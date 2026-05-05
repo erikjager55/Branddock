@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug, Bug, MessageSquarePlus } from 'lucide-react';
+import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug, Bug, MessageSquarePlus, FileText } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useSettingsStore, type SettingsTab } from '@/stores/useSettingsStore';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
@@ -20,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'integrations', label: 'Integrations', icon: Plug },
+  { id: 'brand-rules', label: 'Brand Rules', icon: FileText },
 ];
 
 export function SettingsSubNav() {

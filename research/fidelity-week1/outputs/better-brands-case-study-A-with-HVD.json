@@ -1,0 +1,14 @@
+{
+  "run": {
+    "brand": "better-brands",
+    "type": "case-study",
+    "condition": "A_with_HVD",
+    "key": "better-brands-case-study-A-with-HVD"
+  },
+  "generatorModel": "claude-opus-4-7",
+  "wordCount": 2820,
+  "inputTokens": 4218,
+  "outputTokens": 8000,
+  "elapsedMs": 145068,
+  "generatedAt": "2026-05-05T15:47:09.742Z"
+}

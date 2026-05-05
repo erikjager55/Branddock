@@ -244,6 +244,17 @@ model Workspace {
   // Agent jobs (4.4 — DB-polling queue)
   agentJobs                 AgentJob[]
 
+  // Continuous Learning Loop (cat 2/4/6/9 — sessie 2 leerlus-werkstroom)
+  brandContextSnapshots     BrandContextSnapshot[]
+  aiCallSnapshots           AICallSnapshot[]
+  aiCallTraces              AICallTrace[]
+  contentFidelityScores     ContentFidelityScore[]
+  learningEvents            LearningEvent[]
+
+  // F-VAL pijler 3: anti-AI-tell laag + brand-specific rules
+  fidelityConfig            FidelityConfig?
+  brandRules                BrandRule[]
+
   @@index([organizationId])
 }
 
@@ -346,6 +357,9 @@ model User {
 
   // Emailit campaign sends (4.2 step 4)
   campaignSendsSent             CampaignSend[]         @relation("CampaignSendSender")
+
+  // Continuous Learning Loop (cat 9 — LearningEvent userId)
+  learningEvents                LearningEvent[]
 
   @@index([workspaceId])
 }
@@ -1039,12 +1053,19 @@ model Deliverable {
   improveSuggestions ImproveSuggestion[]
   components        DeliverableComponent[]
   campaignSends     CampaignSend[]
+
+  // Cat 2 — Continuous Learning Loop FK (leerlus-werkstroom sessie 2)
+  // Plain String FK without Prisma relation declaration to avoid 10 back-references on AICallTrace.
+  // App-code lookup: prisma.aICallTrace.findUnique({ where: { id: deliverable.primaryCallTraceId } })
+  primaryCallTraceId String?
+
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
   @@index([campaignId])
   @@index([status])
   @@index([approvalStatus])
+  @@index([primaryCallTraceId])
 }
 
 model CampaignTeamMember {
@@ -1068,8 +1089,23 @@ model ContentVersion {
   createdAt       DateTime    @default(now())
   createdBy       String?
 
+  // Cat 4 — User-edit diff-tracking (leerlus-werkstroom sessie 2)
+  // Populated only when this version represents a user-edit (createdBy='USER').
+  // AI-generated versions: all four fields NULL.
+  diffFromPrevious Json?      // structured diff (ProseMirror-diff or text-diff), format-aware
+  diffSummary      Json?      // { charsAdded, charsRemoved, paragraphsTouched, percentChanged, sectionsReordered, ratio }
+  editType         String?    // EditTypeKey: shorten | expand | restructure | polish | rewrite | factual | tone
+  editorUserId     String?    // userId of the editor (no FK constraint — user may be deleted)
+
+  // Cat 2 — AI-call provenance (only set when createdBy='AI')
+  primaryCallTraceId String?
+
+  // Cat 6 — Fidelity scores (1:N — multi-judge support)
+  fidelityScores   ContentFidelityScore[]
+
   @@index([deliverableId])
   @@unique([deliverableId, versionNumber])
+  @@index([primaryCallTraceId])
 }
 
 model DeliverableComponent {
@@ -1122,11 +1158,15 @@ model DeliverableComponent {
   userFeedback          String?           @db.Text
   iterationCount        Int               @default(0)
 
+  // Cat 2 — Continuous Learning Loop FK
+  primaryCallTraceId    String?
+
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
   @@index([deliverableId, order])
   @@unique([deliverableId, variantGroup, variantIndex])
+  @@index([primaryCallTraceId])
 }
 
 model MediumEnrichment {
@@ -1170,9 +1210,14 @@ model ImproveSuggestion {
   status          SuggestionStatus  @default(PENDING)
   deliverableId   String
   deliverable     Deliverable       @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  // Cat 2 — Continuous Learning Loop FK (which AI-call generated this suggestion)
+  primaryCallTraceId String?
+
   createdAt       DateTime          @default(now())
 
   @@index([deliverableId])
+  @@index([primaryCallTraceId])
 }
 
 model CampaignTemplate {
@@ -2052,11 +2097,15 @@ model AIPersonaAnalysisSession {
   createdBy          User                     @relation(fields: [createdById], references: [id])
   messages           AIPersonaAnalysisMessage[]
 
+  // Cat 2 — Continuous Learning Loop FK
+  primaryCallTraceId String?
+
   createdAt          DateTime                 @default(now())
   updatedAt          DateTime                 @updatedAt
 
   @@index([personaId])
   @@index([workspaceId])
+  @@index([primaryCallTraceId])
 }
 
 enum AIPersonaAnalysisStatus {
@@ -2106,12 +2155,16 @@ model ExplorationSession {
   createdBy          User                    @relation(fields: [createdById], references: [id])
   messages           ExplorationMessage[]
 
+  // Cat 2 — Continuous Learning Loop FK
+  primaryCallTraceId String?
+
   createdAt          DateTime                @default(now())
   updatedAt          DateTime                @updatedAt
 
   @@index([itemType, itemId])
   @@index([workspaceId])
   @@index([workspaceId, itemType])
+  @@index([primaryCallTraceId])
 }
 
 enum ExplorationStatus {
@@ -2279,9 +2332,14 @@ model PersonaChatMessage {
   session     PersonaChatSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   insights    PersonaChatInsight[] // Insights gekoppeld aan dit bericht
 
+  // Cat 2 — Continuous Learning Loop FK
+  // (When implemented, token-tracking fields above will migrate into Trace.responseMetadata)
+  primaryCallTraceId String?
+
   createdAt   DateTime            @default(now())
 
   @@index([sessionId])
+  @@index([primaryCallTraceId])
 }
 
 enum ChatRole {
@@ -2633,9 +2691,13 @@ model AlignmentScan {
   workspaceId       String
   workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  // Cat 2 — Continuous Learning Loop FK
+  primaryCallTraceId String?
+
   @@index([workspaceId])
   @@index([status])
   @@index([workspaceId, status])
+  @@index([primaryCallTraceId])
 }
 
 model ModuleScore {
@@ -2695,7 +2757,11 @@ model BrandAudit {
   workspaceId     String
   workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  // Cat 2 — Continuous Learning Loop FK
+  primaryCallTraceId String?
+
   @@index([workspaceId])
+  @@index([primaryCallTraceId])
 }
 
 // =============================================================
@@ -3618,8 +3684,12 @@ model TrendResearchJob {
 
   detectedTrends   DetectedTrend[]
 
+  // Cat 2 — Continuous Learning Loop FK
+  primaryCallTraceId String?
+
   @@index([workspaceId])
   @@index([status])
+  @@index([primaryCallTraceId])
 }
 
 // =============================================================
@@ -4499,4 +4569,280 @@ model AgentJob {
   @@index([status, scheduledAt])
   @@index([type, status])
   @@index([workspaceId, status])
+}
+
+// =============================================================
+// CONTINUOUS LEARNING LOOP (sessie 2 — leerlus-werkstroom 2026-05-05)
+// =============================================================
+//
+// Vijf modellen die samen de leerlus-fundament vormen:
+// - BrandContextSnapshot : frozen brand-context per AI-call (cat 2a)
+// - AICallSnapshot       : frozen call-payload per AI-call (cat 2b/c gemerged)
+// - AICallTrace          : per-call instance, polymorf naar parent-entity (cat 2)
+// - ContentFidelityScore : 3-pillar + 6-criteria scoring per content-versie (cat 6)
+// - LearningEvent        : unified event-log voor cross-cutting queries (cat 9)
+//
+// Zie: IMPLEMENTATIEPLAN-LEARNING-LOOP.md voor architectuur-rationale.
+// Zie: branddock-learning-loop-decisions.md (memory) voor design-beslissingen.
+//
+// NOG TOE TE VOEGEN (apart, na verificatie schema valideert):
+// - `primaryCallTraceId String?` op 10 generatie-modellen (Deliverable,
+//   DeliverableComponent, ExplorationSession, TrendResearchJob, BrandAudit,
+//   AlignmentScan, AIPersonaAnalysisSession, PersonaChatMessage, ImproveSuggestion)
+//   ContentVersion krijgt deze FK óók (al deels via fidelityScores back-relation).
+// =============================================================
+
+model BrandContextSnapshot {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /** sha256 of canonical-stringified content. Dedup-key. */
+  contentHash String
+
+  /** Volledige BrandContextBlock zoals returned door getBrandContext().
+   *  Bevat alle 12 brand assets, persona's, producten, geactiveerde trends,
+   *  competitors, styleguide, brand voices, consistent models. */
+  content     Json
+
+  createdAt   DateTime  @default(now())
+
+  callTraces  AICallTrace[]
+
+  @@unique([workspaceId, contentHash])
+  @@index([workspaceId])
+}
+
+model AICallSnapshot {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /** sha256 of canonical-stringified payload. Dedup-key. */
+  contentHash      String
+
+  /** Volledige call-payload: model + messages + tools + params + providerExtensions.
+   *  Provider-agnostiek. Hash op canonical-stringify. */
+  payload          Json
+
+  /** Provenance — hoe is deze prompt geproduceerd? */
+  sourceType       String    // "ts-builder" | "db-config" | "inline"
+  sourceIdentifier String    // file:function for TS, ExplorationConfigId for DB
+  gitSha           String?   // env var bij call-tijd, NULL voor db-config
+
+  createdAt        DateTime  @default(now())
+
+  callTraces       AICallTrace[]
+
+  @@unique([workspaceId, contentHash])
+  @@index([workspaceId])
+  @@index([sourceIdentifier])
+}
+
+model AICallTrace {
+  id                       String                @id @default(cuid())
+  workspaceId              String
+  workspace                Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  aiCallSnapshotId         String
+  aiCallSnapshot           AICallSnapshot        @relation(fields: [aiCallSnapshotId], references: [id], onDelete: Cascade)
+
+  brandContextSnapshotId   String?
+  brandContextSnapshot     BrandContextSnapshot? @relation(fields: [brandContextSnapshotId], references: [id], onDelete: SetNull)
+
+  /** Polymorf — geen FK-constraint. Cleanup-job nodig voor orphans. */
+  parentEntityType         String                // "Deliverable" | "ContentVersion" | "ExplorationSession" | ...
+  parentEntityId           String
+
+  /** Voor multi-call paden (strategy-pipeline 8+ calls, tool-use loops).
+   *  Single-call paden hebben callOrder=0. */
+  callOrder                Int                   @default(0)
+
+  /** Response-metadata: tokens, latency, stopReason, errorCode, cache-info. */
+  responseMetadata         Json
+
+  startedAt                DateTime              @default(now())
+  completedAt              DateTime?
+
+  fidelityScores           ContentFidelityScore[]
+
+  @@index([workspaceId])
+  @@index([parentEntityType, parentEntityId, callOrder])
+  @@index([aiCallSnapshotId])
+  @@index([brandContextSnapshotId])
+}
+
+model ContentFidelityScore {
+  id                  String          @id @default(cuid())
+  workspaceId         String
+  workspace           Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  contentVersionId    String
+  contentVersion      ContentVersion  @relation(fields: [contentVersionId], references: [id], onDelete: Cascade)
+
+  /** NULL voor deterministische scores (geen AI-call). */
+  judgeCallTraceId    String?
+  judgeCallTrace      AICallTrace?    @relation(fields: [judgeCallTraceId], references: [id], onDelete: SetNull)
+
+  /** Human-readable label: "deterministic-rule-engine-v1" | "claude-judge-fidelity" | "human:userId". */
+  judgeIdentifier     String
+
+  /** 0-100, weighted average van pillars. */
+  compositeScore      Float
+
+  /** PillarScores shape: { strategic: {score, weight}, audience: {score, weight}, execution: {score, weight} } */
+  pillarScores        Json
+
+  /** SubCriteriaScores shape: 6 keys, elk { score, pillar, source, rationale? } */
+  subCriteriaScores   Json
+
+  /** RuleViolation[]: { ruleId, severity, message, snippet?, source, pillar? } */
+  ruleViolations      Json
+
+  /** compositeScore >= compositeThreshold (uit fidelity-criteria.ts). */
+  thresholdMet        Boolean         @default(false)
+
+  /** Versie van de scoring-logica voor reproducibility. */
+  scorerVersion       String?
+
+  scoredAt            DateTime        @default(now())
+
+  @@index([workspaceId])
+  @@index([contentVersionId])
+  @@index([judgeCallTraceId])
+  @@index([workspaceId, scoredAt])
+}
+
+model LearningEvent {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /** Optioneel — system-events (cron, agent) hebben geen userId. */
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  /** LearningEventType uit src/types/learning-loop.ts.
+   *  String, geen DB-enum — uitbreiden vereist alleen TS-update. */
+  eventType   String
+
+  /** Polymorf — geen FK-constraint. */
+  entityType  String
+  entityId    String
+
+  /** Event-specifieke payload. Shape per type via TS discriminated union. */
+  data        Json?
+
+  timestamp   DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, timestamp])
+  @@index([workspaceId, userId, timestamp])
+  @@index([entityType, entityId, timestamp])
+  @@index([workspaceId, eventType, timestamp])
+}
+
+// ============================================================
+// F-VAL: pijler 3 (anti-AI-tell + rules) + workspace fidelity config
+// Zie docs/fidelity/F-VAL-plan-v0.5.md
+// ============================================================
+
+enum BrandRuleType {
+  /** Verboden woord/frase — exact match of regex */
+  FORBIDDEN_WORD
+  /** Verplichte formulering in specifieke context */
+  REQUIRED_PHRASE
+  /** Kwantitatieve grens (max zinslengte, max bullets, etc) */
+  STYLE_LIMIT
+  /** Output moet expliciete verwijzing bevatten naar gekozen pijler/waarde */
+  PILLAR_REFERENCE
+}
+
+enum HumanVoiceMode {
+  /** HVD niet geïnjecteerd — rauwe Branddock + BVD output */
+  OFF
+  /** HVD wordt geïnjecteerd naast BVD in alle generaties */
+  BASELINE
+  /** BASELINE + post-generatie tell-check; auto-rewrite bij AI_LEANING / PURE_AI verdict */
+  STRICT
+}
+
+/**
+ * Per-workspace brand rules (pijler 3c uit F-VAL v0.5).
+ *
+ * Aanvullend op de generieke Human Voice Directive — workspace-eigenaars
+ * voegen hier merk-specifieke verboden woorden, verplichte formuleringen
+ * en stijlregels toe. Auto-import vanuit BrandPersonality.wordsWeAvoid
+ * is voorzien als seed bij workspace creation.
+ */
+model BrandRule {
+  id                  String          @id @default(cuid())
+  workspaceId         String
+  workspace           Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  ruleType            BrandRuleType
+  /** Pattern: literal string of regex source (afhankelijk van patternIsRegex) */
+  pattern             String
+  patternIsRegex      Boolean         @default(false)
+
+  /** Optionele uitleg voor de gebruiker bij detectie */
+  message             String?
+
+  /** info | warning | error — bepaalt hoe streng de violation telt in pijler 3 score */
+  severity            String          @default("warning")
+
+  /** Lege array = van toepassing op alle content types. Anders alleen op
+   *  deliverables met deliverableTypeId in deze lijst. */
+  contentTypeFilter   String[]        @default([])
+
+  isActive            Boolean         @default(true)
+
+  /** Voor audit: waar kwam deze rule vandaan?
+   *  "manual" | "auto:wordsWeAvoid" | "csv-import" | "system" */
+  source              String          @default("manual")
+
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@index([workspaceId, isActive])
+  @@index([workspaceId, ruleType])
+}
+
+/**
+ * Per-workspace fidelity scoring configuratie (pijler 1/2/3 weights,
+ * Human Voice mode, content-type opt-outs).
+ *
+ * Eén record per workspace (unique). Auto-aangemaakt bij workspace
+ * creation via databaseHook met defaults.
+ */
+model FidelityConfig {
+  id                    String          @id @default(cuid())
+  workspaceId           String          @unique
+  workspace             Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // ─── Composite weights (sum should equal 1.0) ───
+  /** Pijler 1 — style scoring op bestaande BrandPersonality data */
+  styleWeight           Float           @default(0.35)
+  /** Pijler 2 — G-Eval rubric judge */
+  judgeWeight           Float           @default(0.45)
+  /** Pijler 3 — anti-tell + BrandRule compliance */
+  ruleWeight            Float           @default(0.20)
+
+  // ─── Pijler 2 rubric weights (6 dimensies, sum 1.0) ───
+  /** Shape: { strategicAnchoring: 0.20, audienceFit: 0.15, brandRecognition: 0.15,
+   *           antiPattern: 0.30, coherence: 0.10, concreteness: 0.10 } */
+  rubricWeights         Json?
+
+  // ─── Pijler 3 anti-tell laag ───
+  humanVoiceMode        HumanVoiceMode  @default(BASELINE)
+
+  /** Drempel voor AI_LEANING verdict — boven dit positie-getal triggert STRICT-mode rewrite */
+  aiLeaningThreshold    Int             @default(30)
+
+  // ─── Per content-type opt-outs ───
+  /** Lege array = fidelity scoring actief voor alle types */
+  disabledContentTypes  String[]        @default([])
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
 }

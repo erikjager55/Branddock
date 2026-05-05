@@ -9,6 +9,7 @@ import { TeamTab } from './team/TeamTab';
 import { WorkspacesTab } from './workspaces/WorkspacesTab';
 import { BillingTab } from './billing/BillingTab';
 import { IntegrationsTab } from './integrations/IntegrationsTab';
+import { RulesTab } from './brand-voice/RulesTab';
 import { AdministratorTab } from './administrator/AdministratorTab';
 import { AiModelsTab } from './ai-models/AiModelsTab';
 import { BugTriageTab } from './developer/BugTriageTab';
@@ -68,6 +69,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
         );
       case 'integrations':
         return <IntegrationsTab />;
+      case 'brand-rules':
+        return <RulesTab />;
       case 'administrator':
         return <AdministratorTab />;
       case 'ai-models':

@@ -92,6 +92,23 @@ export async function PATCH(
       console.error('[Brand asset framework version snapshot failed]', versionError);
     }
 
+    // F-VAL pijler 3c: auto-sync wordsWeAvoid → BrandRule (FORBIDDEN_WORD)
+    // Alleen voor BRAND_PERSONALITY assets met wordsWeAvoid in frameworkData.
+    if (
+      (parsed.data.frameworkType ?? asset.frameworkType) === 'BRAND_PERSONALITY' &&
+      'wordsWeAvoid' in mergedFrameworkData
+    ) {
+      try {
+        const { syncWordsAvoidToRules } = await import('@/lib/brand-fidelity/brand-rule-sync');
+        const wordsWeAvoid = mergedFrameworkData.wordsWeAvoid as unknown;
+        const wordsArray = Array.isArray(wordsWeAvoid) ? (wordsWeAvoid as string[]) : [];
+        await syncWordsAvoidToRules(workspaceId, wordsArray);
+      } catch (syncError) {
+        console.error('[BrandRule auto-sync failed]', syncError);
+        // Non-fatal — framework update succeeds regardless
+      }
+    }
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error("[PATCH /api/brand-assets/:id/framework]", error);

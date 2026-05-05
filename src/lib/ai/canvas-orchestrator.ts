@@ -26,6 +26,8 @@ import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-typ
 import { getPromptTemplate } from '@/lib/studio/prompt-templates';
 import { getContentTypeInputs } from '@/features/campaigns/lib/content-type-inputs';
 import { buildBrandVoiceDirectiveFromContext } from '@/lib/studio/brand-voice-directive';
+import { buildHumanVoiceDirective } from '@/lib/studio/human-voice-directive';
+import { resolveHumanVoiceMode } from '@/lib/brand-fidelity/fidelity-config';
 import { sanitizeVariantContent } from '@/features/campaigns/lib/variant-content-sanitizer';
 import OpenAI from 'openai';
 
@@ -130,10 +132,19 @@ export async function* orchestrateContentGeneration(
     (t) => t.type === 'image' || t.type === 'hero-image',
   );
 
-  // ── Build brand voice directive ────────────────────────
-  const voiceDirective = buildBrandVoiceDirectiveFromContext(stack.brand, {
+  // ── Build brand voice directive (BVD) + Human Voice Directive (HVD) ─
+  const bvd = buildBrandVoiceDirectiveFromContext(stack.brand, {
     deliverableTypeId: stack.deliverableTypeId ?? undefined,
   });
+
+  // F-VAL pijler 3: append generic anti-AI-tell layer when enabled
+  const humanVoiceMode = await resolveHumanVoiceMode(workspaceId);
+  const hvd =
+    humanVoiceMode === 'OFF'
+      ? ''
+      : buildHumanVoiceDirective({ language: stack.brand.contentLanguage ?? 'nl' });
+
+  const voiceDirective = hvd ? `${bvd}\n\n${hvd}` : bvd;
 
   // ── Regeneration path ─────────────────────────────────
   if (options?.regenerateGroup) {

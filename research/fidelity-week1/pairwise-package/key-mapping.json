@@ -1,0 +1,102 @@
+{
+  "generatedAt": "2026-05-05T15:12:27.283Z",
+  "mapping": [
+    {
+      "brandSlug": "wra-juristen",
+      "contentType": "case-study",
+      "testMode": "DRIFT",
+      "presented": {
+        "versieA": {
+          "source": "outputs/wra-juristen-case-study-B.md",
+          "kind": "B_OURS"
+        },
+        "versieB": {
+          "source": "outputs/wra-juristen-case-study-A.md",
+          "kind": "A_OURS"
+        }
+      },
+      "pairLabel": "01-case-study"
+    },
+    {
+      "brandSlug": "wra-juristen",
+      "contentType": "thought-leadership",
+      "testMode": "DRIFT",
+      "presented": {
+        "versieA": {
+          "source": "outputs/wra-juristen-thought-leadership-A.md",
+          "kind": "A_OURS"
+        },
+        "versieB": {
+          "source": "outputs/wra-juristen-thought-leadership-B.md",
+          "kind": "B_OURS"
+        }
+      },
+      "pairLabel": "02-thought-leadership"
+    },
+    {
+      "brandSlug": "linfi",
+      "contentType": "case-study",
+      "testMode": "DRIFT",
+      "presented": {
+        "versieA": {
+          "source": "outputs/linfi-case-study-B.md",
+          "kind": "B_OURS"
+        },
+        "versieB": {
+          "source": "outputs/linfi-case-study-A.md",
+          "kind": "A_OURS"
+        }
+      },
+      "pairLabel": "01-case-study"
+    },
+    {
+      "brandSlug": "linfi",
+      "contentType": "thought-leadership",
+      "testMode": "DRIFT",
+      "presented": {
+        "versieA": {
+          "source": "outputs/linfi-thought-leadership-A.md",
+          "kind": "A_OURS"
+        },
+        "versieB": {
+          "source": "outputs/linfi-thought-leadership-B.md",
+          "kind": "B_OURS"
+        }
+      },
+      "pairLabel": "02-thought-leadership"
+    },
+    {
+      "brandSlug": "better-brands",
+      "contentType": "case-study",
+      "testMode": "AI_VS_HUMAN",
+      "presented": {
+        "versieA": {
+          "source": "outputs/better-brands-case-study-A.md",
+          "kind": "A_OURS"
+        },
+        "versieB": {
+          "source": "external-corpus/bb-article-2021-5-powermerken.md",
+          "kind": "HUMAN"
+        }
+      },
+      "pairLabel": "01-case-study"
+    },
+    {
+      "brandSlug": "better-brands",
+      "contentType": "thought-leadership",
+      "testMode": "AI_VS_HUMAN",
+      "presented": {
+        "versieA": {
+          "source": "external-corpus/bb-article-2020-sales-naar-purpose.md",
+          "kind": "HUMAN"
+        },
+        "versieB": {
+          "source": "outputs/better-brands-thought-leadership-A.md",
+          "kind": "A_OURS"
+        }
+      },
+      "pairLabel": "02-thought-leadership"
+    }
+  ],
+  "explanation": "For each brand × content-type pair: presented.versieA.kind and versieB.kind tell whether the displayed version is our condition A (A_OURS), our condition B (B_OURS), or a human-written reference article (HUMAN). testMode indicates whether this pair tests drift A→B (DRIFT) or AI→Human comparison (AI_VS_HUMAN)."
+}
