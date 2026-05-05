@@ -28,6 +28,7 @@ import { getContentTypeInputs } from '@/features/campaigns/lib/content-type-inpu
 import { buildBrandVoiceDirectiveFromContext } from '@/lib/studio/brand-voice-directive';
 import { buildHumanVoiceDirective } from '@/lib/studio/human-voice-directive';
 import { resolveHumanVoiceMode } from '@/lib/brand-fidelity/fidelity-config';
+import { detectAiTells } from '@/lib/brand-fidelity/ai-tell-detector';
 import { sanitizeVariantContent } from '@/features/campaigns/lib/variant-content-sanitizer';
 import OpenAI from 'openai';
 
@@ -231,6 +232,36 @@ export async function* orchestrateContentGeneration(
         })),
       },
     };
+  }
+
+  // ── Step 2.5: Run AI-tell detector on first variant (F-VAL pijler 3) ─
+  // Lightweight signal — concat all first-variant content to a blob, run
+  // detector, yield position/verdict. Demo-UI reads this for the
+  // mens-baseline position bar. Full STRICT mode rewrite-loop is wired
+  // separately (week 2 — requires structured rewrite that preserves
+  // component groups + variants).
+  try {
+    const blobText = textResult.components
+      .map((c) => c.variants[0]?.content ?? '')
+      .filter(Boolean)
+      .join('\n\n');
+    if (blobText.split(/\s+/).filter(Boolean).length >= 50) {
+      const tellResult = detectAiTells(blobText);
+      yield {
+        event: 'tell_check_complete',
+        data: {
+          verdict: tellResult.verdict,
+          humanBaselinePosition: tellResult.humanBaselinePosition,
+          scorePer1000Words: Math.round(tellResult.scorePer1000Words * 10) / 10,
+          uniqueTellCount: tellResult.uniqueTellCount,
+          totalMatches: tellResult.totalMatches,
+          wordCount: tellResult.wordCount,
+        },
+      };
+    }
+  } catch (tellErr) {
+    // Non-fatal — generation succeeds regardless of detector outcome
+    console.error('[canvas-orchestrator] tell-check failed:', tellErr);
   }
 
   // ── Step 3: Image generation is now manual ────────────
