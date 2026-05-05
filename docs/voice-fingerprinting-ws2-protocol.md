@@ -1,6 +1,6 @@
 # Voice Fingerprinting WS2 — Drift Measurement Protocol
 
-**Versie**: v0.3 — pre-registratie (amendment vóór WS3 stap 3 scoring)
+**Versie**: v0.4 — pre-registratie (amendment vóór WS3 stap 3 RE-RUN met chunking)
 **Datum**: 2026-05-05
 **Status**: pre-registratie — vastgelegd in git VÓÓR enige scoring of A.1-A.4 implementatie. Wijzigingen na deze commit vereisen expliciete versie-bump met motivatie.
 
@@ -335,6 +335,32 @@ Onder n=16 met thin Pearson-distributie is een zelfstandige threshold-based corr
 
 mStyleDistance pipeline: 1-2 dagen bouwwerk (model download, corpus embedding, centroid berekening, scoring functie). Onderdeel van WS3-setup, niet F-VAL bouwwerk.
 
+### §6.6 Chunking method voor long-form embedding (TOEGEVOEGD v0.4)
+
+WS3 stap 3 first run (2026-05-05, model download + embedding op v0.3-spec) toonde aan dat alle 16 pieces similarities clusteren tussen 0.9964-0.9997 — range 0.003, geen discriminatie tussen LINFI's eigen content en non-LINFI content (LINFI loo mean = non-LINFI mean = 0.9991, gelijk tot 4 decimalen).
+
+**Diagnostische bevinding**: mStyleDistance gebruikt `xlm-roberta-base` met `max_seq_length = 512` tokens. Onze long-form pieces zijn 613-1921 woorden ≈ 750-2400 tokens. Het model ziet alleen de eerste ~500 tokens van elk stuk. Alle openings van professionele marketing-prose lijken stilistisch op elkaar → similarities collapse naar ~1.0.
+
+**Karakter van de fix**: dit is een TECHNISCHE constraint (sequence-truncation door tokenizer), niet een methodologische uitkomst. We adjusten geen thresholds om in een gewenste branche uit te komen — we corrigeren een bekende model-limiet die niet was geanticipeerd in v0.3. De hypothese ("embedding distinguishes brand styles") blijft intact; chunking is de operationalisering die het model toestaat de volledige tekst te zien. **Niet post-hoc rationalisatie** in de zin die §7.4 verbiedt — dit valt onder "implementatie-refinement bij ontdekte technische limiet".
+
+**Methodology — chunk + mean-pool**:
+
+1. Per piece, tokenize via de model's eigen tokenizer (`model.tokenizer`).
+2. Split tokens in chunks van **480 tokens** (32-token headroom voor CLS/SEP special tokens).
+3. **Overlap 50 tokens** tussen opeenvolgende chunks om context-grenzen te bewaren.
+4. Decode elke chunk-tokens terug naar tekst.
+5. Embed elke chunk afzonderlijk via `model.encode()`.
+6. **Mean-pool** de chunk-embeddings tot één document-embedding.
+7. **L2-normalize** de mean-pooled vector (sentence-transformers convention).
+
+Items met ≤480 tokens worden ongewijzigd direct geëmbed (geen chunking nodig).
+
+**Output uitbreiding**: `embeddings.json` rapporteert per item de `chunk_count` voor transparantie. Als `chunk_count = 1` is het stuk binnen single-chunk limit; `chunk_count > 1` toont aan dat chunking actief was. Aggregate stats noteren mean / median / max chunk_count over de pool.
+
+**Pre-registratie locked**: alle parameters (480 tokens chunk size, 50 tokens overlap, mean-pool aggregation, L2 normalize) zijn vastgelegd vóór re-run. Tweaking van deze parameters na de re-run zou post-hoc rationalisatie zijn en is verboden per §7.4.
+
+**Wat dit niet wijzigt**: de v0.3 amendment over kwalitatieve disagreement-case inspectie als primair signaal staat. Spearman ρ blijft leidend voor secundair directional indicator. Branch-criteria niet aangepast. n=16 pool ongewijzigd.
+
 ---
 
 ## §7 Pre-registratie & post-hoc rationalisatie-discipline
@@ -426,4 +452,5 @@ Na pre-registratie commit:
 
 - **v0.1** (2026-05-05, inline in chat, niet gecommit): initiele rubriek + 4 dimensies + 5-punts vs 1-10 keuze + 3 content-types + falsificatie-branches.
 - **v0.2** (2026-05-05, commit `446f92b`): toegevoegd asymmetrie-erkenning rater 2 (§3.2), κ per rater-type-paar (§3.3), asymmetrische weging (§3.4), rater-framing (§3.6), tweezijdige hypothese A.3 (§1.2), 10 LLM-tells (§1.3), brand-specific weight 3× (§1.3), branch (c) clarificatie geen A.5 fallback (§5), WS2 conditie B redefinitie BVD+A.1-A.4 i.p.v. nieuw schema (§4.2), WS3 scenario B + LINFI-anchored + approved losgelaten (§6.2-6.3), post-hoc rationalisatie blocklist (§7.4).
-- **v0.3** (2026-05-05, dit commit): WS3 disagreement-criterium herzien op basis van WS3 stap 2 score-distributie observatie (commit `fce7bb6`: 3 unieke waarden 72/78/88 over 16 pieces — thin distribution noopt tot Spearman ρ + kwalitatieve inspectie als primair signaal). Pearson r en Spearman ρ beide rapporteren; kwalitatieve disagreement-case inspectie wordt primair signaal voor F-VAL pijler 1 beslissing; correlation-thresholds gedegradeerd naar directional indicators (§6.4). §7.2 non-modifiable lijst aangepast om Pearson 0.4/0.7 te verwijderen en kwalitatieve inspectie als de gefixeerde primary methodology vast te leggen. **Pre-data amendment**: WS3 stap 3 (mStyleDistance embeddings) en stap 4 (correlation calc) waren nog niet gestart op moment van deze versie-bump. Modelverificatie `StyleDistance/mstyledistance` op HuggingFace bevestigd in dezelfde sessie (sentence-transformers, xlm-roberta-base, multilingual incl. Nederlands).
+- **v0.3** (2026-05-05, commit `9db58cc`): WS3 disagreement-criterium herzien op basis van WS3 stap 2 score-distributie observatie (commit `fce7bb6`: 3 unieke waarden 72/78/88 over 16 pieces — thin distribution noopt tot Spearman ρ + kwalitatieve inspectie als primair signaal). Pearson r en Spearman ρ beide rapporteren; kwalitatieve disagreement-case inspectie wordt primair signaal voor F-VAL pijler 1 beslissing; correlation-thresholds gedegradeerd naar directional indicators (§6.4). §7.2 non-modifiable lijst aangepast om Pearson 0.4/0.7 te verwijderen en kwalitatieve inspectie als de gefixeerde primary methodology vast te leggen. **Pre-data amendment**: WS3 stap 3 (mStyleDistance embeddings) en stap 4 (correlation calc) waren nog niet gestart op moment van deze versie-bump. Modelverificatie `StyleDistance/mstyledistance` op HuggingFace bevestigd in dezelfde sessie (sentence-transformers, xlm-roberta-base, multilingual incl. Nederlands).
+- **v0.4** (2026-05-05, dit commit): chunking-method toegevoegd voor long-form embedding (§6.6). WS3 stap 3 first run liet zien dat similarity range 0.003 was over 16 pieces — embedding signal collapse door 512-token truncation. Chunking met 480-token chunks + 50-token overlap + mean-pool + L2-normalize fixt dit. **Karakter**: technische constraint correctie, geen methodology threshold tweaking; hypothese intact, parameters locked vóór re-run, valt onder §7.4 toegestane implementatie-refinement. Disagreement-case primair signaal en Spearman ρ leading uit v0.3 onveranderd.

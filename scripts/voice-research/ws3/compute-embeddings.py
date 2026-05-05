@@ -6,6 +6,15 @@ style-only embedding model based on XLM-RoBERTa). For each piece, computes cosin
 similarity to the LINFI brand-anchor centroid.
 
 Methodology choices:
+  - Chunking (per protocol v0.4 §6.6): xlm-roberta-base has max_seq_length=512
+    tokens. Pieces of 600-1900 words exceed this. Without chunking, only the first
+    ~500 tokens are embedded, leading to similarity collapse (observed in v0.3
+    first run: range 0.003 across all 16 pieces). Chunking strategy:
+      * tokenize via model.tokenizer
+      * 480-token chunks (32-token headroom for special tokens)
+      * 50-token overlap to preserve context boundaries
+      * mean-pool chunk embeddings + L2-normalize
+    Items with <=480 tokens skip chunking and embed directly.
   - Leave-one-out for LINFI items: each LINFI piece's centroid is built from the
     OTHER 11 LINFI pieces. This avoids the bias where train-set items have inflated
     similarity to a centroid built from themselves.
@@ -55,7 +64,11 @@ from sentence_transformers import SentenceTransformer
 MODEL_NAME = "StyleDistance/mstyledistance"
 DEFAULT_CORPUS = Path(__file__).parent / "output" / "corpus.jsonl"
 DEFAULT_OUTPUT = Path(__file__).parent / "output" / "embeddings.json"
-PROTOCOL_VERSION = "v0.3"
+PROTOCOL_VERSION = "v0.4"
+
+# Chunking parameters (locked per protocol v0.4 §6.6 — modifications require versie-bump)
+CHUNK_TOKEN_SIZE = 480  # 32-token headroom for [CLS]/[SEP] special tokens (model max=512)
+CHUNK_OVERLAP_TOKENS = 50  # preserves context across chunk boundaries
 
 # ─── Helpers ──────────────────────────────────────────────
 
@@ -64,6 +77,49 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     a_norm = a / np.linalg.norm(a)
     b_norm = b / np.linalg.norm(b)
     return float(np.dot(a_norm, b_norm))
+
+
+def embed_chunked(
+    model, tokenizer, text: str, chunk_size: int, overlap: int
+) -> tuple[np.ndarray, int]:
+    """Embed long text via chunking + mean-pool + L2-normalize.
+
+    Per protocol v0.4 §6.6: tokenize, split into ``chunk_size``-token chunks with
+    ``overlap`` tokens between consecutive chunks, embed each chunk, mean-pool
+    the chunk embeddings, then L2-normalize.
+
+    Returns (document_embedding, chunk_count).
+    """
+    tokens = tokenizer.encode(text, add_special_tokens=False)
+    if len(tokens) <= chunk_size:
+        # Single chunk — embed directly. Still mean-pool of 1, L2-normalize for consistency.
+        emb = model.encode(text, convert_to_numpy=True)
+        norm = np.linalg.norm(emb)
+        return (emb / norm if norm > 0 else emb, 1)
+
+    # Split into overlapping chunks
+    step = chunk_size - overlap
+    chunk_texts: list[str] = []
+    for start in range(0, len(tokens), step):
+        chunk_tokens = tokens[start : start + chunk_size]
+        chunk_text = tokenizer.decode(chunk_tokens, skip_special_tokens=True)
+        chunk_texts.append(chunk_text)
+        # Stop once we've reached a chunk that ends at the document end
+        if start + chunk_size >= len(tokens):
+            break
+
+    # Embed all chunks at once (model handles batching internally)
+    chunk_embeddings = model.encode(
+        chunk_texts, convert_to_numpy=True, show_progress_bar=False, batch_size=4
+    )
+
+    # Mean-pool + L2 normalize
+    doc_embedding = chunk_embeddings.mean(axis=0)
+    norm = np.linalg.norm(doc_embedding)
+    if norm > 0:
+        doc_embedding = doc_embedding / norm
+
+    return (doc_embedding, len(chunk_texts))
 
 
 def stats(values: list[float]) -> dict:
@@ -136,15 +192,36 @@ def main() -> None:
     # Load model
     print(f"\nLoading {MODEL_NAME} (first run downloads ~1.1GB to HF cache)...")
     model = SentenceTransformer(MODEL_NAME)
-    print(f"Model loaded. Embedding dim: {model.get_sentence_embedding_dimension()}")
-
-    # Embed all texts
-    texts = [item["content"] for item in items]
-    print(f"\nEmbedding {len(texts)} texts...")
-    embeddings = model.encode(
-        texts, show_progress_bar=True, convert_to_numpy=True, batch_size=4
+    tokenizer = model.tokenizer
+    embed_dim = model.get_sentence_embedding_dimension()
+    print(f"Model loaded. Embedding dim: {embed_dim}")
+    print(
+        f"Chunking method (protocol v0.4 §6.6): {CHUNK_TOKEN_SIZE} tokens / chunk, "
+        f"{CHUNK_OVERLAP_TOKENS} overlap"
     )
-    print(f"Embeddings shape: {embeddings.shape}")
+
+    # Embed each text using chunking + mean-pool
+    print(f"\nEmbedding {len(items)} texts via chunked mean-pool...")
+    embeddings = np.zeros((len(items), embed_dim), dtype=np.float32)
+    chunk_counts: list[int] = []
+    for i, item in enumerate(items):
+        emb, n_chunks = embed_chunked(
+            model, tokenizer, item["content"], CHUNK_TOKEN_SIZE, CHUNK_OVERLAP_TOKENS
+        )
+        embeddings[i] = emb
+        chunk_counts.append(n_chunks)
+        wc = item["wordCount"]
+        print(
+            f"  [{i + 1:>2}/{len(items)}] {item['workspaceSlug']}/{item['contentType']} "
+            f"({wc}w) -> {n_chunks} chunk{'s' if n_chunks != 1 else ''}"
+        )
+
+    print(f"\nEmbeddings shape: {embeddings.shape}")
+    print(
+        f"Chunk distribution: min={min(chunk_counts)} median="
+        f"{sorted(chunk_counts)[len(chunk_counts) // 2]} max={max(chunk_counts)} "
+        f"total={sum(chunk_counts)}"
+    )
 
     # Compute pooled LINFI centroid (used for non-LINFI items)
     linfi_embeddings = embeddings[linfi_idx]
@@ -174,6 +251,7 @@ def main() -> None:
             "is_brand_anchor": is_anchor,
             "content_type": item["contentType"],
             "word_count": item["wordCount"],
+            "chunk_count": chunk_counts[i],
             "similarity_to_linfi_centroid": sim,
             "similarity_method": method,
             "embedding": embeddings[i].tolist(),
@@ -202,6 +280,19 @@ def main() -> None:
         "method": (
             "leave-one-out for LINFI (brand-anchor); pooled centroid for non-LINFI"
         ),
+        "chunking": {
+            "enabled": True,
+            "chunk_token_size": CHUNK_TOKEN_SIZE,
+            "overlap_tokens": CHUNK_OVERLAP_TOKENS,
+            "aggregation": "mean-pool + L2-normalize",
+            "chunk_count_per_item": dict(zip([item["id"] for item in items], chunk_counts)),
+            "chunk_count_stats": {
+                "min": min(chunk_counts),
+                "median": sorted(chunk_counts)[len(chunk_counts) // 2],
+                "max": max(chunk_counts),
+                "total": sum(chunk_counts),
+            },
+        },
         "language_caveat": (
             "Dutch not explicitly in 9-language mStyleDistance training set; "
             "xlm-roberta base supports Dutch but style-feature transfer is unverified. "
