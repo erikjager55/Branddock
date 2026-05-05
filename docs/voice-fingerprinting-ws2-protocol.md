@@ -1,6 +1,6 @@
 # Voice Fingerprinting WS2 — Drift Measurement Protocol
 
-**Versie**: v0.4 — pre-registratie (amendment vóór WS3 stap 3 RE-RUN met chunking)
+**Versie**: v0.5 — WS3 aggregate-finding gevangen, Brand Voice extractie als toekomstige doel-architectuur genoteerd
 **Datum**: 2026-05-05
 **Status**: pre-registratie — vastgelegd in git VÓÓR enige scoring of A.1-A.4 implementatie. Wijzigingen na deze commit vereisen expliciete versie-bump met motivatie.
 
@@ -361,6 +361,46 @@ Items met ≤480 tokens worden ongewijzigd direct geëmbed (geen chunking nodig)
 
 **Wat dit niet wijzigt**: de v0.3 amendment over kwalitatieve disagreement-case inspectie als primair signaal staat. Spearman ρ blijft leidend voor secundair directional indicator. Branch-criteria niet aangepast. n=16 pool ongewijzigd.
 
+### §6.7 WS3 aggregate-finding (v0.5, 2026-05-05 sessie-afsluiting)
+
+WS3 is end-to-end gedraaid (corpus n=16, voice-scoring, mStyleDistance chunked embeddings, Pearson + Spearman + 4 disagreement-cases). Plus on-the-fly kwalitatieve review door product-eigenaar samen met klant op alle 4 cases inclusief vergelijking met externe brand-voice referentie (hoog.design article + 3 LINFI LinkedIn-posts).
+
+**Hoofdbevinding**: het embedding-signaal in de huidige opzet (mStyleDistance tegen workspace-eigen-corpus) is **redundant tot misleidend** voor F-VAL pijler 1 in haar huidige implementatie. Reden: LINFI's bestaande long-form corpus is uniform afgegleden van de canonical Brand Personality voice. Een centroid uit dat corpus meet "consistentie met afdrijf-patroon", niet "fidelity met intended voice".
+
+**Ondersteunend bewijs uit de 4 cases**:
+- 3 cases (voice=72, sim≈0.997): scorer correct laag, embedding wrongly hoog → embedding bevestigt drift, voegt geen signaal toe
+- 1 case (voice=88, sim=0.992 laagste): scorer over-rate door brand-vocabulary aanwezigheid, embedding flagt "outlier" maar direction-blind. Kwalitatieve vergelijking met hoog.design article toont deze case is weliswaar minder typisch dan corpus, maar dichter bij echte LINFI voice
+- LinkedIn-evidence: real LINFI voice op social = casual/playful/spannend ("plop-up bar", "stiekem trots", "één druk op de knop") — fundamenteel anders dan zowel corpus als canonical Brand Personality formal richting
+
+**Conclusie F-VAL pijler 1 build/no-build**: BOUWEN, maar **NIET in de huidige vorm** (embedding-tegen-eigen-corpus). Wel met **gecureerde reference set** als centroid-bron — embedding-tegen-aspirational-voice. Dat sluit aan op de Brand Voice module die als toekomstige extractie is genoteerd (zie §6.8).
+
+### §6.8 Brand Voice extractie als toekomstige doel-architectuur (v0.5)
+
+Tijdens deze sessie kwam aan het licht dat voice-data nu verspreid in Brand Personality canonical asset zit (writingSample, brandVoiceDescription, channelTones, wordsWeUse/Avoid, deels toneDimensions) en deels in Brandstyle Analyzer's tone-of-voice sectie. Een dedicated **Brand Voice module** (parallel aan Brandstyle, eigen analyzer + curatie-UI + export) zou:
+
+- Voice references als gecureerde set leveren (auto-scan + manual paste + URL import zoals hoog.design)
+- Pijler 1 style-scoring een betere centroid-bron geven (embedding-tegen-references, niet tegen eigen-corpus)
+- Pijler 3 BrandRule auto-sync uitbreiden van alleen `wordsWeAvoid` naar volledige voice-vocabulary + brand-specifieke anti-patterns
+- Pijler 2 G-Eval rubric-judge een rijkere prompt-context geven
+
+**Sequencing-keuze (vastgelegd 2026-05-05)**: Brand Voice extractie wacht tot:
+1. **Fidelity scoring afgerond** — geeft stabiele scoring-baseline op huidige BrandPersonality-data; Brand Voice extractie wordt dan een migratie met regressie-test (scoort fidelity hetzelfde voor dezelfde content vóór en na de extractie?).
+2. **Learning loop afgerond** — geeft telemetrie over waar fidelity zwak is; voorkomt over-engineered Brand Voice scope op aannames; extractie wordt gericht door data.
+
+WS2 generation (12 stukken voor drift-meting) **kan parallel draaien** op huidige BrandPersonality-data — meet propagation-mechaniek, niet bron-data-kwaliteit.
+
+**Open observaties die bij Brand Voice extractie heroverwogen worden** (niet nu actie ondernemen):
+- LINFI tone-fix mogelijk in verkeerde richting: huidige fix `{formalCasual: 3, seriousFunny: 2, respectfulIrreverent: 2, matterOfFactEnthusiastic: 3}` consistent met `Meticulous/Refined/Reliable/Discerning` formal-axis, maar LinkedIn-evidence toont real brand voice meer in oorspronkelijke `{5, 6, 6, 5}` casual/playful richting. Bij Brand Voice extractie heroverwegen via channel-tones (long-form formal, social casual) — niet via eenmalige tone-slider-keuze.
+- Brand Personality bevat zowel psychografische identiteit (Aaker, archetypen, traits, spectrum) als verbale uitvoering (samples, vocabulary, channels). Brand Voice extractie behoudt psychografie in Brand Personality, verplaatst verbale uitvoering naar Brand Voice. Migratie-plan komt in `IMPLEMENTATIEPLAN-BRAND-VOICE.md` zodra fidelity + learning loop af zijn.
+
+**Relatie tot bestaande fidelity-infrastructuur** (decision-locked):
+- 3-pijler architectuur (style 35% / judge 45% / rule 20%) blijft
+- 6 rubric criteria blijven
+- BrandRule auto-sync mechanisme breidt uit (extra source-paden), wordt niet vervangen
+- HumanVoiceDirective (brand-agnostic AI-tells) blijft separate component
+
+Brand Voice is data-laag-uitbreiding, niet scoring-laag-redesign.
+
 ---
 
 ## §7 Pre-registratie & post-hoc rationalisatie-discipline
@@ -453,4 +493,5 @@ Na pre-registratie commit:
 - **v0.1** (2026-05-05, inline in chat, niet gecommit): initiele rubriek + 4 dimensies + 5-punts vs 1-10 keuze + 3 content-types + falsificatie-branches.
 - **v0.2** (2026-05-05, commit `446f92b`): toegevoegd asymmetrie-erkenning rater 2 (§3.2), κ per rater-type-paar (§3.3), asymmetrische weging (§3.4), rater-framing (§3.6), tweezijdige hypothese A.3 (§1.2), 10 LLM-tells (§1.3), brand-specific weight 3× (§1.3), branch (c) clarificatie geen A.5 fallback (§5), WS2 conditie B redefinitie BVD+A.1-A.4 i.p.v. nieuw schema (§4.2), WS3 scenario B + LINFI-anchored + approved losgelaten (§6.2-6.3), post-hoc rationalisatie blocklist (§7.4).
 - **v0.3** (2026-05-05, commit `9db58cc`): WS3 disagreement-criterium herzien op basis van WS3 stap 2 score-distributie observatie (commit `fce7bb6`: 3 unieke waarden 72/78/88 over 16 pieces — thin distribution noopt tot Spearman ρ + kwalitatieve inspectie als primair signaal). Pearson r en Spearman ρ beide rapporteren; kwalitatieve disagreement-case inspectie wordt primair signaal voor F-VAL pijler 1 beslissing; correlation-thresholds gedegradeerd naar directional indicators (§6.4). §7.2 non-modifiable lijst aangepast om Pearson 0.4/0.7 te verwijderen en kwalitatieve inspectie als de gefixeerde primary methodology vast te leggen. **Pre-data amendment**: WS3 stap 3 (mStyleDistance embeddings) en stap 4 (correlation calc) waren nog niet gestart op moment van deze versie-bump. Modelverificatie `StyleDistance/mstyledistance` op HuggingFace bevestigd in dezelfde sessie (sentence-transformers, xlm-roberta-base, multilingual incl. Nederlands).
-- **v0.4** (2026-05-05, dit commit): chunking-method toegevoegd voor long-form embedding (§6.6). WS3 stap 3 first run liet zien dat similarity range 0.003 was over 16 pieces — embedding signal collapse door 512-token truncation. Chunking met 480-token chunks + 50-token overlap + mean-pool + L2-normalize fixt dit. **Karakter**: technische constraint correctie, geen methodology threshold tweaking; hypothese intact, parameters locked vóór re-run, valt onder §7.4 toegestane implementatie-refinement. Disagreement-case primair signaal en Spearman ρ leading uit v0.3 onveranderd.
+- **v0.4** (2026-05-05, commit `de882ce`): chunking-method toegevoegd voor long-form embedding (§6.6). WS3 stap 3 first run liet zien dat similarity range 0.003 was over 16 pieces — embedding signal collapse door 512-token truncation. Chunking met 480-token chunks + 50-token overlap + mean-pool + L2-normalize fixt dit. **Karakter**: technische constraint correctie, geen methodology threshold tweaking; hypothese intact, parameters locked vóór re-run, valt onder §7.4 toegestane implementatie-refinement. Disagreement-case primair signaal en Spearman ρ leading uit v0.3 onveranderd.
+- **v0.5** (2026-05-05, dit commit): WS3 aggregate-finding gevangen na on-the-fly kwalitatieve review met product-eigenaar + klant op alle 4 disagreement-cases (§6.7). Hoofdconclusie: F-VAL pijler 1 BOUWEN maar **niet in huidige vorm** — embedding-tegen-eigen-corpus is redundant tot misleidend wegens corpus-drift; embedding-tegen-gecureerde-references (Brand Voice module) is doel-architectuur. Brand Voice extractie als parallel module aan Brandstyle genoteerd voor toekomst (§6.8), wacht op fidelity + learning loop afronding. Sequencing-keuze: WS2 generation kan parallel draaien op huidige data (meet propagation-mechaniek, niet bron-data). LINFI tone-fix observatie genoteerd als open punt voor Brand Voice extractie, niet nu actie ondernemen.
