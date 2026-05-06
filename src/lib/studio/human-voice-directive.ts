@@ -76,6 +76,10 @@ export function buildHumanVoiceDirective(options?: HumanVoiceOptions): string {
       ? 'Lees elke zin terug: klinkt het alsof je het zelf zou zeggen, of alsof een handboek over jouw onderwerp het zou zeggen? Bij twijfel — herschrijf.'
       : 'Read each sentence back: would you actually say this, or would a handbook about your topic say it? When in doubt — rewrite.',
     '',
+    isDutch
+      ? '**Uitzondering**: woorden die expliciet in de Brand Voice sectie hierboven staan (wordsWeUse) zijn merk-eigen vocabulaire — niet vermijden ook al lijken ze abstract. Ze zijn gekozen door het merk en horen natuurlijk in de tekst voor te komen.'
+      : '**Exception**: words explicitly listed in the Brand Voice section above (wordsWeUse) are brand-specific vocabulary — don\'t avoid them even if they feel abstract. They\'re chosen by the brand and should appear naturally.',
+    '',
     'These rules override generic "be helpful and clear" impulses.',
   ].join('\n');
 }
