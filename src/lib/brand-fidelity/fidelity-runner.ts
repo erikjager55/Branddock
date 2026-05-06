@@ -61,28 +61,62 @@ export interface FidelityRunInput {
 // ─── Brand Personality fetcher ──────────────────────
 
 /**
- * Fetch structured BrandPersonality data uit BrandAsset table.
- * Pijler 1 style-scorer gebruikt wordsWeUse + personalityTraits;
- * deze zitten in frameworkData JSON, niet in de afgeleide brand context string.
+ * Fetch structured voice signals voor pijler 1 style-scorer.
  *
- * Returns null wanneer geen BRAND_PERSONALITY asset bestaat — caller skipt
- * dan pijler 1 en draait alleen pijlers 2 + 3 (composition normaliseert weights).
+ * BV-WIRE migration (W-1, minimal data-source swap):
+ * - wordsWeUse + voiceDescription komen uit BrandVoiceguide (nieuw single
+ *   source of truth voor voice). Fallback naar legacy BrandPersonality.
+ * - personalityTraits komen uit BrandPersonality (NIET in voiceguide).
+ *
+ * Returns null wanneer beide bronnen leeg zijn — caller skipt pijler 1 en
+ * draait alleen pijlers 2 + 3 (composition normaliseert weights).
+ *
+ * Het centroid-embedding cosine-similarity algoritme (W-1 full) komt later;
+ * dit is een data-source migration die het algoritme intact laat.
  */
 async function fetchBrandPersonalityInput(workspaceId: string): Promise<BrandPersonalityInput | null> {
   try {
-    const asset = await prisma.brandAsset.findFirst({
-      where: { workspaceId, frameworkType: 'BRAND_PERSONALITY' },
-      select: { frameworkData: true },
-    });
-    if (!asset?.frameworkData) return null;
+    const [voiceguide, asset] = await Promise.all([
+      prisma.brandVoiceguide.findUnique({
+        where: { workspaceId },
+        select: { wordsWeUse: true, voiceDescription: true },
+      }),
+      prisma.brandAsset.findFirst({
+        where: { workspaceId, frameworkType: 'BRAND_PERSONALITY' },
+        select: { frameworkData: true },
+      }),
+    ]);
 
-    const data = asset.frameworkData as Record<string, unknown>;
+    // Voiceguide wint voor voice-velden; legacy BrandPersonality voice-data
+    // alleen gebruiken als fallback voor unmigrated workspaces.
+    const personalityData = (asset?.frameworkData ?? null) as Record<string, unknown> | null;
 
-    const wordsWeUse = Array.isArray(data.wordsWeUse)
-      ? data.wordsWeUse.filter((w): w is string => typeof w === 'string')
-      : [];
+    let wordsWeUse: string[] = [];
+    let brandVoiceDescription: string | undefined;
 
-    const traitsRaw = Array.isArray(data.personalityTraits) ? data.personalityTraits : [];
+    if (voiceguide && (voiceguide.wordsWeUse?.length || voiceguide.voiceDescription)) {
+      wordsWeUse = (voiceguide.wordsWeUse ?? []).filter(
+        (w): w is string => typeof w === 'string',
+      );
+      brandVoiceDescription =
+        typeof voiceguide.voiceDescription === 'string' && voiceguide.voiceDescription.length > 0
+          ? voiceguide.voiceDescription
+          : undefined;
+    } else if (personalityData) {
+      // Legacy fallback — BrandPersonality.frameworkData voice-velden
+      if (Array.isArray(personalityData.wordsWeUse)) {
+        wordsWeUse = personalityData.wordsWeUse.filter((w): w is string => typeof w === 'string');
+      }
+      if (typeof personalityData.brandVoiceDescription === 'string') {
+        brandVoiceDescription = personalityData.brandVoiceDescription;
+      }
+    }
+
+    // personalityTraits leven NIET in voiceguide — altijd uit BrandPersonality
+    const traitsRaw =
+      personalityData && Array.isArray(personalityData.personalityTraits)
+        ? personalityData.personalityTraits
+        : [];
     const personalityTraits: PersonalityTraitInput[] = traitsRaw
       .filter((t): t is Record<string, unknown> => typeof t === 'object' && t !== null)
       .map((t) => ({
@@ -92,12 +126,12 @@ async function fetchBrandPersonalityInput(workspaceId: string): Promise<BrandPer
         butNeverThat: typeof t.butNeverThat === 'string' ? t.butNeverThat : undefined,
       }));
 
-    const brandVoiceDescription =
-      typeof data.brandVoiceDescription === 'string' ? data.brandVoiceDescription : undefined;
+    // Beide bronnen leeg → null returnen voor pijler 1 skip
+    if (wordsWeUse.length === 0 && personalityTraits.length === 0) return null;
 
     return { wordsWeUse, personalityTraits, brandVoiceDescription };
   } catch (err) {
-    console.warn('[fidelity-runner] Failed to fetch BrandPersonality:', (err as Error).message);
+    console.warn('[fidelity-runner] Failed to fetch voice signals:', (err as Error).message);
     return null;
   }
 }

@@ -19,25 +19,49 @@ interface BrandPersonalityInput {
 }
 
 /**
- * Fetch BrandPersonality voor symmetric scoring tussen Branddock en vanille.
- * Vanille output wordt gescoord TEGEN dezelfde brand signals als Branddock —
- * dat maakt het echte verschil zichtbaar (vanille kent BB's wordsWeUse niet,
- * dus pijler 1 wordt laag; Branddock injecteert ze, dus hoger).
+ * Fetch voice signals voor symmetric scoring tussen Branddock en vanille.
+ * BV-WIRE: voiceguide (wordsWeUse + voiceDescription) + legacy
+ * BrandPersonality (personalityTraits) — zelfde shape als fidelity-runner.
  */
 async function fetchWorkspaceBrandPersonality(
   workspaceId: string,
 ): Promise<BrandPersonalityInput | null> {
   try {
-    const asset = await prisma.brandAsset.findFirst({
-      where: { workspaceId, frameworkType: 'BRAND_PERSONALITY' },
-      select: { frameworkData: true },
-    });
-    if (!asset?.frameworkData) return null;
-    const data = asset.frameworkData as Record<string, unknown>;
-    const wordsWeUse = Array.isArray(data.wordsWeUse)
-      ? data.wordsWeUse.filter((w): w is string => typeof w === 'string')
-      : [];
-    const traitsRaw = Array.isArray(data.personalityTraits) ? data.personalityTraits : [];
+    const [voiceguide, asset] = await Promise.all([
+      prisma.brandVoiceguide.findUnique({
+        where: { workspaceId },
+        select: { wordsWeUse: true, voiceDescription: true },
+      }),
+      prisma.brandAsset.findFirst({
+        where: { workspaceId, frameworkType: 'BRAND_PERSONALITY' },
+        select: { frameworkData: true },
+      }),
+    ]);
+
+    const personalityData = (asset?.frameworkData ?? null) as Record<string, unknown> | null;
+
+    let wordsWeUse: string[] = [];
+    let brandVoiceDescription: string | undefined;
+
+    if (voiceguide && (voiceguide.wordsWeUse?.length || voiceguide.voiceDescription)) {
+      wordsWeUse = (voiceguide.wordsWeUse ?? []).filter((w): w is string => typeof w === 'string');
+      brandVoiceDescription =
+        typeof voiceguide.voiceDescription === 'string' && voiceguide.voiceDescription.length > 0
+          ? voiceguide.voiceDescription
+          : undefined;
+    } else if (personalityData) {
+      if (Array.isArray(personalityData.wordsWeUse)) {
+        wordsWeUse = personalityData.wordsWeUse.filter((w): w is string => typeof w === 'string');
+      }
+      if (typeof personalityData.brandVoiceDescription === 'string') {
+        brandVoiceDescription = personalityData.brandVoiceDescription;
+      }
+    }
+
+    const traitsRaw =
+      personalityData && Array.isArray(personalityData.personalityTraits)
+        ? personalityData.personalityTraits
+        : [];
     const personalityTraits: PersonalityTraitInput[] = traitsRaw
       .filter((t): t is Record<string, unknown> => typeof t === 'object' && t !== null)
       .map((t) => ({
@@ -46,8 +70,8 @@ async function fetchWorkspaceBrandPersonality(
         weAreThis: typeof t.weAreThis === 'string' ? t.weAreThis : undefined,
         butNeverThat: typeof t.butNeverThat === 'string' ? t.butNeverThat : undefined,
       }));
-    const brandVoiceDescription =
-      typeof data.brandVoiceDescription === 'string' ? data.brandVoiceDescription : undefined;
+
+    if (wordsWeUse.length === 0 && personalityTraits.length === 0) return null;
     return { wordsWeUse, personalityTraits, brandVoiceDescription };
   } catch {
     return null;
