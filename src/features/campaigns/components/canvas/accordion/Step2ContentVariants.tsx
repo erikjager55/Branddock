@@ -139,6 +139,27 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
     return result;
   }, [variantGroups, variantCount]);
 
+  // Resolve angle label per variant index. Alle component groups van
+  // dezelfde variantIndex delen dezelfde angle (parallelle Claude calls per
+  // angle), dus we pakken het label uit de eerste niet-lege group. Wanneer
+  // angles ontbreken (legacy 1-call mode) blijft array leeg en valt UI terug
+  // op "Variant A/B" labels.
+  const variantAngleLabels = useMemo(() => {
+    const labels: Array<string | null> = [];
+    for (let i = 0; i < variantCount; i++) {
+      let label: string | null = null;
+      for (const variants of variantGroups.values()) {
+        const v = variants[i];
+        if (v?.angleLabel) {
+          label = v.angleLabel;
+          break;
+        }
+      }
+      labels.push(label);
+    }
+    return labels;
+  }, [variantGroups, variantCount]);
+
   // Currently selected variant = all groups at the same index
   const selectedVariantIndex = useMemo(() => {
     const firstGroup = variantGroups.keys().next().value;
@@ -231,28 +252,14 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
       {/* F-VAL fidelity score — verschijnt zodra detector heeft gerund (~5ms na text_complete) */}
       {hasVariants && <FidelityScoreBar deliverableId={deliverableId} />}
 
-      {/* Variant selector tabs */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-gray-700">Select variant:</span>
-        {composedVariants.map((_, idx) => {
-          const isSelected = idx === selectedVariantIndex;
-          return (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => selectVariant(idx)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                isSelected
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {isSelected && <Check className="h-3 w-3" />}
-              Variant {VARIANT_LABELS[idx] ?? idx + 1}
-            </button>
-          );
-        })}
-      </div>
+      {/* Variant selector — pill toggle met angle label per variant
+       *  ([A] Schaal & trots / [B] Daglicht & lucht) i.p.v. kale "Variant A/B" */}
+      <VariantSelector
+        count={composedVariants.length}
+        selectedIndex={selectedVariantIndex}
+        onSelect={selectVariant}
+        angleLabels={variantAngleLabels}
+      />
 
       {/* Full composed previews — each variant in the actual medium format */}
       <div className={`grid gap-4 ${composedVariants.length === 2 ? 'grid-cols-2' : composedVariants.length >= 3 ? 'grid-cols-3' : ''}`}>
@@ -410,6 +417,67 @@ function SceneBreakdown({
 }
 
 // ─── Generating Indicator with elapsed timer ────────────────
+
+/**
+ * Variant selector — pill toggle. Per variant ofwel de creative angle
+ * (bv "Schaal & trots") of fallback "Variant A". Letter-circle voor visuele
+ * landmark, blue-tinted highlight bij selected (matches design screenshot).
+ *
+ * Tailwind 4 purge-safe: actieve blauwe kleuren via inline style omdat
+ * specifieke shades anders gepurged kunnen worden.
+ */
+function VariantSelector({
+  count,
+  selectedIndex,
+  onSelect,
+  angleLabels,
+}: {
+  count: number;
+  selectedIndex: number;
+  onSelect: (idx: number) => void;
+  angleLabels: Array<string | null>;
+}) {
+  const VARIANT_LETTERS = ['A', 'B', 'C', 'D'];
+  if (count <= 0) return null;
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      {Array.from({ length: count }).map((_, idx) => {
+        const isSelected = idx === selectedIndex;
+        const letter = VARIANT_LETTERS[idx] ?? String(idx + 1);
+        const label = angleLabels[idx] ?? `Variant ${letter}`;
+        return (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => onSelect(idx)}
+            className={`group inline-flex items-center gap-2.5 pl-1 pr-4 py-1 rounded-full text-sm transition-all ${
+              isSelected
+                ? 'border-2 font-semibold'
+                : 'border-2 border-transparent font-medium text-gray-700 hover:bg-gray-50'
+            }`}
+            style={
+              isSelected
+                ? { backgroundColor: '#eff6ff', borderColor: '#bfdbfe', color: '#1d4ed8' }
+                : undefined
+            }
+            aria-pressed={isSelected}
+          >
+            <span
+              className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
+                isSelected ? 'text-white' : 'bg-gray-100 text-gray-600'
+              }`}
+              style={isSelected ? { backgroundColor: '#1d4ed8' } : undefined}
+            >
+              {letter}
+            </span>
+            <span className="truncate max-w-[200px]">{label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function GeneratingIndicator({ contentType }: { contentType: string | null }) {
   const { label: estimatedLabel } = getEstimatedDuration(contentType ?? '');

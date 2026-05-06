@@ -29,6 +29,7 @@ import { buildBrandVoiceDirectiveFromContext } from '@/lib/studio/brand-voice-di
 import { buildHumanVoiceDirective } from '@/lib/studio/human-voice-directive';
 import { resolveHumanVoiceMode } from '@/lib/brand-fidelity/fidelity-config';
 import { detectAiTells } from '@/lib/brand-fidelity/ai-tell-detector';
+import { generateCreativeAngles, formatAngleInstruction, type CreativeAngle } from './canvas-angle-generator';
 import {
   runFidelityScoring,
   buildFidelityScoreEventPayload,
@@ -62,6 +63,10 @@ interface TextComponentGroup {
     content: string;
     tone?: string;
     cta?: string;
+    /** Creative angle label voor deze variant (bv "Schaal & trots").
+     *  Optioneel: alleen aanwezig wanneer per-angle parallel generation
+     *  liep. Legacy 1-call mode laat dit null. */
+    angleLabel?: string;
   }>;
 }
 
@@ -178,27 +183,93 @@ export async function* orchestrateContentGeneration(
     return;
   }
 
-  // ── Step 2: Generate text components ──────────────────
-  const { systemPrompt, userPrompt } = buildCanvasPrompt(stack, stack.medium, options, voiceDirective);
+  // ── Step 2: Generate text components (per-variant parallel calls) ──
+  //
+  // Architecture: instead of one Claude call returning 2 variants per group
+  // (which produces near-identical variants), we do:
+  //   2a. Generate 2 distinct creative angles via Gemini Flash (~$0.001)
+  //   2b. Run 2 parallel Claude calls — one per angle — each producing 1
+  //       variant per group. Angle is injected into the system prompt so
+  //       the variant is fundamentally framed by it.
+  //   2c. Merge results: variants[0] = call A, variants[1] = call B,
+  //       both labeled with their angle.
+  //
+  // Falls back to legacy 1-call/2-variant flow if angle generation fails.
   const textModel = await resolveFeatureModel(workspaceId, 'canvas-text-generate');
 
   for (const group of textGroups) {
     yield { event: 'text_generating', data: { group, status: 'generating' } };
   }
 
-  // Try primary provider first, fall back to other supported providers if
-  // it errors out (Anthropic has intermittent 500s on claude-sonnet-4-5).
-  // The order is: user's configured provider → remaining supported providers
-  // so the configured choice is always attempted first.
-  const textResult = await generateTextWithFallback(
-    workspaceId,
-    textModel.provider,
-    textModel.model,
-    systemPrompt,
-    userPrompt,
-    stack.deliverableTypeId,
-    { deliverableId, brandContext: stack.brand },
-  );
+  const angles = await generateCreativeAngles(stack, stack.deliverableTypeId ?? '');
+
+  let textResult: TextGenerationResult;
+
+  if (angles && angles.length === 2) {
+    // ── Per-angle parallel generation ──
+    yield {
+      event: 'angles_ready',
+      data: { angles: angles.map((a) => ({ label: a.label, approach: a.approach })) },
+    };
+
+    const promptPerAngle = angles.map((angle) =>
+      buildCanvasPrompt(stack, stack.medium, options, voiceDirective, angle),
+    );
+
+    let parallelResults: TextGenerationResult[];
+    try {
+      parallelResults = await Promise.all(
+        promptPerAngle.map((p, idx) =>
+          generateTextWithFallback(
+            workspaceId,
+            textModel.provider,
+            textModel.model,
+            p.systemPrompt,
+            p.userPrompt,
+            stack.deliverableTypeId,
+            { deliverableId, brandContext: stack.brand, angleLabel: angles[idx].label },
+          ),
+        ),
+      );
+    } catch (parallelErr) {
+      // Per-angle failure → fall back to legacy 1-call mode below
+      console.warn(
+        '[canvas-orchestrator] Per-angle generation failed, falling back to legacy:',
+        (parallelErr as Error).message,
+      );
+      parallelResults = [];
+    }
+
+    if (parallelResults.length === 2 && parallelResults.every((r) => r?.components?.length)) {
+      // Merge: groep van A.variants[0] + B.variants[0] → groep met 2 variants
+      const merged = mergeAngleResults(parallelResults, angles);
+      textResult = merged;
+    } else {
+      // Fallback to legacy
+      const { systemPrompt, userPrompt } = buildCanvasPrompt(stack, stack.medium, options, voiceDirective);
+      textResult = await generateTextWithFallback(
+        workspaceId,
+        textModel.provider,
+        textModel.model,
+        systemPrompt,
+        userPrompt,
+        stack.deliverableTypeId,
+        { deliverableId, brandContext: stack.brand },
+      );
+    }
+  } else {
+    // ── Legacy 1-call/2-variant flow (angle generation skipped or failed) ──
+    const { systemPrompt, userPrompt } = buildCanvasPrompt(stack, stack.medium, options, voiceDirective);
+    textResult = await generateTextWithFallback(
+      workspaceId,
+      textModel.provider,
+      textModel.model,
+      systemPrompt,
+      userPrompt,
+      stack.deliverableTypeId,
+      { deliverableId, brandContext: stack.brand },
+    );
+  }
 
   // Validate AI response
   if (!textResult?.components || !Array.isArray(textResult.components)) {
@@ -236,6 +307,7 @@ export async function* orchestrateContentGeneration(
           content: v.content,
           tone: v.tone,
           cta: v.cta ?? null,
+          angleLabel: v.angleLabel ?? null,
         })),
       },
     };
@@ -487,6 +559,56 @@ function resolveMaxTokens(contentType: string | null): number {
   return 4000; // short-form: social posts, ads, carousels
 }
 
+/**
+ * Merge twee per-angle TextGenerationResults tot één gecombineerd resultaat
+ * waar elke component group beide variants bevat (variants[0] = angle A,
+ * variants[1] = angle B), beide getagd met hun angleLabel.
+ *
+ * Robust tegen mismatch: wanneer een group alleen in A zit (niet in B), wordt
+ * de A-variant alleen toegevoegd. Voorkomt errors als Claude in één call
+ * een group oversloeg.
+ */
+function mergeAngleResults(
+  results: TextGenerationResult[],
+  angles: CreativeAngle[],
+): TextGenerationResult {
+  const groupMap = new Map<string, TextComponentGroup>();
+
+  for (let idx = 0; idx < results.length; idx++) {
+    const result = results[idx];
+    const angleLabel = angles[idx]?.label;
+    if (!result?.components) continue;
+
+    for (const component of result.components) {
+      if (!component.group) continue;
+      const key = component.group.trim().toLowerCase();
+      const firstVariant = component.variants?.[0];
+      if (!firstVariant) continue;
+
+      const tagged = { ...firstVariant, angleLabel };
+
+      const existing = groupMap.get(key);
+      if (existing) {
+        existing.variants.push(tagged);
+      } else {
+        groupMap.set(key, {
+          group: component.group,
+          variants: [tagged],
+        });
+      }
+    }
+  }
+
+  // Merge imagePrompts from first result with content (image generation
+  // happens manually now, but kept for backward compat with downstream code).
+  const imagePrompts = results[0]?.imagePrompts;
+
+  return {
+    components: Array.from(groupMap.values()),
+    imagePrompts,
+  };
+}
+
 async function generateTextWithFallback(
   workspaceId: string,
   primaryProvider: AiProvider,
@@ -494,7 +616,7 @@ async function generateTextWithFallback(
   systemPrompt: string,
   userPrompt: string,
   contentType?: string | null,
-  tracking?: { deliverableId: string; brandContext?: unknown },
+  tracking?: { deliverableId: string; brandContext?: unknown; angleLabel?: string },
 ): Promise<TextGenerationResult> {
   // Build the ordered list of providers to try. Primary first, then the
   // feature's other supportedProviders (from the feature registry).
@@ -535,6 +657,15 @@ async function generateTextWithFallback(
         console.warn(
           `[canvas-orchestrator] recovered via fallback provider ${provider}/${model} after primary failure`,
         );
+      }
+      // Tag elke variant met angleLabel zodat de merge-stap ze kan
+      // groeperen onder de juiste creative angle.
+      if (tracking?.angleLabel && result?.components) {
+        for (const c of result.components) {
+          if (Array.isArray(c.variants)) {
+            for (const v of c.variants) v.angleLabel = tracking.angleLabel;
+          }
+        }
       }
       return result;
     } catch (error) {
@@ -744,6 +875,9 @@ function buildCanvasPrompt(
   medium: MediumContext | null,
   options?: OrchestrationOptions,
   voiceDirective?: string,
+  /** When provided: prompt asks for ONE variant only, framed by this angle.
+   *  When null: legacy fallback — prompt asks for 2 variants in one call. */
+  angle?: CreativeAngle | null,
 ): { systemPrompt: string; userPrompt: string } {
   const componentTemplate = (medium?.componentTemplate ?? []) as ComponentTemplateItem[];
   const textGroups = componentTemplate
@@ -766,6 +900,8 @@ function buildCanvasPrompt(
     typeTemplate.systemPrompt,
     '',
     'IMPORTANT: In addition to the type-specific instructions above, respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.',
+    '',
+    angle ? formatAngleInstruction(angle) : '',
     '',
     '## Brand Context',
     formatBrandContext(stack.brand),
@@ -800,8 +936,12 @@ function buildCanvasPrompt(
     ? `\n\nUser instruction: ${options.instruction}`
     : '';
 
+  const variantCountInstruction = angle
+    ? `Generate exactly 1 variant for each of the following component groups, fully expressing the "${angle.label}" angle defined in the system prompt:`
+    : 'Generate exactly 2 variants for each of the following component groups:';
+
   const userPrompt = [
-    'Generate exactly 2 variants for each of the following component groups:',
+    variantCountInstruction,
     groupInstructions,
     imageInstruction,
     userInstruction,
@@ -848,7 +988,9 @@ function buildCanvasPrompt(
       : '',
     '}',
     '',
-    'Each group must have exactly 2 variants with different creative approaches.',
+    angle
+      ? 'Each group has exactly 1 variant — make it fully express the angle.'
+      : 'Each group must have exactly 2 variants with different creative approaches.',
     'IMPORTANT: Every variant MUST include a "cta" field — a short, compelling call-to-action text in plain text, 2-6 words (max ~48 characters), no markdown. Examples: "Start your free trial", "Learn more", "Book a demo", "Shop now". The CTA should match the content goal and platform. NEVER a paragraph. NEVER leave it empty.',
     'Ensure all content is on-brand and appropriate for the target platform.',
   ]

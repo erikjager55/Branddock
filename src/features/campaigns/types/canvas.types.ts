@@ -16,6 +16,11 @@ export interface CanvasVariant {
   isSelected: boolean;
   /** DB component ID — set when loaded from existing DeliverableComponent records */
   componentId?: string;
+  /** Korte 2-4 woord NL label van de creative angle voor deze variant
+   *  (bv. "Schaal & trots" / "Daglicht & lucht"). Gedeeld over alle component
+   *  groups op dezelfde variantIndex zodat de pill-toggle één label per
+   *  variant kan tonen i.p.v. kale "Variant A / B". */
+  angleLabel?: string;
 }
 
 export interface CanvasImageVariant {

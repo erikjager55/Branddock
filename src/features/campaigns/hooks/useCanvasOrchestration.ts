@@ -293,7 +293,7 @@ function routeEvent(eventName: string, rawData: string) {
 
     case 'text_complete': {
       const group = data.group as string | undefined;
-      const variants = data.variants as Array<{ content: string; tone?: string; cta?: string | null }> | undefined;
+      const variants = data.variants as Array<{ content: string; tone?: string; cta?: string | null; angleLabel?: string | null }> | undefined;
       if (group && Array.isArray(variants)) {
         const mapped: CanvasVariant[] = variants.map((v, i) => ({
           index: i,
@@ -301,6 +301,7 @@ function routeEvent(eventName: string, rawData: string) {
           tone: v.tone,
           cta: v.cta ?? undefined,
           isSelected: i === 0,
+          angleLabel: v.angleLabel ?? undefined,
         }));
         store.addVariantGroup(group, mapped);
         store.setGenerationStatus(group, 'complete');
