@@ -321,14 +321,14 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
       { key: 'activation_strategy', title: 'Activation Strategy', icon: 'Rocket', question: 'How will these transformative goals be integrated into your brand strategy, communication themes, campaigns, and internal culture? Who are the key stakeholders, and what role does each play?' },
     ];
   }
+  // BV-WIRE W-5: brand-personality exploration covers psychographic +
+  // visual dimensions only. Voice exploration (voice_tone, writing_sample,
+  // channel_adaptation) moved to BrandVoiceguide module.
   if (itemType === 'brand_asset' && itemSubType === 'brand-personality') {
     return [
       { key: 'dimension_mapping', title: 'Personality Dimensions', icon: 'User', question: 'If your brand walked into a room, what impression would it make? Describe its character in terms of sincerity (honest, warm), excitement (daring, spirited), competence (reliable, intelligent), sophistication (elegant, charming), and ruggedness (tough, outdoorsy). Which 1-2 dimensions feel most dominant?' },
       { key: 'core_traits', title: 'Core Traits', icon: 'Fingerprint', question: 'Name 3-5 defining personality traits for your brand. For each trait, give a concrete example of what it looks like in action ("We Are This") and what the "too far" version would be that your brand should never become ("But Never That").' },
       { key: 'spectrum_positioning', title: 'Personality Spectrum', icon: 'Sliders', question: 'Position your brand on these spectrums: friendly vs. formal, energetic vs. thoughtful, modern vs. traditional, innovative vs. proven, playful vs. serious, inclusive vs. exclusive, bold vs. reserved. Where do you sit, and why?' },
-      { key: 'voice_tone', title: 'Voice & Tone', icon: 'MessageCircle', question: 'Describe how your brand sounds in writing and speech. Is it formal or casual? Serious or humorous? Respectful or irreverent? Matter-of-fact or enthusiastic? What specific words or phrases does your brand love to use — and which would it never use?' },
-      { key: 'writing_sample', title: 'Voice in Action', icon: 'Award', question: 'Write a short paragraph (3-4 sentences) in your brand\u2019s authentic voice. This could be a product description, email opening, or social media post. Show us how the personality comes alive in real communication.' },
-      { key: 'channel_adaptation', title: 'Channel Adaptation', icon: 'MessageCircle', question: 'How does your brand\u2019s tone shift across different channels \u2014 website, social media, customer support, email marketing, and crisis communication? The voice stays the same, but the tone adapts. Describe the differences.' },
       { key: 'visual_expression', title: 'Visual Personality', icon: 'Palette', question: 'How should your brand personality translate into visual design? Think about what colors feel right for your personality, what typography style matches your character, and what kind of imagery represents your brand.' },
     ];
   }
@@ -364,6 +364,16 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
 /**
  * Return fallback field suggestions config for known item types.
  * These ensure the LLM knows about ALL updatable fields even without a DB config.
+ *
+ * BV-WIRE W-5 (Optie A-light, 2026-05-06): voice-related fields stripped from
+ * the brand-personality fallback. Voice signals (toneDimensions,
+ * brandVoiceDescription, wordsWeUse, wordsWeAvoid, writingSample, channelTones)
+ * are now owned by BrandVoiceguide — exploring them via the brand-personality
+ * config would write back into BrandPersonality.frameworkData where
+ * formatBrandPersonality() no longer reads them (BV-5 deprecated those fields).
+ * Net effect: brand-personality exploration now only suggests psychographic +
+ * visual fields; voice exploration runs through the dedicated
+ * BrandVoiceguide module. See IMPLEMENTATIEPLAN-BV-WIRE.md.
  */
 function getDefaultFieldSuggestionsConfig(
   itemType: string,
@@ -383,21 +393,6 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'frameworkData.spectrumSliders.playfulSerious', label: 'Spectrum: Playful vs Serious', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Fun/Playful/Lighthearted, 7 = Serious/Professional/Business-like' },
       { field: 'frameworkData.spectrumSliders.inclusiveExclusive', label: 'Spectrum: Inclusive vs Exclusive', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Inclusive/Welcoming/Mass appeal, 7 = Exclusive/Selective/Limited access' },
       { field: 'frameworkData.spectrumSliders.boldReserved', label: 'Spectrum: Bold vs Reserved', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Bold/Daring/Provocative, 7 = Reserved/Understated/Subtle' },
-      // Tone dimensions — individual numeric fields (1-7 scale, NN/g model)
-      { field: 'frameworkData.toneDimensions.formalCasual', label: 'Tone: Formal vs Casual', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Formal/Structured/Professional, 7 = Casual/Conversational/Relaxed' },
-      { field: 'frameworkData.toneDimensions.seriousFunny', label: 'Tone: Serious vs Funny', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Serious/Straightforward, 7 = Funny/Intentionally humorous' },
-      { field: 'frameworkData.toneDimensions.respectfulIrreverent', label: 'Tone: Respectful vs Irreverent', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Respectful/Dignified, 7 = Irreverent/Playful/Unconventional' },
-      { field: 'frameworkData.toneDimensions.matterOfFactEnthusiastic', label: 'Tone: Matter-of-fact vs Enthusiastic', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Matter-of-fact/Neutral/Dry, 7 = Enthusiastic/Energetic/Emotionally engaged' },
-      { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice', type: 'text' as const, extractionHint: 'Describe the overall brand voice in 2-3 sentences' },
-      { field: 'frameworkData.wordsWeUse', label: 'Words We Use', type: 'array' as const, extractionHint: 'Extract 5-10 words or phrases the brand should use as a JSON array of strings' },
-      { field: 'frameworkData.wordsWeAvoid', label: 'Words We Avoid', type: 'array' as const, extractionHint: 'Extract 5-10 words or phrases the brand should avoid as a JSON array of strings' },
-      { field: 'frameworkData.writingSample', label: 'Writing Sample', type: 'text' as const, extractionHint: 'Create a writing sample that demonstrates the brand voice' },
-      // Channel tones — individual string fields per communication channel
-      { field: 'frameworkData.channelTones.website', label: 'Channel: Website', type: 'text' as const, extractionHint: 'Describe the brand tone for the website in 1-2 sentences (e.g. "Core voice, slightly formal, authoritative")' },
-      { field: 'frameworkData.channelTones.socialMedia', label: 'Channel: Social Media', type: 'text' as const, extractionHint: 'Describe the brand tone for social media in 1-2 sentences (e.g. "More casual, personality-forward, engaging")' },
-      { field: 'frameworkData.channelTones.customerSupport', label: 'Channel: Customer Support', type: 'text' as const, extractionHint: 'Describe the brand tone for customer support in 1-2 sentences (e.g. "Empathetic, solution-focused, patient")' },
-      { field: 'frameworkData.channelTones.email', label: 'Channel: Email', type: 'text' as const, extractionHint: 'Describe the brand tone for email marketing in 1-2 sentences (e.g. "Warm, personal, value-focused")' },
-      { field: 'frameworkData.channelTones.crisis', label: 'Channel: Crisis', type: 'text' as const, extractionHint: 'Describe the brand tone for crisis communication in 1-2 sentences (e.g. "Transparent, serious, accountable")' },
       { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Describe the color direction that matches the brand personality' },
       { field: 'frameworkData.typographyDirection', label: 'Typography Direction', type: 'text' as const, extractionHint: 'Describe the typography style that matches the brand personality' },
       { field: 'frameworkData.imageryDirection', label: 'Imagery Direction', type: 'text' as const, extractionHint: 'Describe the imagery style that represents the brand personality' },
