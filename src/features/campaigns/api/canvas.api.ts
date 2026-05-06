@@ -29,11 +29,45 @@ export interface PersistedStrictRewrite {
   rewrittenAt?: string;
 }
 
+/** One color match between a generated swatch and the brand palette,
+ *  produced by visual-color-alignment.ts. */
+export interface VisualColorMatchDetail {
+  generatedHex: string;
+  generatedPopulation: number;
+  brandHex: string | null;
+  brandCategory: string | null;
+  deltaE: number;
+  matchQuality: 'exact' | 'close' | 'acceptable' | 'noticeable' | 'different';
+}
+
+export interface VisualColorAlignmentDetail {
+  score: number;
+  matches: VisualColorMatchDetail[];
+  matchedBrandHexes: string[];
+  unmatchedColors: { hex: string; population: number }[];
+}
+
+/** Per-dimension AI judge score from visual-ai-judge.ts. */
+export interface VisualJudgeDimensionDetail {
+  score: number;
+  rationale: string;
+}
+
+export interface VisualJudgeDetail {
+  composite: number;
+  flagged: string[];
+  dimensions: Record<string, VisualJudgeDimensionDetail>;
+}
+
 export interface PersistedVisualFidelityScore {
   componentId: string;
   compositeScore: number;
   thresholdMet: boolean;
   judgeSkipped: boolean;
+  /** Full color-alignment detail for the expanded view. */
+  colorAlignment: VisualColorAlignmentDetail | null;
+  /** Full AI-judge detail. `null` or `{ skipped: true }` when judge was skipped. */
+  aiJudgeDimensions: VisualJudgeDetail | { skipped: true } | null;
 }
 
 export interface FetchCanvasComponentsResult {

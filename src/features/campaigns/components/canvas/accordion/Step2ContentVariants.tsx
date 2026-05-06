@@ -7,6 +7,7 @@ import { resolvePreviewComponent } from '../previews/preview-map';
 import { VariantIndexOverrideProvider } from '../previews/InlineEditableSection';
 import { FeedbackBar } from '../FeedbackBar';
 import { VisualFidelityBadge } from '../VisualFidelityBadge';
+import { VisualFidelityDetail } from '../VisualFidelityDetail';
 import { Badge } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { PreviewContent } from '../../../types/canvas.types';
@@ -563,6 +564,8 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
   const [showLibraryPicker, setShowLibraryPicker] = React.useState(false);
   const [showComposePicker, setShowComposePicker] = React.useState(false);
   const [showTrainedPicker, setShowTrainedPicker] = React.useState(false);
+  const [openVisualFidelityDetail, setOpenVisualFidelityDetail] =
+    React.useState<{ componentId: string; imageUrl: string } | null>(null);
 
   if (source === 'none') return null;
 
@@ -673,9 +676,24 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
                 }}
               >
                 <img src={img.url} alt={img.prompt} className="w-full aspect-square object-cover" />
-                {/* G8 — visual fidelity badge in top-left when scored */}
-                <div className="absolute top-2 left-2 pointer-events-none">
-                  <VisualFidelityBadge componentId={img.componentId} variant="compact" />
+                {/* G8 — visual fidelity badge in top-left when scored.
+                    Click opens the detail panel; outer button's click handler
+                    (variant select) is suppressed via stopPropagation in the
+                    badge itself. */}
+                <div className="absolute top-2 left-2">
+                  <VisualFidelityBadge
+                    componentId={img.componentId}
+                    variant="compact"
+                    onOpenDetail={
+                      img.componentId
+                        ? () =>
+                            setOpenVisualFidelityDetail({
+                              componentId: img.componentId!,
+                              imageUrl: img.url,
+                            })
+                        : undefined
+                    }
+                  />
                 </div>
                 {img.isSelected && (
                   <div className="absolute top-2 right-2 rounded-full bg-white/90 p-1 shadow">
@@ -722,6 +740,15 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
             </div>
           )}
         </>
+      )}
+
+      {/* G8 — full-screen detail panel for the clicked image's score */}
+      {openVisualFidelityDetail && (
+        <VisualFidelityDetail
+          componentId={openVisualFidelityDetail.componentId}
+          imageUrl={openVisualFidelityDetail.imageUrl}
+          onClose={() => setOpenVisualFidelityDetail(null)}
+        />
       )}
     </div>
   );

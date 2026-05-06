@@ -28,6 +28,10 @@ interface VisualFidelityBadgeProps {
   /** Render variant — `compact` is a small pill on top of the image,
    *  `inline` is a wider chip suited for a card footer. */
   variant?: 'compact' | 'inline';
+  /** When provided, the badge becomes a button that opens the detail
+   *  panel via this callback. Stops click propagation so the variant
+   *  card's own click handler doesn't fire. */
+  onOpenDetail?: () => void;
 }
 
 /**
@@ -43,87 +47,102 @@ interface VisualFidelityBadgeProps {
  * Click expands to show color-alignment summary + AI-judge composite —
  * deferred to Phase 3, kept as TODO.
  */
-export function VisualFidelityBadge({ componentId, variant = 'compact' }: VisualFidelityBadgeProps) {
+export function VisualFidelityBadge({
+  componentId,
+  variant = 'compact',
+  onOpenDetail,
+}: VisualFidelityBadgeProps) {
   const score = useCanvasStore((s) =>
     componentId ? s.visualFidelityScores.get(componentId) : undefined,
   );
 
   if (!componentId || !score) return null;
 
+  let body: React.ReactNode;
+  let bg = 'rgba(255,255,255,0.92)';
+  let fg = '#374151';
+  let borderColor: string | undefined;
+  let title: string | undefined;
+
   if (score.stage === 'computing') {
-    return (
-      <Pill variant={variant} bg="rgba(255,255,255,0.85)" fg="#374151">
+    body = (
+      <>
         <Loader2 className="h-3 w-3 animate-spin" />
         Scoring…
-      </Pill>
+      </>
     );
-  }
-
-  if (score.stage === 'skipped') {
-    return (
-      <Pill
-        variant={variant}
-        bg="rgba(255,255,255,0.85)"
-        fg="#6b7280"
-        title={score.errorMessage ?? 'Visual fidelity score unavailable'}
-      >
+    bg = 'rgba(255,255,255,0.85)';
+  } else if (score.stage === 'skipped') {
+    body = (
+      <>
         <ImageOff className="h-3 w-3" />
         Score n/a
-      </Pill>
+      </>
     );
+    bg = 'rgba(255,255,255,0.85)';
+    fg = '#6b7280';
+    title = score.errorMessage ?? 'Visual fidelity score unavailable';
+  } else if (score.compositeScore !== null) {
+    const composite = Math.round(score.compositeScore);
+    const zone = zoneFor(composite);
+    const Icon = zone === 'good' ? ShieldCheck : AlertTriangle;
+    const label =
+      zone === 'good' ? 'On-brand' : zone === 'warn' ? 'Off-target' : 'Off-brand';
+    body = (
+      <>
+        <Icon className="h-3 w-3" />
+        <span className="tabular-nums font-semibold">{composite}</span>
+        <span className="text-[10px] opacity-70">{label}</span>
+      </>
+    );
+    fg = ZONE_HEX[zone];
+    borderColor = ZONE_HEX[zone];
+    title = score.judgeSkipped
+      ? `${composite}/100 — color match only (AI judge unavailable). Click for breakdown.`
+      : `${composite}/100 visual fidelity${
+          score.thresholdMet ? '' : ' — below threshold 70'
+        }. Click for breakdown.`;
+  } else {
+    return null;
   }
 
-  // stage === 'complete'
-  if (score.compositeScore === null) return null;
-  const composite = Math.round(score.compositeScore);
-  const zone = zoneFor(composite);
-  const Icon = zone === 'good' ? ShieldCheck : AlertTriangle;
-  const label =
-    zone === 'good' ? 'On-brand' : zone === 'warn' ? 'Off-target' : 'Off-brand';
-
-  return (
-    <Pill
-      variant={variant}
-      bg="rgba(255,255,255,0.92)"
-      fg={ZONE_HEX[zone]}
-      borderColor={ZONE_HEX[zone]}
-      title={
-        score.judgeSkipped
-          ? `${composite}/100 — color match only (AI judge unavailable)`
-          : `${composite}/100 visual fidelity${score.thresholdMet ? '' : ' — below threshold 70'}`
-      }
-    >
-      <Icon className="h-3 w-3" />
-      <span className="tabular-nums font-semibold">{composite}</span>
-      <span className="text-[10px] opacity-70">{label}</span>
-    </Pill>
-  );
-}
-
-interface PillProps {
-  variant: 'compact' | 'inline';
-  bg: string;
-  fg: string;
-  borderColor?: string;
-  title?: string;
-  children: React.ReactNode;
-}
-
-function Pill({ variant, bg, fg, borderColor, title, children }: PillProps) {
+  // Static pill rendering
   const padding = variant === 'compact' ? 'px-2 py-0.5' : 'px-2.5 py-1';
   const text = variant === 'compact' ? 'text-[11px]' : 'text-xs';
   const gap = variant === 'compact' ? 'gap-1' : 'gap-1.5';
+  const className = `inline-flex items-center ${gap} ${padding} ${text} rounded-full backdrop-blur-sm shadow-sm`;
+  const style = {
+    backgroundColor: bg,
+    color: fg,
+    border: borderColor
+      ? `1px solid ${borderColor}33`
+      : '1px solid rgba(0,0,0,0.08)',
+  };
+
+  // When clickable, render as button that surfaces the detail panel.
+  // Use stopPropagation so the surrounding image-variant card doesn't
+  // also fire its own click (which would re-select the variant).
+  if (onOpenDetail) {
+    return (
+      <button
+        type="button"
+        title={title}
+        className={`${className} cursor-pointer hover:shadow-md transition-shadow pointer-events-auto`}
+        style={style}
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpenDetail();
+        }}
+      >
+        {body}
+      </button>
+    );
+  }
+
   return (
-    <div
-      title={title}
-      className={`inline-flex items-center ${gap} ${padding} ${text} rounded-full backdrop-blur-sm shadow-sm`}
-      style={{
-        backgroundColor: bg,
-        color: fg,
-        border: borderColor ? `1px solid ${borderColor}33` : '1px solid rgba(0,0,0,0.08)',
-      }}
-    >
-      {children}
+    <div title={title} className={className} style={style}>
+      {body}
     </div>
   );
 }
+

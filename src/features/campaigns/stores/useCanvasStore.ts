@@ -155,6 +155,9 @@ interface CanvasStoreState {
   // Per-componentId score state. Populated streaming via
   // visual_fidelity_running (componentIds known) and
   // visual_fidelity_complete (results). Cleared on regenerate.
+  // Detail fields (colorAlignment, aiJudgeDimensions) only populated
+  // via the GET /components hydrate path; the SSE flow only carries
+  // the summary (composite/threshold/skipped/error).
   visualFidelityScores: Map<
     string,
     {
@@ -163,6 +166,11 @@ interface CanvasStoreState {
       thresholdMet: boolean;
       judgeSkipped: boolean;
       errorMessage: string | null;
+      colorAlignment: import('../api/canvas.api').VisualColorAlignmentDetail | null;
+      aiJudgeDimensions:
+        | import('../api/canvas.api').VisualJudgeDetail
+        | { skipped: true }
+        | null;
     }
   >;
 
@@ -302,6 +310,11 @@ interface CanvasStoreState {
       thresholdMet: boolean;
       judgeSkipped: boolean;
       error?: string;
+      colorAlignment?: import('../api/canvas.api').VisualColorAlignmentDetail | null;
+      aiJudgeDimensions?:
+        | import('../api/canvas.api').VisualJudgeDetail
+        | { skipped: true }
+        | null;
     }>,
   ) => void;
   resetVisualFidelity: () => void;
@@ -438,16 +451,7 @@ const INITIAL_STATE = {
     model: null,
     errorMessage: null,
   },
-  visualFidelityScores: new Map<
-    string,
-    {
-      stage: 'idle' | 'computing' | 'complete' | 'skipped';
-      compositeScore: number | null;
-      thresholdMet: boolean;
-      judgeSkipped: boolean;
-      errorMessage: string | null;
-    }
-  >(),
+  visualFidelityScores: new Map() as CanvasStoreState['visualFidelityScores'],
   additionalContextItems: new Map<string, SelectedContextItem>(),
   contextSelectorOpen: false,
   feedbackDraft: '',
@@ -744,6 +748,8 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
           thresholdMet: false,
           judgeSkipped: false,
           errorMessage: null,
+          colorAlignment: null,
+          aiJudgeDimensions: null,
         });
       }
       return { visualFidelityScores: next };
@@ -760,13 +766,15 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
           thresholdMet: r.thresholdMet,
           judgeSkipped: r.judgeSkipped,
           errorMessage: r.error ?? null,
+          colorAlignment: r.colorAlignment ?? null,
+          aiJudgeDimensions: r.aiJudgeDimensions ?? null,
         });
       }
       return { visualFidelityScores: next };
     }),
 
   resetVisualFidelity: () =>
-    set({ visualFidelityScores: new Map() }),
+    set({ visualFidelityScores: new Map() as CanvasStoreState['visualFidelityScores'] }),
 
   setFeedbackDraft: (text) => set({ feedbackDraft: text }),
 

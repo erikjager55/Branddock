@@ -39,6 +39,7 @@ export async function GET(
             compositeScore: true,
             thresholdMet: true,
             scoredAt: true,
+            colorAlignment: true,
             aiJudgeDimensions: true,
           },
         })
@@ -46,7 +47,13 @@ export async function GET(
     // Most recent per componentId — findMany returned desc, dedupe to first.
     const visualFidelityByComponent = new Map<
       string,
-      { compositeScore: number; thresholdMet: boolean; judgeSkipped: boolean }
+      {
+        compositeScore: number;
+        thresholdMet: boolean;
+        judgeSkipped: boolean;
+        colorAlignment: unknown;
+        aiJudgeDimensions: unknown;
+      }
     >();
     for (const s of visualFidelityScores) {
       if (visualFidelityByComponent.has(s.componentId)) continue;
@@ -55,6 +62,8 @@ export async function GET(
         compositeScore: s.compositeScore,
         thresholdMet: s.thresholdMet,
         judgeSkipped: dims?.skipped === true,
+        colorAlignment: s.colorAlignment,
+        aiJudgeDimensions: s.aiJudgeDimensions,
       });
     }
 
