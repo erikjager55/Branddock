@@ -148,6 +148,7 @@ export async function POST(
             deliverable.contentType ?? 'tiktok-script',
             workspaceId,
             sceneId,
+            deliverableId,
           );
 
           sendEvent('video_prompt_ready', { prompt: videoPrompt });

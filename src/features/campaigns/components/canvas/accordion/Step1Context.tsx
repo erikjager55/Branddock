@@ -803,14 +803,14 @@ const VISUAL_SOURCES: Array<{
   {
     value: 'compose',
     label: 'Compose',
-    description: 'Combine multiple library images via natural language (e.g. "model holding the product")',
-    ready: false,
+    description: 'Combine 2-9 library images via natural language (e.g. "model holding the product")',
+    ready: true,
   },
   {
     value: 'trained-style',
     label: 'Trained style',
     description: 'Apply your trained AI Model (illustration / photography / brand style)',
-    ready: false,
+    ready: true,
   },
   {
     value: 'none',
