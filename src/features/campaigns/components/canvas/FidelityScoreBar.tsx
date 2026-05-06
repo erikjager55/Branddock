@@ -2,7 +2,16 @@
 
 import React from 'react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
-import { Loader2, ShieldCheck, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { useVanillaBaseline } from '../../hooks/useVanillaBaseline';
+import {
+  Loader2,
+  ShieldCheck,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
 
 // ─── Tailwind 4 purge — inline hexes voor gradient backgrounds ──
 // Standaard Tailwind klassen werken voor de zone backgrounds, maar de
@@ -33,6 +42,8 @@ const VERDICT_COLOR: Record<keyof typeof VERDICT_LABELS, string> = {
 interface FidelityScoreBarProps {
   /** Compacte modus: enkel position bar zonder pillar breakdown details */
   compact?: boolean;
+  /** Deliverable ID — required om "Vergelijk met vanille AI" knop te tonen */
+  deliverableId?: string | null;
 }
 
 /**
@@ -47,8 +58,10 @@ interface FidelityScoreBarProps {
  *   - computing:      same as detector-only, with "computing composite…" spinner
  *   - complete:       full position-bar + composite badge + pillar breakdown
  */
-export function FidelityScoreBar({ compact = false }: FidelityScoreBarProps) {
+export function FidelityScoreBar({ compact = false, deliverableId = null }: FidelityScoreBarProps) {
   const fidelity = useCanvasStore((s) => s.fidelityScore);
+  const vanilla = useCanvasStore((s) => s.vanillaBaseline);
+  const { compare: runVanillaCompare, isRunning: isVanillaRunning } = useVanillaBaseline(deliverableId);
   const [showPillars, setShowPillars] = React.useState(!compact);
 
   if (fidelity.stage === 'idle') return null;
@@ -134,6 +147,183 @@ export function FidelityScoreBar({ compact = false }: FidelityScoreBarProps) {
           )}
         </div>
       )}
+
+      {/* ─── Vergelijk-met-vanille-AI panel ─── */}
+      {isComplete && deliverableId && (
+        <VanillaComparisonPanel
+          branddockComposite={fidelity.compositeScore ?? 0}
+          branddockPosition={fidelity.humanBaselinePosition ?? 0}
+          vanilla={vanilla}
+          isRunning={isVanillaRunning}
+          onCompare={runVanillaCompare}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Vanille comparison panel ─────────────────────
+
+interface VanillaComparisonPanelProps {
+  branddockComposite: number;
+  branddockPosition: number;
+  vanilla: {
+    stage: 'idle' | 'generating' | 'scoring' | 'complete' | 'error';
+    compositeScore: number | null;
+    detectorVerdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI' | null;
+    humanBaselinePosition: number | null;
+    pillars: { style: number | null; judge: number | null; rules: number | null } | null;
+    model: string | null;
+    wordCount: number | null;
+    errorMessage: string | null;
+  };
+  isRunning: boolean;
+  onCompare: () => void;
+}
+
+function VanillaComparisonPanel({
+  branddockComposite,
+  branddockPosition,
+  vanilla,
+  isRunning,
+  onCompare,
+}: VanillaComparisonPanelProps) {
+  // Idle: alleen CTA
+  if (vanilla.stage === 'idle') {
+    return (
+      <div className="mt-4 pt-3 border-t border-gray-100">
+        <button
+          type="button"
+          onClick={onCompare}
+          className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-teal-200 bg-teal-50 text-sm font-medium text-teal-700 hover:bg-teal-100 transition-colors"
+        >
+          <Sparkles className="w-4 h-4" />
+          Vergelijk met vanille ChatGPT
+        </button>
+      </div>
+    );
+  }
+
+  // Loading: stage 'generating' of 'scoring'
+  if (isRunning) {
+    return (
+      <div className="mt-4 pt-3 border-t border-gray-100">
+        <div className="rounded-lg bg-gray-50 px-3 py-3 flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900">
+              {vanilla.stage === 'generating' ? 'Vanille ChatGPT genereert…' : 'Composite berekenen…'}
+            </p>
+            <p className="text-xs text-gray-500">
+              GPT-4o output zonder Branddock context — meestal 30-60s totaal.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error
+  if (vanilla.stage === 'error') {
+    return (
+      <div className="mt-4 pt-3 border-t border-gray-100">
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5">
+          <p className="text-sm font-medium text-red-900">Vergelijking mislukt</p>
+          <p className="text-xs text-red-700 mt-0.5">{vanilla.errorMessage ?? 'Onbekende fout'}</p>
+          <button
+            type="button"
+            onClick={onCompare}
+            className="mt-2 text-xs font-medium text-red-700 underline hover:text-red-900"
+          >
+            Opnieuw proberen
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Complete: side-by-side comparison
+  if (vanilla.stage === 'complete' && vanilla.compositeScore !== null && vanilla.detectorVerdict) {
+    const delta = branddockComposite - vanilla.compositeScore;
+    const positionDelta = (vanilla.humanBaselinePosition ?? 0) - branddockPosition;
+    const branddockWins = delta > 0;
+
+    return (
+      <div className="mt-4 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="w-4 h-4 text-teal-600" />
+          <h4 className="text-sm font-semibold text-gray-900">Vergelijking met vanille ChatGPT</h4>
+        </div>
+
+        {/* Delta hero */}
+        <div
+          className={`rounded-lg px-4 py-3 mb-3 ${
+            branddockWins ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs font-medium text-gray-600">Branddock − ChatGPT</div>
+              <div
+                className={`text-3xl font-bold ${branddockWins ? 'text-emerald-700' : 'text-amber-700'}`}
+              >
+                {delta >= 0 ? '+' : ''}
+                {delta} punten
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-gray-600">positie-verschil</div>
+              <div className="text-lg font-semibold text-gray-900 inline-flex items-center gap-1">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                {positionDelta > 0 ? `${positionDelta} stappen menselijker` : `${Math.abs(positionDelta)} stappen meer AI`}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Side-by-side score-mini */}
+        <div className="grid grid-cols-2 gap-2">
+          <ScoreMini
+            label="Branddock"
+            composite={branddockComposite}
+            position={branddockPosition}
+            highlight
+          />
+          <ScoreMini
+            label={`Vanille ${vanilla.model ?? 'GPT-4o'}`}
+            composite={vanilla.compositeScore}
+            position={vanilla.humanBaselinePosition ?? 0}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function ScoreMini({
+  label,
+  composite,
+  position,
+  highlight = false,
+}: {
+  label: string;
+  composite: number;
+  position: number;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-lg border px-3 py-2.5 ${
+        highlight ? 'border-teal-300 bg-teal-50/50' : 'border-gray-200 bg-white'
+      }`}
+    >
+      <div className="flex items-baseline justify-between mb-1.5">
+        <span className="text-xs font-semibold text-gray-700 truncate">{label}</span>
+        <span className="text-xl font-bold text-gray-900">{composite}</span>
+      </div>
+      <PositionBar position={position} />
     </div>
   );
 }

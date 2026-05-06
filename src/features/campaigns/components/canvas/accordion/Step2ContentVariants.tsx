@@ -229,7 +229,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
       )}
 
       {/* F-VAL fidelity score — verschijnt zodra detector heeft gerund (~5ms na text_complete) */}
-      {hasVariants && <FidelityScoreBar />}
+      {hasVariants && <FidelityScoreBar deliverableId={deliverableId} />}
 
       {/* Variant selector tabs */}
       <div className="flex items-center gap-2">

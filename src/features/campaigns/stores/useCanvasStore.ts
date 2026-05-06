@@ -107,6 +107,28 @@ interface CanvasStoreState {
     elapsedMs: number | null;
   };
 
+  // ─── Vanille baseline (demo: "Vergelijk met vanille AI") ──
+  // Wordt gevuld via de POST /api/studio/[id]/vanilla-baseline SSE flow.
+  // null tot user op "Vergelijk met ChatGPT" klikt; daarna stage-aware
+  // states zoals fidelityScore. Bewaard apart zodat UI beide naast elkaar
+  // kan tonen zonder dat een vanilla run de Branddock score overschrijft.
+  vanillaBaseline: {
+    stage: 'idle' | 'generating' | 'scoring' | 'complete' | 'error';
+    /** Eerste 800 chars van vanille output — voor side-by-side preview */
+    preview: string | null;
+    /** Word count voor UI */
+    wordCount: number | null;
+    /** Composite 0-100 — null tot scoring complete */
+    compositeScore: number | null;
+    detectorVerdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI' | null;
+    humanBaselinePosition: number | null;
+    pillars: { style: number | null; judge: number | null; rules: number | null } | null;
+    /** Vanille model used (gpt-4o) */
+    model: string | null;
+    /** Foutmelding bij stage === 'error' */
+    errorMessage: string | null;
+  };
+
   // ─── Additional knowledge context ────────────────────────
   additionalContextItems: Map<string, SelectedContextItem>;
   contextSelectorOpen: boolean;
@@ -215,6 +237,15 @@ interface CanvasStoreState {
     elapsedMs: number;
   }) => void;
   resetFidelityScore: () => void;
+  setVanillaStage: (stage: 'idle' | 'generating' | 'scoring' | 'complete' | 'error', errorMessage?: string) => void;
+  setVanillaTextComplete: (data: { preview: string; wordCount: number; model: string }) => void;
+  setVanillaScoreComplete: (data: {
+    compositeScore: number;
+    detectorVerdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI';
+    humanBaselinePosition: number;
+    pillars: { style: number | null; judge: number | null; rules: number | null };
+  }) => void;
+  resetVanillaBaseline: () => void;
   setFeedbackDraft: (text: string) => void;
   setFeedbackGroup: (group: string | null) => void;
   toggleContextSelector: () => void;
@@ -327,6 +358,17 @@ const INITIAL_STATE = {
     humanBaselinePosition: null,
     pillars: null,
     elapsedMs: null,
+  },
+  vanillaBaseline: {
+    stage: 'idle' as const,
+    preview: null,
+    wordCount: null,
+    compositeScore: null,
+    detectorVerdict: null,
+    humanBaselinePosition: null,
+    pillars: null,
+    model: null,
+    errorMessage: null,
   },
   additionalContextItems: new Map<string, SelectedContextItem>(),
   contextSelectorOpen: false,
@@ -522,6 +564,53 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         humanBaselinePosition: null,
         pillars: null,
         elapsedMs: null,
+      },
+    }),
+
+  setVanillaStage: (stage, errorMessage) =>
+    set((state) => ({
+      vanillaBaseline: {
+        ...state.vanillaBaseline,
+        stage,
+        errorMessage: stage === 'error' ? (errorMessage ?? 'Vanilla baseline failed') : null,
+      },
+    })),
+
+  setVanillaTextComplete: ({ preview, wordCount, model }) =>
+    set((state) => ({
+      vanillaBaseline: {
+        ...state.vanillaBaseline,
+        stage: 'scoring',
+        preview,
+        wordCount,
+        model,
+      },
+    })),
+
+  setVanillaScoreComplete: (data) =>
+    set((state) => ({
+      vanillaBaseline: {
+        ...state.vanillaBaseline,
+        stage: 'complete',
+        compositeScore: data.compositeScore,
+        detectorVerdict: data.detectorVerdict,
+        humanBaselinePosition: data.humanBaselinePosition,
+        pillars: data.pillars,
+      },
+    })),
+
+  resetVanillaBaseline: () =>
+    set({
+      vanillaBaseline: {
+        stage: 'idle',
+        preview: null,
+        wordCount: null,
+        compositeScore: null,
+        detectorVerdict: null,
+        humanBaselinePosition: null,
+        pillars: null,
+        model: null,
+        errorMessage: null,
       },
     }),
 
