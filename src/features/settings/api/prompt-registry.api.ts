@@ -63,3 +63,56 @@ export async function fetchPromptDetail(
   }
   return res.json();
 }
+
+export interface PromptDashboardProviderBucket {
+  provider: string;
+  callCount: number;
+  successCount: number;
+  errorCount: number;
+  totalLatencyMs: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  costUsd: number;
+  avgLatencyMs: number;
+  failureRate: number;
+}
+
+export interface PromptDashboardModelBucket {
+  model: string;
+  provider: string;
+  callCount: number;
+  costUsd: number;
+}
+
+export interface PromptDashboardSourceStat {
+  sourceIdentifier: string;
+  callCount: number;
+  errorCount: number;
+  costUsd: number;
+}
+
+export interface PromptDashboardData {
+  window: string;
+  generatedAt: string;
+  totals: {
+    calls24h: number;
+    calls7d: number;
+    calls30d: number;
+    callsAllTime: number;
+    cost24h: number;
+    cost7d: number;
+    cost30d: number;
+  };
+  providers: PromptDashboardProviderBucket[];
+  models: PromptDashboardModelBucket[];
+  topByCalls: PromptDashboardSourceStat[];
+  topByErrors: PromptDashboardSourceStat[];
+}
+
+export async function fetchPromptDashboard(): Promise<PromptDashboardData> {
+  const res = await fetch('/api/admin/prompt-registry/dashboard');
+  if (!res.ok) {
+    throw new Error(`Failed to fetch prompt dashboard: ${res.status}`);
+  }
+  return res.json();
+}

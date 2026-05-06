@@ -1,13 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { FileCode, Activity, Clock, AlertCircle } from 'lucide-react';
+import { FileCode, Activity, Clock, AlertCircle, BarChart3, List } from 'lucide-react';
 import { Card, Badge, EmptyState } from '@/components/shared';
 import {
   usePromptRegistry,
   usePromptDetail,
 } from '@/features/settings/hooks/use-prompt-registry';
 import type { PromptRegistryEntry, PromptVersionDetail } from '@/features/settings/api/prompt-registry.api';
+import { PromptUsageDashboard } from './PromptUsageDashboard';
+
+type TabView = 'dashboard' | 'registry';
 
 /**
  * AI Prompts Registry — read-only Settings page (Phase 6, niveau A).
@@ -22,75 +25,100 @@ import type { PromptRegistryEntry, PromptVersionDetail } from '@/features/settin
  * (zie beslissing 5: niveau A = read-only registry).
  */
 export function PromptRegistryTab() {
+  const [view, setView] = useState<TabView>('dashboard');
   const [selectedIdentifier, setSelectedIdentifier] = useState<string | null>(null);
   const { data: prompts, isLoading, error } = usePromptRegistry();
-
-  if (isLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-        Loading prompt registry…
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <EmptyState
-          icon={AlertCircle}
-          title="Failed to load prompts"
-          description={error instanceof Error ? error.message : 'Unknown error'}
-        />
-      </div>
-    );
-  }
-
-  if (!prompts || prompts.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <EmptyState
-          icon={FileCode}
-          title="No prompts tracked yet"
-          description="AI prompts appear here once tracking is wired into a route. Trigger any AI flow to see entries."
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
       <header className="px-8 pt-6 pb-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">AI Prompts</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Read-only view of all AI prompt-templates in use. Track call counts,
-          token spend, latency, and version history per template.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">AI Prompts</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Read-only view of all AI prompt-templates in use. Dashboard shows
+              30-day aggregates; registry has version history per template.
+            </p>
+          </div>
+          <div className="flex items-center gap-1 bg-gray-100 rounded-md p-0.5">
+            <button
+              type="button"
+              onClick={() => setView('dashboard')}
+              className={`px-3 py-1.5 text-sm rounded flex items-center gap-1.5 transition-colors ${
+                view === 'dashboard'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <BarChart3 className="h-3.5 w-3.5" />
+              Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('registry')}
+              className={`px-3 py-1.5 text-sm rounded flex items-center gap-1.5 transition-colors ${
+                view === 'registry'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <List className="h-3.5 w-3.5" />
+              Registry
+            </button>
+          </div>
+        </div>
       </header>
 
-      <div className="flex-1 overflow-hidden flex">
-        {/* Left: list */}
-        <div className="w-96 border-r border-gray-200 overflow-y-auto p-4 space-y-2">
-          {prompts.map((p) => (
-            <PromptListItem
-              key={p.sourceIdentifier}
-              prompt={p}
-              isSelected={p.sourceIdentifier === selectedIdentifier}
-              onSelect={() => setSelectedIdentifier(p.sourceIdentifier)}
-            />
-          ))}
-        </div>
-
-        {/* Right: detail */}
+      {view === 'dashboard' ? (
         <div className="flex-1 overflow-y-auto p-6">
-          {selectedIdentifier ? (
-            <PromptDetail identifier={selectedIdentifier} />
-          ) : (
-            <div className="flex items-center justify-center h-full text-sm text-gray-400">
-              Select a prompt to see version history and payload preview.
-            </div>
-          )}
+          <PromptUsageDashboard />
         </div>
-      </div>
+      ) : isLoading ? (
+        <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+          Loading prompt registry…
+        </div>
+      ) : error ? (
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState
+            icon={AlertCircle}
+            title="Failed to load prompts"
+            description={error instanceof Error ? error.message : 'Unknown error'}
+          />
+        </div>
+      ) : !prompts || prompts.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState
+            icon={FileCode}
+            title="No prompts tracked yet"
+            description="AI prompts appear here once tracking is wired into a route. Trigger any AI flow to see entries."
+          />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-hidden flex">
+          {/* Left: list */}
+          <div className="w-96 border-r border-gray-200 overflow-y-auto p-4 space-y-2">
+            {prompts.map((p) => (
+              <PromptListItem
+                key={p.sourceIdentifier}
+                prompt={p}
+                isSelected={p.sourceIdentifier === selectedIdentifier}
+                onSelect={() => setSelectedIdentifier(p.sourceIdentifier)}
+              />
+            ))}
+          </div>
+
+          {/* Right: detail */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {selectedIdentifier ? (
+              <PromptDetail identifier={selectedIdentifier} />
+            ) : (
+              <div className="flex items-center justify-center h-full text-sm text-gray-400">
+                Select a prompt to see version history and payload preview.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
