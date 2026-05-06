@@ -365,6 +365,12 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
           processed.authoritativeColors,
           visionScreenshots,
           { log: (msg) => console.log(msg) },
+          {
+            workspaceId: styleguideMeta.workspaceId,
+            parentEntityType: 'BrandStyleguide',
+            parentEntityId: styleguideId,
+            sourceIdentifier: 'src/lib/brandstyle/analysis-engine.ts:verifyColorUsage',
+          },
         );
         for (const color of processed.authoritativeColors) {
           const rec = evidenceMap.get(color.hex);
@@ -393,6 +399,13 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         VISUAL_IDENTITY_SYSTEM,
         prompt,
         { temperature: 0.2, maxTokens: 4096, images: pageScreenshots, timeoutMs: 180_000 },
+        {
+          workspaceId: styleguideMeta.workspaceId,
+          parentEntityType: 'BrandStyleguide',
+          parentEntityId: styleguideId,
+          callOrder: 0,
+          sourceIdentifier: 'src/lib/brandstyle/analysis-engine.ts:analyzeUrl:visualIdentity',
+        },
       );
     } catch (err) {
       await markError(styleguideId, `Visual identity analysis failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -418,6 +431,13 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         VOICE_IMAGERY_SYSTEM,
         prompt,
         { temperature: 0.3, maxTokens: 4096, images: pageScreenshots, timeoutMs: 180_000 },
+        {
+          workspaceId: styleguideMeta.workspaceId,
+          parentEntityType: 'BrandStyleguide',
+          parentEntityId: styleguideId,
+          callOrder: 1,
+          sourceIdentifier: 'src/lib/brandstyle/analysis-engine.ts:analyzeUrl:voiceImagery',
+        },
       );
     } catch (err) {
       await markError(styleguideId, `Voice & imagery analysis failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -432,6 +452,13 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         DESIGN_LANGUAGE_SYSTEM,
         dlPrompt,
         { temperature: 0.3, maxTokens: 4096, images: pageScreenshots, timeoutMs: 180_000 },
+        {
+          workspaceId: styleguideMeta.workspaceId,
+          parentEntityType: 'BrandStyleguide',
+          parentEntityId: styleguideId,
+          callOrder: 2,
+          sourceIdentifier: 'src/lib/brandstyle/analysis-engine.ts:analyzeUrl:designLanguage',
+        },
       );
     } catch (err) {
       // Design language is non-critical — log and continue
@@ -455,6 +482,12 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
             designLanguageSummary: designResult?.layoutPrinciples?.usageNotes ?? undefined,
           },
           scraped.url,
+          {
+            workspaceId: styleguideMeta.workspaceId,
+            parentEntityType: 'BrandStyleguide',
+            parentEntityId: styleguideId,
+            sourceIdentifier: 'src/lib/brandstyle/analysis-engine.ts:analyzeVisualLanguage',
+          },
         );
       } catch (err) {
         // Visual language is non-critical — log and continue
@@ -710,6 +743,16 @@ export async function analyzePdf(
   fileName: string,
 ): Promise<void> {
   try {
+    // Look up workspaceId for learning-loop tracking
+    const styleguideMeta = await prisma.brandStyleguide.findUnique({
+      where: { id: styleguideId },
+      select: { workspaceId: true },
+    });
+    if (!styleguideMeta) {
+      console.error(`[brandstyle-analysis] Styleguide ${styleguideId} not found`);
+      return;
+    }
+
     // Step 1: Parse PDF
     await updateStatus(styleguideId, 'SCANNING_STRUCTURE');
     let parsed: ParsedPdfData;
@@ -749,6 +792,12 @@ export async function analyzePdf(
         PDF_ANALYSIS_SYSTEM_PROMPT,
         prompt,
         { temperature: 0.2, maxTokens: 6000 },
+        {
+          workspaceId: styleguideMeta.workspaceId,
+          parentEntityType: 'BrandStyleguide',
+          parentEntityId: styleguideId,
+          sourceIdentifier: 'src/lib/brandstyle/analysis-engine.ts:analyzePdf',
+        },
       );
     } catch (err) {
       await markError(styleguideId, `AI analysis failed: ${err instanceof Error ? err.message : String(err)}`);

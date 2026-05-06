@@ -81,7 +81,14 @@ export async function generateFixOptions(
   const result = await createClaudeStructuredCompletion<FixGenerationResult>(
     systemPrompt,
     userPrompt,
-    { maxTokens: 4000, temperature: 0.3, timeoutMs: 60_000 }
+    { maxTokens: 4000, temperature: 0.3, timeoutMs: 60_000 },
+    {
+      workspaceId,
+      parentEntityType: 'AlignmentIssue',
+      parentEntityId: issueId,
+      brandContext: brandContextBlock,
+      sourceIdentifier: 'src/lib/alignment/fix-generator.ts:generateFixOptions',
+    },
   );
 
   // Determine labels from issue data

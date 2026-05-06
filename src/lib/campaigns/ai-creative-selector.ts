@@ -12,6 +12,7 @@
  */
 
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
+import type { AICallTracking } from '@/lib/learning-loop';
 import { GOLDENBERG_TEMPLATES, TEMPLATE_INSIGHT_AFFINITY, type GoldenbergTemplateDefinition } from '@/lib/goldenberg/goldenberg-templates';
 import type { HumanInsight } from './strategy-blueprint.types';
 
@@ -93,6 +94,7 @@ function buildCacheKey(ctx: CreativeSelectionContext): string {
  */
 export async function selectCreativeMaterials(
   ctx: CreativeSelectionContext,
+  tracking?: AICallTracking,
 ): Promise<CreativeSelectionResult> {
   // Check cache first — avoids repeated LLM call on retry/regeneration
   const cacheKey = buildCacheKey(ctx);
@@ -154,6 +156,12 @@ Find 3 Goldenberg templates and 3 creative angles that would make THIS specific 
       systemPrompt,
       userPrompt,
       { model: 'gemini-2.5-flash', temperature: 0.9 },
+      tracking
+        ? {
+            ...tracking,
+            sourceIdentifier: tracking.sourceIdentifier ?? 'src/lib/campaigns/ai-creative-selector.ts:selectCreativeMaterials',
+          }
+        : undefined,
     );
 
     const templates = resolveTemplates(result.templateIds ?? []);

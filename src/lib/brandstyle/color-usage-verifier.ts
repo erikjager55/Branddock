@@ -40,6 +40,7 @@
 
 import sharp from 'sharp';
 import { createClaudeStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
+import type { AICallTracking } from '@/lib/learning-loop';
 import type { PageScreenshot } from './page-screenshotter';
 import type { AuthoritativeColor } from './analysis-prompts';
 
@@ -115,6 +116,7 @@ export async function verifyColorUsage(
   palette: AuthoritativeColor[],
   screenshots: PageScreenshot[],
   options: VerifyOptions = {},
+  tracking?: AICallTracking,
 ): Promise<Map<string, ColorUsageRecord>> {
   const log = options.log ?? (() => {});
   const records = new Map<string, ColorUsageRecord>();
@@ -220,6 +222,7 @@ export async function verifyColorUsage(
     visionVerdicts = await runVisionPass(
       visionTargets.map((c) => c.hex),
       screenshots,
+      tracking,
     );
   } catch (err) {
     log(
@@ -362,6 +365,7 @@ Rules:
 async function runVisionPass(
   hexes: string[],
   screenshots: PageScreenshot[],
+  tracking?: AICallTracking,
 ): Promise<VisionResponse> {
   // createClaudeStructuredCompletion accepts images as buffers. Reuse the
   // same image plumbing the Visual Identity call uses.
@@ -370,5 +374,6 @@ async function runVisionPass(
     VISION_SYSTEM_PROMPT,
     buildVisionUserPrompt(hexes),
     { temperature: 0.1, maxTokens: 2048, images, timeoutMs: 90_000 },
+    tracking,
   );
 }

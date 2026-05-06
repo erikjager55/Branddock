@@ -68,7 +68,8 @@ export async function runBrandAudit(
   // 2. AI analysis for clarity + differentiation + per-asset quality
   const aiResult = await runAiAnalysis(
     moduleData,
-    completenessResult.assets.map((a) => a.assetName)
+    completenessResult.assets.map((a) => a.assetName),
+    workspaceId
   );
 
   // 3. Assemble dimensions
@@ -190,7 +191,8 @@ export async function runBrandAudit(
 
 async function runAiAnalysis(
   moduleData: Awaited<ReturnType<typeof fetchAllModuleData>>,
-  assetNames: string[]
+  assetNames: string[],
+  workspaceId: string
 ): Promise<AiAuditResponse> {
   const brandDataSummary = moduleData
     .map((m) => {
@@ -248,7 +250,14 @@ Respond as JSON matching this exact structure:
     return await createClaudeStructuredCompletion<AiAuditResponse>(
       systemPrompt,
       userPrompt,
-      { maxTokens: 8000, temperature: 0.3 }
+      { maxTokens: 8000, temperature: 0.3 },
+      {
+        // BrandAudit record exists pas na deze AI-call — gebruik Workspace als parent
+        workspaceId,
+        parentEntityType: 'Workspace',
+        parentEntityId: workspaceId,
+        sourceIdentifier: 'src/lib/alignment/auditor.ts:runAiAnalysis',
+      },
     );
   } catch (error) {
     console.error("[auditor] AI analysis failed, using fallback:", error);

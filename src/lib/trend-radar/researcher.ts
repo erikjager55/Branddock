@@ -163,7 +163,10 @@ export async function runTrendResearch(
       ? `${query} (industry: ${brandContext.brandName ?? ''} ${brandContext.productsOverview ?? ''})`
       : query;
 
-    const diverseQueries = await generateDiverseQueries(searchQuery, brandContext);
+    const diverseQueries = await generateDiverseQueries(searchQuery, brandContext, {
+      workspaceId,
+      researchJobId: jobId,
+    });
     state.queriesGenerated = diverseQueries.length;
 
     if (state.cancelled) return await finalizeCancelled(jobId);
@@ -318,6 +321,7 @@ export async function runTrendResearch(
         state.sourcesProcessed = completed;
         state.signalsExtracted = 0; // will be set after
       },
+      { workspaceId, researchJobId: jobId },
     );
 
     state.signalsExtracted = signals.length;
@@ -420,7 +424,10 @@ export async function runTrendResearch(
     state.phase = 'validating';
     state.currentUrl = 'Validating trend quality...';
 
-    const judgeResult = await judgeTrends(synthesis.trends, brandContext);
+    const judgeResult = await judgeTrends(synthesis.trends, brandContext, {
+      workspaceId,
+      researchJobId: jobId,
+    });
 
     if (judgeResult.error) {
       allErrors.push(`Judge: ${judgeResult.error}`);

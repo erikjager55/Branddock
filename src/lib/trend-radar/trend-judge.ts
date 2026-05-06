@@ -55,6 +55,7 @@ interface JudgeResult {
 export async function judgeTrends(
   candidates: SanitizedTrend[],
   brandContext?: BrandContextBlock,
+  trackingContext?: { workspaceId: string; researchJobId?: string },
 ): Promise<{
   approved: Array<SanitizedTrend & { scores: TrendScores }>;
   rejected: Array<{ title: string; reason: string }>;
@@ -85,6 +86,15 @@ export async function judgeTrends(
       systemPrompt,
       userPrompt,
       { temperature: 0.2, maxTokens: 6000, timeoutMs: 180_000 },
+      trackingContext
+        ? {
+            workspaceId: trackingContext.workspaceId,
+            parentEntityType: trackingContext.researchJobId ? 'TrendResearchJob' : 'Workspace',
+            parentEntityId: trackingContext.researchJobId ?? trackingContext.workspaceId,
+            brandContext,
+            sourceIdentifier: 'src/lib/trend-radar/trend-judge.ts:judgeTrends',
+          }
+        : undefined,
     );
 
     if (!result?.judgements?.length) {

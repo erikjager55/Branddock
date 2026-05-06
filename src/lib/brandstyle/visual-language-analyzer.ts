@@ -7,6 +7,7 @@
 // =============================================================
 
 import { createClaudeStructuredCompletion } from "@/lib/ai/exploration/ai-caller";
+import type { AICallTracking } from '@/lib/learning-loop';
 import type {
   VisualLanguageProfile,
   CssVisualHeuristics,
@@ -113,6 +114,7 @@ export async function analyzeVisualLanguage(
   heuristics: CssVisualHeuristics,
   context: VisualLanguageContext,
   sourceUrl: string,
+  tracking?: AICallTracking,
 ): Promise<VisualLanguageProfile> {
   const prompt = buildVisualLanguagePrompt(heuristics, context, sourceUrl);
 
@@ -122,6 +124,7 @@ export async function analyzeVisualLanguage(
     VISUAL_LANGUAGE_SYSTEM,
     prompt,
     { temperature: 0.2, maxTokens: 4096 },
+    tracking,
   );
 
   return {

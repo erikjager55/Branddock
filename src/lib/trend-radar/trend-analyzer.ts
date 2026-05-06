@@ -173,6 +173,13 @@ export async function synthesizeTrends(params: {
       systemPrompt,
       userPrompt,
       { temperature: 0.4, maxTokens: 10000, timeoutMs: 180_000 },
+      {
+        workspaceId: params.workspaceId,
+        parentEntityType: params.researchJobId ? 'TrendResearchJob' : 'Workspace',
+        parentEntityId: params.researchJobId ?? params.workspaceId,
+        brandContext: params.brandContext,
+        sourceIdentifier: 'src/lib/trend-radar/trend-analyzer.ts:synthesizeTrends',
+      },
     );
 
     if (!result?.trends?.length) {
@@ -306,6 +313,13 @@ export async function analyzeTrends(params: {
       systemPrompt,
       userPrompt,
       { temperature: 0.3, maxOutputTokens: 8000 },
+      {
+        workspaceId: params.workspaceId,
+        parentEntityType: params.researchJobId ? 'TrendResearchJob' : 'Workspace',
+        parentEntityId: params.researchJobId ?? params.workspaceId,
+        brandContext: params.brandContext,
+        sourceIdentifier: 'src/lib/trend-radar/trend-analyzer.ts:analyzeTrends',
+      },
     );
 
     if (!result?.trends?.length) {
@@ -393,6 +407,13 @@ export async function analyzeMultipleSources(params: {
       systemPrompt,
       userPrompt,
       { temperature: 0.4, maxOutputTokens: 10000 },
+      {
+        workspaceId: params.workspaceId,
+        parentEntityType: params.researchJobId ? 'TrendResearchJob' : 'Workspace',
+        parentEntityId: params.researchJobId ?? params.workspaceId,
+        brandContext: params.brandContext,
+        sourceIdentifier: 'src/lib/trend-radar/trend-analyzer.ts:analyzeMultipleSources',
+      },
     );
 
     if (!result?.trends?.length) {

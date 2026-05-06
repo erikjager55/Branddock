@@ -114,6 +114,8 @@ export async function* runSeoPipeline(
     try {
       let rawOutput: string;
 
+      const stepTracking = { workspaceId, deliverableId };
+
       if (stepDef.step === 3) {
         // Step 3: Competitor analysis via Gemini search grounding
         rawOutput = await runCompetitorAnalysisStep(
@@ -126,6 +128,7 @@ export async function* runSeoPipeline(
           voiceDirective,
           contentType,
           textModel,
+          stepTracking,
         );
       } else if (stepDef.step === 6) {
         // Step 6: First draft — returns markdown, not JSON
@@ -140,6 +143,7 @@ export async function* runSeoPipeline(
           voiceDirective,
           contentType,
           textModel,
+          stepTracking,
         );
       } else {
         // Steps 1, 2, 4, 5, 7, 8: structured JSON completion
@@ -154,6 +158,7 @@ export async function* runSeoPipeline(
           voiceDirective,
           contentType,
           textModel,
+          stepTracking,
         );
       }
 
@@ -221,6 +226,7 @@ export async function* runSeoPipeline(
       state.accumulatedContext,
       voiceDirective,
       textModel,
+      { workspaceId, deliverableId },
     );
   } catch {
     // Fallback: use the editorial review version (step 7) as variant B
@@ -387,6 +393,7 @@ async function runStructuredStep(
   voiceDirective: string,
   contentType: string,
   textModel: ResolvedModel,
+  stepTracking?: { workspaceId: string; deliverableId: string },
 ): Promise<string> {
   const ctx = {
     brandContext,
@@ -407,6 +414,15 @@ async function runStructuredStep(
     systemPrompt,
     userPrompt,
     { timeoutMs: 120_000 },
+    stepTracking
+      ? {
+          workspaceId: stepTracking.workspaceId,
+          parentEntityType: 'Deliverable',
+          parentEntityId: stepTracking.deliverableId,
+          callOrder: step,
+          sourceIdentifier: `src/lib/ai/seo-pipeline.ts:runStructuredStep:${step}`,
+        }
+      : undefined,
   );
 
   return extractText(result);
@@ -423,6 +439,7 @@ async function runDraftStep(
   voiceDirective: string,
   contentType: string,
   textModel: ResolvedModel,
+  stepTracking?: { workspaceId: string; deliverableId: string },
 ): Promise<string> {
   // Step 6 produces markdown, not JSON — use non-structured completion
   const ctx = {
@@ -444,6 +461,15 @@ async function runDraftStep(
     systemPrompt,
     userPrompt,
     { timeoutMs: 180_000 },
+    stepTracking
+      ? {
+          workspaceId: stepTracking.workspaceId,
+          parentEntityType: 'Deliverable',
+          parentEntityId: stepTracking.deliverableId,
+          callOrder: step,
+          sourceIdentifier: `src/lib/ai/seo-pipeline.ts:runDraftStep:${step}`,
+        }
+      : undefined,
   );
 
   return extractText(result);
@@ -459,6 +485,7 @@ async function runCompetitorAnalysisStep(
   voiceDirective: string,
   contentType: string,
   textModel: ResolvedModel,
+  stepTracking?: { workspaceId: string; deliverableId: string },
 ): Promise<string> {
   // Phase 1: Get live search results via Gemini search grounding
   let searchResults = '';
@@ -491,6 +518,15 @@ async function runCompetitorAnalysisStep(
     systemPrompt,
     userPrompt,
     { timeoutMs: 120_000 },
+    stepTracking
+      ? {
+          workspaceId: stepTracking.workspaceId,
+          parentEntityType: 'Deliverable',
+          parentEntityId: stepTracking.deliverableId,
+          callOrder: 3,
+          sourceIdentifier: 'src/lib/ai/seo-pipeline.ts:runCompetitorAnalysisStep',
+        }
+      : undefined,
   );
 
   return extractText(result);
@@ -503,6 +539,7 @@ async function generateAlternativeVariant(
   accumulatedResearch: string,
   voiceDirective: string,
   textModel: ResolvedModel,
+  stepTracking?: { workspaceId: string; deliverableId: string },
 ): Promise<string> {
   const systemPrompt = `You are a Senior Conversion Copywriter creating an alternative version of an SEO-optimized page.
 
@@ -539,6 +576,15 @@ Write the complete alternative version (Variant B). Different creative angle, sa
     systemPrompt,
     userPrompt,
     { timeoutMs: 180_000 },
+    stepTracking
+      ? {
+          workspaceId: stepTracking.workspaceId,
+          parentEntityType: 'Deliverable',
+          parentEntityId: stepTracking.deliverableId,
+          callOrder: 99, // variant B generation runs after the 8-step pipeline
+          sourceIdentifier: 'src/lib/ai/seo-pipeline.ts:generateAlternativeVariant',
+        }
+      : undefined,
   );
 
   return extractText(result);

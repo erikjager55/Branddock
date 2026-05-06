@@ -84,6 +84,8 @@ const CLAUDE_OPTIONS = {
 export async function analyzeWebsiteData(
   extraction: WebsiteExtraction,
   progress: ScanProgress,
+  workspaceId?: string,
+  scanId?: string,
 ): Promise<AnalysisResults> {
   const companyName = extraction.companyProfile?.name || 'the company';
   const userPrompt = buildAnalysisUserPrompt(extraction, companyName);
@@ -95,6 +97,19 @@ export async function analyzeWebsiteData(
     strategyCompetition: null,
   };
 
+  // Build tracking inputs per call (callOrder 0-3 for the 4 parallel calls).
+  // Tracking only enabled when both workspaceId AND scanId provided.
+  const buildTracking = (suffix: string, callOrder: number) =>
+    workspaceId && scanId
+      ? {
+          workspaceId,
+          parentEntityType: 'WebsiteScan',
+          parentEntityId: scanId,
+          callOrder,
+          sourceIdentifier: `src/lib/website-scanner/ai-analyzer.ts:analyzeWebsiteData:${suffix}`,
+        }
+      : undefined;
+
   // Run all 4 analysis calls in parallel
   const [foundationA, foundationB, audienceProducts, strategyCompetition] = await Promise.allSettled([
     // Call 1: Brand Foundation A
@@ -104,6 +119,7 @@ export async function analyzeWebsiteData(
         BRAND_FOUNDATION_A_SYSTEM_PROMPT,
         userPrompt,
         CLAUDE_OPTIONS,
+        buildTracking('brandFoundationA', 0),
       );
       progress.categoriesDone++;
       return result;
@@ -114,6 +130,7 @@ export async function analyzeWebsiteData(
         BRAND_FOUNDATION_B_SYSTEM_PROMPT,
         userPrompt,
         CLAUDE_OPTIONS,
+        buildTracking('brandFoundationB', 1),
       );
       progress.categoriesDone++;
       return result;
@@ -124,6 +141,7 @@ export async function analyzeWebsiteData(
         AUDIENCE_PRODUCTS_SYSTEM_PROMPT,
         userPrompt,
         CLAUDE_OPTIONS,
+        buildTracking('audienceProducts', 2),
       );
       progress.categoriesDone++;
       return result;
@@ -134,6 +152,7 @@ export async function analyzeWebsiteData(
         STRATEGY_COMPETITION_SYSTEM_PROMPT,
         userPrompt,
         CLAUDE_OPTIONS,
+        buildTracking('strategyCompetition', 3),
       );
       progress.categoriesDone++;
       return result;

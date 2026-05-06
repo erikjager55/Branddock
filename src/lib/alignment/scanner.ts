@@ -96,9 +96,11 @@ export async function runScan(scanId: string, workspaceId: string) {
     state.progress = 5;
 
     let brandContextStr: string;
+    let brandContextSnapshot: unknown = null;
     try {
       const brandContextBlock = await getBrandContext(workspaceId);
       brandContextStr = formatBrandContext(brandContextBlock);
+      brandContextSnapshot = brandContextBlock;
     } catch (error) {
       console.error("[scanner] Failed to fetch brand context:", error);
       brandContextStr = "No brand context available.";
@@ -148,7 +150,15 @@ export async function runScan(scanId: string, workspaceId: string) {
           await createClaudeStructuredCompletion<ModuleAnalysisResult>(
             systemPrompt,
             userPrompt,
-            { maxTokens: 4000, temperature: 0.3, timeoutMs: 60_000 }
+            { maxTokens: 4000, temperature: 0.3, timeoutMs: 60_000 },
+            {
+              workspaceId,
+              parentEntityType: 'AlignmentScan',
+              parentEntityId: scanId,
+              callOrder: i,
+              brandContext: brandContextSnapshot,
+              sourceIdentifier: `src/lib/alignment/scanner.ts:runScan:${module}`,
+            },
           );
 
         // Clamp score to valid range

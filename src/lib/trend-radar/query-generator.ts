@@ -25,6 +25,7 @@ interface QueryGenerationResult {
 export async function generateDiverseQueries(
   baseQuery: string,
   brandContext?: BrandContextBlock,
+  trackingContext?: { workspaceId: string; researchJobId?: string },
 ): Promise<string[]> {
   try {
     const prompt = buildQueryGenerationPrompt(baseQuery, brandContext);
@@ -33,6 +34,15 @@ export async function generateDiverseQueries(
       'You are a search query optimization expert. Return only a JSON array of search query strings.',
       prompt,
       { model: FLASH_MODEL, temperature: 0.5, maxOutputTokens: 1000 },
+      trackingContext
+        ? {
+            workspaceId: trackingContext.workspaceId,
+            parentEntityType: trackingContext.researchJobId ? 'TrendResearchJob' : 'Workspace',
+            parentEntityId: trackingContext.researchJobId ?? trackingContext.workspaceId,
+            brandContext,
+            sourceIdentifier: 'src/lib/trend-radar/query-generator.ts:generateDiverseQueries',
+          }
+        : undefined,
     );
 
     // Handle both array and { queries: [...] } response shapes

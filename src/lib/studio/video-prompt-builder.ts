@@ -99,6 +99,7 @@ export async function buildVideoPromptFromScript(
   contentType: string,
   workspaceId: string,
   sceneType: SceneType = 'full',
+  deliverableId?: string,
 ): Promise<string> {
   const { provider, model } = await resolveFeatureModel(workspaceId, 'content-generate');
 
@@ -108,6 +109,15 @@ export async function buildVideoPromptFromScript(
     SYSTEM_PROMPT,
     buildUserPrompt(scriptText, brandContext, contentType, sceneType),
     { temperature: 0.7, maxTokens: 1024 },
+    deliverableId
+      ? {
+          workspaceId,
+          parentEntityType: 'Deliverable',
+          parentEntityId: deliverableId,
+          brandContext,
+          sourceIdentifier: 'src/lib/studio/video-prompt-builder.ts:buildVideoPromptFromScript',
+        }
+      : undefined,
   );
 
   return result.videoPrompt || result.sceneDescription || scriptText.slice(0, 400);

@@ -55,6 +55,7 @@ export async function extractSignals(
   content: string,
   sourceUrl: string,
   sourceName: string,
+  trackingContext?: { workspaceId: string; researchJobId?: string; callOrder?: number },
 ): Promise<Signal[]> {
   try {
     const prompt = buildSignalExtractionPrompt(sourceUrl, sourceName, content);
@@ -63,6 +64,15 @@ export async function extractSignals(
       'You are a research data extraction specialist. Extract structured facts only. Return valid JSON.',
       prompt,
       { model: EXTRACTION_MODEL, temperature: 0.1, maxOutputTokens: 3000 },
+      trackingContext
+        ? {
+            workspaceId: trackingContext.workspaceId,
+            parentEntityType: trackingContext.researchJobId ? 'TrendResearchJob' : 'Workspace',
+            parentEntityId: trackingContext.researchJobId ?? trackingContext.workspaceId,
+            callOrder: trackingContext.callOrder,
+            sourceIdentifier: 'src/lib/trend-radar/signal-extractor.ts:extractSignals',
+          }
+        : undefined,
     );
 
     if (!result?.signals?.length) {
@@ -100,12 +110,18 @@ export async function extractSignals(
 export async function extractSignalsFromSources(
   sources: Array<{ name: string; url: string; content: string }>,
   onProgress?: (completed: number, total: number) => void,
+  trackingContext?: { workspaceId: string; researchJobId?: string },
 ): Promise<Signal[]> {
   let completed = 0;
   const total = sources.length;
 
-  const promises = sources.map(async (source) => {
-    const signals = await extractSignals(source.content, source.url, source.name);
+  const promises = sources.map(async (source, index) => {
+    const signals = await extractSignals(
+      source.content,
+      source.url,
+      source.name,
+      trackingContext ? { ...trackingContext, callOrder: index } : undefined,
+    );
     completed++;
     onProgress?.(completed, total);
     return signals;
