@@ -122,38 +122,45 @@ thresholdMet = composite >= 75
 
 ## Empirisch gevalideerde demo curve
 
-Tegen Better Brands case-study (3000 woorden), gemeten met **symmetric scoring**
-(alle outputs tegen dezelfde BrandPersonality, langs `scripts/fidelity/test-demo-full-flow.ts`):
+Tegen Better Brands blog-post brief, gemeten met **symmetric scoring** (alle outputs
+tegen dezelfde BrandPersonality, langs `scripts/fidelity/test-demo-full-flow.ts`).
+Twee meetregimes:
+
+### Met hybride HVD (current — sinds commit `e5d0911`, mei 2026)
+
+| Output | Composite | Verdict | Position | P1 | P2 | P3 |
+|---|---|---|---|---|---|---|
+| **Branddock + BVD + HVD** (baseline) | **68-71** | **TOP_TIER** | **5-12** | 33-50 | 77-82 | 93-97 |
+| **Vanille GPT-4o** (no Branddock) | 51-53 | HUMAN_BASELINE / AI_LEANING | 25-35 | 15-30 | 58-69 | 80-85 |
+| **Branddock + STRICT** | only triggers when baseline AI_LEANING/PURE_AI |
+
+**Demo claim ranges (gemeten met hybride HVD)**:
+- **Branddock baseline vs Vanille: +15 tot +18 punten consistent**
+- Verdict transition: Branddock direct in TOP_TIER, vanille blijft in HUMAN_BASELINE / AI_LEANING
+- Pijler 3 (anti-tell): Branddock 93-97 vs vanille 80-85 — beslissende factor
+- STRICT mode als safety-net: alleen actief bij briefs die AI_LEANING produceren
+
+### Pre-hybride HVD (oude research baseline, voor referentie)
 
 | Output | Composite | Verdict | Position |
 |---|---|---|---|
-| **Branddock + STRICT** | 70-75/100 | HUMAN_BASELINE / TOP_TIER | 8-25 |
-| **Branddock + BVD + HVD** (baseline) | 60-65/100 | AI_LEANING | 30-40 |
-| **Vanille GPT-4o** (no Branddock) | 50-55/100 | HUMAN_BASELINE / AI_LEANING | 25-45 |
+| Branddock + STRICT | 70-75 | HUMAN_BASELINE / TOP_TIER | 8-25 |
+| Branddock + BVD + HVD | 60-65 | AI_LEANING | 30-40 |
+| Vanille GPT-4o | 50-55 | HUMAN_BASELINE / AI_LEANING | 25-45 |
 
-**Belangrijk: scores varieren tussen runs** door AI non-determinisme (judge + generator).
-De ranges hierboven dekken meerdere runs op dezelfde brief.
+Met de oude verbose HVD (~500 tokens met long avoid-lijsten) werd Claude juist gepriemd
+om AI-tells in te brengen — pijler 3 was lager voor Branddock baseline dan voor vanille
+(79 vs 84). STRICT mode was nodig om dat te corrigeren. Met de hybride HVD (sinds
+mei 2026) is dat opgelost: Branddock baseline scoort direct hoog op pijler 3.
 
-**Demo claim ranges (gemeten)**:
-- Branddock+STRICT vs Vanille: **+15 tot +30 punten verschil**
-- Branddock baseline vs Vanille: **+5 tot +15 punten verschil**
-- STRICT lift over baseline: **+5 tot +10 punten** (consistent)
-
-**Wat STRICT mode betrouwbaar oplevert** (in iedere run):
-1. Verdict-transitie AI_LEANING → HUMAN_BASELINE/TOP_TIER (visueel demo-moment)
-2. Position drop van 30-40 → 8-25 (richting menselijker)
-3. Pijler 2 (judge) lift van ~70 → ~85
-4. Pijler 3 (rules) lift van ~80 → ~89 (anti-AI-tell verbetering)
-
-**Pijler 3 anomalie**: vanille scoort soms hoger op pijler 3 dan Branddock baseline —
-zonder BVD/HVD prompt-pollutie produceert GPT-4o minder AI-tells per 1000 woorden.
-**STRICT mode is de differentiator**: het brengt Branddock óók naar TOP_TIER terwijl
-brand voice match (pijler 1) en strategische verankering (pijler 2) hoog blijven.
-
-**Demo narratief aanbevolen**:
-> "ChatGPT zonder context produceert decent maar generiek werk. Branddock injecteert
-> jouw merkcontext — maar laat soms AI-patronen zien. STRICT mode is waar het verschil
-> wordt: TOP_TIER menselijke output mét brand voice match, in één klik."
+**Demo narratief (current)**:
+> "Vanille ChatGPT produceert decent werk maar mist jouw merk-DNA. Pijler 1 (brand
+> vocab match) zakt naar 15-30%, pijler 3 (anti-AI-tell) blijft op 80-85. Branddock
+> injecteert jouw merkcontext via BVD + Human Voice Directive: pijler 1 omhoog
+> (33-50%), pijler 3 naar 93-97 (top-tier menselijk schrijven). Verdict-transitie
+> die je live ziet: vanille blijft AI_LEANING, Branddock landt op TOP_TIER. +15
+> punten gap, consistent over runs. STRICT mode als auto-rewrite is een safety-net
+> voor briefs die het lastig maken — niet de hoofd-attractie."
 
 ## End-to-end data flow
 

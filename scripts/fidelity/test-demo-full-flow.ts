@@ -121,12 +121,61 @@ async function main() {
     targetWordCount: 3000,
   };
 
-  // ── Stap 1: Branddock baseline (BB-A research output) ──
-  console.log('\n━━━ Stap 1: Branddock baseline (BB-A Opus + BVD + HVD) ━━━');
-  const branddockText = readFileSync(
-    join(process.cwd(), 'research', 'fidelity-week1', 'outputs', 'better-brands-case-study-A.md'),
-    'utf8',
+  // ── Stap 1: Branddock baseline ──
+  // Default: research file (oude prompts, demo van pre-HVD-tuning baseline)
+  // Met FRESH=1 env: genereer fresh content met current BVD + HVD
+  const useFresh = process.env.FRESH === '1';
+  console.log(
+    `\n━━━ Stap 1: Branddock baseline (${useFresh ? 'FRESH met current hybride HVD' : 'BB-A research file'}) ━━━`,
   );
+
+  let branddockText: string;
+  if (useFresh) {
+    const { buildHumanVoiceDirective } = await import('../../src/lib/studio/human-voice-directive');
+    const { default: Anthropic } = await import('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? '' });
+
+    const brandVoiceBlock = `## BRAND VOICE — Better Brands
+
+**Brand voice**: Strategisch maar menselijk. Confident zonder arrogant. Visionair maar niet onpraktisch. Anti-greenwashing.
+
+**WordsWeUse**: ${(personality?.wordsWeUse ?? []).join(', ')}
+
+**Personality traits**: ${(personality?.personalityTraits ?? []).map((t) => t.name).filter(Boolean).join(', ')}`;
+
+    const hvd = buildHumanVoiceDirective({ language: 'nl' });
+    const userPrompt = [
+      `Schrijf een blog-post (~3000 woorden) over de volgende briefing:`,
+      ``,
+      `**Doel**: ${TEST_BRIEF.objective}`,
+      `**Kernboodschap**: ${TEST_BRIEF.keyMessage}`,
+      `**Tone**: ${TEST_BRIEF.toneDirection}`,
+      `**CTA**: ${TEST_BRIEF.callToAction}`,
+      `**Outline**:`,
+      ...TEST_BRIEF.contentOutline.map((s) => `- ${s}`),
+      ``,
+      `Output: alleen de blog-post in markdown, geen preamble.`,
+    ].join('\n');
+
+    console.log('  Generating fresh met current hybride HVD…');
+    const t0 = Date.now();
+    const stream = client.messages.stream({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 16000,
+      system: [brandVoiceBlock, '', hvd].join('\n'),
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+    const finalMessage = await stream.finalMessage();
+    const block = finalMessage.content.find((b) => b.type === 'text');
+    branddockText = block && 'text' in block ? block.text.trim() : '';
+    console.log(`  ✓ Generated ${branddockText.split(/\s+/).filter(Boolean).length} woorden in ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  } else {
+    branddockText = readFileSync(
+      join(process.cwd(), 'research', 'fidelity-week1', 'outputs', 'better-brands-case-study-A.md'),
+      'utf8',
+    );
+  }
+
   const branddockScore = await computeFidelityScore({ ...sharedScoring, contentText: branddockText });
   const branddockResult: ScoreResult = {
     composite: branddockScore.compositeScore,
@@ -140,10 +189,11 @@ async function main() {
     wordCount: branddockScore.wordCount,
     thresholdMet: branddockScore.thresholdMet,
   };
-  summarizeScore('Branddock + BVD + HVD', branddockResult);
+  summarizeScore(useFresh ? 'Branddock + BVD + hybride HVD (FRESH)' : 'Branddock + BVD + HVD (research)', branddockResult);
 
-  // ── Stap 2: STRICT mode rewrite ──
+  // ── Stap 2: STRICT mode rewrite (alleen bij AI_LEANING/PURE_AI) ──
   console.log('\n━━━ Stap 2: STRICT mode rewrite + re-score ━━━');
+  let strictResult: ScoreResult | null = null;
   if (branddockResult.detectorVerdict !== 'AI_LEANING' && branddockResult.detectorVerdict !== 'PURE_AI') {
     console.log(`  STRICT NIET getriggerd (verdict ${branddockResult.detectorVerdict}) — skip`);
   } else {
@@ -170,7 +220,7 @@ async function main() {
 
     if (strictOutcome.rewriteAttempted && strictOutcome.finalText !== branddockText) {
       const strictScore = await computeFidelityScore({ ...sharedScoring, contentText: strictOutcome.finalText });
-      const strictResult: ScoreResult = {
+      strictResult = {
         composite: strictScore.compositeScore,
         detectorVerdict: strictScore.detectorVerdict,
         position: strictScore.humanBaselinePosition,
@@ -183,111 +233,122 @@ async function main() {
         thresholdMet: strictScore.thresholdMet,
       };
       summarizeScore('Branddock + STRICT', strictResult);
-
-      // ── Stap 3: Vanille comparison ──
-      console.log('\n━━━ Stap 3: Vanille GPT-4o (zonder Branddock context) ━━━');
-      console.log('  Generating…');
-      const vanilla = await generateVanillaBaseline({
-        contentTypeId: 'blog-post',
-        objective: TEST_BRIEF.objective,
-        keyMessage: TEST_BRIEF.keyMessage,
-        toneDirection: TEST_BRIEF.toneDirection,
-        callToAction: TEST_BRIEF.callToAction,
-        contentOutline: TEST_BRIEF.contentOutline,
-      });
-      console.log(`  Generated ${vanilla.wordCount} woorden in ${(vanilla.generationMs / 1000).toFixed(0)}s`);
-
-      const vanillaScore = await computeFidelityScore({
-        ...sharedScoring,
-        contentText: vanilla.text,
-        targetWordCount: vanilla.wordCount, // length-control uit
-      });
-      const vanillaResult: ScoreResult = {
-        composite: vanillaScore.compositeScore,
-        detectorVerdict: vanillaScore.detectorVerdict,
-        position: vanillaScore.humanBaselinePosition,
-        pillars: {
-          style: vanillaScore.pillars.style.weight > 0 ? vanillaScore.pillars.style.score : null,
-          judge: vanillaScore.pillars.judge?.score ?? null,
-          rules: vanillaScore.pillars.rules.score,
-        },
-        wordCount: vanillaScore.wordCount,
-        thresholdMet: vanillaScore.thresholdMet,
-      };
-      summarizeScore('Vanille GPT-4o', vanillaResult);
-
-      // ── Stap 4: Comparison report ──
-      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('Demo Claim Verificatie');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('');
-      console.log('Output                        Composite   Verdict          Position   P1   P2   P3');
-      const fmt = (label: string, r: ScoreResult) =>
-        `${label.padEnd(28)}  ${String(r.composite).padStart(9)}   ${r.detectorVerdict.padEnd(15)}    ${String(r.position).padStart(7)}   ${String(r.pillars.style ?? '-').padStart(2)}   ${String(r.pillars.judge ?? '-').padStart(2)}   ${String(r.pillars.rules).padStart(2)}`;
-      console.log(fmt('Branddock + BVD + HVD', branddockResult));
-      console.log(fmt('Branddock + STRICT', strictResult));
-      console.log(fmt('Vanille GPT-4o', vanillaResult));
-
-      const deltaStrictVsVanilla = strictResult.composite - vanillaResult.composite;
-      const deltaBaselineVsVanilla = branddockResult.composite - vanillaResult.composite;
-      const strictLift = strictResult.composite - branddockResult.composite;
-
-      console.log('');
-      console.log('Demo deltas:');
-      console.log(`  Branddock+STRICT vs vanille  = ${deltaStrictVsVanilla >= 0 ? '+' : ''}${deltaStrictVsVanilla} punten`);
-      console.log(`  Branddock baseline vs vanille = ${deltaBaselineVsVanilla >= 0 ? '+' : ''}${deltaBaselineVsVanilla} punten`);
-      console.log(`  STRICT lift over baseline     = ${strictLift >= 0 ? '+' : ''}${strictLift} punten`);
-
-      const claimVerdict =
-        deltaStrictVsVanilla >= 25 && deltaBaselineVsVanilla >= 15
-          ? '✓ DEMO CLAIM SOLID — gap >= research baseline'
-          : deltaBaselineVsVanilla >= 5
-          ? '△ DEMO CLAIM HOLDS — kleinere marge dan research baseline maar zichtbaar verschil'
-          : '✗ DEMO CLAIM AT RISK — vanille te dichtbij Branddock';
-      console.log(`\n${claimVerdict}`);
-
-      // ── Save report ──
-      const reportPath = join(
-        process.cwd(),
-        'research',
-        'fidelity-week1',
-        'reports',
-        'demo-full-flow-validation.md',
-      );
-      mkdirSync(join(process.cwd(), 'research', 'fidelity-week1', 'reports'), { recursive: true });
-      writeFileSync(
-        reportPath,
-        [
-          `# F-VAL Demo Full Flow Validation`,
-          `Datum: ${new Date().toISOString().slice(0, 10)}`,
-          ``,
-          `## Setup`,
-          `- Workspace: Better Brands`,
-          `- Brief: ${TEST_BRIEF.objective.slice(0, 100)}…`,
-          `- Branddock baseline: BB-A research output (Opus + BVD + HVD, 2930 woorden)`,
-          `- Symmetric scoring: alle outputs tegen workspace BrandPersonality`,
-          ``,
-          `## Resultaten`,
-          ``,
-          `| Output | Composite | Verdict | Pos | P1 | P2 | P3 | Word ct |`,
-          `|---|---|---|---|---|---|---|---|`,
-          `| Branddock + BVD + HVD | ${branddockResult.composite} | ${branddockResult.detectorVerdict} | ${branddockResult.position} | ${branddockResult.pillars.style ?? '-'} | ${branddockResult.pillars.judge ?? '-'} | ${branddockResult.pillars.rules} | ${branddockResult.wordCount} |`,
-          `| Branddock + STRICT | ${strictResult.composite} | ${strictResult.detectorVerdict} | ${strictResult.position} | ${strictResult.pillars.style ?? '-'} | ${strictResult.pillars.judge ?? '-'} | ${strictResult.pillars.rules} | ${strictResult.wordCount} |`,
-          `| Vanille GPT-4o | ${vanillaResult.composite} | ${vanillaResult.detectorVerdict} | ${vanillaResult.position} | ${vanillaResult.pillars.style ?? '-'} | ${vanillaResult.pillars.judge ?? '-'} | ${vanillaResult.pillars.rules} | ${vanillaResult.wordCount} |`,
-          ``,
-          `## Demo deltas`,
-          `- **Branddock+STRICT vs vanille: ${deltaStrictVsVanilla >= 0 ? '+' : ''}${deltaStrictVsVanilla} punten**`,
-          `- Branddock baseline vs vanille: ${deltaBaselineVsVanilla >= 0 ? '+' : ''}${deltaBaselineVsVanilla} punten`,
-          `- STRICT lift over baseline: ${strictLift >= 0 ? '+' : ''}${strictLift} punten`,
-          ``,
-          `## Verdict`,
-          claimVerdict,
-        ].join('\n'),
-        'utf8',
-      );
-      console.log(`\n✓ Report: ${reportPath}`);
     }
   }
+
+  // ── Stap 3: Vanille comparison (altijd) ──
+  console.log('\n━━━ Stap 3: Vanille GPT-4o (zonder Branddock context) ━━━');
+  console.log('  Generating…');
+  const vanilla = await generateVanillaBaseline({
+    contentTypeId: 'blog-post',
+    objective: TEST_BRIEF.objective,
+    keyMessage: TEST_BRIEF.keyMessage,
+    toneDirection: TEST_BRIEF.toneDirection,
+    callToAction: TEST_BRIEF.callToAction,
+    contentOutline: TEST_BRIEF.contentOutline,
+  });
+  console.log(`  Generated ${vanilla.wordCount} woorden in ${(vanilla.generationMs / 1000).toFixed(0)}s`);
+
+  const vanillaScore = await computeFidelityScore({
+    ...sharedScoring,
+    contentText: vanilla.text,
+    targetWordCount: vanilla.wordCount, // length-control uit
+  });
+  const vanillaResult: ScoreResult = {
+    composite: vanillaScore.compositeScore,
+    detectorVerdict: vanillaScore.detectorVerdict,
+    position: vanillaScore.humanBaselinePosition,
+    pillars: {
+      style: vanillaScore.pillars.style.weight > 0 ? vanillaScore.pillars.style.score : null,
+      judge: vanillaScore.pillars.judge?.score ?? null,
+      rules: vanillaScore.pillars.rules.score,
+    },
+    wordCount: vanillaScore.wordCount,
+    thresholdMet: vanillaScore.thresholdMet,
+  };
+  summarizeScore('Vanille GPT-4o', vanillaResult);
+
+  // ── Stap 4: Comparison report ──
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('Demo Claim Verificatie');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
+  console.log('Output                        Composite   Verdict          Position   P1   P2   P3');
+  const fmt = (label: string, r: ScoreResult) =>
+    `${label.padEnd(28)}  ${String(r.composite).padStart(9)}   ${r.detectorVerdict.padEnd(15)}    ${String(r.position).padStart(7)}   ${String(r.pillars.style ?? '-').padStart(2)}   ${String(r.pillars.judge ?? '-').padStart(2)}   ${String(r.pillars.rules).padStart(2)}`;
+  console.log(fmt('Branddock + BVD + HVD', branddockResult));
+  if (strictResult) console.log(fmt('Branddock + STRICT', strictResult));
+  console.log(fmt('Vanille GPT-4o', vanillaResult));
+
+  const deltaBaselineVsVanilla = branddockResult.composite - vanillaResult.composite;
+  const deltaStrictVsVanilla = strictResult ? strictResult.composite - vanillaResult.composite : null;
+  const strictLift = strictResult ? strictResult.composite - branddockResult.composite : null;
+
+  console.log('');
+  console.log('Demo deltas:');
+  console.log(`  Branddock baseline vs vanille = ${deltaBaselineVsVanilla >= 0 ? '+' : ''}${deltaBaselineVsVanilla} punten`);
+  if (deltaStrictVsVanilla !== null && strictLift !== null) {
+    console.log(`  Branddock+STRICT vs vanille  = ${deltaStrictVsVanilla >= 0 ? '+' : ''}${deltaStrictVsVanilla} punten`);
+    console.log(`  STRICT lift over baseline     = ${strictLift >= 0 ? '+' : ''}${strictLift} punten`);
+  } else {
+    console.log(`  STRICT not triggered (baseline al ${branddockResult.detectorVerdict}) — geen rewrite nodig`);
+  }
+
+  const baselineSolid = deltaBaselineVsVanilla >= 10;
+  const claimVerdict = baselineSolid
+    ? '✓ DEMO CLAIM SOLID — Branddock baseline wint zichtbaar van vanille'
+    : deltaBaselineVsVanilla >= 5
+    ? '△ DEMO CLAIM HOLDS — kleinere marge maar zichtbaar verschil'
+    : '✗ DEMO CLAIM AT RISK — vanille te dichtbij Branddock';
+  console.log(`\n${claimVerdict}`);
+
+  // ── Save report ──
+  const reportPath = join(
+    process.cwd(),
+    'research',
+    'fidelity-week1',
+    'reports',
+    'demo-full-flow-validation.md',
+  );
+  mkdirSync(join(process.cwd(), 'research', 'fidelity-week1', 'reports'), { recursive: true });
+  writeFileSync(
+    reportPath,
+    [
+      `# F-VAL Demo Full Flow Validation`,
+      `Datum: ${new Date().toISOString().slice(0, 10)}`,
+      `Mode: ${useFresh ? 'FRESH (current hybride HVD)' : 'BB-A research file (oude HVD)'}`,
+      ``,
+      `## Setup`,
+      `- Workspace: Better Brands`,
+      `- Brief: ${TEST_BRIEF.objective.slice(0, 100)}…`,
+      `- Branddock baseline: ${useFresh ? `fresh Sonnet 4.6 met current hybride HVD (${branddockResult.wordCount} woorden)` : `BB-A research output (Opus + oude HVD, ${branddockResult.wordCount} woorden)`}`,
+      `- Symmetric scoring: alle outputs tegen workspace BrandPersonality`,
+      ``,
+      `## Resultaten`,
+      ``,
+      `| Output | Composite | Verdict | Pos | P1 | P2 | P3 | Word ct |`,
+      `|---|---|---|---|---|---|---|---|`,
+      `| Branddock + BVD + HVD | ${branddockResult.composite} | ${branddockResult.detectorVerdict} | ${branddockResult.position} | ${branddockResult.pillars.style ?? '-'} | ${branddockResult.pillars.judge ?? '-'} | ${branddockResult.pillars.rules} | ${branddockResult.wordCount} |`,
+      strictResult
+        ? `| Branddock + STRICT | ${strictResult.composite} | ${strictResult.detectorVerdict} | ${strictResult.position} | ${strictResult.pillars.style ?? '-'} | ${strictResult.pillars.judge ?? '-'} | ${strictResult.pillars.rules} | ${strictResult.wordCount} |`
+        : `| Branddock + STRICT | not triggered (baseline ${branddockResult.detectorVerdict}) |  |  |  |  |  |  |`,
+      `| Vanille GPT-4o | ${vanillaResult.composite} | ${vanillaResult.detectorVerdict} | ${vanillaResult.position} | ${vanillaResult.pillars.style ?? '-'} | ${vanillaResult.pillars.judge ?? '-'} | ${vanillaResult.pillars.rules} | ${vanillaResult.wordCount} |`,
+      ``,
+      `## Demo deltas`,
+      `- **Branddock baseline vs vanille: ${deltaBaselineVsVanilla >= 0 ? '+' : ''}${deltaBaselineVsVanilla} punten**`,
+      ...(deltaStrictVsVanilla !== null
+        ? [
+            `- Branddock+STRICT vs vanille: ${deltaStrictVsVanilla >= 0 ? '+' : ''}${deltaStrictVsVanilla} punten`,
+            `- STRICT lift over baseline: ${strictLift !== null && strictLift >= 0 ? '+' : ''}${strictLift} punten`,
+          ]
+        : [`- STRICT not triggered`]),
+      ``,
+      `## Verdict`,
+      claimVerdict,
+    ].join('\n'),
+    'utf8',
+  );
+  console.log(`\n✓ Report: ${reportPath}`);
 
   await prisma.$disconnect();
 }

@@ -1,24 +1,24 @@
 # F-VAL Demo Full Flow Validation
 Datum: 2026-05-06
+Mode: FRESH (current hybride HVD)
 
 ## Setup
 - Workspace: Better Brands
 - Brief: Differentiëren van purpose-washers via operationeel bewijs; brand managers overtuigen dat purpose al…
-- Branddock baseline: BB-A research output (Opus + BVD + HVD, 2930 woorden)
+- Branddock baseline: fresh Sonnet 4.6 met current hybride HVD (2411 woorden)
 - Symmetric scoring: alle outputs tegen workspace BrandPersonality
 
 ## Resultaten
 
 | Output | Composite | Verdict | Pos | P1 | P2 | P3 | Word ct |
 |---|---|---|---|---|---|---|---|
-| Branddock + BVD + HVD | 62 | AI_LEANING | 35 | 40 | 72 | 79 | 2930 |
-| Branddock + STRICT | 70 | HUMAN_BASELINE | 19 | 40 | 84 | 89 | 2870 |
-| Vanille GPT-4o | 53 | HUMAN_BASELINE | 27 | 30 | 58 | 84 | 561 |
+| Branddock + BVD + HVD | 68 | TOP_TIER | 5 | 33 | 82 | 97 | 2411 |
+| Branddock + STRICT | not triggered (baseline TOP_TIER) |  |  |  |  |  |  |
+| Vanille GPT-4o | 53 | HUMAN_BASELINE | 28 | 15 | 69 | 83 | 602 |
 
 ## Demo deltas
-- **Branddock+STRICT vs vanille: +17 punten**
-- Branddock baseline vs vanille: +9 punten
-- STRICT lift over baseline: +8 punten
+- **Branddock baseline vs vanille: +15 punten**
+- STRICT not triggered
 
 ## Verdict
-△ DEMO CLAIM HOLDS — kleinere marge dan research baseline maar zichtbaar verschil
+✓ DEMO CLAIM SOLID — Branddock baseline wint zichtbaar van vanille
