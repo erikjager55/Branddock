@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { withAiRateLimit } from "@/lib/ai/middleware";
 import { scoreContentFidelity } from "@/lib/learning-loop";
-import { emitLearningEvent } from "@/lib/learning-loop";
 
 /**
  * POST /api/learning-loop/fidelity/rescore/[contentVersionId]
@@ -42,20 +41,8 @@ export async function POST(
       judgeIdentifier: body.judgeIdentifier,
     });
 
-    // Emit fidelity.scored event for unified event-log
-    void emitLearningEvent({
-      workspaceId,
-      payload: {
-        type: "fidelity.scored",
-        data: {
-          scoreId: result.scoreId,
-          contentVersionId: result.contentVersionId,
-          compositeScore: result.compositeScore,
-          thresholdMet: result.thresholdMet,
-          judgeIdentifier: body.judgeIdentifier ?? "claude-judge-fidelity",
-        },
-      },
-    });
+    // fidelity.scored event is emitted by scoreContentFidelity itself —
+    // no need to double-emit here.
 
     return NextResponse.json(result);
   } catch (error) {

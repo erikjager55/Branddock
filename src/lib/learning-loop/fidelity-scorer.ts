@@ -35,6 +35,7 @@ import type {
 
 import { runDeterministicRule, DETERMINISTIC_CRITERIA } from "./fidelity-rules";
 import { tryTrackStart, tryTrackComplete } from "./track-helpers";
+import { emitLearningEvent } from "./event-emitter";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Types
@@ -179,6 +180,23 @@ export async function scoreContentFidelity(
       scorerVersion: "v0-2026-05-06",
     },
     select: { id: true, compositeScore: true, thresholdMet: true },
+  });
+
+  // Emit fidelity.scored event so the unified event-log captures every
+  // scoring run regardless of the call entry-point (rescore route,
+  // canvas-orchestrator hook, smoke test, etc.).
+  void emitLearningEvent({
+    workspaceId,
+    payload: {
+      type: "fidelity.scored",
+      data: {
+        contentVersionId,
+        scoreId: score.id,
+        compositeScore: score.compositeScore,
+        thresholdMet: score.thresholdMet,
+        judgeIdentifier,
+      },
+    },
   });
 
   return {
