@@ -111,7 +111,12 @@ export function formatBrandContext(ctx: BrandContextBlock): string {
   if (ctx.brandColors) lines.push(`**Brand Colors:** ${ctx.brandColors}`);
   if (ctx.brandFonts) lines.push(`**Brand Fonts:** ${ctx.brandFonts}`);
   if (ctx.brandTypography) lines.push(`**Typography:** ${ctx.brandTypography}`);
-  if (ctx.brandToneOfVoice) lines.push(`**Tone of Voice:** ${ctx.brandToneOfVoice}`);
+  // BV-WIRE: Brandstyle tone-of-voice only injected when voiceguide is absent.
+  // Voiceguide is the canonical voice source; rendering both produces
+  // contradictory tone instructions and wastes ~50-200 tokens.
+  if (!ctx.brandVoiceguide && ctx.brandToneOfVoice) {
+    lines.push(`**Tone of Voice:** ${ctx.brandToneOfVoice}`);
+  }
   if (ctx.brandImageryStyle) lines.push(`**Imagery Style:** ${ctx.brandImageryStyle}`);
   if (ctx.brandVisualSystem) {
     lines.push(`**Visual System:** ${ctx.brandVisualSystem}`);
@@ -185,7 +190,9 @@ export function formatBrandContextTier(ctx: BrandContextBlock, tier: BrandContex
     const visual: string[] = [];
     if (ctx.brandColors) visual.push('colors');
     if (ctx.brandTypography) visual.push('typography');
-    if (ctx.brandToneOfVoice) visual.push('tone of voice');
+    // BV-WIRE: tone-of-voice only flagged when voiceguide absent (voiceguide
+    // is already listed under defined brand assets).
+    if (!ctx.brandVoiceguide && ctx.brandToneOfVoice) visual.push('tone of voice');
     if (ctx.brandImageryStyle) visual.push('imagery style');
     if (ctx.brandVisualLanguage) visual.push('visual language');
     if (visual.length > 0) parts.push(`**Visual identity:** ${visual.join(', ')} defined`);
@@ -203,7 +210,11 @@ export function formatBrandContextTier(ctx: BrandContextBlock, tier: BrandContex
     if (ctx.brandEssence) parts.push(`**Brand Essence:** ${ctx.brandEssence}`);
     if (ctx.brandPromise) parts.push(`**Brand Promise:** ${ctx.brandPromise}`);
     if (ctx.brandValues?.length) parts.push(`**Core Values:** ${ctx.brandValues.join(', ')}`);
-    if (ctx.brandToneOfVoice) parts.push(`**Tone of Voice:** ${ctx.brandToneOfVoice}`);
+    // BV-WIRE: voiceguide preferred — fall back to brandstyle tone-of-voice
+    // only when voiceguide is not present.
+    if (!ctx.brandVoiceguide && ctx.brandToneOfVoice) {
+      parts.push(`**Tone of Voice:** ${ctx.brandToneOfVoice}`);
+    }
     if (ctx.brandPersonality) {
       // Only first 500 chars of personality — enough for voice/tone guidance
       const short = ctx.brandPersonality.length > 500
@@ -226,7 +237,7 @@ export function formatBrandContextTier(ctx: BrandContextBlock, tier: BrandContex
   if (ctx.brandName) parts.push(`**Brand Name:** ${ctx.brandName}`);
 
   parts.push('');
-  parts.push('> Prioritize Brand Personality for tone/voice guidance.');
+  parts.push('> Prioritize Brand Voice Guide for tone/voice guidance.');
   parts.push('');
 
   // Strategy foundation
@@ -243,7 +254,11 @@ export function formatBrandContextTier(ctx: BrandContextBlock, tier: BrandContex
 
   // Visual identity (included in medium)
   if (ctx.brandColors) parts.push(`**Brand Colors:** ${ctx.brandColors}`);
-  if (ctx.brandToneOfVoice) parts.push(`**Tone of Voice:** ${ctx.brandToneOfVoice}`);
+  // BV-WIRE: voiceguide preferred — fall back to brandstyle tone-of-voice
+  // only when voiceguide is not present.
+  if (!ctx.brandVoiceguide && ctx.brandToneOfVoice) {
+    parts.push(`**Tone of Voice:** ${ctx.brandToneOfVoice}`);
+  }
 
   // External context — only audience + industry, no competitor/trend details
   if (ctx.targetAudience) parts.push(`**Target Audience:** ${ctx.targetAudience}`);
