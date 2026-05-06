@@ -5,9 +5,27 @@
 > gebouwd. Deze doc inventariseert alle plekken in de codebase die nog tegen
 > voice-data lezen via de oude paden, en bepaalt de cutover-volgorde.
 >
-> **Status**: gepland.
+> **Status**: ✅ afgerond (W-1 t/m W-6 + cross-link UI). W-7 buiten scope.
 > **Voorvereiste**: BV-0 t/m BV-5 deployed + werkend.
-> **Laatst bijgewerkt**: 6 mei 2026 [EJ]
+> **Laatst bijgewerkt**: 6 mei 2026 [EJ + Claude]
+>
+> ## ✅ AFGEROND (commits)
+>
+> | Wave | Commit | Wat |
+> |---|---|---|
+> | W-1 | `57482ec` | Pillar 1 fetcher voiceguide-first met legacy fallback |
+> | W-2 | `9904873` | Brand Voice Directive prefer voiceguide |
+> | W-3 | `1ae6035` | website-scanner output-schema voiceguide |
+> | W-4 | `c009dba` | consistent-models resolvers voiceguide priority |
+> | W-5 | `84c9044` | AI Exploration brand-personality config voice-fields gestript |
+> | W-6 | `85fcc10` | Framework PATCH triggert syncWorkspaceBrandRules |
+> | gate | `ee9d411` | Tone-of-voice gegate op `!brandVoiceguide` in 4 prompt-templates |
+> | UX | `f8bef3e` | Cross-link cards Brandstyle ↔ Brand Voice |
+> | test | `f47efc4` | Pillar 1 regression test (n=82, mean Δ=1.78, **PASS**) |
+>
+> Regression rapport: `research/fidelity-week1/reports/pillar1-regression-report.md`.
+> Test runner: `scripts/fidelity/test-pillar1-regression.ts` (herbruikbaar voor
+> toekomstige W-1-full centroid switch).
 
 ---
 
@@ -24,20 +42,20 @@
 | `src/lib/brandvoice/*` | ✅ Klaar | voice-analyzer-engine + voice-analysis-prompts |
 | `src/features/brandvoice/*` | ✅ Klaar | UI (4 tabs + analyzer + companion sidebar) |
 | **Onderstaande modules consumeren nog voice-data via de oude paden — REWIRE NODIG** | | |
-| `src/lib/brand-fidelity/composition-engine.ts` | 🟡 Rewire | Pillar 1 style-scorer leest BrandPersonality.writingSample |
-| `src/lib/brand-fidelity/fidelity-runner.ts` | 🟡 Rewire | Composition input bouwen uit personality |
-| `src/lib/brand-fidelity/style-scorer.ts` | 🟡 Rewire | Embedding-match tegen `BrandPersonality.writingSample` |
-| `src/lib/studio/brand-voice-directive.ts` | 🟡 Rewire | BVD-extractie uit personality |
-| `src/lib/alignment/fix-generator.ts` | 🟡 Rewire | Alignment scanner-fixes lezen voice-velden |
-| `src/lib/brand-foundation/coherence-checker.ts` | 🟡 Rewire | Brand consistency check |
-| `src/lib/claw/tools/write-tools.ts` | 🟡 Rewire | Campaign tooling voice-context |
-| `src/lib/consistent-models/model-context-resolver.ts` | 🟡 Rewire | AI image gen context |
-| `src/lib/consistent-models/workspace-context-resolver.ts` | 🟡 Rewire | Workspace AI context |
-| `src/lib/ai/exploration/config-resolver.ts` | 🟡 Rewire | AI Exploration brand-personality config |
-| `src/lib/ai/prompts/brand-alignment.ts` | 🟡 Rewire | Alignment AI-prompts |
-| `src/lib/ai/prompts/website-scanner.ts` | 🟡 Rewire | Website scanner prompts |
-| `src/app/api/brand-assets/[id]/framework/route.ts` | 🟡 Rewire | Triggert nog `syncWordsAvoidToRules` (legacy) |
-| `src/app/api/studio/[deliverableId]/vanilla-baseline/route.ts` | 🟡 Rewire | F-VAL vanilla GPT-4o comparison |
+| `src/lib/brand-fidelity/composition-engine.ts` | 🟡 Deferred | W-1-full centroid switch (pure-text input shape ongewijzigd na W-1 data-swap) |
+| `src/lib/brand-fidelity/fidelity-runner.ts` | ✅ W-1 | Voiceguide-first fetcher met legacy fallback |
+| `src/lib/brand-fidelity/style-scorer.ts` | 🟡 Deferred | Embedding-cosine algo switch hoort bij W-1-full |
+| `src/lib/studio/brand-voice-directive.ts` | ✅ W-2 | BVD-extractie uit voiceguide, tone-of-voice gegate |
+| `src/lib/alignment/fix-generator.ts` | ✅ via brand-context | Leest voiceguide via `getBrandContext()`, geen directe edit nodig |
+| `src/lib/brand-foundation/coherence-checker.ts` | ⏸️ Orphan | 0 callers in codebase — geen migratie nodig, kandidaat voor verwijdering |
+| `src/lib/claw/tools/write-tools.ts` | ❌ Geen ref | False positive in oorspronkelijke audit — bestand bevat geen voice refs |
+| `src/lib/consistent-models/model-context-resolver.ts` | ✅ W-4 | Voiceguide priority + fallback |
+| `src/lib/consistent-models/workspace-context-resolver.ts` | ✅ W-4 | Voiceguide priority + fallback |
+| `src/lib/ai/exploration/config-resolver.ts` | ✅ W-5 | Voice dimensions + field-suggestions gestript uit brand-personality |
+| `src/lib/ai/prompts/brand-alignment.ts` | ✅ via brand-context | Leest voiceguide via `getBrandContext()` |
+| `src/lib/ai/prompts/website-scanner.ts` | ✅ W-3 | Output-schema bevat voiceguide |
+| `src/app/api/brand-assets/[id]/framework/route.ts` | ✅ W-6 | Triggert `syncWorkspaceBrandRules` na BRAND_PERSONALITY PATCH |
+| `src/app/api/studio/[deliverableId]/vanilla-baseline/route.ts` | ✅ W-1 | Voiceguide-first fetcher (commit door EJ) |
 
 ---
 
