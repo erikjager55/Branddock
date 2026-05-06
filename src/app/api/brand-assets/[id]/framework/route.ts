@@ -109,6 +109,23 @@ export async function PATCH(
       }
     }
 
+    // BV-WIRE W-6: Voiceguide takeover — when BrandVoiceguide exists for the
+    // workspace, drop the legacy 'auto:wordsWeAvoid' rules just written above
+    // and sync voiceguide rules instead (single source of truth — matches
+    // getBrandContext priority). Idempotent: returns source='none' when no
+    // voiceguide present, leaving legacy rules in place.
+    // Verwijder de legacy syncWordsAvoidToRules-call hierboven zodra het BV-5
+    // deprecation-window verstreken is (zie IMPLEMENTATIEPLAN-BV-WIRE.md W-6 stap 2).
+    if ((parsed.data.frameworkType ?? asset.frameworkType) === 'BRAND_PERSONALITY') {
+      try {
+        const { syncWorkspaceBrandRules } = await import('@/lib/brand-fidelity/brand-rule-sync');
+        await syncWorkspaceBrandRules(workspaceId);
+      } catch (syncError) {
+        console.error('[Voiceguide BrandRule sync failed]', syncError);
+        // Non-fatal — framework update succeeds regardless
+      }
+    }
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error("[PATCH /api/brand-assets/:id/framework]", error);
