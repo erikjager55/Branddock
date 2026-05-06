@@ -313,116 +313,18 @@ export async function* orchestrateContentGeneration(
     };
   }
 
-  // ── Step 2.5: Run AI-tell detector on first variant (F-VAL pijler 3) ─
-  // Lightweight signal — concat all first-variant content to a blob, run
-  // detector, yield position/verdict. Demo-UI reads this for the
-  // mens-baseline position bar. Full STRICT mode rewrite-loop is wired
-  // separately (week 2 — requires structured rewrite that preserves
-  // component groups + variants).
-  const blobText = textResult.components
-    .map((c) => c.variants[0]?.content ?? '')
-    .filter(Boolean)
-    .join('\n\n');
-  const blobWordCount = blobText.split(/\s+/).filter(Boolean).length;
-
-  try {
-    if (blobWordCount >= 50) {
-      const tellResult = detectAiTells(blobText);
-      yield {
-        event: 'tell_check_complete',
-        data: {
-          verdict: tellResult.verdict,
-          humanBaselinePosition: tellResult.humanBaselinePosition,
-          scorePer1000Words: Math.round(tellResult.scorePer1000Words * 10) / 10,
-          uniqueTellCount: tellResult.uniqueTellCount,
-          totalMatches: tellResult.totalMatches,
-          wordCount: tellResult.wordCount,
-        },
-      };
-    }
-  } catch (tellErr) {
-    // Non-fatal — generation succeeds regardless of detector outcome
-    console.error('[canvas-orchestrator] tell-check failed:', tellErr);
-  }
-
-  // ── Step 2.6: Run full F-VAL composition (pijlers 1+2+3) ─
-  // Combineert style-scorer + cross-family G-Eval judge + anti-tell + rules
-  // tot één compositeScore. Persist resultaat naar Deliverable.settings.fidelityScore
-  // voor de demo-UI position-bar + composite display. Non-fatal — falen
-  // hier mag content-generation niet blokkeren.
-  if (blobWordCount >= 50) {
-    yield { event: 'fidelity_score_running', data: { stage: 'computing' } };
-    let fidelityErrorMessage: string | null = null;
-    let fidelityOutcome: Awaited<ReturnType<typeof runFidelityScoring>> = null;
-    try {
-      fidelityOutcome = await runFidelityScoring({
-        workspaceId,
-        deliverableId,
-        contentTypeId: stack.deliverableTypeId,
-        contentText: blobText,
-        stack,
-        generatorProvider: textModel.provider,
-      });
-    } catch (fidelityErr) {
-      const message = fidelityErr instanceof Error ? fidelityErr.message : 'Unknown error';
-      console.error('[canvas-orchestrator] fidelity scoring failed:', message);
-      fidelityErrorMessage = message;
-    }
-
-    // ALTIJD terminal event yielden zodat de UI spinner clears.
-    // Bij failure of null result: skipped event met reason — anders blijft
-    // de "composite berekenen…" spinner eindeloos draaien.
-    if (fidelityOutcome) {
-      yield {
-        event: 'fidelity_score_complete',
-        data: buildFidelityScoreEventPayload(fidelityOutcome.result),
-      };
-
-      // ── Step 2.7: STRICT mode rewrite (conditional) ─
-      // Wanneer FidelityConfig.humanVoiceMode === STRICT en het origineel
-      // detector-verdict AI_LEANING/PURE_AI is, draaien we een rewrite
-      // via Claude Sonnet en herberekenen we de composition score.
-      yield { event: 'strict_rewrite_running', data: { stage: 'rewriting' } };
-      let strictOutcome: Awaited<ReturnType<typeof runStrictModeIfApplicable>> = null;
-      let strictErrorMessage: string | null = null;
-      try {
-        strictOutcome = await runStrictModeIfApplicable(
-          {
-            compositionInput: fidelityOutcome.compositionInput,
-            deliverableId,
-          },
-          humanVoiceMode,
-        );
-      } catch (strictErr) {
-        const message = strictErr instanceof Error ? strictErr.message : 'Unknown error';
-        console.error('[canvas-orchestrator] STRICT mode failed:', message);
-        strictErrorMessage = message;
-      }
-
-      if (strictOutcome) {
-        yield {
-          event: 'strict_rewrite_complete',
-          data: buildStrictRewriteEventPayload(strictOutcome, strictOutcome.finalFidelityScore),
-        };
-      } else {
-        // Skipped (mode !== STRICT) of failed — clear de spinner sowieso
-        yield {
-          event: 'strict_rewrite_skipped',
-          data: { reason: strictErrorMessage ?? 'STRICT mode not applicable for this workspace' },
-        };
-      }
-    } else {
-      // Composition runde niet (null) of throwde — emit skipped zodat UI niet hangt
-      yield {
-        event: 'fidelity_score_skipped',
-        data: {
-          reason:
-            fidelityErrorMessage ??
-            'Score could not be computed (insufficient signal or runtime issue)',
-        },
-      };
-    }
-  }
+  // ── Steps 2.5-2.7: F-VAL scoring pipeline ─
+  // Detector + composition + (conditional) STRICT rewrite. Shared helper
+  // wordt ook door regenerate flow aangeroepen zodat de position-bar
+  // niet verdwijnt bij een group-regenerate.
+  yield* runFidelityScoringPipeline({
+    deliverableId,
+    workspaceId,
+    textResult,
+    stack,
+    textModelProvider: textModel.provider,
+    humanVoiceMode,
+  });
 
   // ── Step 3: Image generation is now manual ────────────
   //
@@ -643,6 +545,121 @@ function mergeAngleResults(
     components: Array.from(groupMap.values()),
     imagePrompts,
   };
+}
+
+/**
+ * Shared F-VAL scoring pipeline — extract zodat zowel de initial generation
+ * als de regenerate flow het kunnen aanroepen. Yields drie SSE events:
+ *
+ *   1. tell_check_complete (~5ms detector signaal)
+ *   2. fidelity_score_running → fidelity_score_complete | fidelity_score_skipped
+ *   3. (alleen bij STRICT mode + AI_LEANING verdict) strict_rewrite_running
+ *      → strict_rewrite_complete | strict_rewrite_skipped
+ *
+ * Non-fatal: alle stappen wrapped in try/catch met terminal events zodat
+ * de UI spinners altijd clears. Geen scoring runt bij blob < 50 woorden.
+ */
+async function* runFidelityScoringPipeline(input: {
+  deliverableId: string;
+  workspaceId: string;
+  textResult: TextGenerationResult;
+  stack: CanvasContextStack;
+  textModelProvider: AiProvider;
+  humanVoiceMode: import('@prisma/client').HumanVoiceMode;
+}): AsyncGenerator<OrchestrationEvent> {
+  const { deliverableId, workspaceId, textResult, stack, textModelProvider, humanVoiceMode } = input;
+
+  const blobText = textResult.components
+    .map((c) => c.variants[0]?.content ?? '')
+    .filter(Boolean)
+    .join('\n\n');
+  const blobWordCount = blobText.split(/\s+/).filter(Boolean).length;
+
+  if (blobWordCount < 50) return;
+
+  // ── Detector ──
+  try {
+    const tellResult = detectAiTells(blobText);
+    yield {
+      event: 'tell_check_complete',
+      data: {
+        verdict: tellResult.verdict,
+        humanBaselinePosition: tellResult.humanBaselinePosition,
+        scorePer1000Words: Math.round(tellResult.scorePer1000Words * 10) / 10,
+        uniqueTellCount: tellResult.uniqueTellCount,
+        totalMatches: tellResult.totalMatches,
+        wordCount: tellResult.wordCount,
+      },
+    };
+  } catch (tellErr) {
+    console.error('[canvas-orchestrator] tell-check failed:', tellErr);
+  }
+
+  // ── Composition ──
+  yield { event: 'fidelity_score_running', data: { stage: 'computing' } };
+  let fidelityErrorMessage: string | null = null;
+  let fidelityOutcome: Awaited<ReturnType<typeof runFidelityScoring>> = null;
+  try {
+    fidelityOutcome = await runFidelityScoring({
+      workspaceId,
+      deliverableId,
+      contentTypeId: stack.deliverableTypeId,
+      contentText: blobText,
+      stack,
+      generatorProvider: textModelProvider,
+    });
+  } catch (fidelityErr) {
+    const message = fidelityErr instanceof Error ? fidelityErr.message : 'Unknown error';
+    console.error('[canvas-orchestrator] fidelity scoring failed:', message);
+    fidelityErrorMessage = message;
+  }
+
+  if (!fidelityOutcome) {
+    yield {
+      event: 'fidelity_score_skipped',
+      data: {
+        reason:
+          fidelityErrorMessage ??
+          'Score could not be computed (insufficient signal or runtime issue)',
+      },
+    };
+    return;
+  }
+
+  yield {
+    event: 'fidelity_score_complete',
+    data: buildFidelityScoreEventPayload(fidelityOutcome.result),
+  };
+
+  // ── STRICT rewrite (conditional) ──
+  yield { event: 'strict_rewrite_running', data: { stage: 'rewriting' } };
+  let strictOutcome: Awaited<ReturnType<typeof runStrictModeIfApplicable>> = null;
+  let strictErrorMessage: string | null = null;
+  try {
+    strictOutcome = await runStrictModeIfApplicable(
+      {
+        compositionInput: fidelityOutcome.compositionInput,
+        deliverableId,
+      },
+      humanVoiceMode,
+    );
+  } catch (strictErr) {
+    const message = strictErr instanceof Error ? strictErr.message : 'Unknown error';
+    console.error('[canvas-orchestrator] STRICT mode failed:', message);
+    strictErrorMessage = message;
+  }
+
+  if (strictOutcome) {
+    yield {
+      event: 'strict_rewrite_complete',
+      data: buildStrictRewriteEventPayload(strictOutcome, strictOutcome.finalFidelityScore),
+    };
+  } else {
+    yield {
+      event: 'strict_rewrite_skipped',
+      data: { reason: strictErrorMessage ?? 'STRICT mode not applicable for this workspace' },
+    };
+  }
 }
 
 async function generateTextWithFallback(
@@ -888,6 +905,40 @@ async function* handleRegeneration(
           data: { message: `Failed to save regenerated content: ${message}`, recoverable: true },
         };
         return;
+      }
+
+      // ── Re-run F-VAL scoring after regenerate ──
+      // Fetch alle current first-variants uit DB en bouw een nieuwe textResult
+      // shape voor de scoring pipeline. Anders verdwijnt de position bar
+      // permanent na een regenerate (UI reset op generate-start, geen
+      // herscoring → fidelity stage blijft 'idle' na regenerate-complete).
+      try {
+        const currentComponents = await prisma.deliverableComponent.findMany({
+          where: { deliverableId, variantIndex: 0, groupType: 'variant' },
+          orderBy: { order: 'asc' },
+        });
+        const groupedForScoring: TextGenerationResult = {
+          components: currentComponents
+            .filter((c) => c.variantGroup && c.generatedContent)
+            .map((c) => ({
+              group: c.variantGroup!,
+              variants: [{ content: c.generatedContent ?? '', tone: undefined }],
+            })),
+        };
+        const humanVoiceMode = await resolveHumanVoiceMode(workspaceId);
+        yield* runFidelityScoringPipeline({
+          deliverableId,
+          workspaceId,
+          textResult: groupedForScoring,
+          stack,
+          textModelProvider: textModel.provider,
+          humanVoiceMode,
+        });
+      } catch (rescoreErr) {
+        console.error(
+          '[canvas-orchestrator] re-score after regenerate failed:',
+          (rescoreErr as Error).message,
+        );
       }
     } else {
       yield {

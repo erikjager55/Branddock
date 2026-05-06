@@ -32,10 +32,18 @@ export async function GET(
       ? (settings.variantAngles as unknown[]).map((v) => (typeof v === 'string' ? v : ''))
       : [];
 
+    // Persistente fidelity + strict snapshots — hydrate de position-bar
+    // en STRICT badge bij page refresh zodat de UI niet leeg lijkt na
+    // een eerdere succesvolle generatie.
+    const fidelityScore = settings.fidelityScore ?? null;
+    const strictRewrite = settings.strictRewrite ?? null;
+
     return NextResponse.json({
       components,
       pipelineStatus: deliverable.pipelineStatus,
       variantAngles,
+      fidelityScore,
+      strictRewrite,
     });
   } catch (error) {
     console.error('[Components List]', error);

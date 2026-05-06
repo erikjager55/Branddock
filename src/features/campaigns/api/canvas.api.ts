@@ -6,14 +6,41 @@ import type {
   DeriveResponse,
 } from '../types/canvas.types';
 
+/** Persisted fidelity score snapshot shape (uit Deliverable.settings.fidelityScore). */
+export interface PersistedFidelityScore {
+  compositeScore: number;
+  thresholdMet: boolean;
+  compositeThreshold: number;
+  detectorVerdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI';
+  humanBaselinePosition: number;
+  pillars: Record<string, unknown>;
+  wordCount?: number;
+  scorerVersion?: string;
+  scoredAt?: string;
+}
+
+/** Persisted STRICT rewrite snapshot (uit Deliverable.settings.strictRewrite). */
+export interface PersistedStrictRewrite {
+  text: string;
+  decisionReason?: string;
+  rewriteAttempted?: boolean;
+  before?: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number };
+  after?: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number };
+  rewrittenAt?: string;
+}
+
 export interface FetchCanvasComponentsResult {
   components: CanvasComponentResponse[];
   /** Creative angle labels — geïndexeerd op variantIndex.
    *  Leeg array bij legacy 1-call generations. */
   variantAngles: string[];
+  /** Persisted fidelity score uit settings — hydrate bar bij page refresh */
+  fidelityScore: PersistedFidelityScore | null;
+  /** Persisted STRICT rewrite snapshot — hydrate STRICT badge bij refresh */
+  strictRewrite: PersistedStrictRewrite | null;
 }
 
-/** Fetch all DeliverableComponent records for a deliverable + creative angle labels */
+/** Fetch all DeliverableComponent records for a deliverable + creative angle labels + persisted fidelity */
 export async function fetchCanvasComponents(deliverableId: string): Promise<FetchCanvasComponentsResult> {
   const res = await fetch(`/api/studio/${deliverableId}/components`);
   if (!res.ok) throw new Error('Failed to fetch canvas components');
@@ -21,6 +48,8 @@ export async function fetchCanvasComponents(deliverableId: string): Promise<Fetc
   return {
     components: data.components ?? [],
     variantAngles: Array.isArray(data.variantAngles) ? data.variantAngles : [],
+    fidelityScore: data.fidelityScore ?? null,
+    strictRewrite: data.strictRewrite ?? null,
   };
 }
 

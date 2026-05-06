@@ -106,6 +106,8 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
   const { data: componentsData, isLoading: componentsLoading } = useCanvasComponents(deliverableId);
   const existingComponents = componentsData?.components;
   const variantAngles = componentsData?.variantAngles ?? [];
+  const persistedFidelityScore = componentsData?.fidelityScore ?? null;
+  const persistedStrictRewrite = componentsData?.strictRewrite ?? null;
 
   const statusConfig = STATUS_BADGE[approvalStatus];
 
@@ -382,6 +384,48 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
       storeState.advanceToStep(nextStep);
     }
   }, [existingComponents]);
+
+  // Hydrate persisted F-VAL fidelity score + STRICT rewrite uit DB op mount
+  // — anders verdwijnt de position-bar na page refresh ondanks dat de
+  // score in Deliverable.settings.fidelityScore staat. Loopt via een
+  // separate effect zodat het niet afhankelijk is van existingComponents
+  // hydration timing.
+  useEffect(() => {
+    if (!persistedFidelityScore && !persistedStrictRewrite) return;
+    const storeState = useCanvasStore.getState();
+
+    if (persistedFidelityScore) {
+      const pillarsRaw = persistedFidelityScore.pillars as Record<
+        string,
+        { score: number; weight: number } | null
+      > | null;
+      storeState.setFidelityComplete({
+        compositeScore: persistedFidelityScore.compositeScore,
+        thresholdMet: persistedFidelityScore.thresholdMet,
+        compositeThreshold: persistedFidelityScore.compositeThreshold,
+        detectorVerdict: persistedFidelityScore.detectorVerdict,
+        humanBaselinePosition: persistedFidelityScore.humanBaselinePosition,
+        pillars: {
+          style: typeof pillarsRaw?.style?.score === 'number' && (pillarsRaw.style?.weight ?? 0) > 0
+            ? pillarsRaw.style.score
+            : null,
+          judge: typeof pillarsRaw?.judge?.score === 'number' ? pillarsRaw.judge.score : null,
+          rules: typeof pillarsRaw?.rules?.score === 'number' ? pillarsRaw.rules.score : 0,
+        },
+        elapsedMs: 0, // unknown from persisted snapshot
+      });
+    }
+
+    if (persistedStrictRewrite?.before && persistedStrictRewrite.after) {
+      storeState.setStrictRewriteComplete({
+        improved: true,
+        decisionReason: persistedStrictRewrite.decisionReason ?? '',
+        before: persistedStrictRewrite.before,
+        after: persistedStrictRewrite.after,
+        rewritePreview: persistedStrictRewrite.text?.slice(0, 1500) ?? null,
+      });
+    }
+  }, [persistedFidelityScore, persistedStrictRewrite]);
 
   // Persist activeStep + completedSteps back to the deliverable settings so
   // reopening the item lands on the same step. Only saves after initial
