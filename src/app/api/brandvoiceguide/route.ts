@@ -73,6 +73,26 @@ export async function GET() {
 // =============================================================
 // PATCH /api/brandvoiceguide — upsert the row
 // =============================================================
+// ChannelToneEntry shape used by the voiceguide UI + analyzer:
+//   { description: string, axisShift?: { axis, direction } | null }
+// The legacy personality shape (string per channel, or numeric tone deltas)
+// is also accepted via the union below so soft-migrations don't break.
+const channelToneEntrySchema = z.object({
+  description: z.string(),
+  axisShift: z
+    .object({
+      axis: z.enum([
+        "formalCasual",
+        "seriousFunny",
+        "respectfulIrreverent",
+        "matterOfFactEnthusiastic",
+      ]),
+      direction: z.enum(["increase", "decrease"]),
+    })
+    .nullable()
+    .optional(),
+});
+
 const updateSchema = z.object({
   voiceDescription: z.string().nullable().optional(),
   toneDimensions: z.record(z.string(), z.number()).nullable().optional(),
@@ -80,7 +100,14 @@ const updateSchema = z.object({
   wordsWeUse: z.array(z.string()).optional(),
   wordsWeAvoid: z.array(z.string()).optional(),
   channelTones: z
-    .record(z.string(), z.union([z.string(), z.record(z.string(), z.number())]))
+    .record(
+      z.string(),
+      z.union([
+        channelToneEntrySchema,                 // new structured shape
+        z.string(),                             // legacy: free-text per channel
+        z.record(z.string(), z.number()),       // legacy: per-channel tone deltas
+      ]),
+    )
     .nullable()
     .optional(),
   antiPatterns: z.array(z.string()).optional(),
