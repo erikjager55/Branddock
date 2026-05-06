@@ -115,7 +115,7 @@ async function main() {
   // 4. Call runFidelityScoring
   console.log('\n→ Calling runFidelityScoring...\n');
   const t0 = Date.now();
-  const result = await runFidelityScoring({
+  const outcome = await runFidelityScoring({
     workspaceId: WORKSPACE_ID,
     deliverableId: DELIVERABLE_ID,
     contentTypeId: deliverable.contentType,
@@ -126,10 +126,11 @@ async function main() {
   });
   const elapsed = Date.now() - t0;
 
-  if (!result) {
+  if (!outcome) {
     console.error('✗ runFidelityScoring returned null — check logs above for cause');
     process.exit(1);
   }
+  const result = outcome.result;
 
   console.log(`✓ Composition score computed in ${(elapsed / 1000).toFixed(1)}s`);
   console.log(`  Composite:           ${result.compositeScore}/100  ${result.thresholdMet ? '(above threshold)' : '(below threshold)'}`);

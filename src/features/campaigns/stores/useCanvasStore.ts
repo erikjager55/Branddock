@@ -107,6 +107,23 @@ interface CanvasStoreState {
     elapsedMs: number | null;
   };
 
+  // ─── STRICT mode rewrite ──────────────────────────────────
+  // Wordt gevuld wanneer FidelityConfig.humanVoiceMode === STRICT en het
+  // origineel een AI_LEANING/PURE_AI verdict had. UI toont een "Auto-improved"
+  // banner met before→after detector signaal. De finale fidelityScore wordt
+  // automatisch overschreven bovenliggende state via setFidelityComplete
+  // zodat de position-bar de improved waarde toont.
+  strictRewrite: {
+    stage: 'idle' | 'rewriting' | 'complete' | 'skipped';
+    /** True wanneer rewrite actually een betere uitkomst opleverde */
+    improved: boolean;
+    /** Detector signaal vóór rewrite */
+    before: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number } | null;
+    /** Detector signaal na rewrite */
+    after: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number } | null;
+    decisionReason: string | null;
+  };
+
   // ─── Vanille baseline (demo: "Vergelijk met vanille AI") ──
   // Wordt gevuld via de POST /api/studio/[id]/vanilla-baseline SSE flow.
   // null tot user op "Vergelijk met ChatGPT" klikt; daarna stage-aware
@@ -237,6 +254,14 @@ interface CanvasStoreState {
     elapsedMs: number;
   }) => void;
   resetFidelityScore: () => void;
+  setStrictRewriteRunning: () => void;
+  setStrictRewriteComplete: (data: {
+    improved: boolean;
+    decisionReason: string;
+    before: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number };
+    after: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number };
+  }) => void;
+  resetStrictRewrite: () => void;
   setVanillaStage: (stage: 'idle' | 'generating' | 'scoring' | 'complete' | 'error', errorMessage?: string) => void;
   setVanillaTextComplete: (data: { preview: string; wordCount: number; model: string }) => void;
   setVanillaScoreComplete: (data: {
@@ -358,6 +383,13 @@ const INITIAL_STATE = {
     humanBaselinePosition: null,
     pillars: null,
     elapsedMs: null,
+  },
+  strictRewrite: {
+    stage: 'idle' as const,
+    improved: false,
+    before: null,
+    after: null,
+    decisionReason: null,
   },
   vanillaBaseline: {
     stage: 'idle' as const,
@@ -564,6 +596,33 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         humanBaselinePosition: null,
         pillars: null,
         elapsedMs: null,
+      },
+    }),
+
+  setStrictRewriteRunning: () =>
+    set((state) => ({
+      strictRewrite: { ...state.strictRewrite, stage: 'rewriting' },
+    })),
+
+  setStrictRewriteComplete: ({ improved, decisionReason, before, after }) =>
+    set({
+      strictRewrite: {
+        stage: improved ? 'complete' : 'skipped',
+        improved,
+        before,
+        after,
+        decisionReason,
+      },
+    }),
+
+  resetStrictRewrite: () =>
+    set({
+      strictRewrite: {
+        stage: 'idle',
+        improved: false,
+        before: null,
+        after: null,
+        decisionReason: null,
       },
     }),
 

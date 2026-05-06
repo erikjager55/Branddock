@@ -60,6 +60,7 @@ interface FidelityScoreBarProps {
  */
 export function FidelityScoreBar({ compact = false, deliverableId = null }: FidelityScoreBarProps) {
   const fidelity = useCanvasStore((s) => s.fidelityScore);
+  const strict = useCanvasStore((s) => s.strictRewrite);
   const vanilla = useCanvasStore((s) => s.vanillaBaseline);
   const { compare: runVanillaCompare, isRunning: isVanillaRunning } = useVanillaBaseline(deliverableId);
   const [showPillars, setShowPillars] = React.useState(!compact);
@@ -120,6 +121,36 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
               <> · berekend in {(fidelity.elapsedMs / 1000).toFixed(0)}s</>
             )}
           </span>
+        </div>
+      )}
+
+      {/* ─── STRICT mode running indicator ─── */}
+      {strict.stage === 'rewriting' && (
+        <div className="mt-3 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2 flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-violet-900">STRICT mode aan het herschrijven…</p>
+            <p className="text-xs text-violet-700">
+              Verdict was AI-leunend — Branddock verbetert de output automatisch. ~15-30s.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ─── STRICT mode improved badge ─── */}
+      {strict.stage === 'complete' && strict.improved && strict.before && strict.after && (
+        <div className="mt-3 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Sparkles className="w-4 h-4 text-violet-600" />
+            <span className="text-sm font-semibold text-violet-900">STRICT mode auto-verbeterd</span>
+          </div>
+          <div className="text-xs text-violet-800">
+            <span className="font-medium">{VERDICT_LABELS[strict.before.verdict]}</span>
+            <span className="text-violet-500"> (pos {strict.before.humanBaselinePosition})</span>
+            <span className="mx-1.5">→</span>
+            <span className="font-medium">{VERDICT_LABELS[strict.after.verdict]}</span>
+            <span className="text-violet-500"> (pos {strict.after.humanBaselinePosition})</span>
+          </div>
         </div>
       )}
 

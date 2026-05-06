@@ -62,6 +62,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
     const store = useCanvasStore.getState();
     store.setGlobalStatus('generating');
     store.resetFidelityScore();
+    store.resetStrictRewrite();
     isGeneratingRef.current = true;
 
     // Abort previous request if any
@@ -382,6 +383,43 @@ function routeEvent(eventName: string, rawData: string) {
           },
           elapsedMs: typeof data.elapsedMs === 'number' ? data.elapsedMs : 0,
         });
+      }
+      break;
+    }
+
+    case 'strict_rewrite_running':
+      store.setStrictRewriteRunning();
+      break;
+
+    case 'strict_rewrite_complete': {
+      const before = data.before as
+        | { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number }
+        | undefined;
+      const after = data.after as
+        | { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number }
+        | undefined;
+      const decisionReason = typeof data.decisionReason === 'string' ? data.decisionReason : '';
+      const improved = data.improved === true;
+      if (before && after) {
+        store.setStrictRewriteComplete({ improved, decisionReason, before, after });
+      }
+
+      // finalScore (re-computed composition) overschrijft fidelityScore
+      // zodat UI position-bar de verbeterde waarde toont.
+      const finalScore = data.finalScore as
+        | {
+            compositeScore: number;
+            thresholdMet: boolean;
+            compositeThreshold: number;
+            detectorVerdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI';
+            humanBaselinePosition: number;
+            pillars: { style: number | null; judge: number | null; rules: number | null };
+            elapsedMs: number;
+          }
+        | null
+        | undefined;
+      if (finalScore && typeof finalScore === 'object' && 'compositeScore' in finalScore) {
+        store.setFidelityComplete(finalScore);
       }
       break;
     }

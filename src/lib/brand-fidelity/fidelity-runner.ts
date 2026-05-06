@@ -14,12 +14,18 @@
 // ============================================================
 
 import { prisma } from '@/lib/prisma';
-import { computeFidelityScore, type FidelityCompositeResult } from './composition-engine';
+import {
+  computeFidelityScore,
+  type FidelityCompositeResult,
+  type FidelityCompositionInput,
+} from './composition-engine';
 import { getOrCreateFidelityConfig } from './fidelity-config';
+import { runStrictModeRewrite, type StrictModeResult } from './strict-mode';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 import type { GeneratorProvider } from './judge-dispatcher';
 import type { GEvalDimension } from './g-eval-rubric';
+import type { HumanVoiceMode } from '@prisma/client';
 
 // ─── Types ──────────────────────────────────────────
 
@@ -197,6 +203,12 @@ async function persistFidelityScore(
 
 // ─── Main API ───────────────────────────────────────
 
+export interface FidelityRunOutcome {
+  result: FidelityCompositeResult;
+  /** De gederiveerde composition input — re-usable voor STRICT re-scoring */
+  compositionInput: FidelityCompositionInput;
+}
+
 /**
  * Score gegenereerde content tegen alle drie F-VAL pijlers.
  *
@@ -208,7 +220,7 @@ async function persistFidelityScore(
  */
 export async function runFidelityScoring(
   input: FidelityRunInput,
-): Promise<FidelityCompositeResult | null> {
+): Promise<FidelityRunOutcome | null> {
   try {
     const wordCount = input.contentText.trim().split(/\s+/).filter(Boolean).length;
     if (wordCount < 50) {
@@ -233,7 +245,7 @@ export async function runFidelityScoring(
         ? (config.rubricWeights as Partial<Record<GEvalDimension, number>>)
         : undefined;
 
-    const result = await computeFidelityScore({
+    const compositionInput: FidelityCompositionInput = {
       contentText: input.contentText,
       workspaceId: input.workspaceId,
       brandName,
@@ -250,12 +262,14 @@ export async function runFidelityScoring(
       },
       rubricWeights,
       skipJudge: input.skipJudge,
-    });
+    };
+
+    const result = await computeFidelityScore(compositionInput);
 
     // Persist async — don't await, don't block the orchestrator
     void persistFidelityScore(input.deliverableId, result);
 
-    return result;
+    return { result, compositionInput };
   } catch (err) {
     console.warn('[fidelity-runner] Scoring failed (non-fatal):', (err as Error).message);
     return null;
@@ -283,5 +297,136 @@ export function buildFidelityScoreEventPayload(result: FidelityCompositeResult) 
     },
     elapsedMs: result.elapsedMs,
     scorerVersion: result.scorerVersion,
+  };
+}
+
+// ─── STRICT mode runner ─────────────────────────────
+
+const STRICT_REWRITE_MODEL = 'claude-sonnet-4-6';
+const STRICT_REWRITE_MAX_TOKENS = 8000;
+
+export interface StrictRunInput {
+  /** Composition input van de eerste scoring run — hergebruikt voor re-scoring */
+  compositionInput: FidelityCompositionInput;
+  /** Deliverable ID voor persistentie van de nieuwe score-snapshot */
+  deliverableId: string;
+}
+
+export interface StrictRunResult {
+  /** True wanneer rewrite improvement opleverde (verdict-drop + score-drop) */
+  improved: boolean;
+  /** Nieuwe finale tekst — origineel als rewrite niet beter was */
+  finalText: string;
+  /** Decisie logging voor SSE/persistence */
+  strictResult: StrictModeResult;
+  /** Hercomputed composition score op finale tekst — null als scoring faalde */
+  finalFidelityScore: FidelityCompositeResult | null;
+}
+
+/**
+ * Anthropic-gebaseerde rewrite callback. Bewust geen extended thinking —
+ * STRICT rewrite is herschrijfwerk, geen reasoning.
+ */
+async function callAnthropicRewrite(feedbackPrompt: string): Promise<string> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY not configured for STRICT rewrite');
+  }
+  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+  const stream = client.messages.stream({
+    model: STRICT_REWRITE_MODEL,
+    max_tokens: STRICT_REWRITE_MAX_TOKENS,
+    system:
+      'You are a senior Dutch-language content editor. Rewrite to eliminate AI patterns while preserving structure, factual content, and approximate length. Output only the revised content, no preamble or commentary.',
+    messages: [{ role: 'user', content: feedbackPrompt }],
+  });
+
+  const finalMessage = await stream.finalMessage();
+  const block = finalMessage.content.find((b) => b.type === 'text');
+  const text = block && 'text' in block ? block.text : '';
+  return text.trim();
+}
+
+/**
+ * Run STRICT mode evaluatie + rewrite + re-score.
+ *
+ * Returns null wanneer humanVoiceMode !== STRICT — caller hoeft humanVoiceMode
+ * niet zelf te checken voor early-exit. Wanneer rewrite plaatsvindt en
+ * succesvol is herbereken we de composition score voor accurate UI display
+ * en persisten dat als nieuwe snapshot.
+ */
+export async function runStrictModeIfApplicable(
+  input: StrictRunInput,
+  humanVoiceMode: HumanVoiceMode,
+): Promise<StrictRunResult | null> {
+  if (humanVoiceMode !== 'STRICT') return null;
+  const original = input.compositionInput.contentText;
+  if (original.split(/\s+/).filter(Boolean).length < 50) return null;
+
+  try {
+    const strictResult = await runStrictModeRewrite(original, async ({ feedbackPrompt }) => {
+      return callAnthropicRewrite(feedbackPrompt);
+    });
+
+    // Geen rewrite uitgevoerd of geen improvement → bail
+    if (!strictResult.rewriteAttempted || strictResult.finalText === original) {
+      return {
+        improved: false,
+        finalText: original,
+        strictResult,
+        finalFidelityScore: null,
+      };
+    }
+
+    // Rewrite was an improvement → herbereken composition score
+    let finalFidelityScore: FidelityCompositeResult | null = null;
+    try {
+      finalFidelityScore = await computeFidelityScore({
+        ...input.compositionInput,
+        contentText: strictResult.finalText,
+      });
+
+      void persistFidelityScore(input.deliverableId, finalFidelityScore);
+    } catch (rescoringErr) {
+      console.warn('[fidelity-runner] STRICT re-scoring failed:', (rescoringErr as Error).message);
+    }
+
+    return {
+      improved: true,
+      finalText: strictResult.finalText,
+      strictResult,
+      finalFidelityScore,
+    };
+  } catch (err) {
+    console.warn('[fidelity-runner] STRICT mode failed (non-fatal):', (err as Error).message);
+    return null;
+  }
+}
+
+/**
+ * SSE event payload voor strict_rewrite_complete. Bevat before/after
+ * detector signaal + (indien beschikbaar) hercomputed composition score
+ * die de fidelityScore in store overschrijft.
+ */
+export function buildStrictRewriteEventPayload(
+  result: StrictRunResult,
+  finalScore: FidelityCompositeResult | null,
+) {
+  return {
+    improved: result.improved,
+    decisionReason: result.strictResult.decisionReason,
+    rewriteAttempted: result.strictResult.rewriteAttempted,
+    before: {
+      verdict: result.strictResult.originalResult.verdict,
+      humanBaselinePosition: result.strictResult.originalResult.humanBaselinePosition,
+      scorePer1000Words: Math.round(result.strictResult.originalResult.scorePer1000Words * 10) / 10,
+    },
+    after: {
+      verdict: result.strictResult.finalResult.verdict,
+      humanBaselinePosition: result.strictResult.finalResult.humanBaselinePosition,
+      scorePer1000Words: Math.round(result.strictResult.finalResult.scorePer1000Words * 10) / 10,
+    },
+    finalScore: finalScore ? buildFidelityScoreEventPayload(finalScore) : null,
   };
 }

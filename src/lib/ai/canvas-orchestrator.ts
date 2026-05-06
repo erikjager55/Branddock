@@ -29,7 +29,12 @@ import { buildBrandVoiceDirectiveFromContext } from '@/lib/studio/brand-voice-di
 import { buildHumanVoiceDirective } from '@/lib/studio/human-voice-directive';
 import { resolveHumanVoiceMode } from '@/lib/brand-fidelity/fidelity-config';
 import { detectAiTells } from '@/lib/brand-fidelity/ai-tell-detector';
-import { runFidelityScoring, buildFidelityScoreEventPayload } from '@/lib/brand-fidelity/fidelity-runner';
+import {
+  runFidelityScoring,
+  buildFidelityScoreEventPayload,
+  runStrictModeIfApplicable,
+  buildStrictRewriteEventPayload,
+} from '@/lib/brand-fidelity/fidelity-runner';
 import { sanitizeVariantContent } from '@/features/campaigns/lib/variant-content-sanitizer';
 import OpenAI from 'openai';
 
@@ -276,7 +281,7 @@ export async function* orchestrateContentGeneration(
   if (blobWordCount >= 50) {
     yield { event: 'fidelity_score_running', data: { stage: 'computing' } };
     try {
-      const fidelityResult = await runFidelityScoring({
+      const fidelityOutcome = await runFidelityScoring({
         workspaceId,
         deliverableId,
         contentTypeId: stack.deliverableTypeId,
@@ -284,11 +289,37 @@ export async function* orchestrateContentGeneration(
         stack,
         generatorProvider: textModel.provider,
       });
-      if (fidelityResult) {
+      if (fidelityOutcome) {
         yield {
           event: 'fidelity_score_complete',
-          data: buildFidelityScoreEventPayload(fidelityResult),
+          data: buildFidelityScoreEventPayload(fidelityOutcome.result),
         };
+
+        // ── Step 2.7: STRICT mode rewrite (conditional) ─
+        // Wanneer FidelityConfig.humanVoiceMode === STRICT en het origineel
+        // detector-verdict AI_LEANING/PURE_AI is, draaien we een rewrite
+        // via Claude Sonnet en herberekenen we de composition score. Het
+        // herberekende resultaat overschrijft de fidelityScore in store
+        // zodat UI altijd de finale waarde toont. Variant content-update
+        // (component-aware) is een aparte vervolgstap.
+        try {
+          yield { event: 'strict_rewrite_running', data: { stage: 'rewriting' } };
+          const strictOutcome = await runStrictModeIfApplicable(
+            {
+              compositionInput: fidelityOutcome.compositionInput,
+              deliverableId,
+            },
+            humanVoiceMode,
+          );
+          if (strictOutcome) {
+            yield {
+              event: 'strict_rewrite_complete',
+              data: buildStrictRewriteEventPayload(strictOutcome, strictOutcome.finalFidelityScore),
+            };
+          }
+        } catch (strictErr) {
+          console.error('[canvas-orchestrator] STRICT mode failed:', strictErr);
+        }
       }
     } catch (fidelityErr) {
       console.error('[canvas-orchestrator] fidelity scoring failed:', fidelityErr);
