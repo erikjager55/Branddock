@@ -4,6 +4,7 @@ import React, { useMemo, useCallback, useState } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { resolvePreviewComponent } from '../previews/preview-map';
+import { VariantIndexOverrideProvider } from '../previews/InlineEditableSection';
 import { FeedbackBar } from '../FeedbackBar';
 import { Badge } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
@@ -15,6 +16,8 @@ import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
 import type { SceneId } from '../../../stores/useCanvasStore';
 import { generateCanvasVisual, setHeroImage as persistHeroImage } from '../../../api/canvas.api';
 import { LibraryAssetPicker } from '../LibraryAssetPicker';
+import { ComposePicker } from '../ComposePicker';
+import { TrainedStylePicker } from '../TrainedStylePicker';
 import { FidelityScoreBar } from '../FidelityScoreBar';
 import type { CanvasImageVariant } from '../../../types/canvas.types';
 
@@ -298,16 +301,21 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
                 )}
               </div>
 
-              {/* Medium-formatted preview */}
+              {/* Medium-formatted preview — wrap in VariantIndexOverrideProvider
+               *  zodat de InlineEditableSection hooks variants[idx] tonen i.p.v.
+               *  de selected variant uit de store. Zonder dit zien beide
+               *  side-by-side kolommen dezelfde tekst (de geselecteerde). */}
               <div className="p-3">
-                <PreviewComponent
-                  previewContent={content}
-                  imageVariants={imageVariants}
-                  isGenerating={false}
-                  heroImage={heroImage}
-                  brandName={contextStack?.brand?.brandName ?? undefined}
-                  platform={platform ?? undefined}
-                />
+                <VariantIndexOverrideProvider index={idx}>
+                  <PreviewComponent
+                    previewContent={content}
+                    imageVariants={imageVariants}
+                    isGenerating={false}
+                    heroImage={heroImage}
+                    brandName={contextStack?.brand?.brandName ?? undefined}
+                    platform={platform ?? undefined}
+                  />
+                </VariantIndexOverrideProvider>
               </div>
             </div>
           );
@@ -451,7 +459,7 @@ function VariantSelector({
             key={idx}
             type="button"
             onClick={() => onSelect(idx)}
-            className={`group inline-flex items-center gap-2.5 pl-1 pr-4 py-1 rounded-full text-sm transition-all ${
+            className={`group inline-flex items-center gap-2 py-1.5 pl-1.5 pr-4 rounded-full text-sm transition-all ${
               isSelected
                 ? 'border-2 font-semibold'
                 : 'border-2 border-transparent font-medium text-gray-700 hover:bg-gray-50'
@@ -464,14 +472,14 @@ function VariantSelector({
             aria-pressed={isSelected}
           >
             <span
-              className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
+              className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold flex-shrink-0 ${
                 isSelected ? 'text-white' : 'bg-gray-100 text-gray-600'
               }`}
               style={isSelected ? { backgroundColor: '#1d4ed8' } : undefined}
             >
               {letter}
             </span>
-            <span className="truncate max-w-[200px]">{label}</span>
+            <span className="truncate max-w-[240px]">{label}</span>
           </button>
         );
       })}
@@ -552,6 +560,8 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
   const hasImages = imageVariants.length > 0;
   const isGenerating = status === 'generating';
   const [showLibraryPicker, setShowLibraryPicker] = React.useState(false);
+  const [showComposePicker, setShowComposePicker] = React.useState(false);
+  const [showTrainedPicker, setShowTrainedPicker] = React.useState(false);
 
   if (source === 'none') return null;
 
@@ -563,24 +573,6 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
       setHeroImage({ url: picked.url, mediaAssetId: null, alt: picked.prompt });
     }
   };
-
-  // Compose / trained-style still placeholder — Phase 4 / 5.
-  if (source === 'compose' || source === 'trained-style') {
-    const sourceLabel = source === 'compose' ? 'Compose' : 'Trained style';
-    return (
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-        <div className="flex items-center gap-2 mb-1">
-          <ImageIcon className="h-4 w-4" />
-          <span className="font-medium">Visual: {sourceLabel}</span>
-        </div>
-        <p className="text-xs text-gray-500">
-          The {sourceLabel} picker is coming in a later phase. Switch the Visual
-          Brief source to <strong>Generate</strong> or <strong>From library</strong>{' '}
-          in Step 1 to pick a visual now.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
@@ -625,6 +617,24 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
         />
       )}
 
+      {/* COMPOSE source — same show/hide pattern as library. */}
+      {source === 'compose' && (!hasImages || showComposePicker) && (
+        <ComposePicker
+          deliverableId={deliverableId}
+          onCancel={hasImages ? () => setShowComposePicker(false) : undefined}
+          onGenerated={() => setShowComposePicker(false)}
+        />
+      )}
+
+      {/* TRAINED-STYLE source — same show/hide pattern. */}
+      {source === 'trained-style' && (!hasImages || showTrainedPicker) && (
+        <TrainedStylePicker
+          deliverableId={deliverableId}
+          onCancel={hasImages ? () => setShowTrainedPicker(false) : undefined}
+          onGenerated={() => setShowTrainedPicker(false)}
+        />
+      )}
+
       {/* Loading state — generate flow only */}
       {source === 'generate' && isGenerating && (
         <div className="flex items-center justify-center py-8 gap-3 text-sm text-gray-600">
@@ -644,11 +654,11 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
         </div>
       )}
 
-      {/* Variants grid — selection. For library source, also surface a
-          "Pick different" button to reopen the picker. Refinement (feedback-
-          driven regenerate) on generate source runs through the FeedbackBar
-          below; library doesn't need feedback since it's curated assets. */}
-      {hasImages && !isGenerating && !showLibraryPicker && (
+      {/* Variants grid — selection. For non-generate sources, also surface
+          a "Pick different / re-compose / regenerate" button to reopen the
+          picker. Refinement (feedback-driven regenerate) on generate source
+          runs through the FeedbackBar below. */}
+      {hasImages && !isGenerating && !showLibraryPicker && !showComposePicker && !showTrainedPicker && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {imageVariants.map((img, idx) => (
@@ -681,6 +691,28 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
                 className="text-xs text-teal-700 hover:text-teal-800 font-medium"
               >
                 Pick different assets →
+              </button>
+            </div>
+          )}
+          {source === 'compose' && (
+            <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowComposePicker(true)}
+                className="text-xs text-teal-700 hover:text-teal-800 font-medium"
+              >
+                Re-compose →
+              </button>
+            </div>
+          )}
+          {source === 'trained-style' && (
+            <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowTrainedPicker(true)}
+                className="text-xs text-teal-700 hover:text-teal-800 font-medium"
+              >
+                Regenerate with trained style →
               </button>
             </div>
           )}

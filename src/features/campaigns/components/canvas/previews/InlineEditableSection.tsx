@@ -6,6 +6,29 @@ import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { updateComponentContent } from '../../../api/canvas.api';
 
 /**
+ * Optional override context — when wrapped around a preview component
+ * forces the editable hooks to read variants[overrideIndex] instead of
+ * the selected variant from store. Used in Step2's side-by-side comparison
+ * view so beide kolommen variant 0 vs variant 1 tonen ongeacht de pill-
+ * toggle. Buiten dit context blijft default gedrag (selected variant).
+ */
+const VariantIndexOverrideContext = React.createContext<number | null>(null);
+
+export function VariantIndexOverrideProvider({
+  index,
+  children,
+}: {
+  index: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <VariantIndexOverrideContext.Provider value={index}>
+      {children}
+    </VariantIndexOverrideContext.Provider>
+  );
+}
+
+/**
  * Helper hook for preview components — given a variant group key, returns
  * the InlineEditableEntry for the currently-selected variant in that group.
  * Returns null when the group has no variants yet (no content generated).
@@ -21,14 +44,16 @@ import { updateComponentContent } from '../../../api/canvas.api';
 export function useEditableEntry(group: string): InlineEditableEntry | null {
   const variants = useCanvasStore((s) => s.variantGroups.get(group));
   const selectedIdx = useCanvasStore((s) => s.selections.get(group) ?? 0);
+  const override = React.useContext(VariantIndexOverrideContext);
+  const idx = override !== null ? override : selectedIdx;
   if (!variants) return null;
-  const selected = variants[selectedIdx];
+  const selected = variants[idx] ?? variants[0];
   if (!selected || !selected.content) return null;
   return {
     group,
     content: selected.content,
     componentId: selected.componentId,
-    variantIndex: selectedIdx,
+    variantIndex: idx,
   };
 }
 
@@ -46,12 +71,14 @@ export function useEditableEntry(group: string): InlineEditableEntry | null {
 export function useEditableEntries(): Map<string, InlineEditableEntry> {
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
+  const override = React.useContext(VariantIndexOverrideContext);
 
   return useMemo(() => {
     const entries = new Map<string, InlineEditableEntry>();
     for (const [group, variants] of variantGroups.entries()) {
-      const idx = selections.get(group) ?? 0;
-      const selected = variants[idx];
+      // Override (Step 2 side-by-side) wint van per-group selection.
+      const idx = override !== null ? override : (selections.get(group) ?? 0);
+      const selected = variants[idx] ?? variants[0];
       if (selected?.content) {
         entries.set(group, {
           group,
@@ -62,7 +89,7 @@ export function useEditableEntries(): Map<string, InlineEditableEntry> {
       }
     }
     return entries;
-  }, [variantGroups, selections]);
+  }, [variantGroups, selections, override]);
 }
 
 /**

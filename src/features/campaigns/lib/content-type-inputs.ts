@@ -2299,18 +2299,21 @@ export function getEstimatedDuration(typeId: string): { label: string; minSecond
     'webinar-outline', 'podcast-outline', 'video-ad', 'native-ad',
   ]);
 
+  // Note: durations include the new 3-call flow (Gemini Flash angle picker
+  // + 2 parallel Claude calls per angle). Adds ~10-15s vs old single-call
+  // generation but produces fundamenteel verschillende variants.
   if (seoTypes.has(resolved)) {
     return { label: '2-4 minutes', minSeconds: 120, maxSeconds: 240 };
   }
   if (longForm.has(resolved)) {
-    return { label: '45-90 seconds', minSeconds: 45, maxSeconds: 90 };
+    return { label: '60-120 seconds', minSeconds: 60, maxSeconds: 120 };
   }
   if (mediumForm.has(resolved)) {
-    return { label: '30-60 seconds', minSeconds: 30, maxSeconds: 60 };
+    return { label: '45-75 seconds', minSeconds: 45, maxSeconds: 75 };
   }
   if (videoAudio.has(resolved)) {
-    return { label: '30-60 seconds', minSeconds: 30, maxSeconds: 60 };
+    return { label: '45-75 seconds', minSeconds: 45, maxSeconds: 75 };
   }
   // Short-form: social posts, ads, carousels
-  return { label: '15-30 seconds', minSeconds: 15, maxSeconds: 30 };
+  return { label: '25-45 seconds', minSeconds: 25, maxSeconds: 45 };
 }
