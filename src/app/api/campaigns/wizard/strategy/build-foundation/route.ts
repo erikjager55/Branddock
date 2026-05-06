@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
           const result = await buildStrategyFoundation(
             {
               workspaceId,
+              campaignId: body.campaignId,
               personaIds: body.personaIds,
               productIds: body.productIds,
               competitorIds: body.competitorIds,

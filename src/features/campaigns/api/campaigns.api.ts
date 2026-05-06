@@ -521,7 +521,7 @@ type PipelineConfigBody = import('@/lib/campaigns/strategy-blueprint.types').Pip
  * generateConceptsSSE so the client can handle both paths uniformly.
  */
 export function quickConceptSSE(
-  body: { workspaceId: string; wizardContext: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; pipelineConfig?: PipelineConfigBody },
+  body: { workspaceId: string; campaignId?: string; wizardContext: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; pipelineConfig?: PipelineConfigBody },
   onEvent: (event: unknown) => void,
   onError: (error: string) => void,
 ): { abort: () => void } {
@@ -530,7 +530,7 @@ export function quickConceptSSE(
 
 /** Mine 3 human insights via SSE */
 export function mineInsightsSSE(
-  body: { workspaceId: string; wizardContext: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; pipelineConfig?: PipelineConfigBody },
+  body: { workspaceId: string; campaignId?: string; wizardContext: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; pipelineConfig?: PipelineConfigBody },
   onEvent: (event: unknown) => void,
   onError: (error: string) => void,
 ): { abort: () => void } {
@@ -539,7 +539,7 @@ export function mineInsightsSSE(
 
 /** Generate 3 creative concepts via SSE */
 export function generateConceptsSSE(
-  body: { workspaceId: string; wizardContext: object; selectedInsight: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; regenerationContext?: { feedback: string; failedConcepts: Array<{ campaignLine: string; whyItFailed: string }> }; pipelineConfig?: PipelineConfigBody },
+  body: { workspaceId: string; campaignId?: string; wizardContext: object; selectedInsight: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; regenerationContext?: { feedback: string; failedConcepts: Array<{ campaignLine: string; whyItFailed: string }> }; pipelineConfig?: PipelineConfigBody },
   onEvent: (event: unknown) => void,
   onError: (error: string) => void,
 ): { abort: () => void } {
@@ -548,7 +548,7 @@ export function generateConceptsSSE(
 
 /** Run creative debate (critic + defense) via SSE */
 export function creativeDebateSSE(
-  body: { workspaceId: string; wizardContext: object; selectedConcept: object; selectedInsight: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; pipelineConfig?: PipelineConfigBody },
+  body: { workspaceId: string; campaignId?: string; wizardContext: object; selectedConcept: object; selectedInsight: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; pipelineConfig?: PipelineConfigBody },
   onEvent: (event: unknown) => void,
   onError: (error: string) => void,
 ): { abort: () => void } {
@@ -557,7 +557,7 @@ export function creativeDebateSSE(
 
 /** Build strategy from approved concept via SSE */
 export function buildStrategySSE(
-  body: { workspaceId: string; wizardContext: object; approvedConcept: object; approvedInsight: object; debateContext?: string; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; pipelineConfig?: PipelineConfigBody },
+  body: { workspaceId: string; campaignId?: string; wizardContext: object; approvedConcept: object; approvedInsight: object; debateContext?: string; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; pipelineConfig?: PipelineConfigBody },
   onEvent: (event: unknown) => void,
   onError: (error: string) => void,
 ): { abort: () => void } {

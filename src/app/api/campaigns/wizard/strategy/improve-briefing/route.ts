@@ -34,10 +34,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'validation is required' }, { status: 400 });
     }
 
+    // Build tracking when draft campaignId is supplied — falls back to
+    // workspace-level tracking otherwise. improveBriefing itself stays on its
+    // legacy positional signature.
+    const tracking: import('@/lib/learning-loop/track-helpers').AICallTracking = {
+      workspaceId,
+      parentEntityType: body.campaignId ? 'Campaign' : 'Workspace',
+      parentEntityId: body.campaignId ?? workspaceId,
+      sourceIdentifier: 'src/lib/campaigns/strategy-chain.ts:improveBriefing',
+      callOrder: 1,
+    };
+
     const result = await improveBriefing(
       body.wizardContext,
       body.validation,
       body.strategicIntent ?? 'hybrid',
+      tracking,
     );
 
     return NextResponse.json(result);

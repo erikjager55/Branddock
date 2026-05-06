@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
           const result = await validateBriefing(
             {
               workspaceId,
+              campaignId: body.campaignId,
               personaIds: body.personaIds,
               productIds: body.productIds,
               competitorIds: body.competitorIds,

@@ -77,6 +77,7 @@ export function StrategyStep() {
   const campaignDescription = useCampaignWizardStore((s) => s.description);
   const campaignGoalType = useCampaignWizardStore((s) => s.campaignGoalType);
   const strategicIntent = useCampaignWizardStore((s) => s.strategicIntent);
+  const draftCampaignId = useCampaignWizardStore((s) => s.draftCampaignId);
   const isGenerating = useCampaignWizardStore((s) => s.isGenerating);
   const pipelineSteps = useCampaignWizardStore((s) => s.pipelineSteps);
   const pipelineError = useCampaignWizardStore((s) => s.pipelineError);
@@ -198,6 +199,7 @@ export function StrategyStep() {
 
     const { abort } = validateBriefingSSE(
       {
+        campaignId: draftCampaignId ?? undefined,
         strategicIntent,
         personaIds: selectedContextIds.personaIds,
         productIds: selectedContextIds.productIds,
@@ -276,6 +278,7 @@ export function StrategyStep() {
 
     const { abort } = buildFoundationSSE(
       {
+        campaignId: draftCampaignId ?? undefined,
         strategicIntent,
         personaIds: selectedContextIds.personaIds,
         productIds: selectedContextIds.productIds,
@@ -446,6 +449,7 @@ export function StrategyStep() {
 
     const { abort } = elaborateJourneySSE(
       {
+        campaignId: draftCampaignId ?? undefined,
         synthesisFeedback: '',
         synthesizedStrategy: (store.synthesizedStrategy ?? store.strategyFoundation ?? {}) as import('@/lib/campaigns/strategy-blueprint.types').StrategyLayer,
         synthesizedArchitecture: (store.synthesizedArchitecture ?? { journeyPhases: [] }) as import('@/lib/campaigns/strategy-blueprint.types').ArchitectureLayer,

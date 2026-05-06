@@ -9,6 +9,7 @@ export const maxDuration = 600;
 
 const requestSchema = z.object({
   workspaceId: z.string().optional(),
+  campaignId: z.string().optional(),
   wizardContext: z.object({
     campaignName: z.string(),
     campaignDescription: z.string().optional(),
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest) {
 
         try {
           const ctx = await buildCreativePipelineContext(workspaceId, {
+            campaignId: body.campaignId,
             personaIds: body.personaIds,
             productIds: body.productIds,
             competitorIds: body.competitorIds,

@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
               }
               sendEvent(event);
             },
+            body.campaignId,
           );
 
           sendEvent({ type: 'complete', result });

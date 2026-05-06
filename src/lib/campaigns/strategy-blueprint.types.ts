@@ -729,6 +729,8 @@ export interface ElaborateJourneyBody {
   trendIds?: string[];
   strategicIntent?: StrategicIntent;
   pipelineConfig?: PipelineConfigBody;
+  /** Draft campaign id from wizard store, used for learning-loop tracking parent. */
+  campaignId?: string;
 }
 
 // ─── Pipeline Types ─────────────────────────────────────────
@@ -831,6 +833,8 @@ export interface ValidateBriefingBody {
     useExternalEnrichment?: boolean;
   };
   pipelineConfig?: PipelineConfigBody;
+  /** Draft campaign id from wizard store, used for learning-loop tracking parent. */
+  campaignId?: string;
 }
 
 export interface ImproveBriefingBody {
@@ -843,6 +847,8 @@ export interface ImproveBriefingBody {
     briefing?: CampaignBriefing;
     useExternalEnrichment?: boolean;
   };
+  /** Draft campaign id from wizard store, used for learning-loop tracking parent. */
+  campaignId?: string;
 }
 
 export interface ImprovedBriefing {
@@ -867,6 +873,8 @@ export interface BuildFoundationBody {
     useExternalEnrichment?: boolean;
   };
   pipelineConfig?: PipelineConfigBody;
+  /** Draft campaign id from wizard store, used for learning-loop tracking parent. */
+  campaignId?: string;
 }
 
 export interface GenerateHooksBody {
@@ -885,6 +893,8 @@ export interface GenerateHooksBody {
   foundation: StrategyFoundation;
   enrichmentContext: EnrichmentContext;
   strategyFeedback?: string;
+  /** Draft campaign id from wizard store, used for learning-loop tracking parent. */
+  campaignId?: string;
 }
 
 export interface RefineHookBody {
@@ -904,6 +914,8 @@ export interface RefineHookBody {
   foundation: StrategyFoundation;
   personaValidation: PersonaValidationResult[];
   hookFeedback?: string;
+  /** Draft campaign id from wizard store, used for learning-loop tracking parent. */
+  campaignId?: string;
 }
 
 // ─── SSE Event Types ────────────────────────────────────────

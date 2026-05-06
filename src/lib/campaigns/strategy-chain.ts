@@ -11,6 +11,7 @@ import { formatBrandContext, formatBrandContextTier } from '@/lib/ai/prompt-temp
 import { buildSelectedPersonasContext } from '@/lib/ai/persona-context';
 import { createClaudeStructuredCompletion, createStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
+import type { AICallTracking } from '@/lib/learning-loop';
 import { calculateBlueprintConfidence } from './confidence-calculator';
 import { computePhaseSchedule } from './phase-scheduler';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
@@ -130,6 +131,28 @@ const BALANCED_TIER_MODELS: Record<AiProvider, string> = {
  * - 'balanced' downgrades to the balanced tier fallback for the provider
  * - 'fast' forces the fast tier fallback
  */
+/**
+ * Build AICallTracking from a phase or pipeline context.
+ * Uses campaignId as parent if present, otherwise workspaceId fallback.
+ * Returns undefined when ctx omits required fields — tracking is opt-in.
+ */
+function buildStrategyTracking(
+  ctx: { workspaceId?: string; campaignId?: string },
+  sourceFn: string,
+  callOrder?: number,
+  brandContext?: unknown,
+): AICallTracking | undefined {
+  if (!ctx.workspaceId) return undefined;
+  return {
+    workspaceId: ctx.workspaceId,
+    parentEntityType: ctx.campaignId ? 'Campaign' : 'Workspace',
+    parentEntityId: ctx.campaignId ?? ctx.workspaceId,
+    brandContext,
+    callOrder,
+    sourceIdentifier: `src/lib/campaigns/strategy-chain.ts:${sourceFn}`,
+  };
+}
+
 async function resolveModelForRigor(
   workspaceId: string,
   featureKey: Parameters<typeof resolveFeatureModel>[1],
@@ -201,6 +224,8 @@ interface GenerateOptions {
   wizardContext?: WizardContext;
   /** Pipeline configuration (strategy depth / creative range / model rigor) */
   pipelineConfig?: PipelineConfig;
+  /** Draft campaign id — used to populate CreativePipelineContext.campaignId for tracking. */
+  campaignId?: string;
 }
 
 // ─── Context Builders ───────────────────────────────────────
@@ -485,6 +510,8 @@ function normalizeArchitectureLayer(raw: ArchitectureLayer): ArchitectureLayer {
 
 interface PhaseContext {
   workspaceId: string;
+  /** Campaign ID for learning-loop tracking. When omitted, tracking falls back to Workspace as parent. */
+  campaignId?: string;
   personaIds?: string[];
   productIds?: string[];
   competitorIds?: string[];
@@ -522,6 +549,7 @@ export async function elaborateJourney(
   },
   workspaceId: string,
   onProgress?: ProgressCallback,
+  campaignId?: string,
 ): Promise<JourneyPhaseResult> {
   const campaignGoalType = data.wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
   const campaignType = data.wizardContext.campaignType;
@@ -565,6 +593,7 @@ export async function elaborateJourney(
       createGeminiStructuredCompletion<ArchitectureLayer>(
         jpPrompt.system, jpPrompt.user,
         { model: GEMINI_FLASH_LITE, temperature: 0.3, maxOutputTokens: 8000, timeoutMs: 60_000, responseSchema: journeyPhasesResponseSchema },
+        buildStrategyTracking({ workspaceId, campaignId }, 'elaborateJourney:journeyPhases', 4),
       ),
     );
 
@@ -600,6 +629,7 @@ export async function elaborateJourney(
     createGeminiStructuredCompletion<ChannelPlanLayer>(
       step5Prompt.system, step5Prompt.user,
       { model: GEMINI_FLASH_LITE, temperature: 0.2, maxOutputTokens: 12000, timeoutMs: 180_000, responseSchema: channelPlanResponseSchema },
+      buildStrategyTracking({ workspaceId, campaignId }, 'elaborateJourney:channelPlanner', 5),
     ),
   );
   const channelPlan = validateOrWarn(channelPlanLayerSchema, channelPlanRaw, 'Step 5 Channel Plan');
@@ -632,6 +662,7 @@ export async function elaborateJourney(
     createGeminiStructuredCompletion<AssetPlanLayer>(
       step6Prompt.system, step6Prompt.user,
       { model: GEMINI_FLASH_LITE, temperature: 0.3, maxOutputTokens: 16000, timeoutMs: 120_000, responseSchema: assetPlanResponseSchema },
+      buildStrategyTracking({ workspaceId, campaignId }, 'elaborateJourney:assetPlanner', 6),
     ),
   );
   const assetPlan = validateOrWarn(assetPlanLayerSchema, assetPlanRaw, 'Step 6 Asset Plan');
@@ -868,6 +899,7 @@ export async function regenerateBlueprintLayer(
         resolvedProvider, resolvedModel,
         prompt.system, prompt.user,
         { temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
+        buildStrategyTracking({ workspaceId, campaignId }, 'regenerateBlueprintLayer:fullVariant', 1),
       ),
     );
     const fullVariant = fullVariantSchema.parse(fullVariantRaw);
@@ -904,6 +936,7 @@ export async function regenerateBlueprintLayer(
       createGeminiStructuredCompletion<ChannelPlanLayer>(
         prompt.system, prompt.user,
         { model: GEMINI_FLASH_LITE, temperature: 0.2, maxOutputTokens: 12000, timeoutMs: 180_000, responseSchema: channelPlanResponseSchema },
+        buildStrategyTracking({ workspaceId, campaignId }, 'regenerateBlueprintLayer:channelPlan', 4),
       ),
     );
     blueprint.channelPlan = validateOrWarn(channelPlanLayerSchema, channelRaw, 'Regenerate Channel Plan');
@@ -937,6 +970,7 @@ export async function regenerateBlueprintLayer(
     createGeminiStructuredCompletion<AssetPlanLayer>(
       assetPrompt.system, assetPrompt.user,
       { model: GEMINI_FLASH_LITE, temperature: 0.3, maxOutputTokens: 16000, timeoutMs: 180_000, responseSchema: assetPlanResponseSchema },
+      buildStrategyTracking({ workspaceId, campaignId }, 'regenerateBlueprintLayer:assetPlan', 5),
     ),
   );
   blueprint.assetPlan = validateOrWarn(assetPlanLayerSchema, assetRaw, 'Regenerate Asset Plan');
@@ -1048,6 +1082,7 @@ export async function validateBriefing(
       'google', GEMINI_FLASH,
       prompt.system, prompt.user,
       { temperature: 0.3, maxTokens: 8192, timeoutMs: 45_000 },
+      buildStrategyTracking(ctx, 'validateBriefing', 1),
     ),
   );
 
@@ -1073,6 +1108,7 @@ export async function improveBriefing(
   wizardContext: { campaignName: string; campaignDescription?: string; campaignGoalType?: string; briefing?: CampaignBriefing },
   validation: BriefingValidation,
   strategicIntent: StrategicIntent,
+  tracking?: AICallTracking,
 ): Promise<ImprovedBriefing> {
   const goalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
 
@@ -1120,6 +1156,7 @@ Rewrite all 5 briefing fields, addressing every gap and applying the suggestions
       'google', GEMINI_FLASH,
       systemPrompt, userPrompt,
       { temperature: 0.5, maxTokens: 8192, timeoutMs: 60_000 },
+      tracking ? { ...tracking, sourceIdentifier: tracking.sourceIdentifier ?? 'src/lib/campaigns/strategy-chain.ts:improveBriefing' } : undefined,
     ),
   );
 
@@ -1280,6 +1317,7 @@ export async function buildStrategyFoundation(
       resolvedProvider, resolvedModel,
       prompt.system, prompt.user,
       { temperature: 0.4, maxTokens: 24000, timeoutMs: 600_000, thinking: foundationThinking },
+      buildStrategyTracking(ctx, 'buildStrategyFoundation', 2),
     ),
   );
 
@@ -1334,6 +1372,8 @@ import { buildQuickConceptPrompt } from '@/lib/ai/prompts/campaign-strategy';
 /** Shared context needed across new pipeline phases */
 interface CreativePipelineContext {
   workspaceId: string;
+  /** Campaign ID for learning-loop tracking. When omitted, tracking falls back to Workspace as parent. */
+  campaignId?: string;
   /** Full brand context string (for strategy build which needs everything) */
   brandContext: string;
   /** Raw brand context data block — use with formatBrandContextTier() for lighter phases */
@@ -1413,6 +1453,7 @@ export async function buildCreativePipelineContext(
 
   return {
     workspaceId,
+    campaignId: opts.campaignId,
     brandContext,
     brandContextData,
     personaContext,
@@ -1478,6 +1519,7 @@ export async function generateInsights(
         prompt.system,
         prompt.user,
         { maxTokens: 16000, thinking: thinkingForRigor(lens.provider, 8000, rigor) },
+        buildStrategyTracking(ctx, `generateInsights:${lens.role}`, 1),
       ),
     );
 
@@ -1608,6 +1650,7 @@ Generate DIFFERENT concepts that address these failures.` : undefined,
         prompt.system,
         prompt.user,
         { maxTokens: 16000, thinking: thinkingForRigor(a.provider, 12_000, rigor) },
+        buildStrategyTracking(ctx, `generateCreativeConcepts:${a.template.id}`, 2),
       ),
     );
 
@@ -1710,6 +1753,7 @@ export async function runCreativeDebate(
         criticPrompt.system,
         criticPrompt.user,
         { maxTokens: 16000, thinking: thinkingForRigor(criticProvider, budgets.critic, rigor) },
+        buildStrategyTracking(ctx, `runCreativeDebate:critic:round${roundNum}`, 3),
       ),
     );
     let critique: unknown;
@@ -1758,6 +1802,7 @@ export async function runCreativeDebate(
         defensePrompt.system,
         defensePrompt.user,
         { maxTokens: 16000, thinking: thinkingForRigor(defenseProvider, budgets.defense, rigor) },
+        buildStrategyTracking(ctx, `runCreativeDebate:defense:round${roundNum}`, 4),
       ),
     );
     let defense: unknown;
@@ -1812,6 +1857,7 @@ export async function generateQuickConcept(
       quickPrompt.system,
       quickPrompt.user,
       { maxTokens: 8000 },
+      buildStrategyTracking(ctx, 'generateQuickConcept', 1),
     ),
   );
 
@@ -1926,6 +1972,7 @@ Bisociation: ${approvedConcept.bisociationDomain.domain} — ${approvedConcept.b
       prompt.system,
       prompt.user,
       { maxTokens: 16000, thinking: thinkingForRigor(provider, 12_000, rigor) },
+      buildStrategyTracking(ctx, 'buildConceptDrivenStrategy', 5),
     ),
   );
 

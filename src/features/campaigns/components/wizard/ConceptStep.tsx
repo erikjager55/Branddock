@@ -64,6 +64,7 @@ export function ConceptStep() {
   const campaignDescription = useCampaignWizardStore((s) => s.description);
   const campaignGoalType = useCampaignWizardStore((s) => s.campaignGoalType);
   const strategicIntent = useCampaignWizardStore((s) => s.strategicIntent);
+  const draftCampaignId = useCampaignWizardStore((s) => s.draftCampaignId);
   const isGenerating = useCampaignWizardStore((s) => s.isGenerating);
   const pipelineSteps = useCampaignWizardStore((s) => s.pipelineSteps);
   const selectedKnowledgeIds = useCampaignWizardStore((s) => s.selectedKnowledgeIds);
@@ -184,7 +185,7 @@ export function ConceptStep() {
     store.updateStepStatus({ step: 1, name: "Insight Mining", status: "pending", label: "Mining insights..." });
 
     const { abort } = mineInsightsSSE(
-      { workspaceId: "", wizardContext, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
+      { workspaceId: "", campaignId: draftCampaignId ?? undefined, wizardContext, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
         const data = event as Record<string, unknown>;
@@ -252,7 +253,7 @@ export function ConceptStep() {
     store.updateStepStatus({ step: 1, name: "Quick Concept", status: "pending", label: "Generating concept and strategy..." });
 
     const { abort } = quickConceptSSE(
-      { workspaceId: "", wizardContext, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
+      { workspaceId: "", campaignId: draftCampaignId ?? undefined, wizardContext, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
         const data = event as Record<string, unknown>;
@@ -329,7 +330,7 @@ export function ConceptStep() {
     const regenCtx = fc.length > 0 ? { feedback: rb, failedConcepts: fc } : undefined;
 
     const { abort } = generateConceptsSSE(
-      { workspaceId: "", wizardContext, selectedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, regenerationContext: regenCtx, pipelineConfig },
+      { workspaceId: "", campaignId: draftCampaignId ?? undefined, wizardContext, selectedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, regenerationContext: regenCtx, pipelineConfig },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
         const data = event as Record<string, unknown>;
@@ -393,7 +394,7 @@ export function ConceptStep() {
     store.updateStepStatus({ step: 1, name: "Strategy Build", status: "pending", label: "Building strategy..." });
 
     const { abort } = buildStrategySSE(
-      { workspaceId: "", wizardContext, approvedConcept, approvedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
+      { workspaceId: "", campaignId: draftCampaignId ?? undefined, wizardContext, approvedConcept, approvedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
         const data = event as Record<string, unknown>;
@@ -459,7 +460,7 @@ export function ConceptStep() {
     store.updateStepStatus({ step: 1, name: "Creative Debate", status: "pending", label: "AI critic and defender refining concept..." });
 
     const { abort } = creativeDebateSSE(
-      { workspaceId: "", wizardContext, selectedConcept, selectedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
+      { workspaceId: "", campaignId: draftCampaignId ?? undefined, wizardContext, selectedConcept, selectedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
         const data = event as Record<string, unknown>;
@@ -518,6 +519,7 @@ export function ConceptStep() {
 
     const { abort } = elaborateJourneySSE(
       {
+        campaignId: draftCampaignId ?? undefined,
         synthesisFeedback: compiledFeedback,
         synthesizedStrategy: strat,
         synthesizedArchitecture: arch,
