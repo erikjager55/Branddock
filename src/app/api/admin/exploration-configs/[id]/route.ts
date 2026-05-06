@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import { resolveWorkspaceId } from '@/lib/auth-server';
+import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { requireDeveloper } from '@/lib/developer-access';
+import { emitLearningEvent, hashContent } from '@/lib/learning-loop';
 
 // GET single config
 export async function GET(
@@ -71,6 +72,37 @@ export async function PUT(
         isActive: body.isActive,
       },
     });
+
+    // Learning Loop event emission (cat 9) — track prompt-content changes via hash
+    const previousContentHash = hashContent({
+      systemPrompt: existing.systemPrompt,
+      feedbackPrompt: existing.feedbackPrompt,
+      reportPrompt: existing.reportPrompt,
+      dimensions: existing.dimensions,
+    });
+    const newContentHash = hashContent({
+      systemPrompt: config.systemPrompt,
+      feedbackPrompt: config.feedbackPrompt,
+      reportPrompt: config.reportPrompt,
+      dimensions: config.dimensions,
+    });
+    if (previousContentHash !== newContentHash) {
+      const session = await getServerSession();
+      void emitLearningEvent({
+        workspaceId,
+        userId: session?.user?.id ?? null,
+        payload: {
+          type: 'config.exploration_updated',
+          data: {
+            configId: config.id,
+            itemType: config.itemType,
+            itemSubType: config.itemSubType ?? undefined,
+            previousContentHash,
+            newContentHash,
+          },
+        },
+      });
+    }
 
     return NextResponse.json({ config });
   } catch (error) {

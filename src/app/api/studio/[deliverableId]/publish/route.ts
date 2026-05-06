@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { resolveWorkspaceId } from '@/lib/auth-server';
+import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { z } from 'zod';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { emitLearningEvent } from '@/lib/learning-loop';
 
 /**
  * Body shape: either pass `scheduledPublishDate` for a future date (results in
@@ -115,6 +116,24 @@ export async function POST(
     // + campaignKeys after a successful response).
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
+    // Learning Loop event emission (cat 9 — content lifecycle).
+    // Only emit on actual PUBLISHED transitions; SCHEDULED is ambient state.
+    if (nextStatus === 'PUBLISHED') {
+      const session = await getServerSession();
+      void emitLearningEvent({
+        workspaceId,
+        userId: session?.user?.id ?? null,
+        payload: {
+          type: 'content.published',
+          data: {
+            deliverableId: updated.id,
+            previousStatus: deliverable.approvalStatus ?? 'DRAFT',
+            newStatus: nextStatus,
+          },
+        },
+      });
+    }
 
     return NextResponse.json({
       deliverableId: updated.id,

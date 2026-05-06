@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { trackEvent } from '@/lib/analytics/posthog';
+import { emitLearningEvent } from '@/lib/learning-loop';
 
 /**
  * Approval state transitions. SCHEDULED and PUBLISHED are terminal-ish but
@@ -134,6 +135,22 @@ export async function PATCH(
         quality_score: updated.qualityScore ?? null,
       },
     });
+
+    // Learning Loop event emission (cat 9 — content lifecycle).
+    // Use explicit literal types so TS can narrow the discriminated union.
+    const lifecycleData = {
+      deliverableId: updated.id,
+      previousStatus: currentStatus,
+      newStatus,
+      reason: note,
+    };
+    if (newStatus === 'APPROVED') {
+      void emitLearningEvent({ workspaceId, userId, payload: { type: 'content.approved', data: lifecycleData } });
+    } else if (newStatus === 'CHANGES_REQUESTED') {
+      void emitLearningEvent({ workspaceId, userId, payload: { type: 'content.rejected', data: lifecycleData } });
+    } else if (newStatus === 'PUBLISHED') {
+      void emitLearningEvent({ workspaceId, userId, payload: { type: 'content.published', data: lifecycleData } });
+    }
 
     return NextResponse.json({
       deliverableId: updated.id,

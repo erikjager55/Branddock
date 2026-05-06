@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { emitLearningEvent } from "@/lib/learning-loop";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -57,6 +58,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     invalidateCache(cacheKeys.prefixes.alignment(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
+    // Learning Loop event emission (cat 9)
+    const session = await getServerSession();
+    void emitLearningEvent({
+      workspaceId,
+      userId: session?.user?.id ?? null,
+      payload: {
+        type: 'alignment.issue_dismissed',
+        data: {
+          issueId: issue.id,
+          scanId: issue.scanId,
+          reason: issue.dismissReason ?? undefined,
+        },
+      },
+    });
 
     return NextResponse.json({
       id: issue.id,
