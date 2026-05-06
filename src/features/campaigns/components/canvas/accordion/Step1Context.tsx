@@ -371,11 +371,8 @@ function TonePillsField({
   onChange: (v: string) => void;
   suggestions?: ReadonlyArray<{ value: string; label: string }> | null;
 }) {
-  // Hide entirely when no curated chips are available — falling back to
-  // a textarea would defeat the "pills only" rule the user asked for.
-  if (!suggestions || suggestions.length === 0) return null;
-
   // Parse comma-separated value into a set for fast membership lookup.
+  // Hook must run before any early return — gate is applied below.
   const activeSet = React.useMemo(() => {
     const items = value
       .split(',')
@@ -383,6 +380,10 @@ function TonePillsField({
       .filter(Boolean);
     return new Set(items);
   }, [value]);
+
+  // Hide entirely when no curated chips are available — falling back to
+  // a textarea would defeat the "pills only" rule the user asked for.
+  if (!suggestions || suggestions.length === 0) return null;
 
   const togglePill = (chipValue: string) => {
     const next = new Set(activeSet);

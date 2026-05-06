@@ -28,7 +28,8 @@ interface ReviewDraftPanelProps {
 
 export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: ReviewDraftPanelProps) {
   const contextClosed = useContext(ReviewClosedContext);
-  if (closed || contextClosed) return null;
+  // All hooks MUST run before any early return — `closed`/`contextClosed`
+  // gate is applied at the JSX level below.
   const current = useMemo(
     () => reviews.find((r) => r.section === section) ?? null,
     [reviews, section],
@@ -52,6 +53,8 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
 
   const updateMut = useUpdateReview();
   const uploadMut = useUploadReviewReference();
+
+  if (closed || contextClosed) return null;
 
   /** After a successful review action, scroll the user back to the
    *  progress indicator at the top so they see the bar advance + the

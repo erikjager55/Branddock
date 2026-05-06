@@ -18,6 +18,12 @@ const eslintConfig = defineConfig([
     "test-results/**",
     "src/scripts/**",
     "*.mjs",
+    // Python virtualenvs under scripts/ (e.g. voice-research/ws3/.venv)
+    // bundle third-party JavaScript (PyTorch model_dump/code.js) that
+    // isn't ours to lint.
+    "scripts/**/.venv/**",
+    "scripts/**/venv/**",
+    "scripts/**/__pycache__/**",
   ]),
   // Downgrade noisy rules to warnings (fix incrementally).
   {
