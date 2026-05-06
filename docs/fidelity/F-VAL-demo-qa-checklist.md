@@ -6,33 +6,50 @@
 
 ## Setup
 
-```bash
-# Terminal 1
-cd ~/Projects/branddock-app
-npm run dev
+Eén commando dat alle preflight checks doet en de dev server start:
 
-# Terminal 2 — verify env
-grep ANTHROPIC_API_KEY .env.local
-grep OPENAI_API_KEY .env.local
+```bash
+cd ~/Projects/branddock-app
+bash scripts/fidelity/launch-demo.sh
 ```
+
+Diagnostic verifieert: API keys, pilot workspaces (BrandPersonality + STRICT mode),
+TypeScript clean, recent F-VAL commits — daarna `npm run dev`.
 
 Login: `erik@branddock.com` / `Password123!`
 
-Workspace: **Branddock Demo** (`demo-workspace-branddock-001`)
+**Pilot workspaces (alle 4 STRICT mode aan, BrandPersonality ingevuld)**:
+- **Better Brands** — 10 wordsWeUse / 4 traits (Visionary, Authentic, Strategic, Inspiring)
+- **Linfi** — 10 wordsWeUse / 4 traits (Meticulous, Refined, Reliable, Discerning)
+- **Nobox** — 10 wordsWeUse / 4 traits (Sustainable, Circular, Conscious, Resourceful)
+- **WRA Juristen** — 10 wordsWeUse / 5 traits (Gelijkwaardig, Nuchter, Slagvaardig, Scherp, Betrokken)
+
+Naast de pilots is er ook **Branddock Demo** (`demo-workspace-branddock-001`) —
+BrandPersonality is leeg (test workspace), STRICT mode is BASELINE. Hier kun je
+de "skip pijler 1" flow testen waar de bar pijler 1 als "n.v.t." toont.
 
 ## Pre-flight DB state
 
-Optioneel — zet de demo workspace in STRICT mode om de rewrite-flow te zien:
+Pilot workspaces zijn al geconfigureerd door de launch-sessie van 2026-05-06:
 
 ```sql
-UPDATE "FidelityConfig"
-SET "humanVoiceMode" = 'STRICT'
-WHERE "workspaceId" = 'demo-workspace-branddock-001';
+SELECT w.name, fc."humanVoiceMode", fc."styleWeight", fc."judgeWeight", fc."ruleWeight"
+FROM "Workspace" w JOIN "FidelityConfig" fc ON fc."workspaceId" = w.id
+WHERE w.name IN ('Better brands', 'Linfi', 'Nobox', 'WRA Juristen');
+-- Allemaal humanVoiceMode = STRICT, weights 0.35/0.45/0.20
 ```
 
-(Of via `prisma studio` → FidelityConfig → demo workspace → set humanVoiceMode = STRICT)
+Demo workspace tijdelijk naar STRICT zetten als je de rewrite-flow wil zien
+zonder pilot data:
 
-Na de test-sessie terugzetten naar `BASELINE`.
+```sql
+INSERT INTO "FidelityConfig" (id, "workspaceId", "humanVoiceMode", "styleWeight",
+  "judgeWeight", "ruleWeight", "aiLeaningThreshold", "disabledContentTypes",
+  "createdAt", "updatedAt")
+VALUES ('fc_demo', 'demo-workspace-branddock-001', 'STRICT', 0.35, 0.45, 0.20,
+  30, ARRAY[]::text[], NOW(), NOW())
+ON CONFLICT ("workspaceId") DO UPDATE SET "humanVoiceMode" = 'STRICT';
+```
 
 ## Flow 1 — Basic fidelity score (BASELINE mode)
 
