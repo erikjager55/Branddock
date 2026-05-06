@@ -249,6 +249,7 @@ model Workspace {
   aiCallSnapshots           AICallSnapshot[]
   aiCallTraces              AICallTrace[]
   contentFidelityScores     ContentFidelityScore[]
+  contentVisualFidelityScores ContentVisualFidelityScore[]
   learningEvents            LearningEvent[]
 
   // F-VAL pijler 3: anti-AI-tell laag + brand-specific rules
@@ -1169,6 +1170,10 @@ model DeliverableComponent {
 
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+
+  // G8 — visual fidelity scores per generated image (one component can have
+  // multiple scores over time across regenerate / multi-judge runs).
+  visualFidelityScores ContentVisualFidelityScore[]
 
   @@index([deliverableId, order])
   @@unique([deliverableId, variantGroup, variantIndex])
@@ -4671,11 +4676,64 @@ model AICallTrace {
   completedAt              DateTime?
 
   fidelityScores           ContentFidelityScore[]
+  visualFidelityScores     ContentVisualFidelityScore[]
 
   @@index([workspaceId])
   @@index([parentEntityType, parentEntityId, callOrder])
   @@index([aiCallSnapshotId])
   @@index([brandContextSnapshotId])
+}
+
+/**
+ * G8 — multimodal visual fidelity score per generated image.
+ *
+ * Mirrors ContentFidelityScore but FK to DeliverableComponent because each
+ * generated image is an atomic visual unit with its own brand-coherence
+ * score. One DeliverableComponent (with imageUrl) can have multiple scores
+ * over time (regenerate, multi-judge).
+ *
+ * Composition: deterministic color alignment + AI-judge visual evaluation.
+ * Threshold defaults to 70 — same publishable bar as text fidelity.
+ */
+model ContentVisualFidelityScore {
+  id                     String                @id @default(cuid())
+  workspaceId            String
+  workspace              Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /** Component holds the imageUrl that was scored. */
+  componentId            String
+  component              DeliverableComponent  @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  /** Snapshot of the URL at scoring time — the component may regenerate later. */
+  imageUrl               String
+
+  /** NULL voor pure-deterministische scores (geen AI-call). */
+  judgeCallTraceId       String?
+  judgeCallTrace         AICallTrace?          @relation(fields: [judgeCallTraceId], references: [id], onDelete: SetNull)
+
+  judgeIdentifier        String
+
+  /** 0-100 weighted average van color alignment + AI-judge dimensies. */
+  compositeScore         Float
+
+  /** colorAlignment: { score, matchedColors[{generatedHex, brandHex, deltaE}], unmatchedColors[hex] } */
+  colorAlignment         Json
+
+  /** aiJudgeDimensions: { 'style-coherence': {score, rationale}, 'mood-fit': {...}, ... } */
+  aiJudgeDimensions      Json
+
+  /** thresholdMet shortcut. */
+  thresholdMet           Boolean               @default(false)
+
+  /** Versie van de scoring-logica voor reproducibility. */
+  scorerVersion          String?
+
+  scoredAt               DateTime              @default(now())
+
+  @@index([workspaceId])
+  @@index([componentId])
+  @@index([judgeCallTraceId])
+  @@index([workspaceId, scoredAt])
 }
 
 model ContentFidelityScore {
