@@ -280,8 +280,10 @@ export async function* orchestrateContentGeneration(
   // hier mag content-generation niet blokkeren.
   if (blobWordCount >= 50) {
     yield { event: 'fidelity_score_running', data: { stage: 'computing' } };
+    let fidelityErrorMessage: string | null = null;
+    let fidelityOutcome: Awaited<ReturnType<typeof runFidelityScoring>> = null;
     try {
-      const fidelityOutcome = await runFidelityScoring({
+      fidelityOutcome = await runFidelityScoring({
         workspaceId,
         deliverableId,
         contentTypeId: stack.deliverableTypeId,
@@ -289,40 +291,64 @@ export async function* orchestrateContentGeneration(
         stack,
         generatorProvider: textModel.provider,
       });
-      if (fidelityOutcome) {
-        yield {
-          event: 'fidelity_score_complete',
-          data: buildFidelityScoreEventPayload(fidelityOutcome.result),
-        };
-
-        // ── Step 2.7: STRICT mode rewrite (conditional) ─
-        // Wanneer FidelityConfig.humanVoiceMode === STRICT en het origineel
-        // detector-verdict AI_LEANING/PURE_AI is, draaien we een rewrite
-        // via Claude Sonnet en herberekenen we de composition score. Het
-        // herberekende resultaat overschrijft de fidelityScore in store
-        // zodat UI altijd de finale waarde toont. Variant content-update
-        // (component-aware) is een aparte vervolgstap.
-        try {
-          yield { event: 'strict_rewrite_running', data: { stage: 'rewriting' } };
-          const strictOutcome = await runStrictModeIfApplicable(
-            {
-              compositionInput: fidelityOutcome.compositionInput,
-              deliverableId,
-            },
-            humanVoiceMode,
-          );
-          if (strictOutcome) {
-            yield {
-              event: 'strict_rewrite_complete',
-              data: buildStrictRewriteEventPayload(strictOutcome, strictOutcome.finalFidelityScore),
-            };
-          }
-        } catch (strictErr) {
-          console.error('[canvas-orchestrator] STRICT mode failed:', strictErr);
-        }
-      }
     } catch (fidelityErr) {
-      console.error('[canvas-orchestrator] fidelity scoring failed:', fidelityErr);
+      const message = fidelityErr instanceof Error ? fidelityErr.message : 'Unknown error';
+      console.error('[canvas-orchestrator] fidelity scoring failed:', message);
+      fidelityErrorMessage = message;
+    }
+
+    // ALTIJD terminal event yielden zodat de UI spinner clears.
+    // Bij failure of null result: skipped event met reason — anders blijft
+    // de "composite berekenen…" spinner eindeloos draaien.
+    if (fidelityOutcome) {
+      yield {
+        event: 'fidelity_score_complete',
+        data: buildFidelityScoreEventPayload(fidelityOutcome.result),
+      };
+
+      // ── Step 2.7: STRICT mode rewrite (conditional) ─
+      // Wanneer FidelityConfig.humanVoiceMode === STRICT en het origineel
+      // detector-verdict AI_LEANING/PURE_AI is, draaien we een rewrite
+      // via Claude Sonnet en herberekenen we de composition score.
+      yield { event: 'strict_rewrite_running', data: { stage: 'rewriting' } };
+      let strictOutcome: Awaited<ReturnType<typeof runStrictModeIfApplicable>> = null;
+      let strictErrorMessage: string | null = null;
+      try {
+        strictOutcome = await runStrictModeIfApplicable(
+          {
+            compositionInput: fidelityOutcome.compositionInput,
+            deliverableId,
+          },
+          humanVoiceMode,
+        );
+      } catch (strictErr) {
+        const message = strictErr instanceof Error ? strictErr.message : 'Unknown error';
+        console.error('[canvas-orchestrator] STRICT mode failed:', message);
+        strictErrorMessage = message;
+      }
+
+      if (strictOutcome) {
+        yield {
+          event: 'strict_rewrite_complete',
+          data: buildStrictRewriteEventPayload(strictOutcome, strictOutcome.finalFidelityScore),
+        };
+      } else {
+        // Skipped (mode !== STRICT) of failed — clear de spinner sowieso
+        yield {
+          event: 'strict_rewrite_skipped',
+          data: { reason: strictErrorMessage ?? 'STRICT mode not applicable for this workspace' },
+        };
+      }
+    } else {
+      // Composition runde niet (null) of throwde — emit skipped zodat UI niet hangt
+      yield {
+        event: 'fidelity_score_skipped',
+        data: {
+          reason:
+            fidelityErrorMessage ??
+            'Score could not be computed (insufficient signal or runtime issue)',
+        },
+      };
     }
   }
 

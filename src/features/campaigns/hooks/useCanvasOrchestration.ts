@@ -387,8 +387,19 @@ function routeEvent(eventName: string, rawData: string) {
       break;
     }
 
+    case 'fidelity_score_skipped': {
+      const reason = typeof data.reason === 'string' ? data.reason : 'Score skipped';
+      store.setFidelityScoreSkipped(reason);
+      break;
+    }
+
     case 'strict_rewrite_running':
       store.setStrictRewriteRunning();
+      break;
+
+    case 'strict_rewrite_skipped':
+      // Clear de STRICT spinner — geen verdict transition om te tonen
+      store.resetStrictRewrite();
       break;
 
     case 'strict_rewrite_complete': {

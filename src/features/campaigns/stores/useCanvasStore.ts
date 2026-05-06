@@ -90,8 +90,11 @@ interface CanvasStoreState {
   // ~5ms after generation) en fidelity_score_complete (full pijler 1+2+3
   // composite, ~20s na generation door cross-family judge call).
   fidelityScore: {
-    /** Streaming status — 'idle' until generation, 'computing' tijdens runner, 'complete' na composite */
-    stage: 'idle' | 'detector-only' | 'computing' | 'complete';
+    /** Streaming status — 'idle' until generation, 'computing' tijdens runner,
+     *  'complete' na composite, 'skipped' bij silent failure (clears spinner) */
+    stage: 'idle' | 'detector-only' | 'computing' | 'complete' | 'skipped';
+    /** Reden waarom scoring werd overgeslagen (alleen bij stage === 'skipped') */
+    skippedReason: string | null;
     /** Composite 0-100 — null tijdens detector-only fase */
     compositeScore: number | null;
     /** True wanneer composite >= compositeThreshold (default 75) */
@@ -256,6 +259,7 @@ interface CanvasStoreState {
     elapsedMs: number;
   }) => void;
   resetFidelityScore: () => void;
+  setFidelityScoreSkipped: (reason: string) => void;
   setStrictRewriteRunning: () => void;
   setStrictRewriteComplete: (data: {
     improved: boolean;
@@ -379,6 +383,7 @@ const INITIAL_STATE = {
   publishSuggestion: null,
   fidelityScore: {
     stage: 'idle' as const,
+    skippedReason: null,
     compositeScore: null,
     thresholdMet: null,
     compositeThreshold: null,
@@ -579,6 +584,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
     set({
       fidelityScore: {
         stage: 'complete',
+        skippedReason: null,
         compositeScore: data.compositeScore,
         thresholdMet: data.thresholdMet,
         compositeThreshold: data.compositeThreshold,
@@ -593,6 +599,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
     set({
       fidelityScore: {
         stage: 'idle',
+        skippedReason: null,
         compositeScore: null,
         thresholdMet: null,
         compositeThreshold: null,
@@ -602,6 +609,17 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         elapsedMs: null,
       },
     }),
+
+  setFidelityScoreSkipped: (reason) =>
+    set((state) => ({
+      fidelityScore: {
+        ...state.fidelityScore,
+        // Detector signaal blijven tonen (verdict + position) als die er al was;
+        // alleen composite stage flippen naar 'skipped' zodat spinner stopt.
+        stage: 'skipped',
+        skippedReason: reason,
+      },
+    })),
 
   setStrictRewriteRunning: () =>
     set((state) => ({

@@ -26,10 +26,10 @@ const ZONE_HEX = {
 } as const;
 
 const VERDICT_LABELS: Record<'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI', string> = {
-  TOP_TIER: 'Top-tier menselijk',
-  HUMAN_BASELINE: 'Mens-baseline',
-  AI_LEANING: 'AI-leunend',
-  PURE_AI: 'Pure AI',
+  TOP_TIER: 'Klinkt heel menselijk',
+  HUMAN_BASELINE: 'Klinkt menselijk',
+  AI_LEANING: 'Voelt AI-achtig',
+  PURE_AI: 'Klinkt als AI',
 };
 
 const VERDICT_COLOR: Record<keyof typeof VERDICT_LABELS, string> = {
@@ -70,25 +70,26 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
   const position = fidelity.humanBaselinePosition ?? 0;
   const verdict = fidelity.detectorVerdict;
   const isComplete = fidelity.stage === 'complete';
+  const isSkipped = fidelity.stage === 'skipped';
   const isComputing = fidelity.stage === 'computing' || fidelity.stage === 'detector-only';
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      {/* ─── Header row: composite + threshold ─── */}
+      {/* ─── Header row: titel + score badge ─── */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-teal-600" />
-            Fidelity score
-            {isComputing && !isComplete && (
+            Brand fidelity score
+            {isComputing && !isComplete && !isSkipped && (
               <span className="inline-flex items-center gap-1 text-xs font-normal text-gray-500 ml-2">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                composite berekenen…
+                bezig met meten…
               </span>
             )}
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Hoe trouw is deze output aan jouw merk t.o.v. een vanille AI?
+            Hoe goed past deze tekst bij jouw merk?
           </p>
         </div>
 
@@ -106,21 +107,33 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
         )}
       </div>
 
-      {/* ─── Position bar (mens↔AI schaal) ─── */}
-      <PositionBar position={position} />
+      {/* ─── Position bar (mens↔AI schaal) met as-labels ─── */}
+      <div className="space-y-1">
+        <PositionBar position={position} />
+        <div className="flex items-center justify-between text-[10px] text-gray-500 font-medium uppercase tracking-wide">
+          <span>← Klinkt menselijk</span>
+          <span>Klinkt als AI →</span>
+        </div>
+      </div>
 
-      {/* ─── Verdict label ─── */}
-      {verdict && (
-        <div className="mt-2 flex items-center justify-between text-xs">
+      {/* ─── Verdict label + skipped fallback ─── */}
+      {verdict && !isSkipped && (
+        <div className="mt-2 text-xs">
           <span className="font-medium" style={{ color: VERDICT_COLOR[verdict] }}>
             {VERDICT_LABELS[verdict]}
           </span>
-          <span className="text-gray-500">
-            positie {position}/100
-            {isComplete && fidelity.elapsedMs !== null && (
-              <> · berekend in {(fidelity.elapsedMs / 1000).toFixed(0)}s</>
-            )}
-          </span>
+          {isComplete && fidelity.elapsedMs !== null && (
+            <span className="text-gray-500"> · gemeten in {(fidelity.elapsedMs / 1000).toFixed(0)}s</span>
+          )}
+        </div>
+      )}
+
+      {/* ─── Skipped state — composite faalde maar detector heeft signaal ─── */}
+      {isSkipped && (
+        <div className="mt-2 text-xs text-gray-500 italic">
+          {verdict
+            ? `${VERDICT_LABELS[verdict]} — uitgebreide score niet beschikbaar.`
+            : 'Score kon niet berekend worden.'}
         </div>
       )}
 
@@ -129,9 +142,9 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
         <div className="mt-3 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2 flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-violet-900">STRICT mode aan het herschrijven…</p>
+            <p className="text-sm font-medium text-violet-900">Branddock verbetert de output…</p>
             <p className="text-xs text-violet-700">
-              Verdict was AI-leunend — Branddock verbetert de output automatisch. ~15-30s.
+              De tekst klinkt nog AI-achtig — we schrijven hem menselijker. ~15-30s.
             </p>
           </div>
         </div>
@@ -155,7 +168,7 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
             onClick={() => setShowPillars((v) => !v)}
             className="w-full flex items-center justify-between text-xs font-medium text-gray-700 hover:text-gray-900"
           >
-            <span>Per-pijler breakdown</span>
+            <span>Bekijk hoe deze score is opgebouwd</span>
             {showPillars ? (
               <ChevronUp className="w-3.5 h-3.5" />
             ) : (
@@ -164,9 +177,9 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
           </button>
           {showPillars && (
             <div className="mt-2 grid grid-cols-3 gap-2">
-              <PillarChip label="Pijler 1" sublabel="Brand voice" score={fidelity.pillars.style} />
-              <PillarChip label="Pijler 2" sublabel="G-Eval rubric" score={fidelity.pillars.judge} />
-              <PillarChip label="Pijler 3" sublabel="Anti-tell + rules" score={fidelity.pillars.rules} />
+              <PillarChip label="Merkstijl" sublabel="Gebruikt jouw woorden" score={fidelity.pillars.style} />
+              <PillarChip label="Strategie" sublabel="AI-beoordeling" score={fidelity.pillars.judge} />
+              <PillarChip label="Menselijk" sublabel="Geen AI-patronen" score={fidelity.pillars.rules} />
             </div>
           )}
         </div>
@@ -228,14 +241,12 @@ function StrictImprovedBlock({
     <div className="mt-3 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5">
       <div className="flex items-center gap-1.5 mb-1">
         <Sparkles className="w-4 h-4 text-violet-600" />
-        <span className="text-sm font-semibold text-violet-900">STRICT mode auto-verbeterd</span>
+        <span className="text-sm font-semibold text-violet-900">Branddock heeft de tekst menselijker gemaakt</span>
       </div>
       <div className="text-xs text-violet-800">
-        <span className="font-medium">{VERDICT_LABELS[before.verdict]}</span>
-        <span className="text-violet-500"> (pos {before.humanBaselinePosition})</span>
+        Was: <span className="font-medium">{VERDICT_LABELS[before.verdict]}</span>
         <span className="mx-1.5">→</span>
-        <span className="font-medium">{VERDICT_LABELS[after.verdict]}</span>
-        <span className="text-violet-500"> (pos {after.humanBaselinePosition})</span>
+        Nu: <span className="font-medium">{VERDICT_LABELS[after.verdict]}</span>
       </div>
 
       {rewritePreview && (
@@ -245,7 +256,7 @@ function StrictImprovedBlock({
             onClick={() => setShowPreview((v) => !v)}
             className="w-full flex items-center justify-between text-xs font-medium text-violet-700 hover:text-violet-900"
           >
-            <span>{showPreview ? 'Verberg' : 'Bekijk'} STRICT-verbeterde versie</span>
+            <span>{showPreview ? 'Verberg' : 'Bekijk'} de menselijkere versie</span>
             {showPreview ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
           {showPreview && (
@@ -272,7 +283,7 @@ function StrictImprovedBlock({
               ) : (
                 <>
                   <Sparkles className="w-3.5 h-3.5" />
-                  Pas STRICT versie toe op variant A
+                  Gebruik deze versie
                 </>
               )}
             </button>
@@ -281,7 +292,7 @@ function StrictImprovedBlock({
           {applyState === 'applied' && (
             <div className="mt-2 text-xs text-violet-700 font-medium inline-flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
-              Toegepast — refresh om de nieuwe content in variant A te zien
+              Toegepast — ververs de pagina om de nieuwe tekst te zien
             </div>
           )}
 
@@ -330,7 +341,7 @@ function VanillaComparisonPanel({
           className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-teal-200 bg-teal-50 text-sm font-medium text-teal-700 hover:bg-teal-100 transition-colors"
         >
           <Sparkles className="w-4 h-4" />
-          Vergelijk met vanille ChatGPT
+          Vergelijk met ChatGPT zonder Branddock
         </button>
       </div>
     );
@@ -344,10 +355,10 @@ function VanillaComparisonPanel({
           <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900">
-              {vanilla.stage === 'generating' ? 'Vanille ChatGPT genereert…' : 'Composite berekenen…'}
+              {vanilla.stage === 'generating' ? 'ChatGPT schrijft de tekst…' : 'Score berekenen…'}
             </p>
             <p className="text-xs text-gray-500">
-              GPT-4o output zonder Branddock context — meestal 30-60s totaal.
+              Zelfde briefing, maar zonder jouw merkcontext — meestal 30-60s totaal.
             </p>
           </div>
         </div>
@@ -384,7 +395,7 @@ function VanillaComparisonPanel({
       <div className="mt-4 pt-3 border-t border-gray-100">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-4 h-4 text-teal-600" />
-          <h4 className="text-sm font-semibold text-gray-900">Vergelijking met vanille ChatGPT</h4>
+          <h4 className="text-sm font-semibold text-gray-900">Vergelijking: met vs. zonder Branddock</h4>
         </div>
 
         {/* Delta hero */}
@@ -395,34 +406,39 @@ function VanillaComparisonPanel({
         >
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs font-medium text-gray-600">Branddock − ChatGPT</div>
+              <div className="text-xs font-medium text-gray-600">Verschil in score</div>
               <div
                 className={`text-3xl font-bold ${branddockWins ? 'text-emerald-700' : 'text-amber-700'}`}
               >
                 {delta >= 0 ? '+' : ''}
                 {delta} punten
               </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xs text-gray-600">positie-verschil</div>
-              <div className="text-lg font-semibold text-gray-900 inline-flex items-center gap-1">
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
-                {positionDelta > 0 ? `${positionDelta} stappen menselijker` : `${Math.abs(positionDelta)} stappen meer AI`}
+              <div className="text-xs text-gray-500 mt-0.5">
+                {branddockWins ? 'beter mét Branddock' : 'beter zonder'}
               </div>
             </div>
+            {positionDelta !== 0 && (
+              <div className="text-right">
+                <div className="text-xs text-gray-600">menselijkheid</div>
+                <div className="text-sm font-semibold text-gray-900 inline-flex items-center gap-1">
+                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  {positionDelta > 0 ? 'menselijker met Branddock' : 'menselijker zonder'}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Side-by-side score-mini */}
         <div className="grid grid-cols-2 gap-2">
           <ScoreMini
-            label="Branddock"
+            label="Met Branddock"
             composite={branddockComposite}
             position={branddockPosition}
             highlight
           />
           <ScoreMini
-            label={`Vanille ${vanilla.model ?? 'GPT-4o'}`}
+            label={`Zonder Branddock (${vanilla.model ?? 'GPT-4o'})`}
             composite={vanilla.compositeScore}
             position={vanilla.humanBaselinePosition ?? 0}
           />
