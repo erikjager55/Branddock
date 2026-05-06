@@ -196,9 +196,16 @@ Guidelines:
 - Mission is present-tense action, Vision is future-tense aspiration.`;
 
 // ─── 3. Brand Foundation B (Claude) ──────────────────────────
-// Brand Archetype, Brand Personality, Brand Story, Core Values, Social Relevancy, Transformative Goals
+// Brand Archetype, Brand Personality, Brand Voice Guide, Brand Story,
+// Core Values, Social Relevancy, Transformative Goals
+//
+// BV-WIRE W-3: brandVoiceguide is extracted alongside brandPersonality
+// during the BV-5 soft-migration window. AI populates voice signals into
+// BOTH brandPersonality.frameworkData (legacy) AND brandVoiceguide (new);
+// they should be consistent. After deprecation-window expires, the
+// brandPersonality voice fields will be removed.
 
-export const BRAND_FOUNDATION_B_SYSTEM_PROMPT = `You are a senior brand strategist. You will receive structured extraction data from a company's website. Your task is to analyze this data and generate framework content for 6 brand assets.
+export const BRAND_FOUNDATION_B_SYSTEM_PROMPT = `You are a senior brand strategist. You will receive structured extraction data from a company's website. Your task is to analyze this data and generate framework content for 7 brand assets.
 
 You must respond with a valid JSON object with these keys:
 
@@ -273,6 +280,21 @@ You must respond with a valid JSON object with these keys:
       "colorDirection": string,
       "typographyDirection": string,
       "imageryDirection": string
+    }
+  },
+  "brandVoiceguide": {
+    "confidence": number (0-100),
+    "voiceDescription": string (1-3 sentences capturing the brand's verbal identity — should mirror brandPersonality.frameworkData.brandVoiceDescription),
+    "writingSamples": string[] (1-3 representative paragraphs in the brand's voice — first sample should match brandPersonality.frameworkData.writingSample),
+    "wordsWeUse": string[] (5-10 — should match brandPersonality.frameworkData.wordsWeUse),
+    "wordsWeAvoid": string[] (5-10 — should match brandPersonality.frameworkData.wordsWeAvoid),
+    "antiPatterns": string[] (3-7 multi-word phrases the brand should never use, e.g. AI-tells like "in een wereld die steeds sneller verandert" or hollow marketing constructions),
+    "channelTones": {
+      "website": string (tone description, may match brandPersonality.frameworkData.channelTones.website),
+      "socialMedia": string,
+      "email": string,
+      "ads": string (paid advertising tone),
+      "video": string (video/audio script tone)
     }
   },
   "brandStory": {
@@ -358,6 +380,7 @@ Guidelines:
 - Use the company's own language and terminology where possible.
 - Always recommend exactly ONE archetype. NEVER suggest a blend or combination.
 - Brand Personality should be inferred from the brand's tone, word choice, and visual signals.
+- Brand Voice Guide must mirror the voice signals you placed in brandPersonality.frameworkData (voiceDescription ~ brandVoiceDescription, writingSamples[0] ~ writingSample, identical wordsWeUse / wordsWeAvoid). The two outputs are intentionally redundant during the soft-migration window — they MUST be consistent. brandVoiceguide.antiPatterns is voiceguide-only; populate with multi-word phrases from the website that read as hollow marketing or AI tells.
 - Brand Story should follow the StoryBrand framework (Donald Miller): character → problem → guide → plan → action → success.
 - Core Values (BrandHouse model): Roots are anchor values already lived, Wings are aspiration values for direction, Fire is the single most distinguishing value.
 - Social Relevancy: only include if there is genuine evidence of social impact. Low confidence if not found.
