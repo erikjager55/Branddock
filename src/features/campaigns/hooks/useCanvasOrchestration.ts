@@ -63,6 +63,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
     store.setGlobalStatus('generating');
     store.resetFidelityScore();
     store.resetStrictRewrite();
+    store.resetVisualFidelity();
     isGeneratingRef.current = true;
 
     // Abort previous request if any
@@ -434,6 +435,27 @@ function routeEvent(eventName: string, rawData: string) {
       if (finalScore && typeof finalScore === 'object' && 'compositeScore' in finalScore) {
         store.setFidelityComplete(finalScore);
       }
+      break;
+    }
+
+    case 'visual_fidelity_running': {
+      const componentIds = Array.isArray(data.componentIds)
+        ? (data.componentIds as unknown[]).filter(
+            (id): id is string => typeof id === 'string',
+          )
+        : [];
+      if (componentIds.length > 0) store.setVisualFidelityRunning(componentIds);
+      break;
+    }
+
+    case 'visual_fidelity_complete': {
+      const results = Array.isArray(data.results)
+        ? (data.results as unknown[]).filter(
+            (r): r is { componentId: string; compositeScore: number | null; thresholdMet: boolean; judgeSkipped: boolean; error?: string } =>
+              typeof r === 'object' && r !== null && typeof (r as { componentId?: unknown }).componentId === 'string',
+          )
+        : [];
+      if (results.length > 0) store.setVisualFidelityComplete(results);
       break;
     }
 

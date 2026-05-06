@@ -36,6 +36,7 @@ import {
   runStrictModeIfApplicable,
   buildStrictRewriteEventPayload,
 } from '@/lib/brand-fidelity/fidelity-runner';
+import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer';
 import { sanitizeVariantContent } from '@/features/campaigns/lib/variant-content-sanitizer';
 import OpenAI from 'openai';
 
@@ -401,8 +402,9 @@ export async function* orchestrateContentGeneration(
   }
 
   // ── Step 5: Persist variants ──────────────────────────
+  let imageComponentIds: string[] = [];
   try {
-    await persistVariants(
+    const result = await persistVariants(
       deliverableId,
       workspaceId,
       textResult,
@@ -410,6 +412,7 @@ export async function* orchestrateContentGeneration(
       { provider: textModel.provider, textDurationMs, imageDurationMs },
       publishSuggestion,
     );
+    imageComponentIds = result.imageComponentIds;
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown persistence error';
     console.error('[canvas-orchestrator] persistVariants failed:', message);
@@ -418,6 +421,16 @@ export async function* orchestrateContentGeneration(
       data: { message: `Failed to save generated content: ${message}`, recoverable: true },
     };
     return;
+  }
+
+  // ── Step 6: Visual fidelity scoring (G8) ─────────────
+  // Score each generated image in parallel against brand visual identity
+  // (deterministic color alignment + Claude vision judge). Fire-and-forget
+  // would be cleaner, but we yield SSE events so the canvas UI can show
+  // per-variant scores immediately rather than waiting for a refresh.
+  // Total ~12-15s (the longest single judge call) since we run in parallel.
+  if (imageComponentIds.length > 0) {
+    yield* runVisualFidelityScoring(workspaceId, imageComponentIds);
   }
 
   // ── Complete ──────────────────────────────────────────
@@ -1638,7 +1651,7 @@ async function persistVariants(
   imageResults: Array<ImageResult | null>,
   meta: { provider: string; textDurationMs: number; imageDurationMs: number },
   publishSuggestion: PublishSuggestion | null,
-): Promise<void> {
+): Promise<{ imageComponentIds: string[] }> {
   // Persist creative-angle labels op Deliverable.settings.variantAngles
   // BEFORE de transaction. Geen schema migration nodig — settings is een
   // bestaand Json veld. Bij page-reload haalt CanvasPage hydrate-flow dit
@@ -1662,6 +1675,8 @@ async function persistVariants(
       console.warn('[canvas-orchestrator] variantAngles persist failed:', (err as Error).message);
     }
   }
+
+  const imageComponentIds: string[] = [];
 
   await prisma.$transaction(async (tx) => {
     // Delete all existing components for fresh generation
@@ -1703,11 +1718,12 @@ async function persistVariants(
       }
     }
 
-    // Create image components
+    // Create image components — capture IDs so the caller can trigger
+    // visual fidelity scoring (G8) after the transaction commits.
     const successfulImages = imageResults.filter((r): r is ImageResult => r !== null);
     for (let variantIndex = 0; variantIndex < successfulImages.length; variantIndex++) {
       const img = successfulImages[variantIndex];
-      await tx.deliverableComponent.create({
+      const created = await tx.deliverableComponent.create({
         data: {
           deliverableId,
           componentType: 'image',
@@ -1725,7 +1741,9 @@ async function persistVariants(
           generatedAt: new Date(),
           iterationCount: 0,
         },
+        select: { id: true },
       });
+      imageComponentIds.push(created.id);
     }
 
     // Update deliverable with publish suggestion (clear stale date if null)
@@ -1738,6 +1756,8 @@ async function persistVariants(
   // Invalidate caches
   invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
   invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
+  return { imageComponentIds };
 }
 
 async function persistRegeneratedGroup(
@@ -1907,4 +1927,60 @@ function buildImagePromptInstruction(brief: VisualBrief | null): string {
     ? `\nAdditional visual direction from the user: ${brief.styleDirectionFreeText.trim()}`
     : '';
   return baseInstruction + chipGuide + freeTextGuide;
+}
+
+// ─── G8 visual fidelity scoring (Phase 2 wire-in) ────────────
+
+/**
+ * Score every freshly-generated image component against brand visual identity.
+ *
+ * Strategy: parallel `Promise.all` so total latency = max(individual)
+ * instead of sum. Each call costs ~$0.04 (Claude Sonnet vision). Failures
+ * surface as `score: null` in the result array — UI shows skipped state.
+ *
+ * Yields:
+ *   - `visual_fidelity_running`  payload: { componentIds: string[] }
+ *   - `visual_fidelity_complete` payload: { results: Array<{ componentId, compositeScore, thresholdMet, judgeSkipped, error?: string }> }
+ */
+async function* runVisualFidelityScoring(
+  workspaceId: string,
+  imageComponentIds: string[],
+): AsyncGenerator<OrchestrationEvent> {
+  yield {
+    event: 'visual_fidelity_running',
+    data: { componentIds: imageComponentIds },
+  };
+
+  const settled = await Promise.allSettled(
+    imageComponentIds.map((componentId) =>
+      scoreImageFidelity({ componentId, workspaceId }),
+    ),
+  );
+
+  const results = settled.map((s, i) => {
+    if (s.status === 'fulfilled') {
+      return {
+        componentId: imageComponentIds[i],
+        compositeScore: s.value.compositeScore,
+        thresholdMet: s.value.thresholdMet,
+        judgeSkipped: s.value.judgeSkipped,
+      };
+    }
+    const message = s.reason instanceof Error ? s.reason.message : String(s.reason);
+    console.warn(
+      `[canvas-orchestrator] visual fidelity scoring failed for ${imageComponentIds[i]}: ${message}`,
+    );
+    return {
+      componentId: imageComponentIds[i],
+      compositeScore: null,
+      thresholdMet: false,
+      judgeSkipped: true,
+      error: message,
+    };
+  });
+
+  yield {
+    event: 'visual_fidelity_complete',
+    data: { results },
+  };
 }

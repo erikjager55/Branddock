@@ -28,6 +28,9 @@ export interface CanvasImageVariant {
   url: string;
   prompt: string;
   isSelected: boolean;
+  /** DeliverableComponent id — needed to look up the matching G8 visual
+   *  fidelity score in `useCanvasStore.visualFidelityScores`. */
+  componentId?: string;
 }
 
 export interface CanvasComponentResponse {

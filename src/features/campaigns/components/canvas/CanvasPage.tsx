@@ -108,6 +108,7 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
   const variantAngles = componentsData?.variantAngles ?? [];
   const persistedFidelityScore = componentsData?.fidelityScore ?? null;
   const persistedStrictRewrite = componentsData?.strictRewrite ?? null;
+  const persistedVisualFidelityScores = componentsData?.visualFidelityScores ?? null;
 
   const statusConfig = STATUS_BADGE[approvalStatus];
 
@@ -324,6 +325,7 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           url: c.imageUrl ?? '',
           prompt: c.imagePromptUsed ?? '',
           isSelected: c.isSelected,
+          componentId: c.id,
         })),
       );
     }
@@ -426,6 +428,20 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
       });
     }
   }, [persistedFidelityScore, persistedStrictRewrite]);
+
+  // G8 — hydrate per-image visual fidelity scores so the badges show
+  // immediately on page load (not only after a fresh canvas generation).
+  useEffect(() => {
+    if (!persistedVisualFidelityScores || persistedVisualFidelityScores.length === 0) return;
+    useCanvasStore.getState().setVisualFidelityComplete(
+      persistedVisualFidelityScores.map((s) => ({
+        componentId: s.componentId,
+        compositeScore: s.compositeScore,
+        thresholdMet: s.thresholdMet,
+        judgeSkipped: s.judgeSkipped,
+      })),
+    );
+  }, [persistedVisualFidelityScores]);
 
   // Persist activeStep + completedSteps back to the deliverable settings so
   // reopening the item lands on the same step. Only saves after initial

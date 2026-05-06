@@ -151,6 +151,21 @@ interface CanvasStoreState {
     errorMessage: string | null;
   };
 
+  // ─── G8 Visual fidelity scores per image component ────────
+  // Per-componentId score state. Populated streaming via
+  // visual_fidelity_running (componentIds known) and
+  // visual_fidelity_complete (results). Cleared on regenerate.
+  visualFidelityScores: Map<
+    string,
+    {
+      stage: 'idle' | 'computing' | 'complete' | 'skipped';
+      compositeScore: number | null;
+      thresholdMet: boolean;
+      judgeSkipped: boolean;
+      errorMessage: string | null;
+    }
+  >;
+
   // ─── Additional knowledge context ────────────────────────
   additionalContextItems: Map<string, SelectedContextItem>;
   contextSelectorOpen: boolean;
@@ -278,6 +293,18 @@ interface CanvasStoreState {
     pillars: { style: number | null; judge: number | null; rules: number | null };
   }) => void;
   resetVanillaBaseline: () => void;
+  // G8 visual fidelity setters
+  setVisualFidelityRunning: (componentIds: string[]) => void;
+  setVisualFidelityComplete: (
+    results: Array<{
+      componentId: string;
+      compositeScore: number | null;
+      thresholdMet: boolean;
+      judgeSkipped: boolean;
+      error?: string;
+    }>,
+  ) => void;
+  resetVisualFidelity: () => void;
   setFeedbackDraft: (text: string) => void;
   setFeedbackGroup: (group: string | null) => void;
   toggleContextSelector: () => void;
@@ -411,6 +438,16 @@ const INITIAL_STATE = {
     model: null,
     errorMessage: null,
   },
+  visualFidelityScores: new Map<
+    string,
+    {
+      stage: 'idle' | 'computing' | 'complete' | 'skipped';
+      compositeScore: number | null;
+      thresholdMet: boolean;
+      judgeSkipped: boolean;
+      errorMessage: string | null;
+    }
+  >(),
   additionalContextItems: new Map<string, SelectedContextItem>(),
   contextSelectorOpen: false,
   feedbackDraft: '',
@@ -696,6 +733,40 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         errorMessage: null,
       },
     }),
+
+  setVisualFidelityRunning: (componentIds) =>
+    set((state) => {
+      const next = new Map(state.visualFidelityScores);
+      for (const id of componentIds) {
+        next.set(id, {
+          stage: 'computing',
+          compositeScore: null,
+          thresholdMet: false,
+          judgeSkipped: false,
+          errorMessage: null,
+        });
+      }
+      return { visualFidelityScores: next };
+    }),
+
+  setVisualFidelityComplete: (results) =>
+    set((state) => {
+      const next = new Map(state.visualFidelityScores);
+      for (const r of results) {
+        const failed = r.compositeScore === null;
+        next.set(r.componentId, {
+          stage: failed ? 'skipped' : 'complete',
+          compositeScore: r.compositeScore,
+          thresholdMet: r.thresholdMet,
+          judgeSkipped: r.judgeSkipped,
+          errorMessage: r.error ?? null,
+        });
+      }
+      return { visualFidelityScores: next };
+    }),
+
+  resetVisualFidelity: () =>
+    set({ visualFidelityScores: new Map() }),
 
   setFeedbackDraft: (text) => set({ feedbackDraft: text }),
 

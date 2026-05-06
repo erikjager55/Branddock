@@ -29,6 +29,13 @@ export interface PersistedStrictRewrite {
   rewrittenAt?: string;
 }
 
+export interface PersistedVisualFidelityScore {
+  componentId: string;
+  compositeScore: number;
+  thresholdMet: boolean;
+  judgeSkipped: boolean;
+}
+
 export interface FetchCanvasComponentsResult {
   components: CanvasComponentResponse[];
   /** Creative angle labels — geïndexeerd op variantIndex.
@@ -38,6 +45,8 @@ export interface FetchCanvasComponentsResult {
   fidelityScore: PersistedFidelityScore | null;
   /** Persisted STRICT rewrite snapshot — hydrate STRICT badge bij refresh */
   strictRewrite: PersistedStrictRewrite | null;
+  /** G8 — most recent visual fidelity score per image component for badge hydration. */
+  visualFidelityScores: PersistedVisualFidelityScore[];
 }
 
 /** Fetch all DeliverableComponent records for a deliverable + creative angle labels + persisted fidelity */
@@ -50,6 +59,7 @@ export async function fetchCanvasComponents(deliverableId: string): Promise<Fetc
     variantAngles: Array.isArray(data.variantAngles) ? data.variantAngles : [],
     fidelityScore: data.fidelityScore ?? null,
     strictRewrite: data.strictRewrite ?? null,
+    visualFidelityScores: Array.isArray(data.visualFidelityScores) ? data.visualFidelityScores : [],
   };
 }
 

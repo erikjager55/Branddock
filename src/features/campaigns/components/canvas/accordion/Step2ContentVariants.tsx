@@ -6,6 +6,7 @@ import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { resolvePreviewComponent } from '../previews/preview-map';
 import { VariantIndexOverrideProvider } from '../previews/InlineEditableSection';
 import { FeedbackBar } from '../FeedbackBar';
+import { VisualFidelityBadge } from '../VisualFidelityBadge';
 import { Badge } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { PreviewContent } from '../../../types/canvas.types';
@@ -672,6 +673,10 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
                 }}
               >
                 <img src={img.url} alt={img.prompt} className="w-full aspect-square object-cover" />
+                {/* G8 — visual fidelity badge in top-left when scored */}
+                <div className="absolute top-2 left-2 pointer-events-none">
+                  <VisualFidelityBadge componentId={img.componentId} variant="compact" />
+                </div>
                 {img.isSelected && (
                   <div className="absolute top-2 right-2 rounded-full bg-white/90 p-1 shadow">
                     <Check className="h-3.5 w-3.5" style={{ color: '#7c3aed' }} />
