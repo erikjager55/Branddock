@@ -24,6 +24,7 @@ import { detectAiTells, type AiTellResult } from './ai-tell-detector';
 import { evaluateBrandRules, type RuleEvaluationResult } from './rule-compiler';
 import { runRubricJudge, type GeneratorProvider } from './judge-dispatcher';
 import { scoreBrandStyle, type StyleScoreResult } from './style-scorer';
+import { scoreVoiceSimilarity, type VoiceSimilarityResult } from './voice-similarity';
 import type { GEvalDimension, GEvalResult } from './g-eval-rubric';
 
 // ─── Input ──────────────────────────────────────────
@@ -78,6 +79,15 @@ export interface FidelityCompositionInput {
 
   /** Composite ≥ deze waarde = thresholdMet. Default 75. */
   compositeThreshold?: number;
+
+  /**
+   * BrandVoiceguide centroid (1536-dim, OpenAI text-embedding-3-small).
+   * Wanneer aanwezig wordt pijler 1 een 50/50 weighted combination van
+   * de string-match composite uit `scoreBrandStyle` en de cosine-similarity
+   * van de gegenereerde content tegen de centroid (W-1-full). Null of
+   * undefined → pijler 1 valt terug op string-match alleen.
+   */
+  voiceguideCentroid?: number[] | null;
 }
 
 // ─── Output ─────────────────────────────────────────
@@ -112,6 +122,10 @@ export interface FidelityCompositeResult {
   detectorVerdict: AiTellResult['verdict'];
   /** Position 0-100 op mens↔AI schaal — demo position-bar */
   humanBaselinePosition: number;
+  /** Voice-similarity result (W-1-full). Null wanneer geen centroid of embedding-call faalde. */
+  voiceSimilarity: VoiceSimilarityResult | null;
+  /** Effective pijler 1 score = combinatie van style + voiceSimilarity wanneer beide beschikbaar */
+  pillar1EffectiveScore: number;
   /** Pillar-niveau breakdown */
   pillars: {
     style: PillarBreakdown<StyleScoreResult>;
@@ -220,11 +234,31 @@ export async function computeFidelityScore(
   const detectorResult = detectAiTells(input.contentText);
   const rulesResult = await evaluateBrandRules(input.workspaceId, input.contentText);
 
+  // W-1-full: voice-similarity via centroid embedding when available.
+  // Runs in parallel with the deterministic pillars above (rules already async,
+  // detector + scoreBrandStyle were sub-ms). Embedding call adds ~200-500ms.
+  const voiceSimilarity = input.voiceguideCentroid
+    ? await scoreVoiceSimilarity(input.contentText, input.voiceguideCentroid)
+    : null;
+
   const pillar3 = computePillar3(detectorResult, rulesResult);
 
-  // Pijler 1 heeft alleen betekenis met declared BrandPersonality signals.
-  // Zonder vocab + traits is het meten tegen niets → skip & herverdeel weight.
-  const skipStyle = styleResult.declaredSignalCount === 0;
+  // Pijler 1 effective score: combineer string-match composite met semantic
+  // similarity wanneer beide beschikbaar. 50/50 wegen — beide signalen vangen
+  // verschillende aspecten (declared vocab vs ritme/registers in samples).
+  const hasStringSignal = styleResult.declaredSignalCount > 0;
+  const hasSemanticSignal = voiceSimilarity !== null;
+  let pillar1EffectiveScore = 0;
+  if (hasStringSignal && hasSemanticSignal) {
+    pillar1EffectiveScore = Math.round(styleResult.compositeScore * 0.5 + voiceSimilarity!.score * 0.5);
+  } else if (hasStringSignal) {
+    pillar1EffectiveScore = styleResult.compositeScore;
+  } else if (hasSemanticSignal) {
+    pillar1EffectiveScore = voiceSimilarity!.score;
+  }
+
+  // Skip pijler 1 alleen wanneer NEITHER signal is available.
+  const skipStyle = !hasStringSignal && !hasSemanticSignal;
 
   const skipJudge = input.skipJudge === true;
   let judgeBreakdown: PillarBreakdown<GEvalResult> | null = null;
@@ -256,7 +290,7 @@ export async function computeFidelityScore(
   const weights = normalizeWeights(input.pillarWeights ?? {}, skipJudge, skipStyle);
 
   const compositeScore = Math.round(
-    (skipStyle ? 0 : styleResult.compositeScore * weights.style) +
+    (skipStyle ? 0 : pillar1EffectiveScore * weights.style) +
       (judgeBreakdown ? judgeBreakdown.score * weights.judge : 0) +
       pillar3.score * weights.rules,
   );
@@ -271,14 +305,16 @@ export async function computeFidelityScore(
     compositeThreshold,
     detectorVerdict: detectorResult.verdict,
     humanBaselinePosition: detectorResult.humanBaselinePosition,
+    voiceSimilarity,
+    pillar1EffectiveScore,
     pillars: {
-      style: { score: styleResult.compositeScore, weight: weights.style, result: styleResult },
+      style: { score: pillar1EffectiveScore, weight: weights.style, result: styleResult },
       judge: judgeBreakdown,
       rules: { score: pillar3.score, weight: weights.rules, result: pillar3.raw },
     },
     wordCount: detectorResult.wordCount,
     elapsedMs: Date.now() - startedAt,
-    scorerVersion: SCORER_VERSION,
+    scorerVersion: hasSemanticSignal ? `${SCORER_VERSION}+voice-emb-1.0` : SCORER_VERSION,
   };
 }
 

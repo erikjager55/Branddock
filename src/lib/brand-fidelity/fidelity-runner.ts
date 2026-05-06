@@ -20,6 +20,7 @@ import {
   type FidelityCompositionInput,
 } from './composition-engine';
 import { getOrCreateFidelityConfig } from './fidelity-config';
+import { fetchVoiceguideCentroid } from './voice-similarity';
 import { runStrictModeRewrite, type StrictModeResult } from './strict-mode';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
@@ -394,9 +395,10 @@ export async function runFidelityScoring(
       return null;
     }
 
-    const [personality, config] = await Promise.all([
+    const [personality, config, voiceguideCentroid] = await Promise.all([
       fetchBrandPersonalityInput(input.workspaceId),
       getOrCreateFidelityConfig(input.workspaceId),
+      fetchVoiceguideCentroid(input.workspaceId),
     ]);
 
     const targetWordCount = resolveTargetWordCount(input.contentTypeId);
@@ -428,6 +430,7 @@ export async function runFidelityScoring(
       },
       rubricWeights,
       skipJudge: input.skipJudge,
+      voiceguideCentroid,
     };
 
     const result = await computeFidelityScore(compositionInput);
