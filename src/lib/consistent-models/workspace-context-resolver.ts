@@ -20,59 +20,74 @@ import { extractBrandTags } from '@/lib/consistent-models/reference-prompt-build
 export async function resolveWorkspaceBrandContext(
   workspaceId: string,
 ): Promise<ModelBrandContext | null> {
-  const [workspace, styleguide, personas, products, competitors, trends, personalityAsset] =
-    await Promise.all([
-      prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { name: true },
-      }),
-      prisma.brandStyleguide.findFirst({
-        where: { workspaceId },
-        select: {
-          colors: { select: { name: true, hex: true } },
-          primaryFontName: true,
-          photographyStyle: true,
-          photographyGuidelines: true,
-          designLanguageSavedForAi: true,
-          toneSavedForAi: true,
-          imagerySavedForAi: true,
-          logos: {
-            orderBy: { sortOrder: 'asc' },
-            select: { variant: true, fileUrl: true, description: true },
-          },
-          logoGuidelines: true,
-          logoDonts: true,
+  const [
+    workspace,
+    styleguide,
+    personas,
+    products,
+    competitors,
+    trends,
+    personalityAsset,
+    voiceguide,
+  ] = await Promise.all([
+    prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { name: true },
+    }),
+    prisma.brandStyleguide.findFirst({
+      where: { workspaceId },
+      select: {
+        colors: { select: { name: true, hex: true } },
+        primaryFontName: true,
+        photographyStyle: true,
+        photographyGuidelines: true,
+        designLanguageSavedForAi: true,
+        toneSavedForAi: true,
+        imagerySavedForAi: true,
+        logos: {
+          orderBy: { sortOrder: 'asc' },
+          select: { variant: true, fileUrl: true, description: true },
         },
-      }),
-      prisma.persona.findMany({
-        where: { workspaceId },
-        select: { name: true, occupation: true, tagline: true },
-        orderBy: { updatedAt: 'desc' },
-        take: 5,
-      }),
-      prisma.product.findMany({
-        where: { workspaceId },
-        select: { name: true, category: true, description: true },
-        orderBy: { updatedAt: 'desc' },
-        take: 10,
-      }),
-      prisma.competitor.findMany({
-        where: { workspaceId, status: 'ANALYZED' },
-        select: { name: true, valueProposition: true },
-        orderBy: { updatedAt: 'desc' },
-        take: 5,
-      }),
-      prisma.detectedTrend.findMany({
-        where: { workspaceId, isActivated: true },
-        select: { title: true, description: true },
-        orderBy: { relevanceScore: 'desc' },
-        take: 5,
-      }),
-      prisma.brandAsset.findFirst({
-        where: { workspaceId, slug: 'brand-personality' },
-        select: { frameworkData: true },
-      }),
-    ]);
+        logoGuidelines: true,
+        logoDonts: true,
+      },
+    }),
+    prisma.persona.findMany({
+      where: { workspaceId },
+      select: { name: true, occupation: true, tagline: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+    }),
+    prisma.product.findMany({
+      where: { workspaceId },
+      select: { name: true, category: true, description: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+    }),
+    prisma.competitor.findMany({
+      where: { workspaceId, status: 'ANALYZED' },
+      select: { name: true, valueProposition: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+    }),
+    prisma.detectedTrend.findMany({
+      where: { workspaceId, isActivated: true },
+      select: { title: true, description: true },
+      orderBy: { relevanceScore: 'desc' },
+      take: 5,
+    }),
+    // Personality asset still queried for psychographic data (personalityTraits → mood keywords)
+    prisma.brandAsset.findFirst({
+      where: { workspaceId, slug: 'brand-personality' },
+      select: { frameworkData: true },
+    }),
+    // BV-WIRE W-4: voiceguide is single source of truth for voice signals.
+    // Falls back to personalityAsset.frameworkData below when voiceguide is absent.
+    prisma.brandVoiceguide.findUnique({
+      where: { workspaceId },
+      select: { voiceDescription: true },
+    }),
+  ]);
 
   if (!workspace) return null;
 
@@ -138,15 +153,25 @@ export async function resolveWorkspaceBrandContext(
     const parts: string[] = [];
     if (typeof fw.primaryDimension === 'string') parts.push(`Primary: ${fw.primaryDimension}`);
     if (typeof fw.secondaryDimension === 'string') parts.push(`Secondary: ${fw.secondaryDimension}`);
-    if (typeof fw.brandVoiceDescription === 'string') parts.push(fw.brandVoiceDescription);
+    // BV-WIRE W-4: prefer BrandVoiceguide.voiceDescription; fall back to legacy
+    // BrandPersonality.brandVoiceDescription when voiceguide absent (unmigrated workspace).
+    const voiceDescription =
+      voiceguide?.voiceDescription ??
+      (typeof fw.brandVoiceDescription === 'string' ? fw.brandVoiceDescription : null);
+    if (voiceDescription) parts.push(voiceDescription);
     if (parts.length) ctx.brandPersonality = parts.join('. ');
 
+    // Mood keywords stay sourced from personalityTraits — psychographic, not voice
+    // (correct per Brand Personality / Brand Voice split, see IMPLEMENTATIEPLAN-BV-WIRE.md).
     if (Array.isArray(fw.personalityTraits)) {
       const traits = (fw.personalityTraits as Array<{ trait?: string }>)
         .map((t) => t?.trait)
         .filter((t): t is string => typeof t === 'string');
       if (traits.length) ctx.moodKeywords = traits;
     }
+  } else if (voiceguide?.voiceDescription) {
+    // No personality asset, but voiceguide has voice description — use that.
+    ctx.brandPersonality = voiceguide.voiceDescription;
   }
 
   if (personas.length > 0) {

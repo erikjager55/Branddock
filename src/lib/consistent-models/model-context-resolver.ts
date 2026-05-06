@@ -84,77 +84,95 @@ export async function resolveModelBrandContext(
   const needs = CONTEXT_MAP[modelType];
 
   // Determine which queries to run based on needs
-  const [workspace, styleguide, personas, products, competitors, trends, personalityAsset] =
-    await Promise.all([
-      prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { name: true },
-      }),
+  const [
+    workspace,
+    styleguide,
+    personas,
+    products,
+    competitors,
+    trends,
+    personalityAsset,
+    voiceguide,
+  ] = await Promise.all([
+    prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { name: true },
+    }),
 
-      // Styleguide — colors, fonts, imagery, design language
-      (needs.brandColors || needs.brandFonts || needs.brandImageryStyle || needs.brandDesignLanguage || needs.toneOfVoice)
-        ? prisma.brandStyleguide.findFirst({
-            where: { workspaceId },
-            select: {
-              colors: { select: { name: true, hex: true } },
-              primaryFontName: true,
-              photographyStyle: true,
-              photographyGuidelines: true,
-              designLanguageSavedForAi: true,
-              toneSavedForAi: true,
-              imagerySavedForAi: true,
-            },
-          })
-        : null,
+    // Styleguide — colors, fonts, imagery, design language
+    (needs.brandColors || needs.brandFonts || needs.brandImageryStyle || needs.brandDesignLanguage || needs.toneOfVoice)
+      ? prisma.brandStyleguide.findFirst({
+          where: { workspaceId },
+          select: {
+            colors: { select: { name: true, hex: true } },
+            primaryFontName: true,
+            photographyStyle: true,
+            photographyGuidelines: true,
+            designLanguageSavedForAi: true,
+            toneSavedForAi: true,
+            imagerySavedForAi: true,
+          },
+        })
+      : null,
 
-      // Personas
-      needs.personas
-        ? prisma.persona.findMany({
-            where: { workspaceId },
-            select: { name: true, occupation: true, tagline: true },
-            orderBy: { updatedAt: 'desc' },
-            take: 5,
-          })
-        : [],
+    // Personas
+    needs.personas
+      ? prisma.persona.findMany({
+          where: { workspaceId },
+          select: { name: true, occupation: true, tagline: true },
+          orderBy: { updatedAt: 'desc' },
+          take: 5,
+        })
+      : [],
 
-      // Products
-      needs.products
-        ? prisma.product.findMany({
-            where: { workspaceId },
-            select: { name: true, category: true, description: true },
-            orderBy: { updatedAt: 'desc' },
-            take: 10,
-          })
-        : [],
+    // Products
+    needs.products
+      ? prisma.product.findMany({
+          where: { workspaceId },
+          select: { name: true, category: true, description: true },
+          orderBy: { updatedAt: 'desc' },
+          take: 10,
+        })
+      : [],
 
-      // Competitors
-      needs.competitors
-        ? prisma.competitor.findMany({
-            where: { workspaceId, status: 'ANALYZED' },
-            select: { name: true, valueProposition: true },
-            orderBy: { updatedAt: 'desc' },
-            take: 5,
-          })
-        : [],
+    // Competitors
+    needs.competitors
+      ? prisma.competitor.findMany({
+          where: { workspaceId, status: 'ANALYZED' },
+          select: { name: true, valueProposition: true },
+          orderBy: { updatedAt: 'desc' },
+          take: 5,
+        })
+      : [],
 
-      // Trends
-      needs.trends
-        ? prisma.detectedTrend.findMany({
-            where: { workspaceId, isActivated: true },
-            select: { title: true, description: true },
-            orderBy: { relevanceScore: 'desc' },
-            take: 5,
-          })
-        : [],
+    // Trends
+    needs.trends
+      ? prisma.detectedTrend.findMany({
+          where: { workspaceId, isActivated: true },
+          select: { title: true, description: true },
+          orderBy: { relevanceScore: 'desc' },
+          take: 5,
+        })
+      : [],
 
-      // Brand Personality asset (for brandPersonality + mood)
-      (needs.brandPersonality || needs.moodKeywords)
-        ? prisma.brandAsset.findFirst({
-            where: { workspaceId, slug: 'brand-personality' },
-            select: { frameworkData: true },
-          })
-        : null,
-    ]);
+    // Brand Personality asset — psychographic data still here (personalityTraits → mood)
+    (needs.brandPersonality || needs.moodKeywords)
+      ? prisma.brandAsset.findFirst({
+          where: { workspaceId, slug: 'brand-personality' },
+          select: { frameworkData: true },
+        })
+      : null,
+
+    // BV-WIRE W-4: BrandVoiceguide is single source of truth for voice signals.
+    // Falls back to personalityAsset.frameworkData.brandVoiceDescription below
+    // when voiceguide absent (unmigrated workspace).
+    needs.brandPersonality
+      ? prisma.brandVoiceguide.findUnique({
+          where: { workspaceId },
+          select: { voiceDescription: true },
+        })
+      : null,
+  ]);
 
   if (!workspace) return null;
 
@@ -195,19 +213,24 @@ export async function resolveModelBrandContext(
     ctx.toneOfVoice = 'Tone of voice saved for AI context';
   }
 
-  // Brand personality (from brand-personality asset frameworkData)
-  if (needs.brandPersonality && personalityAsset?.frameworkData) {
-    const fw = personalityAsset.frameworkData as Record<string, unknown>;
+  // Brand personality string (psychographic dimensions + voice description).
+  // BV-WIRE W-4: voiceguide.voiceDescription preferred; falls back to legacy
+  // personalityAsset.frameworkData.brandVoiceDescription for unmigrated workspaces.
+  if (needs.brandPersonality) {
     const parts: string[] = [];
-    if (fw.primaryDimension && typeof fw.primaryDimension === 'string') {
+    const fw = personalityAsset?.frameworkData as Record<string, unknown> | undefined;
+
+    if (fw?.primaryDimension && typeof fw.primaryDimension === 'string') {
       parts.push(`Primary: ${fw.primaryDimension}`);
     }
-    if (fw.secondaryDimension && typeof fw.secondaryDimension === 'string') {
+    if (fw?.secondaryDimension && typeof fw.secondaryDimension === 'string') {
       parts.push(`Secondary: ${fw.secondaryDimension}`);
     }
-    if (fw.brandVoiceDescription && typeof fw.brandVoiceDescription === 'string') {
-      parts.push(fw.brandVoiceDescription);
-    }
+    const voiceDescription =
+      voiceguide?.voiceDescription ??
+      (fw && typeof fw.brandVoiceDescription === 'string' ? fw.brandVoiceDescription : null);
+    if (voiceDescription) parts.push(voiceDescription);
+
     if (parts.length) ctx.brandPersonality = parts.join('. ');
   }
 
