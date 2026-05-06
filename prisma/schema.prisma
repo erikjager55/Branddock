@@ -255,6 +255,9 @@ model Workspace {
   fidelityConfig            FidelityConfig?
   brandRules                BrandRule[]
 
+  // Brand Voiceguide (parallel aan brandStyleguide — verbale identity)
+  brandVoiceguide           BrandVoiceguide?
+
   @@index([organizationId])
 }
 
@@ -360,6 +363,9 @@ model User {
 
   // Continuous Learning Loop (cat 9 — LearningEvent userId)
   learningEvents                LearningEvent[]
+
+  // Brand Voiceguide (verbale identity)
+  createdBrandVoiceguides       BrandVoiceguide[]    @relation("BrandVoiceguideCreator")
 
   @@index([workspaceId])
 }
@@ -4845,4 +4851,82 @@ model FidelityConfig {
 
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
+}
+
+// =============================================================
+// BRAND VOICEGUIDE (werkstroom Brand Voice extractie 2026-05-06)
+// =============================================================
+//
+// Parallel module aan Brandstyle (visueel). BrandVoiceguide = verbale identity:
+// references, vocabulary, channel-tones, anti-patterns, voice-DNA.
+// Gemigreerd uit BrandPersonality.frameworkData voice-velden.
+//
+// NB: model heet BrandVoiceguide (niet BrandVoice) omdat BrandVoice al
+// bestaat als ElevenLabs TTS voice-record (Fase I.1). Voiceguide spiegelt
+// BrandStyleguide-naamgeving (visual = styleguide, verbal = voiceguide).
+//
+// Sequencing: 3-6 maand soft-migration window. Tijdens window blijven
+// BrandPersonality voice-velden bestaan; getBrandContext() prefereert
+// BrandVoiceguide als bestaat, fallback op BrandPersonality.
+//
+// Centroid embedding: pgvector(1536) via OpenAI text-embedding-3-small.
+// Berekend uit writingSamples[] bij mutatie (background-job).
+// =============================================================
+
+model BrandVoiceguide {
+  id              String    @id @default(cuid())
+  workspaceId     String    @unique
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // ─── Voice DNA ──────────────────────────────
+  /** Vrije-tekst beschrijving van de merkstem. Migreert uit BrandPersonality.brandVoiceDescription. */
+  voiceDescription   String?   @db.Text
+
+  /** Globale 4-axis NN/g tone-baseline. Shape: { formalCasual, seriousFunny, respectfulIrreverent, matterOfFactEnthusiastic } */
+  toneDimensions     Json?
+
+  // ─── References ─────────────────────────────
+  /** Gecureerde writing-samples (5-10 typisch). Bron voor centroid-embedding.
+   *  Migreert van BrandPersonality.writingSample (1×) naar array. */
+  writingSamples     Json      @default("[]")
+
+  // ─── Vocabulary ─────────────────────────────
+  /** Single-word level — woorden die het merk gebruikt. */
+  wordsWeUse         String[]
+  /** Single-word level — woorden die het merk vermijdt. Auto-sync bron voor BrandRule. */
+  wordsWeAvoid       String[]
+
+  // ─── Channel-Tones ──────────────────────────
+  /** Per-kanaal tone-overrides bovenop globale toneDimensions.
+   *  Shape: { website: { formalCasual, ... }, socialMedia: {...}, email: {...}, ads: {...}, video: {...} } */
+  channelTones       Json?
+
+  // ─── Anti-Patterns ──────────────────────────
+  /** Multi-word phrases die het merk vermijdt (uitbreiding op wordsWeAvoid). */
+  antiPatterns       String[]
+
+  // ─── Embedding centroid (Pijler 1 fidelity) ─────
+  /** OpenAI text-embedding-3-small van geconcateneerde writingSamples. Beheerd via raw SQL. */
+  centroidEmbedding  Unsupported("vector(1536)")?
+  centroidComputedAt DateTime?
+
+  // ─── Save-for-AI per sectie ──────────────────
+  voiceDnaSavedForAi      Boolean @default(true)
+  vocabularySavedForAi    Boolean @default(true)
+  channelTonesSavedForAi  Boolean @default(true)
+  antiPatternsSavedForAi  Boolean @default(true)
+  /** References zijn verbose — default off. */
+  referencesSavedForAi    Boolean @default(false)
+
+  // ─── Metadata ────────────────────────────────
+  /** "manual" | "extracted" (van BrandPersonality migratie) | "analyzer" (door tekst-scanner) */
+  source           String    @default("manual")
+  publishedAt      DateTime?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  createdById      String?
+  createdBy        User?     @relation("BrandVoiceguideCreator", fields: [createdById], references: [id])
+
+  @@index([workspaceId])
 }

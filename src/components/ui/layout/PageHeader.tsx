@@ -14,7 +14,7 @@ import {
 import {
   LayoutDashboard, Building2, Target, Palette, Users, Package,
   Swords, Radar, BookOpen, Shield, Megaphone, FileText, FlaskConical,
-  Settings, HelpCircle, Image, GraduationCap, Wand2,
+  Settings, HelpCircle, Image, GraduationCap, Wand2, Mic2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -23,6 +23,7 @@ const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
   'brand-foundation': Building2,
   'business-strategy': Target,
   'brandstyle': Palette,
+  'brandvoice': Mic2,
   'personas': Users,
   'products': Package,
   'competitors': Swords,

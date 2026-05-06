@@ -383,6 +383,81 @@ const TONE_LABELS: Record<string, [string, string]> = {
   matterOfFactEnthusiastic: ['Matter-of-fact', 'Enthusiastic'],
 };
 
+// ─── Brand Voiceguide ──────────────────────────────────────
+
+interface BrandVoiceguideRow {
+  voiceDescription?: string | null;
+  toneDimensions?: unknown;
+  wordsWeUse?: string[];
+  wordsWeAvoid?: string[];
+  antiPatterns?: string[];
+  writingSamples?: unknown;
+  channelTones?: unknown;
+}
+
+/**
+ * Format Brand Voiceguide row into a readable string for AI context.
+ * Replaces voice-specific output that previously came from BrandPersonality.
+ *
+ * Includes:
+ *  - Voice description (one-paragraph summary)
+ *  - Tone dimensions (4-axis NN/g)
+ *  - Channel-specific tone overrides
+ *  - Words we use / avoid
+ *  - Anti-patterns (forbidden phrasings)
+ *  - First writing sample as voice exemplar (truncated)
+ */
+export function formatBrandVoiceguide(data: BrandVoiceguideRow): string {
+  const parts: string[] = [];
+
+  if (data.voiceDescription) {
+    parts.push(`Voice: ${data.voiceDescription}`);
+  }
+
+  // Tone dimensions: 4-axis NN/g sliders (1-7), 4 = neutral
+  if (data.toneDimensions && typeof data.toneDimensions === 'object') {
+    const td = data.toneDimensions as Record<string, number>;
+    const tones = Object.entries(td)
+      .filter(([, v]) => typeof v === 'number' && v !== 4)
+      .map(([k, v]) => {
+        const labels = TONE_LABELS[k];
+        if (!labels) return null;
+        return v < 4 ? labels[0] : labels[1];
+      })
+      .filter(Boolean);
+    if (tones.length > 0) parts.push(`Tone of voice: ${tones.join(', ')}`);
+  }
+
+  // Channel tones: per-channel overrides
+  if (data.channelTones && typeof data.channelTones === 'object') {
+    const channels = Object.entries(data.channelTones as Record<string, string>)
+      .filter(([, v]) => typeof v === 'string' && v.trim().length > 0)
+      .map(([k, v]) => `${k}: ${v}`);
+    if (channels.length > 0) parts.push(`Channel-specific tone: ${channels.join('; ')}`);
+  }
+
+  if (Array.isArray(data.wordsWeUse) && data.wordsWeUse.length > 0) {
+    parts.push(`Words we use: ${data.wordsWeUse.filter(Boolean).join(', ')}`);
+  }
+  if (Array.isArray(data.wordsWeAvoid) && data.wordsWeAvoid.length > 0) {
+    parts.push(`Words we avoid: ${data.wordsWeAvoid.filter(Boolean).join(', ')}`);
+  }
+  if (Array.isArray(data.antiPatterns) && data.antiPatterns.length > 0) {
+    parts.push(`Anti-patterns (never write): ${data.antiPatterns.filter(Boolean).join(', ')}`);
+  }
+
+  // First writing sample as voice exemplar (truncated to keep prompt lean)
+  if (Array.isArray(data.writingSamples) && data.writingSamples.length > 0) {
+    const first = data.writingSamples[0];
+    if (typeof first === 'string' && first.trim().length > 0) {
+      const truncated = first.length > 600 ? first.slice(0, 600) + '…' : first;
+      parts.push(`Writing sample: "${truncated}"`);
+    }
+  }
+
+  return parts.join('. ');
+}
+
 /** Format Brand Personality frameworkData into a readable string for AI context */
 export function formatBrandPersonality(data: BrandPersonalityData): string {
   const parts: string[] = [];
@@ -436,40 +511,12 @@ export function formatBrandPersonality(data: BrandPersonalityData): string {
   }
 
   // Tone dimensions
-  if (data.toneDimensions) {
-    const tones = Object.entries(data.toneDimensions)
-      .filter(([, v]) => v !== 4)
-      .map(([k, v]) => {
-        const labels = TONE_LABELS[k];
-        if (!labels) return null;
-        const position = v < 4 ? labels[0] : labels[1];
-        return position;
-      })
-      .filter(Boolean);
-    if (tones.length > 0) parts.push(`Tone of voice: ${tones.join(', ')}`);
-  }
-
-  // Voice description
-  if (data.brandVoiceDescription) parts.push(`Brand voice: ${data.brandVoiceDescription}`);
-
-  // Word preferences
-  if (Array.isArray(data.wordsWeUse) && data.wordsWeUse.length > 0) {
-    parts.push(`Words we use: ${data.wordsWeUse.filter(Boolean).join(', ')}`);
-  }
-  if (Array.isArray(data.wordsWeAvoid) && data.wordsWeAvoid.length > 0) {
-    parts.push(`Words we avoid: ${data.wordsWeAvoid.filter(Boolean).join(', ')}`);
-  }
-
-  // Writing sample
-  if (data.writingSample) parts.push(`Writing sample: "${data.writingSample}"`);
-
-  // Channel tones
-  if (data.channelTones) {
-    const channels = Object.entries(data.channelTones)
-      .filter(([, v]) => !!v)
-      .map(([k, v]) => `${k}: ${v}`);
-    if (channels.length > 0) parts.push(`Channel-specific tone: ${channels.join('; ')}`);
-  }
+  // Voice-related fields (toneDimensions, brandVoiceDescription, wordsWeUse,
+  // wordsWeAvoid, writingSample, channelTones) MOVED to BrandVoiceguide. They
+  // are formatted by formatBrandVoiceguide() and surfaced as ctx.brandVoiceguide.
+  // The legacy frameworkData shape still carries them for historical workspaces
+  // that haven't migrated yet — those fields are intentionally NOT rendered here
+  // to avoid duplicate voice context in AI prompts.
 
   // Visual expression
   if (data.colorDirection) parts.push(`Color direction: ${data.colorDirection}`);
@@ -755,7 +802,7 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
   if (cached) return cached;
 
   // Fetch all sources in parallel
-  const [workspace, brandAssets, personas, products, activatedTrends, competitors, styleguide, consistentModels] = await Promise.all([
+  const [workspace, brandAssets, personas, products, activatedTrends, competitors, styleguide, consistentModels, voiceguide] = await Promise.all([
     prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { name: true, contentLanguage: true },
@@ -867,6 +914,19 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       select: { name: true, type: true, description: true },
       orderBy: { updatedAt: 'desc' },
       take: 10,
+    }),
+
+    prisma.brandVoiceguide.findUnique({
+      where: { workspaceId },
+      select: {
+        voiceDescription: true,
+        toneDimensions: true,
+        wordsWeUse: true,
+        wordsWeAvoid: true,
+        antiPatterns: true,
+        writingSamples: true,
+        channelTones: true,
+      },
     }),
   ]);
 
@@ -998,6 +1058,28 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       if (formatted) ctx.brandPersonality = formatted;
     } else {
       ctx.brandPersonality = extractContentText(personality.content) || personality.description || undefined;
+    }
+  }
+
+  // Brand Voiceguide (split from personality — voiceguide row wins; fallback
+  // re-projects legacy BrandPersonality voice fields into the voiceguide shape
+  // so unmigrated workspaces still get voice context in AI prompts.)
+  if (voiceguide) {
+    const formatted = formatBrandVoiceguide(voiceguide as BrandVoiceguideRow);
+    if (formatted) ctx.brandVoiceguide = formatted;
+  } else if (personality?.frameworkData) {
+    const fw = personality.frameworkData as BrandPersonalityData | null;
+    if (fw) {
+      const fallback = formatBrandVoiceguide({
+        voiceDescription: fw.brandVoiceDescription ?? null,
+        toneDimensions: fw.toneDimensions ?? null,
+        wordsWeUse: fw.wordsWeUse ?? [],
+        wordsWeAvoid: fw.wordsWeAvoid ?? [],
+        antiPatterns: [],
+        writingSamples: fw.writingSample ? [fw.writingSample] : [],
+        channelTones: fw.channelTones ?? null,
+      });
+      if (fallback) ctx.brandVoiceguide = fallback;
     }
   }
 

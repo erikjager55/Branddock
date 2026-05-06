@@ -39,6 +39,8 @@ import {
   TransformativeGoalsDashboard,
   BrandstyleAnalyzerPage,
   BrandStyleguidePage,
+  BrandVoiceguidePage,
+  BrandVoiceAnalyzerPage,
   WorkshopPurchasePage,
   WorkshopSessionPage,
   WorkshopCompletePage,
@@ -547,7 +549,23 @@ function AppContent() {
             onNavigateToGuide={() => handleSetActiveSection('brandstyle')}
           />
         );
-      
+
+      // 🎙️ Brand Voice (Voiceguide + Analyzer)
+      case 'brandvoice':
+      case 'brandvoice-guide':
+        return (
+          <BrandVoiceguidePage
+            onNavigateToAnalyzer={() => handleSetActiveSection('brandvoice-analyze')}
+          />
+        );
+      case 'brandvoice-analyze':
+        return (
+          <BrandVoiceAnalyzerPage
+            onNavigateToGuide={() => handleSetActiveSection('brandvoice')}
+          />
+        );
+
+
       // 🆕 NEW: Asset Unlock Detail View (Design Demo)
       case 'asset-unlock-demo':
         return <TransformativeGoalsDashboard 

@@ -89,6 +89,9 @@ export async function startScanPipeline(
     cancelled: false,
     brandstyleStatus: null,
     brandstyleError: null,
+    brandvoiceStatus: null,
+    brandvoiceError: null,
+    brandvoiceJobId: null,
   };
 
   scanProgress.set(scanId, progress);
@@ -179,7 +182,7 @@ export async function startScanPipeline(
     progress.status = 'ANALYZING';
     progress.progress = calculateProgress(progress);
 
-    const analysisResults = await analyzeWebsiteData(extraction, progress);
+    const analysisResults = await analyzeWebsiteData(extraction, progress, workspaceId, scanId);
 
     if (progress.cancelled) {
       await finalizeScan(scanId, progress, 'CANCELLED');
@@ -262,6 +265,40 @@ export async function startScanPipeline(
       const errMsg = err instanceof Error ? err.message : 'Unknown error';
       progress.brandstyleError = errMsg;
       console.error('[scanner-pipeline] Brandstyle analysis failed (non-critical):', errMsg);
+      // Non-critical: continue
+    }
+
+    // Phase 5b: VOICE ANALYSIS (non-critical)
+    // Auto-analyze verbal identity using the same scrape data. Skipped if a
+    // BrandVoiceguide already exists — we never overwrite manual content.
+    progress.brandvoiceStatus = 'Starting brand voice analysis...';
+    try {
+      const existingVoice = await prisma.brandVoiceguide.findUnique({
+        where: { workspaceId },
+        select: { id: true },
+      });
+      if (existingVoice) {
+        progress.brandvoiceStatus = 'Brand voice already configured — skipped';
+      } else {
+        const { initVoiceAnalysisJob, startVoiceAnalysisPipeline } = await import(
+          '@/lib/brandvoice/voice-analyzer-engine'
+        );
+        const jobId = `voice_${crypto.randomUUID()}`;
+        progress.brandvoiceJobId = jobId;
+        initVoiceAnalysisJob(jobId);
+        // Fire-and-forget — engine writes to its own progress map. Result is
+        // surfaced via the brandvoice analyzer review screen, gated by user accept.
+        void startVoiceAnalysisPipeline({
+          jobId,
+          workspaceId,
+          url,
+        });
+        progress.brandvoiceStatus = 'Brand voice analysis running in background';
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Unknown error';
+      progress.brandvoiceError = errMsg;
+      console.error('[scanner-pipeline] Voice analysis failed (non-critical):', errMsg);
       // Non-critical: continue to COMPLETED
     }
 

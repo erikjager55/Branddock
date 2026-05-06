@@ -478,179 +478,59 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
         </div>
       </div>
 
-      {/* ─── Card 4: Voice & Tone ─── */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-        <div className="flex items-start gap-3 mb-5">
-          <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-            <Volume2 className="h-5 w-5 text-blue-600" />
+      {/* ─── Card 4 + 5: MOVED to Brand Voice ─── */}
+      {/* Voice & Tone, Words we use/avoid, Writing sample and Communication
+          Style now live in the dedicated Brand Voice module (see sidebar).
+          The legacy fields below stay rendered read-only for one migration
+          window so users can verify what's already there. */}
+      <div className="bg-teal-50/40 border-2 border-teal-200 rounded-2xl p-6">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="h-10 w-10 rounded-xl bg-teal-100 flex items-center justify-center flex-shrink-0">
+            <Volume2 className="h-5 w-5 text-teal-600" />
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">Voice & Tone</h2>
-            <p className="text-sm text-gray-500">
-              Define your brand&apos;s voice using NN/g&apos;s 4 tone dimensions
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-gray-900">Voice, Tone & Communication Style — moved</h2>
+            <p className="text-sm text-gray-600">
+              Voice description, 4-axis tone dimensions, vocabulary (words we use / avoid),
+              writing samples and channel-specific tones now live in the
+              <strong> Brand Voice </strong>
+              module. Edit them there. The fields below stay visible read-only during the
+              migration window.
             </p>
           </div>
         </div>
 
-        {/* Tone dimension sliders */}
-        <div className="space-y-5 mb-6">
-          {TONE_DIMENSIONS.map((dim) => {
-            const value = isEditing
-              ? draft.toneDimensions[dim.key as keyof ToneDimensions]
-              : d.toneDimensions[dim.key as keyof ToneDimensions];
-
-            return (
-              <div key={dim.key}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-gray-700">{dim.leftLabel}</span>
-                  <span className="text-xs font-medium text-gray-700">{dim.rightLabel}</span>
-                </div>
-                {isEditing ? (
-                  <input
-                    type="range"
-                    min={1}
-                    max={7}
-                    value={value}
-                    onChange={(e) =>
-                      handleToneChange(dim.key as keyof ToneDimensions, Number(e.target.value))
-                    }
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  />
-                ) : (
-                  <div className="relative h-2 bg-gray-200 rounded-full">
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-blue-500 border-2 border-white shadow-sm"
-                      style={{ left: `${((value - 1) / 6) * 100}%`, transform: 'translate(-50%, -50%)' }}
-                    />
-                  </div>
-                )}
-                <p className="text-[10px] text-gray-400 mt-1 text-center">{dim.description}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Brand voice description */}
-        <div className="mb-5">
-          <label className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 block">
-            Brand Voice Description
-          </label>
-          {isEditing ? (
-            <textarea
-              value={draft.brandVoiceDescription}
-              onChange={(e) => handleFieldChange('brandVoiceDescription', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
-              rows={3}
-              placeholder="Describe how your brand sounds in writing and speech..."
-            />
-          ) : d.brandVoiceDescription ? (
-            <p className="text-sm text-gray-700 leading-relaxed">{d.brandVoiceDescription}</p>
-          ) : (
-            <p className="text-sm italic text-gray-400">Describe your brand voice...</p>
-          )}
-        </div>
-
-        {/* Words we use / avoid */}
-        <div className="grid grid-cols-2 gap-4 mb-5">
-          <div>
-            <label className="text-xs font-medium text-emerald-600 uppercase tracking-wider mb-2 block">
-              Words We Use
-            </label>
-            <WordList
-              words={isEditing ? draft.wordsWeUse : d.wordsWeUse}
-              isEditing={isEditing}
-              onAdd={() => addWord('wordsWeUse')}
-              onUpdate={(i, v) => updateWord('wordsWeUse', i, v)}
-              onRemove={(i) => removeWord('wordsWeUse', i)}
-              placeholder="Add a word..."
-              emptyText="No words defined"
-              tagColor="emerald"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-red-500 uppercase tracking-wider mb-2 block">
-              Words We Avoid
-            </label>
-            <WordList
-              words={isEditing ? draft.wordsWeAvoid : d.wordsWeAvoid}
-              isEditing={isEditing}
-              onAdd={() => addWord('wordsWeAvoid')}
-              onUpdate={(i, v) => updateWord('wordsWeAvoid', i, v)}
-              onRemove={(i) => removeWord('wordsWeAvoid', i)}
-              placeholder="Add a word..."
-              emptyText="No words defined"
-              tagColor="red"
-            />
-          </div>
-        </div>
-
-        {/* Writing sample */}
-        <div>
-          <label className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 block">
-            Writing Sample
-          </label>
-          <p className="text-[10px] text-gray-400 mb-2">
-            A short paragraph that demonstrates your brand voice in action
-          </p>
-          {isEditing ? (
-            <textarea
-              value={draft.writingSample}
-              onChange={(e) => handleFieldChange('writingSample', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
-              rows={4}
-              placeholder="Write a sample paragraph in your brand's voice..."
-            />
-          ) : d.writingSample ? (
-            <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 italic">
-              <p className="text-sm text-gray-700 leading-relaxed">&ldquo;{d.writingSample}&rdquo;</p>
+        {/* Read-only summary of the voice fields still in frameworkData */}
+        <div className="mt-4 grid sm:grid-cols-2 gap-3 text-xs">
+          {d.brandVoiceDescription && (
+            <div className="p-3 bg-white rounded-md border border-gray-200">
+              <p className="font-semibold text-gray-700 mb-1">Voice description</p>
+              <p className="text-gray-600">{d.brandVoiceDescription}</p>
             </div>
-          ) : (
-            <p className="text-sm italic text-gray-400">Add a writing sample...</p>
+          )}
+          {(d.wordsWeUse?.length ?? 0) > 0 && (
+            <div className="p-3 bg-white rounded-md border border-gray-200">
+              <p className="font-semibold text-gray-700 mb-1">Words we use ({d.wordsWeUse.length})</p>
+              <p className="text-gray-600">{d.wordsWeUse.join(", ")}</p>
+            </div>
+          )}
+          {(d.wordsWeAvoid?.length ?? 0) > 0 && (
+            <div className="p-3 bg-white rounded-md border border-gray-200">
+              <p className="font-semibold text-gray-700 mb-1">Words we avoid ({d.wordsWeAvoid.length})</p>
+              <p className="text-gray-600">{d.wordsWeAvoid.join(", ")}</p>
+            </div>
+          )}
+          {d.writingSample && (
+            <div className="p-3 bg-white rounded-md border border-gray-200">
+              <p className="font-semibold text-gray-700 mb-1">Writing sample</p>
+              <p className="text-gray-600 italic">
+                &ldquo;{d.writingSample.length > 200 ? d.writingSample.slice(0, 200) + "…" : d.writingSample}&rdquo;
+              </p>
+            </div>
           )}
         </div>
       </div>
 
-      {/* ─── Card 5: Communication Style ─── */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-        <div className="flex items-start gap-3 mb-5">
-          <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-            <MessageCircle className="h-5 w-5 text-emerald-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">Communication Style</h2>
-            <p className="text-sm text-gray-500">
-              How tone shifts across channels while the core voice stays consistent
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {CHANNELS.map((ch) => {
-            const value = isEditing
-              ? draft.channelTones[ch.key as keyof ChannelTones]
-              : d.channelTones[ch.key as keyof ChannelTones];
-
-            return (
-              <div key={ch.key} className="bg-gray-50 border border-gray-100 rounded-xl p-4">
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">{ch.label}</label>
-                {isEditing ? (
-                  <textarea
-                    value={value}
-                    onChange={(e) => handleChannelChange(ch.key as keyof ChannelTones, e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
-                    rows={2}
-                    placeholder={ch.placeholder}
-                  />
-                ) : value ? (
-                  <p className="text-sm text-gray-600">{value}</p>
-                ) : (
-                  <p className="text-sm italic text-gray-400">{ch.placeholder}</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
 
       {/* ─── Card 6: Visual Expression ─── */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">

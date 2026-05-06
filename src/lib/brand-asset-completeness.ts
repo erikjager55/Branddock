@@ -164,6 +164,9 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
       break;
     }
     case 'BRAND_PERSONALITY': {
+      // Voice-related fields (toneDimensions, brandVoiceDescription, wordsWeUse,
+      // wordsWeAvoid, writingSample, channelTones) moved to BrandVoiceguide.
+      // Personality completeness now only counts the psychographic + visual fields.
       const bpe = data as BrandPersonalityFrameworkData;
       const scores = bpe?.dimensionScores;
       const hasScores = scores && Object.values(scores).some(v => v > 0);
@@ -172,12 +175,6 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
         { label: 'Primary Dimension', filled: !!bpe?.primaryDimension },
         { label: 'Personality Traits', filled: (bpe?.personalityTraits?.length ?? 0) >= 3 },
         { label: 'Spectrum Sliders', filled: !!(bpe?.spectrumSliders && Object.values(bpe.spectrumSliders).some(v => v !== 4)) },
-        { label: 'Tone Dimensions', filled: !!(bpe?.toneDimensions && Object.values(bpe.toneDimensions).some(v => v !== 4)) },
-        { label: 'Brand Voice', filled: !!bpe?.brandVoiceDescription },
-        { label: 'Words We Use', filled: Array.isArray(bpe?.wordsWeUse) && bpe.wordsWeUse.length > 0 },
-        { label: 'Words We Avoid', filled: Array.isArray(bpe?.wordsWeAvoid) && bpe.wordsWeAvoid.length > 0 },
-        { label: 'Writing Sample', filled: !!bpe?.writingSample },
-        { label: 'Channel Tones', filled: !!(bpe?.channelTones && Object.values(bpe.channelTones).some(v => !!v)) },
         { label: 'Color Direction', filled: !!bpe?.colorDirection },
         { label: 'Typography Direction', filled: !!bpe?.typographyDirection },
       );

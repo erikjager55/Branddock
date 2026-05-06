@@ -311,9 +311,15 @@ export interface ChannelTones {
 }
 
 /**
- * Defines the brand's voice, tone, and visual expression using Aaker's 5 Dimensions
- * and NN/g's 4-dimension Tone of Voice model. This is the authoritative source for
- * all voice/tone/visual personality guidance — Brand Archetype defers to this asset.
+ * Defines the brand's psychographic personality using Aaker's 5 Dimensions.
+ * Visual personality expression also lives here.
+ *
+ * NOTE: voice-related fields below are @deprecated and now live in
+ * BrandVoiceguide (see `src/features/brandvoice/`). The fields are kept on the
+ * type for back-compat with workspaces that haven't migrated yet, but the
+ * BrandPersonality UI no longer renders editors for them and
+ * formatBrandPersonality() in brand-context.ts no longer surfaces them in AI
+ * prompts (formatBrandVoiceguide() does that instead).
  */
 export interface BrandPersonalityFrameworkData {
   // Section 1: Aaker Dimension Scores
@@ -327,17 +333,20 @@ export interface BrandPersonalityFrameworkData {
   // Section 3: Personality Spectrum (7 sliders)
   spectrumSliders: PersonalitySpectrumValues;
 
-  // Section 4: Voice & Tone
+  /** @deprecated Moved to BrandVoiceguide.toneDimensions */
   toneDimensions: ToneDimensions;
+  /** @deprecated Moved to BrandVoiceguide.voiceDescription */
   brandVoiceDescription: string;
+  /** @deprecated Moved to BrandVoiceguide.wordsWeUse */
   wordsWeUse: string[];
+  /** @deprecated Moved to BrandVoiceguide.wordsWeAvoid */
   wordsWeAvoid: string[];
+  /** @deprecated Moved to BrandVoiceguide.writingSamples (array) */
   writingSample: string;
-
-  // Section 5: Communication Style
+  /** @deprecated Moved to BrandVoiceguide.channelTones */
   channelTones: ChannelTones;
 
-  // Section 6: Visual Personality Expression
+  // Section 6: Visual Personality Expression — STAYS in personality
   colorDirection: string;
   typographyDirection: string;
   imageryDirection: string;

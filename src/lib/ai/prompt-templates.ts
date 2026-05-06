@@ -25,6 +25,7 @@ export interface BrandContextBlock {
   brandVision?: string;
   brandArchetype?: string;
   brandPersonality?: string;
+  brandVoiceguide?: string;
   brandStory?: string;
   brandValues?: string[];
   transformativeGoals?: string;
@@ -97,6 +98,10 @@ export function formatBrandContext(ctx: BrandContextBlock): string {
   if (ctx.brandVision) lines.push(`**Vision:** ${ctx.brandVision}`);
   if (ctx.brandArchetype) lines.push(`**Brand Archetype:** ${ctx.brandArchetype}`);
   if (ctx.brandPersonality) lines.push(`**Brand Personality:** ${ctx.brandPersonality}`);
+  if (ctx.brandVoiceguide) {
+    lines.push(`**Brand Voice Guide:**`);
+    lines.push(ctx.brandVoiceguide);
+  }
   if (ctx.brandStory) lines.push(`**Brand Story:** ${ctx.brandStory}`);
   if (ctx.brandValues?.length) lines.push(`**Core Values:** ${ctx.brandValues.join(', ')}`);
   if (ctx.transformativeGoals) lines.push(`**Transformative Goals:** ${ctx.transformativeGoals}`);
@@ -169,6 +174,7 @@ export function formatBrandContextTier(ctx: BrandContextBlock, tier: BrandContex
     if (ctx.brandVision) assets.push('Vision');
     if (ctx.brandArchetype) assets.push('Brand Archetype');
     if (ctx.brandPersonality) assets.push('Brand Personality');
+    if (ctx.brandVoiceguide) assets.push('Brand Voice Guide');
     if (ctx.brandStory) assets.push('Brand Story');
     if (ctx.brandValues?.length) assets.push(`Core Values (${ctx.brandValues.length})`);
     if (ctx.transformativeGoals) assets.push('Transformative Goals');
@@ -205,6 +211,12 @@ export function formatBrandContextTier(ctx: BrandContextBlock, tier: BrandContex
         : ctx.brandPersonality;
       parts.push(`**Brand Personality:** ${short}`);
     }
+    if (ctx.brandVoiceguide) {
+      const shortVoice = ctx.brandVoiceguide.length > 800
+        ? ctx.brandVoiceguide.slice(0, 800) + '…'
+        : ctx.brandVoiceguide;
+      parts.push(`**Brand Voice Guide:**\n${shortVoice}`);
+    }
     if (ctx.industry) parts.push(`**Industry:** ${ctx.industry}`);
     return parts.join('\n');
   }
@@ -226,6 +238,7 @@ export function formatBrandContextTier(ctx: BrandContextBlock, tier: BrandContex
   if (ctx.brandVision) parts.push(`**Vision:** ${ctx.brandVision}`);
   if (ctx.brandArchetype) parts.push(`**Brand Archetype:** ${ctx.brandArchetype}`);
   if (ctx.brandPersonality) parts.push(`**Brand Personality:** ${ctx.brandPersonality}`);
+  if (ctx.brandVoiceguide) parts.push(`**Brand Voice Guide:**\n${ctx.brandVoiceguide}`);
   if (ctx.brandValues?.length) parts.push(`**Core Values:** ${ctx.brandValues.join(', ')}`);
 
   // Visual identity (included in medium)

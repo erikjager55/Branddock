@@ -104,6 +104,7 @@ export const cacheKeys = {
     competitors: (wsId: string) => `competitors:${wsId}`,
     websiteScanner: (wsId: string) => `website-scanner:${wsId}`,
     brandstyle: (wsId: string) => `brandstyle:${wsId}`,
+    brandvoiceguide: (wsId: string) => `brandvoiceguide:${wsId}`,
     media: (wsId: string) => `media:${wsId}`,
     notifications: (wsId: string) => `notifications:${wsId}`,
     allDashboards: 'dashboard:',

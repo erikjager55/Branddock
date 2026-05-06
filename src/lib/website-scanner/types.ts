@@ -116,4 +116,9 @@ export interface ScanProgress {
   cancelled: boolean;
   brandstyleStatus: string | null;
   brandstyleError: string | null;
+  /** Brand Voice (verbal identity) auto-analysis. Runs after STYLING using
+   *  the same scrape data. Non-critical — failures don't block the scan. */
+  brandvoiceStatus: string | null;
+  brandvoiceError: string | null;
+  brandvoiceJobId: string | null;
 }

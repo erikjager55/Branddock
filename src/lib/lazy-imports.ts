@@ -24,6 +24,14 @@ export const BrandStyleguidePage = lazy(() =>
   import('@/features/brandstyle/components/BrandStyleguidePage').then(m => ({ default: m.BrandStyleguidePage }))
 );
 
+// ─── Brand Voice ───────────────────────────────────────────
+export const BrandVoiceguidePage = lazy(() =>
+  import('@/features/brandvoice/components/BrandVoiceguidePage').then(m => ({ default: m.BrandVoiceguidePage }))
+);
+export const BrandVoiceAnalyzerPage = lazy(() =>
+  import('@/features/brandvoice/components/BrandVoiceAnalyzerPage').then(m => ({ default: m.BrandVoiceAnalyzerPage }))
+);
+
 // ─── Workshops ─────────────────────────────────────────────
 export const WorkshopPurchasePage = lazy(() =>
   import('@/features/workshop/components/purchase/WorkshopPurchasePage').then(m => ({ default: m.WorkshopPurchasePage }))
@@ -207,6 +215,7 @@ const moduleLoaders: Record<string, () => Promise<unknown>> = {
   'dashboard': () => import('@/components/dashboard/DashboardPage'),
   'brand': () => import('@/components/brand-foundation/BrandFoundationPage'),
   'brandstyle': () => import('@/features/brandstyle/components/BrandstyleAnalyzerPage'),
+  'brandvoice': () => import('@/features/brandvoice/components/BrandVoiceguidePage'),
   'personas': () => import('@/features/personas/components/PersonasPage'),
   'products': () => import('@/features/products/components/ProductsOverviewPage'),
   'competitors': () => import('@/features/competitors/components/CompetitorsOverviewPage'),
