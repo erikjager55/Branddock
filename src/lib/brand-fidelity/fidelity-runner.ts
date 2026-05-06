@@ -201,6 +201,51 @@ async function persistFidelityScore(
   }
 }
 
+/**
+ * Persist STRICT rewrite snapshot op Deliverable.settings.strictRewrite.
+ * Bewaart de finale tekst + before/after detector signaal zodat UI hem
+ * kan ophalen voor de "Bekijk STRICT-verbeterde versie" preview panel.
+ */
+async function persistStrictRewrite(
+  deliverableId: string,
+  rewriteText: string,
+  result: StrictModeResult,
+): Promise<void> {
+  try {
+    const existing = await prisma.deliverable.findUnique({
+      where: { id: deliverableId },
+      select: { settings: true },
+    });
+    const currentSettings = (existing?.settings as Record<string, unknown> | null) ?? {};
+
+    const strictRewriteSnapshot = {
+      text: rewriteText,
+      decisionReason: result.decisionReason,
+      rewriteAttempted: result.rewriteAttempted,
+      before: {
+        verdict: result.originalResult.verdict,
+        humanBaselinePosition: result.originalResult.humanBaselinePosition,
+        scorePer1000Words: Math.round(result.originalResult.scorePer1000Words * 10) / 10,
+      },
+      after: {
+        verdict: result.finalResult.verdict,
+        humanBaselinePosition: result.finalResult.humanBaselinePosition,
+        scorePer1000Words: Math.round(result.finalResult.scorePer1000Words * 10) / 10,
+      },
+      rewrittenAt: new Date().toISOString(),
+    };
+
+    await prisma.deliverable.update({
+      where: { id: deliverableId },
+      data: {
+        settings: { ...currentSettings, strictRewrite: strictRewriteSnapshot },
+      },
+    });
+  } catch (err) {
+    console.warn('[fidelity-runner] STRICT persist failed:', (err as Error).message);
+  }
+}
+
 // ─── Main API ───────────────────────────────────────
 
 export interface FidelityRunOutcome {
@@ -379,7 +424,9 @@ export async function runStrictModeIfApplicable(
       };
     }
 
-    // Rewrite was an improvement → herbereken composition score
+    // Rewrite was an improvement → persist + herbereken composition score
+    void persistStrictRewrite(input.deliverableId, strictResult.finalText, strictResult);
+
     let finalFidelityScore: FidelityCompositeResult | null = null;
     try {
       finalFidelityScore = await computeFidelityScore({
@@ -409,6 +456,9 @@ export async function runStrictModeIfApplicable(
  * detector signaal + (indien beschikbaar) hercomputed composition score
  * die de fidelityScore in store overschrijft.
  */
+/** Aantal chars uit rewrite-tekst dat over de wire gaat — UI haalt rest van DB */
+const REWRITE_PREVIEW_CHARS = 1500;
+
 export function buildStrictRewriteEventPayload(
   result: StrictRunResult,
   finalScore: FidelityCompositeResult | null,
@@ -427,6 +477,13 @@ export function buildStrictRewriteEventPayload(
       humanBaselinePosition: result.strictResult.finalResult.humanBaselinePosition,
       scorePer1000Words: Math.round(result.strictResult.finalResult.scorePer1000Words * 10) / 10,
     },
+    /** Preview van eerste 1500 chars — volledige tekst staat op
+     *  Deliverable.settings.strictRewrite.text en is via PATCH endpoint
+     *  beschikbaar. Bewust truncated om SSE chunk klein te houden. */
+    rewritePreview: result.improved
+      ? result.finalText.slice(0, REWRITE_PREVIEW_CHARS) +
+        (result.finalText.length > REWRITE_PREVIEW_CHARS ? '\n\n[…volledige tekst beschikbaar]' : '')
+      : null,
     finalScore: finalScore ? buildFidelityScoreEventPayload(finalScore) : null,
   };
 }

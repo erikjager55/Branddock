@@ -122,6 +122,8 @@ interface CanvasStoreState {
     /** Detector signaal na rewrite */
     after: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number } | null;
     decisionReason: string | null;
+    /** Eerste ~1500 chars van rewrite — volledig staat op DB.settings.strictRewrite.text */
+    rewritePreview: string | null;
   };
 
   // ─── Vanille baseline (demo: "Vergelijk met vanille AI") ──
@@ -260,6 +262,7 @@ interface CanvasStoreState {
     decisionReason: string;
     before: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number };
     after: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number };
+    rewritePreview: string | null;
   }) => void;
   resetStrictRewrite: () => void;
   setVanillaStage: (stage: 'idle' | 'generating' | 'scoring' | 'complete' | 'error', errorMessage?: string) => void;
@@ -390,6 +393,7 @@ const INITIAL_STATE = {
     before: null,
     after: null,
     decisionReason: null,
+    rewritePreview: null,
   },
   vanillaBaseline: {
     stage: 'idle' as const,
@@ -604,7 +608,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       strictRewrite: { ...state.strictRewrite, stage: 'rewriting' },
     })),
 
-  setStrictRewriteComplete: ({ improved, decisionReason, before, after }) =>
+  setStrictRewriteComplete: ({ improved, decisionReason, before, after, rewritePreview }) =>
     set({
       strictRewrite: {
         stage: improved ? 'complete' : 'skipped',
@@ -612,6 +616,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         before,
         after,
         decisionReason,
+        rewritePreview,
       },
     }),
 
@@ -623,6 +628,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         before: null,
         after: null,
         decisionReason: null,
+        rewritePreview: null,
       },
     }),
 

@@ -400,8 +400,9 @@ function routeEvent(eventName: string, rawData: string) {
         | undefined;
       const decisionReason = typeof data.decisionReason === 'string' ? data.decisionReason : '';
       const improved = data.improved === true;
+      const rewritePreview = typeof data.rewritePreview === 'string' ? data.rewritePreview : null;
       if (before && after) {
-        store.setStrictRewriteComplete({ improved, decisionReason, before, after });
+        store.setStrictRewriteComplete({ improved, decisionReason, before, after, rewritePreview });
       }
 
       // finalScore (re-computed composition) overschrijft fidelityScore

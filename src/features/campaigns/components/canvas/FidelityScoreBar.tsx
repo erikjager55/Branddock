@@ -137,21 +137,13 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
         </div>
       )}
 
-      {/* ─── STRICT mode improved badge ─── */}
+      {/* ─── STRICT mode improved badge + rewrite preview ─── */}
       {strict.stage === 'complete' && strict.improved && strict.before && strict.after && (
-        <div className="mt-3 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Sparkles className="w-4 h-4 text-violet-600" />
-            <span className="text-sm font-semibold text-violet-900">STRICT mode auto-verbeterd</span>
-          </div>
-          <div className="text-xs text-violet-800">
-            <span className="font-medium">{VERDICT_LABELS[strict.before.verdict]}</span>
-            <span className="text-violet-500"> (pos {strict.before.humanBaselinePosition})</span>
-            <span className="mx-1.5">→</span>
-            <span className="font-medium">{VERDICT_LABELS[strict.after.verdict]}</span>
-            <span className="text-violet-500"> (pos {strict.after.humanBaselinePosition})</span>
-          </div>
-        </div>
+        <StrictImprovedBlock
+          before={strict.before}
+          after={strict.after}
+          rewritePreview={strict.rewritePreview}
+        />
       )}
 
       {/* ─── Pillar breakdown ─── */}
@@ -188,6 +180,56 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
           isRunning={isVanillaRunning}
           onCompare={runVanillaCompare}
         />
+      )}
+    </div>
+  );
+}
+
+// ─── STRICT improved block ─────────────────────────
+
+function StrictImprovedBlock({
+  before,
+  after,
+  rewritePreview,
+}: {
+  before: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number };
+  after: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number };
+  rewritePreview: string | null;
+}) {
+  const [showPreview, setShowPreview] = React.useState(false);
+
+  return (
+    <div className="mt-3 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5">
+      <div className="flex items-center gap-1.5 mb-1">
+        <Sparkles className="w-4 h-4 text-violet-600" />
+        <span className="text-sm font-semibold text-violet-900">STRICT mode auto-verbeterd</span>
+      </div>
+      <div className="text-xs text-violet-800">
+        <span className="font-medium">{VERDICT_LABELS[before.verdict]}</span>
+        <span className="text-violet-500"> (pos {before.humanBaselinePosition})</span>
+        <span className="mx-1.5">→</span>
+        <span className="font-medium">{VERDICT_LABELS[after.verdict]}</span>
+        <span className="text-violet-500"> (pos {after.humanBaselinePosition})</span>
+      </div>
+
+      {rewritePreview && (
+        <div className="mt-2 pt-2 border-t border-violet-200">
+          <button
+            type="button"
+            onClick={() => setShowPreview((v) => !v)}
+            className="w-full flex items-center justify-between text-xs font-medium text-violet-700 hover:text-violet-900"
+          >
+            <span>{showPreview ? 'Verberg' : 'Bekijk'} STRICT-verbeterde versie</span>
+            {showPreview ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+          {showPreview && (
+            <div className="mt-2 max-h-72 overflow-y-auto rounded bg-white border border-violet-100 px-3 py-2">
+              <pre className="text-xs text-gray-800 whitespace-pre-wrap font-sans leading-relaxed">
+                {rewritePreview}
+              </pre>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
