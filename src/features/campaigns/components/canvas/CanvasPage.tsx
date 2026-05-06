@@ -103,7 +103,9 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const visualBriefModified = useCanvasStore((s) => s.visualBriefModified);
 
-  const { data: existingComponents, isLoading: componentsLoading } = useCanvasComponents(deliverableId);
+  const { data: componentsData, isLoading: componentsLoading } = useCanvasComponents(deliverableId);
+  const existingComponents = componentsData?.components;
+  const variantAngles = componentsData?.variantAngles ?? [];
 
   const statusConfig = STATUS_BADGE[approvalStatus];
 
@@ -344,13 +346,20 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         if (c.visualBrief) {
           try { cta = JSON.parse(c.visualBrief)?.cta; } catch { /* ignore */ }
         }
+        const variantIndex = c.variantIndex ?? i;
+        // Hydrate angleLabel uit settings.variantAngles geïndexeerd op
+        // variantIndex. Lege string in array = geen angle voor die index
+        // (legacy 1-call mode of mismatch). Filter naar undefined zodat
+        // de pill UI fallback "Variant A/B" toont i.p.v. lege string.
+        const angleLabel = variantAngles[variantIndex];
         return {
-          index: c.variantIndex ?? i,
+          index: variantIndex,
           content: c.generatedContent ?? '',
           tone: undefined,
           cta,
           isSelected: c.isSelected,
           componentId: c.id,
+          angleLabel: angleLabel && angleLabel.length > 0 ? angleLabel : undefined,
         };
       });
       storeState.addVariantGroup(group, variants);

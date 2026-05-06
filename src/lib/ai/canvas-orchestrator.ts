@@ -560,6 +560,42 @@ function resolveMaxTokens(contentType: string | null): number {
 }
 
 /**
+ * Extract de angleLabel array uit textResult, geïndexeerd op variantIndex.
+ * Alle groups van dezelfde variantIndex delen één angle (parallel calls per
+ * angle taggen elke variant), dus we pakken het label uit de eerste niet-lege
+ * group. Returns leeg array wanneer geen labels beschikbaar (legacy 1-call
+ * mode).
+ */
+function extractVariantAngles(textResult: TextGenerationResult): string[] {
+  if (!textResult?.components?.length) return [];
+  // Bepaal max variantCount over alle groups
+  let maxVariants = 0;
+  for (const c of textResult.components) {
+    if (c.variants?.length > maxVariants) maxVariants = c.variants.length;
+  }
+
+  const labels: string[] = [];
+  for (let i = 0; i < maxVariants; i++) {
+    let label: string | null = null;
+    for (const c of textResult.components) {
+      const v = c.variants?.[i];
+      if (v?.angleLabel) {
+        label = v.angleLabel;
+        break;
+      }
+    }
+    // Push lege string als sentinel voor "no angle for this index" — array
+    // index alignment behouden zodat UI weet welke variants WEL een label
+    // hebben en welke niet.
+    labels.push(label ?? '');
+  }
+
+  // Wanneer NIETS gelabeld is (legacy mode), stuur leeg array zodat we
+  // settings.variantAngles helemaal niet schrijven (clean fallback).
+  return labels.some((l) => l.length > 0) ? labels : [];
+}
+
+/**
  * Merge twee per-angle TextGenerationResults tot één gecombineerd resultaat
  * waar elke component group beide variants bevat (variants[0] = angle A,
  * variants[1] = angle B), beide getagd met hun angleLabel.
@@ -1552,6 +1588,30 @@ async function persistVariants(
   meta: { provider: string; textDurationMs: number; imageDurationMs: number },
   publishSuggestion: PublishSuggestion | null,
 ): Promise<void> {
+  // Persist creative-angle labels op Deliverable.settings.variantAngles
+  // BEFORE de transaction. Geen schema migration nodig — settings is een
+  // bestaand Json veld. Bij page-reload haalt CanvasPage hydrate-flow dit
+  // op en hangt angleLabel terug aan de geladen variants.
+  const variantAngles = extractVariantAngles(textResult);
+  if (variantAngles.length > 0) {
+    try {
+      const existing = await prisma.deliverable.findUnique({
+        where: { id: deliverableId },
+        select: { settings: true },
+      });
+      const currentSettings = (existing?.settings as Record<string, unknown> | null) ?? {};
+      await prisma.deliverable.update({
+        where: { id: deliverableId },
+        data: {
+          settings: { ...currentSettings, variantAngles },
+        },
+      });
+    } catch (err) {
+      // Non-fatal — variants persist normaal, alleen labels gaan verloren
+      console.warn('[canvas-orchestrator] variantAngles persist failed:', (err as Error).message);
+    }
+  }
+
   await prisma.$transaction(async (tx) => {
     // Delete all existing components for fresh generation
     await tx.deliverableComponent.deleteMany({

@@ -12,10 +12,10 @@ export async function GET(
 
     const { deliverableId } = await params;
 
-    // Verify ownership
+    // Verify ownership + load settings for variantAngles hydration
     const deliverable = await prisma.deliverable.findFirst({
       where: { id: deliverableId, campaign: { workspaceId } },
-      select: { id: true, pipelineStatus: true },
+      select: { id: true, pipelineStatus: true, settings: true },
     });
     if (!deliverable) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -24,9 +24,18 @@ export async function GET(
       orderBy: { order: 'asc' },
     });
 
+    // Extract variantAngles array uit settings — geïndexeerd op variantIndex
+    // zodat de UI hydrate-flow de creative angle labels terug kan koppelen
+    // aan de geladen variants. Leeg array bij legacy 1-call generations.
+    const settings = (deliverable.settings as Record<string, unknown> | null) ?? {};
+    const variantAngles = Array.isArray(settings.variantAngles)
+      ? (settings.variantAngles as unknown[]).map((v) => (typeof v === 'string' ? v : ''))
+      : [];
+
     return NextResponse.json({
       components,
       pipelineStatus: deliverable.pipelineStatus,
+      variantAngles,
     });
   } catch (error) {
     console.error('[Components List]', error);

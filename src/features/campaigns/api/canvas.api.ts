@@ -6,12 +6,22 @@ import type {
   DeriveResponse,
 } from '../types/canvas.types';
 
-/** Fetch all DeliverableComponent records for a deliverable */
-export async function fetchCanvasComponents(deliverableId: string): Promise<CanvasComponentResponse[]> {
+export interface FetchCanvasComponentsResult {
+  components: CanvasComponentResponse[];
+  /** Creative angle labels — geïndexeerd op variantIndex.
+   *  Leeg array bij legacy 1-call generations. */
+  variantAngles: string[];
+}
+
+/** Fetch all DeliverableComponent records for a deliverable + creative angle labels */
+export async function fetchCanvasComponents(deliverableId: string): Promise<FetchCanvasComponentsResult> {
   const res = await fetch(`/api/studio/${deliverableId}/components`);
   if (!res.ok) throw new Error('Failed to fetch canvas components');
   const data = await res.json();
-  return data.components ?? [];
+  return {
+    components: data.components ?? [],
+    variantAngles: Array.isArray(data.variantAngles) ? data.variantAngles : [],
+  };
 }
 
 /** Select a variant — sets isSelected=true and deselects siblings */
@@ -172,6 +182,72 @@ export async function selectCanvasVisualFromLibrary(
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Failed to select library visuals' }));
     throw new Error(err.error ?? 'Failed to select library visuals');
+  }
+  return res.json();
+}
+
+export interface GenerateTrainedVisualResponse {
+  variants: Array<{ id: string; url: string; prompt: string }>;
+  provider: 'fal';
+  model: string;
+  source: 'trained-style';
+  modelId: string;
+  modelName: string;
+  aspectRatio: string;
+  generationDuration: number;
+}
+
+/**
+ * Trigger image generation using one of the workspace's trained
+ * ConsistentModels (LoRA fine-tunes). The model + strength come from
+ * settings.visualBrief.trained — the endpoint reads them server-side.
+ * Replaces any existing visual-group components.
+ */
+export async function generateCanvasVisualTrained(
+  deliverableId: string,
+  options?: { instruction?: string; aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4'; count?: number },
+): Promise<GenerateTrainedVisualResponse> {
+  const res = await fetch(`/api/studio/${deliverableId}/generate-visual-trained`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(options ?? {}),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to generate trained visual' }));
+    throw new Error(err.error ?? 'Failed to generate trained visual');
+  }
+  return res.json();
+}
+
+export interface GenerateComposeVisualResponse {
+  variants: Array<{ id: string; url: string; prompt: string }>;
+  provider: 'fal';
+  model: string;
+  source: 'compose';
+  referenceCount: number;
+  aspectRatio: string;
+  generationDuration: number;
+}
+
+/**
+ * Trigger image generation by composing 2-9 reference MediaAssets with
+ * a natural-language instruction. References + instruction come from
+ * settings.visualBrief.compose — the endpoint reads them server-side.
+ * Calls fal.ai FLUX Pro Kontext multi-reference. Replaces any existing
+ * visual-group components.
+ */
+export async function generateCanvasVisualCompose(
+  deliverableId: string,
+  options?: { aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4'; count?: number },
+): Promise<GenerateComposeVisualResponse> {
+  const res = await fetch(`/api/studio/${deliverableId}/generate-visual-compose`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(options ?? {}),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to generate compose visual' }));
+    throw new Error(err.error ?? 'Failed to generate compose visual');
   }
   return res.json();
 }
