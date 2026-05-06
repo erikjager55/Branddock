@@ -122,18 +122,38 @@ thresholdMet = composite >= 75
 
 ## Empirisch gevalideerde demo curve
 
-Tegen Better Brands case-study (3000 woorden, gevalideerd in `scripts/fidelity/test-composition-engine.ts`):
+Tegen Better Brands case-study (3000 woorden), gemeten met **symmetric scoring**
+(alle outputs tegen dezelfde BrandPersonality, langs `scripts/fidelity/test-demo-full-flow.ts`):
 
 | Output | Composite | Verdict | Position |
 |---|---|---|---|
-| **Branddock + STRICT** | **75/100** | TOP_TIER | 8/100 |
-| **Branddock + BVD + HVD** (baseline) | **65/100** | AI_LEANING | 35/100 |
-| **Vanille GPT-4o** (no Branddock) | **40/100** | AI_LEANING | 42/100 |
+| **Branddock + STRICT** | 70-75/100 | HUMAN_BASELINE / TOP_TIER | 8-25 |
+| **Branddock + BVD + HVD** (baseline) | 60-65/100 | AI_LEANING | 30-40 |
+| **Vanille GPT-4o** (no Branddock) | 50-55/100 | HUMAN_BASELINE / AI_LEANING | 25-45 |
 
-**Demo claim onderbouwd**:
-- Branddock+STRICT vs Vanille: **+35 punten verschil** (75 vs 40)
-- Branddock baseline vs Vanille: **+25 punten verschil** (65 vs 40)
-- STRICT lift over baseline: **+10 punten** (75 vs 65)
+**Belangrijk: scores varieren tussen runs** door AI non-determinisme (judge + generator).
+De ranges hierboven dekken meerdere runs op dezelfde brief.
+
+**Demo claim ranges (gemeten)**:
+- Branddock+STRICT vs Vanille: **+15 tot +30 punten verschil**
+- Branddock baseline vs Vanille: **+5 tot +15 punten verschil**
+- STRICT lift over baseline: **+5 tot +10 punten** (consistent)
+
+**Wat STRICT mode betrouwbaar oplevert** (in iedere run):
+1. Verdict-transitie AI_LEANING → HUMAN_BASELINE/TOP_TIER (visueel demo-moment)
+2. Position drop van 30-40 → 8-25 (richting menselijker)
+3. Pijler 2 (judge) lift van ~70 → ~85
+4. Pijler 3 (rules) lift van ~80 → ~89 (anti-AI-tell verbetering)
+
+**Pijler 3 anomalie**: vanille scoort soms hoger op pijler 3 dan Branddock baseline —
+zonder BVD/HVD prompt-pollutie produceert GPT-4o minder AI-tells per 1000 woorden.
+**STRICT mode is de differentiator**: het brengt Branddock óók naar TOP_TIER terwijl
+brand voice match (pijler 1) en strategische verankering (pijler 2) hoog blijven.
+
+**Demo narratief aanbevolen**:
+> "ChatGPT zonder context produceert decent maar generiek werk. Branddock injecteert
+> jouw merkcontext — maar laat soms AI-patronen zien. STRICT mode is waar het verschil
+> wordt: TOP_TIER menselijke output mét brand voice match, in één klik."
 
 ## End-to-end data flow
 
@@ -290,13 +310,36 @@ src/features/campaigns/
 
 ## Demo script (aanbevolen volgorde)
 
-1. **Open Canvas** → kies een blog-post deliverable in een pilot workspace.
-2. **Klik Generate** (~30s wait). Tijdens streaming: "Branddock injecteert merkcontext en anti-AI-tell instructies in de prompt."
-3. **Position-bar verschijnt** (~5ms na text complete): "Hier is de detector — 30+ AI-tell patronen geijkt tegen Erik's eigen Frankwatching artikelen. Pos 8 = top-tier menselijk."
-4. **Composite badge landt** (~20s): "Drie pijlers, gewogen samen. 75 boven drempel = klaar voor publicatie."
-5. **Klik 'Vergelijk met vanille ChatGPT'** (~30-60s wait). Tijdens wait: leg uit dat dezelfde brief naar GPT-4o gaat zonder Branddock-context.
-6. **Delta hero verschijnt**: "+35 punten verschil. Meetbaar."
-7. **(Optional, in STRICT mode workspace)** Klik through STRICT improved badge: "Branddock detecteerde AI_LEANING, schreef automatisch om naar mens-baseline. Klik 'Pas toe' om variant A te updaten."
+**Vooraf**: zorg dat de pilot workspace `humanVoiceMode = STRICT` heeft (al gedaan
+voor BB/LINFI/Nobox/WRA — zie `scripts/fidelity/launch-demo.sh`).
+
+1. **Open Canvas** → kies een blog-post deliverable in een pilot workspace, met
+   ingevuld `brief.objective`.
+2. **Klik Generate** (~60-120s voor long-form). Tijdens streaming: *"Branddock
+   bedenkt eerst twee creative angles, dan parallel twee Claude calls met die angles
+   geinjecteerd in de prompt — fundamenteel verschillende variants A en B."*
+3. **Position-bar verschijnt** (~5ms na text complete): *"Onze detector vergelijkt
+   tegen 30+ AI-tell patronen, geijkt op echte menselijke Frankwatching artikelen."*
+4. **Composite badge landt** (~20s). Toon de pillar-breakdown:
+   *"Drie pijlers: brand voice match (jouw vocab), AI-judge rubric (cross-family),
+   anti-AI-tell + rules (deterministisch)."*
+5. **STRICT mode banner verschijnt** als verdict AI_LEANING was (~30-60s wait
+   voor rewrite). Zeer demo-waardig moment:
+   *"De output klonk net iets te AI-achtig. Branddock heeft hem automatisch
+   herschreven — kijk: AI-leunend → mens-baseline. Pijler 3 (anti-tell) gaat
+   van 79 naar 89. Pijler 2 (judge) van 72 naar 84. Composite +8."*
+6. **Klik 'Vergelijk met ChatGPT zonder Branddock'** (~30-60s). Tijdens wait:
+   *"Zelfde brief naar GPT-4o, geen merk-context. Wat krijg je?"*
+7. **Delta hero verschijnt** (verschil afhankelijk van run, +15 tot +30 punten):
+   *"+22 punten verschil. Brand voice match (pijler 1) is waar Branddock écht
+   wint — vanille kent jouw declared vocab niet."*
+8. **(Optioneel)** Klik "Bekijk de menselijkere versie" → "Gebruik deze versie":
+   *"Eén klik en de variant wordt vervangen door de STRICT-verbeterde tekst."*
+
+**Brief-strategie**: voor demos waarbij je het verschil wil maximaliseren, werk
+met een minimaal brief.objective (1 zin). Vanille zonder veel guidance valt
+sneller in AI-clichés. Met een rijke brief (zoals deze) zakt vanille minder ver,
+maar STRICT lift blijft consistent.
 
 ---
 
