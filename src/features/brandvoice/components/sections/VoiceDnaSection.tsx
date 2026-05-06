@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mic2, RefreshCcw, AlertCircle } from "lucide-react";
-import { Button } from "@/components/shared";
+import { Mic2, RefreshCcw, AlertCircle, Type } from "lucide-react";
+import { Button, CrossLinkCard } from "@/components/shared";
 import { AiContentBanner } from "../AiContentBanner";
 import { useUpdateVoiceguide, useRecomputeCentroid } from "../../hooks";
+import { useBrandstyleStore } from "@/features/brandstyle/stores/useBrandstyleStore";
 import type { BrandVoiceguide, ToneAxis, ToneDimensions } from "../../types/voiceguide.types";
 
 interface VoiceDnaSectionProps {
   voiceguide: BrandVoiceguide;
+  /** Cross-module navigator. When provided, renders a "style guidelines live
+   * in Brandstyle" cross-link card at the top of the section. */
+  onNavigate?: (section: string) => void;
 }
 
 const TONE_AXES: { key: ToneAxis; left: string; right: string }[] = [
@@ -25,7 +29,7 @@ const DEFAULT_TONE: ToneDimensions = {
   matterOfFactEnthusiastic: 4,
 };
 
-export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
+export function VoiceDnaSection({ voiceguide, onNavigate }: VoiceDnaSectionProps) {
   const update = useUpdateVoiceguide();
   const recompute = useRecomputeCentroid();
   const [description, setDescription] = useState(voiceguide.voiceDescription ?? "");
@@ -59,6 +63,23 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
 
   return (
     <div className="space-y-6">
+      {/* Cross-link to brandstyle tone-of-voice (BV-WIRE) */}
+      {onNavigate && (
+        <CrossLinkCard
+          icon={Type}
+          accent="violet"
+          title="Style guidelines live in Brandstyle"
+          description="Do/don't examples and writing guidelines for human writers are managed on the Brandstyle Tone of Voice tab. This page captures the machine-readable voice signals used by AI generation."
+          ctaLabel="Open Brandstyle"
+          onClick={() => {
+            // Pre-set the destination tab so the user lands directly on
+            // Tone of Voice (brandstyle's default tab is brand_assets).
+            useBrandstyleStore.getState().setActiveTab("tone_of_voice");
+            onNavigate("brandstyle-guide");
+          }}
+        />
+      )}
+
       {/* Voice description */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-center gap-2 mb-3">

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { CheckCircle, X, Eye, Lightbulb, Pencil, Plus, Trash2 } from "lucide-react";
-import { Card, Button } from "@/components/shared";
+import { CheckCircle, X, Eye, Lightbulb, Pencil, Plus, Trash2, Mic2 } from "lucide-react";
+import { Card, Button, CrossLinkCard } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
 import { EditableStringList } from "./EditableStringList";
 import { useUpdateSection } from "../hooks/useBrandstyleHooks";
@@ -37,9 +37,12 @@ function GuidelineBadge({ type }: { type: "observed" | "recommended" }) {
 interface ToneOfVoiceSectionProps {
   styleguide: BrandStyleguide;
   canEdit: boolean;
+  /** Cross-module navigator. When provided, renders a "voiceguide is canonical"
+   * cross-link card at the top of the section. */
+  onNavigate?: (section: string) => void;
 }
 
-export function ToneOfVoiceSection({ styleguide, canEdit }: ToneOfVoiceSectionProps) {
+export function ToneOfVoiceSection({ styleguide, canEdit, onNavigate }: ToneOfVoiceSectionProps) {
   const examples = (styleguide.examplePhrases ?? []) as ExamplePhrase[];
   const doExamples = examples.filter((e) => e.type === "do");
   const dontExamples = examples.filter((e) => e.type === "dont");
@@ -88,6 +91,18 @@ export function ToneOfVoiceSection({ styleguide, canEdit }: ToneOfVoiceSectionPr
 
   return (
     <div data-testid="tone-of-voice-section" className="space-y-6">
+      {/* Cross-link to canonical voice source (BV-WIRE) */}
+      {onNavigate && (
+        <CrossLinkCard
+          icon={Mic2}
+          accent="teal"
+          title="Brand Voice Guide is the canonical voice source"
+          description="The guidelines on this tab are reference material for human writers. AI generations read voice rules, vocabulary, and channel tones from the Brand Voice Guide."
+          ctaLabel="Open Brand Voice"
+          onClick={() => onNavigate("brandvoice")}
+        />
+      )}
+
       {/* Content Guidelines */}
       <Card>
         <EditableStringList

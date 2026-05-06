@@ -27,9 +27,12 @@ import { useAnalyzeUrl } from "../hooks/useBrandstyleHooks";
 
 interface BrandStyleguidePageProps {
   onNavigateToAnalyzer: () => void;
+  /** Cross-module navigator (e.g. setActiveSection). Used by tone-of-voice
+   * tab to surface a "voiceguide is canonical" cross-link. */
+  onNavigate?: (section: string) => void;
 }
 
-export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePageProps) {
+export function BrandStyleguidePage({ onNavigateToAnalyzer, onNavigate }: BrandStyleguidePageProps) {
   const { data, isLoading, isError } = useStyleguide();
   const { activeTab, setActiveTab, selectedColorId, isColorModalOpen, closeColorModal } = useBrandstyleStore();
   const isEditing = useBrandstyleStore((s) => s.isEditing);
@@ -150,7 +153,7 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
             {activeTab === "typography" && <TypographySection styleguide={styleguide} canEdit={canEdit} />}
             {activeTab === "spacing" && <SpacingSection styleguide={styleguide} canEdit={canEdit} />}
             {activeTab === "components" && <ComponentsSection styleguide={styleguide} canEdit={canEdit} />}
-            {activeTab === "tone_of_voice" && <ToneOfVoiceSection styleguide={styleguide} canEdit={canEdit} />}
+            {activeTab === "tone_of_voice" && <ToneOfVoiceSection styleguide={styleguide} canEdit={canEdit} onNavigate={onNavigate} />}
             {activeTab === "imagery" && <ImagerySection styleguide={styleguide} canEdit={canEdit} />}
             {activeTab === "visual_system" && <VisualSystemSection styleguide={styleguide} canEdit={canEdit} />}
             {activeTab === "design_system" && <DesignSystemSection styleguide={styleguide} />}

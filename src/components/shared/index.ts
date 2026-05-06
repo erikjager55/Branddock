@@ -51,3 +51,6 @@ export type { BrandContextTagsEditorProps } from './BrandContextTagsEditor';
 
 export { StyleGuidelinesEditor } from './StyleGuidelinesEditor';
 export type { StyleGuidelinesEditorProps } from './StyleGuidelinesEditor';
+
+export { CrossLinkCard } from './CrossLinkCard';
+export type { CrossLinkCardProps } from './CrossLinkCard';
