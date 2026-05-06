@@ -825,8 +825,9 @@ async function* handleRegeneration(
     }
 
     // Persist regenerated images
+    let regeneratedImageComponentIds: string[] = [];
     try {
-      await persistRegeneratedGroup(
+      const result = await persistRegeneratedGroup(
         deliverableId,
         workspaceId,
         effectiveGroup,
@@ -835,6 +836,7 @@ async function* handleRegeneration(
         0,
         { provider: 'openai', durationMs: imageDurationMs },
       );
+      regeneratedImageComponentIds = result.imageComponentIds;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown persistence error';
       console.error('[canvas-orchestrator] persistRegeneratedGroup (image) failed:', message);
@@ -843,6 +845,13 @@ async function* handleRegeneration(
         data: { message: `Failed to save regenerated images: ${message}`, recoverable: true },
       };
       return;
+    }
+
+    // G8 — score the new images. Old scores still exist in the DB but are
+    // tied to the deleted DeliverableComponent records (cascade); fresh
+    // scores will replace them in the UI on the next page load.
+    if (regeneratedImageComponentIds.length > 0) {
+      yield* runVisualFidelityScoring(workspaceId, regeneratedImageComponentIds);
     }
   } else {
     // Regenerate text group
@@ -1768,7 +1777,9 @@ async function persistRegeneratedGroup(
   imageResults: Array<ImageResult | null> | null,
   maxIterationHint: number,
   meta?: { provider: string; durationMs?: number },
-): Promise<void> {
+): Promise<{ imageComponentIds: string[] }> {
+  const imageComponentIds: string[] = [];
+
   await prisma.$transaction(async (tx) => {
     // Fetch current group components inside transaction to avoid stale data
     const groupComponents = await tx.deliverableComponent.findMany({
@@ -1823,11 +1834,12 @@ async function persistRegeneratedGroup(
     }
 
     if (imageResults) {
-      // Persist image variants
+      // Persist image variants — capture IDs so the caller can score them
+      // via runVisualFidelityScoring after the transaction commits.
       const successfulImages = imageResults.filter((r): r is ImageResult => r !== null);
       for (let variantIndex = 0; variantIndex < successfulImages.length; variantIndex++) {
         const img = successfulImages[variantIndex];
-        await tx.deliverableComponent.create({
+        const created = await tx.deliverableComponent.create({
           data: {
             deliverableId,
             componentType: 'image',
@@ -1845,13 +1857,17 @@ async function persistRegeneratedGroup(
             generatedAt: new Date(),
             iterationCount: maxIteration + 1,
           },
+          select: { id: true },
         });
+        imageComponentIds.push(created.id);
       }
     }
   });
 
   invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
   invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
+  return { imageComponentIds };
 }
 
 // ─── Visual Brief — rich style-direction mapping ──────────────────────
