@@ -52,7 +52,10 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     // Resolve configurable model for workshop report generation
     const resolved = await resolveFeatureModel(workspaceId, 'workshop-report');
 
-    // Call AI provider — generateAIResponse supports all providers
+    // Call AI provider — generateAIResponse supports all providers.
+    // Learning Loop tracking enabled — captures AICallSnapshot (prompt + model
+    // + params) en AICallTrace (per-call instance met token-counts +
+    // stop_reason). No brand-context — workshop reports use step-data only.
     const content = await generateAIResponse(
       resolved.provider,
       resolved.model,
@@ -60,6 +63,12 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       userPrompt,
       0.3,
       4000,
+      {
+        workspaceId,
+        parentEntityType: 'Workshop',
+        parentEntityId: workshopId,
+        sourceIdentifier: 'src/app/api/workshops/[workshopId]/generate-report/route.ts:POST',
+      },
     );
 
     if (!content) {

@@ -83,14 +83,14 @@ export async function POST() {
     if (exaResults.length === 0) {
       // Exa unavailable — fall back to pure AI discovery
       const aiOnly = await discoverViaAiOnly(
-        brandName, industry, brandDescription, productNames, existingNames,
+        brandName, industry, brandDescription, productNames, existingNames, workspaceId,
       );
       return NextResponse.json({ competitors: aiOnly });
     }
 
     // 3. Deduplicate and rank via Claude
     const ranked = await rankWithClaude(
-      exaResults, brandName, industry, brandDescription, productNames, existingNames,
+      exaResults, brandName, industry, brandDescription, productNames, existingNames, workspaceId,
     );
 
     return NextResponse.json({ competitors: ranked });
@@ -189,6 +189,7 @@ async function rankWithClaude(
   brandDescription: string,
   productNames: string,
   existingNames: string[],
+  workspaceId: string,
 ): Promise<DiscoveredCompetitor[]> {
   const resultsText = exaResults
     .slice(0, 20)
@@ -225,6 +226,12 @@ ${resultsText}
 
 Return JSON: { "competitors": [{ "name", "websiteUrl", "description", "relevanceScore" (0-100), "relevanceReason", "tier" ("DIRECT"|"INDIRECT"|"ASPIRATIONAL") }] }`,
     { temperature: 0.2, maxTokens: 2000 },
+    {
+      workspaceId,
+      parentEntityType: 'Workspace',
+      parentEntityId: workspaceId,
+      sourceIdentifier: 'src/app/api/competitors/discover/route.ts:rankWithClaude',
+    },
   );
 
   return (result.competitors ?? [])
@@ -240,6 +247,7 @@ async function discoverViaAiOnly(
   brandDescription: string,
   productNames: string,
   existingNames: string[],
+  workspaceId: string,
 ): Promise<DiscoveredCompetitor[]> {
   const excludeList = existingNames.length > 0
     ? `\nEXCLUDE: ${existingNames.join(', ')}`
@@ -263,6 +271,12 @@ ${excludeList}
 
 Return JSON: { "competitors": [{ "name", "websiteUrl", "description", "relevanceScore", "relevanceReason", "tier" }] }`,
     { temperature: 0.3, maxTokens: 2000 },
+    {
+      workspaceId,
+      parentEntityType: 'Workspace',
+      parentEntityId: workspaceId,
+      sourceIdentifier: 'src/app/api/competitors/discover/route.ts:discoverViaAiOnly',
+    },
   );
 
   return (result.competitors ?? [])

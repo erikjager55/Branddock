@@ -100,6 +100,12 @@ export async function POST(request: NextRequest) {
       systemPrompt,
       userPrompt,
       { temperature: 0.3 },
+      {
+        workspaceId,
+        parentEntityType: 'Workspace',
+        parentEntityId: workspaceId,
+        sourceIdentifier: 'src/app/api/competitors/analyze/url/route.ts:POST',
+      },
     );
 
     const jobId = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;

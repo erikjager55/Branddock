@@ -102,6 +102,12 @@ export async function POST(request: NextRequest) {
       systemPrompt,
       userPrompt,
       { temperature: 0.3 },
+      {
+        workspaceId,
+        parentEntityType: 'Workspace',
+        parentEntityId: workspaceId,
+        sourceIdentifier: 'src/app/api/products/analyze/pdf/route.ts:POST',
+      },
     );
 
     // 4. Validate and normalize result

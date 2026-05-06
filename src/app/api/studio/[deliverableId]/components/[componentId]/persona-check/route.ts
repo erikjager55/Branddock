@@ -110,6 +110,12 @@ Simulate each persona's reaction to this content. Return a JSON array.`;
       systemPrompt,
       userPrompt,
       { maxTokens: 2000 },
+      {
+        workspaceId,
+        parentEntityType: 'DeliverableComponent',
+        parentEntityId: componentId,
+        sourceIdentifier: 'src/app/api/studio/[deliverableId]/components/[componentId]/persona-check/route.ts:POST',
+      },
     );
 
     // Parse the response — extract JSON array

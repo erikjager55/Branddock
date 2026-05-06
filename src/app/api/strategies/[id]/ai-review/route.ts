@@ -115,6 +115,12 @@ End Date: ${strategy.endDate?.toISOString().split("T")[0] ?? "Not set"}`;
       SYSTEM_PROMPT,
       userPrompt,
       { temperature: 0.3, maxTokens: 4000 },
+      {
+        workspaceId,
+        parentEntityType: 'BusinessStrategy',
+        parentEntityId: id,
+        sourceIdentifier: 'src/app/api/strategies/[id]/ai-review/route.ts:POST',
+      },
     );
 
     const parsed = aiReviewSchema.safeParse(rawReview);

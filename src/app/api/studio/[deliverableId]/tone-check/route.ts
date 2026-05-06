@@ -166,6 +166,12 @@ Analyze the content above against the brand's tone-of-voice guidelines${personal
       systemPrompt,
       userPrompt,
       { temperature: 0.3, maxTokens: 2048 },
+      {
+        workspaceId,
+        parentEntityType: 'Deliverable',
+        parentEntityId: deliverableId,
+        sourceIdentifier: 'src/app/api/studio/[deliverableId]/tone-check/route.ts:POST',
+      },
     );
 
     // Normalize score to valid range

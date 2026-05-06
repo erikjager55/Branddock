@@ -127,6 +127,12 @@ export async function POST(
       systemPrompt,
       userPrompt,
       { temperature: 0.7, maxTokens: 1024 },
+      {
+        workspaceId,
+        parentEntityType: 'Deliverable',
+        parentEntityId: deliverableId,
+        sourceIdentifier: 'src/app/api/studio/[deliverableId]/inline-transform/route.ts:POST',
+      },
     );
 
     const rawTransformed = aiResponse?.transformedText;

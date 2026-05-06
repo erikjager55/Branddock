@@ -148,6 +148,12 @@ export async function POST(
         feedbackUserPrompt,
         explorationConfig.temperature,
         512,
+        {
+          workspaceId,
+          parentEntityType: 'ExplorationSession',
+          parentEntityId: sessionId,
+          sourceIdentifier: 'src/app/api/exploration/[itemType]/[itemId]/sessions/[sessionId]/answer/route.ts:POST',
+        },
       );
     } catch (err) {
       console.warn('[exploration-feedback] AI call failed, using fallback:', err);

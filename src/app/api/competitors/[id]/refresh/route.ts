@@ -93,6 +93,12 @@ export async function POST(
       systemPrompt,
       userPrompt,
       { temperature: 0.3 },
+      {
+        workspaceId,
+        parentEntityType: 'Competitor',
+        parentEntityId: id,
+        sourceIdentifier: 'src/app/api/competitors/[id]/refresh/route.ts:POST',
+      },
     );
 
     // 4. Update competitor with fresh data

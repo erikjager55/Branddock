@@ -104,6 +104,14 @@ export async function POST(request: NextRequest) {
       systemPrompt,
       userPrompt,
       { temperature: 0.3 },
+      {
+        // No Product entity exists at AI-call time (created post-analysis).
+        // Use Workspace as coarser parent — leerlus joins via timestamp + sourceIdentifier.
+        workspaceId,
+        parentEntityType: 'Workspace',
+        parentEntityId: workspaceId,
+        sourceIdentifier: 'src/app/api/products/analyze/url/route.ts:POST',
+      },
     );
     console.log("[analyze/url] AI returned, product name:", result?.name);
 

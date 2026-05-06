@@ -107,6 +107,12 @@ Evaluate the content under review for consistency with the approved siblings. Re
       systemPrompt,
       userPrompt,
       { maxTokens: 2000 },
+      {
+        workspaceId,
+        parentEntityType: 'DeliverableComponent',
+        parentEntityId: componentId,
+        sourceIdentifier: 'src/app/api/studio/[deliverableId]/components/[componentId]/consistency-check/route.ts:POST',
+      },
     );
 
     // Parse the response
