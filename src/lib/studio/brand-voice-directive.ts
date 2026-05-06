@@ -5,9 +5,17 @@
 // block that is injected BEFORE type-specific templates in every
 // content generation, scoring, and suggestion prompt.
 //
-// This ensures brand personality, tone of voice, language, and
-// channel-specific communication style take absolute priority
-// over generic framework methodologies.
+// This ensures brand voice, tone of voice, language, and channel-
+// specific communication style take absolute priority over generic
+// framework methodologies.
+//
+// Source — BV-WIRE W-2 (2026-05-06):
+//   Primary: ctx.brandVoiceguide (formatted by formatBrandVoiceguide
+//   in brand-context.ts; falls back to legacy BrandPersonality voice
+//   fields for unmigrated workspaces).
+//   Fallback: ctx.brandToneOfVoice (Brandstyle Analyzer) — only
+//   injected when no voiceguide present, voiceguide otherwise wins
+//   (single source of truth per BV-WIRE recommendation).
 // =============================================================
 
 import { getBrandContext } from '@/lib/ai/brand-context';
@@ -75,11 +83,11 @@ export function buildBrandVoiceDirectiveFromContext(
   ctx: BrandContextBlock,
   options?: BrandVoiceDirectiveOptions,
 ): string {
-  const hasPersonality = !!ctx.brandPersonality;
+  const hasVoiceguide = !!ctx.brandVoiceguide;
   const hasToneOfVoice = !!ctx.brandToneOfVoice;
   const hasLanguage = !!ctx.contentLanguage && ctx.contentLanguage !== 'en';
 
-  if (!hasPersonality && !hasToneOfVoice && !hasLanguage) {
+  if (!hasVoiceguide && !hasToneOfVoice && !hasLanguage) {
     return '';
   }
 
@@ -96,12 +104,15 @@ export function buildBrandVoiceDirectiveFromContext(
     parts.push('');
   }
 
-  if (hasPersonality) {
-    parts.push(`**Brand voice**: ${ctx.brandPersonality}`);
+  if (hasVoiceguide) {
+    parts.push(`**Brand voice**: ${ctx.brandVoiceguide}`);
     parts.push('');
   }
 
-  if (hasToneOfVoice && ctx.brandToneOfVoice !== ctx.brandPersonality) {
+  // Tone of voice (Brandstyle Analyzer) is fallback-only — injected when
+  // no voiceguide present. Voiceguide is the canonical source per BV-WIRE
+  // recommendation; gating here prevents duplicate voice context in prompts.
+  if (!hasVoiceguide && hasToneOfVoice) {
     parts.push(`**Tone of voice guidelines**: ${ctx.brandToneOfVoice}`);
     parts.push('');
   }
