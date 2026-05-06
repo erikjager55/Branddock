@@ -6,7 +6,14 @@
 >
 > Lees eerst: `FIDELITY-CRITERIA-AUDIT.md` — audit-input voor deze sessie.
 >
-> Laatst bijgewerkt: 5 mei 2026 [EJ]
+> Laatst bijgewerkt: 6 mei 2026 [EJ]
+>
+> **Status**: ✅ v1 afgerond 2026-05-05 (beslissing 7 in `branddock-learning-loop-decisions.md`).
+> ✅ iteratie 2 afgerond 2026-05-06 — 4 Long-Form differentiaties + 2 Email differentiaties
+> + 4 nieuwe criteria (`behavioral-application` G1, `distinctiveness` G3,
+> `memorability-stickiness` G7, `narrative-flow`). Validatie via
+> `scripts/fidelity/validate-all-criteria.ts` — alle 53 content-types resolveren
+> naar valid configs. Open: G8 multimodal (separate werkstroom).
 
 ---
 

@@ -214,6 +214,43 @@ const CRIT_COMPLETENESS_COVERAGE: CriterionTemplate = {
   source: "ai-judge",
 };
 
+// ─── Iteratie 2 toevoegingen (gap G1, G3, G7) ────────────
+
+const CRIT_BEHAVIORAL_APPLICATION: CriterionTemplate = {
+  key: "behavioral-application",
+  label: "Behavioral Application",
+  description:
+    "Applies behavior-change frameworks (Cialdini / BCT / EAST / MINDSPACE) appropriate to the goal (gap G1)",
+  pillar: "strategic",
+  source: "ai-judge",
+};
+
+const CRIT_DISTINCTIVENESS: CriterionTemplate = {
+  key: "distinctiveness",
+  label: "Distinctiveness",
+  description:
+    "Stands out from generic AI output, brand-distinctive perspective, original framing (gap G3)",
+  pillar: "strategic",
+  source: "ai-judge",
+};
+
+const CRIT_MEMORABILITY: CriterionTemplate = {
+  key: "memorability-stickiness",
+  label: "Memorability",
+  description:
+    "SUCCESs framework: simple, unexpected, concrete, credible, emotional, story-led (gap G7)",
+  pillar: "audience",
+  source: "ai-judge",
+};
+
+const CRIT_NARRATIVE_FLOW: CriterionTemplate = {
+  key: "narrative-flow",
+  label: "Narrative Flow",
+  description: "Story arc, problem-solution-result progression, emotional pacing",
+  pillar: "execution",
+  source: "ai-judge",
+};
+
 // ─────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────
@@ -468,6 +505,162 @@ const OVERRIDE_LINKEDIN: ContentTypeFidelityConfig = {
  */
 // (Geen aparte override; valt onder Advertising-categorie via mapping hieronder.)
 
+// ─── Iteratie 2: Long-Form differentiatie (4 types) ──────────────
+//
+// Default `CONFIG_LONG_FORM` (= blog-post profile) blijft voor blog-post,
+// pillar-page, article. Deze 4 types verdienen eigen weights/criteria
+// vanwege fundamenteel ander reader-intent.
+
+/**
+ * whitepaper: research-backed thought leadership — evidence is alles.
+ * Strategic pillar wordt zwaarder, evidence-strength dominant binnen.
+ * Concept-fidelity blijft maar wordt secundair.
+ */
+const OVERRIDE_WHITEPAPER: ContentTypeFidelityConfig = {
+  ...CONFIG_LONG_FORM,
+  contentTypeId: "whitepaper",
+  pillars: [
+    pillar(PILLAR_STRATEGIC, 0.5),
+    pillar(PILLAR_AUDIENCE, 0.15),
+    pillar(PILLAR_EXECUTION, 0.35),
+  ],
+  criteria: [
+    crit(CRIT_BRAND_FIDELITY, 0.25),
+    crit(CRIT_CONCEPT_FIDELITY, 0.25),
+    crit(CRIT_EVIDENCE_STRENGTH, 0.5), // dominant
+    crit(CRIT_AUDIENCE_RESONANCE, 1.0),
+    crit(CRIT_CRAFT_QUALITY, 0.5),
+    crit(CRIT_SEO_CRAFTSMANSHIP, 0.5),
+  ],
+  compositeThreshold: 75, // hogere bar voor authoritative content
+};
+
+/**
+ * case-study: customer success narrative — story-driven, persuasion-led.
+ * Swap evidence-strength → narrative-flow; audience pillar krijgt
+ * memorability als 6e dimensie waar evidence-strength was.
+ */
+const OVERRIDE_CASE_STUDY: ContentTypeFidelityConfig = {
+  ...CONFIG_LONG_FORM,
+  contentTypeId: "case-study",
+  pillars: [
+    pillar(PILLAR_STRATEGIC, 0.35),
+    pillar(PILLAR_AUDIENCE, 0.3),
+    pillar(PILLAR_EXECUTION, 0.35),
+  ],
+  criteria: [
+    crit(CRIT_BRAND_FIDELITY, 0.4),
+    crit(CRIT_CONCEPT_FIDELITY, 0.6), // story-arc consistency
+    // Evidence-strength dropped — case-studies zijn narrative-led
+    crit(CRIT_AUDIENCE_RESONANCE, 0.5),
+    crit(CRIT_MEMORABILITY, 0.5), // SUCCESs framework toegepast
+    crit(CRIT_NARRATIVE_FLOW, 0.6), // story arc
+    crit(CRIT_CRAFT_QUALITY, 0.4),
+  ],
+  compositeThreshold: 70,
+};
+
+/**
+ * ebook: long-form lead magnet — completeness + structure heavyweight.
+ * Replace evidence-strength with completeness-coverage; lower threshold
+ * because length tolerates wider quality variation.
+ */
+const OVERRIDE_EBOOK: ContentTypeFidelityConfig = {
+  ...CONFIG_LONG_FORM,
+  contentTypeId: "ebook",
+  pillars: [
+    pillar(PILLAR_STRATEGIC, 0.35),
+    pillar(PILLAR_AUDIENCE, 0.2),
+    pillar(PILLAR_EXECUTION, 0.45),
+  ],
+  criteria: [
+    crit(CRIT_BRAND_FIDELITY, 0.3),
+    crit(CRIT_CONCEPT_FIDELITY, 0.3),
+    crit(CRIT_COMPLETENESS_COVERAGE, 0.4), // vervangt evidence-strength
+    crit(CRIT_AUDIENCE_RESONANCE, 1.0),
+    crit(CRIT_CRAFT_QUALITY, 0.6),
+    crit(CRIT_SEO_CRAFTSMANSHIP, 0.4),
+  ],
+  compositeThreshold: 65,
+};
+
+/**
+ * thought-leadership: distinctive POV is the whole point. Replace
+ * evidence-strength with distinctiveness; emphasize concept-fidelity
+ * (the thesis) over brand-fidelity (which would dilute the voice).
+ */
+const OVERRIDE_THOUGHT_LEADERSHIP: ContentTypeFidelityConfig = {
+  ...CONFIG_LONG_FORM,
+  contentTypeId: "thought-leadership",
+  pillars: [
+    pillar(PILLAR_STRATEGIC, 0.5),
+    pillar(PILLAR_AUDIENCE, 0.25),
+    pillar(PILLAR_EXECUTION, 0.25),
+  ],
+  criteria: [
+    crit(CRIT_BRAND_FIDELITY, 0.2),
+    crit(CRIT_CONCEPT_FIDELITY, 0.35),
+    crit(CRIT_DISTINCTIVENESS, 0.45), // dominant — original POV is the goal
+    crit(CRIT_AUDIENCE_RESONANCE, 1.0),
+    crit(CRIT_CRAFT_QUALITY, 0.6),
+    crit(CRIT_SEO_CRAFTSMANSHIP, 0.4),
+  ],
+  compositeThreshold: 75, // executive-bylined → high bar
+};
+
+// ─── Iteratie 2: Email differentiatie (2 types) ──────────────────
+//
+// Default `CONFIG_EMAIL` blijft voor newsletter, nurture-sequence.
+// Deze 2 differentiëren omdat hun doel fundamenteel anders is.
+
+/**
+ * welcome-sequence: relationship-setting moment — concept-fidelity is
+ * de toon-aangevende factor. Subject-line is minder kritiek (deze emails
+ * worden meestal geopend uit verwachting), audience-resonance dominant.
+ */
+const OVERRIDE_WELCOME_SEQUENCE: ContentTypeFidelityConfig = {
+  ...CONFIG_EMAIL,
+  contentTypeId: "welcome-sequence",
+  pillars: [
+    pillar(PILLAR_STRATEGIC, 0.4),
+    pillar(PILLAR_AUDIENCE, 0.4),
+    pillar(PILLAR_EXECUTION, 0.2),
+  ],
+  criteria: [
+    crit(CRIT_BRAND_FIDELITY, 0.4),
+    crit(CRIT_CONCEPT_FIDELITY, 0.6), // tone-setting moment
+    crit(CRIT_AUDIENCE_RESONANCE, 0.6), // dominant — onboarding fit
+    crit(CRIT_SUBJECT_LINE_STRENGTH, 0.4),
+    crit(CRIT_CRAFT_QUALITY, 0.5),
+    crit(CRIT_DELIVERABILITY_TECHNICAL, 0.5),
+  ],
+  compositeThreshold: 70,
+};
+
+/**
+ * promotional-email: conversion-driven — behavioral-application earns
+ * its first-class slot. Swap subject-line for behavioral-application
+ * to make the goal explicit.
+ */
+const OVERRIDE_PROMOTIONAL_EMAIL: ContentTypeFidelityConfig = {
+  ...CONFIG_EMAIL,
+  contentTypeId: "promotional-email",
+  pillars: [
+    pillar(PILLAR_STRATEGIC, 0.45),
+    pillar(PILLAR_AUDIENCE, 0.3),
+    pillar(PILLAR_EXECUTION, 0.25),
+  ],
+  criteria: [
+    crit(CRIT_BRAND_FIDELITY, 0.3),
+    crit(CRIT_CONCEPT_FIDELITY, 0.3),
+    crit(CRIT_BEHAVIORAL_APPLICATION, 0.4), // Cialdini / BCT / EAST
+    crit(CRIT_AUDIENCE_RESONANCE, 0.5),
+    crit(CRIT_SUBJECT_LINE_STRENGTH, 0.5),
+    crit(CRIT_DELIVERABILITY_TECHNICAL, 1.0),
+  ],
+  compositeThreshold: 70,
+};
+
 const TYPE_OVERRIDES: Record<string, ContentTypeFidelityConfig> = {
   "faq-page": OVERRIDE_FAQ_PAGE,
   "tiktok-script": OVERRIDE_TIKTOK,
@@ -478,6 +671,14 @@ const TYPE_OVERRIDES: Record<string, ContentTypeFidelityConfig> = {
   "linkedin-event": { ...OVERRIDE_LINKEDIN, contentTypeId: "linkedin-event" },
   "linkedin-poll": { ...OVERRIDE_LINKEDIN, contentTypeId: "linkedin-poll" },
   // linkedin-ad valt onder Advertising — geen override nodig.
+  // Iteratie 2 — Long-Form differentiatie (4 types)
+  "whitepaper": OVERRIDE_WHITEPAPER,
+  "case-study": OVERRIDE_CASE_STUDY,
+  "ebook": OVERRIDE_EBOOK,
+  "thought-leadership": OVERRIDE_THOUGHT_LEADERSHIP,
+  // Iteratie 2 — Email differentiatie (2 types)
+  "welcome-sequence": OVERRIDE_WELCOME_SEQUENCE,
+  "promotional-email": OVERRIDE_PROMOTIONAL_EMAIL,
 };
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -536,6 +737,11 @@ export const KNOWN_CRITERION_KEYS = [
   "message-clarity",
   "credibility-evidence",
   "completeness-coverage",
+  // Iteratie 2 toevoegingen
+  "behavioral-application",
+  "distinctiveness",
+  "memorability-stickiness",
+  "narrative-flow",
 ] as const;
 
 export type KnownCriterionKey = (typeof KNOWN_CRITERION_KEYS)[number];
