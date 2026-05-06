@@ -36,88 +36,47 @@ export function buildHumanVoiceDirective(options?: HumanVoiceOptions): string {
   const language = (options?.language ?? 'nl').toLowerCase();
   const isDutch = language === 'nl';
 
+  // Sharp & short — long avoid-lijsten primen het model juist op die woorden
+  // (counter-intuitief uit eerdere testen). Drie absolute prohibities + drie
+  // positieve schrijfprincipes + één meta-instructie. ~250 tokens i.p.v. ~500.
   return [
-    '## HUMAN VOICE DIRECTIVE — schrijf zoals een ervaren mens',
-    '',
-    'Een mens schrijft niet perfect-symmetrisch en niet uniform-positief. Echte tekst heeft ritme, blinde vlekken, en mening. Volg deze instructies voorrang boven generieke "duidelijk en behulpzaam"-impulsen.',
-    '',
-    '### NEVER do these',
-    '',
-    '**Woorden** (vermijd, óók in vertaling):',
-    isDutch
-      ? '- NL: naadloos, baanbrekend, robuust, veelzijdig, multifunctioneel, intuïtief, doordacht, toonaangevend, vooraanstaand, impactvol, betekenisvol, boeiend, fascinerend, indrukwekkend, ongeëvenaard, verheugd'
-      : '- EN: delve, tapestry, testament to, intricate(ies), interplay, pivotal, meticulous, underscore, bolster, garner, vibrant, multifaceted, robust, leverage, harness, streamline, realm, landscape, synergy, cutting-edge, seamless, transformative, holistic, cohesive, unparalleled, game-changing',
-    '- Buzzword-werkwoorden: optimaliseren, transformeren, faciliteren, ontsluiten, verrijken, verdiepen, omarmen, benutten / optimize, enhance, elevate, empower, embrace, foster, navigate',
-    '- Lege adverbia: effectively, efficiently, successfully, strategically, consistently, seamlessly',
-    '',
-    '**Zinsstructuren**:',
-    isDutch
-      ? '- "Het is niet zomaar X, het is Y" — overgebruikt, voorspelbaar'
-      : '- "It\'s not just X, it\'s Y" — overgebruikt, voorspelbaar',
-    isDutch
-      ? '- "Niet omdat..., maar omdat..." — vermijd deze constructie helemaal'
-      : '- "Not because of X, but because of Y" — vermijd deze constructie helemaal',
-    isDutch
-      ? '- "Of je nu X bent of Y" — telegram-zin uit AI-handboek'
-      : '- "Whether you\'re X or Y" — telegram-zin uit AI-handboek',
-    '- Drieslag wanneer asymmetrisch ("snel, efficiënt en schaalbaar") — kies twee, of vier; drie ruikt automatisch',
-    isDutch
-      ? '- Aankondigings-zinnen: "Laten we eens kijken naar...", "In dit artikel verkennen we..." — schrap deze meta-laag, lever direct inhoud'
-      : '- Announcement sentences: "Let\'s look at...", "In this article we explore..." — drop the meta-layer, deliver content directly',
-    isDutch
-      ? '- Slotformules "Kortom," / "Tot slot," gevolgd door herhaling — laat het slot zelf werk doen'
-      : '- Closing formulas "In conclusion," / "All in all," followed by recap — let the closing earn its place',
-    '',
-    '**Interpunctie**:',
-    isDutch
-      ? '- Em-dash (—) alleen als paar rond een tussenzin — niet trailing aan einde van een zin (Engels gebruik in Nederlandse tekst)'
-      : '- Em-dash (—) only as a pair around a parenthetical — not as trailing modifier',
-    '- Geen smart quotes (" " \' \') — gebruik rechte aanhalingstekens',
-    '- Geen Oxford-komma in Nederlands ("schrijven, lezen, en kijken")',
-    isDutch
-      ? '- Vermijd "X: een korte punchline." — die dubbele-punt-pingpong is een AI-tic'
-      : '- Avoid "X: short punchline." — colon-punchline is an AI tic',
-    '',
-    '**Toon**:',
-    isDutch
-      ? '- Geen disclaimer-mantra\'s ("Het is goed te beseffen dat...", "Het is belangrijk om...") — schrijf het gewoon'
-      : '- No disclaimer-mantras ("It\'s important to note that...", "It\'s worth noting that...") — just say it',
-    isDutch
-      ? '- Geen overdreven beleefdheid ("Absoluut!", "Wat een goede vraag!") in zakelijke tekst'
-      : '- No over-polite openers ("Certainly!", "Great question!") in business text',
-    '- Geen AI-overtuigingsmarkers ("zonder dat het ook maar een millimeter afweek", "exactly the same", "honderd procent gegarandeerd") — mensen overdrijven niet zo absoluut',
-    '- Niet 1500 woorden lang dezelfde toon — een echte mens zwabbert; varieer ritme en register',
-    '',
-    '**Inhoud**:',
-    isDutch
-      ? '- Geen vage referenties ("in talloze projecten", "diverse onderzoeken tonen aan") — concrete naam, jaar, situatie of niets'
-      : '- No vague evidence ("in countless projects", "various studies show") — concrete name, year, situation, or nothing',
-    '- Geen verzonnen statistieken met decimalen om geloofwaardig te lijken — ronde getallen of geen getal',
-    '- Geen symmetrische voor- en nadelen-lijsten waar elk pluspunt netjes een minpunt krijgt — een mens schrijft scheef',
-    isDutch
-      ? '- Geen omniscient-stem die alle perspectieven weet — laat blind spots en mening doorklinken'
-      : '- No omniscient voice covering all perspectives — let blind spots and opinion show',
-    '',
-    '**Opbouw**:',
-    '- Geen schoolse alinea\'s van uniforme lengte met identieke H-structuur',
-    '- Geen bullet-list waar prozavorm logischer was, vooral niet drie items per stuk',
-    '- Geen H2/H3 die de inhoud parafraseert ("De voordelen van X", "Hoe X werkt") — kies koppen die spanning of haak bieden',
-    '- Geen perfect symmetrische structuur (intro + 3 hoofdpunten + conclusie) voor een complex onderwerp',
-    '',
-    '### DO these instead',
+    '## HUMAN VOICE — schrijf als ervaren mens, niet als AI',
     '',
     isDutch
-      ? '- Begin met een vraag, observatie of concrete situatie — niet met "In een wereld die..."'
-      : '- Open with a question, observation, or concrete situation — not "In today\'s world..."',
-    '- Variëer zinslengte — kort dan lang dan kort, niet uniform-medium',
-    '- Eén concrete persoon, plek, getal of citaat per ~300 woorden — anders is het lucht',
-    isDutch
-      ? '- Schrijf in werkwoorden, niet in nominalisaties ("we besluiten" niet "het besluit wordt genomen")'
-      : '- Write in verbs, not nominalizations ("we decide" not "the decision is made")',
-    '- Laat een mening doorklinken — niet "evenwichtig", wel onderbouwd',
-    '- Houd één spanningsboog vast: vraag → spanning → antwoord. Niet vijf parallelle structuurtjes',
+      ? 'Echte tekst heeft ritme, mening en blinde vlekken. AI-tekst is symmetrisch, beleefd, verklaart alles. Schrijf zoals jij praat tegen een collega die het al snapt.'
+      : 'Real writing has rhythm, opinion, and blind spots. AI writing is symmetric, polite, explains everything. Write like you would talk to a colleague who gets it.',
     '',
-    'Apply this voice baseline NEXT to (not over) the brand-specific directive above. The brand directive defines identity; this directive prevents AI-tells.',
+    '### ABSOLUTE PROHIBITIES (geen uitzondering)',
+    '',
+    isDutch
+      ? '1. **Em-dash (—)** — gebruik NIET. Komma\'s of haakjes wel. (Trailing em-dash in Nederlandse tekst is dé AI-tell.)'
+      : '1. **Em-dash (—)** — DO NOT use. Commas or parentheses instead. (Trailing em-dash is THE AI-tell.)',
+    isDutch
+      ? '2. **Contrast-formules** — geen "niet alleen X, maar ook Y" / "niet zomaar X, het is Y" / "niet omdat X, maar omdat Y". Schrap of herschrijf direct.'
+      : '2. **Contrast formulas** — no "not just X, it\'s Y" / "not only X but also Y" / "not because X, but because Y". Drop or rewrite directly.',
+    isDutch
+      ? '3. **Disclaimer-mantra\'s** — geen "Het is belangrijk om...", "Het is goed te beseffen...", "Laten we eens kijken naar...", "In dit artikel...". Schrap. Lever inhoud direct.'
+      : '3. **Disclaimer-mantras** — no "It\'s important to note...", "Let\'s look at...", "In this article we explore...". Drop. Deliver content directly.',
+    '',
+    '### POSITIEVE INSTRUCTIES',
+    '',
+    isDutch
+      ? '4. **Open concreet** — vraag, observatie, naam, getal. Niet "In een wereld waarin..." of "In de huidige tijd...".'
+      : '4. **Open concretely** — question, observation, name, number. Not "In today\'s world..." or "In the current era...".',
+    isDutch
+      ? '5. **Varieer zinslengte** — kort. Lang met komma\'s en bijzin. Kort. Niet uniform-medium.'
+      : '5. **Vary sentence length** — short. Long with commas and a clause. Short. Not uniform-medium.',
+    isDutch
+      ? '6. **Eén concreet anker per 300 woorden** — naam, getal, jaar, situatie. Anders is het lucht.'
+      : '6. **One concrete anchor per 300 words** — name, number, year, situation. Else it\'s air.',
+    '',
+    '### META-INSTRUCTIE',
+    '',
+    isDutch
+      ? 'Lees elke zin terug: klinkt het alsof je het zelf zou zeggen, of alsof een handboek over jouw onderwerp het zou zeggen? Bij twijfel — herschrijf.'
+      : 'Read each sentence back: would you actually say this, or would a handbook about your topic say it? When in doubt — rewrite.',
+    '',
+    'These rules override generic "be helpful and clear" impulses.',
   ].join('\n');
 }
 
