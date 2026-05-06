@@ -44,7 +44,9 @@ try {
 }
 
 const WORKSPACE_ID = 'demo-workspace-branddock-001';
-const DELIVERABLE_ID = 'cmn8u20pt00arnimsl7kk942m'; // "Brand Refresh Guidelines" blog-post
+// Deliverable met bijbehorende ContentVersion (versionNumber 3) zodat de
+// opt-in dual-write naar ContentFidelityScore daadwerkelijk activeert.
+const DELIVERABLE_ID = 'cmn8u20q000b1nimshyjcxczn'; // "AI Trends in Brand Strategy"
 
 async function main() {
   const { runFidelityScoring, buildFidelityScoreEventPayload } = await import(

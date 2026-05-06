@@ -143,6 +143,7 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
           before={strict.before}
           after={strict.after}
           rewritePreview={strict.rewritePreview}
+          deliverableId={deliverableId}
         />
       )}
 
@@ -191,12 +192,37 @@ function StrictImprovedBlock({
   before,
   after,
   rewritePreview,
+  deliverableId,
 }: {
   before: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number };
   after: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number };
   rewritePreview: string | null;
+  deliverableId: string | null;
 }) {
   const [showPreview, setShowPreview] = React.useState(false);
+  const [applyState, setApplyState] = React.useState<'idle' | 'applying' | 'applied' | 'error'>('idle');
+  const [applyError, setApplyError] = React.useState<string | null>(null);
+
+  const handleApply = React.useCallback(async () => {
+    if (!deliverableId) return;
+    setApplyState('applying');
+    setApplyError(null);
+    try {
+      const res = await fetch(`/api/studio/${deliverableId}/strict-rewrite/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error ?? `Apply failed: ${res.status}`);
+      }
+      setApplyState('applied');
+    } catch (err) {
+      setApplyError(err instanceof Error ? err.message : 'Apply mislukt');
+      setApplyState('error');
+    }
+  }, [deliverableId]);
 
   return (
     <div className="mt-3 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5">
@@ -228,6 +254,39 @@ function StrictImprovedBlock({
                 {rewritePreview}
               </pre>
             </div>
+          )}
+
+          {/* Apply CTA — gebruikersactie, replace longest first-variant component */}
+          {deliverableId && applyState !== 'applied' && (
+            <button
+              type="button"
+              onClick={handleApply}
+              disabled={applyState === 'applying'}
+              className="mt-2 w-full inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border border-violet-300 bg-white text-xs font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {applyState === 'applying' ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Toepassen…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Pas STRICT versie toe op variant A
+                </>
+              )}
+            </button>
+          )}
+
+          {applyState === 'applied' && (
+            <div className="mt-2 text-xs text-violet-700 font-medium inline-flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Toegepast — refresh om de nieuwe content in variant A te zien
+            </div>
+          )}
+
+          {applyState === 'error' && applyError && (
+            <div className="mt-2 text-xs text-red-700">{applyError}</div>
           )}
         </div>
       )}

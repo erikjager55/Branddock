@@ -202,6 +202,93 @@ async function persistFidelityScore(
 }
 
 /**
+ * Opt-in dual-write naar de polished ContentFidelityScore tabel.
+ *
+ * Activeert alleen wanneer er een ContentVersion bestaat die bij deze
+ * Deliverable hoort — in canvas-only flows (zonder Studio version) is
+ * dit een no-op. Wanneer canvas → Studio version flow wordt gewired
+ * (toekomstige stap, opensaande task #27) gaat dit automatisch werken
+ * zonder code-changes hier.
+ *
+ * judgeIdentifier blijft consistent ("composition-engine-v1.0") zodat
+ * downstream queries kunnen filteren op judge-source. ContentFidelityScore
+ * is 1:N met ContentVersion (multi-judge support — andere scorers zoals
+ * de learning-loop scorer kunnen co-existeren).
+ */
+async function persistContentFidelityScoreIfPossible(
+  deliverableId: string,
+  workspaceId: string,
+  result: FidelityCompositeResult,
+): Promise<void> {
+  try {
+    // Pak de meest recente ContentVersion voor deze deliverable.
+    // Geen-version = canvas-only piece → no-op.
+    const version = await prisma.contentVersion.findFirst({
+      where: { deliverableId },
+      orderBy: { versionNumber: 'desc' },
+      select: { id: true },
+    });
+    if (!version) return;
+
+    const pillarScoresJson = {
+      style: { score: result.pillars.style.score, weight: result.pillars.style.weight },
+      judge: result.pillars.judge
+        ? {
+            score: result.pillars.judge.score,
+            weight: result.pillars.judge.weight,
+            judgeProvider: result.pillars.judge.result.judgeProvider,
+            judgeModel: result.pillars.judge.result.judgeModel,
+          }
+        : null,
+      rules: {
+        score: result.pillars.rules.score,
+        weight: result.pillars.rules.weight,
+        violationCount: result.pillars.rules.result.rules.violations.length,
+      },
+    };
+
+    const subCriteriaScoresJson: Record<string, { score: number; pillar: string; source: string; rationale?: string }> = {};
+    if (result.pillars.judge) {
+      const judge = result.pillars.judge.result;
+      for (const [key, dimScore] of Object.entries(judge.scores)) {
+        subCriteriaScoresJson[key] = {
+          score: dimScore.score,
+          pillar: 'judge',
+          source: `${judge.judgeProvider}/${judge.judgeModel}`,
+          rationale: dimScore.reasoning,
+        };
+      }
+    }
+
+    const ruleViolationsJson = result.pillars.rules.result.rules.violations.map((v) => ({
+      ruleId: v.ruleId,
+      severity: v.severity,
+      message: v.message,
+      snippet: v.snippet || undefined,
+      source: 'rule-compiler',
+      pillar: 'rules',
+    }));
+
+    await prisma.contentFidelityScore.create({
+      data: {
+        workspaceId,
+        contentVersionId: version.id,
+        judgeIdentifier: 'composition-engine-v1.0',
+        compositeScore: result.compositeScore,
+        pillarScores: pillarScoresJson,
+        subCriteriaScores: subCriteriaScoresJson,
+        ruleViolations: ruleViolationsJson,
+        thresholdMet: result.thresholdMet,
+        scorerVersion: result.scorerVersion,
+      },
+    });
+  } catch (err) {
+    // Non-fatal — Deliverable.settings.fidelityScore blijft de fallback.
+    console.warn('[fidelity-runner] ContentFidelityScore dual-write failed:', (err as Error).message);
+  }
+}
+
+/**
  * Persist STRICT rewrite snapshot op Deliverable.settings.strictRewrite.
  * Bewaart de finale tekst + before/after detector signaal zodat UI hem
  * kan ophalen voor de "Bekijk STRICT-verbeterde versie" preview panel.
@@ -313,6 +400,7 @@ export async function runFidelityScoring(
 
     // Persist async — don't await, don't block the orchestrator
     void persistFidelityScore(input.deliverableId, result);
+    void persistContentFidelityScoreIfPossible(input.deliverableId, input.workspaceId, result);
 
     return { result, compositionInput };
   } catch (err) {
@@ -435,6 +523,11 @@ export async function runStrictModeIfApplicable(
       });
 
       void persistFidelityScore(input.deliverableId, finalFidelityScore);
+      void persistContentFidelityScoreIfPossible(
+        input.deliverableId,
+        input.compositionInput.workspaceId,
+        finalFidelityScore,
+      );
     } catch (rescoringErr) {
       console.warn('[fidelity-runner] STRICT re-scoring failed:', (rescoringErr as Error).message);
     }
