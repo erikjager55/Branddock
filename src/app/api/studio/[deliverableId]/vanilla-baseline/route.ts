@@ -6,6 +6,54 @@ import { generateVanillaBaseline } from '@/lib/brand-fidelity/vanilla-baseline';
 import { computeFidelityScore } from '@/lib/brand-fidelity/composition-engine';
 import { buildFidelityScoreEventPayload } from '@/lib/brand-fidelity/fidelity-runner';
 
+interface PersonalityTraitInput {
+  name?: string;
+  description?: string;
+  weAreThis?: string;
+  butNeverThat?: string;
+}
+interface BrandPersonalityInput {
+  personalityTraits?: PersonalityTraitInput[];
+  wordsWeUse?: string[];
+  brandVoiceDescription?: string;
+}
+
+/**
+ * Fetch BrandPersonality voor symmetric scoring tussen Branddock en vanille.
+ * Vanille output wordt gescoord TEGEN dezelfde brand signals als Branddock —
+ * dat maakt het echte verschil zichtbaar (vanille kent BB's wordsWeUse niet,
+ * dus pijler 1 wordt laag; Branddock injecteert ze, dus hoger).
+ */
+async function fetchWorkspaceBrandPersonality(
+  workspaceId: string,
+): Promise<BrandPersonalityInput | null> {
+  try {
+    const asset = await prisma.brandAsset.findFirst({
+      where: { workspaceId, frameworkType: 'BRAND_PERSONALITY' },
+      select: { frameworkData: true },
+    });
+    if (!asset?.frameworkData) return null;
+    const data = asset.frameworkData as Record<string, unknown>;
+    const wordsWeUse = Array.isArray(data.wordsWeUse)
+      ? data.wordsWeUse.filter((w): w is string => typeof w === 'string')
+      : [];
+    const traitsRaw = Array.isArray(data.personalityTraits) ? data.personalityTraits : [];
+    const personalityTraits: PersonalityTraitInput[] = traitsRaw
+      .filter((t): t is Record<string, unknown> => typeof t === 'object' && t !== null)
+      .map((t) => ({
+        name: typeof t.name === 'string' ? t.name : undefined,
+        description: typeof t.description === 'string' ? t.description : undefined,
+        weAreThis: typeof t.weAreThis === 'string' ? t.weAreThis : undefined,
+        butNeverThat: typeof t.butNeverThat === 'string' ? t.butNeverThat : undefined,
+      }));
+    const brandVoiceDescription =
+      typeof data.brandVoiceDescription === 'string' ? data.brandVoiceDescription : undefined;
+    return { wordsWeUse, personalityTraits, brandVoiceDescription };
+  } catch {
+    return null;
+  }
+}
+
 // Maximaal 2 minuten — vanille generatie 20-40s + composition ~20s
 export const maxDuration = 120;
 
@@ -109,16 +157,23 @@ export async function POST(
           // ── Step 2: scoren via composition engine ──
           sendEvent('vanilla_scoring', { stage: 'scoring' });
 
+          // Symmetric scoring: vanille output wordt gescoord TEGEN de
+          // workspace's BrandPersonality signals — dezelfde standaard als
+          // de Branddock-side. Vanille kent de declared wordsWeUse +
+          // personalityTraits niet (geen BVD geinjecteerd in generation),
+          // dus pijler 1 score zakt — dat IS het demo-signaal. Asymmetric
+          // weighting (personality:null) zou vanille kunstmatig hoog
+          // scoren omdat pijler 1's 0.35 weight herverdeelt.
+          const brandPersonality = await fetchWorkspaceBrandPersonality(workspaceId);
+
           const fidelityResult = await computeFidelityScore({
             contentText: baseline.text,
             workspaceId,
-            // Bewust geen brand context — dit IS de "wat als je geen Branddock hebt" simulatie.
-            // Empty strings zodat G-Eval prompt nog werkt; personality null skipt pijler 1.
             brandName: 'Vanilla baseline',
             brandVoiceSummary: 'No brand voice specified — generic content writer.',
-            personality: null,
+            personality: brandPersonality, // gelijke maat als Branddock-scoring
             generatorProvider: 'openai',
-            targetWordCount: baseline.wordCount, // length-control uit (gebruik eigen length als target)
+            targetWordCount: baseline.wordCount, // length-control uit (gebruik eigen length)
           });
 
           sendEvent('vanilla_score_complete', {
