@@ -7,6 +7,14 @@
 
 import { GoogleGenAI, PersonGeneration, Type } from '@google/genai';
 
+import type { AICallPayload } from '@/types/learning-loop';
+import {
+  tryTrackStart,
+  tryTrackComplete,
+  buildErrorMetadata,
+  type AICallTracking,
+} from '@/lib/learning-loop';
+
 // ─── Singleton ─────────────────────────────────────────────
 
 const globalForGemini = globalThis as unknown as {
@@ -265,6 +273,7 @@ export async function createGeminiStructuredCompletion<T>(
   systemPrompt: string,
   userPrompt: string,
   options?: GeminiCompletionOptions,
+  tracking?: AICallTracking,
 ): Promise<T> {
   const client = getClient();
   const model = options?.model ?? DEFAULT_MODEL;
@@ -274,8 +283,31 @@ export async function createGeminiStructuredCompletion<T>(
   // Thinking mode needs more time — default 10 min
   const defaultTimeout = useThinking ? 600_000 : 60_000;
 
+  // Learning Loop tracking — opt-in via `tracking` parameter
+  const startTime = Date.now();
+  let traceId: string | null = null;
+  if (tracking) {
+    const payload: AICallPayload = {
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      params: {
+        temperature,
+        max_tokens: maxOutputTokens,
+        response_format: options?.responseSchema ? { schema: options.responseSchema } : { type: 'json_object' },
+      },
+      providerExtensions: useThinking
+        ? { gemini_thinking: { thinkingBudget: options!.thinkingConfig!.thinkingBudget } }
+        : undefined,
+    };
+    traceId = await tryTrackStart(tracking, payload);
+  }
+
   let lastError: unknown;
 
+  try {
   for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt++) {
     try {
       const config: Record<string, unknown> = {
@@ -336,12 +368,27 @@ export async function createGeminiStructuredCompletion<T>(
         cleaned = cleaned.slice(jsonStart, jsonEnd + 1);
       }
 
+      let parsed: T;
       try {
-        return JSON.parse(cleaned) as T;
+        parsed = JSON.parse(cleaned) as T;
       } catch (parseError) {
         const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
         throw new Error(`Failed to parse Gemini response as JSON: ${msg}. Response starts with: "${cleaned.slice(0, 200)}"`);
       }
+
+      // Success — track met fine response-metadata
+      if (traceId) {
+        const usage = (response as unknown as { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } }).usageMetadata;
+        await tryTrackComplete(traceId, {
+          inputTokens: usage?.promptTokenCount ?? 0,
+          outputTokens: usage?.candidatesTokenCount ?? 0,
+          stopReason: finishReason ?? 'STOP',
+          latencyMs: Date.now() - startTime,
+          wasFromCache: tracking?.wasFromCache ?? false,
+          cacheAgeSeconds: tracking?.cacheAgeSeconds,
+        });
+      }
+      return parsed;
     } catch (error) {
       lastError = error;
 
@@ -358,6 +405,13 @@ export async function createGeminiStructuredCompletion<T>(
 
   // Should not reach here, but TypeScript needs it
   throw lastError;
+  } catch (err) {
+    // Terminal failure — track error metadata
+    if (traceId && tracking) {
+      await tryTrackComplete(traceId, buildErrorMetadata(startTime, err, tracking));
+    }
+    throw err;
+  }
 }
 
 // ─── Image Generation (Imagen 4) ────────────────────────────

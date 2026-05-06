@@ -3,6 +3,20 @@ import OpenAI from 'openai';
 import { GoogleGenAI } from '@google/genai';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 
+import type {
+  AICallPayload,
+  AICallResponseMetadata,
+} from '@/types/learning-loop';
+import {
+  tryTrackStart,
+  tryTrackComplete,
+  buildErrorMetadata,
+  type AICallTracking,
+} from '@/lib/learning-loop';
+
+// Re-export voor callers die direct uit ai-caller importeren
+export type { AICallTracking };
+
 // ─── Singleton Clients ──────────────────────────────────────
 
 const globalForCallerAnthropic = globalThis as unknown as {
@@ -44,8 +58,16 @@ function getGoogleClient(): InstanceType<typeof GoogleGenAI> {
   return globalForCallerGoogle.callerGoogleClient;
 }
 
+// ─── Learning Loop Tracking ──────────────────────────────────────────────
+// Tracking-helpers (tryTrackStart, tryTrackComplete, buildErrorMetadata,
+// AICallTracking) worden geïmporteerd uit `@/lib/learning-loop`.
+// Zelfde helpers worden gebruikt door gemini-client.ts.
+
 /**
- * Generic AI call — supports Anthropic, OpenAI and Google (Gemini)
+ * Generic AI call — supports Anthropic, OpenAI and Google (Gemini).
+ *
+ * Optional `tracking` parameter enables learning-loop tracking with
+ * fine response-metadata (token counts, stop_reason). Backwards compatible.
  */
 export async function generateAIResponse(
   provider: string,
@@ -54,49 +76,113 @@ export async function generateAIResponse(
   userPrompt: string,
   temperature: number,
   maxTokens: number,
+  tracking?: AICallTracking,
 ): Promise<string> {
-  if (provider === 'anthropic') {
-    const client = getAnthropicClient();
-    const response = await client.messages.create({
+  const startTime = Date.now();
+  let traceId: string | null = null;
+
+  if (tracking) {
+    const payload: AICallPayload = {
       model,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-      temperature,
-      max_tokens: maxTokens,
-    });
-    return response.content[0]?.type === 'text' ? response.content[0].text : '';
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      params: { temperature, max_tokens: maxTokens },
+    };
+    traceId = await tryTrackStart(tracking, payload);
   }
 
-  if (provider === 'google') {
-    const client = getGoogleClient();
-    const response = await client.models.generateContent({
-      model,
-      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-      config: {
-        systemInstruction: systemPrompt,
+  try {
+    if (provider === 'anthropic') {
+      const client = getAnthropicClient();
+      const response = await client.messages.create({
+        model,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
         temperature,
-        maxOutputTokens: maxTokens,
-      },
+        max_tokens: maxTokens,
+      });
+      const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
+
+      if (traceId) {
+        const usage = response.usage;
+        await tryTrackComplete(traceId, {
+          inputTokens: usage?.input_tokens ?? 0,
+          outputTokens: usage?.output_tokens ?? 0,
+          cacheReadTokens: usage?.cache_read_input_tokens ?? undefined,
+          cacheWriteTokens: usage?.cache_creation_input_tokens ?? undefined,
+          stopReason: response.stop_reason ?? 'end_turn',
+          latencyMs: Date.now() - startTime,
+          wasFromCache: tracking?.wasFromCache ?? false,
+          cacheAgeSeconds: tracking?.cacheAgeSeconds,
+        });
+      }
+      return text;
+    }
+
+    if (provider === 'google') {
+      const client = getGoogleClient();
+      const response = await client.models.generateContent({
+        model,
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        config: {
+          systemInstruction: systemPrompt,
+          temperature,
+          maxOutputTokens: maxTokens,
+        },
+      });
+      const text = response.text?.trim() ?? '';
+
+      if (traceId) {
+        const usage = (response as unknown as { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } }).usageMetadata;
+        const finishReason = response.candidates?.[0]?.finishReason;
+        await tryTrackComplete(traceId, {
+          inputTokens: usage?.promptTokenCount ?? 0,
+          outputTokens: usage?.candidatesTokenCount ?? 0,
+          stopReason: finishReason ?? 'STOP',
+          latencyMs: Date.now() - startTime,
+          wasFromCache: tracking?.wasFromCache ?? false,
+          cacheAgeSeconds: tracking?.cacheAgeSeconds,
+        });
+      }
+      return text;
+    }
+
+    if (provider !== 'openai') {
+      throw new Error(`Unsupported AI provider: "${provider}". Valid providers: anthropic, google, openai`);
+    }
+
+    // OpenAI
+    const client = getOpenAIClient();
+    const response = await client.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature,
+      max_completion_tokens: maxTokens,
     });
-    return response.text?.trim() ?? '';
-  }
+    const text = response.choices[0]?.message?.content ?? '';
 
-  if (provider !== 'openai') {
-    throw new Error(`Unsupported AI provider: "${provider}". Valid providers: anthropic, google, openai`);
+    if (traceId) {
+      await tryTrackComplete(traceId, {
+        inputTokens: response.usage?.prompt_tokens ?? 0,
+        outputTokens: response.usage?.completion_tokens ?? 0,
+        stopReason: response.choices[0]?.finish_reason ?? 'unknown',
+        latencyMs: Date.now() - startTime,
+        wasFromCache: tracking?.wasFromCache ?? false,
+        cacheAgeSeconds: tracking?.cacheAgeSeconds,
+      });
+    }
+    return text;
+  } catch (err) {
+    if (traceId && tracking) {
+      await tryTrackComplete(traceId, buildErrorMetadata(startTime, err, tracking));
+    }
+    throw err;
   }
-
-  // OpenAI
-  const client = getOpenAIClient();
-  const response = await client.chat.completions.create({
-    model,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
-    temperature,
-    max_completion_tokens: maxTokens,
-  });
-  return response.choices[0]?.message?.content ?? '';
 }
 
 // ─── OpenAI Structured JSON Completion (JSON Schema constrained decoding) ───
@@ -299,6 +385,7 @@ export async function createClaudeStructuredCompletion<T>(
   systemPrompt: string,
   userPrompt: string,
   options?: ClaudeCompletionOptions,
+  tracking?: AICallTracking,
 ): Promise<T> {
   const client = getAnthropicClient();
   const model = options?.model ?? CLAUDE_SONNET;
@@ -309,8 +396,30 @@ export async function createClaudeStructuredCompletion<T>(
   // Extended thinking needs more time (thinking + generation) — default 10 min
   const defaultTimeout = useThinking ? 600_000 : 90_000;
 
+  // Learning Loop tracking — opt-in via `tracking` parameter
+  const startTime = Date.now();
+  let traceId: string | null = null;
+  if (tracking) {
+    const payload: AICallPayload = {
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }, // multimodal content omitted from snapshot for v1
+      ],
+      params: {
+        temperature,
+        max_tokens: maxTokens,
+      },
+      providerExtensions: useThinking
+        ? { extended_thinking: { budget_tokens: options!.thinking!.budgetTokens } }
+        : undefined,
+    };
+    traceId = await tryTrackStart(tracking, payload);
+  }
+
   let lastError: unknown;
 
+  try {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       // Build user message content. When `images` is provided, send as a
@@ -390,12 +499,29 @@ export async function createClaudeStructuredCompletion<T>(
       // matching close, so trailing commentary from the model is discarded.
       cleaned = extractFirstJson(cleaned);
 
+      let parsed: T;
       try {
-        return JSON.parse(cleaned) as T;
+        parsed = JSON.parse(cleaned) as T;
       } catch (parseError) {
         const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
         throw new Error(`Failed to parse Claude response as JSON: ${msg}. Response starts with: "${cleaned.slice(0, 200)}"`);
       }
+
+      // Success — track met fine response-metadata
+      if (traceId) {
+        const usage = response.usage;
+        await tryTrackComplete(traceId, {
+          inputTokens: usage?.input_tokens ?? 0,
+          outputTokens: usage?.output_tokens ?? 0,
+          cacheReadTokens: usage?.cache_read_input_tokens ?? undefined,
+          cacheWriteTokens: usage?.cache_creation_input_tokens ?? undefined,
+          stopReason: response.stop_reason ?? 'unknown',
+          latencyMs: Date.now() - startTime,
+          wasFromCache: tracking?.wasFromCache ?? false,
+          cacheAgeSeconds: tracking?.cacheAgeSeconds,
+        });
+      }
+      return parsed;
     } catch (error) {
       lastError = error;
 
@@ -412,6 +538,13 @@ export async function createClaudeStructuredCompletion<T>(
 
   // Should not reach here, but TypeScript needs it
   throw lastError;
+  } catch (err) {
+    // Terminal failure — track error metadata
+    if (traceId && tracking) {
+      await tryTrackComplete(traceId, buildErrorMetadata(startTime, err, tracking));
+    }
+    throw err;
+  }
 }
 
 // ─── Generic Structured Completion (Multi-Provider) ─────
@@ -433,6 +566,15 @@ interface StructuredCompletionOptions {
 /**
  * Provider-agnostic structured JSON completion.
  * Dispatches to Claude, OpenAI, or Gemini based on the provider string.
+ *
+ * Optional `tracking` parameter enables learning-loop tracking — schrijft
+ * BrandContextSnapshot + AICallSnapshot + AICallTrace voor deze call.
+ * Backwards-compatible: zonder `tracking` werkt deze functie ongewijzigd.
+ *
+ * Tracking-granulariteit is **coarse** voor anthropic/google (geen toegang
+ * tot response.usage zonder `createClaude/GeminiStructuredCompletion` aan
+ * te passen). Voor openai is tracking **fine** met token counts en
+ * stop_reason. Sessie 3b/3c kan fine tracking voor anthropic/google toevoegen.
  */
 export async function createStructuredCompletion<T>(
   provider: string,
@@ -440,20 +582,21 @@ export async function createStructuredCompletion<T>(
   systemPrompt: string,
   userPrompt: string,
   options?: StructuredCompletionOptions,
+  tracking?: AICallTracking,
 ): Promise<T> {
+  // Anthropic + Google: pure dispatch — lower-level wrappers doen eigen tracking
+  // (zie createClaudeStructuredCompletion + createGeminiStructuredCompletion).
   if (provider === 'anthropic') {
-    // No withRetry here — createClaudeStructuredCompletion has its own internal retry loop
     return createClaudeStructuredCompletion<T>(systemPrompt, userPrompt, {
       model,
       temperature: options?.temperature,
       maxTokens: options?.maxTokens,
       timeoutMs: options?.timeoutMs,
       thinking: options?.thinking?.anthropic,
-    });
+    }, tracking);
   }
 
   if (provider === 'google') {
-    // No withRetry here — createGeminiStructuredCompletion has its own internal retry loop
     return createGeminiStructuredCompletion<T>(systemPrompt, userPrompt, {
       model,
       temperature: options?.temperature,
@@ -461,50 +604,95 @@ export async function createStructuredCompletion<T>(
       responseSchema: options?.responseSchema,
       timeoutMs: options?.timeoutMs,
       thinkingConfig: options?.thinking?.google,
-    });
+    }, tracking);
   }
 
+  // OpenAI inline — tracking op deze laag (response.usage direct beschikbaar)
   if (provider === 'openai') {
-    return withRetry('OpenAI ' + model, async () => {
-      const client = getOpenAIClient();
-      const reasoningConfig = options?.thinking?.openai;
-      // When reasoning is enabled, temperature should be 1 (OpenAI requirement for reasoning models)
-      const temperature = reasoningConfig ? 1 : (options?.temperature ?? 0.3);
-      const maxTokens = options?.maxTokens ?? 8000;
-      const defaultTimeout = reasoningConfig ? 600_000 : 120_000;
+    const startTime = Date.now();
+    const reasoningConfig = options?.thinking?.openai;
+    // When reasoning is enabled, temperature should be 1 (OpenAI requirement for reasoning models)
+    const temperature = reasoningConfig ? 1 : (options?.temperature ?? 0.3);
+    const maxTokens = options?.maxTokens ?? 8000;
 
-      const requestBody: Record<string, unknown> = {
+    let traceId: string | null = null;
+    if (tracking) {
+      const payload: AICallPayload = {
         model,
         messages: [
-          { role: 'system', content: `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.` },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        temperature,
-        max_completion_tokens: maxTokens,
-        response_format: { type: 'json_object' },
+        params: {
+          temperature,
+          max_tokens: maxTokens,
+          response_format: { type: 'json_object' },
+        },
+        providerExtensions: reasoningConfig
+          ? { openai_reasoning: { effort: reasoningConfig.reasoningEffort } }
+          : undefined,
       };
+      traceId = await tryTrackStart(tracking, payload);
+    }
 
-      if (reasoningConfig) {
-        requestBody.reasoning_effort = reasoningConfig.reasoningEffort;
+    try {
+      return await withRetry('OpenAI ' + model, async () => {
+        const client = getOpenAIClient();
+        const defaultTimeout = reasoningConfig ? 600_000 : 120_000;
+
+        const requestBody: Record<string, unknown> = {
+          model,
+          messages: [
+            { role: 'system', content: `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.` },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature,
+          max_completion_tokens: maxTokens,
+          response_format: { type: 'json_object' },
+        };
+
+        if (reasoningConfig) {
+          requestBody.reasoning_effort = reasoningConfig.reasoningEffort;
+        }
+
+        const response = await client.chat.completions.create(
+          requestBody as unknown as Parameters<typeof client.chat.completions.create>[0],
+          { signal: AbortSignal.timeout(options?.timeoutMs ?? defaultTimeout) },
+        ) as OpenAI.Chat.Completions.ChatCompletion;
+
+        const text = response.choices[0]?.message?.content ?? '';
+        if (!text) {
+          throw new Error(`Empty response from OpenAI ${model} (structured completion)`);
+        }
+
+        let parsed: T;
+        try {
+          parsed = JSON.parse(text) as T;
+        } catch (parseError) {
+          const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+          throw new Error(`Failed to parse OpenAI ${model} response as JSON: ${msg}. Response starts with: "${text.slice(0, 200)}"`);
+        }
+
+        // Fine tracking — direct access to response.usage en finish_reason
+        if (traceId) {
+          await tryTrackComplete(traceId, {
+            inputTokens: response.usage?.prompt_tokens ?? 0,
+            outputTokens: response.usage?.completion_tokens ?? 0,
+            stopReason: response.choices[0]?.finish_reason ?? 'unknown',
+            latencyMs: Date.now() - startTime,
+            wasFromCache: tracking?.wasFromCache ?? false,
+            cacheAgeSeconds: tracking?.cacheAgeSeconds,
+          });
+        }
+
+        return parsed;
+      });
+    } catch (err) {
+      if (traceId && tracking) {
+        await tryTrackComplete(traceId, buildErrorMetadata(startTime, err, tracking));
       }
-
-      const response = await client.chat.completions.create(
-        requestBody as unknown as Parameters<typeof client.chat.completions.create>[0],
-        { signal: AbortSignal.timeout(options?.timeoutMs ?? defaultTimeout) },
-      ) as OpenAI.Chat.Completions.ChatCompletion;
-
-      const text = response.choices[0]?.message?.content ?? '';
-      if (!text) {
-        throw new Error(`Empty response from OpenAI ${model} (structured completion)`);
-      }
-
-      try {
-        return JSON.parse(text) as T;
-      } catch (parseError) {
-        const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
-        throw new Error(`Failed to parse OpenAI ${model} response as JSON: ${msg}. Response starts with: "${text.slice(0, 200)}"`);
-      }
-    });
+      throw err;
+    }
   }
 
   throw new Error(`Unsupported AI provider: "${provider}". Valid providers: anthropic, google, openai`);
