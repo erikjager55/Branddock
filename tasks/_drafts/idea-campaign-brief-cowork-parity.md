@@ -92,7 +92,8 @@ A3-validatie 2026-05-07 toonde bimodale gap-verdeling: 6 secties met 5-50% gap (
   - Sectie 4 — Kanaalstrategie (uit `ChannelPlanLayer.channels[]` + `timingStrategy` + `phaseDurations[]`)
   - Sectie 6 — Benodigde assets (uit `AssetPlanLayer.deliverables[]` + `prepDeliverables[]`) — **prominent renderen met per-asset-brief uit `deliverable.brief` als USP**
   - Sectie 10 — Volgende stappen (uit `prepDeliverables[]`)
-- Voor de 4 ontbrekende secties (5/7/8/9): expliciete "Niet beschikbaar — vereist <modulenaam>" placeholder met link naar follow-up tasks
+- **Sectie 5 — Week-thema-render-prompt** (toegevoegd 2026-05-07 na B1 dissolved): on-render AI-call genereert per-week-thema's uit campaign-strategy + persona + asset-distributie + funnel-positie. **Geen persistentie**, geen `WeeklyTheme` model. Statisch-contextueel (gebaseerd op reeds-aanwezige workspace-data, geen externe API). Zie `tasks/_drafts/idea-campaign-weekly-calendar.md` voor rationale.
+- Voor de 3 resterende ontbrekende secties (7/8/9): expliciete "Niet beschikbaar — vereist <modulenaam>" placeholder met link naar follow-up tasks
 - Markdown-as-output (geen PDF/Notion-styling in Fase A)
 - "Klaar voor klant"-knop + post-export survey voor primary-metric tracking
 
@@ -129,7 +130,8 @@ A3-validatie 2026-05-07 toonde bimodale gap-verdeling: 6 secties met 5-50% gap (
 # ACCEPTATIECRITERIA (Fase A MVP)
 
 - [ ] Given een afgeronde campaign-wizard (alle 9 fasen tot en met `elaborate`), When user klikt "Genereer campagne-brief", Then verschijnt een markdown-document met 10 secties in Linfi-stijl-volgorde
-- [ ] Given de gegenereerde brief, When user inspecteert sectie 5 (kalender), 7 (metrics), 8 (budget), 9 (risico's), Then ziet user expliciete "Niet beschikbaar — vereist <follow-up-feature-id>"-placeholder met link, **niet** een hallucinatie of lege sectie
+- [ ] Given de gegenereerde brief, When user inspecteert sectie 5 (kalender), Then ziet user week-thema's afgeleid uit campaign-strategy + persona + asset-distributie (1 thema per week, on-render gegenereerd, geen persistentie)
+- [ ] Given de gegenereerde brief, When user inspecteert sectie 7 (metrics), 8 (budget), 9 (risico's), Then ziet user expliciete "Niet beschikbaar — vereist <follow-up-feature-id>"-placeholder met link, **niet** een hallucinatie of lege sectie
 - [ ] Given de gegenereerde brief, When user inspecteert sectie 6 (assets), Then ziet user per asset een mini-brief met objective + keyMessage + toneDirection + CTA + contentOutline (Branddock-USP vs. Cowork)
 - [ ] Given de gegenereerde brief, When user klikt "Klaar voor klant", Then wordt een telemetrie-event gelogd voor primary-metric tracking (% briefs naar klant)
 - [ ] Given de wizard-data heeft missing fields (bv. geen masterMessage), When de brief gegenereerd wordt, Then toont de relevante sectie een gerichte "ontbrekende data"-melding ipv. blanco
