@@ -20,6 +20,7 @@ import { runFalGeneration } from '@/lib/integrations/fal/fal-client';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
+import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
 import type { ConsistentModelType } from '@/features/consistent-models/types/consistent-model.types';
@@ -325,6 +326,18 @@ export async function POST(request: Request, { params }: RouteParams) {
     });
 
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+
+    // G8 — fire-and-forget visual fidelity scoring for the new components.
+    // Each call costs ~$0.04 (Claude vision). The route returns immediately
+    // with variants; the client's components query refetches after a delay
+    // to pick up the scores once they land.
+    void Promise.allSettled(
+      components.map((c) =>
+        scoreImageFidelity({ componentId: c.id, workspaceId }),
+      ),
+    ).catch(() => {
+      /* individual failures are logged inside scoreImageFidelity */
+    });
 
     return NextResponse.json({
       variants: components,

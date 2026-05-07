@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, Search, X, Image as ImageIcon, Heart, Sparkles, AlertCircle } from 'lucide-react';
 import { useMediaAssets } from '@/features/media-library/hooks';
 import { generateCanvasVisualCompose, setHeroImage as persistHeroImage } from '../../api/canvas.api';
+import { canvasKeys } from '../../hooks/canvas.hooks';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import type { MediaAssetWithMeta, MediaCategory } from '@/features/media-library/types/media.types';
 import type { CanvasImageVariant } from '../../types/canvas.types';
@@ -43,6 +45,8 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated }: ComposeP
   const setVisualBriefField = useCanvasStore((s) => s.setVisualBriefField);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
   const setHeroImage = useCanvasStore((s) => s.setHeroImage);
+  const setVisualFidelityRunning = useCanvasStore((s) => s.setVisualFidelityRunning);
+  const queryClient = useQueryClient();
 
   const initialCompose = visualBrief.compose;
   const [picked, setPicked] = useState<string[]>(initialCompose?.referenceIds ?? []);
@@ -121,8 +125,25 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated }: ComposeP
         url: v.url,
         prompt: v.prompt,
         isSelected: i === 0,
+        componentId: v.id,
       }));
       setImageVariants(mapped);
+
+      // G8 — show "Scoring…" badge immediately. The route fired
+      // scoreImageFidelity in the background; refetch in 20s to pick up
+      // persisted scores. Falls through naturally if the score takes
+      // longer (next refetch interval / page interaction grabs it).
+      const componentIds = result.variants
+        .map((v) => v.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+      if (componentIds.length > 0) {
+        setVisualFidelityRunning(componentIds);
+        setTimeout(() => {
+          void queryClient.invalidateQueries({
+            queryKey: canvasKeys.components(deliverableId),
+          });
+        }, 20_000);
+      }
 
       const first = result.variants[0];
       if (first) {

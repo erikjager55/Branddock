@@ -23,6 +23,7 @@ import { assembleCanvasContext, type CanvasContextStack } from '@/lib/ai/canvas-
 import { buildVisualBriefImagePrompts } from '@/lib/ai/visual-brief-prompts';
 import { runFalGeneration } from '@/lib/integrations/fal/fal-client';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
+import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer';
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
@@ -307,6 +308,18 @@ export async function POST(request: Request, { params }: RouteParams) {
     });
 
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+
+    // G8 — fire-and-forget visual fidelity scoring for the new components.
+    // Each call costs ~$0.04 (Claude vision) and runs ~12-15s. We don't
+    // await so the route returns immediately with variants; the client's
+    // components query refetches after a delay to pick up the scores.
+    void Promise.allSettled(
+      components.map((c) =>
+        scoreImageFidelity({ componentId: c.id, workspaceId }),
+      ),
+    ).catch(() => {
+      /* individual failures are logged inside scoreImageFidelity */
+    });
 
     return NextResponse.json({
       variants: components,

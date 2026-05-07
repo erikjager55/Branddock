@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, Sparkles, X, AlertCircle, Cpu } from 'lucide-react';
 import { useConsistentModels } from '@/features/consistent-models/hooks';
 import { generateCanvasVisualTrained, setHeroImage as persistHeroImage } from '../../api/canvas.api';
+import { canvasKeys } from '../../hooks/canvas.hooks';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import type { CanvasImageVariant } from '../../types/canvas.types';
 
@@ -28,6 +30,8 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated }: Tra
   const setVisualBriefField = useCanvasStore((s) => s.setVisualBriefField);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
   const setHeroImage = useCanvasStore((s) => s.setHeroImage);
+  const setVisualFidelityRunning = useCanvasStore((s) => s.setVisualFidelityRunning);
+  const queryClient = useQueryClient();
 
   const initialTrained = visualBrief.trained;
   const [selectedModelId, setSelectedModelId] = useState<string | null>(initialTrained?.modelId ?? null);
@@ -82,8 +86,24 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated }: Tra
         url: v.url,
         prompt: v.prompt,
         isSelected: i === 0,
+        componentId: v.id,
       }));
       setImageVariants(mapped);
+
+      // G8 — show "Scoring…" badge immediately while the route's
+      // background scoreImageFidelity calls run. Refetch in 20s to pick
+      // up the persisted scores.
+      const componentIds = result.variants
+        .map((v) => v.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+      if (componentIds.length > 0) {
+        setVisualFidelityRunning(componentIds);
+        setTimeout(() => {
+          void queryClient.invalidateQueries({
+            queryKey: canvasKeys.components(deliverableId),
+          });
+        }, 20_000);
+      }
 
       // Auto-promote the first variant to hero image — same pattern as the
       // generate / library flows.
