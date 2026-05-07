@@ -71,4 +71,4 @@ Twee gescheiden subagents voor feature-discovery vóór code wordt geschreven. `
 - Task: [tasks/done/feature-planner-setup.md](../tasks/done/feature-planner-setup.md)
 - ADR: [adr/2026-05-07-feature-planner-architecture.md](adr/2026-05-07-feature-planner-architecture.md)
 - Spec: [playbooks/feature-discovery.md](playbooks/feature-discovery.md)
-- Commit: _(pending)_
+- Commit: `5bd7886`
