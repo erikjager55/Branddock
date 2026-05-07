@@ -414,6 +414,76 @@ export async function createGeminiStructuredCompletion<T>(
   }
 }
 
+// ─── Plain-text Completion ──────────────────────────────────
+
+export interface GeminiTextCompletionResult {
+  content: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+/**
+ * Generate plain-text content via Gemini (no JSON constraint).
+ * Use for content generation where the output is markdown/prose, not structured data.
+ */
+export async function createGeminiTextCompletion(
+  systemPrompt: string,
+  userPrompt: string,
+  options?: GeminiCompletionOptions,
+): Promise<GeminiTextCompletionResult> {
+  const client = getClient();
+  const model = options?.model ?? DEFAULT_MODEL;
+  const temperature = options?.temperature ?? 0.7;
+  const maxOutputTokens = options?.maxOutputTokens ?? 4000;
+  const useThinking = !!options?.thinkingConfig;
+  const defaultTimeout = useThinking ? 600_000 : 120_000;
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt++) {
+    try {
+      const config: Record<string, unknown> = {
+        systemInstruction: systemPrompt,
+        temperature,
+        maxOutputTokens,
+        abortSignal: AbortSignal.timeout(options?.timeoutMs ?? defaultTimeout),
+      };
+      if (useThinking) {
+        config.thinkingConfig = { thinkingBudget: options!.thinkingConfig!.thinkingBudget };
+      }
+
+      const response = await client.models.generateContent({
+        model,
+        contents: [{ role: 'user' as const, parts: [{ text: userPrompt }] }],
+        config: config as Parameters<typeof client.models.generateContent>[0]['config'],
+      });
+
+      const finishReason = response.candidates?.[0]?.finishReason;
+      if (finishReason === 'MAX_TOKENS') {
+        throw new Error(`Gemini response truncated at ${maxOutputTokens} tokens — increase maxOutputTokens or shorten prompt.`);
+      }
+
+      const text = response.text?.trim() ?? '';
+      if (!text) throw new Error('Empty response from Gemini (text completion)');
+
+      const usage = (response as unknown as { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } }).usageMetadata;
+      return {
+        content: text,
+        inputTokens: usage?.promptTokenCount ?? 0,
+        outputTokens: usage?.candidatesTokenCount ?? 0,
+      };
+    } catch (error) {
+      lastError = error;
+      if (attempt < GEMINI_MAX_RETRIES && isGeminiTransientError(error)) {
+        const delay = GEMINI_BASE_DELAY_MS * Math.pow(2, attempt);
+        await geminiSleep(delay);
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError;
+}
+
 // ─── Image Generation (Imagen 4) ────────────────────────────
 
 export interface ImagenOptions {

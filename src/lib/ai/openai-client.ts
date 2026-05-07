@@ -20,6 +20,8 @@ export interface CompletionOptions {
   temperature?: number;
   maxTokens?: number;
   useCase?: AiUseCase;
+  /** Override the per-useCase default request timeout (ms) */
+  timeoutMs?: number;
 }
 
 export interface StreamingOptions extends CompletionOptions {
@@ -91,7 +93,7 @@ function resolveOptions(opts?: CompletionOptions) {
     model: opts?.model ?? aiConfig.model,
     temperature: opts?.temperature ?? aiConfig.temperature(useCase),
     max_completion_tokens: opts?.maxTokens ?? aiConfig.maxTokens(useCase),
-    timeout: aiConfig.timeout(useCase),
+    timeout: opts?.timeoutMs ?? aiConfig.timeout(useCase),
   };
 }
 
@@ -117,6 +119,31 @@ export const openaiClient = {
     );
 
     return response.choices[0]?.message?.content ?? '';
+  },
+
+  /**
+   * Chat completion that also exposes token usage.
+   * Use this when you need observability (cost tracking, telemetry).
+   */
+  async createChatCompletionWithUsage(
+    messages: ChatCompletionMessageParam[],
+    options?: CompletionOptions,
+  ): Promise<{ content: string; inputTokens: number; outputTokens: number }> {
+    const { model, temperature, max_completion_tokens, timeout } = resolveOptions(options);
+    const client = getClient();
+
+    const response = await withRetry(() =>
+      client.chat.completions.create(
+        { model, messages, temperature, max_completion_tokens },
+        { timeout },
+      ),
+    );
+
+    return {
+      content: response.choices[0]?.message?.content ?? '',
+      inputTokens: response.usage?.prompt_tokens ?? 0,
+      outputTokens: response.usage?.completion_tokens ?? 0,
+    };
   },
 
   /**

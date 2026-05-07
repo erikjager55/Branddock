@@ -1,20 +1,38 @@
 import { NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
-import { buildGenerationContext } from '@/lib/studio/context-builder';
-import { buildCascadingComponentContext } from '@/lib/studio/context-builder';
+import type { ComponentStatus } from '@prisma/client';
+import { buildGenerationContext, buildCascadingComponentContext } from '@/lib/studio/context-builder';
+import { buildComponentPrompt, getMaxTokensForComponent } from '@/lib/studio/component-prompt-builder';
+import { extractPersonaIdsFromSettings } from '@/lib/studio/extract-persona-ids';
+import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
+import { AVAILABLE_MODELS, type ResolvedModel, type AiProvider } from '@/lib/ai/feature-models';
+import { dispatchTextCompletion } from '@/lib/ai/dispatch-completion';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
+import type { TypeSettings } from '@/types/studio';
+
+const KNOWN_PROVIDERS: ReadonlySet<AiProvider> = new Set<AiProvider>(['anthropic', 'openai', 'google']);
+
+function resolveBodyAiModel(modelId: string | null): ResolvedModel | null {
+  if (!modelId) return null;
+  const found = AVAILABLE_MODELS.find((m) => m.id === modelId);
+  if (!found) return null;
+  if (!KNOWN_PROVIDERS.has(found.provider as AiProvider)) return null;
+  return { provider: found.provider as AiProvider, model: found.id };
+}
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ deliverableId: string; componentId: string }> },
 ) {
+  const { deliverableId, componentId } = await params;
+  let previousStatus: ComponentStatus | null = null;
+
   try {
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { deliverableId, componentId } = await params;
-
-    // Fetch component with deliverable and campaign data
     const component = await prisma.deliverableComponent.findFirst({
       where: { id: componentId, deliverableId, deliverable: { campaign: { workspaceId } } },
       include: {
@@ -29,82 +47,115 @@ export async function POST(
     });
     if (!component) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    if (component.status === 'GENERATING') {
+    previousStatus = component.status;
+    if (previousStatus === 'GENERATING') {
       return NextResponse.json({ error: 'Already generating' }, { status: 409 });
+    }
+    if (previousStatus === 'APPROVED') {
+      return NextResponse.json(
+        { error: 'Component is approved — use regenerate to override' },
+        { status: 409 },
+      );
     }
 
     const body = await request.json().catch(() => ({}));
-    const aiModel = (body.aiModel as string) || null;
-    const additionalInstructions = (body.additionalInstructions as string) || '';
+    const requestedAiModel = typeof body.aiModel === 'string' ? body.aiModel : null;
+    const additionalInstructions =
+      typeof body.additionalInstructions === 'string' ? body.additionalInstructions : '';
 
-    // Mark as generating
-    await prisma.deliverableComponent.update({
-      where: { id: componentId },
-      data: { status: 'GENERATING', aiModel },
+    const resolvedModel: ResolvedModel =
+      resolveBodyAiModel(requestedAiModel) ??
+      (await resolveFeatureModel(workspaceId, 'content-generate'));
+
+    // Concurrency guard — only flip to GENERATING if status is still what we read.
+    // Prevents two parallel POSTs from both running an AI call + double-spending.
+    // Note: aiModel/aiProvider are written only on success path so a failed
+    // attempt doesn't leave misleading attribution on the row.
+    const guardResult = await prisma.deliverableComponent.updateMany({
+      where: { id: componentId, status: previousStatus },
+      data: { status: 'GENERATING' },
     });
+    if (guardResult.count === 0) {
+      return NextResponse.json({ error: 'Already generating' }, { status: 409 });
+    }
 
-    // Get all sibling components for cascading context
     const allComponents = await prisma.deliverableComponent.findMany({
       where: { deliverableId },
       select: { id: true, componentType: true, status: true, generatedContent: true, imageUrl: true },
     });
 
-    // Build cascading context from approved siblings
-    const masterMessage = component.deliverable.campaign.masterMessage as { coreClaim: string; proofPoint: string; emotionalHook: string; primaryCta: string } | null;
-    const cascadingContext = buildCascadingComponentContext(
-      componentId,
-      allComponents,
-      masterMessage,
-    );
+    const masterMessage = component.deliverable.campaign.masterMessage as
+      | { coreClaim: string; proofPoint: string; emotionalHook: string; primaryCta: string }
+      | null;
+    const cascadingContext = buildCascadingComponentContext(componentId, allComponents, masterMessage);
 
-    // Build full generation context
-    const campaignData = {
-      campaignTitle: component.deliverable.campaign.title,
-      campaignGoalType: component.deliverable.campaign.campaignGoalType,
-      strategy: component.deliverable.campaign.strategy as Record<string, unknown> | null,
-    };
-
-    const personaIds: string[] = []; // TODO: extract from deliverable settings
+    const personaIds = extractPersonaIdsFromSettings(component.deliverable.settings);
     const generationContext = await buildGenerationContext(
       workspaceId,
       personaIds,
-      campaignData,
+      {
+        campaignTitle: component.deliverable.campaign.title,
+        campaignGoalType: component.deliverable.campaign.campaignGoalType,
+        strategy: component.deliverable.campaign.strategy as Record<string, unknown> | null,
+      },
       component.deliverable.title,
     );
 
-    // TODO: Actually call AI here with the context. For now, generate stub content.
-    const stubContent = `[AI Generated ${component.componentType}] — This is placeholder content for "${component.deliverable.title}". Component: ${component.componentType}. Cascading context included: ${cascadingContext ? 'yes' : 'no'}.`;
+    const { systemPrompt, userPrompt } = buildComponentPrompt({
+      componentType: component.componentType,
+      deliverableContentType: component.deliverable.contentType,
+      deliverableTitle: component.deliverable.title,
+      generationContext,
+      cascadingContext,
+      additionalInstructions,
+      settings: component.deliverable.settings as TypeSettings | null,
+    });
 
-    // Update component with generated content
+    const result = await dispatchTextCompletion({
+      resolvedModel,
+      systemPrompt,
+      userPrompt,
+      maxTokens: getMaxTokensForComponent(component.componentType),
+    });
+
     const updated = await prisma.deliverableComponent.update({
       where: { id: componentId },
       data: {
         status: 'GENERATED',
-        generatedContent: stubContent,
+        generatedContent: result.content,
         cascadingContext: cascadingContext || null,
-        promptUsed: `Brand context: ${generationContext.brandContext.slice(0, 200)}...`,
+        promptUsed: userPrompt,
+        aiModel: result.model,
+        aiProvider: result.provider,
+        generationDuration: result.durationMs,
         generatedAt: new Date(),
         version: { increment: 1 },
       },
     });
 
-    // Update pipeline status if needed
     await prisma.deliverable.update({
       where: { id: deliverableId },
       data: { pipelineStatus: 'IN_PROGRESS' },
     });
 
+    invalidateCache(cacheKeys.prefixes.studio(workspaceId));
+    invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error('[Component Generate]', error);
 
-    // Try to reset component status on error
-    const { componentId } = await params;
-    await prisma.deliverableComponent.update({
-      where: { id: componentId },
-      data: { status: 'PENDING' },
-    }).catch(() => {});
+    // Revert to the row's pre-run status. Only mutate rows that we actually
+    // flipped to GENERATING (defends against another caller having taken over).
+    const revertTo: ComponentStatus = previousStatus ?? 'PENDING';
+    await prisma.deliverableComponent
+      .updateMany({
+        where: { id: componentId, status: 'GENERATING' },
+        data: { status: revertTo },
+      })
+      .catch(() => {});
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'AI generation failed' }, { status: 500 });
   }
 }

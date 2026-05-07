@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 1 week
 owner: claude-code
-status: open
+status: done
 created: 2026-05-07
-completed: -
+completed: 2026-05-07
 related-adr: -
 related-spec: -
 worktree: branddock-feat-studio-real-ai

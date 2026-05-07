@@ -12,6 +12,7 @@
     "test:e2e:headed": "playwright test --config e2e/playwright.config.ts --headed",
     "test:e2e:debug": "playwright test --config e2e/playwright.config.ts --debug",
     "test:e2e:report": "playwright show-report",
+    "smoke:studio": "tsx scripts/smoke-tests/studio-generation.ts",
     "seed:test": "SEED_CONFIRM=yes npx prisma db seed",
     "db:backup": "mkdir -p backups && pg_dump \"$DATABASE_URL\" > backups/db-manual-$(date +%Y%m%d-%H%M).sql",
     "db:migrate": "npx prisma migrate dev",

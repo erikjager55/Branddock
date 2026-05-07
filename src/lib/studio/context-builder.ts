@@ -184,32 +184,43 @@ interface CascadingContextData {
   approvedComponentTypes: string[];
 }
 
+export interface CascadingContextOptions {
+  /**
+   * Sibling statuses to include as context. Default: ['APPROVED'] (single-component
+   * regeneration uses approved siblings only). Generate-all passes ['APPROVED',
+   * 'GENERATED'] so component N sees output of components 1..N-1 from the same run.
+   */
+  includeStatuses?: string[];
+}
+
 /**
- * Builds cascading context from approved sibling components.
+ * Builds cascading context from sibling components matching the requested statuses.
  * Injected into AI prompts when generating a new component to ensure consistency.
  */
 export function buildCascadingComponentContext(
   currentComponentId: string,
   allComponents: ComponentData[],
   masterMessage: MasterMessage | null,
+  options?: CascadingContextOptions,
 ): string {
-  const approved = allComponents.filter(
-    (c) => c.status === 'APPROVED' && c.id !== currentComponentId,
+  const allowed = options?.includeStatuses ?? ['APPROVED'];
+  const siblings = allComponents.filter(
+    (c) => allowed.includes(c.status) && c.id !== currentComponentId,
   );
 
-  if (approved.length === 0 && !masterMessage) {
+  if (siblings.length === 0 && !masterMessage) {
     return '';
   }
 
   const ctx: CascadingContextData = {
     headline:
-      approved.find((c) => c.componentType === 'headline')?.generatedContent ?? null,
+      siblings.find((c) => c.componentType === 'headline')?.generatedContent ?? null,
     keyMessage:
-      approved.find((c) => c.componentType === 'subheadline')?.generatedContent ?? null,
+      siblings.find((c) => c.componentType === 'subheadline')?.generatedContent ?? null,
     bodyConclusion:
-      approved.find((c) => c.componentType === 'body_text')?.generatedContent?.slice(-500) ?? null,
+      siblings.find((c) => c.componentType === 'body_text')?.generatedContent?.slice(-500) ?? null,
     textContext:
-      approved
+      siblings
         .filter((c) => ['headline', 'body_text', 'caption', 'subject_line'].includes(c.componentType))
         .map((c) => c.generatedContent?.slice(0, 200))
         .filter(Boolean)
@@ -217,7 +228,7 @@ export function buildCascadingComponentContext(
     masterMessageStr: masterMessage
       ? `Core: ${masterMessage.coreClaim} | Proof: ${masterMessage.proofPoint} | CTA: ${masterMessage.primaryCta}`
       : null,
-    approvedComponentTypes: approved.map((c) => c.componentType),
+    approvedComponentTypes: siblings.map((c) => c.componentType),
   };
 
   return formatCascadingContext(ctx);
