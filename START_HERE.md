@@ -17,11 +17,11 @@ Pre-launch eindigt bij volledige content-flow zonder blocker-bugs (Brief → Str
 
 > Update na elke afgeronde task.
 
-> **2026-05-07**: studio-content-generation-real-ai (P0) afgerond — content-flow levert nu echte AI-output. Volgende kritische pad: versioning + brand-voice + QA-gating.
+> **2026-05-07**: content-versioning-crud + auto-trigger-fidelity-scoring (geabsorbeerd) afgerond. Versions worden nu auto-aangemaakt bij elke AI-generation, fidelity-scoring fires async. Sidebar-component drop-in klaar (CanvasPage-integratie als handover). Pre-launch content-flow-foundation staat.
 
-1. **`content-versioning-crud`** ([task](tasks/content-versioning-crud.md)) — 3 dagen. ContentVersion CRUD-routes + version history UI. Unblockt `auto-trigger-fidelity-scoring` (1 uur, blocked). Dependency op studio-real-ai is nu satisfied.
-2. **`brand-voice-content-integration`** ([task](tasks/brand-voice-content-integration.md)) — 3 dagen. BrandVoiceGuide injectie in generation prompts + voice-consistency score. Onafhankelijk parallel uitvoerbaar met #1.
-3. **`posthog-sentry-browser`** ([task](tasks/posthog-sentry-browser.md)) — quick win 1 dag. Observability moet staan vóór eerste pilot. Onafhankelijk van content-pad.
+1. **`brand-voice-content-integration`** ([task](tasks/brand-voice-content-integration.md)) — 3 dagen. BrandVoiceGuide injectie in generation prompts + voice-consistency score. Dependency op studio-real-ai (✓) satisfied.
+2. **`content-item-qa-gating`** ([task](tasks/content-item-qa-gating.md)) — 2-3 dagen. Publish-readiness gate op consistency/persona/voice scores. Dependency op brand-voice (#1) voor voice-score.
+3. **`posthog-sentry-browser`** ([task](tasks/posthog-sentry-browser.md)) — quick win 1 dag. Observability vóór eerste pilot. Onafhankelijk van content-pad.
 
 ---
 
@@ -66,11 +66,11 @@ Volledige gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-d
 
 > Auto-bijgewerkt door `task-finalize` skill.
 
+- 2026-05-07 — [ContentVersion CRUD + studio hooks + version-history sidebar](tasks/done/content-versioning-crud.md)
+- 2026-05-07 — [Auto-trigger fidelity-scoring](tasks/done/auto-trigger-fidelity-scoring.md) (absorbed in content-versioning)
 - 2026-05-07 — [Studio component generation — echte AI in 3 routes](tasks/done/studio-content-generation-real-ai.md) (P0)
 - 2026-05-07 — [Feature-planner sparring-partner (PM + Tech-Lead subagents)](tasks/done/feature-planner-setup.md)
 - 2026-05-07 — [Hooks + skills + subagents + eerste autonome routine](tasks/done/hooks-routines-week-3.md) (week 3)
-- 2026-05-07 — [Backlog herstructurering — open plans + roadmap items naar tasks/](tasks/done/tasks-migration-week-2.md) (week 2)
-- 2026-05-07 — [Documentatie-architectuur migratie](tasks/done/docs-migration-week-1.md) (week 1)
 
 ---
 
