@@ -7,9 +7,9 @@
 
 ## Huidige fase
 
-**Pre-launch** — alle code draait localhost. Stripe + Vercel deployment in voorbereiding.
+**Pre-launch** — product-readiness van de content-flow. Vercel + Stripe zijn launch-fase.
 
-Pre-launch eindigt bij livegang (Vercel + custom domain operationeel).
+Pre-launch eindigt bij volledige content-flow zonder blocker-bugs (Brief → Strategy → Concept → Canvas → Export) + observability live.
 
 ---
 
@@ -17,11 +17,11 @@ Pre-launch eindigt bij livegang (Vercel + custom domain operationeel).
 
 > Update na elke afgeronde task.
 
-> **2026-05-07 — fase-shift**: Vercel + Stripe verplaatst naar launch-fase. Pre-launch = product-readiness van content-flow. Inventarisatie leverde 4 nieuwe NOW-tasks op (content-items kritisch pad).
+> **2026-05-07**: studio-content-generation-real-ai (P0) afgerond — content-flow levert nu echte AI-output. Volgende kritische pad: versioning + brand-voice + QA-gating.
 
-1. **`studio-content-generation-real-ai`** ([task](tasks/studio-content-generation-real-ai.md)) — **P0**, 1 week. TODO-stubs in 3 studio generation-routes vervangen door echte AI-calls + cascading-context builder. Zonder dit werkt content-flow niet.
-2. **`content-versioning-crud`** ([task](tasks/content-versioning-crud.md)) — 3 dagen. ContentVersion CRUD-routes + version history UI. Unblockt `auto-trigger-fidelity-scoring`. Dependency op #1 voor hooks.
-3. **`posthog-sentry-browser`** ([task](tasks/posthog-sentry-browser.md)) — quick win 1 dag. Observability moet staan vóór pilot. Onafhankelijk van content-pad.
+1. **`content-versioning-crud`** ([task](tasks/content-versioning-crud.md)) — 3 dagen. ContentVersion CRUD-routes + version history UI. Unblockt `auto-trigger-fidelity-scoring` (1 uur, blocked). Dependency op studio-real-ai is nu satisfied.
+2. **`brand-voice-content-integration`** ([task](tasks/brand-voice-content-integration.md)) — 3 dagen. BrandVoiceGuide injectie in generation prompts + voice-consistency score. Onafhankelijk parallel uitvoerbaar met #1.
+3. **`posthog-sentry-browser`** ([task](tasks/posthog-sentry-browser.md)) — quick win 1 dag. Observability moet staan vóór eerste pilot. Onafhankelijk van content-pad.
 
 ---
 
@@ -66,6 +66,8 @@ Volledige gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-d
 
 > Auto-bijgewerkt door `task-finalize` skill.
 
+- 2026-05-07 — [Studio component generation — echte AI in 3 routes](tasks/done/studio-content-generation-real-ai.md) (P0)
+- 2026-05-07 — [Feature-planner sparring-partner (PM + Tech-Lead subagents)](tasks/done/feature-planner-setup.md)
 - 2026-05-07 — [Hooks + skills + subagents + eerste autonome routine](tasks/done/hooks-routines-week-3.md) (week 3)
 - 2026-05-07 — [Backlog herstructurering — open plans + roadmap items naar tasks/](tasks/done/tasks-migration-week-2.md) (week 2)
 - 2026-05-07 — [Documentatie-architectuur migratie](tasks/done/docs-migration-week-1.md) (week 1)
