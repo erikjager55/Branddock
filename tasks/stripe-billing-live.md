@@ -1,8 +1,8 @@
 ---
 id: stripe-billing-live
 title: Stripe live billing — checkout + webhooks + plan enforcement
-fase: pre-launch
-priority: now
+fase: launch
+priority: next
 effort: 1 week
 owner: claude-code
 status: open

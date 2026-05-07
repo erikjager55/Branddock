@@ -1,8 +1,8 @@
 ---
 id: content-styling-migratie
 title: Migreer content-styling velden naar Content Brief (8 categorieën)
-fase: post-launch
-priority: next
+fase: pre-launch
+priority: now
 effort: 3-5 dagen
 owner: claude-code
 status: open

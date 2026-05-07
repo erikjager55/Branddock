@@ -1,8 +1,8 @@
 ---
 id: campaign-drafts-db-backed
 title: Campaign Drafts DB-backed (multi-device persistence)
-fase: post-launch
-priority: next
+fase: pre-launch
+priority: now
 effort: 1.5 dag
 owner: claude-code
 status: open

@@ -1,8 +1,8 @@
 ---
 id: auto-trigger-fidelity-scoring
 title: Auto-trigger fidelity-scoring na ContentVersion creation
-fase: post-launch
-priority: next
+fase: pre-launch
+priority: now
 effort: 1 uur
 owner: claude-code
 status: blocked

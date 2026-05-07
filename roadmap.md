@@ -10,8 +10,8 @@
 
 | Fase | Definitie | Hard criterium afronding |
 |---|---|---|
-| **Pre-launch** | Alles wat moet zodat applicatie online kan draaien | Vercel deployment + custom domain operationeel |
-| **Launch** | De livegang + eerste 30 dagen | Eerste betalende klant aan boord, 0 P0/P1 bugs in core flows |
+| **Pre-launch** | Product-readiness: content-flows werkend en getest, observability staat, content-items bugvrij | Volledige content-flow (Brief → Strategy → Concept → Canvas → Export) zonder blocker-bugs op alle ondersteunde content-types; observability live |
+| **Launch** | Livegang infra + billing + eerste 30 dagen klanten | Vercel + custom domain + Stripe live billing operationeel; eerste betalende klant aan boord; 0 P0/P1 bugs in core flows |
 | **Post-launch** | Klantenwerving, schaal, Brandclaw transformatie | Doorlopend |
 
 **Brandclaw transformatie**: Optie B (in stappen post-launch) — eerste node Strategy Analyst pas maand 3 post-launch.
@@ -20,35 +20,46 @@
 
 ## ⚡ NOW (deze 2-4 weken)
 
-Max 5 items. Sortering op pre-launch dependency.
+Pre-launch = product-readiness van content-flows. Sortering op dependency-volgorde.
 
-| ID | Titel | Fase | Effort | Status | Blocker |
-|---|---|---|---|---|---|
-| [`docs-migration-week-1`](tasks/docs-migration-week-1.md) | Documentatie-architectuur migratie | pre-launch | 1 week | in-progress | week 1 dag 4-7 done, smoke-test pending |
-| [`tasks-migration-week-2`](tasks/tasks-migration-week-2.md) | Open plans distilleren naar tasks/ | pre-launch | 3 dagen | in-progress | dag 1-3 done |
-| [`hooks-routines-week-3`](tasks/hooks-routines-week-3.md) | Claude Code hooks + skills + eerste routine | pre-launch | 1 week | open | wacht op week 2 done |
-| [`stripe-billing-live`](tasks/stripe-billing-live.md) | Stripe live billing (2 plannen, checkout, webhook, plan-gate) | pre-launch | 1 week | open | - |
-| [`vercel-deployment`](tasks/vercel-deployment.md) | Vercel + Neon DB + Sentry + custom domain | pre-launch | 3 dagen | open | env-var keys verzamelen |
+**Content-items kritisch pad** (sequencing: #1 → #2 → #4 + #5 parallel)
+| ID | Titel | Effort | Status | Blocker |
+|---|---|---|---|---|
+| [`studio-content-generation-real-ai`](tasks/studio-content-generation-real-ai.md) | Vervang TODO-stubs door echte AI-calls in studio generation | 1 week | open | P0 — content-flow werkt nu niet |
+| [`content-versioning-crud`](tasks/content-versioning-crud.md) | ContentVersion CRUD-routes + version history UI | 3 dagen | open | dependency op #1 voor hooks |
+| [`brand-voice-content-integration`](tasks/brand-voice-content-integration.md) | BrandVoiceGuide injectie in generation prompts + voice-consistency score | 3 dagen | open | dependency op #1 |
+| [`content-item-qa-gating`](tasks/content-item-qa-gating.md) | Publish-readiness gate op consistency/persona/voice scores | 2-3 dagen | open | dependency op voice-score uit voorgaande |
+
+**Independent pre-launch tracks** (parallel uitvoerbaar)
+| ID | Titel | Effort | Status | Blocker |
+|---|---|---|---|---|
+| [`posthog-sentry-browser`](tasks/posthog-sentry-browser.md) | PostHog + Sentry browser-side wiring | 1 dag | open | - |
+| [`campaign-drafts-db-backed`](tasks/campaign-drafts-db-backed.md) | Campaign Drafts DB-backed (multi-device persistence) | 1.5 dag | open | - |
+| [`content-styling-migratie`](tasks/content-styling-migratie.md) | Content-styling velden naar Content Brief (8 categorieën) | 3-5 dagen | open | - |
+| [`auto-trigger-fidelity-scoring`](tasks/auto-trigger-fidelity-scoring.md) | Auto-trigger fidelity-scoring na ContentVersion | 1 uur | blocked | wacht op `content-versioning-crud` |
 
 ---
 
 ## 🔵 NEXT (1-3 maanden, RICE-gerangschikt)
 
+**Launch-fase (live-gang infra + billing)**
 | ID | Titel | Fase | Effort | Notitie |
 |---|---|---|---|---|
+| [`vercel-deployment`](tasks/vercel-deployment.md) | Vercel + Neon DB + custom domain + monitoring | launch | 3 dagen | Hard launch-blocker |
+| [`stripe-billing-live`](tasks/stripe-billing-live.md) | Stripe live billing — checkout + webhooks + plan enforcement | launch | 1 week | Hard launch-blocker, parallel met Vercel mogelijk |
 | [`pilot-onboarding-better-brands`](tasks/pilot-onboarding-better-brands.md) | Better Brands eerste pilot live | launch | 2 dagen | Voorwaarde: vercel-deployment done |
-| [`posthog-sentry-browser`](tasks/posthog-sentry-browser.md) | PostHog + Sentry browser-side wiring | launch | 1 dag | Activation tracking + frontend errors |
 | `onboarding-flow-test` | Onboarding flow met 3 externe gebruikers | launch | 1 week | Validation pre-klant — task-file volgt |
 | `marketing-site-pricing` | Marketing site + pricing pagina | launch | 1 week | Conversie-driver — task-file volgt |
-| [`campaign-drafts-db-backed`](tasks/campaign-drafts-db-backed.md) | Campaign drafts DB-backed (multi-device) | post-launch | 1.5 dag | Gedistilleerd uit plan |
+
+**Post-launch**
+| ID | Titel | Fase | Effort | Notitie |
+|---|---|---|---|---|
 | [`claw-page-awareness`](tasks/claw-page-awareness.md) | Brand Assistant page awareness + field-fill | post-launch | 2-3 dagen | Gedistilleerd uit plan |
 | [`canvas-inline-edit-overlays`](tasks/canvas-inline-edit-overlays.md) | Per-preview inline-edit Content Canvas | post-launch | 2-3 dagen | UX-verbetering item 9.0b |
 | [`power-user-shortcuts`](tasks/power-user-shortcuts.md) | Power-user shortcuts (5 micro-optimalisaties) | post-launch | 1-2 dagen | Gedistilleerd uit plan |
 | [`bv-wire-w1-full-centroid`](tasks/bv-wire-w1-full-centroid.md) | BV-WIRE W-1 full centroid switch | post-launch | 4-6 uur | Regression-harness staat klaar |
 | `learning-loop-dashboard-usage` | Per-sourceIdentifier dashboard | post-launch | halve dag | Task-file volgt |
 | [`tech-debt-any-types`](tasks/tech-debt-any-types.md) | 146 `: any` opruimen | post-launch | 1-2 dagen | L2 auto-mode kandidaat |
-| [`content-styling-migratie`](tasks/content-styling-migratie.md) | Migreer content-styling velden naar Content Brief (8 categorieën) | post-launch | 3-5 dagen | Item 9.0c |
-| [`auto-trigger-fidelity-scoring`](tasks/auto-trigger-fidelity-scoring.md) | Auto-trigger fidelity-scoring | post-launch | 1 uur | Status: blocked op ContentVersion-routes |
 | `weekly-report-email-via-resend` | Weekly report email via Emailit | post-launch | 1 dag | Task-file volgt na weekly-report generator |
 
 ---
@@ -102,13 +113,14 @@ Max 5 items. Sortering op pre-launch dependency.
 
 ## 💡 Aanbeveling huidige sessie
 
-Pre-launch staat onder druk: documentatie migratie loopt nu (week 1 in uitvoering). Logische volgorde:
-1. **`docs-migration-week-1`** afronden (deze week, dag 4-7)
-2. **`tasks-migration-week-2`** (volgende week)
-3. **`hooks-routines-week-3`** (week erna)
-4. **`stripe-billing-live`** + **`vercel-deployment`** (parallel of sequentieel — kunnen elkaar niet blokkeren)
+Docs-migratie is afgerond (entries #222-#224 in changelog). Inventarisatie 2026-05-07 leverde **content-items kritisch pad** op:
 
-Skip Next-items totdat NOW-bucket leeg is.
+1. **`studio-content-generation-real-ai`** eerst (1 week) — P0, content-flow werkt nu niet door TODO-stubs in 3 generation-routes
+2. **`content-versioning-crud`** (3 dagen) — unblockt `auto-trigger-fidelity-scoring`, foundation voor edit-history
+3. **`brand-voice-content-integration`** (3 dagen) + **`content-item-qa-gating`** (2-3 dagen) parallel — kwaliteit + gates op de output uit #1
+4. **`posthog-sentry-browser`** (1 dag) als tussendoor-quick-win voor observability vóór pilot
+
+Vercel + Stripe verplaatst naar launch-fase (NEXT) — pakken op ná product-readiness.
 
 ---
 

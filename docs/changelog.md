@@ -63,3 +63,12 @@ CLAUDE.md teruggebracht van 2323 → 270 regels, repo root van 37 → 5 .md best
 - ADR: -
 - Spec: [playbooks/working-flow.md](playbooks/working-flow.md)
 - Commit: `0abd656`
+
+### 225. Feature-planner sparring-partner (PM + Tech-Lead subagents)
+
+Twee gescheiden subagents voor feature-discovery vóór code wordt geschreven. `feature-planner` (PM-mode) doet 6-assen discovery + anti-sycophancy (3 redenen om NIET te bouwen) + 5-punts stop-conditie + Red Team Review, output naar `tasks/_drafts/idea-<id>.md`. `technical-planner` (Tech-Lead-mode) past Phase -1 Gates (Simplicity/Anti-Abstraction/Integration-First) toe en promoot idea-file naar uitvoerbare `tasks/<id>.md`. Forced commitment moment tussen fases voorkomt premature technical design — onderzoek wees dit aan als #1 valkuil voor solo-devs. Plus: 2 nieuwe Stream Deck triggers (Plan feature, Tech plan), staging area `tasks/_drafts/`, gids `docs/playbooks/feature-discovery.md`. Smoke-test handover voor user.
+
+- Task: [tasks/done/feature-planner-setup.md](../tasks/done/feature-planner-setup.md)
+- ADR: [adr/2026-05-07-feature-planner-architecture.md](adr/2026-05-07-feature-planner-architecture.md)
+- Spec: [playbooks/feature-discovery.md](playbooks/feature-discovery.md)
+- Commit: _(pending)_

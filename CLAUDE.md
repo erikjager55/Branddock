@@ -239,12 +239,16 @@ TOKEN_ENCRYPTION_KEY=<voor OAuth tokens — back up zorgvuldig>
 |---|---|---|
 | Start sessie | "Lees CLAUDE.md, gotchas.md en START_HERE.md..." | Sessie-opener |
 | Werk overzicht | "Geef me een overzichtelijk overzicht..." | Open werk + keuze |
+| **Plan feature** | "Run feature-planner subagent voor nieuw idee..." | PM-mode discovery → tasks/_drafts/idea-<id>.md |
+| **Tech plan** | "Run technical-planner subagent op tasks/_drafts/idea-<id>.md..." | Promote idea naar uitvoerbare tasks/<id>.md |
 | Bugfix | "Bug: [...]" | Quick fix |
 | Finalize | "Ik ben klaar. Voer task-finalize skill uit." | End-of-task ceremonie |
 | Commit | "Commit huidig werk met conventional-commit message..." | Tussentijdse commit |
 | Retro | "Lees alle tasks/done/..." | Vrijdagretro |
 | Doc-sync | "Run nightly-doc-sync routine..." | Autonome routine |
 | Help | "Ik weet niet hoe verder. Hier is wat ik probeer: [...]" | Vastloop-hulp |
+
+Volledige feature-discovery flow: `docs/playbooks/feature-discovery.md`.
 
 ---
 

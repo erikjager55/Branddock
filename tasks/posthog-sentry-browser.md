@@ -1,8 +1,8 @@
 ---
 id: posthog-sentry-browser
 title: PostHog + Sentry browser-side wiring
-fase: launch
-priority: next
+fase: pre-launch
+priority: now
 effort: 1 dag
 owner: claude-code
 status: open

@@ -1,8 +1,8 @@
 ---
 id: vercel-deployment
 title: Vercel deployment + Neon DB + custom domain + monitoring
-fase: pre-launch
-priority: now
+fase: launch
+priority: next
 effort: 3 dagen
 owner: claude-code
 status: open

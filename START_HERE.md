@@ -17,9 +17,11 @@ Pre-launch eindigt bij livegang (Vercel + custom domain operationeel).
 
 > Update na elke afgeronde task.
 
-1. **Vercel deployment** ([`tasks/vercel-deployment.md`](tasks/vercel-deployment.md)) — pre-launch must-have, Vercel + Neon Postgres setup, env vars, deploy + smoke-test. Live-gang triggert overgang naar launch-fase.
-2. **Stripe billing live** ([`tasks/stripe-billing-live.md`](tasks/stripe-billing-live.md)) — pre-launch must-have. Productie-mode keys, webhooks, checkout-flow getest met echte kaart. Kan parallel met Vercel werk.
-3. **Pilot onboarding Better Brands** ([`tasks/pilot-onboarding-better-brands.md`](tasks/pilot-onboarding-better-brands.md)) — eerste echte klant door het volledige flow heen. Friction-punten in `gotchas.md`. Validatie van pre-launch readiness.
+> **2026-05-07 — fase-shift**: Vercel + Stripe verplaatst naar launch-fase. Pre-launch = product-readiness van content-flow. Inventarisatie leverde 4 nieuwe NOW-tasks op (content-items kritisch pad).
+
+1. **`studio-content-generation-real-ai`** ([task](tasks/studio-content-generation-real-ai.md)) — **P0**, 1 week. TODO-stubs in 3 studio generation-routes vervangen door echte AI-calls + cascading-context builder. Zonder dit werkt content-flow niet.
+2. **`content-versioning-crud`** ([task](tasks/content-versioning-crud.md)) — 3 dagen. ContentVersion CRUD-routes + version history UI. Unblockt `auto-trigger-fidelity-scoring`. Dependency op #1 voor hooks.
+3. **`posthog-sentry-browser`** ([task](tasks/posthog-sentry-browser.md)) — quick win 1 dag. Observability moet staan vóór pilot. Onafhankelijk van content-pad.
 
 ---
 
@@ -42,6 +44,13 @@ Bij twijfel over wat te doen:
 Geef me een overzichtelijk overzicht van mijn openstaande werk zodat ik kan kiezen wat ik oppak.
 [volledige prompt in Stream Deck knop "Werk overzicht"]
 ```
+
+Bij **nieuw feature-idee** (sparring nodig vóór code):
+```
+Ik heb een idee voor X. Run feature-planner subagent.
+```
+Pipeline: 6-assen discovery → `tasks/_drafts/idea-<id>.md` → technical-planner → `tasks/<id>.md` → uitvoer.
+Volledige gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-discovery.md)
 
 ---
 
@@ -67,8 +76,9 @@ Geef me een overzichtelijk overzicht van mijn openstaande werk zodat ik kan kiez
 
 - **`roadmap.md`** — volledige Now/Next/Later met fasering
 - **`docs/playbooks/working-flow.md`** — operating manual + spelregels
+- **`docs/playbooks/feature-discovery.md`** — feature-planner pipeline
 - **`CLAUDE.md`** — runtime context voor agent
 - **`docs/changelog.md`** — wat is gebouwd (chronologisch)
 - **`docs/adr/`** — architecturale beslissingen
-- **`tasks/`** — actieve taken
+- **`tasks/`** — actieve taken (+`_drafts/` staging area voor PM-output)
 - **`tasks/done/`** — afgeronde taken
