@@ -233,19 +233,36 @@ export async function restoreContentVersion(
       },
     });
 
+    // Per-component update with graceful skip on P2025 (component deleted
+    // since the snapshot was taken). Log so the operator notices if a restore
+    // is partial. A more aggressive policy (delete-extras / recreate-missing)
+    // would alter user data more than necessary — best-effort revert is safer.
     for (const c of snapshot.components) {
-      await tx.deliverableComponent.update({
-        where: { id: c.id },
-        data: {
-          generatedContent: c.generatedContent,
-          imageUrl: c.imageUrl,
-          cascadingContext: c.cascadingContext,
-          promptUsed: c.promptUsed,
-          aiModel: c.aiModel,
-          aiProvider: c.aiProvider,
-          status: 'GENERATED',
-        },
-      });
+      try {
+        await tx.deliverableComponent.update({
+          where: { id: c.id },
+          data: {
+            generatedContent: c.generatedContent,
+            imageUrl: c.imageUrl,
+            cascadingContext: c.cascadingContext,
+            promptUsed: c.promptUsed,
+            aiModel: c.aiModel,
+            aiProvider: c.aiProvider,
+            status: 'GENERATED',
+          },
+        });
+      } catch (err) {
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2025'
+        ) {
+          console.warn(
+            `[restoreContentVersion] component ${c.id} no longer exists — skipped (best-effort restore)`,
+          );
+          continue;
+        }
+        throw err;
+      }
     }
   });
 

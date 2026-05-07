@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 1 uur
 owner: claude-code
-status: blocked
+status: done
 created: 2026-05-07
-completed: -
+completed: 2026-05-07
 related-adr: docs/adr/2026-05-05-fval-three-pillar.md
 related-spec: docs/fidelity/F-VAL-architecture.md
 worktree: -
