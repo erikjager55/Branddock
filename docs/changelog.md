@@ -80,4 +80,4 @@ TODO-stubs in `generate`/`regenerate`/`generate-all` routes vervangen door echte
 - Task: [tasks/done/studio-content-generation-real-ai.md](../tasks/done/studio-content-generation-real-ai.md)
 - ADR: -
 - Spec: -
-- Commit: `<hash>`
+- Commit: `4a54fad` (initial) + `fbc44d7` (hardening)
