@@ -25,7 +25,7 @@ Gevolg: pre-launch content-flow lijkt te werken maar levert geen bruikbare outpu
 # Voorstel
 
 1. Vervang stubs in 3 routes door echte AI-calls via `src/lib/ai/openaiClient` of `anthropicClient` (per `WorkspaceAiConfig.contentGeneration`).
-2. Bouw een **cascading-context builder** die per component injecteert: campaign strategy, master message, voorgaande componenten in dezelfde deliverable (voor consistency), brand context (`getBrandContext(workspaceId)`).
+2. Bouw een **cascading-context builder** die per component injecteert: campaign strategy, master message, **`AssetPlanDeliverable.brief` (objective + keyMessage + toneDirection + CTA + contentOutline) als per-asset context-laag**, voorgaande componenten in dezelfde deliverable (voor consistency), brand context (`getBrandContext(workspaceId)`).
 3. `regenerate`-route hergebruikt context + voegt user-feedback toe als steering-instructie in de prompt.
 4. `generate-all` orchestreert sequentieel met context-cascade (component N krijgt output van 1..N-1 als context).
 5. Cache invalidation per `cacheKeys.prefixes.STUDIO(workspaceId)` na elke mutatie.
@@ -37,6 +37,7 @@ Gevolg: pre-launch content-flow lijkt te werken maar levert geen bruikbare outpu
 - [ ] `regenerate` route gebruikt user-feedback als prompt-steering (bevestig met diff tussen v1 en v2 output)
 - [ ] Brand context (workspace/persona/product/voice) zit in elke generation-prompt
 - [ ] Strategy + masterMessage zit in elke generation-prompt
+- [ ] `AssetPlanDeliverable.brief` (objective + keyMessage + toneDirection + CTA + contentOutline) zit in elke generation-prompt als prominente per-asset context-laag
 - [ ] Cache invalidation aanroepen aanwezig in alle 3 routes
 - [ ] Geen `any` types in nieuwe code
 - [ ] Loading + error states in canvas-UI getest (component-level retry, error-banner)
@@ -85,5 +86,7 @@ Gevolg: pre-launch content-flow lijkt te werken maar levert geen bruikbare outpu
 # Notes
 
 Agent-inventarisatie 2026-05-07 identificeerde dit als P0 pre-launch. Zonder echte AI in deze 3 routes werkt de hele content-flow niet, ondanks dat de UI lijkt te functioneren.
+
+A3-validatie 2026-05-07 (zie `tasks/_drafts/idea-campaign-brief-cowork-parity-validation.md`) identificeerde `AssetPlanDeliverable.brief` als de rijkste bestaande per-asset context-laag in het schema — rijker dan een Cowork-stijl must-have-lijst. Daarom is dit veld expliciet toegevoegd aan de cascading-context builder.
 
 Dependency-volgorde voor de 4 nieuwe pre-launch tasks: dit is #1, daarna `content-versioning-crud` (versions van AI-output), `brand-voice-content-integration` (voice in prompts hier), en als laatste `content-item-qa-gating` (gates op de AI-output uit deze routes).

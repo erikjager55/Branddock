@@ -61,6 +61,7 @@ Pre-launch = product-readiness van content-flows. Sortering op dependency-volgor
 | `learning-loop-dashboard-usage` | Per-sourceIdentifier dashboard | post-launch | halve dag | Task-file volgt |
 | [`tech-debt-any-types`](tasks/tech-debt-any-types.md) | 146 `: any` opruimen | post-launch | 1-2 dagen | L2 auto-mode kandidaat |
 | `weekly-report-email-via-resend` | Weekly report email via Emailit | post-launch | 1 dag | Task-file volgt na weekly-report generator |
+| `campaign-brief-output-mapper` | Campagne-brief output-mapper (Fase A van Cowork-pariteit) | post-launch | 1-2 dagen | A3-validatie 2026-05-07 done — geblokkeerd tot `studio-content-generation-real-ai` af. Idea: `tasks/_drafts/idea-campaign-brief-cowork-parity.md` |
 
 ---
 
@@ -103,6 +104,16 @@ Pre-launch = product-readiness van content-flows. Sortering op dependency-volgor
 |---|---|
 | `privacy-dpa-hooks` | Workspace-isolation enforcement, opt-in cross-klant aggregaten |
 | `cross-workspace-benchmarks` | WorkspacePerformanceBenchmark model |
+
+### Campagne-brief uitbreidingen (Fase B — follow-ups na Fase A output-mapper)
+> Komen voort uit A3-validatie 2026-05-07. Elk vereist eigen `feature-planner` discovery met expliciete Brandclaw-loop-impact-vraag. ADR vereist voor B1/B2 (raken Strategy Analyst + Measurement nodes), aanbevolen voor B3 (Optimization).
+
+| ID | Titel | Brandclaw-impact |
+|---|---|---|
+| `campaign-weekly-calendar` | `WeeklyTheme`/`WeeklyContentCalendar` model + per-week posts-grid | ADR — Strategy Analyst input |
+| `campaign-kpi-structure` | Typed KPI-schema + KPI-prompt-fase (primair/secundair/counter, sub-segmentatie) | ADR — Measurement node directe input |
+| `campaign-budget-table` | `CampaignBudget` model met line-items + percentage-toelichting + contingency | ADR aanbevolen — Optimization node mutation-policy |
+| `campaign-risk-assessment` | `CampaignRisk` model + risk-assessment-prompt-fase met mitigatie-stappen | Beperkt — cross-link in `gotchas.md` volstaat |
 
 ### F-VAL iteraties
 | ID | Titel | Trigger |

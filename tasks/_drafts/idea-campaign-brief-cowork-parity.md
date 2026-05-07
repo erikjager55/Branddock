@@ -1,9 +1,12 @@
 ---
 id: campaign-brief-cowork-parity
 title: Campagne-brief-output op Cowork-pariteit (10-secties Linfi-stijl)
-status: pending-validation
+status: pending-tech
 created: 2026-05-07
-verdict: needs-validation-first
+validated: 2026-05-07
+verdict: ready-to-build (Fase A scope only)
+scope: Fase A — output-mapper-laag (1-2 dagen). Fase B (data-laag uitbreidingen) gemarkeerd als follow-up via aparte feature-discoveries.
+blocked-by: studio-content-generation-real-ai (P0, 1 week, open) — Fase A render-laag heeft werkende AI-content nodig
 ---
 
 # Probleemstelling (1 zin)
@@ -78,65 +81,74 @@ Niet-trigger:
 
 > NB: definitieve scope wacht op A3-validatie. Onderstaande is **indicatief richtinggevend**, te bevestigen na validatie.
 
-## In-Scope (MVP — indicatief, pending A3)
+## In-Scope (Fase A MVP — output-mapper, 1-2 dagen)
 
-Te bepalen na A3-validatie. Drie scenario's:
+A3-validatie 2026-05-07 toonde bimodale gap-verdeling: 6 secties met 5-50% gap (format-zone, output-mapper volstaat) en 4 secties met 70-95% gap (data-zone, vereist nieuwe modellen). Fase A pakt de eerste cluster.
 
-- **Scenario 1 (gap < 40%)**: alleen output-mapper-laag — bestaande wizard-data → Linfi-stijl markdown export. ~1-2 dagen.
-- **Scenario 2 (gap 40-70%)**: Strategy-step herstructureren + brief-output-mapper + brand-voice-injectie in brief-prompts. ~1 week.
-- **Scenario 3 (gap > 70%)**: data-laag uitbreiden eerst (extra velden, betere persona-pijnpunten) dan pas redesign — feature parkeert tot data-laag fix.
+- **Markdown/HTML render-laag** voor wizard-output naar Linfi-stijl 10-secties brief, voor de 6 dekkende secties:
+  - Sectie 1 — Campagne overzicht (uit `Campaign` + `BusinessStrategy` + `StrategyFoundation.coreMessage`)
+  - Sectie 2 — Doelgroep narratief (uit `Persona.{frustrations, motivations, preferredChannels, buyingTriggers, decisionCriteria}` + `StrategyFoundation.audienceInsights`)
+  - Sectie 3 — Kernboodschappen (uit `Campaign.masterMessage` + `MediumEnrichment.phaseGuidance` voor tone-per-kanaal)
+  - Sectie 4 — Kanaalstrategie (uit `ChannelPlanLayer.channels[]` + `timingStrategy` + `phaseDurations[]`)
+  - Sectie 6 — Benodigde assets (uit `AssetPlanLayer.deliverables[]` + `prepDeliverables[]`) — **prominent renderen met per-asset-brief uit `deliverable.brief` als USP**
+  - Sectie 10 — Volgende stappen (uit `prepDeliverables[]`)
+- Voor de 4 ontbrekende secties (5/7/8/9): expliciete "Niet beschikbaar — vereist <modulenaam>" placeholder met link naar follow-up tasks
+- Markdown-as-output (geen PDF/Notion-styling in Fase A)
+- "Klaar voor klant"-knop + post-export survey voor primary-metric tracking
 
-## Out-of-Scope (expliciet NIET, ook al verleidelijk)
+## Out-of-Scope (expliciet NIET in Fase A — follow-up features)
 
-- Multi-language briefs (NL only in MVP)
-- PDF-export met merk-styling (markdown/HTML voldoende)
+**Fase B follow-up features** (aparte feature-discoveries via `feature-planner`, na launch):
+- **B1 — `campaign-weekly-calendar`** (sectie 5, 70% gap): nieuw `WeeklyTheme`/`WeeklyContentCalendar` model, raakt Brandclaw Strategy-Analyst-input → ADR vereist
+- **B2 — `campaign-kpi-structure`** (sectie 7, 75% gap): typed KPI-schema + KPI-prompt-fase, directe input voor Brandclaw Measurement-node → ADR vereist
+- **B3 — `campaign-budget-table`** (sectie 8, 90% gap): nieuw `CampaignBudget` model met line-items, mogelijk Brandclaw Optimization-node-input → ADR aanbevolen
+- **B4 — `campaign-risk-assessment`** (sectie 9, 95% gap): nieuw `CampaignRisk` model + risk-assessment-prompt, beperkte loop-impact → cross-link in `gotchas.md`
+
+**Echt out-of-scope (geen follow-up)**:
+- Multi-language briefs (NL only)
+- PDF-export met merk-styling
 - Notion / Google Doc / Word-export
-- Webinar-planning, podcast-pitches, gastartikel-ideeën (Linfi-brief had die, MVP niet)
+- Webinar-planning, podcast-pitches, gastartikel-ideeën
 - Pinterest-board strategie
 - Auto-publish naar social platforms
-- Auto-budget berekening op workspace-data (user vult zelf in)
-- Auto-risico-detectie via workspace-scanning (AI mag suggesteren, geen scanning)
-- Live benchmark-research APIs (statische defaults)
-- Multi-tenant agency-templating (1 brief per workspace per campagne)
-- Brief-versioning/diff-history (gebruikt later `ContentVersion` als die klaar is)
-- Per-week content-kalender met deadline-koppeling aan `ContentBrief` module
+- Live benchmark-research APIs
+- Multi-tenant agency-templating
+- Brief-versioning/diff-history (gebruikt later `ContentVersion`)
 
-> Out-of-Scope (12) > In-Scope (TBD, max 4-5) ✓
+> Fase A In-Scope: 6 items. Out-of-Scope (incl. B-follow-ups): 13 items. ✓
 
 # AANNAMES
 
-- **A1 — Pilot-klanten gebruiken Branddock voor campagne-planning** — bewijs: founder N=1 dogfooding. Onbewezen voor externe pilots? **Ja** — niet gevalideerd, acceptabel pre-launch maar kwetsbaar voor adoption-bias.
-- **A2 — Format > input-kwaliteit** — bewijs: gevoel uit Cowork-vergelijking. **Onbewezen.** A3-validatie test dit indirect: als wizard genoeg ruwe data heeft, is format de bottleneck; zo niet, dan input-kwaliteit.
-- **A3 — Wizard-data is rijk genoeg om Cowork-pariteit te halen** — bewijs: ontbreekt. **Onbewezen** — erkend door founder. Cheapest experiment: 2 uur, geen code (zie EERSTE TAAK).
-- **A4 — Brandclaw-loop architectuur blijft intact bij output-laag-only redesign** — bewijs: alleen waar als optie (a) gekozen wordt (output-mapper), niet (b) (data-modellen wijzigen). Sturing tijdens technical-planner.
+- **A1 — Pilot-klanten gebruiken Branddock voor campagne-planning** — bewijs: founder N=1 dogfooding. Onbewezen voor externe pilots: nog niet gevalideerd, acceptabel pre-launch maar kwetsbaar voor adoption-bias.
+- **A2 — Format > input-kwaliteit (voor Fase A)** — bewijs: A3-validatie 2026-05-07 toonde 6 van 10 secties met 5-50% gap, oorzaak `format` of `format+data` partial. Voor Fase A scope: **bevestigd**. Voor 4 zware secties: input-kwaliteit *is* de bottleneck → niet in Fase A.
+- **A3 — Wizard-data is rijk genoeg om Cowork-pariteit te halen** — A3-validatie code-archeologie 2026-05-07: **gedeeltelijk bevestigd**. Voor 6 secties: ja (Fase A scope). Voor 4 secties: nee (Fase B-follow-ups). Zie `idea-campaign-brief-cowork-parity-validation.md`.
+- **A4 — Brandclaw-loop architectuur blijft intact bij output-laag-only redesign** — voor Fase A: **bevestigd** (alleen render-laag, geen schema-wijziging). Voor Fase B1/B2/B3: **niet** intact, ADR vereist per follow-up.
 
-> Onbewezen aannames vereisen validatie VOOR build, niet erna. A3 is blokker voor promotie naar `tasks/<id>.md`.
+> Aannames voor Fase A gevalideerd. Aannames voor Fase B per follow-up te valideren in eigen feature-discovery.
 
-# ACCEPTATIECRITERIA (MVP)
+# ACCEPTATIECRITERIA (Fase A MVP)
 
-> Geblokkeerd door A3-validatie. Worden Given/When/Then na validatie geformuleerd.
+- [ ] Given een afgeronde campaign-wizard (alle 9 fasen tot en met `elaborate`), When user klikt "Genereer campagne-brief", Then verschijnt een markdown-document met 10 secties in Linfi-stijl-volgorde
+- [ ] Given de gegenereerde brief, When user inspecteert sectie 5 (kalender), 7 (metrics), 8 (budget), 9 (risico's), Then ziet user expliciete "Niet beschikbaar — vereist <follow-up-feature-id>"-placeholder met link, **niet** een hallucinatie of lege sectie
+- [ ] Given de gegenereerde brief, When user inspecteert sectie 6 (assets), Then ziet user per asset een mini-brief met objective + keyMessage + toneDirection + CTA + contentOutline (Branddock-USP vs. Cowork)
+- [ ] Given de gegenereerde brief, When user klikt "Klaar voor klant", Then wordt een telemetrie-event gelogd voor primary-metric tracking (% briefs naar klant)
+- [ ] Given de wizard-data heeft missing fields (bv. geen masterMessage), When de brief gegenereerd wordt, Then toont de relevante sectie een gerichte "ontbrekende data"-melding ipv. blanco
+- [ ] Counter-metric: render-tijd brief ≤ 5 seconden (geen AI-call in Fase A — pure mapping + template)
+- [ ] `npx tsc --noEmit` 0 errors, geen `any` types, lint groen
 
-Indicatief, te concretiseren post-validatie:
-- [ ] TBD pending A3 — afhankelijk van scenario 1/2/3
-- [ ] Given een ingevulde campagne-strategy, When user klikt "Genereer brief", Then verschijnt 10-secties markdown analoog aan Cowork-output ≥ 7/10 quality
-- [ ] Given gegenereerde brief, When user past 0 edits toe, Then "klaar voor klant"-knop is direct beschikbaar
-- [ ] Counter-metric: brief-generatie-tijd ≤ 2× huidige wizard-tijd
+# EERSTE TAAK (na studio-content-generation-real-ai live)
 
-# EERSTE TAAK (morgen startbaar)
+**Run `technical-planner` subagent voor Fase A** — input: dit bestand + `idea-campaign-brief-cowork-parity-validation.md`. Output: `tasks/campaign-brief-output-mapper.md` met file-set, fase-A-acceptatiecriteria gespiegeld, eerste sub-task, smoke-test plan.
 
-**A3-validatie — 2 uur, geen code, geen subagent.**
+Verwachte file-set (indicatief, technical-planner bepaalt definitief):
+- `src/lib/campaigns/brief-renderer.ts` (nieuw) — markdown-template-engine voor 10-secties output
+- `src/lib/campaigns/brief-data-mapper.ts` (nieuw) — wizard-state → renderer-input transformatie
+- `src/app/api/campaigns/[id]/brief/render/route.ts` (nieuw) — GET endpoint voor brief-output
+- `src/components/campaigns/.../BriefRenderView.tsx` (nieuw) — UI met "klaar voor klant"-knop + telemetrie
+- `prisma/schema.prisma` — geen wijzigingen (Fase A is render-only)
+- A3-validatie-bestand toevoegen aan `docs/specs/` of `docs/playbooks/` als referentie
 
-Stappen:
-1. Maak fictieve Linfi-achtige test-workspace in Branddock met realistische brand-data (assets, voice, personas, products)
-2. Doorloop volledige campagne-wizard (Brief → Strategy → Concept → Canvas) voor "Lead generation onder NL architecten, 7 weken, organic social"
-3. Map de wizard-output tegen de 10-secties Linfi-brief (overzicht, doelgroep, kernboodschappen, kanalen, kalender, assets, KPI's, budget, risico's, next-steps)
-4. Per sectie: bereken gap-percentage (% velden leeg / hardgecodeerde fallback / hallucination-prone)
-5. Conclusie naar `tasks/_drafts/idea-campaign-brief-cowork-parity-validation-results.md`:
-   - Gap < 40% → promote naar `tasks/<id>.md` met scenario 1 (output-mapper, 1-2 dagen)
-   - Gap 40-70% → promote met scenario 2 (Strategy-redesign, 1 week)
-   - Gap > 70% → parkeer feature, eerst data-laag fix in aparte task
-
-Geen tools nodig buiten Branddock UI + handmatig markdown-mapping. Output is gat-rapport, geen code.
+Geblokkeerd tot: `studio-content-generation-real-ai` task gemarkeerd als done in `tasks/done/`.
 
 ---
 
@@ -174,10 +186,14 @@ Aanvullend: tweede risico (Brandclaw-conflict) verdient ADR-overweging zodra sce
 
 - [x] Probleem in 1 zin formuleerbaar
 - [x] Eén primaire success-metric (niet 5)
-- [x] Out-of-Scope-lijst langer dan In-Scope-lijst (12 vs. TBD ≤ 5)
-- [ ] MVP-acceptance-criteria concreet (Given/When/Then) — **geblokkeerd door A3**
-- [x] Eerste taak morgen startbaar (A3-validatie, 2 uur)
+- [x] Out-of-Scope-lijst langer dan In-Scope-lijst (13 vs. 6)
+- [x] MVP-acceptance-criteria concreet (Given/When/Then)
+- [x] Eerste taak morgen startbaar (technical-planner, geblokkeerd tot studio-P0 done)
+
+**5/5 ✓ — `ready-to-build` voor Fase A scope**
 
 # Volgende stap
 
-**Wacht op A3-validatie.** Zodra `tasks/_drafts/idea-campaign-brief-cowork-parity-validation-results.md` bestaat met gap-rapport: roep `technical-planner` subagent aan met dit bestand + validation-results als input. Bij gap < 40% promotie naar `tasks/<id>.md` direct. Bij gap > 70% parkeer en open separate data-laag task.
+**Wacht op `studio-content-generation-real-ai` (P0, 1 week, open).** Zodra die task done is: roep `technical-planner` subagent aan met dit bestand + `idea-campaign-brief-cowork-parity-validation.md` als input om naar `tasks/campaign-brief-output-mapper.md` te promoten.
+
+**Parallel pad** (geen blocker): kan voor de B-follow-ups (B1 weekly-calendar, B2 kpi-structure, B3 budget-table, B4 risk-assessment) los van Fase A nieuwe `feature-planner` discoveries openen — elk met expliciete Brandclaw-loop-impact-vraag in Ronde 3. Niet allemaal tegelijk; één per keer als capaciteit het toelaat.
