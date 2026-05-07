@@ -300,12 +300,70 @@ async function testRegenerate() {
   console.log(`[OK] ${v2Length < v1Length ? 'Output is shorter — feedback honored.' : 'Output NOT shorter — feedback ignored?'}`);
 }
 
+async function testContentVersioning() {
+  console.log('\n══════════════════════════════════════════════════════════');
+  console.log('TEST 4: createContentVersion + list + restore');
+  console.log('══════════════════════════════════════════════════════════');
+
+  const { createContentVersion, restoreContentVersion } = await import('@/lib/learning-loop/content-version');
+
+  const d = await loadDeliverable();
+  const wsId = d.campaign.workspaceId;
+
+  console.log(`Creating ContentVersion (createdBy=AI) for deliverable ${d.id}…`);
+  const v1 = await createContentVersion({
+    deliverableId: d.id,
+    workspaceId: wsId,
+    createdBy: 'AI',
+  });
+  console.log(`[OK] Created v${v1.versionNumber} (id=${v1.id}), createdBy=${v1.createdBy}`);
+
+  console.log(`Creating second version (createdBy=USER) for diff-tracking…`);
+  // Mutate one component to trigger a non-empty diff, then snapshot
+  const firstComponent = (await loadAllComponents(d.id))[0];
+  await prisma.deliverableComponent.update({
+    where: { id: firstComponent.id },
+    data: { generatedContent: `[smoke-mutated ${Date.now()}] ${firstComponent.generatedContent ?? ''}` },
+  });
+  const v2 = await createContentVersion({
+    deliverableId: d.id,
+    workspaceId: wsId,
+    createdBy: 'USER',
+    editorUserId: 'smoke-test-user',
+  });
+  console.log(`[OK] Created v${v2.versionNumber} (id=${v2.id}), editType=${v2.editType ?? 'null'}, hasDiff=${v2.diffFromPrevious !== null}`);
+
+  console.log(`Listing recent versions…`);
+  const versions = await prisma.contentVersion.findMany({
+    where: { deliverableId: d.id },
+    orderBy: { versionNumber: 'desc' },
+    take: 5,
+    select: { versionNumber: true, createdBy: true, editType: true, createdAt: true },
+  });
+  versions.forEach((v) => {
+    console.log(`  - v${v.versionNumber} ${v.createdBy} ${v.editType ?? '-'} ${v.createdAt.toISOString()}`);
+  });
+
+  console.log(`Restoring to v${v1.versionNumber}…`);
+  const v3 = await restoreContentVersion(v1.id, wsId, 'smoke-test-user');
+  console.log(`[OK] Restore created v${v3.versionNumber} (id=${v3.id})`);
+
+  // Verify the deliverable's first component is back to the v1 content
+  const componentAfterRestore = await prisma.deliverableComponent.findUnique({
+    where: { id: firstComponent.id },
+    select: { generatedContent: true },
+  });
+  const restoredCorrectly = !componentAfterRestore?.generatedContent?.startsWith('[smoke-mutated');
+  console.log(`[${restoredCorrectly ? 'OK' : 'FAIL'}] Component content reverted: ${restoredCorrectly}`);
+}
+
 async function main() {
   console.log('Studio Content Generation — Smoke Test');
   console.log('======================================\n');
   await testGenerate();
   await testGenerateAll();
   await testRegenerate();
+  await testContentVersioning();
   console.log('\n══════════════════════════════════════════════════════════');
   console.log('Smoke test complete.');
   console.log('══════════════════════════════════════════════════════════\n');

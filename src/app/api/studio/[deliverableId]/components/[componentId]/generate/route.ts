@@ -10,6 +10,8 @@ import { AVAILABLE_MODELS, type ResolvedModel, type AiProvider } from '@/lib/ai/
 import { dispatchTextCompletion } from '@/lib/ai/dispatch-completion';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { createContentVersion } from '@/lib/learning-loop/content-version';
+import { scoreContentFidelity } from '@/lib/learning-loop/fidelity-scorer';
 import type { TypeSettings } from '@/types/studio';
 
 const KNOWN_PROVIDERS: ReadonlySet<AiProvider> = new Set<AiProvider>(['anthropic', 'openai', 'google']);
@@ -141,6 +143,23 @@ export async function POST(
     invalidateCache(cacheKeys.prefixes.studio(workspaceId));
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
+    // Snapshot the deliverable as a new ContentVersion (createdBy='AI'), then
+    // fire-and-forget fidelity scoring. Failures here don't fail the route —
+    // the user already has their generated content, versioning is observability.
+    try {
+      const newVersion = await createContentVersion({
+        deliverableId,
+        workspaceId,
+        createdBy: 'AI',
+      });
+      invalidateCache(cacheKeys.prefixes.contentVersions(deliverableId));
+      void scoreContentFidelity({ contentVersionId: newVersion.id, workspaceId }).catch((err) => {
+        console.error(`[fidelity-scoring async fail] version=${newVersion.id}`, err);
+      });
+    } catch (versionErr) {
+      console.error('[ContentVersion create failed after generate]', versionErr);
+    }
 
     return NextResponse.json(updated);
   } catch (error) {

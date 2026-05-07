@@ -94,6 +94,10 @@ export const cacheKeys = {
     deliverable: (wsId: string, deliverableId: string) => `studio:${wsId}:deliverable:${deliverableId}`,
     component: (wsId: string, componentId: string) => `studio:${wsId}:component:${componentId}`,
   },
+  contentVersions: {
+    list: (deliverableId: string) => `content-versions:${deliverableId}:list`,
+    detail: (deliverableId: string, versionId: string) => `content-versions:${deliverableId}:detail:${versionId}`,
+  },
 
   // Invalidation prefixes
   prefixes: {
@@ -112,6 +116,7 @@ export const cacheKeys = {
     media: (wsId: string) => `media:${wsId}`,
     notifications: (wsId: string) => `notifications:${wsId}`,
     studio: (wsId: string) => `studio:${wsId}`,
+    contentVersions: (deliverableId: string) => `content-versions:${deliverableId}`,
     allDashboards: 'dashboard:',
     allStatic: 'static:',
   },
