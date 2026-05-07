@@ -35,24 +35,29 @@ B1 als zelfstandig `WeeklyTheme`-datamodel-feature is **niet gerechtvaardigd**:
 
 | # | Track | Wat erin gaat | Status |
 |---|---|---|---|
-| **1** | `studio-content-generation-real-ai` (NOW, P0) | **Siblings-context-injectie** in cascading-context-builder: bij generatie van post N krijgt de prompt een summary van naburige posts (vermijd repeat-frasing, repeat-structure, repeat-angle). Lost JTBD "saaie posts binnen 1 week" direct op. | Voorgestelde edit, **niet uitgevoerd** — parallel-agent werkt momenteel in deze files. Tekst klaar in sectie hieronder. |
+| **1** | Nieuwe follow-up task `studio-siblings-context-variation` (post-launch quality enhancement) | **Siblings-context-injectie** in cascading-context-builder: bij generatie van post N krijgt de prompt een summary van naburige posts (vermijd repeat-frasing, repeat-structure, repeat-angle). Lost JTBD "saaie posts binnen 1 week" direct op. | `studio-content-generation-real-ai` is gemarkeerd done op 2026-05-07 (commit `fbc44d7`, multi-round hardening), zonder siblings-context. Wordt eigen task, niet edit op done-task. |
 | **2** | `campaign-brief-output-mapper` (Fase A van Cowork-pariteit, NEXT) | **Week-thema-render-prompt** als sectie 5 van de brief: AI-call on-render genereert per-week-thema uit campaign-strategy + persona + asset-distributie. Geen persistentie. Statisch-contextueel (a). | Toegevoegd aan `idea-campaign-brief-cowork-parity.md` Fase A acceptatiecriteria. |
 | **3** | `weekly-theme-actuality-driven` (LATER, post-launch) | **Actualiteit-driven thematisering** met externe signalen (Perplexity Sonar of equivalent) + zelflerend via Brandclaw Measurement→Optimization. Mooi post-launch maand 7-12. | Toegevoegd aan `roadmap.md` LATER. |
 
-# Voorgestelde edit voor `studio-content-generation-real-ai.md` (klaar, niet uitgevoerd)
+# Follow-up task spec voor `studio-siblings-context-variation`
 
-> **Reden niet uitgevoerd**: parallel-agent werkt momenteel in `src/lib/studio/context-builder.ts` en gerelateerde routes. Race-conditie-risico met file-edits aan dezelfde task. Edit toepassen wanneer parallel-agent's commit live is.
+> Studio-content-generation-real-ai is done (commit `fbc44d7`, 2026-05-07) zonder siblings-context. Onderstaande wordt eigen `tasks/<id>.md` als post-launch quality-enhancement.
 
-**Toevoeging aan voorstel sectie van studio-content-generation-real-ai.md** (na huidige punt 4):
+**Probleem**: gegenereerde posts binnen 1 deliverable-set/week-batch lijken te veel op elkaar (repeat-frasing, repeat-structure, repeat-angle), wat "saaie campagnes" oplevert. JTBD-bevestiging in A3-validatie 2026-05-07.
 
-```
-5. **Siblings-context-injectie voor variatie-borging**: cascading-context-builder voegt per generation-call een `siblings-summary` toe (3-5 zinnen samenvatting van naburige posts in dezelfde week-batch of deliverable-set). Doel: AI-prompt expliciet instrueren om herhaling te vermijden in (a) frasing/woordkeuze, (b) structuur (intro/body/cta-volgorde), (c) invalshoek (zelfde-pijnpunt-zelfde-angle). Voorkomt "saaie campagnes" zoals geconstateerd in A3-validatie 2026-05-07.
-```
+**Voorstel**:
+- Cascading-context-builder uitbreiden: bij generatie van post N voegt het builder-mechanisme een `siblings-summary` toe (3-5 zinnen samenvatting van naburige posts in dezelfde week-batch of deliverable-set)
+- Prompt-instructie expliciet: vermijd herhaling in (a) frasing/woordkeuze, (b) structuur (intro/body/cta-volgorde), (c) invalshoek (zelfde-pijnpunt-zelfde-angle)
+- Lexicale diversiteit-meting via Jaccard-distance op woord-tokens als acceptatie-validatie
 
-**Nieuw acceptatiecriterium**:
-```
-- [ ] generate-all output toont meetbare variatie tussen naburige posts (bv. lexicale diversiteit > 0.6 over alle deliverables in een week-batch via Jaccard-distance op woord-tokens)
-```
+**Acceptatiecriterium (key)**:
+- [ ] generate-all output toont meetbare variatie tussen naburige posts (lexicale diversiteit > 0.6 over alle deliverables in een week-batch via Jaccard-distance)
+- [ ] Geen breaking change op bestaande cascading-context-builder API
+- [ ] Token-budget binnen bestaande 8K cap blijft
+
+**Effort**: ½-1 dag schatting
+**Fase**: post-launch (quality enhancement, geen pre-launch blocker)
+**Brandclaw-impact**: geen (alleen output-quality; loop-architectuur ongemoeid)
 
 # Niet-gepland follow-up
 
@@ -67,7 +72,7 @@ B1 als zelfstandig `WeeklyTheme`-datamodel-feature is **niet gerechtvaardigd**:
 - ✅ `campaign-budget-table`, `campaign-kpi-structure`, `campaign-risk-assessment` blijven Fase B follow-ups
 - ✅ Fase A `campaign-brief-output-mapper` krijgt 1 extra acceptatiecriterium (week-thema-render-prompt)
 - ✅ Nieuwe LATER item: `weekly-theme-actuality-driven`
-- ⏳ `studio-content-generation-real-ai` krijgt siblings-context-eis toegevoegd zodra parallel-agent klaar is
+- ✅ Nieuwe post-launch quality-enhancement task: `studio-siblings-context-variation` (½-1 dag, geen Brandclaw-impact)
 
 # Lessen voor toekomstige feature-planner sessies
 

@@ -13,6 +13,10 @@ blocked-by: studio-content-generation-real-ai (P0, 1 week, open) — Fase A rend
 
 De huidige Branddock campagne-wizard produceert kwalitatief magere campagne-briefs die een brand strategist niet zonder substantiële edits naar een klant kan sturen — referentie-output van Anthropic's Claude Cowork community-skill scoort 7,5/10, Branddock-output blijft daar substantieel onder.
 
+# Scope
+
+**Generieke platform-functionaliteit voor elke workspace.** De Linfi-referentie in dit document en in `idea-campaign-brief-cowork-parity-validation.md` dient uitsluitend als (1) kwaliteits-benchmark (Cowork-output op 7,5/10) en (2) JTBD-validatie (echte klantopdracht waar founder de pijn ervoer). Geen Linfi-specifieke logica, fields, of paths in de implementatie.
+
 # WHO — Doelgebruiker
 
 **Rol**: brand strategist (intern of agency-zijde) die actief nieuwe campagnes plant voor klanten en de output direct als client-presenteerbaar artefact wil gebruiken.

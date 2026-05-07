@@ -61,7 +61,8 @@ Pre-launch = product-readiness van content-flows. Sortering op dependency-volgor
 | `learning-loop-dashboard-usage` | Per-sourceIdentifier dashboard | post-launch | halve dag | Task-file volgt |
 | [`tech-debt-any-types`](tasks/tech-debt-any-types.md) | 146 `: any` opruimen | post-launch | 1-2 dagen | L2 auto-mode kandidaat |
 | `weekly-report-email-via-resend` | Weekly report email via Emailit | post-launch | 1 dag | Task-file volgt na weekly-report generator |
-| `campaign-brief-output-mapper` | Campagne-brief output-mapper (Fase A van Cowork-pariteit) | post-launch | 1-2 dagen | A3-validatie 2026-05-07 done — geblokkeerd tot `studio-content-generation-real-ai` af. Idea: `tasks/_drafts/idea-campaign-brief-cowork-parity.md` |
+| [`campaign-brief-output-mapper`](tasks/campaign-brief-output-mapper.md) | Campagne-brief output-mapper (Fase A van Cowork-pariteit) | pre-launch | 2-3 dagen | Technical-planner promoted 2026-05-07. Phase -1 Gates 3/3 passed, geen ADR. Render-only, geen Prisma-wijziging. **Now-eligible** sinds studio-P0 done — verplaatsen naar NOW-tabel wanneer gepakt wordt |
+| `studio-siblings-context-variation` | Variatie-borging tussen naburige posts (lexicale diversiteit Jaccard) | post-launch | ½-1 dag | Quality-enhancement na studio-P0. Lost saaie-posts JTBD op (B1-discovery 2026-05-07). Geen Brandclaw-impact. |
 
 ---
 
