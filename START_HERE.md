@@ -17,9 +17,9 @@ Pre-launch eindigt bij livegang (Vercel + custom domain operationeel).
 
 > Update na elke afgeronde task.
 
-1. **Documentatie-architectuur migratie** (`tasks/docs-migration-week-1.md`) — week 1 dag 1-2 in uitvoering, dag 3-7 wacht op user goedkeuring
-2. _(volgt na migratie-week-1)_
-3. _(volgt na migratie-week-1)_
+1. **Vercel deployment** ([`tasks/vercel-deployment.md`](tasks/vercel-deployment.md)) — pre-launch must-have, Vercel + Neon Postgres setup, env vars, deploy + smoke-test. Live-gang triggert overgang naar launch-fase.
+2. **Stripe billing live** ([`tasks/stripe-billing-live.md`](tasks/stripe-billing-live.md)) — pre-launch must-have. Productie-mode keys, webhooks, checkout-flow getest met echte kaart. Kan parallel met Vercel werk.
+3. **Pilot onboarding Better Brands** ([`tasks/pilot-onboarding-better-brands.md`](tasks/pilot-onboarding-better-brands.md)) — eerste echte klant door het volledige flow heen. Friction-punten in `gotchas.md`. Validatie van pre-launch readiness.
 
 ---
 
@@ -57,14 +57,16 @@ Geef me een overzichtelijk overzicht van mijn openstaande werk zodat ik kan kiez
 
 > Auto-bijgewerkt door `task-finalize` skill.
 
-- _(leeg — dit is de eerste sessie met de nieuwe structuur)_
+- 2026-05-07 — [Hooks + skills + subagents + eerste autonome routine](tasks/done/hooks-routines-week-3.md) (week 3)
+- 2026-05-07 — [Backlog herstructurering — open plans + roadmap items naar tasks/](tasks/done/tasks-migration-week-2.md) (week 2)
+- 2026-05-07 — [Documentatie-architectuur migratie](tasks/done/docs-migration-week-1.md) (week 1)
 
 ---
 
 ## Zie ook
 
-- **`roadmap.md`** — volledige Now/Next/Later met fasering _(volgt op week 1 dag 5)_
-- **`docs/playbooks/working-flow.md`** — operating manual + spelregels _(volgt op week 1 dag 4-5; tot dan: `docs/archive/old-lists/PLAN-VAN-AANPAK.md`)_
+- **`roadmap.md`** — volledige Now/Next/Later met fasering
+- **`docs/playbooks/working-flow.md`** — operating manual + spelregels
 - **`CLAUDE.md`** — runtime context voor agent
 - **`docs/changelog.md`** — wat is gebouwd (chronologisch)
 - **`docs/adr/`** — architecturale beslissingen

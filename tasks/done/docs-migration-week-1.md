@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 1 week
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-07
-completed: -
+completed: 2026-05-07
 related-adr: docs/adr/2026-05-07-tasks-as-files.md (te schrijven dag 6-7)
 related-spec: PLAN-VAN-AANPAK.md
 worktree: -

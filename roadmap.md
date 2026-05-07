@@ -24,32 +24,32 @@ Max 5 items. Sortering op pre-launch dependency.
 
 | ID | Titel | Fase | Effort | Status | Blocker |
 |---|---|---|---|---|---|
-| `docs-migration-week-1` | Documentatie-architectuur migratie | pre-launch | 1 week | in-progress | dag 4-7 in uitvoering |
-| `tasks-migration-week-2` | Open plans distilleren naar tasks/ | pre-launch | 3 dagen | open | wacht op week 1 done |
-| `hooks-routines-week-3` | Claude Code hooks + skills + eerste routine | pre-launch | 1 week | open | wacht op week 2 done |
-| `stripe-billing-live` | Stripe live billing (2 plannen, checkout, webhook, plan-gate) | pre-launch | 1 week | open | - |
-| `vercel-deployment` | Vercel + Neon DB + Sentry + custom domain | pre-launch | 3 dagen | open | env-var keys verzamelen |
+| [`docs-migration-week-1`](tasks/docs-migration-week-1.md) | Documentatie-architectuur migratie | pre-launch | 1 week | in-progress | week 1 dag 4-7 done, smoke-test pending |
+| [`tasks-migration-week-2`](tasks/tasks-migration-week-2.md) | Open plans distilleren naar tasks/ | pre-launch | 3 dagen | in-progress | dag 1-3 done |
+| [`hooks-routines-week-3`](tasks/hooks-routines-week-3.md) | Claude Code hooks + skills + eerste routine | pre-launch | 1 week | open | wacht op week 2 done |
+| [`stripe-billing-live`](tasks/stripe-billing-live.md) | Stripe live billing (2 plannen, checkout, webhook, plan-gate) | pre-launch | 1 week | open | - |
+| [`vercel-deployment`](tasks/vercel-deployment.md) | Vercel + Neon DB + Sentry + custom domain | pre-launch | 3 dagen | open | env-var keys verzamelen |
 
 ---
 
 ## 🔵 NEXT (1-3 maanden, RICE-gerangschikt)
 
-| ID | Titel | Fase | Effort | RICE notitie |
+| ID | Titel | Fase | Effort | Notitie |
 |---|---|---|---|---|
-| `pilot-onboarding-better-brands` | Better Brands eerste pilot live | launch | 2 dagen | High reach, max impact, hoge confidence |
-| `posthog-sentry-browser` | PostHog + Sentry browser-side wiring | launch | 1 dag | Activation tracking + error tracking pre-klanten |
-| `onboarding-flow-test` | Onboarding flow met 3 externe gebruikers | launch | 1 week | Validation pre-klant |
-| `marketing-site-pricing` | Marketing site + pricing pagina | launch | 1 week | Conversie-driver |
-| `campaign-drafts-db-backed` | Campaign drafts DB-backed (multi-device) | post-launch | 1.5 dag | Plan: `docs/archive/plans-pending-task-migration/IMPLEMENTATIEPLAN-CAMPAIGN-DRAFTS.md` |
-| `claw-page-awareness` | Brand Assistant page awareness + field-fill | post-launch | 2-3 dagen | Plan: `docs/archive/plans-pending-task-migration/IMPLEMENTATIEPLAN-CLAW-PAGE-AWARENESS.md` |
-| `canvas-inline-edit-overlays` | Per-preview inline-edit Content Canvas (item 9.0b) | post-launch | 2-3 dagen | UX-verbetering |
-| `power-user-shortcuts` | Power-user shortcuts | post-launch | 1-2 dagen | Plan: `docs/archive/plans-pending-task-migration/IMPLEMENTATIEPLAN-POWER-USER-SHORTCUTS.md` |
-| `bv-wire-w1-full-centroid` | BV-WIRE W-1 full centroid switch | post-launch | 4-6 uur | Regression-harness staat klaar |
-| `learning-loop-dashboard-usage` | Per-sourceIdentifier dashboard | post-launch | halve dag | Bouwt op AICallSnapshot |
-| `tech-debt-any-types` | 146 `: any` opruimen | post-launch | 1-2 dagen | L2 auto-mode kandidaat |
-| `content-styling-migratie` | Migreer content-styling velden naar Content Brief (8 categorieën, item 9.0c) | post-launch | 3-5 dagen | Long-form, sales, pr-hr, email, carousel, podcast, advertising, video, web-page |
-| `auto-trigger-fidelity-scoring` | Auto-trigger fidelity-scoring | post-launch | 1 uur | Geblokkeerd op ContentVersion-routes |
-| `weekly-report-email-via-resend` | Weekly report email via Emailit/Resend | post-launch | 1 dag | Wacht op weekly-report generator |
+| [`pilot-onboarding-better-brands`](tasks/pilot-onboarding-better-brands.md) | Better Brands eerste pilot live | launch | 2 dagen | Voorwaarde: vercel-deployment done |
+| [`posthog-sentry-browser`](tasks/posthog-sentry-browser.md) | PostHog + Sentry browser-side wiring | launch | 1 dag | Activation tracking + frontend errors |
+| `onboarding-flow-test` | Onboarding flow met 3 externe gebruikers | launch | 1 week | Validation pre-klant — task-file volgt |
+| `marketing-site-pricing` | Marketing site + pricing pagina | launch | 1 week | Conversie-driver — task-file volgt |
+| [`campaign-drafts-db-backed`](tasks/campaign-drafts-db-backed.md) | Campaign drafts DB-backed (multi-device) | post-launch | 1.5 dag | Gedistilleerd uit plan |
+| [`claw-page-awareness`](tasks/claw-page-awareness.md) | Brand Assistant page awareness + field-fill | post-launch | 2-3 dagen | Gedistilleerd uit plan |
+| [`canvas-inline-edit-overlays`](tasks/canvas-inline-edit-overlays.md) | Per-preview inline-edit Content Canvas | post-launch | 2-3 dagen | UX-verbetering item 9.0b |
+| [`power-user-shortcuts`](tasks/power-user-shortcuts.md) | Power-user shortcuts (5 micro-optimalisaties) | post-launch | 1-2 dagen | Gedistilleerd uit plan |
+| [`bv-wire-w1-full-centroid`](tasks/bv-wire-w1-full-centroid.md) | BV-WIRE W-1 full centroid switch | post-launch | 4-6 uur | Regression-harness staat klaar |
+| `learning-loop-dashboard-usage` | Per-sourceIdentifier dashboard | post-launch | halve dag | Task-file volgt |
+| [`tech-debt-any-types`](tasks/tech-debt-any-types.md) | 146 `: any` opruimen | post-launch | 1-2 dagen | L2 auto-mode kandidaat |
+| [`content-styling-migratie`](tasks/content-styling-migratie.md) | Migreer content-styling velden naar Content Brief (8 categorieën) | post-launch | 3-5 dagen | Item 9.0c |
+| [`auto-trigger-fidelity-scoring`](tasks/auto-trigger-fidelity-scoring.md) | Auto-trigger fidelity-scoring | post-launch | 1 uur | Status: blocked op ContentVersion-routes |
+| `weekly-report-email-via-resend` | Weekly report email via Emailit | post-launch | 1 dag | Task-file volgt na weekly-report generator |
 
 ---
 

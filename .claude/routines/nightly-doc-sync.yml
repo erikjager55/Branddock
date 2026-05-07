@@ -1,0 +1,103 @@
+# Nightly Doc-Sync Routine
+#
+# Runt 's nachts om documentation drift tussen code en docs te detecteren.
+# Eerste autonome routine — laagste risico, leert ons de cadans voor toekomstige routines.
+#
+# Status: DRAFT — uitvoeren vereist activatie via Claude Code Routines (handmatige eerste run aanbevolen).
+
+name: Nightly Doc-Sync
+description: |
+  Audit drift tussen codebase en docs/ — features zonder ADR, tasks done zonder changelog,
+  bug fixes zonder gotchas update. Schrijft bevindingen naar tasks/triage-<datum>.md.
+  Niet committen, niet fixen — alleen rapporteren voor user-review.
+
+# Schedule: 02:00 NL tijd (off-peak, lage Anthropic load)
+schedule: "0 2 * * *"
+
+# Cost controls
+budget:
+  max_tokens: 50000
+  max_runtime_minutes: 30
+  daily_cap: 1  # max 1 run per dag
+
+# Model — Sonnet voor routine werk (cheaper dan Opus, voldoende voor scan-tasks)
+model: claude-sonnet-4-5-20250929
+
+# Permissions tijdens routine
+permissions:
+  mode: auto
+  allow:
+    - "Bash(git log:*)"
+    - "Bash(git show:*)"
+    - "Bash(git diff:*)"
+    - "Bash(grep:*)"
+    - "Bash(ls:*)"
+    - "Bash(find:*)"
+    - "Bash(wc:*)"
+    - "Bash(head:*)"
+    - "Bash(cat:*)"
+    - "Read"
+    - "Write"  # alleen voor tasks/triage-*.md
+    - "Glob"
+  deny:
+    - "Bash(git commit:*)"
+    - "Bash(git push:*)"
+    - "Bash(git add:*)"
+    - "Bash(npm install:*)"
+    - "Bash(npx prisma:*)"
+    - "Edit"  # geen file-modifications buiten triage-output
+
+# Working directory
+cwd: ${CLAUDE_PROJECT_DIR}
+
+# Prompt
+prompt: |
+  Run de doc-keeper subagent om documentation drift te detecteren.
+
+  Scope: alle wijzigingen in laatste 7 dagen.
+
+  Workflow:
+  1. Roep `doc-keeper` subagent aan met expliciete instructie:
+     "Audit drift voor commits van laatste 7 dagen. Volg het workflow in
+     `.claude/agents/doc-keeper.md`. Schrijf eindrapport naar
+     `tasks/triage-$(date +%Y-%m-%d).md`."
+
+  2. Wacht op subagent-rapport.
+
+  3. Verifieer: bestaat `tasks/triage-<datum>.md`? Heeft het content?
+
+  4. Geen commit. Geen edit van andere files. Alleen het triage-bestand.
+
+  5. Output naar console:
+     - Aantal drift-items per categorie
+     - Pad naar triage-file
+     - "Triage ready voor review tijdens volgende vrijdagretro"
+
+  Bij failures (network, timeout, permission deny):
+  - Schrijf wat gefaald is naar `tasks/triage-<datum>-FAILED.md`
+  - Exit met error code zodat monitoring het oppakt
+
+# Notifications (optioneel, vereist hook-setup)
+notifications:
+  on_success: false  # geen ping bij groen
+  on_failure: true   # wel ping bij failure
+  on_threshold: ">10 drift items"  # ping bij veel drift
+
+# Stop conditions
+stop_conditions:
+  - max_iterations: 1  # routine doet één pass, geen retry-loop
+  - on_token_budget_warning: true  # stop bij >80% van budget
+  - on_external_service_failure: true
+
+# Notes
+# ----
+# Eerste run: handmatig triggeren via `claude --routine nightly-doc-sync`
+# om output te valideren voordat schedule actief wordt.
+#
+# Cost-schatting: ~10-30K tokens per run = $0.05-0.15.
+# Bij dagelijkse cadans: ~$3-9/maand.
+#
+# Niet geschikt voor:
+# - Code-fixes (die vereisen review-gate, dit is autonoom)
+# - Issue-triage (vereist GitHub MCP-server setup, separate routine)
+# - Schema-validation (vereist DB-access, security-risico)

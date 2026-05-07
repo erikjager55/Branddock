@@ -4,15 +4,15 @@ Deze 3 IMPLEMENTATIEPLAN-* bestanden bevatten **open werk** dat nog niet gedisti
 
 ## Status
 
-Deze documenten zijn **content-bron** voor toekomstige task-files, niet zelf het werkdocument. Tijdens **week 2 van de docs-migratie** (eigen task `tasks/docs-migration-week-2.md`) worden ze omgezet naar standaard task-format.
+✅ **Gedistilleerd naar tasks/** op 2026-05-07 (week 2 dag 1 van docs-migratie). Originele plan-docs blijven hier als referentie voor implementatie-detail; task-files dragen het werkbare format.
 
 ## Bestanden + bestemming
 
-| Bron | Toekomstige task-file | Status content |
+| Bron | Task-file | Status |
 |---|---|---|
-| `IMPLEMENTATIEPLAN-CAMPAIGN-DRAFTS.md` | `tasks/campaign-drafts-db-backed.md` | Plan goedgekeurd, niet uitgevoerd |
-| `IMPLEMENTATIEPLAN-CLAW-PAGE-AWARENESS.md` | `tasks/claw-page-awareness.md` | Plan goedgekeurd, niet uitgevoerd |
-| `IMPLEMENTATIEPLAN-POWER-USER-SHORTCUTS.md` | `tasks/power-user-shortcuts.md` | Concept, niet uitgevoerd |
+| `IMPLEMENTATIEPLAN-CAMPAIGN-DRAFTS.md` | [`tasks/campaign-drafts-db-backed.md`](../../../tasks/campaign-drafts-db-backed.md) | ✅ gedistilleerd, plan blijft als gedetailleerde referentie |
+| `IMPLEMENTATIEPLAN-CLAW-PAGE-AWARENESS.md` | [`tasks/claw-page-awareness.md`](../../../tasks/claw-page-awareness.md) | ✅ gedistilleerd, plan blijft als gedetailleerde referentie |
+| `IMPLEMENTATIEPLAN-POWER-USER-SHORTCUTS.md` | [`tasks/power-user-shortcuts.md`](../../../tasks/power-user-shortcuts.md) | ✅ gedistilleerd, plan blijft als gedetailleerde referentie |
 
 ## Hoe te distilleren
 
