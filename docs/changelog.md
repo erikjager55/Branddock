@@ -44,7 +44,7 @@ CLAUDE.md teruggebracht van 2323 → 270 regels, repo root van 37 → 5 .md best
 - Task: [tasks/done/docs-migration-week-1.md](../tasks/done/docs-migration-week-1.md)
 - ADR: [adr/2026-05-07-claude-md-restructure.md](adr/2026-05-07-claude-md-restructure.md), [adr/2026-05-07-tasks-as-files.md](adr/2026-05-07-tasks-as-files.md)
 - Spec: -
-- Commit: <hash>
+- Commit: `47cf1aa` (week 1) + `0abd656` (afronding)
 
 ### 223. Backlog herstructurering — open plans + roadmap items naar tasks/
 
@@ -53,7 +53,7 @@ CLAUDE.md teruggebracht van 2323 → 270 regels, repo root van 37 → 5 .md best
 - Task: [tasks/done/tasks-migration-week-2.md](../tasks/done/tasks-migration-week-2.md)
 - ADR: [adr/2026-05-07-tasks-as-files.md](adr/2026-05-07-tasks-as-files.md)
 - Spec: -
-- Commit: <hash>
+- Commit: `0abd656`
 
 ### 224. Hooks + skills + subagents + eerste autonome routine (week 3)
 
@@ -62,4 +62,4 @@ CLAUDE.md teruggebracht van 2323 → 270 regels, repo root van 37 → 5 .md best
 - Task: [tasks/done/hooks-routines-week-3.md](../tasks/done/hooks-routines-week-3.md)
 - ADR: -
 - Spec: [playbooks/working-flow.md](playbooks/working-flow.md)
-- Commit: <hash>
+- Commit: `0abd656`
