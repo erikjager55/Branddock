@@ -89,7 +89,7 @@ Server-side: 4 CRUD-routes onder `/api/content/[deliverableId]/versions/` (list/
 - Task: [tasks/done/content-versioning-crud.md](../tasks/done/content-versioning-crud.md)
 - ADR: -
 - Spec: -
-- Commit: `58355cf` (iter 1+2 server) + `<hash>` (iter 3+4 UI)
+- Commit: `58355cf` (iter 1+2 server) + `9dc5e2a` (iter 3+4 UI)
 
 ### 228. Auto-trigger fidelity-scoring (absorbed in #227)
 
