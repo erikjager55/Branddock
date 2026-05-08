@@ -249,4 +249,4 @@ Phase 0 voorloper #2 Brand Control Program — foundation klaar.
 - Task: [tasks/done/claw-page-awareness.md](../tasks/done/claw-page-awareness.md)
 - ADR: -
 - Spec: [tasks/_drafts/idea-brand-control-program.md](../tasks/_drafts/idea-brand-control-program.md) (Phase 0.2.A)
-- Commit: `f5b9090` (foundation) + finalize-commit volgt
+- Commit: `f5b9090` (foundation) + `f709329` (finalize)
