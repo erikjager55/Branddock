@@ -210,4 +210,4 @@ Two-subagent code-review: 0 CRITICAL, 3 WARNINGS — alle 3 gemarkeerd als accep
 - Task: [tasks/done/tech-debt-any-types.md](../tasks/done/tech-debt-any-types.md)
 - ADR: -
 - Spec: [tasks/_drafts/idea-brand-control-program.md](../tasks/_drafts/idea-brand-control-program.md) (Phase 0 voorloper context)
-- Commit: `fcf4002` + `4598dde` + `2b035e4` + `804b385` + `71302b9` + `5346c1e` (+ task-finalize commit hash volgt)
+- Commit: `fcf4002` + `4598dde` + `2b035e4` + `804b385` + `71302b9` + `5346c1e` + `33ea121` (finalize)
