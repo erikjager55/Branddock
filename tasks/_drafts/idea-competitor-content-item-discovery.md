@@ -3,7 +3,8 @@ id: competitor-content-item-discovery
 title: Competitor content-item discovery — eerste producer voor CompetitorContentItem (RSS + sitemap + AI-classify)
 status: pending-tech
 created: 2026-05-08
-verdict: ready-to-build
+verdict: needs-validation-first
+revision: 2026-05-08 — A1 probe uitgevoerd (42.9% RSS hit-rate, < 50% threshold), scope-cut nodig naar sitemap-first variant. Zie docs/audits/2026-05-08-competitor-rss-probe-results.md.
 ---
 
 # Probleemstelling (1 zin)
@@ -126,7 +127,7 @@ Triggers:
 
 # AANNAMES
 
-- **A1** — ≥70% van pilot-concurrenten heeft een werkende RSS-feed op standaard URL-paden — bewijs: B2B-SaaS branche-norm, snel valideerbaar via sample. Onbewezen? **Ja** — pre-build validatie: scrape de RSS-paden voor de 25 bestaande competitors in dev-DB en meet hit-rate. **Validatie-actie: <30 min met curl-script vóór schema-werk start.**
+- **A1** — ~~≥70% van pilot-concurrenten heeft een werkende RSS-feed~~ **VERWORPEN 2026-05-08**: probe `scripts/probes/competitor-rss-hit-rate.ts` op 7 ANALYZED competitors gaf **42.9% hit-rate**. Alle hits zijn WordPress-sites met `/feed`. Homepage `<link rel="alternate">` parsing voegde 0% toe. Implicatie: scope-cut naar sitemap-first variant. Zie [`docs/audits/2026-05-08-competitor-rss-probe-results.md`](../../docs/audits/2026-05-08-competitor-rss-probe-results.md).
 - **A2** — Sitemap.xml fallback dekt 90% van de overige 30% — bewijs: sitemap is bijna verplicht voor SEO, dus aanwezigheid is hoog. Onbewezen, maar low-risk; als hit < 90% kan een derde fallback (HTML scrape `/blog/`, `/news/`) erbij in MVP+.
 - **A3** — URL-path-patroon classificatie haalt 80% accuracy op format-detectie — bewijs: meeste sites volgen `/blog/` of `/news/` conventies. Onbewezen — meet via 50-item sample na A1 validatie. Bij <70%: AI-fallback noodzakelijk in MVP.
 - **A4** — Theme-tagging via AI-call levert nuttige labels (gebruikers vinden ze accuraat) — bewijs: vergelijkbare patterns werken in `studio-content-generation` voor eigen content. Onbewezen voor competitor-content. Geen blokker — bij slechte kwaliteit kan tagger uit zonder schema-impact.
@@ -171,13 +172,16 @@ Door A1 + A3 alleen als probes te draaien (niet bouwen), leren we de feasibility
 
 ## Verdict van de planner
 
-**ready-to-build** — schema is mergeable, scope is goed afgekaderd, validatie-acties (A1 + A3) zijn klein en pre-build uitvoerbaar. Hooked aan Phase 3 BCP en Fase 4 brandclaw-monitoring. Cost is binnen budget. Out-of-scope > In-scope.
+**needs-validation-first** (revisie 2026-05-08 na A1 probe) — A1 verworpen, scope-cut nodig vóór technical-planner kan promoten. Schema is mergeable, hookt aan Phase 3 BCP en Fase 4. Out-of-scope > In-scope.
 
-Twee voorbehouden:
-1. **A1 validatie eerst draaien** — bij < 50% RSS-coverage scope-cut naar sitemap-first
-2. **Async-fallback design pre-uitwerken** — als A5 faalt (refresh > 30s), moet er een queue-based fallback klaarstaan om de pilot-UX te beschermen
+Drie open validatie-stappen vóór promotion:
+1. **A2 sitemap.xml-coverage probe** op zelfde 7 competitors — verwacht 85% hit-rate, te valideren in vervolg-probe (~30 min)
+2. **A3 format-classifier accuracy** op 50-item sample (gemixt sitemap + RSS items) — bepaalt of AI-classifier in MVP-pad zit of optioneel
+3. **HTML-fallback hit-rate** voor sites zonder RSS én zonder sitemap — voorkomt MVP gap voor 10-15% niche
 
-Reden voor `ready-to-build` (niet `needs-validation-first`): de validatie-acties zijn binnen 1 uur scriptbaar, niet weken aan user-research. Technical-planner kan promoten zodra A1+A3 numbers binnen zijn.
+Bij A2 ≥ 70% hit-rate: scope reviseren naar sitemap-first variant met deze cijfers en alsnog promoten naar technical-planner.
+
+Async-fallback design (A5) blijft staan als pre-build voorbehoud.
 
 # 5-Punts Stop-Conditie
 
