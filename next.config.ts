@@ -86,7 +86,5 @@ export default sentryDsnConfigured
       },
       // Tunnel /monitoring → /api/sentry to bypass ad-blockers (optional)
       tunnelRoute: '/monitoring',
-      // Tree-shake Sentry SDK in non-production for smaller dev bundles
-      disableLogger: true,
     })
   : nextConfig;
