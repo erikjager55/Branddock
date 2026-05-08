@@ -92,7 +92,7 @@ interface QuestionnaireWorkflowStepProps {
   step: WorkflowStep;
   questionnaire: Questionnaire;
   availableAssets: Asset[];
-  updateQuestionnaire: (id: string, field: string, value: any) => void;
+  updateQuestionnaire: (id: string, field: string, value: unknown) => void;
   toggleAssetSelection: (id: string, assetId: string) => void;
   generateLink: (id: string) => void;
   copyLink: (url: string) => void;
@@ -149,7 +149,7 @@ export function QuestionnaireWorkflowStep({
     setEditingQuestionId(newQuestion.id);
   };
 
-  const updateQuestion = (questionId: string, field: string, value: any) => {
+  const updateQuestion = (questionId: string, field: string, value: unknown) => {
     const currentQuestions = questionnaire.questions || [];
     const updatedQuestions = currentQuestions.map(q => 
       q.id === questionId ? { ...q, [field]: value } : q

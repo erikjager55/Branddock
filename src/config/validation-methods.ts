@@ -10,6 +10,7 @@ import {
   ClipboardList,
   TestTube,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { ValidationMethodId, UnlockTier } from '../types/validation';
 
 // Re-export for convenience
@@ -19,7 +20,7 @@ export interface ValidationMethod {
   id: ValidationMethodId;
   name: string;
   description: string;
-  icon: any;
+  icon: LucideIcon;
   category: string;
   duration: string;
   unlockLevel: UnlockTier;

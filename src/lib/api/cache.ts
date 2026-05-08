@@ -73,8 +73,9 @@ export function cachedJson(key: string): NextResponse | null {
   return null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RouteHandler = (...args: any[]) => Promise<NextResponse>;
+// Generic Next.js route handler — args shape varies per route (request, params, etc.).
+// `unknown[]` preserves type-safety while remaining permissive for HOC-wrapping.
+type RouteHandler = (...args: unknown[]) => Promise<NextResponse>;
 
 /**
  * HOC that wraps a Next.js route handler with server-side caching.
@@ -86,8 +87,7 @@ type RouteHandler = (...args: any[]) => Promise<NextResponse>;
  */
 export function withCache(key: string, ttlMs: number) {
   return (handler: RouteHandler): RouteHandler => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return async (...args: any[]): Promise<NextResponse> => {
+    return async (...args: unknown[]): Promise<NextResponse> => {
       const cached = getCached(key);
       if (cached !== null) {
         return NextResponse.json(cached, {

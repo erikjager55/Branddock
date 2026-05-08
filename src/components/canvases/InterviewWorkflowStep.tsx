@@ -111,7 +111,7 @@ interface InterviewWorkflowStepProps {
   step: WorkflowStep;
   interview: Interview;
   availableAssets: Asset[];
-  updateInterview: (id: string, field: string, value: any) => void;
+  updateInterview: (id: string, field: string, value: unknown) => void;
   toggleAssetSelection: (id: string, assetId: string) => void;
   handleLockInterview: (id: string) => void;
   handleUnlockInterview: (id: string) => void;

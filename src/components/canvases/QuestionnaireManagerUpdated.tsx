@@ -96,7 +96,9 @@ interface Question {
 interface QuestionnaireManagerProps {
   assetId: string;
   onRerender?: () => void;
-  onEdit?: (data: any) => void;
+  // Polymorphic callback — data shape varies by questionnaire-flow stage (config, draft, results).
+  // Caller dispatches based on internal state; ResearchDashboard.handleCanvasEdit just logs.
+  onEdit?: (data: Record<string, unknown>) => void;
   initialConfig?: {
     numberOfQuestionnaires: number;
     selectedAssets: string[];
@@ -190,7 +192,10 @@ export function QuestionnaireManager({
     initialConfig?.numberOfQuestionnaires || 3
   );
 
-  const updateQuestionnaire = (id: string, field: string, value: any) => {
+  // Generic field-update: value type depends on which field is being set
+  // (string for name/email, string[] for selectedAssets, boolean for linkGenerated, etc.).
+  // unknown chosen over generic-keyof pattern to keep call-sites untyped at this stage.
+  const updateQuestionnaire = (id: string, field: string, value: unknown) => {
     setQuestionnaires(prev => 
       prev.map(q => 
         q.id === id 

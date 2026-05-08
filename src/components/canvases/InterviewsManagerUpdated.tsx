@@ -97,7 +97,9 @@ interface Interview {
 interface InterviewsManagerProps {
   assetId: string;
   onRerender?: () => void;
-  onEdit?: (data: any) => void;
+  // Polymorphic callback — data shape varies by interview-flow stage. See parallel
+  // QuestionnaireManagerUpdated note.
+  onEdit?: (data: Record<string, unknown>) => void;
   initialConfig?: {
     numberOfInterviews: number;
     selectedAssets: string[];
@@ -298,7 +300,8 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
     return reasons[reason || ''] || 'Locked';
   };
 
-  const updateInterview = (interviewId: string, field: string, value: any) => {
+  // Generic field-update: value type per Interview field (string, string[], Date, etc.).
+  const updateInterview = (interviewId: string, field: string, value: unknown) => {
     setInterviews(prev => prev.map(interview => 
       interview.id === interviewId ? { ...interview, [field]: value } : interview
     ));
