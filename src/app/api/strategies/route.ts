@@ -1,7 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma, type KeyResult, type Milestone } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+
+// ---------------------------------------------------------------
+// Mapper-input types
+// ---------------------------------------------------------------
+// mapStrategyDetail accepts BOTH the POST/route.ts include (no lockedBy,
+// linkedCampaigns without campaign) AND the [id]/route.ts include (with both).
+// Canonical type is the narrower one; richer caller is assignable to it.
+// lockedBy is added as optional intersection — read defensively with `?.`.
+type StrategyDetailInput = Prisma.BusinessStrategyGetPayload<{
+  include: {
+    objectives: { include: { keyResults: true; focusArea: true } };
+    focusAreas: { include: { _count: { select: { objectives: true } } } };
+    milestones: true;
+    linkedCampaigns: true;
+  };
+}> & {
+  lockedBy?: { id: string; name: string | null } | null;
+};
+
+type ObjectiveInput = Prisma.ObjectiveGetPayload<{
+  include: { keyResults: true; focusArea: true };
+}>;
+
+type FocusAreaInput = Prisma.FocusAreaGetPayload<{
+  include: { _count: { select: { objectives: true } } };
+}> & {
+  objectives?: unknown[]; // fallback path — only `.length` is read
+};
 
 const createStrategySchema = z.object({
   name: z.string().min(1).max(200),
@@ -159,8 +188,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapStrategyDetail(s: any) {
+function mapStrategyDetail(s: StrategyDetailInput) {
   return {
     id: s.id,
     name: s.name,
@@ -197,8 +225,7 @@ function mapStrategyDetail(s: any) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapObjective(o: any) {
+function mapObjective(o: ObjectiveInput) {
   return {
     id: o.id,
     title: o.title,
@@ -215,8 +242,7 @@ function mapObjective(o: any) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapKeyResult(kr: any) {
+function mapKeyResult(kr: KeyResult) {
   return {
     id: kr.id,
     description: kr.description,
@@ -226,8 +252,7 @@ function mapKeyResult(kr: any) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapFocusArea(fa: any) {
+function mapFocusArea(fa: FocusAreaInput) {
   return {
     id: fa.id,
     name: fa.name,
@@ -238,8 +263,7 @@ function mapFocusArea(fa: any) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapMilestone(m: any) {
+function mapMilestone(m: Milestone) {
   return {
     id: m.id,
     title: m.title,
