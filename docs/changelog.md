@@ -177,7 +177,7 @@ Final validator: 10 categorieën, 0 issues. tsc + eslint clean op alle gewijzigd
 - Task: [tasks/done/content-styling-migratie.md](../tasks/done/content-styling-migratie.md)
 - ADR: -
 - Spec: -
-- Commit: `e815861` (validator) + `<hash>` (migratie-fixes)
+- Commit: `e815861` (validator) + `c331df8` (migratie-fixes)
 
 ### 234. Campaign-wizard concept-approval bug-fix + UX-redesign
 
