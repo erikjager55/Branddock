@@ -626,6 +626,61 @@ export const writeTools: ClawToolDefinition[] = [
     },
   },
 
+  // ─── Generic Form-Fill (client-only, no DB) ──────────────
+  {
+    name: 'fill_form_fields',
+    description:
+      'Fill one or more editable fields on the page the user is currently viewing. Use ONLY when the Current Page context lists `formFillFields` and you want to propose values for them. Field `key` must match an entry from that list exactly — never invent keys. Values can be strings, string arrays, numbers, or booleans depending on the registered field. Bracket notation is supported for nested fields (e.g. `goals[0].title`) when the registered key uses it. ' +
+      'This tool does NOT write to the database; the page applies values to its in-memory form state after the user confirms — they then save manually via the page\'s existing Save button. Prefer dedicated tools (e.g. `update_persona`, `update_deliverable_brief`) when they exist; use `fill_form_fields` only as the generic fallback for pages without one.',
+    inputSchema: z.object({
+      assignments: z.array(z.object({
+        key: z.string().describe('Field key from formFillFields — must match exactly.'),
+        value: z.union([
+          z.string(),
+          z.array(z.string()),
+          z.number(),
+          z.boolean(),
+          z.null(),
+        ]).describe('Proposed value. Strings for textareas, arrays for lists, etc.'),
+      })).min(1).describe('One entry per field to fill — non-empty.'),
+    }),
+    requiresConfirmation: true,
+    category: 'write',
+    buildProposal: async (params) => {
+      const p = params as { assignments: Array<{ key: string; value: unknown }> };
+      const changes: MutationProposal['changes'] = p.assignments.map(({ key, value }) => ({
+        field: key,
+        label: key, // Client overlays the registered label when rendering.
+        currentValue: null,
+        proposedValue: Array.isArray(value)
+          ? value.join(', ')
+          : value === null
+            ? ''
+            : String(value),
+      }));
+      return {
+        toolCallId: '',
+        toolName: 'fill_form_fields',
+        params,
+        description: `Fill ${changes.length} field${changes.length === 1 ? '' : 's'} on this page`,
+        entityType: 'FormFill',
+        changes,
+      };
+    },
+    execute: async (params) => {
+      const p = params as { assignments: Array<{ key: string; value: unknown }> };
+      // Client-only tool — server execute is a pass-through that hands the
+      // assignments back via clientAction. MutationConfirmCard routes them to
+      // useFormFillStore.applyFill after the user confirms.
+      return {
+        success: true,
+        clientAction: 'form_fill' as const,
+        assignments: p.assignments,
+        message: `Ready to fill ${p.assignments.length} field(s)`,
+      };
+    },
+  },
+
   // ─── Create Deliverable ──────────────────────────────────
   // Path 2 fix (2026-04-25): when the user asks Claw "make a LinkedIn post"
   // it must NOT generate the body in chat — it must create the deliverable

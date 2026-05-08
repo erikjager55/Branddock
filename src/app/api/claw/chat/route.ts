@@ -68,6 +68,12 @@ const requestSchema = z.object({
       })),
       notes: z.string().optional(),
     }).optional(),
+    formFillFields: z.array(z.object({
+      key: z.string(),
+      label: z.string(),
+      currentValue: z.string().nullable(),
+      isEmpty: z.boolean(),
+    })).optional(),
   }).optional(),
 });
 

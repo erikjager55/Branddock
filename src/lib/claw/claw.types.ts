@@ -181,6 +181,22 @@ export interface ClawPageContext {
    * in the system prompt instead.
    */
   wizardSnapshot?: ClawWizardSnapshot;
+  /**
+   * Editable form-fields registered by the active page via `useFormFillStore`.
+   * The AI sees these in the system prompt and can call the generic
+   * `fill_form_fields` write-tool with `[{ key, value }, ...]` to propose
+   * values; on user-confirm the client applies via the registered setters.
+   *
+   * Use this for pages without a dedicated write-tool (e.g. PersonaDetail,
+   * BrandAssetDetail). Dedicated tools — like `update_deliverable_brief` —
+   * remain preferred where they exist.
+   */
+  formFillFields?: Array<{
+    key: string;
+    label: string;
+    currentValue: string | null;
+    isEmpty: boolean;
+  }>;
 }
 
 export interface ClawWizardSnapshot {

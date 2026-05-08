@@ -5,6 +5,7 @@ import { Check, X, Pencil, Wrench } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useClawStore } from '@/stores/useClawStore';
+import { useFormFillStore, type FormFillAssignment } from '@/stores/useFormFillStore';
 import { useCampaignWizardStore } from '@/features/campaigns/stores/useCampaignWizardStore';
 import { useCampaignStore } from '@/features/campaigns/stores/useCampaignStore';
 import { useContentLibraryStore } from '@/features/campaigns/stores/useContentLibraryStore';
@@ -75,6 +76,9 @@ function applyWizardUpdate(updates: Record<string, unknown>): number {
 export function MutationConfirmCard() {
   const { pendingMutation, setPendingMutation, activeConversationId, addMessage, requestNavigation } = useClawStore();
   const queryClient = useQueryClient();
+  // Subscribe to registered form-fill fields so the proposal preview can
+  // overlay user-readable labels for `fill_form_fields` proposals.
+  const formFillFields = useFormFillStore((s) => s.fields);
   const [isEditing, setIsEditing] = useState(false);
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,6 +116,20 @@ export function MutationConfirmCard() {
           const applied = applyWizardUpdate(innerResult.updates as Record<string, unknown>);
           if (applied > 0) {
             toast.success(`Filled ${applied} wizard field${applied === 1 ? '' : 's'}`);
+          }
+        } else if (innerResult?.clientAction === 'form_fill' && Array.isArray(innerResult.assignments)) {
+          // Generic form-fill — route to the page's registered setters via
+          // useFormFillStore.applyFill. Missing keys mean the AI proposed a
+          // key that the active page doesn't expose; surface as a soft warning.
+          const assignments = innerResult.assignments as FormFillAssignment[];
+          const { applied, missing } = useFormFillStore.getState().applyFill(assignments);
+          if (applied.length > 0) {
+            toast.success(`Filled ${applied.length} field${applied.length === 1 ? '' : 's'}`);
+          }
+          if (missing.length > 0) {
+            toast.warning(
+              `Couldn't fill ${missing.length} field${missing.length === 1 ? '' : 's'}: ${missing.join(', ')}`,
+            );
           }
         }
       }
@@ -235,22 +253,33 @@ export function MutationConfirmCard() {
           {/* Changes preview */}
           {pendingMutation.changes && pendingMutation.changes.length > 0 && (
             <div className="space-y-3">
-              {pendingMutation.changes.map((change, i) => (
-                <ChangeRow
-                  key={i}
-                  field={change.label}
-                  currentValue={change.currentValue}
-                  proposedValue={
-                    isEditing && editedValues[change.field] !== undefined
-                      ? editedValues[change.field]
-                      : change.proposedValue
-                  }
-                  isEditing={isEditing}
-                  onEdit={(value) =>
-                    setEditedValues((prev) => ({ ...prev, [change.field]: value }))
-                  }
-                />
-              ))}
+              {pendingMutation.changes.map((change, i) => {
+                // For fill_form_fields proposals: overlay the registered label
+                // (and currentValue) from useFormFillStore — the tool only
+                // knows the raw key; the page knows the human label.
+                const registered =
+                  pendingMutation.toolName === 'fill_form_fields'
+                    ? formFillFields.find((f) => f.key === change.field)
+                    : undefined;
+                const displayLabel = registered?.label ?? change.label;
+                const displayCurrent = registered?.currentValue ?? change.currentValue;
+                return (
+                  <ChangeRow
+                    key={i}
+                    field={displayLabel}
+                    currentValue={displayCurrent}
+                    proposedValue={
+                      isEditing && editedValues[change.field] !== undefined
+                        ? editedValues[change.field]
+                        : change.proposedValue
+                    }
+                    isEditing={isEditing}
+                    onEdit={(value) =>
+                      setEditedValues((prev) => ({ ...prev, [change.field]: value }))
+                    }
+                  />
+                );
+              })}
             </div>
           )}
         </div>

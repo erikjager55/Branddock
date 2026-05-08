@@ -429,6 +429,42 @@ function formatPageContext(ctx: ClawPageContext): string {
     lines.push(formatWizardSnapshot(ctx.wizardSnapshot));
   }
 
+  if (ctx.formFillFields && ctx.formFillFields.length > 0) {
+    lines.push('');
+    lines.push(formatFormFillFields(ctx.formFillFields));
+  }
+
+  return lines.join('\n');
+}
+
+function formatFormFillFields(
+  fields: NonNullable<ClawPageContext['formFillFields']>,
+): string {
+  const lines: string[] = [];
+  lines.push('## Editable form fields on this page');
+  lines.push('');
+  lines.push(
+    'The page has registered the following editable fields. You can propose ' +
+    'values for any of them via the `fill_form_fields` tool — pass an array ' +
+    'of `{ key, value }` objects matching keys exactly. Bracket notation ' +
+    'like `goals[0].title` is supported when the registered key uses it.'
+  );
+  lines.push('');
+  for (const f of fields) {
+    if (f.isEmpty) {
+      lines.push(`- ${f.label} (\`${f.key}\`): _empty_`);
+    } else {
+      lines.push(`- ${f.label} (\`${f.key}\`): ${f.currentValue}`);
+    }
+  }
+  lines.push('');
+  lines.push(
+    'Prefer dedicated tools (e.g. `update_persona`, `update_deliverable_brief`) ' +
+    'when they exist for this entity type. Use `fill_form_fields` only when ' +
+    'no dedicated tool covers the field. The user sees a confirmation card ' +
+    'before anything is applied; the page applies values to its in-memory ' +
+    'form-state, and the user saves manually via the page\'s Save button.'
+  );
   return lines.join('\n');
 }
 

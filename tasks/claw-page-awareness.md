@@ -5,7 +5,7 @@ fase: pre-launch
 priority: now
 effort: 2-3 dagen
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-05-07
 completed: -
 related-adr: -
@@ -16,6 +16,37 @@ worktree: branddock-feat-claw-awareness
 ## Update 2026-05-08 — pre-launch promotion + Δ-1 chat-integratie hooks
 
 Opgenomen als **Phase 0 voorloper** in Brand Control Program (zie `tasks/_drafts/idea-brand-control-program.md`).
+
+### Discovery 2026-05-08 — bestaande infrastructuur veel rijker dan task-file aannam
+
+Pre-existing in repository (geen werk meer nodig):
+- ✅ `ClawPageContext` met `page`/`entityType`/`entityId`/`entityName`/`campaignId`/`wizardSnapshot` velden
+- ✅ `pageContext` wordt gestuurd vanuit `InputBar.tsx` → `/api/claw/chat` route → `context-assembler.ts` system prompt
+- ✅ `useClawStore.activeEntity` + `setActiveEntity` (gewired vanaf detail-pages)
+- ✅ `inspect_current_entity` read-tool al gebouwd voor 5 entity types met `FieldPreview[]` + `isEmpty` + completeness
+- ✅ `MutationConfirmCard` confirmation-flow + `clientAction: 'wizard_update'` precedent
+
+Wat nog ontbreekt:
+- ❌ `fill_form_fields` generic write-tool — voor pages zonder dedicated tool (BrandAssetDetail framework-fields, settings forms, etc.)
+- ❌ `useFormFillStore` registratie-API zodat pages hun setters bekend maken aan de AI
+- ❌ Wiring per page (Step1Context, PersonaDetail, BrandAssetDetail)
+- ❌ Δ-1 chat-integratie compat: `pageContext.sectionPath` voor Canvas Step 4 + `inspect_current_entity` op Canvas Step 4
+
+### Phase 0.2.A — Foundation klaar 2026-05-08 (commit volgt)
+
+Geleverd:
+- `src/stores/useFormFillStore.ts` — Zustand store met `registerFields` / `clearFields` / `applyFill`
+- `ClawPageContext.formFillFields` veld + Zod schema-extension in `/api/claw/chat`
+- `fill_form_fields` write-tool in `write-tools.ts` met `clientAction: 'form_fill'` (mirror van `wizard_update` pattern)
+- `context-assembler.ts` `formatFormFillFields()` surfaces velden + tool-instructies in system prompt
+- `InputBar.tsx` leest `useFormFillStore.fields` + includeert in pageContext payload
+- `MutationConfirmCard.tsx` handler voor `clientAction === 'form_fill'` → `useFormFillStore.applyFill()` + label-overlay voor user-readable preview
+
+Wat NOG niet gedaan (volgt in vervolg-sessie):
+- Page-wiring — PersonaDetailPage en BrandAssetDetailPage moeten edit-state via useFormFillStore exposen. PersonaDetail gebruikt vandaag TanStack Query mutations (geen lokale form-state) — vereist refactor om edit-state in store te exposen
+- Δ-1 chat-integratie compat criteria 1-3
+
+**Δ-1 dependency**: Brand Assistant chat-integratie van Content Review (Δ-1) bouwt op deze drie infrastructuur-elementen — verifieer in deze task dat de ontworpen contracten Δ-1 niet uitsluiten:
 
 **Δ-1 dependency**: Brand Assistant chat-integratie van Content Review (Δ-1) bouwt op deze drie infrastructuur-elementen — verifieer in deze task dat de ontworpen contracten Δ-1 niet uitsluiten:
 

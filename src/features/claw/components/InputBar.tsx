@@ -3,6 +3,7 @@
 import React, { useRef, useCallback, useState, useEffect, useMemo } from 'react';
 import { Send, Paperclip, FileText, Link, Type, X } from 'lucide-react';
 import { useClawStore } from '@/stores/useClawStore';
+import { useFormFillStore } from '@/stores/useFormFillStore';
 import { ContextSelectorModal } from './ContextSelectorModal';
 import { SlashCommandMenu } from './SlashCommandMenu';
 import type { ClawMessage, ClawAttachment } from '@/lib/claw/claw.types';
@@ -39,6 +40,10 @@ export function InputBar() {
     wizardSnapshot,
     setActivityStatus,
   } = useClawStore();
+
+  // Editable form fields the active page has registered, surfaced to the AI
+  // via pageContext so it can target them with `fill_form_fields`.
+  const formFillFields = useFormFillStore((s) => s.fields);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showContextModal, setShowContextModal] = useState(false);
@@ -158,6 +163,14 @@ export function InputBar() {
               ...(activeEntity.campaignId && { campaignId: activeEntity.campaignId }),
             }),
             ...(wizardSnapshot && { wizardSnapshot }),
+            ...(formFillFields.length > 0 && {
+              formFillFields: formFillFields.map(({ key, label, currentValue }) => ({
+                key,
+                label,
+                currentValue,
+                isEmpty: currentValue === null || currentValue === '',
+              })),
+            }),
           },
         }),
         signal: abortRef.current.signal,
