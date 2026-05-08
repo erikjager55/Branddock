@@ -305,4 +305,4 @@ Beide vervolg-idea-docs zijn klaar voor technical-planner promotion zodra effort
 - Task: -  (discovery-cluster, geen single task)
 - ADR: [adr/2026-05-08-competitor-snapshot-historie.md](adr/2026-05-08-competitor-snapshot-historie.md) (parent)
 - Spec: [tasks/_drafts/idea-competitive-intelligence-loop.md](../tasks/_drafts/idea-competitive-intelligence-loop.md), [tasks/_drafts/idea-competitor-content-item-discovery.md](../tasks/_drafts/idea-competitor-content-item-discovery.md), [tasks/_drafts/idea-competitor-ai-event-classifier.md](../tasks/_drafts/idea-competitor-ai-event-classifier.md)
-- Commit: `41a7c90` (cost-model) + `bc6dc6f` (idea content-discovery) + `46d3b0a` (A1 RSS) + `d7f81ba` (A2 sitemap) + `583f384` (A3 classifier) + `6e3c7ed` (idea ai-event) + `7355f44` (A1 classifier-events) + finalize-commit (volgt)
+- Commit: `41a7c90` (cost-model) + `bc6dc6f` (idea content-discovery) + `46d3b0a` (A1 RSS) + `d7f81ba` (A2 sitemap) + `583f384` (A3 classifier) + `6e3c7ed` (idea ai-event) + `7355f44` (A1 classifier-events) + `edd2e4b` (finalize)
