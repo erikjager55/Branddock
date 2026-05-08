@@ -27,6 +27,7 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
+import { safeSocialLinks } from '../../src/lib/competitors/refresh-write';
 import { computeContentHash } from '../../src/lib/competitors/snapshot-hash';
 import type { CanonicalExtracted } from '../../src/lib/competitors/types';
 
@@ -111,14 +112,11 @@ async function main(): Promise<void> {
       visualStyleNotes: competitor.visualStyleNotes,
       strengths: competitor.strengths ?? [],
       weaknesses: competitor.weaknesses ?? [],
-      // socialLinks is JSON; cast naar verwacht record-shape, niet-record
-      // wordt door canonicalize stilletjes als leeg behandeld.
-      socialLinks:
-        competitor.socialLinks &&
-        typeof competitor.socialLinks === 'object' &&
-        !Array.isArray(competitor.socialLinks)
-          ? (competitor.socialLinks as Record<string, string>)
-          : null,
+      // socialLinks is JSON; safeSocialLinks valideert object-of-strings
+      // shape (rejects arrays, primitives, mixed-shape) en valt anders
+      // veilig terug naar null. Voorkomt runtime-crash op malformed
+      // historische rijen.
+      socialLinks: safeSocialLinks(competitor.socialLinks),
       hasBlog: competitor.hasBlog,
       hasCareersPage: competitor.hasCareersPage,
     };
@@ -127,13 +125,14 @@ async function main(): Promise<void> {
 
     try {
       const result = await prisma.$transaction(async (tx) => {
-        // Idempotency-check binnen de transactie zelf — voorkomt race
-        // bij parallelle runs.
+        // Idempotency-check binnen de transactie — sterker dan de outer
+        // findMany filter `snapshots: { none: {} }`. Een echte refresh
+        // die tussen outer-read en deze tx een snapshot heeft geschreven
+        // (race-window), wordt hier alsnog gedetecteerd: dan skippen.
+        // Niet alleen op notes-prefix, want ANY snapshot betekent dat
+        // er al een baseline is.
         const existing = await tx.competitorSnapshot.findFirst({
-          where: {
-            competitorId: competitor.id,
-            notes: { startsWith: BACKFILL_NOTE_PREFIX },
-          },
+          where: { competitorId: competitor.id },
           select: { id: true },
         });
         if (existing) return { skipped: true };

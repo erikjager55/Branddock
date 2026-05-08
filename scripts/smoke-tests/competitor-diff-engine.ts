@@ -217,13 +217,25 @@ console.log('\n## Rule 4 — NEW_PRODUCT');
   const e = findActivity(events, 'NEW_PRODUCT');
   assert('detected on add', e !== undefined);
   assert(
-    'added contains new item',
+    'added contains new item (case-preserved)',
     e?.diffPayload.kind === 'list-change' &&
-      e.diffPayload.added.includes('brand voice'),
+      e.diffPayload.added.includes('Brand voice'),
   );
   assert(
     'no PRODUCT_REMOVED on pure-add',
     findActivity(events, 'PRODUCT_REMOVED') === undefined,
+  );
+
+  // Case-only re-cast → set-membership is case-insensitive.
+  const recased = fixture({ mainOfferings: ['BRAND STRATEGY', 'content generation'] });
+  const noEvents = computeDiff(prev, recased, baselineWorkflow);
+  assert(
+    'case-only re-cast → no NEW_PRODUCT',
+    findActivity(noEvents, 'NEW_PRODUCT') === undefined,
+  );
+  assert(
+    'case-only re-cast → no PRODUCT_REMOVED',
+    findActivity(noEvents, 'PRODUCT_REMOVED') === undefined,
   );
 }
 
@@ -235,10 +247,20 @@ console.log('\n## Rule 5 — PRODUCT_REMOVED');
   const e = findActivity(events, 'PRODUCT_REMOVED');
   assert('detected on remove', e !== undefined);
   assert(
-    'removed contains gone item',
+    'removed contains gone item (case-preserved)',
     e?.diffPayload.kind === 'list-change' &&
-      e.diffPayload.removed.includes('content generation'),
+      e.diffPayload.removed.includes('Content generation'),
   );
+}
+
+console.log('\n## Case-sensitive content events (W.3 fix)');
+{
+  // Hash + diff trekken nu in lockstep op: case-only edit triggert
+  // zowel een hash-flip als een diff-event. Geen orphan snapshots.
+  const prev = fixture();
+  const next = fixture({ tagline: 'THE MODERN BRAND PLATFORM' });
+  const events = computeDiff(prev, next, baselineWorkflow);
+  assert('case-only tagline edit → TAGLINE_CHANGED', findActivity(events, 'TAGLINE_CHANGED') !== undefined);
 }
 
 console.log('\n## Rule 6 — STATUS_CHANGED');

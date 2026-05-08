@@ -5,10 +5,10 @@ fase: pre-launch
 priority: now
 effort: 3-4 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-08
-completed:
-progress: PR-1 schema applied via db push (commit fd2738c). PR-2 diff-engine + hash + backfill committed (commit 99df752, 7 retroactive snapshots backfilled). PR-3 refresh dual-write committed.
+completed: 2026-05-08
+progress: PR-1 schema applied via db push (commit fd2738c). PR-2 diff-engine + hash + backfill committed (commit 99df752, 7 retroactive snapshots backfilled). PR-3 refresh dual-write committed (commit 5d16834). Task-finalize round-1+2+3 reviews + fixes (3 iterations, 2 CRITICAL + 8 WARNING resolved).
 related-adr: docs/adr/2026-05-08-competitor-snapshot-historie.md
 related-spec: tasks/_drafts/idea-competitive-intelligence-loop.md
 worktree: branddock-feat-competitor-snapshot

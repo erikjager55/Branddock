@@ -3955,6 +3955,7 @@ model CompetitorSnapshot {
   activities            CompetitorActivity[]
   firstSeenContentItems CompetitorContentItem[] @relation("ContentItemFirstSeenSnapshot")
 
+  @@unique([competitorId, contentHash])
   @@index([competitorId, capturedAt])
   @@index([workspaceId, capturedAt])
   @@index([contentHash])

@@ -2,31 +2,35 @@
  * DB-side smoke voor de refresh dual-write logica (PR-3 van
  * Competitive Intelligence Loop Fase 1).
  *
- * Test direct tegen de dev-DB — slaat de Next.js HTTP-laag, scraping
- * en AI-call over (die zijn unchanged van pre-PR-3). Focust op de
- * dual-write transactie + hash-match no-op.
+ * Test rechtstreeks tegen de helper `applyCompetitorRefreshDualWrite`
+ * — dezelfde functie die de refresh-route aanroept binnen zijn
+ * transactie. Een regression in helper-gedrag wordt dus ook hier
+ * gevangen, niet alleen in de route. Slaat alleen scrape + AI over
+ * (die zijn unchanged van pre-PR-3).
  *
  * Drie scenario's:
- *   1. Hash-match (no-op): snapshot-state ongewijzigd → 0 nieuwe rijen
- *   2. Hash-miss content change: tagline wijziging → +1 snapshot, +1
- *      TAGLINE_CHANGED activity
- *   3. Workflow event in combinatie met content: status DRAFT→ANALYZED
- *      genereert STATUS_CHANGED naast de content-event
+ *   1. Hash-match no-op met workflow event: identieke canonical +
+ *      DRAFT→ANALYZED transitie → outcome=no-op-hash-match,
+ *      +1 STATUS_CHANGED activity met snapshotId=null, geen nieuwe
+ *      snapshot, metadata fields wel overschreven
+ *   2. Hash-miss content change: tagline wijziging → +1 snapshot,
+ *      +1 TAGLINE_CHANGED activity met snapshotId=new-snapshot.id
+ *   3. Idempotency op consecutieve identieke refreshes: tweede
+ *      refresh met identieke content → no-op via findUnique pre-check,
+ *      snapshotCount blijft gelijk
  *
- * Cleanup: delete alle test-rijen na elk scenario (cascades).
+ * Cleanup: delete fixture cascades naar snapshots + activities.
  *
  * Run: DATABASE_URL="postgresql://erikjager:@localhost:5432/branddock" \
  *        npx tsx scripts/smoke-tests/competitor-refresh-dual-write.ts
  */
 import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-import { computeDiff } from '../../src/lib/competitors/diff-engine';
+import { applyCompetitorRefreshDualWrite } from '../../src/lib/competitors/refresh-write';
 import { computeContentHash } from '../../src/lib/competitors/snapshot-hash';
-import type {
-  CanonicalExtracted,
-  ManualEventContext,
-} from '../../src/lib/competitors/types';
+import type { CanonicalExtracted } from '../../src/lib/competitors/types';
 
 let pass = 0;
 let fail = 0;
@@ -51,10 +55,10 @@ async function main(): Promise<void> {
   const adapter = new PrismaPg({ connectionString });
   const prisma = new PrismaClient({ adapter });
 
-  // Pak één backfilled competitor als basis. We leiden alleen state af —
-  // we wijzigen niets aan deze rij; alle smoke-writes gaan op een nieuw
-  // aangemaakte fixture-competitor zodat we 100% deterministisch kunnen
-  // cleanup'en.
+  // Pak één backfilled competitor's workspace om hetzelfde tenant-context
+  // te delen met productie-data. Geen mutaties op die rij — wel een
+  // dedicated fixture-Competitor in dezelfde workspace zodat we cleanup
+  // deterministisch kunnen doen.
   const seedCompetitor = await prisma.competitor.findFirst({
     where: { snapshotCount: { gt: 0 } },
     select: { workspaceId: true },
@@ -97,7 +101,7 @@ async function main(): Promise<void> {
       slug: fixtureSlug,
       websiteUrl: 'https://example.com',
       workspaceId,
-      status: 'ANALYZED',
+      status: 'DRAFT', // Start DRAFT zodat scenario 3 een echte transitie kan testen
       tier: 'DIRECT',
       tagline: baseExtracted.tagline,
       valueProposition: baseExtracted.valueProposition,
@@ -119,7 +123,7 @@ async function main(): Promise<void> {
   });
   console.log(`  fixture id: ${fixture.id}`);
 
-  // Initial snapshot (mirror van backfill behavior)
+  // Initial snapshot mirror van backfill behavior
   await prisma.competitorSnapshot.create({
     data: {
       competitorId: fixture.id,
@@ -133,125 +137,153 @@ async function main(): Promise<void> {
   });
 
   try {
-    // ─── Scenario 1: hash-match no-op ─────────────────────
-    console.log('\n=== Scenario 1: hash-match (no-op) ===\n');
+    // ─── Scenario 1: hash-match no-op (no workflow change) ─
+    console.log('\n=== Scenario 1: hash-match (no-op) — same content, status DRAFT→ANALYZED ===\n');
     {
-      const newHash = computeContentHash(baseExtracted);
-      assert('recomputed hash matches initial', newHash === baseHash);
+      // Workflow change DRAFT→ANALYZED OOK in dit scenario; bewijst
+      // dat workflow events op no-op pad worden geschreven (W.2 fix).
+      const result = await prisma.$transaction((tx) =>
+        applyCompetitorRefreshDualWrite(tx as unknown as Prisma.TransactionClient, {
+          competitorId: fixture.id,
+          workspaceId,
+          workflowBefore: { status: 'DRAFT', tier: 'DIRECT' },
+          workflowAfter: { status: 'ANALYZED', tier: 'DIRECT' },
+          prevCanonical: baseExtracted,
+          nextCanonical: baseExtracted,
+          newContentHash: baseHash,
+          newScrapeHash: null,
+          metadataUpdate: { competitiveScore: 75 },
+          triggerSource: 'MANUAL',
+          signalSource: 'WEBSCRAPE',
+          triggeredById: null,
+          scrapedJsonInfo: undefined,
+        }),
+      );
 
-      const beforeCount = await prisma.competitorSnapshot.count({
-        where: { competitorId: fixture.id },
-      });
-      const beforeActivityCount = await prisma.competitorActivity.count({
-        where: { competitorId: fixture.id },
-      });
+      assert('outcome = no-op-hash-match', result.outcome === 'no-op-hash-match');
+      assert('1 activity created (workflow event)', result.activitiesCreated === 1);
 
-      // Geen schrijven — hash-match path zou alleen lastScrapedAt
-      // updaten. We verifiëren dat er GEEN snapshot/activity bijkomt.
-      await prisma.competitor.update({
+      const after = await prisma.competitor.findUniqueOrThrow({
         where: { id: fixture.id },
-        data: { lastScrapedAt: new Date() },
+        select: {
+          snapshotCount: true,
+          unacknowledgedActivityCount: true,
+          status: true,
+          competitiveScore: true,
+        },
       });
+      assert('snapshotCount unchanged at 1', after.snapshotCount === 1);
+      assert('unack count = 1 (status event)', after.unacknowledgedActivityCount === 1);
+      assert('status updated to ANALYZED', after.status === 'ANALYZED');
+      assert('metadata field competitiveScore updated', after.competitiveScore === 75);
 
-      const afterCount = await prisma.competitorSnapshot.count({
-        where: { competitorId: fixture.id },
+      const statusEvent = await prisma.competitorActivity.findFirst({
+        where: { competitorId: fixture.id, type: 'STATUS_CHANGED' },
       });
-      const afterActivityCount = await prisma.competitorActivity.count({
-        where: { competitorId: fixture.id },
-      });
-
-      assert('snapshot count unchanged', afterCount === beforeCount);
-      assert('activity count unchanged', afterActivityCount === beforeActivityCount);
+      assert('STATUS_CHANGED activity exists', statusEvent !== null);
+      assert('STATUS_CHANGED snapshotId is null (workflow-only)', statusEvent?.snapshotId === null);
     }
 
-    // ─── Scenario 2: hash-miss met content change ────────
+    // ─── Scenario 2: hash-miss content change ────────────
     console.log('\n=== Scenario 2: hash-miss (tagline change) ===\n');
     {
       const next: CanonicalExtracted = { ...baseExtracted, tagline: 'New positioning' };
       const newHash = computeContentHash(next);
       assert('hash changed on content edit', newHash !== baseHash);
 
-      const ctx: ManualEventContext = {
-        workflowBefore: { status: 'ANALYZED', tier: 'DIRECT' },
-        workflowAfter: { status: 'ANALYZED', tier: 'DIRECT' },
-      };
-      const events = computeDiff(baseExtracted, next, ctx);
-      assert('diff produces 1 event', events.length === 1);
-      assert('event type is TAGLINE_CHANGED', events[0]?.type === 'TAGLINE_CHANGED');
+      const result = await prisma.$transaction((tx) =>
+        applyCompetitorRefreshDualWrite(tx as unknown as Prisma.TransactionClient, {
+          competitorId: fixture.id,
+          workspaceId,
+          workflowBefore: { status: 'ANALYZED', tier: 'DIRECT' },
+          workflowAfter: { status: 'ANALYZED', tier: 'DIRECT' },
+          prevCanonical: baseExtracted,
+          nextCanonical: next,
+          newContentHash: newHash,
+          newScrapeHash: null,
+          metadataUpdate: {},
+          triggerSource: 'MANUAL',
+          signalSource: 'WEBSCRAPE',
+          triggeredById: null,
+          scrapedJsonInfo: undefined,
+        }),
+      );
 
-      // Mirror dual-write transactie uit refresh-route
-      await prisma.$transaction(async (tx) => {
-        const snap = await tx.competitorSnapshot.create({
-          data: {
-            competitorId: fixture.id,
-            workspaceId,
-            contentHash: newHash,
-            extractedJson: next as unknown as object,
-            triggerSource: 'MANUAL',
-            signalSource: 'WEBSCRAPE',
-            notes: 'smoke-test scenario-2',
-          },
-          select: { id: true },
-        });
-        await tx.competitorActivity.createMany({
-          data: events.map((e) => ({
-            type: e.type,
-            severity: e.severity,
-            diffPayload: e.diffPayload as unknown as object,
-            summary: e.summary,
-            detectionMethod: e.detectionMethod,
-            confidence: e.confidence,
-            snapshotId: snap.id,
-            competitorId: fixture.id,
-            workspaceId,
-          })),
-        });
-        await tx.competitor.update({
-          where: { id: fixture.id },
-          data: {
-            tagline: next.tagline,
-            snapshotCount: { increment: 1 },
-            unacknowledgedActivityCount: { increment: events.length },
-          },
-        });
-      });
+      assert('outcome = snapshot-written', result.outcome === 'snapshot-written');
+      assert('1 activity created (TAGLINE_CHANGED)', result.activitiesCreated === 1);
 
       const after = await prisma.competitor.findUniqueOrThrow({
         where: { id: fixture.id },
         select: { snapshotCount: true, unacknowledgedActivityCount: true, tagline: true },
       });
       assert('snapshotCount = 2', after.snapshotCount === 2);
-      assert('unack count = 1', after.unacknowledgedActivityCount === 1);
+      assert('unack count = 2 (cumulative)', after.unacknowledgedActivityCount === 2);
       assert('competitor pointer reflects new tagline', after.tagline === 'New positioning');
 
-      const activityRow = await prisma.competitorActivity.findFirstOrThrow({
+      const taglineEvent = await prisma.competitorActivity.findFirst({
         where: { competitorId: fixture.id, type: 'TAGLINE_CHANGED' },
       });
-      assert('activity has correct severity', activityRow.severity === 'NOTABLE');
-      assert('activity acknowledged is null', activityRow.acknowledgedAt === null);
+      assert('TAGLINE_CHANGED activity exists', taglineEvent !== null);
+      assert('snapshotId is set (linked to snapshot)', taglineEvent?.snapshotId !== null);
+      assert('severity = NOTABLE', taglineEvent?.severity === 'NOTABLE');
     }
 
-    // ─── Scenario 3: workflow event combineerbaar met content ──
-    console.log('\n=== Scenario 3: workflow + content combined ===\n');
+    // ─── Scenario 3: idempotency op consecutieve identieke refreshes ─
+    //
+    // NB: dit is geen P2002-race-test (sequentiële transacties triggeren
+    // de unique-violation niet — de tweede tx ziet de bestaande row al
+    // via findUnique). De daadwerkelijke race-protection bij echte
+    // concurrentie is een MVP-tradeoff; zie comments in refresh-write.ts.
+    console.log('\n=== Scenario 3: idempotency (consecutieve identieke refreshes) ===\n');
     {
-      const next: CanonicalExtracted = { ...baseExtracted, valueProposition: 'New VP' };
-      const ctx: ManualEventContext = {
-        workflowBefore: { status: 'DRAFT', tier: 'DIRECT' },
-        workflowAfter: { status: 'ANALYZED', tier: 'DIRECT' },
-      };
-      const events = computeDiff(baseExtracted, next, ctx);
-      assert('combined produces 2 events', events.length === 2);
-      assert(
-        'contains VALUE_PROP_CHANGED',
-        events.some((e) => e.type === 'VALUE_PROP_CHANGED'),
+      const next: CanonicalExtracted = { ...baseExtracted, valueProposition: 'Idempotency VP' };
+      const newHash = computeContentHash(next);
+
+      const first = await prisma.$transaction((tx) =>
+        applyCompetitorRefreshDualWrite(tx as unknown as Prisma.TransactionClient, {
+          competitorId: fixture.id,
+          workspaceId,
+          workflowBefore: { status: 'ANALYZED', tier: 'DIRECT' },
+          workflowAfter: { status: 'ANALYZED', tier: 'DIRECT' },
+          prevCanonical: { ...baseExtracted, tagline: 'New positioning' },
+          nextCanonical: next,
+          newContentHash: newHash,
+          newScrapeHash: null,
+          metadataUpdate: {},
+          triggerSource: 'MANUAL',
+          signalSource: 'WEBSCRAPE',
+          triggeredById: null,
+          scrapedJsonInfo: undefined,
+        }),
       );
+      assert('first refresh: snapshot-written', first.outcome === 'snapshot-written');
+      const snapshotCountAfterFirst = first.competitor.snapshotCount;
+
+      const second = await prisma.$transaction((tx) =>
+        applyCompetitorRefreshDualWrite(tx as unknown as Prisma.TransactionClient, {
+          competitorId: fixture.id,
+          workspaceId,
+          workflowBefore: { status: 'ANALYZED', tier: 'DIRECT' },
+          workflowAfter: { status: 'ANALYZED', tier: 'DIRECT' },
+          prevCanonical: next,
+          nextCanonical: next,
+          newContentHash: newHash,
+          newScrapeHash: null,
+          metadataUpdate: {},
+          triggerSource: 'MANUAL',
+          signalSource: 'WEBSCRAPE',
+          triggeredById: null,
+          scrapedJsonInfo: undefined,
+        }),
+      );
+      assert('second refresh: no-op-hash-match', second.outcome === 'no-op-hash-match');
+      assert('second refresh: 0 activities', second.activitiesCreated === 0);
       assert(
-        'contains STATUS_CHANGED',
-        events.some((e) => e.type === 'STATUS_CHANGED'),
+        'snapshotCount unchanged on no-op',
+        second.competitor.snapshotCount === snapshotCountAfterFirst,
       );
     }
   } finally {
-    // Cleanup: delete fixture cascades naar snapshots + activities
     console.log('\n=== Cleanup ===\n');
     await prisma.competitor.delete({ where: { id: fixture.id } });
     console.log(`  deleted fixture ${fixture.id} (cascades to snapshots + activities)`);

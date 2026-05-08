@@ -84,6 +84,9 @@ CREATE TABLE "CompetitorContentItem" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "CompetitorSnapshot_competitorId_contentHash_key" ON "CompetitorSnapshot"("competitorId", "contentHash");
+
+-- CreateIndex
 CREATE INDEX "CompetitorSnapshot_competitorId_capturedAt_idx" ON "CompetitorSnapshot"("competitorId", "capturedAt");
 
 -- CreateIndex

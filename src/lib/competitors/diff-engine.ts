@@ -28,42 +28,68 @@ import type {
 
 // ─── Helpers ────────────────────────────────────────────
 
+/**
+ * Normaliseer voor diff-vergelijking: trim + collapse whitespace.
+ * Géén lowercasing — case-changes ("ACME" → "Acme") zijn echte content
+ * events die zichtbaar moeten worden. Dit moet in lockstep blijven met
+ * snapshot-hash.ts:normalizeString — anders krijg je hash-flips zonder
+ * diff-events of vice versa.
+ */
 function normalize(value: string | null | undefined): string {
   if (value == null) return '';
-  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+  return value.trim().replace(/\s+/g, ' ');
 }
 
-function normalizeSet(values: string[] | null | undefined): Set<string> {
-  if (!values) return new Set();
-  return new Set(values.map((v) => normalize(v)).filter((v) => v.length > 0));
+function normalizeSet(values: string[] | null | undefined): Map<string, string> {
+  // Map van token → original-cased value; behoudt origineel voor weergave
+  // in diff-payload.added/.removed terwijl set-membership case-insensitive is.
+  const out = new Map<string, string>();
+  if (!values) return out;
+  for (const raw of values) {
+    const trimmed = normalize(raw);
+    if (trimmed.length === 0) continue;
+    const token = trimmed.toLowerCase();
+    if (!out.has(token)) out.set(token, trimmed);
+  }
+  return out;
 }
 
-function diffSet(prev: Set<string>, next: Set<string>): {
+function diffSet(prev: Map<string, string>, next: Map<string, string>): {
   added: string[];
   removed: string[];
 } {
   const added: string[] = [];
   const removed: string[] = [];
-  for (const item of next) if (!prev.has(item)) added.push(item);
-  for (const item of prev) if (!next.has(item)) removed.push(item);
+  for (const [token, original] of next) if (!prev.has(token)) added.push(original);
+  for (const [token, original] of prev) if (!next.has(token)) removed.push(original);
   return { added: added.sort(), removed: removed.sort() };
 }
 
-/** Char-distance ratio. >= 0.30 → significant edit; minder → cosmetisch. */
+/**
+ * Jaccard distance over genormaliseerde lowercase woord-tokens.
+ * Symmetrisch en positie-onafhankelijk — een typo-fix in een lange
+ * pricingDetails geeft een lage ratio, een herschreven blok geeft
+ * een hoge ratio. ≥ 0.30 → MAJOR detail-edit.
+ *
+ * Min-length guard: bij erg korte pricingDetails (totaal <5 unieke
+ * woorden) is elke single-token wijziging > 0.30 ratio. Voor zo
+ * korte tekst leunen we volledig op `pricingModel`-signaal en
+ * geven we ratio 0 terug om false-positive MAJOR-events te voorkomen.
+ */
 function detailsDiffRatio(prev: string, next: string): number {
-  if (prev === next) return 0;
-  if (prev.length === 0 && next.length === 0) return 0;
-  const longer = Math.max(prev.length, next.length);
-  if (longer === 0) return 0;
-  // Simple symmetric distance proxy: |Δlen| + first-position-of-divergence.
-  // Goedkoper dan Levenshtein voor MVP — bij significant rewrite is
-  // length-delta of early divergence vrijwel altijd > 30%.
-  const lengthDelta = Math.abs(prev.length - next.length);
-  let divergeAt = 0;
-  const minLen = Math.min(prev.length, next.length);
-  while (divergeAt < minLen && prev[divergeAt] === next[divergeAt]) divergeAt++;
-  const distance = lengthDelta + (minLen - divergeAt);
-  return Math.min(1, distance / longer);
+  const prevWords = new Set(
+    normalize(prev).toLowerCase().split(' ').filter((w) => w.length > 0),
+  );
+  const nextWords = new Set(
+    normalize(next).toLowerCase().split(' ').filter((w) => w.length > 0),
+  );
+  if (prevWords.size === 0 && nextWords.size === 0) return 0;
+  let intersection = 0;
+  for (const w of prevWords) if (nextWords.has(w)) intersection++;
+  const unionSize = prevWords.size + nextWords.size - intersection;
+  if (unionSize === 0) return 0;
+  if (unionSize < 5) return 0; // te kort voor zinvolle Jaccard-signaal
+  return 1 - intersection / unionSize;
 }
 
 // ─── Diff entry-points ──────────────────────────────────

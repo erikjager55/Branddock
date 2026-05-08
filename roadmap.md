@@ -44,14 +44,14 @@
 
 | Fase | Items | Effort | Status |
 |---|---|---|---|
-| **Fase 1 — Data-laag** | [`competitor-snapshot-historie`](tasks/competitor-snapshot-historie.md) (Snapshot/Activity/ContentItem schema + dual-write refresh + backfill + 7 deterministische diff-rules) | 3-4d | open — pre-build voorbereid 2026-05-08 |
+| **Fase 1 — Data-laag** | [`competitor-snapshot-historie`](tasks/done/competitor-snapshot-historie.md) (Snapshot/Activity/ContentItem schema + dual-write refresh + backfill + 7 deterministische diff-rules) | 3-4d | ✅ done 2026-05-08 |
 | **Fase 2 — Analyse-frameworks UI** | `competitor-positioning-frameworks-ui` (positioning-map, narrative-tab, messaging-matrix, content-gap-tabellen) | 5-7d | conditional op pilot-validatie — task-file volgt |
 | **Fase 3 — Battlecards + brief** | Battlecard-generator + competitive-brief docx/pdf export | 3-5d | if-capacity post-Fase-2 |
 | **Fase 4 — Brandclaw monitoring** | `brandclaw-competitor-monitoring` — cron-scheduling, `monitor_competitor` tool, in-app notifications | 5-7d | post-launch — eigen ADR voor cron-infra |
 | **Fase 5 — External signals** | RSS-ingestion, Wayback-historiek, hiring-signals, G2/Capterra reviews | 5-10d | uit-scope MVP — `CompetitorSignalSource` enum bedraad voor uitbreiding |
 
 **ADR's**:
-- ⏳ [`2026-05-08-competitor-snapshot-historie`](docs/adr/2026-05-08-competitor-snapshot-historie.md) — `proposed`, naar `accepted` bij merge Fase 1 PR-3
+- ✅ [`2026-05-08-competitor-snapshot-historie`](docs/adr/2026-05-08-competitor-snapshot-historie.md) — Snapshot/Activity/ContentItem additieve schema-uitbreiding
 - ⏳ ADR voor Fase 4 cron-infra (Vercel Cron vs Upstash QStash) — vóór Brandclaw monitoring start
 - ⏳ Mogelijke retention-ADR — wanneer snapshot-tabel >100k rijen of privacy-incident
 
@@ -67,8 +67,8 @@ Pre-launch = product-readiness van content-flows + foundations voor BCP en Compe
 | ID | Titel | Effort | Status | Blocker |
 |---|---|---|---|---|
 | [`content-locale-enforcement-fix`](tasks/done/content-locale-enforcement-fix.md) | Tweetalige output bugfix — locale-enforcement op alle generation-routes. `npm run smoke:locale` 31/31 passed (29 unit + 2 live AI). | 1-2 dagen | ✅ done 2026-05-08 | - |
-| [`canvas-tweaks-conversion-shortform`](tasks/canvas-tweaks-conversion-shortform.md) | Per-item tweaks #1 — 12 types (4 social + 7 ads + 2 email). `conversionContentStyleFields()` met hookFormat/payoffPromise/targetObjection/proofPoint. | 2-3 dagen | open | - |
-| [`canvas-tweaks-longform-authority`](tasks/canvas-tweaks-longform-authority.md) | Per-item tweaks #2 — 10 types (6 long-form + 4 PR/case). `authorityContentFields()` + `narrativeAnchorFields()`. | 2 dagen | open | - |
+| [`canvas-tweaks-conversion-shortform`](tasks/done/canvas-tweaks-conversion-shortform.md) | Per-item tweaks #1 — 13 types (4 social + 7 ads + 2 email). `conversionContentStyleFields()` + Asset Planner examples + canvas-orchestrator hookFormat-enrichment. `npm run smoke:conversion-tweaks` 8/8 passed. | 2-3 dagen | ✅ done 2026-05-08 | - |
+| [`canvas-tweaks-longform-authority`](tasks/done/canvas-tweaks-longform-authority.md) | Per-item tweaks #2 — 10 types (6 long-form + 4 PR/case). `authorityContentFields()` + `narrativeAnchorFields()` + canvas-orchestrator AUTHORITY_RICH_RENDERS (THESIS/ANTI-THESIS/PIVOT framing). `npm run smoke:longform-tweaks` 8/8 passed. | 2 dagen | ✅ done 2026-05-08 | - |
 | [`canvas-tweaks-structured-skeleton`](tasks/canvas-tweaks-structured-skeleton.md) | Per-item tweaks #3 — 13 types (9 structured + 3 naked-fixes + 4 video). Parametrized `skeletonInputFields(kind)`. | 2 dagen | open | - |
 | [`canvas-image-briefing-defaults`](tasks/canvas-image-briefing-defaults.md) | Image #1 — per-content-type defaults-mapping (23 types) + suggestie-strook in Step1Context. | 1 dag | open | - |
 | [`canvas-image-content-coupling`](tasks/canvas-image-content-coupling.md) | Image #2 — persona+product+cta+concept in image-prompt-builder, 4 routes updaten. | 1-1.5 dag | open | - |
@@ -83,7 +83,7 @@ Pre-launch = product-readiness van content-flows + foundations voor BCP en Compe
 **Actief — overige NOW**
 | ID | Titel | Effort | Status | Blocker |
 |---|---|---|---|---|
-| [`competitor-snapshot-historie`](tasks/competitor-snapshot-historie.md) | Competitive-intel Fase 1 — Snapshot/Activity/ContentItem schema + dual-write refresh + backfill + 7 diff-rules. PR-1 schema gecommit (`fd2738c`); PR-2 + PR-3 open. ADR `proposed`. | 3-4 dagen | in-progress | - |
+| [`competitor-snapshot-historie`](tasks/done/competitor-snapshot-historie.md) | Competitive-intel Fase 1 — Snapshot/Activity/ContentItem schema + dual-write refresh + backfill + 7 diff-rules. ADR accepted. | 3-4 dagen | ✅ done 2026-05-08 | - |
 | [`campaign-brief-output-mapper`](tasks/campaign-brief-output-mapper.md) | Cowork-pariteit Fase A render-mapper. Phase -1 Gates 3/3, geen ADR, render-only. | 2-3 dagen | open | - |
 
 **Recent voltooid — discovery (week 19, 2026-05-08)**

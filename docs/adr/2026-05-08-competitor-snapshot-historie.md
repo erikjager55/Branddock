@@ -1,7 +1,7 @@
 ---
 id: 2026-05-08-competitor-snapshot-historie
 title: Competitor data-model uitbreiden met Snapshot/Activity/ContentItem voor immutable historie
-status: proposed
+status: accepted
 date: 2026-05-08
 supersedes: -
 superseded-by: -
