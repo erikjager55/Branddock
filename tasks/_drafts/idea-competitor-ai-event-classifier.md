@@ -130,7 +130,7 @@ Triggers:
 
 # AANNAMES
 
-- **A1** — Claude Haiku 4.5 haalt ≥ 75% accuracy op synthetische test-set van 30 prev/next paren met CATEGORY_REPOSITIONING en TARGET_AUDIENCE_CHANGED labels — bewijs: A3 probe (2026-05-08) gaf 100% accuracy op format-classification met dezelfde model. Onbewezen voor pattern-detection (kwalitatief moeilijker dan format-detectie). **Validatie-actie pre-build**: probe-script bouwen + draaien (~1u werk).
+- **A1** — ~~≥ 75% accuracy~~ **VERIFIED 2026-05-08**: probe `scripts/probes/competitor-classifier-events-accuracy.ts` gaf **96,7% accuracy (29/30)** op synthetische test-set. Per-class: CATEGORY_REPOSITIONING 100%, TARGET_AUDIENCE_CHANGED 90% (1 borderline-miss met dual-event-natuur), NONE 100% (geen false-positives). Avg confidence 0,95. Zie [`docs/audits/2026-05-08-competitor-classifier-events-accuracy.md`](../../docs/audits/2026-05-08-competitor-classifier-events-accuracy.md).
 - **A2** — Pre-filter Jaccard-trigger reduceert AI-calls met ≥ 50% — bewijs: bij stabiele competitors zal valueProposition zelden veranderen tussen refreshes; alleen bij echte content-shifts triggert classifier. Onbewezen, maar low-risk: bij hoger AI-call-volume past cost binnen budget zolang elke refresh < $0,03 blijft.
 - **A3** — Confidence-veld is goed-gecalibreerd door Haiku — bewijs: structured outputs met expliciete confidence prompt-engineering werken in andere project-flows. Onbewezen voor deze taak. Calibratie-validatie: bij A1 probe ook confidence-distributie loggen.
 - **A4** — Refresh-route latency-impact ≤ 2s — bewijs: Haiku call ~1-2s + Jaccard pre-filter snel. Onbewezen onder load. **Validatie**: integratie-smoke met timing-meting.
@@ -178,11 +178,14 @@ Door pilot eerst de deterministische 7 events alleen te draaien, leren we welke 
 
 ## Verdict van de planner
 
-**ready-to-build** — schema is mergeable, scope is strak afgekaderd (2 events), cost binnen budget, A1 validatie pre-build uitvoerbaar, helper-extractie pattern uit Fase 1 maakt integratie laagdrempelig. Out-of-scope > In-scope (10 vs 2).
+**ready-to-build** — A1 pre-build validatie afgerond met 96,7% accuracy (boven 75% target). Schema is mergeable, scope is strak afgekaderd (2 events), cost binnen budget, helper-extractie pattern uit Fase 1 maakt integratie laagdrempelig. Out-of-scope > In-scope (10 vs 2).
 
-Twee voorbehouden voor technical-planner:
-1. **A1 validatie-probe eerst draaien** — bij accuracy < 75% scope-cut naar enkel TARGET_AUDIENCE_CHANGED of confidence-threshold tuning
-2. **Cost-tracking actief in implementation** — `createStructuredCompletion`-telemetry meten per refresh, alarm bij budget-overschrijding
+Drie voorbehouden voor technical-planner (observability-acties, niet pre-build blokkers):
+1. **Strenge JSON-prompt verplicht** — A1 toonde 33% parse-error zonder "CRITICAL: respond with ONLY valid JSON" prefix. Met strenger prompt: 0% parse-errors.
+2. **Allow multiple events per pair** — schema laat het al toe; aud-03 edge case toont dat dual-natured shifts (audience+category samen) zinvol zijn.
+3. **Cost-tracking actief in implementation** — `createStructuredCompletion`-telemetry meten per refresh, alarm bij budget-overschrijding.
+
+Klaar voor technical-planner promotion.
 
 # 5-Punts Stop-Conditie
 
@@ -194,4 +197,4 @@ Twee voorbehouden voor technical-planner:
 
 # Volgende stap
 
-Klaar voor technical-planner promotion na A1-probe. Idea-doc → `tasks/competitor-ai-event-classifier.md` met definitieve scope, of bij A1 < 75% een revisie-pass met scope-cut.
+Klaar voor technical-planner promotion. A1 afgerond (96,7% accuracy). Idea-doc → uitvoerbare `tasks/competitor-ai-event-classifier.md` met sitemap-first MVP-scope wanneer effort-window beschikbaar.
