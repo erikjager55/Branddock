@@ -9,6 +9,10 @@ import { WEBSITE_DELIVERABLE_TYPES } from '@/lib/ai/seo-pipeline.types';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
 import type { VisualBriefSource, VisualStyleDirection } from '@/lib/ai/canvas-context';
+import {
+  getContentTypeImageDefaults,
+  getContentTypeAspectHint,
+} from '../../../constants/image-briefing-defaults';
 import { ContentTypeInputFields } from '../../shared/ContentTypeInputFields';
 import {
   getContentTypeInputs,
@@ -847,12 +851,64 @@ const STYLE_CHIPS: Array<{ value: VisualStyleDirection; label: string; descripti
  *     plain input below the chips.
  */
 function VisualBriefSection() {
+  const contentType = useCanvasStore((s) => s.contentType);
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const setSource = useCanvasStore((s) => s.setVisualBriefSource);
   const setStyleDirection = useCanvasStore((s) => s.setVisualBriefStyleDirection);
+  const setBriefingText = useCanvasStore((s) => s.setVisualBriefBriefingText);
+  const deliverableId = useCanvasStore((s) => s.deliverableId);
 
   const filledChip = visualBrief.styleDirection;
   const freeText = visualBrief.styleDirectionFreeText ?? '';
+  const briefingText = visualBrief.briefingText ?? '';
+
+  // Suggest-from-content button state. On click → POST suggest-visual-briefing,
+  // fill briefing-textarea with response. Conservative: empty / parse-error
+  // leaves the field unchanged.
+  const [suggestLoading, setSuggestLoading] = React.useState(false);
+  const [suggestError, setSuggestError] = React.useState<string | null>(null);
+  const handleSuggestBriefing = React.useCallback(async () => {
+    if (!deliverableId) return;
+    setSuggestLoading(true);
+    setSuggestError(null);
+    try {
+      const res = await fetch(`/api/studio/${deliverableId}/suggest-visual-briefing`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        setSuggestError('Suggestion failed — try again later');
+        return;
+      }
+      const data = (await res.json()) as { briefing?: string };
+      const suggestion = data.briefing?.trim();
+      if (suggestion) {
+        setBriefingText(suggestion);
+      }
+    } catch (err) {
+      console.error('[VisualBriefSection] suggest-visual-briefing failed', err);
+      setSuggestError('Network error');
+    } finally {
+      setSuggestLoading(false);
+    }
+  }, [deliverableId, setBriefingText]);
+
+  // Suggestion strip — content-type-aware defaults. Dismissible per session
+  // (not persisted) so power-users can hide the nudge without it returning
+  // every reload. See canvas-image-briefing-defaults task.
+  const [suggestionDismissed, setSuggestionDismissed] = React.useState(false);
+  const defaults = React.useMemo(
+    () => getContentTypeImageDefaults(contentType),
+    [contentType],
+  );
+  const aspectHint = React.useMemo(
+    () => getContentTypeAspectHint(contentType),
+    [contentType],
+  );
+  const suggestedChipLabel = React.useMemo(() => {
+    if (!defaults) return null;
+    if (!defaults.styleDirection) return 'no chip';
+    return STYLE_CHIPS.find((c) => c.value === defaults.styleDirection)?.label ?? defaults.styleDirection;
+  }, [defaults]);
 
   // Tailwind 4 in this project only safelists the teal/primary palette
   // (see globals.css @theme inline). Violet utilities get purged, so the
@@ -874,6 +930,97 @@ function VisualBriefSection() {
         How the visual gets made. Source picks the pipeline, style direction
         steers both what the AI writes and what it generates.
       </p>
+
+      {/* Suggestion strip — content-type-aware starting point. Not auto-applied;
+          user clicks "Use defaults" to fill source + chip. */}
+      {defaults && !suggestionDismissed && (
+        <div
+          className="mb-3 rounded-md p-2.5 flex items-start gap-2.5"
+          style={{
+            backgroundColor: ACTIVE_BG,
+            border: `1px solid ${ACTIVE_BORDER}`,
+          }}
+        >
+          <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: ACTIVE_HEX }} />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium" style={{ color: '#4c1d95' }}>
+              Suggested for {contentType ?? 'this content'}: {suggestedChipLabel}
+              {aspectHint ? ` · ${aspectHint}` : ''}
+              {defaults.modelHint ? ` · ${defaults.modelHint}` : ''}
+            </p>
+            <p className="text-[11px] mt-0.5" style={{ color: '#5b21b6' }}>
+              {defaults.rationale}
+            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSource(defaults.source);
+                  setStyleDirection(defaults.styleDirection);
+                }}
+                className="text-xs font-medium px-2.5 py-1 rounded transition-colors"
+                style={{
+                  backgroundColor: ACTIVE_HEX,
+                  color: '#ffffff',
+                }}
+              >
+                Use defaults
+              </button>
+              <button
+                type="button"
+                onClick={() => setSuggestionDismissed(true)}
+                className="text-xs font-medium px-2.5 py-1 rounded transition-colors"
+                style={{
+                  backgroundColor: '#ffffff',
+                  color: '#5b21b6',
+                  border: `1px solid ${CHIP_ACTIVE_BORDER}`,
+                }}
+              >
+                Customize
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Briefing — concrete subject description (overrules keyMessage as
+          subject-seed in image-prompt builder). Distinct from style hints
+          below (style notes belong in styleDirectionFreeText). */}
+      <div className="space-y-1.5 mb-4">
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+            Briefing
+          </p>
+          <button
+            type="button"
+            onClick={handleSuggestBriefing}
+            disabled={suggestLoading || !deliverableId}
+            className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded transition-colors disabled:opacity-50"
+            style={{
+              backgroundColor: suggestLoading ? '#e5e7eb' : ACTIVE_BG,
+              color: suggestLoading ? '#9ca3af' : ACTIVE_HEX,
+              border: `1px solid ${ACTIVE_BORDER}`,
+            }}
+          >
+            <Sparkles className="h-3 w-3" />
+            {suggestLoading ? 'Suggesting…' : 'Suggest from content'}
+          </button>
+        </div>
+        <textarea
+          value={briefingText}
+          onChange={(e) => setBriefingText(e.target.value || null)}
+          placeholder="Beschrijf wat het beeld moet tonen — wie, waar, wat, sfeer"
+          rows={2}
+          className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 resize-y"
+          style={{ outlineColor: ACTIVE_HEX }}
+        />
+        <p className="text-[11px] text-gray-500">
+          Subject voor het beeld. Overrules je key-message als ingevuld.
+        </p>
+        {suggestError && (
+          <p className="text-[11px] text-red-600">{suggestError}</p>
+        )}
+      </div>
 
       {/* Source — radio cards */}
       <div className="space-y-2 mb-4">

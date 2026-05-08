@@ -387,6 +387,7 @@ interface CanvasStoreState {
     chip: VisualStyleDirection | null,
     freeText?: string | null,
   ) => void;
+  setVisualBriefBriefingText: (text: string | null) => void;
   setVisualBriefField: <K extends 'generate' | 'library' | 'compose' | 'trained'>(
     key: K,
     value: VisualBrief[K],
@@ -904,6 +905,12 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         styleDirectionFreeText:
           freeText !== undefined ? freeText : state.visualBrief.styleDirectionFreeText,
       },
+      visualBriefModified: true,
+    })),
+
+  setVisualBriefBriefingText: (text) =>
+    set((state) => ({
+      visualBrief: { ...state.visualBrief, briefingText: text },
       visualBriefModified: true,
     })),
 

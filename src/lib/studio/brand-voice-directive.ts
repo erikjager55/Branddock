@@ -85,7 +85,7 @@ export function buildBrandVoiceDirectiveFromContext(
 ): string {
   const hasVoiceguide = !!ctx.brandVoiceguide;
   const hasToneOfVoice = !!ctx.brandToneOfVoice;
-  const hasLanguage = !!ctx.contentLanguage && ctx.contentLanguage !== 'en';
+  const hasLanguage = !!ctx.contentLanguage;
 
   if (!hasVoiceguide && !hasToneOfVoice && !hasLanguage) {
     return '';
@@ -96,13 +96,13 @@ export function buildBrandVoiceDirectiveFromContext(
   parts.push('All content MUST conform to these rules. They override any conflicting generic advice.');
   parts.push('');
 
-  // Only emit explicit language instruction for non-English workspaces
+  // Always emit explicit language enforcement — even for EN workspaces brand-context
+  // can contain mixed-language input (e.g. NL persona-quotes in an EN brand foundation)
+  // which the AI mirrors unless told to translate.
   const lang = ctx.contentLanguage ?? 'en';
-  if (lang !== 'en') {
-    const langName = LANGUAGE_NAMES[lang] ?? lang;
-    parts.push(`**Language**: Write ALL content in ${langName}. No exceptions — every word, heading, hashtag, and CTA must be in ${langName}.`);
-    parts.push('');
-  }
+  const langName = LANGUAGE_NAMES[lang] ?? lang;
+  parts.push(`**Language**: Write ALL content in ${langName}. Every word, heading, hashtag, and CTA — no exceptions. If source material in this prompt (brand context, persona descriptions, prior content, user instructions) is in another language, translate the meaning into ${langName} before responding. Do not preserve foreign-language phrases for "authenticity". This rule outranks tone, style, and methodology guidance.`);
+  parts.push('');
 
   if (hasVoiceguide) {
     parts.push(`**Brand voice**: ${ctx.brandVoiceguide}`);

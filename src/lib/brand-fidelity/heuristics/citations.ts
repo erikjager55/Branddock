@@ -129,6 +129,12 @@ export const CITATIONS: Record<string, Citation> = {
     language: 'en',
     summary: 'Klassieker filler-words referentie (very, rather, little, pretty).',
   },
+  plain_english_a_z: {
+    name: 'Plain English Campaign — A-Z of alternative words',
+    url: 'https://www.plainenglish.co.uk/files/alternative.pdf',
+    language: 'en',
+    summary: 'Authoritative UK plain-English replacement-word list (utilize → use, commence → start, etc.).',
+  },
 
   // ─── Duitse bronnen ──────────────────────────
   hix_hohenheim: {

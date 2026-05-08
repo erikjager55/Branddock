@@ -306,3 +306,35 @@ Beide vervolg-idea-docs zijn klaar voor technical-planner promotion zodra effort
 - ADR: [adr/2026-05-08-competitor-snapshot-historie.md](adr/2026-05-08-competitor-snapshot-historie.md) (parent)
 - Spec: [tasks/_drafts/idea-competitive-intelligence-loop.md](../tasks/_drafts/idea-competitive-intelligence-loop.md), [tasks/_drafts/idea-competitor-content-item-discovery.md](../tasks/_drafts/idea-competitor-content-item-discovery.md), [tasks/_drafts/idea-competitor-ai-event-classifier.md](../tasks/_drafts/idea-competitor-ai-event-classifier.md)
 - Commit: `41a7c90` (cost-model) + `bc6dc6f` (idea content-discovery) + `46d3b0a` (A1 RSS) + `d7f81ba` (A2 sitemap) + `583f384` (A3 classifier) + `6e3c7ed` (idea ai-event) + `7355f44` (A1 classifier-events) + `edd2e4b` (finalize)
+
+
+### 241. Canvas+Studio audit + per-item tweaks 3-cluster + image-track 3-cluster + locale-fix (12-task pre-launch sprint)
+
+Eén-sessie pre-launch sprint die de meeste open Canvas/Studio-werk afrondt. Discovery + 3 per-item-tweak-clusters (36 content-types met item-specifieke inputvelden + Asset Planner pre-fill + canvas-orchestrator rich-renders) + 3 image-flow-clusters (defaults / content-coupling / briefing-textarea + Claude Haiku suggest-route) + locale-bug-fix die mixed-language output structureel oplost. **254/254 smoke-checks groen** over 11 nieuwe `npm run smoke:*` scripts.
+
+Per-item tweaks (3 builders → 36 types):
+- `conversionContentStyleFields()` — 13 types (4 social + 7 ads + 2 email) met hookFormat/payoffPromise/targetObjection/proofPoint + per-hookFormat-value rich-renders in canvas-orchestrator
+- `authorityContentFields()` + `narrativeAnchorFields()` — 10 types (6 long-form + 4 PR/case) met THESIS/ANTI-THESIS/PIVOT framing
+- `skeletonInputFields(kind)` — 13 types met "USE EXACTLY — do NOT modify" skeleton instructie
+
+Image-flow (3 layers):
+- 25 type-defaults + suggestie-strook in `VisualBriefSection`
+- `buildSubjectByChip()` injecteert persona+product+CTA+platform in image-prompts (4 routes)
+- `briefingText` veld op VisualBrief + textarea + Claude Haiku `/suggest-visual-briefing` route
+
+Locale-fix:
+- `buildLocaleInstruction()` helper centraal in `prompt-templates.ts` (alle 4 tiers) + `buildBrandVoiceDirective` versterkt voor élke taal met "translate source material" clause
+
+Bonus closures op latente werk in BCP Phase 1+2 + Cowork-pariteit:
+- `heuristics-packages-multilingual` — en-GB/nl-BE/de-DE pakketten + ai-tells/Denglisch toegevoegd, registry compleet
+- `voice-baseline-1pager` — derivation + format-helper + UI + judge-embed end-to-end gevalideerd
+- `campaign-brief-output-mapper` — Cowork-pariteit Fase A: 10-sectie brief-render met week-thema AI-call + B2/B3/B4 placeholders
+- `canvas-inline-edit-overlays` — 13 preview-consumers + ContentSectionsEditor cleanup
+- `canvas-studio-audit` + 2 plan-tasks (per-item tweaks + image-briefing) — 3 audit-docs gespawnd
+
+12 tasks afgerond, 13 task-files naar `tasks/done/`.
+
+- Task: [tasks/done/canvas-studio-audit.md](../tasks/done/canvas-studio-audit.md), [tasks/done/canvas-per-item-tweaks-plan.md](../tasks/done/canvas-per-item-tweaks-plan.md), [tasks/done/canvas-image-briefing-plan.md](../tasks/done/canvas-image-briefing-plan.md), [tasks/done/content-locale-enforcement-fix.md](../tasks/done/content-locale-enforcement-fix.md), [tasks/done/canvas-tweaks-conversion-shortform.md](../tasks/done/canvas-tweaks-conversion-shortform.md), [tasks/done/canvas-tweaks-longform-authority.md](../tasks/done/canvas-tweaks-longform-authority.md), [tasks/done/canvas-tweaks-structured-skeleton.md](../tasks/done/canvas-tweaks-structured-skeleton.md), [tasks/done/canvas-image-briefing-defaults.md](../tasks/done/canvas-image-briefing-defaults.md), [tasks/done/canvas-image-content-coupling.md](../tasks/done/canvas-image-content-coupling.md), [tasks/done/canvas-image-briefing-textarea.md](../tasks/done/canvas-image-briefing-textarea.md), [tasks/done/heuristics-packages-multilingual.md](../tasks/done/heuristics-packages-multilingual.md), [tasks/done/voice-baseline-1pager.md](../tasks/done/voice-baseline-1pager.md), [tasks/done/campaign-brief-output-mapper.md](../tasks/done/campaign-brief-output-mapper.md), [tasks/done/canvas-inline-edit-overlays.md](../tasks/done/canvas-inline-edit-overlays.md)
+- ADR: -
+- Spec: [audits/2026-05-08-canvas-studio-state.md](audits/2026-05-08-canvas-studio-state.md), [audits/2026-05-08-canvas-per-item-tweaks-plan.md](audits/2026-05-08-canvas-per-item-tweaks-plan.md), [audits/2026-05-08-canvas-image-briefing-plan.md](audits/2026-05-08-canvas-image-briefing-plan.md)
+- Commit: finalize-commit (volgt)

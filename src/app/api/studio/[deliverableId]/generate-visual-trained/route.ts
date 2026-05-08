@@ -205,6 +205,11 @@ export async function POST(request: Request, { params }: RouteParams) {
       {
         keyMessage: stack.brief?.keyMessage ?? null,
         objective: stack.brief?.objective ?? null,
+        callToAction: stack.brief?.callToAction ?? null,
+        personas: stack.personas,
+        products: stack.products,
+        creativePlatform: stack.concept?.creativePlatform ?? null,
+        platform: stack.medium?.platform ?? null,
       },
       promptCount,
     );

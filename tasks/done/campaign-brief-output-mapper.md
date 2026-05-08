@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 2-3 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-05-07
-completed: -
+completed: 2026-05-08
 related-adr: -
 related-spec: tasks/_drafts/idea-campaign-brief-cowork-parity.md
 worktree: branddock-feat-campaign-brief-output-mapper
@@ -139,3 +139,62 @@ Onbekende factor 1.3x voor markdown-rendering library-keuze (`react-markdown` re
 **Cross-link**: dit task-bestand verwijst naar `idea-campaign-brief-cowork-parity.md` + validation-rapport als read-only spec. Bij Fase A done: archief-validatie naar `docs/specs/` of `docs/playbooks/` als referentie.
 
 **Volgende stap na done**: `feature-planner` discovery openen voor B2 (`campaign-kpi-structure`) — eerste van 3 follow-ups. Niet alle drie tegelijk.
+
+## Implementation summary 2026-05-08 (final delivery)
+
+Hoofdimplementatie geleverd in eerdere sessie. Deze sessie afgerond: smoke-test geschreven + quality-gates geverifieerd + status closed.
+
+**Files in scope (al bestaand vóór deze sessie)**:
+- `src/lib/campaigns/brief-data-mapper.ts` (456 regels) — pure mapper `mapToBriefViewModel({campaign, blueprint, personas, enrichments})` returnt `{viewModel, missing}` tuple
+- `src/lib/campaigns/brief-renderer.ts` (357 regels) — `renderBriefMarkdown({viewModel, missing, weekThemes})` produceert 10-sectie markdown
+- `src/lib/campaigns/brief-types.ts` (133 regels) — `BriefViewModel`, `BriefMeta`, `BriefSection`, `BriefMissingDataFlag`, `WeekTheme`, `BriefAssetEntry`, etc.
+- `src/lib/campaigns/brief-week-theme-prompt.ts` (244 regels) — Anthropic-call wrapper voor sectie 5 week-thema's met timeout + fallback
+- `src/app/api/campaigns/[id]/brief/render/route.ts` (170 regels) — GET endpoint, workspace-isolation, parallel mapper + week-theme-call
+- `src/app/api/campaigns/[id]/brief/mark-ready/route.ts` (78 regels) — POST endpoint voor PostHog `campaign_brief_marked_ready` telemetry
+- `src/features/campaigns/components/detail/strategy/BriefRenderView.tsx` (250 regels) — UI component met markdown-preview + "Klaar voor klant"-knop
+- `src/features/campaigns/components/content-library/ContentLibraryCampaignMode.tsx` — "Generate brief"-knop geïntegreerd (regel 553) + lazy-load BriefRenderView (regel 26-31)
+
+**Files toegevoegd deze sessie**:
+- `scripts/smoke-tests/campaign-brief-render.ts` (new) + `npm run smoke:brief-render`
+
+**Quality gates**:
+- ✅ `npx tsc --noEmit` 0 errors
+- ✅ `npm run lint` 0 errors (mijn smoke-script lint-clean)
+- ✅ `npm run smoke:brief-render` 31/31 passed
+
+**Smoke-coverage** (DB-vrij, geen AI-calls):
+- Scenario 1 — minimal campaign + null blueprint: returns viewModel zonder crash, emit missing-flags (3 checks)
+- Scenario 2 — full blueprint + 2 personas + 1 enrichment: viewModel populated + 0 critical-missing, alle 10 secties rendert in markdown (`# 1. ... ## 10. ...`), placeholder-secties 7/8/9 tonen "Not available — requires follow-up feature `campaign-kpi-structure / campaign-budget-table / campaign-risk-assessment`", sectie 6 toont per-asset mini-brief (objective + keyMessage + CTA + outline), sectie 2 personas, sectie 4 channels (linkedin + email) — **23 checks**
+- Scenario 3 — week-themes injected: sectie 5 includes week-1+2 thema-naam + linked deliverables (3 checks)
+- Scenario 4 — weekThemes null: sectie 5 header aanwezig + fallback-melding (2 checks)
+
+**Markdown output** (sample voor full blueprint):
+```
+# Campaign brief — Test Campagne
+*Duration: 9 weeks · Period: 1 Jun 2026 → 1 Aug 2026*
+
+## 1. Campaign overview
+## 2. Audience
+### Primary segment — Maria
+**Role**: Marketing Director
+## 3. Key messaging
+## 4. Channel strategy
+## 5. Content calendar (week themes)
+## 6. Asset inventory
+## 7. Success metrics
+> **Not available** — requires follow-up feature `campaign-kpi-structure`.
+## 8. Budget allocation
+> **Not available** — requires follow-up feature `campaign-budget-table`.
+## 9. Risks & mitigations
+> **Not available** — requires follow-up feature `campaign-risk-assessment`.
+## 10. Next steps
+```
+
+2161 chars / 88 regels voor middelgrote blueprint — ruim onder verwachte performance-budget.
+
+**Out-of-scope verified**:
+- Geen Prisma schema-wijziging
+- Studio-content-generation-real-ai dependency: ✅ done (commit `fbc44d7`)
+- Geen wizard-API-route refactor
+
+**Volgende stap na done** (per task-file note): `feature-planner` discovery openen voor B2 `campaign-kpi-structure` — eerste van 3 follow-ups (B2/B3/B4). Niet alle drie tegelijk.

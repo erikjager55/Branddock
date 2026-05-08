@@ -26,8 +26,8 @@
 | Fase | Items | Effort | Status |
 |---|---|---|---|
 | **Phase 0 — Foundation** | [`tech-debt-any-types`](tasks/done/tech-debt-any-types.md), [`claw-page-awareness`](tasks/done/claw-page-awareness.md) (scope-cut: foundation only) | 3-5d | ✅ done 2026-05-08 |
-| **Phase 1 — F-VAL extension** | [`bv-wire-w1-full-centroid`](tasks/done/bv-wire-w1-full-centroid.md) ✅, [`heuristics-packages-multilingual`](tasks/heuristics-packages-multilingual.md) (Δ-2, 5-7d, open), [`voice-baseline-1pager`](tasks/voice-baseline-1pager.md) (Δ-3, 2-3d, open) | 8-11d | bv-w1 done; Δ-2 + Δ-3 task-files aangemaakt 2026-05-08 |
-| **Phase 2 — Review surfaces** | Δ-1 Content Review (3 surfaces: Brand Alignment Tab 3 + Brand Assistant chat-tool + PublishGate), Δ-4 PublishGate 2nd-opinion, [`canvas-inline-edit-overlays`](tasks/canvas-inline-edit-overlays.md), claw-page-awareness vervolg-cluster (page-wiring deferred uit Phase 0.2.A) | 13-17d | task-files volgen |
+| **Phase 1 — F-VAL extension** | [`bv-wire-w1-full-centroid`](tasks/done/bv-wire-w1-full-centroid.md) ✅, [`heuristics-packages-multilingual`](tasks/done/heuristics-packages-multilingual.md) ✅ (Δ-2 done), [`voice-baseline-1pager`](tasks/done/voice-baseline-1pager.md) ✅ (Δ-3 done) | 8-11d | ✅ done 2026-05-08 — Phase 2 review-surfaces unblocked |
+| **Phase 2 — Review surfaces** | Δ-1 Content Review (3 surfaces: Brand Alignment Tab 3 + Brand Assistant chat-tool + PublishGate), Δ-4 PublishGate 2nd-opinion, [`canvas-inline-edit-overlays`](tasks/done/canvas-inline-edit-overlays.md) ✅, claw-page-awareness vervolg-cluster (page-wiring deferred uit Phase 0.2.A) | 13-17d | inline-edit done; Δ-1/Δ-4/claw-vervolg task-files volgen |
 | **Phase 3 — Strategy Analyst** | brandclaw-data-collection, Strategy Analyst stub (agent-architecture v1) | 20-27d | task-files volgen |
 
 **ADR's**:
@@ -69,22 +69,22 @@ Pre-launch = product-readiness van content-flows + foundations voor BCP en Compe
 | [`content-locale-enforcement-fix`](tasks/done/content-locale-enforcement-fix.md) | Tweetalige output bugfix — locale-enforcement op alle generation-routes. `npm run smoke:locale` 31/31 passed (29 unit + 2 live AI). | 1-2 dagen | ✅ done 2026-05-08 | - |
 | [`canvas-tweaks-conversion-shortform`](tasks/done/canvas-tweaks-conversion-shortform.md) | Per-item tweaks #1 — 13 types (4 social + 7 ads + 2 email). `conversionContentStyleFields()` + Asset Planner examples + canvas-orchestrator hookFormat-enrichment. `npm run smoke:conversion-tweaks` 8/8 passed. | 2-3 dagen | ✅ done 2026-05-08 | - |
 | [`canvas-tweaks-longform-authority`](tasks/done/canvas-tweaks-longform-authority.md) | Per-item tweaks #2 — 10 types (6 long-form + 4 PR/case). `authorityContentFields()` + `narrativeAnchorFields()` + canvas-orchestrator AUTHORITY_RICH_RENDERS (THESIS/ANTI-THESIS/PIVOT framing). `npm run smoke:longform-tweaks` 8/8 passed. | 2 dagen | ✅ done 2026-05-08 | - |
-| [`canvas-tweaks-structured-skeleton`](tasks/canvas-tweaks-structured-skeleton.md) | Per-item tweaks #3 — 13 types (9 structured + 3 naked-fixes + 4 video). Parametrized `skeletonInputFields(kind)`. | 2 dagen | open | - |
-| [`canvas-image-briefing-defaults`](tasks/canvas-image-briefing-defaults.md) | Image #1 — per-content-type defaults-mapping (23 types) + suggestie-strook in Step1Context. | 1 dag | open | - |
-| [`canvas-image-content-coupling`](tasks/canvas-image-content-coupling.md) | Image #2 — persona+product+cta+concept in image-prompt-builder, 4 routes updaten. | 1-1.5 dag | open | - |
-| [`canvas-image-briefing-textarea`](tasks/canvas-image-briefing-textarea.md) | Image #3 — dedicated briefing-veld + nieuwe `/suggest-visual-briefing` route met Claude. | 1 dag | open | - |
+| [`canvas-tweaks-structured-skeleton`](tasks/done/canvas-tweaks-structured-skeleton.md) | Per-item tweaks #3 — 13 types (9 structured + 2 naked-fixes + 4 video opt-in; instagram-post via conversion-task). Parametrized `skeletonInputFields(kind)` + canvas-orchestrator skeleton-render ("USE EXACTLY"). `npm run smoke:structured-tweaks` 13/13 passed. | 2 dagen | ✅ done 2026-05-08 | - |
+| [`canvas-image-briefing-defaults`](tasks/done/canvas-image-briefing-defaults.md) | Image #1 — per-content-type defaults-mapping (25 types) + suggestie-strook in VisualBriefSection (Step1Context). `npm run smoke:image-defaults` 20/20 passed. UI hand-test handover voor visual verification. | 1 dag | ✅ done 2026-05-08 | - |
+| [`canvas-image-content-coupling`](tasks/done/canvas-image-content-coupling.md) | Image #2 — persona+product+cta+concept+platform in image-prompt-builder via per-chip `buildSubjectByChip`. 3 routes (generate-visual / -trained / -compose) updated. `npm run smoke:image-coupling` 25/25 passed. | 1-1.5 dag | ✅ done 2026-05-08 | - |
+| [`canvas-image-briefing-textarea`](tasks/done/canvas-image-briefing-textarea.md) | Image #3 — `briefingText` op VisualBrief + textarea + Claude Haiku `/suggest-visual-briefing` route + builder gebruikt briefingText als highest-priority subject-seed. `npm run smoke:image-briefing` 10/10 passed. | 1 dag | ✅ done 2026-05-08 | - |
 
 **Actief — BCP Phase 1 (F-VAL extension)**
 | ID | Titel | Effort | Status | Blocker |
 |---|---|---|---|---|
-| [`heuristics-packages-multilingual`](tasks/heuristics-packages-multilingual.md) | Δ-2 — F-VAL Pijler 3 NL-NL / NL-BE / EN-GB / DE-DE pakketten | 5-7 dagen | open | - |
-| [`voice-baseline-1pager`](tasks/voice-baseline-1pager.md) | Δ-3 — afgeleide compact voice-view uit BrandVoiceguide | 2-3 dagen | open | - |
+| [`heuristics-packages-multilingual`](tasks/done/heuristics-packages-multilingual.md) | Δ-2 — F-VAL Pijler 3 NL-NL ✅ (eerder) / EN-GB ✅ / NL-BE ✅ (extends-NL-NL) / DE-DE ✅ (incl. Denglisch). `npm run smoke:heuristics-locales` 50/50 passed. | 5-7 dagen | ✅ done 2026-05-08 | - |
+| [`voice-baseline-1pager`](tasks/done/voice-baseline-1pager.md) | Δ-3 — afgeleide 1-pager uit BrandVoiceguide (derivation + UI + judge-prompt embed + cache). `npm run smoke:voice-baseline` 32/32 passed. | 2-3 dagen | ✅ done 2026-05-08 | - |
 
 **Actief — overige NOW**
 | ID | Titel | Effort | Status | Blocker |
 |---|---|---|---|---|
 | [`competitor-snapshot-historie`](tasks/done/competitor-snapshot-historie.md) | Competitive-intel Fase 1 — Snapshot/Activity/ContentItem schema + dual-write refresh + backfill + 7 diff-rules. ADR accepted. | 3-4 dagen | ✅ done 2026-05-08 | - |
-| [`campaign-brief-output-mapper`](tasks/campaign-brief-output-mapper.md) | Cowork-pariteit Fase A render-mapper. Phase -1 Gates 3/3, geen ADR, render-only. | 2-3 dagen | open | - |
+| [`campaign-brief-output-mapper`](tasks/done/campaign-brief-output-mapper.md) | Cowork-pariteit Fase A render-mapper — pure mapper + renderer + AI week-themes + UI + telemetry route. `npm run smoke:brief-render` 31/31 passed. | 2-3 dagen | ✅ done 2026-05-08 | - |
 
 **Recent voltooid — discovery (week 19, 2026-05-08)**
 - ✅ [`canvas-studio-audit`](tasks/done/canvas-studio-audit.md) — `docs/audits/2026-05-08-canvas-studio-state.md`. Spec-claims vs code-realiteit + 5 open vragen.

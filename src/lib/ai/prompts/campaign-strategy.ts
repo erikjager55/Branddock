@@ -1003,7 +1003,40 @@ ${phaseInstruction}
   - Carousels / decks: { slidesCount: N, narrativeStructure: "Problem → Solution" }
   - Press releases / media pitches: { newsFact: "the announcement", releaseDate: "date" }
   - Job postings / career pages: { jobTitle: "role title", keyRequirements: [...] }
-  Only include fields where you can derive a reasonable value from the campaign strategy context. Do NOT include empty strings or empty arrays.
+  - **Structured / multi-section content** (linkedin-carousel, social-carousel, ebook, sales-deck, landing-page, microsite, webinar-outline, podcast-outline, linkedin-video, explainer-video, promo-video, tiktok-script): include the structure-skeleton bundle — { ${'$'}{kind}Skeleton: "Newline-separated 5-7 concrete titles for each slide/section/chapter/agenda-item/page/scene — avoid generic 'Tip 1 / Tip 2' templates", ${'$'}{kind}Hook: "exact opening line (slide 1 / section 1 / scene 1)", payoffPosition: "number — which item lands the payoff (typically 60-70% through)" } where {kind} = slide for carousels/decks, section for landing-page, chapter for ebook, agenda for webinar/podcast outlines, page for microsite, scene for video. Plus per-type extras:
+    - landing-page: also { valueProposition, targetObjection }
+    - product-page: { valueProposition, targetObjection, featureBenefitMap: "Newline-separated Feature → Benefit pairs" }
+    - comparison-page: { differentiatorClaim: "1-sentence single-dimension you win on", tonePosition: "factual"|"persuasive"|"diplomatic" }
+    - sales-deck: also { centralPainPoint, competitorContext: "1-sentence positioning vs. dominant alternative" }
+    - ebook: also { targetTakeaway, narrativeArc: "educational"|"journey"|"argument" }
+    - webinar-outline: also { targetTakeaway }
+    - podcast-outline: also { centralQuestion: "open question the guest is uniquely positioned to answer" }
+    - explainer-video: also { coreAnalogy: "single metaphor that maps to product mechanism" }
+    - promo-video: also { valueProposition }
+    - microsite: also { narrativeFlow: "1-sentence how the user-journey flows page-by-page" }
+    - newsletter: also { featuredItem: "hero-item this edition", recurringSegments: "Newline-separated recurring rubrics" }
+  - **Long-form / authority content** (blog-post, pillar-page, article, thought-leadership, whitepaper, linkedin-article): include the authority-frame bundle — { uniqueAngle: "1-2 sentences naming what this content says that 95% of others don't (contrarian or under-discussed angle)", evidencePieces: "Newline-separated list of 3-5 named evidence pieces — data points, quotes, anecdotes, customer-fragments. One per line.", counterClaim: "Anti-thesis the content explicitly refutes (or empty if uniqueAngle is additive)" }. Plus per-type extras:
+    - whitepaper: also { coreThesis: "1-2 sentence testable claim the whole document defends", dataSourcesUsed: "Newline-separated list of 3-5 sources/datasets", targetCitationCount: 5-15 }
+    - thought-leadership: also { industryNorm: "the consensus belief you're challenging, in plain language", authorPerspective: "executive/role + contrarian angle" }
+    - linkedin-article: also { personalCredentials: "1-sentence why this author is qualified", authorPerspective }
+    - pillar-page: also { subTopicMap: "Newline-separated list of 3-7 sub-topics that decompose uniqueAngle into H2-sections", internalSubpages: "(or empty)" }
+  - **Narrative anchor content** (case-study, press-release, media-pitch, employee-story): include the narrative-anchor bundle — { whyNowAngle: "1-2 sentences tying to a current event/regulatory shift/market trend that justifies publishing now", pivotMoment: "1 sentence naming the specific scene/decision the story turns on", industryContext: "(or empty)" }. Plus per-type extras:
+    - case-study: also { solutionPhases: "Newline-separated list of 3-5 implementation steps", failureFootnote: "what went wrong on the way (or empty)" }
+    - media-pitch: also { dataPoint: "1 surprising stat anchoring the pitch (mark hypothesised vs. confirmed)" }. Note: journalistRecentArticle is NOT AI-derivable — leave out
+    - employee-story: also { cultureSignal: "1 observable behavior signaling culture (concrete, not 'collaborative')" }
+  - **Short-form / conversion content** (linkedin-post, instagram-post, twitter-thread, facebook-post, linkedin-ad, search-ad, social-ad, display-ad, retargeting-ad, video-ad, native-ad, promotional-email, re-engagement-email): include the conversion-hook bundle — { hookFormat: "pattern-interrupt"|"question"|"stat"|"contrarian-take"|"story-open"|"listicle-promise", payoffPromise: "1-sentence concrete value the reader gets", targetObjection: "single strongest weerstand from persona pain points (or empty)", proofPoint: "1 stat / quote / customer-fragment from brand context (or empty)" }. Plus per-type extras where relevant:
+    - linkedin-ad / search-ad / social-ad / display-ad / native-ad: also { valueProposition: "(audience) + (job-to-be-done) + (differentiator) in 1-2 sentences" }
+    - search-ad: also { headlineCount: 3 }, display-ad: also { headlineCount: 2, dominantVisualElement: "concrete visual focus" }
+    - retargeting-ad: also { previousActionContext: "exact prior action", incentiveOffer: "(or empty if brand avoids discounts)" }
+    - video-ad: also { hookSecond: "concrete 0:00-0:03 visual", payoffMoment: "timestamp + scene", skipDeterrent: "tactic to prevent skip" }
+    - native-ad: also { editorialPretext: "editorial story angle, not a product-pitch" }
+    - promotional-email: also { urgencyMechanism: "deadline"|"scarcity"|"loss-aversion"|"none", socialProofSnippet: "(or empty)" }
+    - re-engagement-email: also { lastValueDelivered: "anchor to prior interest", pivotAngle: "specific re-entry, not 'we miss you'" }
+    - instagram-post: also { captionLength: "short"|"medium"|"long", firstLineMagnet: "exact first line ≤125 chars" }
+    - twitter-thread: also { openingHook: "exact opening tweet ≤280 chars", tweetSkeleton: "outline (or empty)" }
+    - facebook-post: also { audienceMood: "casual-conversational"|"community-rallying"|"informative-helpful"|"playful-irreverent" }
+    - linkedin-post: also { personalAnecdote: true|false }
+  Only include fields where you can derive a reasonable value from the campaign strategy context. Do NOT include empty strings or empty arrays — leave optional fields out rather than empty.
 
 ## CRITICAL: TIMELINE DISTRIBUTION RULES
 The deployment timeline has multiple journey phases, each lasting several weeks. You MUST distribute deliverables across ALL phases — not just the first one.

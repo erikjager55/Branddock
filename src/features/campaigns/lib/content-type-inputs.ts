@@ -21,7 +21,11 @@ export type InputCategory =
   | "references"
   | "creative-direction"
   | "content-style"
-  | "engagement";
+  | "engagement"
+  | "conversion-hook"
+  | "authority-frame"
+  | "narrative-anchor"
+  | "structure-skeleton";
 
 export type InputFieldType =
   | "text"
@@ -66,14 +70,22 @@ export const INPUT_CATEGORY_CONFIG: Record<
   InputCategory,
   { label: string; order: number }
 > = {
-  seo: { label: "SEO & Keywords", order: 1 },
-  "content-style": { label: "Content Style", order: 2 },
-  engagement: { label: "Engagement", order: 3 },
-  "campaign-details": { label: "Campaign Details", order: 4 },
-  "format-specs": { label: "Format & Specs", order: 5 },
-  audience: { label: "Audience", order: 6 },
-  references: { label: "References & Sources", order: 7 },
-  "creative-direction": { label: "Creative Direction", order: 8 },
+  // Argument / framing groups — only one of these surfaces per content-type
+  // (conversion-hook for short-form, authority-frame for long-form,
+  // narrative-anchor for PR/case). All share order=1 because they're
+  // mutually exclusive at the type-level.
+  "conversion-hook": { label: "Conversion Hook", order: 1 },
+  "authority-frame": { label: "Authority Frame", order: 1 },
+  "narrative-anchor": { label: "Narrative Anchor", order: 1 },
+  "structure-skeleton": { label: "Structure Skeleton", order: 1 },
+  seo: { label: "SEO & Keywords", order: 2 },
+  "content-style": { label: "Content Style", order: 3 },
+  engagement: { label: "Engagement", order: 4 },
+  "campaign-details": { label: "Campaign Details", order: 5 },
+  "format-specs": { label: "Format & Specs", order: 6 },
+  audience: { label: "Audience", order: 7 },
+  references: { label: "References & Sources", order: 8 },
+  "creative-direction": { label: "Creative Direction", order: 9 },
 };
 
 // ─── Content categories ────────────────────────────────────
@@ -755,7 +767,349 @@ function socialProof(): ContentTypeInputField {
 }
 
 function adContentStyleFields(): ContentTypeInputField[] {
+  // TODO(post-build): evaluate deprecation of urgencyLevel — overlaps with
+  // conversion-bundle hookFormat + payoffPromise + (for promo-email)
+  // urgencyMechanism. See canvas-tweaks-conversion-shortform task notes.
   return [adCtaType(), urgencyLevel(), socialProof()];
+}
+
+// ── Conversion Hook bundle (short-form / direct-response content) ──
+// Drives the narrative scaffolding the AI uses to compose the opener and
+// argument-arc for social posts, ads, and promotional emails. See
+// docs/audits/2026-05-08-canvas-per-item-tweaks-plan.md for the rationale
+// per content-type.
+
+function hookFormat(): ContentTypeInputField {
+  return {
+    key: "hookFormat",
+    label: "Hook Format",
+    category: "conversion-hook",
+    type: "select",
+    options: [
+      { value: "pattern-interrupt", label: "Pattern Interrupt — break expected rhythm" },
+      { value: "question", label: "Question — open with a probing question" },
+      { value: "stat", label: "Stat — surprising number first" },
+      { value: "contrarian-take", label: "Contrarian Take — challenge a common belief" },
+      { value: "story-open", label: "Story Open — narrative micro-scene" },
+      { value: "listicle-promise", label: "Listicle Promise — promise N items / steps" },
+    ],
+    helpText: "Drives the first 1–3 lines / opening seconds",
+    aiDerivable: true,
+    aiHint: "Pick the hook style most likely to stop the scroll for this persona; default to 'question' if uncertain",
+  };
+}
+
+function payoffPromise(): ContentTypeInputField {
+  return {
+    key: "payoffPromise",
+    label: "Payoff Promise",
+    category: "conversion-hook",
+    type: "text",
+    placeholder: "e.g. \"Een 3-stappen-frame om brand-fluff te detecteren\"",
+    helpText: "What the reader gets if they keep reading / click through",
+    aiDerivable: true,
+    aiHint: "1 sentence; concrete and specific (not 'learn more about X'). Derive from product value-prop + persona desired outcome",
+  };
+}
+
+function targetObjection(): ContentTypeInputField {
+  return {
+    key: "targetObjection",
+    label: "Target Objection",
+    category: "conversion-hook",
+    type: "text",
+    placeholder: "e.g. \"marketing-budget al uitgeput\"",
+    helpText: "Concrete weerstand the copy should address head-on (optional)",
+    aiDerivable: true,
+    aiHint: "Pick the single strongest objection from persona pain points or campaign keyObjections; leave blank if none stands out",
+  };
+}
+
+function proofPoint(): ContentTypeInputField {
+  return {
+    key: "proofPoint",
+    label: "Proof Point",
+    category: "conversion-hook",
+    type: "text",
+    placeholder: "e.g. \"Better Brands +24% voice-fidelity in 4 weken\"",
+    helpText: "1 stat / quote / customer-fragment for the body (optional)",
+    aiDerivable: true,
+    aiHint: "Use a brand-context customer story, metric, or testimonial; leave blank if none available",
+  };
+}
+
+function conversionContentStyleFields(): ContentTypeInputField[] {
+  return [hookFormat(), payoffPromise(), targetObjection(), proofPoint()];
+}
+
+// ── Reusable conversion helpers (used by 2+ types) ──
+
+function valueProposition(): ContentTypeInputField {
+  return {
+    key: "valueProposition",
+    label: "Value Proposition",
+    category: "conversion-hook",
+    type: "textarea",
+    placeholder: "e.g. \"Voor brand-managers die voice-consistency willen meten — zonder eigen taal-team op te bouwen\"",
+    helpText: "Short, sharp value-prop the ad-copy should anchor on",
+    aiDerivable: true,
+    aiHint: "1-2 sentences; (audience) + (job-to-be-done) + (differentiator). Derive from product + persona + competitor-positioning",
+  };
+}
+
+function headlineCount(defaultValue: number = 3): ContentTypeInputField {
+  return {
+    key: "headlineCount",
+    label: `Headline Variants (default ${defaultValue})`,
+    category: "format-specs",
+    type: "number",
+    placeholder: String(defaultValue),
+    helpText: "Number of headline variations to generate (Google search-ad asset best practice: 3-5)",
+    aiDerivable: true,
+    aiHint: `Default ${defaultValue}; for search-ads aim 3-5, display-ads 1-2`,
+  };
+}
+
+// ── Authority Frame bundle (long-form / argumentative content) ──
+// Drives the thesis the AI argues for. Without these, long-form content
+// defaults to descriptive SEO-blog patterns ("What is X — A Comprehensive
+// Guide") instead of taking a position. See audit sectie 3.2.
+
+function uniqueAngle(): ContentTypeInputField {
+  return {
+    key: "uniqueAngle",
+    label: "Unique Angle",
+    category: "authority-frame",
+    type: "textarea",
+    placeholder: "e.g. \"Most positioning frameworks fail because they treat positioning as creative rather than operational\"",
+    helpText: "What this content says that 95% of others don't — 1-2 sentences",
+    aiDerivable: true,
+    aiHint: "Synthesize from brand-positioning + persona pain points + competitor analysis: pick the contrarian or under-discussed angle most credible for this brand",
+  };
+}
+
+function evidencePieces(): ContentTypeInputField {
+  return {
+    key: "evidencePieces",
+    label: "Evidence Pieces",
+    category: "authority-frame",
+    type: "textarea",
+    placeholder: "Eén bewijsstuk per regel:\n- Reichheld churn data 2024\n- Patagonia case (Worn Wear)\n- Eigen voice-fidelity benchmark (n=200)",
+    helpText: "Eén stuk bewijs per regel — minimaal 3, maximaal 7 (citaten, statistieken, klantvoorbeelden, anekdotes)",
+    aiDerivable: true,
+    aiHint: "Suggest 3-5 named evidence pieces (data, quote, anecdote, customer-fragment) drawn from brand-context, persona pains, or external industry references; each item on its own line",
+  };
+}
+
+function counterClaim(): ContentTypeInputField {
+  return {
+    key: "counterClaim",
+    label: "Counter-Claim (optional)",
+    category: "authority-frame",
+    type: "textarea",
+    placeholder: "e.g. \"Positioning is a constraint engineering problem, not a creative exercise\"",
+    helpText: "The anti-thesis the content explicitly refutes — sharpens the argument",
+    aiDerivable: true,
+    aiHint: "Pick the strongest commonly-held belief that uniqueAngle contradicts; leave blank if uniqueAngle is additive rather than contrarian",
+  };
+}
+
+function authorityContentFields(): ContentTypeInputField[] {
+  return [uniqueAngle(), evidencePieces(), counterClaim()];
+}
+
+// ── Reusable authority helpers (used by 2+ types) ──
+
+function coreThesis(): ContentTypeInputField {
+  return {
+    key: "coreThesis",
+    label: "Core Thesis",
+    category: "authority-frame",
+    type: "textarea",
+    placeholder: "e.g. \"Brand consistency drives 2.3x conversion in B2B SaaS — but only when measured at the voice-level, not the visual-level\"",
+    helpText: "1-2 sentence thesis statement the whole document defends",
+    aiDerivable: true,
+    aiHint: "1-2 sentences; testable claim; should sharpen uniqueAngle into a single defendable proposition",
+  };
+}
+
+function industryNorm(): ContentTypeInputField {
+  return {
+    key: "industryNorm",
+    label: "Industry Norm (the consensus you're challenging)",
+    category: "authority-frame",
+    type: "textarea",
+    placeholder: "e.g. \"Most brand consultants treat brand voice as taste — subjective, untestable\"",
+    helpText: "What does everyone in this space currently believe — that you're about to challenge",
+    aiDerivable: true,
+    aiHint: "State the commonly-held belief in plain language; the rest of the content will refute or update it",
+  };
+}
+
+function personalCredentials(): ContentTypeInputField {
+  return {
+    key: "personalCredentials",
+    label: "Personal Credentials",
+    category: "creative-direction",
+    type: "text",
+    placeholder: "e.g. \"15 jaar brand-strategie bij B2B SaaS, ex-VP Brand bij ACME\"",
+    helpText: "Why is this author qualified to take this position?",
+    aiDerivable: true,
+    aiHint: "Derive from brand-context author/team info; 1 sentence, concrete role + experience",
+  };
+}
+
+// ── Narrative Anchor bundle (PR / case-study / employee-story) ──
+// Drives the narrative scharnier-moment + why-now framing. Without these,
+// PR content defaults to corporate-speak boilerplate without journalistic
+// hook. See audit sectie 2 (PR/HR/Comms).
+
+function whyNowAngle(): ContentTypeInputField {
+  return {
+    key: "whyNowAngle",
+    label: "Why Now",
+    category: "narrative-anchor",
+    type: "textarea",
+    placeholder: "e.g. \"Met EU AI Act van kracht per Q1 2026 moeten brand-teams hun AI-content audit-trail bewijzen\"",
+    helpText: "What makes this newsworthy NOW — the journalistic timing-hook",
+    aiDerivable: true,
+    aiHint: "Tie to a current event, regulatory shift, market trend, or seasonal moment that justifies publishing now rather than next quarter",
+  };
+}
+
+function pivotMoment(): ContentTypeInputField {
+  return {
+    key: "pivotMoment",
+    label: "Pivot Moment",
+    category: "narrative-anchor",
+    type: "text",
+    placeholder: "e.g. \"het moment waarop de klant z'n team durfde te halveren\"",
+    helpText: "The narrative scharnier — the specific scene the story turns on",
+    aiDerivable: true,
+    aiHint: "Identify the single concrete moment / decision / scene that makes the story memorable; 1 sentence",
+  };
+}
+
+function industryContext(): ContentTypeInputField {
+  return {
+    key: "industryContext",
+    label: "Industry Context (optional)",
+    category: "narrative-anchor",
+    type: "text",
+    placeholder: "e.g. \"in een markt waar 80% van AI-tools nog steeds Engelse output teruggeeft\"",
+    helpText: "Wider industry frame the story sits in (optional)",
+    aiDerivable: true,
+    aiHint: "Brief 1-sentence backdrop that situates the story; leave blank if the story stands alone",
+  };
+}
+
+function narrativeAnchorFields(): ContentTypeInputField[] {
+  return [whyNowAngle(), pivotMoment(), industryContext()];
+}
+
+// ── Structure Skeleton bundle (multi-section content) ──
+// Drives the structural spine for content with multiple sections /
+// slides / chapters / agenda-items. Without these, AI invents a default
+// skeleton (e.g. "Tip 1: Start strong, Tip 5: Stay consistent" for
+// carousels) — generic by construction. See audit sectie 2 (Carousel,
+// Website, Sales, Video & Audio sub-rijen).
+
+type SkeletonKind = 'slide' | 'section' | 'chapter' | 'agenda' | 'page' | 'scene';
+
+const SKELETON_LABELS: Record<SkeletonKind, { item: string; itemPlural: string; firstLabel: string }> = {
+  slide: { item: 'slide', itemPlural: 'slides', firstLabel: 'First Slide Hook' },
+  section: { item: 'section', itemPlural: 'sections', firstLabel: 'First Section Hook' },
+  chapter: { item: 'chapter', itemPlural: 'chapters', firstLabel: 'Opening Chapter Hook' },
+  agenda: { item: 'agenda item', itemPlural: 'agenda items', firstLabel: 'Opening Hook' },
+  page: { item: 'page', itemPlural: 'pages', firstLabel: 'Landing-Page Hook' },
+  scene: { item: 'scene', itemPlural: 'scenes', firstLabel: 'Opening Scene Hook' },
+};
+
+function skeletonField(kind: SkeletonKind): ContentTypeInputField {
+  const meta = SKELETON_LABELS[kind];
+  return {
+    key: `${kind}Skeleton`,
+    label: `${meta.item.charAt(0).toUpperCase() + meta.item.slice(1)} Skeleton`,
+    category: "structure-skeleton",
+    type: "textarea",
+    placeholder: `Eén ${meta.item} per regel:\n- Het probleem niemand benoemt\n- De data die het bewijst\n- Onze aanpak\n- Bewijs uit klantcase\n- De volgende stap`,
+    helpText: `Eén ${meta.item} per regel — wordt 1-op-1 als ${meta.itemPlural}-titel gebruikt. Optioneel: \`Titel — bullet1; bullet2\` voor sub-points.`,
+    aiDerivable: true,
+    aiHint: `Generate 5-7 concrete ${meta.item} titles aligned with the campaign goal + persona pain points; each on its own line. Avoid generic templates like "Tip 1 / Tip 2".`,
+  };
+}
+
+function skeletonHookField(kind: SkeletonKind): ContentTypeInputField {
+  const meta = SKELETON_LABELS[kind];
+  return {
+    key: `${kind}Hook`,
+    label: meta.firstLabel,
+    category: "structure-skeleton",
+    type: "text",
+    placeholder: `e.g. \"De meeste merken meten brand-voice niet — wij wel.\"`,
+    helpText: `Exact opening line for ${meta.item} 1 (or the piece overall). Make-or-break for engagement.`,
+    aiDerivable: true,
+    aiHint: `Generate the literal opening line that makes the audience pause; align with ${meta.item}Skeleton item 1 if present`,
+  };
+}
+
+function skeletonPayoffPosition(kind: SkeletonKind): ContentTypeInputField {
+  const meta = SKELETON_LABELS[kind];
+  return {
+    key: "payoffPosition",
+    label: `Payoff ${meta.item.charAt(0).toUpperCase() + meta.item.slice(1)} (number)`,
+    category: "structure-skeleton",
+    type: "number",
+    placeholder: "4",
+    helpText: `Which ${meta.item} number lands the payoff (typically 60-70% through the piece).`,
+    aiDerivable: true,
+    aiHint: `Suggest a position roughly 60-70% through the total ${meta.item} count`,
+  };
+}
+
+function skeletonInputFields(kind: SkeletonKind): ContentTypeInputField[] {
+  return [skeletonField(kind), skeletonHookField(kind), skeletonPayoffPosition(kind)];
+}
+
+// ── Reusable structure helpers (used by 2+ types) ──
+
+function targetTakeaway(): ContentTypeInputField {
+  return {
+    key: "targetTakeaway",
+    label: "Target Takeaway",
+    category: "structure-skeleton",
+    type: "text",
+    placeholder: "e.g. \"Een meetbare brand-voice is een operationele keuze, geen creatieve\"",
+    helpText: "1 sentence the audience should remember after consuming this piece",
+    aiDerivable: true,
+    aiHint: "Distill the single proposition the audience should walk away with; concrete and testable",
+  };
+}
+
+function centralPainPoint(): ContentTypeInputField {
+  return {
+    key: "centralPainPoint",
+    label: "Central Pain Point",
+    category: "structure-skeleton",
+    type: "text",
+    placeholder: "e.g. \"Inconsistentie kost teams 30% meer review-tijd\"",
+    helpText: "The single pain the entire piece anchors on (deck/one-pager spine)",
+    aiDerivable: true,
+    aiHint: "Pick the most-acute pain from persona pain points that this content addresses",
+  };
+}
+
+function featureBenefitMap(): ContentTypeInputField {
+  return {
+    key: "featureBenefitMap",
+    label: "Feature → Benefit Map",
+    category: "structure-skeleton",
+    type: "textarea",
+    placeholder: "Eén pair per regel — Feature → Benefit:\n- Voice-fidelity scoring → weet je copy on-brand is voordat je publiceert\n- Template-library → 80% minder review-rondes",
+    helpText: "Eén Feature → Benefit pair per regel. Voorkomt dat product-pages feature-dumps worden.",
+    aiDerivable: true,
+    aiHint: "Generate 3-5 feature/benefit pairs from product specs; each pair: feature → concrete user-outcome (not 'increased efficiency')",
+  };
 }
 
 // ── Video ──
@@ -833,6 +1187,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Long-Form Content ──────────────────────────────────
 
   "blog-post": [
+    ...authorityContentFields(),
     ...longFormContentStyleFields(),
     seoKeyword(),
     secondaryKeywords(),
@@ -858,12 +1213,53 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "pillar-page": [
+    ...authorityContentFields(),
+    {
+      key: "subTopicMap",
+      label: "Sub-Topic Map (3-7 H2s)",
+      category: "authority-frame",
+      type: "textarea",
+      placeholder: "Eén sub-topic per regel — wordt H2:\n- How to define brand-voice operationally\n- Why most voice-guides fail\n- Measuring voice-fidelity",
+      helpText: "3-7 sub-topics — these become H2 sections + drive internal-linking strategy",
+      aiDerivable: true,
+      aiHint: "Generate 3-7 sub-topics that decompose uniqueAngle into hub-and-spoke structure; one per line",
+    },
+    {
+      key: "internalSubpages",
+      label: "Internal Sub-Pages to Link (optional)",
+      category: "seo",
+      type: "textarea",
+      placeholder: "Eén URL of pagina-titel per regel",
+      helpText: "Existing sub-pages to cross-link from this pillar (optional)",
+    },
     ...longFormContentStyleFields(),
     seoKeyword(),
     secondaryKeywords(),
   ],
 
   whitepaper: [
+    ...authorityContentFields(),
+    coreThesis(),
+    {
+      key: "dataSourcesUsed",
+      label: "Data Sources Used",
+      category: "references",
+      type: "textarea",
+      placeholder: "Eén bron per regel — auteur, organisatie of dataset",
+      helpText: "Named data sources / studies / datasets the whitepaper builds on",
+      aiDerivable: true,
+      aiHint: "Suggest 3-5 credible source-types or specific publications relevant to coreThesis; each source on its own line",
+    },
+    {
+      key: "targetCitationCount",
+      label: "Target Citation Count",
+      category: "format-specs",
+      type: "number",
+      placeholder: "10",
+      helpText: "Number of citations to weave through the whitepaper (academic feel: 8-15, commercial: 3-7)",
+      aiDerivable: true,
+      aiHint: "Default 8 for academic, 5 for commercial whitepapers; adjust to expertiseLevel",
+    },
     ...longFormContentStyleFields(),
 
     {
@@ -890,6 +1286,27 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "case-study": [
+    ...narrativeAnchorFields(),
+    {
+      key: "solutionPhases",
+      label: "Solution Phases (3-5)",
+      category: "narrative-anchor",
+      type: "textarea",
+      placeholder: "Eén implementatie-fase per regel:\n- Discovery + audit (week 1-2)\n- Voice-baseline definition (week 3)\n- Team rollout (week 4-6)",
+      helpText: "3-5 implementation steps — gives the case-study spine and pacing",
+      aiDerivable: true,
+      aiHint: "Generate 3-5 phases that show concrete progression; one per line",
+    },
+    {
+      key: "failureFootnote",
+      label: "Failure Footnote (optional but credible)",
+      category: "narrative-anchor",
+      type: "textarea",
+      placeholder: "e.g. \"Eerste poging gestrand: voice-guide te abstract; iteratie 2 voegde concrete do/don't-voorbeelden toe\"",
+      helpText: "What went wrong on the way — adds credibility, breaks hagiography pattern",
+      aiDerivable: true,
+      aiHint: "Suggest a plausible mid-project setback that makes the success more credible; leave blank if customer prefers polished narrative",
+    },
     ...longFormContentStyleFields(),
     {
       key: "customerName",
@@ -931,6 +1348,22 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   ebook: [
+    ...skeletonInputFields('chapter'),
+    targetTakeaway(),
+    {
+      key: "narrativeArc",
+      label: "Narrative Arc",
+      category: "structure-skeleton",
+      type: "select",
+      options: [
+        { value: "educational", label: "Educational — informative arc" },
+        { value: "journey", label: "Journey — protagonist transformation" },
+        { value: "argument", label: "Argument — thesis + evidence + conclusion" },
+      ],
+      helpText: "Overarching story-shape across chapters",
+      aiDerivable: true,
+      aiHint: "Match to topic: how-to/explainer → educational, case-driven → journey, position-piece → argument",
+    },
     ...longFormContentStyleFields(),
 
     {
@@ -956,12 +1389,15 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   article: [
+    ...authorityContentFields(),
     ...longFormContentStyleFields(),
     seoKeyword(),
     secondaryKeywords(),
   ],
 
   "thought-leadership": [
+    ...authorityContentFields(),
+    industryNorm(),
     ...longFormContentStyleFields(),
     seoKeyword(),
 
@@ -981,6 +1417,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Social Media ───────────────────────────────────────
 
   "linkedin-post": [
+    ...conversionContentStyleFields(),
     ...socialContentStyleFields(),
     {
       key: "postType",
@@ -999,9 +1436,20 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on campaign goal and content strategy",
     },
+    {
+      key: "personalAnecdote",
+      label: "Lead with Personal Anecdote",
+      category: "creative-direction",
+      type: "boolean",
+      helpText: "Open with a 1-2 sentence personal scene before the argument",
+      aiDerivable: true,
+      aiHint: "Set true when hookFormat='story-open' or 'pattern-interrupt' and persona favors human voice",
+    },
   ],
 
   "linkedin-article": [
+    ...authorityContentFields(),
+    personalCredentials(),
     ...longFormContentStyleFields(),
     // LinkedIn article is a social long-form post — keyword targeting is
     // helpful but not structural. Marked optional so users can skip it.
@@ -1020,6 +1468,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "linkedin-carousel": [
+    ...skeletonInputFields('slide'),
     ...carouselContentStyleFields(),
     slidesCount(),
     {
@@ -1041,6 +1490,8 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "linkedin-ad": [
+    ...conversionContentStyleFields(),
+    valueProposition(),
     ...adContentStyleFields(),
     landingPageUrl(),
     {
@@ -1077,6 +1528,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "linkedin-video": [
+    ...skeletonInputFields('scene'),
     ...videoContentStyleFields(),
     videoDuration(),
     {
@@ -1163,10 +1615,36 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "instagram-post": [
+    ...conversionContentStyleFields(),
     ...socialContentStyleFields(),
+    {
+      key: "captionLength",
+      label: "Caption Length",
+      category: "format-specs",
+      type: "select",
+      options: [
+        { value: "short", label: "Short — 1 sentence + emoji" },
+        { value: "medium", label: "Medium — 3-5 sentences" },
+        { value: "long", label: "Long — micro-essay (5+ sentences)" },
+      ],
+      helpText: "Driver for caption-depth and structure",
+      aiDerivable: true,
+      aiHint: "Default 'medium' unless hookFormat='story-open' (then 'long') or audience is awareness-stage (then 'short')",
+    },
+    {
+      key: "firstLineMagnet",
+      label: "First-Line Magnet",
+      category: "conversion-hook",
+      type: "text",
+      placeholder: "e.g. \"Stop scrollen. Lees dit.\"",
+      helpText: "The exact first line — Instagram truncates after ~125 chars",
+      aiDerivable: true,
+      aiHint: "Generate the exact opening line that aligns with hookFormat; max 125 chars before truncation",
+    },
   ],
 
   "twitter-thread": [
+    ...conversionContentStyleFields(),
     ...socialContentStyleFields(),
     {
       key: "threadLength",
@@ -1178,9 +1656,30 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on topic depth, typically 5-10",
     },
+    {
+      key: "openingHook",
+      label: "Opening Tweet — Exact Text",
+      category: "conversion-hook",
+      type: "textarea",
+      placeholder: "e.g. \"De meeste B2B-merken denken dat consistentie hen langzaam maakt. Het tegendeel is waar.\"",
+      helpText: "The literal first tweet (max 280 chars) — make-or-break for thread engagement",
+      aiDerivable: true,
+      aiHint: "Generate the exact opening tweet aligned with hookFormat; max 280 chars; should stand alone as a strong claim",
+    },
+    {
+      key: "tweetSkeleton",
+      label: "Tweet Skeleton (optional)",
+      category: "creative-direction",
+      type: "textarea",
+      placeholder: "Eén tweet per regel — outline van het thread",
+      helpText: "Optional: outline tweet-by-tweet (one per line) to lock the structure",
+      aiDerivable: true,
+      aiHint: "Generate N-line outline matching threadLength; leave blank if you want AI to choose structure",
+    },
   ],
 
   "facebook-post": [
+    ...conversionContentStyleFields(),
     ...socialContentStyleFields(),
     {
       key: "postType",
@@ -1192,9 +1691,25 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on campaign content and goal",
     },
+    {
+      key: "audienceMood",
+      label: "Audience Mood",
+      category: "creative-direction",
+      type: "select",
+      options: [
+        { value: "casual-conversational", label: "Casual / Conversational — friendly, light" },
+        { value: "community-rallying", label: "Community Rallying — calls to shared identity" },
+        { value: "informative-helpful", label: "Informative / Helpful — explainer voice" },
+        { value: "playful-irreverent", label: "Playful / Irreverent — humor, surprise" },
+      ],
+      helpText: "Facebook is conversational — mood-input shifts tone significantly",
+      aiDerivable: true,
+      aiHint: "Match to brand-personality archetype + persona age/setting",
+    },
   ],
 
   "tiktok-script": [
+    ...skeletonInputFields('scene'),
     ...videoContentStyleFields(),
     videoDuration(),
     {
@@ -1208,6 +1723,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "social-carousel": [
+    ...skeletonInputFields('slide'),
     ...carouselContentStyleFields(),
     slidesCount(),
     {
@@ -1242,6 +1758,9 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Advertising ────────────────────────────────────────
 
   "search-ad": [
+    ...conversionContentStyleFields(),
+    valueProposition(),
+    headlineCount(3),
     ...adContentStyleFields(),
     {
       key: "targetKeywords",
@@ -1258,6 +1777,8 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "social-ad": [
+    ...conversionContentStyleFields(),
+    valueProposition(),
     ...adContentStyleFields(),
     landingPageUrl(),
     {
@@ -1291,11 +1812,45 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "display-ad": [
+    ...conversionContentStyleFields(),
+    valueProposition(),
+    headlineCount(2),
     ...adContentStyleFields(),
     landingPageUrl(),
+    {
+      key: "dominantVisualElement",
+      label: "Dominant Visual Element",
+      category: "creative-direction",
+      type: "text",
+      placeholder: "e.g. \"product hero shot center, bold contrast badge top-right\"",
+      helpText: "Display ads have ~1-2 words of copy room — visual focus is essential",
+      aiDerivable: true,
+      aiHint: "Suggest one focal element that supports the value-prop; avoid generic 'lifestyle photo'",
+    },
   ],
 
   "retargeting-ad": [
+    ...conversionContentStyleFields(),
+    {
+      key: "previousActionContext",
+      label: "Previous Action Context",
+      category: "conversion-hook",
+      type: "text",
+      placeholder: "e.g. \"viewed pricing page 3 days ago, bounced before signup\"",
+      helpText: "What the user concretely did — copy must reference this directly",
+      aiDerivable: true,
+      aiHint: "Derive from retargetingSegment + productReference: name the specific action that triggered this audience",
+    },
+    {
+      key: "incentiveOffer",
+      label: "Incentive Offer (optional)",
+      category: "conversion-hook",
+      type: "text",
+      placeholder: "e.g. \"15% korting bij signup deze week\"",
+      helpText: "Optional incentive to overcome the bounce-reason",
+      aiDerivable: true,
+      aiHint: "Suggest a moderate incentive aligned with funnel-stage; leave blank if brand avoids discounting",
+    },
     ...adContentStyleFields(),
     landingPageUrl(),
     {
@@ -1328,6 +1883,37 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "video-ad": [
+    ...conversionContentStyleFields(),
+    {
+      key: "hookSecond",
+      label: "0:00 – 0:03 — Visual Hook",
+      category: "conversion-hook",
+      type: "text",
+      placeholder: "e.g. \"Close-up van handen die een notitieboek dichtslaan\"",
+      helpText: "What happens in the first 3 seconds — make-or-break for skip behavior",
+      aiDerivable: true,
+      aiHint: "Describe a concrete visual that aligns with hookFormat; avoid 'engaging intro'-type vagueness",
+    },
+    {
+      key: "payoffMoment",
+      label: "Payoff Moment (timestamp + scene)",
+      category: "conversion-hook",
+      type: "text",
+      placeholder: "e.g. \"0:18 — split-screen: chaotic-marketing vs. consistent-brand\"",
+      helpText: "Scene where the value lands for the viewer",
+      aiDerivable: true,
+      aiHint: "Position payoff at ~60-70% of duration; describe the visual that makes the message stick",
+    },
+    {
+      key: "skipDeterrent",
+      label: "Skip Deterrent (0:00 – 0:05)",
+      category: "conversion-hook",
+      type: "text",
+      placeholder: "e.g. \"open with statement that names viewer's exact frustration\"",
+      helpText: "Specific tactic to prevent skip in the 5-second skippable window",
+      aiDerivable: true,
+      aiHint: "Pick one of: pattern-interrupt visual, named-pain-point statement, contrarian claim, surprising stat",
+    },
     ...adContentStyleFields(),
     ...videoContentStyleFields(),
     videoDuration(),
@@ -1351,6 +1937,18 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "native-ad": [
+    ...conversionContentStyleFields(),
+    valueProposition(),
+    {
+      key: "editorialPretext",
+      label: "Editorial Pretext",
+      category: "conversion-hook",
+      type: "textarea",
+      placeholder: "e.g. \"3 lessen die brand-managers leerden over consistentie\"",
+      helpText: "Editorial framing — what makes this read like content, not an ad",
+      aiDerivable: true,
+      aiHint: "Frame as an editorial story angle (lesson, trend-piece, list, profile); not a product-pitch",
+    },
     ...adContentStyleFields(),
     landingPageUrl(),
     {
@@ -1368,14 +1966,35 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Email Marketing ────────────────────────────────────
 
   newsletter: [
+    ...emailContentStyleFields(),
     subjectLine(),
     {
+      key: "featuredItem",
+      label: "Featured Item This Edition",
+      category: "structure-skeleton",
+      type: "text",
+      placeholder: "e.g. \"Nieuwe brand-voice scoring beschikbaar voor LinkedIn-content\"",
+      helpText: "The single hero-item that anchors this edition (vs. recurring sections)",
+      aiDerivable: true,
+      aiHint: "Pick the most newsworthy item from campaign content; 1 sentence",
+    },
+    {
+      key: "recurringSegments",
+      label: "Recurring Segments",
+      category: "structure-skeleton",
+      type: "textarea",
+      placeholder: "Eén vast segment per regel:\n- Brand-news van de week\n- Klantcase\n- Quick-tip\n- Wat we lezen",
+      helpText: "Vaste rubrieken die in elke editie terugkomen — drives consistency across editions",
+      aiDerivable: true,
+      aiHint: "Suggest 3-5 recurring segment names that fit the brand and audience; one per line",
+    },
+    {
       key: "sectionTopics",
-      label: "Section Topics",
+      label: "Section Topics (this edition)",
       category: "campaign-details",
       type: "tags",
       placeholder: "Add section topic…",
-      helpText: "Content sections to include in the newsletter",
+      helpText: "Content sections specific to this edition (overlay on top of recurringSegments)",
       aiDerivable: true,
       aiHint: "3-5 sections based on campaign themes and recent content",
     },
@@ -1417,6 +2036,32 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "promotional-email": [
+    ...conversionContentStyleFields(),
+    {
+      key: "urgencyMechanism",
+      label: "Urgency Mechanism",
+      category: "conversion-hook",
+      type: "select",
+      options: [
+        { value: "deadline", label: "Deadline — date/time-bound" },
+        { value: "scarcity", label: "Scarcity — limited inventory / seats" },
+        { value: "loss-aversion", label: "Loss Aversion — what they lose by not acting" },
+        { value: "none", label: "None — evergreen / no manufactured urgency" },
+      ],
+      helpText: "Promo emails without an urgency mechanism read as 'nice to know'",
+      aiDerivable: true,
+      aiHint: "Match to offerDetails: time-bound discount → deadline; finite seats → scarcity; ongoing pricing → none",
+    },
+    {
+      key: "socialProofSnippet",
+      label: "Social Proof Snippet (optional)",
+      category: "conversion-hook",
+      type: "text",
+      placeholder: "e.g. \"\"3x sneller dan ons vorige tool\" — Maartje, brand lead bij ACME\"",
+      helpText: "1 customer-quote / metric / case-fragment that supports the offer",
+      aiDerivable: true,
+      aiHint: "Use a brand-context testimonial or metric; leave blank if none available",
+    },
     ...emailContentStyleFields(),
     subjectLine(),
     {
@@ -1468,6 +2113,27 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "re-engagement-email": [
+    ...conversionContentStyleFields(),
+    {
+      key: "lastValueDelivered",
+      label: "Last Value Delivered",
+      category: "conversion-hook",
+      type: "text",
+      placeholder: "e.g. \"laatste keer interesse: brand-voice analyzer voor LinkedIn\"",
+      helpText: "Anchor — what concretely interested the user the last time they engaged",
+      aiDerivable: true,
+      aiHint: "Derive from segmentation data if available; if not, suggest a high-value moment based on persona",
+    },
+    {
+      key: "pivotAngle",
+      label: "Pivot Angle",
+      category: "conversion-hook",
+      type: "text",
+      placeholder: "e.g. \"vraag of pijn nog actueel is, niet 'we miss you'\"",
+      helpText: "How the email pivots away from generic 'we miss you'",
+      aiDerivable: true,
+      aiHint: "Suggest a specific re-entry angle: new feature relevant to lastValueDelivered, or check-in question about a known pain",
+    },
     ...emailContentStyleFields(),
     subjectLine(),
     {
@@ -1493,6 +2159,9 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Website & Landing Pages ────────────────────────────
 
   "landing-page": [
+    ...skeletonInputFields('section'),
+    valueProposition(),
+    targetObjection(),
     ...webPageContentStyleFields(),
     seoKeyword(),
     {
@@ -1534,6 +2203,9 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "product-page": [
+    valueProposition(),
+    targetObjection(),
+    featureBenefitMap(),
     ...webPageContentStyleFields(),
     seoKeyword(),
     {
@@ -1574,6 +2246,30 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "comparison-page": [
+    {
+      key: "differentiatorClaim",
+      label: "Differentiator Claim",
+      category: "structure-skeleton",
+      type: "text",
+      placeholder: "e.g. \"Wij meten brand-voice; concurrenten meten alleen visuele consistentie\"",
+      helpText: "1 sentence naming the single dimension on which you win — anchors the comparison",
+      aiDerivable: true,
+      aiHint: "Pick the strongest defensible advantage from competitor analysis; concrete and measurable, not 'better UX'",
+    },
+    {
+      key: "tonePosition",
+      label: "Tone Position",
+      category: "structure-skeleton",
+      type: "select",
+      options: [
+        { value: "factual", label: "Factual — neutral comparison, let data speak" },
+        { value: "persuasive", label: "Persuasive — actively argue your case" },
+        { value: "diplomatic", label: "Diplomatic — acknowledge their strengths first" },
+      ],
+      helpText: "Comparison tone — too aggressive backfires, too soft is wasted breath",
+      aiDerivable: true,
+      aiHint: "Match to brand-personality + audience expectation: technical buyers prefer factual, marketing-buyers persuasive",
+    },
     ...webPageContentStyleFields(),
     seoKeyword(),
     {
@@ -1600,6 +2296,18 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   microsite: [
+    ...skeletonInputFields('page'),
+    {
+      key: "narrativeFlow",
+      label: "Narrative Flow Across Pages",
+      category: "structure-skeleton",
+      type: "text",
+      placeholder: "e.g. \"Probleem (page 1) → Bewijs + case (page 2) → Aanpak (page 3) → CTA (page 4)\"",
+      helpText: "How the story unfolds page-by-page — give the multi-page-microsite a spine",
+      aiDerivable: true,
+      aiHint: "Describe in 1 sentence how the user-journey flows across pages; tie to campaign goal",
+    },
+    ...webPageContentStyleFields(),
     seoKeyword(),
     {
       key: "micrositePages",
@@ -1616,6 +2324,17 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Video & Audio ──────────────────────────────────────
 
   "explainer-video": [
+    ...skeletonInputFields('scene'),
+    {
+      key: "coreAnalogy",
+      label: "Core Analogy",
+      category: "structure-skeleton",
+      type: "text",
+      placeholder: "e.g. \"brand-voice consistency = stem-test in een choor — mis één partij en het wordt zichtbaar\"",
+      helpText: "The single metaphor the explainer hangs on — explainers stand or fall on this",
+      aiDerivable: true,
+      aiHint: "Pick an analogy from the persona's everyday-world that maps cleanly to the product mechanism; concrete and memorable",
+    },
     ...videoContentStyleFields(),
     videoDuration(),
     {
@@ -1671,6 +2390,8 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "promo-video": [
+    ...skeletonInputFields('scene'),
+    valueProposition(),
     ...videoContentStyleFields(),
     videoDuration(),
     {
@@ -1686,6 +2407,8 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "webinar-outline": [
+    ...skeletonInputFields('agenda'),
+    targetTakeaway(),
     ...podcastContentStyleFields(),
     videoDuration(),
     {
@@ -1723,6 +2446,17 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "podcast-outline": [
+    ...skeletonInputFields('agenda'),
+    {
+      key: "centralQuestion",
+      label: "Central Question",
+      category: "structure-skeleton",
+      type: "text",
+      placeholder: "e.g. \"Waarom faalt brand-consistency in agencies maar slaagt het in-house?\"",
+      helpText: "The single question the episode investigates — keeps the conversation focused",
+      aiDerivable: true,
+      aiHint: "Frame as an open question the guest is uniquely positioned to answer; not yes/no",
+    },
     ...podcastContentStyleFields(),
     videoDuration(),
     {
@@ -1738,6 +2472,18 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Sales & Pitch ──────────────────────────────────────
 
   "sales-deck": [
+    ...skeletonInputFields('slide'),
+    centralPainPoint(),
+    {
+      key: "competitorContext",
+      label: "Competitor Context",
+      category: "structure-skeleton",
+      type: "text",
+      placeholder: "e.g. \"vs. legacy tools die brand-voice nog handmatig reviewen\"",
+      helpText: "How the deck positions vs. competitors (1 sentence)",
+      aiDerivable: true,
+      aiHint: "Pick the dominant alternative the buyer is comparing against; derive from competitor analysis if available",
+    },
     ...salesContentStyleFields(),
     slidesCount(),
     {
@@ -1841,6 +2587,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── PR & Communications ────────────────────────────────
 
   "press-release": [
+    ...narrativeAnchorFields(),
     ...prContentStyleFields(),
     {
       key: "newsFact",
@@ -1882,6 +2629,26 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "media-pitch": [
+    ...narrativeAnchorFields(),
+    {
+      key: "journalistRecentArticle",
+      label: "Journalist's Recent Article (reference)",
+      category: "narrative-anchor",
+      type: "text",
+      placeholder: "e.g. \"Marketing Week 2026-04-12 — 'Brand-tools die nooit pivoteren'\"",
+      helpText: "Title or summary of a recent piece by this journalist — pitches without this are auto-deleted",
+      aiDerivable: false,
+    },
+    {
+      key: "dataPoint",
+      label: "Hero Data Point",
+      category: "narrative-anchor",
+      type: "text",
+      placeholder: "e.g. \"3 op de 5 B2B-merken meten brand-voice niet\"",
+      helpText: "1 surprising stat / number that anchors the pitch",
+      aiDerivable: true,
+      aiHint: "Suggest a credible-sounding statistic relevant to the story; mark clearly when source is hypothesised vs. confirmed",
+    },
     ...prContentStyleFields(),
     {
       key: "targetJournalist",
@@ -1999,6 +2766,17 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "employee-story": [
+    ...narrativeAnchorFields(),
+    {
+      key: "cultureSignal",
+      label: "Culture Signal",
+      category: "narrative-anchor",
+      type: "text",
+      placeholder: "e.g. \"team durft elkaar te corrigeren in design-review zonder hiërarchie\"",
+      helpText: "1 specific cultural behavior the story implicitly demonstrates",
+      aiDerivable: true,
+      aiHint: "Pick one observable behavior that signals the company culture; concrete and specific, not 'collaborative' or 'innovative'",
+    },
     ...prContentStyleFields(),
     {
       key: "employeeName",

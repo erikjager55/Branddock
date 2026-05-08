@@ -1635,6 +1635,80 @@ const MEDIUM_CONFIG_HANDLED_KEYS = new Set<string>([
   'aspectRatio', 'footageType', 'textOverlay', 'colorGrade', 'quality',
 ]);
 
+// Per-hookFormat instruction snippets — make hookFormat-value choices
+// concrete for the AI instead of a thin "- Hook Format: pattern-interrupt"
+// label. Drives the OPENING of conversion content (social posts, ads,
+// promo-emails). See docs/audits/2026-05-08-canvas-per-item-tweaks-plan.md.
+const HOOK_FORMAT_INSTRUCTIONS: Record<string, string> = {
+  'pattern-interrupt':
+    'Open with a sentence that breaks expected rhythm. Forbidden openers: "Did you know", "I want to share", "Excited to announce", "In today\'s world". Make the reader pause on line one.',
+  'question':
+    'Open with a probing question the persona genuinely wonders about. Not rhetorical; not a setup-for-product. The question itself must be the hook.',
+  'stat':
+    'Open with a surprising number or statistic in the first line. Make the magnitude itself carry the hook — no preamble like "A recent study found that".',
+  'contrarian-take':
+    'Open by challenging a commonly-held belief in this space. State the contrarian position in the first sentence; defend it after. No "many people think X, but actually" — just state the contrarian claim flat.',
+  'story-open':
+    'Open with a 1-2 sentence narrative micro-scene — concrete moment, named subject, sensory detail. Pivot to the point in line 3.',
+  'listicle-promise':
+    'Open by promising a specific number of items / steps / lessons (e.g. "3 dingen die ik fout deed bij merkconsistentie"). The number-promise is the hook.',
+};
+
+function buildHookFormatLine(value: string): string {
+  const snippet = HOOK_FORMAT_INSTRUCTIONS[value];
+  if (!snippet) return `- Hook Format: ${value}`;
+  return `- Hook Format (${value}): ${snippet}`;
+}
+
+// Authority-frame (long-form) and narrative-anchor (PR/case) keys that
+// need rich rendering instead of thin "- Label: value" lines. These keys
+// drive the OPENING / THESIS / NARRATIVE-PIVOT and require explicit
+// "do this, not that" framing to prevent default descriptive-blog output.
+// See docs/audits/2026-05-08-canvas-per-item-tweaks-plan.md sectie 3.2.
+const AUTHORITY_RICH_RENDERS: Record<string, (val: string) => string> = {
+  uniqueAngle: (val) =>
+    `- **Unique Angle (THESIS — drives H1 + lead-paragraph)**: ${val}\n  → The H1 MUST express this angle, not a descriptive title like "What is X" or "A Comprehensive Guide to Y". The lead-paragraph MUST stake out this position before any context-setting.`,
+  counterClaim: (val) =>
+    `- **Counter-Claim (ANTI-THESIS — explicitly refute this)**: ${val}\n  → Name and refute this counter-claim within the first 200 words. Do not skip it; the refutation is the argument.`,
+  evidencePieces: (val) =>
+    `- **Evidence Pieces (weave naturally into argument)**:\n${val.split(/\n/).map((line) => `    • ${line.replace(/^[-•*]\s*/, '').trim()}`).filter((l) => l.length > 4).join('\n')}\n  → Integrate these into the running argument as the content unfolds. Do NOT list them as a separate bullet-section. Each evidence piece should appear in the natural place where it strengthens a claim.`,
+  pivotMoment: (val) =>
+    `- **Pivot Moment (NARRATIVE SCHARNIER — the story turns here)**: ${val}\n  → The lead-paragraph MUST hint at this pivot. The body MUST land on this moment as the turning point. Do not bury it in a middle-paragraph.`,
+  whyNowAngle: (val) =>
+    `- **Why Now (JOURNALISTIC HOOK — opens the piece)**: ${val}\n  → The first sentence MUST establish this timing-relevance. PR/case content without why-now reads as evergreen marketing copy.`,
+};
+
+// Skeleton renderers — multi-section content (carousels / decks / pages /
+// outlines / videos). The AI loves to invent its own slide/section titles
+// or re-order them for "better flow"; this rendering forbids that
+// explicitly. See canvas-tweaks-structured-skeleton task notes risico 1.
+function buildSkeletonRender(itemName: string, itemPlural: string): (val: string) => string {
+  return (val) => {
+    const items = val
+      .split(/\n/)
+      .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+      .filter((l) => l.length > 0);
+    const numbered = items.map((item, i) => `    ${i + 1}. ${item}`).join('\n');
+    return [
+      `- **${itemName.charAt(0).toUpperCase() + itemName.slice(1)} Skeleton (USE EXACTLY — do NOT modify, reorder, or add)**:`,
+      numbered,
+      `  → THESE are the ${itemPlural}. Use them in this order. Each ${itemName} MUST appear exactly once. Do NOT invent additional ${itemPlural}. Do NOT merge or split them. The titles above are the ${itemName} headings — the body of each ${itemName} expands the title, but the title-text itself is fixed.`,
+    ].join('\n');
+  };
+}
+
+const SKELETON_RICH_RENDERS: Record<string, (val: string) => string> = {
+  slideSkeleton: buildSkeletonRender('slide', 'slides'),
+  sectionSkeleton: buildSkeletonRender('section', 'sections'),
+  chapterSkeleton: buildSkeletonRender('chapter', 'chapters'),
+  agendaSkeleton: buildSkeletonRender('agenda item', 'agenda items'),
+  pageSkeleton: buildSkeletonRender('page', 'pages'),
+  sceneSkeleton: buildSkeletonRender('scene', 'scenes'),
+};
+
+// Merge skeleton renders into authority renders for unified lookup
+Object.assign(AUTHORITY_RICH_RENDERS, SKELETON_RICH_RENDERS);
+
 function formatContentTypeInputs(
   inputs: Record<string, string | string[] | number | boolean> | undefined,
   typeId: string | null,
@@ -1648,11 +1722,22 @@ function formatContentTypeInputs(
     .filter((f) => inputs[f.key] != null && inputs[f.key] !== '')
     .map((f) => {
       const val = inputs[f.key];
+      // Special-case hookFormat: enrich with the per-value instruction
+      // so the AI doesn't treat the slug as a label-only hint.
+      if (f.key === 'hookFormat' && typeof val === 'string') {
+        return buildHookFormatLine(val);
+      }
+      // Authority-frame + narrative-anchor rich renders — see comment on
+      // AUTHORITY_RICH_RENDERS map.
+      const richRenderer = AUTHORITY_RICH_RENDERS[f.key];
+      if (richRenderer && typeof val === 'string' && val.trim().length > 0) {
+        return richRenderer(val);
+      }
       const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val);
       return `- ${f.label}: ${display}`;
     });
   if (lines.length === 0) return '';
-  return `\n## Content-Specific Inputs\nUse these inputs to make the content specific and actionable. For example, if SEO keywords are provided, naturally incorporate them. If a landing page URL is specified, use it in the CTA.\n${lines.join('\n')}`;
+  return `\n## Content-Specific Inputs\nUse these inputs to make the content specific and actionable. For example, if SEO keywords are provided, naturally incorporate them. If a landing page URL is specified, use it in the CTA. **The Hook Format instruction (when present) governs the opening line(s). The Unique Angle / Counter-Claim / Pivot Moment / Why Now instructions (when present) govern the H1, lead-paragraph, and overall narrative structure — they override any generic "engaging intro" or "comprehensive guide" defaults.**\n${lines.join('\n')}`;
 }
 
 /**

@@ -5,12 +5,11 @@ fase: pre-launch
 priority: now
 effort: 5-7 dagen (excl. native BE/DE-calibratie — accepted)
 owner: claude-code
-status: in-progress
-sub-cluster-done: A — schema migration (BrandVoiceguide.contentLocale veld) + locale-resolver helper. B foundation — types + citations register (25 sources) + nl-NL package (5 categorieën, ~110 entries) + registry. C — Pijler 3 evaluator + composition-engine merge (parallel-fetch BrandRule + heuristics, single RuleEvaluationResult downstream)
-sub-cluster-todo: B-2 — en-GB package + AI-tells (founder-content), B-3 — nl-BE extends-nl-NL programmatisch, B-4 — de-DE package
-sub-cluster-d-scripts-ready: scripts/heuristics/seed-bb-locale.ts (idempotent BB-locale seed) + scripts/heuristics/smoke-nl-NL.ts (3-sample smoke met validatie); user-runtime execution required (DB + Prisma access)
+status: done
+sub-cluster-done: A — schema migration + locale-resolver. B-1 — types + citations + nl-NL package + registry. C — Pijler 3 evaluator + composition-engine merge. B-2 — en-GB package (6 categorieën incl. ai-tells, ~120 entries). B-3 — nl-BE programmatisch extends-nl-NL (whitelist 16 NL-woorden + 7 BE-extras). B-4 — de-DE package (6 categorieën incl. Denglisch, ~110 entries). Registry alle 4 locales actief. Smoke 50/50 passed.
+sub-cluster-d-scripts-ready: scripts/heuristics/seed-bb-locale.ts + scripts/heuristics/smoke-nl-NL.ts (require DB) + scripts/heuristics/smoke-all-locales.ts (DB-vrij, npm run smoke:heuristics-locales)
 created: 2026-05-08
-completed: -
+completed: 2026-05-08
 related-adr: 2026-05-08-locale-routing-brand-voice
 related-spec: tasks/_drafts/idea-brand-control-program.md
 worktree: branddock-program-p1
@@ -143,3 +142,41 @@ Pilot-rollout volgorde (per beslispunt 2 in idea-doc):
 ADR-3 (`docs/adr/2026-05-08-locale-routing-brand-voice.md`) is de canonical referentie voor hoe `BrandVoiceguide.contentLocale` wordt geresolved + waarom hard-switch + nl-BE-extends-nl-NL pattern.
 
 Plan: schema + locale-resolver eerst (klein, foundation), dan citations + types + shared helpers, dan per-locale packs (nl-NL → en-GB → nl-BE → de-DE), dan Pijler 3 wiring + smoke. Parallel-uitvoer mogelijk per-locale na foundation.
+
+## Implementation summary 2026-05-08 (B-2/3/4 final delivery)
+
+Sub-cluster A/B-1/C/D al klaar in eerdere sessie. Deze sessie afgerond: B-2 + B-3 + B-4 + registry + smoke.
+
+**Files toegevoegd**:
+- **en-GB pakket** (7 files) — `corporate-fluff.ts` (Plain English Campaign A-Z + CFO overhyped + PRSA jargon, ~26 entries), `superlatives.ts` (~22), `fillers.ts` (Strunk & White + plain-English, 19), `vague-quality.ts` (~21), `risky-comparatives.ts` (14), `ai-tells.ts` (Wikipedia "Signs of AI writing" + The Decoder Reddit AI-words, ~40 entries — EN-only categorie), `index.ts` (frozen package)
+- **nl-BE pakket** (4 files) — `nl-words-whitelisted.ts` (16 NL-woorden Set), `corporate-fluff-extra.ts` (5 BE-vacature-cliché's), `superlatives-extra.ts` (2 BE-intensifiers), `index.ts` (programmatisch extends nl-NL met `filterWhitelist()` + extras, frozen unit)
+- **de-DE pakket** (7 files) — `corporate-fluff.ts` (Karrierebibel + Caesar Caesar + Cobalt, ~28 entries), `superlatives.ts` (~18), `fillers.ts` (Sternenvogelreisen Füllwörter, 20), `vague-quality.ts` (~16), `risky-comparatives.ts` (12), `denglisch.ts` (~23 corporate-Anglicisms; geconcat met corporate-fluff bij export), `index.ts`
+- **Citations uitgebreid** — `plain_english_a_z` toegevoegd aan `citations.ts`
+- **Registry update** — `heuristics/index.ts` registreert nu alle 4 locales
+- **Smoke** — `scripts/heuristics/smoke-all-locales.ts` (DB-vrij, 50 unit-checks) + `npm run smoke:heuristics-locales`
+
+**Quality gates**:
+- ✅ `npx tsc --noEmit` 0 errors
+- ✅ `npm run lint` 0 errors (mijn files lint-clean; baseline + 1 warning door parallel werk)
+- ✅ `npm run smoke:heuristics-locales` 50/50 passed
+
+**Smoke-coverage**:
+- Registry-load alle 4 locales
+- en-GB key terms (delve, tapestry, utilize, leverage, synergy, fillers)
+- nl-BE inheritance + whitelist filter (job/onthaal/verlof gefilterd; stakeholder/leverage/synergie/ontzorgen geërfd) + BE-extras (familiale sfeer / marktconform salaris / straf / machtig)
+- de-DE key terms (Synergie/ganzheitlich/kompetent/Mindset/Kickoff/leveragen/Stakeholder/weltweit führend/innovativ/besser/eigentlich)
+- Cross-locale isolation (ontzorgen alleen in NL-pakketten, delve alleen in en-GB, ai-tells categorie alleen in en-GB)
+- All 4 packages `Object.isFrozen(pkg) === true` (hard-switch principle ADR-3)
+
+**Out-of-scope deferred (per task-file scope-trim)**:
+- `address-form-rule.ts` (BE u/je-default) — vereist evaluator-uitbreiding voor `HeuristicRule[]` consumption (evaluator gebruikt nu alleen `categories`); HeuristicRule is in `types.ts` gedefinieerd maar evaluator-side wiring is een aparte task
+- `nl-jargon-extra-flag.ts` (BE pinpas/tosti/gaaf-flag) — idem; vereist context-aware HeuristicRule-evaluator
+- `shared/risky-comparatives-detector.ts` — 2-step rule helper genoemd in plan; v1 rust op de term-list + evaluator's substantiation-check (cijfer in window). Aparte 2-step-detector kan in iteratie 3 indien false-positive rate te hoog is
+- Native BE/DE content-strateeg-review — user-accepted in task-file; pilot-feedback corrigeert
+- Per-workspace heuristic-overrides + version-pinning — LATER per task-file
+
+**Pilot-rollout volgorde** (uit notes, ongewijzigd):
+1. Better Brands `nl-NL` ✅ (Phase 1 smoke ready, BB seed script staat klaar)
+2. Linfi `nl-NL` (zelfde pakket, alleen seed)
+3. `en-GB` voor founder-content of 3e pilot
+4. `nl-BE` + `de-DE` on-demand bij pilot-aanmelding

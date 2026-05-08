@@ -13,12 +13,15 @@ import type { HeuristicPackage } from './types';
 import type { Locale } from './locale-resolver';
 import { resolveLocaleForBrand } from './locale-resolver';
 import { NL_NL_PACKAGE } from './nl-NL';
+import { EN_GB_PACKAGE } from './en-GB';
+import { NL_BE_PACKAGE } from './nl-BE';
+import { DE_DE_PACKAGE } from './de-DE';
 
 const REGISTRY: Partial<Record<Locale, HeuristicPackage>> = {
   'nl-NL': NL_NL_PACKAGE,
-  // 'en-GB': EN_GB_PACKAGE,  ← volgt sub-cluster B-2
-  // 'nl-BE': NL_BE_PACKAGE,  ← volgt sub-cluster B-3 (extends nl-NL)
-  // 'de-DE': DE_DE_PACKAGE,  ← volgt sub-cluster B-4
+  'en-GB': EN_GB_PACKAGE,
+  'nl-BE': NL_BE_PACKAGE,
+  'de-DE': DE_DE_PACKAGE,
 };
 
 /**

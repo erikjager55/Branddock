@@ -5,11 +5,11 @@ fase: pre-launch
 priority: now
 effort: 2-3 dagen
 owner: claude-code
-status: in-progress
-sub-cluster-done: A (pure derivation), B (UI component VoiceBaseline1Pager.tsx + Brand Alignment header integration + useVoiceBaseline1Pager TanStack hook), C (F-VAL judge-prompt embed via composition-input → g-eval-rubric BRAND_VOICE-section), D (getBrandContext cache integration via brandContext.voiceBaseline1Pager + fidelity-runner direct fetch)
+status: done
+sub-cluster-done: A (pure derivation `deriveVoiceBaseline1Pager` + `formatVoiceBaseline1Pager`), B (UI `VoiceBaseline1Pager.tsx` + Brand Alignment header integration + `useVoiceBaseline1Pager` TanStack hook), C (F-VAL judge-prompt embed via composition-input → `g-eval-rubric` BRAND_VOICE-section + `external-content-runner` consumer), D (`getBrandContext` cache integration via `brandContext.voiceBaseline1Pager` + `fidelity-runner` direct fetch). Smoke 32/32 passed.
 sub-cluster-deferred: -
 created: 2026-05-08
-completed: -
+completed: 2026-05-08
 related-adr: -
 related-spec: tasks/_drafts/idea-brand-control-program.md
 worktree: branddock-program-p1
@@ -133,3 +133,50 @@ Implementatie-volgorde (aanbevolen):
 3. F-VAL embed laatst (vereist judge-prompt-rebuild + smoke-run)
 
 Cross-task dependencies: geen blokkers. Δ-3 kan parallel met Δ-2 lopen — verschillende files, verschillende concerns. Gemeenschappelijke `BrandVoiceguide` reads zijn read-only.
+
+## Implementation summary 2026-05-08 (final delivery)
+
+Alle 4 sub-clusters waren al landed in eerdere sessie. Deze sessie afgerond: smoke-test geschreven + quality-gates geverifieerd + status closed.
+
+**Files in scope (al bestaand vóór deze sessie)**:
+- `src/lib/brand-fidelity/voice-baseline-1pager.ts` (215 regels) — `deriveVoiceBaseline1Pager()` + `formatVoiceBaseline1Pager()` + types `VoiceBaseline1Pager` / `VoiceAttribute`. NN/g 4-axis tone-dimensions canonical (formalCasual / seriousFunny / respectfulIrreverent / matterOfFactEnthusiastic).
+- `src/features/brand-alignment/components/VoiceBaseline1Pager.tsx` (224 regels) — header-component voor Brand Alignment.
+- `src/features/brand-alignment/hooks/use-voice-baseline-1pager.ts` (34 regels) — TanStack Query hook met 5-min staleTime.
+- `src/components/brand-alignment/BrandAlignmentPage.tsx` — header-include.
+- `src/lib/ai/prompt-templates.ts` — `BrandContextBlock.voiceBaseline1Pager` veld.
+- `src/lib/ai/brand-context.ts` — derivation + cache integration.
+- `src/lib/brand-fidelity/g-eval-rubric.ts` — BRAND_VOICE-section consumer.
+- `src/lib/brand-fidelity/fidelity-runner.ts` + `external-content-runner.ts` — direct-fetch consumers.
+
+**Files toegevoegd deze sessie**:
+- `scripts/smoke-tests/voice-baseline-1pager.ts` (new) + `npm run smoke:voice-baseline`
+
+**Quality gates**:
+- ✅ `npx tsc --noEmit` 0 errors
+- ✅ `npm run lint` 0 errors (963 warnings; mijn smoke-script lint-clean)
+- ✅ `npm run smoke:voice-baseline` 32/32 passed (DB-vrij, pure derivation+format)
+
+**Smoke-coverage**:
+- Null/undefined input → emptyBaseline (6 checks)
+- Partial voiceguide (3 wordsWeUse, no toneDimensions) → degraded shape met derivedFromCount honest (4 checks)
+- Full voiceguide (NN/g 4-axis + 8 wordsWeUse + 5 wordsWeAvoid + 4 antiPatterns) → all sections populated (8 checks)
+- Top-10 truncation: 15 wordsWeUse → top-10 (head van lijst, available count = 15 zichtbaar) (5 checks)
+- Format helper: word-count 57 (ruim onder 300-limit), alle 4 secties aanwezig, terms verbatim opgenomen (7 checks)
+- Empty baseline format: 4 placeholder sections, headers aanwezig (2 checks)
+
+**Consumer-koppeling geverifieerd via grep** (single source of truth):
+- UI: `VoiceBaseline1Pager.tsx` + `BrandAlignmentPage.tsx`
+- F-VAL Pijler 2 judge: `g-eval-rubric.ts`
+- F-VAL runner: `fidelity-runner.ts` + `external-content-runner.ts`
+- AI context cache: `brand-context.ts` + `prompt-templates.ts`
+
+Geen duplicate-derivation in code; alle consumers importeren vanuit `src/lib/brand-fidelity/voice-baseline-1pager.ts`.
+
+## BCP Phase 1 — VOLLEDIG AFGEROND
+
+Phase 1 (F-VAL extension): 3/3 items done deze sessie:
+- ✅ `bv-wire-w1-full-centroid` (eerder)
+- ✅ `heuristics-packages-multilingual` (Δ-2 — alle 4 locales)
+- ✅ `voice-baseline-1pager` (Δ-3 — 1-pager derivation + UI + judge-embed + cache)
+
+Phase 2 review-surfaces (Δ-1 + Δ-4) is nu unblocked. Pilot-rollout BB nl-NL klaar voor execution (BB seed-script staat in `scripts/heuristics/seed-bb-locale.ts`; voiceguide moet dan `contentLocale: 'nl-NL'` gezet hebben).
