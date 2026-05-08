@@ -86,3 +86,35 @@ Goede L2 auto-mode kandidaat omdat:
 - Geen externe service-calls
 - Hooks bewaken type-check + lint na elke edit
 - Per cluster 30-60 min werk → past in 1 sessie van 4u
+
+## Voortgang
+
+Baseline bij start van uitvoering: **118 occurrences in 59 files** (lager dan task-file's 146 — eerdere clusters/sessies hadden al wat opgeruimd).
+
+| Sessie | Cluster | Files | Δ | tsc | Commit |
+|---|---|---|---|---|---|
+| 2026-05-08 | 1 — types | 8× `src/types/*` + cascade `FilterPanel.tsx` | -13 | 0 errors | `e4cd4cd` |
+| 2026-05-08 | 2 — utils + services | `logger.ts`, `FilterService.ts` | -9 | 0 errors | `8cb1eb2` |
+| 2026-05-08 | 3 — strategy-tools + white-label | 5 files + `AssetSelectionModal` export | -5 | 0 errors | `8e0d00e` |
+| | **Stand** | | **91** | | |
+
+**Type-bugs blootgelegd onder `any`** (waardevol bijproduct):
+1. `selectedAssets: any[]` in `FrameworkWorkspace.handleSelectMultipleAssets` verborg dat 'file'-typed `AssetOption` entries een runtime-mismatch zouden veroorzaken (gemapte `Asset.type` ondersteunt geen 'file'). Fix: filter via type-predicate vóór map.
+2. `client: any` in `ClientManagementPage.AddClientModal.onAdd` verborg dat formData de `createdAt/updatedAt/projectsCount/strategiesCount` velden van `Client` mist. Fix: `Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'projectsCount' | 'strategiesCount'>` als prop-type.
+
+**Resterende clusters** (91 occurrences):
+- `src/components/canvases` — 14 files, biggest. Canvas preview/render-laag, raakt UI hot path. Smoke-test per file aangeraden.
+- `src/app/api` — 10 files. Route handlers, hoog impact. Smoke-test per route na fix.
+- `src/lib/ai/**` — verspreid. AI-clients, providers.
+- `src/lib/learning-loop/**` — recent gebouwd, types waarschijnlijk al goed gedefinieerd, verbeteringen klein.
+- `src/features/*/api`, `src/features/*/hooks` — TanStack Query hooks, API client functions.
+
+Plus: `Record<string, any>` en `<T = any>` patronen die buiten de `: any` literal-grep vallen, maar wel onder de bedoeling van de task — eindig daarop expliciet aan het eind (separate cluster).
+
+**Pattern-gids voor volgende sessie**:
+- `icon: any` → `LucideIcon` (uit `lucide-react`)
+- `data?: any`, `error?: any`, `value: any` → `unknown` — dwingt narrowing bij callsite
+- `(args: any) => ...` → echte type uit caller, of `unknown` als de callsite het naderhand narrowt
+- `<T = any>` → vaak laat staan (TS conventie voor flexibele defaults), maar onderzoek per geval
+- `Record<string, any>` → `Record<string, unknown>` — bijna altijd veilig
+- Eslint regel `@typescript-eslint/no-explicit-any` blijft op `warn` tijdens uitvoering, escaleren naar `error` als laatste actie wanneer baseline 0 is.
