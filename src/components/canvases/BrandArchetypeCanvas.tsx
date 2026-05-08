@@ -6,11 +6,30 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from '../ui/textarea';
 import { Edit, RefreshCw, Save, X, Users, Star, Crown, Target } from 'lucide-react';
 
+interface Archetype {
+  name: string;
+  match: number;
+  traits: string[];
+  motivation: string;
+  shadow?: string;
+}
+
+interface BrandArchetypeData {
+  primaryArchetype: Archetype;
+  secondaryArchetype: Archetype;
+}
+
+type BrandArchetypeAggregated = {
+  primaryArchetype?: Archetype;
+  secondaryArchetype?: Archetype;
+  allArchetypes?: Archetype[];
+};
+
 interface BrandArchetypeCanvasProps {
   onRerender: () => void;
-  onEdit: (data: any) => void;
-  assetData?: any;
-  sessionData?: any;
+  onEdit: (data: BrandArchetypeData) => void;
+  assetData?: Partial<BrandArchetypeData>;
+  sessionData?: { aggregatedData?: BrandArchetypeAggregated; sources?: string[] };
   isLocked?: boolean;
 }
 
@@ -35,8 +54,8 @@ export function BrandArchetypeCanvas({ onRerender, onEdit, assetData, sessionDat
   };
 
   // Initialize with session data if available
-  const sessionContent = sessionData?.aggregatedData || {};
-  const initialData = {
+  const sessionContent: BrandArchetypeAggregated = sessionData?.aggregatedData || {};
+  const initialData: BrandArchetypeData = {
     primaryArchetype: sessionContent.primaryArchetype || defaultData.primaryArchetype,
     secondaryArchetype: sessionContent.secondaryArchetype || sessionContent.allArchetypes?.[1] || defaultData.secondaryArchetype
   };

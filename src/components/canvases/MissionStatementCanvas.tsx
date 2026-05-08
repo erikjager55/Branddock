@@ -6,11 +6,21 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from '../ui/textarea';
 import { Edit, RefreshCw, Save, X, Target, Users, Zap, Heart } from 'lucide-react';
 
+interface MissionStatementData {
+  mission: string;
+  components: { who: string; what: string; how: string; why: string };
+}
+
+type MissionStatementAggregated = {
+  mission?: string;
+  keyComponents?: Partial<MissionStatementData["components"]>;
+};
+
 interface MissionStatementCanvasProps {
   onRerender: () => void;
-  onEdit: (data: any) => void;
-  assetData?: any;
-  sessionData?: any;
+  onEdit: (data: MissionStatementData) => void;
+  assetData?: Partial<MissionStatementData>;
+  sessionData?: { aggregatedData?: MissionStatementAggregated; sources?: string[] };
   isLocked?: boolean;
 }
 
@@ -29,10 +39,10 @@ export function MissionStatementCanvas({ onRerender, onEdit, assetData, sessionD
   };
 
   // Initialize with session data if available
-  const sessionContent = sessionData?.aggregatedData || {};
-  const initialData = {
+  const sessionContent: MissionStatementAggregated = sessionData?.aggregatedData || {};
+  const initialData: MissionStatementData = {
     mission: sessionContent.mission || defaultData.mission,
-    components: sessionContent.keyComponents || defaultData.components
+    components: { ...defaultData.components, ...sessionContent.keyComponents }
   };
 
   const [editData, setEditData] = useState(initialData);

@@ -13,11 +13,19 @@ import {
   CollapsibleTrigger,
 } from '../ui/collapsible';
 
+interface GoldenCircleData {
+  why: string;
+  how: string;
+  what: string;
+}
+
+type GoldenCircleAggregated = Partial<GoldenCircleData>;
+
 interface GoldenCircleCanvasProps {
   onRerender: () => void;
-  onEdit: (data: any) => void;
-  assetData?: any;
-  sessionData?: any;
+  onEdit: (data: GoldenCircleData) => void;
+  assetData?: Partial<GoldenCircleData>;
+  sessionData?: { aggregatedData?: GoldenCircleAggregated; sources?: string[] };
   isLocked?: boolean;
 }
 
@@ -35,8 +43,8 @@ export function GoldenCircleCanvas({ onRerender, onEdit, assetData, sessionData,
   };
 
   // Initialize with session data if available
-  const sessionContent = sessionData?.aggregatedData || {};
-  const initialData = {
+  const sessionContent: GoldenCircleAggregated = sessionData?.aggregatedData || {};
+  const initialData: GoldenCircleData = {
     why: sessionContent.why || defaultData.why,
     how: sessionContent.how || defaultData.how,
     what: sessionContent.what || defaultData.what

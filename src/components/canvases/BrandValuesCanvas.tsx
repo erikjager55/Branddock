@@ -6,11 +6,24 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from '../ui/textarea';
 import { Edit, RefreshCw, Save, X, Heart, Star, Target, Users, CheckCircle } from 'lucide-react';
 
+interface BrandValueItem {
+  name: string;
+  description: string;
+  behaviors: string[];
+  frequency?: number;
+}
+
+interface BrandValuesData {
+  values: BrandValueItem[];
+}
+
+type BrandValuesAggregated = Partial<BrandValuesData>;
+
 interface BrandValuesCanvasProps {
   onRerender: () => void;
-  onEdit: (data: any) => void;
-  assetData?: any;
-  sessionData?: any;
+  onEdit: (data: BrandValuesData) => void;
+  assetData?: Partial<BrandValuesData>;
+  sessionData?: { aggregatedData?: BrandValuesAggregated; sources?: string[] };
   isLocked?: boolean;
 }
 
@@ -49,7 +62,7 @@ export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, 
   };
 
   // Initialize with session data if available
-  const sessionContent = sessionData?.aggregatedData || {};
+  const sessionContent: BrandValuesAggregated = sessionData?.aggregatedData || {};
   const initialData = {
     values: sessionContent.values || defaultData.values
   };
@@ -103,7 +116,7 @@ export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, 
         {/* Values Display */}
         <div className="space-y-6 mb-8">
           <div className="grid gap-6">
-            {editData.values.map((value: any, index: number) => (
+            {editData.values.map((value: BrandValueItem, index: number) => (
               <div key={index} className={`rounded-2xl p-6 border-2 ${getValueColor(index)}`}>
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mr-4 shadow-sm">
@@ -162,7 +175,7 @@ export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, 
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
-              {editData.values.map((value: any, index: number) => (
+              {editData.values.map((value: BrandValueItem, index: number) => (
                 <div key={index} className="border rounded-lg p-4">
                   <h4 className="font-semibold mb-4">Value #{index + 1}</h4>
                   <div className="grid grid-cols-2 gap-4">
