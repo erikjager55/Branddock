@@ -286,4 +286,4 @@ Foundation voor de drie review-surfaces (Brand Alignment Tab 3, Brand Assistant 
 - Task: [tasks/done/content-review-multi-surface.md](../tasks/done/content-review-multi-surface.md)
 - ADR: [adr/2026-05-08-fval-output-schema-bevindingen.md](adr/2026-05-08-fval-output-schema-bevindingen.md), [adr/2026-05-08-locale-routing-brand-voice.md](adr/2026-05-08-locale-routing-brand-voice.md), [adr/2026-05-08-brandclaw-agent-architectuur.md](adr/2026-05-08-brandclaw-agent-architectuur.md)
 - Spec: [tasks/_drafts/idea-brand-control-program.md](../tasks/_drafts/idea-brand-control-program.md)
-- Commit: `<finalize-commit>` (filled after commit)
+- Commit: `4c3cc99` (schema+migration) + `4232625` (engine) + `b3f3c20` (API+ingest v1) + `110e9fa` (smoke) + `8294350` (Prisma 7 import-fix scripts) + `f755ccb` (finalize)
