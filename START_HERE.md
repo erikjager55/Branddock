@@ -7,9 +7,9 @@
 
 ## Huidige fase
 
-**Pre-launch** — product-readiness van de content-flow. Vercel + Stripe zijn launch-fase.
+**Pre-launch — herzien 2026-05-08**: scope verbreed via [Brand Control Program](tasks/_drafts/idea-brand-control-program.md). Naast oorspronkelijke product-readiness ook review-side capabilities (Δ-1/2/3/4) + Strategy Analyst-stub. Pilot-start verplaatst van "+/- nu" naar +10-14 weken (strategische product-positioneringskeuze: brand-control instrument vs. content-creatie tool). Vercel + Stripe blijven launch-fase, ná programma-completion.
 
-Pre-launch eindigt bij volledige content-flow zonder blocker-bugs (Brief → Strategy → Concept → Canvas → Export) + observability live.
+Pre-launch nu: alle 4 fasen Brand Control Program klaar + content-flow blocker-vrij + observability live.
 
 ---
 
@@ -17,11 +17,15 @@ Pre-launch eindigt bij volledige content-flow zonder blocker-bugs (Brief → Str
 
 > Update na elke afgeronde task.
 
-> **2026-05-08**: content-styling-migratie afgerond via validator-driven workflow (validator catcht 9 gaps, alle 9 gefixt, eindrapport 0 issues over 10 categorieën). **Pre-launch NOW-bucket is leeg.** 8 NOW-tasks deze week — fase verschuift naar launch.
+> **2026-05-08**: oorspronkelijke pre-launch NOW-bucket geleegd (8 tasks done deze week). Brand Control Program besloten — Phase 0 voorlopers nu top-prio. ADR-1 + ADR-3 geschreven; idea-doc gelocked-in.
 
-1. **`pilot-onboarding-better-brands`** ([task](tasks/pilot-onboarding-better-brands.md)) — 2 dagen, NEXT/launch-fase. Eerste echte klant door volledige flow heen, friction-punten naar `gotchas.md`. Functioneel staat alles klaar.
-2. **`vercel-deployment`** ([task](tasks/vercel-deployment.md)) — 3 dagen, NEXT/launch-fase. Vercel + Neon DB + custom domain + monitoring. Voorwaarde voor publicatie aan externe pilot-gebruikers.
-3. **`stripe-billing-live`** ([task](tasks/stripe-billing-live.md)) — 1 week, NEXT/launch-fase. Productie-mode keys + webhooks + checkout met echte kaart. Parallel met Vercel mogelijk.
+1. **`tech-debt-any-types`** ([task](tasks/tech-debt-any-types.md)) — 1-2 dagen, **Phase 0** voorloper, status `in-progress`. Schema-extensie safety voor ADR-1 (`BrandReviewFinding`) + ADR-3 (`BrandVoiceguide.contentLocale`). Cluster-prioriteit API/hooks/lib/ai eerst. L2 auto-mode kandidaat.
+2. **`claw-page-awareness`** ([task](tasks/claw-page-awareness.md)) — 2-3 dagen, **Phase 0** voorloper, status `open`. Brand Assistant pageContext + `inspect_current_entity` + `fill_form_fields`. Acceptance uitgebreid met Δ-1 chat-integratie hooks (3 nieuwe criteria).
+3. **`bv-wire-w1-full-centroid`** ([task](tasks/bv-wire-w1-full-centroid.md)) — 4-6 uur, **Phase 1** onderdeel, status `open`. F-VAL Pijler 1 string-match → cosine-similarity. Better Brands regression toonde Δ+24 punten. Harness staat klaar.
+
+**Niet-Phase-0 NOW-task**: [`canvas-studio-audit`](tasks/canvas-studio-audit.md) (1d) — parallel uitvoerbaar binnen Phase 0 wall-clock; informeert per-item tweaks die in Phase 2 review-surfaces meegenomen kunnen worden.
+
+**Volgende deliverables na Phase 0**: Δ-2 (heuristiek-pakketten NL/EN/BE/DE) + Δ-3 (voice 1-pager) → technical-planner promotion vereist; geen task-files yet.
 
 ---
 

@@ -1,17 +1,32 @@
 ---
 id: tech-debt-any-types
 title: 146 `: any` type annotations opruimen
-fase: post-launch
-priority: next
+fase: pre-launch
+priority: now
 effort: 1-2 dagen (auto-mode kandidaat)
 owner: claude-code
 status: in-progress
 created: 2026-05-07
 completed: -
-related-adr: -
-related-spec: -
+related-adr: 2026-05-08-fval-output-schema-bevindingen, 2026-05-08-locale-routing-brand-voice
+related-spec: tasks/_drafts/idea-brand-control-program.md
 worktree: -
 ---
+
+## Update 2026-05-08 — pre-launch promotion + scope-herijking
+
+Opgenomen als **Phase 0 voorloper** in Brand Control Program (zie `tasks/_drafts/idea-brand-control-program.md`).
+
+**Reden**: Phase 1+ van het programma breidt het Prisma-schema uit met `BrandVoiceguide.contentLocale` (ADR-3), `ContentReviewLog`, `BrandReviewFinding` (ADR-1) en `StrategyObservation` (ADR-2 volgt). Bestaande `: any` in API-routes en hooks zijn de hot paths voor schema-evolutie — runtime-bugs tijdens schema-extensie zijn een reëel risico zonder strict-types op deze laag.
+
+**Cluster-prioriteit (gewijzigd t.o.v. originele plan)**: API/hooks/lib/ai eerst, dan rest. Concreet:
+1. `src/app/api/**/*.ts` — schema-extensie consumers
+2. `src/features/**/hooks/*.ts` — TanStack Query consumers
+3. `src/features/**/api/*.ts` — fetcher-laag
+4. `src/lib/ai/**/*.ts` — AI provider clients
+5. Rest verspreid
+
+L2 supervised auto-mode blijft passend; clusters 1-3 vereisen extra zorg vanwege schema-aanraking.
 
 # Probleem
 

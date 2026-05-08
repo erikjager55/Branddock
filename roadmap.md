@@ -14,7 +14,26 @@
 | **Launch** | Livegang infra + billing + eerste 30 dagen klanten | Vercel + custom domain + Stripe live billing operationeel; eerste betalende klant aan boord; 0 P0/P1 bugs in core flows |
 | **Post-launch** | Klantenwerving, schaal, Brandclaw transformatie | Doorlopend |
 
-**Brandclaw transformatie**: Optie B (in stappen post-launch) — eerste node Strategy Analyst pas maand 3 post-launch.
+**Brandclaw transformatie**: Optie B → herzien 2026-05-08 — Strategy Analyst-stub naar pre-launch getrokken in **Brand Control Program** (zie sectie hieronder).
+
+---
+
+## 🎯 Brand Control Program (pre-launch herdefinitie 2026-05-08)
+
+> 4 fasen + 4 voorlopers, 10-14 weken wall-clock pre-launch. Idea-doc: [`tasks/_drafts/idea-brand-control-program.md`](tasks/_drafts/idea-brand-control-program.md)
+> **Doel**: review-side capabilities (Δ-1/2/3/4) + Strategy Analyst-stub. Pilot-start verplaatst van "+/- nu" naar +10-14 weken — strategische product-positioneringskeuze (brand-control instrument vs. content-creatie tool).
+
+| Fase | Items | Effort | Status |
+|---|---|---|---|
+| **Phase 0 — Foundation** | [`tech-debt-any-types`](tasks/tech-debt-any-types.md), [`claw-page-awareness`](tasks/claw-page-awareness.md) | 3-5d | in-progress |
+| **Phase 1 — F-VAL extension** | [`bv-wire-w1-full-centroid`](tasks/bv-wire-w1-full-centroid.md), Δ-2 heuristiek-pakketten NL/EN/BE/DE, Δ-3 voice 1-pager | 8-11d | task-files volgen |
+| **Phase 2 — Review surfaces** | Δ-1 Content Review (3 surfaces: Brand Alignment Tab 3 + Brand Assistant chat-tool + PublishGate), Δ-4 PublishGate 2nd-opinion, [`canvas-inline-edit-overlays`](tasks/canvas-inline-edit-overlays.md) | 13-17d | task-files volgen |
+| **Phase 3 — Strategy Analyst** | brandclaw-data-collection, Strategy Analyst stub (agent-architecture v1) | 20-27d | task-files volgen |
+
+**ADR's**:
+- ✅ [`2026-05-08-fval-output-schema-bevindingen`](docs/adr/2026-05-08-fval-output-schema-bevindingen.md) — additive `BrandReviewFinding` model
+- ✅ [`2026-05-08-locale-routing-brand-voice`](docs/adr/2026-05-08-locale-routing-brand-voice.md) — `BrandVoiceguide.contentLocale` per-brand routing
+- ⏳ ADR-2 Brandclaw agent-architectuur — vóór Phase 3 start
 
 ---
 
@@ -22,21 +41,33 @@
 
 Pre-launch = product-readiness van content-flows. Sortering op dependency-volgorde.
 
-**Content-items kritisch pad** (sequencing: #1 → #2 → #4 + #5 parallel)
+**Discovery / planning** (blokkeert nieuwe Canvas/Studio bouwtaken)
 | ID | Titel | Effort | Status | Blocker |
 |---|---|---|---|---|
-| [`studio-content-generation-real-ai`](tasks/studio-content-generation-real-ai.md) | Vervang TODO-stubs door echte AI-calls in studio generation | 1 week | open | P0 — content-flow werkt nu niet |
-| [`content-versioning-crud`](tasks/content-versioning-crud.md) | ContentVersion CRUD-routes + version history UI | 3 dagen | open | dependency op #1 voor hooks |
-| [`brand-voice-content-integration`](tasks/brand-voice-content-integration.md) | BrandVoiceGuide injectie in generation prompts + voice-consistency score | 3 dagen | open | dependency op #1 |
-| [`content-item-qa-gating`](tasks/content-item-qa-gating.md) | Publish-readiness gate op consistency/persona/voice scores | 2-3 dagen | open | dependency op voice-score uit voorgaande |
+| [`canvas-studio-audit`](tasks/canvas-studio-audit.md) | Audit Canvas + Studio feitelijke staat — basis voor herplanning per-item tweaks + generieke verbeteringen | 1 dag | open | - |
 
-**Independent pre-launch tracks** (parallel uitvoerbaar)
+**Content-items kritisch pad** ✅ ALLE VIER DONE 2026-05-07/08 — verplaatsen naar changelog bij volgende roadmap-update
 | ID | Titel | Effort | Status | Blocker |
 |---|---|---|---|---|
-| [`posthog-sentry-browser`](tasks/posthog-sentry-browser.md) | PostHog + Sentry browser-side wiring | 1 dag | open | - |
-| [`campaign-drafts-db-backed`](tasks/campaign-drafts-db-backed.md) | Campaign Drafts DB-backed (multi-device persistence) | 1.5 dag | open | - |
-| [`content-styling-migratie`](tasks/content-styling-migratie.md) | Content-styling velden naar Content Brief (8 categorieën) | 3-5 dagen | open | - |
-| [`auto-trigger-fidelity-scoring`](tasks/auto-trigger-fidelity-scoring.md) | Auto-trigger fidelity-scoring na ContentVersion | 1 uur | blocked | wacht op `content-versioning-crud` |
+| [`studio-content-generation-real-ai`](tasks/done/studio-content-generation-real-ai.md) | Vervang TODO-stubs door echte AI-calls in studio generation | 1 week | ✅ done 2026-05-07 | - |
+| [`content-versioning-crud`](tasks/done/content-versioning-crud.md) | ContentVersion CRUD-routes + version history UI | 3 dagen | ✅ done 2026-05-07 | - |
+| [`brand-voice-content-integration`](tasks/done/brand-voice-content-integration.md) | BrandVoiceGuide injectie in generation prompts + voice-consistency score | 3 dagen | ✅ done 2026-05-08 | - |
+| [`content-item-qa-gating`](tasks/done/content-item-qa-gating.md) | Publish-readiness gate op consistency/persona/voice scores | 2-3 dagen | ✅ done 2026-05-08 | - |
+
+**Independent pre-launch tracks** ✅ ALLE VIER DONE 2026-05-07/08 — verplaatsen naar changelog bij volgende roadmap-update
+| ID | Titel | Effort | Status | Blocker |
+|---|---|---|---|---|
+| [`posthog-sentry-browser`](tasks/done/posthog-sentry-browser.md) | PostHog + Sentry browser-side wiring | 1 dag | ✅ done 2026-05-08 | - |
+| [`campaign-drafts-db-backed`](tasks/done/campaign-drafts-db-backed.md) | Campaign Drafts DB-backed (multi-device persistence) | 1.5 dag | ✅ done 2026-05-08 | - |
+| [`content-styling-migratie`](tasks/done/content-styling-migratie.md) | Content-styling velden naar Content Brief (8 categorieën) | 3-5 dagen | ✅ done 2026-05-08 | - |
+| [`auto-trigger-fidelity-scoring`](tasks/done/auto-trigger-fidelity-scoring.md) | Auto-trigger fidelity-scoring na ContentVersion | 1 uur | ✅ done 2026-05-07 | - |
+
+**Brand Control Program — Phase 0 voorlopers** (gepromoot van post-launch op 2026-05-08)
+| ID | Titel | Effort | Status | Blocker |
+|---|---|---|---|---|
+| [`tech-debt-any-types`](tasks/tech-debt-any-types.md) | 146 `: any` opruimen — schema-extensie safety voor Phase 1+ | 1-2 dagen | in-progress | - |
+| [`claw-page-awareness`](tasks/claw-page-awareness.md) | Brand Assistant page awareness + Δ-1 chat-integratie hooks | 2-3 dagen | open | - |
+| [`bv-wire-w1-full-centroid`](tasks/bv-wire-w1-full-centroid.md) | F-VAL Pijler 1 semantic centroid switch (Phase 1 onderdeel) | 4-6 uur | open | - |
 
 ---
 
@@ -52,14 +83,13 @@ Pre-launch = product-readiness van content-flows. Sortering op dependency-volgor
 | `marketing-site-pricing` | Marketing site + pricing pagina | launch | 1 week | Conversie-driver — task-file volgt |
 
 **Post-launch**
+
+> 4 items verplaatst 2026-05-08 naar **Brand Control Program** (zie programma-sectie boven): `claw-page-awareness` + `canvas-inline-edit-overlays` (Phase 0/2), `bv-wire-w1-full-centroid` (Phase 1), `tech-debt-any-types` (Phase 0).
+
 | ID | Titel | Fase | Effort | Notitie |
 |---|---|---|---|---|
-| [`claw-page-awareness`](tasks/claw-page-awareness.md) | Brand Assistant page awareness + field-fill | post-launch | 2-3 dagen | Gedistilleerd uit plan |
-| [`canvas-inline-edit-overlays`](tasks/canvas-inline-edit-overlays.md) | Per-preview inline-edit Content Canvas | post-launch | 2-3 dagen | UX-verbetering item 9.0b |
 | [`power-user-shortcuts`](tasks/power-user-shortcuts.md) | Power-user shortcuts (5 micro-optimalisaties) | post-launch | 1-2 dagen | Gedistilleerd uit plan |
-| [`bv-wire-w1-full-centroid`](tasks/bv-wire-w1-full-centroid.md) | BV-WIRE W-1 full centroid switch | post-launch | 4-6 uur | Regression-harness staat klaar |
 | `learning-loop-dashboard-usage` | Per-sourceIdentifier dashboard | post-launch | halve dag | Task-file volgt |
-| [`tech-debt-any-types`](tasks/tech-debt-any-types.md) | 146 `: any` opruimen | post-launch | 1-2 dagen | L2 auto-mode kandidaat |
 | `weekly-report-email-via-resend` | Weekly report email via Emailit | post-launch | 1 dag | Task-file volgt na weekly-report generator |
 | [`campaign-brief-output-mapper`](tasks/campaign-brief-output-mapper.md) | Campagne-brief output-mapper (Fase A van Cowork-pariteit) | pre-launch | 2-3 dagen | Technical-planner promoted 2026-05-07. Phase -1 Gates 3/3 passed, geen ADR. Render-only, geen Prisma-wijziging. **Now-eligible** sinds studio-P0 done — verplaatsen naar NOW-tabel wanneer gepakt wordt |
 | `studio-siblings-context-variation` | Variatie-borging tussen naburige posts (lexicale diversiteit Jaccard) | post-launch | ½-1 dag | Quality-enhancement na studio-P0. Lost saaie-posts JTBD op (B1-discovery 2026-05-07). Geen Brandclaw-impact. |
@@ -126,14 +156,16 @@ Pre-launch = product-readiness van content-flows. Sortering op dependency-volgor
 
 ## 💡 Aanbeveling huidige sessie
 
-Docs-migratie is afgerond (entries #222-#224 in changelog). Inventarisatie 2026-05-07 leverde **content-items kritisch pad** op:
+**2026-05-08 update**: Brand Control Program-besluit verschuift focus. Content-items kritisch pad is volledig af (8 NOW-tasks done deze week — alle ✅). Resterende NOW-tasks: `canvas-studio-audit` (1d) + 3 Phase 0 voorlopers van het programma.
 
-1. **`studio-content-generation-real-ai`** eerst (1 week) — P0, content-flow werkt nu niet door TODO-stubs in 3 generation-routes
-2. **`content-versioning-crud`** (3 dagen) — unblockt `auto-trigger-fidelity-scoring`, foundation voor edit-history
-3. **`brand-voice-content-integration`** (3 dagen) + **`content-item-qa-gating`** (2-3 dagen) parallel — kwaliteit + gates op de output uit #1
-4. **`posthog-sentry-browser`** (1 dag) als tussendoor-quick-win voor observability vóór pilot
+**Programma-prioriteit nu**:
+1. **`tech-debt-any-types`** (1-2d, L2 auto-mode) — Phase 0 voorloper, schema-extensie safety voor ADR-1 + ADR-3 implementatie
+2. **`claw-page-awareness`** (2-3d) — Phase 0 voorloper, Δ-1 chat-integratie hook
+3. **`bv-wire-w1-full-centroid`** (4-6u) — Phase 1 onderdeel, regression-harness staat klaar
+4. **Δ-2 + Δ-3 task-files genereren** via technical-planner zodra Phase 0 klaar is
+5. **`canvas-studio-audit`** (1d) parallel binnen Phase 0 wall-clock — informeert per-item tweaks die in Phase 2 review-surfaces meegenomen kunnen worden
 
-Vercel + Stripe verplaatst naar launch-fase (NEXT) — pakken op ná product-readiness.
+Vercel + Stripe blijven in launch-fase (NEXT) — `pilot-onboarding-better-brands` wacht op programma-completion (+10-14 weken).
 
 ---
 

@@ -1,17 +1,27 @@
 ---
 id: claw-page-awareness
 title: Brand Assistant page awareness + universal field-fill
-fase: post-launch
-priority: next
+fase: pre-launch
+priority: now
 effort: 2-3 dagen
 owner: claude-code
 status: open
 created: 2026-05-07
 completed: -
 related-adr: -
-related-spec: docs/archive/plans-pending-task-migration/IMPLEMENTATIEPLAN-CLAW-PAGE-AWARENESS.md
+related-spec: docs/archive/plans-pending-task-migration/IMPLEMENTATIEPLAN-CLAW-PAGE-AWARENESS.md, tasks/_drafts/idea-brand-control-program.md
 worktree: branddock-feat-claw-awareness
 ---
+
+## Update 2026-05-08 — pre-launch promotion + Δ-1 chat-integratie hooks
+
+Opgenomen als **Phase 0 voorloper** in Brand Control Program (zie `tasks/_drafts/idea-brand-control-program.md`).
+
+**Δ-1 dependency**: Brand Assistant chat-integratie van Content Review (Δ-1) bouwt op deze drie infrastructuur-elementen — verifieer in deze task dat de ontworpen contracten Δ-1 niet uitsluiten:
+
+- **`pageContext` payload** moet workspace-id + (wanneer op Canvas) huidige content-id + section-path bevatten — zodat het komende `review_content` read-tool weet wát te reviewen wanneer user "review deze draft" zegt
+- **`inspect_current_entity` returns** moeten content-tekst + section-id meeleveren wanneer page = Canvas Step 4 — zodat review-flow huidige draft kan ophalen zonder paste-in
+- **Read-tool chat-card pattern** moet werken voor multi-row return (`BrandReviewResultCard` rendert N findings) — verificatie dat `MutationConfirmCard`-pattern of een nieuw `ReadResultCard`-pattern dit ondersteunt
 
 # Probleem
 
@@ -36,6 +46,9 @@ Generic field-filler vermijdt per-pagina dedicated tools — eenmalig bouwen, we
 - [ ] Bracket-notatie support voor nested velden (`goals[0].title`)
 - [ ] Wiring in 3 representatieve pagina's: Stap 1 Content Brief (Canvas), Persona Detail, Brand Asset Detail
 - [ ] System prompt in `context-assembler.ts` includeert pagina-context + welke velden actief zijn
+- [ ] **Δ-1 chat-integratie compat**: `pageContext` payload-shape includeert workspace-id + (when on Canvas) content-id + section-path — komende `review_content` read-tool kan deze velden lezen zonder schema-wijziging
+- [ ] **Δ-1 chat-integratie compat**: `inspect_current_entity` returns op Canvas Step 4 leveren content-tekst + section-id mee — voldoende voor `review_content` om huidige draft op te halen
+- [ ] **Δ-1 chat-integratie compat**: read-tool result-card-pattern is gedocumenteerd of geverifieerd — `BrandReviewResultCard` (N-row tabel) zal hetzelfde patroon gebruiken
 - [ ] `npx tsc --noEmit` 0 errors
 - [ ] Smoke-test: vraag "vul deze velden in" op elk van de 3 wired pagina's → verwacht velden gevuld na bevestiging
 
