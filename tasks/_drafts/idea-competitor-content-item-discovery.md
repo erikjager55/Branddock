@@ -4,7 +4,7 @@ title: Competitor content-item discovery — eerste producer voor CompetitorCont
 status: pending-tech
 created: 2026-05-08
 verdict: needs-validation-first
-revision: 2026-05-08 — A1 probe uitgevoerd (42.9% RSS hit-rate, < 50% threshold), scope-cut nodig naar sitemap-first variant. Zie docs/audits/2026-05-08-competitor-rss-probe-results.md.
+revision: 2026-05-08 — A1 probe (42.9% RSS) → scope-cut. A2 probe (71.4% sitemap, > 70% target) → sitemap-first MVP scope BEVESTIGD. HTML-fallback verworpen (0% in sample). Zie docs/audits/2026-05-08-competitor-rss-probe-results.md + docs/audits/2026-05-08-competitor-content-source-availability.md.
 ---
 
 # Probleemstelling (1 zin)
@@ -172,16 +172,21 @@ Door A1 + A3 alleen als probes te draaien (niet bouwen), leren we de feasibility
 
 ## Verdict van de planner
 
-**needs-validation-first** (revisie 2026-05-08 na A1 probe) — A1 verworpen, scope-cut nodig vóór technical-planner kan promoten. Schema is mergeable, hookt aan Phase 3 BCP en Fase 4. Out-of-scope > In-scope.
+**needs-validation-first** (revisie 2026-05-08 — 1 open validatie-stap resterend).
 
-Drie open validatie-stappen vóór promotion:
-1. **A2 sitemap.xml-coverage probe** op zelfde 7 competitors — verwacht 85% hit-rate, te valideren in vervolg-probe (~30 min)
-2. **A3 format-classifier accuracy** op 50-item sample (gemixt sitemap + RSS items) — bepaalt of AI-classifier in MVP-pad zit of optioneel
-3. **HTML-fallback hit-rate** voor sites zonder RSS én zonder sitemap — voorkomt MVP gap voor 10-15% niche
+Status van de pre-build validaties:
+1. ✅ **A1 RSS-coverage** — 42.9% (< 50% threshold) → scope-cut vastgelegd
+2. ✅ **A2 sitemap-coverage** — 71.4% (> 70% target) → sitemap-first scope bevestigd
+3. ✗ **HTML-fallback** — 0% in sample → niet bruikbaar, verwijderd uit MVP-scope
+4. ⏳ **A3 format-classifier accuracy** — open. 50 URLs uit gevonden sitemaps handmatig labelen als ground-truth, AI-classifier draaien, accuracy meten. ~30 min werk. Bepaalt of AI-classifier in MVP-pad zit (haalbaar als ≥ 80%).
 
-Bij A2 ≥ 70% hit-rate: scope reviseren naar sitemap-first variant met deze cijfers en alsnog promoten naar technical-planner.
+Bij A3 ≥ 80% accuracy: technical-planner kan promoten naar uitvoerbare `tasks/competitor-content-item-discovery.md` met sitemap-first MVP-scope (effort 5-6 dagen, zie audit-doc).
+
+Bij A3 < 80%: classifier-strategie heroverwegen (taxonomie-based fallback, of AI-prompts tunen, of defer formats naar post-launch met enkel BLOG_POST detection).
 
 Async-fallback design (A5) blijft staan als pre-build voorbehoud.
+
+**Niet langer nodig**: HTML-fallback design — verworpen op evidence. Graceful-skip pad voor competitors zonder enige bron (~28% verwacht) is wel verplicht.
 
 # 5-Punts Stop-Conditie
 
