@@ -8,7 +8,7 @@ owner: claude-code
 status: in-progress
 created: 2026-05-08
 completed:
-progress: PR-1 schema-only applied via db push (2026-05-08). PR-2 (backfill + diff-engine) en PR-3 (refresh dual-write) staan nog open.
+progress: PR-1 schema applied via db push (commit fd2738c). PR-2 diff-engine + hash + backfill committed (commit 99df752, 7 retroactive snapshots backfilled). PR-3 refresh dual-write committed.
 related-adr: docs/adr/2026-05-08-competitor-snapshot-historie.md
 related-spec: tasks/_drafts/idea-competitive-intelligence-loop.md
 worktree: branddock-feat-competitor-snapshot
@@ -173,7 +173,7 @@ Volgt exact `BrandstyleSnapshot` (`prisma/schema.prisma:1860-1894`): hash-based 
 
 Per CLAUDE.md: deze task heeft 3+ stappen + architecturale impact (schema-wijziging). User-approval op deze plan vóór uitvoering. Geen code wordt geschreven tot je groen licht geeft.
 
-## PR-1 voortgang (2026-05-08)
+## PR-1 voortgang (2026-05-08, commit fd2738c)
 
 ✅ Feature-branch `branddock-feat-competitor-snapshot` aangemaakt
 ✅ Schema-additie: 3 modellen, 6 enums, 5 nieuwe Competitor-velden, 1 nieuwe index, 5 relations
@@ -183,6 +183,27 @@ Per CLAUDE.md: deze task heeft 3+ stappen + architecturale impact (schema-wijzig
 ✅ `prisma db push` toegepast op dev-DB; 25 bestaande competitors hebben default `snapshotCount=0` zonder NULL-issues
 ✅ pgvector v0.8.2 actief — `embedding vector(1536)` op CompetitorContentItem werkt
 ✅ SQL bewaard in `prisma/migrations-pending-bootstrap/2026-05-08_competitor_snapshot_models.sql` voor toekomstige Vercel/Neon migration-bootstrap
+
+## PR-2 voortgang (2026-05-08, commit 99df752)
+
+✅ `src/lib/competitors/types.ts` — CanonicalExtracted (15 fields), DiffPayload discriminated union, DetectedActivity, ManualEventContext
+✅ `src/lib/competitors/snapshot-hash.ts` — sha256 over canonical sort + whitespace-normalize, tri-state nullable booleans
+✅ `src/lib/competitors/diff-engine.ts` — 7 deterministische rules (TAGLINE / VALUE_PROP / PRICING / NEW_PRODUCT / PRODUCT_REMOVED / STATUS / TIER) met >30% details-ratio voor PRICING_CHANGED major-detection
+✅ `prisma/scripts/backfill-competitor-snapshots.ts` — idempotent per-row transactie, dry-run mode, workspace-filter
+✅ `src/lib/api/cache-keys.ts` — `competitors.activity(wsId)` + `.snapshots(wsId, id)` toegevoegd
+✅ `scripts/smoke-tests/competitor-diff-engine.ts` — 43 asserts in 3 lagen, 43/43 pass
+✅ Backfill draaide live: 7 ANALYZED competitors → 7 retroactive snapshots, 2e run idempotent (0 schrijves)
+
+## PR-3 voortgang (2026-05-08, in-progress)
+
+✅ `src/app/api/competitors/[id]/refresh/route.ts` — herschreven naar dual-write pattern:
+   - Build CanonicalExtracted uit AI-result + existing fallback (zelfde merge-rules als pre-PR-3)
+   - computeContentHash + read latest snapshot
+   - **hash-match path**: alleen `lastScrapedAt` updaten, return early met `_refreshOutcome: 'no-op-hash-match'`
+   - **hash-miss path**: één `$transaction` met snapshot.create + activities.createMany + competitor.update (incl. snapshotCount + unacknowledgedActivityCount increments)
+   - Cache-invalidation onveranderd (`prefixes.competitors` raakt list/detail/activity/snapshots in één call)
+✅ `npx tsc --noEmit` 0 errors
+✅ `scripts/smoke-tests/competitor-refresh-dual-write.ts` — 14 asserts in 3 scenarios (hash-match no-op, hash-miss content change, combined workflow + content), 14/14 pass, fixture cleanup via cascade werkt
 
 ## Afwijkingen van oorspronkelijk plan
 
