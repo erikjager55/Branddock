@@ -14,11 +14,13 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { resolveWorkspaceId } from '@/lib/auth-server';
+import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { publishToLinkedIn } from '@/lib/integrations/linkedin/linkedin-client';
 import { refreshTokenIfNeeded, type StoredCredentials } from '@/lib/integrations/social-oauth/token-refresh';
 import { sendViaResend, contentToEmailHtml } from '@/lib/integrations/resend/resend-publish';
 import { createWordPressPost, uploadWordPressImage, contentToWordPressHtml } from '@/lib/integrations/wordpress/wordpress-client';
+import { getContentReadiness } from '@/lib/learning-loop/content-readiness';
+import { emitLearningEvent } from '@/lib/learning-loop';
 
 interface RouteParams {
   params: Promise<{ deliverableId: string }>;
@@ -30,6 +32,12 @@ const publishSchema = z.object({
   publishNow: z.boolean().optional(),
   /** Email-specific: recipient address(es) */
   emailTo: z.union([z.string().email(), z.array(z.string().email())]).optional(),
+  /**
+   * Override the QA-gate when the latest fidelity-score is below threshold.
+   * Required (10..500 chars) when `getContentReadiness` returns `canPublish: false`;
+   * absent overrideReason on a blocked deliverable returns 422.
+   */
+  overrideReason: z.string().trim().min(10).max(500).optional(),
 });
 
 export async function POST(request: Request, { params }: RouteParams) {
@@ -57,7 +65,47 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { channelId, scheduledFor, publishNow, emailTo } = parsed.data;
+    const { channelId, scheduledFor, publishNow, emailTo, overrideReason } = parsed.data;
+
+    // QA-gate — channel-publish actually distributes externally (LinkedIn,
+    // email, WordPress) so the fidelity-gate is even more important here than
+    // on the manual /publish route. Override accepted via `overrideReason`
+    // body field (10..500 chars). Audit-trail emitted as `content.published`
+    // LearningEvent with `reason="override (score N): <text>"` — discoverable
+    // alongside the regular publish-with-override events.
+    const readiness = await getContentReadiness(deliverableId, workspaceId);
+    if (!readiness.canPublish && !overrideReason) {
+      return NextResponse.json(
+        {
+          error: 'Content not ready for channel publish',
+          reason: readiness.reason,
+          score: readiness.latestScore,
+          hint: 'Pass `overrideReason` (10..500 chars) to bypass the gate.',
+        },
+        { status: 422 },
+      );
+    }
+    if (!readiness.canPublish && overrideReason) {
+      const session = await getServerSession();
+      const scoreNum = readiness.latestScore?.compositeScore;
+      const overrideTag =
+        scoreNum !== undefined
+          ? `override (score ${Math.round(scoreNum)}): ${overrideReason}`
+          : `override: ${overrideReason}`;
+      void emitLearningEvent({
+        workspaceId,
+        userId: session?.user?.id ?? null,
+        payload: {
+          type: 'content.published',
+          data: {
+            deliverableId,
+            previousStatus: deliverable.approvalStatus ?? 'DRAFT',
+            newStatus: 'PUBLISHED',
+            reason: overrideTag,
+          },
+        },
+      });
+    }
 
     const channel = await prisma.publishChannel.findFirst({
       where: { id: channelId, workspaceId, isActive: true },

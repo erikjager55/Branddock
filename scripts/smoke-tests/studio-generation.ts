@@ -357,6 +357,76 @@ async function testContentVersioning() {
   console.log(`[${restoredCorrectly ? 'OK' : 'FAIL'}] Component content reverted: ${restoredCorrectly}`);
 }
 
+async function testReadinessGate() {
+  console.log('\n══════════════════════════════════════════════════════════');
+  console.log('TEST 5: getContentReadiness QA-gate');
+  console.log('══════════════════════════════════════════════════════════');
+
+  const { getContentReadiness } = await import('@/lib/learning-loop/content-readiness');
+  const { createContentVersion } = await import('@/lib/learning-loop/content-version');
+
+  const d = await loadDeliverable();
+  const wsId = d.campaign.workspaceId;
+
+  // Baseline — most recent score on most recent version determines state.
+  const baseline = await getContentReadiness(d.id, wsId);
+  console.log(`Baseline readiness: canPublish=${baseline.canPublish}, reason=${baseline.reason}`);
+  if (baseline.latestScore) {
+    console.log(
+      `  composite=${Math.round(baseline.latestScore.compositeScore)}, threshold=${baseline.latestScore.threshold}, met=${baseline.latestScore.thresholdMet}`,
+    );
+  }
+
+  // Force a below-threshold scenario by creating a fresh version + manual low score.
+  const v = await createContentVersion({
+    deliverableId: d.id,
+    workspaceId: wsId,
+    createdBy: 'AI',
+  });
+  console.log(`Created test ContentVersion v${v.versionNumber}`);
+
+  await prisma.contentFidelityScore.create({
+    data: {
+      workspaceId: wsId,
+      contentVersionId: v.id,
+      judgeIdentifier: 'smoke-test-judge',
+      compositeScore: 42,
+      pillarScores: { strategic: { score: 40, weight: 0.4 }, audience: { score: 45, weight: 0.3 }, execution: { score: 41, weight: 0.3 } },
+      subCriteriaScores: {},
+      ruleViolations: [],
+      thresholdMet: false,
+      scoredAt: new Date(),
+    },
+  });
+  console.log('Inserted ContentFidelityScore (composite=42, thresholdMet=false)');
+
+  const blocked = await getContentReadiness(d.id, wsId);
+  console.log(`After low score: canPublish=${blocked.canPublish}, reason=${blocked.reason}`);
+  console.log(
+    `  [${!blocked.canPublish && blocked.reason === 'below-threshold' ? 'OK' : 'FAIL'}] gate blocks below-threshold`,
+  );
+
+  // Insert a passing score on the same version — most recent should now be passing.
+  await prisma.contentFidelityScore.create({
+    data: {
+      workspaceId: wsId,
+      contentVersionId: v.id,
+      judgeIdentifier: 'smoke-test-judge-passing',
+      compositeScore: 78,
+      pillarScores: { strategic: { score: 80, weight: 0.4 }, audience: { score: 75, weight: 0.3 }, execution: { score: 78, weight: 0.3 } },
+      subCriteriaScores: {},
+      ruleViolations: [],
+      thresholdMet: true,
+      scoredAt: new Date(),
+    },
+  });
+  const ready = await getContentReadiness(d.id, wsId);
+  console.log(`After passing score: canPublish=${ready.canPublish}, reason=${ready.reason}`);
+  console.log(
+    `  [${ready.canPublish && ready.reason === 'ready' ? 'OK' : 'FAIL'}] gate allows passing score`,
+  );
+}
+
 async function main() {
   console.log('Studio Content Generation — Smoke Test');
   console.log('======================================\n');
@@ -364,6 +434,7 @@ async function main() {
   await testGenerateAll();
   await testRegenerate();
   await testContentVersioning();
+  await testReadinessGate();
   console.log('\n══════════════════════════════════════════════════════════');
   console.log('Smoke test complete.');
   console.log('══════════════════════════════════════════════════════════\n');

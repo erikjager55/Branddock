@@ -1,43 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
-import { z } from 'zod';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { emitLearningEvent } from '@/lib/learning-loop';
 import { getContentReadiness } from '@/lib/learning-loop/content-readiness';
 
 /**
- * Body shape: either pass `scheduledPublishDate` for a future date (results in
- * SCHEDULED status) or `publishNow: true` (results in PUBLISHED status). A
- * past date counts as a backdated publish (PUBLISHED with publishedAt set to
- * that past date). Both fields optional → empty body defaults to publishNow.
+ * Override path for publish when the QA-gate (fidelity-score below threshold)
+ * blocks the regular /publish route. Caller must supply a `reason` string
+ * (10..500 chars) so analytics can later query why overrides happen.
  *
- * Distribution is independent: `publishedVia` carries the channel platform
- * (e.g. "linkedin") when the publish was triggered via a connected channel.
- * Omitted (or empty) means manual / local-only — the user marked it as
- * published in Branddock and distributes externally themselves.
+ * The event tag is `content.published` with `reason="override (score N): <text>"`
+ * — same event type as a normal publish so timelines stay clean. Filtering
+ * for overrides happens via the `reason` prefix.
  */
-const publishSchema = z.object({
+const overrideSchema = z.object({
+  reason: z.string().trim().min(10).max(500),
   scheduledPublishDate: z.string().datetime().optional(),
   publishNow: z.boolean().optional(),
   publishedVia: z.string().trim().min(1).max(50).optional(),
 });
 
-/**
- * POST /api/studio/[deliverableId]/publish
- *
- * WordPress-style publish endpoint. The state machine:
- *
- *   - publishNow=true OR no date          → PUBLISHED, publishedAt=now
- *   - scheduledPublishDate in the future  → SCHEDULED, scheduledPublishDate set
- *   - scheduledPublishDate in the past    → PUBLISHED, publishedAt=that date (backdate)
- *
- * Idempotent: a SCHEDULED item can be re-scheduled (date updated) or
- * fast-tracked to PUBLISHED. Pre-conditions relaxed — any status except a
- * truly empty draft can publish (we keep the "must have content" check
- * implicit through the upstream UI).
- */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ deliverableId: string }> },
@@ -52,39 +37,33 @@ export async function POST(
       where: { id: deliverableId },
       include: { campaign: { select: { workspaceId: true, id: true } } },
     });
-
-    if (!deliverable) {
-      return NextResponse.json({ error: 'Deliverable not found' }, { status: 404 });
-    }
+    if (!deliverable) return NextResponse.json({ error: 'Deliverable not found' }, { status: 404 });
     if (deliverable.campaign.workspaceId !== workspaceId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const body = await request.json().catch(() => ({}));
-    const parsed = publishSchema.safeParse(body);
+    const parsed = overrideSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Validation failed', details: parsed.error.flatten() },
         { status: 400 },
       );
     }
+    const { reason, scheduledPublishDate, publishNow, publishedVia } = parsed.data;
 
-    const { scheduledPublishDate, publishNow, publishedVia } = parsed.data;
-
-    // QA-gate: block publish when the latest fidelity-score is below the
-    // type-specific compositeThreshold. Failsafe-open (no version / no score
-    // yet) lets the publish proceed so missing-data doesn't brick the route.
-    // For overrides, callers must use POST /publish-with-override.
+    // Capture the score we're overriding for the audit-trail. Failsafe-open
+    // (no-version / no-score) means there's nothing to override — caller
+    // should use the normal /publish route. Reject so we don't pollute the
+    // override-rate metric with no-op overrides.
     const readiness = await getContentReadiness(deliverableId, workspaceId);
-    if (!readiness.canPublish) {
+    if (readiness.canPublish) {
       return NextResponse.json(
         {
-          error: 'Content not ready for publish',
+          error: 'Override not needed — content passes the gate. Use /publish.',
           reason: readiness.reason,
-          score: readiness.latestScore,
-          overrideEndpoint: `/api/studio/${deliverableId}/publish-with-override`,
         },
-        { status: 422 },
+        { status: 400 },
       );
     }
 
@@ -92,23 +71,18 @@ export async function POST(
     const schedDate = scheduledPublishDate ? new Date(scheduledPublishDate) : null;
     const isFuture = schedDate !== null && schedDate.getTime() > now.getTime();
 
-    // Resolve target status + timestamps from the body shape.
     let nextStatus: 'SCHEDULED' | 'PUBLISHED';
     let nextPublishedAt: Date | null;
     let nextScheduledDate: Date | null;
-
     if (publishNow === true || schedDate === null) {
-      // Publish immediately — no future date provided.
       nextStatus = 'PUBLISHED';
       nextPublishedAt = now;
       nextScheduledDate = null;
     } else if (isFuture) {
-      // Schedule for a future date — status SCHEDULED, no publishedAt yet.
       nextStatus = 'SCHEDULED';
       nextPublishedAt = null;
       nextScheduledDate = schedDate;
     } else {
-      // Past date → backdated publish.
       nextStatus = 'PUBLISHED';
       nextPublishedAt = schedDate;
       nextScheduledDate = schedDate;
@@ -120,26 +94,21 @@ export async function POST(
         approvalStatus: nextStatus,
         publishedAt: nextPublishedAt,
         scheduledPublishDate: nextScheduledDate,
-        // Distribution channel — null when the user used the local "Publish
-        // now" button without a connected channel. Channel-publish routes
-        // pass the platform string explicitly.
         publishedVia: publishedVia ?? null,
-        // Mark the deliverable as completed once it has a publish intent —
-        // SCHEDULED items still count as completed work, just queued.
         status: 'COMPLETED',
       },
     });
 
-    // Server-side cache invalidation. Client-side TanStack Query cache is
-    // refreshed by the caller (Step4Timeline invalidates contentLibraryKeys
-    // + campaignKeys after a successful response).
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
-    // Learning Loop event emission (cat 9 — content lifecycle).
-    // Only emit on actual PUBLISHED transitions; SCHEDULED is ambient state.
     if (nextStatus === 'PUBLISHED') {
       const session = await getServerSession();
+      const scoreNum = readiness.latestScore?.compositeScore;
+      const overrideTag =
+        scoreNum !== undefined
+          ? `override (score ${Math.round(scoreNum)}): ${reason}`
+          : `override: ${reason}`;
       void emitLearningEvent({
         workspaceId,
         userId: session?.user?.id ?? null,
@@ -149,6 +118,7 @@ export async function POST(
             deliverableId: updated.id,
             previousStatus: deliverable.approvalStatus ?? 'DRAFT',
             newStatus: nextStatus,
+            reason: overrideTag,
           },
         },
       });
@@ -160,9 +130,14 @@ export async function POST(
       publishedAt: updated.publishedAt?.toISOString() ?? null,
       scheduledPublishDate: updated.scheduledPublishDate?.toISOString() ?? null,
       publishedVia: updated.publishedVia,
+      override: {
+        reason,
+        compositeScoreAtOverride: readiness.latestScore?.compositeScore ?? null,
+        threshold: readiness.latestScore?.threshold ?? null,
+      },
     });
   } catch (error) {
-    console.error('[POST /api/studio/:id/publish]', error);
+    console.error('[POST /api/studio/:id/publish-with-override]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
