@@ -134,4 +134,4 @@ Bug-fix + UX rework op de "Review Creative Concept" wizard-stap. **Bug**: button
 - Task: [tasks/done/concept-approval-ux-fix.md](../tasks/done/concept-approval-ux-fix.md)
 - ADR: -
 - Spec: -
-- Commit: `<filled after commit>`
+- Commit: `aee6d91`
