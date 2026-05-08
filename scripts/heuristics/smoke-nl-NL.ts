@@ -19,11 +19,10 @@
  *     scripts/heuristics/smoke-nl-NL.ts [--workspace=<id>]
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { evaluateHeuristics } from '@/lib/brand-fidelity/heuristics/evaluator';
 import { resolveLocaleForBrand } from '@/lib/brand-fidelity/heuristics/locale-resolver';
 
-const prisma = new PrismaClient();
 const args = process.argv.slice(2);
 const workspaceArg = args.find((a) => a.startsWith('--workspace='));
 const explicitWorkspaceId = workspaceArg ? workspaceArg.slice('--workspace='.length) : null;

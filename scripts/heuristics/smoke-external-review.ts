@@ -16,10 +16,9 @@
  * --keep: bewaart de test-rows na afloop (handig voor UI-debugging).
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { runFidelityForExternalContent } from '@/lib/brand-fidelity/external-content-runner';
 
-const prisma = new PrismaClient();
 const args = process.argv.slice(2);
 const keep = args.includes('--keep');
 const workspaceArg = args.find((a) => a.startsWith('--workspace='));

@@ -20,9 +20,8 @@
  * --workspace=<id> voor andere pilot-workspaces (Linfi, Nobox, WRA).
  */
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 const args = process.argv.slice(2);
 const force = args.includes('--force');
 const workspaceArg = args.find((a) => a.startsWith('--workspace='));
