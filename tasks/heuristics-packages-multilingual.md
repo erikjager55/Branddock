@@ -6,8 +6,8 @@ priority: now
 effort: 5-7 dagen (excl. native BE/DE-calibratie — accepted)
 owner: claude-code
 status: in-progress
-sub-cluster-done: A — schema migration (BrandVoiceguide.contentLocale veld) + locale-resolver helper. B foundation — types + citations register (25 sources) + nl-NL package (5 categorieën, ~110 entries) + registry (getHeuristicsForBrand resolver-wrap)
-sub-cluster-todo: B-2 — en-GB package + AI-tells (founder-content), B-3 — nl-BE extends-nl-NL programmatisch, B-4 — de-DE package, C — Pijler 3 wiring + brand-rule-sync extension, D — BB seed nl-NL + smoke test
+sub-cluster-done: A — schema migration (BrandVoiceguide.contentLocale veld) + locale-resolver helper. B foundation — types + citations register (25 sources) + nl-NL package (5 categorieën, ~110 entries) + registry. C — Pijler 3 evaluator + composition-engine merge (parallel-fetch BrandRule + heuristics, single RuleEvaluationResult downstream)
+sub-cluster-todo: B-2 — en-GB package + AI-tells (founder-content), B-3 — nl-BE extends-nl-NL programmatisch, B-4 — de-DE package, D — BB seed nl-NL + smoke test (Better Brands content runt door F-VAL → expect locale-specific findings in pillar3 violations)
 created: 2026-05-08
 completed: -
 related-adr: 2026-05-08-locale-routing-brand-voice
