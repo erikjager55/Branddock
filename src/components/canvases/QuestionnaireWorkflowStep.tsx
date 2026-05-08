@@ -34,6 +34,7 @@ import {
   CheckSquare,
   Circle as RadioIcon
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -83,7 +84,7 @@ interface Questionnaire {
 interface Asset {
   id: string;
   name: string;
-  icon: any;
+  icon: LucideIcon;
   type: string;
 }
 

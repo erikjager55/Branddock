@@ -12,13 +12,14 @@ import {
   Sparkles,
   ArrowUpRight,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface UnifiedResearchCardProps {
   // Core info
   id: string;
   name: string;
   description: string;
-  icon: any;
+  icon: LucideIcon;
   color: string;
   bgColor?: string;
   borderColor?: string;
@@ -37,7 +38,7 @@ interface UnifiedResearchCardProps {
   
   // Activities - What's Included
   activities: {
-    icon: any;
+    icon: LucideIcon;
     name: string;
     description: string;
     duration: string;

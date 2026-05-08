@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HelpCircle, Info, Lightbulb, AlertCircle, Sparkles, X } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Button } from './ui/button';
 
 // Tooltip types
@@ -8,7 +9,7 @@ export type TooltipType = 'info' | 'tip' | 'warning' | 'new-feature';
 
 interface TooltipConfig {
   type: TooltipType;
-  icon: any;
+  icon: LucideIcon;
   color: string;
   bgColor: string;
   borderColor: string;

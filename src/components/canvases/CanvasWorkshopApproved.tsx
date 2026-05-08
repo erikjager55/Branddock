@@ -24,6 +24,7 @@ import {
   Lightbulb,
   TrendingUp
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { WorkshopReport } from './WorkshopReport';
 
 interface Workshop {
@@ -42,7 +43,7 @@ interface Workshop {
 interface Asset {
   id: string;
   name: string;
-  icon: any;
+  icon: LucideIcon;
   type: string;
 }
 

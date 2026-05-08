@@ -9,7 +9,7 @@ interface CanvasBlock {
   id: string;
   title: string;
   content: string;
-  icon?: any;
+  icon?: string;
 }
 
 interface CanvasWorkspaceSharedProps {

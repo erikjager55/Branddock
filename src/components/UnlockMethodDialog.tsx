@@ -27,6 +27,7 @@ import {
   Palette,
   BookOpen,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface UnlockMethodDialogProps {
   open: boolean;
@@ -45,7 +46,7 @@ interface UnlockMethodDialogProps {
     assetsIncluded: number;
     strategyToolsUnlocked: number;
     timeline: string;
-    icon: any;
+    icon: LucideIcon;
     color: string;
   };
   onPurchase: (bundleId: string) => void;

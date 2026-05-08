@@ -1,7 +1,7 @@
 import React from 'react';
 import { InterviewsManager as UpdatedManager } from './InterviewsManagerUpdated';
 
-export function InterviewsManager(props: any) {
+export function InterviewsManager(props: React.ComponentProps<typeof UpdatedManager>) {
   return <UpdatedManager {...props} />;
 }
 

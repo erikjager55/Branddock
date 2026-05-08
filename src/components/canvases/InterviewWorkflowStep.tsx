@@ -20,7 +20,8 @@ import {
   HelpCircle,
   FileText,
   Zap,
-  Package
+  Package,
+  type LucideIcon,
 } from 'lucide-react';
 import { SessionNavigator } from '../SessionNavigator';
 import { useBrandAssets } from '../../contexts/BrandAssetsContext';
@@ -102,7 +103,7 @@ interface Interview {
 interface Asset {
   id: string;
   name: string;
-  icon: any;
+  icon: LucideIcon;
   type: string;
 }
 

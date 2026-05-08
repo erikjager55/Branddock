@@ -17,12 +17,13 @@ import {
   Unlock,
   Crown,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface ResearchMethod {
   id: string;
   name: string;
-  icon: any;
+  icon: LucideIcon;
   duration: string;
   unlocksPotential: number;
   unlockLevel: 'free' | 'basic' | 'pro';

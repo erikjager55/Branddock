@@ -28,6 +28,7 @@ import {
   TrendingUp,
   Package,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { ResearchBundle } from '../types/research-bundle';
 import { researchBundles } from '../lib/catalogs/research-bundles';
 
@@ -88,7 +89,7 @@ export function ResearchPlansPage({ onSelectBundle, onNavigateToCustomValidation
                     const impact = 'High Impact';
                     
                     // Map actual strategy tools to display
-                    const toolsMapping: Record<string, { icon: any; name: string }> = {
+                    const toolsMapping: Record<string, { icon: LucideIcon; name: string }> = {
                       'campaign-strategy-generator': { icon: Target, name: 'Campaign Strategy' },
                       'messaging-framework-builder': { icon: MessageSquare, name: 'Messaging Framework' },
                       'go-to-market-strategy': { icon: Rocket, name: 'Go-to-Market' },
