@@ -6,8 +6,8 @@ priority: now
 effort: 8-10 dagen (parallel-track met Δ-2/Δ-3)
 owner: claude-code
 status: in-progress
-sub-cluster-done: A foundation — Prisma schema + migration. A engine — runFidelityForExternalContent helper (src/lib/brand-fidelity/external-content-runner.ts) + RuleViolation→BrandReviewFinding mapping (severity + category-inference uit synthetic ruleId) + ContentReviewLog persistence in transaction
-sub-cluster-todo: B — backend route POST /api/alignment/review-external + ingest helpers (paste/url/.docx/.pdf); C — Surface 1 Brand Alignment Tab 3 UI; D — Surface 2 Brand Assistant chat-tool (review_content read-tool); E — Surface 3 PublishGate uitbreiding (bevindingen-tabel render)
+sub-cluster-done: A foundation + A engine. B v1 — POST /api/alignment/review-external + ingest helpers (paste-direct + URL via native fetch + lichte HTML→text strip). File-ingest (PDF via unpdf, DOCX via mammoth) deferred naar B-2 sub-sub-cluster.
+sub-cluster-todo: B-2 — file-upload (PDF + DOCX); C — Surface 1 Brand Alignment Tab 3 UI; D — Surface 2 Brand Assistant chat-tool (review_content read-tool); E — Surface 3 PublishGate uitbreiding (bevindingen-tabel render)
 created: 2026-05-08
 completed: -
 related-adr: 2026-05-08-fval-output-schema-bevindingen, 2026-05-08-locale-routing-brand-voice
