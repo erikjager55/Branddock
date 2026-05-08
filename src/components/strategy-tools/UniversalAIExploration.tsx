@@ -43,12 +43,13 @@ import {
   Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import type { LucideIcon } from 'lucide-react';
 import { StrategyTool } from '../../types/strategy';
 
 interface UniversalAIExplorationProps {
   tool: StrategyTool;
   onBack: () => void;
-  onComplete?: (results: any) => void;
+  onComplete?: (results: unknown) => void;
 }
 
 type AnalysisStep = 'context' | 'processing' | 'insights' | 'review' | 'summary';
@@ -66,7 +67,7 @@ interface InsightConfig {
   title: string;
   description: string;
   confidence: number;
-  icon: any;
+  icon: LucideIcon;
   type?: 'success' | 'warning' | 'info';
 }
 

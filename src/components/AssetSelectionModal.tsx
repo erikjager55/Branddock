@@ -16,7 +16,7 @@ import {
   Sparkles
 } from 'lucide-react';
 
-interface AssetOption {
+export interface AssetOption {
   id: string;
   name: string;
   type: 'product' | 'audience' | 'trend' | 'file';

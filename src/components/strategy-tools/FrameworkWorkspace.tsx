@@ -38,7 +38,7 @@ import {
   Activity,
   Zap
 } from 'lucide-react';
-import { AssetSelectionModal } from '../AssetSelectionModal';
+import { AssetSelectionModal, type AssetOption } from '../AssetSelectionModal';
 
 interface Asset {
   id: string;
@@ -142,14 +142,16 @@ export function FrameworkWorkspace({ frameworkId, config, onBack }: FrameworkWor
     setAssets(assets.filter(a => a.id !== id));
   };
 
-  const handleSelectMultipleAssets = (selectedAssets: any[]) => {
-    const newAssets: Asset[] = selectedAssets.map(selectedAsset => ({
-      id: selectedAsset.id,
-      name: selectedAsset.name,
-      type: selectedAsset.type === 'audience' ? 'persona' : selectedAsset.type,
-      trustLevel: selectedAsset.trustLevel,
-      trustLabel: selectedAsset.trustLabel
-    }));
+  const handleSelectMultipleAssets = (selectedAssets: AssetOption[]) => {
+    const newAssets: Asset[] = selectedAssets
+      .filter((a): a is AssetOption & { type: 'product' | 'audience' | 'trend' } => a.type !== 'file')
+      .map(selectedAsset => ({
+        id: selectedAsset.id,
+        name: selectedAsset.name,
+        type: selectedAsset.type === 'audience' ? 'persona' : selectedAsset.type,
+        trustLevel: selectedAsset.trustLevel,
+        trustLabel: selectedAsset.trustLabel,
+      }));
     setAssets([...assets, ...newAssets]);
   };
 

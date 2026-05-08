@@ -32,7 +32,7 @@ export function AgencySettingsPage() {
     setIsSaving(false);
   };
 
-  const updateField = (field: keyof AgencySettings, value: any) => {
+  const updateField = <K extends keyof AgencySettings>(field: K, value: AgencySettings[K]) => {
     setLocalSettings(prev => prev ? { ...prev, [field]: value } : null);
   };
 

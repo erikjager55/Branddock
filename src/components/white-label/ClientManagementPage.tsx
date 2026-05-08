@@ -193,7 +193,7 @@ export function ClientManagementPage() {
 function AddClientModal({ open, onClose, onAdd }: {
   open: boolean;
   onClose: () => void;
-  onAdd: (client: any) => void;
+  onAdd: (client: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'projectsCount' | 'strategiesCount'>) => void;
 }) {
   const [formData, setFormData] = useState({
     name: '',
