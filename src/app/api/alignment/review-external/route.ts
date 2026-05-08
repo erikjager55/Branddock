@@ -12,13 +12,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
-import { runFidelityForExternalContent } from '@/lib/brand-fidelity/external-content-runner';
+import {
+  runFidelityForExternalContent,
+  WorkspaceNotFoundError,
+} from '@/lib/brand-fidelity/external-content-runner';
 import {
   ingestPaste,
   ingestUrl,
   ingestFile,
   IngestError,
 } from '@/lib/alignment/external-content-ingest';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 
 // ─── Request schema (discriminated union per sourceType) ──
 
@@ -31,7 +36,16 @@ const requestSchema = z.discriminatedUnion('sourceType', [
   }),
   z.object({
     sourceType: z.literal('url'),
-    url: z.string().url(),
+    url: z
+      .string()
+      .url()
+      .refine((u) => {
+        try {
+          return ['http:', 'https:'].includes(new URL(u).protocol);
+        } catch {
+          return false;
+        }
+      }, { message: 'Alleen http(s) URLs toegestaan' }),
     language: z.string().optional(),
     runJudge: z.boolean().optional(),
   }),
@@ -80,12 +94,25 @@ export async function POST(request: NextRequest) {
       contentText = ingest.text;
       sourceUrl = input.url;
     } else {
-      // 'file' — placeholder, throws NOT_SUPPORTED in v1
-      contentText = (ingestFile(input.fileId) as unknown as string);
+      // 'file' — placeholder, throws NOT_SUPPORTED in v1 (returnt `never`).
+      ingestFile(input.fileId);
+      // Onbereikbaar; alleen voor type-narrowing.
+      contentText = '';
     }
   } catch (err) {
     if (err instanceof IngestError) {
-      const status = err.code === 'NOT_SUPPORTED' ? 501 : 422;
+      const status =
+        err.code === 'NOT_SUPPORTED'
+          ? 501
+          : err.code === 'BLOCKED_HOST'
+            ? 403
+            : err.code === 'INVALID_URL'
+              ? 400
+              : err.code === 'PAYLOAD_TOO_LARGE'
+                ? 413
+                : err.code === 'TIMEOUT'
+                  ? 504
+                  : 422;
       return NextResponse.json(
         { error: err.message, code: err.code },
         { status },
@@ -106,6 +133,9 @@ export async function POST(request: NextRequest) {
       runJudge: input.runJudge ?? true,
     });
 
+    invalidateCache(cacheKeys.prefixes.alignment(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
     return NextResponse.json({
       reviewLogId: result.reviewLogId,
       compositeScore: result.result.compositeScore,
@@ -115,6 +145,11 @@ export async function POST(request: NextRequest) {
       scorerVersion: result.result.scorerVersion,
     });
   } catch (err) {
+    // Workspace lookup-mismatch (zou theoretisch niet mogen na resolveWorkspaceId,
+    // maar guards tegen race waarbij workspace tussentijds verwijderd wordt).
+    if (err instanceof WorkspaceNotFoundError) {
+      return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
+    }
     console.error('[POST /api/alignment/review-external]', err);
     return NextResponse.json(
       { error: 'Review failed', message: (err as Error).message },

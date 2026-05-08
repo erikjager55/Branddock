@@ -5120,8 +5120,9 @@ enum FindingCategory {
 /**
  * Per ADR-1: gestructureerde finding row. XOR FK pattern — een finding hoort
  * bij een ContentFidelityScore (gegenereerde content) OF bij een
- * ContentReviewLog (externe paste-in/URL/file). App-level enforced; Prisma
- * constraint optie wordt later overwogen via @@check (Postgres CHECK constraint).
+ * ContentReviewLog (externe paste-in/URL/file). XOR is afgedwongen op
+ * Postgres-niveau via raw CHECK constraint (zie migration
+ * `20260508130000_add_brand_review_finding_and_content_review_log`).
  */
 model BrandReviewFinding {
   id          String    @id @default(cuid())

@@ -5,12 +5,12 @@ fase: pre-launch
 priority: now
 effort: 8-10 dagen (parallel-track met Δ-2/Δ-3)
 owner: claude-code
-status: in-progress
-sub-cluster-done: A foundation + A engine. B v1 — POST /api/alignment/review-external + ingest helpers (paste-direct + URL via native fetch + lichte HTML→text strip). File-ingest (PDF via unpdf, DOCX via mammoth) deferred naar B-2 sub-sub-cluster.
-sub-cluster-todo: B-2 — file-upload (PDF + DOCX); C — Surface 1 Brand Alignment Tab 3 UI; D — Surface 2 Brand Assistant chat-tool (review_content read-tool); E — Surface 3 PublishGate uitbreiding (bevindingen-tabel render)
+status: done
+sub-cluster-done: A foundation + A engine + B v1 (POST /api/alignment/review-external + ingest helpers met SSRF-hardening + byte-cap streaming + html-strip 2-pass). Live smoke groen.
+sub-cluster-todo: B-2 — file-upload (PDF via unpdf + DOCX via mammoth); C — Surface 1 Brand Alignment Tab 3 UI; D — Surface 2 Brand Assistant chat-tool (review_content read-tool); E — Surface 3 PublishGate uitbreiding (bevindingen-tabel render)
 smoke-script: scripts/heuristics/smoke-external-review.ts (direct-call runner, verifieert ContentReviewLog persistence + BrandReviewFinding XOR + category-mapping; idempotent cleanup tenzij --keep)
 created: 2026-05-08
-completed: -
+completed: 2026-05-08
 related-adr: 2026-05-08-fval-output-schema-bevindingen, 2026-05-08-locale-routing-brand-voice
 related-spec: tasks/_drafts/idea-brand-control-program.md
 worktree: branddock-program-p2

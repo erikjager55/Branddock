@@ -28,13 +28,20 @@ import {
 } from './composition-engine';
 import type { GeneratorProvider } from './judge-dispatcher';
 import type { RuleViolation } from './rule-compiler';
-import { Prisma } from '@prisma/client';
-import type {
-  BrandReviewSeverity,
-  FindingCategory,
-} from '@prisma/client';
+import { Prisma, BrandReviewSeverity, FindingCategory } from '@prisma/client';
 
 // ─── Public API ──────────────────────────────────────
+
+const REVIEW_CHAR_LIMIT = 50_000;
+const DEFAULT_RETENTION_DAYS = 90;
+
+export class WorkspaceNotFoundError extends Error {
+  constructor(public readonly workspaceId: string) {
+    super(`Workspace not found: ${workspaceId}`);
+    this.name = 'WorkspaceNotFoundError';
+    Object.setPrototypeOf(this, WorkspaceNotFoundError.prototype);
+  }
+}
 
 export interface ExternalContentReviewInput {
   workspaceId: string;
@@ -46,7 +53,11 @@ export interface ExternalContentReviewInput {
   sourceUrl?: string;
   /** User-id van de trigger; null voor system-runs (cron audits). */
   userId?: string;
-  /** Optional explicit locale override; else falls back via `BrandVoiceguide.contentLocale`. */
+  /**
+   * Stored on `ContentReviewLog.language` as audit-metadata. v1 doet GEEN active
+   * locale-override op de evaluator — heuristic-pakket-resolution loopt altijd via
+   * `BrandVoiceguide.contentLocale` (per ADR-3). Activeren als override = follow-up.
+   */
   language?: string;
   /** Default true — skip in fast-preview pad. */
   runJudge?: boolean;
@@ -60,8 +71,6 @@ export interface ExternalContentReviewResult {
   result: FidelityCompositeResult;
 }
 
-const DEFAULT_RETENTION_DAYS = 90;
-
 /**
  * Orchestreer F-VAL run + ContentReviewLog + BrandReviewFinding persistence
  * voor extern content. Single entry-point voor alle drie review-surfaces.
@@ -70,6 +79,19 @@ export async function runFidelityForExternalContent(
   input: ExternalContentReviewInput,
 ): Promise<ExternalContentReviewResult> {
   const startedAt = Date.now();
+
+  // Cap content BEFORE F-VAL run so finding char-offsets reference positions
+  // that exist in the persisted sourceContent. Pure slice — geen marker in de
+  // text die naar de evaluator gaat (anders pollueert "[truncated]" word-count
+  // en heuristic-matches). Storage krijgt het truncated-flag via aparte
+  // metadata-marker.
+  const wasTruncated = input.contentText.length > REVIEW_CHAR_LIMIT;
+  const cappedContentText = wasTruncated
+    ? input.contentText.slice(0, REVIEW_CHAR_LIMIT)
+    : input.contentText;
+  const storedSourceContent = wasTruncated
+    ? cappedContentText + '\n\n[truncated for review]'
+    : cappedContentText;
 
   // ── Fetch brand-context for prompt-embed (parallel with centroid) ──
   const [workspace, voiceguide, voiceguideCentroid] = await Promise.all([
@@ -84,7 +106,7 @@ export async function runFidelityForExternalContent(
   ]);
 
   if (!workspace) {
-    throw new Error(`Workspace not found: ${input.workspaceId}`);
+    throw new WorkspaceNotFoundError(input.workspaceId);
   }
 
   // ── Build minimal composition input ──
@@ -94,7 +116,7 @@ export async function runFidelityForExternalContent(
   );
 
   const compositionInput: FidelityCompositionInput = {
-    contentText: input.contentText,
+    contentText: cappedContentText,
     workspaceId: input.workspaceId,
     brandName: workspace.name ?? 'Brand',
     brandVoiceSummary: voiceguide?.voiceDescription ?? '',
@@ -103,7 +125,9 @@ export async function runFidelityForExternalContent(
     // Anthropic is the safest default cross-family judge; review-pad heeft
     // geen generator-provider om mee te kruisen (extern content is generator-agnostisch).
     generatorProvider: 'anthropic' as GeneratorProvider,
-    targetWordCount: countWords(input.contentText),
+    // External content heeft geen "target" word-count (geen brief). 0 signaleert
+    // dat length-fit dimension genegeerd moet worden door composition-engine.
+    targetWordCount: 0,
     skipJudge: input.runJudge === false,
     voiceguideCentroid,
   };
@@ -125,7 +149,7 @@ export async function runFidelityForExternalContent(
       workspaceId: input.workspaceId,
       userId: input.userId ?? null,
       sourceType: input.sourceType,
-      sourceContent: truncateForStorage(input.contentText),
+      sourceContent: storedSourceContent,
       sourceUrl: input.sourceUrl ?? null,
       language: input.language ?? null,
       compositeScore: result.compositeScore,
@@ -159,19 +183,6 @@ export async function runFidelityForExternalContent(
 
 // ─── Internals ───────────────────────────────────────
 
-const STORAGE_CHAR_LIMIT = 50_000;
-
-/** Truncate paste-in content for DB-storage budget. Char-offset positions in
- *  findings remain valid for the truncated copy (they reference the same text). */
-function truncateForStorage(text: string): string {
-  if (text.length <= STORAGE_CHAR_LIMIT) return text;
-  return text.slice(0, STORAGE_CHAR_LIMIT) + '\n\n[truncated for storage]';
-}
-
-function countWords(text: string): number {
-  return text.trim().split(/\s+/).filter(Boolean).length;
-}
-
 function pillarsToJson(result: FidelityCompositeResult): Prisma.InputJsonValue {
   return {
     style: { score: result.pillars.style.score, weight: result.pillars.style.weight },
@@ -202,15 +213,17 @@ interface FindingInput {
  * category-prefix parsed; BrandRule violations fall back to TERMINOLOGY.
  */
 function mapViolationToFindingInput(v: RuleViolation): FindingInput {
-  const severity = mapSeverity(v.severity);
-  const category = inferCategory(v.ruleId);
-
-  const location = `char ${v.position}: "${v.snippet}"`;
+  // rule-compiler emit `position: 0, snippet: ''` als sentinel voor
+  // non-positional violations (REQUIRED_PHRASE / STYLE_LIMIT counters).
+  const isDocumentLevel = v.position === 0 && (!v.snippet || v.snippet === '');
+  const location = isDocumentLevel
+    ? 'document-level'
+    : `char ${v.position}: "${v.snippet}"`;
 
   return {
     location,
-    severity,
-    category,
+    severity: mapSeverity(v.severity),
+    category: inferCategory(v.ruleId),
     description: v.message,
     evidence: { ruleId: v.ruleId, ruleType: v.ruleType, pattern: v.pattern },
   };
@@ -219,37 +232,39 @@ function mapViolationToFindingInput(v: RuleViolation): FindingInput {
 function mapSeverity(s: RuleViolation['severity']): BrandReviewSeverity {
   switch (s) {
     case 'error':
-      return 'HIGH' as BrandReviewSeverity;
+      return BrandReviewSeverity.HIGH;
     case 'warning':
-      return 'MEDIUM' as BrandReviewSeverity;
+      return BrandReviewSeverity.MEDIUM;
     case 'info':
     default:
-      return 'LOW' as BrandReviewSeverity;
+      return BrandReviewSeverity.LOW;
   }
 }
 
 /**
  * Parse `heuristic:<locale>:<category>:<term>` ruleId-prefix → FindingCategory.
- * Non-heuristic violations (BrandRule rows) → TERMINOLOGY default.
+ * Non-heuristic violations (BrandRule rows) → TERMINOLOGY default. Onbekende
+ * heuristic-categorieën fallthrough → TERMINOLOGY (consistent met BrandRule
+ * fallback) i.p.v. silent BUSINESS-bucketing van future packs.
  */
 function inferCategory(ruleId: string): FindingCategory {
   if (!ruleId.startsWith('heuristic:')) {
-    return 'TERMINOLOGY' as FindingCategory;
+    return FindingCategory.TERMINOLOGY;
   }
   const parts = ruleId.split(':');
   const heuristicCategory = parts[2] ?? '';
   switch (heuristicCategory) {
     case 'corporate-fluff':
-      return 'VOICE' as FindingCategory;
+      return FindingCategory.VOICE;
     case 'superlatives':
     case 'vague-quality':
     case 'risky-comparatives':
-      return 'CLAIMS' as FindingCategory;
+      return FindingCategory.CLAIMS;
     case 'fillers':
-      return 'STYLE' as FindingCategory;
+      return FindingCategory.STYLE;
     case 'ai-tells':
-      return 'AI_TELL' as FindingCategory;
+      return FindingCategory.AI_TELL;
     default:
-      return 'BUSINESS' as FindingCategory;
+      return FindingCategory.TERMINOLOGY;
   }
 }

@@ -39,7 +39,7 @@ async function main() {
     : await prisma.workspace.findFirst({ where: { name: 'Better Brands' } });
 
   if (!workspace) {
-    console.error('❌ Workspace not found');
+    console.error('[FAIL] Workspace not found');
     process.exit(1);
   }
 
@@ -89,12 +89,12 @@ async function main() {
   });
 
   if (!log) {
-    console.error('❌ ContentReviewLog row niet gevonden in DB');
+    console.error('[FAIL] ContentReviewLog row niet gevonden in DB');
     process.exit(1);
   }
 
   console.log('Persistence verified:');
-  console.log(`  ContentReviewLog.workspaceId: ${log.workspaceId === workspace.id ? '✅' : '❌'}`);
+  console.log(`  ContentReviewLog.workspaceId: ${log.workspaceId === workspace.id ? '[OK]' : '[FAIL]'}`);
   console.log(`  ContentReviewLog.sourceType: ${log.sourceType}`);
   console.log(`  ContentReviewLog.compositeScore: ${log.compositeScore}`);
   console.log(`  ContentReviewLog.findings count: ${log.findings.length}`);
@@ -106,7 +106,7 @@ async function main() {
     (f) => (f.fidelityScoreId === null) === (f.contentReviewLogId === null),
   );
   console.log(
-    `XOR FK constraint: ${xorViolations.length === 0 ? '✅ all findings have exactly one parent' : `❌ ${xorViolations.length} violations`}`,
+    `XOR FK constraint: ${xorViolations.length === 0 ? '[OK] all findings have exactly one parent' : `[FAIL] ${xorViolations.length} violations`}`,
   );
 
   // ── Sample findings ──
@@ -127,19 +127,19 @@ async function main() {
     console.log('Cleaning up test rows...');
     // Cascade delete via FK on ContentReviewLog → BrandReviewFinding
     await prisma.contentReviewLog.delete({ where: { id: result.reviewLogId } });
-    console.log('✅ Cleanup done');
+    console.log('[OK] Cleanup done');
   } else {
     console.log('');
     console.log(`(--keep) Test rows preserved. ContentReviewLog: ${result.reviewLogId}`);
   }
 
   console.log('');
-  console.log('✅ Δ-1 end-to-end smoke passed');
+  console.log('[OK] Δ-1 end-to-end smoke passed');
 }
 
 main()
   .catch((err) => {
-    console.error('❌ Smoke failed:', err);
+    console.error('[FAIL] Smoke failed:', err);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());
