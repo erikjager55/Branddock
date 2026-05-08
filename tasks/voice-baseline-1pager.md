@@ -6,8 +6,8 @@ priority: now
 effort: 2-3 dagen
 owner: claude-code
 status: in-progress
-sub-cluster-done: A (pure derivation), C (F-VAL judge-prompt embed via composition-input → g-eval-rubric BRAND_VOICE-section), D (getBrandContext cache integration via brandContext.voiceBaseline1Pager + fidelity-runner direct fetch)
-sub-cluster-deferred: B — UI VoiceBaseline1Pager component in Brand Alignment header
+sub-cluster-done: A (pure derivation), B (UI component VoiceBaseline1Pager.tsx + Brand Alignment header integration + useVoiceBaseline1Pager TanStack hook), C (F-VAL judge-prompt embed via composition-input → g-eval-rubric BRAND_VOICE-section), D (getBrandContext cache integration via brandContext.voiceBaseline1Pager + fidelity-runner direct fetch)
+sub-cluster-deferred: -
 created: 2026-05-08
 completed: -
 related-adr: -

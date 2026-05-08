@@ -37,6 +37,7 @@ import { AnalyzingScanModal } from './AnalyzingScanModal';
 import { ScanCompleteModal } from './ScanCompleteModal';
 import { FixIssueModal } from './FixIssueModal';
 import { BrandAuditView } from './BrandAuditView';
+import { VoiceBaseline1Pager } from '@/features/brand-alignment/components/VoiceBaseline1Pager';
 
 // ─── Relative time helper ───────────────────────────────────
 
@@ -196,6 +197,9 @@ export function BrandAlignmentPage() {
           ) : undefined
         }
       />
+
+      {/* ── Δ-3 Voice Baseline 1-pager (read-only header, alle tabs) ── */}
+      <VoiceBaseline1Pager />
 
       {/* ── Tab switcher ─────────────────────────────────── */}
       <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit mb-6">
