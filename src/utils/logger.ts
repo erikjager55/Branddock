@@ -27,7 +27,7 @@ class Logger {
   /**
    * Log informational messages
    */
-  info(message: string, data?: any) {
+  info(message: string, data?: unknown) {
     if (!this.enabled) return;
     console.log(`[INFO] ${message}`, data !== undefined ? data : '');
   }
@@ -35,7 +35,7 @@ class Logger {
   /**
    * Log warnings
    */
-  warn(message: string, data?: any) {
+  warn(message: string, data?: unknown) {
     if (!this.enabled) return;
     console.warn(`[WARN] ${message}`, data !== undefined ? data : '');
   }
@@ -43,14 +43,14 @@ class Logger {
   /**
    * Log errors (always enabled, even in production)
    */
-  error(message: string, error?: any) {
+  error(message: string, error?: unknown) {
     console.error(`[ERROR] ${message}`, error !== undefined ? error : '');
   }
 
   /**
    * Log debug information (only in development)
    */
-  debug(message: string, data?: any) {
+  debug(message: string, data?: unknown) {
     if (!this.enabled) return;
     console.log(`[DEBUG] ${message}`, data !== undefined ? data : '');
   }
@@ -58,7 +58,7 @@ class Logger {
   /**
    * Log navigation events
    */
-  navigation(message: string, data?: any) {
+  navigation(message: string, data?: unknown) {
     if (!this.enabled) return;
     console.log(`[NAV] ${message}`, data !== undefined ? data : '');
   }
@@ -66,7 +66,7 @@ class Logger {
   /**
    * Log user interactions
    */
-  interaction(message: string, data?: any) {
+  interaction(message: string, data?: unknown) {
     if (!this.enabled) return;
     console.log(`[INTERACTION] ${message}`, data !== undefined ? data : '');
   }

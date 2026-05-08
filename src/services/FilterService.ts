@@ -100,13 +100,13 @@ class FilterService {
   /**
    * Get field value from item (supports nested fields)
    */
-  private getFieldValue<T>(item: T, field: string): any {
+  private getFieldValue<T>(item: T, field: string): unknown {
     const parts = field.split('.');
-    let value: any = item;
+    let value: unknown = item;
 
     for (const part of parts) {
       if (value && typeof value === 'object' && part in value) {
-        value = value[part];
+        value = (value as Record<string, unknown>)[part];
       } else {
         return undefined;
       }
@@ -146,7 +146,7 @@ class FilterService {
   /**
    * Compare two values
    */
-  private compareValues(a: any, b: any): number {
+  private compareValues(a: unknown, b: unknown): number {
     // Handle null/undefined
     if (a == null && b == null) return 0;
     if (a == null) return 1;
