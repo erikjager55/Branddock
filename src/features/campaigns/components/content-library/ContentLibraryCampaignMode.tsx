@@ -19,8 +19,17 @@ import { StrategySection } from "../detail/strategy/StrategySection";
 import { RegenerateSectionButton } from "../detail/strategy/RegenerateSectionButton";
 import { exportCampaignStrategyPdf } from "../../utils/exportCampaignStrategyPdf";
 import { exportCampaignStrategyJson } from "../../utils/exportCampaignStrategyJson";
+import dynamic from "next/dynamic";
 import type { BlueprintStrategyResponse } from "@/types/campaign";
 import type { CampaignBlueprint } from "@/lib/campaigns/strategy-blueprint.types";
+
+// Lazy-load BriefRenderView (incl. react-markdown) zodat de markdown-renderer
+// alleen wordt geladen wanneer een gebruiker de modal opent. Houdt de eager
+// campaign-page chunk klein — zie docs/adr/2026-05-08-markdown-rendering-library.md.
+const BriefRenderView = dynamic(
+  () => import("../detail/strategy/BriefRenderView").then((m) => m.BriefRenderView),
+  { ssr: false },
+);
 
 
 interface ContentLibraryCampaignModeProps {
@@ -91,6 +100,9 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Campagne-brief render modal
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
 
   const handleStartEditTitle = useCallback(() => {
     if (lock.isLocked || !campaign) return;
@@ -534,6 +546,14 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
                 >
                   Export JSON
                 </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={Sparkles}
+                  onClick={() => setBriefModalOpen(true)}
+                >
+                  Generate brief
+                </Button>
                 <RegenerateSectionButton campaignId={campaignId} layer="strategy" />
               </div>
             </div>
@@ -569,6 +589,14 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
           if (ids.length > 0) bulkGenerate.start(ids);
         }}
       />
+      {briefModalOpen && (
+        <BriefRenderView
+          campaignId={campaignId}
+          campaignTitle={campaign?.title ?? ''}
+          isOpen={briefModalOpen}
+          onClose={() => setBriefModalOpen(false)}
+        />
+      )}
     </>
   );
 }
