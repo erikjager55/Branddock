@@ -5,7 +5,9 @@ fase: pre-launch
 priority: now
 effort: 2-3 dagen
 owner: claude-code
-status: open
+status: in-progress
+sub-cluster: A — pure derivation function (in scope, this commit)
+sub-cluster-deferred: B — UI component + hook, C — F-VAL judge-prompt embed, D — getBrandContext cache integration
 created: 2026-05-08
 completed: -
 related-adr: -
