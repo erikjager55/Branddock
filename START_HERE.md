@@ -17,11 +17,11 @@ Pre-launch eindigt bij volledige content-flow zonder blocker-bugs (Brief → Str
 
 > Update na elke afgeronde task.
 
-> **2026-05-08**: posthog-sentry-browser afgerond — browser-side analytics + error-tracking infra in place (graceful no-op zonder env-vars). 5 events live in auth + QA-gate flow. Pre-launch content-pad + observability staan; resterende NOW-bucket is parallel-track werk.
+> **2026-05-08**: campaign-drafts-db-backed absorbed (3 eerdere sessies a6204bc + e55fc3c + dfc81ac dekken het volledig). 6 absorbed-tasks deze week — pre-launch foundation is veel verder dan task-files initieel suggereerden. NOW-bucket bijna leeg.
 
-1. **`campaign-drafts-db-backed`** ([task](tasks/campaign-drafts-db-backed.md)) — 1.5 dag. Multi-device persistence voor campaign drafts. Korte, contained task.
-2. **`content-styling-migratie`** ([task](tasks/content-styling-migratie.md)) — 3-5 dagen. Content-styling velden naar Content Brief (8 categorieën).
-3. **Pre-pilot smoke** — handover van mijn werk: `<VersionHistorySidebar>` + `<PublishGate>` zijn drop-in maar niet gewired in CanvasPage. Lijkt nu dé natuurlijke integratie-task vóór een echte pilot.
+1. **Pre-pilot UI-wiring** — handover: `<VersionHistorySidebar>` + `<PublishGate>` zijn drop-in components klaar, maar nog niet in `CanvasPage` gewired. Lijkt dé natuurlijke integratie-task vóór een echte pilot. ~half dag.
+2. **`content-styling-migratie`** ([task](tasks/content-styling-migratie.md)) — 3-5 dagen. Content-styling velden naar Content Brief (8 categorieën). Laatste open NOW-task.
+3. **Pilot starten** — 5 NOW-tasks zijn done + 1 absorbed deze week. Functioneel pre-launch klaar; opgaande hint dat het tijd wordt voor `pilot-onboarding-better-brands` (in NEXT-bucket, launch-fase).
 
 ---
 
@@ -66,11 +66,11 @@ Volledige gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-d
 
 > Auto-bijgewerkt door `task-finalize` skill.
 
+- 2026-05-08 — [Campaign drafts DB-backed](tasks/done/campaign-drafts-db-backed.md) (absorbed by 3 eerdere sessies)
 - 2026-05-08 — [PostHog browser + Sentry frontend observability](tasks/done/posthog-sentry-browser.md)
 - 2026-05-08 — [Content publish QA-gate](tasks/done/content-item-qa-gating.md) (manual + channel routes)
 - 2026-05-08 — [Brand-voice content integration](tasks/done/brand-voice-content-integration.md) (absorbed by BV-1 + fidelity-scorer + #227)
 - 2026-05-07 — [ContentVersion CRUD + studio hooks + version-history sidebar](tasks/done/content-versioning-crud.md)
-- 2026-05-07 — [Auto-trigger fidelity-scoring](tasks/done/auto-trigger-fidelity-scoring.md) (absorbed in content-versioning)
 
 ---
 
