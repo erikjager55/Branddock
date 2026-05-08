@@ -5,7 +5,11 @@ fase: post-launch
 priority: next
 effort: 4-6 uur (+ 1u regression test)
 owner: claude-code
-status: open
+status: done
+completed: 2026-05-08
+implementation-done: 2026-05-06 (commit 323ba39, pre-program)
+empirical-better-brands: validated +24 punten Δ pre/post W-1-full
+runtime-followup-pending: multi-workspace centroid seeding (Linfi/Nobox/WRA via scripts/fidelity/seed-voiceguide-centroids.ts) — operational, no code-change needed
 created: 2026-05-07
 completed: -
 related-adr: docs/adr/2026-05-06-brand-voice-extraction.md
