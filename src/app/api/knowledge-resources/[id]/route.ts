@@ -2,11 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
-import { DifficultyLevel } from "@prisma/client";
+import { DifficultyLevel, Prisma, type KnowledgeResource } from "@prisma/client";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 
-function mapResource(r: any) {
+type ResourceListItem = Pick<
+  KnowledgeResource,
+  | "id"
+  | "title"
+  | "slug"
+  | "description"
+  | "type"
+  | "category"
+  | "author"
+  | "estimatedDuration"
+  | "rating"
+  | "isFavorite"
+  | "isFeatured"
+  | "createdAt"
+>;
+
+function mapResource(r: ResourceListItem) {
   return {
     id: r.id,
     title: r.title,
@@ -23,7 +39,7 @@ function mapResource(r: any) {
   };
 }
 
-function mapResourceDetail(r: any) {
+function mapResourceDetail(r: KnowledgeResource) {
   return {
     ...mapResource(r),
     url: r.url,
@@ -132,16 +148,12 @@ export async function PATCH(
       );
     }
 
-    const data = parsed.data;
-    const updateData: any = { ...data };
-
-    if (data.publicationDate) {
-      updateData.publicationDate = new Date(data.publicationDate);
-    }
-
-    if (data.difficultyLevel) {
-      updateData.difficultyLevel = data.difficultyLevel as DifficultyLevel;
-    }
+    const { publicationDate, difficultyLevel, ...rest } = parsed.data;
+    const updateData: Prisma.KnowledgeResourceUpdateInput = {
+      ...rest,
+      ...(publicationDate && { publicationDate: new Date(publicationDate) }),
+      ...(difficultyLevel && { difficultyLevel: difficultyLevel as DifficultyLevel }),
+    };
 
     const resource = await prisma.knowledgeResource.update({
       where: { id },

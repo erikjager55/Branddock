@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Persona } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { computeValidationPercentage, PERSONA_VALIDATION_WEIGHTS } from "@/lib/validation-percentage";
@@ -165,8 +166,7 @@ export async function POST(
  * Generates field suggestions based on persona data gaps and analysis insights.
  * Each suggestion proposes a new or improved value for a persona field.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function generateFieldSuggestions(persona: any, arrays: {
+function generateFieldSuggestions(persona: Persona, arrays: {
   goals: string[];
   motivations: string[];
   frustrations: string[];

@@ -2,12 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
-import { DifficultyLevel } from "@prisma/client";
+import { DifficultyLevel, Prisma, type KnowledgeResource } from "@prisma/client";
 import { KNOWLEDGE_RESOURCE_LIST_SELECT } from "@/lib/db/queries";
 import { setCache, cachedJson, invalidateCache } from "@/lib/api/cache";
 import { cacheKeys, CACHE_TTL } from "@/lib/api/cache-keys";
 
-function mapResource(r: any) {
+type ResourceListItem = Pick<
+  KnowledgeResource,
+  | "id"
+  | "title"
+  | "slug"
+  | "description"
+  | "type"
+  | "category"
+  | "author"
+  | "url"
+  | "estimatedDuration"
+  | "rating"
+  | "isFavorite"
+  | "isFeatured"
+  | "createdAt"
+>;
+
+function mapResource(r: ResourceListItem) {
   return {
     id: r.id,
     title: r.title,
@@ -48,7 +65,7 @@ export async function GET(request: NextRequest) {
       if (hit) return hit;
     }
 
-    const where: any = {
+    const where: Prisma.KnowledgeResourceWhereInput = {
       workspaceId,
       isArchived,
     };

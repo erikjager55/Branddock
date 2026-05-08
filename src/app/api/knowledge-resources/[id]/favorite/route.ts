@@ -3,8 +3,25 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import type { KnowledgeResource } from "@prisma/client";
 
-function mapResource(r: any) {
+type ResourceListItem = Pick<
+  KnowledgeResource,
+  | "id"
+  | "title"
+  | "slug"
+  | "description"
+  | "type"
+  | "category"
+  | "author"
+  | "estimatedDuration"
+  | "rating"
+  | "isFavorite"
+  | "isFeatured"
+  | "createdAt"
+>;
+
+function mapResource(r: ResourceListItem) {
   return {
     id: r.id,
     title: r.title,

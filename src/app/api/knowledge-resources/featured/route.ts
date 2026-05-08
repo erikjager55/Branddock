@@ -1,8 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import type { KnowledgeResource } from "@prisma/client";
 
-function mapResource(r: any) {
+type ResourceListItem = Pick<
+  KnowledgeResource,
+  | "id"
+  | "title"
+  | "slug"
+  | "description"
+  | "type"
+  | "category"
+  | "author"
+  | "url"
+  | "estimatedDuration"
+  | "rating"
+  | "isFavorite"
+  | "isFeatured"
+  | "createdAt"
+>;
+
+function mapResource(r: ResourceListItem) {
   return {
     id: r.id,
     title: r.title,

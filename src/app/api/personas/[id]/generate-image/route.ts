@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Persona } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
@@ -6,6 +7,10 @@ import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { createVersion } from "@/lib/versioning";
 import { buildPersonaSnapshot } from "@/lib/snapshot-builders";
+
+type GeminiImagePart = {
+  inlineData?: { mimeType?: string; data?: string };
+};
 
 // DiceBear PNG fallback — unique per persona, works reliably with next/image
 function diceBearUrl(persona: { name: string; age?: string | null; occupation?: string | null; location?: string | null }) {
@@ -87,9 +92,9 @@ export async function POST(
     const geminiData = await geminiResponse.json();
 
     // Find the image part in the response
-    const imagePart = geminiData.candidates?.[0]?.content?.parts?.find(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (part: any) => part.inlineData?.mimeType?.startsWith("image/")
+    const parts = geminiData.candidates?.[0]?.content?.parts as GeminiImagePart[] | undefined;
+    const imagePart = parts?.find(
+      (part) => part.inlineData?.mimeType?.startsWith("image/")
     );
 
     if (!imagePart?.inlineData?.data) {
@@ -144,8 +149,7 @@ export async function POST(
  * Builds a photorealistic prompt from all available persona data.
  * More filled fields → more specific and better photo.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildPhotoPrompt(persona: any): string {
+function buildPhotoPrompt(persona: Persona): string {
   const parts: string[] = [];
 
   // Core instruction
