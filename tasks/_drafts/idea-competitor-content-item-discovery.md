@@ -3,8 +3,8 @@ id: competitor-content-item-discovery
 title: Competitor content-item discovery — eerste producer voor CompetitorContentItem (RSS + sitemap + AI-classify)
 status: pending-tech
 created: 2026-05-08
-verdict: needs-validation-first
-revision: 2026-05-08 — A1 probe (42.9% RSS) → scope-cut. A2 probe (71.4% sitemap, > 70% target) → sitemap-first MVP scope BEVESTIGD. HTML-fallback verworpen (0% in sample). Zie docs/audits/2026-05-08-competitor-rss-probe-results.md + docs/audits/2026-05-08-competitor-content-source-availability.md.
+verdict: ready-to-build
+revision: 2026-05-08 — A1 probe (42.9% RSS) → scope-cut. A2 probe (71.4% sitemap, > 70% target) → sitemap-first MVP scope. HTML-fallback verworpen (0%). A3 probe (100% classifier accuracy met Haiku 4.5 op 25 hand-gelabelde URLs) → AI-classifier in MVP-pad. Alle pre-build validaties afgerond. Zie docs/audits/2026-05-08-competitor-{rss-probe-results,content-source-availability,classifier-accuracy}.md.
 ---
 
 # Probleemstelling (1 zin)
@@ -172,21 +172,25 @@ Door A1 + A3 alleen als probes te draaien (niet bouwen), leren we de feasibility
 
 ## Verdict van de planner
 
-**needs-validation-first** (revisie 2026-05-08 — 1 open validatie-stap resterend).
+**ready-to-build** (revisie 2026-05-08 — alle pre-build validaties afgerond).
 
 Status van de pre-build validaties:
 1. ✅ **A1 RSS-coverage** — 42.9% (< 50% threshold) → scope-cut vastgelegd
 2. ✅ **A2 sitemap-coverage** — 71.4% (> 70% target) → sitemap-first scope bevestigd
-3. ✗ **HTML-fallback** — 0% in sample → niet bruikbaar, verwijderd uit MVP-scope
-4. ⏳ **A3 format-classifier accuracy** — open. 50 URLs uit gevonden sitemaps handmatig labelen als ground-truth, AI-classifier draaien, accuracy meten. ~30 min werk. Bepaalt of AI-classifier in MVP-pad zit (haalbaar als ≥ 80%).
+3. ✗ **HTML-fallback** — 0% in sample → verwijderd uit MVP-scope
+4. ✅ **A3 classifier-accuracy** — **100%** met Haiku 4.5 op 25 URLs → AI-classifier in MVP-pad
 
-Bij A3 ≥ 80% accuracy: technical-planner kan promoten naar uitvoerbare `tasks/competitor-content-item-discovery.md` met sitemap-first MVP-scope (effort 5-6 dagen, zie audit-doc).
+Definitieve MVP-scope:
+- Primaire bron: sitemap.xml (4 paden + robots.txt + recursie sub-sitemaps)
+- Secundaire bron: RSS-feed (alleen als sitemap leeg)
+- Geen HTML-fallback (verworpen)
+- AI-classifier: Haiku 4.5 in batched calls voor format + theme tagging
+- Graceful-skip voor competitors zonder enige bron (~28% verwacht in sample)
+- Effort: **5-6 dagen** voor MVP
 
-Bij A3 < 80%: classifier-strategie heroverwegen (taxonomie-based fallback, of AI-prompts tunen, of defer formats naar post-launch met enkel BLOG_POST detection).
+Async-fallback design (A5) blijft staan als technical-planner voorbehoud — meet refresh-route latency met content-discovery erbij; bij > 30s: queue-based fallback verplicht in implementatie.
 
-Async-fallback design (A5) blijft staan als pre-build voorbehoud.
-
-**Niet langer nodig**: HTML-fallback design — verworpen op evidence. Graceful-skip pad voor competitors zonder enige bron (~28% verwacht) is wel verplicht.
+**Klaar voor technical-planner promotion** naar uitvoerbare `tasks/competitor-content-item-discovery.md`. Alle audit-docs + probe-scripts staan op de feature-branch onder `docs/audits/` en `scripts/probes/`.
 
 # 5-Punts Stop-Conditie
 
@@ -198,4 +202,4 @@ Async-fallback design (A5) blijft staan als pre-build voorbehoud.
 
 # Volgende stap
 
-Run A1 validatie-script vóór technical-planner promotion. Bij hit-rate ≥ 50%: ready-to-build. Bij < 50%: revisie scope-cut naar sitemap-first variant.
+Klaar voor technical-planner promotion. Idea-doc → `tasks/competitor-content-item-discovery.md` met sitemap-first MVP-scope, alle audit-docs als evidence-base in de task-file linken.
