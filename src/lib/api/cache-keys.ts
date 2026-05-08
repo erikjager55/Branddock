@@ -65,6 +65,8 @@ export const cacheKeys = {
   competitors: {
     list: (wsId: string) => `competitors:${wsId}:list`,
     detail: (wsId: string, id: string) => `competitors:${wsId}:detail:${id}`,
+    activity: (wsId: string) => `competitors:${wsId}:activity`,
+    snapshots: (wsId: string, id: string) => `competitors:${wsId}:snapshots:${id}`,
   },
   websiteScanner: {
     scan: (wsId: string, scanId: string) => `website-scanner:${wsId}:scan:${scanId}`,
