@@ -255,6 +255,8 @@ model Workspace {
   aiCallTraces                AICallTrace[]
   contentFidelityScores       ContentFidelityScore[]
   contentVisualFidelityScores ContentVisualFidelityScore[]
+  brandReviewFindings         BrandReviewFinding[]
+  contentReviewLogs           ContentReviewLog[]
   learningEvents              LearningEvent[]
 
   // F-VAL pijler 3: anti-AI-tell laag + brand-specific rules
@@ -374,6 +376,9 @@ model User {
 
   // Brand Voiceguide (verbale identity)
   createdBrandVoiceguides BrandVoiceguide[] @relation("BrandVoiceguideCreator")
+
+  // Δ-1 Content Review (paste-in/URL/file pad)
+  contentReviewLogs ContentReviewLog[]
 
   @@index([workspaceId])
 }
@@ -5055,12 +5060,160 @@ model ContentFidelityScore {
    */
   scorerVersion String?
 
+  /**
+   * ADR-1: nullable aggregate-counter voor snelle UI-counts zonder join.
+   * null = pre-Δ-1 row (geen findings-pad gerunde); 0 = run zonder findings.
+   */
+  findingsCount Int?
+
+  /**
+   * ADR-1: 1-N relation naar gestructureerde bevindingen.
+   */
+  findings BrandReviewFinding[]
+
   scoredAt DateTime @default(now())
 
   @@index([workspaceId])
   @@index([contentVersionId])
   @@index([judgeCallTraceId])
   @@index([workspaceId, scoredAt])
+}
+
+// ============================================================
+// Δ-1 Content Review — extern paste-in/URL/file pad voor F-VAL
+// (ADR-1 BrandReviewFinding model + ContentReviewLog session-metadata)
+// ============================================================
+
+enum BrandReviewSeverity {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum FindingCategory {
+  /**
+   * §5.1 — toon, persoonsverschuiving, genre-misfit
+   */
+  VOICE
+  /**
+   * §5.2 — synoniem-zwerm, brand-vocabulary onderbenut
+   */
+  TERMINOLOGY
+  /**
+   * §5.3 — superlatieven, vage kwaliteit, comparatieven
+   */
+  CLAIMS
+  /**
+   * §5.4 — sentence/title case, number-formatting, punctuatie
+   */
+  STYLE
+  /**
+   * §5.5 — kern-narrative, positionering, regulering
+   */
+  BUSINESS
+  /**
+   * EN-only initieel — AI-generated content telltales
+   */
+  AI_TELL
+}
+
+/**
+ * Per ADR-1: gestructureerde finding row. XOR FK pattern — een finding hoort
+ * bij een ContentFidelityScore (gegenereerde content) OF bij een
+ * ContentReviewLog (externe paste-in/URL/file). App-level enforced; Prisma
+ * constraint optie wordt later overwogen via @@check (Postgres CHECK constraint).
+ */
+model BrandReviewFinding {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // XOR — exactly one of these is non-null
+  fidelityScoreId    String?
+  fidelityScore      ContentFidelityScore? @relation(fields: [fidelityScoreId], references: [id], onDelete: Cascade)
+  contentReviewLogId String?
+  contentReviewLog   ContentReviewLog?     @relation(fields: [contentReviewLogId], references: [id], onDelete: Cascade)
+
+  /**
+   * "section + first 4 words" of "char-offset range"
+   */
+  location    String
+  severity    BrandReviewSeverity
+  category    FindingCategory
+  description String              @db.Text
+  suggestion  String?             @db.Text
+  /**
+   * Voor top-issues: voor/na in volledige zinscontext
+   */
+  beforeText  String?             @db.Text
+  afterText   String?             @db.Text
+  /**
+   * Citation-keys, rule-IDs, confidence — provenance metadata
+   */
+  evidence    Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([fidelityScoreId, severity])
+  @@index([contentReviewLogId, severity])
+  @@index([workspaceId, createdAt])
+}
+
+/**
+ * Δ-1 Content Review session metadata. Per beslispunt 4 idea-doc: 90-dagen
+ * default retention via `retainUntil` + nightly cron-cleanup. PII-bewust:
+ * `sourceContent` veld bevat paste-in tekst die confidentieel kan zijn —
+ * encryption-at-rest is workspace-toggle in privacy-dpa-hooks LATER-task.
+ */
+model ContentReviewLog {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /**
+   * Optioneel: system-runs (e.g. scheduled audit) hebben geen user.
+   */
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  /**
+   * 'paste' | 'url' | 'file' — bron van de gereviewde content.
+   */
+  sourceType    String
+  /**
+   * Volledige tekst (paste OF na ingest van URL/file). Truncate ≥50KB.
+   */
+  sourceContent String  @db.Text
+  /**
+   * Originele URL bij sourceType='url' — voor source-attribution.
+   */
+  sourceUrl     String?
+  /**
+   * Optionele explicit locale-override (anders: BrandVoiceguide.contentLocale via resolver).
+   */
+  language      String?
+
+  /**
+   * Snapshot van F-VAL output (immutable per ADR-2 reproducibility).
+   */
+  compositeScore   Float
+  pillarScoresJson Json
+  scorerVersion    String?
+
+  /**
+   * Per ADR-1: findings live in BrandReviewFinding 1-N relation.
+   */
+  findings BrandReviewFinding[]
+
+  durationMs  Int
+  /**
+   * Default = createdAt + 90 days (per beslispunt 4). Cron-cleanup ruimt op.
+   */
+  retainUntil DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([retainUntil])
 }
 
 model LearningEvent {
@@ -5203,6 +5356,7 @@ model FidelityConfig {
   // ─── Composite weights (sum should equal 1.0) ───
   /**
    * /**
+   * /**
    * /** Pijler 1 — style scoring op bestaande BrandPersonality data
    */
   styleWeight Float @default(0.35)
@@ -5217,6 +5371,7 @@ model FidelityConfig {
 
   // ─── Pijler 2 rubric weights (6 dimensies, sum 1.0) ───
   /**
+   * /**
    * /**
    * /** Shape: { strategicAnchoring: 0.20, audienceFit: 0.15, brandRecognition: 0.15,
    * antiPattern: 0.30, coherence: 0.10, concreteness: 0.10 }
@@ -5233,6 +5388,7 @@ model FidelityConfig {
 
   // ─── Per content-type opt-outs ───
   /**
+   * /**
    * /**
    * /** Lege array = fidelity scoring actief voor alle types
    */
@@ -5270,6 +5426,7 @@ model BrandVoiceguide {
   // ─── Voice DNA ──────────────────────────────
   /**
    * /**
+   * /**
    * /** Vrije-tekst beschrijving van de merkstem. Migreert uit BrandPersonality.brandVoiceDescription.
    */
   voiceDescription String? @db.Text
@@ -5282,6 +5439,7 @@ model BrandVoiceguide {
   // ─── References ─────────────────────────────
   /**
    * /**
+   * /**
    * /** Gecureerde writing-samples (5-10 typisch). Bron voor centroid-embedding.
    * Migreert van BrandPersonality.writingSample (1×) naar array.
    */
@@ -5289,6 +5447,7 @@ model BrandVoiceguide {
 
   // ─── Vocabulary ─────────────────────────────
   /**
+   * /**
    * /**
    * /** Single-word level — woorden die het merk gebruikt.
    */
@@ -5301,6 +5460,7 @@ model BrandVoiceguide {
   // ─── Channel-Tones ──────────────────────────
   /**
    * /**
+   * /**
    * /** Per-kanaal tone-overrides bovenop globale toneDimensions.
    * Shape: { website: { formalCasual, ... }, socialMedia: {...}, email: {...}, ads: {...}, video: {...} }
    */
@@ -5309,12 +5469,14 @@ model BrandVoiceguide {
   // ─── Anti-Patterns ──────────────────────────
   /**
    * /**
+   * /**
    * /** Multi-word phrases die het merk vermijdt (uitbreiding op wordsWeAvoid).
    */
   antiPatterns String[]
 
   // ─── Embedding centroid (Pijler 1 fidelity) ─────
   /**
+   * /**
    * /**
    * /** OpenAI text-embedding-3-small van geconcateneerde writingSamples. Beheerd via raw SQL.
    */
@@ -5323,6 +5485,7 @@ model BrandVoiceguide {
 
   // ─── Locale (ADR-3 — per-brand routing voor heuristiek-pakketten) ─────
   /**
+   * /**
    * /**
    * IETF BCP 47 locale-tag: `nl-NL` / `nl-BE` / `en-GB` / `de-DE` (v1).
    * Wanneer null: `getHeuristicsForBrand()` resolver valt terug op
@@ -5345,6 +5508,7 @@ model BrandVoiceguide {
 
   // ─── Metadata ────────────────────────────────
   /**
+   * /**
    * /**
    * /** "manual" | "extracted" (van BrandPersonality migratie) | "analyzer" (door tekst-scanner)
    */

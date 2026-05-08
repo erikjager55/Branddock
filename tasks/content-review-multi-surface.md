@@ -5,7 +5,9 @@ fase: pre-launch
 priority: now
 effort: 8-10 dagen (parallel-track met Δ-2/Δ-3)
 owner: claude-code
-status: open
+status: in-progress
+sub-cluster-done: A foundation — Prisma schema additions (BrandReviewFinding model + ContentReviewLog model + 2 enums + Workspace/User back-relations + ContentFidelityScore.findingsCount); migration SQL met XOR CHECK constraint
+sub-cluster-todo: A engine — runFidelityForExternalContent helper + persistence-laag voor ContentReviewLog; B — backend route + ingest helpers; C — Surface 1 Brand Alignment Tab 3 UI; D — Surface 2 Brand Assistant chat-tool; E — Surface 3 PublishGate uitbreiding
 created: 2026-05-08
 completed: -
 related-adr: 2026-05-08-fval-output-schema-bevindingen, 2026-05-08-locale-routing-brand-voice
