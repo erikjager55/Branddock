@@ -5,7 +5,9 @@ fase: pre-launch
 priority: now
 effort: 2-3 dagen
 owner: claude-code
-status: in-progress
+status: done
+completed: 2026-05-08
+scope-completed: Phase 0.2.A foundation only (useFormFillStore + fill_form_fields tool + system-prompt surfacing + MutationConfirmCard handler). Page-wiring (PersonaDetail/BrandAssetDetail/Step1Context) en Δ-1 chat-integratie compat-criteria deferred — eigen follow-up sub-cluster, niet langer in deze task-file. Foundation is non-regression: AI ziet `formFillFields = []` op alle pages tot een page expliciet registreert, valt terug op dedicated tools.
 created: 2026-05-07
 completed: -
 related-adr: -

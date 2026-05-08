@@ -221,4 +221,32 @@ Task formal closure 2026-05-08: implementation reviewed in scope of Brand Contro
 - Task: [tasks/done/bv-wire-w1-full-centroid.md](../tasks/done/bv-wire-w1-full-centroid.md)
 - ADR: -
 - Spec: [tasks/_drafts/idea-brand-control-program.md](../tasks/_drafts/idea-brand-control-program.md) (Phase 1 #1)
-- Commit: `323ba39` (implementation, 2026-05-06) + closure-commit volgt
+- Commit: `323ba39` (implementation, 2026-05-06) + closure-commit `5489675`
+
+### 237. Brand Assistant fill_form_fields foundation — Phase 0.2.A claw-page-awareness
+
+Generic write-tool infrastructure waarmee de AI editable form-fields op elke page kan invullen via `fill_form_fields([{key, value}, ...])` — bracket-notation ondersteund. Mirror van bestaand `update_campaign_wizard` pattern: server-execute returnt `clientAction: 'form_fill'` met assignments; `MutationConfirmCard` routes naar `useFormFillStore.applyFill()` na user-confirm.
+
+**Foundation geleverd (8 files, commit `f5b9090` + finalize-fixes):**
+- `src/stores/useFormFillStore.ts` (new) — Zustand store met `registerFields` / `clearFields` / `applyFill` API; returns `{applied, missing}` zodat de client kan tonen welke keys de active page niet exposeert
+- `src/lib/claw/claw.types.ts` — `formFillFields` array op `ClawPageContext`
+- `src/app/api/claw/chat/route.ts` — Zod schema-extension
+- `src/lib/claw/tools/write-tools.ts` — nieuw `fill_form_fields` tool met Zod input + `clientAction: 'form_fill'` op execute
+- `src/lib/claw/context-assembler.ts` — `formatFormFillFields()` surfaces velden + tool-instructies in system prompt; instrueert preferring dedicated tools
+- `src/features/claw/components/InputBar.tsx` — leest `useFormFillStore.fields` + includes in pageContext
+- `src/features/claw/components/MutationConfirmCard.tsx` — `clientAction === 'form_fill'` handler + label-overlay (registered label i.p.v. raw key) + conditional footer text voor client-only tools ("Save manually to persist" vs DB-snapshot-message) + defensive type-predicate filter op assignments
+
+**Deferred follow-ups** (eigen sub-cluster, niet langer in deze task-file):
+- Page-wiring voor PersonaDetail/BrandAssetDetail/Step1Context — alle 3 hebben dedicated tools (update_persona, update_asset_*, update_deliverable_*); `fill_form_fields` is bedoeld voor pages zonder dedicated tool. Wiring pagina-specifiek edit-state-refactor zinnig zodra die pages er zijn.
+- Δ-1 chat-integratie compat-criteria 1-3 (sectionPath voor Canvas Step 4 + content-text returns + chat-card pattern) — landen natuurlijk binnen Δ-1 implementation in Phase 2 van Brand Control Program.
+
+**Two-subagent review**: 3 iteraties tot 0 CRITICAL/WARNING. Round 1: misleading footer text + defensive cast — beide gefixt. Round 2: type predicate value-property check — gefixt. Round 3: clean (1 soft-MINOR over string-literal coupling — established codebase pattern, deferred).
+
+tsc + lint clean (0 errors, 960 warnings, declining trend). Smoke-test deferred — vereist gewired page; foundation is non-regression (AI ziet `formFillFields = []` tot page registreert, valt terug op dedicated tools).
+
+Phase 0 voorloper #2 Brand Control Program — foundation klaar.
+
+- Task: [tasks/done/claw-page-awareness.md](../tasks/done/claw-page-awareness.md)
+- ADR: -
+- Spec: [tasks/_drafts/idea-brand-control-program.md](../tasks/_drafts/idea-brand-control-program.md) (Phase 0.2.A)
+- Commit: `f5b9090` (foundation) + finalize-commit volgt

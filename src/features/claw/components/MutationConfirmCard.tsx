@@ -121,7 +121,15 @@ export function MutationConfirmCard() {
           // Generic form-fill — route to the page's registered setters via
           // useFormFillStore.applyFill. Missing keys mean the AI proposed a
           // key that the active page doesn't expose; surface as a soft warning.
-          const assignments = innerResult.assignments as FormFillAssignment[];
+          // Defensive filter — Zod validated the AI input, but the return
+          // path is not Zod-checked; reject malformed entries before apply.
+          const assignments = (innerResult.assignments as unknown[]).filter(
+            (a): a is FormFillAssignment =>
+              typeof a === 'object' &&
+              a !== null &&
+              typeof (a as { key: unknown }).key === 'string' &&
+              'value' in a,
+          );
           const { applied, missing } = useFormFillStore.getState().applyFill(assignments);
           if (applied.length > 0) {
             toast.success(`Filled ${applied.length} field${applied.length === 1 ? '' : 's'}`);
@@ -284,9 +292,13 @@ export function MutationConfirmCard() {
           )}
         </div>
 
-        {/* Info footer */}
+        {/* Info footer — phrasing depends on whether this tool writes to the
+         *  DB (snapshot created) or only updates client-side form state
+         *  (user must manually save afterwards). */}
         <div className="px-4 py-2 border-t border-amber-200/40 bg-amber-50/20 text-xs text-amber-700">
-          This will update the data and create a version snapshot.
+          {pendingMutation.toolName === 'fill_form_fields' || pendingMutation.toolName === 'update_campaign_wizard'
+            ? 'This will update the form fields on this page. Save manually to persist.'
+            : 'This will update the data and create a version snapshot.'}
         </div>
 
         {/* Actions — primary Apply on the right, secondary Edit next to it, tertiary Skip on the left */}
