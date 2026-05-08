@@ -5201,6 +5201,7 @@ model FidelityConfig {
 
   // ─── Composite weights (sum should equal 1.0) ───
   /**
+   * /**
    * /** Pijler 1 — style scoring op bestaande BrandPersonality data
    */
   styleWeight Float @default(0.35)
@@ -5215,6 +5216,7 @@ model FidelityConfig {
 
   // ─── Pijler 2 rubric weights (6 dimensies, sum 1.0) ───
   /**
+   * /**
    * /** Shape: { strategicAnchoring: 0.20, audienceFit: 0.15, brandRecognition: 0.15,
    * antiPattern: 0.30, coherence: 0.10, concreteness: 0.10 }
    */
@@ -5230,6 +5232,7 @@ model FidelityConfig {
 
   // ─── Per content-type opt-outs ───
   /**
+   * /**
    * /** Lege array = fidelity scoring actief voor alle types
    */
   disabledContentTypes String[] @default([])
@@ -5265,6 +5268,7 @@ model BrandVoiceguide {
 
   // ─── Voice DNA ──────────────────────────────
   /**
+   * /**
    * /** Vrije-tekst beschrijving van de merkstem. Migreert uit BrandPersonality.brandVoiceDescription.
    */
   voiceDescription String? @db.Text
@@ -5276,6 +5280,7 @@ model BrandVoiceguide {
 
   // ─── References ─────────────────────────────
   /**
+   * /**
    * /** Gecureerde writing-samples (5-10 typisch). Bron voor centroid-embedding.
    * Migreert van BrandPersonality.writingSample (1×) naar array.
    */
@@ -5283,6 +5288,7 @@ model BrandVoiceguide {
 
   // ─── Vocabulary ─────────────────────────────
   /**
+   * /**
    * /** Single-word level — woorden die het merk gebruikt.
    */
   wordsWeUse   String[]
@@ -5293,6 +5299,7 @@ model BrandVoiceguide {
 
   // ─── Channel-Tones ──────────────────────────
   /**
+   * /**
    * /** Per-kanaal tone-overrides bovenop globale toneDimensions.
    * Shape: { website: { formalCasual, ... }, socialMedia: {...}, email: {...}, ads: {...}, video: {...} }
    */
@@ -5300,16 +5307,30 @@ model BrandVoiceguide {
 
   // ─── Anti-Patterns ──────────────────────────
   /**
+   * /**
    * /** Multi-word phrases die het merk vermijdt (uitbreiding op wordsWeAvoid).
    */
   antiPatterns String[]
 
   // ─── Embedding centroid (Pijler 1 fidelity) ─────
   /**
+   * /**
    * /** OpenAI text-embedding-3-small van geconcateneerde writingSamples. Beheerd via raw SQL.
    */
   centroidEmbedding  Unsupported("vector(1536)")?
   centroidComputedAt DateTime?
+
+  // ─── Locale (ADR-3 — per-brand routing voor heuristiek-pakketten) ─────
+  /**
+   * /**
+   * IETF BCP 47 locale-tag: `nl-NL` / `nl-BE` / `en-GB` / `de-DE` (v1).
+   * Wanneer null: `getHeuristicsForBrand()` resolver valt terug op
+   * `Workspace.contentLanguage` mapped naar default-locale (en→en-GB,
+   * nl→nl-NL, de→de-DE), dan op `en-GB` als ultimate default.
+   * Source-of-truth voor F-VAL Pijler 3 heuristiek-pakket-selectie + Δ-2
+   * heuristics-packages-multilingual task.
+   */
+  contentLocale String?
 
   // ─── Save-for-AI per sectie ──────────────────
   voiceDnaSavedForAi     Boolean @default(true)
@@ -5323,6 +5344,7 @@ model BrandVoiceguide {
 
   // ─── Metadata ────────────────────────────────
   /**
+   * /**
    * /** "manual" | "extracted" (van BrandPersonality migratie) | "analyzer" (door tekst-scanner)
    */
   source      String    @default("manual")

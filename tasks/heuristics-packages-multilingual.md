@@ -5,7 +5,9 @@ fase: pre-launch
 priority: now
 effort: 5-7 dagen (excl. native BE/DE-calibratie — accepted)
 owner: claude-code
-status: open
+status: in-progress
+sub-cluster-done: A — schema migration (BrandVoiceguide.contentLocale veld) + locale-resolver helper (3-laag fallback per ADR-3)
+sub-cluster-todo: B — heuristic packages + citations (NL/EN seed first, BE/DE on-demand), C — Pijler 3 wiring + brand-rule-sync extension, D — BB seed nl-NL + smoke test
 created: 2026-05-08
 completed: -
 related-adr: 2026-05-08-locale-routing-brand-voice
