@@ -21,6 +21,10 @@ import {
 } from './composition-engine';
 import { getOrCreateFidelityConfig } from './fidelity-config';
 import { fetchVoiceguideCentroid } from './voice-similarity';
+import {
+  deriveVoiceBaseline1Pager,
+  formatVoiceBaseline1Pager,
+} from './voice-baseline-1pager';
 import { runStrictModeRewrite, type StrictModeResult } from './strict-mode';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
@@ -395,10 +399,16 @@ export async function runFidelityScoring(
       return null;
     }
 
-    const [personality, config, voiceguideCentroid] = await Promise.all([
+    const [personality, config, voiceguideCentroid, voiceguideRow] = await Promise.all([
       fetchBrandPersonalityInput(input.workspaceId),
       getOrCreateFidelityConfig(input.workspaceId),
       fetchVoiceguideCentroid(input.workspaceId),
+      // Δ-3: full voiceguide row for 1-pager derivation (separate from
+      // fetchBrandPersonalityInput which only reads 2 fields). Cheap query
+      // since BrandVoiceguide is keyed on workspaceId (unique).
+      prisma.brandVoiceguide.findUnique({
+        where: { workspaceId: input.workspaceId },
+      }),
     ]);
 
     const targetWordCount = resolveTargetWordCount(input.contentTypeId);
@@ -406,6 +416,11 @@ export async function runFidelityScoring(
     const brandVoiceSummary = summarizeBrandVoice(input.stack, personality);
     const personaSummary = summarizePersona(input.stack);
     const strategySummary = summarizeStrategy(input.stack);
+    // Δ-3: derived 1-pager string for judge-prompt embed. Empty-baseline when
+    // no voiceguide → format() returns placeholder strings, prompt safely degrades.
+    const voiceBaseline1Pager = formatVoiceBaseline1Pager(
+      deriveVoiceBaseline1Pager(voiceguideRow),
+    );
 
     // FidelityConfig.rubricWeights is JSON; cast to expected shape (defensive)
     const rubricWeights =
@@ -431,6 +446,7 @@ export async function runFidelityScoring(
       rubricWeights,
       skipJudge: input.skipJudge,
       voiceguideCentroid,
+      voiceBaseline1Pager,
     };
 
     const result = await computeFidelityScore(compositionInput);

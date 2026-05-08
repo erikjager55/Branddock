@@ -88,6 +88,14 @@ export interface FidelityCompositionInput {
    * undefined → pijler 1 valt terug op string-match alleen.
    */
   voiceguideCentroid?: number[] | null;
+
+  /**
+   * Δ-3 voice-baseline 1-pager — compact markdown view voor pijler 2 judge-prompt.
+   * Vervangt ad-hoc voiceguide-field-includes met canonical methodology-conform
+   * format. Empty-baseline-string werkt safe (placeholders), prompt valt terug
+   * op `brandVoiceSummary` alleen wanneer 1-pager niet meegeleverd is.
+   */
+  voiceBaseline1Pager?: string;
 }
 
 // ─── Output ─────────────────────────────────────────
@@ -269,6 +277,7 @@ export async function computeFidelityScore(
         contentText: input.contentText,
         brandName: input.brandName,
         brandVoiceSummary: input.brandVoiceSummary,
+        voiceBaseline1Pager: input.voiceBaseline1Pager,
         personaSummary: input.personaSummary,
         strategySummary: input.strategySummary,
         detectorResult,

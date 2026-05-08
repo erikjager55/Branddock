@@ -6,8 +6,8 @@ priority: now
 effort: 2-3 dagen
 owner: claude-code
 status: in-progress
-sub-cluster: A — pure derivation function (in scope, this commit)
-sub-cluster-deferred: B — UI component + hook, C — F-VAL judge-prompt embed, D — getBrandContext cache integration
+sub-cluster-done: A (pure derivation), C (F-VAL judge-prompt embed via composition-input → g-eval-rubric BRAND_VOICE-section), D (getBrandContext cache integration via brandContext.voiceBaseline1Pager + fidelity-runner direct fetch)
+sub-cluster-deferred: B — UI VoiceBaseline1Pager component in Brand Alignment header
 created: 2026-05-08
 completed: -
 related-adr: -

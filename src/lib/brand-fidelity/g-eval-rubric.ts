@@ -172,6 +172,13 @@ export interface RubricPromptContext {
   brandName: string;
   /** Genormaliseerde brand voice samenvatting (uit BVD/BrandPersonality) */
   brandVoiceSummary: string;
+  /**
+   * Δ-3 voice-baseline 1-pager — compact markdown view (≤300 woorden) afgeleid
+   * uit BrandVoiceguide via deriveVoiceBaseline1Pager + formatVoiceBaseline1Pager.
+   * Wanneer aanwezig wordt deze als BRAND_VOICE-section toegevoegd aan de prompt
+   * naast `brandVoiceSummary` (die one-liner blijft voor backwards-compat).
+   */
+  voiceBaseline1Pager?: string;
   /** Persona-context indien beschikbaar — primary persona name + key triggers */
   personaSummary?: string;
   /** Strategische pijler/doel uit campagne — leeg als content niet aan campagne hangt */
@@ -214,10 +221,18 @@ export function buildRubricUserPrompt(ctx: RubricPromptContext): string {
     (d) => `### ${d.label} (${d.key}, weight ${d.weight})\n${d.rubric}`,
   ).join('\n\n');
 
+  // Δ-3: prefer expanded voice-baseline 1-pager when supplied (canonical
+  // methodology-conform format); brandVoiceSummary blijft als fallback when
+  // 1-pager niet meegeleverd is (backwards-compat voor consumers die nog niet
+  // door brand-context lopen).
+  const voiceSection = ctx.voiceBaseline1Pager
+    ? `${ctx.voiceBaseline1Pager}\n\n**Voice summary (one-liner)**: ${ctx.brandVoiceSummary}`
+    : `**Voice summary**: ${ctx.brandVoiceSummary}`;
+
   return `## Brand context
 
 **Brand**: ${ctx.brandName}
-**Voice summary**: ${ctx.brandVoiceSummary}
+${voiceSection}
 ${ctx.personaSummary ? `**Target persona**: ${ctx.personaSummary}` : ''}
 ${ctx.strategySummary ? `**Strategic pillar**: ${ctx.strategySummary}` : ''}
 
