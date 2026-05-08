@@ -287,3 +287,22 @@ Foundation voor de drie review-surfaces (Brand Alignment Tab 3, Brand Assistant 
 - ADR: [adr/2026-05-08-fval-output-schema-bevindingen.md](adr/2026-05-08-fval-output-schema-bevindingen.md), [adr/2026-05-08-locale-routing-brand-voice.md](adr/2026-05-08-locale-routing-brand-voice.md), [adr/2026-05-08-brandclaw-agent-architectuur.md](adr/2026-05-08-brandclaw-agent-architectuur.md)
 - Spec: [tasks/_drafts/idea-brand-control-program.md](../tasks/_drafts/idea-brand-control-program.md)
 - Commit: `4c3cc99` (schema+migration) + `4232625` (engine) + `b3f3c20` (API+ingest v1) + `110e9fa` (smoke) + `8294350` (Prisma 7 import-fix scripts) + `f755ccb` (finalize)
+
+### 240. Competitive-intel discovery cluster — cost-model + 2 vervolg-idea-docs ready-to-build
+
+Pre-build discovery-werk voor de Competitive Intelligence Loop, vervolg op #238 Fase 1 data-laag. Drie validatie-probes uitgevoerd, 4 audit-docs geleverd, 2 vervolg-idea-docs van `pending-tech` naar `ready-to-build` gepromoot via evidence.
+
+**Cost-model Fase 4 brandclaw-monitoring** (`docs/audits/2026-05-08-competitor-monitoring-cost-model.md`): pilot-tier ~$11/maand effectief, tier 1 (50 ws) ~$55/maand, tier 2 (100 ws) ~$110/maand. Worst-case (100 ws × 15 concurrenten × weekly-deep zonder hash-skip) ~$1100/maand. Hard-cap aanbevelingen per plan-tier (free 4 / pro 8 / ent 25 concurrenten), prompt-caching verplicht vóór cron actief, `WorkspaceMonitoringMetrics` model nodig in Fase 4 task. Validatie-blokker §1 voor Fase 2 promotion afgerond.
+
+**Idea-doc `competitor-content-item-discovery`** (`tasks/_drafts/idea-competitor-content-item-discovery.md`): producer voor de lege `CompetitorContentItem`-tabel. Drie probes uitgevoerd: A1 RSS hit-rate 42.9% (verworpen, scope-cut), A2 sitemap-coverage 71.4% (boven 70% target), A3 URL-classifier accuracy 100% met Haiku 4.5 op 25 hand-gelabelde URLs. Definitieve MVP-scope: sitemap-first met robots.txt + 4 paden + recursie sub-sitemaps, RSS als secundaire fallback, AI-classifier voor format+themes, geen HTML-fallback (0% in sample), graceful skip voor competitors zonder bron (~28%). Effort 5-6 dagen.
+
+**Idea-doc `competitor-ai-event-classifier`** (`tasks/_drafts/idea-competitor-ai-event-classifier.md`): pattern-detection bovenop deterministische diff-rules voor 2 strategische events (CATEGORY_REPOSITIONING + TARGET_AUDIENCE_CHANGED). A1 probe: 96.7% accuracy op 30 synthetische prev/next paren met Haiku 4.5 — CATEGORY 100%, TARGET_AUDIENCE 90% (1 borderline dual-event miss), NONE 100% (0 false-positives). Strikte JSON-only prompt verplicht (eerste run gaf 33% parse-errors zonder). MVP-scope strak: 2 events deze task; visual-rebrand/funding/leadership/format-emerging defereren naar vervolg-tasks die andere data-sources binnenhalen. Effort 3-4 dagen.
+
+**Probe-infrastructuur**: 4 nieuwe scripts in `scripts/probes/` (`competitor-rss-hit-rate.ts`, `competitor-content-source-availability.ts`, `competitor-classifier-accuracy.ts`, `competitor-classifier-events-accuracy.ts`) — herbruikbare feature-feasibility-validatie pattern voor toekomstige idea-docs.
+
+Beide vervolg-idea-docs zijn klaar voor technical-planner promotion zodra effort-window beschikbaar is. Validatie-blokker §2 (pilot-priority-check 3 leads) blijft open user-action.
+
+- Task: -  (discovery-cluster, geen single task)
+- ADR: [adr/2026-05-08-competitor-snapshot-historie.md](adr/2026-05-08-competitor-snapshot-historie.md) (parent)
+- Spec: [tasks/_drafts/idea-competitive-intelligence-loop.md](../tasks/_drafts/idea-competitive-intelligence-loop.md), [tasks/_drafts/idea-competitor-content-item-discovery.md](../tasks/_drafts/idea-competitor-content-item-discovery.md), [tasks/_drafts/idea-competitor-ai-event-classifier.md](../tasks/_drafts/idea-competitor-ai-event-classifier.md)
+- Commit: `41a7c90` (cost-model) + `bc6dc6f` (idea content-discovery) + `46d3b0a` (A1 RSS) + `d7f81ba` (A2 sitemap) + `583f384` (A3 classifier) + `6e3c7ed` (idea ai-event) + `7355f44` (A1 classifier-events) + finalize-commit (volgt)
