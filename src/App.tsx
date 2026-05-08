@@ -15,6 +15,7 @@ import { LazyWrapper } from './components/shared';
 
 // ─── Contexts, stores, hooks, utils ────────────────────────
 import { AppProviders, useBrandAssets, useResearchPlan, useUIState } from './contexts';
+import type { ResearchPlanConfiguration } from './contexts/ResearchPlanContext';
 import { useProductsStore } from './features/products/stores/useProductsStore';
 import { useCompetitorsStore } from './features/competitors/stores/useCompetitorsStore';
 import { useTrendRadarStore } from './features/trend-radar/stores/useTrendRadarStore';
@@ -318,7 +319,7 @@ function AppContent() {
   const handlePlanCreated = (config: {
     approachId: string;
     selectedAssets: string[];
-    configuration: any;
+    configuration: ResearchPlanConfiguration;
     entryMode: string;
     rationale?: Record<string, string>;
   }) => {
@@ -344,7 +345,9 @@ function AppContent() {
     // Update shared assets for each method
     const updatedSharedAssets = { ...sharedSelectedAssets };
     config.selectedAssets.forEach(assetId => {
-      const methodId = methods[assetId];
+      // methods can be Record<string,string> (tool-flow) or string[] (bundle-flow);
+      // string-indexing only yields hits in tool-flow — bundle-flow returns undefined harmlessly
+      const methodId = (methods as Record<string, string>)[assetId];
       if (methodId && updatedSharedAssets[methodId as keyof typeof updatedSharedAssets]) {
         const existing = updatedSharedAssets[methodId as keyof typeof updatedSharedAssets];
         if (!existing.includes(assetId)) {

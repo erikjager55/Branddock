@@ -74,6 +74,7 @@ import { GenericToolManager } from './canvases/GenericToolManager';
 import { SessionOutcomeHeader } from './SessionOutcomeHeader';
 import { SessionNavigator } from './SessionNavigator';
 import { useBrandAssets } from '../contexts/BrandAssetsContext';
+import type { ResearchPlan } from '../contexts/ResearchPlanContext';
 import { ResearchMethodType } from '../types/brand-asset';
 
 interface ResearchDashboardProps {
@@ -90,7 +91,9 @@ interface ResearchDashboardProps {
     workshop: string[];
   };
   onAssetsChange?: (tool: string, assets: string[]) => void;
-  researchPlanConfig?: any;
+  // Misnomer: this is the WHOLE ResearchPlan (with id, method, unlockedAssets, etc.),
+  // not just the inner configuration object. Kept for backwards-compat with callers.
+  researchPlanConfig?: ResearchPlan | null;
 }
 
 export function ResearchDashboard({ 
@@ -455,7 +458,9 @@ export function ResearchDashboard({
     alert('Canvas regeneration initiated! This may take a few moments to complete.');
   };
 
-  const handleCanvasEdit = (data: any) => {
+  // Polymorphic — data shape varies per canvas (MissionStatement, GoldenCircle, etc.).
+  // Component just logs; downstream consumers narrow per shape.
+  const handleCanvasEdit = (data: Record<string, unknown>) => {
     // Logic to save edited canvas data
     logger.interaction('Saving canvas data', { data });
     alert('Canvas changes saved successfully!');
@@ -1031,7 +1036,7 @@ export function ResearchDashboard({
            <InterviewsManager 
              assetId={assetId}
              initialConfig={interviewConfig || { 
-               numberOfInterviews: researchPlanConfig?.numberOfInterviews || 3, 
+               numberOfInterviews: researchPlanConfig?.configuration?.numberOfInterviews || 3,
                selectedAssets: [] 
              }}
              researchPlanConfig={researchPlanConfig}
@@ -1126,7 +1131,7 @@ export function ResearchDashboard({
           <QuestionnaireManager 
             assetId={assetId}
             initialConfig={{ 
-              numberOfQuestionnaires: researchPlanConfig?.numberOfQuestionnaires || 3, 
+              numberOfQuestionnaires: researchPlanConfig?.configuration?.numberOfQuestionnaires || 3,
               selectedAssets: [] 
             }}
             researchPlanConfig={researchPlanConfig}

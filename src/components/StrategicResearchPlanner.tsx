@@ -34,17 +34,29 @@ import {
   Palette,
   BookOpen
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 import { ResearchTargetCategory, ResearchTarget } from '../types/research-target';
 import { useBrandAssets } from '../contexts/BrandAssetsContext';
 import { usePersonas } from '../contexts/PersonasContext';
+import type { ResearchPlanConfiguration } from '../contexts/ResearchPlanContext';
 import { researchBundles, getBundlesForTarget } from '../lib/catalogs/research-bundles';
+
+interface ResearchItem {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: LucideIcon;
+  type: string;
+  avatar?: string | null;
+  compatibleTools?: string[];
+}
 
 interface StrategicResearchPlannerProps {
   onPlanCreated: (plan: {
     approachId: string;
     selectedAssets: string[];
-    configuration: any;
+    configuration: ResearchPlanConfiguration;
     entryMode: 'tool' | 'bundle';
     rationale?: Record<string, string>;
   }) => void;
@@ -1101,7 +1113,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            {researchItems.map((item: any) => {
+            {researchItems.map((item: ResearchItem) => {
               const Icon = item.icon;
               const isSelected = selectedAssets.includes(item.id);
               

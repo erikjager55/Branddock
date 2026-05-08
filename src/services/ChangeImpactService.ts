@@ -130,7 +130,10 @@ export class ChangeImpactService {
    */
   static checkCampaignImpacts(
     impactAnalysis: ImpactAnalysis,
-    activeCampaigns: any[] // Type from campaign strategy
+    // Minimal contract — only fields actually read in this method.
+    // Full Campaign type lives in campaign strategy module; intentionally not imported
+    // to keep this service decoupled.
+    activeCampaigns: Array<{ id: string; name: string; selectedAssets?: string[] }>
   ): CampaignImpact[] {
     const assetId = impactAnalysis.change.assetId;
 

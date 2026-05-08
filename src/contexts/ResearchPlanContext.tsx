@@ -2,6 +2,24 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { saveToStorage, loadFromStorage, StorageKeys } from '../utils/storage';
 import { useWorkspace } from '../hooks/use-workspace';
 
+/**
+ * Polymorphic research-plan configuration. Two production code paths emit different shapes:
+ * - Tool-flow (StrategicResearchPlanner.tsx:362): primaryTool + toolConfig + bundle + questionnaire/interview counts
+ * - Bundle-flow (StrategicResearchPlanner.tsx:636): planName + methods + totalAssets + scoreBoost
+ * All fields optional to accommodate both paths via a single union-style type.
+ */
+export interface ResearchPlanConfiguration {
+  primaryTool?: string;
+  toolConfig?: Record<string, unknown>;
+  bundle?: string | null;
+  numberOfQuestionnaires?: number;
+  numberOfInterviews?: number;
+  planName?: string;
+  methods?: string[] | Record<string, string>;
+  totalAssets?: number;
+  scoreBoost?: number;
+}
+
 export interface ResearchPlan {
   id: string;
   method: string;
@@ -9,7 +27,7 @@ export interface ResearchPlan {
   unlockedAssets: string[];
   entryMode: 'asset' | 'bundle' | 'questionnaire';
   rationale?: Record<string, string>;
-  configuration?: any;
+  configuration?: ResearchPlanConfiguration;
   createdAt: string;
   updatedAt: string;
 }
