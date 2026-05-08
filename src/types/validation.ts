@@ -11,6 +11,8 @@
  * @see /config/validation-methods.ts - Validation method configurations
  */
 
+import type { LucideIcon } from "lucide-react";
+
 // ============================================================================
 // Method Identifiers
 // ============================================================================
@@ -158,7 +160,7 @@ export interface ValidationMethodDisplayProps {
   label: string;
   description?: string;
   status: ValidationMethodUIStatus;
-  icon?: any; // LucideIcon
+  icon?: LucideIcon;
   duration?: string;
   impact?: 'high' | 'medium' | 'low';
   unlockLevel?: UnlockTier;

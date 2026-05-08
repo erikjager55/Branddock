@@ -1,12 +1,14 @@
 // Strategy Hub Type Definitions
 
+import type { LucideIcon } from "lucide-react";
+
 // Unlockable research/analysis tool (used in purchase flow)
 export interface UnlockableTool {
   id: string;
   name: string;
   description: string;
   price: number;
-  icon?: any;
+  icon?: LucideIcon;
   supportsMultiAsset?: boolean;
   relatedAssets?: string[];
 }
@@ -38,7 +40,7 @@ export interface StrategyTool {
   category: StrategyCategory;
   tagline: string;
   description: string;
-  icon: any;
+  icon: LucideIcon;
   color: string;
   status: StrategyToolStatus;
   
@@ -99,7 +101,7 @@ export interface StrategySession {
   // Generated output
   output?: {
     format: OutputFormat;
-    content: any; // Structured based on format
+    content: unknown; // Structured based on format
     summary: string;
     keyInsights: string[];
     recommendations: string[];

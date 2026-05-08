@@ -1,6 +1,8 @@
 // Research Target Types - What are you researching?
 
-export type ResearchTargetCategory = 
+import type { LucideIcon } from "lucide-react";
+
+export type ResearchTargetCategory =
   | 'brand' 
   | 'persona' 
   | 'products-services' 
@@ -17,7 +19,7 @@ export interface ResearchTargetOption {
   category: ResearchTargetCategory;
   label: string;
   description: string;
-  icon: any;
+  icon: LucideIcon;
   color: string;
   examples: string[];
   availableItems?: number; // How many items can be researched

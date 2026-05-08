@@ -5,7 +5,7 @@ fase: post-launch
 priority: next
 effort: 1-2 dagen (auto-mode kandidaat)
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-05-07
 completed: -
 related-adr: -

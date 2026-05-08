@@ -2,6 +2,7 @@
 // ResearchBundle types — Product catalog definitions
 // =============================================================
 
+import type { LucideIcon } from "lucide-react";
 import type { ResearchTargetCategory } from './research-target';
 
 export interface ResearchBundle {
@@ -19,13 +20,13 @@ export interface ResearchBundle {
   bundlePrice: number;
   savings: number;
   badge?: string;
-  icon: any;
+  icon: LucideIcon;
   color: string;
   strategyToolUnlocked?: string | string[];
   bundleType?: 'foundation' | 'specialized' | 'legacy';
   tier?: 'starter' | 'professional' | 'enterprise';
   activities?: {
-    icon: any;
+    icon: LucideIcon;
     name: string;
     description: string;
     duration: string;

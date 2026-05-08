@@ -264,7 +264,7 @@ export function FilterPanel({
                     <>
                       {field?.type === 'select' || field?.type === 'multiselect' ? (
                         <select
-                          value={condition.value}
+                          value={typeof condition.value === 'string' || typeof condition.value === 'number' ? condition.value : ''}
                           onChange={(e) => updateCondition(condition.id, { value: e.target.value })}
                           className="flex-1 h-9 px-3 text-sm border border-border rounded-md bg-background"
                         >
@@ -278,7 +278,7 @@ export function FilterPanel({
                       ) : (
                         <input
                           type={field?.type === 'number' ? 'number' : field?.type === 'date' ? 'date' : 'text'}
-                          value={condition.value}
+                          value={typeof condition.value === 'string' || typeof condition.value === 'number' ? condition.value : ''}
                           onChange={(e) => updateCondition(condition.id, { value: e.target.value })}
                           placeholder={field?.placeholder || 'Value...'}
                           className="flex-1 h-9 px-3 text-sm border border-border rounded-md bg-background"

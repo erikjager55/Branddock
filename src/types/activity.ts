@@ -51,7 +51,7 @@ export interface ActivityMetadata {
   fileName?: string;
   insightText?: string;
   milestoneType?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface Activity {

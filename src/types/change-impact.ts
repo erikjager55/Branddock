@@ -18,8 +18,8 @@ export interface AssetChange {
   
   // What exactly changed
   fieldChanged?: string;
-  oldValue?: any;
-  newValue?: any;
+  oldValue?: unknown;
+  newValue?: unknown;
   
   // Research impact
   researchAdded?: boolean;

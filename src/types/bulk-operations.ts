@@ -54,7 +54,7 @@ export interface BulkOperationResult {
   completedAt?: Date;
   errors?: string[];
   canUndo: boolean;
-  undoData?: any;
+  undoData?: unknown;
 }
 
 export interface BulkSelectionState {
@@ -66,6 +66,6 @@ export interface BulkSelectionState {
 export interface BulkActionHandler<T = any> {
   action: BulkActionType;
   execute: (items: T[], params?: Record<string, any>) => Promise<BulkOperationResult>;
-  undo?: (undoData: any) => Promise<void>;
+  undo?: (undoData: unknown) => Promise<void>;
   validate?: (items: T[], params?: Record<string, any>) => string | null; // Returns error message or null
 }
