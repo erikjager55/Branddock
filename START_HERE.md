@@ -17,11 +17,11 @@ Pre-launch eindigt bij volledige content-flow zonder blocker-bugs (Brief → Str
 
 > Update na elke afgeronde task.
 
-> **2026-05-07**: content-versioning-crud + auto-trigger-fidelity-scoring (geabsorbeerd) afgerond. Versions worden nu auto-aangemaakt bij elke AI-generation, fidelity-scoring fires async. Sidebar-component drop-in klaar (CanvasPage-integratie als handover). Pre-launch content-flow-foundation staat.
+> **2026-05-08**: brand-voice-content-integration absorbed (BV-1 + fidelity-scorer + #227 leveren samen al voice-injectie + voice-scoring). Pre-launch content-flow-foundation staat compleet — focus verschuift naar gates + observability + de pre-pilot tracks.
 
-1. **`brand-voice-content-integration`** ([task](tasks/brand-voice-content-integration.md)) — 3 dagen. BrandVoiceGuide injectie in generation prompts + voice-consistency score. Dependency op studio-real-ai (✓) satisfied.
-2. **`content-item-qa-gating`** ([task](tasks/content-item-qa-gating.md)) — 2-3 dagen. Publish-readiness gate op consistency/persona/voice scores. Dependency op brand-voice (#1) voor voice-score.
-3. **`posthog-sentry-browser`** ([task](tasks/posthog-sentry-browser.md)) — quick win 1 dag. Observability vóór eerste pilot. Onafhankelijk van content-pad.
+1. **`content-item-qa-gating`** ([task](tasks/content-item-qa-gating.md)) — 2-3 dagen. Publish-readiness gate die lage consistency/persona/voice scores blokkeert vóór publicatie. Dependency op voice-score is nu satisfied (via `brand-fidelity` criterion).
+2. **`posthog-sentry-browser`** ([task](tasks/posthog-sentry-browser.md)) — quick win 1 dag. Activation tracking + frontend errors live krijgen. Belangrijk vóór de eerste pilot.
+3. **`campaign-drafts-db-backed`** ([task](tasks/campaign-drafts-db-backed.md)) — 1.5 dag. Multi-device persistence voor campaign drafts. Onafhankelijk parallel uitvoerbaar.
 
 ---
 
@@ -66,11 +66,11 @@ Volledige gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-d
 
 > Auto-bijgewerkt door `task-finalize` skill.
 
+- 2026-05-08 — [Brand-voice content integration](tasks/done/brand-voice-content-integration.md) (absorbed by BV-1 + fidelity-scorer + #227)
 - 2026-05-07 — [ContentVersion CRUD + studio hooks + version-history sidebar](tasks/done/content-versioning-crud.md)
 - 2026-05-07 — [Auto-trigger fidelity-scoring](tasks/done/auto-trigger-fidelity-scoring.md) (absorbed in content-versioning)
 - 2026-05-07 — [Studio component generation — echte AI in 3 routes](tasks/done/studio-content-generation-real-ai.md) (P0)
 - 2026-05-07 — [Feature-planner sparring-partner (PM + Tech-Lead subagents)](tasks/done/feature-planner-setup.md)
-- 2026-05-07 — [Hooks + skills + subagents + eerste autonome routine](tasks/done/hooks-routines-week-3.md) (week 3)
 
 ---
 
