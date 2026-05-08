@@ -125,4 +125,4 @@ Browser-side observability vóór de eerste pilot. PostHog: `posthog-js` package
 - Task: [tasks/done/posthog-sentry-browser.md](../tasks/done/posthog-sentry-browser.md)
 - ADR: -
 - Spec: -
-- Commit: `<hash>`
+- Commit: `3eb5b4d`
