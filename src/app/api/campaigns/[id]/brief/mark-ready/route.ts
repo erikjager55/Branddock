@@ -11,9 +11,12 @@ import { trackEvent } from '@/lib/analytics/posthog';
  * markeert als "klaar voor klant". Logt event `campaign_brief_marked_ready`
  * voor primary-metric tracking. Geen DB-mutatie, dus geen cache-invalidation.
  */
+// Max 20 is een ruime upper-bound boven de huidige 10 secties, voorkomt
+// dat een client een nonsens-waarde (bv. 2_000_000_000) naar PostHog stuurt
+// en zo de telemetrie-distributie corrumpeert.
 const PayloadSchema = z.object({
-  sectionsRenderedCount: z.number().int().min(0),
-  missingDataFlags: z.array(z.string()).default([]),
+  sectionsRenderedCount: z.number().int().min(0).max(20),
+  missingDataFlags: z.array(z.string()).max(50).default([]),
 });
 
 export async function POST(

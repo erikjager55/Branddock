@@ -3,20 +3,22 @@
  * campaign-brief. Genereert per-week-thema's afgeleid uit campagne-strategie,
  * persona's en asset-distributie. Geen persistentie: één AI-call per render.
  *
- * Hard timeout van 6 seconden via `timeoutMs` in `anthropicClient`. Bij
- * timeout/fail retourneert deze functie een `error`-string i.p.v. te throwen,
- * zodat de renderer een fallback-melding kan tonen en de overige 9 secties
- * gewoon kunnen renderen.
+ * Hard timeout van 6 seconden via `timeoutMs` in `anthropicClient` —
+ * respecteert het ≤5s p95-render budget uit de task-spec. Bij timeout/fail
+ * retourneert deze functie een `error`-string i.p.v. te throwen, zodat de
+ * renderer een fallback-melding kan tonen en de overige 9 secties gewoon
+ * kunnen renderen.
  */
 
 import { z } from 'zod';
 import { anthropicClient } from '@/lib/ai/anthropic-client';
 import type { WeekTheme, BriefViewModel } from '@/lib/campaigns/brief-types';
 
-// 10s geeft ruimte boven de gemiddelde Anthropic-latency van 3-5s zonder de
-// hele render te blokkeren bij een trage API-dag. Bij timeout/fail toont
-// sectie 5 een fallback met retry-knop — geen harde fout naar de user.
-const WEEK_THEME_TIMEOUT_MS = 10_000;
+// 6s respecteert het ≤5s p95-render budget uit task-spec — Anthropic-call zit
+// gemiddeld 3-5s, dus 6s laat een buffer voor slechte API-dagen zonder de
+// counter-metric te slopen. Bij timeout/fail toont sectie 5 een fallback met
+// retry-knop — geen harde fout naar de user.
+const WEEK_THEME_TIMEOUT_MS = 6_000;
 
 const WeekThemeSchema = z.object({
   weekNumber: z.number().int().min(1).max(104), // hard cap: 2 jaar — voorkomt absurde waardes

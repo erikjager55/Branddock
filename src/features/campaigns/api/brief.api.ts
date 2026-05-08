@@ -30,21 +30,22 @@ async function fetchBriefRender(campaignId: string): Promise<BriefRenderResponse
 }
 
 /**
- * Fetcht een gerenderde campagne-brief. `staleTime: 0` zodat elke "Genereer
- * brief"-click een verse render uit de wizard-data oplevert (incl. nieuwe
- * AI-week-thema's).
+ * Fetcht een gerenderde campagne-brief. `staleTime: 60_000` voorkomt dat
+ * close+reopen binnen 60s een nieuwe Anthropic-call triggert (week-thema's
+ * zijn duur — ~3-5s per render). User die echt wil refreshen kan via een
+ * dedicated "Regenerate" actie de query invalideren (out-of-scope MVP).
  *
- * `enabled` op `false` houdt de hook idle tot caller `refetch()` aanroept,
- * zodat de modal pas fetcht wanneer hij geopend wordt — geen onnodige call
- * bij modal-mount-zonder-trigger.
+ * `enabled` op `false` houdt de hook idle tot caller hem activeert, zodat
+ * de modal pas fetcht wanneer hij geopend wordt — geen onnodige call bij
+ * modal-mount-zonder-trigger.
  */
 export function useGenerateBrief(campaignId: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['campaign-brief', campaignId],
     queryFn: () => fetchBriefRender(campaignId),
     enabled: options?.enabled ?? false,
-    staleTime: 0,
-    gcTime: 60_000,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
     retry: 1,
   });
 }

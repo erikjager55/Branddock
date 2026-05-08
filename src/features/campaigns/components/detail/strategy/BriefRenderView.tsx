@@ -43,8 +43,19 @@ export function BriefRenderView({
     setMarkingError(null);
     try {
       const flagFieldNames = briefQuery.data.missing.map((m) => m.fieldName);
+      // De brief heeft 10 secties; sectie 7/8/9 zijn altijd placeholders. Een
+      // sectie geldt als "rendered" als hij geen 'error'-severity missing-flag
+      // heeft. Tel UNIEKE secties met error-flags (mapper kan meerdere
+      // error-flags per sectie emit'en, bv. `personas` + `masterMessage` —
+      // beide section 2/3) — anders deduct'en we dubbel.
+      const erroredSections = new Set(
+        briefQuery.data.missing
+          .filter((m) => m.severity === 'error')
+          .map((m) => m.section),
+      );
+      const sectionsRenderedCount = Math.max(0, 10 - erroredSections.size);
       await markBriefReady(campaignId, {
-        sectionsRenderedCount: 10,
+        sectionsRenderedCount,
         missingDataFlags: flagFieldNames,
       });
       setMarkedReady(true);
@@ -83,6 +94,8 @@ export function BriefRenderView({
             missing={briefQuery.data.missing}
             durationMs={briefQuery.data.durationMs}
             weekThemeError={briefQuery.data.weekThemeError}
+            onRegenerate={() => briefQuery.refetch()}
+            isRefetching={briefQuery.isFetching}
           />
         )}
       </div>
@@ -121,9 +134,11 @@ interface BriefContentProps {
   missing: { section: number; fieldName: string; severity: 'warning' | 'error'; message: string }[];
   durationMs: number;
   weekThemeError: string | null;
+  onRegenerate: () => void;
+  isRefetching: boolean;
 }
 
-function BriefContent({ markdown, missing, durationMs, weekThemeError }: BriefContentProps) {
+function BriefContent({ markdown, missing, durationMs, weekThemeError, onRegenerate, isRefetching }: BriefContentProps) {
   return (
     <div className="space-y-4">
       {missing.length > 0 && <MissingDataBanner missing={missing} />}
@@ -132,8 +147,18 @@ function BriefContent({ markdown, missing, durationMs, weekThemeError }: BriefCo
           <strong>Section 5 (calendar):</strong> {weekThemeError}
         </div>
       )}
-      <div className="text-xs text-gray-400 mb-2">
-        Render time: {(durationMs / 1000).toFixed(2)}s
+      <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+        <span>Render time: {(durationMs / 1000).toFixed(2)}s</span>
+        <button
+          type="button"
+          onClick={onRegenerate}
+          disabled={isRefetching}
+          className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-800 disabled:opacity-50"
+          title="Regenerate brief from latest wizard data"
+        >
+          <RefreshCw className={`w-3 h-3 ${isRefetching ? 'animate-spin' : ''}`} />
+          {isRefetching ? 'Regenerating…' : 'Regenerate'}
+        </button>
       </div>
       <article className="text-gray-800">
         <ReactMarkdown components={MARKDOWN_COMPONENTS}>{markdown}</ReactMarkdown>

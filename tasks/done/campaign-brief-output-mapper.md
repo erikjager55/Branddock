@@ -8,6 +8,7 @@ owner: claude-code
 status: done
 created: 2026-05-07
 completed: 2026-05-08
+finalize-rounds: 4 review-iteraties (1 nieuwe regression in round 2 zelf gefixt: PG NULLS-sorting); 0 CRITICAL bij convergentie. 1 productie-commit `855f8a3` + finalize fixes.
 related-adr: -
 related-spec: tasks/_drafts/idea-campaign-brief-cowork-parity.md
 worktree: branddock-feat-campaign-brief-output-mapper

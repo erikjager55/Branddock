@@ -51,9 +51,20 @@ export async function GET(
         })
       : [];
 
+    // Cap op 200 rijen — voldoende voor alle gangbare platform×format-combinaties
+    // van een workspace + globale defaults; voorkomt onbegrensde memory-load
+    // bij toekomstige workspaces met honderden enrichment-rijen.
+    //
+    // orderBy zorgt voor deterministisch subset wanneer de cap hit: workspace-
+    // specifieke rijen (non-null workspaceId) eerst, globale defaults
+    // (workspaceId=null) als laatste. Postgres-default voor `ORDER BY DESC`
+    // is `NULLS FIRST` — daarom expliciet `nulls: 'last'`. Stabiele tie-break
+    // via id ASC voorkomt willekeur binnen dezelfde workspaceId-groep.
     const enrichments = await prisma.mediumEnrichment.findMany({
       where: { OR: [{ workspaceId }, { workspaceId: null, isDefault: true }] },
       select: { platform: true, format: true, phaseGuidance: true },
+      orderBy: [{ workspaceId: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }],
+      take: 200,
     });
 
     const { viewModel, missing } = mapToBriefViewModel({

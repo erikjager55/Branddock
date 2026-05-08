@@ -38,6 +38,11 @@ export interface MapToBriefInput {
   blueprint: CampaignBlueprint | null;
   personas: Persona[];
   enrichments: MediumEnrichmentSlice[];
+  /** Wall-clock voor `meta.generatedAt`. Optioneel — caller die determinisme
+   *  wil (smoke-tests, snapshot-renders) injecteert een vaste Date; default
+   *  `new Date()` voor productie-renders. Bewust geen `Date.now()` in de
+   *  body om de pure-function claim te waarborgen. */
+  now?: Date;
 }
 
 export interface MapToBriefResult {
@@ -51,7 +56,8 @@ export interface MapToBriefResult {
  * weergeven (bv. boven de markdown of als waarschuwing-banner).
  */
 export function mapToBriefViewModel(input: MapToBriefInput): MapToBriefResult {
-  const { campaign, blueprint, personas, enrichments } = input;
+  const { campaign, blueprint, personas, enrichments, now } = input;
+  const generatedAt = (now ?? new Date()).toISOString();
   const missing: BriefMissingDataFlag[] = [];
 
   const durationWeeks = computeDurationWeeks(campaign.startDate, campaign.endDate, blueprint?.channelPlan?.phaseDurations);
@@ -71,7 +77,7 @@ export function mapToBriefViewModel(input: MapToBriefInput): MapToBriefResult {
       startDate: campaign.startDate ? campaign.startDate.toISOString() : null,
       endDate: campaign.endDate ? campaign.endDate.toISOString() : null,
       durationWeeks,
-      generatedAt: new Date().toISOString(),
+      generatedAt,
     },
     overview,
     audience,
@@ -312,9 +318,12 @@ function mapAssets(blueprint: CampaignBlueprint | null, missing: BriefMissingDat
   // Defensive grouping: AI-output kan onverwachte/missing productionPriority
   // hebben. Onbekende waardes vallen terug op should-have i.p.v. silent-drop
   // — anders zien gebruikers assets verdwijnen uit de brief zonder reden.
+  // Surface elke unknown waarde als MissingDataFlag zodat de UI signaleert
+  // dat de wizard-data wat nakijken behoeft.
   const mustHave: BriefAssetEntry[] = [];
   const shouldHave: BriefAssetEntry[] = [];
   const niceToHave: BriefAssetEntry[] = [];
+  const unknownPriorities = new Set<string>();
   for (const d of deliverables) {
     const entry = toEntry(d);
     switch (d.productionPriority) {
@@ -325,10 +334,32 @@ function mapAssets(blueprint: CampaignBlueprint | null, missing: BriefMissingDat
         niceToHave.push(entry);
         break;
       case 'should-have':
-      default:
         shouldHave.push(entry);
         break;
+      default: {
+        // TS narrowt productionPriority naar `never` in de default-case
+        // (de union dekt alle 3 string-literals). Runtime kan AI-output
+        // echter alles emit'en — cast naar `unknown` om defensive te
+        // checken zonder TS te misleiden.
+        // User-facing label: vermijd interne sentinel-strings als '<missing>';
+        // '(empty)' is begrijpelijk én collision-vrij met legitieme priority-
+        // waarden.
+        const raw: unknown = d.productionPriority;
+        const observed =
+          typeof raw === 'string' && raw.length > 0 ? raw : '(empty)';
+        unknownPriorities.add(observed);
+        shouldHave.push(entry);
+        break;
+      }
     }
+  }
+  if (unknownPriorities.size > 0) {
+    missing.push({
+      section: 6,
+      fieldName: 'assetPlan.deliverables[].productionPriority',
+      severity: 'warning',
+      message: `Unknown productionPriority value(s) bucketed to should-have: ${Array.from(unknownPriorities).sort().join(', ')}`,
+    });
   }
 
   return {

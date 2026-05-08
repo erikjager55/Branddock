@@ -338,3 +338,26 @@ Bonus closures op latente werk in BCP Phase 1+2 + Cowork-pariteit:
 - ADR: -
 - Spec: [audits/2026-05-08-canvas-studio-state.md](audits/2026-05-08-canvas-studio-state.md), [audits/2026-05-08-canvas-per-item-tweaks-plan.md](audits/2026-05-08-canvas-per-item-tweaks-plan.md), [audits/2026-05-08-canvas-image-briefing-plan.md](audits/2026-05-08-canvas-image-briefing-plan.md)
 - Commit: `a8363c0`
+
+### 242. Campaign brief output-mapper — Fase A Cowork-pariteit (finalize + review-loop)
+
+Render-laag bovenop bestaande `CampaignBlueprint` die wizard-output transformeert naar 10-secties Linfi-stijl markdown-brief: pure data-mapper (`brief-data-mapper.ts`) + markdown-renderer (`brief-renderer.ts`) + on-render Anthropic-call voor sectie 5 week-thema's + GET/POST routes onder `/api/campaigns/[id]/brief/{render,mark-ready}` + `BriefRenderView` modal in ContentLibraryCampaignMode. Secties 7/8/9 tonen expliciete "Not available — requires <follow-up-feature>" placeholders met links naar `campaign-kpi-structure` / `campaign-budget-table` / `campaign-risk-assessment`. Geen schema-wijzigingen.
+
+**Implementation** (productie-commit `855f8a3`): 9 nieuwe files (~1688 regels) + ContentLibraryCampaignMode extension. Workspace-isolation via `resolveWorkspaceId()` + `findFirst({ where: { id, workspaceId } })` op beide routes. PostHog event `campaign_brief_marked_ready` op "Klaar voor klant"-knop. AI-call via `anthropicClient.createChatCompletion` met 6s timeout + Zod-schema voor week-theme response.
+
+**Finalize review-loop** — 4 iteraties tot 0 CRITICAL/0 WARNING:
+- Round 1: 0 CRITICAL + 14 WARNING (timeout 10s vs spec 6s, hardcoded sectionsRenderedCount, escape() newline corruption, Zod onbegrensd, mediumEnrichment unbounded, `new Date()` in mapper, etc.)
+- Round 2: 0 CRITICAL + 4 WARNING (orderBy non-deterministic, sectionsRenderedCount counts flags niet sections, staleTime UX trap, unknownPriorities severity)
+- Round 3: 1 CRITICAL (PG NULLS-sorting bug zelf-geintroduceerd in R2: `ORDER BY DESC` defaultt naar NULLS FIRST → workspace-overrides afgekapt bij 200-cap) + 1 WARNING (`<missing>` sentinel lekt naar user-message)
+- Round 4: convergentie 0 CRITICAL / 0 WARNING
+
+**Fixes geleverd**: timeout 10s→6s; `new Date()` injectable via `now?: Date` parameter; escape() strip newlines; Zod `.max(20)` op sectionsRenderedCount; sectionsRenderedCount via unique-section Set; staleTime 60_000 + Regenerate-knop; mediumEnrichment `take: 200` + `orderBy: [{ workspaceId: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }]`; `${ch.priority}` defensive; `unknownPriorities` MissingDataFlag met `(empty)` sentinel.
+
+**Quality gates**: tsc 0 errors, lint 0 errors (0 warnings in nieuwe files). Manual smoke-test (9 stappen UI-werk uit task-file) is user-action vóór live productie-gebruik.
+
+**Out-of-scope** (B-cluster follow-ups): `campaign-kpi-structure` (sectie 7), `campaign-budget-table` (sectie 8), `campaign-risk-assessment` (sectie 9), brief-versioning, PDF/Notion/Word export.
+
+- Task: [tasks/done/campaign-brief-output-mapper.md](../tasks/done/campaign-brief-output-mapper.md)
+- ADR: -
+- Spec: [tasks/_drafts/idea-campaign-brief-cowork-parity.md](../tasks/_drafts/idea-campaign-brief-cowork-parity.md) + [tasks/_drafts/idea-campaign-brief-cowork-parity-validation.md](../tasks/_drafts/idea-campaign-brief-cowork-parity-validation.md)
+- Commit: `855f8a3` (initial implementation, parallel session) + finalize-commit (volgt)

@@ -147,7 +147,7 @@ function renderSection4Channels(vm: BriefViewModel): string {
       '',
       `### ${escape(ch.name)} — ${escape(ch.role)}`,
       `**Objective**: ${escape(ch.objective)}`,
-      `**Budget level**: ${escape(ch.budgetAllocation)} · **Priority**: ${ch.priority}`,
+      `**Budget level**: ${escape(ch.budgetAllocation)} · **Priority**: ${typeof ch.priority === 'number' ? ch.priority : '—'}`,
     );
     appendBulletList(lines, '**Content mix**', ch.contentMix);
   }
@@ -328,13 +328,21 @@ function missingField(name: string): string {
  * door de markdown-meaningful tekens te escapen. react-markdown negeert raw HTML
  * by default, dus extra HTML-sanitization is niet nodig — deze escape gaat
  * alleen over markdown-leesbaarheid.
+ *
+ * Strip newlines (`\n` / `\r`) naar spaties: zonder dit breekt een AI-output
+ * met embedded newline een heading over meerdere regels en corrumpeert de
+ * volgende sectie (bijv. `### Week 1 — Theme\nMore text` rendert niet als
+ * één heading).
  */
 function escape(str: string): string {
   if (typeof str !== 'string') return '';
+  // Newlines binnen content krimpen tot spaties — voorkomt heading/listrender-
+  // corruption wanneer AI of wizard-data een embedded `\n` of `\r` bevat.
+  let escaped = str.replace(/[\r\n]+/g, ' ');
   // Escape ALL markdown-meaningful characters om te voorkomen dat
   // AI-touched of user-content per ongeluk headings, lijsten, blockquotes,
   // links of formatting injecteert in de gerenderde brief.
-  let escaped = str
+  escaped = escaped
     .replace(/\\/g, '\\\\')
     .replace(/\|/g, '\\|')
     .replace(/`/g, '\\`')
