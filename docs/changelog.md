@@ -116,4 +116,4 @@ Server-side: helper `src/lib/learning-loop/content-readiness.ts` `getContentRead
 - Task: [tasks/done/content-item-qa-gating.md](../tasks/done/content-item-qa-gating.md)
 - ADR: -
 - Spec: -
-- Commit: `<hash>`
+- Commit: `817b586`
