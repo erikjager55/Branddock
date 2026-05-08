@@ -790,8 +790,24 @@ function textOverlay(): ContentTypeInputField {
   };
 }
 
+function colorGrade(): ContentTypeInputField {
+  return {
+    key: "colorGrade",
+    label: "Color Grade",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "warm", label: "Warm" },
+      { value: "cool", label: "Cool" },
+      { value: "vibrant", label: "Vibrant" },
+      { value: "natural", label: "Natural" },
+    ],
+    helpText: "Visual mood — beïnvloedt phrasing en tone (warm = nostalgisch, cool = professioneel, vibrant = energiek, natural = documentary)",
+  };
+}
+
 function videoContentStyleFields(): ContentTypeInputField[] {
-  return [footageType(), textOverlay()];
+  return [footageType(), textOverlay(), colorGrade()];
 }
 
 // ── Web-page ──

@@ -1453,6 +1453,82 @@ function formatMediumConfig(config: Record<string, unknown>): string {
     }
   }
 
+  // ── Sales (migrated 2026-05-08) ────────────────────────
+  const salesAngle = config.salesAngle as string | undefined;
+  const includePricing = config.includePricing as boolean | undefined;
+  if (salesAngle || includePricing !== undefined) {
+    if (salesAngle) {
+      const angleMap: Record<string, string> = {
+        'pain-point': 'Lead with the prospect\'s pain — diagnose the problem first, position the solution as the relief.',
+        'value-prop': 'Lead with the unique value proposition — what only this product/service delivers, framed in outcome language.',
+        'social-proof': 'Lead with social proof — concrete customer outcomes, named logos, quantified results — credibility before claims.',
+        'roi': 'Lead with ROI / business case — concrete numbers (cost savings, revenue uplift, time-to-value).',
+        'differentiator': 'Lead with the competitive differentiator — explicitly contrast with alternatives without naming competitors negatively.',
+      };
+      parts.push(`- Sales angle: ${angleMap[salesAngle] ?? salesAngle}`);
+    }
+    if (includePricing === true) {
+      parts.push('- Include pricing: surface concrete price points or pricing-model details (per-seat, per-month, tiered). Never use placeholder values — omit if unknown rather than write €XX.');
+    } else if (includePricing === false) {
+      parts.push('- Pricing: do not include specific prices or pricing tiers — keep the message value-led; pricing conversation belongs in a follow-up.');
+    }
+  }
+
+  // ── PR-HR (migrated 2026-05-08) ────────────────────────
+  const prStructure = config.structure as string | undefined;
+  const quoteCount = config.quoteCount as number | undefined;
+  const includeBoilerplate = config.includeBoilerplate as boolean | undefined;
+  const includeContactBlock = config.includeContactBlock as boolean | undefined;
+  if (prStructure || quoteCount !== undefined || includeBoilerplate !== undefined || includeContactBlock !== undefined) {
+    if (prStructure) {
+      const structMap: Record<string, string> = {
+        'inverted-pyramid': 'Inverted-pyramid structure: most newsworthy facts in the lede, supporting details after, background last. Standard journalistic form.',
+        'narrative': 'Narrative structure: tell the story chronologically with a clear opening hook, middle development, and resolution.',
+        'q-and-a': 'Q&A structure: question-answer format throughout, useful for FAQ-style internal comms or interview-format pitches.',
+        'announcement': 'Announcement structure: lead with the news (what + when + who), then the why and how, finally next-steps + contact.',
+      };
+      parts.push(`- Structure: ${structMap[prStructure] ?? prStructure}`);
+    }
+    if (typeof quoteCount === 'number' && quoteCount > 0) {
+      parts.push(`- Quotes: include ${quoteCount} on-record quote${quoteCount === 1 ? '' : 's'} from named spokesperson(s). Each quote should add a perspective the body copy cannot — emotion, vision, or specific commitment. Use [SPOKESPERSON NAME, TITLE] placeholders if specific names are not available.`);
+    }
+    if (includeBoilerplate === true) {
+      parts.push('- Boilerplate: end with a standard "About [Company]" paragraph (~50-80 words) describing the company, mission, and key facts. Use [COMPANY BOILERPLATE] placeholder if specifics are unknown.');
+    }
+    if (includeContactBlock === true) {
+      parts.push('- Contact block: end with a "Media Contact" section listing name, title, email, and phone. Use [PRESS CONTACT NAME / EMAIL / PHONE] placeholders.');
+    }
+  }
+
+  // ── Carousel transition (migrated 2026-05-08) ──────────
+  const transitionStyle = config.transitionStyle as string | undefined;
+  if (transitionStyle) {
+    const transMap: Record<string, string> = {
+      'sequential': 'Sequential narrative — each slide builds linearly on the previous, like a story arc.',
+      'thematic': 'Thematic — each slide explores a separate facet of the same topic; order matters less than coherence.',
+      'comparison': 'Comparison — slides juxtapose options or "before/after" pairs, build to a recommendation.',
+      'listicle': 'Listicle — numbered slides ("1 of 5 ways to...") with a strong hook on slide 1 and recap on the final.',
+      'tutorial': 'Tutorial / step-by-step — each slide is one concrete action; keep slide-text short, image-led.',
+    };
+    parts.push(`- Carousel transition: ${transMap[transitionStyle] ?? transitionStyle}`);
+  }
+
+  // ── Video color + quality (migrated/retained 2026-05-08) ──
+  const colorGrade = config.colorGrade as string | undefined;
+  const videoQuality = config.quality as string | undefined;
+  if (colorGrade) {
+    const gradeMap: Record<string, string> = {
+      warm: 'Warm color grade — gold/amber tones, evoke nostalgia or comfort. Phrasing should match: cozy, inviting, human.',
+      cool: 'Cool color grade — blue/teal tones, evoke calm, professional, technical. Phrasing should match: precise, considered, credible.',
+      vibrant: 'Vibrant color grade — saturated, high-contrast, energetic. Phrasing should match the energy: punchy, exclamatory-but-not-cheesy, action-oriented.',
+      natural: 'Natural color grade — minimal grading, true-to-life. Phrasing should be matter-of-fact, documentary-style.',
+    };
+    parts.push(`- Color grade: ${gradeMap[colorGrade] ?? colorGrade}`);
+  }
+  if (videoQuality) {
+    parts.push(`- Quality target: ${videoQuality} — assume the viewer sees crisp detail; reference visual elements precisely (typography, motion graphics, b-roll texture).`);
+  }
+
   // If no category-specific rules matched, fall back to generic
   if (parts.length === 1) {
     for (const [key, value] of entries) {
@@ -1543,7 +1619,7 @@ const MEDIUM_CONFIG_HANDLED_KEYS = new Set<string>([
   // Social-post (migrated 9.0c)
   'visualStyle', 'hashtagStrategy', 'ctaStyle', 'includeEmoji',
   // Carousel
-  'slideCount', 'slideFormat', 'includeCtaSlide',
+  'slideCount', 'slideFormat', 'includeCtaSlide', 'transitionStyle',
   // Email
   'templateStyle', 'headerType', 'ctaPlacement', 'personalize', 'previewTextLength',
   // Podcast
@@ -1551,8 +1627,12 @@ const MEDIUM_CONFIG_HANDLED_KEYS = new Set<string>([
   'includeShowNotes', 'includeTranscript',
   // Advertising
   'adFormat', 'urgencyLevel', 'socialProof',
+  // Sales (migrated 2026-05-08)
+  'salesAngle', 'includePricing',
+  // PR-HR (migrated 2026-05-08; hasEmbargo dropped 2026-04-28 als irrelevant voor HR/internal/career)
+  'structure', 'quoteCount', 'includeBoilerplate', 'includeContactBlock',
   // Video
-  'aspectRatio', 'footageType', 'textOverlay',
+  'aspectRatio', 'footageType', 'textOverlay', 'colorGrade', 'quality',
 ]);
 
 function formatContentTypeInputs(

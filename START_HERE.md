@@ -17,11 +17,11 @@ Pre-launch eindigt bij volledige content-flow zonder blocker-bugs (Brief → Str
 
 > Update na elke afgeronde task.
 
-> **2026-05-08**: pre-pilot UI-wiring afgerond — VersionHistorySidebar + PublishGate live in Step4Timeline. 7 NOW-tasks done deze week; pre-launch is functioneel + zichtbaar voor pilot-users. Alleen content-styling-migratie open in NOW-bucket.
+> **2026-05-08**: content-styling-migratie afgerond via validator-driven workflow (validator catcht 9 gaps, alle 9 gefixt, eindrapport 0 issues over 10 categorieën). **Pre-launch NOW-bucket is leeg.** 8 NOW-tasks deze week — fase verschuift naar launch.
 
-1. **`content-styling-migratie`** ([task](tasks/content-styling-migratie.md)) — 3-5 dagen. Content-styling velden naar Content Brief (8 categorieën). Laatste open NOW-task.
-2. **`pilot-onboarding-better-brands`** ([task](tasks/pilot-onboarding-better-brands.md)) — 2 dagen, NEXT/launch-fase. Eerste echte klant door volledige flow heen, friction-punten in `gotchas.md`. Functioneel staat alles klaar voor pilot-start.
-3. **`vercel-deployment`** ([task](tasks/vercel-deployment.md)) — 3 dagen, NEXT/launch-fase. Vercel + Neon DB + custom domain + monitoring. Voorwaarde voor pilot-publicatie aan externe gebruikers.
+1. **`pilot-onboarding-better-brands`** ([task](tasks/pilot-onboarding-better-brands.md)) — 2 dagen, NEXT/launch-fase. Eerste echte klant door volledige flow heen, friction-punten naar `gotchas.md`. Functioneel staat alles klaar.
+2. **`vercel-deployment`** ([task](tasks/vercel-deployment.md)) — 3 dagen, NEXT/launch-fase. Vercel + Neon DB + custom domain + monitoring. Voorwaarde voor publicatie aan externe pilot-gebruikers.
+3. **`stripe-billing-live`** ([task](tasks/stripe-billing-live.md)) — 1 week, NEXT/launch-fase. Productie-mode keys + webhooks + checkout met echte kaart. Parallel met Vercel mogelijk.
 
 ---
 
@@ -66,11 +66,11 @@ Volledige gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-d
 
 > Auto-bijgewerkt door `task-finalize` skill.
 
+- 2026-05-08 — [Content-styling migratie (9 categorieën, validator-driven)](tasks/done/content-styling-migratie.md)
 - 2026-05-08 — [Campaign drafts DB-backed](tasks/done/campaign-drafts-db-backed.md) (absorbed by 3 eerdere sessies)
 - 2026-05-08 — [PostHog browser + Sentry frontend observability](tasks/done/posthog-sentry-browser.md)
 - 2026-05-08 — [Content publish QA-gate](tasks/done/content-item-qa-gating.md) (manual + channel routes)
 - 2026-05-08 — [Brand-voice content integration](tasks/done/brand-voice-content-integration.md) (absorbed by BV-1 + fidelity-scorer + #227)
-- 2026-05-07 — [ContentVersion CRUD + studio hooks + version-history sidebar](tasks/done/content-versioning-crud.md)
 
 ---
 

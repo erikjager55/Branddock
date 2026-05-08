@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 3-5 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-05-07
-completed: -
+completed: 2026-05-08
 related-adr: -
 related-spec: -
 worktree: branddock-feat-content-styling-migratie

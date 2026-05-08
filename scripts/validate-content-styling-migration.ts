@@ -41,7 +41,8 @@ const EXPECTED: Record<string, CategoryExpectation> = {
   },
   'pr-hr': {
     label: 'PR-HR',
-    migratedKeys: ['tone', 'structure', 'quoteCount', 'includeBoilerplate', 'includeContactBlock', 'hasEmbargo'],
+    // hasEmbargo bewust gedropt 2026-04-28 ("irrelevant for HR/internal/career")
+    migratedKeys: ['tone', 'structure', 'quoteCount', 'includeBoilerplate', 'includeContactBlock'],
     retainedKeys: [],
   },
   email: {
@@ -61,7 +62,9 @@ const EXPECTED: Record<string, CategoryExpectation> = {
   },
   advertising: {
     label: 'Advertising',
-    migratedKeys: ['urgencyLevel', 'socialProof', 'ctaType', 'visualStyle'],
+    // ctaType blijft semantisch gedeeld met web-page rendering (1 veld, 2 use-cases) —
+    // legacy-remains is hier intentioneel, niet verwijderen uit registry.
+    migratedKeys: ['urgencyLevel', 'socialProof', 'visualStyle'],
     retainedKeys: ['adFormat'],
   },
   video: {
@@ -120,8 +123,23 @@ function hasRichFormat(key: string): boolean {
   return re.test(orchestratorSrc);
 }
 
+/**
+ * Keys die via shared helpers worden ge-include (niet als losse `key: 'X'`).
+ * Validator-false-positive whitelist: deze velden HEBBEN een builder, maar via
+ * een gedeelde functie zoals socialContentStyleFields() of
+ * longFormContentStyleFields() — onze regex matcht alleen literale `key: 'X'`.
+ */
+const SHARED_HELPER_KEYS = new Set<string>([
+  // socialContentStyleFields() in content-type-inputs.ts — gedeeld over
+  // social-post + sales (tone/ctaStyle) en visualStyle.
+  'tone', 'ctaStyle', 'visualStyle',
+  // longFormContentStyleFields() en variants
+  'readingLevel', 'includeQuotes', 'internalLinking',
+]);
+
 /** Detecteer of er een field-builder voor deze key bestaat in content-type-inputs.ts. */
 function hasFieldBuilder(key: string): boolean {
+  if (SHARED_HELPER_KEYS.has(key)) return true; // shared via helper, niet matchbaar via regex
   const re = new RegExp(`key:\\s*['"\`]${key}['"\`]`);
   return re.test(inputsSrc);
 }

@@ -334,25 +334,9 @@ export const MEDIUM_CATEGORY_CONFIGS: Record<MediumCategory, MediumCategoryConfi
           },
         ],
       },
-      {
-        id: 'visual-style',
-        title: 'Color Grade',
-        fields: [
-          {
-            key: 'colorGrade',
-            label: 'Color Grading',
-            type: 'color-grid',
-            options: [
-              { value: 'warm', label: 'Warm' },
-              { value: 'cool', label: 'Cool' },
-              { value: 'vibrant', label: 'Vibrant' },
-              { value: 'natural', label: 'Natural' },
-            ],
-            defaultValue: 'natural',
-            columns: 4,
-          },
-        ],
-      },
+      // colorGrade gemigreerd naar content-type-inputs.ts (Step 1 Content Brief)
+      // op 2026-05-08, samen met footageType + textOverlay (al eerder gemigreerd).
+      // Step 3 Medium toont alleen nog platform-rendering (duration, aspectRatio, quality).
     ],
   },
 };
