@@ -156,7 +156,7 @@ Geen layout-restructure van CanvasPage nodig — beide secties hangen aan de bes
 - Task: handover van #227 + #230, geen aparte task-file
 - ADR: -
 - Spec: -
-- Commit: `<hash>`
+- Commit: `1f782c3`
 
 ### 232. Campaign-wizard concept-approval bug-fix + UX-redesign
 
