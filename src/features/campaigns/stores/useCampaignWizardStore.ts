@@ -303,6 +303,11 @@ interface CampaignWizardState {
 
 // ─── Initial state ────────────────────────────────────────
 
+/** Tracks which finalStrategy/synthesizedStrategy divergence combos we've
+ *  already warned about, to keep dev-mode log noise to one entry per combo.
+ *  See `allConceptRated()` for usage. */
+const __warnedConceptDivergences = new Set<string>();
+
 const INITIAL_STATE = {
   workspaceId: null as string | null,
   draftCampaignId: null as string | null,
@@ -540,7 +545,11 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
 
     allConceptRated: () => {
       const state = get();
-      const strategy = state.synthesizedStrategy;
+      // Mirror ConceptReviewView's strategy source: prefer finalStrategy when present,
+      // fall back to synthesizedStrategy. Without this fallback the gate diverges
+      // from the rendered cards and the Approve button stays disabled even when
+      // all visible elements are rated (concept-approval-ux-fix, 2026-05-08).
+      const strategy = state.finalStrategy ?? state.synthesizedStrategy;
       if (!strategy) return false;
 
       const conceptFields: Array<{ key: string; field: keyof StrategyLayer }> = [
@@ -551,6 +560,22 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
         { key: 'concept.campaignTheme', field: 'campaignTheme' },
         { key: 'concept.effieRationale', field: 'effieRationale' },
       ];
+
+      if (process.env.NODE_ENV !== 'production' && state.finalStrategy && state.synthesizedStrategy) {
+        const diverged = conceptFields.filter(({ field }) =>
+          !!state.finalStrategy?.[field] !== !!state.synthesizedStrategy?.[field],
+        );
+        if (diverged.length > 0) {
+          const sig = diverged.map(({ field }) => field).sort().join(',');
+          if (!__warnedConceptDivergences.has(sig)) {
+            __warnedConceptDivergences.add(sig);
+            console.warn(
+              '[concept-approval] finalStrategy vs synthesizedStrategy diverge on concept fields:',
+              diverged.map(({ field }) => field),
+            );
+          }
+        }
+      }
 
       const presentKeys = conceptFields.filter(({ field }) => !!strategy[field]);
       if (presentKeys.length === 0) return false;

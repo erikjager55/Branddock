@@ -729,14 +729,27 @@ export function ConceptStep() {
   //   need them — it creates one deliverable from selectedContentType.
 
   const handleApprove = useCallback(() => {
-    const {
-      synthesizedStrategy: strat,
-      synthesizedArchitecture: arch,
-      personaValidation: pv,
-      wizardMode: mode,
-    } = useCampaignWizardStore.getState();
+    const state = useCampaignWizardStore.getState();
+    // Mirror ConceptReviewView's strategy source: prefer finalStrategy (set by
+    // setFinalStrategyResult after build-strategy) over synthesizedStrategy.
+    // Without this fallback, clicking "Approve Concept" silently no-ops in the
+    // multi-variant campaign path where synthesizedStrategy stays null.
+    const strat = state.finalStrategy ?? state.synthesizedStrategy;
+    const arch = state.finalArchitecture ?? state.synthesizedArchitecture;
+    const pv = state.personaValidation;
+    const mode = state.wizardMode;
 
-    if (!strat || !arch) return;
+    if (!strat || !arch) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[concept-approval] handleApprove early-return:', {
+          hasFinalStrategy: !!state.finalStrategy,
+          hasSynthesizedStrategy: !!state.synthesizedStrategy,
+          hasFinalArchitecture: !!state.finalArchitecture,
+          hasSynthesizedArchitecture: !!state.synthesizedArchitecture,
+        });
+      }
+      return;
+    }
 
     const channelPlan = elaborateResult?.channelPlan ?? {
       channels: [],
@@ -765,15 +778,14 @@ export function ConceptStep() {
       modelsUsed: [],
     };
 
-    const store = useCampaignWizardStore.getState();
-    store.setBlueprintResult(blueprint);
-    store.setStrategyPhase("complete");
+    state.setBlueprintResult(blueprint);
+    state.setStrategyPhase("complete");
 
     // Content mode: skip the "Creative concept approved / Click Continue"
     // confirmation screen entirely and advance straight to the Content
     // step. One less click, no dead intermediate state.
     if (mode === 'content') {
-      store.nextStep();
+      state.nextStep();
     }
   }, [elaborateResult]);
 

@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useState } from "react";
+import { toast } from "sonner";
 import {
-  Sparkles,
   Target,
   Palette,
   Eye,
@@ -11,6 +11,7 @@ import {
   AlertCircle,
   RefreshCw,
   CheckCircle2,
+  CheckCheck,
 } from "lucide-react";
 import { Button, Badge } from "@/components/shared";
 import { ElementRatingCard } from "./ElementRatingCard";
@@ -19,15 +20,60 @@ import type { StrategyLayer, ArchitectureLayer } from "../../types/campaign-wiza
 
 // ─── Constants ──────────────────────────────────────────
 
-/** Rating keys for concept elements — used for gating and feedback compilation */
-export const CONCEPT_RATING_KEYS = [
-  "concept.creativePlatform",
-  "concept.creativeTerritory",
-  "concept.brandRole",
-  "concept.memorableDevice",
-  "concept.campaignTheme",
-  "concept.effieRationale",
+interface ConceptElementSpec {
+  key: string;
+  field: keyof StrategyLayer;
+  label: string;
+  icon?: React.ElementType;
+  highlighted?: boolean;
+  highlightBg?: string;
+}
+
+/** Single source of truth for the 6 concept elements rendered in the review.
+ *  Mirrors the conceptFields list in useCampaignWizardStore.allConceptRated().
+ */
+export const CONCEPT_ELEMENTS: readonly ConceptElementSpec[] = [
+  {
+    key: "concept.creativePlatform",
+    field: "creativePlatform",
+    label: "Creative Platform (Big Idea)",
+    icon: Lightbulb,
+    highlighted: true,
+    highlightBg: "bg-amber-50",
+  },
+  {
+    key: "concept.creativeTerritory",
+    field: "creativeTerritory",
+    label: "Creative Territory",
+  },
+  {
+    key: "concept.brandRole",
+    field: "brandRole",
+    label: "Brand Role",
+  },
+  {
+    key: "concept.memorableDevice",
+    field: "memorableDevice",
+    label: "Memorable Device",
+    highlighted: true,
+    highlightBg: "bg-blue-50",
+  },
+  {
+    key: "concept.campaignTheme",
+    field: "campaignTheme",
+    label: "Campaign Theme",
+  },
+  {
+    key: "concept.effieRationale",
+    field: "effieRationale",
+    label: "Effie Award Rationale",
+    highlighted: true,
+    highlightBg: "bg-emerald-50",
+  },
 ] as const;
+
+/** Backwards-compatible export for any external consumer */
+export const CONCEPT_RATING_KEYS = CONCEPT_ELEMENTS.map((e) => e.key);
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -51,14 +97,51 @@ export function ConceptReviewView({
   const strategyRatings = useCampaignWizardStore((s) => s.strategyRatings);
   const conceptFeedback = useCampaignWizardStore((s) => s.conceptFeedback);
   const setConceptFeedback = useCampaignWizardStore((s) => s.setConceptFeedback);
-  // Use the store's canonical gating logic to avoid duplicated all-rated checks
+  const setStrategyRating = useCampaignWizardStore((s) => s.setStrategyRating);
   const allRated = useCampaignWizardStore((s) => s.allConceptRated());
 
-  // Progress display only — how many of the present concept elements have been rated
-  const presentKeys = CONCEPT_RATING_KEYS.filter((key) => {
-    const field = key.replace("concept.", "") as keyof StrategyLayer;
-    return !!strategy[field];
-  });
+  const presentElements = CONCEPT_ELEMENTS.filter((el) => !!strategy[el.field]);
+  const ratedCount = presentElements.filter((el) => !!strategyRatings[el.key]).length;
+  const unratedElements = presentElements.filter((el) => !strategyRatings[el.key]);
+
+  // Open the optional-feedback disclosure only when content is already
+  // present at first render. After mount the user is in control — store
+  // updates to conceptFeedback won't yank the panel open or closed.
+  const [feedbackOpen, setFeedbackOpen] = useState(() => !!conceptFeedback);
+
+  const handleApproveClick = useCallback(() => {
+    if (allRated) {
+      onApprove();
+      return;
+    }
+    if (unratedElements.length > 0) {
+      const visibleLabels = unratedElements.slice(0, 3).map((el) => el.label);
+      const remaining = unratedElements.length - visibleLabels.length;
+      const description =
+        remaining > 0
+          ? `${visibleLabels.join(", ")} and ${remaining} more`
+          : visibleLabels.join(", ");
+      toast.warning("Rate every element first", { description });
+      const firstKey = unratedElements[0].key;
+      const target = document.querySelector<HTMLElement>(
+        `[data-rating-key="${firstKey}"]`,
+      );
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [allRated, onApprove, unratedElements]);
+
+  const handleApproveAll = useCallback(() => {
+    let touched = 0;
+    presentElements.forEach((el) => {
+      if (!strategyRatings[el.key]) {
+        setStrategyRating(el.key, "up");
+        touched += 1;
+      }
+    });
+    if (touched > 0) {
+      toast.success(`Marked ${touched} element${touched === 1 ? "" : "s"} as approved`);
+    }
+  }, [presentElements, strategyRatings, setStrategyRating]);
 
   return (
     <div className="space-y-6">
@@ -68,8 +151,9 @@ export function ConceptReviewView({
           Review Creative Concept
         </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          Rate each concept element to guide the final synthesis.
-          All elements must be rated before you can proceed.
+          Rate each element to guide the final synthesis. Use a quick thumbs-up
+          for everything you accept as-is, or thumbs-down with a note where you
+          want changes.
         </p>
       </div>
 
@@ -130,68 +214,32 @@ export function ConceptReviewView({
           <span className="text-xs text-muted-foreground">
             Rate each element
           </span>
+          {!allRated && presentElements.length > 0 && (
+            <div className="ml-auto">
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={CheckCheck}
+                onClick={handleApproveAll}
+                title="Mark every remaining element as approved"
+              >
+                Mark all as approved
+              </Button>
+            </div>
+          )}
         </div>
 
-        {/* Creative Platform (Big Idea) */}
-        {strategy.creativePlatform && (
+        {presentElements.map((el) => (
           <ElementRatingCard
-            label="Creative Platform (Big Idea)"
-            value={strategy.creativePlatform}
-            ratingKey="concept.creativePlatform"
-            icon={Lightbulb}
-            highlighted
-            highlightBg="bg-amber-50"
+            key={el.key}
+            label={el.label}
+            value={String(strategy[el.field] ?? "")}
+            ratingKey={el.key}
+            icon={el.icon}
+            highlighted={el.highlighted}
+            highlightBg={el.highlightBg}
           />
-        )}
-
-        {/* Creative Territory */}
-        {strategy.creativeTerritory && (
-          <ElementRatingCard
-            label="Creative Territory"
-            value={strategy.creativeTerritory}
-            ratingKey="concept.creativeTerritory"
-          />
-        )}
-
-        {/* Brand Role */}
-        {strategy.brandRole && (
-          <ElementRatingCard
-            label="Brand Role"
-            value={strategy.brandRole}
-            ratingKey="concept.brandRole"
-          />
-        )}
-
-        {/* Memorable Device */}
-        {strategy.memorableDevice && (
-          <ElementRatingCard
-            label="Memorable Device"
-            value={strategy.memorableDevice}
-            ratingKey="concept.memorableDevice"
-            highlighted
-            highlightBg="bg-blue-50"
-          />
-        )}
-
-        {/* Campaign Theme */}
-        {strategy.campaignTheme && (
-          <ElementRatingCard
-            label="Campaign Theme"
-            value={strategy.campaignTheme}
-            ratingKey="concept.campaignTheme"
-          />
-        )}
-
-        {/* Effie Rationale */}
-        {strategy.effieRationale && (
-          <ElementRatingCard
-            label="Effie Award Rationale"
-            value={strategy.effieRationale}
-            ratingKey="concept.effieRationale"
-            highlighted
-            highlightBg="bg-emerald-50"
-          />
-        )}
+        ))}
       </div>
 
       {/* Error banner */}
@@ -202,24 +250,50 @@ export function ConceptReviewView({
         </div>
       )}
 
-      {/* Feedback + CTA */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-semibold text-gray-900">Additional Feedback</span>
-          <span className="text-xs text-muted-foreground">(optional)</span>
+      {/* Optional feedback — visually de-emphasized. Initial-opens when
+          rehydrated content exists; thereafter user-controlled so subsequent
+          store mutations don't yank the panel open or closed. */}
+      <details
+        className="border border-gray-100 rounded-lg bg-gray-50"
+        open={feedbackOpen}
+        onToggle={(e) => setFeedbackOpen((e.currentTarget as HTMLDetailsElement).open)}
+      >
+        <summary className="cursor-pointer px-4 py-2.5 text-xs font-medium text-gray-600 hover:text-gray-900 select-none flex items-center gap-2">
+          <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
+          Additional feedback
+          <span className="text-muted-foreground font-normal">(optional)</span>
+          {conceptFeedback && (
+            <span className="ml-auto text-xs text-emerald-600">
+              {conceptFeedback.length} chars
+            </span>
+          )}
+        </summary>
+        <div className="px-4 pb-4">
+          <textarea
+            value={conceptFeedback}
+            onChange={(e) => setConceptFeedback(e.target.value)}
+            placeholder="Any adjustments to the creative concept before finalizing..."
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+          />
         </div>
-        <textarea
-          value={conceptFeedback}
-          onChange={(e) => setConceptFeedback(e.target.value)}
-          placeholder="Any adjustments to the creative concept before finalizing..."
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-        />
+      </details>
 
-        {/* Rating progress */}
-        {!allRated && presentKeys.length > 0 && (
-          <p className="text-xs text-amber-600 text-center">
-            {presentKeys.filter((k) => !!strategyRatings[k]).length} of {presentKeys.length} elements rated
+      {/* Progress + actions — inline at the bottom of step content */}
+      <div className="space-y-3">
+        {presentElements.length > 0 && (
+          <p
+            className={`text-xs font-medium text-center ${
+              ratedCount === 0
+                ? "text-muted-foreground"
+                : allRated
+                  ? "text-emerald-600"
+                  : "text-amber-600"
+            }`}
+            aria-live="polite"
+          >
+            {allRated
+              ? `All ${presentElements.length} elements rated — ready to approve`
+              : `${ratedCount} of ${presentElements.length} elements rated`}
           </p>
         )}
 
@@ -230,7 +304,6 @@ export function ConceptReviewView({
               size="lg"
               icon={RefreshCw}
               onClick={onRefine}
-              disabled={!allRated}
             >
               Refine Concept
             </Button>
@@ -239,8 +312,7 @@ export function ConceptReviewView({
             variant="cta"
             size="lg"
             icon={CheckCircle2}
-            onClick={onApprove}
-            disabled={!allRated}
+            onClick={handleApproveClick}
           >
             Approve Concept
           </Button>

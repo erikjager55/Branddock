@@ -47,10 +47,18 @@ export function ElementRatingCard({
     }
   };
 
+  const isRated = !!rating;
+
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" data-rating-key={ratingKey}>
       {/* Label + rating buttons */}
       <div className="flex items-center gap-1.5">
+        <span
+          aria-hidden
+          className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+          style={{ backgroundColor: isRated ? "#10b981" : "#fbbf24" }}
+          title={isRated ? "Rated" : "Not yet rated"}
+        />
         {Icon && <Icon className="w-3.5 h-3.5 text-gray-400" />}
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           {label}
