@@ -16,6 +16,8 @@ import {
 } from '../../../lib/publish-timing';
 import { usePublishChannels } from '@/features/settings/hooks/use-publish-channels';
 import { STUDIO } from '@/lib/constants/design-tokens';
+import { PublishGate } from '../PublishGate';
+import { VersionHistorySidebar } from '../VersionHistorySidebar';
 import type { PreviewContent } from '../../../types/canvas.types';
 import {
   Calendar,
@@ -71,6 +73,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   // Schedule picker is collapsed by default (WordPress UX) — opens via Edit.
   const [showSchedulePicker, setShowSchedulePicker] = useState(false);
   const [showDownloadFormats, setShowDownloadFormats] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
 
   const platform = contextStack?.medium?.platform ?? null;
   const format = contextStack?.medium?.format ?? null;
@@ -400,6 +403,44 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           </div>
         );
       })()}
+
+      {/* Publish-readiness gate (entry #230) — shows the fidelity-score-badge
+          + provides the override path when the gate blocks. Renders alongside
+          the existing schedule/approve buttons rather than replacing them so
+          the channel-publish + email-send flows stay intact. */}
+      {!isPublished && (
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              <p className="text-sm font-medium text-gray-700">Publish-readiness</p>
+              <button
+                type="button"
+                onClick={() => setShowVersionHistory((s) => !s)}
+                className="text-xs text-gray-500 hover:text-gray-700 underline-offset-2 hover:underline"
+              >
+                {showVersionHistory ? 'Verberg versies' : 'Toon versies'}
+              </button>
+            </div>
+            <PublishGate
+              deliverableId={deliverableId}
+              onPublish={() => handlePublish('publish-now')}
+              isPublishing={isSubmitting}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Version history (entry #227) — collapsible side-panel toont AI-versies +
+          USER-edits met fidelity-scores en restore-knoppen. Bewaakt history
+          buiten de actieve canvas-edit, zonder layout te restructuren. */}
+      {showVersionHistory && (
+        <div className="fixed inset-y-0 right-0 z-40 shadow-2xl">
+          <VersionHistorySidebar
+            deliverableId={deliverableId}
+            onRestored={() => setShowVersionHistory(false)}
+          />
+        </div>
+      )}
 
       {/* Send Campaign (email deliverables only) — also available once
           scheduled, the user may still want to push to Emailit. */}

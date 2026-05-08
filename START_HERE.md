@@ -17,11 +17,11 @@ Pre-launch eindigt bij volledige content-flow zonder blocker-bugs (Brief → Str
 
 > Update na elke afgeronde task.
 
-> **2026-05-08**: campaign-drafts-db-backed absorbed (3 eerdere sessies a6204bc + e55fc3c + dfc81ac dekken het volledig). 6 absorbed-tasks deze week — pre-launch foundation is veel verder dan task-files initieel suggereerden. NOW-bucket bijna leeg.
+> **2026-05-08**: pre-pilot UI-wiring afgerond — VersionHistorySidebar + PublishGate live in Step4Timeline. 7 NOW-tasks done deze week; pre-launch is functioneel + zichtbaar voor pilot-users. Alleen content-styling-migratie open in NOW-bucket.
 
-1. **Pre-pilot UI-wiring** — handover: `<VersionHistorySidebar>` + `<PublishGate>` zijn drop-in components klaar, maar nog niet in `CanvasPage` gewired. Lijkt dé natuurlijke integratie-task vóór een echte pilot. ~half dag.
-2. **`content-styling-migratie`** ([task](tasks/content-styling-migratie.md)) — 3-5 dagen. Content-styling velden naar Content Brief (8 categorieën). Laatste open NOW-task.
-3. **Pilot starten** — 5 NOW-tasks zijn done + 1 absorbed deze week. Functioneel pre-launch klaar; opgaande hint dat het tijd wordt voor `pilot-onboarding-better-brands` (in NEXT-bucket, launch-fase).
+1. **`content-styling-migratie`** ([task](tasks/content-styling-migratie.md)) — 3-5 dagen. Content-styling velden naar Content Brief (8 categorieën). Laatste open NOW-task.
+2. **`pilot-onboarding-better-brands`** ([task](tasks/pilot-onboarding-better-brands.md)) — 2 dagen, NEXT/launch-fase. Eerste echte klant door volledige flow heen, friction-punten in `gotchas.md`. Functioneel staat alles klaar voor pilot-start.
+3. **`vercel-deployment`** ([task](tasks/vercel-deployment.md)) — 3 dagen, NEXT/launch-fase. Vercel + Neon DB + custom domain + monitoring. Voorwaarde voor pilot-publicatie aan externe gebruikers.
 
 ---
 
