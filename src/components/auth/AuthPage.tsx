@@ -6,6 +6,7 @@ import { Mail, Lock, User, LogIn, UserPlus, Loader2, AlertCircle, ArrowLeft, Che
 import { signIn, signUp, authClient } from '@/lib/auth-client';
 import { SocialLoginButtons } from './SocialLoginButtons';
 import { AuthDivider } from './AuthDivider';
+import { trackBrowserEvent } from '@/lib/analytics/posthog-browser';
 
 type AuthView = 'login' | 'register' | 'forgot-password';
 
@@ -30,6 +31,8 @@ export function AuthPage() {
 
     if (authError) {
       setError(authError.message || 'Login failed');
+    } else {
+      void trackBrowserEvent('login_succeeded', { method: 'email' });
     }
     setLoading(false);
   };
@@ -47,6 +50,8 @@ export function AuthPage() {
 
     if (authError) {
       setError(authError.message || 'Registration failed');
+    } else {
+      void trackBrowserEvent('signup_completed', { method: 'email' });
     }
     setLoading(false);
   };

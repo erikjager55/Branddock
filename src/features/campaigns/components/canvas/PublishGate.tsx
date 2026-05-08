@@ -8,6 +8,7 @@ import {
   usePublishWithOverride,
 } from '../../hooks/content-readiness.hooks';
 import type { ContentReadiness } from '../../api/content-readiness.api';
+import { trackBrowserEvent } from '@/lib/analytics/posthog-browser';
 
 interface PublishGateProps {
   deliverableId: string;
@@ -40,6 +41,27 @@ export function PublishGate({
   const overrideMutation = usePublishWithOverride(deliverableId);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
 
+  // Fire content_qa_gate_blocked exactly once per below-threshold transition
+  // (mount or score-change to below-threshold). Reason-flag lets the
+  // dashboard slice between real blocks and other failsafe states.
+  const lastBlockedScoreRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (data?.canPublish === false && data.reason === 'below-threshold') {
+      const fingerprint = `${data.latestScore?.id ?? 'no-id'}`;
+      if (lastBlockedScoreRef.current !== fingerprint) {
+        lastBlockedScoreRef.current = fingerprint;
+        void trackBrowserEvent('content_qa_gate_blocked', {
+          deliverable_id: deliverableId,
+          composite_score: data.latestScore?.compositeScore,
+          threshold: data.latestScore?.threshold,
+          judge: data.latestScore?.judgeIdentifier,
+        });
+      }
+    } else {
+      lastBlockedScoreRef.current = null;
+    }
+  }, [data, deliverableId]);
+
   if (isLoading || !data) {
     return (
       <div className="flex items-center gap-2">
@@ -64,7 +86,14 @@ export function PublishGate({
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => setShowOverrideModal(true)}
+              onClick={() => {
+                void trackBrowserEvent('content_qa_override_modal_opened', {
+                  deliverable_id: deliverableId,
+                  composite_score: data.latestScore?.compositeScore,
+                  threshold: data.latestScore?.threshold,
+                });
+                setShowOverrideModal(true);
+              }}
             >
               Override…
             </Button>
@@ -94,6 +123,12 @@ export function PublishGate({
           onConfirm={async (reason) => {
             try {
               await overrideMutation.mutateAsync({ reason, publishNow: true, publishedVia });
+              void trackBrowserEvent('content_qa_override_fired', {
+                deliverable_id: deliverableId,
+                composite_score: data.latestScore?.compositeScore,
+                threshold: data.latestScore?.threshold,
+                reason_length: reason.length,
+              });
               setShowOverrideModal(false);
             } catch (err) {
               console.error('[PublishGate override failed]', err);

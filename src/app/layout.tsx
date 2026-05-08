@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import '../index.css';
 import { QueryProvider } from '@/providers/query-provider';
+import { PostHogProvider } from '@/components/analytics/PostHogProvider';
 import { Toaster } from 'sonner';
 import { validateEnv } from '@/lib/env-validation';
 
@@ -21,8 +22,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <QueryProvider>
-          {children}
-          <Toaster position="bottom-right" richColors />
+          <PostHogProvider>
+            {children}
+            <Toaster position="bottom-right" richColors />
+          </PostHogProvider>
         </QueryProvider>
       </body>
     </html>
