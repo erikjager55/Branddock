@@ -382,4 +382,4 @@ Eerste pilot-zichtbare review-surface bovenop bestaande Δ-1 API. Derde tab "Con
 - Task: [tasks/done/content-review-tab-3-ui.md](../tasks/done/content-review-tab-3-ui.md)
 - ADR: [adr/2026-05-08-fval-output-schema-bevindingen.md](adr/2026-05-08-fval-output-schema-bevindingen.md), [adr/2026-05-08-locale-routing-brand-voice.md](adr/2026-05-08-locale-routing-brand-voice.md)
 - Spec: [tasks/_drafts/idea-brand-control-program.md](../tasks/_drafts/idea-brand-control-program.md)
-- Commit: `994e772` (initial implementation) + finalize-commit (volgt)
+- Commit: `994e772` (initial implementation) + `cf030f1` (finalize)
