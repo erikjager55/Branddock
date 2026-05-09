@@ -9,6 +9,7 @@ import {
   FileJson,
   ShieldCheck,
   ClipboardCheck,
+  FileSearch,
 } from 'lucide-react';
 import {
   EmptyState,
@@ -37,6 +38,7 @@ import { AnalyzingScanModal } from './AnalyzingScanModal';
 import { ScanCompleteModal } from './ScanCompleteModal';
 import { FixIssueModal } from './FixIssueModal';
 import { BrandAuditView } from './BrandAuditView';
+import { ContentReviewTab } from './ContentReviewTab';
 import { VoiceBaseline1Pager } from '@/features/brand-alignment/components/VoiceBaseline1Pager';
 
 // ─── Relative time helper ───────────────────────────────────
@@ -206,6 +208,7 @@ export function BrandAlignmentPage() {
         {([
           { key: 'alignment' as AlignmentTab, label: 'Brand Alignment', icon: ShieldCheck },
           { key: 'audit' as AlignmentTab, label: 'Brand Audit', icon: ClipboardCheck },
+          { key: 'review' as AlignmentTab, label: 'Content Review', icon: FileSearch },
         ]).map((tab) => {
           const isActive = activeTab === tab.key;
           const TabIcon = tab.icon;
@@ -280,6 +283,11 @@ export function BrandAlignmentPage() {
       {/* ── Audit tab content ────────────────────────────── */}
       {activeTab === 'audit' && (
         <BrandAuditView />
+      )}
+
+      {/* ── Content Review tab (Δ-1 Surface C) ───────────── */}
+      {activeTab === 'review' && (
+        <ContentReviewTab />
       )}
 
       {/* ── Scan Progress Modal ──────────────────────────── */}

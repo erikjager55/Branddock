@@ -1,7 +1,17 @@
 import { create } from "zustand";
 import type { IssueSeverity, IssueStatus } from "@/types/brand-alignment";
 
-export type AlignmentTab = "alignment" | "audit";
+export type AlignmentTab = "alignment" | "audit" | "review";
+
+export type ReviewSeverityFilter = "HIGH" | "MEDIUM" | "LOW" | null;
+export type ReviewCategoryFilter =
+  | "VOICE"
+  | "TERMINOLOGY"
+  | "CLAIMS"
+  | "STYLE"
+  | "BUSINESS"
+  | "AI_TELL"
+  | null;
 
 interface BrandAlignmentStore {
   // Tab state
