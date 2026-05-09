@@ -34,6 +34,13 @@ function assert(name: string, cond: boolean, detail?: string): void {
 
 const FLUFF_TEXT = `In het hart van elke onderneming staat de fundamentele behoefte om zich te onderscheiden in een wereld vol concurrentie. Bij ons staat de klant altijd centraal en streven we ernaar om elke dag het beste van onszelf te geven. Onze kernwaarden zijn passie, kwaliteit en innovatie. Wij geloven dat door samenwerking en synergie de mooiste resultaten worden bereikt. Met meer dan 25 jaar ervaring in de markt bieden wij oplossingen op maat voor elke uitdaging die uw bedrijf tegenkomt.`;
 
+// Tweede fixture-string voor de workspace-isolation test. Andere content
+// zorgt dat een toekomstige content-hash dedup (mocht die ooit zonder
+// workspace-scoping werken) de tweede review niet stiekem als hergebruik
+// van de eerste behandelt — dan zou de assertion `reviewLogId !== first`
+// vals positief slagen.
+const FLUFF_TEXT_B = `Onze missie is helder: waarde leveren die echt het verschil maakt voor onze klanten. Door innovatieve aanpak en hands-on mentaliteit transformeren we uitdagingen naar duurzame oplossingen. Met een ervaren team van professionals staan we klaar om elke fase van het traject te begeleiden, van strategie tot uitvoering. Excellence is voor ons geen doel maar een dagelijkse standaard waarmee we vertrouwen opbouwen.`;
+
 async function main(): Promise<void> {
   if (!process.env.ANTHROPIC_API_KEY) {
     console.error('ANTHROPIC_API_KEY required');
@@ -119,28 +126,82 @@ async function main(): Promise<void> {
     console.error('  ✗ Zod-test threw:', err instanceof Error ? err.message : String(err));
   }
 
-  console.log('\n=== 3. Workspace-isolation ===\n');
+  console.log('\n=== 3. Workspace-isolation (tool-level, niet alleen DB-level) ===\n');
+  // Echte test: roep de tool aan met ctx.workspaceId van een ANDERE workspace
+  // dan waar de review hoort. De tool moet workspace-A's review niet kunnen
+  // lekken in workspace-B. (FK-cascade voorkomt cross-workspace findings al
+  // op DB-niveau, maar de tool-execute zelf moet ook workspace-isolatie
+  // afdwingen voor toekomstige refactors.)
   if (reviewLogIds.length > 0) {
+    // Deterministic ordering — bij seeds met >2 workspaces voorkomt dit
+    // dat de "andere" workspace per run varieert (test-flakiness).
     const otherWs = await prisma.workspace.findFirst({
       where: { id: { not: workspace.id } },
+      orderBy: { id: 'asc' },
       select: { id: true },
     });
-    if (otherWs) {
-      const findings = await prisma.brandReviewFinding.findMany({
-        where: {
-          contentReviewLogId: reviewLogIds[0],
-          workspaceId: otherWs.id,
-        },
-      });
+    const otherUser = otherWs
+      ? await prisma.organizationMember.findFirst({
+          where: { organization: { workspaces: { some: { id: otherWs.id } } } },
+          orderBy: { id: 'asc' },
+          select: { userId: true },
+        })
+      : null;
+
+    if (otherWs && otherUser) {
+      // Tool execute met workspace-B context → moet eigen review aanmaken,
+      // niet workspace-A's reviewLogId teruggeven. Andere fixture-string om
+      // toekomstige content-hash-dedup niet vals positief te laten passen.
+      const otherCtx = { workspaceId: otherWs.id, userId: otherUser.userId };
+      const result = (await tool.execute(
+        { sourceType: 'paste', content: FLUFF_TEXT_B },
+        otherCtx,
+      )) as Record<string, unknown>;
+
       assert(
-        'findings van workspace-A onzichtbaar via workspace-B filter',
-        findings.length === 0,
+        'tool met andere workspaceId maakt eigen reviewLog (niet hergebruik)',
+        typeof result.reviewLogId === 'string' &&
+          result.reviewLogId !== reviewLogIds[0],
       );
+
+      // Ook: geen findings van workspace-A zouden via workspace-B context
+      // een way-in moeten hebben naar tool-output. We verifiëren door alle
+      // returned topFindings tegen de andere reviewLogId te checken.
+      if (typeof result.reviewLogId === 'string') {
+        const findingsForOther = await prisma.brandReviewFinding.findMany({
+          where: { contentReviewLogId: result.reviewLogId },
+          select: { workspaceId: true },
+        });
+        // .every() retourneert vacuously true bij lege array; daarom expliciet
+        // op non-empty checken zodat een F-VAL run zonder findings geen stille
+        // pass geeft op de isolation-claim. Eén gecombineerde assertion voorkomt
+        // dubbele rode regels bij dezelfde root-cause.
+        const allBelongToOtherWs =
+          findingsForOther.length > 0 &&
+          findingsForOther.every((f) => f.workspaceId === otherWs.id);
+        assert(
+          'otherCtx review levert ≥1 finding én alle findings behoren tot otherWs',
+          allBelongToOtherWs,
+          findingsForOther.length === 0
+            ? 'F-VAL run leverde 0 findings — isolation niet getest'
+            : 'er waren findings buiten otherWs.id',
+        );
+      }
     } else {
-      console.log('  ⚠ skipped (geen tweede workspace beschikbaar)');
+      // Loud-fail bij missing 2nd workspace: een silent-skip zou de
+      // isolation-guarantee laten rotten. Dev moet de fixture seeden.
+      assert(
+        'workspace-isolation getest (vereist 2e workspace + user in seed)',
+        false,
+        'geen tweede workspace+user gevonden — seed een tweede workspace',
+      );
     }
   } else {
-    console.log('  ⚠ skipped (paste-test faalde, geen reviewLogId)');
+    assert(
+      'workspace-isolation getest (vereist geslaagde test 1)',
+      false,
+      'paste-test faalde, geen reviewLogId om isolation te testen',
+    );
   }
 
   console.log('\n=== 4. URL-input naar private IP ===\n');

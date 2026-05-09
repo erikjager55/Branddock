@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
+import { CheckCircle2, AlertTriangle } from "lucide-react";
 
 /**
  * Δ-1 Surface D — Brand Assistant chat-card render voor `review_content`
@@ -38,7 +38,10 @@ export interface ReviewSuccessResult {
 export interface ReviewErrorResult {
   error: string;
   code?: string;
-  failureReason: "ingest_failed";
+  // `ingest_failed` = paste/url ingest threw (private-IP, byte-cap, scheme).
+  // `invalid_input` = Zod safeParse afwees (malformed shape, content < 50,
+  // ongeldige URL). Apart houden zodat FE differentiated copy kan tonen.
+  failureReason: "ingest_failed" | "invalid_input";
   clientAction: "review_findings_card";
 }
 
@@ -135,16 +138,16 @@ function ReviewSuccessCard({ data }: { data: ReviewSuccessResult }) {
         </div>
       )}
 
-      {/* Link to full review */}
+      {/* Pointer naar Tab 3. Geen href: BrandAlignmentPage parsed (nog) geen
+          URL-param voor reviewLogId pre-load — een klikbare link zou broken
+          UX geven (lege Tab 3). Bij implementatie van URL-param parser
+          (separate task) kan deze block weer een werkende deep-link worden. */}
       {data.findingsCount > data.topFindings.length && (
-        <div className="pt-2 mt-2 border-t border-gray-100">
-          <a
-            href={`/brand-alignment?tab=review&reviewLogId=${data.reviewLogId}`}
-            className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:text-emerald-800 hover:underline"
-          >
-            View all {data.findingsCount} findings
-            <ExternalLink className="w-3 h-3" />
-          </a>
+        <div className="pt-2 mt-2 border-t border-gray-100 text-xs text-gray-500">
+          + {data.findingsCount - data.topFindings.length} more finding
+          {data.findingsCount - data.topFindings.length === 1 ? "" : "s"} —
+          run a fresh review in <strong>Brand Alignment → Content Review</strong>{" "}
+          to see all.
         </div>
       )}
     </div>

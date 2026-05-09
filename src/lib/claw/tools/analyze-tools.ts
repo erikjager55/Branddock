@@ -12,6 +12,33 @@ import { runFidelityForExternalContent } from '@/lib/brand-fidelity/external-con
 // HIGH < LOW < MEDIUM). Top-level const zodat hij niet per-call her-alloceert.
 const REVIEW_SEVERITY_RANK: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
 const TOP_FINDINGS_LIMIT = 3;
+// Hard-cap op description/suggestion text in tool-result. Findings worden
+// gestringified in elke vervolg-Anthropic-call's message-history; zonder cap
+// kan een verbose F-VAL run het token-budget mid-conversation opvreten.
+// Volledige tekst blijft in DB beschikbaar via de Surface C GET endpoint.
+const TOP_FINDINGS_TEXT_CAP = 280;
+
+// Schema gedeeld tussen tool-advertise (Anthropic) en runtime-validate
+// (defense-in-depth bij chat-route die block.input direct doorzet).
+const REVIEW_CONTENT_INPUT = z.discriminatedUnion('sourceType', [
+  z.object({
+    sourceType: z.literal('paste'),
+    content: z
+      .string()
+      .min(50, 'content must be at least 50 characters')
+      .max(50_000, 'content exceeds 50,000 character limit'),
+  }),
+  z.object({
+    sourceType: z.literal('url'),
+    url: z.string().url('must be a valid http(s) URL'),
+  }),
+]);
+
+function capText(text: string | null | undefined, cap: number): string | null {
+  if (!text) return null;
+  if (text.length <= cap) return text;
+  return text.slice(0, cap - 1).trimEnd() + '…';
+}
 
 /**
  * ANALYZE tools — perform AI-powered analysis on workspace data.
@@ -170,26 +197,34 @@ export const analyzeTools: ClawToolDefinition[] = [
   {
     name: 'review_content',
     description:
-      'Run F-VAL fidelity review on paste-content or a public URL. Returns composite score, threshold-status and the top-3 most severe findings (with location, category and suggestion). Use this ONLY when the user explicitly asks to review their copy, posts content for an on-brand check, or wants F-VAL feedback on a piece of writing. Do NOT auto-run on every assistant output — this tool consumes AI budget and is rate-limited.',
-    inputSchema: z.discriminatedUnion('sourceType', [
-      z.object({
-        sourceType: z.literal('paste'),
-        content: z
-          .string()
-          .min(50, 'content must be at least 50 characters')
-          .max(50_000, 'content exceeds 50,000 character limit'),
-      }),
-      z.object({
-        sourceType: z.literal('url'),
-        url: z.string().url('must be a valid http(s) URL'),
-      }),
-    ]),
+      'Run F-VAL fidelity review on paste-content or a public URL. Returns composite score, threshold-status and the top-3 most severe findings (with location, category and suggestion). Use this ONLY when the user explicitly asks to review their copy, posts content for an on-brand check, or wants F-VAL feedback on a piece of writing — and only when the paste-content or URL is included in the same turn. Do NOT auto-run on every assistant output — this tool consumes AI budget and is rate-limited.',
+    inputSchema: REVIEW_CONTENT_INPUT,
     requiresConfirmation: false,
     category: 'analyze',
     execute: async (params, ctx) => {
-      const input = params as
-        | { sourceType: 'paste'; content: string }
-        | { sourceType: 'url'; url: string };
+      // Defense-in-depth: chat-route forwards Anthropic's tool-call payload as
+      // raw `block.input` (no safeParse on its side). If the model emits a
+      // malformed shape, an inline cast would let it slip through to
+      // ingestPaste/Url. Re-validate here with the same schema we advertise
+      // to Anthropic — a parse-failure returns the same render-friendly
+      // error shape as ingest-failures so the FE handles it uniformly.
+      const parsed = REVIEW_CONTENT_INPUT.safeParse(params);
+      if (!parsed.success) {
+        // Join all issue messages — discriminated-union mismatches surface
+        // multiple issues (one per branch); only emitting issues[0] strips
+        // the actionable feedback the LLM needs for self-correction.
+        const messages = parsed.error.issues
+          .map((i) => i.message)
+          .filter(Boolean)
+          .join('; ');
+        return {
+          error: messages || 'Invalid review_content input',
+          code: 'INVALID_INPUT',
+          clientAction: 'review_findings_card' as const,
+          failureReason: 'invalid_input',
+        };
+      }
+      const input = parsed.data;
 
       // ── Ingest ──
       let contentText: string;
@@ -226,8 +261,12 @@ export const analyzeTools: ClawToolDefinition[] = [
       });
 
       // ── Top-N findings ──
-      // Fetch een ruime set en sorteer client-side op SEVERITY_RANK; Prisma's
-      // enum-orderBy is alfabetisch (HIGH < LOW < MEDIUM), niet priority-based.
+      // Take=200 als runaway-guard. Prisma's enum-orderBy is alfabetisch
+      // (HIGH < LOW < MEDIUM), dus we kunnen niet DB-side de top-3 trekken
+      // zonder priority-CASE; in plaats daarvan halen we tot 200 en sorteren
+      // client-side. In praktijk produceert F-VAL <100 findings per review;
+      // 200 dekt edge-cases (50k-char paste, zeer fluff-rijk) zonder een
+      // pathologisch payload-risico.
       const allFindings = await prisma.brandReviewFinding.findMany({
         where: {
           contentReviewLogId: runResult.reviewLogId,
@@ -240,7 +279,7 @@ export const analyzeTools: ClawToolDefinition[] = [
           description: true,
           suggestion: true,
         },
-        take: 50,
+        take: 200,
       });
       const topFindings = [...allFindings]
         .sort(
@@ -248,7 +287,16 @@ export const analyzeTools: ClawToolDefinition[] = [
             (REVIEW_SEVERITY_RANK[a.severity] ?? 99) -
             (REVIEW_SEVERITY_RANK[b.severity] ?? 99),
         )
-        .slice(0, TOP_FINDINGS_LIMIT);
+        .slice(0, TOP_FINDINGS_LIMIT)
+        // Cap text-velden — deze blob round-tript via tool_result terug naar
+        // Anthropic in elke vervolg-turn van het gesprek.
+        .map((f) => ({
+          severity: f.severity,
+          category: f.category,
+          location: f.location,
+          description: capText(f.description, TOP_FINDINGS_TEXT_CAP) ?? '',
+          suggestion: capText(f.suggestion, TOP_FINDINGS_TEXT_CAP),
+        }));
 
       // ── Output: compact JSON met clientAction marker ──
       // Chat-FE rendert ReviewFindingsCard wanneer clientAction matcht;

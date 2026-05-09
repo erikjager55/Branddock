@@ -383,3 +383,27 @@ Eerste pilot-zichtbare review-surface bovenop bestaande Δ-1 API. Derde tab "Con
 - ADR: [adr/2026-05-08-fval-output-schema-bevindingen.md](adr/2026-05-08-fval-output-schema-bevindingen.md), [adr/2026-05-08-locale-routing-brand-voice.md](adr/2026-05-08-locale-routing-brand-voice.md)
 - Spec: [tasks/_drafts/idea-brand-control-program.md](../tasks/_drafts/idea-brand-control-program.md)
 - Commit: `994e772` (initial implementation) + `cf030f1` (finalize)
+
+### 244. Δ-1 Surface D — Brand Assistant `review_content` chat-tool (finalize)
+
+Δ-1 Surface D maakt F-VAL fidelity-review beschikbaar als chat-native tool in de Brand Assistant. User plakt content of URL in chat → tool draait F-VAL → `ReviewFindingsCard` rendert inline met composite-score, threshold-status en top-3 findings. Initial build was commit `534d60c`; finalize-cyclus voegt 5 review-rondes hardening toe.
+
+**Geleverd** (initial `534d60c`, ~485 regels): nieuwe `review_content` analyze-tool in `analyze-tools.ts` (Zod discriminated-union paste/url, hergebruikt `runFidelityForExternalContent` engine + `ingestPaste`/`ingestUrl` met SSRF-mitigatie), `ReviewFindingsCard` met error-variant en `role="status"`, ChatArea `clientAction === 'review_findings_card'` routing, system-prompt anti-over-trigger contract, server-side smoke-test met 4 scenarios.
+
+**Finalize review-loop** — 5 iteraties (skill hard-limit) tot 0 CRITICAL en alleen design-trade-off WARNINGs over:
+- Round 1: 1 CRITICAL (broken Tab 3 deep-link) + 5 WARNINGs (Zod safeParse defense-in-depth, `take: 50` silent correctness, anti-over-trigger soft spot, top-findings text round-trip naar Anthropic, smoke-test 3 tautologie)
+- Round 2: 0 CRITICAL + 3 WARNINGs (smoke-test silent-skip, vacuous-true op empty array, Zod issues join voor LLM-feedback)
+- Round 3: 0 CRITICAL + 4 WARNINGs (deterministic test-ordering, andere fixture-string voor isolation-run, take=200 runaway-guard, Zod multi-issue join)
+- Round 4: 0 CRITICAL + 1 WARNING (`failureReason: 'invalid_input'` semantisch correct voor Zod-fail, type-union uitgebreid)
+- Round 5: 0 CRITICAL + 3 design-trade-off WARNINGs (alle expliciet als acceptable geframed door reviewers)
+
+**Architectuur-keuzes**: defense-in-depth `safeParse` op tool-execute entry (chat-route trust Anthropic SDK; redundant guard hier voorkomt malformed-input slip), `take: 200` runaway-guard (Prisma's enum-orderBy is alfabetisch HIGH<LOW<MEDIUM, dus client-side severity-sort vereist), `TOP_FINDINGS_TEXT_CAP=280` (gestringified findings round-trippen naar Anthropic in elke vervolg-turn), Tab-3 deep-link verwijderd (URL-param parser is separate task wanneer pilot-feedback dit prioriteert), `failureReason: 'ingest_failed' | 'invalid_input'` discriminated zodat FE differentiated copy kan tonen (placeholder voor toekomst).
+
+**Quality gates**: tsc 0 errors, lint 0 errors in nieuwe files (969 pre-existing warnings).
+
+**Out-of-scope** (gedocumenteerd in task-Notes): URL-param parser voor Tab 3 deep-link, ReviewErrorCard differentiated copy per failureReason, Surface E PublishGate findings-block, severity-visual unification Surface C+D.
+
+- Task: [tasks/done/content-review-chat-tool.md](../tasks/done/content-review-chat-tool.md)
+- ADR: [adr/2026-05-08-fval-output-schema-bevindingen.md](adr/2026-05-08-fval-output-schema-bevindingen.md), [adr/2026-05-08-locale-routing-brand-voice.md](adr/2026-05-08-locale-routing-brand-voice.md)
+- Spec: [tasks/_drafts/idea-content-review-chat-tool.md](../tasks/_drafts/idea-content-review-chat-tool.md)
+- Commit: `534d60c` (initial implementation) + `<finalize-hash>` (5-round hardening)
