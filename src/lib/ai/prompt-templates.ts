@@ -11,6 +11,7 @@
 // =============================================================
 
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { buildLocaleInstruction } from './locale-instruction';
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -26,6 +27,15 @@ export interface BrandContextBlock {
   brandArchetype?: string;
   brandPersonality?: string;
   brandVoiceguide?: string;
+  /**
+   * Compact 1-pager view derived from BrandVoiceguide via
+   * `deriveVoiceBaseline1Pager` + `formatVoiceBaseline1Pager`. Designed to
+   * replace ad-hoc voiceguide-field-includes in F-VAL judge-prompts and
+   * Strategy Analyst context — single source of truth for "what is brand
+   * baseline". ≤300 words. Coexists with `brandVoiceguide` (which is the
+   * legacy free-form-list format) until consumers migrate.
+   */
+  voiceBaseline1Pager?: string;
   brandStory?: string;
   brandValues?: string[];
   transformativeGoals?: string;
@@ -80,7 +90,15 @@ export const STRUCTURED_INSTRUCTIONS = `You MUST respond with valid JSON only. N
 // ─── Brand context formatter ───────────────────────────────
 
 export function formatBrandContext(ctx: BrandContextBlock): string {
-  const lines: string[] = ['## Brand Context'];
+  const lines: string[] = [];
+
+  // Locale enforcement comes FIRST so the AI cannot miss it under brand-context noise
+  const localeInstruction = buildLocaleInstruction(ctx.contentLanguage);
+  if (localeInstruction) {
+    lines.push(localeInstruction);
+  }
+
+  lines.push('## Brand Context');
 
   if (ctx.brandName) lines.push(`**Brand Name:** ${ctx.brandName}`);
 
@@ -165,7 +183,10 @@ export function formatBrandContextTier(ctx: BrandContextBlock, tier: BrandContex
   if (tier === 'full') return formatBrandContext(ctx);
 
   if (tier === 'summary') {
-    const parts: string[] = ['## Brand Context (Summary)'];
+    const parts: string[] = [];
+    const localeInstruction = buildLocaleInstruction(ctx.contentLanguage);
+    if (localeInstruction) parts.push(localeInstruction);
+    parts.push('## Brand Context (Summary)');
     if (ctx.brandName) parts.push(`**Brand:** ${ctx.brandName}`);
     if (ctx.industry) parts.push(`**Industry:** ${ctx.industry}`);
 
@@ -205,7 +226,10 @@ export function formatBrandContextTier(ctx: BrandContextBlock, tier: BrandContex
   }
 
   if (tier === 'light') {
-    const parts: string[] = ['## Brand Context'];
+    const parts: string[] = [];
+    const localeInstruction = buildLocaleInstruction(ctx.contentLanguage);
+    if (localeInstruction) parts.push(localeInstruction);
+    parts.push('## Brand Context');
     if (ctx.brandName) parts.push(`**Brand Name:** ${ctx.brandName}`);
     if (ctx.brandEssence) parts.push(`**Brand Essence:** ${ctx.brandEssence}`);
     if (ctx.brandPromise) parts.push(`**Brand Promise:** ${ctx.brandPromise}`);
@@ -233,7 +257,10 @@ export function formatBrandContextTier(ctx: BrandContextBlock, tier: BrandContex
   }
 
   // tier === 'medium'
-  const parts: string[] = ['## Brand Context'];
+  const parts: string[] = [];
+  const localeInstruction = buildLocaleInstruction(ctx.contentLanguage);
+  if (localeInstruction) parts.push(localeInstruction);
+  parts.push('## Brand Context');
   if (ctx.brandName) parts.push(`**Brand Name:** ${ctx.brandName}`);
 
   parts.push('');

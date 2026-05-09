@@ -1,6 +1,9 @@
 # CONTENT CANVAS — Spec: Stap 3 (Medium) + Stap 4 (Planner)
 
-> **Doel van dit document**: Exacte implementatiespec voor Claude Code.
+> ⚠️ **ACHTERHAALD per 2026-05-08** — voor huidige werkelijkheid zie [`docs/audits/2026-05-08-canvas-studio-state.md`](../audits/2026-05-08-canvas-studio-state.md).
+> Stap 3 Medium (`Step3GenerateMedium.tsx` + 11 medium-componenten) en Stap 4 Planner (`Step4Timeline.tsx`) zijn beide gebouwd. Per-content-type tweaks worden gepland via [`tasks/canvas-per-item-tweaks-plan.md`](../../tasks/canvas-per-item-tweaks-plan.md). Document blijft als historische snapshot.
+>
+> **Originele doel**: Exacte implementatiespec voor Claude Code.
 > Schrijf dit als toevoeging aan de bestaande Content Canvas wizard.
 > Raak stap 1 (Review Context) en stap 2 (Content Variants) NIET aan —
 > die zijn volledig werkend.

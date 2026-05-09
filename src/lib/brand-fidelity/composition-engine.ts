@@ -22,6 +22,7 @@
 
 import { detectAiTells, type AiTellResult } from './ai-tell-detector';
 import { evaluateBrandRules, type RuleEvaluationResult } from './rule-compiler';
+import { evaluateHeuristics } from './heuristics/evaluator';
 import { runRubricJudge, type GeneratorProvider } from './judge-dispatcher';
 import { scoreBrandStyle, type StyleScoreResult } from './style-scorer';
 import { scoreVoiceSimilarity, type VoiceSimilarityResult } from './voice-similarity';
@@ -88,6 +89,14 @@ export interface FidelityCompositionInput {
    * undefined → pijler 1 valt terug op string-match alleen.
    */
   voiceguideCentroid?: number[] | null;
+
+  /**
+   * Δ-3 voice-baseline 1-pager — compact markdown view voor pijler 2 judge-prompt.
+   * Vervangt ad-hoc voiceguide-field-includes met canonical methodology-conform
+   * format. Empty-baseline-string werkt safe (placeholders), prompt valt terug
+   * op `brandVoiceSummary` alleen wanneer 1-pager niet meegeleverd is.
+   */
+  voiceBaseline1Pager?: string;
 }
 
 // ─── Output ─────────────────────────────────────────
@@ -157,6 +166,43 @@ const DEFAULT_PILLAR3_RULE_WEIGHT = 0.4;
 const DEFAULT_COMPOSITE_THRESHOLD = 75;
 
 // ─── Pure helpers ───────────────────────────────────
+
+/**
+ * Merge BrandRule evaluator-result met heuristic-violations (Δ-2). Recompute
+ * ruleScore + counters om beide bronnen te reflecteren. Hergebruikt zelfde
+ * scoring-formula als rule-compiler (weighted violations / wordCount * 1000).
+ */
+function mergeRuleResults(
+  brandRules: RuleEvaluationResult,
+  heuristicViolations: import('./rule-compiler').RuleViolation[],
+): RuleEvaluationResult {
+  const merged = [...brandRules.violations, ...heuristicViolations];
+  const SEVERITY_WEIGHTS = { error: 3, warning: 1, info: 0.5 };
+  const weighted = merged.reduce((sum, v) => sum + (SEVERITY_WEIGHTS[v.severity] ?? 1), 0);
+  const violationsPer1000 = brandRules.wordCount > 0 ? (weighted / brandRules.wordCount) * 1000 : 0;
+  const ruleScore = Math.max(0, Math.min(100, Math.round(100 - violationsPer1000 * 2)));
+
+  const byCount = { error: 0, warning: 0, info: 0 };
+  const byType: typeof brandRules.byType = {
+    FORBIDDEN_WORD: 0,
+    REQUIRED_PHRASE: 0,
+    STYLE_LIMIT: 0,
+    PILLAR_REFERENCE: 0,
+  };
+  for (const v of merged) {
+    byCount[v.severity]++;
+    byType[v.ruleType]++;
+  }
+
+  return {
+    violations: merged,
+    ruleScore,
+    byCount,
+    byType,
+    wordCount: brandRules.wordCount,
+    rulesEvaluated: brandRules.rulesEvaluated + heuristicViolations.length,
+  };
+}
 
 /**
  * Normaliseer pillar weights zodat ze tot 1.0 sommeren.
@@ -232,7 +278,15 @@ export async function computeFidelityScore(
 
   const styleResult = scoreBrandStyle(input.contentText, input.personality);
   const detectorResult = detectAiTells(input.contentText);
-  const rulesResult = await evaluateBrandRules(input.workspaceId, input.contentText);
+
+  // Pijler 3: parallel-fetch BrandRule evaluator (DB-backed) + heuristics
+  // evaluator (Δ-2 — locale-package). Merge into single RuleEvaluationResult
+  // zodat downstream pillar3 score-logic ongewijzigd blijft.
+  const [brandRulesResult, heuristicsResult] = await Promise.all([
+    evaluateBrandRules(input.workspaceId, input.contentText),
+    evaluateHeuristics(input.workspaceId, input.contentText),
+  ]);
+  const rulesResult = mergeRuleResults(brandRulesResult, heuristicsResult.violations);
 
   // W-1-full: voice-similarity via centroid embedding when available.
   // Runs in parallel with the deterministic pillars above (rules already async,
@@ -269,6 +323,7 @@ export async function computeFidelityScore(
         contentText: input.contentText,
         brandName: input.brandName,
         brandVoiceSummary: input.brandVoiceSummary,
+        voiceBaseline1Pager: input.voiceBaseline1Pager,
         personaSummary: input.personaSummary,
         strategySummary: input.strategySummary,
         detectorResult,

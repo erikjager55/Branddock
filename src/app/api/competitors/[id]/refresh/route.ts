@@ -16,9 +16,47 @@ import {
 import { resolveFeatureModel } from "@/lib/ai/feature-models.server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import {
+  computeContentHash,
+  computeScrapeHash,
+} from "@/lib/competitors/snapshot-hash";
+import {
+  applyCompetitorRefreshDualWrite,
+  safeSocialLinks,
+} from "@/lib/competitors/refresh-write";
+import type { CanonicalExtracted } from "@/lib/competitors/types";
 import type { Prisma } from "@prisma/client";
 
-// POST /api/competitors/[id]/refresh — Re-scrape and re-analyze
+/**
+ * Defensive shape check op een snapshot's extractedJson voordat we hem
+ * als prev-canonical aan de diff-engine geven. Een rij geschreven onder
+ * een andere shape (bijv. na een toekomstige schema-evolutie) zou anders
+ * spurious diff-events of crashes veroorzaken. Bij twijfel: prev = null.
+ */
+function isCanonicalShape(value: unknown): value is CanonicalExtracted {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    Array.isArray(obj.differentiators) &&
+    Array.isArray(obj.mainOfferings) &&
+    Array.isArray(obj.messagingThemes) &&
+    Array.isArray(obj.strengths) &&
+    Array.isArray(obj.weaknesses)
+  );
+}
+
+// POST /api/competitors/[id]/refresh — Re-scrape and re-analyze.
+//
+// Dual-write pattern (PR-3 van Competitive Intelligence Loop Fase 1):
+//   1. Scrape + AI extraction → fresh CanonicalExtracted
+//   2. computeContentHash op fresh state
+//   3. Lees latest snapshot voor diff-baseline (orderBy capturedAt DESC,
+//      id DESC voor tie-break op identieke timestamps)
+//   4. Roep applyCompetitorRefreshDualWrite() helper aan binnen één
+//      transactie. Helper handelt no-op vs snapshot-write af, P2002
+//      race-protection, en alle counter/pointer updates.
+//   5. invalidateCache (prefix `competitors:${workspaceId}` raakt
+//      list, detail, activity, snapshots in één call)
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -84,7 +122,6 @@ export async function POST(
       brandContext: brandContextStr,
     });
 
-    // Resolve configurable model for competitor analysis
     const resolved = await resolveFeatureModel(workspaceId, 'competitor-analysis');
 
     const result = await createStructuredCompletion<CompetitorAnalysisResult>(
@@ -101,41 +138,103 @@ export async function POST(
       },
     );
 
-    // 4. Update competitor with fresh data
-    const updated = await prisma.competitor.update({
-      where: { id },
-      data: {
-        name: result.name || existing.name,
-        tagline: result.tagline ?? existing.tagline,
-        description: result.description || existing.description,
-        foundingYear: result.foundingYear ?? existing.foundingYear,
-        headquarters: result.headquarters ?? existing.headquarters,
-        employeeRange: result.employeeRange ?? existing.employeeRange,
-        valueProposition: result.valueProposition ?? existing.valueProposition,
-        targetAudience: result.targetAudience ?? existing.targetAudience,
-        differentiators: result.differentiators?.length ? result.differentiators : existing.differentiators,
-        mainOfferings: result.mainOfferings?.length ? result.mainOfferings : existing.mainOfferings,
-        pricingModel: result.pricingModel ?? existing.pricingModel,
-        pricingDetails: result.pricingDetails ?? existing.pricingDetails,
-        toneOfVoice: result.toneOfVoice ?? existing.toneOfVoice,
-        messagingThemes: result.messagingThemes?.length ? result.messagingThemes : existing.messagingThemes,
-        visualStyleNotes: result.visualStyleNotes ?? existing.visualStyleNotes,
-        strengths: result.strengths?.length ? result.strengths : existing.strengths,
-        weaknesses: result.weaknesses?.length ? result.weaknesses : existing.weaknesses,
-        socialLinks: (result.socialLinks ?? existing.socialLinks ?? undefined) as Prisma.InputJsonValue | undefined,
-        hasBlog: result.hasBlog ?? existing.hasBlog,
-        hasCareersPage: result.hasCareersPage ?? existing.hasCareersPage,
-        competitiveScore: result.competitiveScore ?? existing.competitiveScore,
-        status: "ANALYZED",
-        lastScrapedAt: new Date(),
-        analysisData: result as unknown as Prisma.InputJsonValue,
-      },
+    // 4. Build canonical state from merged AI-result + existing fallbacks.
+    //    Same merge-rules as pre-PR-3: AI null/empty → keep existing.
+    const nextCanonical: CanonicalExtracted = {
+      tagline: result.tagline ?? existing.tagline,
+      valueProposition: result.valueProposition ?? existing.valueProposition,
+      targetAudience: result.targetAudience ?? existing.targetAudience,
+      differentiators: result.differentiators?.length
+        ? result.differentiators
+        : existing.differentiators,
+      mainOfferings: result.mainOfferings?.length
+        ? result.mainOfferings
+        : existing.mainOfferings,
+      pricingModel: result.pricingModel ?? existing.pricingModel,
+      pricingDetails: result.pricingDetails ?? existing.pricingDetails,
+      toneOfVoice: result.toneOfVoice ?? existing.toneOfVoice,
+      messagingThemes: result.messagingThemes?.length
+        ? result.messagingThemes
+        : existing.messagingThemes,
+      visualStyleNotes: result.visualStyleNotes ?? existing.visualStyleNotes,
+      strengths: result.strengths?.length ? result.strengths : existing.strengths,
+      weaknesses: result.weaknesses?.length ? result.weaknesses : existing.weaknesses,
+      socialLinks: safeSocialLinks(result.socialLinks ?? existing.socialLinks),
+      hasBlog: result.hasBlog ?? existing.hasBlog,
+      hasCareersPage: result.hasCareersPage ?? existing.hasCareersPage,
+    };
+
+    const newContentHash = computeContentHash(nextCanonical);
+    const newScrapeHash = computeScrapeHash(scraped.bodyText);
+
+    // 5. Read latest snapshot for diff baseline. Tie-break on id DESC
+    //    handles identical capturedAt timestamps deterministically.
+    //    Defensive shape-validation: historical snapshots from before
+    //    a future schema-change might have a different shape; fall
+    //    back to null prev (no content events) rather than crashing.
+    const latestSnapshot = await prisma.competitorSnapshot.findFirst({
+      where: { competitorId: id },
+      orderBy: [{ capturedAt: 'desc' }, { id: 'desc' }],
+      select: { extractedJson: true },
     });
+    const prevCanonical = isCanonicalShape(latestSnapshot?.extractedJson)
+      ? (latestSnapshot.extractedJson as unknown as CanonicalExtracted)
+      : null;
+
+    // 6. Metadata that is NOT part of the canonical hash but should
+    //    refresh on every successful AI extraction (regardless of
+    //    snapshot-write outcome) — name, description, founding-year,
+    //    HQ, employee-range, competitive score, raw analysisData.
+    const metadataUpdate: Prisma.CompetitorUpdateInput = {
+      name: result.name || existing.name,
+      description: result.description || existing.description,
+      foundingYear: result.foundingYear ?? existing.foundingYear,
+      headquarters: result.headquarters ?? existing.headquarters,
+      employeeRange: result.employeeRange ?? existing.employeeRange,
+      competitiveScore: result.competitiveScore ?? existing.competitiveScore,
+      analysisData: result as unknown as Prisma.InputJsonValue,
+    };
+
+    // 7. Workflow transition: alleen DRAFT → ANALYZED triggeren een
+    //    automatische status-promotie. ARCHIVED competitors blijven
+    //    archived bij refresh (ze zouden anders silent un-archive'd worden).
+    const nextStatus = existing.status === 'DRAFT' ? 'ANALYZED' : existing.status;
+
+    // 8. Dual-write transaction — helper handles snapshot, activities,
+    //    pointer update + collision-detection. Cast naar TransactionClient:
+    //    extension `withTokenEncryption` produceert een DynamicClientExtension
+    //    type-shape die structureel compatible is voor onze 3 modellen, maar
+    //    nominaal niet matcht. Geïsoleerde cast op deze ene call-site.
+    const writeResult = await prisma.$transaction((tx) =>
+      applyCompetitorRefreshDualWrite(tx as unknown as Prisma.TransactionClient, {
+        competitorId: id,
+        workspaceId,
+        workflowBefore: { status: existing.status, tier: existing.tier },
+        workflowAfter: { status: nextStatus, tier: existing.tier },
+        prevCanonical,
+        nextCanonical,
+        newContentHash,
+        newScrapeHash,
+        metadataUpdate,
+        triggerSource: 'MANUAL',
+        signalSource: 'WEBSCRAPE',
+        triggeredById: null,
+        scrapedJsonInfo: {
+          title: scraped.title ?? null,
+          description: scraped.description ?? null,
+          bodyTextLength: scraped.bodyText.length,
+        },
+      }),
+    );
 
     invalidateCache(cacheKeys.prefixes.competitors(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
-    return NextResponse.json(updated);
+    return NextResponse.json({
+      ...writeResult.competitor,
+      _refreshOutcome: writeResult.outcome,
+      _activitiesCreated: writeResult.activitiesCreated,
+    });
   } catch (error) {
     console.error("[POST /api/competitors/:id/refresh]", error);
     const message = error instanceof Error ? error.message : "Internal server error";

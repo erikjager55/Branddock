@@ -15,8 +15,106 @@
  * internals.
  */
 
-import type { VisualBrief, VisualStyleDirection } from './canvas-context';
+import type {
+  PersonaContext,
+  ProductContext,
+  VisualBrief,
+  VisualStyleDirection,
+} from './canvas-context';
 import type { BrandContextBlock } from './prompt-templates';
+
+const SUBJECT_FIELD_MAX_CHARS = 200;
+
+function truncate(str: string | null | undefined, max = SUBJECT_FIELD_MAX_CHARS): string {
+  if (!str) return '';
+  const trimmed = str.trim();
+  return trimmed.length > max ? `${trimmed.slice(0, max)}…` : trimmed;
+}
+
+interface SubjectContext {
+  keyMessage: string | null;
+  objective: string | null;
+  callToAction?: string | null;
+  /** Personas linked to this deliverable; first one used as primary subject when chip needs a person. */
+  personas?: PersonaContext[];
+  /** Products linked to this deliverable; first one used for product-shot chip. */
+  products?: ProductContext[];
+  /** From ConceptContext.creativePlatform — campaign theme. */
+  creativePlatform?: string | null;
+  /** From MediumContext.platform — e.g. 'linkedin'. */
+  platform?: string | null;
+  /** Aspect ratio hint for the prompt — purely cosmetic, the route passes the actual aspect-ratio to the model API. */
+  aspectRatio?: string | null;
+  /** Brand fallback when subject can't be built. */
+  brandName?: string | null;
+}
+
+/**
+ * Build the subject seed per chip. Returns a concrete sentence the image
+ * generator can ground on. Each branch falls back gracefully when the
+ * preferred context is missing (e.g. product-shot without a product →
+ * brand-name + warning).
+ *
+ * Persona handling: uses `name` + the first 200 chars of `serialized`
+ * (which contains the demographics + occupation block from
+ * persona-serializer.ts). Personas in B2B SaaS are fictional, so name is
+ * safe to use; the serialized chunk surfaces age / occupation / setting
+ * the AI can use.
+ */
+function buildSubjectByChip(
+  chip: VisualStyleDirection | null,
+  ctx: SubjectContext,
+): string {
+  const persona = ctx.personas?.[0];
+  const product = ctx.products?.[0];
+  const personaContext = persona
+    ? `${persona.name} — ${truncate(persona.serialized, 200)}`
+    : null;
+
+  switch (chip) {
+    case 'lifestyle':
+    case 'ugc':
+      return personaContext && product
+        ? `${personaContext}, using ${product.name}${product.category ? ` (${product.category})` : ''}`
+        : personaContext
+          ? personaContext
+          : product
+            ? `Person interacting with ${product.name}${product.category ? ` (${product.category})` : ''}`
+            : (truncate(ctx.keyMessage) || `Brand visual for ${ctx.brandName ?? 'the brand'}`);
+
+    case 'product-shot':
+      if (product) {
+        const featureSnippet = product.features?.[0] ? ` — ${truncate(product.features[0], 80)}` : '';
+        return `${product.name}${product.category ? ` (${product.category})` : ''}${featureSnippet}, hero composition`;
+      }
+      // Explicit warning for product-shot without product — pilot guardrail
+      console.warn('[visual-brief-prompts] product-shot chip selected without a linked product; falling back to brand visual');
+      return truncate(ctx.keyMessage) || `Brand visual for ${ctx.brandName ?? 'the brand'}`;
+
+    case 'behind-the-scenes':
+      return personaContext
+        ? `Behind the scenes: ${personaContext} at work`
+        : (truncate(ctx.keyMessage) || `Behind the scenes at ${ctx.brandName ?? 'the brand'}`);
+
+    case 'quote-text': {
+      const quote = ctx.callToAction || ctx.keyMessage;
+      return quote ? `Typography hero featuring: "${truncate(quote, 150)}"` : `Brand quote for ${ctx.brandName ?? 'the brand'}`;
+    }
+
+    case 'infographic':
+    case 'data-driven':
+      return truncate(ctx.keyMessage) || `Data visualization for ${ctx.brandName ?? 'the brand'}`;
+
+    case 'illustration':
+      return truncate(ctx.keyMessage) || (product ? `Illustrated metaphor for ${product.name}` : `Illustration for ${ctx.brandName ?? 'the brand'}`);
+
+    default:
+      // No chip: rich fallback if context available, else simple keyMessage
+      return personaContext && product
+        ? `${personaContext}, with ${product.name}`
+        : (truncate(ctx.keyMessage) || truncate(ctx.objective) || `Brand visual for ${ctx.brandName ?? 'the brand'}`);
+  }
+}
 
 /**
  * Smart model selection per style chip — picks the model whose strengths
@@ -111,7 +209,7 @@ export function formatBrandVisualIdentity(brand: BrandContextBlock): string {
 export function buildVisualBriefImagePrompts(
   brief: VisualBrief,
   brand: BrandContextBlock,
-  subject: { keyMessage: string | null; objective: string | null },
+  subject: SubjectContext,
   count = 2,
 ): string[] {
   const chip = brief.styleDirection;
@@ -119,12 +217,29 @@ export function buildVisualBriefImagePrompts(
   const freeText = brief.styleDirectionFreeText?.trim() ?? '';
   const visualIdentity = formatBrandVisualIdentity(brand);
 
-  // Subject seed — what the image should depict. Falls back to brand name
-  // when neither key message nor objective is set, since Imagen/DALL-E
-  // need *something* concrete.
-  const subjectSeed = subject.keyMessage?.trim()
-    ?? subject.objective?.trim()
-    ?? `Brand visual for ${brand.brandName}`;
+  // Subject seed — explicit briefing-text overrules everything (user
+  // wrote / AI suggested concrete subject). Otherwise chip-aware build
+  // from personas/products/keyMessage. See canvas-image-briefing-textarea
+  // task — `briefingText` exists to give users a single source of truth
+  // for "what should the image depict" without parsing it out of style hints.
+  const explicitBriefing = brief.briefingText?.trim();
+  const subjectSeed = explicitBriefing && explicitBriefing.length > 0
+    ? explicitBriefing
+    : buildSubjectByChip(chip, {
+        ...subject,
+        brandName: subject.brandName ?? brand.brandName ?? null,
+      });
+
+  // Optional context blocks injected after subject when present.
+  const callToActionBlock = subject.callToAction
+    ? `Call to action context: "${truncate(subject.callToAction, 150)}".`
+    : '';
+  const platformBlock = subject.platform
+    ? `Intended for ${subject.platform}${subject.aspectRatio ? ` (${subject.aspectRatio})` : ''}.`
+    : '';
+  const themeBlock = subject.creativePlatform
+    ? `Campaign theme: ${truncate(subject.creativePlatform, 150)}.`
+    : '';
 
   // Two compositional angles per chip — "close" focuses on the subject;
   // "wide" pulls back for environmental context. Both same chip, same
@@ -141,6 +256,9 @@ export function buildVisualBriefImagePrompts(
     const parts = [
       styleInstruction,
       `Subject: ${subjectSeed}.`,
+      platformBlock,
+      themeBlock,
+      callToActionBlock,
       angles[i],
       freeText,
       visualIdentity,

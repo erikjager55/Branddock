@@ -7,25 +7,49 @@
 
 ## Huidige fase
 
-**Pre-launch — herzien 2026-05-08**: scope verbreed via [Brand Control Program](tasks/_drafts/idea-brand-control-program.md). Naast oorspronkelijke product-readiness ook review-side capabilities (Δ-1/2/3/4) + Strategy Analyst-stub. Pilot-start verplaatst van "+/- nu" naar +10-14 weken (strategische product-positioneringskeuze: brand-control instrument vs. content-creatie tool). Vercel + Stripe blijven launch-fase, ná programma-completion.
+**Pre-launch — 2026-05-08 (laat)**: scope verbreed via [Brand Control Program](tasks/_drafts/idea-brand-control-program.md) + parallel werkstroom [Competitive Intelligence Loop](tasks/_drafts/idea-competitive-intelligence-loop.md). Pilot-start verplaatst naar +10-14 weken. Vercel + Stripe blijven launch-fase, ná programma-completion.
 
-Pre-launch nu: alle 4 fasen Brand Control Program klaar + content-flow blocker-vrij + observability live.
+**Stand van zaken**:
+- BCP Phase 0 ✅ done (tech-debt-any-types, claw-page-awareness, bv-wire-w1-full-centroid)
+- BCP Phase 1 task-files gepromoot: `heuristics-packages-multilingual` (Δ-2) + `voice-baseline-1pager` (Δ-3) — beide open
+- ADR-2 Brandclaw agent-architectuur ✅ accepted (commit `64ebfdb`)
+- Canvas-studio-audit ✅ done — spawnde **6 nieuwe canvas-cluster tasks** (3 per-item tweaks + 3 image-briefing)
+- Competitive-intel Fase 1 PR-1 ✅ committed (schema toegepast); PR-2/PR-3 open
 
 ---
 
-## Top 3 actieve tasks
+## Top actieve tasks
 
-> Update na elke afgeronde task.
+> Update na elke afgeronde task. **10 priority-now tasks open** — geclusterd hieronder. User kiest wat hij oppakt; mijn top-3 advies bovenaan.
 
-> **2026-05-08**: oorspronkelijke pre-launch NOW-bucket geleegd (8 tasks done deze week). Brand Control Program besloten — Phase 0 voorlopers nu top-prio. ADR-1 + ADR-3 geschreven; idea-doc gelocked-in.
+> **2026-05-08 (laat)**: parallel-sessie burst — canvas-studio-audit + bijbehorende plans done, 6 canvas-cluster tasks gepromoot, 2 BCP Phase 1 task-files gepromoot, content-locale-enforcement-fix done. Mijn werk: competitive-intel PR-1 schema in twee commits.
 
-1. **`tech-debt-any-types`** ([task](tasks/tech-debt-any-types.md)) — 1-2 dagen, **Phase 0** voorloper, status `in-progress`. Schema-extensie safety voor ADR-1 (`BrandReviewFinding`) + ADR-3 (`BrandVoiceguide.contentLocale`). Cluster-prioriteit API/hooks/lib/ai eerst. L2 auto-mode kandidaat.
-2. **`claw-page-awareness`** ([task](tasks/claw-page-awareness.md)) — 2-3 dagen, **Phase 0** voorloper, status `open`. Brand Assistant pageContext + `inspect_current_entity` + `fill_form_fields`. Acceptance uitgebreid met Δ-1 chat-integratie hooks (3 nieuwe criteria).
-3. **`bv-wire-w1-full-centroid`** ([task](tasks/bv-wire-w1-full-centroid.md)) — 4-6 uur, **Phase 1** onderdeel, status `open`. F-VAL Pijler 1 string-match → cosine-similarity. Better Brands regression toonde Δ+24 punten. Harness staat klaar.
+### Top 3 advies
 
-**Niet-Phase-0 NOW-task**: [`canvas-studio-audit`](tasks/canvas-studio-audit.md) (1d) — parallel uitvoerbaar binnen Phase 0 wall-clock; informeert per-item tweaks die in Phase 2 review-surfaces meegenomen kunnen worden.
+1. **`competitor-snapshot-historie`** ([task](tasks/competitor-snapshot-historie.md)) — 3-4 dagen, status `in-progress`. PR-1 schema gecommit. PR-2 (diff-engine + backfill) en PR-3 (refresh dual-write) open. Worktree `branddock-feat-competitor-snapshot`.
+2. **`heuristics-packages-multilingual`** ([task](tasks/heuristics-packages-multilingual.md)) — 5-7 dagen, status `open`. BCP Phase 1 Δ-2: F-VAL Pijler 3 NL-NL / NL-BE / EN-GB / DE-DE pakketten. Blokt Phase 2 Δ-1.
+3. **`voice-baseline-1pager`** ([task](tasks/voice-baseline-1pager.md)) — 2-3 dagen, status `open`. BCP Phase 1 Δ-3: afgeleide compact voice-view uit BrandVoiceguide.
 
-**Volgende deliverables na Phase 0**: Δ-2 (heuristiek-pakketten NL/EN/BE/DE) + Δ-3 (voice 1-pager) → technical-planner promotion vereist; geen task-files yet.
+### Andere open priority-now tasks (geclusterd)
+
+**Canvas per-item tweaks cluster** (gepromoot uit canvas-studio-audit):
+- `canvas-tweaks-conversion-shortform` (2-3d) — social posts, ads, promo-email
+- `canvas-tweaks-longform-authority` (2d) — blog, thought-leadership, whitepaper, case-study, press
+- `canvas-tweaks-structured-skeleton` (2d) — carousels, web-pages, decks, podcast/webinar + naked-type fixes
+
+**Canvas image-briefing cluster** (gepromoot uit canvas-image-briefing-plan):
+- `canvas-image-briefing-defaults` (1d) — per-content-type defaults + suggestie-strook in Visual Brief
+- `canvas-image-briefing-textarea` (1d) — briefing-textarea + AI-suggestie
+- `canvas-image-content-coupling` (1-1.5d) — content-coupled image-prompt builder
+
+**Cowork-pariteit Fase A**:
+- `campaign-brief-output-mapper` (2-3d) — render-only mapper, geen Prisma-wijziging
+
+### Volgende deliverables (geen task-file yet)
+
+- BCP Phase 2: Δ-1 Content Review (3 surfaces) + Δ-4 PublishGate 2nd-opinion + claw-page-awareness vervolg-cluster
+- Competitive-intel Fase 2 (`competitor-positioning-frameworks-ui`) — conditional op pilot-validatie
+- Competitive-intel Fase 4 (`brandclaw-competitor-monitoring`) — post-launch, eigen cron-infra ADR
 
 ---
 
@@ -66,15 +90,17 @@ Volledige gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-d
 
 ---
 
-## Recent afgeronde tasks (laatste 5)
+## Recent afgeronde tasks (laatste 7, week 19)
 
 > Auto-bijgewerkt door `task-finalize` skill.
 
-- 2026-05-08 — [Content-styling migratie (9 categorieën, validator-driven)](tasks/done/content-styling-migratie.md)
-- 2026-05-08 — [Campaign drafts DB-backed](tasks/done/campaign-drafts-db-backed.md) (absorbed by 3 eerdere sessies)
-- 2026-05-08 — [PostHog browser + Sentry frontend observability](tasks/done/posthog-sentry-browser.md)
-- 2026-05-08 — [Content publish QA-gate](tasks/done/content-item-qa-gating.md) (manual + channel routes)
-- 2026-05-08 — [Brand-voice content integration](tasks/done/brand-voice-content-integration.md) (absorbed by BV-1 + fidelity-scorer + #227)
+- 2026-05-08 — [Content-locale enforcement fix](tasks/done/content-locale-enforcement-fix.md)
+- 2026-05-08 — [Canvas image-briefing plan](tasks/done/canvas-image-briefing-plan.md) — spawnde 3-task image-briefing cluster
+- 2026-05-08 — [Canvas per-item tweaks plan](tasks/done/canvas-per-item-tweaks-plan.md) — spawnde 3-task canvas-tweaks cluster
+- 2026-05-08 — [Canvas + Studio audit](tasks/done/canvas-studio-audit.md) — basis voor de 2 plans hierboven
+- 2026-05-08 — [Tech-debt any-types cleanup (146 fixes)](tasks/done/tech-debt-any-types.md) — BCP Phase 0
+- 2026-05-08 — [Brand Assistant page awareness](tasks/done/claw-page-awareness.md) — BCP Phase 0
+- 2026-05-08 — [F-VAL Pijler 1 cosine-similarity](tasks/done/bv-wire-w1-full-centroid.md) — BCP Phase 1, Better Brands Δ+24
 
 ---
 

@@ -97,6 +97,13 @@ export interface VisualBrief {
   styleDirection: VisualStyleDirection | null;
   /** Free-text style notes — used when none of the chips fit. */
   styleDirectionFreeText: string | null;
+  /**
+   * Concrete subject-omschrijving — what the image MUST depict (who,
+   * where, what, mood). Overrules keyMessage as the subject-seed when
+   * present. Distinct from styleDirectionFreeText (style hints) — see
+   * canvas-image-briefing-textarea task decision 2026-05-08.
+   */
+  briefingText?: string | null;
   /** Per-source config blocks — only the active source's block is read. */
   generate?: {
     /** Image model preference (imagen-4 / dall-e-3 / flux-pro / recraft / ideogram). */
@@ -447,11 +454,12 @@ function parseVisualBrief(
     const source = (obj.source ?? 'generate') as VisualBriefSource;
     const styleDirection = (obj.styleDirection ?? null) as VisualStyleDirection | null;
     const styleDirectionFreeText = (obj.styleDirectionFreeText ?? null) as string | null;
+    const briefingText = (obj.briefingText ?? null) as string | null;
     const generate = obj.generate as VisualBrief['generate'];
     const library = obj.library as VisualBrief['library'];
     const compose = obj.compose as VisualBrief['compose'];
     const trained = obj.trained as VisualBrief['trained'];
-    return { source, styleDirection, styleDirectionFreeText, generate, library, compose, trained };
+    return { source, styleDirection, styleDirectionFreeText, briefingText, generate, library, compose, trained };
   }
   // Legacy migration — synthesize a minimal VisualBrief from old keys
   const legacyVisualStyle = typeof legacyInputs?.visualStyle === 'string' ? legacyInputs.visualStyle : null;

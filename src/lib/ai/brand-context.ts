@@ -16,6 +16,10 @@
 
 import { prisma } from '@/lib/prisma';
 import type { BrandContextBlock } from './prompt-templates';
+import {
+  deriveVoiceBaseline1Pager,
+  formatVoiceBaseline1Pager,
+} from '../brand-fidelity/voice-baseline-1pager';
 
 // ─── Cache ─────────────────────────────────────────────────
 
@@ -1064,9 +1068,20 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
   // Brand Voiceguide (split from personality — voiceguide row wins; fallback
   // re-projects legacy BrandPersonality voice fields into the voiceguide shape
   // so unmigrated workspaces still get voice context in AI prompts.)
+  //
+  // Two formats produced from the same source:
+  //  - `brandVoiceguide`: legacy free-form-list (formatBrandVoiceguide)
+  //  - `voiceBaseline1Pager`: methodology-conform 1-pager (Δ-3) — preferred for
+  //    F-VAL judge-prompts and Strategy Analyst. Both coexist until consumers
+  //    finish migrating.
   if (voiceguide) {
     const formatted = formatBrandVoiceguide(voiceguide as BrandVoiceguideRow);
     if (formatted) ctx.brandVoiceguide = formatted;
+    // Δ-3 1-pager: derive from the same row via the canonical pure function.
+    // Cast is safe because select-shape in the Prisma query above mirrors the
+    // BrandVoiceguide model's read-fields.
+    const baseline = deriveVoiceBaseline1Pager(voiceguide as Parameters<typeof deriveVoiceBaseline1Pager>[0]);
+    ctx.voiceBaseline1Pager = formatVoiceBaseline1Pager(baseline);
   } else if (personality?.frameworkData) {
     const fw = personality.frameworkData as BrandPersonalityData | null;
     if (fw) {
@@ -1080,6 +1095,20 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         channelTones: fw.channelTones ?? null,
       });
       if (fallback) ctx.brandVoiceguide = fallback;
+      // Δ-3 1-pager fallback: project legacy personality fields into a minimal
+      // BrandVoiceguide-shaped row so the same derivation function works.
+      const baseline = deriveVoiceBaseline1Pager({
+        voiceDescription: fw.brandVoiceDescription ?? null,
+        toneDimensions: fw.toneDimensions ?? null,
+        wordsWeUse: fw.wordsWeUse ?? [],
+        wordsWeAvoid: fw.wordsWeAvoid ?? [],
+        antiPatterns: [],
+        writingSamples: fw.writingSample ? [fw.writingSample] : [],
+        channelTones: null,
+        // Fields the derivation function does not read but the BrandVoiceguide
+        // type requires — cast through unknown to satisfy the type-check.
+      } as unknown as Parameters<typeof deriveVoiceBaseline1Pager>[0]);
+      ctx.voiceBaseline1Pager = formatVoiceBaseline1Pager(baseline);
     }
   }
 

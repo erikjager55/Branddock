@@ -1,7 +1,10 @@
 # CONTENT-CANVAS-SPEC.md
 # Content Canvas — Functionele & Technische Specificatie
 
-> **Doel**: Volledige spec voor de Content Canvas module.
+> ⚠️ **ACHTERHAALD per 2026-05-08** — voor huidige werkelijkheid zie [`docs/audits/2026-05-08-canvas-studio-state.md`](../audits/2026-05-08-canvas-studio-state.md).
+> 5 kernfuncties (orchestrate / components / approval / publish / derive) zijn gebouwd, maar in een andere route-namespace (`/api/studio/[deliverableId]/...` ipv `/api/canvas/:campaignId/...`). DeliverableApproval + CanvasLayout Prisma-modellen nooit gebouwd. Document blijft als historische snapshot.
+>
+> **Originele doel**: Volledige spec voor de Content Canvas module.
 > Dit document beschrijft wat Content Canvas is, hoe het verschilt van
 > Content Studio, wat er al bestaat, en wat gebouwd moet worden.
 >
