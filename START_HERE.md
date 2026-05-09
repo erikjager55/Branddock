@@ -5,39 +5,6 @@
 
 ---
 
-## ⚠️ EERSTE ACTIE BIJ SESSIE-START — BRANCH-STATE OPLOSSEN
-
-**Onopgeloste branch-divergentie van 2026-05-08 sessie**:
-
-| Branch | Inhoud | Status |
-|---|---|---|
-| `main` | Pre-divergentie. Geen Δ-1 / canvas-sprint werk. Synced met `origin/main`. | active checkout |
-| `branddock-feat-competitor-snapshot` | Δ-1 sub-cluster A+B (foundation/engine/POST endpoint) + competitive-intel Fase 1 + canvas pre-launch sprint (12 tasks, 254 smoke-checks groen) — **commits `a8363c0` + `5c9f499` niet gepushed** | local-only |
-| `tasks/content-review-tab-3-ui.md` | Δ-1 Surface C UI task-file (in-progress, 1-2d) door technical-planner gepromoot | **untracked op `main`**, dependencies leven op feature-branch |
-
-### Eerste sessie-actie — kies één
-
-**Optie A (aanbevolen)** — switch naar feature-branch + push naar origin voor PR:
-```bash
-git stash -u                                          # save untracked task-file
-git checkout branddock-feat-competitor-snapshot
-git stash pop                                          # restore task-file
-git push -u origin branddock-feat-competitor-snapshot  # backup naar remote
-```
-
-**Optie B** — merge feature-branch naar `main` (lossere history):
-```bash
-git stash -u
-git merge branddock-feat-competitor-snapshot
-git stash pop
-```
-
-**Optie C** — discard alles (`git stash drop`) en herstart vanuit `main`. Verlies van 2 commits + 14 task-finalizations + 11 smoke-scripts.
-
-→ **Tot deze keuze gemaakt is, blijft Δ-1 Surface C task geblokkeerd** (dependencies ontbreken op `main`).
-
----
-
 ## Huidige fase
 
 **Pre-launch — herzien 2026-05-08, einde sprint #2 (Canvas + BCP Phase 1)**:
@@ -60,13 +27,13 @@ Pilot-start projectie: +6-10 weken (was +10-14, sneller dan verwacht door BCP Ph
 
 ---
 
-## Top 3 actieve pre-launch tasks (volgorde + branch waar ze leven)
+## Top 3 actieve pre-launch tasks
 
-> **Allen op `branddock-feat-competitor-snapshot`** — los eerst branch-state op.
+> PR #5 is gemerged op origin/main (commit `618d336`); alle dependencies leven nu op `main`. Surface C is **unblocked**.
 
-1. **`content-review-tab-3-ui`** ([task](tasks/content-review-tab-3-ui.md)) — **Δ-1 Surface C, 1-2 dagen, status `in-progress`**. UI-tab voor Brand Alignment naast bestaande Δ-1 API. Eerste pilot-zichtbare review-surface. Dependencies (Δ-1 sub-cluster A+B) live op feature-branch, niet op `main`.
+1. **`content-review-tab-3-ui`** ([task](tasks/content-review-tab-3-ui.md)) — **Δ-1 Surface C, 1-2 dagen, status `in-progress`**. UI-tab voor Brand Alignment naast bestaande Δ-1 API. Eerste pilot-zichtbare review-surface. Δ-1 sub-cluster A+B foundation/engine/POST endpoint zit op main (commit `f755ccb`).
 
-2. **Δ-1 Surface D — Brand Assistant chat-tool `add_review_findings`** — task-file nog te maken (idea-doc `tasks/_drafts/idea-content-review.md` had verdict `ready-to-build`, maar idea-doc is verloren bij branch-switch — feature-planner moet opnieuw of we hergebruiken oude voorstel uit Δ-1 idea-doc). 2-3 dagen geschat.
+2. **Δ-1 Surface D — Brand Assistant chat-tool `add_review_findings`** — task-file nog te maken (`tasks/_drafts/idea-content-review.md` was verdict `ready-to-build`; bij PR-5 merge is de idea-doc als referentie gemerged, hergebruik of feature-planner opnieuw). 2-3 dagen geschat.
 
 3. **Δ-1 Surface E — PublishGate findings-block** — uitbreiden op bestaande `PublishGate.tsx`. Task-file nog te maken. 2-3 dagen geschat. Per Red Team Review heeft regressie-risico op pilot-demo (eerste publish geblokkeerd door nieuwe gate = slechte ervaring) — **scope-trim aanbeveling**: na Surface C smoke + pilot-feedback bouwen, niet upfront.
 
@@ -78,9 +45,8 @@ Pilot-start projectie: +6-10 weken (was +10-14, sneller dan verwacht door BCP Ph
 
 ## Open beslissingen (blokkers voor werk)
 
-1. **Branch-state** — zie EERSTE ACTIE bovenaan. Surface C kan niet uitgevoerd worden tot opgelost.
-2. **Δ-1 Surface D + E scope-trim** — bouwen na Surface C pilot-feedback (aanbevolen) of upfront indivisible MVP? Per feature-planner Red Team review: trim aanbevolen.
-3. **Pilot LoRA-status Better Brands workspace** — staat trained-style image-flow defaults open op (`canvas-image-briefing-defaults` zette tiktok-script default op lifestyle als pilot-veiligheid; flip naar trained-style mogelijk via runtime check zodra LoRA's geseed zijn).
+1. **Δ-1 Surface D + E scope-trim** — bouwen na Surface C pilot-feedback (aanbevolen) of upfront indivisible MVP? Per feature-planner Red Team review: trim aanbevolen.
+2. **Pilot LoRA-status Better Brands workspace** — staat trained-style image-flow defaults open op (`canvas-image-briefing-defaults` zette tiktok-script default op lifestyle als pilot-veiligheid; flip naar trained-style mogelijk via runtime check zodra LoRA's geseed zijn).
 
 ---
 
@@ -89,12 +55,12 @@ Pilot-start projectie: +6-10 weken (was +10-14, sneller dan verwacht door BCP Ph
 **Sessie-start prompt** (Stream Deck "Start sessie" knop):
 ```
 Lees CLAUDE.md, gotchas.md en START_HERE.md.
-Bevestig de branch-state warning + huidige top-3 tasks.
+Bevestig wat je begrijpt over de huidige fase en geef de top 3 actieve tasks.
 ```
 
-**Branch-state opgelost? Dan task-werk**:
+**Bij task-werk**:
 ```
-Werk aan tasks/content-review-tab-3-ui.md volgens de regels in CLAUDE.md.
+Werk aan tasks/<id>.md volgens de regels in CLAUDE.md.
 Start in plan-mode. Bevestig file-set en acceptatiecriteria voor je begint.
 ```
 
@@ -112,9 +78,9 @@ Volledige gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-d
 
 ---
 
-## Recent afgeronde tasks (sessie 2026-05-08)
+## Recent afgeronde tasks (sessie 2026-05-08 / 2026-05-09)
 
-> Op `branddock-feat-competitor-snapshot`, niet zichtbaar op `main` tot branch-state opgelost.
+> Allemaal op `origin/main` na PR-5 merge (`618d336`) + finalize-commit (`4b0cffe`, entry #242).
 
 **Canvas + Studio sprint (12 tasks, 254/254 smoke-checks)**:
 - Locale-fix bug — `content-locale-enforcement-fix` (31/31)
@@ -125,8 +91,10 @@ Volledige gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-d
 **BCP Phase 1 + bonus closures**:
 - `heuristics-packages-multilingual` (50/50) — 4 locales
 - `voice-baseline-1pager` (32/32)
-- `campaign-brief-output-mapper` (31/31) — Cowork-pariteit Fase A
+- `campaign-brief-output-mapper` (31/31) — Cowork-pariteit Fase A — incl. 4-round task-finalize review-loop (entry #242)
 - `canvas-inline-edit-overlays` (26/26) — BCP Phase 2 #1
+
+**Δ-1 Content Review foundation + engine + API v1** — entry #239 (parallel-sessie commit `f755ccb`); Surface C UI is de eerstvolgende stap.
 
 **11 nieuwe `npm run smoke:*` scripts** beschikbaar voor regression-testing.
 
@@ -134,12 +102,12 @@ Volledige gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-d
 
 ## Zie ook
 
-- **`roadmap.md`** — volledige Now/Next/Later met fasering (mogelijk verouderd t.o.v. branch-state — verifieer per branch)
+- **`roadmap.md`** — volledige Now/Next/Later met fasering
 - **`docs/playbooks/working-flow.md`** — operating manual + spelregels
 - **`docs/playbooks/feature-discovery.md`** — feature-planner pipeline
 - **`CLAUDE.md`** — runtime context voor agent
-- **`docs/changelog.md`** — wat is gebouwd (chronologisch; entry #241 op feature-branch)
-- **`docs/audits/2026-05-08-canvas-studio-state.md`** — Canvas/Studio current-state audit (op feature-branch)
+- **`docs/changelog.md`** — wat is gebouwd (chronologisch; laatste entry #242)
+- **`docs/audits/2026-05-08-canvas-studio-state.md`** — Canvas/Studio current-state audit
 - **`docs/audits/2026-05-08-canvas-per-item-tweaks-plan.md`** — per-content-type tweak-plan
 - **`docs/audits/2026-05-08-canvas-image-briefing-plan.md`** — image-flow plan
 - **`docs/adr/`** — architecturale beslissingen
