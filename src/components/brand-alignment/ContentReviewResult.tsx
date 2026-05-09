@@ -78,7 +78,7 @@ export function ContentReviewResult({
 
   return (
     <div className="space-y-5">
-      <ScorePanel data={submitData} />
+      <ScorePanel data={submitData} actualFindingsCount={findings.length} />
 
       {findingsLoading && <FindingsLoadingState />}
       {findingsError && <FindingsErrorState message={findingsError} />}
@@ -113,10 +113,20 @@ export function ContentReviewResult({
 
 // ─── Score panel ──────────────────────────────────────
 
-function ScorePanel({ data }: { data: ReviewSubmitResponse }) {
+interface ScorePanelProps {
+  data: ReviewSubmitResponse;
+  /** Actual count uit GET response zodra die binnen is. Vóór GET-load
+   *  valt dit terug op `data.findingsCount` uit de POST-mutation —
+   *  voorkomt UX-divergentie als beide getallen zouden gaan
+   *  verschillen (hoort niet, defense-in-depth). */
+  actualFindingsCount?: number;
+}
+
+function ScorePanel({ data, actualFindingsCount }: ScorePanelProps) {
   const score = Math.round(data.compositeScore);
   const passed = data.thresholdMet;
   const color = passed ? "text-emerald-600" : score >= 60 ? "text-amber-600" : "text-red-600";
+  const findingsCount = actualFindingsCount ?? data.findingsCount;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-5 flex items-center gap-5">
@@ -139,7 +149,7 @@ function ScorePanel({ data }: { data: ReviewSubmitResponse }) {
           )}
         </div>
         <div className="text-gray-600">
-          {data.findingsCount} finding{data.findingsCount === 1 ? "" : "s"} ·
+          {findingsCount} finding{findingsCount === 1 ? "" : "s"} ·
           run took {(data.durationMs / 1000).toFixed(1)}s
           {data.scorerVersion && (
             <> · scorer <code className="text-xs">{data.scorerVersion}</code></>
@@ -237,10 +247,10 @@ function FindingsTable({ findings }: { findings: ReviewFinding[] }) {
       <table className="w-full text-sm">
         <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
           <tr>
-            <th className="px-3 py-2 w-24">Severity</th>
-            <th className="px-3 py-2 w-32">Category</th>
-            <th className="px-3 py-2 w-48">Location</th>
-            <th className="px-3 py-2">Description</th>
+            <th scope="col" className="px-3 py-2 w-24">Severity</th>
+            <th scope="col" className="px-3 py-2 w-32">Category</th>
+            <th scope="col" className="px-3 py-2 w-48">Location</th>
+            <th scope="col" className="px-3 py-2">Description</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">

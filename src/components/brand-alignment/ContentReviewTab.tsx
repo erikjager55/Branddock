@@ -132,7 +132,10 @@ function InputCard({
   submitError,
 }: InputCardProps) {
   // Counter toont getrimde lengte (zelfde basis als canSubmit) — anders
-  // ziet user "55 / 50000" groen terwijl submit met 50 chars naar server gaat.
+  // ziet user "55 / 50000" groen terwijl submit met 50 chars naar server
+  // gaat. Edge case: whitespace-only edits aan de boundary (50→52 spaties
+  // toevoegen) updaten de counter niet — bewust, want trim is de
+  // source-of-truth. Functioneel correct.
   const pasteLen = pasteContent.trim().length;
   const tooShort = mode === "paste" && pasteLen > 0 && pasteLen < PASTE_MIN_CHARS;
   const tooLong = mode === "paste" && pasteLen > PASTE_MAX_CHARS;

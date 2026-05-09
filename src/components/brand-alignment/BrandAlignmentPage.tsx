@@ -38,6 +38,10 @@ import { AnalyzingScanModal } from './AnalyzingScanModal';
 import { ScanCompleteModal } from './ScanCompleteModal';
 import { FixIssueModal } from './FixIssueModal';
 import { BrandAuditView } from './BrandAuditView';
+// TODO future: lazy-load via `next/dynamic` (zoals BriefRenderView in
+// ContentLibraryCampaignMode) — ContentReviewTab is hidden by default
+// en zou met code-split de Alignment/Audit tab-bundle 10-20KB lichter
+// maken. Niet kritisch, defer tot bundle-trim pass.
 import { ContentReviewTab } from './ContentReviewTab';
 import { VoiceBaseline1Pager } from '@/features/brand-alignment/components/VoiceBaseline1Pager';
 
