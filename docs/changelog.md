@@ -406,4 +406,4 @@ Eerste pilot-zichtbare review-surface bovenop bestaande Δ-1 API. Derde tab "Con
 - Task: [tasks/done/content-review-chat-tool.md](../tasks/done/content-review-chat-tool.md)
 - ADR: [adr/2026-05-08-fval-output-schema-bevindingen.md](adr/2026-05-08-fval-output-schema-bevindingen.md), [adr/2026-05-08-locale-routing-brand-voice.md](adr/2026-05-08-locale-routing-brand-voice.md)
 - Spec: [tasks/_drafts/idea-content-review-chat-tool.md](../tasks/_drafts/idea-content-review-chat-tool.md)
-- Commit: `534d60c` (initial implementation) + `<finalize-hash>` (5-round hardening)
+- Commit: `534d60c` (initial implementation) + `f2f0455` (5-round hardening)
