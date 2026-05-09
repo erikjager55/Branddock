@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Laatst bijgewerkt**: 2026-05-08 (laat — BCP Phase 0+1 task-files compleet, Canvas-cluster gepromoot uit audit, Competitive Intelligence Loop PR-1 gecommit).
+> **Laatst bijgewerkt**: 2026-05-09 (sprint #2 gemerged via PR #5 `618d336`; BCP Phase 0+1 + Canvas-cluster + Cowork Fase A + Competitive-intel Fase 1 op `main`).
 > **Update-cadans**: Now continu (na elke afgeronde task), Next wekelijks (vrijdagretro), Later maandelijks.
 > **Bron**: gedistilleerd uit oude TODO.md, BRANDCLAW-ROADMAP.md, STRATEGISCHE-VERVOLGSTAPPEN.md (allen in `docs/archive/old-lists/`).
 
@@ -61,42 +61,31 @@
 
 ## ⚡ NOW (deze 2-4 weken)
 
-Pre-launch = product-readiness van content-flows + foundations voor BCP en Competitive Intelligence Loop.
+Pre-launch = BCP Phase 2 review-surfaces (Δ-1 → Δ-4 → claw-vervolg). Alle Phase 0+1 + Canvas/Studio + Cowork Fase A + Competitive-intel Fase 1 zit op `main`.
 
-**Actief — Canvas/Studio bouw-tasks (uit discovery 2026-05-08)**
+**Actief — Δ-1 Content Review surfaces**
 | ID | Titel | Effort | Status | Blocker |
 |---|---|---|---|---|
-| [`content-locale-enforcement-fix`](tasks/done/content-locale-enforcement-fix.md) | Tweetalige output bugfix — locale-enforcement op alle generation-routes. `npm run smoke:locale` 31/31 passed (29 unit + 2 live AI). | 1-2 dagen | ✅ done 2026-05-08 | - |
-| [`canvas-tweaks-conversion-shortform`](tasks/done/canvas-tweaks-conversion-shortform.md) | Per-item tweaks #1 — 13 types (4 social + 7 ads + 2 email). `conversionContentStyleFields()` + Asset Planner examples + canvas-orchestrator hookFormat-enrichment. `npm run smoke:conversion-tweaks` 8/8 passed. | 2-3 dagen | ✅ done 2026-05-08 | - |
-| [`canvas-tweaks-longform-authority`](tasks/done/canvas-tweaks-longform-authority.md) | Per-item tweaks #2 — 10 types (6 long-form + 4 PR/case). `authorityContentFields()` + `narrativeAnchorFields()` + canvas-orchestrator AUTHORITY_RICH_RENDERS (THESIS/ANTI-THESIS/PIVOT framing). `npm run smoke:longform-tweaks` 8/8 passed. | 2 dagen | ✅ done 2026-05-08 | - |
-| [`canvas-tweaks-structured-skeleton`](tasks/done/canvas-tweaks-structured-skeleton.md) | Per-item tweaks #3 — 13 types (9 structured + 2 naked-fixes + 4 video opt-in; instagram-post via conversion-task). Parametrized `skeletonInputFields(kind)` + canvas-orchestrator skeleton-render ("USE EXACTLY"). `npm run smoke:structured-tweaks` 13/13 passed. | 2 dagen | ✅ done 2026-05-08 | - |
-| [`canvas-image-briefing-defaults`](tasks/done/canvas-image-briefing-defaults.md) | Image #1 — per-content-type defaults-mapping (25 types) + suggestie-strook in VisualBriefSection (Step1Context). `npm run smoke:image-defaults` 20/20 passed. UI hand-test handover voor visual verification. | 1 dag | ✅ done 2026-05-08 | - |
-| [`canvas-image-content-coupling`](tasks/done/canvas-image-content-coupling.md) | Image #2 — persona+product+cta+concept+platform in image-prompt-builder via per-chip `buildSubjectByChip`. 3 routes (generate-visual / -trained / -compose) updated. `npm run smoke:image-coupling` 25/25 passed. | 1-1.5 dag | ✅ done 2026-05-08 | - |
-| [`canvas-image-briefing-textarea`](tasks/done/canvas-image-briefing-textarea.md) | Image #3 — `briefingText` op VisualBrief + textarea + Claude Haiku `/suggest-visual-briefing` route + builder gebruikt briefingText als highest-priority subject-seed. `npm run smoke:image-briefing` 10/10 passed. | 1 dag | ✅ done 2026-05-08 | - |
+| [`content-review-tab-3-ui`](tasks/content-review-tab-3-ui.md) | Δ-1 Surface C — Brand Alignment Tab 3 "Content Review" UI. Eerste pilot-zichtbare review-surface (paste-textarea + URL + composite-score + findings-tabel). | 1-2 dagen | in-progress | - |
+| `delta-1-surface-d` | Δ-1 Surface D — Brand Assistant chat-tool `add_review_findings`. Task-file nog te maken (idea-doc verloren bij branch-switch — feature-planner opnieuw of hergebruik oud Δ-1 voorstel). | 2-3 dagen | open | task-file |
+| `delta-1-surface-e` | Δ-1 Surface E — PublishGate findings-block. Scope-trim: na Surface C pilot-feedback bouwen, niet upfront (regressie-risico op pilot-demo). | 2-3 dagen | open | task-file + Surface C smoke |
 
-**Actief — BCP Phase 1 (F-VAL extension)**
+**Actief — overige Phase 2**
 | ID | Titel | Effort | Status | Blocker |
 |---|---|---|---|---|
-| [`heuristics-packages-multilingual`](tasks/done/heuristics-packages-multilingual.md) | Δ-2 — F-VAL Pijler 3 NL-NL ✅ (eerder) / EN-GB ✅ / NL-BE ✅ (extends-NL-NL) / DE-DE ✅ (incl. Denglisch). `npm run smoke:heuristics-locales` 50/50 passed. | 5-7 dagen | ✅ done 2026-05-08 | - |
-| [`voice-baseline-1pager`](tasks/done/voice-baseline-1pager.md) | Δ-3 — afgeleide 1-pager uit BrandVoiceguide (derivation + UI + judge-prompt embed + cache). `npm run smoke:voice-baseline` 32/32 passed. | 2-3 dagen | ✅ done 2026-05-08 | - |
+| `delta-4-publishgate-2nd-opinion` | Δ-4 PublishGate 2nd-opinion review-pass | onbekend | open | task-file |
+| `claw-page-awareness-vervolg` | Page-wiring PersonaDetail / BrandAssetDetail / Step1Context (deferred uit Phase 0.2.A) | ~2 dagen | open | task-file |
 
-**Actief — overige NOW**
-| ID | Titel | Effort | Status | Blocker |
-|---|---|---|---|---|
-| [`competitor-snapshot-historie`](tasks/done/competitor-snapshot-historie.md) | Competitive-intel Fase 1 — Snapshot/Activity/ContentItem schema + dual-write refresh + backfill + 7 diff-rules. ADR accepted. | 3-4 dagen | ✅ done 2026-05-08 | - |
-| [`campaign-brief-output-mapper`](tasks/done/campaign-brief-output-mapper.md) | Cowork-pariteit Fase A render-mapper — pure mapper + renderer + AI week-themes + UI + telemetry route. `npm run smoke:brief-render` 31/31 passed. | 2-3 dagen | ✅ done 2026-05-08 | - |
+**Recent voltooid (sprint #2, gemerged 2026-05-09 via PR #5 `618d336`)**
 
-**Recent voltooid — discovery (week 19, 2026-05-08)**
-- ✅ [`canvas-studio-audit`](tasks/done/canvas-studio-audit.md) — `docs/audits/2026-05-08-canvas-studio-state.md`. Spec-claims vs code-realiteit + 5 open vragen.
-- ✅ [`canvas-per-item-tweaks-plan`](tasks/done/canvas-per-item-tweaks-plan.md) — `docs/audits/2026-05-08-canvas-per-item-tweaks-plan.md`. 53 types geanalyseerd → 3 bouw-tasks. Hypothese-sterkte: wisselvallig (sterk voor 3 archetypen).
-- ✅ [`canvas-image-briefing-plan`](tasks/done/canvas-image-briefing-plan.md) — `docs/audits/2026-05-08-canvas-image-briefing-plan.md`. 5 visual-routes + UX-flow (suggestie-strook in Step1Context, geen aparte modal) + 23 type-defaults → 3 bouw-tasks.
+> 16 task-finalizations + 254/254 smoke-checks + 11 nieuwe `npm run smoke:*` scripts. Volledige details in `tasks/done/` + `docs/changelog.md` (entry #239–242).
 
-**Recent voltooid (week 19, 2026-05-07/08)**
-- ✅ Content-items kritisch pad (4 tasks): studio-content-generation-real-ai, content-versioning-crud, brand-voice-content-integration, content-item-qa-gating
-- ✅ Independent pre-launch tracks (4 tasks): posthog-sentry-browser, campaign-drafts-db-backed, content-styling-migratie, auto-trigger-fidelity-scoring
-- ✅ BCP Phase 0 voorlopers (3 tasks): tech-debt-any-types (146 fixes), claw-page-awareness (foundation only — page-wiring vervolg in Phase 2), bv-wire-w1-full-centroid (Better Brands Δ+24)
-
-Volledige details in `tasks/done/` + `docs/changelog.md`.
+- **Canvas/Studio (12 tasks)**: locale-fix + 3 per-item-tweaks-clusters (conversion / longform / structured) + 3 image-track-tasks (defaults / coupling / briefing) + 3 discovery-audits + canvas-inline-edit-overlays
+- **BCP Phase 0** (3 tasks): tech-debt-any-types, claw-page-awareness foundation, bv-wire-w1-full-centroid
+- **BCP Phase 1** (2 tasks): heuristics-packages-multilingual (Δ-2, 4 locales), voice-baseline-1pager (Δ-3)
+- **Cowork-pariteit Fase A**: campaign-brief-output-mapper
+- **Competitive-intel Fase 1**: competitor-snapshot-historie (Snapshot/Activity/ContentItem schema + 7 diff-rules)
+- **Eerder week 19**: 4 content-items kritisch pad + 4 independent pre-launch tracks (PostHog/Sentry, campaign-drafts-db, content-styling-migratie, auto-trigger-fidelity)
 
 ---
 
@@ -120,7 +109,6 @@ Volledige details in `tasks/done/` + `docs/changelog.md`.
 | [`power-user-shortcuts`](tasks/power-user-shortcuts.md) | Power-user shortcuts (5 micro-optimalisaties) | post-launch | 1-2 dagen | Gedistilleerd uit plan |
 | `learning-loop-dashboard-usage` | Per-sourceIdentifier dashboard | post-launch | halve dag | Task-file volgt |
 | `weekly-report-email-via-resend` | Weekly report email via Emailit | post-launch | 1 dag | Task-file volgt na weekly-report generator |
-| [`campaign-brief-output-mapper`](tasks/campaign-brief-output-mapper.md) | Campagne-brief output-mapper (Fase A van Cowork-pariteit) | pre-launch | 2-3 dagen | Technical-planner promoted 2026-05-07. Phase -1 Gates 3/3 passed, geen ADR. Render-only, geen Prisma-wijziging. **Now-eligible** sinds studio-P0 done — verplaatsen naar NOW-tabel wanneer gepakt wordt |
 | `studio-siblings-context-variation` | Variatie-borging tussen naburige posts (lexicale diversiteit Jaccard) | post-launch | ½-1 dag | Quality-enhancement na studio-P0. Lost saaie-posts JTBD op (B1-discovery 2026-05-07). Geen Brandclaw-impact. |
 
 ---
@@ -185,21 +173,19 @@ Volledige details in `tasks/done/` + `docs/changelog.md`.
 
 ## 💡 Aanbeveling huidige sessie
 
-**2026-05-08 (laat)**: BCP Phase 0 done; Phase 1 task-files (Δ-2 + Δ-3) gepromoot; ADR-2 Brandclaw agent-architectuur ✅ accepted; Canvas-studio-audit done en spawnde 6 canvas-cluster tasks; Competitive Intelligence Loop PR-1 schema gecommit. **10 priority-now tasks** open verspreid over 4 clusters.
+**2026-05-09**: sprint #2 gemerged (PR #5 `618d336`). BCP Phase 0+1 + Canvas-cluster + Cowork Fase A + Competitive-intel Fase 1 zit op `main`. Focus verschuift naar **BCP Phase 2 review-surfaces** — Δ-1 Content Review.
 
-**Cluster-prioritering** (gebruiker kiest oppakvolgorde):
+**Volgorde-aanbeveling**:
 
-- **Competitive-intel** — PR-2 (diff-engine + backfill) en PR-3 (refresh dual-write) van `competitor-snapshot-historie`. Werk-in-uitvoering, foundation voor Fase 2/4.
-- **BCP Phase 1** — `heuristics-packages-multilingual` (Δ-2, 5-7d) + `voice-baseline-1pager` (Δ-3, 2-3d). Blokt Phase 2 review-surfaces.
-- **Canvas tweaks** — 3 tasks (conversion / longform / structured), 6-7d totaal. Pilot-quality-driver, geen Phase-blokker.
-- **Canvas image** — 3 tasks (defaults / textarea / coupling), 3-3.5d totaal. Visual-brief polish.
-- **Cowork-pariteit Fase A** — `campaign-brief-output-mapper` (2-3d), render-only.
+1. **`content-review-tab-3-ui`** (1-2d, in-progress) — eerste pilot-zichtbare review-surface, momentum vanuit foundation/engine/POST-endpoint. Direct vervolg op sprint #2.
+2. **Δ-1 Surface D + E task-files schrijven** — feature-planner draaien (idea-doc verloren) of hergebruik oude voorstel. Surface E pas bouwen na Surface C pilot-feedback (scope-trim Red Team).
+3. **Δ-4 + claw-page-awareness vervolg** — Phase 2 closures, parallel mogelijk met Surface D.
+
+**Launch-track parallel mogelijk**: `vercel-deployment` (3d, geen code-conflict met Surface C) ontgrendelt `pilot-onboarding-better-brands`. Stripe daarna voor revenue-pad. Pilot-start projectie: +6-10 weken.
 
 **Validatie-acties competitive-intel Fase 2/4** (vóór technical-planner promotion):
 - Pilot-priority-check (3 leads): is competitor-intelligence in top-3 needs?
 - Cost-modeling Fase 4: workspaces × concurrenten × scan-frequency × token-cost — budget-plafond bepalen
-
-Vercel + Stripe blijven in launch-fase (NEXT) — `pilot-onboarding-better-brands` wacht op programma-completion (+10-14 weken).
 
 ---
 
