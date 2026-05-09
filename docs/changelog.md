@@ -361,3 +361,25 @@ Render-laag bovenop bestaande `CampaignBlueprint` die wizard-output transformeer
 - ADR: -
 - Spec: [tasks/_drafts/idea-campaign-brief-cowork-parity.md](../tasks/_drafts/idea-campaign-brief-cowork-parity.md) + [tasks/_drafts/idea-campaign-brief-cowork-parity-validation.md](../tasks/_drafts/idea-campaign-brief-cowork-parity-validation.md)
 - Commit: `855f8a3` (initial implementation, parallel session) + `4b0cffe` (finalize)
+
+### 243. Δ-1 Surface C — Brand Alignment "Content Review" tab UI
+
+Eerste pilot-zichtbare review-surface bovenop bestaande Δ-1 API. Derde tab "Content Review" naast Alignment + Audit op `BrandAlignmentPage`. Paste-textarea (50-50000 chars getrimd) of URL-input + submit triggert POST `/api/alignment/review-external`, waarna nieuwe GET `/[reviewLogId]` route findings ophaalt voor render. Score-gauge (3-color emerald/amber/red) + threshold-badge + filterable findings-tabel met severity + category pills (counts per group) + before/after blocks voor top-issues.
+
+**Geleverd** (productie-commit `994e772`, ~786 regels): nieuwe GET `/api/alignment/review-external/[reviewLogId]/route.ts` (workspace-isolated, expliciete severity-rank sort post-fetch wegens alfabetisch enum-sort default), `useReviewContent` hook (mutation + query met staleTime Infinity per ADR-2 immutability), `ContentReviewTab` (input UI met paste/url toggle), `ContentReviewResult` (score + filters + findings-table), `useBrandAlignmentStore` AlignmentTab union extend ("alignment" | "audit" | "review"), `BrandAlignmentPage` 3rd tab integratie. Severity-mapping HIGH→CRITICAL/MEDIUM→WARNING/LOW→SUGGESTION hergebruikt bestaande `SeverityBadge`.
+
+**Architectuur-keuzes**: Optie B uit task-Notes (nieuwe GET-route ipv POST-extending — respecteert "POST niet aanraken"); filter-state lokaal in ContentReviewResult (geen Zustand); React text-children only render (geen `dangerouslySetInnerHTML`, XSS-mitigatie); `DEFAULT_COMPOSITE_THRESHOLD` geïmporteerd uit composition-engine ipv hardcoded magic-number.
+
+**Finalize review-loop** — 3 iteraties tot 0 CRITICAL/0 WARNING:
+- Round 1: 0 CRITICAL + 6 WARNING (severity-sort alfabetisch, trim min/max inconsistent, thresholdMet alleen op mutation, geen aria-pressed/role=alert, long-text overflow)
+- Round 2: 0 CRITICAL + 3 WARNING (magic-number drift, incomplete tab-ARIA, char-counter untrimmed)
+- Round 3: 0 CRITICAL + 0 WARNING (één future-proofing concern over latent threshold-divergence — defer als design-coupling, geen actuele bug)
+
+**Quality gates**: tsc 0 errors, lint 0 errors (0 warnings in nieuwe files; 969 totaal pre-existing).
+
+**Out-of-scope** (Δ-1 v2 follow-ups): file-upload UI (B-2 PDF/DOCX), tone-suggestions inline-edit, Surface D (Brand Assistant chat-tool), Surface E (PublishGate findings-block), history-list earlier reviews, auto-export PDF/CSV.
+
+- Task: [tasks/done/content-review-tab-3-ui.md](../tasks/done/content-review-tab-3-ui.md)
+- ADR: [adr/2026-05-08-fval-output-schema-bevindingen.md](adr/2026-05-08-fval-output-schema-bevindingen.md), [adr/2026-05-08-locale-routing-brand-voice.md](adr/2026-05-08-locale-routing-brand-voice.md)
+- Spec: [tasks/_drafts/idea-brand-control-program.md](../tasks/_drafts/idea-brand-control-program.md)
+- Commit: `994e772` (initial implementation) + finalize-commit (volgt)

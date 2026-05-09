@@ -40,6 +40,7 @@ export interface ReviewFindingsResponse {
   sourceType: string;
   sourceUrl: string | null;
   compositeScore: number;
+  thresholdMet: boolean;
   scorerVersion: string | null;
   durationMs: number;
   findingsCount: number;

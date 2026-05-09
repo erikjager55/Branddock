@@ -29,15 +29,19 @@ export function ContentReviewTab() {
   const findingsQuery = useReviewFindings(submitMutation.data?.reviewLogId ?? null);
 
   const isSubmitting = submitMutation.isPending || findingsQuery.isFetching;
+  // Beide bounds op de getrimde content — anders ziet de user "55 / 50000"
+  // groen terwijl submit alleen 50 chars stuurt. Trim ook bij submit.
+  const trimmedPasteLen = pasteContent.trim().length;
   const canSubmit = mode === "paste"
-    ? pasteContent.trim().length >= PASTE_MIN_CHARS && pasteContent.length <= PASTE_MAX_CHARS
+    ? trimmedPasteLen >= PASTE_MIN_CHARS && trimmedPasteLen <= PASTE_MAX_CHARS
     : isLikelyUrl(urlValue.trim());
 
   const handleSubmit = () => {
     if (!canSubmit || isSubmitting) return;
+    // Trim ook bij submit — zelfde reden als hierboven.
     const input: ReviewSubmitInput =
       mode === "paste"
-        ? { sourceType: "paste", content: pasteContent }
+        ? { sourceType: "paste", content: pasteContent.trim() }
         : { sourceType: "url", url: urlValue.trim() };
     submitMutation.mutate(input);
   };
@@ -127,15 +131,22 @@ function InputCard({
   onSubmit,
   submitError,
 }: InputCardProps) {
-  const pasteLen = pasteContent.length;
+  // Counter toont getrimde lengte (zelfde basis als canSubmit) — anders
+  // ziet user "55 / 50000" groen terwijl submit met 50 chars naar server gaat.
+  const pasteLen = pasteContent.trim().length;
   const tooShort = mode === "paste" && pasteLen > 0 && pasteLen < PASTE_MIN_CHARS;
   const tooLong = mode === "paste" && pasteLen > PASTE_MAX_CHARS;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-5 space-y-4">
+      {/* Plain aria-pressed toggle — geen volledig WAI-ARIA tab-pattern
+          (zou roving tabindex + arrow-key handler + tabpanels vereisen).
+          Een onvolledig tab-pattern misleidt SR-users meer dan plain
+          buttons; consistent met PillButton-toggle elders. */}
       <div className="flex gap-2">
         <button
           type="button"
+          aria-pressed={mode === "paste"}
           onClick={() => onModeChange("paste")}
           className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
             mode === "paste"
@@ -147,6 +158,7 @@ function InputCard({
         </button>
         <button
           type="button"
+          aria-pressed={mode === "url"}
           onClick={() => onModeChange("url")}
           className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
             mode === "url"
@@ -193,7 +205,10 @@ function InputCard({
       )}
 
       {submitError && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 flex items-start gap-2">
+        <div
+          role="status"
+          className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 flex items-start gap-2"
+        >
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
           <span>{submitError}</span>
         </div>

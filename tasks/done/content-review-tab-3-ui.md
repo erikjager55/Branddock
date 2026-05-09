@@ -5,9 +5,10 @@ fase: pre-launch
 priority: now
 effort: 1-2 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-08
-completed: -
+completed: 2026-05-09
+finalize-rounds: 3 review-iteraties (R1 0/6 / R2 0/3 / R3 0/0 WARNING), 0 CRITICAL doorheen. Productie-commit `994e772` + finalize-fixes.
 related-adr: 2026-05-08-fval-output-schema-bevindingen, 2026-05-08-locale-routing-brand-voice
 related-spec: tasks/_drafts/idea-brand-control-program.md
 worktree: -

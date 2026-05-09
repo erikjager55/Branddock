@@ -215,6 +215,7 @@ function PillButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={active}
       className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
         active
           ? "bg-emerald-50 text-emerald-700 border-emerald-300"
@@ -266,13 +267,13 @@ function FindingsTable({ findings }: { findings: ReviewFinding[] }) {
                     {f.beforeText && (
                       <div className="rounded bg-red-50 border border-red-100 px-2 py-1">
                         <div className="text-red-700 font-medium mb-0.5">Before</div>
-                        <div className="text-red-900">{f.beforeText}</div>
+                        <div className="text-red-900 break-words whitespace-pre-wrap">{f.beforeText}</div>
                       </div>
                     )}
                     {f.afterText && (
                       <div className="rounded bg-emerald-50 border border-emerald-100 px-2 py-1">
                         <div className="text-emerald-700 font-medium mb-0.5">After</div>
-                        <div className="text-emerald-900">{f.afterText}</div>
+                        <div className="text-emerald-900 break-words whitespace-pre-wrap">{f.afterText}</div>
                       </div>
                     )}
                   </div>

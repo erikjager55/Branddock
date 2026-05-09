@@ -163,7 +163,7 @@ const DEFAULT_PILLAR_WEIGHTS = {
 const DEFAULT_PILLAR3_DETECTOR_WEIGHT = 0.6;
 const DEFAULT_PILLAR3_RULE_WEIGHT = 0.4;
 
-const DEFAULT_COMPOSITE_THRESHOLD = 75;
+export const DEFAULT_COMPOSITE_THRESHOLD = 75;
 
 // ─── Pure helpers ───────────────────────────────────
 
