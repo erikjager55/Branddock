@@ -1,6 +1,17 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import type { ClawToolDefinition } from '../claw.types';
+import {
+  ingestPaste,
+  ingestUrl,
+  IngestError,
+} from '@/lib/alignment/external-content-ingest';
+import { runFidelityForExternalContent } from '@/lib/brand-fidelity/external-content-runner';
+
+// Severity-rank voor client-side ordering (Prisma's enum-sort is alfabetisch:
+// HIGH < LOW < MEDIUM). Top-level const zodat hij niet per-call her-alloceert.
+const REVIEW_SEVERITY_RANK: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+const TOP_FINDINGS_LIMIT = 3;
 
 /**
  * ANALYZE tools — perform AI-powered analysis on workspace data.
@@ -151,6 +162,107 @@ export const analyzeTools: ClawToolDefinition[] = [
           type: a.frameworkType,
           data: a.frameworkData,
         })),
+      };
+    },
+  },
+
+  // ─── Δ-1 Surface D — Brand Assistant `review_content` chat-tool ───
+  {
+    name: 'review_content',
+    description:
+      'Run F-VAL fidelity review on paste-content or a public URL. Returns composite score, threshold-status and the top-3 most severe findings (with location, category and suggestion). Use this ONLY when the user explicitly asks to review their copy, posts content for an on-brand check, or wants F-VAL feedback on a piece of writing. Do NOT auto-run on every assistant output — this tool consumes AI budget and is rate-limited.',
+    inputSchema: z.discriminatedUnion('sourceType', [
+      z.object({
+        sourceType: z.literal('paste'),
+        content: z
+          .string()
+          .min(50, 'content must be at least 50 characters')
+          .max(50_000, 'content exceeds 50,000 character limit'),
+      }),
+      z.object({
+        sourceType: z.literal('url'),
+        url: z.string().url('must be a valid http(s) URL'),
+      }),
+    ]),
+    requiresConfirmation: false,
+    category: 'analyze',
+    execute: async (params, ctx) => {
+      const input = params as
+        | { sourceType: 'paste'; content: string }
+        | { sourceType: 'url'; url: string };
+
+      // ── Ingest ──
+      let contentText: string;
+      let sourceUrl: string | null = null;
+      try {
+        if (input.sourceType === 'paste') {
+          contentText = ingestPaste(input.content).text;
+        } else {
+          const ingest = await ingestUrl(input.url);
+          contentText = ingest.text;
+          sourceUrl = input.url;
+        }
+      } catch (err) {
+        if (err instanceof IngestError) {
+          // Render-friendly error voor chat — geen stack-trace.
+          return {
+            error: err.message,
+            code: err.code,
+            clientAction: 'review_findings_card' as const,
+            failureReason: 'ingest_failed',
+          };
+        }
+        throw err;
+      }
+
+      // ── Run F-VAL ──
+      const runResult = await runFidelityForExternalContent({
+        workspaceId: ctx.workspaceId,
+        userId: ctx.userId,
+        contentText,
+        sourceType: input.sourceType,
+        sourceUrl: sourceUrl ?? undefined,
+        runJudge: true,
+      });
+
+      // ── Top-N findings ──
+      // Fetch een ruime set en sorteer client-side op SEVERITY_RANK; Prisma's
+      // enum-orderBy is alfabetisch (HIGH < LOW < MEDIUM), niet priority-based.
+      const allFindings = await prisma.brandReviewFinding.findMany({
+        where: {
+          contentReviewLogId: runResult.reviewLogId,
+          workspaceId: ctx.workspaceId,
+        },
+        select: {
+          severity: true,
+          category: true,
+          location: true,
+          description: true,
+          suggestion: true,
+        },
+        take: 50,
+      });
+      const topFindings = [...allFindings]
+        .sort(
+          (a, b) =>
+            (REVIEW_SEVERITY_RANK[a.severity] ?? 99) -
+            (REVIEW_SEVERITY_RANK[b.severity] ?? 99),
+        )
+        .slice(0, TOP_FINDINGS_LIMIT);
+
+      // ── Output: compact JSON met clientAction marker ──
+      // Chat-FE rendert ReviewFindingsCard wanneer clientAction matcht;
+      // assistent ziet de gestructureerde data en kan in eigen voice
+      // commentariëren. Volledige findings blijven via GET endpoint
+      // /api/alignment/review-external/[reviewLogId] op te vragen.
+      return {
+        reviewLogId: runResult.reviewLogId,
+        compositeScore: runResult.result.compositeScore,
+        thresholdMet: runResult.result.thresholdMet,
+        findingsCount: runResult.findingsCount,
+        topFindings,
+        scorerVersion: runResult.result.scorerVersion ?? null,
+        clientAction: 'review_findings_card' as const,
       };
     },
   },

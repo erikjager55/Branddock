@@ -8,6 +8,7 @@ import { BugReportForm } from './BugReportForm';
 import { FeedbackForm } from './FeedbackForm';
 import { QuickContentForm } from './QuickContentForm';
 import { MarkdownContent } from './MarkdownContent';
+import { ReviewFindingsCard, type ReviewCardData } from './ReviewFindingsCard';
 import { getQuickActions } from '@/lib/claw/quick-actions';
 import type { ClawMessage, ClawQuickAction } from '@/lib/claw/claw.types';
 
@@ -252,28 +253,42 @@ function MessageBubble({ message }: { message: ClawMessage }) {
         )}
 
         {/* Tool results inline */}
-        {message.toolResults?.map((tr) => (
-          <div
-            key={tr.toolCallId}
-            className={`mt-2 px-3 py-2 rounded-lg text-xs ${
-              tr.isError ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-600'
-            }`}
-          >
-            <div className="flex items-center gap-1.5 mb-1">
-              {tr.isError ? (
-                <AlertCircle size={12} className="text-red-500" />
-              ) : (
-                <Wrench size={12} className="text-gray-400" />
-              )}
-              <span className="font-medium">{tr.toolName}</span>
+        {message.toolResults?.map((tr) => {
+          // Δ-1 Surface D — review_content krijgt een rijkere card via
+          // clientAction marker. Andere analyze/read tools blijven de
+          // generieke "Data retrieved successfully" badge.
+          const result = tr.result as Record<string, unknown> | undefined;
+          if (
+            !tr.isError &&
+            tr.toolName === 'review_content' &&
+            result?.clientAction === 'review_findings_card'
+          ) {
+            return <ReviewFindingsCard key={tr.toolCallId} data={result as unknown as ReviewCardData} />;
+          }
+
+          return (
+            <div
+              key={tr.toolCallId}
+              className={`mt-2 px-3 py-2 rounded-lg text-xs ${
+                tr.isError ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-600'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                {tr.isError ? (
+                  <AlertCircle size={12} className="text-red-500" />
+                ) : (
+                  <Wrench size={12} className="text-gray-400" />
+                )}
+                <span className="font-medium">{tr.toolName}</span>
+              </div>
+              <div className="truncate">
+                {tr.isError
+                  ? String((tr.result as Record<string, unknown>)?.error ?? 'Error')
+                  : 'Data retrieved successfully'}
+              </div>
             </div>
-            <div className="truncate">
-              {tr.isError
-                ? String((tr.result as Record<string, unknown>)?.error ?? 'Error')
-                : 'Data retrieved successfully'}
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Attachments on user messages */}
         {isUser && message.attachments?.map((att) => (
