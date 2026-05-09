@@ -360,4 +360,4 @@ Render-laag bovenop bestaande `CampaignBlueprint` die wizard-output transformeer
 - Task: [tasks/done/campaign-brief-output-mapper.md](../tasks/done/campaign-brief-output-mapper.md)
 - ADR: -
 - Spec: [tasks/_drafts/idea-campaign-brief-cowork-parity.md](../tasks/_drafts/idea-campaign-brief-cowork-parity.md) + [tasks/_drafts/idea-campaign-brief-cowork-parity-validation.md](../tasks/_drafts/idea-campaign-brief-cowork-parity-validation.md)
-- Commit: `855f8a3` (initial implementation, parallel session) + `6a5ad6c` (finalize)
+- Commit: `855f8a3` (initial implementation, parallel session) + `4b0cffe` (finalize)
