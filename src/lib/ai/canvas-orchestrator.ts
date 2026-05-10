@@ -149,7 +149,13 @@ export async function* orchestrateContentGeneration(
   // Fire-and-forget mismatch-detection — logt warn wanneer de configured
   // workspace.contentLanguage afwijkt van detected language uit brand-content.
   // 5-min cache in helper voorkomt log-spam; geen auto-override.
-  logBrandLanguageMismatchIfAny(workspaceId, stack.brand.contentLanguage);
+  // Defense-in-depth try/catch: een crash in deze guard mag generation
+  // nooit blokkeren.
+  try {
+    logBrandLanguageMismatchIfAny(workspaceId, stack.brand.contentLanguage);
+  } catch (err) {
+    console.warn('[canvas-orchestrator] language-guard crashed:', (err as Error).message);
+  }
 
   // ── Build brand voice directive (BVD) + Human Voice Directive (HVD) ─
   const bvd = buildBrandVoiceDirectiveFromContext(stack.brand, {

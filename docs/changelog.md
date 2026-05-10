@@ -525,3 +525,39 @@ Drie incrementele wijzigingen op de F-VAL rules-pijler na visual-smoke ontdekkin
 - ADR: -
 - Spec: -
 - Commit: `accd88c` (initial implementation) + `82eca9c` (4-round hardening)
+
+### 249. Brand-language auto-detect + backfill + runtime mismatch-guard
+
+F-VAL rules-audit van vandaag onthulde dat 5 van 15 workspaces (incl. LINFI) verkeerd geconfigureerde `Workspace.contentLanguage` hadden — content was duidelijk NL maar veld stond op default 'en'. Resultaat: F-VAL Pijler 3 gebruikte EN-GB heuristic-pack ipv NL-NL, canvas-orchestrator injecteerde "Write in English" in elke generate-prompt. Auto-detect mechanism corrigeert alle workspaces tegelijk plus runtime-guard maakt toekomstige mismatches zichtbaar zonder user-flow te onderbreken.
+
+**Geleverd** (initial `e5d2818`, ~950 regels):
+
+- `franc-min` v6.2.0 dependency (42KB pure-JS, geen native bindings, ISO 639-3 trigram-detectie, 150+ talen)
+- `src/lib/i18n/detect-brand-language.ts` (nieuw) — `detectBrandLanguage(workspaceId)` consolideert voiceguide.voiceDescription + writingSamples + brandAssets via flatten-helper (depth-cap 10 + WeakSet voor circular safety), runt franc, mapt naar 3 ondersteunde locales (nl-NL / en-GB / de-DE — FR detecteert maar mapt naar null tot heuristic-pack bestaat). Confidence-thresholds: `high` ≥2 sources én ≥300 chars; `medium` ≥1 source én ≥150 chars; `low` anders.
+- `logBrandLanguageMismatchIfAny()` fire-and-forget runtime-guard met optimistic cache-set vóór await (concurrent-call dedup), MAX_CACHE_SIZE=500 + drop-oldest eviction, cache-clear in catch-branch (geen 5-min stilte na transient DB-error)
+- `scripts/backfill-brand-language.ts` (nieuw) — workspace-iteratie audit/apply met productie-guard, `--apply` flag, `--workspace-slug` filter, idempotent. Workspaces zonder voiceguide-row krijgen alleen workspace.contentLanguage correctie (voiceguide.contentLocale blijft NULL). Action-enum: `update-ws` / `update-locale` / `update-both` / `skip-match` / `skip-no-signal` / `skip-low-conf` / `skip-medium-conf`.
+- `src/lib/ai/canvas-orchestrator.ts` — fire-and-forget mismatch-guard call vóór BVD-build, try/catch defense-in-depth
+- `scripts/smoke-tests/brand-language-detect.ts` — 11 fixture-tests (NL/EN/DE/FR/mixed/short/empty/code-blob)
+- `docs/adr/2026-05-10-brand-language-auto-detect.md` — precedence-policy (voiceguide.contentLocale → workspace.contentLanguage → detection → en-GB), confidence-thresholds, override-policy (auto-detect is NIET runtime-override; backfill-tool + warn-log only), franc-min library-rationale vs alternatives
+
+**Productie-data effect** na `--apply` op alle workspaces:
+- 4 NL-correcties: linfi, better-brands, wra-juristen, goed-bouw (en → nl)
+- 1 inverse: napking (nl → en, content was EN)
+- 9 voiceguide.contentLocale fills waar voiceguide-row bestond
+- 2 skipped voor no-signal: wassink-groep, techcorp-brand (geen tekstuele content)
+- Verified idempotent: 2e run is no-op
+
+**Finalize review-loop** — 4 iteraties (Reviewer A clean op iter 3; iter-4 WARNINGs zijn cache-race-nuances van bewust gedocumenteerd ontwerp):
+- Round 1: 3 CRITICAL gefixt (FR-mapping drop, `!= null` undefined fix, francScore drop), 4 WARNINGs
+- Round 2: action-enum `skip-medium-conf` toegevoegd, orderBy take:20 brandAssets, depth-cap + WeakSet, MAX_CACHE_SIZE 500, try/catch orchestrator
+- Round 3: cache-clear in catch-branch, smoke FR-test comment expliciet, summary toont medium-conf count
+- Round 4: 0 CRITICAL, 3 WARNINGs allemaal acceptable trade-offs rondom optimistic-cache-set design
+
+**Quality gates**: tsc 0 errors, lint 0 errors, smoke 11/11 pass, backfill verified idempotent.
+
+**Out-of-scope** (gedocumenteerd in task-Notes): helper-level unit tests (smoke draait franc-lib direct, helper integration is via backfill --apply live), franc-min margin gating, telemetry hook bij detection-failure, ES/PT/IT detection (geen heuristic-packs; UI accepteert wel manual-set), LRU eviction ipv insertion-order, BrandVoiceguide.contentLocale picker UI (separate task), auto-detect bij workspace-creation (chicken-and-egg met onboarding), multi-locale workspace support (post-launch).
+
+- Task: [tasks/done/brand-language-auto-detect.md](../tasks/done/brand-language-auto-detect.md)
+- ADR: [adr/2026-05-10-brand-language-auto-detect.md](adr/2026-05-10-brand-language-auto-detect.md)
+- Spec: -
+- Commit: `e5d2818` (initial implementation) + `<finalize-hash>` (4-round hardening)

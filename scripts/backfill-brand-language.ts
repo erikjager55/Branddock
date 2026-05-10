@@ -49,6 +49,7 @@ interface RowReport {
   action:
     | 'skip-no-signal'
     | 'skip-low-conf'
+    | 'skip-medium-conf'
     | 'skip-match'
     | 'update-ws'
     | 'update-locale'
@@ -136,7 +137,12 @@ async function main() {
 
   if (!apply) {
     const updateCount = reports.filter((r) => r.action.startsWith('update')).length;
-    console.log(`\n[report-only] ${updateCount} workspace(s) would be updated. Re-run with --apply to write.\n`);
+    const mediumCount = reports.filter((r) => r.action === 'skip-medium-conf').length;
+    console.log(
+      `\n[report-only] ${updateCount} workspace(s) would be updated. ` +
+        `${mediumCount > 0 ? `${mediumCount} skipped voor medium-confidence (manual review aanbevolen). ` : ''}` +
+        `Re-run with --apply to write.\n`,
+    );
     await prisma.$disconnect();
     return;
   }
@@ -198,7 +204,7 @@ function planAction(ws: WorkspaceState, detection: BrandLanguageDetection): RowR
     return {
       ws,
       detection,
-      action: 'skip-low-conf',
+      action: 'skip-medium-conf',
       reason: `medium confidence — manual review aanbevolen`,
     };
   }

@@ -62,10 +62,15 @@ console.log('\n=== 3. DE fixture ===\n');
   assert('DE corporate text → deu', lang === 'deu', `got ${lang}`);
 }
 
-console.log('\n=== 4. FR fixture ===\n');
+console.log('\n=== 4. FR fixture (franc-raw only — geen ISO3_TO_LANG mapping) ===\n');
 {
+  // Test confirmt dat franc-min FR-tekst herkent. Belangrijk: onze
+  // `detectBrandLanguage`-helper mapt `fra` NIET naar een DetectedLanguage,
+  // want er bestaat geen FR heuristic-pack in locale-resolver. FR-workspaces
+  // krijgen dus `language: null` uit de helper en blijven op user-set
+  // workspace.contentLanguage waarde (handmatig te managen via Settings UI).
   const lang = franc(FR_CORPORATE, { minLength: 50 });
-  assert('FR corporate text → fra', lang === 'fra', `got ${lang}`);
+  assert('FR corporate text → fra (franc raw)', lang === 'fra', `got ${lang}`);
 }
 
 console.log('\n=== 5. Short / empty edge-cases ===\n');

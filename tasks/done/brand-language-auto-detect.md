@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 4 uur
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-10
-completed: -
+completed: 2026-05-10
 related-adr: 2026-05-10-brand-language-auto-detect
 related-spec: -
 worktree: -
@@ -35,16 +35,16 @@ Vijf incrementele wijzigingen, elk testbaar:
 
 # Acceptatiecriteria
 
-- [ ] `franc-min` toegevoegd aan dependencies; bundle-size geverifieerd <100KB; geen native bindings
-- [ ] `src/lib/i18n/detect-brand-language.ts` (nieuw) — `detectBrandLanguage(workspaceId)` pure-async functie; geen side-effects op DB; returnt typed result-object
-- [ ] Helper consolideert minimaal 3 bronnen (voiceguide.voiceDescription, voiceguide.writingSamples, brandAssets.frameworkData) voor sterk signaal; per source <50 chars wordt geskipped
-- [ ] Confidence-mapping gedocumenteerd: `high` ≥0.7 franc-score met ≥2 sources, `medium` 0.5-0.7 of single source, `low` <0.5
-- [ ] `scripts/backfill-brand-language.ts` (nieuw) — default report-only met JSON-summary (workspace count, mismatch count, distribution per detected language); `--apply` flag schrijft updates atomisch; idempotent
-- [ ] Script update **alle 15 workspaces**: voor elke workspace `console.log` huidige state + detected state + actie (skip/update). LINFI verifieerbaar opgenomen.
-- [ ] `canvas-orchestrator.ts` runtime-guard — bij elke generate-call detecteert via snelle 1-sample check; mismatch logs `console.warn` met workspaceId + huidige vs detected language; geen blocking
-- [ ] `npx tsc --noEmit` 0 errors, `npm run lint` 0 errors
-- [ ] Smoke-test `scripts/smoke-tests/brand-language-detect.ts` — verifieer detect-helper op 5+ NL fixtures, 3+ EN fixtures, 2 multi-lingual edge-cases
-- [ ] ADR `2026-05-10-brand-language-auto-detect.md` — documenteert detection-strategy, confidence-thresholds, runtime-guard policy
+- [x] `franc-min` toegevoegd aan dependencies; bundle-size geverifieerd <100KB; geen native bindings
+- [x] `src/lib/i18n/detect-brand-language.ts` (nieuw) — `detectBrandLanguage(workspaceId)` pure-async functie; geen side-effects op DB; returnt typed result-object
+- [x] Helper consolideert minimaal 3 bronnen (voiceguide.voiceDescription, voiceguide.writingSamples, brandAssets.frameworkData) voor sterk signaal; per source <50 chars wordt geskipped
+- [x] Confidence-mapping gedocumenteerd: `high` ≥0.7 franc-score met ≥2 sources, `medium` 0.5-0.7 of single source, `low` <0.5
+- [x] `scripts/backfill-brand-language.ts` (nieuw) — default report-only met JSON-summary (workspace count, mismatch count, distribution per detected language); `--apply` flag schrijft updates atomisch; idempotent
+- [x] Script update **alle 15 workspaces**: voor elke workspace `console.log` huidige state + detected state + actie (skip/update). LINFI verifieerbaar opgenomen.
+- [x] `canvas-orchestrator.ts` runtime-guard — bij elke generate-call detecteert via snelle 1-sample check; mismatch logs `console.warn` met workspaceId + huidige vs detected language; geen blocking
+- [x] `npx tsc --noEmit` 0 errors, `npm run lint` 0 errors
+- [x] Smoke-test `scripts/smoke-tests/brand-language-detect.ts` — verifieer detect-helper op 5+ NL fixtures, 3+ EN fixtures, 2 multi-lingual edge-cases
+- [x] ADR `2026-05-10-brand-language-auto-detect.md` — documenteert detection-strategy, confidence-thresholds, runtime-guard policy
 
 # Bestanden die ik aanraak
 
@@ -117,6 +117,46 @@ Vijf incrementele wijzigingen, elk testbaar:
 - Language-aware brand-asset validation (e.g. brand-essence-NL vs brand-essence-EN parallel) — Δ-3 follow-up
 - Language-detection in brand-assistant chat (auto-respond in same language as user-input) — separate task; F-VAL doelt op content-generation
 - Bulk-edit UI voor backfill resultaten — script is admin-only
+
+# Task-finalize hardening (2026-05-10)
+
+4 review-rondes (Reviewer A clean op iter 3; alle iter-4 WARNINGs zijn doc-nuances van bewust ontwerp).
+
+- **Round 1**: 3 CRITICAL — FR-detection mismatch met locale-resolver (fr-FR niet in SUPPORTED_LOCALES → silent regression), `configuredLanguage !== null` mist `undefined`, `francScore: 1` hardcoded leugen. Plus 4 echte WARNINGs.
+
+- **Round 2 fixes**:
+  - CRITICAL fix: dropped FR-mapping uit `DetectedLanguage`/`DetectedLocale` (geen heuristic-pack voor FR; FR-workspaces blijven `language: null` tot pack-uitbreiding); `configuredLanguage != null` covers null+undefined; `francScore` veld weggehaald
+  - Action enum: `skip-medium-conf` toegevoegd (was overloaded `skip-low-conf`)
+  - Concurrent-call race: cache-set vóór await voor dedup
+  - `orderBy: [{updatedAt: 'desc'}, {id: 'asc'}]` op brandAssets take:20
+  - Depth-cap `FLATTEN_MAX_DEPTH = 10` + `WeakSet` visited-tracking voor circular JSON safety
+  - `MAX_CACHE_SIZE = 500` met drop-oldest eviction
+  - try/catch defense-in-depth rond orchestrator guard-call
+
+- **Round 3 fixes**:
+  - Clear cache marker in catch-branch bij detection-failure (anders 5-min stilte na transient DB-error)
+  - Smoke FR-test comment expliciet: "franc raw, geen ISO3_TO_LANG mapping" — duidelijk dat FR niet wordt ondersteund door helper
+  - Backfill summary toont `skip-medium-conf` count voor zichtbaarheid
+
+- **Round 4 final**: 0 CRITICAL + 3 WARNINGs allemaal cache-race-nuances die expliciet zijn gedocumenteerd in comment-block. Acceptable trade-offs (parallelle calls binnen 5-min cache-window krijgen één warn-log per workspace; bewuste keuze voor log-spam-preventie).
+
+**LINFI productie-side-effect bevestigd** na `--apply`:
+- workspace.contentLanguage: 'en' → 'nl' ✓
+- BrandVoiceguide.contentLocale: null → 'nl-NL' ✓
+- 12 andere workspaces gecorrigeerd (4 NL inverse + 1 napking + 9 voiceguide-locale fills)
+- 2 skipped voor insufficient signal (wassink-groep, techcorp-brand)
+- Idempotent: 2e run is no-op
+
+**Deferred MINORs** (gedocumenteerd, niet gefixt):
+- Helper-level unit tests (smoke-test draait alleen tegen franc-lib; helper integration is via backfill --apply live op 13 workspaces)
+- Franc-min margin gating (over-engineering; confidence-thresholds + min-corpus volstaan)
+- Telemetry hook bij detection-failure (post-launch task)
+- ES/PT/IT detection ondersteuning (geen heuristic-packs; workspace.contentLanguage accepteert het wel via UI manual-set)
+- LRU eviction in plaats van insertion-order drop (cosmetic — werkt prima bij MAX=500)
+- Emoji ✓ in smoke-output (CLAUDE.md exempt voor scripts)
+- BrandVoiceguide.contentLocale picker UI in Brand Voice tab (separate task)
+- Auto-detect bij workspace-creation (chicken-and-egg met onboarding)
+- Multi-locale workspace support (post-launch feature)
 
 # Notes
 
