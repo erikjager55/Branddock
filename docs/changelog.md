@@ -432,3 +432,28 @@ Sluit de Δ-1 trifecta: Surface C (Tab 3 paste/url review-UI) en Surface D (Bran
 - ADR: [adr/2026-05-08-fval-output-schema-bevindingen.md](adr/2026-05-08-fval-output-schema-bevindingen.md)
 - Spec: -
 - Commit: `0b27fe0` (initial implementation) + `9a86e6f` (5-round hardening)
+
+### 246. Δ-1 cleanup-pack — shared SEVERITY_RANK + ReviewFinding types + SPA deep-link + InputBar tool_result fix
+
+Drie cleanup-items uit de Surface D + E finalize-loops als 'separate task' geflagged zijn nu samen geadresseerd, plus een latente productie-bug die tijdens visual smoke aan het licht kwam:
+
+**1. SEVERITY_RANK shared util**: nieuwe `src/lib/brand-fidelity/severity-rank.ts` met `Record<ReviewSeverity, number>` (compile-time exhaustiveness) + `severityRank()` helper met `?? 99` fallback. Drie call-sites (Surface C external GET route, Surface D analyze-tool, Surface E internal GET route) importeren ervan i.p.v. eigen inline-declaratie. Drift-risico bij toekomstige severity-uitbreiding (bijv. `CRITICAL`) weg.
+
+**2. ReviewFinding types extract**: nieuwe `src/types/brand-review-finding.ts` met `ReviewSeverity` / `ReviewCategory` / `ReviewFinding` string-union types. `useReviewContent` (Surface C) en `useInternalFindings` (Surface E) importeren beide uit deze neutrale plek; de hooks-cross-import van Surface E naar Surface C is weg. `useReviewContent` re-exporteert types voor backwards-compat met bestaande consumers.
+
+**3. SPA deep-link voor "View all findings"**: hybrid-SPA architectuur ondersteunt geen URL-params voor pagina-routing (browser-URL blijft constant; `<a href>` zou full reload veroorzaken), dus implementatie via Zustand-store preload-state:
+- `useBrandAlignmentStore` extended met `preloadReviewLogId` / `preloadFidelityScoreId` + `openReviewByLogId(id)` / `openReviewByFidelityScoreId(id)` / `clearPreload()` actions (XOR via action-pattern: actie clears tegen-overgestelde field)
+- `ContentReviewTab` leest preload-state op mount; bij aanwezigheid skip het paste/url input-form en render direct `ContentReviewResult` met pre-loaded findings via de juiste hook (`useReviewFindings` voor extern, `useInternalFindings` voor intern); synthetisch `ReviewSubmitResponse`-shape voor uniforme render. `clearPreload()` op submit-fire en op handleReset zodat fresh review altijd voorrang krijgt
+- Surface D `ReviewFindingsCard`: button met `openReviewByLogId` + `setActiveSection('brand-alignment')` + `closeClaw()` (chat-overlay sluit, content-review tab opent)
+- Surface E PublishGate `FindingsBlock`: button met `openReviewByFidelityScoreId` + `setActiveSection` (Canvas wordt verlaten, acceptable trade-off voor deep-link UX)
+
+**4. Latente productie-bug ontdekt en gefixt** (`InputBar.tsx`): `tool_result` SSE event was sinds initial Surface D commit (534d60c) alleen een activity-status setter — `message.toolResults` werd NOOIT gepopuleerd. ChatArea iterates `message.toolResults?.map(...)` om de juiste card te dispatchen, maar door lege array viel het altijd door naar de generic "Data retrieved" badge — of niets. De assistent-text-output gaf zoveel detail (score, threshold, top-3 issues in markdown) dat het op een card leek; pas bij deze cleanup-pack visual smoke (waar de "View all findings" button moest verschijnen) viel op dat de card zelf nooit rendered. Fix: accumuleer SSE `tool_result` events in lokale array tijdens streaming, plak op assistant message bij `done` event. Generic `analyze` tools renderen nu de Wrench-badge (gewenst); `review_content` dispatcht naar ReviewFindingsCard zoals altijd bedoeld.
+
+**Aanvullende cleanups uit finalize-loop**: `durationMs` optional gemaakt in `ReviewSubmitResponse` (preload-internal heeft geen duration; ScorePanel rendert "run took Xs" conditioneel pas vanaf > 0); useEffect-cleanup op ContentReviewTab unmount **verwijderd** (BrandAlignmentPage conditioneel rendert via `{activeTab === 'review' && ...}`, dus tab-switch zou preload wissen — handleSubmit + handleReset volstaan).
+
+**Quality gates**: tsc 0 errors, lint 0 errors in nieuwe/aangeraakte files, smoke `internal-findings.ts` 16/16 pass, manual UX-smoke (Surface D card "View all" + Surface E "+ N more" deep-links beide bevestigd live).
+
+- Task: [tasks/done/delta-1-cleanup-pack.md](../tasks/done/delta-1-cleanup-pack.md)
+- ADR: -
+- Spec: -
+- Commit: `1008918` (initial cleanup-pack) + `4470717` (InputBar tool_result fix) + `<finalize-hash>` (3-round hardening)

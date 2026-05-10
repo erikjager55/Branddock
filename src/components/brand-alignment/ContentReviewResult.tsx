@@ -149,8 +149,13 @@ function ScorePanel({ data, actualFindingsCount }: ScorePanelProps) {
           )}
         </div>
         <div className="text-gray-600">
-          {findingsCount} finding{findingsCount === 1 ? "" : "s"} ·
-          run took {(data.durationMs / 1000).toFixed(1)}s
+          {findingsCount} finding{findingsCount === 1 ? "" : "s"}
+          {/* Duration alleen tonen als bekend (verse run / externe-GET).
+              Preload-internal flows hebben geen duration en moeten geen
+              "0.0s" sentinel tonen. */}
+          {typeof data.durationMs === "number" && data.durationMs > 0 && (
+            <> · run took {(data.durationMs / 1000).toFixed(1)}s</>
+          )}
           {data.scorerVersion && (
             <> · scorer <code className="text-xs">{data.scorerVersion}</code></>
           )}

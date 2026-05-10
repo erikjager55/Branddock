@@ -20,7 +20,13 @@ export interface ReviewSubmitResponse {
   compositeScore: number;
   thresholdMet: boolean;
   findingsCount: number;
-  durationMs: number;
+  /**
+   * Optioneel — beschikbaar voor verse mutation-runs en externe-content GET
+   * round-trips. Voor preload-internal flows (Surface E PublishGate deep-link)
+   * is duration niet bekend (de score kan dagen oud zijn). FE-render moet de
+   * regel conditioneel weglaten ipv "0.0s" sentinel tonen.
+   */
+  durationMs?: number;
   scorerVersion: string | null;
 }
 
@@ -99,6 +105,11 @@ export function useSubmitReview() {
  * `enabled: false` totdat een reviewLogId is geleverd na succesvolle mutation.
  * `staleTime: Infinity` — review-logs zijn immutable per ADR-2, dus cache
  * mag eeuwig leven binnen de sessie.
+ *
+ * De runtime throw in queryFn is defense-in-depth: `enabled: false` voorkomt
+ * de initial fetch maar niet een programmatic `refetch()`-call. Zonder de
+ * throw zou een caller per ongeluk null doorzetten naar `fetchReviewFindings`
+ * en pas op de fetch-URL-encoding faalt.
  */
 export function useReviewFindings(reviewLogId: string | null) {
   return useQuery({

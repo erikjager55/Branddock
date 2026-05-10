@@ -7,7 +7,10 @@
 // Assistant analyze-tool, PublishGate internal-findings GET) zodat een
 // toekomstige severity-toevoeging (bijv. CRITICAL) één plek heeft om bij
 // te werken — geen drift over surfaces.
-export const SEVERITY_RANK: Record<string, number> = {
+
+import type { ReviewSeverity } from '@/types/brand-review-finding';
+
+export const SEVERITY_RANK: Record<ReviewSeverity, number> = {
   HIGH: 0,
   MEDIUM: 1,
   LOW: 2,
@@ -16,8 +19,9 @@ export const SEVERITY_RANK: Record<string, number> = {
 /**
  * Helper om een rank op te zoeken met een veilige fallback (99) voor
  * onbekende severity-waarden — voorkomt dat een nieuwe enum-value silent
- * naar 0 sortert in callers die `?? 99` vergeten.
+ * naar 0 sortert in callers die `?? 99` vergeten. Accepteert `string` zodat
+ * runtime-data uit Prisma (waar severity een DB-enum is) zonder cast werkt.
  */
 export function severityRank(severity: string): number {
-  return SEVERITY_RANK[severity] ?? 99;
+  return (SEVERITY_RANK as Record<string, number>)[severity] ?? 99;
 }

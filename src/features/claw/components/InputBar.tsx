@@ -310,6 +310,11 @@ export function InputBar() {
           }
 
           case 'error':
+            // Stream-error mid-run laat eventueel verzamelde tool-results
+            // achter — geen finalized assistant-message wordt aangemaakt
+            // (geen `done` event). Acceptabel: een halve message tonen met
+            // alleen tool-cards zonder afsluitende AI-tekst zou verwarrender
+            // zijn dan helemaal geen message. User kan retry'en.
             console.error('Chat SSE error:', d.message);
             setActivityStatus(null);
             setIsStreaming(false);

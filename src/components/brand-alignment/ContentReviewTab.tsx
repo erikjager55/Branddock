@@ -56,6 +56,11 @@ export function ContentReviewTab() {
 
   const handleSubmit = () => {
     if (!canSubmit || isSubmitting) return;
+    // Clear preload-state vóór submit zodat een fresh review ALTIJD voorrang
+    // krijgt boven een eerder via deep-link geladen review. Zonder deze clear
+    // bleef `externalReviewLogId = preloadReviewLogId ?? submitMutation.data...`
+    // de preload tonen i.p.v. het nieuwe submit-resultaat.
+    clearPreload();
     // Trim ook bij submit — zelfde reden als hierboven.
     const input: ReviewSubmitInput =
       mode === "paste"
@@ -73,6 +78,14 @@ export function ContentReviewTab() {
     clearPreload();
   };
 
+  // Geen cleanup-on-unmount: BrandAlignmentPage rendert dit component
+  // conditioneel via `{activeTab === 'review' && <ContentReviewTab />}`,
+  // dus elke tab-switch (Tab 1↔Tab 3) zou de preload wissen — gebruiker
+  // verliest dan de context wanneer hij even naar Alignment kijkt en
+  // terugkomt. handleSubmit + handleReset dekken de paden waar preload
+  // moet weg; cross-section-nav-en-terug behoudt de preload (volgende
+  // deep-link click overschrijft hem alsnog).
+
   // Render-tree: input → loading → result. Showresult wanneer er
   // pre-loaded data is OF een afgeronde mutation. Collapse input wanneer
   // result tonen is — hergebruiken van scrolling-real-estate.
@@ -88,8 +101,9 @@ export function ContentReviewTab() {
 
   // Bouw een synthetisch ReviewSubmitResponse-shape voor pre-loaded reviews
   // zodat ContentReviewResult dezelfde score-panel kan renderen als bij een
-  // normaal submit-flow. `durationMs` is niet beschikbaar voor pre-loads
-  // (review is mogelijk dagen oud) — we tonen 0 als sentinel.
+  // normaal submit-flow. `durationMs` is niet beschikbaar voor preload-internal
+  // (score kan dagen oud zijn) — we laten het veld `undefined`; ScorePanel
+  // rendert de "run took Xs" regel conditioneel pas vanaf > 0.
   const resolvedSubmitData = preloadReviewLogId && findingsQuery.data
     ? {
         reviewLogId: findingsQuery.data.reviewLogId,
@@ -108,7 +122,9 @@ export function ContentReviewTab() {
           compositeScore: internalFindingsQuery.data.compositeScore,
           thresholdMet: internalFindingsQuery.data.thresholdMet,
           findingsCount: internalFindingsQuery.data.findingsCount,
-          durationMs: 0,
+          // durationMs ontbreekt voor preload-internal — score kan dagen oud
+          // zijn. UI rendert die regel conditioneel pas vanaf > 0.
+          durationMs: undefined,
           scorerVersion: internalFindingsQuery.data.scorerVersion,
         }
       : submitMutation.data;

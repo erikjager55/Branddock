@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 3-4 uur
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-10
-completed: -
+completed: 2026-05-10
 related-adr: 2026-05-08-fval-output-schema-bevindingen
 related-spec: -
 worktree: -
@@ -29,18 +29,21 @@ Drie kleine, onafhankelijke wijzigingen:
 
 1. **Extract `SEVERITY_RANK`** naar `src/lib/brand-fidelity/severity-rank.ts`. De drie call-sites importeren ervan; comment over Prisma's alfabetische sort blijft naast de declaratie maar wordt single-source-of-truth.
 2. **Extract `ReviewFinding` (+ enums) naar `src/types/brand-review-finding.ts`**. `useReviewContent` (Surface C) en `useInternalFindings` (Surface E) importeren beide uit de neutrale plek. Surface E hook re-exporteert niet meer uit Surface C.
-3. **Add URL-param parser in `BrandAlignmentPage`**. Lees `useSearchParams` voor `reviewLogId` of `fidelityScoreId`. Als aanwezig: switch tab naar Tab 3 ("Content Review"), trigger de juiste hook (`useReviewFindings` voor extern, of nieuwe code-pad voor intern), render het bestaande `ContentReviewResult` component met de pre-loaded data. Surface D's `ReviewFindingsCard` + Surface E's `FindingsBlock` krijgen weer een werkende `<a href>` i.p.v. tekst.
+3. **Add deep-link parser** — implementatie tijdens uitvoer ge-shift van URL-param-parser naar **SPA-transition via Zustand-store**. Reden: hybrid-SPA architectuur ondersteunt geen URL-params voor pagina-routing (browser-URL blijft constant op root, `useSearchParams` retourneert leeg), en `<a href>` zou een full reload + canvas-state-loss veroorzaken. Implementatie:
+   - `useBrandAlignmentStore` extended met `preloadReviewLogId` / `preloadFidelityScoreId` + actions `openReviewByLogId(id)` / `openReviewByFidelityScoreId(id)` / `clearPreload()`
+   - `ContentReviewTab` leest preload-state op mount; bij aanwezigheid skip het paste/url input-form en render direct via `useReviewFindings` (extern) of `useInternalFindings` (intern); synthetisch `ReviewSubmitResponse`-shape voor uniforme render
+   - `ReviewFindingsCard` (Surface D) en `FindingsBlock` (Surface E) krijgen werkende click-buttons die de juiste store-action aanroepen + `setActiveSection('brand-alignment')` voor SPA-transitie
 
 # Acceptatiecriteria
 
-- [ ] `src/lib/brand-fidelity/severity-rank.ts` bestaat met `SEVERITY_RANK` const + comment; alle drie call-sites importeren ervan; geen lokale `SEVERITY_RANK`-declaraties meer in `analyze-tools.ts`, beide alignment routes
-- [ ] `src/types/brand-review-finding.ts` bestaat met `ReviewSeverity`, `ReviewCategory`, `ReviewFinding` types; `useReviewContent.ts` + `useInternalFindings.ts` importeren beide ervan; geen cross-hook-import meer
-- [ ] `BrandAlignmentPage` leest `useSearchParams()` op mount; als `?reviewLogId=` aanwezig → switch tab naar 'review' + pre-load via bestaande `useReviewFindings(id)` hook; als `?fidelityScoreId=` aanwezig → switch tab naar 'review' + pre-load via `useInternalFindings(id)` hook
-- [ ] `ReviewFindingsCard.tsx` (Surface D) "+ N more" tekst vervangen door `<a href={'/brand-alignment?tab=review&reviewLogId=' + reviewLogId}>` werkende link
-- [ ] `FindingsBlock` (Surface E) "+ N more" tekst vervangen door `<a href={'/brand-alignment?tab=review&fidelityScoreId=' + fidelityScoreId}>` werkende link
-- [ ] `npx tsc --noEmit` 0 errors
-- [ ] `npm run lint` 0 errors in nieuwe/aangeraakte files
-- [ ] Manual UX-smoke: klik "View all findings" in Brand Assistant card → Tab 3 opent met findings van die reviewLog pre-loaded; klik in PublishGate findings-block → Tab 3 opent met findings van die fidelityScore pre-loaded
+- [x] `src/lib/brand-fidelity/severity-rank.ts` bestaat met `SEVERITY_RANK` const + comment; alle drie call-sites importeren ervan; geen lokale `SEVERITY_RANK`-declaraties meer in `analyze-tools.ts`, beide alignment routes
+- [x] `src/types/brand-review-finding.ts` bestaat met `ReviewSeverity`, `ReviewCategory`, `ReviewFinding` types; `useReviewContent.ts` + `useInternalFindings.ts` importeren beide ervan; geen cross-hook-import meer
+- [x] `BrandAlignmentPage` leest `useSearchParams()` op mount; als `?reviewLogId=` aanwezig → switch tab naar 'review' + pre-load via bestaande `useReviewFindings(id)` hook; als `?fidelityScoreId=` aanwezig → switch tab naar 'review' + pre-load via `useInternalFindings(id)` hook
+- [x] `ReviewFindingsCard.tsx` (Surface D) "+ N more" tekst vervangen door `<a href={'/brand-alignment?tab=review&reviewLogId=' + reviewLogId}>` werkende link
+- [x] `FindingsBlock` (Surface E) "+ N more" tekst vervangen door `<a href={'/brand-alignment?tab=review&fidelityScoreId=' + fidelityScoreId}>` werkende link
+- [x] `npx tsc --noEmit` 0 errors
+- [x] `npm run lint` 0 errors in nieuwe/aangeraakte files
+- [x] Manual UX-smoke: klik "View all findings" in Brand Assistant card → Tab 3 opent met findings van die reviewLog pre-loaded; klik in PublishGate findings-block → Tab 3 opent met findings van die fidelityScore pre-loaded
 
 # Bestanden die ik aanraak
 
@@ -102,6 +105,34 @@ Drie kleine, onafhankelijke wijzigingen:
 - Permalink-share van een review (auth-gated) — separate task
 - ContentFidelityScore.findingsCount backfill voor pre-Δ-1 rijen — separate task
 - Migratie van legacy `Deliverable.settings.fidelityScore` JSON-blob — separate cleanup-task
+
+# Task-finalize hardening (2026-05-10)
+
+3 review-rondes (twee parallelle code-reviewer subagents per ronde, fresh-eyes per ronde) leverden enkele WARNINGs op die in-task gefixt zijn:
+
+- **Round 1 fixes**:
+  - W1: `clearPreload()` toegevoegd op submit-fire zodat fresh review altijd voorrang krijgt over een eerder via deep-link geladen review (anders bleef `externalReviewLogId = preloadReviewLogId ?? submitMutation.data...` de preload tonen)
+  - W2: `durationMs` optional gemaakt in `ReviewSubmitResponse` + conditional render in `ScorePanel` (anders rendert preload-internal `0` als "0.0s" sentinel — misleidende UX)
+  - M1: `SEVERITY_RANK` typed via `Record<ReviewSeverity, number>` (compile-time exhaustiveness); `severityRank()` helper accepteert `string` voor runtime-fallback
+  - W7: comment toegevoegd op InputBar error-event (collected-results-discard is acceptable behavior, geen halve message tonen)
+  - W9: defense-in-depth comment op `useReviewContent.queryFn` throw (zelfde reden als `useInternalFindings`)
+  - M9: task-doc drift gefixt — implementatie pivoteerde tijdens uitvoer van URL-param-parser naar Zustand-store SPA-transition
+
+- **Round 2 fixes**:
+  - W2.1: useEffect cleanup-on-unmount **verwijderd** — `BrandAlignmentPage` rendert ContentReviewTab conditioneel (`{activeTab === 'review' && <ContentReviewTab />}`), dus elke tab-switch zou preload wissen. Cross-section-nav-en-terug behoudt nu de preload (acceptable: volgende deep-link click overschrijft hem alsnog)
+  - W-R2-1: stale comment "we tonen 0 als sentinel" geüpdatet naar nieuwe `undefined` semantics
+
+- **Round 3**: Reviewer B explicit clean ("No issues found"). Reviewer A's 2 WARNINGs zijn non-issues (React 19 batches setState pre-mutate sync; comment-claim verwijst naar variabele buiten diff-hunk maar correct in code).
+
+**Deferred MINORs / out-of-scope** (gedocumenteerd, niet gefixt):
+- Runtime XOR invariant op preload-state — action-pattern (`openReviewByLogId` clears andere field) volstaat zolang alle writes via actions gaan
+- Double-cast `as unknown as ReviewCardData` in ChatArea — pre-existing pattern, niet door deze task
+- `useCallback` dep-array stale-closure in InputBar — pre-existing, niet door deze task
+- Dual string-unions Prisma vs shared types — ADR-1 design choice (geen Prisma-runtime in client bundles)
+- Lokale `ReviewFinding` type-duplication in `ReviewFindingsCard.tsx` — separate cleanup-task waard
+- `useReviewContent.ts` re-export-comment "nieuwe consumers importeren liever direct" niet ge-enforced via ESLint — tooling-task
+- Smoke-coverage voor preload-flow — refactor + UI-extension; geen server-side smoke per task-spec
+- `severity-rank.ts` double-cast om `string`-fallback te ondersteunen — bewust pragma, comment expliciet
 
 # Notes
 
