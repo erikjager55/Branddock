@@ -39,6 +39,8 @@ export const NL_NL_CORPORATE_FLUFF: HeuristicEntry[] = [
   // Vacature-/recruitment-jeukwoorden (Werf& + Schrijfvis)
   { term: 'proactief', citationKey: 'werf_jeukwoorden', severity: 'always-flag' },
   { term: 'innovatief', citationKey: 'werf_jeukwoorden', severity: 'always-flag', annotation: 'Eis bewijs (19% van vacatures — Werf& 2023)' },
+  { term: 'innovatie', citationKey: 'werf_jeukwoorden', severity: 'always-flag', annotation: 'Stam-variant van innovatief; nietszeggend zonder substantiatie' },
+  { term: 'innovaties', citationKey: 'werf_jeukwoorden', severity: 'always-flag', annotation: 'Plural-variant van innovatie' },
   { term: 'dynamisch', citationKey: 'werf_jeukwoorden', severity: 'always-flag' },
   { term: 'resultaatgericht', citationKey: 'werf_jeukwoorden', severity: 'always-flag' },
   { term: 'oplossingsgericht', citationKey: 'werf_jeukwoorden', severity: 'always-flag' },

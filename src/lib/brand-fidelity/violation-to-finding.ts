@@ -8,6 +8,7 @@
 // ============================================================
 
 import { Prisma, BrandReviewSeverity, FindingCategory } from '@prisma/client';
+import type { BrandRuleType } from '@prisma/client';
 import type { RuleViolation } from './rule-compiler';
 
 /**
@@ -40,7 +41,7 @@ export function mapViolationToFindingInput(v: RuleViolation): FindingInput {
   return {
     location,
     severity: mapSeverity(v.severity),
-    category: inferCategory(v.ruleId),
+    category: inferCategory(v.ruleId, v.ruleType),
     description: v.message,
     evidence: { ruleId: v.ruleId, ruleType: v.ruleType, pattern: v.pattern },
   };
@@ -59,28 +60,57 @@ export function mapSeverity(s: RuleViolation['severity']): BrandReviewSeverity {
 }
 
 /**
- * Parse `heuristic:<locale>:<category>:<term>` ruleId-prefix → FindingCategory.
- * Non-heuristic violations (BrandRule rows) → TERMINOLOGY default. Onbekende
- * heuristic-categorieën fallthrough → TERMINOLOGY (consistent met BrandRule
- * fallback) i.p.v. silent BUSINESS-bucketing van future packs.
+ * Bepaal `FindingCategory` per RuleViolation. Twee paden:
+ *
+ *  1. **Heuristic violations** (`ruleId` starts met `heuristic:`): parse
+ *     `heuristic:<locale>:<category>:<term>` prefix; mapping zoals voorheen.
+ *
+ *  2. **BrandRule violations** (DB-rules): gebruik `ruleType` voor
+ *     categorisatie i.p.v. blind TERMINOLOGY-fallback (insights-tab toonde
+ *     anders 100% TERMINOLOGY voor alle BrandRule findings, wat de category-
+ *     spread waardeloos maakt). FORBIDDEN_WORD blijft TERMINOLOGY want
+ *     daar is geen eenduidig pad zonder schema-veld.
+ *
+ * Onbekende heuristic-categorieën fallthrough → TERMINOLOGY (consistent met
+ * BrandRule-fallback) i.p.v. silent BUSINESS-bucketing van future packs.
  */
-export function inferCategory(ruleId: string): FindingCategory {
-  if (!ruleId.startsWith('heuristic:')) {
-    return FindingCategory.TERMINOLOGY;
+export function inferCategory(
+  ruleId: string,
+  ruleType?: BrandRuleType,
+): FindingCategory {
+  // Heuristic-violations: parse de `<category>` segment uit de ruleId.
+  if (ruleId.startsWith('heuristic:')) {
+    const parts = ruleId.split(':');
+    const heuristicCategory = parts[2] ?? '';
+    switch (heuristicCategory) {
+      case 'corporate-fluff':
+        return FindingCategory.VOICE;
+      case 'superlatives':
+      case 'vague-quality':
+      case 'risky-comparatives':
+        return FindingCategory.CLAIMS;
+      case 'fillers':
+        return FindingCategory.STYLE;
+      case 'ai-tells':
+        return FindingCategory.AI_TELL;
+      default:
+        return FindingCategory.TERMINOLOGY;
+    }
   }
-  const parts = ruleId.split(':');
-  const heuristicCategory = parts[2] ?? '';
-  switch (heuristicCategory) {
-    case 'corporate-fluff':
-      return FindingCategory.VOICE;
-    case 'superlatives':
-    case 'vague-quality':
-    case 'risky-comparatives':
-      return FindingCategory.CLAIMS;
-    case 'fillers':
+
+  // BrandRule violations: routeer per ruleType. FORBIDDEN_WORD heeft geen
+  // eenduidige category zonder schema-extension; blijft TERMINOLOGY.
+  switch (ruleType) {
+    case 'REQUIRED_PHRASE':
+      // Verplichte claims/positionering — businessfoundation voor on-brand
+      return FindingCategory.BUSINESS;
+    case 'STYLE_LIMIT':
+      // sentence-length, bullet-counts — pure style-constraints
       return FindingCategory.STYLE;
-    case 'ai-tells':
-      return FindingCategory.AI_TELL;
+    case 'PILLAR_REFERENCE':
+      // Brand-pillar keywords missing — businessfoundation
+      return FindingCategory.BUSINESS;
+    case 'FORBIDDEN_WORD':
     default:
       return FindingCategory.TERMINOLOGY;
   }

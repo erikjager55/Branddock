@@ -29,7 +29,9 @@ export const NL_NL_VAGUE_QUALITY: HeuristicEntry[] = [
   { term: 'wendbaar', citationKey: 'cliche_schatkamer', severity: 'always-flag' },
   { term: 'slagvaardig', citationKey: 'cliche_schatkamer', severity: 'always-flag' },
   { term: 'gepassioneerd', citationKey: 'frankwatching_cliches', severity: 'always-flag' },
+  { term: 'passie', citationKey: 'frankwatching_cliches', severity: 'always-flag', annotation: 'Stam-variant van gepassioneerd; nietszeggend buzzword zonder substantiatie' },
   { term: 'gedreven', citationKey: 'frankwatching_cliches', severity: 'always-flag' },
   { term: 'gecommitteerd', citationKey: 'frankwatching_cliches', severity: 'always-flag' },
   { term: 'klantgericht', citationKey: 'frankwatching_cliches', severity: 'always-flag' },
+  { term: 'kwaliteit', citationKey: 'cliche_schatkamer', severity: 'context-flag', contextFlag: 'requires-substantiation', annotation: 'Vage claim zonder substantiatie (cijfer/concrete spec/garantie); concretiseer via materiaal/proces' },
 ];

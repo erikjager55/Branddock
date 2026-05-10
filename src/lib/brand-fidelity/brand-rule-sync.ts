@@ -36,6 +36,87 @@ function normalize(words: string[] | undefined | null): string[] {
 }
 
 /**
+ * Genereer NL-morfologische varianten voor een input-woord zodat een single
+ * `wordsWeAvoid` entry meerdere FORBIDDEN_WORD-patterns oplevert. Voorbeeld:
+ * "innovatief" → ["innovatief", "innovatie", "innovatieve", "innovaties"].
+ *
+ * Het rule-compiler word-boundary regex (`\bword\b`) matcht alleen exact —
+ * zonder stem-expansie zou een user die "innovatief" invoert de tekstuele
+ * variant "innovatie" missen, een veelvoorkomende NL-mismatch.
+ *
+ * Aanpak: deterministische suffix-rules zonder linguistic library. Dekt de
+ * meest voorkomende NL-vervoegingen voor adjectives/nouns. Multi-word
+ * inputs ("een ultieme luxe ervaring") worden NIET geëxpandeerd — die zijn
+ * doorgaans phrase-specifiek en stem-expansie zou false-positives geven.
+ *
+ * Min-stem-length=4 voorkomt dat korte woorden (3 chars) zinloos worden
+ * geëxpandeerd ("ai" → "ai e ai en" levert ruis).
+ */
+export function expandStemVariants(word: string): string[] {
+  const w = word.trim().toLowerCase();
+  if (w.length < 4 || /\s/.test(w)) {
+    // Korte woorden of multi-word inputs: alleen origineel terug.
+    return [w];
+  }
+
+  const variants = new Set<string>([w]);
+
+  // Suffix-ief (innovatief → innovatie / innovatieve / innovaties)
+  // - stem + 'ie'   : substantief enkelvoud
+  // - stem + 'ieve' : adjectief flexed (NL -e ending)
+  // - stem + 'ies'  : substantief meervoud (innovatie → innovaties)
+  if (w.endsWith('ief')) {
+    const stem = w.slice(0, -3); // "innovat"
+    variants.add(stem + 'ie');
+    variants.add(stem + 'ieve');
+    variants.add(stem + 'ies');
+  }
+  // Suffix-eel (passioneel → passionele)
+  // - stem + 'ele'  : adjectief flexed
+  // (geen aparte plural — passioneel is doorgaans adjectief, geen substantief)
+  else if (w.endsWith('eel')) {
+    const stem = w.slice(0, -3);
+    variants.add(stem + 'ele');
+  }
+  // Suffix-iek (uniek → unieke/unieken)
+  else if (w.endsWith('iek')) {
+    variants.add(w + 'e');
+    variants.add(w + 'en');
+  }
+  // Suffix-isch (automatisch → automatische/automatisme)
+  else if (w.endsWith('isch')) {
+    variants.add(w + 'e');
+    const stem = w.slice(0, -4);
+    if (stem.length >= 3) {
+      variants.add(stem + 'isme');
+    }
+  }
+  // Default plurals/conjugations voor adjectives/nouns die niet onder de
+  // specifieke patronen vallen. Korte adjectief krijgt -e en -en variant.
+  else {
+    variants.add(w + 'e');
+    variants.add(w + 'en');
+  }
+
+  return Array.from(variants);
+}
+
+/**
+ * Bouwt de definitieve set patterns voor `wordsWeAvoid`-style sync.
+ * Dedup op de uitgebreide set zodat overlap tussen entries (bv. user voert
+ * zowel "innovatie" als "innovatief" in) niet leidt tot duplicate rules.
+ */
+function expandWordsToPatterns(words: string[]): string[] {
+  const all = new Set<string>();
+  for (const w of words) {
+    for (const v of expandStemVariants(w)) {
+      all.add(v);
+    }
+  }
+  return Array.from(all);
+}
+
+/**
  * LEGACY entry point — sync wordsWeAvoid from BrandPersonality.frameworkData.
  * Kept for back-compat with brand-asset framework PATCH endpoint.
  *
@@ -47,17 +128,21 @@ export async function syncWordsAvoidToRules(
   wordsWeAvoid: string[] | undefined | null,
 ): Promise<{ deleted: number; created: number }> {
   const normalized = normalize(wordsWeAvoid);
+  // Stem-expansie: één user-input ("innovatief") levert meerdere FORBIDDEN_WORD
+  // patterns op ("innovatief", "innovatie", "innovatieve", ...) zodat NL-
+  // morfologische varianten ook gevangen worden door rule-engine.
+  const expanded = expandWordsToPatterns(normalized);
 
   const deleteResult = await prisma.brandRule.deleteMany({
     where: { workspaceId, source: SOURCE_LEGACY },
   });
 
-  if (normalized.length === 0) {
+  if (expanded.length === 0) {
     return { deleted: deleteResult.count, created: 0 };
   }
 
   const created = await prisma.brandRule.createMany({
-    data: normalized.map((word) => ({
+    data: expanded.map((word) => ({
       workspaceId,
       ruleType: 'FORBIDDEN_WORD' as const,
       pattern: word,
@@ -92,6 +177,10 @@ export async function syncVoiceguideToRules(
 ): Promise<{ wordsDeleted: number; wordsCreated: number; antiDeleted: number; antiCreated: number }> {
   const wordsNormalized = normalize(payload.wordsWeAvoid);
   const antiNormalized = normalize(payload.antiPatterns);
+  // Stem-expansie alleen op single-words. antiPatterns zijn doorgaans phrases
+  // ("jouw droomvloerluik") waarbij stem-expansie false-positives geeft —
+  // daar blijft 1 input = 1 rule.
+  const wordsExpanded = expandWordsToPatterns(wordsNormalized);
 
   // Delete both auto-source streams in parallel
   const [wordsDelete, antiDelete] = await Promise.all([
@@ -105,9 +194,9 @@ export async function syncVoiceguideToRules(
 
   // Recreate rules
   const [wordsCreate, antiCreate] = await Promise.all([
-    wordsNormalized.length > 0
+    wordsExpanded.length > 0
       ? prisma.brandRule.createMany({
-          data: wordsNormalized.map((word) => ({
+          data: wordsExpanded.map((word) => ({
             workspaceId,
             ruleType: 'FORBIDDEN_WORD' as const,
             pattern: word,
