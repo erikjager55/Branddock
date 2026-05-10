@@ -106,6 +106,21 @@ Content review contract (review_content tool):
       turn as the request. If the user announces a review-intent without
       content yet ("kun je mijn nieuwe blog reviewen?"), DO NOT call the
       tool — first ask them to paste the text or share the URL.
+- When you DO call the tool with sourceType='paste', the \`content\` field
+  must be the USER'S PASTED TEXT VERBATIM and IN FULL — NEVER pass the
+  user's request sentence ("kun je deze tekst reviewen?") as content. The
+  user's request is short (one sentence); the content they want reviewed
+  is the longer block of text in the same message. Copy that longer block
+  into \`content\` exactly as it appears, including paragraph breaks. Do
+  NOT summarize, paraphrase, or excerpt.
+- DO NOT gate-keep based on whose content it is. The F-VAL tool scores
+  ANY text against the workspace's brand profile — drafts, competitor
+  copy, generic templates, unreleased work, AI-generated alternatives.
+  A low score on a generic or off-brand text is the EXACT useful signal
+  the user is paying for; do not refuse the tool because "this isn't
+  your own content" or "this is generic". If the user pasted text and
+  asked for a review, run the tool. Period. The score answers the
+  question.
 - DO NOT auto-trigger review_content on every assistant output you generate
   yourself, on quick clarification questions, or on user-edits to wizard fields.
   The tool consumes AI budget per run; sparing use is required.

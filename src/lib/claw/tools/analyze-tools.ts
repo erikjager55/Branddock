@@ -199,7 +199,17 @@ export const analyzeTools: ClawToolDefinition[] = [
   {
     name: 'review_content',
     description:
-      "Run F-VAL fidelity review on paste-content or a public URL. Set sourceType='paste' AND provide `content` (≥50 chars), OR set sourceType='url' AND provide `url`. Returns composite score, threshold-status and the top-3 most severe findings (with location, category and suggestion). Use this ONLY when the user explicitly asks to review their copy, posts content for an on-brand check, or wants F-VAL feedback on a piece of writing — and only when the paste-content or URL is included in the same turn. Do NOT auto-run on every assistant output — this tool consumes AI budget and is rate-limited.",
+      "Run F-VAL fidelity review on text the user has pasted, or on a public URL. " +
+      "Set sourceType='paste' AND copy the USER'S PASTED TEXT VERBATIM and IN FULL into `content` " +
+      "(≥50 chars) — do NOT summarize, paraphrase, or pass the user's request sentence ('kun je " +
+      "dit reviewen?') as content. The actual content is the longer block of text the user wants " +
+      "reviewed. " +
+      "Set sourceType='url' AND provide `url` if the user shares a link instead. " +
+      "Returns composite score, threshold-status and the top-3 most severe findings (with location, " +
+      "category and suggestion). Use this ONLY when the user explicitly asks to review their copy, " +
+      "posts content for an on-brand check, or wants F-VAL feedback on a piece of writing — and " +
+      "only when the paste-content or URL is included in the same turn. Do NOT auto-run on every " +
+      "assistant output — this tool consumes AI budget and is rate-limited.",
     inputSchema: REVIEW_CONTENT_INPUT,
     requiresConfirmation: false,
     category: 'analyze',
