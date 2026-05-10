@@ -457,3 +457,31 @@ Drie cleanup-items uit de Surface D + E finalize-loops als 'separate task' gefla
 - ADR: -
 - Spec: -
 - Commit: `1008918` (initial cleanup-pack) + `4470717` (InputBar tool_result fix) + `bc3b69b` (3-round hardening)
+
+### 247. Brand Alignment Insights tab — pilot-feedback dashboard voor Δ-1 surfaces
+
+Brengt een 4e tab "Insights" naast Alignment / Audit / Content Review met 30d aggregaten over de Δ-1 trifecta — extern (Surface C+D paste/url, gecombineerd) plus intern (Surface E canvas-content). User-visible per workspace, geen org-overview. Geeft data om over 30 dagen pivot-vs-wasted-effort verdict per surface te kunnen geven.
+
+**Geleverd** (initial `c0f274e`, ~790 regels):
+- Nieuwe GET `/api/brand-alignment/insights/route.ts` — workspace-scoped 30d aggregate. Returnt KPI-totalen (reviews, findings, threshold-pass-rate, blocked-published-rate proxy via `Deliverable.publishedAt + thresholdMet=false`), top-5 finding-categories via Prisma `groupBy` met stabiele tie-break `[count desc, category asc]`, 7d day-bucket pass-rate trend voor sparkline, 5 meest recente reviews (extern + intern gemixt op scoredAt). `truncated` response-flag wanneer 5000+ records de runaway-cap raken.
+- `useAlignmentInsights` TanStack hook met `staleTime: 60s`, `gcTime: 5min` expliciet, queryKey gepostfixed met workspaceId voor cross-workspace cache-isolation.
+- `InsightsTab` component met KPI-tiles pattern (cf. `PromptUsageDashboard`), `SparklineChart` 7d trend (hergebruik van business-strategy SparklineChart, nu met `useId()` voor unique gradient-id ipv hardcoded `sparkline-fill`), top-5 categories ranking, recent-reviews lijst met source-pill (Paste / URL / Canvas) + score-color + relative-time. Empty-state placeholder bij 0 reviews; truncated-banner bij >=5000 records met expliciete sampling-methode-uitleg; "Workspace context niet beschikbaar" fallback bij failed useWorkspace.
+- `useBrandAlignmentStore.AlignmentTab` union extend met `'insights'`; `BrandAlignmentPage` 4e tab-button + conditional render.
+
+**Cross-task scope-creep**: SparklineChart hardcoded gradient-id collision was een latente bug die door de nieuwe InsightsTab consumer relevanter werd — `useId()` fix in dezelfde PR (geen API-change, backwards-compatible voor bestaande StrategyProgress consumer).
+
+**Finalize review-loop** — 5 iteraties (skill hard-limit + 1 met user-akkoord) tot 0 CRITICAL en alleen acceptabele truncation-edge-case MINORs over:
+- Round 1: 3 CRITICAL (Tailwind class overlap, workspace-isolation defense gap, SparklineChart gradient-id) + 6 WARNINGs (DEFAULT_COMPOSITE_THRESHOLD import, take cap + N+1 fold, override-rate label rename, role=alert, _count consistent, queryKey workspaceId)
+- Round 2: 0 CRITICAL + 3 WARNINGs (workspace error fallback, gcTime expliciet, truncated flag)
+- Round 3: 0 CRITICAL + 4 WARNINGs (`_count.findings` ipv relation-load tegen memory-spike, stable tie-break, isPending ipv isLoading, mixed-threshold semantics comment)
+- Round 4: 0 CRITICAL + 2 WARNINGs (banner-text trend distortion, no-workspace copy)
+- Round 5 (hard-limit + 1): 0 CRITICAL + 2 WARNINGs gefixt + corner-case truncation behaviour gedocumenteerd
+
+**Quality gates**: tsc 0 errors, lint 0 errors in nieuwe files, manual UX-smoke pass op LINFI workspace (10 reviews, 16 findings, 20% pass-rate, 0% blocked-published — actionable productie-data).
+
+**Out-of-scope** (gedocumenteerd in task-Notes): formatRelative NL drift met dashboard formatLastScan EN, empty-state CTA inert, trend-arrow ignores reviewCount, color-token drift, A11y debt (KPI-tiles geen role/aria-label, sparkline no role=img), tab-state geen URL-sync, denormalized findingsCount legacy-undercount, blockedPublishedRate proxy-overcounting, micro-race already covered.
+
+- Task: [tasks/done/brand-alignment-insights-tab.md](../tasks/done/brand-alignment-insights-tab.md)
+- ADR: -
+- Spec: -
+- Commit: `c0f274e` (initial implementation) + `<finalize-hash>` (5-round hardening)

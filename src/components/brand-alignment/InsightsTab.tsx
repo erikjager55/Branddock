@@ -17,6 +17,7 @@ import {
   type PassRatePoint,
   type RecentReview,
 } from "@/hooks/useAlignmentInsights";
+import { useWorkspace } from "@/hooks/use-workspace";
 import { SparklineChart } from "@/features/business-strategy/components/detail/SparklineChart";
 
 const FINDING_CATEGORY_LABELS: Record<string, string> = {
@@ -46,9 +47,18 @@ const SOURCE_PILL: Record<RecentReview["source"], string> = {
  * recent reviews lijst. 30d window per workspace; geen org-overview.
  */
 export function InsightsTab() {
-  const { data, isLoading, isError, error } = useAlignmentInsights();
+  const { workspaceId, isLoading: wsLoading } = useWorkspace();
+  // `isPending` (TanStack v5) is true zolang er geen data EN geen error is —
+  // dekt zowel "query nog niet gestart (enabled flipte zojuist)" als
+  // "fetch in flight". Voorkomt het flicker-window dat ontstaat bij
+  // `isLoading` alleen, waar isLoading=false even op kan duiken tussen
+  // enabled-flip en queryFn-start.
+  const { data, isPending: queryLoading, isError, error } = useAlignmentInsights();
 
-  if (isLoading) {
+  // Skeleton zolang óf de workspace-resolution óf de insights-query loopt.
+  // Zonder de wsLoading check kon een falende workspace-resolve een eternal
+  // skeleton geven (query blijft `enabled: false`, dus isPending=true).
+  if (wsLoading || (workspaceId && queryLoading)) {
     return (
       <div className="max-w-4xl mx-auto py-12 flex flex-col items-center text-gray-400">
         <Loader2 className="w-6 h-6 animate-spin mb-2" />
@@ -57,17 +67,45 @@ export function InsightsTab() {
     );
   }
 
+  // Workspace-resolve klaar maar geen workspaceId → kan een resolve-fail
+  // zijn (sessie/cookie/network) OF de user heeft geen actieve workspace.
+  // useWorkspace swallowt netwerk-errors naar `null`, dus we kunnen de
+  // twee paden niet onderscheiden — copy benoemt beide opties expliciet
+  // i.p.v. te suggereren dat het een gebruikerskeuze is.
+  if (!workspaceId) {
+    return (
+      <div className="max-w-4xl mx-auto py-12">
+        <div
+          role="alert"
+          className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-start gap-2"
+        >
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div>
+            <div className="font-medium">Workspace context niet beschikbaar</div>
+            <div className="text-xs mt-0.5">
+              Insights worden per workspace berekend, maar er kon geen actieve
+              workspace worden gevonden. Probeer opnieuw in te loggen of
+              switchen naar een andere workspace via de header.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isError) {
     return (
-      <div
-        role="status"
-        className="max-w-4xl mx-auto py-12 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-start gap-2"
-      >
-        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        <div>
-          <div className="font-medium">Could not load insights</div>
-          <div className="text-xs mt-0.5">
-            {error instanceof Error ? error.message : "Unknown error"}
+      <div className="max-w-4xl mx-auto py-12">
+        <div
+          role="alert"
+          className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-start gap-2"
+        >
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div>
+            <div className="font-medium">Could not load insights</div>
+            <div className="text-xs mt-0.5">
+              {error instanceof Error ? error.message : "Unknown error"}
+            </div>
           </div>
         </div>
       </div>
@@ -111,6 +149,27 @@ export function InsightsTab() {
         </div>
       </header>
 
+      {/* Truncated-banner — ge-aggregeerd uit een gedeeltelijke set wanneer
+          5000+ reviews of scores in 30d. Tekst expliciet over de sampling-
+          methode (orderBy createdAt desc + take 5000), inclusief het effect
+          op de 7d sparkline trend (oude dagen kunnen verloren gaan). */}
+      {data.truncated && (
+        <div
+          role="status"
+          className="rounded-md border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800 flex items-start gap-2"
+        >
+          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <div>
+            <span className="font-medium">Gedeeltelijke aggregatie</span> —
+            er zijn meer dan 5000 reviews in 30 dagen; de getoonde
+            percentages zijn berekend over de 5000 meest recente reviews.
+            Oudere records zijn niet meegenomen, dus zowel absolute counts
+            als de 7d-trend kunnen voor minder recente dagen ondergeschat
+            zijn.
+          </div>
+        </div>
+      )}
+
       {/* KPI tiles */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile
@@ -138,21 +197,21 @@ export function InsightsTab() {
         />
         <KpiTile
           icon={ShieldOff}
-          label="PublishGate override-rate"
+          label="Below-threshold gepubliceerd"
           value={
             totals.blockedCount > 0
-              ? `${totals.overrideRate}%`
+              ? `${totals.blockedPublishedRate}%`
               : "—"
           }
           sub={
             totals.blockedCount > 0
-              ? `${totals.blockedCount} below-threshold internal`
-              : "Geen blocked publishes"
+              ? `${totals.blockedCount} below-threshold internal scores`
+              : "Geen below-threshold scores"
           }
           accent={
             totals.blockedCount === 0
               ? "neutral"
-              : totals.overrideRate > 50
+              : totals.blockedPublishedRate > 50
                 ? "warn"
                 : "good"
           }

@@ -15,8 +15,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { DEFAULT_COMPOSITE_THRESHOLD } from '@/lib/brand-fidelity/composition-engine';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const REVIEW_FETCH_CAP = 5000;
 
 interface CategoryCount {
   category: string;
@@ -53,6 +55,10 @@ export async function GET() {
     const since7d = now - 7 * ONE_DAY_MS;
 
     // ── External reviews (Surface C+D) ──
+    // take: 5000 als runaway-guard; bij overschrijding signaleren we via
+    // de `truncated` response-flag (UI toont waarschuwing). `_count.findings`
+    // ipv relation-load voorkomt memory-spike bij outlier-reviews met
+    // duizenden findings — we hebben alleen het aantal nodig, niet de IDs.
     const externalReviews = await prisma.contentReviewLog.findMany({
       where: { workspaceId, createdAt: { gte: since30d } },
       select: {
@@ -60,12 +66,15 @@ export async function GET() {
         sourceType: true,
         compositeScore: true,
         createdAt: true,
-        findings: { select: { id: true } },
+        _count: { select: { findings: true } },
       },
       orderBy: { createdAt: 'desc' },
+      take: REVIEW_FETCH_CAP,
     });
 
     // ── Internal reviews (Surface E) ──
+    // contentVersion.deliverable.publishedAt meeladen zodat we override-rate
+    // in één Prisma-call kunnen berekenen (geen N+1).
     const internalScores = await prisma.contentFidelityScore.findMany({
       where: { workspaceId, scoredAt: { gte: since30d } },
       select: {
@@ -74,31 +83,56 @@ export async function GET() {
         thresholdMet: true,
         findingsCount: true,
         scoredAt: true,
+        contentVersion: {
+          select: {
+            deliverable: { select: { publishedAt: true } },
+          },
+        },
       },
       orderBy: { scoredAt: 'desc' },
+      take: REVIEW_FETCH_CAP,
     });
 
     // ── Findings hot-spot (top categories over 30d, beide bronnen) ──
     // groupBy over BrandReviewFinding workspace-scoped voor 30d. XOR-shape
     // betekent dat dezelfde tabel alle findings van Surface C/D/E bevat.
+    //
+    // NB bij truncation: deze query telt ALLE findings in 30d (geen review-
+    // cap), terwijl `totalFindings` uit de capped reviews-arrays komt.
+    // Dat kan visuele inconsistency geven (category-sum > totalFindings)
+    // wanneer >5000 reviews bestaan. Bewuste keuze: top-categorieën zijn
+    // stabieler bij volledige scan dan bij review-subset; bij truncation
+    // toont de banner de undercount-disclaimer en is dit acceptable.
+    // Tie-break-orderBy [count desc, category asc] geeft een stabiele
+    // ordering tussen requests — anders kunnen categorieën met gelijke
+    // counts willekeurig swappen op de dashboard.
     const categoryGroups = await prisma.brandReviewFinding.groupBy({
       by: ['category'],
       where: { workspaceId, createdAt: { gte: since30d } },
-      _count: { _all: true },
-      orderBy: { _count: { id: 'desc' } },
+      _count: { id: true },
+      orderBy: [
+        { _count: { id: 'desc' } },
+        { category: 'asc' },
+      ],
+      take: 5,
     });
-    const topCategories: CategoryCount[] = categoryGroups
-      .map((g) => ({ category: g.category as string, count: g._count._all }))
-      .slice(0, 5);
+    const topCategories: CategoryCount[] = categoryGroups.map((g) => ({
+      category: g.category,
+      count: g._count.id,
+    }));
 
     // ── KPI berekeningen ──
-    // Threshold-met derivatie: external `ContentReviewLog` heeft geen
-    // `thresholdMet` veld (zie Surface C task-Notes), dus berekenen via
-    // DEFAULT_COMPOSITE_THRESHOLD = 75 (consistent met Surface C GET endpoint).
-    const DEFAULT_THRESHOLD = 75;
+    // Threshold-met-mix: extern (ContentReviewLog) heeft geen `thresholdMet`
+    // veld — we deriveren via DEFAULT_COMPOSITE_THRESHOLD (75). Intern
+    // (ContentFidelityScore) heeft wél persistent `thresholdMet` per-version,
+    // mogelijk berekend met een andere per-content-type drempel uit
+    // fidelity-criteria.ts (varieert 60-75 per type). De overall
+    // `thresholdPassRate` mengt dus twee threshold-systemen — voor pilot-
+    // signaal acceptabel (overall trend > exacte vergelijkbaarheid), bij
+    // dieper onderzoek kunnen extern/intern aparte rates getoond worden.
 
     const externalPassed = externalReviews.filter(
-      (r) => r.compositeScore >= DEFAULT_THRESHOLD,
+      (r) => r.compositeScore >= DEFAULT_COMPOSITE_THRESHOLD,
     ).length;
     const internalPassed = internalScores.filter((s) => s.thresholdMet).length;
     const totalReviews = externalReviews.length + internalScores.length;
@@ -107,31 +141,24 @@ export async function GET() {
       totalReviews > 0 ? Math.round((totalPassed / totalReviews) * 100) : 0;
 
     const totalFindings =
-      externalReviews.reduce((sum, r) => sum + r.findings.length, 0) +
+      externalReviews.reduce((sum, r) => sum + r._count.findings, 0) +
       internalScores.reduce((sum, s) => sum + (s.findingsCount ?? 0), 0);
 
-    // ── Override-rate (Surface E PublishGate) ──
-    // Below-threshold internal scores die "blocked" zijn — we tellen er
-    // hoeveel actually published-via-override zijn. We hebben momenteel geen
-    // direct schema-veld dat override op een score koppelt; we proxieren via
-    // `Deliverable.publishedAt` set + score thresholdMet=false (een blocked
-    // score op een gepubliceerde deliverable IS een override).
+    // ── "Blocked & published" rate (Surface E PublishGate proxy) ──
+    // Telt below-threshold internal scores wier deliverable later (op een
+    // versie die niet per se deze score is) gepubliceerd werd. PROXY: we
+    // hebben geen schema-link tussen de blocked-versie en de published-
+    // versie, dus dit is een approximatie die overtelt wanneer een latere
+    // (passing) versie van dezelfde deliverable gepubliceerd werd. Voor
+    // pilot-signal goed genoeg; KPI-label expliciet "Below-threshold
+    // gepubliceerd" om de proxy-aard te communiceren.
     const blockedInternal = internalScores.filter((s) => !s.thresholdMet);
-    let overrides = 0;
-    if (blockedInternal.length > 0) {
-      // Pak unieke deliverables van de blocked scores via ContentVersion.
-      const scoreIds = blockedInternal.map((s) => s.id);
-      const versionsForBlocked = await prisma.contentFidelityScore.findMany({
-        where: { id: { in: scoreIds } },
-        select: { contentVersion: { select: { deliverable: { select: { publishedAt: true } } } } },
-      });
-      overrides = versionsForBlocked.filter(
-        (v) => v.contentVersion.deliverable.publishedAt !== null,
-      ).length;
-    }
-    const overrideRate =
+    const blockedAndPublished = blockedInternal.filter(
+      (s) => s.contentVersion.deliverable.publishedAt !== null,
+    ).length;
+    const blockedPublishedRate =
       blockedInternal.length > 0
-        ? Math.round((overrides / blockedInternal.length) * 100)
+        ? Math.round((blockedAndPublished / blockedInternal.length) * 100)
         : 0;
 
     // ── 7d threshold-pass-rate trend voor sparkline ──
@@ -156,7 +183,7 @@ export async function GET() {
 
       const dayTotal = externalDay.length + internalDay.length;
       const dayPassed =
-        externalDay.filter((r) => r.compositeScore >= DEFAULT_THRESHOLD).length +
+        externalDay.filter((r) => r.compositeScore >= DEFAULT_COMPOSITE_THRESHOLD).length +
         internalDay.filter((s) => s.thresholdMet).length;
       const dayPassRate = dayTotal > 0 ? Math.round((dayPassed / dayTotal) * 100) : 0;
 
@@ -181,8 +208,8 @@ export async function GET() {
         id: r.id,
         source: r.sourceType === 'url' ? 'url' : 'paste',
         compositeScore: r.compositeScore,
-        thresholdMet: r.compositeScore >= DEFAULT_THRESHOLD,
-        findingsCount: r.findings.length,
+        thresholdMet: r.compositeScore >= DEFAULT_COMPOSITE_THRESHOLD,
+        findingsCount: r._count.findings,
         scoredAt: r.createdAt,
       })),
       ...internalScores.map<RecentRaw>((s) => ({
@@ -211,6 +238,16 @@ export async function GET() {
       externalReviews.filter((r) => r.createdAt.getTime() >= since7d).length +
       internalScores.filter((s) => s.scoredAt.getTime() >= since7d).length;
 
+    // Truncated-flag — wanneer een van de twee fetches de runaway-cap
+    // raakt, zijn KPIs uit een gedeeltelijke set berekend. UI rendert dan
+    // een waarschuwing zodat de pilot-verdict niet stiekem op onderschatte
+    // counts wordt gebaseerd. Pas-gelijk-aan-cap is hier voldoende-signaal:
+    // bij precies REVIEW_FETCH_CAP records is er groot risico dat er meer
+    // bestaan zonder dat we het zien.
+    const truncated =
+      externalReviews.length >= REVIEW_FETCH_CAP ||
+      internalScores.length >= REVIEW_FETCH_CAP;
+
     return NextResponse.json({
       window: '30d',
       generatedAt: new Date().toISOString(),
@@ -221,12 +258,13 @@ export async function GET() {
         reviewsLast7d,
         totalFindings,
         thresholdPassRate,
-        overrideRate,
+        blockedPublishedRate,
         blockedCount: blockedInternal.length,
       },
       topCategories,
       passRateTrend,
       recentReviews,
+      truncated,
     });
   } catch (error) {
     console.error('[GET /api/brand-alignment/insights]', error);
