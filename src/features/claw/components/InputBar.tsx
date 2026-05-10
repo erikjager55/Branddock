@@ -6,7 +6,7 @@ import { useClawStore } from '@/stores/useClawStore';
 import { useFormFillStore } from '@/stores/useFormFillStore';
 import { ContextSelectorModal } from './ContextSelectorModal';
 import { SlashCommandMenu } from './SlashCommandMenu';
-import type { ClawMessage, ClawAttachment } from '@/lib/claw/claw.types';
+import type { ClawMessage, ClawAttachment, ClawToolResult } from '@/lib/claw/claw.types';
 import {
   toolActivityLabel,
   THINKING_LABEL,
@@ -187,6 +187,12 @@ export function InputBar() {
       let buffer = '';
       let fullText = '';
       let convId = activeConversationId;
+      // Accumulate tool_result SSE events tijdens streaming zodat de
+      // afgeronde assistant-message ook de tool-output bevat. Zonder dit
+      // valt clientAction-gebaseerde rendering (bv. ReviewFindingsCard
+      // voor Surface D) silently terug op een lege array — text-only
+      // output zonder structured card.
+      const collectedToolResults: ClawToolResult[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -265,11 +271,24 @@ export function InputBar() {
             break;
           }
 
-          case 'tool_result':
+          case 'tool_result': {
             // Tool finished — either another tool follows or Claude writes a reply.
             // Briefly indicate processing so there's no "dead" gap.
             setActivityStatus(PROCESSING_RESULTS_LABEL);
+            // Verzamel het result-object zodat de afgeronde assistant-message
+            // de tool-output bevat (en ChatArea de juiste card kan dispatchen).
+            const toolCallId = (d.toolCallId as string) ?? '';
+            const toolName = (d.toolName as string) ?? '';
+            if (toolCallId && toolName) {
+              collectedToolResults.push({
+                toolCallId,
+                toolName,
+                result: d.result,
+                isError: (d.isError as boolean | undefined) ?? false,
+              });
+            }
             break;
+          }
 
           case 'mutation_proposal':
             setActivityStatus(null);
@@ -282,6 +301,9 @@ export function InputBar() {
               role: 'assistant',
               content: fullText,
               createdAt: new Date().toISOString(),
+              toolResults: collectedToolResults.length > 0
+                ? [...collectedToolResults]
+                : undefined,
             };
             finalizeStreaming(assistantMessage);
             break;
