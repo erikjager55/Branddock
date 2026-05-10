@@ -524,4 +524,4 @@ Drie incrementele wijzigingen op de F-VAL rules-pijler na visual-smoke ontdekkin
 - Task: [tasks/done/fval-rules-pillar-audit.md](../tasks/done/fval-rules-pillar-audit.md)
 - ADR: -
 - Spec: -
-- Commit: `accd88c` (initial implementation) + `<finalize-hash>` (4-round hardening)
+- Commit: `accd88c` (initial implementation) + `82eca9c` (4-round hardening)
