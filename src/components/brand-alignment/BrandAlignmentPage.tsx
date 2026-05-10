@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   ClipboardCheck,
   FileSearch,
+  BarChart3,
 } from 'lucide-react';
 import {
   EmptyState,
@@ -43,6 +44,7 @@ import { BrandAuditView } from './BrandAuditView';
 // en zou met code-split de Alignment/Audit tab-bundle 10-20KB lichter
 // maken. Niet kritisch, defer tot bundle-trim pass.
 import { ContentReviewTab } from './ContentReviewTab';
+import { InsightsTab } from './InsightsTab';
 import { VoiceBaseline1Pager } from '@/features/brand-alignment/components/VoiceBaseline1Pager';
 
 // ─── Relative time helper ───────────────────────────────────
@@ -213,6 +215,7 @@ export function BrandAlignmentPage() {
           { key: 'alignment' as AlignmentTab, label: 'Brand Alignment', icon: ShieldCheck },
           { key: 'audit' as AlignmentTab, label: 'Brand Audit', icon: ClipboardCheck },
           { key: 'review' as AlignmentTab, label: 'Content Review', icon: FileSearch },
+          { key: 'insights' as AlignmentTab, label: 'Insights', icon: BarChart3 },
         ]).map((tab) => {
           const isActive = activeTab === tab.key;
           const TabIcon = tab.icon;
@@ -292,6 +295,11 @@ export function BrandAlignmentPage() {
       {/* ── Content Review tab (Δ-1 Surface C) ───────────── */}
       {activeTab === 'review' && (
         <ContentReviewTab />
+      )}
+
+      {/* ── Insights tab — pilot-feedback dashboard ──────── */}
+      {activeTab === 'insights' && (
+        <InsightsTab />
       )}
 
       {/* ── Scan Progress Modal ──────────────────────────── */}

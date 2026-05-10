@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { IssueSeverity, IssueStatus } from "@/types/brand-alignment";
 
-export type AlignmentTab = "alignment" | "audit" | "review";
+export type AlignmentTab = "alignment" | "audit" | "review" | "insights";
 
 interface BrandAlignmentStore {
   // Tab state
