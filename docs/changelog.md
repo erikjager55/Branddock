@@ -560,4 +560,4 @@ F-VAL rules-audit van vandaag onthulde dat 5 van 15 workspaces (incl. LINFI) ver
 - Task: [tasks/done/brand-language-auto-detect.md](../tasks/done/brand-language-auto-detect.md)
 - ADR: [adr/2026-05-10-brand-language-auto-detect.md](adr/2026-05-10-brand-language-auto-detect.md)
 - Spec: -
-- Commit: `e5d2818` (initial implementation) + `<finalize-hash>` (4-round hardening)
+- Commit: `e5d2818` (initial implementation) + `021f262` (4-round hardening)
