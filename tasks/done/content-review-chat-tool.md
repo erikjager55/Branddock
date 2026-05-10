@@ -34,7 +34,7 @@ Eén nieuwe `analyze`-tool `review_content` in `claw-tools/analyze-tools.ts` die
 - [x] `npx tsc --noEmit` 0 errors
 - [x] `npm run lint` 0 errors in nieuwe files
 - [x] Smoke-test `scripts/smoke-tests/claw-review-tool.ts` — 11/11 pass
-- [ ] Manual chat-smoke (5 prompts in Brand Assistant) — user-action, niet door agent uit te voeren
+- [x] Manual chat-smoke (6 prompts in Brand Assistant) — uitgevoerd door user 2026-05-10 op LINFI workspace; alle 6 paden gevalideerd (zie post-finalize live-test sectie)
 
 # Bestanden die ik aanraak
 
@@ -119,6 +119,32 @@ Eén nieuwe `analyze`-tool `review_content` in `claw-tools/analyze-tools.ts` die
 - ReviewErrorCard differentieert (nog) niet tussen `ingest_failed` vs `invalid_input` copy
 - SSRF redirect-chain coverage gap in smoke-test (engine-level concern, niet tool-level)
 - Smoke-test pollution via persisted reviewLogs (audit-log retention 90 dagen via cron — bekend)
+
+# Post-finalize live-test (2026-05-10 op LINFI workspace)
+
+Manual chat-smoke onthulde 3 productie-issues die buiten de 5-round
+finalize-loop zijn gefixt:
+
+1. **Schema-conversie bug** (`e20d238`) — Anthropic rejecteerde tools-payload met `tools.40.custom.input_schema.type: Input should be 'object'`. Onze minimal `zodToJsonSchema` converter (`src/lib/claw/tools/registry.ts`) heeft geen handler voor `discriminatedUnion` → viel door naar string-fallback. Schema vervangen door flat `z.object` met optional content/url + cross-field check in execute.
+
+2. **Verbatim-paste extractie** (`91a4d8d`) — model passte de gebruikers-verzoek-zin (~32 chars) als `content` ipv de geplakte tekst eronder. Tool-description aangescherpt: "copy the USER'S PASTED TEXT VERBATIM and IN FULL"; system-prompt restate.
+
+3. **Content-quality gatekeeping** (`91a4d8d` soft + `1c6e856` hard) — model weigerde tool aan te roepen op generieke fluff omdat "deze tekst lijkt niet over jullie merk te gaan". F-VAL is juist bedoeld om elke tekst tegen brand-profiel te scoren — een lage score op generieke copy is het signaal. Eerst soft anti-gatekeep regel; toen model bleef weigeren, vervangen door directieve prompt met concrete voorbeelden + lijst van 5 verboden NL-zinnen ("of moet je nog de eigenlijke tekst delen", "lijkt niet over [brand] te gaan", etc.) + CORRECT/WRONG voorbeeld-paragraaf.
+
+**6 manual smoke-tests gevalideerd**:
+
+| # | Path | Resultaat |
+|---|------|-----------|
+| 1 | Paste fluff-NL (~350 chars) | 63/100, top-findings cliché-VOICE + buzzwords |
+| 2 | Review-intent zonder paste | Tool niet fires, vraagt om paste/URL |
+| 3 | Brand-vraag zonder review | BrandVoiceguide context, geen tool-call |
+| 4 | Te korte paste (<50 chars) | Model self-route naar `analyze_brand_completeness` (Zod-pad latent verified, model semantic-gating intercepts eerst) |
+| 5 | URL linfi.nl homepage | 70/100, "luxe" anti-pattern overtreding gedetecteerd — productie-actionable |
+| 6 | Private IP 169.254.169.254 | Model-laag refusal (cloud IMDS recognized), tool-laag SSRF dekkend via server-smoke |
+
+**Layered defense bevestigd**: model self-routes via semantische intent-detectie BEFORE Zod min(50) of SSRF-engine getriggerd worden. Defense-in-depth guards aanwezig maar zelden bereikt — productie-flow is robuuster dan verwacht.
+
+**Bonus productie-insight**: LINFI's eigen homepage scoort 70/100 door "luxe" 3x te gebruiken (staat in voice-guide anti-pattern lijst). Direct actionable copy-fix voor user.
 
 # Notes
 
