@@ -456,4 +456,4 @@ Drie cleanup-items uit de Surface D + E finalize-loops als 'separate task' gefla
 - Task: [tasks/done/delta-1-cleanup-pack.md](../tasks/done/delta-1-cleanup-pack.md)
 - ADR: -
 - Spec: -
-- Commit: `1008918` (initial cleanup-pack) + `4470717` (InputBar tool_result fix) + `<finalize-hash>` (3-round hardening)
+- Commit: `1008918` (initial cleanup-pack) + `4470717` (InputBar tool_result fix) + `bc3b69b` (3-round hardening)
