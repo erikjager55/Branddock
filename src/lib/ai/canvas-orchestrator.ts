@@ -28,6 +28,7 @@ import { getContentTypeInputs } from '@/features/campaigns/lib/content-type-inpu
 import { buildBrandVoiceDirectiveFromContext } from '@/lib/studio/brand-voice-directive';
 import { buildHumanVoiceDirective } from '@/lib/studio/human-voice-directive';
 import { resolveHumanVoiceMode } from '@/lib/brand-fidelity/fidelity-config';
+import { logBrandLanguageMismatchIfAny } from '@/lib/i18n/detect-brand-language';
 import { detectAiTells } from '@/lib/brand-fidelity/ai-tell-detector';
 import { generateCreativeAngles, formatAngleInstruction, type CreativeAngle } from './canvas-angle-generator';
 import {
@@ -144,6 +145,11 @@ export async function* orchestrateContentGeneration(
   const hasImageComponent = componentTemplate.some(
     (t) => t.type === 'image' || t.type === 'hero-image',
   );
+
+  // Fire-and-forget mismatch-detection — logt warn wanneer de configured
+  // workspace.contentLanguage afwijkt van detected language uit brand-content.
+  // 5-min cache in helper voorkomt log-spam; geen auto-override.
+  logBrandLanguageMismatchIfAny(workspaceId, stack.brand.contentLanguage);
 
   // ── Build brand voice directive (BVD) + Human Voice Directive (HVD) ─
   const bvd = buildBrandVoiceDirectiveFromContext(stack.brand, {
