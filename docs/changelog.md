@@ -431,4 +431,4 @@ Sluit de Δ-1 trifecta: Surface C (Tab 3 paste/url review-UI) en Surface D (Bran
 - Task: [tasks/done/publishgate-findings-block.md](../tasks/done/publishgate-findings-block.md)
 - ADR: [adr/2026-05-08-fval-output-schema-bevindingen.md](adr/2026-05-08-fval-output-schema-bevindingen.md)
 - Spec: -
-- Commit: `0b27fe0` (initial implementation) + `<finalize-hash>` (5-round hardening)
+- Commit: `0b27fe0` (initial implementation) + `9a86e6f` (5-round hardening)
