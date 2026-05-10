@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { CheckCircle2, AlertTriangle, ShieldOff, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ShieldOff, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/shared';
 import {
   useContentReadiness,
@@ -9,6 +9,10 @@ import {
 } from '../../hooks/content-readiness.hooks';
 import type { ContentReadiness } from '../../api/content-readiness.api';
 import { trackBrowserEvent } from '@/lib/analytics/posthog-browser';
+import {
+  useInternalFindings,
+  type InternalFindingsResponse,
+} from '@/hooks/useInternalFindings';
 
 interface PublishGateProps {
   deliverableId: string;
@@ -76,41 +80,50 @@ export function PublishGate({
 
   return (
     <>
-      <div className="flex items-center gap-3">
-        <ReadinessBadge readiness={data} />
-        {blocked ? (
-          <div className="flex items-center gap-2">
-            <Button variant="primary" size="sm" disabled title={blockedTooltip(data)}>
-              Publiceer
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <ReadinessBadge readiness={data} />
+          {blocked ? (
+            <div className="flex items-center gap-2">
+              <Button variant="primary" size="sm" disabled title={blockedTooltip(data)}>
+                Publiceer
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  void trackBrowserEvent('content_qa_override_modal_opened', {
+                    deliverable_id: deliverableId,
+                    composite_score: data.latestScore?.compositeScore,
+                    threshold: data.latestScore?.threshold,
+                  });
+                  setShowOverrideModal(true);
+                }}
+              >
+                Override…
+              </Button>
+            </div>
+          ) : (
+            <Button variant="primary" size="sm" onClick={onPublish} disabled={isPublishing}>
+              {isPublishing ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  Publiceren…
+                </>
+              ) : noScoreYet ? (
+                'Publiceer zonder score'
+              ) : (
+                'Publiceer'
+              )}
             </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                void trackBrowserEvent('content_qa_override_modal_opened', {
-                  deliverable_id: deliverableId,
-                  composite_score: data.latestScore?.compositeScore,
-                  threshold: data.latestScore?.threshold,
-                });
-                setShowOverrideModal(true);
-              }}
-            >
-              Override…
-            </Button>
-          </div>
-        ) : (
-          <Button variant="primary" size="sm" onClick={onPublish} disabled={isPublishing}>
-            {isPublishing ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                Publiceren…
-              </>
-            ) : noScoreYet ? (
-              'Publiceer zonder score'
-            ) : (
-              'Publiceer'
-            )}
-          </Button>
+          )}
+        </div>
+
+        {/* Δ-1 Surface E findings-block — alleen bij below-threshold + beschikbare
+            fidelity-score-id. Toont concrete issues zodat user gemotiveerd is om
+            te fixen ipv direct overriden. */}
+        {blocked && data.latestScore?.id && (
+          <FindingsBlock fidelityScoreId={data.latestScore.id} />
         )}
       </div>
 
@@ -137,6 +150,125 @@ export function PublishGate({
         />
       )}
     </>
+  );
+}
+
+/**
+ * Δ-1 Surface E findings-block — toont top-3 HIGH-severity findings boven
+ * de override-button zodat user concrete issues ziet vóór de keuze om te
+ * overriden of fixen. Graceful op alle data-states (loading / error / empty
+ * findings / score zonder findings — auto-trigger persist is async dus
+ * findings kunnen even na de score landen).
+ */
+const SEVERITY_PILL: Record<string, string> = {
+  HIGH: 'bg-red-100 text-red-800 border-red-200',
+  MEDIUM: 'bg-amber-100 text-amber-800 border-amber-200',
+  LOW: 'bg-gray-100 text-gray-700 border-gray-200',
+};
+
+const FINDING_CATEGORY_LABEL: Record<string, string> = {
+  VOICE: 'Voice',
+  TERMINOLOGY: 'Terminology',
+  CLAIMS: 'Claims',
+  STYLE: 'Style',
+  BUSINESS: 'Business',
+  AI_TELL: 'AI tell',
+};
+
+const TOP_FINDINGS_LIMIT = 3;
+
+function FindingsBlock({ fidelityScoreId }: { fidelityScoreId: string }) {
+  const { data, isLoading, isError } = useInternalFindings(fidelityScoreId);
+  const [expanded, setExpanded] = useState(true);
+
+  // Loading-state — score is er, findings nog niet gepersist of in flight.
+  if (isLoading) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500 inline-flex items-center gap-2">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Findings laden…
+      </div>
+    );
+  }
+
+  // Error of ontbrekende findings — async persist kan gefaald zijn (graceful
+  // degradatie per fidelity-runner.ts comment). Geen findings-block tonen,
+  // de ReadinessBadge + override-flow blijft volledig functioneel.
+  if (isError || !data || data.findingsCount === 0) {
+    return null;
+  }
+
+  return <FindingsBlockContent data={data} expanded={expanded} setExpanded={setExpanded} />;
+}
+
+function FindingsBlockContent({
+  data,
+  expanded,
+  setExpanded,
+}: {
+  data: InternalFindingsResponse;
+  expanded: boolean;
+  setExpanded: (v: boolean) => void;
+}) {
+  const top = data.findings.slice(0, TOP_FINDINGS_LIMIT);
+  const remaining = data.findingsCount - top.length;
+
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50/50 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-medium text-amber-900 hover:bg-amber-100/50"
+        aria-expanded={expanded}
+      >
+        {expanded ? (
+          <ChevronDown className="h-3.5 w-3.5" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5" />
+        )}
+        <AlertTriangle className="h-3.5 w-3.5" />
+        <span>
+          {data.findingsCount} finding{data.findingsCount === 1 ? '' : 's'} — fix
+          deze om de score te verhogen
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="px-3 pb-3 pt-1 space-y-2 border-t border-amber-200/70">
+          <div className="text-[10px] uppercase tracking-wide text-amber-700/70 font-medium">
+            Top {top.length} van {data.findingsCount}
+          </div>
+          {top.map((f) => (
+            <div key={f.id} className="flex gap-2 items-start text-xs">
+              <span
+                className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${SEVERITY_PILL[f.severity] ?? SEVERITY_PILL.LOW}`}
+              >
+                {f.severity}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="text-gray-800 break-words">
+                  <span className="text-gray-500">
+                    {FINDING_CATEGORY_LABEL[f.category] ?? f.category}:
+                  </span>{' '}
+                  {f.description}
+                </div>
+                {f.suggestion && (
+                  <div className="text-emerald-700 mt-0.5 break-words">
+                    → {f.suggestion}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          {remaining > 0 && (
+            <div className="text-[11px] text-amber-700/80 pt-1 border-t border-amber-200/70">
+              + {remaining} more — bekijk alles in{' '}
+              <strong>Brand Alignment → Content Review</strong>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

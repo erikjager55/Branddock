@@ -26,8 +26,10 @@ import {
   formatVoiceBaseline1Pager,
 } from './voice-baseline-1pager';
 import { runStrictModeRewrite, type StrictModeResult } from './strict-mode';
+import { mapViolationToFindingInput } from './violation-to-finding';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
+import { Prisma } from '@prisma/client';
 import type { GeneratorProvider } from './judge-dispatcher';
 import type { GEvalDimension } from './g-eval-rubric';
 import type { HumanVoiceMode } from '@prisma/client';
@@ -308,6 +310,13 @@ async function persistContentFidelityScoreIfPossible(
       pillar: 'rules',
     }));
 
+    // Δ-1 Surface E: persist BrandReviewFinding rows alongside the score so
+    // PublishGate (en mogelijk andere internal-content surfaces) dezelfde
+    // structured-finding shape kan tonen die external Surface C/D al gebruikt.
+    // Nested-create binnen één Prisma-call: 1 round-trip ipv 2.
+    const findings = result.pillars.rules.result.rules.violations.map(
+      mapViolationToFindingInput,
+    );
     await prisma.contentFidelityScore.create({
       data: {
         workspaceId,
@@ -319,10 +328,25 @@ async function persistContentFidelityScoreIfPossible(
         ruleViolations: ruleViolationsJson,
         thresholdMet: result.thresholdMet,
         scorerVersion: result.scorerVersion,
+        findings: {
+          create: findings.map((f) => ({
+            workspaceId,
+            location: f.location,
+            severity: f.severity,
+            category: f.category,
+            description: f.description,
+            suggestion: f.suggestion ?? null,
+            beforeText: null,
+            afterText: null,
+            evidence: f.evidence ?? Prisma.JsonNull,
+          })),
+        },
       },
     });
   } catch (err) {
     // Non-fatal — Deliverable.settings.fidelityScore blijft de fallback.
+    // Findings-write failure leidt tot empty findings-block in PublishGate
+    // (graceful degradatie); score zelf is nog wel beschikbaar.
     console.warn('[fidelity-runner] ContentFidelityScore dual-write failed:', (err as Error).message);
   }
 }
