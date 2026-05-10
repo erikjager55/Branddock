@@ -48,19 +48,31 @@ console.log('\n=== 2. Suffix -eel (passioneel) ===\n');
 console.log('\n=== 3. Suffix -iek (uniek) ===\n');
 {
   const out = expandStemVariants('uniek');
-  expectIncludes('uniek', out, ['uniek', 'unieke', 'unieken']);
+  expectIncludes('uniek', out, ['uniek', 'unieke']);
+  assert(
+    'uniek: geen onnatuurlijke -en plural ("unieken" is geen NL-noun)',
+    !out.includes('unieken'),
+  );
 }
 
 console.log('\n=== 4. Suffix -isch (automatisch) ===\n');
 {
   const out = expandStemVariants('automatisch');
-  expectIncludes('automatisch', out, ['automatisch', 'automatische', 'automatisme']);
+  expectIncludes('automatisch', out, ['automatisch', 'automatische']);
+  assert(
+    'automatisch: geen -isme transformatie (te risk-prone — "logisme" zou ook geproduceerd worden)',
+    !out.includes('automatisme'),
+  );
 }
 
-console.log('\n=== 5. Default plurals (kwaliteit) ===\n');
+console.log('\n=== 5. Default plural — non-e ending (kwaliteit) ===\n');
 {
   const out = expandStemVariants('kwaliteit');
-  expectIncludes('kwaliteit', out, ['kwaliteit', 'kwaliteite', 'kwaliteiten']);
+  expectIncludes('kwaliteit', out, ['kwaliteit', 'kwaliteiten']);
+  assert(
+    'kwaliteit: geen onnatuurlijke "kwaliteite" variant',
+    !out.includes('kwaliteite'),
+  );
 }
 
 console.log('\n=== 6. Multi-word input (een ultieme luxe ervaring) ===\n');
@@ -93,16 +105,28 @@ console.log('\n=== 8. Whitespace + casing (  Innovatief  ) ===\n');
   );
 }
 
-console.log('\n=== 9. Empty + special chars ===\n');
+console.log('\n=== 9. Empty input ===\n');
 {
   const out = expandStemVariants('');
-  assert('empty input: returns array met empty string', out.length === 1 && out[0] === '');
+  // Defensieve guard: empty pattern als BrandRule zou een empty regex
+  // compileren die overal matcht. Helper retourneert nu lege array.
+  assert('empty input: returns []', out.length === 0);
 }
 
-console.log('\n=== 10. Default-pad: niet-suffix-matching woord (luxe) ===\n');
+console.log('\n=== 10. Default-pad — e-ending (luxe) ===\n');
 {
   const out = expandStemVariants('luxe');
-  expectIncludes('luxe', out, ['luxe', 'luxee', 'luxeen']);
+  // Voor woorden eindigend op -e: alleen + s (luxes), geen + e of + en
+  // (zou onnatuurlijke "luxee"/"luxeen" produceren).
+  expectIncludes('luxe', out, ['luxe', 'luxes']);
+  assert(
+    'luxe: geen "luxee" variant',
+    !out.includes('luxee'),
+  );
+  assert(
+    'luxe: geen "luxeen" variant',
+    !out.includes('luxeen'),
+  );
 }
 
 console.log('\n=== 11. Dedup binnen output ===\n');

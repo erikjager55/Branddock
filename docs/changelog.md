@@ -485,3 +485,43 @@ Brengt een 4e tab "Insights" naast Alignment / Audit / Content Review met 30d ag
 - ADR: -
 - Spec: -
 - Commit: `c0f274e` (initial implementation) + `64f7f95` (5-round hardening)
+
+### 248. F-VAL rules-pijler audit — mapper categories + NL-NL packs + stem-variants
+
+Drie incrementele wijzigingen op de F-VAL rules-pijler na visual-smoke ontdekking dat fluff-NL-tekst met "passie/kwaliteit/innovatie" 0 findings opleverde voor LINFI. Insights tab toonde 16/16 findings allemaal in TERMINOLOGY-categorie (mapper-quirk). Resultaat: rijkere category-spread + meer signal-coverage voor alle drie Δ-1 surfaces.
+
+**Geleverd** (initial `accd88c`, ~415 regels):
+
+- `inferCategory` in `violation-to-finding.ts` extended met `ruleType?: BrandRuleType` parameter. BrandRule violations routen nu via `v.ruleType`: REQUIRED_PHRASE → `BUSINESS`, STYLE_LIMIT → `STYLE`, PILLAR_REFERENCE → `BUSINESS`, FORBIDDEN_WORD blijft `TERMINOLOGY` (geen eenduidig pad zonder schema-extension). Insights tab krijgt category-spread i.p.v. 100% TERMINOLOGY voor alle BrandRule findings.
+
+- NL-NL heuristic-pack uitbreiding: `vague-quality.ts` krijgt "passie" (always-flag) en "kwaliteit" (context-flag, requires-substantiation). `corporate-fluff.ts` krijgt "innovatie" en "innovaties" als stem-varianten van "innovatief". Vangt veelvoorkomende NL-cliché-buzzwords die voorheen door beide pillars heen vielen.
+
+- `expandStemVariants(word)` helper in `brand-rule-sync.ts` — pure-functie, deterministische NL suffix-rules zonder linguistic library. `wordsWeAvoid` entries krijgen automatisch flexed/plural varianten als FORBIDDEN_WORD BrandRules. Beide sync-functies (`syncWordsAvoidToRules` legacy + `syncVoiceguideToRules`) gebruiken het. AntiPatterns blijven 1-op-1 (phrases). LINFI verified: 14 input wordsWeAvoid → 44 BrandRules; "innovatief" matcht nu ook "innovatie" in tekst → 1 FORBIDDEN_WORD violation (was 0).
+
+**Suffix-rules (precision boven recall — false-positives in user-facing patterns/messages zijn schadelijker dan gemiste plurals)**:
+- `-ief` (innovatief → innovatie/innovatieve/innovaties)
+- `-eel` (passioneel → passionele) — geen plural (-en) want non-NL-noun risk
+- `-iek` (uniek → unieke) — geen `+ en` want "unieken" geen NL-noun
+- `-isch` (automatisch → automatische) — geen `-isme` want "logisme/basisme" non-words
+- Default: `endsWith('e')` → `+ s` (luxe → luxes); else → `+ en` (kwaliteit → kwaliteiten)
+
+**Gemist (deliberate trade-off, gedocumenteerd in helper-JSDoc)**: `materieel → materialen`, `techniek → technieken`, `fabriek → fabrieken`, `automatisch → automatisme`. User moet zulke plural-vormen handmatig in wordsWeAvoid invoeren als die actively unwanted zijn.
+
+**Smoke-test** `heuristic-stem-variants.ts` 25/25 pass: 5 suffix-rules + edge cases (multi-word skip, korte input, empty=`[]`, whitespace, dedup).
+
+**Finalize review-loop** — 4 iteraties tot Reviewer A clean (Reviewer B's WARNINGs blijven doc-clarity-claims op already-verified behavior):
+- Round 1: 2 CRITICAL (`-isch + 'isme'` non-words; default-pad "luxee/kwaliteite") + 5 WARNINGs
+- Round 2: 0 CRITICAL + 3 trade-off-WARNINGs gefixt naar conservatief
+- Round 3: 5 WARNINGs over gemiste legitime plurals → resolved via uitgebreide JSDoc trade-off-block
+- Round 4: Reviewer A clean ✓
+
+**Quality gates**: tsc 0 errors, lint 0 errors, smoke 25/25 pass.
+
+**LINFI productie-side-effect bevestigd**: na resync 14 → 44 wordsWeAvoid BrandRules. Heuristics blijven echter 0 violations: LINFI's `Workspace.contentLanguage='en'` → EN-GB pack i.p.v. NL-NL. **Separate user-action vereist** in workspace settings om naar 'nl' te switchen voor NL-NL heuristic-pack activatie.
+
+**Out-of-scope** (gedocumenteerd in task-Notes): locale-guard op helper (NL-only morfologie), dubbele findings risk heuristic+BrandRule, BrandRule.category schema-field voor eenduidige FORBIDDEN_WORD-categorisatie, multi-locale heuristic-pack expansion (en-GB / nl-BE / de-DE), lemmatizer-library voor preciezere morfologie, deploy-time backfill-cron voor bestaande workspaces.
+
+- Task: [tasks/done/fval-rules-pillar-audit.md](../tasks/done/fval-rules-pillar-audit.md)
+- ADR: -
+- Spec: -
+- Commit: `accd88c` (initial implementation) + `<finalize-hash>` (4-round hardening)

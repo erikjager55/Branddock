@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 1 dag
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-10
-completed: -
+completed: 2026-05-10
 related-adr: 2026-05-08-fval-output-schema-bevindingen
 related-spec: -
 worktree: -
@@ -54,15 +54,15 @@ Drie incrementele wijzigingen, elk onafhankelijk testbaar:
 
 # Acceptatiecriteria
 
-- [ ] `inferCategory` in `violation-to-finding.ts` checkt `v.ruleType` als prefix niet `heuristic:`; mapping zoals beschreven; geschiedenis-comment uitgebreid
-- [ ] NL-NL heuristic-pack: "passie" + "kwaliteit" als entries in `vague-quality.ts`; "innovatie" + "innovaties" in `corporate-fluff.ts`
-- [ ] `expandStemVariants(word)` helper in `brand-rule-sync.ts` met deterministische suffix-rules (≥5 NL-suffix-patronen); pure-functie, side-effect-free
-- [ ] `syncVoiceguideToRules` + `syncWordsAvoidToRules` gebruiken `expandStemVariants` → 1 word levert N rules in DB
-- [ ] Re-sync LINFI's BrandVoiceguide.wordsWeAvoid via API + verifieer dat "innovatief" → ≥3 BrandRules ("innovatief", "innovatie", "innovatieve")
-- [ ] Audit-script `scripts/_audit-rules-pillar.ts` re-run op LINFI fluff-tekst → ≥3 violations voor "innovatie", "innovaties" + "passie", "kwaliteit" via heuristic-pack
-- [ ] `npx tsc --noEmit` 0 errors, `npm run lint` 0 errors in nieuwe/aangeraakte files
-- [ ] Smoke-test `scripts/smoke-tests/heuristic-stem-variants.ts` (nieuw) — verifieer expandStemVariants output voor 10+ NL-input-words
-- [ ] Manual UX-smoke: paste fluff-tekst in Brand Assistant → krijg ReviewFindingsCard met findings (>0); Insights tab toont meer category-spread (niet meer 100% TERMINOLOGY)
+- [x] `inferCategory` in `violation-to-finding.ts` checkt `v.ruleType` als prefix niet `heuristic:`; mapping zoals beschreven; geschiedenis-comment uitgebreid
+- [x] NL-NL heuristic-pack: "passie" + "kwaliteit" als entries in `vague-quality.ts`; "innovatie" + "innovaties" in `corporate-fluff.ts`
+- [x] `expandStemVariants(word)` helper in `brand-rule-sync.ts` met deterministische suffix-rules (≥5 NL-suffix-patronen); pure-functie, side-effect-free
+- [x] `syncVoiceguideToRules` + `syncWordsAvoidToRules` gebruiken `expandStemVariants` → 1 word levert N rules in DB
+- [x] Re-sync LINFI's BrandVoiceguide.wordsWeAvoid via API + verifieer dat "innovatief" → ≥3 BrandRules ("innovatief", "innovatie", "innovatieve")
+- [x] Audit-script `scripts/_audit-rules-pillar.ts` re-run op LINFI fluff-tekst → ≥3 violations voor "innovatie", "innovaties" + "passie", "kwaliteit" via heuristic-pack
+- [x] `npx tsc --noEmit` 0 errors, `npm run lint` 0 errors in nieuwe/aangeraakte files
+- [x] Smoke-test `scripts/smoke-tests/heuristic-stem-variants.ts` (nieuw) — verifieer expandStemVariants output voor 10+ NL-input-words
+- [x] Manual UX-smoke: paste fluff-tekst in Brand Assistant → krijg ReviewFindingsCard met findings (>0); Insights tab toont meer category-spread (niet meer 100% TERMINOLOGY)
 
 # Bestanden die ik aanraak
 
@@ -126,6 +126,32 @@ Drie incrementele wijzigingen, elk onafhankelijk testbaar:
 - Automatische stem-variant suggesties in BrandVoiceguide UI — Δ-2 follow-up
 - Deploy-time backfill-cron voor bestaande workspaces — separate ops-task
 - Severity-tuning per heuristic-entry — bestaande severity-mapping (warning-default) volstaat
+
+# Task-finalize hardening (2026-05-10)
+
+4 review-rondes (Reviewer A clean in round 4, Reviewer B's WARNINGs zijn doc-clarity-claims op already-verified behavior).
+
+- **Round 1**: 2 CRITICAL — `-isch + 'isme'` produceert non-words ("logisme/basisme") voor kortere stems; default-pad `+ 'e' + 'en'` produceert "luxee/luxeen/kwaliteite". Plus 5 WARNINGs (`-iek + 'en'` "unieken" geen NL-noun; empty-string returns `[""]` hidden vulnerability).
+
+- **Round 2**: 0 CRITICAL + 0 WARNING van Reviewer A; 3 WARNINGs van Reviewer B alle "Acceptable trade-off". Code-fixes: `-iek` alleen `+ 'e'`, `-isch` alleen `+ 'e'` (drop `-isme`), default-pad `endsWith('e')` → `+ 's'` else `+ 'en'`, empty-input returns `[]` met @internal annotatie.
+
+- **Round 3**: 0 CRITICAL + 5 WARNINGs converging op "user mist legitieme plurals (technieken/fabrieken/automatisme)". Beslissing: precision boven recall — false-positives in user-facing patterns/messages zijn schadelijker dan gemiste plurals. Comment-update om alle 4 conservative trade-offs expliciet te documenteren in de helper-JSDoc.
+
+- **Round 4**: Reviewer A clean. Reviewer B 2 WARNINGs reeds-verified (caller-audit door A: single caller is safe; `-ief` branch is grammatically correct). Convergence bereikt.
+
+**Deferred MINORs** (gedocumenteerd, niet gefixt):
+- Locale-guard op helper (NL-only morfologie, runt op alle workspaces — `@internal` JSDoc volstaat)
+- Dubbele findings risk wanneer heuristic-pack én BrandRule sync dezelfde term vangen — composition-engine dedup is pre-existing concern, niet door deze task geïntroduceerd
+- "kwaliteit" als context-flag met requires-substantiation: substantiation-evaluator gedrag op LINFI-style "tot op de millimeter" niet expliciet getest in deze scope
+- `expandStemVariants` exposed alleen voor smoke-test — colocated test-file zou cleaner zijn (refactor-task)
+- Hard-replace strategy in sync (deleteMany + createMany op elke resync) — acceptable bij O(50) workspaces, flag voor post-launch scale
+- Substantief-plural mismatches: materieel→materialen, techniek→technieken, fabriek→fabrieken, automatisch→automatisme worden NIET geëxpandeerd (zie helper-JSDoc trade-off-block)
+- Pre-inflected adjective edge: user moet base/lemma form invoeren
+
+**LINFI productie-side-effects bevestigd**:
+- wordsAvoid 14 → 44 BrandRules na resync (stem-expansion werkend)
+- "innovatief" matcht nu "innovatie" in tekst → 1 FORBIDDEN_WORD violation (was 0)
+- Heuristics blijven 0 violations: LINFI workspace.contentLanguage='en' → EN-GB pack ipv NL-NL. **Separate user-action vereist** in workspace settings om naar 'nl' te switchen voor NL-NL heuristic-pack activatie.
 
 # Notes
 

@@ -49,11 +49,45 @@ function normalize(words: string[] | undefined | null): string[] {
  * inputs ("een ultieme luxe ervaring") worden NIET geëxpandeerd — die zijn
  * doorgaans phrase-specifiek en stem-expansie zou false-positives geven.
  *
+ * Conservatieve trade-offs (precision boven recall — false-positives in
+ * user-facing patterns/messages zijn schadelijker dan gemiste plurals):
+ *   - User is expected to enter the base/lemma form van het woord (niet
+ *     pre-inflected: "innovatief" niet "innovatieve"). Stem-expansie
+ *     genereert dan flexed varianten; bij pre-inflected input genereert
+ *     het over-expansie zonder kwaliteitsverlies.
+ *   - `-eel` woorden krijgen alleen adjectief-flexion (`stem + 'ele'`).
+ *     Substantief-plurals zoals "materieel → materialen" worden NIET
+ *     gegenereerd — die plural is morfologisch onregelmatig en zou een
+ *     stem-mutatie vereisen die we zonder library niet betrouwbaar doen.
+ *   - `-iek` woorden krijgen alleen + 'e' (adjectief flexion). Echte NL
+ *     noun-plurals zoals "techniek → technieken", "fabriek → fabrieken",
+ *     "muziek → muzieken" worden NIET gegenereerd, want de regel kan
+ *     adjectives ("uniek") niet betrouwbaar onderscheiden van nouns
+ *     zonder linguistic library.
+ *   - `-isch` woorden krijgen alleen + 'e'. De legitime substantief-vorm
+ *     "automatisch → automatisme" wordt NIET gegenereerd, want voor
+ *     kortere `-isch` words ("logisch", "basisch") zou het pattern
+ *     non-words ("logisme", "basisme") produceren.
+ *
+ * Voor alle bovenstaande gemiste plurals: user moet de plural-vormen
+ * handmatig in wordsWeAvoid invoeren als die actively unwanted zijn.
+ *
  * Min-stem-length=4 voorkomt dat korte woorden (3 chars) zinloos worden
- * geëxpandeerd ("ai" → "ai e ai en" levert ruis).
+ * geëxpandeerd. Een input van 3 chars of korter retourneert alleen het
+ * origineel.
+ *
+ * @internal Public alleen voor de smoke-test; niet bedoeld voor externe
+ * callers. NL-locale-specific morfologie — niet gebruiken op EN-content.
  */
 export function expandStemVariants(word: string): string[] {
   const w = word.trim().toLowerCase();
+  // Empty-input guard: `expandStemVariants('')` zou anders `['']` retourneren,
+  // wat als FORBIDDEN_WORD-pattern een lege regex (`\b\b`) zou compileren die
+  // overal matcht. Sync-flow filtert empties al in `normalize()`, maar deze
+  // helper is `export`ed dus defense-in-depth.
+  if (w.length === 0) {
+    return [];
+  }
   if (w.length < 4 || /\s/.test(w)) {
     // Korte woorden of multi-word inputs: alleen origineel terug.
     return [w];
@@ -62,9 +96,9 @@ export function expandStemVariants(word: string): string[] {
   const variants = new Set<string>([w]);
 
   // Suffix-ief (innovatief → innovatie / innovatieve / innovaties)
-  // - stem + 'ie'   : substantief enkelvoud
-  // - stem + 'ieve' : adjectief flexed (NL -e ending)
-  // - stem + 'ies'  : substantief meervoud (innovatie → innovaties)
+  //   - stem + 'ie'   : substantief enkelvoud
+  //   - stem + 'ieve' : adjectief flexed (NL -e ending)
+  //   - stem + 'ies'  : substantief meervoud
   if (w.endsWith('ief')) {
     const stem = w.slice(0, -3); // "innovat"
     variants.add(stem + 'ie');
@@ -72,30 +106,37 @@ export function expandStemVariants(word: string): string[] {
     variants.add(stem + 'ies');
   }
   // Suffix-eel (passioneel → passionele)
-  // - stem + 'ele'  : adjectief flexed
-  // (geen aparte plural — passioneel is doorgaans adjectief, geen substantief)
+  //   - stem + 'ele'  : adjectief flexed
+  //   (geen aparte plural — passioneel is doorgaans adjectief)
   else if (w.endsWith('eel')) {
     const stem = w.slice(0, -3);
     variants.add(stem + 'ele');
   }
-  // Suffix-iek (uniek → unieke/unieken)
+  // Suffix-iek (uniek → unieke)
+  //   Alleen + 'e' (adjectief flexed). 'unieken' is geen NL plural;
+  //   '-iek' woorden zijn doorgaans adjectives, niet nouns.
   else if (w.endsWith('iek')) {
     variants.add(w + 'e');
-    variants.add(w + 'en');
   }
-  // Suffix-isch (automatisch → automatische/automatisme)
+  // Suffix-isch (automatisch → automatische)
+  //   Alleen + 'e' (adjectief flexed). '-isme' transformatie is onbetrouwbaar
+  //   zonder linguistic library: "automatisch" → "automatisme" werkt, maar
+  //   "logisch"/"basisch" → "logisme"/"basisme" zijn geen NL-woorden.
   else if (w.endsWith('isch')) {
     variants.add(w + 'e');
-    const stem = w.slice(0, -4);
-    if (stem.length >= 3) {
-      variants.add(stem + 'isme');
-    }
   }
-  // Default plurals/conjugations voor adjectives/nouns die niet onder de
-  // specifieke patronen vallen. Korte adjectief krijgt -e en -en variant.
+  // Default-pad — voor woorden die niet onder een specifieke suffix-regel
+  // vallen. Conservatief: voeg ALLEEN de NL noun-plural toe afhankelijk van
+  // de woord-uitgang. Dit voorkomt non-NL ruis als "luxee" (uit "luxe + e")
+  // of "kwaliteite" (uit "kwaliteit + e").
+  //   - endsWith('e')  → + 's' (luxe → luxes)
+  //   - anders         → + 'en' (kwaliteit → kwaliteiten)
   else {
-    variants.add(w + 'e');
-    variants.add(w + 'en');
+    if (w.endsWith('e')) {
+      variants.add(w + 's');
+    } else {
+      variants.add(w + 'en');
+    }
   }
 
   return Array.from(variants);
