@@ -20,19 +20,21 @@ const TOP_FINDINGS_TEXT_CAP = 280;
 
 // Schema gedeeld tussen tool-advertise (Anthropic) en runtime-validate
 // (defense-in-depth bij chat-route die block.input direct doorzet).
-const REVIEW_CONTENT_INPUT = z.discriminatedUnion('sourceType', [
-  z.object({
-    sourceType: z.literal('paste'),
-    content: z
-      .string()
-      .min(50, 'content must be at least 50 characters')
-      .max(50_000, 'content exceeds 50,000 character limit'),
-  }),
-  z.object({
-    sourceType: z.literal('url'),
-    url: z.string().url('must be a valid http(s) URL'),
-  }),
-]);
+//
+// NB: Anthropic vereist `type: 'object'` op de root van input_schema; een
+// Zod discriminatedUnion compileert (via onze minimal zod→json-schema
+// converter) niet naar dat shape. Daarom flat object + cross-field check
+// in execute(). Tool-description verheldert de paste-vs-url combinatie
+// voor het model.
+const REVIEW_CONTENT_INPUT = z.object({
+  sourceType: z.enum(['paste', 'url']),
+  content: z
+    .string()
+    .min(50, 'content must be at least 50 characters')
+    .max(50_000, 'content exceeds 50,000 character limit')
+    .optional(),
+  url: z.string().url('must be a valid http(s) URL').optional(),
+});
 
 function capText(text: string | null | undefined, cap: number): string | null {
   if (!text) return null;
@@ -197,7 +199,7 @@ export const analyzeTools: ClawToolDefinition[] = [
   {
     name: 'review_content',
     description:
-      'Run F-VAL fidelity review on paste-content or a public URL. Returns composite score, threshold-status and the top-3 most severe findings (with location, category and suggestion). Use this ONLY when the user explicitly asks to review their copy, posts content for an on-brand check, or wants F-VAL feedback on a piece of writing — and only when the paste-content or URL is included in the same turn. Do NOT auto-run on every assistant output — this tool consumes AI budget and is rate-limited.',
+      "Run F-VAL fidelity review on paste-content or a public URL. Set sourceType='paste' AND provide `content` (≥50 chars), OR set sourceType='url' AND provide `url`. Returns composite score, threshold-status and the top-3 most severe findings (with location, category and suggestion). Use this ONLY when the user explicitly asks to review their copy, posts content for an on-brand check, or wants F-VAL feedback on a piece of writing — and only when the paste-content or URL is included in the same turn. Do NOT auto-run on every assistant output — this tool consumes AI budget and is rate-limited.",
     inputSchema: REVIEW_CONTENT_INPUT,
     requiresConfirmation: false,
     category: 'analyze',
@@ -210,9 +212,8 @@ export const analyzeTools: ClawToolDefinition[] = [
       // error shape as ingest-failures so the FE handles it uniformly.
       const parsed = REVIEW_CONTENT_INPUT.safeParse(params);
       if (!parsed.success) {
-        // Join all issue messages — discriminated-union mismatches surface
-        // multiple issues (one per branch); only emitting issues[0] strips
-        // the actionable feedback the LLM needs for self-correction.
+        // Join all issue messages — strips the actionable feedback the LLM
+        // needs for self-correction if we'd only surface issues[0].
         const messages = parsed.error.issues
           .map((i) => i.message)
           .filter(Boolean)
@@ -224,7 +225,31 @@ export const analyzeTools: ClawToolDefinition[] = [
           failureReason: 'invalid_input',
         };
       }
-      const input = parsed.data;
+      const data = parsed.data;
+      // Cross-field check: schema is flat (Anthropic vereist type=object op
+      // root, dus geen discriminatedUnion). Check hier of het juiste veld
+      // gevuld is voor de gekozen sourceType — geeft duidelijke feedback
+      // aan zowel model als user.
+      if (data.sourceType === 'paste' && !data.content) {
+        return {
+          error: 'content is required when sourceType is paste',
+          code: 'MISSING_CONTENT',
+          clientAction: 'review_findings_card' as const,
+          failureReason: 'invalid_input',
+        };
+      }
+      if (data.sourceType === 'url' && !data.url) {
+        return {
+          error: 'url is required when sourceType is url',
+          code: 'MISSING_URL',
+          clientAction: 'review_findings_card' as const,
+          failureReason: 'invalid_input',
+        };
+      }
+      const input =
+        data.sourceType === 'paste'
+          ? { sourceType: 'paste' as const, content: data.content as string }
+          : { sourceType: 'url' as const, url: data.url as string };
 
       // ── Ingest ──
       let contentText: string;
