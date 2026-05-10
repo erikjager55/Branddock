@@ -407,3 +407,28 @@ Eerste pilot-zichtbare review-surface bovenop bestaande Δ-1 API. Derde tab "Con
 - ADR: [adr/2026-05-08-fval-output-schema-bevindingen.md](adr/2026-05-08-fval-output-schema-bevindingen.md), [adr/2026-05-08-locale-routing-brand-voice.md](adr/2026-05-08-locale-routing-brand-voice.md)
 - Spec: [tasks/_drafts/idea-content-review-chat-tool.md](../tasks/_drafts/idea-content-review-chat-tool.md)
 - Commit: `534d60c` (initial implementation) + `f2f0455` (5-round hardening)
+
+### 245. Δ-1 Surface E — PublishGate findings-block voor interne content (finalize)
+
+Sluit de Δ-1 trifecta: Surface C (Tab 3 paste/url review-UI) en Surface D (Brand Assistant chat-tool) waren live op `main`; Surface E haakt structured findings nu ook in PublishGate voor INTERN gegenereerde canvas-content. Bij sub-threshold score toont PublishGate een uitvouwbaar amber-block met top-3 HIGH-severity findings (severity-pill + category + description + suggestion), zodat user concrete issues ziet vóór de override-modal-keuze. Schema staat al voor: `BrandReviewFinding.fidelityScoreId` is een nullable FK in XOR-relatie met `contentReviewLogId` (ADR-1) — geen migratie nodig.
+
+**Geleverd** (initial `0b27fe0`, ~850 regels): shared util `src/lib/brand-fidelity/violation-to-finding.ts` (extract `mapViolationToFindingInput` + `mapSeverity` + `inferCategory` uit external runner; beide runners delen nu één mapper), `persistContentFidelityScoreIfPossible` extend met `BrandReviewFinding` nested-create via `fidelityScoreId` (atomic 1-roundtrip), nieuwe GET `/api/alignment/internal-findings/[fidelityScoreId]/route.ts` mirror van Surface C, `useInternalFindings` TanStack hook met `staleTime: Infinity` (scores immutable per ADR-2), `FindingsBlock` sub-component in `PublishGate.tsx` met expand/collapse + `key={fidelityScoreId}` voor state-reset bij regenerate. Smoke-test 16/16 + manual UX-smoke uitgevoerd op LINFI deliverable via dev-helper inject-fixture script.
+
+**Finalize review-loop** — 5 iteraties (skill hard-limit) tot 0 CRITICAL/0 WARNING:
+- Round 1: 2 CRITICAL (`findingsCount` aggregate ontbrak op create — ADR-1 join-free counter; `inject-fixture` geen NODE_ENV/localhost guard) + 1 WARNING (smoke-test 4 deels tautologisch zoals Surface D round 2)
+- Round 2: 0 CRITICAL + 2 WARNINGs (`as string` cast violates "no any types" — revert naar runtime throw als defense-in-depth tegen `refetch()`; smoke-test 4 hard-fail breekt single-workspace seeds — back to soft-skip met luide warn)
+- Round 3-4: 1 WARNING ronde 3 (`findingsCount` ook missend op fixture/smoke synthetic creates), 1 WARNING ronde 4 (`SMOKE_FINDINGS_COUNT` magic number — derive uit `smokeFindings.length`)
+- Round 5: 0 CRITICAL + 0 WARNING — beide reviewers approve, MINORs als "bewuste keuze" gemarkeerd
+
+**Architectuur-keuzes**: nested-create voor atomic findings+score persist (1 round-trip), aggregate-counter pattern (`findingsCount: findings.length`) gerold mirror op runner én fixture-injector én smoke-test, drift-detection assert in smoke (`findingsCount === persisted.length`), typed `Record<BrandReviewSeverity, …>` voor compile-time exhaustiveness, `key={fidelityScoreId}` voor state-reset bij regenerate, runtime throw in `useInternalFindings.queryFn` als defense-in-depth tegen `refetch()` (die `enabled: false` bypassed).
+
+**Quality gates**: tsc 0 errors, lint 0 errors in nieuwe files (969 pre-existing warnings totaal), smoke `internal-findings.ts` 16/16 pass.
+
+**Dev-helper toegevoegd**: `scripts/inject-publishgate-findings-fixture.ts` — synthetic ContentVersion + sub-threshold ContentFidelityScore + 5 findings injecteren op een gekozen deliverable, met NODE_ENV-prod refusal + localhost-DATABASE_URL guard + `--cleanup` flag. Voor toekomstige UX-smoke van Surface E zonder live F-VAL run te hoeven triggeren.
+
+**Out-of-scope** (gedocumenteerd in task-Notes): `getContentReadiness` filtert niet op `judgeIdentifier` (bestaand readiness-query, niet door deze task geïntroduceerd), STRICT re-score path duplicate-rij-accumulation (bestaand pattern), `mapViolationToFindingInput` populeert `suggestion` nooit (productie heuristics emit geen replacement-text — render is conditioneel), `inferCategory` BrandRule→TERMINOLOGY route (ADR-1 ontwerpkeuze), `SEVERITY_RANK` triplicaat Surface C/D/E (extract naar shared util — separate cleanup-task), `ReviewFinding` type cross-import (extract naar `types/findings.ts` — separate cleanup-task), URL-param parser voor `?fidelityScoreId=` deep-link in BrandAlignmentPage, stale-findings race van 10s `useContentReadiness` staleTime + fire-and-forget persist (acceptable MVP window).
+
+- Task: [tasks/done/publishgate-findings-block.md](../tasks/done/publishgate-findings-block.md)
+- ADR: [adr/2026-05-08-fval-output-schema-bevindingen.md](adr/2026-05-08-fval-output-schema-bevindingen.md)
+- Spec: -
+- Commit: `0b27fe0` (initial implementation) + `<finalize-hash>` (5-round hardening)

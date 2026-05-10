@@ -9,7 +9,7 @@
  *  3. GET endpoint round-trip — fetch via /api/alignment/internal-findings
  *     levert severity-rank gesorteerde response
  *  4. Workspace-isolation — fidelityScore uit workspace-A is onzichtbaar
- *     voor workspace-B
+ *     voor workspace-B (vereist 2e workspace in seed; soft-skip anders)
  *
  * Cleanup: alle ContentFidelityScore + BrandReviewFinding rows die deze
  * run aanmaakt worden via cascade-delete opgeruimd zodra de fixture
@@ -126,6 +126,34 @@ async function main(): Promise<void> {
 
   console.log('\n=== 2. Persistence (synthetic ContentFidelityScore + findings) ===\n');
 
+  // Findings-array losgetrokken zodat findingsCount uit .length kan worden
+  // afgeleid (mirror runner-contract: één bron-of-truth voor count + array).
+  const smokeFindings = [
+    {
+      workspaceId: workspace.id,
+      location: mapped1.location,
+      severity: mapped1.severity,
+      category: mapped1.category,
+      description: mapped1.description,
+      evidence: mapped1.evidence ?? Prisma.JsonNull,
+    },
+    {
+      workspaceId: workspace.id,
+      location: mapped2.location,
+      severity: mapped2.severity,
+      category: mapped2.category,
+      description: mapped2.description,
+      evidence: mapped2.evidence ?? Prisma.JsonNull,
+    },
+    {
+      workspaceId: workspace.id,
+      location: mapped3.location,
+      severity: mapped3.severity,
+      category: mapped3.category,
+      description: mapped3.description,
+      evidence: mapped3.evidence ?? Prisma.JsonNull,
+    },
+  ];
   const created = await prisma.contentFidelityScore.create({
     data: {
       workspaceId: workspace.id,
@@ -137,33 +165,10 @@ async function main(): Promise<void> {
       ruleViolations: [],
       thresholdMet: false,
       scorerVersion: 'smoke-v1',
+      // Mirror runner-contract: aggregate-counter pre-rolled bij create.
+      findingsCount: smokeFindings.length,
       findings: {
-        create: [
-          {
-            workspaceId: workspace.id,
-            location: mapped1.location,
-            severity: mapped1.severity,
-            category: mapped1.category,
-            description: mapped1.description,
-            evidence: mapped1.evidence ?? Prisma.JsonNull,
-          },
-          {
-            workspaceId: workspace.id,
-            location: mapped2.location,
-            severity: mapped2.severity,
-            category: mapped2.category,
-            description: mapped2.description,
-            evidence: mapped2.evidence ?? Prisma.JsonNull,
-          },
-          {
-            workspaceId: workspace.id,
-            location: mapped3.location,
-            severity: mapped3.severity,
-            category: mapped3.category,
-            description: mapped3.description,
-            evidence: mapped3.evidence ?? Prisma.JsonNull,
-          },
-        ],
+        create: smokeFindings,
       },
     },
     select: { id: true },
@@ -181,6 +186,19 @@ async function main(): Promise<void> {
   });
 
   assert('3 findings persisted', persisted.length === 3);
+
+  // Drift-detection: aggregate counter MOET matchen met de daadwerkelijke
+  // findings.count na persist. Vangt regressies op als een toekomstige
+  // refactor de findingsCount-set vergeet.
+  const scoreWithCount = await prisma.contentFidelityScore.findUnique({
+    where: { id: created.id },
+    select: { findingsCount: true },
+  });
+  assert(
+    'findingsCount aggregate matcht met daadwerkelijke findings.count',
+    scoreWithCount?.findingsCount === persisted.length,
+    `findingsCount=${scoreWithCount?.findingsCount}, actual=${persisted.length}`,
+  );
   assert(
     'XOR — alle findings hebben fidelityScoreId',
     persisted.every((f) => f.fidelityScoreId === created.id),
@@ -246,26 +264,43 @@ async function main(): Promise<void> {
     }
   }
 
-  console.log('\n=== 4. Workspace-isolation ===\n');
+  console.log('\n=== 4. Workspace-isolation (mirror beide route-queries) ===\n');
   const otherWs = await prisma.workspace.findFirst({
     where: { id: { not: workspace.id } },
     orderBy: { id: 'asc' },
     select: { id: true },
   });
   if (otherWs) {
-    // Direct DB-check: fidelity-score van workspace-A mag niet via workspaceId
-    // van workspace-B opvraagbaar zijn (dat is exact wat de GET endpoint doet
-    // via findFirst({ where: { id, workspaceId } })).
-    const crossWorkspace = await prisma.contentFidelityScore.findFirst({
+    // De GET endpoint doet TWEE workspace-isolated queries: (1) findFirst op
+    // ContentFidelityScore + workspaceId, (2) findMany op BrandReviewFinding +
+    // workspaceId. Beide moeten een cross-workspace user blokkeren. We
+    // mirroren beide queries hier expliciet zodat een refactor die per ongeluk
+    // één van de filters dropt, gedetecteerd wordt.
+    const crossScore = await prisma.contentFidelityScore.findFirst({
       where: { id: created.id, workspaceId: otherWs.id },
       select: { id: true },
     });
     assert(
-      'fidelity-score uit workspace-A onzichtbaar via workspace-B filter',
-      crossWorkspace === null,
+      'route-query 1: fidelity-score onzichtbaar via verkeerde workspaceId',
+      crossScore === null,
+    );
+
+    const crossFindings = await prisma.brandReviewFinding.findMany({
+      where: { fidelityScoreId: created.id, workspaceId: otherWs.id },
+      select: { id: true },
+    });
+    assert(
+      'route-query 2: findings onzichtbaar via verkeerde workspaceId',
+      crossFindings.length === 0,
     );
   } else {
-    console.log('  ⚠ skipped (geen tweede workspace beschikbaar)');
+    // Soft-skip — een fresh dev-DB heeft soms maar één workspace. We willen
+    // de smoke-test niet rood maken op een fixture-tekort dat geen regressie
+    // is van de tool-laag. Wel een luide WARN log zodat de dev het ziet.
+    console.warn(
+      '  ⚠ workspace-isolation NIET getest — geen 2e workspace in seed. ' +
+        'Voor volledige coverage: seed een tweede workspace.',
+    );
   }
 
   // ── Cleanup — verwijder de synthetic fixture ──

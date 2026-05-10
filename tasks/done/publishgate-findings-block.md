@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 1 dag
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-10
-completed: -
+completed: 2026-05-10
 related-adr: 2026-05-08-fval-output-schema-bevindingen
 related-spec: -
 worktree: -
@@ -29,15 +29,15 @@ Drie gefocuste wijzigingen die de bestaande external-content findings-flow uitbr
 
 # Acceptatiecriteria
 
-- [ ] `mapViolationToFindingInput` + helpers verplaatst naar `src/lib/brand-fidelity/violation-to-finding.ts`; beide runners importeren ervan; `npx tsc --noEmit` 0 errors
-- [ ] `persistContentFidelityScoreIfPossible` schrijft `BrandReviewFinding` rijen met `fidelityScoreId` na `ContentFidelityScore.create`; atomic in dezelfde Prisma-call via nested-create
-- [ ] Nieuwe GET `/api/alignment/internal-findings/[fidelityScoreId]/route.ts` retourneert `{ compositeScore, thresholdMet, findings: [...] }` met workspace-isolation + severity-rank sort
-- [ ] `useInternalFindings(fidelityScoreId)` hook in `src/hooks/` met TanStack Query (`staleTime: Infinity` per ADR-2 immutability)
-- [ ] `PublishGate.tsx` rendert findings-block wanneer score < threshold; top-3 HIGH met severity-pill + description + suggestion; "View all N findings" deep-link naar Tab 3
-- [ ] Hard-block UX behouden: findings-block toont issues maar verbergt de override-modal-knop niet (user kan alsnog override + audit-trail emit)
-- [ ] Smoke-test `scripts/smoke-tests/internal-findings.ts` — genereer mock deliverable + content-version, run `runFidelityScoring`, verifieer findings persisted en findbaar via GET endpoint
-- [ ] `npm run lint` 0 errors in nieuwe files
-- [ ] Manual UX-smoke: deliverable met sub-threshold score → PublishGate toont concrete findings — user-action vóór live productie
+- [x] `mapViolationToFindingInput` + helpers verplaatst naar `src/lib/brand-fidelity/violation-to-finding.ts`; beide runners importeren ervan; `npx tsc --noEmit` 0 errors
+- [x] `persistContentFidelityScoreIfPossible` schrijft `BrandReviewFinding` rijen met `fidelityScoreId` na `ContentFidelityScore.create`; atomic in dezelfde Prisma-call via nested-create
+- [x] Nieuwe GET `/api/alignment/internal-findings/[fidelityScoreId]/route.ts` retourneert `{ compositeScore, thresholdMet, findings: [...] }` met workspace-isolation + severity-rank sort
+- [x] `useInternalFindings(fidelityScoreId)` hook in `src/hooks/` met TanStack Query (`staleTime: Infinity` per ADR-2 immutability)
+- [x] `PublishGate.tsx` rendert findings-block wanneer score < threshold; top-3 HIGH met severity-pill + description + suggestion; "View all N findings" deep-link naar Tab 3
+- [x] Hard-block UX behouden: findings-block toont issues maar verbergt de override-modal-knop niet (user kan alsnog override + audit-trail emit)
+- [x] Smoke-test `scripts/smoke-tests/internal-findings.ts` — 16/16 pass (mapper-contract heuristic+rule+info, persistence + drift-detection findingsCount, workspace-isolation mirror beide route-queries; HTTP-pad overslaagbaar via FLAG_SKIP_HTTP)
+- [x] `npm run lint` 0 errors in nieuwe files (969 pre-existing warnings totaal)
+- [x] Manual UX-smoke: uitgevoerd 2026-05-10 op LINFI workspace via `scripts/inject-publishgate-findings-fixture.ts` (synthetische sub-threshold score op live deliverable). Screenshot bevestigde correcte rendering: amber-styled block, severity-pills (HIGH rood / MEDIUM amber / LOW grijs), groene `→` suggesties, "+ N more" footer als platte tekst, layout onder de buttons-rij geen overflow
 
 # Bestanden die ik aanraak
 
@@ -105,6 +105,26 @@ Drie gefocuste wijzigingen die de bestaande external-content findings-flow uitbr
 - Per-workspace threshold-override via UI — separate task
 - Surface E wireframe redesign — pure incremental enhancement bovenop bestaande PublishGate
 - Migratie van legacy `Deliverable.settings.fidelityScore` JSON-blob — separate cleanup-task
+
+# Task-finalize hardening (2026-05-10)
+
+5 review-rondes (twee parallelle code-reviewer subagents per ronde, fresh-eyes per ronde) leverden 2 CRITICAL + diverse WARNINGs op die in-task gefixt zijn:
+
+- **C.1 (round 1)**: `findingsCount` aggregate counter ontbrak op `ContentFidelityScore.create` — schema heeft `Int?` aggregate veld (ADR-1) voor join-free UI counts. Reviewer wees erop dat de Surface E task expliciet de internal path uitbreidt, dus het ontbreken was een door deze commit geïntroduceerde regressie. Toegevoegd: `findingsCount: findings.length` op de runner-create. Mirror toegepast op fixture-injector + smoke-test.
+- **C.2 (round 1)**: dev-helper `inject-publishgate-findings-fixture.ts` geen NODE_ENV guard. Toegevoegd: `NODE_ENV !== 'production'` + localhost-DATABASE_URL check, met `--i-know-what-im-doing` override-flag voor uitzonderingen.
+- **W.A8 (round 1)**: smoke-test 4 (workspace-isolation) was deels tautologisch (zelfde patroon als Surface D round 2). Refactor naar twee assertions die beide route-queries mirroren (fidelity-score lookup én findings findMany), expliciet over wat getest wordt.
+- **Round 2 cleanups**: typed `Record<BrandReviewSeverity, …>` / `Record<FindingCategory, …>` ipv `Record<string, …>` voor compile-time exhaustiveness; `key={fidelityScoreId}` op `FindingsBlock` zodat collapsed-state reset bij regenerate; runtime throw in `useInternalFindings.queryFn` behouden als defense-in-depth tegen `refetch()` (die `enabled: false` bypassed).
+- **Round 3-4**: drift-detection assert in smoke-test (`findingsCount` aggregate moet matchen met `persisted.length` na nested-create); smokeFindings array losgetrokken zodat `findingsCount: smokeFindings.length` bron-of-truth-symmetrisch is met de runner.
+
+**Deferred MINORs / out-of-scope** (gedocumenteerd, niet gefixt binnen Surface E):
+- `getContentReadiness` filtert niet op `judgeIdentifier` (latest-by-scoredAt kan een fixture-judge of andere scorer pakken vóór composition-engine) — bestaand readiness-query, niet door deze task geïntroduceerd
+- STRICT re-score path creëert duplicate `ContentFidelityScore` rijen (oudere blijven met findings hangen) — bestaand pattern in fidelity-runner
+- `mapViolationToFindingInput` populeert `suggestion` nooit in productie (alleen via fixture) — render-conditioneel werkt al; mapper-extension is follow-up
+- `inferCategory` mapt alle non-heuristic BrandRule violations naar TERMINOLOGY (BUSINESS-FindingCategory ongebruikt) — ADR-1 keuze, niet door deze task geïntroduceerd
+- `SEVERITY_RANK` triplicaat over Surface C/D/E — separate cleanup-task waard (extract naar shared util)
+- `ReviewFinding` type cross-import van Surface C hook — separate cleanup-task waard (extract naar `types/findings.ts`)
+- Deep-link `?fidelityScoreId=` URL-param parser in BrandAlignmentPage — separate task (zelfde caveat als Surface C/D)
+- Stale-findings race tussen 10s `useContentReadiness` staleTime en fire-and-forget persist — acceptable MVP window; monitor in pilot
 
 # Notes
 

@@ -13,6 +13,7 @@ import {
   useInternalFindings,
   type InternalFindingsResponse,
 } from '@/hooks/useInternalFindings';
+import type { BrandReviewSeverity, FindingCategory } from '@prisma/client';
 
 interface PublishGateProps {
   deliverableId: string;
@@ -121,9 +122,14 @@ export function PublishGate({
 
         {/* Δ-1 Surface E findings-block — alleen bij below-threshold + beschikbare
             fidelity-score-id. Toont concrete issues zodat user gemotiveerd is om
-            te fixen ipv direct overriden. */}
+            te fixen ipv direct overriden. `key` op fidelityScoreId zorgt dat de
+            expanded/collapsed state reset bij regenerate (nieuwe score-id =
+            nieuwe finding-set, geen mengeling van oude collapsed-keuze). */}
         {blocked && data.latestScore?.id && (
-          <FindingsBlock fidelityScoreId={data.latestScore.id} />
+          <FindingsBlock
+            key={data.latestScore.id}
+            fidelityScoreId={data.latestScore.id}
+          />
         )}
       </div>
 
@@ -160,13 +166,15 @@ export function PublishGate({
  * findings / score zonder findings — auto-trigger persist is async dus
  * findings kunnen even na de score landen).
  */
-const SEVERITY_PILL: Record<string, string> = {
+// Typed Records zodat een toekomstige BrandReviewSeverity / FindingCategory
+// enum-waarde een TS-error oplevert in plaats van een silent missing-key.
+const SEVERITY_PILL: Record<BrandReviewSeverity, string> = {
   HIGH: 'bg-red-100 text-red-800 border-red-200',
   MEDIUM: 'bg-amber-100 text-amber-800 border-amber-200',
   LOW: 'bg-gray-100 text-gray-700 border-gray-200',
 };
 
-const FINDING_CATEGORY_LABEL: Record<string, string> = {
+const FINDING_CATEGORY_LABEL: Record<FindingCategory, string> = {
   VOICE: 'Voice',
   TERMINOLOGY: 'Terminology',
   CLAIMS: 'Claims',
@@ -241,14 +249,14 @@ function FindingsBlockContent({
           {top.map((f) => (
             <div key={f.id} className="flex gap-2 items-start text-xs">
               <span
-                className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${SEVERITY_PILL[f.severity] ?? SEVERITY_PILL.LOW}`}
+                className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${SEVERITY_PILL[f.severity]}`}
               >
                 {f.severity}
               </span>
               <div className="flex-1 min-w-0">
                 <div className="text-gray-800 break-words">
                   <span className="text-gray-500">
-                    {FINDING_CATEGORY_LABEL[f.category] ?? f.category}:
+                    {FINDING_CATEGORY_LABEL[f.category]}:
                   </span>{' '}
                   {f.description}
                 </div>

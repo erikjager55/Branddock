@@ -51,6 +51,9 @@ async function fetchInternalFindings(
 export function useInternalFindings(fidelityScoreId: string | null) {
   return useQuery({
     queryKey: ['internal-findings', fidelityScoreId],
+    // Runtime guard naast `enabled`-gate. `enabled: false` voorkomt initial
+    // fetch maar niet een programmatic `refetch()`-call, dus het throw-pad
+    // is geen dead code — het is defense-in-depth tegen toekomstige callers.
     queryFn: () => {
       if (!fidelityScoreId) throw new Error('fidelityScoreId required');
       return fetchInternalFindings(fidelityScoreId);

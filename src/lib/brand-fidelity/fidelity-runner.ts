@@ -328,6 +328,10 @@ async function persistContentFidelityScoreIfPossible(
         ruleViolations: ruleViolationsJson,
         thresholdMet: result.thresholdMet,
         scorerVersion: result.scorerVersion,
+        // Aggregate-counter voor join-free UI counts (ADR-1). Pre-rolled bij
+        // create zodat dashboards en find-list views niet per row een join
+        // op BrandReviewFinding hoeven te doen.
+        findingsCount: findings.length,
         findings: {
           create: findings.map((f) => ({
             workspaceId,
