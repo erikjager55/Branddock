@@ -10,11 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
-
-// Prisma's enum-sort is alfabetisch (HIGH < LOW < MEDIUM), niet
-// priority-based. Voor "high-priority-eerst" sorteren we daarom
-// client-side op een expliciete severity-rank na de fetch.
-const SEVERITY_RANK: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+import { SEVERITY_RANK } from '@/lib/brand-fidelity/severity-rank';
 
 export async function GET(
   _request: NextRequest,

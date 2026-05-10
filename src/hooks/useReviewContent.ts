@@ -5,26 +5,15 @@
 // ============================================================
 
 import { useMutation, useQuery } from '@tanstack/react-query';
+import type {
+  ReviewFinding,
+  ReviewSeverity,
+  ReviewCategory,
+} from '@/types/brand-review-finding';
 
-export type ReviewSeverity = 'HIGH' | 'MEDIUM' | 'LOW';
-export type ReviewCategory =
-  | 'VOICE'
-  | 'TERMINOLOGY'
-  | 'CLAIMS'
-  | 'STYLE'
-  | 'BUSINESS'
-  | 'AI_TELL';
-
-export interface ReviewFinding {
-  id: string;
-  location: string;
-  severity: ReviewSeverity;
-  category: ReviewCategory;
-  description: string;
-  suggestion: string | null;
-  beforeText: string | null;
-  afterText: string | null;
-}
+// Re-export voor bestaande consumers die uit deze hook importeerden.
+// Nieuwe consumers importeren liever direct uit `@/types/brand-review-finding`.
+export type { ReviewFinding, ReviewSeverity, ReviewCategory };
 
 export interface ReviewSubmitResponse {
   reviewLogId: string;

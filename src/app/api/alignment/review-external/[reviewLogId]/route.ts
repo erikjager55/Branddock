@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { DEFAULT_COMPOSITE_THRESHOLD } from '@/lib/brand-fidelity/composition-engine';
+import { SEVERITY_RANK } from '@/lib/brand-fidelity/severity-rank';
 
 // `ContentReviewLog` persist compositeScore maar niet de threshold die
 // de runner gebruikte — dus derive het bij de GET. Importeer de constant
@@ -23,12 +24,6 @@ import { DEFAULT_COMPOSITE_THRESHOLD } from '@/lib/brand-fidelity/composition-en
 // Tot dan: GET reflecteert de default, POST reflecteert de daadwerkelijk
 // gebruikte threshold uit de runner-output. Niet-actueel in MVP want geen
 // caller passeert custom threshold.
-
-// Prisma's enum-sort is alfabetisch (HIGH < LOW < MEDIUM), niet
-// priority-based. Voor "high-priority-eerst" sorteren we daarom
-// client-side op een expliciete severity-rank na de fetch.
-// Top-level const zodat hij niet per-request opnieuw wordt aangelegd.
-const SEVERITY_RANK: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
 
 export async function GET(
   _request: NextRequest,

@@ -6,7 +6,7 @@
 // ============================================================
 
 import { useQuery } from '@tanstack/react-query';
-import type { ReviewFinding } from './useReviewContent';
+import type { ReviewFinding } from '@/types/brand-review-finding';
 
 export interface InternalFindingsResponse {
   fidelityScoreId: string;

@@ -7,10 +7,8 @@ import {
   IngestError,
 } from '@/lib/alignment/external-content-ingest';
 import { runFidelityForExternalContent } from '@/lib/brand-fidelity/external-content-runner';
+import { SEVERITY_RANK } from '@/lib/brand-fidelity/severity-rank';
 
-// Severity-rank voor client-side ordering (Prisma's enum-sort is alfabetisch:
-// HIGH < LOW < MEDIUM). Top-level const zodat hij niet per-call her-alloceert.
-const REVIEW_SEVERITY_RANK: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
 const TOP_FINDINGS_LIMIT = 3;
 // Hard-cap op description/suggestion text in tool-result. Findings worden
 // gestringified in elke vervolg-Anthropic-call's message-history; zonder cap
@@ -319,8 +317,8 @@ export const analyzeTools: ClawToolDefinition[] = [
       const topFindings = [...allFindings]
         .sort(
           (a, b) =>
-            (REVIEW_SEVERITY_RANK[a.severity] ?? 99) -
-            (REVIEW_SEVERITY_RANK[b.severity] ?? 99),
+            (SEVERITY_RANK[a.severity] ?? 99) -
+            (SEVERITY_RANK[b.severity] ?? 99),
         )
         .slice(0, TOP_FINDINGS_LIMIT)
         // Cap text-velden — deze blob round-tript via tool_result terug naar

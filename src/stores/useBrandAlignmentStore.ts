@@ -24,6 +24,13 @@ interface BrandAlignmentStore {
   selectedIssueId: string | null;
   selectedFixOption: 'A' | 'B' | 'C' | null;
 
+  // Δ-1 deep-link preload — gezet door Surface D ReviewFindingsCard en
+  // Surface E PublishGate findings-block. Wanneer aanwezig opent
+  // ContentReviewTab direct met de pre-loaded review/score i.p.v. het
+  // paste/url input-form. Mutually exclusive (alleen één tegelijk).
+  preloadReviewLogId: string | null;
+  preloadFidelityScoreId: string | null;
+
   // Actions
   setActiveTab: (tab: AlignmentTab) => void;
   setActiveScanId: (id: string | null) => void;
@@ -39,6 +46,13 @@ interface BrandAlignmentStore {
   setSelectedIssueId: (id: string | null) => void;
   setFixModalOpen: (open: boolean) => void;
   resetFilters: () => void;
+
+  /** Pre-load een externe (paste/url) review via reviewLogId + switch tab. */
+  openReviewByLogId: (id: string) => void;
+  /** Pre-load een interne (canvas) review via fidelityScoreId + switch tab. */
+  openReviewByFidelityScoreId: (id: string) => void;
+  /** Reset preload-state (bv. bij "New review" knop). */
+  clearPreload: () => void;
 }
 
 export const useBrandAlignmentStore = create<BrandAlignmentStore>((set) => ({
@@ -56,6 +70,9 @@ export const useBrandAlignmentStore = create<BrandAlignmentStore>((set) => ({
   isFixModalOpen: false,
   selectedIssueId: null,
   selectedFixOption: null,
+
+  preloadReviewLogId: null,
+  preloadFidelityScoreId: null,
 
   setActiveTab: (tab) => set({ activeTab: tab }),
   setActiveScanId: (id) => set({ activeScanId: id }),
@@ -77,6 +94,21 @@ export const useBrandAlignmentStore = create<BrandAlignmentStore>((set) => ({
     set(open ? { isFixModalOpen: true } : { isFixModalOpen: false, selectedIssueId: null, selectedFixOption: null }),
   resetFilters: () =>
     set({ severityFilter: null, statusFilter: null, moduleFilter: null }),
+
+  openReviewByLogId: (id) =>
+    set({
+      activeTab: 'review',
+      preloadReviewLogId: id,
+      preloadFidelityScoreId: null,
+    }),
+  openReviewByFidelityScoreId: (id) =>
+    set({
+      activeTab: 'review',
+      preloadFidelityScoreId: id,
+      preloadReviewLogId: null,
+    }),
+  clearPreload: () =>
+    set({ preloadReviewLogId: null, preloadFidelityScoreId: null }),
 }));
 
 // Selectors

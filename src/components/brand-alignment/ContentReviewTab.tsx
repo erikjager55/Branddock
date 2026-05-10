@@ -8,6 +8,8 @@ import {
   useReviewFindings,
   type ReviewSubmitInput,
 } from "@/hooks/useReviewContent";
+import { useInternalFindings } from "@/hooks/useInternalFindings";
+import { useBrandAlignmentStore } from "@/stores/useBrandAlignmentStore";
 import { ContentReviewResult } from "./ContentReviewResult";
 
 const PASTE_MIN_CHARS = 50;
@@ -25,8 +27,24 @@ export function ContentReviewTab() {
   const [pasteContent, setPasteContent] = useState("");
   const [urlValue, setUrlValue] = useState("");
 
+  // Δ-1 deep-link preload — wanneer Surface D ReviewFindingsCard of Surface E
+  // FindingsBlock een review aanwijst, opent dit tab direct met die specifieke
+  // review pre-loaded i.p.v. het paste/url input-form. Mutually exclusive: of
+  // een externe (reviewLogId) of een interne (fidelityScoreId), nooit beide.
+  const preloadReviewLogId = useBrandAlignmentStore((s) => s.preloadReviewLogId);
+  const preloadFidelityScoreId = useBrandAlignmentStore(
+    (s) => s.preloadFidelityScoreId,
+  );
+  const clearPreload = useBrandAlignmentStore((s) => s.clearPreload);
+
   const submitMutation = useSubmitReview();
-  const findingsQuery = useReviewFindings(submitMutation.data?.reviewLogId ?? null);
+  // Voorrang: preloadReviewLogId > submit-result. Als gebruiker daarna "New
+  // review" klikt, clearPreload() wordt geroepen en submit-result-pad neemt
+  // het over.
+  const externalReviewLogId =
+    preloadReviewLogId ?? submitMutation.data?.reviewLogId ?? null;
+  const findingsQuery = useReviewFindings(externalReviewLogId);
+  const internalFindingsQuery = useInternalFindings(preloadFidelityScoreId);
 
   const isSubmitting = submitMutation.isPending || findingsQuery.isFetching;
   // Beide bounds op de getrimde content — anders ziet de user "55 / 50000"
@@ -50,11 +68,70 @@ export function ContentReviewTab() {
     submitMutation.reset();
     setPasteContent("");
     setUrlValue("");
+    // Clear preload-state ook zodat "New review" altijd terug naar input-form
+    // gaat, ook als de tab via deep-link werd geopend.
+    clearPreload();
   };
 
-  // Render-tree: input → loading → result. Collapse input wanneer result tonen
-  // is — hergebruiken van scrolling-real-estate.
-  const showResult = !!submitMutation.data && !submitMutation.isPending;
+  // Render-tree: input → loading → result. Showresult wanneer er
+  // pre-loaded data is OF een afgeronde mutation. Collapse input wanneer
+  // result tonen is — hergebruiken van scrolling-real-estate.
+  const hasPreloadExternal =
+    !!preloadReviewLogId && (findingsQuery.data || findingsQuery.isFetching);
+  const hasPreloadInternal =
+    !!preloadFidelityScoreId &&
+    (internalFindingsQuery.data || internalFindingsQuery.isFetching);
+  const showResult =
+    hasPreloadExternal ||
+    hasPreloadInternal ||
+    (!!submitMutation.data && !submitMutation.isPending);
+
+  // Bouw een synthetisch ReviewSubmitResponse-shape voor pre-loaded reviews
+  // zodat ContentReviewResult dezelfde score-panel kan renderen als bij een
+  // normaal submit-flow. `durationMs` is niet beschikbaar voor pre-loads
+  // (review is mogelijk dagen oud) — we tonen 0 als sentinel.
+  const resolvedSubmitData = preloadReviewLogId && findingsQuery.data
+    ? {
+        reviewLogId: findingsQuery.data.reviewLogId,
+        compositeScore: findingsQuery.data.compositeScore,
+        thresholdMet: findingsQuery.data.thresholdMet,
+        findingsCount: findingsQuery.data.findingsCount,
+        durationMs: findingsQuery.data.durationMs,
+        scorerVersion: findingsQuery.data.scorerVersion,
+      }
+    : preloadFidelityScoreId && internalFindingsQuery.data
+      ? {
+          // Internal-content reviews hebben geen reviewLogId — gebruik
+          // fidelityScoreId als pseudo-id voor render. ContentReviewResult
+          // leest het veld niet voor logica, alleen voor display.
+          reviewLogId: internalFindingsQuery.data.fidelityScoreId,
+          compositeScore: internalFindingsQuery.data.compositeScore,
+          thresholdMet: internalFindingsQuery.data.thresholdMet,
+          findingsCount: internalFindingsQuery.data.findingsCount,
+          durationMs: 0,
+          scorerVersion: internalFindingsQuery.data.scorerVersion,
+        }
+      : submitMutation.data;
+
+  const resolvedFindings = preloadReviewLogId
+    ? findingsQuery.data?.findings ?? []
+    : preloadFidelityScoreId
+      ? internalFindingsQuery.data?.findings ?? []
+      : findingsQuery.data?.findings ?? [];
+
+  const resolvedFindingsLoading = preloadReviewLogId
+    ? findingsQuery.isPending
+    : preloadFidelityScoreId
+      ? internalFindingsQuery.isPending
+      : findingsQuery.isPending;
+
+  const resolvedFindingsError = preloadReviewLogId
+    ? findingsQuery.error instanceof Error ? findingsQuery.error.message : null
+    : preloadFidelityScoreId
+      ? internalFindingsQuery.error instanceof Error
+        ? internalFindingsQuery.error.message
+        : null
+      : findingsQuery.error instanceof Error ? findingsQuery.error.message : null;
 
   return (
     <div className="max-w-4xl mx-auto py-6 space-y-6">
@@ -83,15 +160,13 @@ export function ContentReviewTab() {
         />
       )}
 
-      {showResult && submitMutation.data && (
+      {showResult && resolvedSubmitData && (
         <>
           <ContentReviewResult
-            submitData={submitMutation.data}
-            findings={findingsQuery.data?.findings ?? []}
-            findingsLoading={findingsQuery.isPending}
-            findingsError={
-              findingsQuery.error instanceof Error ? findingsQuery.error.message : null
-            }
+            submitData={resolvedSubmitData}
+            findings={resolvedFindings}
+            findingsLoading={resolvedFindingsLoading}
+            findingsError={resolvedFindingsError}
           />
           <div className="flex justify-end">
             <Button variant="secondary" size="sm" onClick={handleReset}>

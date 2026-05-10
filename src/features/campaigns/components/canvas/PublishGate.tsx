@@ -13,6 +13,8 @@ import {
   useInternalFindings,
   type InternalFindingsResponse,
 } from '@/hooks/useInternalFindings';
+import { useUIState } from '@/contexts/UIStateContext';
+import { useBrandAlignmentStore } from '@/stores/useBrandAlignmentStore';
 import type { BrandReviewSeverity, FindingCategory } from '@prisma/client';
 
 interface PublishGateProps {
@@ -221,6 +223,19 @@ function FindingsBlockContent({
   const top = data.findings.slice(0, TOP_FINDINGS_LIMIT);
   const remaining = data.findingsCount - top.length;
 
+  const { setActiveSection } = useUIState();
+  const openReviewByFidelityScoreId = useBrandAlignmentStore(
+    (s) => s.openReviewByFidelityScoreId,
+  );
+
+  // SPA-transition naar Brand Alignment → Content Review tab met deze
+  // fidelity-score pre-loaded. Pre-load via Zustand-store (hybrid-SPA pad
+  // ondersteunt geen URL-params voor pagina-routing).
+  const handleViewAll = () => {
+    openReviewByFidelityScoreId(data.fidelityScoreId);
+    setActiveSection('brand-alignment');
+  };
+
   return (
     <div className="rounded-lg border border-amber-200 bg-amber-50/50 overflow-hidden">
       <button
@@ -269,9 +284,14 @@ function FindingsBlockContent({
             </div>
           ))}
           {remaining > 0 && (
-            <div className="text-[11px] text-amber-700/80 pt-1 border-t border-amber-200/70">
-              + {remaining} more — bekijk alles in{' '}
-              <strong>Brand Alignment → Content Review</strong>
+            <div className="text-[11px] pt-1 border-t border-amber-200/70">
+              <button
+                type="button"
+                onClick={handleViewAll}
+                className="text-amber-800 hover:text-amber-900 hover:underline"
+              >
+                + {remaining} more — bekijk alles in Brand Alignment → Content Review
+              </button>
             </div>
           )}
         </div>
