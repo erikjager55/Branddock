@@ -484,4 +484,4 @@ Brengt een 4e tab "Insights" naast Alignment / Audit / Content Review met 30d ag
 - Task: [tasks/done/brand-alignment-insights-tab.md](../tasks/done/brand-alignment-insights-tab.md)
 - ADR: -
 - Spec: -
-- Commit: `c0f274e` (initial implementation) + `<finalize-hash>` (5-round hardening)
+- Commit: `c0f274e` (initial implementation) + `64f7f95` (5-round hardening)
