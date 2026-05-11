@@ -29,6 +29,7 @@ import { cacheKeys } from "@/lib/api/cache-keys";
 const VOICEGUIDE_SELECT = {
   id: true,
   workspaceId: true,
+  contentLocale: true,
   voiceDescription: true,
   toneDimensions: true,
   writingSamples: true,
@@ -93,8 +94,19 @@ const channelToneEntrySchema = z.object({
     .optional(),
 });
 
+// Whitelist op BCP-47 locales — moet matchen met SUPPORTED_LOCALES in
+// `src/lib/brand-fidelity/heuristics/locale-resolver.ts`. Bewust geen
+// import om circular-dependency risico te vermijden (server-only route
+// importeert client-safe locale-resolver; consistency wordt via tests
+// gegarandeerd).
+const SUPPORTED_LOCALE_VALUES = ['nl-NL', 'nl-BE', 'en-GB', 'de-DE'] as const;
+
 const updateSchema = z.object({
   voiceDescription: z.string().nullable().optional(),
+  contentLocale: z
+    .enum(SUPPORTED_LOCALE_VALUES)
+    .nullable()
+    .optional(),
   toneDimensions: z.record(z.string(), z.number()).nullable().optional(),
   writingSamples: z.array(z.string()).optional(),
   wordsWeUse: z.array(z.string()).optional(),

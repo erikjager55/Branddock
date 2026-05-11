@@ -33,6 +33,7 @@ export type ChannelTones = Partial<Record<ChannelKey, ChannelToneEntry>>;
 export interface BrandVoiceguide {
   id: string;
   workspaceId: string;
+  contentLocale: 'nl-NL' | 'nl-BE' | 'en-GB' | 'de-DE' | null;
   voiceDescription: string | null;
   toneDimensions: ToneDimensions | null;
   writingSamples: string[];
@@ -54,6 +55,12 @@ export interface BrandVoiceguide {
 
 export interface UpdateBrandVoiceguideBody {
   voiceDescription?: string | null;
+  /**
+   * BCP-47 locale die F-VAL pijler-3 heuristic-pack-keuze stuurt.
+   * Whitelist: 'nl-NL' / 'nl-BE' / 'en-GB' / 'de-DE' / null (= reset
+   * naar workspace.contentLanguage fallback per locale-resolver-precedence).
+   */
+  contentLocale?: 'nl-NL' | 'nl-BE' | 'en-GB' | 'de-DE' | null;
   toneDimensions?: ToneDimensions | null;
   writingSamples?: string[];
   wordsWeUse?: string[];

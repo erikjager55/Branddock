@@ -1,12 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mic2, RefreshCcw, AlertCircle, Type } from "lucide-react";
+import { Mic2, RefreshCcw, AlertCircle, Type, Globe, Sparkles, Loader2 } from "lucide-react";
 import { Button, CrossLinkCard } from "@/components/shared";
 import { AiContentBanner } from "../AiContentBanner";
 import { useUpdateVoiceguide, useRecomputeCentroid } from "../../hooks";
 import { useBrandstyleStore } from "@/features/brandstyle/stores/useBrandstyleStore";
+import { useSuggestedLocale } from "@/hooks/useSuggestedLocale";
 import type { BrandVoiceguide, ToneAxis, ToneDimensions } from "../../types/voiceguide.types";
+
+type ContentLocale = NonNullable<BrandVoiceguide["contentLocale"]>;
+
+/** Locale-options voor de picker — match met SUPPORTED_LOCALES in locale-resolver.ts. */
+const LOCALE_OPTIONS: { code: ContentLocale; label: string }[] = [
+  { code: "nl-NL", label: "Nederlands (Nederland)" },
+  { code: "nl-BE", label: "Nederlands (België)" },
+  { code: "en-GB", label: "English (United Kingdom)" },
+  { code: "de-DE", label: "Deutsch (Deutschland)" },
+];
+
+const CONFIDENCE_BADGE: Record<"high" | "medium" | "low", string> = {
+  high: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  medium: "bg-amber-50 text-amber-700 border-amber-200",
+  low: "bg-gray-100 text-gray-600 border-gray-200",
+};
 
 interface VoiceDnaSectionProps {
   voiceguide: BrandVoiceguide;
@@ -32,8 +49,12 @@ const DEFAULT_TONE: ToneDimensions = {
 export function VoiceDnaSection({ voiceguide, onNavigate }: VoiceDnaSectionProps) {
   const update = useUpdateVoiceguide();
   const recompute = useRecomputeCentroid();
+  const suggested = useSuggestedLocale();
   const [description, setDescription] = useState(voiceguide.voiceDescription ?? "");
   const [tone, setTone] = useState<ToneDimensions>(voiceguide.toneDimensions ?? DEFAULT_TONE);
+  const [contentLocale, setContentLocale] = useState<ContentLocale | null>(
+    voiceguide.contentLocale ?? null,
+  );
   const [recomputeError, setRecomputeError] = useState<string | null>(null);
 
   // Sync incoming when row updates externally
@@ -43,9 +64,16 @@ export function VoiceDnaSection({ voiceguide, onNavigate }: VoiceDnaSectionProps
   useEffect(() => {
     setTone(voiceguide.toneDimensions ?? DEFAULT_TONE);
   }, [voiceguide.toneDimensions]);
+  useEffect(() => {
+    setContentLocale(voiceguide.contentLocale ?? null);
+  }, [voiceguide.contentLocale]);
 
   const handleSave = () => {
-    update.mutate({ voiceDescription: description, toneDimensions: tone });
+    update.mutate({
+      voiceDescription: description,
+      toneDimensions: tone,
+      contentLocale,
+    });
   };
 
   const handleRecompute = async () => {
@@ -59,7 +87,8 @@ export function VoiceDnaSection({ voiceguide, onNavigate }: VoiceDnaSectionProps
 
   const dirty =
     (voiceguide.voiceDescription ?? "") !== description ||
-    JSON.stringify(voiceguide.toneDimensions ?? DEFAULT_TONE) !== JSON.stringify(tone);
+    JSON.stringify(voiceguide.toneDimensions ?? DEFAULT_TONE) !== JSON.stringify(tone) ||
+    (voiceguide.contentLocale ?? null) !== contentLocale;
 
   return (
     <div className="space-y-6">
@@ -97,6 +126,68 @@ export function VoiceDnaSection({ voiceguide, onNavigate }: VoiceDnaSectionProps
           placeholder="We sound like a knowledgeable friend — warm, direct, and curious. Never academic, never salesy."
           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary-300"
         />
+      </div>
+
+      {/* Content locale — F-VAL pijler-3 heuristic-pack-keuze */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Globe className="w-4 h-4 text-teal-600" />
+          <h3 className="text-sm font-semibold text-gray-900">Content locale</h3>
+        </div>
+        <p className="text-xs text-gray-500 mb-3">
+          Bepaalt welke F-VAL heuristic-pack wordt gebruikt voor cliché-detectie
+          en welke taal-instructie de AI krijgt bij content-generatie. Laat
+          leeg om de workspace-default te volgen.
+        </p>
+        <select
+          value={contentLocale ?? ""}
+          onChange={(e) =>
+            setContentLocale((e.target.value as ContentLocale | "") || null)
+          }
+          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
+        >
+          <option value="">— Workspace-default —</option>
+          {LOCALE_OPTIONS.map((opt) => (
+            <option key={opt.code} value={opt.code}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+
+        {/* Auto-detected suggestion */}
+        {suggested.isPending ? (
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Detecteren op basis van brand-content...
+          </div>
+        ) : suggested.data?.locale ? (
+          <div className="mt-3 flex items-center gap-2 text-xs flex-wrap">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="text-gray-600">Auto-detected:</span>
+            <span className="font-medium text-gray-800">{suggested.data.locale}</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${CONFIDENCE_BADGE[suggested.data.confidence]}`}
+            >
+              {suggested.data.confidence}
+            </span>
+            <span className="text-gray-400">
+              · {suggested.data.sourceCount} sources, {suggested.data.totalChars.toLocaleString()} chars
+            </span>
+            {suggested.data.locale !== contentLocale && (
+              <button
+                type="button"
+                onClick={() => setContentLocale(suggested.data?.locale ?? null)}
+                className="ml-auto text-emerald-700 hover:text-emerald-800 hover:underline"
+              >
+                Use suggested
+              </button>
+            )}
+          </div>
+        ) : (
+          <p className="mt-3 text-xs text-gray-400 italic">
+            Geen taal-signaal gedetecteerd — voeg writing-samples of brand-assets toe.
+          </p>
+        )}
       </div>
 
       {/* 4-axis tone sliders */}
