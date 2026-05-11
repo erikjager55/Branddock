@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Laatst bijgewerkt**: 2026-05-09 (sprint #2 gemerged via PR #5 `618d336`; BCP Phase 0+1 + Canvas-cluster + Cowork Fase A + Competitive-intel Fase 1 op `main`).
+> **Laatst bijgewerkt**: 2026-05-11 (sprint #3 in voltooiing — Δ-1 Surface C/D/E + cleanup-pack + Insights tab + F-VAL rules-audit + brand-language auto-detect + locale-picker UI allemaal op `main`).
 > **Update-cadans**: Now continu (na elke afgeronde task), Next wekelijks (vrijdagretro), Later maandelijks.
 > **Bron**: gedistilleerd uit oude TODO.md, BRANDCLAW-ROADMAP.md, STRATEGISCHE-VERVOLGSTAPPEN.md (allen in `docs/archive/old-lists/`).
 
@@ -27,7 +27,7 @@
 |---|---|---|---|
 | **Phase 0 — Foundation** | [`tech-debt-any-types`](tasks/done/tech-debt-any-types.md), [`claw-page-awareness`](tasks/done/claw-page-awareness.md) (scope-cut: foundation only) | 3-5d | ✅ done 2026-05-08 |
 | **Phase 1 — F-VAL extension** | [`bv-wire-w1-full-centroid`](tasks/done/bv-wire-w1-full-centroid.md) ✅, [`heuristics-packages-multilingual`](tasks/done/heuristics-packages-multilingual.md) ✅ (Δ-2 done), [`voice-baseline-1pager`](tasks/done/voice-baseline-1pager.md) ✅ (Δ-3 done) | 8-11d | ✅ done 2026-05-08 — Phase 2 review-surfaces unblocked |
-| **Phase 2 — Review surfaces** | Δ-1 Content Review (3 surfaces: Brand Alignment Tab 3 + Brand Assistant chat-tool + PublishGate), Δ-4 PublishGate 2nd-opinion, [`canvas-inline-edit-overlays`](tasks/done/canvas-inline-edit-overlays.md) ✅, claw-page-awareness vervolg-cluster (page-wiring deferred uit Phase 0.2.A) | 13-17d | inline-edit done; Δ-1/Δ-4/claw-vervolg task-files volgen |
+| **Phase 2 — Review surfaces** | Δ-1 Surface C ✅ (Brand Alignment Tab 3), Δ-1 Surface D ✅ (Brand Assistant chat-tool), Δ-1 Surface E ✅ (PublishGate findings-block), Δ-1 cleanup-pack ✅, [`brand-alignment-insights-tab`](tasks/done/brand-alignment-insights-tab.md) ✅, [`canvas-inline-edit-overlays`](tasks/done/canvas-inline-edit-overlays.md) ✅, Δ-4 PublishGate 2nd-opinion (open), claw-page-awareness vervolg-cluster (open) | 13-17d | Δ-1 + Insights done; Δ-4 + claw-vervolg task-files volgen |
 | **Phase 3 — Strategy Analyst** | brandclaw-data-collection, Strategy Analyst stub (agent-architecture v1) | 20-27d | task-files volgen |
 
 **ADR's**:
@@ -61,31 +61,40 @@
 
 ## ⚡ NOW (deze 2-4 weken)
 
-Pre-launch = BCP Phase 2 review-surfaces (Δ-1 → Δ-4 → claw-vervolg). Alle Phase 0+1 + Canvas/Studio + Cowork Fase A + Competitive-intel Fase 1 zit op `main`.
+Pre-launch = BCP Phase 2 sluit af. Δ-1 review-surfaces + Insights tab + F-VAL rules-audit + brand-language auto-detect + locale-picker UI zit op `main`. Resterend: Δ-4 + claw-page-awareness vervolg, daarna verschuift focus naar launch-track.
 
-**Actief — Δ-1 Content Review surfaces**
+**Actief — Phase 2 closures**
 | ID | Titel | Effort | Status | Blocker |
 |---|---|---|---|---|
-| [`content-review-tab-3-ui`](tasks/content-review-tab-3-ui.md) | Δ-1 Surface C — Brand Alignment Tab 3 "Content Review" UI. Eerste pilot-zichtbare review-surface (paste-textarea + URL + composite-score + findings-tabel). | 1-2 dagen | in-progress | - |
-| `delta-1-surface-d` | Δ-1 Surface D — Brand Assistant chat-tool `add_review_findings`. Task-file nog te maken (idea-doc verloren bij branch-switch — feature-planner opnieuw of hergebruik oud Δ-1 voorstel). | 2-3 dagen | open | task-file |
-| `delta-1-surface-e` | Δ-1 Surface E — PublishGate findings-block. Scope-trim: na Surface C pilot-feedback bouwen, niet upfront (regressie-risico op pilot-demo). | 2-3 dagen | open | task-file + Surface C smoke |
-
-**Actief — overige Phase 2**
-| ID | Titel | Effort | Status | Blocker |
-|---|---|---|---|---|
-| `delta-4-publishgate-2nd-opinion` | Δ-4 PublishGate 2nd-opinion review-pass | onbekend | open | task-file |
+| `delta-4-publishgate-2nd-opinion` | Δ-4 PublishGate 2nd-opinion review-pass | onbekend | open | task-file (feature-planner) |
 | `claw-page-awareness-vervolg` | Page-wiring PersonaDetail / BrandAssetDetail / Step1Context (deferred uit Phase 0.2.A) | ~2 dagen | open | task-file |
+
+**Backlog smoke-tests (~1 uur)**
+| ID | Titel | Effort | Notitie |
+|---|---|---|---|
+| learning-loop-smoke-e2e | End-to-end smoke van learning-loop infra (BrandContextSnapshot + AICallTrace + LearningEvent flow) | ~30 min | Item #3 uit cross-sessie open backlog 2026-05-06 |
+| visual-brief-trained-style-smoke | Visual Brief Compose + Trained-Style E2E op Goed-Bouw / Better Brands | ~30 min | Item #4 uit cross-sessie open backlog 2026-05-06 |
+
+**Recent voltooid (sprint #3, 2026-05-09 t/m 2026-05-11)**
+
+> 7 task-finalizations bovenop sprint #2-merge. Volledige details in `tasks/done/` + `docs/changelog.md` (entry #243–250).
+
+- **Δ-1 Content Review surfaces (3)**: Surface C `content-review-tab-3-ui` (entry #243), Surface D `content-review-chat-tool` Brand Assistant `review_content` (entry #244), Surface E `publishgate-findings-block` (entry #245)
+- **Δ-1 cleanup-pack**: shared `SEVERITY_RANK` + `ReviewFinding` types + SPA deep-link + InputBar tool_result fix (entry #246)
+- **Brand Alignment Insights tab**: pilot-feedback dashboard voor Δ-1 surfaces (entry #247)
+- **F-VAL rules-pijler audit**: mapper categories + NL-NL packs + stem-variants + composition-engine violation-dedup (entry #248 + `310e53c`)
+- **Brand-language auto-detect**: `franc-min` integration + backfill van 13 workspaces + runtime mismatch-guard (entry #249)
+- **BrandVoiceguide.contentLocale picker UI**: manuele override in Voice DNA tab + auto-detected suggestion + Currently-active pill (entry #250)
 
 **Recent voltooid (sprint #2, gemerged 2026-05-09 via PR #5 `618d336`)**
 
 > 16 task-finalizations + 254/254 smoke-checks + 11 nieuwe `npm run smoke:*` scripts. Volledige details in `tasks/done/` + `docs/changelog.md` (entry #239–242).
 
-- **Canvas/Studio (12 tasks)**: locale-fix + 3 per-item-tweaks-clusters (conversion / longform / structured) + 3 image-track-tasks (defaults / coupling / briefing) + 3 discovery-audits + canvas-inline-edit-overlays
+- **Canvas/Studio (12 tasks)**: locale-fix + 3 per-item-tweaks-clusters + 3 image-track-tasks + 3 discovery-audits + canvas-inline-edit-overlays
 - **BCP Phase 0** (3 tasks): tech-debt-any-types, claw-page-awareness foundation, bv-wire-w1-full-centroid
 - **BCP Phase 1** (2 tasks): heuristics-packages-multilingual (Δ-2, 4 locales), voice-baseline-1pager (Δ-3)
 - **Cowork-pariteit Fase A**: campaign-brief-output-mapper
-- **Competitive-intel Fase 1**: competitor-snapshot-historie (Snapshot/Activity/ContentItem schema + 7 diff-rules)
-- **Eerder week 19**: 4 content-items kritisch pad + 4 independent pre-launch tracks (PostHog/Sentry, campaign-drafts-db, content-styling-migratie, auto-trigger-fidelity)
+- **Competitive-intel Fase 1**: competitor-snapshot-historie
 
 ---
 
@@ -173,15 +182,15 @@ Pre-launch = BCP Phase 2 review-surfaces (Δ-1 → Δ-4 → claw-vervolg). Alle 
 
 ## 💡 Aanbeveling huidige sessie
 
-**2026-05-09**: sprint #2 gemerged (PR #5 `618d336`). BCP Phase 0+1 + Canvas-cluster + Cowork Fase A + Competitive-intel Fase 1 zit op `main`. Focus verschuift naar **BCP Phase 2 review-surfaces** — Δ-1 Content Review.
+**2026-05-11**: sprint #3 voltooit BCP Phase 2 review-surfaces (Δ-1 Surface C/D/E + cleanup-pack + Insights tab) plus side-iteraties (F-VAL rules-audit, brand-language auto-detect, locale-picker UI). 7 entries (#243–250) bovenop sprint #2-merge. Pre-launch product-readiness staat: review-loop is functioneel end-to-end voor pilot.
 
 **Volgorde-aanbeveling**:
 
-1. **`content-review-tab-3-ui`** (1-2d, in-progress) — eerste pilot-zichtbare review-surface, momentum vanuit foundation/engine/POST-endpoint. Direct vervolg op sprint #2.
-2. **Δ-1 Surface D + E task-files schrijven** — feature-planner draaien (idea-doc verloren) of hergebruik oude voorstel. Surface E pas bouwen na Surface C pilot-feedback (scope-trim Red Team).
-3. **Δ-4 + claw-page-awareness vervolg** — Phase 2 closures, parallel mogelijk met Surface D.
+1. **Phase 2 closures** — `delta-4-publishgate-2nd-opinion` + `claw-page-awareness-vervolg` task-files via feature-planner. Sluit BCP Phase 2 helemaal af voor pilot-start.
+2. **Backlog smoke-tests** (~1 uur) — learning-loop e2e + Visual Brief trained-style. Korte runway-check vóór launch-track.
+3. **Launch-track activeren** — `vercel-deployment` (3d) ontgrendelt `pilot-onboarding-better-brands`. Stripe daarna voor revenue-pad. Met BCP Phase 2 in zicht is launch-projectie +4-6 weken (was +6-10 begin sprint #3).
 
-**Launch-track parallel mogelijk**: `vercel-deployment` (3d, geen code-conflict met Surface C) ontgrendelt `pilot-onboarding-better-brands`. Stripe daarna voor revenue-pad. Pilot-start projectie: +6-10 weken.
+**Optioneel parallel**: `power-user-shortcuts` of `learning-loop-dashboard-usage` als kleine post-launch-spillovers wanneer er capaciteit is.
 
 **Validatie-acties competitive-intel Fase 2/4** (vóór technical-planner promotion):
 - Pilot-priority-check (3 leads): is competitor-intelligence in top-3 needs?
