@@ -168,15 +168,75 @@ export const DEFAULT_COMPOSITE_THRESHOLD = 75;
 // ─── Pure helpers ───────────────────────────────────
 
 /**
+ * Dedupe violations op `(position, snippet)` — wanneer BrandRule en
+ * heuristic-pack hetzelfde woord op dezelfde char-offset matchen (typisch
+ * scenario: user heeft "innovatief" in wordsWeAvoid → stem-variant
+ * matcht "innovatie"; heuristic NL-NL corporate-fluff matcht ook
+ * "innovatie") zou de pijler-3 score anders dubbel-getelde penalty geven
+ * en de findings-tabel zou twee rows tonen voor één textspan.
+ *
+ * Tie-break-regels:
+ *   1. Hogere severity wint (error > warning > info) — sterker signaal
+ *      gaat boven zwakker
+ *   2. Bij gelijke severity wint heuristic — rijkere category-mapping
+ *      (Voice/Claims/Style/AI_TELL) is informatiever dan BrandRule
+ *      fallback naar TERMINOLOGY
+ *
+ * User-intent (wordsWeAvoid) blijft gehonoreerd: hetzelfde woord wordt
+ * nog steeds geflagged, maar via de heuristic-violation (waarvan de
+ * category meer context geeft over WAAROM het buzzword is).
+ */
+export function dedupeViolations(
+  violations: import('./rule-compiler').RuleViolation[],
+): import('./rule-compiler').RuleViolation[] {
+  const SEVERITY_RANK: Record<string, number> = { error: 0, warning: 1, info: 2 };
+  const map = new Map<string, import('./rule-compiler').RuleViolation>();
+
+  for (const v of violations) {
+    // Document-level violations (sentinel position=0 + empty snippet) hebben
+    // geen uniek (position, snippet) — die behouden we 1-op-1 op ruleId om
+    // legitieme verschillende rule-violations niet te collapsen.
+    const key =
+      v.position === 0 && !v.snippet
+        ? `doc:${v.ruleId}`
+        : `${v.position}:${v.snippet}`;
+
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, v);
+      continue;
+    }
+    const existingRank = SEVERITY_RANK[existing.severity] ?? 99;
+    const newRank = SEVERITY_RANK[v.severity] ?? 99;
+    if (newRank < existingRank) {
+      map.set(key, v);
+    } else if (newRank === existingRank) {
+      const existingIsHeuristic = existing.ruleId.startsWith('heuristic:');
+      const newIsHeuristic = v.ruleId.startsWith('heuristic:');
+      if (newIsHeuristic && !existingIsHeuristic) {
+        map.set(key, v);
+      }
+    }
+  }
+
+  return Array.from(map.values());
+}
+
+/**
  * Merge BrandRule evaluator-result met heuristic-violations (Δ-2). Recompute
  * ruleScore + counters om beide bronnen te reflecteren. Hergebruikt zelfde
  * scoring-formula als rule-compiler (weighted violations / wordCount * 1000).
+ * Dedupe via `dedupeViolations` voorkomt dubbel-tellen wanneer beide bronnen
+ * dezelfde textspan vangen.
  */
 function mergeRuleResults(
   brandRules: RuleEvaluationResult,
   heuristicViolations: import('./rule-compiler').RuleViolation[],
 ): RuleEvaluationResult {
-  const merged = [...brandRules.violations, ...heuristicViolations];
+  const merged = dedupeViolations([
+    ...brandRules.violations,
+    ...heuristicViolations,
+  ]);
   const SEVERITY_WEIGHTS = { error: 3, warning: 1, info: 0.5 };
   const weighted = merged.reduce((sum, v) => sum + (SEVERITY_WEIGHTS[v.severity] ?? 1), 0);
   const violationsPer1000 = brandRules.wordCount > 0 ? (weighted / brandRules.wordCount) * 1000 : 0;
