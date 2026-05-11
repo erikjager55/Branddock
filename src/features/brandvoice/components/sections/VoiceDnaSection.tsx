@@ -25,6 +25,15 @@ const CONFIDENCE_BADGE: Record<"high" | "medium" | "low", string> = {
   low: "bg-gray-100 text-gray-600 border-gray-200",
 };
 
+const ACTIVE_SOURCE_LABEL: Record<
+  "voiceguide" | "workspace-default" | "fallback",
+  string
+> = {
+  voiceguide: "voiceguide override",
+  "workspace-default": "workspace default",
+  fallback: "fallback",
+};
+
 interface VoiceDnaSectionProps {
   voiceguide: BrandVoiceguide;
   /** Cross-module navigator. When provided, renders a "style guidelines live
@@ -139,7 +148,33 @@ export function VoiceDnaSection({ voiceguide, onNavigate }: VoiceDnaSectionProps
           en welke taal-instructie de AI krijgt bij content-generatie. Laat
           leeg om de workspace-default te volgen.
         </p>
+
+        {/* Currently-active status: toont welke locale F-VAL momenteel
+            gebruikt + uit welke laag van de fallback die komt. Verborgen
+            wanneer resolver-call faalde (UI is eerlijk over onbekende state). */}
+        {suggested.data?.activeLocale && suggested.data.activeSource && (
+          <div className="mb-2 flex items-center gap-2 text-xs">
+            <span className="text-gray-500">Currently active:</span>
+            <span className="font-medium text-gray-900">
+              {suggested.data.activeLocale}
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium border bg-gray-50 text-gray-600 border-gray-200">
+              {ACTIVE_SOURCE_LABEL[suggested.data.activeSource]}
+            </span>
+          </div>
+        )}
+
+        {/* Unsaved-cue staat los van de active-row zodat het ook zichtbaar
+            blijft wanneer de resolver-call (nog) niet beschikbaar is. */}
+        {(voiceguide.contentLocale ?? null) !== contentLocale && (
+          <div className="mb-2 text-xs text-amber-700 italic">
+            Unsaved change — klik Save om toe te passen.
+          </div>
+        )}
+
         <select
+          id="content-locale-select"
+          aria-label="Content locale — kies welke taal F-VAL heuristic-pack gebruikt"
           value={contentLocale ?? ""}
           onChange={(e) =>
             setContentLocale((e.target.value as ContentLocale | "") || null)
@@ -154,40 +189,48 @@ export function VoiceDnaSection({ voiceguide, onNavigate }: VoiceDnaSectionProps
           ))}
         </select>
 
-        {/* Auto-detected suggestion */}
-        {suggested.isPending ? (
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            Detecteren op basis van brand-content...
-          </div>
-        ) : suggested.data?.locale ? (
-          <div className="mt-3 flex items-center gap-2 text-xs flex-wrap">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="text-gray-600">Auto-detected:</span>
-            <span className="font-medium text-gray-800">{suggested.data.locale}</span>
-            <span
-              className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${CONFIDENCE_BADGE[suggested.data.confidence]}`}
-            >
-              {suggested.data.confidence}
-            </span>
-            <span className="text-gray-400">
-              · {suggested.data.sourceCount} sources, {suggested.data.totalChars.toLocaleString()} chars
-            </span>
-            {suggested.data.locale !== contentLocale && (
-              <button
-                type="button"
-                onClick={() => setContentLocale(suggested.data?.locale ?? null)}
-                className="ml-auto text-emerald-700 hover:text-emerald-800 hover:underline"
+        {/* Auto-detected suggestion — informatief, geen knop. Gebruiker
+            kiest zelf in dropdown of de detection overgenomen wordt. */}
+        {(() => {
+          if (suggested.isPending) {
+            return (
+              <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Detecteren op basis van brand-content...
+              </div>
+            );
+          }
+          if (suggested.isError) {
+            return (
+              <p className="mt-3 text-xs text-amber-700 italic">
+                Auto-detectie tijdelijk niet beschikbaar.
+              </p>
+            );
+          }
+          const data = suggested.data;
+          if (!data?.locale) {
+            return (
+              <p className="mt-3 text-xs text-gray-400 italic">
+                Geen taal-signaal gedetecteerd — voeg writing-samples of brand-assets toe.
+              </p>
+            );
+          }
+          return (
+            <div className="mt-3 flex items-center gap-2 text-xs flex-wrap">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-gray-600">Auto-detected:</span>
+              <span className="font-medium text-gray-800">{data.locale}</span>
+              <span
+                className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${CONFIDENCE_BADGE[data.confidence]}`}
               >
-                Use suggested
-              </button>
-            )}
-          </div>
-        ) : (
-          <p className="mt-3 text-xs text-gray-400 italic">
-            Geen taal-signaal gedetecteerd — voeg writing-samples of brand-assets toe.
-          </p>
-        )}
+                {data.confidence}
+              </span>
+              <span className="text-gray-400">
+                · {data.sourceCount} sources, {data.totalChars.toLocaleString()} chars
+              </span>
+            </div>
+          );
+        })()}
       </div>
 
       {/* 4-axis tone sliders */}

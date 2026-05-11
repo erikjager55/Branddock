@@ -22,7 +22,7 @@ export const SUPPORTED_LOCALES = ['nl-NL', 'nl-BE', 'en-GB', 'de-DE'] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
 /** Default-locale per ISO-639-1 language-code (Workspace.contentLanguage values). */
-const DEFAULT_LOCALE_BY_LANG: Record<string, Locale> = {
+export const DEFAULT_LOCALE_BY_LANG: Record<string, Locale> = {
   en: 'en-GB',
   nl: 'nl-NL',
   de: 'de-DE',
@@ -30,7 +30,10 @@ const DEFAULT_LOCALE_BY_LANG: Record<string, Locale> = {
 };
 
 /** Ultimate fallback wanneer geen voiceguide + onbekende workspace.contentLanguage. */
-const ULTIMATE_FALLBACK: Locale = 'en-GB';
+export const ULTIMATE_FALLBACK: Locale = 'en-GB';
+
+/** Welke laag van de 3-laagse fallback de actieve locale heeft geleverd. */
+export type LocaleSource = 'voiceguide' | 'workspace-default' | 'fallback';
 
 /**
  * Validate dat een string een ondersteunde Locale is. Gebruik in API-Zod-schema's
@@ -51,7 +54,8 @@ export function isSupportedLocale(value: unknown): value is Locale {
  * separate caching-laag verantwoordelijk; resolver zelf is lookup-only).
  */
 export async function resolveLocaleForBrand(workspaceId: string): Promise<Locale> {
-  // Step 1: voiceguide.contentLocale (preferred)
+  // Hot path (F-VAL content-generation): sequentieel met short-circuit op
+  // voiceguide-hit zodat 90% van de calls slechts één DB-roundtrip kost.
   const voiceguide = await prisma.brandVoiceguide.findUnique({
     where: { workspaceId },
     select: { contentLocale: true },
@@ -60,7 +64,6 @@ export async function resolveLocaleForBrand(workspaceId: string): Promise<Locale
     return voiceguide.contentLocale;
   }
 
-  // Step 2: workspace.contentLanguage mapped to default-locale
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
     select: { contentLanguage: true },
@@ -70,6 +73,37 @@ export async function resolveLocaleForBrand(workspaceId: string): Promise<Locale
     return DEFAULT_LOCALE_BY_LANG[lang];
   }
 
-  // Step 3: ultimate fallback
   return ULTIMATE_FALLBACK;
+}
+
+/**
+ * Variant van `resolveLocaleForBrand` die ook teruggeeft uit welke laag de
+ * locale komt — voor UI-indicators die moeten tonen waarom een bepaalde
+ * locale actief is (voiceguide override / workspace default / fallback).
+ *
+ * Parallelle queries omdat de UI altijd de source-label wil tonen — geen
+ * short-circuit-baat zoals in de hot-path-variant.
+ */
+export async function resolveLocaleForBrandWithSource(
+  workspaceId: string,
+): Promise<{ locale: Locale; source: LocaleSource }> {
+  const [voiceguide, workspace] = await Promise.all([
+    prisma.brandVoiceguide.findUnique({
+      where: { workspaceId },
+      select: { contentLocale: true },
+    }),
+    prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { contentLanguage: true },
+    }),
+  ]);
+
+  if (voiceguide?.contentLocale && isSupportedLocale(voiceguide.contentLocale)) {
+    return { locale: voiceguide.contentLocale, source: 'voiceguide' };
+  }
+  const lang = workspace?.contentLanguage;
+  if (lang && DEFAULT_LOCALE_BY_LANG[lang]) {
+    return { locale: DEFAULT_LOCALE_BY_LANG[lang], source: 'workspace-default' };
+  }
+  return { locale: ULTIMATE_FALLBACK, source: 'fallback' };
 }

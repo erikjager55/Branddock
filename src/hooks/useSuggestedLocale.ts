@@ -6,12 +6,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { useWorkspace } from './use-workspace';
 
+import type { Locale, LocaleSource } from '@/lib/brand-fidelity/heuristics/locale-resolver';
+
 export interface SuggestedLocaleResponse {
-  locale: 'nl-NL' | 'nl-BE' | 'en-GB' | 'de-DE' | null;
+  locale: Locale | null;
   language: 'nl' | 'en' | 'de' | null;
   confidence: 'high' | 'medium' | 'low';
   sourceCount: number;
   totalChars: number;
+  /**
+   * Resolved locale dat F-VAL momenteel gebruikt voor heuristic-pack-keuze.
+   * Null wanneer de resolver-call faalde — UI moet dan de "Currently active"
+   * regel verbergen ipv een gefabriceerde fallback tonen.
+   */
+  activeLocale: Locale | null;
+  /** Welke laag van de 3-laagse fallback de `activeLocale` heeft geleverd. */
+  activeSource: LocaleSource | null;
 }
 
 interface ErrorBody {

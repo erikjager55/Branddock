@@ -16,6 +16,7 @@ import type {
   UpdateBrandVoiceguideBody,
   SaveForAiSection,
 } from "../types/voiceguide.types";
+import { useWorkspace } from "@/hooks/use-workspace";
 
 export const voiceguideKeys = {
   all: ["voiceguide"] as const,
@@ -51,10 +52,19 @@ export function useVoiceAnalysisStatus(jobId: string | null) {
 
 export function useUpdateVoiceguide() {
   const qc = useQueryClient();
+  const { workspaceId } = useWorkspace();
   return useMutation({
     mutationFn: (body: UpdateBrandVoiceguideBody) => updateVoiceguide(body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: voiceguideKeys.all });
+      // suggested-locale endpoint returnt ook `activeLocale` (resolved
+      // via voiceguide.contentLocale → workspace.contentLanguage), dus
+      // moet refetchen wanneer de voiceguide muteert. Skip wanneer
+      // workspaceId nog niet resolved is — de suggested-locale query
+      // is dan ook nog niet gevuld (gated by `enabled: !!workspaceId`).
+      if (workspaceId) {
+        qc.invalidateQueries({ queryKey: ['suggested-locale', workspaceId] });
+      }
     },
   });
 }

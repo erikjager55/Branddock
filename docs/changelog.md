@@ -526,6 +526,43 @@ Drie incrementele wijzigingen op de F-VAL rules-pijler na visual-smoke ontdekkin
 - Spec: -
 - Commit: `accd88c` (initial implementation) + `82eca9c` (4-round hardening)
 
+### 250. BrandVoiceguide.contentLocale picker UI (Voice DNA tab)
+
+Follow-up uit #249 deferred-list. Gaf user geen UI om `BrandVoiceguide.contentLocale` te overriden — voorheen alleen DB-script via backfill. Pilot start binnenkort en multi-locale brands (nl-BE, multi-merk agencies) hadden geen pad om handmatig te corrigeren wanneer auto-detect verkeerd zit of bewust afwijkende keuze nodig is.
+
+**Geleverd** (scaffold `f4ee9ac` + finalize-iteratie):
+
+- `src/app/api/i18n/detect-suggested-locale/route.ts` (nieuw) — GET endpoint wrapper rond `detectBrandLanguage(workspaceId)` PLUS `resolveLocaleForBrandWithSource(workspaceId)`. Twee onafhankelijke try/catch-blokken zodat een failure in detectie de active-locale niet onbruikbaar maakt (en omgekeerd). Auth-resolutie heeft eigen catch.
+- `src/hooks/useSuggestedLocale.ts` (nieuw) — TanStack hook met `staleTime: Infinity` + workspaceId-scoped queryKey; types via canonical `Locale` + `LocaleSource` re-export uit locale-resolver.
+- `src/lib/brand-fidelity/heuristics/locale-resolver.ts` — toegevoegd `resolveLocaleForBrandWithSource` (parallel queries, voor UI-indicator) naast bestaande `resolveLocaleForBrand` (hot-path, sequentieel met short-circuit). Exports `SUPPORTED_LOCALES`, `DEFAULT_LOCALE_BY_LANG`, `LocaleSource` als single source of truth.
+- `src/app/api/brandvoiceguide/route.ts` — updateSchema accepteert `contentLocale: z.enum(SUPPORTED_LOCALES).nullable().optional()`. Import direct uit locale-resolver (geen lokale duplicatie).
+- `src/features/brandvoice/components/sections/VoiceDnaSection.tsx` — Content-locale card met: "Currently active" pill (laat zien wat F-VAL gebruikt + source-label: voiceguide override / workspace default / fallback), aparte unsaved-cue, BCP-47 dropdown (4 locales), informatieve auto-detected regel met confidence-badge. `aria-label` op select.
+- `src/features/brandvoice/hooks/index.ts` — `useUpdateVoiceguide` invalidates `['suggested-locale', workspaceId]` zodat de "Currently active" pill refresht na save.
+- `scripts/smoke-tests/locale-picker-api.ts` (nieuw) — DB-laag + HTTP-laag tests met try/finally cleanup (restoreert LINFI's originele contentLocale ook bij mid-run crash).
+
+**UX-iteratie** (gedreven door pilot-user testronde):
+- Initiele "Use suggested" knop verwarrend (gebruiker dacht het was een bevestig-knop voor dropdown-keuze) → knop verwijderd, auto-detected blijft alleen als info-regel
+- Geen indicatie welke locale F-VAL daadwerkelijk gebruikt → "Currently active" pill toegevoegd (los van unsaved dropdown-state)
+- Save-actie refreshte niet de active-locale → cache-invalidation toegevoegd aan voiceguide-mutation
+
+**Finalize review-loop** — 5 iteraties (hard limit; round 5 reviewer A clean, B 2 defensive WARNINGs over documented v1 trade-offs):
+- Round 1: 2 CRITICAL gefixt (`DEFAULT_LOCALE_BY_LANG` + `SUPPORTED_LOCALE_VALUES` duplicaten — imports uit canonical resolver)
+- Round 2: catch-block fabriceerde gefakede en-GB activeLocale (corrupted UI-truth) → returnt null bij resolver-fail; `<select>` aria-label toegevoegd; `key={contentLocale}` weggehaald (niet langer nodig na verwijderen "Use suggested"); non-null `!` weg
+- Round 3: Zod-enum readonly-tuple fix; smoke-test in try/finally; workspaceId in invalidation
+- Round 4: hot-path `resolveLocaleForBrand` terug naar sequential short-circuit (perf-regressie vermeden door behoud van parallel-variant alleen in WithSource); invalidation skipt expliciet als workspaceId falsy
+- Round 5: clean op A, B's residuals zijn documented v1 limitaties (staleTime+detection-refresh)
+
+**Whitelist consistency** nu via één bron: `SUPPORTED_LOCALES` in locale-resolver wordt gebruikt door Zod-enum (route), TS-type (`Locale`), en LOCALE_OPTIONS-codes (UI). `LocaleSource` type idem voor activeSource.
+
+**Documenten**:
+- Task `tasks/done/brandvoiceguide-locale-picker.md`
+- ADR (referentie): `docs/adr/2026-05-08-locale-routing-brand-voice.md`, `docs/adr/2026-05-10-brand-language-auto-detect.md`
+
+- Task: [tasks/done/brandvoiceguide-locale-picker.md](tasks/done/brandvoiceguide-locale-picker.md)
+- ADR: -
+- Spec: -
+- Commits: scaffold `f4ee9ac`, finalize `<TBD>`
+
 ### 249. Brand-language auto-detect + backfill + runtime mismatch-guard
 
 F-VAL rules-audit van vandaag onthulde dat 5 van 15 workspaces (incl. LINFI) verkeerd geconfigureerde `Workspace.contentLanguage` hadden — content was duidelijk NL maar veld stond op default 'en'. Resultaat: F-VAL Pijler 3 gebruikte EN-GB heuristic-pack ipv NL-NL, canvas-orchestrator injecteerde "Write in English" in elke generate-prompt. Auto-detect mechanism corrigeert alle workspaces tegelijk plus runtime-guard maakt toekomstige mismatches zichtbaar zonder user-flow te onderbreken.

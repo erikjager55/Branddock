@@ -25,6 +25,7 @@ import { invalidateBrandContext } from "@/lib/ai/brand-context";
 import { syncVoiceguideToRules } from "@/lib/brand-fidelity/brand-rule-sync";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { SUPPORTED_LOCALES } from "@/lib/brand-fidelity/heuristics/locale-resolver";
 
 const VOICEGUIDE_SELECT = {
   id: true,
@@ -94,17 +95,10 @@ const channelToneEntrySchema = z.object({
     .optional(),
 });
 
-// Whitelist op BCP-47 locales — moet matchen met SUPPORTED_LOCALES in
-// `src/lib/brand-fidelity/heuristics/locale-resolver.ts`. Bewust geen
-// import om circular-dependency risico te vermijden (server-only route
-// importeert client-safe locale-resolver; consistency wordt via tests
-// gegarandeerd).
-const SUPPORTED_LOCALE_VALUES = ['nl-NL', 'nl-BE', 'en-GB', 'de-DE'] as const;
-
 const updateSchema = z.object({
   voiceDescription: z.string().nullable().optional(),
   contentLocale: z
-    .enum(SUPPORTED_LOCALE_VALUES)
+    .enum(SUPPORTED_LOCALES)
     .nullable()
     .optional(),
   toneDimensions: z.record(z.string(), z.number()).nullable().optional(),

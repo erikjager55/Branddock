@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 3 uur
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-11
-completed: -
+completed: 2026-05-11
 related-adr: 2026-05-10-brand-language-auto-detect
 related-spec: -
 worktree: -

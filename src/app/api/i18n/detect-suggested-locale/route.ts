@@ -1,41 +1,78 @@
 // ============================================================
 // GET /api/i18n/detect-suggested-locale
 //
-// Wraps `detectBrandLanguage(workspaceId)` voor de Voice DNA tab UI
-// zodat het ContentLocaleField een "Auto-detected: ..." suggestion kan
-// tonen. Read-only — geen DB-writes; tolerant voor detection-fail.
+// Twee onafhankelijke laagjes:
+//   1. `detectBrandLanguage(workspaceId)` — heuristische suggestie op basis
+//      van brand-content (writing samples / assets).
+//   2. `resolveLocaleForBrandWithSource(workspaceId)` — wat F-VAL daadwerkelijk
+//      momenteel gebruikt (canonical resolver uit locale-resolver.ts — single
+//      source of truth per ADR-3).
+//
+// Beide blokken hebben hun eigen try/catch zodat een failure in één laag de
+// andere niet onbruikbaar maakt. Op resolve-failure returnt `activeLocale`
+// = null zodat de UI eerlijk kan zijn ("kon niet bepalen") in plaats van een
+// gefabriceerde fallback te tonen.
 // ============================================================
 
 import { NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { detectBrandLanguage } from '@/lib/i18n/detect-brand-language';
+import {
+  resolveLocaleForBrandWithSource,
+  type Locale,
+  type LocaleSource,
+} from '@/lib/brand-fidelity/heuristics/locale-resolver';
+
+interface DetectSuggestedLocaleResponse {
+  locale: Locale | null;
+  language: 'nl' | 'en' | 'de' | null;
+  confidence: 'high' | 'medium' | 'low';
+  sourceCount: number;
+  totalChars: number;
+  activeLocale: Locale | null;
+  activeSource: LocaleSource | null;
+}
 
 export async function GET() {
+  let workspaceId: string | null;
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: 'No workspace' }, { status: 403 });
-    }
-
-    const detection = await detectBrandLanguage(workspaceId);
-
-    return NextResponse.json({
-      locale: detection.locale,
-      language: detection.language,
-      confidence: detection.confidence,
-      sourceCount: detection.sourcesUsed.length,
-      totalChars: detection.totalChars,
-    });
+    workspaceId = await resolveWorkspaceId();
   } catch (error) {
-    console.error('[GET /api/i18n/detect-suggested-locale]', error);
-    // Graceful degradation: UI mag werken zonder suggestion. Returnt
-    // dezelfde shape als low-confidence detection.
-    return NextResponse.json({
-      locale: null,
-      language: null,
-      confidence: 'low',
-      sourceCount: 0,
-      totalChars: 0,
-    });
+    console.error('[detect-suggested-locale] resolveWorkspaceId failed', error);
+    return NextResponse.json({ error: 'Auth resolution failed' }, { status: 500 });
   }
+  if (!workspaceId) {
+    return NextResponse.json({ error: 'No workspace' }, { status: 403 });
+  }
+
+  const response: DetectSuggestedLocaleResponse = {
+    locale: null,
+    language: null,
+    confidence: 'low',
+    sourceCount: 0,
+    totalChars: 0,
+    activeLocale: null,
+    activeSource: null,
+  };
+
+  try {
+    const detection = await detectBrandLanguage(workspaceId);
+    response.locale = detection.locale;
+    response.language = detection.language;
+    response.confidence = detection.confidence;
+    response.sourceCount = detection.sourcesUsed.length;
+    response.totalChars = detection.totalChars;
+  } catch (error) {
+    console.error('[detect-suggested-locale] detection failed', error);
+  }
+
+  try {
+    const active = await resolveLocaleForBrandWithSource(workspaceId);
+    response.activeLocale = active.locale;
+    response.activeSource = active.source;
+  } catch (error) {
+    console.error('[detect-suggested-locale] resolve-active failed', error);
+  }
+
+  return NextResponse.json(response);
 }
