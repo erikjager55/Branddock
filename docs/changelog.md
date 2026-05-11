@@ -561,7 +561,7 @@ Follow-up uit #249 deferred-list. Gaf user geen UI om `BrandVoiceguide.contentLo
 - Task: [tasks/done/brandvoiceguide-locale-picker.md](tasks/done/brandvoiceguide-locale-picker.md)
 - ADR: -
 - Spec: -
-- Commits: scaffold `f4ee9ac`, finalize `<TBD>`
+- Commits: scaffold `f4ee9ac`, finalize `0538a8d`
 
 ### 249. Brand-language auto-detect + backfill + runtime mismatch-guard
 
