@@ -170,6 +170,73 @@ export async function* orchestrateContentGeneration(
     },
   };
 
+  // ── Pre-generation checkpoint-gates (sub-sprint #6.A) ─────
+  // [1] validateBriefInput: minimum-input check. Block bij volledig leeg
+  //     → vermijd verspilde AI-calls.
+  // [2] validateContextCompleteness: brand-name required (block);
+  //     persona/product + contentLanguage warn-only.
+  // Accumulator gateWarningsAcc verzamelt warn-severity results voor
+  // latere persistentie naar AICallTrace.gateWarnings.
+  const gateWarningsAcc: import('@/lib/content-test/checkpoint-gates').GateResult[] = [];
+  {
+    const { validateBriefInput, validateContextCompleteness } = await import(
+      '@/lib/content-test/checkpoint-gates'
+    );
+    const briefGate = validateBriefInput({
+      objective: stack.brief?.objective ?? undefined,
+      keyMessage: stack.brief?.keyMessage ?? undefined,
+      toneDirection: stack.brief?.toneDirection ?? undefined,
+      callToAction: stack.brief?.callToAction ?? undefined,
+    });
+    if (!briefGate.pass) {
+      if (briefGate.severity === 'block') {
+        yield {
+          event: 'error',
+          data: {
+            message: `Pre-generation gate failed (brief-input): ${briefGate.reasons.join(' · ')}`,
+            recoverable: false,
+            gate: 'brief-input',
+          },
+        };
+        return;
+      }
+      gateWarningsAcc.push(briefGate);
+    }
+    const contextGate = validateContextCompleteness({
+      brand: stack.brand
+        ? {
+            brandName: stack.brand.brandName ?? undefined,
+            contentLanguage: stack.brand.contentLanguage ?? undefined,
+          }
+        : undefined,
+      personas: stack.personas?.map((p) => ({ name: p.name ?? undefined })),
+      products: stack.products?.map((p) => ({ name: p.name ?? undefined })),
+    });
+    if (!contextGate.pass) {
+      if (contextGate.severity === 'block') {
+        yield {
+          event: 'error',
+          data: {
+            message: `Pre-generation gate failed (context-completeness): ${contextGate.reasons.join(' · ')}`,
+            recoverable: false,
+            gate: 'context-completeness',
+          },
+        };
+        return;
+      }
+      gateWarningsAcc.push(contextGate);
+    }
+    if (gateWarningsAcc.length > 0) {
+      yield {
+        event: 'gate_warnings',
+        data: {
+          stage: 'pre-generation',
+          warnings: gateWarningsAcc.map((g) => ({ stage: g.stage, reasons: g.reasons })),
+        },
+      };
+    }
+  }
+
   // ── Determine component groups from template ──────────
   const componentTemplate = (stack.medium?.componentTemplate ?? []) as ComponentTemplateItem[];
   const textGroups = componentTemplate
