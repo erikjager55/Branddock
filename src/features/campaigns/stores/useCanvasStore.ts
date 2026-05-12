@@ -164,7 +164,12 @@ interface CanvasStoreState {
   // ─── Iteration-nudges (content-test improvement #8) ──
   // Wordt gevuld via complete event payload. UI rendert ze als chips na
   // generation om user een directe vervolgactie aan te bieden.
-  iterationNudges: Array<{ id: string; label: string; intent: string }>;
+  iterationNudges: Array<{
+    id: string;
+    label: string;
+    intent: string;
+    targetContentTypeId?: string;
+  }>;
 
   // ─── Vanille baseline (demo: "Vergelijk met vanille AI") ──
   // Wordt gevuld via de POST /api/studio/[id]/vanilla-baseline SSE flow.
@@ -353,7 +358,12 @@ interface CanvasStoreState {
   }) => void;
   resetBrandVoiceStatus: () => void;
   setIterationNudges: (
-    nudges: Array<{ id: string; label: string; intent: string }>,
+    nudges: Array<{
+      id: string;
+      label: string;
+      intent: string;
+      targetContentTypeId?: string;
+    }>,
   ) => void;
   resetIterationNudges: () => void;
   setVanillaStage: (stage: 'idle' | 'generating' | 'scoring' | 'complete' | 'error', errorMessage?: string) => void;
@@ -520,7 +530,12 @@ const INITIAL_STATE = {
     userMessage: null,
     isFallback: false,
   },
-  iterationNudges: [] as Array<{ id: string; label: string; intent: string }>,
+  iterationNudges: [] as Array<{
+    id: string;
+    label: string;
+    intent: string;
+    targetContentTypeId?: string;
+  }>,
   vanillaBaseline: {
     stage: 'idle' as const,
     preview: null,

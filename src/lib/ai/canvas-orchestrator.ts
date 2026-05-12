@@ -1026,31 +1026,53 @@ export async function* orchestrateContentGeneration(
   };
 }
 
+interface IterationNudge {
+  id: string;
+  label: string;
+  intent: string;
+  /** Concrete DELIVERABLE_TYPES.id voor derive-acties. */
+  targetContentTypeId?: string;
+}
+
 function buildIterationNudges(input: {
   contentType: string | null;
   medium: CanvasContextStack['medium'];
   hasImageComponent: boolean;
-}): Array<{ id: string; label: string; intent: string }> {
-  const nudges: Array<{ id: string; label: string; intent: string }> = [
+}): IterationNudge[] {
+  const nudges: IterationNudge[] = [
     { id: 'revise-section', label: 'Een sectie herzien', intent: 'revise_section' },
     { id: 'adjust-tone', label: 'Toon aanpassen', intent: 'adjust_tone' },
   ];
-  // Cross-channel variant-suggestie afhankelijk van huidig content-type
+  // Cross-channel variant-suggestie afhankelijk van huidig content-type.
+  // Mapping naar DELIVERABLE_TYPES.id zodat derive-endpoint precies weet
+  // welke target content-type aan te maken.
   const ct = input.contentType?.toLowerCase() ?? '';
   if (ct.includes('blog') || ct.includes('article') || ct.includes('long')) {
     nudges.push({
       id: 'variant-linkedin',
       label: 'LinkedIn-variant maken',
-      intent: 'derive_linkedin',
+      intent: 'derive',
+      targetContentTypeId: 'linkedin-post',
     });
-    nudges.push({ id: 'variant-email', label: 'E-mail-variant maken', intent: 'derive_email' });
+    nudges.push({
+      id: 'variant-email',
+      label: 'Nieuwsbrief-variant maken',
+      intent: 'derive',
+      targetContentTypeId: 'newsletter',
+    });
   } else if (ct.includes('social') || ct.includes('linkedin') || ct.includes('twitter')) {
-    nudges.push({ id: 'variant-blog', label: 'Blog-versie maken', intent: 'derive_blog' });
-  } else if (ct.includes('email')) {
+    nudges.push({
+      id: 'variant-blog',
+      label: 'Blogpost-versie maken',
+      intent: 'derive',
+      targetContentTypeId: 'blog-post',
+    });
+  } else if (ct.includes('email') || ct.includes('newsletter')) {
     nudges.push({
       id: 'variant-landing',
-      label: 'Landing-page maken',
-      intent: 'derive_landing',
+      label: 'Landingspagina maken',
+      intent: 'derive',
+      targetContentTypeId: 'landing-page',
     });
   }
   if (!input.hasImageComponent && ct.includes('blog')) {

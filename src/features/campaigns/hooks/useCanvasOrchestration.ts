@@ -545,7 +545,12 @@ function routeEvent(eventName: string, rawData: string) {
 
     case 'complete': {
       const nudges = Array.isArray(data.iterationNudges)
-        ? (data.iterationNudges as Array<{ id?: unknown; label?: unknown; intent?: unknown }>)
+        ? (data.iterationNudges as Array<{
+            id?: unknown;
+            label?: unknown;
+            intent?: unknown;
+            targetContentTypeId?: unknown;
+          }>)
             .filter(
               (n) =>
                 typeof n.id === 'string' &&
@@ -556,6 +561,10 @@ function routeEvent(eventName: string, rawData: string) {
               id: n.id as string,
               label: n.label as string,
               intent: n.intent as string,
+              targetContentTypeId:
+                typeof n.targetContentTypeId === 'string'
+                  ? (n.targetContentTypeId as string)
+                  : undefined,
             }))
         : [];
       if (nudges.length > 0) store.setIterationNudges(nudges);

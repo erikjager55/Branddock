@@ -4,12 +4,24 @@ import { resolveWorkspaceId } from '@/lib/auth-server';
 import { z } from 'zod';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 
-const deriveSchema = z.object({
-  targetPlatform: z.string().min(1).max(100),
-  targetFormat: z.string().min(1).max(100),
-  title: z.string().min(1).max(200).optional(),
-});
+// Twee paden: (1) klassiek targetPlatform + targetFormat strings,
+// (2) targetContentTypeId via DELIVERABLE_TYPES registry (iteration-nudge
+// flow uit canvas-orchestrator, content-test improvement #7).
+const deriveSchema = z
+  .object({
+    targetContentTypeId: z.string().min(1).max(100).optional(),
+    targetPlatform: z.string().min(1).max(100).optional(),
+    targetFormat: z.string().min(1).max(100).optional(),
+    title: z.string().min(1).max(200).optional(),
+  })
+  .refine(
+    (data) => data.targetContentTypeId || (data.targetPlatform && data.targetFormat),
+    {
+      message: 'Either targetContentTypeId OR both targetPlatform+targetFormat required',
+    },
+  );
 
 /** POST /api/studio/[deliverableId]/derive — Create a derivative deliverable for another platform */
 export async function POST(
@@ -46,23 +58,47 @@ export async function POST(
       );
     }
 
-    const { targetPlatform, targetFormat, title } = parsed.data;
+    const { targetContentTypeId, targetPlatform, targetFormat, title } = parsed.data;
 
-    const derivedTitle = title ??
-      `${source.title} (${targetPlatform} ${targetFormat})`;
+    // Resolve target content-type via registry of fallback op platform-format-string
+    let resolvedContentType: string;
+    let resolvedTitle: string;
+    if (targetContentTypeId) {
+      const typeDef = getDeliverableTypeById(targetContentTypeId);
+      if (!typeDef) {
+        return NextResponse.json(
+          { error: `Unknown targetContentTypeId "${targetContentTypeId}"` },
+          { status: 400 },
+        );
+      }
+      resolvedContentType = typeDef.id;
+      resolvedTitle = title ?? `${source.title} — ${typeDef.name}`;
+    } else {
+      resolvedContentType = `${targetPlatform}_${targetFormat}`;
+      resolvedTitle = title ?? `${source.title} (${targetPlatform} ${targetFormat})`;
+    }
+
+    // Strip iteration-specific snapshots uit settings — brief + visualBrief
+    // moeten meegaan, maar strictRewrite + autoIterate behoren bij het bron-
+    // document, niet bij de derived versie.
+    const sourceSettings = (source.settings as Record<string, unknown> | null) ?? {};
+    const { strictRewrite: _strict, autoIterate: _auto, ...cleanSettings } = sourceSettings;
+    void _strict;
+    void _auto;
 
     // Create derived deliverable
     const derived = await prisma.deliverable.create({
       data: {
-        title: derivedTitle,
-        contentType: `${targetPlatform}_${targetFormat}`,
+        title: resolvedTitle,
+        contentType: resolvedContentType,
         campaignId: source.campaign.id,
         derivedFromId: deliverableId,
         status: 'NOT_STARTED',
         approvalStatus: 'DRAFT',
         progress: 0,
-        // Copy pipeline-related settings from source
-        settings: source.settings ?? undefined,
+        // Inherit brief + visualBrief + voiceguide-overrides via settings;
+        // strip strictRewrite + autoIterate (bron-specifiek).
+        settings: Object.keys(cleanSettings).length > 0 ? cleanSettings : undefined,
         journeyPhase: source.journeyPhase,
       },
     });
