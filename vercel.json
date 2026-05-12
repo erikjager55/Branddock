@@ -1,8 +1,35 @@
 {
+  "regions": ["fra1"],
   "crons": [
     {
       "path": "/api/cron/run-jobs",
       "schedule": "* * * * *"
     }
-  ]
+  ],
+  "functions": {
+    "src/app/api/studio/[deliverableId]/orchestrate/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/studio/[deliverableId]/generate-visual/route.ts": {
+      "maxDuration": 120
+    },
+    "src/app/api/studio/[deliverableId]/generate-visual-compose/route.ts": {
+      "maxDuration": 120
+    },
+    "src/app/api/studio/[deliverableId]/generate-visual-trained/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/studio/[deliverableId]/generate-video/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/studio/[deliverableId]/generate-voiceover/route.ts": {
+      "maxDuration": 120
+    },
+    "src/app/api/campaigns/[id]/bulk-generate/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/cron/run-jobs/route.ts": {
+      "maxDuration": 300
+    }
+  }
 }
