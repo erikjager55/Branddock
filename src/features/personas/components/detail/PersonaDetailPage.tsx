@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { SkeletonCard } from '@/components/shared';
@@ -25,6 +25,75 @@ import { ProfileCompletenessCard, ResearchSidebarCard, QuickActionsCard, Strateg
 import { ChatWithPersonaModal } from '../chat/ChatWithPersonaModal';
 import { DeletePersonaConfirmDialog } from './DeletePersonaConfirmDialog';
 import { exportPersonaPdf } from '../../utils/exportPersonaPdf';
+import { useFormFillStore, type FormFillField } from '@/stores/useFormFillStore';
+import type { UpdatePersonaBody } from '../../types/persona.types';
+
+/**
+ * Velden die we exposeren aan de Brand Assistant via `useFormFillStore`.
+ * String-velden krijgen scalar setters; string[]-velden accepteren een
+ * volledige array OR een comma-separated string en normaliseren naar string[].
+ *
+ * Bracket-notatie wordt hier NIET gebruikt voor persona — alle array-velden
+ * zijn flat string[] zonder objects, dus full-array vervanging is natuurlijker
+ * dan per-index assignments. (Bracket-notatie wel relevant voor frameworkData
+ * in BrandAssetDetail — andere page-wiring.)
+ */
+/**
+ * String-velden. `nullable: true` velden (quote, bio) accepteren `null` in
+ * UpdatePersonaBody; andere velden zijn `string?` en accepteren alleen
+ * `undefined`. Bij een AI-fill met null/undefined sturen we voor non-nullable
+ * velden een lege string ipv `null` zodat het PATCH-schema niet breekt.
+ */
+const PERSONA_STRING_FIELDS: ReadonlyArray<{
+  key: keyof UpdatePersonaBody;
+  label: string;
+  nullable: boolean;
+}> = [
+  { key: 'name', label: 'Naam', nullable: false },
+  { key: 'tagline', label: 'Tagline', nullable: false },
+  { key: 'age', label: 'Leeftijd', nullable: false },
+  { key: 'gender', label: 'Gender', nullable: false },
+  { key: 'location', label: 'Locatie', nullable: false },
+  { key: 'occupation', label: 'Beroep', nullable: false },
+  { key: 'education', label: 'Opleiding', nullable: false },
+  { key: 'income', label: 'Inkomen', nullable: false },
+  { key: 'familyStatus', label: 'Gezinssituatie', nullable: false },
+  { key: 'personalityType', label: 'Persoonlijkheidstype', nullable: false },
+  { key: 'strategicImplications', label: 'Strategische implicaties', nullable: false },
+  { key: 'quote', label: 'Quote', nullable: true },
+  { key: 'bio', label: 'Bio', nullable: true },
+];
+
+const PERSONA_ARRAY_FIELDS: ReadonlyArray<{ key: keyof UpdatePersonaBody; label: string }> = [
+  { key: 'coreValues', label: 'Core values' },
+  { key: 'interests', label: 'Interesses' },
+  { key: 'goals', label: 'Doelen' },
+  { key: 'motivations', label: 'Motivaties' },
+  { key: 'frustrations', label: 'Frustraties' },
+  { key: 'behaviors', label: 'Gedragingen' },
+  { key: 'preferredChannels', label: 'Voorkeurs-kanalen' },
+  { key: 'techStack', label: 'Tech stack' },
+  { key: 'buyingTriggers', label: 'Aankoop-triggers' },
+  { key: 'decisionCriteria', label: 'Beslissingscriteria' },
+];
+
+/** Normaliseer AI-output naar een string-array voor array-velden. */
+function normalizeArrayValue(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((v) => String(v));
+  if (typeof value === 'string') {
+    return value
+      .split(/[,\n]/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  return [];
+}
+
+/** Format een array als comma-separated preview, of null wanneer leeg. */
+function formatArrayPreview(arr: string[] | null | undefined): string | null {
+  if (!arr || arr.length === 0) return null;
+  return arr.join(', ');
+}
 
 interface PersonaDetailPageProps {
   personaId: string;
@@ -72,6 +141,30 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
     return () => setActiveEntity(null);
   }, [persona?.id, persona?.name, setActiveEntity]);
 
+  // Batched-mutate via microtask: meerdere setters in dezelfde tick (zoals
+  // wanneer `fill_form_fields` N assignments synchroon doorloopt) worden
+  // in één enkele `updatePersona.mutate({ ...allFields })` call gemerged.
+  // Anders zou de UI N parallelle PATCH-calls vuren, één per veld.
+  const pendingUpdateRef = useRef<UpdatePersonaBody>({});
+  const flushScheduledRef = useRef(false);
+  const updatePersonaMutate = updatePersona.mutate;
+  const enqueueUpdate = useCallback(
+    (partial: UpdatePersonaBody) => {
+      pendingUpdateRef.current = { ...pendingUpdateRef.current, ...partial };
+      if (flushScheduledRef.current) return;
+      flushScheduledRef.current = true;
+      queueMicrotask(() => {
+        const payload = pendingUpdateRef.current;
+        pendingUpdateRef.current = {};
+        flushScheduledRef.current = false;
+        if (Object.keys(payload).length > 0) {
+          updatePersonaMutate(payload);
+        }
+      });
+    },
+    [updatePersonaMutate],
+  );
+
   // Lock state & visibility
   const lockState = useLockState({
     entityType: 'personas',
@@ -95,6 +188,54 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
       setEditing(false);
     }
   }, [lockState.isLocked, isEditing, setEditing]);
+
+  // Form-fill registry — exposeert persona-velden aan de Brand Assistant
+  // zodat `fill_form_fields` ze via `updatePersona.mutate()` kan schrijven.
+  // Verborgen wanneer locked (alle setters zouden falen op de API anyway).
+  const formFillFields = useMemo<FormFillField[]>(() => {
+    if (!persona || lockState.isLocked) return [];
+    const stringFields = PERSONA_STRING_FIELDS.map<FormFillField>((field) => {
+      const current = persona[field.key as keyof typeof persona];
+      const currentString = typeof current === 'string' ? current : null;
+      return {
+        key: field.key,
+        label: field.label,
+        currentValue: currentString && currentString.trim().length > 0 ? currentString : null,
+        setter: (value) => {
+          // Null/undefined → '' voor non-nullable velden (PATCH-schema staat
+          // null niet toe); voor nullable velden (quote, bio) blijft null
+          // expliciet behouden zodat "clear" semantisch correct landt in DB.
+          const normalized =
+            value == null
+              ? field.nullable
+                ? null
+                : ''
+              : String(value);
+          enqueueUpdate({ [field.key]: normalized } as UpdatePersonaBody);
+        },
+      };
+    });
+    const arrayFields = PERSONA_ARRAY_FIELDS.map<FormFillField>((field) => {
+      const current = persona[field.key as keyof typeof persona];
+      const currentArray = Array.isArray(current) ? (current as string[]) : null;
+      return {
+        key: field.key,
+        label: field.label,
+        currentValue: formatArrayPreview(currentArray),
+        setter: (value) => {
+          enqueueUpdate({ [field.key]: normalizeArrayValue(value) } as UpdatePersonaBody);
+        },
+      };
+    });
+    return [...stringFields, ...arrayFields];
+  }, [persona, lockState.isLocked, enqueueUpdate]);
+
+  useEffect(() => {
+    useFormFillStore.getState().registerFields(formFillFields);
+    return () => {
+      useFormFillStore.getState().clearFields();
+    };
+  }, [formFillFields]);
 
   if (isLoading) {
     return (

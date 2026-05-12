@@ -21,6 +21,24 @@ import {
   getCtaSuggestions,
   type ContentTypeInputValue,
 } from '../../../lib/content-type-inputs';
+import { useFormFillStore, type FormFillField } from '@/stores/useFormFillStore';
+
+/**
+ * Format een ContentTypeInputValue naar de preview-string die de AI ziet
+ * via `currentValue` in de form-fill registry. Lege waarden worden `null`
+ * zodat het systeem-prompt eerlijk laat zien dat het veld nog leeg is.
+ */
+function formatCurrentValue(v: ContentTypeInputValue | undefined): string | null {
+  if (v == null) return null;
+  if (typeof v === 'string') {
+    const trimmed = v.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  if (Array.isArray(v)) return v.length > 0 ? v.join(', ') : null;
+  if (typeof v === 'boolean') return v ? 'yes' : null;
+  if (typeof v === 'number') return String(v);
+  return null;
+}
 
 interface Step1ContextProps {
   deliverableId: string;
@@ -34,7 +52,70 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const contentType = useCanvasStore((s) => s.contentType);
   const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
+  const brief = useCanvasStore((s) => s.brief);
+  const setBriefField = useCanvasStore((s) => s.setBriefField);
+  const setContentTypeInput = useCanvasStore((s) => s.setContentTypeInput);
   const { generate, isGenerating } = useCanvasOrchestration(deliverableId);
+
+  // Form-fill registry — exposeert briefing-velden aan de Brand Assistant
+  // zodat `fill_form_fields` tool ze direct kan schrijven via de bestaande
+  // store-actions. Re-registreert bij elke value-change zodat `currentValue`
+  // in het systeem-prompt actueel is. Cleanup op unmount.
+  const contentTypeFields = React.useMemo(
+    () => (contentType ? getContentTypeInputs(contentType) : []),
+    [contentType],
+  );
+  React.useEffect(() => {
+    const fields: FormFillField[] = [
+      {
+        key: 'objective',
+        label: 'Objective',
+        currentValue: brief.objective.trim() || null,
+        setter: (value) => setBriefField('objective', String(value ?? '')),
+      },
+      {
+        key: 'keyMessage',
+        label: 'Key message',
+        currentValue: brief.keyMessage.trim() || null,
+        setter: (value) => setBriefField('keyMessage', String(value ?? '')),
+      },
+      {
+        key: 'toneDirection',
+        label: 'Tone of voice',
+        currentValue: brief.toneDirection.trim() || null,
+        setter: (value) =>
+          setBriefField(
+            'toneDirection',
+            Array.isArray(value) ? value.join(', ') : String(value ?? ''),
+          ),
+      },
+      {
+        key: 'callToAction',
+        label: 'Call to action',
+        currentValue: brief.callToAction.trim() || null,
+        setter: (value) => setBriefField('callToAction', String(value ?? '')),
+      },
+      ...contentTypeFields.map<FormFillField>((field) => ({
+        key: field.key,
+        label: field.label,
+        currentValue: formatCurrentValue(contentTypeInputs[field.key]),
+        setter: (value) => setContentTypeInput(field.key, value as ContentTypeInputValue),
+      })),
+    ];
+    useFormFillStore.getState().registerFields(fields);
+    return () => {
+      useFormFillStore.getState().clearFields();
+    };
+  }, [
+    brief.objective,
+    brief.keyMessage,
+    brief.toneDirection,
+    brief.callToAction,
+    contentTypeInputs,
+    contentTypeFields,
+    setBriefField,
+    setContentTypeInput,
+  ]);
 
   // When content has already been generated (variants exist in the store,
   // loaded either from a wizard session or from persisted DeliverableComponent

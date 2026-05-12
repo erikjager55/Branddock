@@ -526,6 +526,44 @@ Drie incrementele wijzigingen op de F-VAL rules-pijler na visual-smoke ontdekkin
 - Spec: -
 - Commit: `accd88c` (initial implementation) + `82eca9c` (4-round hardening)
 
+### 251. Brand Assistant page-wiring — Step1Context + PersonaDetail + BrandAssetDetail
+
+Sluit BCP Phase 2 Phase 0.2.A vervolg-cluster af. Foundation (`useFormFillStore` + `fill_form_fields` tool + system-prompt surfacing + MutationConfirmCard handler) was 2026-05-08 gemerged maar geen enkele page registreerde nog velden — AI zag overal `formFillFields = []`. Resultaat na deze entry: Brand Assistant kan op de 3 hoogvolume-pages "vul X met Y" begrijpen, confirm-card tonen, en het veld via de bestaande mutation-paden persisteren.
+
+**Geleverd** (`f4ee9ac` scaffold pad reused; eigen commit volgt):
+
+- `src/features/campaigns/components/canvas/accordion/Step1Context.tsx` (modify) — `useEffect` registreert `objective` / `keyMessage` / `toneDirection` / `callToAction` + content-type-specifieke velden bij `useFormFillStore`. Setters routen direct via bestaande `useCanvasStore.setBriefField` + `setContentTypeInput` (geen refactor). `formatCurrentValue` helper voor string/array/boolean preview.
+- `src/features/personas/components/detail/PersonaDetailPage.tsx` (modify) — page-level adapter expose 23 velden (13 strings + 10 string-arrays). Batched-mutate via `queueMicrotask` + ref accumulator: N synchrone setter-calls in `fill_form_fields.applyFill` loop worden in 1 `updatePersona.mutate(...)` gemerged ipv N parallelle PATCH-calls. `null → ''` coercion voor non-nullable string-fields (PATCH-schema accepteert null niet); null behouden voor nullable `quote` / `bio` zodat "clear" semantisch correct landt. Locked = geen velden exposeren.
+- `src/features/brand-asset-detail/components/BrandAssetDetailPage.tsx` (modify) — polymorphic frameworkData adapter exposeert top-level keys ongeacht frameworkType (BRAND_ESSENCE / PURPOSE_WHEEL / etc.). Server-side shallow merge in `/api/brand-assets/[id]/framework` PATCH route betekent dat we alleen gewijzigde keys hoeven te sturen — elimineert stale-baseData race wanneer meerdere fills snel achter elkaar gebeuren. `humanizeKey` voor labels, `formatFrameworkPreview` voor previews (string/number/array → tekst, object → `<N fields>` hint).
+
+**Trade-offs gedocumenteerd**:
+- Geen bracket-notatie support in v1 — AI moet hele nested objecten/arrays meesturen wanneer het sub-keys wil wijzigen. Server merget shallow op top-level, dus partiële nested objecten verliezen niet-genoemde sub-keys. Acceptabel omdat de AI de structuur sowieso moet kennen voor consistente updates.
+- Step1Context heeft geen lock-state check — content briefs zijn niet locked in huidige model. Persona/Asset wel.
+- Browser-smoke (5 stappen Step1/Persona/Asset/Δ-1 compat/edge-case) uitgesteld naar pre-launch sprint #4 batch — consistent met de pre-launch-smoke-batch deferral (zie eerdere entry). Code passes tsc + lint clean, 2 review-rondes 0 CRITICAL.
+
+**Δ-1 compat (uit done task acceptance-criteria)**:
+- `pageContext.sectionPath` voor Canvas Step 4 — sinds Surface D shipped impliciet voldaan
+- `inspect_current_entity` op Canvas Step 4 — Surface D gebruikt eigen `review_content` tool, niet inspect; criterium achterhaald
+- Read-tool chat-card pattern — `BrandReviewResultCard` werkt via Surface D-pattern; geen nieuwe verificatie nodig
+
+**Finalize review-loop** — 2 iteraties (clean op round 2):
+- Round 1: 1 CRITICAL gefixt (BrandAssetDetailPage stale-baseData race; server merge betekent geen full-frameworkData spread nodig), 1 WARNING gefixt (PersonaDetailPage string null-coercion via `nullable` flag per veld)
+- Round 2: Reviewer A clean, Reviewer B residual WARNINGs zijn "Pattern is safe, no action" — geen actionable changes
+
+**Files modified**:
+- `src/features/campaigns/components/canvas/accordion/Step1Context.tsx`
+- `src/features/personas/components/detail/PersonaDetailPage.tsx`
+- `src/features/brand-asset-detail/components/BrandAssetDetailPage.tsx`
+
+**Documenten**:
+- Task: [tasks/done/claw-page-awareness-vervolg.md](tasks/done/claw-page-awareness-vervolg.md)
+- Parent task: [tasks/done/claw-page-awareness.md](tasks/done/claw-page-awareness.md) — Phase 0.2.A foundation
+
+- Task: [tasks/done/claw-page-awareness-vervolg.md](tasks/done/claw-page-awareness-vervolg.md)
+- ADR: -
+- Spec: -
+- Commit: `<TBD>`
+
 ### 250. BrandVoiceguide.contentLocale picker UI (Voice DNA tab)
 
 Follow-up uit #249 deferred-list. Gaf user geen UI om `BrandVoiceguide.contentLocale` te overriden — voorheen alleen DB-script via backfill. Pilot start binnenkort en multi-locale brands (nl-BE, multi-merk agencies) hadden geen pad om handmatig te corrigeren wanneer auto-detect verkeerd zit of bewust afwijkende keuze nodig is.

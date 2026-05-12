@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useAssetDetail, useUpdateFramework } from "../hooks/useBrandAssetDetail";
@@ -31,6 +31,45 @@ import type { BrandAssetDetail } from "../types/brand-asset-detail.types";
 import { useLockState } from "@/hooks/useLockState";
 import { LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFormFillStore, type FormFillField } from "@/stores/useFormFillStore";
+
+/** camelCase → Title Case (zonder externe lib). "essenceStatement" → "Essence statement". */
+function humanizeKey(key: string): string {
+  return key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (c) => c.toUpperCase())
+    .trim()
+    .toLowerCase()
+    .replace(/^./, (c) => c.toUpperCase());
+}
+
+/**
+ * Preview-string voor een veld-waarde. Doel: AI ziet exact wat momenteel
+ * staat zodat het kan beslissen of een fill nodig is. Voor diep-geneste
+ * objecten of grote arrays: een korte hint ("<3 fields>", "<5 items>") +
+ * de top-level shape is voldoende — AI moet anyway het hele object/array
+ * meesturen wanneer het wil schrijven (geen bracket-notatie in v1).
+ */
+function formatFrameworkPreview(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'boolean') return value ? 'yes' : 'no';
+  if (Array.isArray(value)) {
+    if (value.length === 0) return null;
+    if (value.every((v) => typeof v === 'string')) return value.join(', ');
+    return `<${value.length} items>`;
+  }
+  if (typeof value === 'object') {
+    const keys = Object.keys(value as Record<string, unknown>);
+    if (keys.length === 0) return null;
+    return `<${keys.length} fields>`;
+  }
+  return null;
+}
 
 /** Parsed companion framework data for cross-referencing between Brand Essence ↔ Brand Promise. */
 interface CompanionData {
@@ -166,6 +205,62 @@ export function BrandAssetDetailPage({
       setIsEditing(false);
     }
   }, [lockState.isLocked, isEditing, setIsEditing]);
+
+  // Batched-mutate via microtask — meerdere setters in dezelfde tick (zoals
+  // wanneer fill_form_fields N assignments synchroon doorloopt) worden in
+  // één enkele updateFramework.mutate call gemerged. De PATCH-route
+  // (`/api/brand-assets/[id]/framework`) doet server-side shallow merge op
+  // top-level keys, dus we sturen alleen de gewijzigde keys — geen full-
+  // frameworkData spread nodig. Dat elimineert de stale-baseData race
+  // wanneer meerdere fills snel achter elkaar gebeuren.
+  const pendingFrameworkRef = useRef<Record<string, unknown> | null>(null);
+  const flushScheduledRef = useRef(false);
+  const updateFrameworkMutate = updateFramework.mutate;
+  const enqueueFrameworkUpdate = useCallback(
+    (key: string, value: unknown) => {
+      const base = pendingFrameworkRef.current ?? {};
+      base[key] = value;
+      pendingFrameworkRef.current = base;
+      if (flushScheduledRef.current) return;
+      flushScheduledRef.current = true;
+      queueMicrotask(() => {
+        const payload = pendingFrameworkRef.current;
+        pendingFrameworkRef.current = null;
+        flushScheduledRef.current = false;
+        if (payload && Object.keys(payload).length > 0) {
+          updateFrameworkMutate({ frameworkData: payload });
+        }
+      });
+    },
+    [updateFrameworkMutate],
+  );
+
+  // Form-fill registry — exposeert top-level frameworkData keys aan de Brand
+  // Assistant. Voor v1: alleen top-level keys (geen bracket-notatie). AI moet
+  // hele arrays/objecten meesturen wanneer het nested-fields wil wijzigen —
+  // de server merget shallow, dus partiële nested objecten verliezen niet-
+  // genoemde sub-keys. Documented limitation in task-file.
+  const formFillFields = useMemo<FormFillField[]>(() => {
+    if (!asset || lockState.isLocked) return [];
+    const fd = asset.frameworkData;
+    if (!fd || typeof fd !== 'object' || Array.isArray(fd)) return [];
+    const fdObj = fd as Record<string, unknown>;
+    return Object.keys(fdObj).map<FormFillField>((key) => ({
+      key,
+      label: humanizeKey(key),
+      currentValue: formatFrameworkPreview(fdObj[key]),
+      setter: (value) => {
+        enqueueFrameworkUpdate(key, value);
+      },
+    }));
+  }, [asset, lockState.isLocked, enqueueFrameworkUpdate]);
+
+  useEffect(() => {
+    useFormFillStore.getState().registerFields(formFillFields);
+    return () => {
+      useFormFillStore.getState().clearFields();
+    };
+  }, [formFillFields]);
 
   if (!assetId) {
     return (
