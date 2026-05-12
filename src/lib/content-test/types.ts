@@ -39,6 +39,8 @@ export type PropertyEvalCheckId =
   | 'pii-safety'
   | 'heading-hierarchy'
   | 'cta-presence'
+  | 'cta-quality'
+  | 'meta-description-compliance'
   | 'hallucination-flag'
   | 'sentence-case-headings'
   | 'minimum-heading-count'

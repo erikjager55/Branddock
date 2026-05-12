@@ -74,7 +74,7 @@ gebruik.`;
   assert('clean content: passed = true', cleanResult.passed === true);
   assert('clean content: 0 block-violations', cleanResult.blockViolations.length === 0);
   assert('clean content: runtime < 100ms', cleanResult.runtimeMs < 100, `got ${cleanResult.runtimeMs.toFixed(1)}ms`);
-  assert('clean content: all 15 checks executed', cleanResult.results.length === 15);
+  assert('clean content: all 17 checks executed', cleanResult.results.length === 17);
 
   // ─── Per-check negative-case fixtures ────────────────────────
 
@@ -127,6 +127,28 @@ gebruik.`;
   const noCtaContent = 'Onze diensten zijn beschikbaar. Wij helpen graag bij vraagstukken in jouw sector. Meer informatie volgt later.';
   const noCtaResult = runAllPropertyEvals(noCtaContent, defaultContext({ requiresCTA: true }));
   assert('#9 cta-presence flags missing action-verb when requiresCTA', !find(noCtaResult.results, 'cta-presence').pass);
+
+  // #16 cta-quality: generic "Submit" / "Lees meer" zonder specificiteit
+  const genericCtaContent = 'Klik hier voor meer informatie over onze diensten en aanbiedingen.';
+  const genericCtaResult = runAllPropertyEvals(
+    genericCtaContent,
+    defaultContext({ requiresCTA: true, groupType: 'cta' }),
+  );
+  assert(
+    '#16 cta-quality flags generic "Klik hier"',
+    !find(genericCtaResult.results, 'cta-quality').pass,
+  );
+
+  // #17 meta-description-compliance: te kort + generic opener
+  const badMetaContent = 'Welkom bij Napking';
+  const badMetaResult = runAllPropertyEvals(
+    badMetaContent,
+    defaultContext({ groupType: 'meta_description' }),
+  );
+  assert(
+    '#17 meta-description-compliance flags too-short + generic opener',
+    !find(badMetaResult.results, 'meta-description-compliance').pass,
+  );
 
   // #10 hallucination-flag: 3+ unknown capitalized entities
   const hallucinateContent = 'Bij Napking werken we samen met Acme Corp, Globex Industries, Initech Solutions en TechStartup BV.';

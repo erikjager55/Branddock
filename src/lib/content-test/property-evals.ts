@@ -340,6 +340,162 @@ export function checkCtaPresence(
 }
 
 /**
+ * #16 — CTA-quality: meer dan alleen action-verb presence. Toetst op
+ * specifiekheid (niet alleen "Submit"), risk-reduction language
+ * ("no credit card", "free for X days") en single primary CTA-density.
+ *
+ * Inspired by Cowork content-creation guidelines: action-verb opening,
+ * specificity over generic submit, risk reduction, één primaire CTA.
+ */
+const RISK_REDUCTION_PATTERNS_NL = [
+  /\bgeen\s+creditcard\b/i,
+  /\bgratis\s+(?:voor|tot)\s+\d+\s*(?:dag|week|maand)/i,
+  /\bopzeggen?\s+wanneer\s+(?:je\s+wilt|gewenst)/i,
+  /\bgeen\s+verplichtingen?\b/i,
+  /\b(?:gratis|free)\s+proberen\b/i,
+  /\b14\s*dagen\s+gratis\b/i,
+];
+const RISK_REDUCTION_PATTERNS_EN = [
+  /\bno\s+credit\s+card\s+required\b/i,
+  /\bfree\s+for\s+\d+\s*(?:days?|weeks?|months?)/i,
+  /\bcancel\s+(?:anytime|whenever)\b/i,
+  /\bno\s+commitment\b/i,
+  /\btry\s+(?:it\s+)?free\b/i,
+  /\b\d+[-\s]?day\s+free\s+trial\b/i,
+];
+const GENERIC_CTA_TERMS = [
+  /\bsubmit\b/i,
+  /\bverstuur\b/i,
+  /\bversturen\b/i,
+  /\bclick\s+here\b/i,
+  /\bklik\s+hier\b/i,
+  /\blees\s+meer\b/i,
+  /\bmeer\s+info\b/i,
+  /\bread\s+more\b/i,
+  /\bcontact\s+(?:us|ons)\b/i,
+];
+
+export function checkCtaQuality(
+  content: string,
+  requiresCTA: boolean,
+  language: string,
+  groupType: string,
+): PropertyEvalResult {
+  // Alleen relevant voor CTA-bearing groups (cta, button, hero CTA copy).
+  // Skip body/headline/meta tenzij requiresCTA true is.
+  const isCtaGroup = ['cta', 'button', 'call_to_action'].includes(groupType.toLowerCase());
+  if (!isCtaGroup && !requiresCTA) {
+    return { check: 'cta-quality', pass: true, severity: 'info', reason: 'Geen CTA-context (skip)' };
+  }
+  const lower = content.toLowerCase();
+  const issues: string[] = [];
+
+  // Generic-CTA detectie ("Submit", "Click here", "Lees meer") — warn omdat
+  // specifieker CTA conversie verhoogt.
+  const genericMatches = GENERIC_CTA_TERMS.filter((re) => re.test(content));
+  if (genericMatches.length > 0 && content.length < 200) {
+    issues.push(
+      'Generieke CTA-tekst gedetecteerd; specifieker zoals "Start je gratis proefperiode" werkt beter dan "Submit"',
+    );
+  }
+
+  // Risk-reduction language — alleen flag wanneer dit een CTA-group is
+  // (anders is afwezigheid niet relevant). Info-severity want niet altijd nodig.
+  const riskPatterns =
+    language === 'nl' ? RISK_REDUCTION_PATTERNS_NL : RISK_REDUCTION_PATTERNS_EN;
+  const hasRiskReduction = riskPatterns.some((re) => re.test(lower));
+  if (!hasRiskReduction && isCtaGroup && content.length > 80) {
+    // Alleen voor langere CTAs (hero CTA copy bv) — korte action buttons
+    // hoeven geen risk-reduction
+    issues.push(
+      'Geen risk-reduction language (e.g. "geen creditcard", "14 dagen gratis", "opzeggen wanneer je wilt")',
+    );
+  }
+
+  // Multi-primary-CTA check: tel hoeveel duidelijke CTAs in content staan.
+  // > 1 actiewoord = mogelijk meerdere concurrerende CTAs, kan conversie hurt.
+  const verbs = language === 'nl' ? ACTION_VERBS_NL : ACTION_VERBS_EN;
+  const verbHits = verbs.reduce(
+    (acc, v) => acc + (lower.match(new RegExp(`\\b${v}\\b`, 'g'))?.length ?? 0),
+    0,
+  );
+  if (verbHits > 2 && isCtaGroup) {
+    issues.push(
+      `Meerdere CTAs (${verbHits}) gedetecteerd; één primaire CTA werkt beter dan meerdere concurrerende acties`,
+    );
+  }
+
+  if (issues.length === 0) {
+    return { check: 'cta-quality', pass: true, severity: 'info', reason: 'OK' };
+  }
+  return {
+    check: 'cta-quality',
+    pass: false,
+    severity: 'warn',
+    reason: issues.join('; '),
+  };
+}
+
+/**
+ * #17 — Meta-description compliance: alleen relevant voor meta_description /
+ * meta-description groups. SEO-vereisten: 120-160 chars, niet generic,
+ * niet beginnend met "Welkom" / "Wij zijn".
+ *
+ * Inspired by Cowork content-creation §4.2: meta description ≤ 160 tekens,
+ * primair keyword, klikwaardig.
+ */
+const META_DESC_OPENERS_TO_AVOID = [
+  /^welkom\s+bij\b/i,
+  /^wij\s+zijn\b/i,
+  /^we\s+zijn\b/i,
+  /^welcome\s+to\b/i,
+  /^we\s+are\b/i,
+];
+
+export function checkMetaDescriptionCompliance(
+  content: string,
+  groupType: string,
+): PropertyEvalResult {
+  const isMetaDesc = ['meta_description', 'meta-description', 'metadescription'].includes(
+    groupType.toLowerCase(),
+  );
+  if (!isMetaDesc) {
+    return { check: 'meta-description-compliance', pass: true, severity: 'info', reason: 'Niet meta-description (skip)' };
+  }
+
+  const trimmed = content.trim();
+  const length = trimmed.length;
+  const issues: string[] = [];
+
+  // SEO sweet-spot: 120-160 chars. Onder 80 = onderbenut, boven 160 = clip in SERP
+  if (length < 80) {
+    issues.push(`Meta-description ${length} chars — onder SEO-minimum (120-160 sweet-spot)`);
+  } else if (length > 160) {
+    issues.push(`Meta-description ${length} chars — overschrijdt 160 chars (Google SERP clip)`);
+  }
+
+  // Generic-opener detection
+  if (META_DESC_OPENERS_TO_AVOID.some((re) => re.test(trimmed))) {
+    issues.push('Generieke opener; begin met benefit/keyword i.p.v. "Welkom bij..."');
+  }
+
+  // Trailing-dot expectation (klikwaardigheid)
+  if (!/[.!?]$/.test(trimmed)) {
+    issues.push('Geen eindleesteken — meta-description hoort als volledige zin te eindigen');
+  }
+
+  if (issues.length === 0) {
+    return { check: 'meta-description-compliance', pass: true, severity: 'info', reason: 'OK' };
+  }
+  return {
+    check: 'meta-description-compliance',
+    pass: false,
+    severity: 'warn',
+    reason: issues.join('; '),
+  };
+}
+
+/**
  * #10 — Hallucination-flag: brand/product-namen die niet in workspace-context
  * staan. Warn-severity — false-positives mogelijk bij legitieme nieuwe naam.
  */
@@ -533,6 +689,8 @@ export function runAllPropertyEvals(
   results.push(checkBannedPhrase(content, context.expectedLanguage));
   results.push(checkHeadingHierarchy(content));
   results.push(checkCtaPresence(content, context.requiresCTA, context.expectedLanguage));
+  results.push(checkCtaQuality(content, context.requiresCTA, context.expectedLanguage, context.groupType));
+  results.push(checkMetaDescriptionCompliance(content, context.groupType));
   results.push(checkHallucinationFlag(content, context.knownEntities));
   results.push(checkSentenceCaseHeadings(content, context.expectedLanguage));
   results.push(checkMinimumHeadingCount(content, context.contentType));
@@ -553,7 +711,7 @@ export function runAllPropertyEvals(
   };
 }
 
-/** Lijst alle 15 check-ids voor test-discovery en UI. */
+/** Lijst alle 17 check-ids voor test-discovery en UI. */
 export const ALL_CHECK_IDS: PropertyEvalCheckId[] = [
   'schema-valid',
   'language-match',
@@ -564,6 +722,8 @@ export const ALL_CHECK_IDS: PropertyEvalCheckId[] = [
   'pii-safety',
   'heading-hierarchy',
   'cta-presence',
+  'cta-quality',
+  'meta-description-compliance',
   'hallucination-flag',
   'sentence-case-headings',
   'minimum-heading-count',

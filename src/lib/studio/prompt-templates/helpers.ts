@@ -119,8 +119,48 @@ Before writing your content, mentally verify each item below. Do NOT include thi
 If any answer is unclear, the content will feel generic. Mentally adjust BEFORE writing — then produce only the final content.
 `;
 
+/**
+ * Formula library voor headlines, hooks en CTAs — geïnspireerd op Cowork
+ * content-creation skill §4.2. Geef het model expliciete formules om uit te
+ * kiezen i.p.v. te improviseren. Verbetert headline-variatie en CTA-kwaliteit.
+ *
+ * Versie 1.2.0 (toegevoegd 2026-05-12 — content-test improvement #2/#3/#5).
+ */
+const FORMULA_LIBRARY = `
+
+## FORMULE-BIBLIOTHEEK (kies bij headlines, hooks, CTAs)
+
+### Headline-formules (kies 1, varieer per variant)
+- "Hoe [resultaat] zonder [obstakel]" — *Hoe je teams sneller laat schrijven zonder kwaliteit te verliezen*
+- "[Getal] [adjectief] manieren om [resultaat]" — *5 onverwachte manieren om customer churn te verlagen*
+- "Waarom [veelgehoorde aanname] verkeerd is (en wat dan wel werkt)" — *Waarom A/B-testen voor SaaS niet meer werkt*
+- "De [adjectief] gids voor [onderwerp]" — *De pragmatische gids voor prompt-engineering*
+- "[Doe dit], niet [dat]" — *Schrijf voor 1 persoon, niet voor 'het publiek'*
+- "Wat [resultaat] ons leerde over [onderwerp]" — *Wat 1000 ARR-conversies ons leerden over pricing-pages*
+- "[Onderwerp]: wat [doelgroep] moet weten in [jaar]" — *AI-content: wat marketing-leads moeten weten in 2026*
+
+### Hook-formules voor eerste regel/openingszin
+- **Statistiek (verrassend)**: "73% van marketing-managers zegt dat hun grootste uitdaging niet budget is, maar focus."
+- **Contraire stelling**: "De beste campagnes beginnen met 'nee' zeggen tegen de meeste kanalen."
+- **Vraag**: "Wanneer kocht een marketing-e-mail jouw aandacht voor het laatst écht?"
+- **Scenario**: "Stel je voor dat je vóór de livegang al weet welke boodschap aanslaat."
+- **Bold claim**: "De meeste landingspagina's verliezen de helft van hun bezoekers in drie seconden."
+- **Story opening**: "Vorig kwartaal werkten we 20 uur per week aan rapportage. Dit veranderden we."
+
+Gebruik nooit generieke openers zoals "In de wereld van vandaag", "Het is belangrijk om", of "Samengevat".
+
+### CTA-richtlijnen
+- **Actiewerkwoorden**: Start, Probeer, Download, Bekijk, Reserveer, Krijg, Ontvang, Begin, Ontdek. NIET: Submit, Verstuur, Klik hier, Lees meer, Meer info.
+- **Specifiek**: "Start je gratis proefperiode" werkt beter dan "Submit" — laat zien WAT er gebeurt.
+- **Risico verlagen**: "Geen creditcard nodig", "14 dagen gratis", "Opzeggen wanneer je wilt".
+- **Eén primaire CTA per pagina/e-mail** — meerdere concurrerende CTAs verlagen conversie.
+
+### Headline-multivariate output
+Wanneer het type meerdere headline-varianten vraagt: produceer 2-3 opties die verschillende formules gebruiken (bv. variant 1 = statistiek, variant 2 = contraire stelling, variant 3 = "hoe X zonder Y"). Geef impliciet aan welke je sterkste vindt door deze als eerste te plaatsen.
+`;
+
 export function buildBaseSystemPrompt(typeInstructions: string): string {
-  return `${typeInstructions}${OUTPUT_FORMAT_INSTRUCTIONS}${REASONING_APPROACH}
+  return `${typeInstructions}${OUTPUT_FORMAT_INSTRUCTIONS}${REASONING_APPROACH}${FORMULA_LIBRARY}
 
 ## QUALITY GUARDRAILS — MANDATORY
 1. NEVER use placeholder values (€XX, $XX, [PRICE], TBD, etc.) — omit pricing entirely if unknown. Exception: press releases and similar formats may use [PLACEHOLDER] markers for names/contacts where the type-specific instructions explicitly call for them.

@@ -5,7 +5,7 @@
 // Social Carousel
 // =============================================================
 
-export const PROMPT_VERSION = '1.1.0';
+export const PROMPT_VERSION = '1.2.0';
 
 import type { PromptTemplate } from './helpers';
 import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './helpers';
