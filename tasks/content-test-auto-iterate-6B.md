@@ -15,16 +15,17 @@ worktree: -
 
 # Status 2026-05-12
 
-**Foundation modules (5/7 deliverables — backend complete)**:
+**Foundation modules (6/7 deliverables compleet)**:
 - ✅ feedback-compiler (`src/lib/content-test/feedback-compiler.ts`, 14/14 smoke) — commit f10c3c5
 - ✅ auto-iterate orchestrator module (`src/lib/ai/auto-iterate.ts`, 17/17 smoke) — commit 4ed8045
 - ✅ per-type thresholds backend (Prisma + accessor + API) — commit e099d61
 - ✅ edit-distance signal (Prisma + Levenshtein + inline-edit hook) — commit b289fea
 - ✅ Settings → Validation UI (ThresholdsTable) — commit f71d116
+- ✅ Canvas-orchestrator wiring + auto-iterate-integration module (FEATURE_AUTO_ITERATE env-flag, snapshot naar Deliverable.settings.autoIterate, LearningEvent attribution per iteration)
 
 **Pending**:
-- ⏳ Canvas-orchestrator auto-iterate wiring (non-triviale refactor van `runFidelityScoringPipeline` om outcome te exposen aan caller, of auto-iterate na `persistVariants` met re-update flow). Beste in aparte plan-mode sessie.
-- ⏳ Feedback dashboard panels in InsightsTab (auto-iterate success-rate, hint-template effectiveness, edit-distance heatmap). Eerste twee panels hebben pas data na orchestrator-wiring; edit-distance heatmap kan al wel.
+- ⏳ Feedback dashboard panels in InsightsTab (auto-iterate success-rate, hint-template effectiveness, edit-distance heatmap). Eerste data zal beschikbaar zijn zodra FEATURE_AUTO_ITERATE actief is in productie.
+- ⏳ UI: "Apply auto-iterated version" knop in canvas (snapshot → live components update). Volgt op feedback-dashboard.
 - ⏸️ Image refine-loop (defer naar post-gemini-migration per task §65-67)
 
 # Probleem

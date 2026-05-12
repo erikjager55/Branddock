@@ -702,14 +702,99 @@ export async function* orchestrateContentGeneration(
   // Detector + composition + (conditional) STRICT rewrite. Shared helper
   // wordt ook door regenerate flow aangeroepen zodat de position-bar
   // niet verdwijnt bij een group-regenerate.
-  yield* runFidelityScoringPipeline({
-    deliverableId,
-    workspaceId,
-    textResult,
-    stack,
-    textModelProvider: textModel.provider,
-    humanVoiceMode,
-  });
+  let fidelityPipelineReturn: FidelityPipelineReturn | null = null;
+  {
+    const gen = runFidelityScoringPipeline({
+      deliverableId,
+      workspaceId,
+      textResult,
+      stack,
+      textModelProvider: textModel.provider,
+      humanVoiceMode,
+    });
+    while (true) {
+      const { value, done } = await gen.next();
+      if (done) {
+        fidelityPipelineReturn = value;
+        break;
+      }
+      yield value;
+    }
+  }
+
+  // ── Step 2.8: Auto-iterate (sub-sprint #6.B wiring) ─
+  // Opt-in via FEATURE_AUTO_ITERATE=true env-flag voor veilige rollout.
+  // Skip wanneer STRICT al rewrite uitvoerde (humanVoiceMode = STRICT) of
+  // wanneer F-VAL geen result kon berekenen. Iteraties worden gepersisteerd
+  // naar Deliverable.settings.autoIterate; user-facing components blijven
+  // origineel — "apply iterated version" knop is follow-up scope.
+  if (
+    fidelityPipelineReturn &&
+    process.env.FEATURE_AUTO_ITERATE === 'true' &&
+    humanVoiceMode !== 'STRICT'
+  ) {
+    try {
+      const { runAutoIterateIntegration } = await import(
+        '@/lib/ai/auto-iterate-integration'
+      );
+      const iterateGen = runAutoIterateIntegration({
+        workspaceId,
+        deliverableId,
+        contentTypeId: stack.deliverableTypeId,
+        compositionInput: fidelityPipelineReturn.compositionInput,
+        initialResult: fidelityPipelineReturn.initialResult,
+        initialText: fidelityPipelineReturn.blobText,
+        enabled: true,
+        stack,
+        textModelProvider: textModel.provider,
+      });
+      let iterateOutcome: import('@/lib/ai/auto-iterate').AutoIterateResult | null = null;
+      while (true) {
+        const { value, done } = await iterateGen.next();
+        if (done) {
+          iterateOutcome = value;
+          break;
+        }
+        yield value as OrchestrationEvent;
+      }
+      if (iterateOutcome && iterateOutcome.attemptsExecuted > 0) {
+        try {
+          const existing = await prisma.deliverable.findUnique({
+            where: { id: deliverableId },
+            select: { settings: true },
+          });
+          const currentSettings = (existing?.settings as Record<string, unknown> | null) ?? {};
+          await prisma.deliverable.update({
+            where: { id: deliverableId },
+            data: {
+              settings: {
+                ...currentSettings,
+                autoIterate: {
+                  attemptsExecuted: iterateOutcome.attemptsExecuted,
+                  finalScore: iterateOutcome.finalScore,
+                  thresholdMet: iterateOutcome.thresholdMet,
+                  stopReason: iterateOutcome.stopReason,
+                  finalText: iterateOutcome.finalText,
+                  iterations: iterateOutcome.iterations,
+                  iteratedAt: new Date().toISOString(),
+                },
+              },
+            },
+          });
+        } catch (persistErr) {
+          console.warn(
+            '[canvas-orchestrator] auto-iterate snapshot persist failed:',
+            (persistErr as Error).message,
+          );
+        }
+      }
+    } catch (err) {
+      console.warn(
+        '[canvas-orchestrator] auto-iterate integration failed:',
+        (err as Error).message,
+      );
+    }
+  }
 
   // ── Step 3: Image generation is now manual ────────────
   //
@@ -1039,6 +1124,15 @@ function mergeAngleResults(
  * Non-fatal: alle stappen wrapped in try/catch met terminal events zodat
  * de UI spinners altijd clears. Geen scoring runt bij blob < 50 woorden.
  */
+interface FidelityPipelineReturn {
+  /** Initial F-VAL result vóór STRICT/auto-iterate. */
+  initialResult: import('@/lib/brand-fidelity/composition-engine').FidelityCompositeResult;
+  /** Composition-input voor re-scoring (auto-iterate hergebruikt dit). */
+  compositionInput: import('@/lib/brand-fidelity/fidelity-runner').FidelityRunOutcome['compositionInput'];
+  /** First-variant blob text. */
+  blobText: string;
+}
+
 async function* runFidelityScoringPipeline(input: {
   deliverableId: string;
   workspaceId: string;
@@ -1046,7 +1140,7 @@ async function* runFidelityScoringPipeline(input: {
   stack: CanvasContextStack;
   textModelProvider: AiProvider;
   humanVoiceMode: import('@prisma/client').HumanVoiceMode;
-}): AsyncGenerator<OrchestrationEvent> {
+}): AsyncGenerator<OrchestrationEvent, FidelityPipelineReturn | null> {
   const { deliverableId, workspaceId, textResult, stack, textModelProvider, humanVoiceMode } = input;
 
   const blobText = textResult.components
@@ -1055,7 +1149,7 @@ async function* runFidelityScoringPipeline(input: {
     .join('\n\n');
   const blobWordCount = blobText.split(/\s+/).filter(Boolean).length;
 
-  if (blobWordCount < 50) return;
+  if (blobWordCount < 50) return null;
 
   // ── Detector ──
   try {
@@ -1103,7 +1197,7 @@ async function* runFidelityScoringPipeline(input: {
           'Score could not be computed (insufficient signal or runtime issue)',
       },
     };
-    return;
+    return null;
   }
 
   yield {
@@ -1202,6 +1296,12 @@ async function* runFidelityScoringPipeline(input: {
       data: { reason: strictErrorMessage ?? 'STRICT mode not applicable for this workspace' },
     };
   }
+
+  return {
+    initialResult: fidelityOutcome.result,
+    compositionInput: fidelityOutcome.compositionInput,
+    blobText,
+  };
 }
 
 async function generateTextWithFallback(
