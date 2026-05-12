@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: ~10 dagen (7d chain + 4d goldens, overlap)
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-12
-completed: -
+completed: 2026-05-12
 related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md §3.0 + §3.1 + §4 #5.B
 worktree: -

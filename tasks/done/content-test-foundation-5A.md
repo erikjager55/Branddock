@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: ~3 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-12
-completed: -
+completed: 2026-05-12
 related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md
 worktree: -
