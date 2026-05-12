@@ -76,6 +76,58 @@ export async function buildBrandVoiceDirective(
 }
 
 /**
+ * Brand-voice fidelity-level voor expliciete user-notification (content-test
+ * verbeterpunt #1 uit Cowork-analyse 2026-05-12). Wordt door canvas-
+ * orchestrator als SSE event uitgezonden zodat UI duidelijk maakt op welk
+ * niveau de brand voice is toegepast.
+ */
+export type BrandVoiceLevel = 'voiceguide' | 'tone-only' | 'language-only' | 'none';
+
+export interface BrandVoiceStatus {
+  level: BrandVoiceLevel;
+  /** Korte uitleg voor user (Nederlands), bv. "Voiceguide actief" of
+   * "Geen voiceguide — neutrale professionele toon gebruikt". */
+  userMessage: string;
+  /** True wanneer level !== 'voiceguide' (UI kan dan suggestie tonen). */
+  isFallback: boolean;
+}
+
+export function getBrandVoiceStatus(ctx: BrandContextBlock): BrandVoiceStatus {
+  const hasVoiceguide = !!ctx.brandVoiceguide;
+  const hasToneOfVoice = !!ctx.brandToneOfVoice;
+  const hasLanguage = !!ctx.contentLanguage;
+  if (hasVoiceguide) {
+    return {
+      level: 'voiceguide',
+      userMessage: 'Brand voiceguide toegepast op deze generatie.',
+      isFallback: false,
+    };
+  }
+  if (hasToneOfVoice) {
+    return {
+      level: 'tone-only',
+      userMessage:
+        'Geen voiceguide geconfigureerd — fallback naar Brandstyle tone-of-voice. Tip: vul de voiceguide aan voor scherpere brand-fit.',
+      isFallback: true,
+    };
+  }
+  if (hasLanguage) {
+    return {
+      level: 'language-only',
+      userMessage:
+        'Geen brand voice of tone-of-voice geconfigureerd — alleen contenttaal toegepast. Tip: vul de voiceguide of tone-of-voice aan voor brand-fit.',
+      isFallback: true,
+    };
+  }
+  return {
+    level: 'none',
+    userMessage:
+      'Geen voiceguide, tone-of-voice of contenttaal geconfigureerd — neutrale professionele toon toegepast.',
+    isFallback: true,
+  };
+}
+
+/**
  * Build the directive synchronously from an already-fetched BrandContextBlock.
  * Useful when the caller already has the context (e.g., canvas orchestrator).
  */

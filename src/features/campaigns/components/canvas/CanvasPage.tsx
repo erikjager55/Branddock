@@ -7,6 +7,7 @@ import { HorizontalAccordion } from './accordion/HorizontalAccordion';
 import { CanvasContextSelector } from './CanvasContextSelector';
 import { InsertImageModal } from './InsertImageModal';
 import { InheritanceBanner } from './InheritanceBanner';
+import { GenerationFeedbackBanners } from './GenerationFeedbackBanners';
 import { CanvasHelpButton } from '../../../claw/components/CanvasHelpButton';
 import { useClawStore } from '@/stores/useClawStore';
 import { Badge, Skeleton } from '@/components/shared';
@@ -611,6 +612,9 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
 
       {/* Inheritance banner — shown when settings were auto-inherited */}
       <InheritanceBanner />
+
+      {/* Generation feedback banners: brand-voice status + iteration nudges */}
+      <GenerationFeedbackBanners />
 
       {/* Accordion layout */}
       <div className={`flex-1 ${STUDIO.canvas.bg} overflow-hidden`}>

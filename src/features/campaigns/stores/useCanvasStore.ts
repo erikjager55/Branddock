@@ -151,6 +151,21 @@ interface CanvasStoreState {
     appliedTemplates: string[];
   };
 
+  // ─── Brand-voice status (content-test improvement #1) ──
+  // Wordt gevuld via SSE brand_voice_status event. Toont welk niveau brand
+  // voice is toegepast op deze generatie — voiceguide / tone-only / language-
+  // only / none. UI rendert fallback-banner wanneer isFallback = true.
+  brandVoiceStatus: {
+    level: 'voiceguide' | 'tone-only' | 'language-only' | 'none' | null;
+    userMessage: string | null;
+    isFallback: boolean;
+  };
+
+  // ─── Iteration-nudges (content-test improvement #8) ──
+  // Wordt gevuld via complete event payload. UI rendert ze als chips na
+  // generation om user een directe vervolgactie aan te bieden.
+  iterationNudges: Array<{ id: string; label: string; intent: string }>;
+
   // ─── Vanille baseline (demo: "Vergelijk met vanille AI") ──
   // Wordt gevuld via de POST /api/studio/[id]/vanilla-baseline SSE flow.
   // null tot user op "Vergelijk met ChatGPT" klikt; daarna stage-aware
@@ -331,6 +346,16 @@ interface CanvasStoreState {
     stopReason: string;
   }) => void;
   resetAutoIterate: () => void;
+  setBrandVoiceStatus: (data: {
+    level: 'voiceguide' | 'tone-only' | 'language-only' | 'none';
+    userMessage: string;
+    isFallback: boolean;
+  }) => void;
+  resetBrandVoiceStatus: () => void;
+  setIterationNudges: (
+    nudges: Array<{ id: string; label: string; intent: string }>,
+  ) => void;
+  resetIterationNudges: () => void;
   setVanillaStage: (stage: 'idle' | 'generating' | 'scoring' | 'complete' | 'error', errorMessage?: string) => void;
   setVanillaTextComplete: (data: { preview: string; wordCount: number; model: string }) => void;
   setVanillaScoreComplete: (data: {
@@ -490,6 +515,12 @@ const INITIAL_STATE = {
     threshold: null,
     appliedTemplates: [] as string[],
   },
+  brandVoiceStatus: {
+    level: null,
+    userMessage: null,
+    isFallback: false,
+  },
+  iterationNudges: [] as Array<{ id: string; label: string; intent: string }>,
   vanillaBaseline: {
     stage: 'idle' as const,
     preview: null,
@@ -789,6 +820,24 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         appliedTemplates: [],
       },
     }),
+
+  setBrandVoiceStatus: (data) =>
+    set({
+      brandVoiceStatus: {
+        level: data.level,
+        userMessage: data.userMessage,
+        isFallback: data.isFallback,
+      },
+    }),
+
+  resetBrandVoiceStatus: () =>
+    set({
+      brandVoiceStatus: { level: null, userMessage: null, isFallback: false },
+    }),
+
+  setIterationNudges: (nudges) => set({ iterationNudges: nudges }),
+
+  resetIterationNudges: () => set({ iterationNudges: [] }),
 
   setVanillaStage: (stage, errorMessage) =>
     set((state) => ({

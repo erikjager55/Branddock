@@ -64,6 +64,8 @@ export function useCanvasOrchestration(deliverableId: string | null) {
     store.resetFidelityScore();
     store.resetStrictRewrite();
     store.resetAutoIterate();
+    store.resetBrandVoiceStatus();
+    store.resetIterationNudges();
     store.resetVisualFidelity();
     isGeneratingRef.current = true;
 
@@ -286,6 +288,21 @@ function routeEvent(eventName: string, rawData: string) {
         store.setContextStack(data.contextStack as Parameters<typeof store.setContextStack>[0]);
       }
       break;
+
+    case 'brand_voice_status': {
+      const level = typeof data.level === 'string' ? data.level : null;
+      const userMessage = typeof data.userMessage === 'string' ? data.userMessage : '';
+      const isFallback = data.isFallback === true;
+      if (
+        level === 'voiceguide' ||
+        level === 'tone-only' ||
+        level === 'language-only' ||
+        level === 'none'
+      ) {
+        store.setBrandVoiceStatus({ level, userMessage, isFallback });
+      }
+      break;
+    }
 
     case 'text_generating':
       if (typeof data.group === 'string') {
@@ -526,9 +543,25 @@ function routeEvent(eventName: string, rawData: string) {
       break;
     }
 
-    case 'complete':
+    case 'complete': {
+      const nudges = Array.isArray(data.iterationNudges)
+        ? (data.iterationNudges as Array<{ id?: unknown; label?: unknown; intent?: unknown }>)
+            .filter(
+              (n) =>
+                typeof n.id === 'string' &&
+                typeof n.label === 'string' &&
+                typeof n.intent === 'string',
+            )
+            .map((n) => ({
+              id: n.id as string,
+              label: n.label as string,
+              intent: n.intent as string,
+            }))
+        : [];
+      if (nudges.length > 0) store.setIterationNudges(nudges);
       store.setGlobalStatus('complete');
       break;
+    }
 
     case 'error': {
       // Respect the server's recoverable flag — image generation failure

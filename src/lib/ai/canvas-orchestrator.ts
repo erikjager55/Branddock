@@ -25,7 +25,7 @@ import type { JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 import { getPromptTemplate } from '@/lib/studio/prompt-templates';
 import { getContentTypeInputs } from '@/features/campaigns/lib/content-type-inputs';
-import { buildBrandVoiceDirectiveFromContext } from '@/lib/studio/brand-voice-directive';
+import { buildBrandVoiceDirectiveFromContext, getBrandVoiceStatus } from '@/lib/studio/brand-voice-directive';
 import { buildHumanVoiceDirective } from '@/lib/studio/human-voice-directive';
 import { resolveHumanVoiceMode } from '@/lib/brand-fidelity/fidelity-config';
 import { logBrandLanguageMismatchIfAny } from '@/lib/i18n/detect-brand-language';
@@ -261,6 +261,20 @@ export async function* orchestrateContentGeneration(
   const bvd = buildBrandVoiceDirectiveFromContext(stack.brand, {
     deliverableTypeId: stack.deliverableTypeId ?? undefined,
   });
+
+  // ── Brand-voice status SSE notification (content-test improvement #1) ──
+  // Stuur expliciet welk niveau brand voice is toegepast zodat UI dit kan
+  // tonen — voorkomt verwarring wanneer fallback wordt gebruikt zonder dat
+  // gebruiker dit weet.
+  const voiceStatus = getBrandVoiceStatus(stack.brand);
+  yield {
+    event: 'brand_voice_status',
+    data: {
+      level: voiceStatus.level,
+      userMessage: voiceStatus.userMessage,
+      isFallback: voiceStatus.isFallback,
+    },
+  };
 
   // F-VAL pijler 3: append generic anti-AI-tell layer when enabled
   const humanVoiceMode = await resolveHumanVoiceMode(workspaceId);
@@ -991,10 +1005,58 @@ export async function* orchestrateContentGeneration(
     textResult.components.reduce((acc, c) => acc + c.variants.length, 0) +
     imageResults.filter((r) => r !== null).length;
 
+  // ── Iteration-nudge suggesties (content-test improvement #8) ──
+  // Geef de UI concrete vervolgacties die de user kan kiezen. Cowork-stijl:
+  // "wil je secties herzien / tone aanpassen / variant voor ander kanaal?"
+  // Worden in UI als chips/quick-actions getoond.
+  const iterationNudges = buildIterationNudges({
+    contentType: stack.deliverableTypeId,
+    medium: stack.medium,
+    hasImageComponent: imageResults.some((r) => r !== null),
+  });
+
   yield {
     event: 'complete',
-    data: { totalDuration, componentCount, gateWarningCount: gateWarningsAcc.length },
+    data: {
+      totalDuration,
+      componentCount,
+      gateWarningCount: gateWarningsAcc.length,
+      iterationNudges,
+    },
   };
+}
+
+function buildIterationNudges(input: {
+  contentType: string | null;
+  medium: CanvasContextStack['medium'];
+  hasImageComponent: boolean;
+}): Array<{ id: string; label: string; intent: string }> {
+  const nudges: Array<{ id: string; label: string; intent: string }> = [
+    { id: 'revise-section', label: 'Een sectie herzien', intent: 'revise_section' },
+    { id: 'adjust-tone', label: 'Toon aanpassen', intent: 'adjust_tone' },
+  ];
+  // Cross-channel variant-suggestie afhankelijk van huidig content-type
+  const ct = input.contentType?.toLowerCase() ?? '';
+  if (ct.includes('blog') || ct.includes('article') || ct.includes('long')) {
+    nudges.push({
+      id: 'variant-linkedin',
+      label: 'LinkedIn-variant maken',
+      intent: 'derive_linkedin',
+    });
+    nudges.push({ id: 'variant-email', label: 'E-mail-variant maken', intent: 'derive_email' });
+  } else if (ct.includes('social') || ct.includes('linkedin') || ct.includes('twitter')) {
+    nudges.push({ id: 'variant-blog', label: 'Blog-versie maken', intent: 'derive_blog' });
+  } else if (ct.includes('email')) {
+    nudges.push({
+      id: 'variant-landing',
+      label: 'Landing-page maken',
+      intent: 'derive_landing',
+    });
+  }
+  if (!input.hasImageComponent && ct.includes('blog')) {
+    nudges.push({ id: 'add-hero-image', label: 'Hero-image toevoegen', intent: 'add_image' });
+  }
+  return nudges;
 }
 
 // ─── Text Generation with Provider Fallback ──────────────
