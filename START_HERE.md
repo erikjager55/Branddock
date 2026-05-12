@@ -19,28 +19,30 @@
 - ✅ BrandVoiceguide.contentLocale picker UI (Voice DNA tab manuele override)
 - ✅ Cowork-pariteit Fase A + Competitive-intel Fase 1 data-laag
 
-**Open Pre-launch werk** (resterend om BCP Phase 2 te sluiten):
-- **claw-page-awareness vervolg-cluster** — page-wiring PersonaDetail / BrandAssetDetail / Step1Context
+**Open Pre-launch werk** (scope-uitbreiding 2026-05-12 na roadmap-inventaris — 5 items + ~10 code-TODOs uit gaps getrokken):
+
+3 parallelle tracks via worktrees, 4 sprints (~6-8 weken):
+
+- **Track A — Quality + Validation**: content-items-test-coverage (53 types) + browser-smoke batch + code-debt cleanup
+- **Track B — Brandclaw + Competitive**: brandclaw-tool-orchestrator → strategy-analyst-stub + competitor-ai-event-classifier + competitor-content-item-discovery + cron-infra ADR
+- **Track C — Launch infra**: vercel-deployment → stripe-billing-live → pilot-onboarding-better-brands + onboarding-flow-test + marketing-site-pricing
 
 **Verplaatst naar post-launch (2026-05-12)**:
-- **Δ-4 PublishGate 2nd-opinion** — pilot niet live, geen evidence dat huidige 3-pijler F-VAL gaten heeft. Pas optillen wanneer pilot-data laat zien dat F-VAL goedkeurt wat geweigerd had moeten worden.
+- **Δ-4 PublishGate 2nd-opinion** — pilot niet live, geen evidence dat huidige 3-pijler F-VAL gaten heeft.
 
-**Launch-track** (separate fase, na BCP Phase 2 closure):
-- `vercel-deployment` (3d) + `stripe-billing-live` (1w) + `pilot-onboarding-better-brands` (2d) + onboarding-flow-test + marketing-site-pricing
-
-Pilot-start projectie: **+4-6 weken** (was +6-10 begin sprint #3; review-surfaces sneller dan verwacht klaar).
+Pilot-start projectie: **+6-8 weken** (strategy-analyst-stub full scope is langste pad).
 
 ---
 
 ## Top 3 actieve pre-launch tasks
 
-> Δ-1 review-surfaces zijn allemaal landed op `main`. NOW-pipeline focust nu op de laatste Phase 2 closure plus optionele backlog-smokes — daarna door naar launch-track.
+> Sprint #4 start hier — validation + quick wins (~1 week, geen parallelisatie nodig). Zie roadmap.md NOW voor volledige sprint-volgorde.
 
-1. **claw-page-awareness vervolg-cluster** — page-wiring voor PersonaDetail / BrandAssetDetail / Step1Context (deferred uit Phase 0.2.A). Task-file nog te maken. ~2 dagen.
+1. **Browser-smoke batch** (~1-2u) — Δ-1 Surface C 9-stap + claw-page-awareness vervolg 5-stap + Visual Brief Compose/Trained-Style E2E + locale-picker browser-smoke. Confidence-check sprint #3 werk.
 
-2. **Backlog smoke-tests** (~1 uur totaal) — learning-loop end-to-end (item #3 cross-sessie backlog) + Visual Brief Compose / Trained-Style (item #4). Korte runway-check vóór launch-track.
+2. **Cron-infra ADR + code-debt quick wins** (~2-5u) — Vercel Cron vs Upstash QStash beslissing + design-tokens cleanup + variant-selection persist.
 
-3. **Launch-track activering** — vercel-deployment (3d) als eerste, ontgrendelt pilot-onboarding.
+3. **testplan-content-items Ronde 1 — 8 representanten** (~1d) — blog-post / linkedin-post / search-ad / newsletter / landing-page / explainer-video / one-pager / press-release. Eind sprint #4: STOP-GATE bug-log review + sprint #5 scope-bepaling.
 
 **Daarna (launch-track activering)**:
 - `vercel-deployment` (3d) ontgrendelt `pilot-onboarding-better-brands` (2d)

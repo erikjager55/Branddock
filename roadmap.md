@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Laatst bijgewerkt**: 2026-05-11 (sprint #3 in voltooiing — Δ-1 Surface C/D/E + cleanup-pack + Insights tab + F-VAL rules-audit + brand-language auto-detect + locale-picker UI allemaal op `main`).
+> **Laatst bijgewerkt**: 2026-05-12 (pre-launch scope-uitbreiding na inventaris — 5 items + 10 code-TODOs uit roadmap-gaps pre-launch getrokken; 3 parallelle tracks over 4 sprints, ~6-8 weken).
 > **Update-cadans**: Now continu (na elke afgeronde task), Next wekelijks (vrijdagretro), Later maandelijks.
 > **Bron**: gedistilleerd uit oude TODO.md, BRANDCLAW-ROADMAP.md, STRATEGISCHE-VERVOLGSTAPPEN.md (allen in `docs/archive/old-lists/`).
 
@@ -59,22 +59,68 @@
 
 ---
 
-## ⚡ NOW (deze 2-4 weken)
+## ⚡ NOW (pre-launch — 4 sprints, ~6-8 weken)
 
-Pre-launch = BCP Phase 2 sluit af. Δ-1 review-surfaces + Insights tab + F-VAL rules-audit + brand-language auto-detect + locale-picker UI zit op `main`. Resterend: Δ-4 + claw-page-awareness vervolg, daarna verschuift focus naar launch-track.
+Pre-launch scope herzien 2026-05-12: alle items uit roadmap-inventaris naar pre-launch getrokken (incl. Strategy Analyst full scope + Competitor AI dubbel). 3 parallelle tracks via worktrees. Pilot-projectie: +6-8 weken.
 
-**Actief — Phase 2 closures**
-| ID | Titel | Effort | Status | Blocker |
+**Track A — Quality + Validation** (main branch)
+| ID | Titel | Effort | Sprint | Status |
 |---|---|---|---|---|
-| `claw-page-awareness-vervolg` | Page-wiring PersonaDetail / BrandAssetDetail / Step1Context (deferred uit Phase 0.2.A) | ~2 dagen | open | task-file |
+| `content-items-test-coverage` | Testplan 53 content-types (representanten + Ronde 1 + Ronde 2 generator-evaluatie). Playbook: `docs/playbooks/testplan-content-items.md` | 3d (full) of 1d (representanten) | #4 (representanten) + #5-6 (full) | open — task-file volgt |
+| `pre-launch-browser-smoke-batch` | Bundeling: Δ-1 Surface C 9-stap + claw-page-awareness vervolg 5-stap + Visual Brief Compose/Trained-Style E2E + locale-picker browser-smoke | ~1-2u | #4 | open — task-file volgt |
+| `code-debt-pre-launch-cleanup` | Persist-TODOs (variant-selection, fix-options, persona-image) + design-tokens cleanup + Exa API replacement + ProseMirror diff. Verspreid over sprints. | ~6d totaal | #4-7 fill-in | open — task-file volgt |
 
-> **Δ-4 PublishGate 2nd-opinion verplaatst naar post-launch (2026-05-12)** — beslissing in pre-discovery: pilot is niet live, geen evidence dat huidige 3-pijler F-VAL gaten heeft die een 2nd-opinion zou vangen. Risico op false-positive moeheid + ~1-3s extra publish-latency + dubbele token-cost zonder bewezen baat. Pas overwegen wanneer pilot-data uitwijst dat F-VAL goedkeurt wat eigenlijk geweigerd had moeten worden.
+**Track B — Brandclaw + Competitive AI** (worktree `branddock-brandclaw`)
+| ID | Titel | Effort | Sprint | Status |
+|---|---|---|---|---|
+| [`brandclaw-tool-orchestrator`](tasks/brandclaw-tool-orchestrator.md) | Shared Anthropic tool-orchestrator voor alle Brandclaw nodes. Foundation. | 3-5d | #5 | open task-file |
+| [`strategy-analyst-stub`](tasks/strategy-analyst-stub.md) | Strategy Analyst node — leest data, suggesteert insights. Volledige MVP-scope pre-launch (beslissing 2026-05-12). | 20-27d | #5-7 | open task-file |
+| `competitor-ai-event-classifier` | AI-pattern-detector voor 5 strategische CompetitorActivity-types (CATEGORY_REPOSITIONING / VISUAL_REBRAND / etc.). Idea: `tasks/_drafts/idea-competitor-ai-event-classifier.md` ready-to-build. | 3-5d | #5-6 | needs task-file via technical-planner |
+| `competitor-content-item-discovery` | Discovery van competitor-content via crawl/RSS. Idea: `tasks/_drafts/idea-competitor-content-item-discovery.md` ready-to-build. | onbekend (5d?) | #6-7 | needs task-file via technical-planner |
+| `cron-infra-adr` | ADR voor cron-infra (Vercel Cron vs Upstash QStash). Blocker voor competitor-monitoring + scheduled-Brandclaw-runs. | ~2u | #4 | open — write ADR direct, geen task-file nodig |
 
-**Backlog smoke-tests (~1 uur)**
-| ID | Titel | Effort | Notitie |
-|---|---|---|---|
-| learning-loop-smoke-e2e | End-to-end smoke van learning-loop infra (BrandContextSnapshot + AICallTrace + LearningEvent flow) | ~30 min | Item #3 uit cross-sessie open backlog 2026-05-06 |
-| visual-brief-trained-style-smoke | Visual Brief Compose + Trained-Style E2E op Goed-Bouw / Better Brands | ~30 min | Item #4 uit cross-sessie open backlog 2026-05-06 |
+**Track C — Launch infra** (worktree `branddock-launch`)
+| ID | Titel | Effort | Sprint | Status |
+|---|---|---|---|---|
+| [`vercel-deployment`](tasks/vercel-deployment.md) | Vercel + Neon DB + custom domain + monitoring | 3d | #5 | open task-file |
+| [`stripe-billing-live`](tasks/stripe-billing-live.md) | Stripe live billing — checkout + webhooks + plan enforcement | 1w | #6 | open task-file |
+| [`pilot-onboarding-better-brands`](tasks/pilot-onboarding-better-brands.md) | Better Brands eerste pilot live | 2d | #6 (na vercel) | open task-file |
+| `onboarding-flow-test` | Onboarding flow met 3 externe gebruikers | 1w | #7 | task-file volgt |
+| `marketing-site-pricing` | Marketing site + pricing pagina | 1w | #6-7 | task-file volgt |
+
+### Sprint-volgorde
+
+**Sprint #4 — Validation + Quick wins** (~1 week, geen parallelisatie nodig)
+1. Browser-smoke batch (~1-2u) — quick confidence-check
+2. Cron-infra ADR (~2u)
+3. Code-debt quick wins: design-tokens cleanup + variant-selection persist (~2-3u)
+4. testplan-content-items Ronde 1 — 8 representanten (~1d)
+5. **STOP-GATE**: review bug-log, plan sprint #5 bugfix-scope
+
+**Sprint #5 — Bugfix + Foundation start** (~2 weken, parallel-start)
+- Track A: bugfix-cluster uit testplan + start full 53-types Ronde 1
+- Track B: brandclaw-tool-orchestrator (3-5d) + competitor-ai-event-classifier task-file via technical-planner
+- Track C: vercel-deployment (3d) start
+
+**Sprint #6 — Feature build + Infra** (~3 weken, 3 parallel tracks)
+- Track A: testplan Ronde 1 finish + persist-TODOs cluster + Ronde 2 generator-evaluatie
+- Track B: strategy-analyst-stub start + competitor-ai-event-classifier build
+- Track C: stripe-billing-live + pilot-onboarding-better-brands + marketing-site-pricing start
+
+**Sprint #7 — Launch readiness** (~2 weken)
+- Strategy-analyst-stub finish + competitor-content-item-discovery
+- onboarding-flow-test met 3 externe gebruikers
+- Marketing-site-pricing finish
+- Final integration smoke + pre-launch checklist
+- **Go/no-go decision** → launch
+
+### Decision-triggered items (geen schedule, blijven open)
+
+| ADR | Trigger |
+|---|---|
+| Retention-ADR (data-lifecycle snapshot-tabel) | Wanneer snapshot-tabel >100k rijen of privacy-incident |
+
+> **Δ-4 PublishGate 2nd-opinion verplaatst naar post-launch (2026-05-12)** — geen pilot-evidence dat F-VAL gaten heeft die een 2nd-opinion zou vangen. Pas overwegen na pilot-data.
 
 **Recent voltooid (sprint #3, 2026-05-09 t/m 2026-05-11)**
 
@@ -112,15 +158,15 @@ Pre-launch = BCP Phase 2 sluit af. Δ-1 review-surfaces + Insights tab + F-VAL r
 
 **Post-launch**
 
-> 4 items verplaatst 2026-05-08 naar **Brand Control Program** (zie programma-sectie boven): `claw-page-awareness` + `canvas-inline-edit-overlays` (Phase 0/2), `bv-wire-w1-full-centroid` (Phase 1), `tech-debt-any-types` (Phase 0).
+> Pre-launch scope is uitgebreid 2026-05-12 — `strategy-analyst-stub`, `brandclaw-tool-orchestrator`, `competitor-ai-event-classifier`, `competitor-content-item-discovery` zijn nu pre-launch (zie NOW). Post-launch resteert het volgende.
 
 | ID | Titel | Fase | Effort | Notitie |
 |---|---|---|---|---|
-| `delta-4-publishgate-2nd-opinion` | Δ-4 PublishGate 2nd-opinion review-pass | post-launch | onbekend | Verplaatst 2026-05-12 uit BCP Phase 2 (pre-discovery): preventief bouwen zonder pilot-evidence onverstandig. Pas optillen wanneer pilot-data laat zien dat F-VAL goedkeurt wat geweigerd had moeten worden. 4 mogelijke interpretaties open: (a) extra AI-call ander model, (b) heuristic conflict-detector, (c) human-in-the-loop, (d) adversarial probe. |
+| `delta-4-publishgate-2nd-opinion` | Δ-4 PublishGate 2nd-opinion review-pass | post-launch | onbekend | Verplaatst 2026-05-12 uit BCP Phase 2: preventief bouwen zonder pilot-evidence onverstandig. 4 mogelijke interpretaties open: (a) extra AI-call ander model, (b) heuristic conflict-detector, (c) human-in-the-loop, (d) adversarial probe. |
 | [`power-user-shortcuts`](tasks/power-user-shortcuts.md) | Power-user shortcuts (5 micro-optimalisaties) | post-launch | 1-2 dagen | Gedistilleerd uit plan |
 | `learning-loop-dashboard-usage` | Per-sourceIdentifier dashboard | post-launch | halve dag | Task-file volgt |
 | `weekly-report-email-via-resend` | Weekly report email via Emailit | post-launch | 1 dag | Task-file volgt na weekly-report generator |
-| `studio-siblings-context-variation` | Variatie-borging tussen naburige posts (lexicale diversiteit Jaccard) | post-launch | ½-1 dag | Quality-enhancement na studio-P0. Lost saaie-posts JTBD op (B1-discovery 2026-05-07). Geen Brandclaw-impact. |
+| `studio-siblings-context-variation` | Variatie-borging tussen naburige posts (lexicale diversiteit Jaccard) | post-launch | ½-1 dag | Quality-enhancement na studio-P0. Geen Brandclaw-impact. |
 
 ---
 
@@ -184,15 +230,19 @@ Pre-launch = BCP Phase 2 sluit af. Δ-1 review-surfaces + Insights tab + F-VAL r
 
 ## 💡 Aanbeveling huidige sessie
 
-**2026-05-11**: sprint #3 voltooit BCP Phase 2 review-surfaces (Δ-1 Surface C/D/E + cleanup-pack + Insights tab) plus side-iteraties (F-VAL rules-audit, brand-language auto-detect, locale-picker UI). 7 entries (#243–250) bovenop sprint #2-merge. Pre-launch product-readiness staat: review-loop is functioneel end-to-end voor pilot.
+**2026-05-12**: roadmap-inventaris onthulde 5 items + ~10 code-TODOs die niet op roadmap stonden. Alle items pre-launch getrokken. 3 parallelle tracks via worktrees over 4 sprints (~6-8 weken). Strategy-analyst-stub full scope (20-27d) is het langste pad — bepaalt feitelijke pilot-projectie.
 
-**Volgorde-aanbeveling**:
+**Direct volgende stap — Sprint #4 start** (~1 week, geen parallelisatie):
+1. **Browser-smoke batch** (~1-2u) — Δ-1 Surface C 9-stap + claw-page-awareness vervolg 5-stap + Visual Brief Compose/Trained-Style E2E + locale-picker browser-smoke. Confidence-check voor alle sprint #3-werk.
+2. **Cron-infra ADR** (~2u) — Vercel Cron vs Upstash QStash decision. Blocker voor competitor-monitoring.
+3. **Code-debt quick wins** (~2-3u) — design-tokens cleanup (15m) + variant-selection persist (2u).
+4. **testplan-content-items Ronde 1 — 8 representanten** (~1d) — blog-post / linkedin-post / search-ad / newsletter / landing-page / explainer-video / one-pager / press-release.
+5. **STOP-GATE eind sprint #4**: bug-log review, plan sprint #5 bugfix-scope.
 
-1. **Phase 2 closure** — `claw-page-awareness-vervolg` task-file via feature-planner. Sluit BCP Phase 2 helemaal af voor pilot-start. (Δ-4 verplaatst naar post-launch — beslissing 2026-05-12.)
-2. **Backlog smoke-tests** (~1 uur) — learning-loop e2e + Visual Brief trained-style. Korte runway-check vóór launch-track.
-3. **Launch-track activeren** — `vercel-deployment` (3d) ontgrendelt `pilot-onboarding-better-brands`. Stripe daarna voor revenue-pad. Met BCP Phase 2 in zicht is launch-projectie +4-6 weken (was +6-10 begin sprint #3).
-
-**Optioneel parallel**: `power-user-shortcuts` of `learning-loop-dashboard-usage` als kleine post-launch-spillovers wanneer er capaciteit is.
+**Track-allocation vanaf sprint #5**:
+- Track A (main): testplan finish + bugfixes + persist-TODOs
+- Track B (worktree branddock-brandclaw): brandclaw-tool-orchestrator → strategy-analyst-stub (parallel: competitor-ai-event-classifier)
+- Track C (worktree branddock-launch): vercel-deployment → stripe-billing-live → pilot-onboarding
 
 **Validatie-acties competitive-intel Fase 2/4** (vóór technical-planner promotion):
 - Pilot-priority-check (3 leads): is competitor-intelligence in top-3 needs?
