@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug, Bug, MessageSquarePlus, FileText, FileCode, Image as ImageIcon } from 'lucide-react';
+import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug, Bug, MessageSquarePlus, FileText, FileCode, Image as ImageIcon, ShieldCheck } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useSettingsStore, type SettingsTab } from '@/stores/useSettingsStore';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'integrations', label: 'Integrations', icon: Plug },
   { id: 'brand-rules', label: 'Brand Rules', icon: FileText },
+  { id: 'validation', label: 'Validation', icon: ShieldCheck },
 ];
 
 export function SettingsSubNav() {

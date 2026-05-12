@@ -10,6 +10,7 @@ import { WorkspacesTab } from './workspaces/WorkspacesTab';
 import { BillingTab } from './billing/BillingTab';
 import { IntegrationsTab } from './integrations/IntegrationsTab';
 import { RulesTab } from './brand-voice/RulesTab';
+import { ValidationTab } from './validation/ValidationTab';
 import { AdministratorTab } from './administrator/AdministratorTab';
 import { AiModelsTab } from './ai-models/AiModelsTab';
 import { PromptRegistryTab } from './prompt-registry/PromptRegistryTab';
@@ -73,6 +74,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
         return <IntegrationsTab />;
       case 'brand-rules':
         return <RulesTab />;
+      case 'validation':
+        return <ValidationTab />;
       case 'administrator':
         return <AdministratorTab />;
       case 'ai-models':
