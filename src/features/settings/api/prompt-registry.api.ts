@@ -24,6 +24,8 @@ export interface PromptVersionDetail {
   contentHash: string;
   sourceType: string;
   gitSha: string | null;
+  /** Semver van prompt-template (content-test #5.A). Null voor pre-#5.A snapshots. */
+  promptVersion: string | null;
   firstSeenAt: string;
   model: string | null;
   messages: Array<{ role: string; content: string }>;
@@ -36,6 +38,11 @@ export interface PromptVersionDetail {
   totalInputTokens: number;
   totalOutputTokens: number;
   lastCallAt: string | null;
+  // Property-eval Layer 1 aggregates (content-test #5.A foundation)
+  propertyEvalRunCount: number;
+  propertyEvalPassRate: number | null; // 0-100, null als geen runs
+  propertyEvalTotalBlock: number;
+  propertyEvalTotalWarn: number;
 }
 
 export interface PromptRegistryDetail {

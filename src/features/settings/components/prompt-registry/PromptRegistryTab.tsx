@@ -217,16 +217,24 @@ function VersionCard({ version, index }: { version: PromptVersionDetail; index: 
     version.callCount > 0
       ? Math.round((version.errorCount / version.callCount) * 100)
       : 0;
+  const propEvalPassRate = version.propertyEvalPassRate;
+  const propEvalHighlight = propEvalPassRate !== null && propEvalPassRate < 80;
 
   return (
     <Card>
       <Card.Header>
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <Badge variant={index === 0 ? 'success' : 'default'}>
                 {index === 0 ? 'Current' : `v${version.callCount > 0 ? '' : 'unused-'}${version.contentHash.slice(0, 8)}`}
               </Badge>
+              {/* Semver badge — content-test #5.A foundation */}
+              {version.promptVersion && (
+                <Badge variant="info">
+                  v{version.promptVersion}
+                </Badge>
+              )}
               {version.gitSha && (
                 <span className="text-xs text-gray-500 font-mono">
                   {version.gitSha.slice(0, 7)}
@@ -250,7 +258,7 @@ function VersionCard({ version, index }: { version: PromptVersionDetail; index: 
         </div>
       </Card.Header>
       <Card.Body>
-        <div className="grid grid-cols-4 gap-4 text-xs mb-4">
+        <div className="grid grid-cols-5 gap-4 text-xs mb-4">
           <Stat label="Calls" value={version.callCount.toString()} icon={Activity} />
           <Stat
             label="Avg latency"
@@ -266,7 +274,22 @@ function VersionCard({ version, index }: { version: PromptVersionDetail; index: 
             value={errorRate > 0 ? `${errorRate}%` : '0'}
             highlight={errorRate > 0}
           />
+          {/* Layer 1 property-eval pass-rate — content-test #5.A */}
+          <Stat
+            label="Layer 1 pass"
+            value={
+              propEvalPassRate !== null
+                ? `${propEvalPassRate}% (${version.propertyEvalRunCount})`
+                : '—'
+            }
+            highlight={propEvalHighlight}
+          />
         </div>
+        {(version.propertyEvalTotalBlock > 0 || version.propertyEvalTotalWarn > 0) && (
+          <div className="text-xs text-gray-600 mb-3 -mt-2">
+            Layer 1 totals: {version.propertyEvalTotalBlock} block · {version.propertyEvalTotalWarn} warn
+          </div>
+        )}
 
         {expanded && (
           <div className="space-y-3 pt-3 border-t border-gray-100">

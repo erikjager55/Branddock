@@ -43,6 +43,7 @@ export async function GET(
         payload: true,
         sourceType: true,
         gitSha: true,
+        promptVersion: true,
         createdAt: true,
         _count: { select: { callTraces: true } },
       },
@@ -60,6 +61,7 @@ export async function GET(
       },
       select: {
         responseMetadata: true,
+        propertyEvalResults: true,
         startedAt: true,
         completedAt: true,
         aiCallSnapshotId: true,
@@ -75,6 +77,11 @@ export async function GET(
       totalInputTokens: number;
       totalOutputTokens: number;
       lastCallAt: Date | null;
+      // Property-eval Layer 1 aggregates (content-test #5.A)
+      propertyEvalRunCount: number;
+      propertyEvalPassedCount: number;
+      propertyEvalTotalBlock: number;
+      propertyEvalTotalWarn: number;
     };
     const statsByVersion: Record<string, VersionStats> = {};
     for (const t of traces) {
@@ -88,6 +95,10 @@ export async function GET(
           totalInputTokens: 0,
           totalOutputTokens: 0,
           lastCallAt: null,
+          propertyEvalRunCount: 0,
+          propertyEvalPassedCount: 0,
+          propertyEvalTotalBlock: 0,
+          propertyEvalTotalWarn: 0,
         };
       }
       const s = statsByVersion[id];
@@ -104,6 +115,17 @@ export async function GET(
       s.totalInputTokens += meta.inputTokens ?? 0;
       s.totalOutputTokens += meta.outputTokens ?? 0;
       if (!s.lastCallAt || t.startedAt > s.lastCallAt) s.lastCallAt = t.startedAt;
+
+      // Property-eval aggregates (skip null voor backwards-compat pre-#5.A)
+      const evalResults = t.propertyEvalResults as
+        | { passed?: boolean; blockViolations?: unknown[]; warnings?: unknown[] }
+        | null;
+      if (evalResults) {
+        s.propertyEvalRunCount++;
+        if (evalResults.passed) s.propertyEvalPassedCount++;
+        s.propertyEvalTotalBlock += evalResults.blockViolations?.length ?? 0;
+        s.propertyEvalTotalWarn += evalResults.warnings?.length ?? 0;
+      }
     }
 
     const versionsWithStats = versions.map((v) => {
@@ -115,6 +137,10 @@ export async function GET(
         totalInputTokens: 0,
         totalOutputTokens: 0,
         lastCallAt: null,
+        propertyEvalRunCount: 0,
+        propertyEvalPassedCount: 0,
+        propertyEvalTotalBlock: 0,
+        propertyEvalTotalWarn: 0,
       };
       // Extract a payload-preview that is safe to ship (truncated message text)
       const p = v.payload as {
@@ -137,6 +163,7 @@ export async function GET(
         contentHash: v.contentHash,
         sourceType: v.sourceType,
         gitSha: v.gitSha,
+        promptVersion: v.promptVersion,
         firstSeenAt: v.createdAt.toISOString(),
         model: p.model ?? null,
         messages: messagePreview,
@@ -152,6 +179,14 @@ export async function GET(
         totalInputTokens: stats.totalInputTokens,
         totalOutputTokens: stats.totalOutputTokens,
         lastCallAt: stats.lastCallAt?.toISOString() ?? null,
+        // Property-eval Layer 1 aggregaten (content-test #5.A)
+        propertyEvalRunCount: stats.propertyEvalRunCount,
+        propertyEvalPassRate:
+          stats.propertyEvalRunCount > 0
+            ? Math.round((stats.propertyEvalPassedCount / stats.propertyEvalRunCount) * 100)
+            : null,
+        propertyEvalTotalBlock: stats.propertyEvalTotalBlock,
+        propertyEvalTotalWarn: stats.propertyEvalTotalWarn,
       };
     });
 
