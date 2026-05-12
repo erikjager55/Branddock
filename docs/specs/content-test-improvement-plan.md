@@ -1,7 +1,7 @@
 # Content Generation — Test & Quality Improvement Plan
 
 > Comprehensive plan for testing, validating en optimaliseren van Branddock's 53 content-types pipeline.
-> **Status**: draft 2026-05-12 — synthese uit externe research (Jasper/Copy.ai/Anyword/Surfer/Anthropic/G-Eval/Promptfoo/LangSmith) + interne audit Branddock pipeline.
+> **Status**: ✅ **accepted 2026-05-12 — Optie B (Full plan)** — synthese uit externe research (Jasper/Copy.ai/Anyword/Surfer/Anthropic/G-Eval/Promptfoo/LangSmith) + interne audit Branddock pipeline.
 > **Owner**: claude-code + user (product decisions)
 > **Sprint-fit**: Track A pre-launch sprint #5-7, gefaseerd.
 
@@ -595,10 +595,7 @@ Generation → F-VAL score
 
 7. **Image refine-loop max-iterations** — 1, 2 of 3 attempts? Cost-trade-off; gebruikers willen niet 30s wachten op image. Aanbeveling: max 2; eerste pre-launch test op pilot-data om optimale waarde te bepalen.
 
-8. **Overall scope-confrontatie** — dit verbeterplan + strategy-analyst-stub + 4 andere pre-launch tracks samen overschrijden waarschijnlijk de 6-8 weken pilot-projectie. **Three options**:
-   - **A (Recommended)**: Phase 1 alleen (sub-sprints #5.A + #5.B foundation) = ~13 dagen, levert Layer 1 + Layer 2 voor representanten + chain-of-prompts core. Verbeteringen sub-plan B/C/D defer naar post-launch.
-   - **B**: Full plan pre-launch (~40d) — pilot-projectie schuift met 2-3 weken naar +9-11 weken.
-   - **C**: Hybride — Phase 1 + auto-iterate (sub-plan C) pre-launch (~20d), wiring-gates (B) + flow-analyse (D) post-launch.
+8. **Overall scope-confrontatie** — ✅ **Beslissing 2026-05-12: Optie B (Full plan pre-launch)**. Alle 6 sub-sprints + multi-modal chain-upgrades pre-launch. Pilot-projectie schuift van +6-8 → +9-11 weken. Rationale: content-quality is competitief differentiator; pilot start moet vanaf dag 1 op-niveau zijn ipv quality-iteration op pilot-klanten.
 
 ---
 

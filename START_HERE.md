@@ -30,7 +30,7 @@
 **Verplaatst naar post-launch (2026-05-12)**:
 - **Δ-4 PublishGate 2nd-opinion** — pilot niet live, geen evidence dat huidige 3-pijler F-VAL gaten heeft.
 
-Pilot-start projectie: **+6-8 weken** (strategy-analyst-stub full scope is langste pad).
+Pilot-start projectie: **+9-11 weken** (content-test verbeterplan Optie B Full geaccepteerd 2026-05-12 — 6 sub-sprints in Track A + chain-of-prompts + multi-modal upgrades, ~40d totaal naast strategy-analyst-stub langste pad).
 
 ---
 
