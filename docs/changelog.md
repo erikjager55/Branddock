@@ -562,7 +562,7 @@ Sluit BCP Phase 2 Phase 0.2.A vervolg-cluster af. Foundation (`useFormFillStore`
 - Task: [tasks/done/claw-page-awareness-vervolg.md](tasks/done/claw-page-awareness-vervolg.md)
 - ADR: -
 - Spec: -
-- Commit: `<TBD>`
+- Commit: `9240030`
 
 ### 250. BrandVoiceguide.contentLocale picker UI (Voice DNA tab)
 
