@@ -5,7 +5,7 @@ fase: pre-launch
 priority: now
 effort: ~3 dagen
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-05-12
 completed: -
 related-adr: -

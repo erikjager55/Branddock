@@ -4896,6 +4896,13 @@ model AICallSnapshot {
   sourceIdentifier String // file:function for TS, ExplorationConfigId for DB
   gitSha           String? // env var bij call-tijd, NULL voor db-config
 
+  /**
+   * Semver van prompt-template (content-test sub-sprint #5.A foundation).
+   * Gevuld uit PROMPT_VERSIONS registry in src/lib/ai/prompt-version-registry.ts.
+   * Nullable voor backwards-compat met pre-#5.A records.
+   */
+  promptVersion String?
+
   createdAt DateTime @default(now())
 
   callTraces AICallTrace[]
@@ -4903,6 +4910,7 @@ model AICallSnapshot {
   @@unique([workspaceId, contentHash])
   @@index([workspaceId])
   @@index([sourceIdentifier])
+  @@index([promptVersion])
 }
 
 model AICallTrace {
@@ -4932,6 +4940,21 @@ model AICallTrace {
    * Response-metadata: tokens, latency, stopReason, errorCode, cache-info.
    */
   responseMetadata Json
+
+  /**
+   * Layer 1 generic property-evals results (content-test #5.A foundation).
+   * Array van { check, pass, severity, reason, evidence? } per generated variant.
+   * Nullable voor backwards-compat + voor calls die geen variants produceren
+   * (zoals strategy-rationale-only calls).
+   */
+  propertyEvalResults Json?
+
+  /**
+   * Wiring checkpoint-gate warnings (content-test #6.A wiring-gates). Array
+   * van warn-severity gate-failures die niet blocked maar wel gelogd zijn.
+   * Pre-#6.A altijd null.
+   */
+  gateWarnings Json?
 
   startedAt   DateTime  @default(now())
   completedAt DateTime?
