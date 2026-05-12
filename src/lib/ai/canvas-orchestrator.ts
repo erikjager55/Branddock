@@ -340,7 +340,52 @@ export async function* orchestrateContentGeneration(
       textResult = { components: [] };
     }
   } else {
-    angles = await generateCreativeAngles(stack, stack.deliverableTypeId ?? '');
+    // Tree-of-Thoughts angle-generator dispatch (sub-sprint #5.B chain-pattern
+    // E). Opt-in via contentTypeInputs.useToTAngles. 4-5 candidates → 3-dim
+    // evaluation → top-2 met framing-diversity-constraint. Cost: ~$0.003 vs
+    // ~$0.001 baseline. Graceful fallback bij failure naar generateCreativeAngles.
+    const useToTAngles =
+      stack.contentTypeInputs?.useToTAngles === true ||
+      stack.contentTypeInputs?.useToTAngles === 'true';
+    if (useToTAngles) {
+      yield {
+        event: 'tot_angles_started',
+        data: { contentType: stack.deliverableTypeId },
+      };
+      const { generateCreativeAnglesToT } = await import('./chains/tree-of-thoughts-angles');
+      const totResult = await generateCreativeAnglesToT(
+        stack,
+        stack.deliverableTypeId ?? '',
+        {
+          tracking: {
+            workspaceId,
+            parentEntityType: 'Deliverable',
+            parentEntityId: deliverableId,
+            brandContext: stack.brand,
+          },
+        },
+      );
+      if (totResult && totResult.selectedAngles.length === 2) {
+        angles = totResult.selectedAngles;
+        yield {
+          event: 'tot_angles_complete',
+          data: {
+            candidateCount: totResult.metrics.candidateCount,
+            generateLatencyMs: totResult.metrics.generateLatencyMs,
+            evaluateLatencyMs: totResult.metrics.evaluateLatencyMs,
+            selectedAngles: angles.map((a) => ({ label: a.label, approach: a.approach })),
+          },
+        };
+      } else {
+        // ToT failed — fallback naar legacy 2-angle direct
+        console.warn(
+          '[canvas-orchestrator] ToT angle-generator failed, falling back to legacy generateCreativeAngles',
+        );
+        angles = await generateCreativeAngles(stack, stack.deliverableTypeId ?? '');
+      }
+    } else {
+      angles = await generateCreativeAngles(stack, stack.deliverableTypeId ?? '');
+    }
     textResult = { components: [] };
   }
 
