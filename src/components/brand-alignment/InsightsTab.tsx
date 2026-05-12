@@ -19,6 +19,7 @@ import {
 } from "@/hooks/useAlignmentInsights";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { SparklineChart } from "@/features/business-strategy/components/detail/SparklineChart";
+import { FeedbackLoopPanels } from "./FeedbackLoopPanels";
 
 const FINDING_CATEGORY_LABELS: Record<string, string> = {
   VOICE: "Voice",
@@ -226,6 +227,15 @@ export function InsightsTab() {
 
       {/* Recent reviews */}
       <RecentReviewsCard reviews={recentReviews} />
+
+      {/* Δ-3 Feedback-loop panels (content-test #6.B) */}
+      <div className="pt-4 mt-2 border-t border-gray-200">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-gray-500" />
+          Feedback-loop
+        </h3>
+        <FeedbackLoopPanels />
+      </div>
     </div>
   );
 }
