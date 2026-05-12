@@ -15,17 +15,18 @@ worktree: -
 
 # Status 2026-05-12
 
-**Foundation modules (6/7 deliverables compleet)**:
+**Foundation modules (7/7 backend + UI gedeeltelijk klaar)**:
 - ✅ feedback-compiler (`src/lib/content-test/feedback-compiler.ts`, 14/14 smoke) — commit f10c3c5
 - ✅ auto-iterate orchestrator module (`src/lib/ai/auto-iterate.ts`, 17/17 smoke) — commit 4ed8045
 - ✅ per-type thresholds backend (Prisma + accessor + API) — commit e099d61
 - ✅ edit-distance signal (Prisma + Levenshtein + inline-edit hook) — commit b289fea
 - ✅ Settings → Validation UI (ThresholdsTable) — commit f71d116
 - ✅ Canvas-orchestrator wiring + auto-iterate-integration module (FEATURE_AUTO_ITERATE env-flag, snapshot naar Deliverable.settings.autoIterate, LearningEvent attribution per iteration)
+- ✅ Feedback-loop dashboard panels in InsightsTab (auto-iterate / templates / edit-distance heatmap) + nieuw `/api/brand-alignment/feedback-loop-metrics` endpoint — commit 4ce7f32
+- ✅ Apply auto-iterated version endpoint (`POST /api/studio/[deliverableId]/auto-iterate/apply`) — backend mirror van strict-rewrite/apply
 
-**Pending**:
-- ⏳ Feedback dashboard panels in InsightsTab (auto-iterate success-rate, hint-template effectiveness, edit-distance heatmap). Eerste data zal beschikbaar zijn zodra FEATURE_AUTO_ITERATE actief is in productie.
-- ⏳ UI: "Apply auto-iterated version" knop in canvas (snapshot → live components update). Volgt op feedback-dashboard.
+**Pending (UI v2 follow-up)**:
+- ⏳ Canvas SSE event-handlers voor auto_iterate_* events + useCanvasStore state + AutoIterateImprovedBlock UI component (mirror van StrictImprovedBlock in FidelityScoreBar). Backend snapshot werkt al — UI moet nog wired.
 - ⏸️ Image refine-loop (defer naar post-gemini-migration per task §65-67)
 
 # Probleem
