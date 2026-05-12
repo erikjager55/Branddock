@@ -880,6 +880,26 @@ export async function* orchestrateContentGeneration(
     }
   }
 
+  // ── Emit gate-metrics + degradation-check (sub-sprint #6.A) ─
+  // Per-run PostHog event + rolling-window degradation-alert. Beide
+  // calls fire-and-forget; tracking-failures swallowen.
+  try {
+    const { emitGateRunMetrics, checkGateDegradation } = await import(
+      '@/lib/content-test/gate-metrics'
+    );
+    await emitGateRunMetrics({
+      workspaceId,
+      deliverableId,
+      gateWarnings: gateWarningsAcc,
+    });
+    await checkGateDegradation({ workspaceId });
+  } catch (err) {
+    console.warn(
+      '[canvas-orchestrator] gate-metrics emit failed:',
+      (err as Error).message,
+    );
+  }
+
   // ── Complete ──────────────────────────────────────────
   const totalDuration = Date.now() - startTime;
   const componentCount =
