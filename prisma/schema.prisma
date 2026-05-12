@@ -266,6 +266,9 @@ model Workspace {
   // Brand Voiceguide (parallel aan brandStyleguide — verbale identity)
   brandVoiceguide BrandVoiceguide?
 
+  // Per-type fidelity thresholds (content-test #6.B)
+  contentTypeThresholds WorkspaceContentTypeThreshold[]
+
   @@index([organizationId])
 }
 
@@ -5544,5 +5547,30 @@ model BrandVoiceguide {
   createdById String?
   createdBy   User?    @relation("BrandVoiceguideCreator", fields: [createdById], references: [id])
 
+  @@index([workspaceId])
+}
+
+/**
+ * Per-type fidelity threshold (content-test #6.B).
+ * Workspaces kunnen per content-type een eigen drempel zetten; ontbreken
+ * van een record betekent fallback op global default (65, conservatief
+ * startend per beslissing 2026-05-12). DeliverableType is in-code
+ * registry (geen Prisma FK) — contentTypeId is plain String.
+ */
+model WorkspaceContentTypeThreshold {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /** Matches DeliverableTypeDefinition.id (zie src/features/campaigns/lib/deliverable-types.ts). */
+  contentTypeId String
+
+  /** Composite F-VAL threshold 0-100. Default 65. */
+  threshold Int @default(65)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, contentTypeId])
   @@index([workspaceId])
 }
