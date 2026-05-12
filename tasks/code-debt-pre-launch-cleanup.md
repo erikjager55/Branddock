@@ -52,7 +52,7 @@ Groeperen in 3 mini-clusters voor fill-in werk tussen grote sprints. Niet als é
 # Acceptatiecriteria
 
 **Cluster A — sprint #4-5 (kritiek)**:
-- [ ] Variant-selection persists via API (refresh = same variant active)
+- [x] Variant-selection persists via API (refresh = same variant active) — done 2026-05-12, commit volgt
 - [ ] Fix-options persist (2× call-sites consistent)
 - [ ] Persona image-storage werkt end-to-end (gen → save → render)
 - [ ] ProseMirror diff replaces string-diff in learning-loop (rich-text comparisons)
@@ -62,7 +62,7 @@ Groeperen in 3 mini-clusters voor fill-in werk tussen grote sprints. Niet als é
 - [ ] Trend-radar smoke groen na migratie
 
 **Cluster C — sprint #6-7 fill-in**:
-- [ ] Design-tokens cleanup (verwijder dev-only nav-entry)
+- [x] Design-tokens cleanup (verwijder dev-only nav-entry) — done 2026-05-12, commit volgt
 - [ ] BrandAlignmentPage lazy-loaded
 - [ ] urgencyLevel deprecation-overlap geëvalueerd (gehandhaafd of verwijderd)
 

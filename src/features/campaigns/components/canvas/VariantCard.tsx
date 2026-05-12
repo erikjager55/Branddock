@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
+import { useSelectVariant } from '../../hooks/canvas.hooks';
 import { InlineEditor } from './InlineEditor';
 import { SimpleMarkdown } from './previews/SimpleMarkdown';
 import { Badge } from '@/components/shared';
@@ -38,10 +39,21 @@ export function VariantCard({
   const [isEditing, setIsEditing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const setSelection = useCanvasStore((s) => s.setSelection);
+  const selectVariantMutation = useSelectVariant(deliverableId ?? '');
 
   const handleSelect = () => {
+    // Always update local store eerst — UI reageert direct, ook wanneer DB-
+    // sync uitstaat (e.g. nog niet-gepersisteerde variants vóór save).
     setSelection(group, variantIndex);
-    // TODO: fire useSelectVariant API call for DB persistence once componentId mapping is available
+
+    // Persist naar DeliverableComponent.isSelected wanneer er een DB-rij
+    // bestaat voor deze variant (componentId is set bij load uit canvas-api).
+    // Mutation invalideert canvasKeys.components zodat refresh consistent
+    // is met server-state — voorkomt dat na page-reload de selectie
+    // verspringt naar de DB-default.
+    if (variant.componentId && deliverableId) {
+      selectVariantMutation.mutate(variant.componentId);
+    }
   };
 
   const handleSave = (content: string) => {
