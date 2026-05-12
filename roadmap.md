@@ -27,7 +27,7 @@
 |---|---|---|---|
 | **Phase 0 — Foundation** | [`tech-debt-any-types`](tasks/done/tech-debt-any-types.md), [`claw-page-awareness`](tasks/done/claw-page-awareness.md) (scope-cut: foundation only) | 3-5d | ✅ done 2026-05-08 |
 | **Phase 1 — F-VAL extension** | [`bv-wire-w1-full-centroid`](tasks/done/bv-wire-w1-full-centroid.md) ✅, [`heuristics-packages-multilingual`](tasks/done/heuristics-packages-multilingual.md) ✅ (Δ-2 done), [`voice-baseline-1pager`](tasks/done/voice-baseline-1pager.md) ✅ (Δ-3 done) | 8-11d | ✅ done 2026-05-08 — Phase 2 review-surfaces unblocked |
-| **Phase 2 — Review surfaces** | Δ-1 Surface C ✅ (Brand Alignment Tab 3), Δ-1 Surface D ✅ (Brand Assistant chat-tool), Δ-1 Surface E ✅ (PublishGate findings-block), Δ-1 cleanup-pack ✅, [`brand-alignment-insights-tab`](tasks/done/brand-alignment-insights-tab.md) ✅, [`canvas-inline-edit-overlays`](tasks/done/canvas-inline-edit-overlays.md) ✅, Δ-4 PublishGate 2nd-opinion (open), claw-page-awareness vervolg-cluster (open) | 13-17d | Δ-1 + Insights done; Δ-4 + claw-vervolg task-files volgen |
+| **Phase 2 — Review surfaces** | Δ-1 Surface C ✅ (Brand Alignment Tab 3), Δ-1 Surface D ✅ (Brand Assistant chat-tool), Δ-1 Surface E ✅ (PublishGate findings-block), Δ-1 cleanup-pack ✅, [`brand-alignment-insights-tab`](tasks/done/brand-alignment-insights-tab.md) ✅, [`canvas-inline-edit-overlays`](tasks/done/canvas-inline-edit-overlays.md) ✅, claw-page-awareness vervolg-cluster (open) | 13-17d | Δ-1 + Insights done; claw-vervolg task-file volgt. **Δ-4 verplaatst naar post-launch** 2026-05-12 — geen pilot-evidence dat F-VAL gaps heeft die een 2nd-opinion zou vangen; preventief bouwen risico op false-positive moeheid + cost/latency tax zonder bewezen baat. |
 | **Phase 3 — Strategy Analyst** | brandclaw-data-collection, Strategy Analyst stub (agent-architecture v1) | 20-27d | task-files volgen |
 
 **ADR's**:
@@ -66,8 +66,9 @@ Pre-launch = BCP Phase 2 sluit af. Δ-1 review-surfaces + Insights tab + F-VAL r
 **Actief — Phase 2 closures**
 | ID | Titel | Effort | Status | Blocker |
 |---|---|---|---|---|
-| `delta-4-publishgate-2nd-opinion` | Δ-4 PublishGate 2nd-opinion review-pass | onbekend | open | task-file (feature-planner) |
 | `claw-page-awareness-vervolg` | Page-wiring PersonaDetail / BrandAssetDetail / Step1Context (deferred uit Phase 0.2.A) | ~2 dagen | open | task-file |
+
+> **Δ-4 PublishGate 2nd-opinion verplaatst naar post-launch (2026-05-12)** — beslissing in pre-discovery: pilot is niet live, geen evidence dat huidige 3-pijler F-VAL gaten heeft die een 2nd-opinion zou vangen. Risico op false-positive moeheid + ~1-3s extra publish-latency + dubbele token-cost zonder bewezen baat. Pas overwegen wanneer pilot-data uitwijst dat F-VAL goedkeurt wat eigenlijk geweigerd had moeten worden.
 
 **Backlog smoke-tests (~1 uur)**
 | ID | Titel | Effort | Notitie |
@@ -115,6 +116,7 @@ Pre-launch = BCP Phase 2 sluit af. Δ-1 review-surfaces + Insights tab + F-VAL r
 
 | ID | Titel | Fase | Effort | Notitie |
 |---|---|---|---|---|
+| `delta-4-publishgate-2nd-opinion` | Δ-4 PublishGate 2nd-opinion review-pass | post-launch | onbekend | Verplaatst 2026-05-12 uit BCP Phase 2 (pre-discovery): preventief bouwen zonder pilot-evidence onverstandig. Pas optillen wanneer pilot-data laat zien dat F-VAL goedkeurt wat geweigerd had moeten worden. 4 mogelijke interpretaties open: (a) extra AI-call ander model, (b) heuristic conflict-detector, (c) human-in-the-loop, (d) adversarial probe. |
 | [`power-user-shortcuts`](tasks/power-user-shortcuts.md) | Power-user shortcuts (5 micro-optimalisaties) | post-launch | 1-2 dagen | Gedistilleerd uit plan |
 | `learning-loop-dashboard-usage` | Per-sourceIdentifier dashboard | post-launch | halve dag | Task-file volgt |
 | `weekly-report-email-via-resend` | Weekly report email via Emailit | post-launch | 1 dag | Task-file volgt na weekly-report generator |
@@ -186,7 +188,7 @@ Pre-launch = BCP Phase 2 sluit af. Δ-1 review-surfaces + Insights tab + F-VAL r
 
 **Volgorde-aanbeveling**:
 
-1. **Phase 2 closures** — `delta-4-publishgate-2nd-opinion` + `claw-page-awareness-vervolg` task-files via feature-planner. Sluit BCP Phase 2 helemaal af voor pilot-start.
+1. **Phase 2 closure** — `claw-page-awareness-vervolg` task-file via feature-planner. Sluit BCP Phase 2 helemaal af voor pilot-start. (Δ-4 verplaatst naar post-launch — beslissing 2026-05-12.)
 2. **Backlog smoke-tests** (~1 uur) — learning-loop e2e + Visual Brief trained-style. Korte runway-check vóór launch-track.
 3. **Launch-track activeren** — `vercel-deployment` (3d) ontgrendelt `pilot-onboarding-better-brands`. Stripe daarna voor revenue-pad. Met BCP Phase 2 in zicht is launch-projectie +4-6 weken (was +6-10 begin sprint #3).
 

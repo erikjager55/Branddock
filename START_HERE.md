@@ -20,8 +20,10 @@
 - ✅ Cowork-pariteit Fase A + Competitive-intel Fase 1 data-laag
 
 **Open Pre-launch werk** (resterend om BCP Phase 2 te sluiten):
-- **Δ-4 PublishGate 2nd-opinion** — task-file nog te maken
 - **claw-page-awareness vervolg-cluster** — page-wiring PersonaDetail / BrandAssetDetail / Step1Context
+
+**Verplaatst naar post-launch (2026-05-12)**:
+- **Δ-4 PublishGate 2nd-opinion** — pilot niet live, geen evidence dat huidige 3-pijler F-VAL gaten heeft. Pas optillen wanneer pilot-data laat zien dat F-VAL goedkeurt wat geweigerd had moeten worden.
 
 **Launch-track** (separate fase, na BCP Phase 2 closure):
 - `vercel-deployment` (3d) + `stripe-billing-live` (1w) + `pilot-onboarding-better-brands` (2d) + onboarding-flow-test + marketing-site-pricing
@@ -32,13 +34,13 @@ Pilot-start projectie: **+4-6 weken** (was +6-10 begin sprint #3; review-surface
 
 ## Top 3 actieve pre-launch tasks
 
-> Δ-1 review-surfaces zijn allemaal landed op `main`. NOW-pipeline focust nu op Phase 2 closures plus optionele backlog-smokes.
+> Δ-1 review-surfaces zijn allemaal landed op `main`. NOW-pipeline focust nu op de laatste Phase 2 closure plus optionele backlog-smokes — daarna door naar launch-track.
 
-1. **Δ-4 PublishGate 2nd-opinion** — task-file maken via feature-planner subagent. Scope: extra review-pass na initiële F-VAL composite om edge-cases en multi-pillar conflicten te vangen vóór publish. Effort onbekend.
+1. **claw-page-awareness vervolg-cluster** — page-wiring voor PersonaDetail / BrandAssetDetail / Step1Context (deferred uit Phase 0.2.A). Task-file nog te maken. ~2 dagen.
 
-2. **claw-page-awareness vervolg-cluster** — page-wiring voor PersonaDetail / BrandAssetDetail / Step1Context (deferred uit Phase 0.2.A). Task-file nog te maken. ~2 dagen.
+2. **Backlog smoke-tests** (~1 uur totaal) — learning-loop end-to-end (item #3 cross-sessie backlog) + Visual Brief Compose / Trained-Style (item #4). Korte runway-check vóór launch-track.
 
-3. **Backlog smoke-tests** (~1 uur totaal) — learning-loop end-to-end (item #3 cross-sessie backlog) + Visual Brief Compose / Trained-Style (item #4). Korte runway-check vóór launch-track.
+3. **Launch-track activering** — vercel-deployment (3d) als eerste, ontgrendelt pilot-onboarding.
 
 **Daarna (launch-track activering)**:
 - `vercel-deployment` (3d) ontgrendelt `pilot-onboarding-better-brands` (2d)
@@ -49,9 +51,8 @@ Pilot-start projectie: **+4-6 weken** (was +6-10 begin sprint #3; review-surface
 
 ## Open beslissingen (blokkers voor werk)
 
-1. **Δ-4 scope** — feature-planner moet bepalen: is dit een aparte AI-call (extra latency + cost) of een verfijning van bestaande F-VAL? Red Team check vóór technical-planner.
-2. **Pilot LoRA-status Better Brands workspace** — trained-style image-flow defaults open op (`canvas-image-briefing-defaults` zette tiktok-script default op lifestyle als pilot-veiligheid; flip naar trained-style mogelijk via runtime check zodra LoRA's geseed zijn).
-3. **Pre-launch sprint #3 browser-smokes uitgesteld** (per memory `branddock-pre-launch-smoke-batch`): Δ-1 Surface C 9-stappen browser-smoke bundelen met deployment/billing/onboarding smokes in sprint #4 batch.
+1. **Pilot LoRA-status Better Brands workspace** — trained-style image-flow defaults open op (`canvas-image-briefing-defaults` zette tiktok-script default op lifestyle als pilot-veiligheid; flip naar trained-style mogelijk via runtime check zodra LoRA's geseed zijn).
+2. **Pre-launch sprint #3 browser-smokes uitgesteld** (per memory `branddock-pre-launch-smoke-batch`): Δ-1 Surface C 9-stappen browser-smoke bundelen met deployment/billing/onboarding smokes in sprint #4 batch.
 
 ---
 
