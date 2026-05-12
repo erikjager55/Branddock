@@ -518,3 +518,162 @@ export async function generateImage(
     mimeType: 'image/png',
   };
 }
+
+// ─── Compose from images (nano-banana) ─────────────────────
+// Sub-sprint #6.A: FAL Flux Pro Kontext multi → Gemini Image Preview.
+// Model gemini-2.5-flash-image-preview ondersteunt multi-image input via
+// inline base64 parts + tekst-instructie. Aspect-ratio gaat als instructie-
+// suffix mee (model ondersteunt geen aspect-ratio param directly).
+
+export type GeminiAspectLabel = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+
+export interface ComposeFromImagesOptions {
+  aspectRatio?: GeminiAspectLabel;
+}
+
+export interface ComposeFromImagesResult {
+  imageBytes: Buffer;
+  mimeType: string;
+  /** Het tekst-deel van Gemini's response (optioneel, voor debug). */
+  responseText: string | null;
+}
+
+export class ComposeInvalidImageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ComposeInvalidImageError';
+  }
+}
+
+export class ComposePolicyBlockedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ComposePolicyBlockedError';
+  }
+}
+
+export class ComposeQuotaError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ComposeQuotaError';
+  }
+}
+
+export class ComposeNetworkError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ComposeNetworkError';
+  }
+}
+
+const COMPOSE_MODEL = 'gemini-2.5-flash-image-preview';
+
+const ASPECT_INSTRUCTION_SUFFIX: Record<GeminiAspectLabel, string> = {
+  '1:1': 'Render output as a square 1:1 image.',
+  '16:9': 'Render output as a 16:9 landscape image.',
+  '9:16': 'Render output as a 9:16 portrait image.',
+  '4:3': 'Render output as a 4:3 landscape image.',
+  '3:4': 'Render output as a 3:4 portrait image.',
+};
+
+async function fetchImageAsInlineData(
+  url: string,
+): Promise<{ data: string; mimeType: string }> {
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch (err) {
+    throw new ComposeNetworkError(
+      `Failed to fetch reference image ${url}: ${(err as Error).message}`,
+    );
+  }
+  if (!res.ok) {
+    throw new ComposeInvalidImageError(
+      `Reference image fetch returned ${res.status} for ${url}`,
+    );
+  }
+  const contentType = res.headers.get('content-type') ?? 'image/png';
+  if (!contentType.startsWith('image/')) {
+    throw new ComposeInvalidImageError(
+      `Reference URL did not return image content-type: ${contentType} for ${url}`,
+    );
+  }
+  const buf = Buffer.from(await res.arrayBuffer());
+  return { data: buf.toString('base64'), mimeType: contentType };
+}
+
+export async function composeFromImages(
+  imageUrls: string[],
+  instruction: string,
+  options?: ComposeFromImagesOptions,
+): Promise<ComposeFromImagesResult> {
+  if (imageUrls.length < 2 || imageUrls.length > 9) {
+    throw new ComposeInvalidImageError(
+      `composeFromImages requires 2-9 image URLs, got ${imageUrls.length}`,
+    );
+  }
+  if (!instruction.trim()) {
+    throw new ComposeInvalidImageError('composeFromImages requires a non-empty instruction');
+  }
+
+  const client = getClient();
+  const inlineImages = await Promise.all(imageUrls.map(fetchImageAsInlineData));
+
+  const aspectSuffix = options?.aspectRatio
+    ? ` ${ASPECT_INSTRUCTION_SUFFIX[options.aspectRatio]}`
+    : '';
+  const textPart = {
+    text: `${instruction}${aspectSuffix}`,
+  };
+  const parts: Array<{ text: string } | { inlineData: { data: string; mimeType: string } }> = [
+    ...inlineImages.map((img) => ({ inlineData: img })),
+    textPart,
+  ];
+
+  let response: Awaited<ReturnType<typeof client.models.generateContent>>;
+  try {
+    response = await client.models.generateContent({
+      model: COMPOSE_MODEL,
+      contents: [{ role: 'user', parts }],
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (/quota|rate.?limit/i.test(message)) {
+      throw new ComposeQuotaError(`Gemini compose quota/rate limit hit: ${message}`);
+    }
+    if (/policy|safety|blocked/i.test(message)) {
+      throw new ComposePolicyBlockedError(`Gemini compose policy block: ${message}`);
+    }
+    if (/network|timeout|ECONN|fetch/i.test(message)) {
+      throw new ComposeNetworkError(`Gemini compose network error: ${message}`);
+    }
+    throw new Error(`Gemini compose failed: ${message}`);
+  }
+
+  const candidate = response.candidates?.[0];
+  if (!candidate) {
+    throw new ComposePolicyBlockedError(
+      'Gemini returned no candidates — likely content-policy block on input',
+    );
+  }
+  const responseParts = candidate.content?.parts ?? [];
+  let imagePart: { inlineData?: { data?: string; mimeType?: string } } | undefined;
+  let responseText: string | null = null;
+  for (const p of responseParts) {
+    if ('inlineData' in p && p.inlineData?.data) {
+      imagePart = p;
+    } else if ('text' in p && typeof p.text === 'string') {
+      responseText = (responseText ?? '') + p.text;
+    }
+  }
+  if (!imagePart?.inlineData?.data) {
+    throw new ComposePolicyBlockedError(
+      'Gemini compose returned no image data (possible policy block or empty response)',
+    );
+  }
+  return {
+    imageBytes: Buffer.from(imagePart.inlineData.data, 'base64'),
+    mimeType: imagePart.inlineData.mimeType ?? 'image/png',
+    responseText,
+  };
+}

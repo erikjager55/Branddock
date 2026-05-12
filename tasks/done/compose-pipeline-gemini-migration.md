@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: ~1 dag
 owner: claude-code
-status: open
+status: done
 created: 2026-05-12
-completed: -
+completed: 2026-05-12
 related-adr: -
 related-spec: -
 worktree: -

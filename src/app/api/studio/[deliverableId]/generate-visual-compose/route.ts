@@ -21,15 +21,22 @@ import { prisma } from '@/lib/prisma';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleCanvasContext, type CanvasContextStack } from '@/lib/ai/canvas-context';
 import { buildVisualBriefImagePrompts } from '@/lib/ai/visual-brief-prompts';
-import { runFalGeneration } from '@/lib/integrations/fal/fal-client';
-import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
+import {
+  composeFromImages,
+  ComposeInvalidImageError,
+  ComposePolicyBlockedError,
+  ComposeQuotaError,
+  ComposeNetworkError,
+  type GeminiAspectLabel,
+} from '@/lib/ai/gemini-client';
 import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer';
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 
 const VISUAL_GROUP = 'visual';
-const COMPOSE_ENDPOINT = 'fal-ai/flux-pro/kontext/multi';
+const COMPOSE_MODEL = 'gemini-2.5-flash-image-preview';
+const COMPOSE_PROVIDER = 'google';
 
 type FalImageSize =
   | 'square_hd'
@@ -228,25 +235,40 @@ export async function POST(request: Request, { params }: RouteParams) {
     const aspectLabel = falSizeToAspectLabel(falImageSize);
     const aspectRatio = falSizeToAspectRatio(falImageSize);
 
+    const geminiAspect: GeminiAspectLabel = (aspectRatio as GeminiAspectLabel) ?? '1:1';
     const startMs = Date.now();
+
+    // Track any typed errors per-prompt zodat we de eerste specifieke error
+    // kunnen surface'en aan de user i.p.v. een generieke fail-all message.
+    const errors: Array<{
+      code: 'invalid-image' | 'policy' | 'quota' | 'network' | 'unknown';
+      message: string;
+    }> = [];
+
     const generated = await Promise.all(
       finalPrompts.map(async (prompt) => {
         try {
-          // kontext/multi expects: prompt + image_urls (array) + aspect_ratio
-          const result = await runFalGeneration(COMPOSE_ENDPOINT, {
-            prompt,
-            image_urls: referenceUrls,
-            num_images: 1,
-            guidance_scale: 3.5,
-            aspect_ratio: aspectRatio,
-            output_format: 'png',
+          const result = await composeFromImages(referenceUrls, prompt, {
+            aspectRatio: geminiAspect,
           });
-          const url = result.images?.[0]?.url;
-          if (!url) return null;
-          return { prompt, hostedUrl: url };
+          return { prompt, imageBytes: result.imageBytes, mimeType: result.mimeType };
         } catch (err) {
+          if (err instanceof ComposeInvalidImageError) {
+            errors.push({ code: 'invalid-image', message: err.message });
+          } else if (err instanceof ComposePolicyBlockedError) {
+            errors.push({ code: 'policy', message: err.message });
+          } else if (err instanceof ComposeQuotaError) {
+            errors.push({ code: 'quota', message: err.message });
+          } else if (err instanceof ComposeNetworkError) {
+            errors.push({ code: 'network', message: err.message });
+          } else {
+            errors.push({
+              code: 'unknown',
+              message: err instanceof Error ? err.message : 'Unknown compose error',
+            });
+          }
           console.error(
-            `[generate-visual-compose] ${COMPOSE_ENDPOINT} call failed:`,
+            `[generate-visual-compose] ${COMPOSE_MODEL} call failed:`,
             err instanceof Error ? err.message : err,
           );
           return null;
@@ -256,8 +278,45 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     const successful = generated.filter((r): r is NonNullable<typeof r> => r !== null);
     if (successful.length === 0) {
+      const firstErr = errors[0];
+      if (firstErr?.code === 'policy') {
+        return NextResponse.json(
+          {
+            error:
+              'Content policy: image was rejected by Gemini safety filter. Adjust your instruction or pick different references.',
+            code: firstErr.code,
+          },
+          { status: 422 },
+        );
+      }
+      if (firstErr?.code === 'invalid-image') {
+        return NextResponse.json(
+          {
+            error:
+              'One or more reference images could not be fetched. Make sure your images are publicly accessible (deploy required for local URLs).',
+            code: firstErr.code,
+            details: firstErr.message,
+          },
+          { status: 400 },
+        );
+      }
+      if (firstErr?.code === 'quota' || firstErr?.code === 'network') {
+        return NextResponse.json(
+          {
+            error:
+              firstErr.code === 'quota'
+                ? 'Gemini quota exceeded. Try again in a moment or contact support.'
+                : 'Network error reaching Gemini. Try again in a moment.',
+            code: firstErr.code,
+          },
+          { status: 502 },
+        );
+      }
       return NextResponse.json(
-        { error: `All compose generation calls failed (${COMPOSE_ENDPOINT}). Check that FAL_KEY is configured.` },
+        {
+          error: `Compose generation failed: ${firstErr?.message ?? 'unknown error'}`,
+          code: firstErr?.code ?? 'unknown',
+        },
         { status: 502 },
       );
     }
@@ -265,12 +324,12 @@ export async function POST(request: Request, { params }: RouteParams) {
     const storage = getStorageProvider();
     const uploads = await Promise.all(
       successful.map(async (img, idx) => {
-        const bytes = await fetchWithSizeLimit(img.hostedUrl, AI_IMAGE_SIZE_CAP);
-        const fileName = `canvas-visual-compose-${deliverableId}-${Date.now()}-${idx}.png`;
-        const upload = await storage.upload(bytes, {
+        const ext = img.mimeType === 'image/jpeg' ? 'jpg' : 'png';
+        const fileName = `canvas-visual-compose-${deliverableId}-${Date.now()}-${idx}.${ext}`;
+        const upload = await storage.upload(img.imageBytes, {
           workspaceId,
           fileName,
-          contentType: 'image/png',
+          contentType: img.mimeType,
         });
         return { url: upload.url, prompt: img.prompt };
       }),
@@ -298,8 +357,8 @@ export async function POST(request: Request, { params }: RouteParams) {
             imageUrl: u.url,
             imageSource: 'ai_generated',
             imagePromptUsed: u.prompt,
-            aiProvider: 'fal',
-            aiModel: COMPOSE_ENDPOINT,
+            aiProvider: COMPOSE_PROVIDER,
+            aiModel: COMPOSE_MODEL,
             generationDuration: elapsedMs,
             status: 'GENERATED',
             generatedAt: new Date(),
@@ -328,8 +387,8 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     return NextResponse.json({
       variants: components,
-      provider: 'fal',
-      model: COMPOSE_ENDPOINT,
+      provider: COMPOSE_PROVIDER,
+      model: COMPOSE_MODEL,
       source: 'compose',
       referenceCount: referenceUrls.length,
       aspectRatio: aspectLabel,
