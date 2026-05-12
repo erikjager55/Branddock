@@ -1,8 +1,8 @@
 ---
 id: stripe-billing-live
 title: Stripe live billing — checkout + webhooks + plan enforcement
-fase: launch
-priority: next
+fase: pre-launch
+priority: now
 effort: 1 week
 owner: claude-code
 status: open
@@ -10,7 +10,7 @@ created: 2026-05-07
 completed: -
 related-adr: -
 related-spec: -
-worktree: branddock-feat-stripe-billing
+worktree: branddock-launch
 ---
 
 # Probleem

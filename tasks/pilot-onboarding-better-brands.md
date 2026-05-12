@@ -1,8 +1,8 @@
 ---
 id: pilot-onboarding-better-brands
 title: Eerste pilot-klant Better Brands live krijgen
-fase: launch
-priority: next
+fase: pre-launch
+priority: now
 effort: 2 dagen
 owner: claude-code
 status: open
@@ -10,7 +10,7 @@ created: 2026-05-07
 completed: -
 related-adr: -
 related-spec: -
-worktree: -
+worktree: branddock-launch
 ---
 
 # Probleem

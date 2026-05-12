@@ -10,8 +10,21 @@ created: 2026-05-08
 completed: -
 related-adr: 2026-05-08-brandclaw-agent-architectuur, 2026-05-08-fval-output-schema-bevindingen, 2026-05-08-locale-routing-brand-voice
 related-spec: tasks/_drafts/idea-brand-control-program.md
-worktree: branddock-program-p3
+worktree: branddock-brandclaw
+sub-phases: A-foundation, B-dimensions-persistence, C-cron-polish
 ---
+
+# Sub-phasing
+
+Originele taak 20-27d. Sub-gefaseerd 2026-05-12 in 3 commit-bare chunks. Track B werkt sequentieel: A → B → C. Elke fase eindigt met eigen review-loop + commit + changelog-entry; geen mid-fase merges naar main.
+
+| Phase | Scope | Effort | Commitable output |
+|---|---|---|---|
+| **A — Foundation** | Node skeleton + system-prompt scaffold + 1 dimension (voice_drift) + manual trigger via UI Tab 4 minimal (run-knop + observations-list) | 5-7d | End-to-end Analyst-run werkt op LINFI; 1 dimension levert observations met evidence; geen scheduling, geen acties beyond Mark-Read |
+| **B — Dimensions + Persistence** | 4 extra dimensions (fidelity_decline / review_pattern / alignment_gap / publish_quality_trend) + StrategyObservation persistence + action-buttons (Read/Acted/Dismiss) | 7-10d | 5 dimensions detecteren observations; UI toont evidence-modal + filter/sort/group; observations persisteren met flags |
+| **C — Cron + Polish** | Vercel Cron weekly trigger + per-workspace concurrency-cap + cost-budget alerts + monitoring + smoke-tests | 5-7d | Maandagochtend 9am UTC cron-run werkt; PostHog cost-alert wired; integration-test op BB passes |
+
+**Volgorde-discipline**: elke phase een eigen branch op `branddock-brandclaw` worktree (`track/brandclaw-phase-a` etc.), gemerged naar `track/brandclaw` na review-loop clean. Na alle 3 fases klaar: PR `track/brandclaw` → `main`.
 
 # Probleem
 

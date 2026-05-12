@@ -1,8 +1,8 @@
 ---
 id: vercel-deployment
 title: Vercel deployment + Neon DB + custom domain + monitoring
-fase: launch
-priority: next
+fase: pre-launch
+priority: now
 effort: 3 dagen
 owner: claude-code
 status: open
@@ -10,7 +10,7 @@ created: 2026-05-07
 completed: -
 related-adr: -
 related-spec: -
-worktree: -
+worktree: branddock-launch
 ---
 
 # Probleem

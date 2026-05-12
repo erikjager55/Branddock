@@ -10,7 +10,7 @@ created: 2026-05-08
 completed: -
 related-adr: 2026-05-08-brandclaw-agent-architectuur
 related-spec: tasks/_drafts/idea-brand-control-program.md
-worktree: branddock-program-p3
+worktree: branddock-brandclaw
 ---
 
 # Probleem
