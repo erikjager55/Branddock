@@ -37,14 +37,19 @@ export type PromptCategory =
  * Chain-of-Thought / Plan-and-Solve / Tree-of-Thoughts patronen landen).
  */
 export const PROMPT_VERSIONS: Record<PromptCategory, string> = {
-  'long-form': '1.0.0',
-  'social-media': '1.0.0',
-  'advertising': '1.0.0',
-  'email': '1.0.0',
-  'website': '1.0.0',
-  'video-audio': '1.0.0',
-  'sales-enablement': '1.0.0',
-  'pr-hr-comms': '1.0.0',
+  // 1.1.0 = REASONING_APPROACH implicit-CoT toegevoegd aan buildBaseSystemPrompt
+  // (sub-sprint #5.B chain-of-prompts upgrade A). Output-format compat (geen
+  // breaking change), content-tuning richting concrete + brand-aligned.
+  'long-form': '1.1.0',
+  'social-media': '1.1.0',
+  'advertising': '1.1.0',
+  'email': '1.1.0',
+  'website': '1.1.0',
+  'video-audio': '1.1.0',
+  'sales-enablement': '1.1.0',
+  'pr-hr-comms': '1.1.0',
+  // campaign-strategy + campaign-concept gebruiken niet buildBaseSystemPrompt,
+  // dus blijven nog op 1.0.0 — Plan-and-Solve + ToT upgrades komen apart
   'campaign-strategy': '1.0.0',
   'campaign-concept': '1.0.0',
 };

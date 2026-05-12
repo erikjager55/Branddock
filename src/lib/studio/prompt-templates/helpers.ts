@@ -89,8 +89,38 @@ const OUTPUT_FORMAT_INSTRUCTIONS = `
 - Do NOT wrap your output in code fences or JSON.
 - Do NOT include meta-commentary like "Here is your content:" — just output the content directly.`;
 
+/**
+ * Implicit Chain-of-Thought reasoning instructions (content-test #5.B,
+ * chain-of-prompts pattern A from plan §3.0).
+ *
+ * Implicit-CoT: model thinks through key questions before writing, but
+ * does NOT output the reasoning. Cost-neutral (geen extra tokens in output);
+ * quality-positive (anti-spray-and-pray; reduces drift van brief).
+ *
+ * Verschilt van expliciete `<thinking>` blocks (zou reasoning in output
+ * dumpen) en van Plan-and-Solve (aparte plan-call). Implicit-CoT is de
+ * laagdrempelige eerste chain-upgrade vóór Plan-and-Solve uitrol.
+ *
+ * Versie-bump 1.0.0 → 1.1.0 (minor: content-tuning, output-format compat).
+ */
+const REASONING_APPROACH = `
+
+## REASONING APPROACH (mental, not output)
+
+Before writing your content, mentally verify each item below. Do NOT include this reasoning in your output — just use it to inform your writing:
+
+1. **Key message clarity**: What is the ONE thing the audience must walk away with?
+2. **Audience fit**: Is your tone matched to their context (boardroom vs feed vs inbox)?
+3. **Evidence-anchor**: Which concrete fact / example / number anchors the abstract claim?
+4. **Structure-fit**: Does this content-type's structure (heading depth, CTA placement) serve the message?
+5. **Anti-cliché check**: Are you using corporate jargon ("synergy", "leverage", "innovative") or hyperbole ("revolutionary", "unparalleled") that signals AI-generated voice? Replace with concrete language.
+6. **Brand-voice match**: Does the tone reflect this specific brand's voice baseline, or could this be from any company?
+
+If any answer is unclear, the content will feel generic. Mentally adjust BEFORE writing — then produce only the final content.
+`;
+
 export function buildBaseSystemPrompt(typeInstructions: string): string {
-  return `${typeInstructions}${OUTPUT_FORMAT_INSTRUCTIONS}
+  return `${typeInstructions}${OUTPUT_FORMAT_INSTRUCTIONS}${REASONING_APPROACH}
 
 ## QUALITY GUARDRAILS — MANDATORY
 1. NEVER use placeholder values (€XX, $XX, [PRICE], TBD, etc.) — omit pricing entirely if unknown. Exception: press releases and similar formats may use [PLACEHOLDER] markers for names/contacts where the type-specific instructions explicitly call for them.
