@@ -5,7 +5,7 @@ fase: pre-launch
 priority: now
 effort: ~10 dagen (7d chain + 4d goldens, overlap)
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-05-12
 completed: -
 related-adr: -

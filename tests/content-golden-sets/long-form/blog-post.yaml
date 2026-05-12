@@ -1,0 +1,272 @@
+# =============================================================
+# Golden-set voor blog-post (long-form representant)
+# Sub-sprint #5.B — Layer 2 type-specific golden-set
+#
+# Structuur:
+#   - 3 human-authored seed-cases (uit pilot-content observaties)
+#   - 5 LLM-evolved synthetic variants (DeepEval Synthesizer style: style-
+#     shift, length-shift, adversarial-input)
+#   - 2 adversarial edge-cases (historisch failure-prone inputs)
+# = 10 goldens
+#
+# G-Eval rubric: Coherence + Consistency + Fluency + Relevance + blog-
+# specifieke checks (SEO keyword in H1/meta, FAQ-sectie, heading-hierarchy).
+#
+# Run:
+#   npx promptfoo eval -c tests/content-golden-sets/long-form/blog-post.yaml
+#
+# CI: nightly + bij PR die src/lib/studio/prompt-templates/long-form.ts raakt.
+# =============================================================
+
+description: 'Golden-set blog-post — long-form representant, baseline meting'
+
+# v1: gebruikt directe Anthropic Claude calls. Vervangen door Branddock
+# orchestrator-call wrapper in v2 wanneer pipeline meer mature is.
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20251001
+    config:
+      max_tokens: 4000
+      temperature: 0.7
+
+# System-prompt placeholder — orchestrator-wrapped variant komt in v2.
+# Pre-launch baseline: simulated user-perspective met representatieve brief.
+prompts:
+  - |
+    Je bent een Nederlandse content-strateeg voor het Branddock-platform. Schrijf een blog-post conform onderstaande brief.
+
+    Brand: {{brand}}
+    SEO Keyword: {{seoKeyword}}
+    Objective: {{objective}}
+    Key message: {{keyMessage}}
+    Tone of voice: {{tone}}
+    Call to action: {{cta}}
+
+    Lever het volgende format:
+    - H1 met SEO-keyword
+    - 3-5 H2 secties met substantie
+    - Conclusie
+    - FAQ-sectie (3 Q&A's)
+    - CTA aan eind
+
+    Schrijf in het Nederlands. Vermijd corporate jargon en AI-tells.
+
+# 10 test-cases (3 human-authored + 5 evolved + 2 adversarial)
+tests:
+  # ─── 3 Human-authored seeds (uit pilot-content patterns) ──────
+  - description: 'Seed: Napking duurzaam servies'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'duurzaam servies horeca'
+      objective: 'Restaurant-owners overtuigen om duurzame servieskeuze te maken'
+      keyMessage: 'Restaurant-kwaliteit servies dat zowel mooi als duurzaam is'
+      tone: 'vakkundig, warm, professioneel'
+      cta: 'Vraag een staal aan'
+    assert:
+      - type: contains
+        value: 'duurzaam servies'  # SEO keyword moet voorkomen
+      - type: contains-any
+        value: ['Napking', 'napking']  # Brand-name mention (case checked door property-evals)
+      - type: not-contains
+        value: '[PRICE]'  # Geen placeholders
+      - type: not-contains
+        value: 'TBD'
+      - type: regex
+        value: '^#\s+.+$'  # Heeft H1
+      - type: javascript
+        value: |
+          // ≥ 3 H2-secties + ≥ 800 woorden (long-form min)
+          const h2Count = (output.match(/^##\s+/gm) || []).length;
+          const wordCount = output.trim().split(/\s+/).length;
+          return h2Count >= 3 && wordCount >= 800;
+      - type: llm-rubric
+        value: |
+          Evalueer deze blog-post op 4 dimensies (1-5):
+          1. Coherence: logische flow tussen secties
+          2. Consistency: terminologie + brand-tone consistent
+          3. Fluency: grammaticaal correct, idiomatic Nederlands
+          4. Relevance: addresseert brief (objective + keyMessage + cta)
+
+          Plus blog-specifieke checks:
+          5. SEO: keyword in H1 + meta-descriptie + body (zonder stuffing)
+          6. FAQ-sectie aanwezig (3 Q&A's)
+          7. Concrete CTA aan eind
+
+          Output JSON: { coherence: N, consistency: N, fluency: N, relevance: N, seo: N, faq: N, cta: N, totalScore: gemiddelde }
+          Pass: totalScore >= 4.0
+
+  - description: 'Seed: LINFI vakmanschap-content'
+    vars:
+      brand: 'LINFI'
+      seoKeyword: 'handgemaakte vloeren maatwerk'
+      objective: 'Premium-segment huiseigenaren bereiken voor maatwerk vloeren'
+      keyMessage: 'Vakmanschap zonder compromis; elke vloer uniek samengesteld'
+      tone: 'vakkundig, exclusief, perfectionistisch'
+      cta: 'Plan een showroom-bezoek'
+    assert:
+      - type: contains
+        value: 'handgemaakte vloeren'
+      - type: contains
+        value: 'LINFI'
+      - type: not-contains-any
+        value: ['innovatief', 'revolutionair', 'cutting-edge']  # LINFI wordsWeAvoid
+      - type: llm-rubric
+        value: |
+          Evalueer deze blog-post op brand-fit met LINFI voiceguide:
+          - tone is vakkundig + exclusief + perfectionistisch
+          - geen marketingese ("innovatief", "revolutionair", "cutting-edge", "uniek")
+          - voorkeur-woorden komen voor (handgemaakt, hoogwaardig, stijlvol, precisiewerk)
+          - feitelijke argumentatie ipv overdrijving
+
+          Score 1-5 per dimensie. Pass: gemiddelde >= 4.0
+
+  - description: 'Seed: Better Brands thought-leadership'
+    vars:
+      brand: 'Better Brands'
+      seoKeyword: 'brand strategy AI tools'
+      objective: 'Brand-strategists overtuigen van AI-augmented workflow'
+      keyMessage: 'AI versnelt strategie-werk zonder de kwaliteit te ondermijnen'
+      tone: 'analytisch, autoritair, founder-voice'
+      cta: 'Boek een demo van Branddock'
+    assert:
+      - type: contains
+        value: 'brand strategy'
+      - type: not-contains
+        value: 'state-of-the-art'  # banned phrase
+      - type: llm-rubric
+        value: |
+          Evalueer thought-leadership-kwaliteit:
+          - origineel perspectief, niet generic content
+          - 1+ concrete claims onderbouwd met data of voorbeeld
+          - founder-voice herkenbaar (vs corporate-stem)
+          - eindigt met substantiële insight, niet alleen CTA
+
+          Score 1-5. Pass: gemiddelde >= 4.0
+
+  # ─── 5 LLM-evolved synthetic variants ────────────────────────
+  - description: 'Evolved: Style-shift naar conversational'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'kies juiste servies restaurant'
+      objective: 'Beginnende restaurant-owners helpen bij servies-keuze'
+      keyMessage: 'Servies-keuze hoeft niet ingewikkeld te zijn'
+      tone: 'conversational, behulpzaam, toegankelijk'
+      cta: 'Download onze gratis gids'
+    assert:
+      - type: llm-rubric
+        value: |
+          Verifieer dat tone conversational + toegankelijk is:
+          - persoonlijke aanspreekvorm (je/jullie)
+          - geen formeel taalgebruik
+          - korte zinnen, geen vakjargon zonder uitleg
+          Score 1-5. Pass: >= 4.0
+
+  - description: 'Evolved: Length-shift naar uitgebreid (2000+ woorden)'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'circulair servies productie keten'
+      objective: 'Sustainability-managers in detail informeren over Napking productie-keten'
+      keyMessage: 'Volledig circulaire keten van klei tot retour'
+      tone: 'gedetailleerd, transparant, technisch onderbouwd'
+      cta: 'Lees ons sustainability-rapport'
+    assert:
+      - type: javascript
+        value: |
+          const wordCount = output.trim().split(/\s+/).length;
+          return wordCount >= 1500;  // Lange variant moet substantieel zijn
+      - type: llm-rubric
+        value: 'Verifieer transparante + gedetailleerde tone met technische onderbouwing. Score 1-5, pass >= 4.0'
+
+  - description: 'Evolved: Adversarial-input — vage brief'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'servies'
+      objective: 'Iets met onze producten'
+      keyMessage: 'We zijn goed'
+      tone: 'professioneel'
+      cta: ''
+    assert:
+      - type: llm-rubric
+        value: |
+          Brief is bewust vaag. Verifieer dat AI:
+          - GEEN generieke fluff-content schrijft ("In de wereld van servies...")
+          - WEL specifieke aannames maakt en transparant communiceert
+          - Geen placeholders/TBDs gebruikt
+          Score 1-5. Pass: >= 3.5 (lager threshold voor vage input)
+
+  - description: 'Evolved: Mixed-language brief NL/EN'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'duurzaam servies'
+      objective: 'Hotel chains overtuigen for sustainable choice'
+      keyMessage: 'Premium quality + circulair production'
+      tone: 'professional yet warm'
+      cta: 'Request samples'
+    assert:
+      - type: javascript
+        value: |
+          // Content moet primair NL zijn ondanks gemengde brief-input
+          // (Brand contentLanguage = nl voor Napking)
+          const englishWords = ['the', 'and', 'with', 'for', 'is', 'this'];
+          const tokens = output.toLowerCase().match(/\b[a-z]+\b/g) || [];
+          const englishCount = tokens.filter(t => englishWords.includes(t)).length;
+          return englishCount / tokens.length < 0.05;  // < 5% common-English words
+      - type: llm-rubric
+        value: 'Verifieer NL-only output ondanks mixed brief. Score 1-5, pass >= 4.0'
+
+  - description: 'Evolved: SEO-focus extreem (multiple keywords)'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'duurzaam servies horeca circulair restaurant'
+      objective: 'Top-1 ranken op gecombineerde duurzaamheid-keywords'
+      keyMessage: 'Sustainable horeca solution'
+      tone: 'feitelijk, autoritair'
+      cta: 'Bekijk de collectie'
+    assert:
+      - type: llm-rubric
+        value: |
+          Verifieer SEO-balans:
+          - Primary keyword in H1 + intro
+          - Geen keyword-stuffing (max 1-2% density)
+          - Natural reading flow ondanks SEO-focus
+          - Meta-description ≤ 155 chars met value-prop
+          Score 1-5. Pass: >= 4.0
+
+  # ─── 2 Adversarial edge-cases (history-prone failures) ────────
+  - description: 'Adversarial: Empty knowledge context'
+    vars:
+      brand: 'NieuweBrand'  # Niet bestaande brand
+      seoKeyword: 'unknown topic'
+      objective: ''
+      keyMessage: ''
+      tone: ''
+      cta: ''
+    assert:
+      - type: llm-rubric
+        value: |
+          Brand + brief vrijwel leeg. AI mag NIET:
+          - Verzonnen feiten over NieuweBrand presenteren
+          - Hallucineren over product/dienst
+          - Pretenderen dat het brand bestaat
+          AI moet WEL:
+          - Generieke maar onderbouwde content schrijven OF
+          - Clearly signaleren dat brand-context ontbreekt
+          Score 1-5. Pass: >= 3.0 (graceful failure)
+
+  - description: 'Adversarial: Conflicting brand-context'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'plastic servies wegwerp'  # In conflict met Napking sustainability
+      objective: 'Plastic single-use servies promoten'  # Off-brand
+      keyMessage: 'Wegwerp is handig'  # Conflict met Napking brand-values
+      tone: 'casual, salesy'
+      cta: 'Koop nu'
+    assert:
+      - type: llm-rubric
+        value: |
+          Brief vraagt off-brand content (plastic wegwerp ≠ Napking duurzame mission).
+          AI mag NIET:
+          - Brief klakkeloos opvolgen tegen brand-DNA in
+          AI moet WEL:
+          - De brand-conflict signaleren in output OF
+          - Brief naar brand-aligned variant herinterpreteren
+          Score 1-5. Pass: >= 3.5 (kritische denkvaardigheid)
