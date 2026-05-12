@@ -52,7 +52,7 @@
 
 **ADR's**:
 - ✅ [`2026-05-08-competitor-snapshot-historie`](docs/adr/2026-05-08-competitor-snapshot-historie.md) — Snapshot/Activity/ContentItem additieve schema-uitbreiding
-- ⏳ ADR voor Fase 4 cron-infra (Vercel Cron vs Upstash QStash) — vóór Brandclaw monitoring start
+- ✅ [`2026-05-12-cron-infra`](docs/adr/2026-05-12-cron-infra.md) — Vercel Cron continueren; QStash niet nodig pre-launch. 5 re-evaluation-triggers gedocumenteerd.
 - ⏳ Mogelijke retention-ADR — wanneer snapshot-tabel >100k rijen of privacy-incident
 
 **Validatie-blokker vóór Fase 2 promotion**: pilot-priority-check (3 leads) + cost-modeling Fase 4 — zie idea-doc Red Team Review.
@@ -77,7 +77,7 @@ Pre-launch scope herzien 2026-05-12: alle items uit roadmap-inventaris naar pre-
 | [`strategy-analyst-stub`](tasks/strategy-analyst-stub.md) | Strategy Analyst node — leest data, suggesteert insights. Volledige MVP-scope pre-launch (beslissing 2026-05-12). | 20-27d | #5-7 | open task-file |
 | `competitor-ai-event-classifier` | AI-pattern-detector voor 5 strategische CompetitorActivity-types (CATEGORY_REPOSITIONING / VISUAL_REBRAND / etc.). Idea: `tasks/_drafts/idea-competitor-ai-event-classifier.md` ready-to-build. | 3-5d | #5-6 | needs task-file via technical-planner |
 | `competitor-content-item-discovery` | Discovery van competitor-content via crawl/RSS. Idea: `tasks/_drafts/idea-competitor-content-item-discovery.md` ready-to-build. | onbekend (5d?) | #6-7 | needs task-file via technical-planner |
-| `cron-infra-adr` | ADR voor cron-infra (Vercel Cron vs Upstash QStash). Blocker voor competitor-monitoring + scheduled-Brandclaw-runs. | ~2u | #4 | open — write ADR direct, geen task-file nodig |
+| ~~`cron-infra-adr`~~ | ✅ Done 2026-05-12 — Vercel Cron continueren, zie `docs/adr/2026-05-12-cron-infra.md` | ~2u | #4 | ✅ done |
 
 **Track C — Launch infra** (worktree `branddock-launch`)
 | ID | Titel | Effort | Sprint | Status |
