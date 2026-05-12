@@ -316,6 +316,111 @@ Image-generatie heeft eigen kwaliteits-uitdagingen die single-prompt niet oplost
 
 ---
 
+### 3.0.6 Image sourcing strategie — vinden / genereren / illustreren
+
+3.0.5 dekt **image-generatie-kwaliteit** (negative prompts, multi-candidate, refine-loop, visual-fidelity dimensies). 3.0.6 dekt **de keuze daarvoor**: wanneer zoek je een bestaande asset, wanneer genereer je nieuw, wanneer kies je foto vs illustratie vs infographic vs UGC?
+
+Huidige Branddock heeft 4 sources voor Visual Brief (Step 1):
+- **Generate** — AI creëert vanaf nul (Imagen / DALL-E / Flux)
+- **From library** — pick uit MediaAsset workspace-collectie
+- **Compose** — combineer 2-9 library-images via natural language (Gemini nano-banana post-migratie)
+- **Trained style** — apply ConsistentModel LoRA op brand-style
+- **No visual** — skip
+
+Wat **ontbreekt** vergeleken met state-of-art content-platforms:
+
+**A. Smart-search across multiple sources** (cross-platform aanbeveling)
+- Vector-search over workspace-library + Pexels (al gewired in Insert Image modal) + Unsplash + Brandfetch + Goose (free) op één query
+- Per resultaat: source-label + license-info + similarity-score
+- "Insert Image" UI verbreden naar één unified search ipv getrennde tabs
+- Tool: bestaande Pexels-integratie als referentie, uitbreiden met Unsplash + Brandfetch API's
+
+**B. Modality-fit decision-tree per content-type**
+- Per content-type een aanbevolen modaliteit (foto / illustratie / infographic / UGC / no-asset):
+
+| Content-type categorie | Default modaliteit | Alternatief |
+|---|---|---|
+| Long-form (blog/whitepaper) | Foto (lifestyle/setting) | Illustratie bij abstracte concepten |
+| Social — LinkedIn-post | Foto (people-facing) of infographic (data) | Illustratie bij thought-leadership |
+| Social — Instagram | Lifestyle-foto met text-overlay | UGC bij gemeenschap-content |
+| Social — tiktok/video-ad | Storyboard frames (motion) | n.v.t. |
+| Advertising — search-ad | n.v.t. (text-only) | — |
+| Advertising — display-ad | Product-shot of UGC | Illustratie bij brand-story |
+| Email — newsletter | Hero foto + section-dividers | Illustratie voor herkenbare brand-voice |
+| Email — promotional | Product-shot | UGC |
+| Website — landing-page | Hero foto + feature illustraties | Volledig illustratief bij abstract product |
+| Website — comparison | Infographic | Tabular met icoontjes |
+| Video — explainer | Mix: live-action + animated frames | Volledig animatie |
+| Sales — one-pager | Infographic met layered data | Foto van product-in-action |
+| PR/HR — press-release | Hero foto (event/team/product) | Logo + brand-graphic |
+| PR/HR — recruitment | Foto van werkomgeving (team) | UGC bij culture-content |
+
+- Default is **content-type aware** in Step 1 UI (al deels live via `getContentTypeImageDefaults` per `canvas-image-briefing-defaults` task)
+- Per workspace **override** mogelijk via Brand Voiceguide visualPreferences
+
+**C. Reuse-vs-regenerate decision-logic**
+- Vóór nieuwe generation: smart-search workspace-library + check `MediaAssetUsageLog` (te bouwen) of een asset matched de huidige brief
+- Threshold-based: similarity ≥ 0.75 op vector-search → **suggest re-use** in Step 2 UI ipv direct genereren
+- Voorkomt assetscollectie-bloat + verkort generation-tijd
+
+**D. Coherence-check copy ↔ image** (bestaande visual-fidelity uitbreiding)
+- Niet alleen "is image on-brand?" maar ook "matched image de keyMessage van de variant?"
+- AI-judge call met variant.content + image-url → coherence-score 0-100
+- Wordt onderdeel van visual-fidelity dimension-breakdown (#3.0.5 dimension `coherence` toevoegen)
+
+**E. Illustration-specifieke pipeline**
+- Voor types waar illustratie default is: aparte prompt-engineering
+- Style-consistency via ConsistentModel LoRA's (al gebouwd) of via prompt-templating
+- Trained-style source bedient dit deels; uitbreiding: per-content-type illustration-template ("flat / 3D / hand-drawn / minimalist")
+
+**F. Brandfetch / external brand-asset integratie**
+- Roadmap-item `brandfetch-integration` ($99/mnd, 60M merken) staat in LATER post-launch
+- Voor pilot pre-launch: workspaces uploaden eigen logo + brand-graphics handmatig (huidige flow)
+- Post-launch: Brandfetch auto-pull bij workspace-onboarding
+
+### Acceptance criteria image-sourcing (subset, integreert in #5.B + #6.B)
+
+**Smart-search expansion** (sub-sprint #6.B fill-in):
+- [ ] Vector-search over workspace MediaAsset table (`pgvector` al beschikbaar via embedding-veld)
+- [ ] Unsplash + Pexels unified search API endpoint
+- [ ] Insert Image modal toont één unified resultaten-grid met source-labels
+- [ ] Per result: similarity-score + license-info badge
+
+**Modality-fit defaults** (sub-sprint #5.A → uitbreiding):
+- [ ] Per content-type een `recommendedModality` field in `deliverable-types.ts` definitions
+- [ ] Step 1 Visual Brief UI toont "Suggested for {type}: {modality}" als hint
+- [ ] Brand Voiceguide `visualPreferences` JSON field om per-workspace defaults te overrulen
+
+**Reuse-detection** (sub-sprint #6.B):
+- [ ] Pre-generation hook in compose/generate routes: vector-search met threshold ≥ 0.75 → suggest re-use
+- [ ] Step 2 UI banner: "We hebben een vergelijkbaar beeld in je library — gebruiken?"
+- [ ] Skip-banner opt-out per generation (one-time toggle)
+
+**Copy-image coherence** (sub-sprint #6.B → dimension-breakdown):
+- [ ] AI-judge call: variant content + image-url → coherence-score 0-100
+- [ ] Toegevoegd als 6e dimensie in visual-fidelity dimension-breakdown (#3.0.5)
+- [ ] Studio UI toont coherence-score apart in visual-fidelity expandable
+
+### Cost-impact image-sourcing
+
+- Smart-search Unsplash/Pexels: free APIs, geen extra cost
+- Vector-search workspace: gratis (pgvector lokaal)
+- Brandfetch: $99/mnd (deferred LATER per roadmap)
+- AI-coherence judge: ~$0.001/call (Haiku); op multi-candidate gen = +$0.003 per generation
+
+### Sprint-impact image-sourcing
+
+Past in bestaande sub-sprints zonder extra slot:
+- **Modality-fit defaults**: 0.5d, fits in #5.A polish
+- **Reuse-detection**: 1.5d, fits in #6.B fill-in
+- **Smart-search unified**: 2d, fits in #6.B fill-in
+- **Copy-image coherence**: 1d, fits in #6.B dimension-breakdown uitbreiding
+- **Illustration-specifieke pipeline**: 1-2d, fits in image-quality-chain task
+
+Totaal +5-6d image-sourcing werk verspreid over bestaande sub-sprints. Geen pilot-projectie verschuiving.
+
+---
+
 ### 3.1 Prompt-quality optimization (sub-plan A)
 
 **Doel**: prompts versioned, eval-gated, en iteratief verbeterd via golden-sets.

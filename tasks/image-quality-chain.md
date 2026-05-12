@@ -3,7 +3,7 @@ id: image-quality-chain
 title: Multi-modal image quality — negative prompts + multi-candidate + refine-loop + visual-fidelity dimensions
 fase: pre-launch
 priority: now
-effort: ~6 dagen
+effort: ~10 dagen (6d quality patterns + 4d image-sourcing strategie)
 owner: claude-code
 status: open
 created: 2026-05-12
@@ -58,6 +58,31 @@ Image-generatie pipeline heeft single-prompt approach zonder negative prompts, s
 - Compare against `Brandstyle.primaryColors[]`
 - Cosine-similarity in LAB color-space (perceptueel correct)
 - Flag in dimension `brandConsistency` als low-score driver
+
+## G. Image sourcing strategie uitbreiding (~3-4d, integratie met §3.0.6 plan)
+
+User-feedback 2026-05-12: image-generatie-kwaliteit is gedekt maar bredere
+**sourcing-strategie** (vinden / genereren / illustreren / hergebruiken)
+miste. Toegevoegd aan dit task-pakket:
+
+- **Modality-fit defaults** per content-type in `deliverable-types.ts`
+  (~0.5d): `recommendedModality: 'photo' | 'illustration' | 'infographic'
+  | 'ugc' | 'none'` field. Step 1 Visual Brief UI toont "Suggested for
+  {type}: {modality}" hint.
+- **Reuse-detection** vóór generation (~1.5d): vector-search workspace
+  MediaAsset via pgvector embedding; threshold ≥ 0.75 → Step 2 UI banner
+  "Vergelijkbaar beeld in library — hergebruiken?" met skip-toggle.
+- **Smart-search unified** (~2d): Insert Image modal toont één resultaten-
+  grid met source-labels (workspace / Pexels / Unsplash) ipv aparte tabs.
+  Per result: similarity-score + license-badge. Brandfetch deferred
+  post-launch ($99/mnd, roadmap LATER).
+- **Copy-image coherence-score** (~1d): AI-judge call (Haiku, ~$0.001)
+  met variant content + image-url → coherence-score 0-100. Toegevoegd
+  als 6e dimensie in visual-fidelity breakdown (naast brandConsistency
+  / subjectIdentity / textAccuracy / composition / lighting).
+- **Illustration-specifieke pipeline** (~1-2d): per content-type een
+  illustration-template ("flat / 3D / hand-drawn / minimalist"); style-
+  consistency via bestaande ConsistentModel LoRA's of prompt-templating.
 
 # Acceptatiecriteria
 
