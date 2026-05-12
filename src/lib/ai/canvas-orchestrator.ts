@@ -583,6 +583,46 @@ export async function* orchestrateContentGeneration(
       group: component.group.trim().toLowerCase(),
     }));
 
+  // ── Checkpoint-gate [4] validateVariantOutput (sub-sprint #6.A) ──
+  // Per-variant length/empty checks vóór property-evals. Block bij empty
+  // of <20 chars (model-output broken). Warn bij group-mismatch (te lange
+  // headline, te korte body). Voorkomt onnodige F-VAL en sanitize-werk
+  // bij kapotte AI-output.
+  {
+    const { validateVariantOutput } = await import(
+      '@/lib/content-test/checkpoint-gates'
+    );
+    const blockingVariantFailures: string[] = [];
+    for (const component of textResult.components) {
+      for (let i = 0; i < component.variants.length; i++) {
+        const gate = validateVariantOutput(
+          { content: component.variants[i].content },
+          component.group,
+        );
+        if (!gate.pass) {
+          if (gate.severity === 'block') {
+            blockingVariantFailures.push(
+              `${component.group}[${i}]: ${gate.reasons.join(' · ')}`,
+            );
+          } else {
+            gateWarningsAcc.push(gate);
+          }
+        }
+      }
+    }
+    if (blockingVariantFailures.length > 0) {
+      yield {
+        event: 'error',
+        data: {
+          message: `Variant-output gate failed: ${blockingVariantFailures.join('; ')}`,
+          recoverable: false,
+          gate: 'variant-output',
+        },
+      };
+      return;
+    }
+  }
+
   for (const component of textResult.components) {
     yield {
       event: 'text_complete',
@@ -747,6 +787,10 @@ export async function* orchestrateContentGeneration(
 
   // ── Step 5: Persist variants ──────────────────────────
   let imageComponentIds: string[] = [];
+  const expectedTextComponentCount = textResult.components.reduce(
+    (sum, c) => sum + c.variants.length,
+    0,
+  );
   try {
     const result = await persistVariants(
       deliverableId,
@@ -757,6 +801,33 @@ export async function* orchestrateContentGeneration(
       publishSuggestion,
     );
     imageComponentIds = result.imageComponentIds;
+    // ── Checkpoint-gate [5] absorb sanitization-warnings (sub-sprint #6.A) ──
+    for (const w of result.sanitizationWarnings) gateWarningsAcc.push(w);
+    // ── Checkpoint-gate [8] validatePersistenceResult (sub-sprint #6.A) ──
+    // Verify deliverableId + component-count consistency. Block bij missing
+    // deliverableId, warn bij component-count mismatch (partial-write).
+    const { validatePersistenceResult } = await import(
+      '@/lib/content-test/checkpoint-gates'
+    );
+    const persistenceGate = validatePersistenceResult({
+      deliverableId,
+      componentCount: result.textComponentCount,
+      expectedComponentCount: expectedTextComponentCount,
+    });
+    if (!persistenceGate.pass) {
+      if (persistenceGate.severity === 'block') {
+        yield {
+          event: 'error',
+          data: {
+            message: `Persistence gate failed: ${persistenceGate.reasons.join(' · ')}`,
+            recoverable: true,
+            gate: 'persistence-result',
+          },
+        };
+        return;
+      }
+      gateWarningsAcc.push(persistenceGate);
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown persistence error';
     console.error('[canvas-orchestrator] persistVariants failed:', message);
@@ -2231,7 +2302,16 @@ async function persistVariants(
   imageResults: Array<ImageResult | null>,
   meta: { provider: string; textDurationMs: number; imageDurationMs: number },
   publishSuggestion: PublishSuggestion | null,
-): Promise<{ imageComponentIds: string[] }> {
+): Promise<{
+  imageComponentIds: string[];
+  sanitizationWarnings: import('@/lib/content-test/checkpoint-gates').GateResult[];
+  textComponentCount: number;
+}> {
+  const { validateSanitizationResult } = await import(
+    '@/lib/content-test/checkpoint-gates'
+  );
+  const sanitizationWarnings: import('@/lib/content-test/checkpoint-gates').GateResult[] = [];
+  let textComponentCount = 0;
   // Persist creative-angle labels op Deliverable.settings.variantAngles
   // BEFORE de transaction. Geen schema migration nodig — settings is een
   // bestaand Json veld. Bij page-reload haalt CanvasPage hydrate-flow dit
@@ -2276,6 +2356,19 @@ async function persistVariants(
         const normalizedCta = variant.cta
           ? sanitizeVariantContent(variant.cta, 'cta')
           : null;
+        // ── Checkpoint-gate [5] validateSanitizationResult (sub-sprint #6.A) ──
+        // Per-variant comparison pre/post sanitize. Block bij empty post-
+        // sanitize (data-loss), warn bij >50% size-shrink of fence-leakage.
+        const sanGate = validateSanitizationResult(variant.content, normalizedContent);
+        if (!sanGate.pass) {
+          if (sanGate.severity === 'block') {
+            throw new Error(
+              `Sanitization gate blocked variant ${component.group}[${variantIndex}]: ${sanGate.reasons.join(' · ')}`,
+            );
+          }
+          sanitizationWarnings.push(sanGate);
+        }
+        textComponentCount++;
         await tx.deliverableComponent.create({
           data: {
             deliverableId,
@@ -2337,7 +2430,7 @@ async function persistVariants(
   invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
   invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
-  return { imageComponentIds };
+  return { imageComponentIds, sanitizationWarnings, textComponentCount };
 }
 
 async function persistRegeneratedGroup(
