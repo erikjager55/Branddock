@@ -456,6 +456,37 @@ export async function* orchestrateContentGeneration(
     textResult = { components: [] };
   }
 
+  // ── Checkpoint-gate [3] validateAngleDiversity (sub-sprint #6.A) ──
+  // Beide angle-paths (ToT + legacy) komen hier samen. Identieke angles =
+  // block → varianten worden onvermijdelijk identical. Low-diversity = warn.
+  if (angles !== null) {
+    const { validateAngleDiversity } = await import(
+      '@/lib/content-test/checkpoint-gates'
+    );
+    const angleGate = validateAngleDiversity(angles);
+    if (!angleGate.pass) {
+      if (angleGate.severity === 'block') {
+        yield {
+          event: 'error',
+          data: {
+            message: `Angle-diversity gate failed: ${angleGate.reasons.join(' · ')}`,
+            recoverable: false,
+            gate: 'angle-diversity',
+          },
+        };
+        return;
+      }
+      gateWarningsAcc.push(angleGate);
+      yield {
+        event: 'gate_warnings',
+        data: {
+          stage: 'angle-diversity',
+          warnings: [{ stage: angleGate.stage, reasons: angleGate.reasons }],
+        },
+      };
+    }
+  }
+
   // Skip angle-based dual-call flow indien Plan-and-Solve textResult al heeft
   if (textResult.components.length === 0) {
 
@@ -957,6 +988,42 @@ async function* runFidelityScoringPipeline(input: {
     data: buildFidelityScoreEventPayload(fidelityOutcome.result),
   };
 
+  // ── Checkpoint-gate [6] validateFidelityComposite (sub-sprint #6.A) ──
+  // STRICT-mode wordt apart bepaald via humanVoiceMode; voor gate-purposes
+  // beschouwen we humanVoiceMode != 'OFF' als "strict-similar" (severity
+  // wordt block ipv warn bij onder-threshold).
+  {
+    const { validateFidelityComposite } = await import(
+      '@/lib/content-test/checkpoint-gates'
+    );
+    const fidelityGate = validateFidelityComposite(
+      { composite: fidelityOutcome.result.compositeScore },
+      fidelityOutcome.result.compositeThreshold,
+      humanVoiceMode !== 'OFF',
+    );
+    if (!fidelityGate.pass) {
+      if (fidelityGate.severity === 'block') {
+        yield {
+          event: 'gate_blocked',
+          data: {
+            stage: 'fidelity-composite',
+            reasons: fidelityGate.reasons,
+            // Non-fatal voor flow — STRICT rewrite hieronder krijgt nog een
+            // kans om score boven threshold te tillen. Geen early-return.
+          },
+        };
+      } else {
+        yield {
+          event: 'gate_warnings',
+          data: {
+            stage: 'fidelity-composite',
+            warnings: [{ stage: fidelityGate.stage, reasons: fidelityGate.reasons }],
+          },
+        };
+      }
+    }
+  }
+
   // ── STRICT rewrite (conditional) ──
   yield { event: 'strict_rewrite_running', data: { stage: 'rewriting' } };
   let strictOutcome: Awaited<ReturnType<typeof runStrictModeIfApplicable>> = null;
@@ -980,6 +1047,32 @@ async function* runFidelityScoringPipeline(input: {
       event: 'strict_rewrite_complete',
       data: buildStrictRewriteEventPayload(strictOutcome, strictOutcome.finalFidelityScore),
     };
+
+    // ── Checkpoint-gate [7] validateStrictRewrite (sub-sprint #6.A) ──
+    // Post-rewrite score moet > pre-rewrite. Marginal-delta (<2) warns,
+    // negative-delta blocks (rewrite verlaagde score → tegenproductief).
+    if (strictOutcome.finalFidelityScore) {
+      const { validateStrictRewrite } = await import(
+        '@/lib/content-test/checkpoint-gates'
+      );
+      const rewriteGate = validateStrictRewrite(
+        fidelityOutcome.result.compositeScore,
+        strictOutcome.finalFidelityScore.compositeScore,
+      );
+      if (!rewriteGate.pass) {
+        yield {
+          event: rewriteGate.severity === 'block' ? 'gate_blocked' : 'gate_warnings',
+          data: {
+            stage: 'strict-rewrite',
+            reasons: rewriteGate.reasons,
+            warnings:
+              rewriteGate.severity === 'warn'
+                ? [{ stage: rewriteGate.stage, reasons: rewriteGate.reasons }]
+                : undefined,
+          },
+        };
+      }
+    }
   } else {
     yield {
       event: 'strict_rewrite_skipped',
