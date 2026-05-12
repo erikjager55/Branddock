@@ -1,0 +1,117 @@
+name: Content Golden-Sets
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/lib/studio/prompt-templates/**'
+      - 'src/lib/ai/chains/**'
+      - 'src/lib/ai/canvas-orchestrator.ts'
+      - 'tests/content-golden-sets/**'
+      - '.github/workflows/golden-sets.yml'
+  workflow_dispatch:
+    # Manual trigger voor adhoc baseline-meting
+  schedule:
+    # Nightly regressie-check tegen latest production prompts
+    - cron: '0 3 * * *'
+
+# Limit concurrent runs van golden-sets (cost-control)
+concurrency:
+  group: golden-sets-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    # Pre-launch: alleen runnen wanneer ANTHROPIC_API_KEY beschikbaar is (anders
+    # would golden-set evals niet werkende judges hebben). Repo-secrets check
+    # via job-level if vermijdt fail-on-missing-key voor forks zonder secrets.
+    if: ${{ github.repository_owner == 'erikjager55' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Verify Promptfoo installation
+        run: npx promptfoo --version
+
+      - name: Run blog-post golden-set (long-form representant)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          mkdir -p .promptfoo-results
+          npx promptfoo eval \
+            -c tests/content-golden-sets/long-form/blog-post.yaml \
+            --output .promptfoo-results/blog-post-results.json \
+            --no-progress-bar || echo "::warning::Golden-set evaluation completed with failures — review artifact"
+
+      - name: Run property-evals smoke (Layer 1 regression check)
+        env:
+          DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
+        run: npx tsx scripts/smoke-tests/property-evals.ts
+
+      - name: Run Plan-and-Solve mock smoke (chain-mechanism regression)
+        env:
+          DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
+        run: npx tsx scripts/smoke-tests/plan-and-solve.ts
+
+      - name: Run Tree-of-Thoughts mock smoke (chain-mechanism regression)
+        env:
+          DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
+        run: npx tsx scripts/smoke-tests/tree-of-thoughts-angles.ts
+
+      - name: Run position-swap calibration smoke
+        run: npx tsx scripts/smoke-tests/position-swap-judge.ts
+
+      - name: Upload golden-set results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-set-results-${{ github.sha }}
+          path: .promptfoo-results/
+          retention-days: 14
+
+      - name: Comment results on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = '.promptfoo-results/blog-post-results.json';
+            if (!fs.existsSync(path)) {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '⚠️ Golden-set evaluation produced no results — check workflow logs.',
+              });
+              return;
+            }
+            const results = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const tests = results.results?.results ?? results.results ?? [];
+            const total = tests.length;
+            const passed = tests.filter(t => t.success || t.passed).length;
+            const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+            const verdict = passRate >= 70 ? '✅' : passRate >= 50 ? '⚠️' : '❌';
+            const body = [
+              `## ${verdict} Golden-Set Results — blog-post`,
+              '',
+              `**Pass-rate**: ${passed}/${total} (${passRate}%) — threshold: 70%`,
+              '',
+              `Full results: [download artifact](${context.payload.pull_request.html_url}/checks)`,
+              '',
+              `<sub>Content-test sub-sprint #5.B baseline. CI runs nightly + on prompt-template changes.</sub>`,
+            ].join('\n');
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
