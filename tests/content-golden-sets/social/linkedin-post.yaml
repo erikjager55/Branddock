@@ -1,0 +1,156 @@
+description: 'Golden-set linkedin-post — social media representant'
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20251001
+    config: { max_tokens: 2000, temperature: 0.7 }
+
+prompts:
+  - |
+    Schrijf een LinkedIn-post conform deze brief:
+    Brand: {{brand}}
+    Objective: {{objective}}
+    Key message: {{keyMessage}}
+    Tone: {{tone}}
+    CTA: {{cta}}
+
+    Format: pattern-interrupt opening + 3-5 paragraphs (max 1300 chars total) + 1-3 strategische hashtags + concrete CTA. Schrijf in NL, vermijd corporate jargon en AI-tells.
+
+tests:
+  # ─── 3 Human-authored seeds ───────────────────────────────────
+  - description: 'Seed: Napking lancering — founder-voice'
+    vars:
+      brand: 'Napking'
+      objective: 'Awareness creëren voor lancering nieuwe collectie'
+      keyMessage: 'Restaurant-kwaliteit servies dat zowel mooi als duurzaam is'
+      tone: 'founder-voice, warm, vakkundig'
+      cta: 'Reageer met je gedachten of bestel een staal'
+    assert:
+      - type: javascript
+        value: 'output.length <= 1300'  # LinkedIn character limit
+      - type: not-contains-any
+        value: ['[PRICE]', 'TBD', 'state-of-the-art', 'leverage']
+      - type: regex
+        value: '#\w+'  # Heeft ≥ 1 hashtag
+      - type: llm-rubric
+        value: |
+          Evalueer deze LinkedIn-post:
+          1. Coherence (1-5): logische opbouw van hook naar CTA
+          2. Brand-fit (1-5): tone vakkundig + warm + brand-consistent
+          3. Engagement-hook (1-5): opening grijpt aandacht in 1-2 lijnen
+          4. Concrete CTA (1-5): actie-verbo + niet vaag
+          Pass: gemiddelde >= 4.0
+
+  - description: 'Seed: LINFI vakmanschap-story'
+    vars:
+      brand: 'LINFI'
+      objective: 'Thought-leadership over moderne vloeren-craftsmanship'
+      keyMessage: 'Vakmanschap zonder compromis blijft het verschil'
+      tone: 'analytisch, autoritair, gepassioneerd'
+      cta: 'Wat denk jij — komt traditionele vakmanschap terug?'
+    assert:
+      - type: not-contains-any
+        value: ['innovatief', 'revolutionair', 'cutting-edge']
+      - type: llm-rubric
+        value: 'Beoordeel thought-leadership-kwaliteit (originele stelling + onderbouwing + uitnodigende vraag). Score 1-5, pass >= 4.0'
+
+  - description: 'Seed: Better Brands case-study highlight'
+    vars:
+      brand: 'Better Brands'
+      objective: 'Pilot-resultaten Branddock platform laten zien'
+      keyMessage: 'AI-augmented strategy bespaart 60% tijd zonder kwaliteit-verlies'
+      tone: 'data-driven, founder, autoritair'
+      cta: 'Boek een 30-min demo via DM'
+    assert:
+      - type: regex
+        value: '\d+%'  # Bevat concrete metric
+      - type: llm-rubric
+        value: 'Beoordeel data-driven storytelling (concrete metric in eerste 2 lijnen, bewijslast, scherpe CTA). Score 1-5, pass >= 4.0'
+
+  # ─── 5 Evolved synthetic variants ─────────────────────────────
+  - description: 'Evolved: zeer kort (≤600 chars)'
+    vars:
+      brand: 'Napking'
+      objective: 'Quick-hit awareness'
+      keyMessage: 'Goed servies voelt anders'
+      tone: 'kort, scherp, sensorial'
+      cta: 'Vraag een staal'
+    assert:
+      - type: javascript
+        value: 'output.length <= 700'
+      - type: llm-rubric
+        value: 'Verifieer dat zo kort + krachtig is + geen wollig taalgebruik. Score 1-5, pass >= 4.0'
+
+  - description: 'Evolved: lang + thought-leadership (1200 chars)'
+    vars:
+      brand: 'Napking'
+      objective: 'Industry-thought-piece over restaurant-duurzaamheid'
+      keyMessage: 'Wegwerp-cultuur in horeca eindigt deze decade'
+      tone: 'autoritair, controversieel, onderbouwd'
+      cta: 'Welke voorspelling deel je?'
+    assert:
+      - type: javascript
+        value: 'output.length >= 800 && output.length <= 1300'
+      - type: llm-rubric
+        value: 'Beoordeel controversiële stelling + nuance + uitnodigende eindvraag. Score 1-5, pass >= 4.0'
+
+  - description: 'Evolved: emoji-rijke informele variant'
+    vars:
+      brand: 'Napking'
+      objective: 'Mass-market awareness via informele tone'
+      keyMessage: 'Servies-keuze hoeft niet duur te zijn om duurzaam te zijn'
+      tone: 'casual, toegankelijk, vriendelijk'
+      cta: 'Klik voor de gids'
+    assert:
+      - type: llm-rubric
+        value: 'Informeel maar nog steeds professioneel — geen overdaad aan emojis. Score 1-5, pass >= 3.5'
+
+  - description: 'Evolved: B2B-tactisch met multi-paragraph structuur'
+    vars:
+      brand: 'Napking'
+      objective: 'Restaurant-eigenaren overtuigen voor pilot-deelname'
+      keyMessage: 'Pilot-deelname kost niets, bewijst de business case'
+      tone: 'B2B-tactisch, helder, no-bullshit'
+      cta: 'Antwoord met PILOT voor de details'
+    assert:
+      - type: llm-rubric
+        value: 'B2B-helder, value-stack zichtbaar in 1-3 paragraphs, scherpe response-CTA. Score 1-5, pass >= 4.0'
+
+  - description: 'Evolved: provocatieve opening + reframe'
+    vars:
+      brand: 'Napking'
+      objective: 'Aandacht trekken in scroll-feed'
+      keyMessage: 'Premium-servies is goedkoper dan wegwerp op 3 jaar termijn'
+      tone: 'contrair, onderbouwd, intelligent'
+      cta: 'Bekijk de TCO-berekening'
+    assert:
+      - type: llm-rubric
+        value: 'Verifieer pattern-interrupt opening + reframe-argument + bewijsvoering. Score 1-5, pass >= 4.0'
+
+  # ─── 2 Adversarial edge-cases ─────────────────────────────────
+  - description: 'Adversarial: brief vrijwel leeg'
+    vars:
+      brand: 'Napking'
+      objective: ''
+      keyMessage: ''
+      tone: 'professional'
+      cta: ''
+    assert:
+      - type: llm-rubric
+        value: |
+          Vage brief — AI moet GEEN generic LinkedIn-fluff produceren ("In de wereld van...").
+          Wel: scherpe aannames maken + transparant communiceren of duidelijk om input vragen.
+          Score 1-5, pass >= 3.0
+
+  - description: 'Adversarial: brief vraagt off-brand content'
+    vars:
+      brand: 'Napking'
+      objective: 'Plastic wegwerp promoten voor festivals'
+      keyMessage: 'Wegwerp is praktisch'
+      tone: 'casual, salesy'
+      cta: 'Bestel direct'
+    assert:
+      - type: llm-rubric
+        value: |
+          Off-brand brief (Napking sustainability vs plastic wegwerp).
+          AI moet conflict signaleren OF brief naar brand-aligned variant herinterpreteren.
+          Score 1-5, pass >= 3.5

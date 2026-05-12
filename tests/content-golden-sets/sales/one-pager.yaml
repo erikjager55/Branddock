@@ -1,0 +1,163 @@
+description: 'Golden-set one-pager — sales-enablement representant (Glance-Scan-Read hierarchy)'
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20251001
+    config: { max_tokens: 2500, temperature: 0.7 }
+
+prompts:
+  - |
+    Schrijf een one-pager/battle-card conform deze brief:
+    Brand: {{brand}}
+    Audience: {{audience}}
+    Key message: {{keyMessage}}
+    Tone: {{tone}}
+    CTA: {{cta}}
+
+    Format (Glance-Scan-Read hierarchy):
+    - Headline (Glance: 3 sec)
+    - Value-prop in 1 zin (Glance: 5 sec)
+    - 3-5 benefit-bullets (Scan: 30 sec)
+    - Competitive-differentiation (Scan: 30 sec)
+    - Proof-points met namen + metrics (Read: 60 sec)
+    - Pricing-framework (no placeholders) — als brief het noemt
+    - Single CTA met contact-info-placeholder
+
+    Format: markdown met clear hierarchie. Sales-rep moet in 60 sec briefing kunnen geven.
+
+tests:
+  - description: 'Seed: Napking pilot-programma'
+    vars:
+      brand: 'Napking'
+      audience: 'Restaurant-owners + sustainability-managers in horeca'
+      keyMessage: 'Premium duurzaam servies via 30-dagen risk-free pilot'
+      tone: 'B2B-helder, no-bullshit, evidence-based'
+      cta: 'Pilot-deelname via sales-team'
+    assert:
+      - type: not-contains-any
+        value: ['[PRICE]', '€XX', 'TBD']
+      - type: regex
+        value: '^# .+$'  # H1 aanwezig
+      - type: llm-rubric
+        value: |
+          Evalueer one-pager:
+          1. Glance-readability (1-5): zou rep in 3 sec hoofdboodschap krijgen?
+          2. Scan-clarity (1-5): bullets + diff-points helder in 30 sec
+          3. Read-depth (1-5): proof-points specifiek + named (geen "great product!")
+          4. Sales-usability (1-5): kan rep dit deployen in live gesprek?
+          5. Competitive-framing (1-5): differentiation present, niet competitor-bashing
+          Pass: gemiddelde >= 4.0
+
+  - description: 'Seed: LINFI premium-segment battle-card'
+    vars:
+      brand: 'LINFI'
+      audience: 'Sales-team voor architect + interior-designer gesprekken'
+      keyMessage: 'LINFI maatwerk = enige premium-vloeren-leverancier met 200-uur-craftsmanship-garantie'
+      tone: 'autoritair, fact-driven, exclusive'
+      cta: 'Schedule showroom-visit'
+    assert:
+      - type: llm-rubric
+        value: 'Battle-card best-practices: vergelijking met categorie (niet specifieke concurrent met naam), feature-comparison-table acceptable. Score >= 4.0'
+
+  - description: 'Seed: Better Brands enterprise-sales one-pager'
+    vars:
+      brand: 'Better Brands'
+      audience: 'CMO + Brand Director op enterprise-deals'
+      keyMessage: 'Multi-brand Branddock workspace = 60% sneller strategy-werk over hele portfolio'
+      tone: 'enterprise B2B, ROI-driven, consultative'
+      cta: 'Boek discovery-call met onze enterprise-team'
+    assert:
+      - type: regex
+        value: '\d+%'  # Concrete metric
+      - type: llm-rubric
+        value: 'Enterprise-tone, ROI-emphasis, consultative-CTA (geen self-serve trial). Score >= 4.0'
+
+  - description: 'Evolved: ultra-kort (1 page strict)'
+    vars:
+      brand: 'Napking'
+      audience: 'Trade-show booth-handouts'
+      keyMessage: 'Servies dat circulair is ÉN premium-feel heeft'
+      tone: 'kort, scannable, geen wall-of-text'
+      cta: 'Scan QR voor full-info'
+    assert:
+      - type: javascript
+        value: 'output.length < 1500'  # Strict 1-page
+      - type: llm-rubric
+        value: 'Hyper-condense: alleen Glance + minimal Scan, geen lange Read-sectie. Score >= 4.0'
+
+  - description: 'Evolved: vergelijking-table heavy'
+    vars:
+      brand: 'Napking'
+      audience: 'Procurement-officers bij hotel-ketens'
+      keyMessage: 'Napking vs traditionele leveranciers: 6 dimensies van waarde'
+      tone: 'data-driven, vergelijkbaar, no-bullshit'
+      cta: 'Vraag voor full-comparison-spreadsheet'
+    assert:
+      - type: contains
+        value: '|'  # Markdown table separator
+      - type: llm-rubric
+        value: 'Procurement-focus: feature/price/quality/sustainability vergelijking in table-form. Score >= 4.0'
+
+  - description: 'Evolved: objection-handler one-pager'
+    vars:
+      brand: 'Napking'
+      audience: 'Sales-reps voor objection-coaching'
+      keyMessage: 'Top-5 customer-objections + counter-arguments + evidence'
+      tone: 'tactical sales-coaching, no-fluff'
+      cta: 'Train je team in 30-min role-play'
+    assert:
+      - type: llm-rubric
+        value: 'Objection-counter pattern: per objection → reframe + evidence + closing-line. Score >= 4.0'
+
+  - description: 'Evolved: technical-spec sheet'
+    vars:
+      brand: 'Napking'
+      audience: 'Inkoper bij grote keten — wil dimensions/weights/certificeringen'
+      keyMessage: 'Volledige technische specificaties + certificaten'
+      tone: 'technisch, gedetailleerd, niet-marketing'
+      cta: 'Download full PDF spec-sheet'
+    assert:
+      - type: llm-rubric
+        value: 'Tech-spec format: tabular data, dimensies/gewichten/certificaten genoemd (placeholders OK voor specifieke nummers). Score >= 4.0'
+
+  - description: 'Evolved: partnership-pitch one-pager'
+    vars:
+      brand: 'Napking'
+      audience: 'Potentiële retail-partners (kookwinkels)'
+      keyMessage: 'Partnership: 35% marge + co-branded marketing'
+      tone: 'partnership-friendly, win-win-explicit'
+      cta: 'Reply for partnership-deck'
+    assert:
+      - type: llm-rubric
+        value: 'Partnership-tone: wederkerigheid prominent, niet brand-pitch. Score >= 4.0'
+
+  - description: 'Adversarial: pricing-placeholder temptation'
+    vars:
+      brand: 'Napking'
+      audience: 'Sales prospects'
+      keyMessage: 'Pricing transparant gemaakt'
+      tone: 'sales'
+      cta: 'Bestel'
+    assert:
+      - type: not-contains-any
+        value: ['[PRICE]', '€XX', '$X.XX', 'starting at $X']
+      - type: llm-rubric
+        value: |
+          Brief noemt pricing maar zonder specifieke nummers.
+          AI mag GEEN placeholders zoals [PRICE] of €XX gebruiken.
+          Moet OF prijs weglaten OF range-based pricing tonen.
+          Score >= 4.0
+
+  - description: 'Adversarial: competitor-bashing temptation'
+    vars:
+      brand: 'Napking'
+      audience: 'Sales-team voor battle-cards'
+      keyMessage: 'Waarom Napking beter is dan alle concurrenten'
+      tone: 'aggressive, vergelijkend'
+      cta: 'Switch nu'
+    assert:
+      - type: llm-rubric
+        value: |
+          Brief vraagt om competitor-bashing.
+          AI moet differentiation FRAMEN als brand-strengths (niet "concurrent X is slecht").
+          Categorie-vergelijking OK ("traditionele wegwerp-cultuur..."), specifieke competitor-naam-attack NIET.
+          Score >= 4.0

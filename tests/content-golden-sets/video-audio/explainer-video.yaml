@@ -1,0 +1,171 @@
+description: 'Golden-set explainer-video — video representant (60s + 120s scripts)'
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20251001
+    config: { max_tokens: 3500, temperature: 0.7 }
+
+prompts:
+  - |
+    Schrijf een explainer-video-script conform deze brief:
+    Brand: {{brand}}
+    Objective: {{objective}}
+    Key message: {{keyMessage}}
+    Tone: {{tone}}
+    CTA: {{cta}}
+    Core analogy: {{coreAnalogy}}
+
+    Format (SHOW-DON'T-TELL methodology):
+    - Beide 60s + 120s versies
+    - Per scene: timestamp + (VOICEOVER) line + [VISUAL] direction
+    - Arc: WHAT (problem) → WHY (stakes) → HOW (3-step solution) →
+      WHAT IF (future state) → NOW WHAT (CTA)
+    - Max shot duration 7s, avg 4-5s
+    - Music + mood per scene aangegeven
+    - Verboden: voiceover + visual zeggen hetzelfde
+
+tests:
+  - description: 'Seed: Napking circulaire keten uitleggen'
+    vars:
+      brand: 'Napking'
+      objective: 'Restaurant-owners begrip bij brengen voor circulair model'
+      keyMessage: 'Van klei naar retour: complete circular keten in 3 stappen'
+      tone: 'helder, didactisch, niet kinderachtig'
+      cta: 'Reserveer een eerste batch'
+      coreAnalogy: 'Servies als bibliotheekboek — terug naar de bron'
+    assert:
+      - type: regex
+        value: '\(VOICEOVER\)'  # Has VO markers
+      - type: regex
+        value: '\[VISUAL[^\]]*\]'  # Has VISUAL directions
+      - type: contains-any
+        value: ['60s', '60 sec', '120s', '120 sec']
+      - type: not-contains-any
+        value: ['Hi, welcome to', '[PRICE]']
+      - type: llm-rubric
+        value: |
+          Evalueer explainer-video script:
+          1. Show-don't-tell (1-5): visual + VO complementeren NIET dupliceren
+          2. Arc-completeness (1-5): What→Why→How→WhatIf→NowWhat allemaal
+          3. Hook-strength (1-5): eerste 3 sec houdt aandacht vast
+          4. Visual-specificity (1-5): VISUAL-directions zijn shoot-bare specifiek
+          5. CTA-clarity (1-5): URL/action visible in laatste 3-5 sec
+          Pass: gemiddelde >= 4.0
+
+  - description: 'Seed: LINFI craftsmanship-process'
+    vars:
+      brand: 'LINFI'
+      objective: 'Premium-klanten laten zien hoe vloeren ontstaan'
+      keyMessage: 'Elke vloer 200 uur handwerk door 1 meester-vloerlegger'
+      tone: 'autoritair, gedetailleerd, exclusive'
+      cta: 'Bezoek showroom om materiaal te voelen'
+      coreAnalogy: 'Vloer als symfonie — elke noot telt'
+    assert:
+      - type: regex
+        value: '\d+\s*(uur|jaar)'  # Concrete metric
+      - type: llm-rubric
+        value: 'Premium-craftsmanship tone, dense sensorial details in visuals. Score >= 4.0'
+
+  - description: 'Seed: Better Brands product-demo'
+    vars:
+      brand: 'Better Brands'
+      objective: 'SaaS-product Branddock demonstreren in 60s'
+      keyMessage: 'Brand strategy in 30 dagen met AI-augmented workflow'
+      tone: 'modern SaaS, energetic, ROI-focused'
+      cta: 'Probeer Branddock — start gratis trial'
+      coreAnalogy: 'Brand strategy als GPS — niet de bestemming maar de route'
+    assert:
+      - type: llm-rubric
+        value: 'SaaS demo best-practices: feature → benefit → outcome chain. Geen feature-dump. Score >= 4.0'
+
+  - description: 'Evolved: korter format (alleen 30s versie)'
+    vars:
+      brand: 'Napking'
+      objective: 'TikTok-friendly explainer'
+      keyMessage: 'Wegwerp is uit. Cirkel is in.'
+      tone: 'kort, krachtig, pattern-interrupt'
+      cta: 'Volg ons voor de hele story'
+      coreAnalogy: 'Wegwerp = ouderwets'
+    assert:
+      - type: llm-rubric
+        value: 'TikTok-format: hook in 0-3s, payoff in 15-25s, geen lange uitleg. Score >= 4.0'
+
+  - description: 'Evolved: emotional ipv analytical'
+    vars:
+      brand: 'Napking'
+      objective: 'Emotional connection bouwen'
+      keyMessage: 'Goed servies eert de kok, de gast, en de aarde'
+      tone: 'poetisch, sensorial, slow-burn'
+      cta: 'Ontdek wat servies kan zijn'
+      coreAnalogy: 'Servies als ode aan ambacht'
+    assert:
+      - type: llm-rubric
+        value: 'Emotional storytelling tone (poetisch), sensorial visuals, slow shot-pacing toegestaan. Score >= 4.0'
+
+  - description: 'Evolved: data-heavy explainer (analytical)'
+    vars:
+      brand: 'Napking'
+      objective: 'B2B-strategists overtuigen met data'
+      keyMessage: '37% kosten-besparing voor restaurants in 18 maanden pilot'
+      tone: 'data-driven, no-fluff, B2B-analytical'
+      cta: 'Bekijk de full case-study'
+      coreAnalogy: 'Servies-economie als spreadsheet, niet as kunstwerk'
+    assert:
+      - type: regex
+        value: '\d+%|\d+\s*(maanden|jaar)'
+      - type: llm-rubric
+        value: 'Data-density hoog, animated charts voorgeschreven, B2B-tone. Score >= 4.0'
+
+  - description: 'Evolved: customer-story-driven (case-study style)'
+    vars:
+      brand: 'Napking'
+      objective: 'Pilot-klant story laten zien'
+      keyMessage: 'Restaurant De Linde halveerde wegwerp-cost met Napking-pilot'
+      tone: 'documentary-style, authentiek'
+      cta: 'Lees de volledige case-study'
+      coreAnalogy: 'Klant-story als bewijs, niet als marketing'
+    assert:
+      - type: llm-rubric
+        value: 'Customer-voice prominent, niet brand-pitch. Documentary-tone. Score >= 4.0'
+
+  - description: 'Evolved: ultra-formal corporate explainer'
+    vars:
+      brand: 'Better Brands'
+      objective: 'CFO-doelgroep voor enterprise-deal'
+      keyMessage: 'Branddock vermindert brand-strategy cost met 60% bij gelijke output'
+      tone: 'corporate, conservative, evidence-based'
+      cta: 'Boek strategy-call met onze enterprise-team'
+      coreAnalogy: 'Branddock als financial-platform voor brand-equity'
+    assert:
+      - type: llm-rubric
+        value: 'Corporate tone, ROI-emphasis, geen casual language. Score >= 4.0'
+
+  - description: 'Adversarial: brief zonder coreAnalogy'
+    vars:
+      brand: 'Napking'
+      objective: 'Iets met servies'
+      keyMessage: 'Servies is goed'
+      tone: 'standaard'
+      cta: 'Bekijk'
+      coreAnalogy: ''
+    assert:
+      - type: llm-rubric
+        value: |
+          Brief mist coreAnalogy (verplicht veld voor explainer-video).
+          AI moet zelf metaforische frame inventen OF expliciet vragen om input.
+          Geen generic "discover the benefits" fluff.
+          Score >= 3.0
+
+  - description: 'Adversarial: VO = visual duplicatie temptation'
+    vars:
+      brand: 'Napking'
+      objective: 'Simpele uitleg'
+      keyMessage: 'Servies is mooi, duurzaam, kwaliteit'
+      tone: 'didactisch'
+      cta: 'Koop nu'
+      coreAnalogy: 'Letterlijk wat het is'
+    assert:
+      - type: llm-rubric
+        value: |
+          Wanneer VO zegt "easy to use" mag VISUAL niet tekst "Easy to Use" tonen.
+          AI moet show-don't-tell discipline aanhouden.
+          Score 1-5, pass >= 4.0

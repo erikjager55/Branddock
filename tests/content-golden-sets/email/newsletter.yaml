@@ -1,0 +1,159 @@
+description: 'Golden-set newsletter — email representant'
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20251001
+    config: { max_tokens: 3000, temperature: 0.7 }
+
+prompts:
+  - |
+    Schrijf een email-newsletter conform deze brief:
+    Brand: {{brand}}
+    Objective: {{objective}}
+    Key message: {{keyMessage}}
+    Tone: {{tone}}
+    CTA: {{cta}}
+
+    Format:
+    - Subject line (≤ 60 chars, A/B-tested optimized)
+    - Preheader (≤ 100 chars, complementeert subject)
+    - Hero-paragraph (2-3 zinnen)
+    - 2-3 content-blokken met H2-headings
+    - Primary CTA button-text + URL-placeholder
+    - Sign-off met persoonlijke naam (placeholder)
+
+    Schrijf in NL. Email-friendly: geen markdown-tabellen, korte paragraphs.
+
+tests:
+  - description: 'Seed: Napking maandelijkse update'
+    vars:
+      brand: 'Napking'
+      objective: 'Maandelijkse update aan klanten + lead-nurturing'
+      keyMessage: 'Nieuwe collectie servies + circulaire keten-update'
+      tone: 'vakkundig, persoonlijk, warm'
+      cta: 'Bekijk de collectie'
+    assert:
+      - type: javascript
+        value: |
+          // Subject line max 60 chars (eerste line met "Subject:" prefix)
+          const subjectMatch = output.match(/Subject\s*(?:line)?:?\s*(.+)/i);
+          if (!subjectMatch) return false;
+          return subjectMatch[1].trim().length <= 70;
+      - type: not-contains
+        value: '[PRICE]'
+      - type: llm-rubric
+        value: |
+          Evalueer newsletter:
+          1. Subject-engagement (1-5): zou jij dit openen?
+          2. Preheader-fit (1-5): complementeert subject, geen herhaling
+          3. Hero-grip (1-5): eerste 2 zinnen verleiden tot doorlezen
+          4. CTA-clarity (1-5): button-text actie-verbo + concreet
+          5. Email-friendly (1-5): korte paragraphs + geen wall-of-text
+          Pass: gemiddelde >= 4.0
+
+  - description: 'Seed: LINFI showroom-aankondiging'
+    vars:
+      brand: 'LINFI'
+      objective: 'Showroom-bezoek aanmoedigen voor premium-segment'
+      keyMessage: 'Nieuwe collectie nu te bezichtigen in showroom'
+      tone: 'exclusief, persoonlijk, uitnodigend'
+      cta: 'Plan een persoonlijk bezoek'
+    assert:
+      - type: not-contains-any
+        value: ['exclusief aanbod', 'limited time only']
+      - type: llm-rubric
+        value: 'Exclusivity zonder cliché-language. Persoonlijke uitnodiging tone. Score >= 4.0'
+
+  - description: 'Seed: Better Brands product-update'
+    vars:
+      brand: 'Better Brands'
+      objective: 'Pilot-klanten informeren over nieuwe Branddock-features'
+      keyMessage: 'Brand Voice tool nu met multilingual support'
+      tone: 'product-update, helder, niet salesy'
+      cta: 'Probeer Brand Voice tool'
+    assert:
+      - type: llm-rubric
+        value: 'Product-update tone (informatief, geen sales-pitch). Concrete feature-benefits. Score >= 4.0'
+
+  - description: 'Evolved: welcome-email (eerste contact)'
+    vars:
+      brand: 'Napking'
+      objective: 'Nieuwe sign-ups welkom heten + onboarding'
+      keyMessage: 'Welkom bij de circulaire keten-beweging'
+      tone: 'warm, welkomstvol, gids-rol'
+      cta: 'Begin met je eerste gratis staal'
+    assert:
+      - type: llm-rubric
+        value: 'Welcome-tone, gids-stem, geen overwhelming feature-dump. Score >= 4.0'
+
+  - description: 'Evolved: re-engagement (lapsed klant)'
+    vars:
+      brand: 'Napking'
+      objective: 'Inactieve klanten terugwinnen'
+      keyMessage: 'We missen je — kijk wat er nieuw is'
+      tone: 'eerlijk, niet desperate, opnieuw verleiden'
+      cta: 'Bekijk wat je gemist hebt'
+    assert:
+      - type: llm-rubric
+        value: 'Re-engagement zonder schuldig-toon. Eerlijk + uitnodigend. Score >= 4.0'
+
+  - description: 'Evolved: ultra-kort transactioneel'
+    vars:
+      brand: 'Napking'
+      objective: 'Order-bevestiging styled als brand-moment'
+      keyMessage: 'Je staal is onderweg'
+      tone: 'kort, dankbaar, professioneel'
+      cta: 'Track je verzending'
+    assert:
+      - type: javascript
+        value: 'output.length < 1500'  # Transactional = kort
+      - type: llm-rubric
+        value: 'Kort + duidelijk + brand-touch. Score >= 4.0'
+
+  - description: 'Evolved: thought-leadership-newsletter (curated insights)'
+    vars:
+      brand: 'Napking'
+      objective: 'Wekelijkse insights voor restaurant-eigenaren'
+      keyMessage: '3 sustainability-trends voor 2027 in horeca'
+      tone: 'autoritair, curator, niet-sales'
+      cta: 'Lees de volledige analyse'
+    assert:
+      - type: llm-rubric
+        value: 'Curator-stem (niet sales). 3 distinct insights. Geen verkoop-poging. Score >= 4.0'
+
+  - description: 'Evolved: bedanking + survey-request'
+    vars:
+      brand: 'Napking'
+      objective: 'Pilot-deelnemers bedanken + feedback vragen'
+      keyMessage: 'Je input vormgegeven onze v2-collectie'
+      tone: 'oprecht dankbaar, vraagt om hulp'
+      cta: 'Vul 3-min survey in'
+    assert:
+      - type: llm-rubric
+        value: 'Authentiek dankbaar, survey-request kort + niet-belastend. Score >= 4.0'
+
+  - description: 'Adversarial: brief vaag/leeg'
+    vars:
+      brand: 'Napking'
+      objective: ''
+      keyMessage: ''
+      tone: 'professional'
+      cta: 'Klik hier'
+    assert:
+      - type: not-contains
+        value: 'Klik hier'  # Anti-pattern CTA
+      - type: llm-rubric
+        value: 'AI verbetert "Klik hier" naar concrete action-verb. Vage brief → expliciteert aannames. Score >= 3.0'
+
+  - description: 'Adversarial: meerdere conflicterende CTAs gewenst'
+    vars:
+      brand: 'Napking'
+      objective: 'Verkopen + nieuwsbrief sign-up + social follow + survey + demo-boeking allemaal tegelijk'
+      keyMessage: 'Doe alles!'
+      tone: 'salesy'
+      cta: 'Klik op alles'
+    assert:
+      - type: llm-rubric
+        value: |
+          Brief vraagt CTA-overload. AI moet ONE primary CTA pakken en rest sub-prioriteren of weglaten.
+          Newsletter mag geen 5 conflicterende CTAs hebben.
+          Score >= 3.5

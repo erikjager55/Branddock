@@ -1,0 +1,183 @@
+description: 'Golden-set landing-page — website representant'
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20251001
+    config: { max_tokens: 4000, temperature: 0.7 }
+
+prompts:
+  - |
+    Schrijf een landing-page conform deze brief:
+    Brand: {{brand}}
+    SEO keyword: {{seoKeyword}}
+    Objective: {{objective}}
+    Key message: {{keyMessage}}
+    Tone: {{tone}}
+    CTA: {{cta}}
+
+    Format (MECLABS structure):
+    1. Hero section: H1 + sub-headline + primary CTA button-text
+    2. Problem section: 3 pain-points
+    3. Solution section: 2-3 paragraphs
+    4. Benefits section: 4-5 benefit-cards
+    5. Social proof: 3 testimonials + trust-metrics
+    6. FAQ: 4-5 Q&As
+    7. Final CTA: urgentie + risk-reversal
+
+    SEO: title-tag ≤ 60 chars, meta-description ≤ 155 chars, keyword in H1+body.
+
+tests:
+  - description: 'Seed: Napking sustainability-pilot landing'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'duurzaam servies restaurant pilot'
+      objective: 'Restaurant-eigenaren laten meedoen aan pilot-programma'
+      keyMessage: 'Test premium duurzaam servies, gratis, 30 dagen'
+      tone: 'professioneel, vertrouwenwekkend, niet-salesy'
+      cta: 'Start gratis 30-dagen pilot'
+    assert:
+      - type: contains
+        value: 'duurzaam servies'  # SEO keyword in content
+      - type: regex
+        value: '^# .+$'  # H1 aanwezig
+      - type: javascript
+        value: |
+          // MECLABS structure: alle 7 secties aanwezig
+          const sections = ['Hero', 'Problem', 'Solution', 'Benefits', 'Social', 'FAQ', 'CTA'];
+          const lower = output.toLowerCase();
+          return sections.filter(s => lower.includes(s.toLowerCase()) || lower.includes('## ')).length >= 3;
+      - type: llm-rubric
+        value: |
+          Evalueer landing-page (MECLABS framework):
+          1. Hero-grip (1-5): H1 + sub binnen 3 sec leesbaar + duidelijk
+          2. Problem-empathy (1-5): pain-points herkenbaar voor doelgroep
+          3. Solution-clarity (1-5): hoe het werkt zonder feature-dump
+          4. Social-proof-specific (1-5): metrics + testimonials concreet (niet "great product!")
+          5. FAQ-objection-handling (1-5): adresseert echte zorgen, niet softball
+          6. CTA-risk-reversal (1-5): garantie/trial/no-credit-card explicit
+          Pass: gemiddelde >= 4.0
+
+  - description: 'Seed: LINFI showroom-conversion landing'
+    vars:
+      brand: 'LINFI'
+      seoKeyword: 'handgemaakte vloeren maatwerk amsterdam'
+      objective: 'Showroom-bezoeken boeken in premium-segment'
+      keyMessage: 'Maatwerk vloeren, persoonlijk advies, in 4 weken geleverd'
+      tone: 'exclusief, persoonlijk, niet massa-markt'
+      cta: 'Plan persoonlijk showroom-gesprek'
+    assert:
+      - type: llm-rubric
+        value: 'Premium-tone, niet mass-market. Exclusive feel zonder cliché. Score >= 4.0'
+
+  - description: 'Seed: Better Brands SaaS-trial landing'
+    vars:
+      brand: 'Better Brands'
+      seoKeyword: 'AI brand strategy software trial'
+      objective: 'SaaS sign-ups voor 14-dagen trial'
+      keyMessage: 'Brand strategy in dagen, niet maanden — bewezen door 50+ bedrijven'
+      tone: 'data-driven, autoritair, modern SaaS'
+      cta: 'Start 14-dagen gratis trial'
+    assert:
+      - type: regex
+        value: '\d+'  # Bevat metric
+      - type: contains-any
+        value: ['geen credit-card', 'no credit card', 'gratis trial', 'risk-free']
+      - type: llm-rubric
+        value: 'Trial-conversion best-practices: data, social-proof, risk-reversal. Score >= 4.0'
+
+  - description: 'Evolved: B2B-enterprise (deal-size groot)'
+    vars:
+      brand: 'Better Brands'
+      seoKeyword: 'enterprise brand strategy platform'
+      objective: 'Enterprise sales-leads genereren'
+      keyMessage: 'Multi-brand workspace voor agencies + enterprise teams'
+      tone: 'enterprise B2B, ROI-focused, niet trial-pushy'
+      cta: 'Boek strategy-call met onze team'
+    assert:
+      - type: not-contains-any
+        value: ['gratis trial', 'Start nu']
+      - type: llm-rubric
+        value: 'Enterprise-tone (consultative, niet self-serve). Sales-call CTA, geen trial. Score >= 4.0'
+
+  - description: 'Evolved: e-commerce product-page-achtig'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'koop duurzaam servies'
+      objective: 'Direct verkopen van Napking starter-set'
+      keyMessage: 'Premium starter-set: 4 borden + 4 schalen, klaar voor restaurant-gebruik'
+      tone: 'product-focused, transparant over prijs'
+      cta: 'Bestel starter-set'
+    assert:
+      - type: llm-rubric
+        value: 'E-commerce best-practices: specs, multiple buy-buttons, geen pricing-placeholders ALS pricing gegeven. Score >= 4.0'
+
+  - description: 'Evolved: lead-magnet (whitepaper-download)'
+    vars:
+      brand: 'Better Brands'
+      seoKeyword: 'brand strategy whitepaper 2027'
+      objective: 'E-mail addresses verzamelen via whitepaper-download'
+      keyMessage: 'De 2027 Brand Strategy Trends Report — 30 pagina insights'
+      tone: 'autoritair, gratis-waarde-eerst'
+      cta: 'Download het rapport (gratis)'
+    assert:
+      - type: llm-rubric
+        value: 'Lead-magnet-pattern: value-eerst, lichtgewicht form (alleen email). Score >= 4.0'
+
+  - description: 'Evolved: ultra-minimal (1 message, 1 CTA)'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'servies pre-order'
+      objective: 'Pre-order voor nieuwe collectie'
+      keyMessage: 'Pre-order Q3 collectie nu beschikbaar'
+      tone: 'minimal, urgentie, geen overload'
+      cta: 'Pre-order nu'
+    assert:
+      - type: llm-rubric
+        value: 'Minimal landing: 1 helder verhaal, 1 CTA. Geen FAQ-overload. Score >= 3.5'
+
+  - description: 'Evolved: event-registration landing'
+    vars:
+      brand: 'Better Brands'
+      seoKeyword: 'brand strategy workshop amsterdam'
+      objective: 'Workshop-aanmeldingen voor live event'
+      keyMessage: 'Halve-dag workshop met founder, max 12 deelnemers'
+      tone: 'persoonlijk, exclusief, beperkte plekken'
+      cta: 'Reserveer je plek'
+    assert:
+      - type: contains-any
+        value: ['datum', 'locatie', 'plekken']
+      - type: llm-rubric
+        value: 'Event-essentials: datum + locatie + spots-left explicit. Score >= 4.0'
+
+  - description: 'Adversarial: SEO keyword-stuffing temptation'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'duurzaam servies horeca circulair premium restaurant kwaliteit klei aardewerk'
+      objective: 'Top-1 ranking op alle keywords'
+      keyMessage: 'Alle keywords moeten erin'
+      tone: 'SEO-first'
+      cta: 'Klik'
+    assert:
+      - type: llm-rubric
+        value: |
+          Brief vraagt keyword-stuffing. AI moet:
+          - Primary keyword in H1 + intro (natural)
+          - Secondary keywords gespreid over body (NIET stuffed)
+          - Density < 2%
+          - Natural reading flow primaat
+          Score >= 4.0
+
+  - description: 'Adversarial: tegenstrijdige USPs'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'goedkoop premium servies'
+      objective: 'Zowel premium positionering als goedkoop positionering'
+      keyMessage: 'Premium kwaliteit + ultra-budget-prijs'
+      tone: 'overal-tegelijk'
+      cta: 'Koop nu'
+    assert:
+      - type: llm-rubric
+        value: |
+          Brief heeft conflicterende USPs (premium vs goedkoop = onmogelijk).
+          AI moet één positie kiezen of het conflict expliciet adresseren
+          (e.g. "best value in premium-segment").
+          Score >= 3.5

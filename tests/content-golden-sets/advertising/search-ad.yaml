@@ -1,0 +1,158 @@
+description: 'Golden-set search-ad — advertising representant (Google Ads format)'
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20251001
+    config: { max_tokens: 1500, temperature: 0.7 }
+
+prompts:
+  - |
+    Schrijf een Google Search Ad conform deze brief:
+    Brand: {{brand}}
+    SEO keyword: {{seoKeyword}}
+    Key message: {{keyMessage}}
+    CTA: {{cta}}
+
+    Format (strict character limits):
+    - 3 headlines (each max 30 chars)
+    - 2 descriptions (each max 90 chars)
+    - 2 callout extensions (each max 25 chars)
+    - 1 sitelink-text (max 25 chars)
+    - 1 final-URL path (lowercase-hyphenated)
+
+    Schrijf in NL. Vermijd corporate jargon en placeholder pricing.
+
+tests:
+  # ─── 3 Human-authored seeds ───────────────────────────────────
+  - description: 'Seed: Napking duurzaam servies'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'duurzaam servies horeca'
+      keyMessage: 'Premium kwaliteit + circulaire keten'
+      cta: 'Vraag een staal aan'
+    assert:
+      - type: javascript
+        value: |
+          // Verify all headlines under 30 chars
+          const headlines = output.match(/Headline\s*\d*:?\s*(.+?)(?=\n|$)/gi) || [];
+          return headlines.every(h => {
+            const text = h.replace(/Headline\s*\d*:?\s*/i, '').trim();
+            return text.length <= 30;
+          });
+      - type: contains-any
+        value: ['duurzaam', 'circulair']  # Keyword in copy
+      - type: not-contains
+        value: '[PRICE]'
+      - type: llm-rubric
+        value: |
+          Evalueer Search Ad:
+          1. Headlines (1-5): scherp + keyword-anchored + non-generic
+          2. CTAs (1-5): action-verb + concreet ("Vraag aan" niet "Klik hier")
+          3. Compliance (1-5): geen pricing-placeholders + geen valse claims
+          Score gemiddeld 1-5, pass >= 4.0
+
+  - description: 'Seed: LINFI vloeren-search'
+    vars:
+      brand: 'LINFI'
+      seoKeyword: 'handgemaakte houten vloeren'
+      keyMessage: 'Premium maatwerk vloeren door vakmensen'
+      cta: 'Plan een showroom-bezoek'
+    assert:
+      - type: contains-any
+        value: ['maatwerk', 'handgemaakt', 'vakmensen']
+      - type: llm-rubric
+        value: 'Geen "innovatief"/"revolutionair" (LINFI wordsWeAvoid). Concrete value-prop. Score >= 4.0'
+
+  - description: 'Seed: Better Brands SaaS-search'
+    vars:
+      brand: 'Better Brands'
+      seoKeyword: 'AI brand strategy software'
+      keyMessage: 'Brand strategy in 30 dagen ipv 6 maanden'
+      cta: 'Start gratis trial'
+    assert:
+      - type: regex
+        value: '\d+\s*(dagen|maanden|%)'  # Bevat concrete metric in copy
+      - type: llm-rubric
+        value: 'Data-anchored claim + urgentie + trial-CTA helder. Score >= 4.0'
+
+  # ─── 5 Evolved variants ───────────────────────────────────────
+  - description: 'Evolved: extreem korte headlines (kort + krachtig)'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'servies'
+      keyMessage: 'Klein + krachtig'
+      cta: 'Probeer'
+    assert:
+      - type: llm-rubric
+        value: 'Headlines ≤ 20 chars + nog steeds value-prop helder. Score >= 3.5'
+
+  - description: 'Evolved: emotional-driven ipv functional'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'duurzaam servies restaurant'
+      keyMessage: 'Voel het verschil: gewicht, glans, balans'
+      cta: 'Voel zelf'
+    assert:
+      - type: llm-rubric
+        value: 'Sensorial framing in 30-char headlines (geen feature-lijst). Score >= 4.0'
+
+  - description: 'Evolved: urgentie-frame (limited time)'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'restaurant servies'
+      keyMessage: 'Eindejaar-collectie, beperkte oplage'
+      cta: 'Reserveer voor 31 dec'
+    assert:
+      - type: contains-any
+        value: ['dec', 'eindejaar', 'beperkt']
+      - type: llm-rubric
+        value: 'Urgentie concreet met datum (niet vaag "binnenkort"). Score >= 4.0'
+
+  - description: 'Evolved: B2B-segmentatie (hotel-keten specifiek)'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'hotel servies inkoop'
+      keyMessage: 'Volume-prijzen voor hotel-ketens'
+      cta: 'Vraag offerte aan'
+    assert:
+      - type: llm-rubric
+        value: 'B2B-tone, hotel-specific framing, B2B-CTA (offerte ipv koop). Score >= 4.0'
+
+  - description: 'Evolved: brand-only search (concurrent op merknaam)'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'Napking'
+      keyMessage: 'Direct kopen via officiële site'
+      cta: 'Bezoek napking.nl'
+    assert:
+      - type: contains
+        value: 'Napking'
+      - type: llm-rubric
+        value: 'Brand-defense ad, officiële-bron-emphasis, geen vergelijking met concurrenten. Score >= 4.0'
+
+  # ─── 2 Adversarial ────────────────────────────────────────────
+  - description: 'Adversarial: keyword-stuffing temptation'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'duurzaam servies horeca circulair premium restaurant kwaliteit'
+      keyMessage: 'Alles tegelijk'
+      cta: 'Klik nu'
+    assert:
+      - type: llm-rubric
+        value: |
+          AI mag NIET alle keywords stuffen in headline. Moet primary keyword pakken
+          + rest natuurlijk verwerken in description. Geen "duurzaam servies horeca
+          circulair" als headline.
+          Score 1-5, pass >= 4.0
+
+  - description: 'Adversarial: false-claim risico'
+    vars:
+      brand: 'Napking'
+      seoKeyword: 'meest duurzaam servies wereld'
+      keyMessage: 'We zijn de beste'
+      cta: 'Bestel direct'
+    assert:
+      - type: llm-rubric
+        value: |
+          Brief vraagt superlatief-claim. AI moet claim relativeren of substantieren
+          met ranking-criterium (Google Ads weigert "meest"/"beste" zonder bewijs).
+          Score 1-5, pass >= 3.5

@@ -1,0 +1,167 @@
+description: 'Golden-set press-release — PR/HR representant (inverted-pyramid format)'
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20251001
+    config: { max_tokens: 3000, temperature: 0.7 }
+
+prompts:
+  - |
+    Schrijf een persbericht conform deze brief:
+    Brand: {{brand}}
+    Subject: {{subject}}
+    Key facts: {{keyFacts}}
+    Tone: {{tone}}
+    Quote-attribution: {{quoteAttribution}}
+
+    Format (AP-style inverted pyramid):
+    - Dateline: [STAD], [DATUM]
+    - Lede: 1 zin met 5 W's (Wie/Wat/Waar/Wanneer/Waarom)
+    - 2-3 supporting-detail-paragraphs (most-important-first)
+    - 1 quote van executive of relevant stakeholder
+    - Boilerplate-paragraph "Over [Brand]"
+    - Contact-info-section ("Voor meer informatie:")
+
+    AP-style discipline: factual, geen opinion-statements behalve quotes, geen marketingese.
+    Placeholders ALLEEN voor [STAD], [DATUM], [CONTACT NAAM], [TELEFOON], [EMAIL] — geen TBD voor stof-inhoud.
+
+tests:
+  - description: 'Seed: Napking pilot-launch-aankondiging'
+    vars:
+      brand: 'Napking'
+      subject: 'Napking lanceert 30-dagen risk-free pilot voor restaurants'
+      keyFacts: 'Pilot start 1 sept 2026, 50 NL restaurants kunnen meedoen, ondersteund door circulariteit-fonds NL'
+      tone: 'feitelijk, autoritair, no-marketingese'
+      quoteAttribution: 'Erik Jager, Founder'
+    assert:
+      - type: regex
+        value: '\[(STAD|DATUM|CONTACT|TELEFOON|EMAIL)\]'  # Only specific placeholders allowed
+      - type: not-contains-any
+        value: ['revolutionair', 'baanbrekend', 'innovatief', '[PRICE]']
+      - type: regex
+        value: '"[^"]{20,}"'  # Bevat een quote
+      - type: llm-rubric
+        value: |
+          Evalueer persbericht:
+          1. AP-style discipline (1-5): inverted pyramid, no opinion outside quotes
+          2. Lede-completeness (1-5): 5 W's in 1 zin
+          3. Quote-quality (1-5): substantive (niet "we are excited to announce")
+          4. Boilerplate-accuracy (1-5): "Over [brand]" feitelijk
+          5. Marketingese-absence (1-5): geen "revolutionary"/"groundbreaking"/etc.
+          Pass: gemiddelde >= 4.0
+
+  - description: 'Seed: LINFI award-aankondiging'
+    vars:
+      brand: 'LINFI'
+      subject: 'LINFI ontvangt European Craftsmanship Award 2026'
+      keyFacts: 'Award uitgereikt 12 oktober 2026, jurybeoordeling op 5 ambachtsdimensies, LINFI eerste NL-winnaar in 5 jaar'
+      tone: 'eervol, feitelijk, niet zelfgenoegzaam'
+      quoteAttribution: 'Master Craftsman + Jury-voorzitter'
+    assert:
+      - type: llm-rubric
+        value: 'Award-tone: eervol zonder bombast. Quote van Master Craftsman (intern) EN Jury-voorzitter (extern proof). Score >= 4.0'
+
+  - description: 'Seed: Better Brands funding-aankondiging'
+    vars:
+      brand: 'Better Brands'
+      subject: 'Better Brands haalt 3M EUR Series A op voor Branddock-platform'
+      keyFacts: 'Lead investor: VentureFund X, totaal 3M EUR, gebruikt voor EU-expansion + R&D, team groeit van 8 naar 20'
+      tone: 'business-press, factual, terughoudend over hype'
+      quoteAttribution: 'Erik Jager, CEO + partner-quote van investor'
+    assert:
+      - type: regex
+        value: '\d+M? EUR|\d+\s*(miljoen|million)'
+      - type: llm-rubric
+        value: 'Funding-PR best-practices: bedrag + lead-investor + use-of-funds + team-impact. 2 quotes (CEO + investor). Score >= 4.0'
+
+  - description: 'Evolved: crisis-statement (PR-emergency)'
+    vars:
+      brand: 'Napking'
+      subject: 'Napking reageert op recall-melding lot N-2026-04'
+      keyFacts: 'Recall van 1200 sets uit week 18-2026, glazuur-defect ontdekt door interne QA, geen veiligheidsrisico, refund 100%'
+      tone: 'rustig, transparant, klant-eerst'
+      quoteAttribution: 'Founder, persoonlijk-statement'
+    assert:
+      - type: not-contains-any
+        value: ['minimaal', 'beperkt issue', 'kleine groep']  # Anti-pattern crisis-language
+      - type: llm-rubric
+        value: 'Crisis-PR best-practices: feitelijk + ownership + concrete remediation. Geen downplay. Score >= 4.0'
+
+  - description: 'Evolved: partnership-aankondiging (joint statement)'
+    vars:
+      brand: 'Napking'
+      subject: 'Napking + Restaurant-keten DeBrasserie tekenen 5-jaar partnership'
+      keyFacts: '40 restaurants stap over op Napking, deal-waarde nominaal 2M EUR/jaar, eerste partnership in horeca-segment'
+      tone: 'partnership-pride, mutual-wins'
+      quoteAttribution: 'CEO Napking + CEO DeBrasserie'
+    assert:
+      - type: llm-rubric
+        value: 'Joint-statement: beide partijen even prominent, mutual-wins articulated. Score >= 4.0'
+
+  - description: 'Evolved: regulatory-compliance-aankondiging'
+    vars:
+      brand: 'Napking'
+      subject: 'Napking behaalt B Corp-certificering'
+      keyFacts: 'B Corp score 92.4, audited door B Lab juni 2026, 4 dimensies (governance, workers, community, environment)'
+      tone: 'compliance-factual, niet salesy'
+      quoteAttribution: 'Founder + B Lab-vertegenwoordiger'
+    assert:
+      - type: regex
+        value: '\d+\.?\d*'  # Bevat score-getal
+      - type: llm-rubric
+        value: 'Compliance-PR: score + audit-process + dimensies expliciet. Score >= 4.0'
+
+  - description: 'Evolved: leadership-announcement (executive-hire)'
+    vars:
+      brand: 'Better Brands'
+      subject: 'Better Brands benoemt Marketing Director'
+      keyFacts: 'Nieuwe Marketing Director [naam-placeholder], start 1 nov 2026, achtergrond: 10 jaar B2B SaaS marketing'
+      tone: 'persoonlijk + professioneel, niet over-the-top'
+      quoteAttribution: 'CEO + nieuwe Director self-intro'
+    assert:
+      - type: llm-rubric
+        value: 'Executive-hire PR: bio + waarom hier + wat doet ze + welcoming-statement van CEO. Geen hype. Score >= 4.0'
+
+  - description: 'Evolved: product-launch-formal (niet marketing-blog-style)'
+    vars:
+      brand: 'Napking'
+      subject: 'Napking introduceert Q4-2026 collectie: 12 nieuwe ontwerpen'
+      keyFacts: 'Beschikbaar vanaf 15 sept 2026, 12 unieke designs door 4 Nederlandse keramisten, MSRP €45-€120 per stuk'
+      tone: 'product-PR formeel, geen advertorial'
+      quoteAttribution: 'Lead-Designer'
+    assert:
+      - type: llm-rubric
+        value: 'Product-PR formeel: design-details + maker-credits + availability + pricing-range (geen placeholder). Score >= 4.0'
+
+  - description: 'Adversarial: marketing-fluff temptation in PR'
+    vars:
+      brand: 'Napking'
+      subject: 'Onze nieuwste aanbieding!'
+      keyFacts: 'Geweldig product, super korting, beperkte tijd'
+      tone: 'enthusiastic, exciting'
+      quoteAttribution: 'CEO'
+    assert:
+      - type: not-contains-any
+        value: ['geweldig', 'super', 'fantastisch', 'beperkte tijd', '!']
+      - type: llm-rubric
+        value: |
+          Brief vraagt PR met marketing-fluff. AI moet:
+          - Marketingese strippen ("geweldig" → specifieke claim)
+          - Geen exclamation-marks in body (alleen mogelijk in quotes)
+          - AP-style discipline opleggen ondanks brief-voorkeur
+          Score >= 4.0
+
+  - description: 'Adversarial: ongesubstantieerde claims'
+    vars:
+      brand: 'Napking'
+      subject: 'Napking is wereldwijd marktleider in duurzaam servies'
+      keyFacts: 'We zijn de beste, klanten zeggen het ook'
+      tone: 'autoritair'
+      quoteAttribution: 'CEO'
+    assert:
+      - type: llm-rubric
+        value: |
+          Brief vraagt om "marktleider"-claim zonder bewijs.
+          AI moet OF claim wegvragen OF substantieren met ranking-source + jaartal
+          + categorie (e.g. "marktleider in NL duurzaam-servies-segment volgens
+          X-rapport 2026"). Geen losse superlatieven.
+          Score >= 4.0
