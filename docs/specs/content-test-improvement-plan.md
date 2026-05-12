@@ -579,23 +579,23 @@ Generation → F-VAL score
 
 ---
 
-## 7. Open beslissingen — vereisen user-input vóór sub-sprint start
+## 7. Beslissingen (alle 8 resolved 2026-05-12)
 
-1. **Promptfoo vs LangSmith vs Langfuse als hoofdtool** — Promptfoo is simpler/free, LangSmith is best-in-class met cost ($39+/mnd), Langfuse self-hosted halfweg. Aanbeveling: Promptfoo voor #5.B (gratis, snel), LangSmith of Langfuse voor #7.B (na pilot-data).
+1. ✅ **Promptfoo eerst, LangSmith post-pilot** — Promptfoo (free, YAML, CI-ready) voor #5.B + #6.A. LangSmith of Langfuse pas in #7.B wanneer trace-naar-dataset pipeline echt nodig is.
 
-2. **G-Eval implementation** — eigen bouwen of via DeepEval (Python, npm-bridge nodig)? Aanbeveling: eigen lightweight implementatie omdat we volledige controle willen over de logprob-weighting voor F-VAL.
+2. ✅ **Eigen lightweight G-Eval implementatie** (~2d) — volledige controle over logprob-weighting math + integration met F-VAL judge-pijler. TypeScript stack consistency.
 
-3. **Per-content-type threshold defaults** — wat zijn de juiste numbers? Press-release stricter dan search-ad, maar exacte waardes vereisen pilot-data. Aanbeveling: start met conservative defaults, observe 2-4 weken, tune.
+3. ✅ **Conservatief threshold starten + pilot tunen** — default 65 (huidige global). Per-type override-mogelijkheid in Settings UI. Verzamel 2-4 weken pilot-data, tune dan voor stricter (press-release) en looser (search-ad).
 
-4. **Auto-iterate visibility** — moet user weten dat F-VAL re-genereerde? Of silent "magic"? Aanbeveling: subtle UI-indicator ("iterated 1× for fidelity") + opt-out toggle.
+4. ✅ **Auto-iterate met subtle indicator + opt-out** — klein UI-element ("Iterated 1× for fidelity") zichtbaar in Step 4 variant-detail. Opt-out toggle in Settings → Validation.
 
-5. **Phase-A scope-cut** — alle 53 types in golden-sets, of alleen 8 representanten + uitbreiding post-pilot? Aanbeveling: 8 representanten in #5.B, full 53 over #7.B + post-launch sprint.
+5. ✅ **Phase-A 8 representanten eerst** — blog/linkedin-post/search-ad/newsletter/landing-page/explainer-video/one-pager/press-release in #5.B. Full 53 over #7.B + post-launch sprint.
 
-6. **Multi-modal video chain integratie** — alle 5 video-types in pre-launch chain, of alleen `explainer-video` als showcase + rest post-launch? Aanbeveling: explainer-video als full-chain showcase pre-launch, video-ad + tiktok-script lightweight chain, linkedin-video + promo-video deferred post-launch (afhankelijk van pilot-vraag).
+6. ✅ **Video-chain: explainer-video full + lightweight 2 anderen** — explainer-video full 5-staps chain (Plan/Script-per-scene/Storyboard/Coherence/Assembly) als showcase. video-ad + tiktok-script lightweight hook-focused chain. linkedin-video + promo-video deferred post-launch.
 
-7. **Image refine-loop max-iterations** — 1, 2 of 3 attempts? Cost-trade-off; gebruikers willen niet 30s wachten op image. Aanbeveling: max 2; eerste pre-launch test op pilot-data om optimale waarde te bepalen.
+7. ✅ **Image refine-loop max 2 iterations** — initial + 2 refine-attempts indien onder threshold. Cost-impact: max 3× baseline per image. Latency: ~30s p95.
 
-8. **Overall scope-confrontatie** — ✅ **Beslissing 2026-05-12: Optie B (Full plan pre-launch)**. Alle 6 sub-sprints + multi-modal chain-upgrades pre-launch. Pilot-projectie schuift van +6-8 → +9-11 weken. Rationale: content-quality is competitief differentiator; pilot start moet vanaf dag 1 op-niveau zijn ipv quality-iteration op pilot-klanten.
+8. ✅ **Optie B (Full plan pre-launch)** — alle 6 sub-sprints + multi-modal chain-upgrades pre-launch. Pilot-projectie +9-11 weken. Content-quality als competitief differentiator vanaf dag 1.
 
 ---
 
