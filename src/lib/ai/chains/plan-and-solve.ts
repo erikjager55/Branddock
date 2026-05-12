@@ -15,7 +15,6 @@
 // =============================================================
 
 import { createStructuredCompletion, type AICallTracking } from '../exploration/ai-caller';
-import { PROMPT_VERSION as LONG_FORM_VERSION } from '@/lib/studio/prompt-templates/long-form';
 import type {
   ContentPlan,
   ExecutedSection,
@@ -24,6 +23,13 @@ import type {
   PlanAndSolveEvent,
   PlanSection,
 } from './plan-and-solve.types';
+
+/**
+ * Plan-and-Solve eigen semver — onafhankelijk van long-form.ts templates
+ * omdat dit een aparte pipeline-strategie is. Bump bij PLAN/EXECUTE-
+ * prompt-wijzigingen. v1.0.0 baseline.
+ */
+export const PLAN_AND_SOLVE_VERSION = '1.0.0';
 
 // ─── Prompt builders ──────────────────────────────────────────
 
@@ -242,7 +248,7 @@ async function runPlanStage(
           ...config.tracking,
           sourceIdentifier: 'src/lib/ai/chains/plan-and-solve.ts:runPlanStage',
           callOrder: 0,
-          promptVersion: LONG_FORM_VERSION,
+          promptVersion: PLAN_AND_SOLVE_VERSION,
         }
       : undefined,
   );
@@ -277,7 +283,7 @@ async function runExecuteStage(
           ...config.tracking,
           sourceIdentifier: `src/lib/ai/chains/plan-and-solve.ts:runExecuteStage:section-${sectionIndex}`,
           callOrder: sectionIndex + 1,
-          promptVersion: LONG_FORM_VERSION,
+          promptVersion: PLAN_AND_SOLVE_VERSION,
         }
       : undefined,
   );
@@ -298,7 +304,7 @@ async function runExecuteStage(
  * Returnt eind-output + per-stage metrics.
  *
  * Tracking: één AICallTrace voor plan (callOrder=0) en één per execute
- * (callOrder=1..N). Plan-stage gebruikt LONG_FORM_VERSION als promptVersion;
+ * (callOrder=1..N). Plan-stage gebruikt PLAN_AND_SOLVE_VERSION als promptVersion;
  * execute-stages idem (zelfde template-versie omdat dit één chain is).
  */
 export async function runPlanAndSolve(

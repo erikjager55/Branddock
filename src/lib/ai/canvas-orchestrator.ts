@@ -241,15 +241,111 @@ export async function* orchestrateContentGeneration(
   //       both labeled with their angle.
   //
   // Falls back to legacy 1-call/2-variant flow if angle generation fails.
+  //
+  // Plan-and-Solve dispatch (content-test #5.B chain-pattern C, opt-in):
+  // Wanneer contentTypeInputs.usePlanAndSolve === true AND content-type
+  // categorie is 'long-form', dispatch naar runPlanAndSolveStream. Produceert
+  // 1 variant met assembledContent (full markdown). Bypassed de angle-
+  // generation omdat Plan-and-Solve eigen structuur-discipline heeft.
   const textModel = await resolveFeatureModel(workspaceId, 'canvas-text-generate');
 
   for (const group of textGroups) {
     yield { event: 'text_generating', data: { group, status: 'generating' } };
   }
 
-  const angles = await generateCreativeAngles(stack, stack.deliverableTypeId ?? '');
+  // Dispatch check: opt-in via contentTypeInputs.usePlanAndSolve
+  const usePlanAndSolve =
+    stack.contentTypeInputs?.usePlanAndSolve === true ||
+    stack.contentTypeInputs?.usePlanAndSolve === 'true';
+  const contentTypeCategory = stack.deliverableTypeId
+    ? (await import('./prompt-version-registry')).getCategoryForType(stack.deliverableTypeId)
+    : null;
+  const isPlanAndSolveEligible = usePlanAndSolve && contentTypeCategory === 'long-form';
 
   let textResult: TextGenerationResult;
+  let angles: Awaited<ReturnType<typeof generateCreativeAngles>> = null;
+
+  if (isPlanAndSolveEligible) {
+    yield {
+      event: 'plan_and_solve_started',
+      data: { contentType: stack.deliverableTypeId },
+    };
+    const { runPlanAndSolveStream } = await import('./chains/plan-and-solve');
+    const brief: import('./chains/plan-and-solve.types').PlanAndSolveBrief = {
+      brandName: stack.brand?.brandName ?? 'Unknown',
+      contentLanguage: stack.brand?.contentLanguage ?? 'nl',
+      contentType: stack.deliverableTypeId ?? 'blog-post',
+      objective: stack.brief?.objective ?? '',
+      keyMessage: stack.brief?.keyMessage ?? '',
+      toneDirection: stack.brief?.toneDirection ?? '',
+      callToAction: stack.brief?.callToAction ?? '',
+      audienceDescription:
+        stack.personas[0]?.name ?? 'algemene zakelijke doelgroep',
+      seoKeyword:
+        typeof stack.contentTypeInputs?.seoKeyword === 'string'
+          ? stack.contentTypeInputs.seoKeyword
+          : undefined,
+    };
+
+    let assembledContent: string | null = null;
+    let planAndSolveError: string | null = null;
+    for await (const psEvent of runPlanAndSolveStream(brief, {
+      tracking: {
+        workspaceId,
+        parentEntityType: 'Deliverable',
+        parentEntityId: deliverableId,
+        brandContext: stack.brand,
+      },
+    })) {
+      // Forward Plan-and-Solve events naar canvas-orchestrator SSE-stream
+      yield { event: `ps_${psEvent.event}`, data: 'data' in psEvent ? psEvent.data : null };
+      if (psEvent.event === 'assembly_complete') {
+        assembledContent = psEvent.data.assembledContent;
+      } else if (psEvent.event === 'error') {
+        planAndSolveError = psEvent.data.message;
+      }
+    }
+
+    if (assembledContent && !planAndSolveError) {
+      // Map Plan-and-Solve output → TextGenerationResult shape
+      textResult = {
+        components: [
+          {
+            group: 'body',
+            variants: [
+              {
+                content: assembledContent,
+                tone: stack.brief?.toneDirection ?? undefined,
+                angleLabel: 'Plan-and-Solve',
+              },
+            ],
+          },
+        ],
+      };
+      yield {
+        event: 'plan_and_solve_complete',
+        data: { wordCount: assembledContent.split(/\s+/).filter(Boolean).length },
+      };
+      // Skip naar property-evals + F-VAL (skip angle-based dual-call flow)
+      // Door textResult te zetten met assembledContent kunnen we direct doorstromen
+      // door de bestaande post-generation pipeline.
+    } else {
+      // Plan-and-Solve faalde — fall-back naar legacy angle-based flow.
+      console.warn(
+        '[canvas-orchestrator] Plan-and-Solve dispatch failed, falling back to angle-based flow:',
+        planAndSolveError ?? 'no assembledContent',
+      );
+      angles = await generateCreativeAngles(stack, stack.deliverableTypeId ?? '');
+      // Continueert in normale flow hieronder met fallback-textResult-build
+      textResult = { components: [] };
+    }
+  } else {
+    angles = await generateCreativeAngles(stack, stack.deliverableTypeId ?? '');
+    textResult = { components: [] };
+  }
+
+  // Skip angle-based dual-call flow indien Plan-and-Solve textResult al heeft
+  if (textResult.components.length === 0) {
 
   if (angles && angles.length === 2) {
     // ── Per-angle parallel generation ──
@@ -316,6 +412,7 @@ export async function* orchestrateContentGeneration(
       { deliverableId, brandContext: stack.brand },
     );
   }
+  } // end: if (textResult.components.length === 0) — Plan-and-Solve dispatch-bypass guard
 
   // Validate AI response
   if (!textResult?.components || !Array.isArray(textResult.components)) {
