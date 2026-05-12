@@ -130,6 +130,44 @@ export async function tryTrackPropertyEvalResults(
 }
 
 /**
+ * Persisteer checkpoint-gate warn-severity resultaten op
+ * AICallTrace.gateWarnings (content-test #6.A).
+ *
+ * Block-severity gates worden direct via SSE error-event afgehandeld en
+ * stoppen de pipeline; alleen warn-severity gates bereiken deze tracker.
+ * Wordt aangeroepen aan einde van orchestrator-run, ongeacht of er
+ * warnings zijn — empty array overschrijft eventuele stale data.
+ *
+ * Tracking-failures swallowen — observability mag niet kritiek zijn.
+ */
+export async function tryTrackGateWarnings(
+  traceId: string | null,
+  warnings: Array<{ stage: string; reasons: string[]; severity: string }>,
+): Promise<void> {
+  if (!traceId) return;
+  try {
+    await prisma.aICallTrace.update({
+      where: { id: traceId },
+      data: {
+        gateWarnings: {
+          count: warnings.length,
+          warnings: warnings.map((w) => ({
+            stage: w.stage,
+            severity: w.severity,
+            reasons: w.reasons,
+          })),
+        } as object,
+      },
+    });
+  } catch (err) {
+    console.warn(
+      "[track-helpers] tryTrackGateWarnings failed:",
+      err instanceof Error ? err.message : err,
+    );
+  }
+}
+
+/**
  * Bouw error-metadata wanneer AI-call faalt.
  * Wordt aangeroepen vanuit catch-blocks in wrapper-functies.
  */

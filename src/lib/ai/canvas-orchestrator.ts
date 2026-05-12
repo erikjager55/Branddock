@@ -848,6 +848,38 @@ export async function* orchestrateContentGeneration(
     yield* runVisualFidelityScoring(workspaceId, imageComponentIds);
   }
 
+  // ── Persist gate-warnings naar AICallTrace (sub-sprint #6.A) ─
+  // Verzamelde warn-severity gates → laatste AICallTrace voor deze
+  // deliverable. Fire-and-forget — observability mag generatie niet
+  // blokkeren. Block-severity gates zijn al via SSE error afgehandeld.
+  if (gateWarningsAcc.length > 0) {
+    try {
+      const latestTrace = await prisma.aICallTrace.findFirst({
+        where: { parentEntityType: 'Deliverable', parentEntityId: deliverableId },
+        orderBy: { startedAt: 'desc' },
+        select: { id: true },
+      });
+      if (latestTrace) {
+        const { tryTrackGateWarnings } = await import(
+          '@/lib/learning-loop/track-helpers'
+        );
+        await tryTrackGateWarnings(
+          latestTrace.id,
+          gateWarningsAcc.map((g) => ({
+            stage: g.stage,
+            severity: g.severity ?? 'warn',
+            reasons: g.reasons,
+          })),
+        );
+      }
+    } catch (err) {
+      console.warn(
+        '[canvas-orchestrator] gateWarnings persist failed:',
+        (err as Error).message,
+      );
+    }
+  }
+
   // ── Complete ──────────────────────────────────────────
   const totalDuration = Date.now() - startTime;
   const componentCount =
@@ -856,7 +888,7 @@ export async function* orchestrateContentGeneration(
 
   yield {
     event: 'complete',
-    data: { totalDuration, componentCount },
+    data: { totalDuration, componentCount, gateWarningCount: gateWarningsAcc.length },
   };
 }
 
