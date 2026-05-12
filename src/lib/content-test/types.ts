@@ -41,6 +41,7 @@ export type PropertyEvalCheckId =
   | 'cta-presence'
   | 'cta-quality'
   | 'meta-description-compliance'
+  | 'claim-substantiation'
   | 'hallucination-flag'
   | 'sentence-case-headings'
   | 'minimum-heading-count'

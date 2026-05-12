@@ -74,7 +74,7 @@ gebruik.`;
   assert('clean content: passed = true', cleanResult.passed === true);
   assert('clean content: 0 block-violations', cleanResult.blockViolations.length === 0);
   assert('clean content: runtime < 100ms', cleanResult.runtimeMs < 100, `got ${cleanResult.runtimeMs.toFixed(1)}ms`);
-  assert('clean content: all 17 checks executed', cleanResult.results.length === 17);
+  assert('clean content: all 18 checks executed', cleanResult.results.length === 18);
 
   // ─── Per-check negative-case fixtures ────────────────────────
 
@@ -148,6 +148,24 @@ gebruik.`;
   assert(
     '#17 meta-description-compliance flags too-short + generic opener',
     !find(badMetaResult.results, 'meta-description-compliance').pass,
+  );
+
+  // #18 claim-substantiation: onderbouwingsloze superlatief + numerieke claim
+  const claimContent =
+    'Wij zijn de beste in de wereld voor brand strategy. Onze klanten zien tot 50% meer conversie binnen 3 weken. Met onze revolutionaire aanpak los je elk probleem op.';
+  const claimResult = runAllPropertyEvals(claimContent, defaultContext());
+  assert(
+    '#18 claim-substantiation flags onderbouwingsloze claims',
+    !find(claimResult.results, 'claim-substantiation').pass,
+  );
+
+  // #18 met source-language → geen warn
+  const sourcedClaimContent =
+    'Volgens een Gartner-rapport uit 2024 zien organisaties tot 50% meer conversie. Onze klanten bevestigen dit (zie casus-studie 2025).';
+  const sourcedClaimResult = runAllPropertyEvals(sourcedClaimContent, defaultContext());
+  assert(
+    '#18 claim-substantiation: numerieke claim met source → pass',
+    find(sourcedClaimResult.results, 'claim-substantiation').pass,
   );
 
   // #10 hallucination-flag: 3+ unknown capitalized entities

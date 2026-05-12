@@ -496,6 +496,93 @@ export function checkMetaDescriptionCompliance(
 }
 
 /**
+ * #18 — Claim-substantiation: detecteert onderbouwingsloze claims die in
+ * juridische context risicovol zijn. Improvement #6 uit Cowork-analyse
+ * 2026-05-12 (compliance dimensie als 4e BrandReviewFinding-laag).
+ *
+ * Drie pattern-categorieën:
+ *  - Superlatieven zonder onderbouwing ("best", "world's leading")
+ *  - Numerieke claims zonder source-language ("50% sneller", "#1 in")
+ *  - Sector-specifiek risico (medisch/financieel/juridisch)
+ *
+ * Alleen warn-severity — false-positives mogelijk bij legitieme claims
+ * met externe bronnen. Bedoeld als triage-flag voor brand-review.
+ */
+const SUPERLATIVE_CLAIMS_PATTERNS = [
+  /\b(?:best|beste|grootste|snelste|meest|nummer\s+1|#1)\s+(?:in|van|ter\s+wereld|world'?s|leading)/i,
+  /\b(?:guaranteed|gegarandeerd|gewaarborgd)\b/i,
+  /\b(?:revolutionary|revolutionair|baanbrekend|disruptive)\b/i,
+  /\b(?:unmatched|ongeevenaard|onovertroffen)\b/i,
+  /\bworld'?s\s+(?:leading|best|first|most|largest)\b/i,
+  /\bproven\s+to\s+(?:cure|heal|treat|fix)\b/i,
+];
+
+const NUMERIC_CLAIM_PATTERNS = [
+  /\b(?:up\s+to|tot|maximaal)\s+\d+\s*(?:%|procent|x|keer)/i,
+  /\b\d+(?:[.,]\d+)?\s*%\s+(?:meer|less|sneller|beter|hoger|lager|faster|better|higher|lower)/i,
+  /\b\d+\s*(?:keer|x|times)\s+(?:meer|less|sneller|beter)/i,
+  /\#\s*1\s+(?:in|voor|for)/i,
+];
+
+const SOURCE_LANGUAGE_PATTERNS = [
+  /\b(?:source|bron|according\s+to|volgens|based\s+on|gebaseerd\s+op|study|studie|research|onderzoek|report|rapport)\b/i,
+  /\b(?:gartner|forrester|mckinsey|deloitte|nielsen|kantar|cbs)\b/i,
+  /\([^)]*\d{4}[^)]*\)/, // (Year YYYY) citatie-pattern
+  /\[\d+\]/, // footnote markers
+];
+
+const SECTOR_RISK_PATTERNS = [
+  /\b(?:cure|cured|geneest|geneest van|treat[sd]?\s+(?:cancer|diabetes|covid))\b/i,
+  /\b(?:guaranteed\s+returns?|gegarandeerd\s+rendement|risk[-\s]?free\s+investment|zonder\s+risico\s+beleggen)\b/i,
+  /\b(?:fda[-\s]?approved|approved\s+by\s+the\s+fda)\b/i,
+];
+
+export function checkClaimSubstantiation(
+  content: string,
+): PropertyEvalResult {
+  // Skip korte content (headlines, CTAs) — substantiation niet verwacht/relevant
+  if (content.trim().length < 80) {
+    return { check: 'claim-substantiation', pass: true, severity: 'info', reason: 'Content te kort voor claim-analysis (skip)' };
+  }
+  const hasSourceLanguage = SOURCE_LANGUAGE_PATTERNS.some((re) => re.test(content));
+  const issues: string[] = [];
+
+  // Sector-risk patterns are ALWAYS warn (regardless of source-language)
+  const sectorRiskMatches = SECTOR_RISK_PATTERNS.filter((re) => re.test(content));
+  if (sectorRiskMatches.length > 0) {
+    issues.push(
+      'Sector-specifiek risicopatroon gedetecteerd (medisch/financieel/regelgeving) — verifieer disclaimer-vereisten en juridische review',
+    );
+  }
+
+  // Superlatieven en numerieke claims warnen ALLEEN wanneer geen source-language
+  if (!hasSourceLanguage) {
+    const superlativeMatches = SUPERLATIVE_CLAIMS_PATTERNS.filter((re) => re.test(content));
+    if (superlativeMatches.length > 0) {
+      issues.push(
+        `Onderbouwingsloze superlatief(en) gedetecteerd zoals "${superlativeMatches[0].source}" — voeg bron, jaartal of vergelijking toe`,
+      );
+    }
+    const numericMatches = NUMERIC_CLAIM_PATTERNS.filter((re) => re.test(content));
+    if (numericMatches.length > 0) {
+      issues.push(
+        'Numerieke claim zonder source-language (geen "volgens", "bron", "studie" of (jaartal)-citatie) — voeg verifieerbare bron toe',
+      );
+    }
+  }
+
+  if (issues.length === 0) {
+    return { check: 'claim-substantiation', pass: true, severity: 'info', reason: 'OK' };
+  }
+  return {
+    check: 'claim-substantiation',
+    pass: false,
+    severity: 'warn',
+    reason: issues.join('; '),
+  };
+}
+
+/**
  * #10 — Hallucination-flag: brand/product-namen die niet in workspace-context
  * staan. Warn-severity — false-positives mogelijk bij legitieme nieuwe naam.
  */
@@ -691,6 +778,7 @@ export function runAllPropertyEvals(
   results.push(checkCtaPresence(content, context.requiresCTA, context.expectedLanguage));
   results.push(checkCtaQuality(content, context.requiresCTA, context.expectedLanguage, context.groupType));
   results.push(checkMetaDescriptionCompliance(content, context.groupType));
+  results.push(checkClaimSubstantiation(content));
   results.push(checkHallucinationFlag(content, context.knownEntities));
   results.push(checkSentenceCaseHeadings(content, context.expectedLanguage));
   results.push(checkMinimumHeadingCount(content, context.contentType));
@@ -711,7 +799,7 @@ export function runAllPropertyEvals(
   };
 }
 
-/** Lijst alle 17 check-ids voor test-discovery en UI. */
+/** Lijst alle 18 check-ids voor test-discovery en UI. */
 export const ALL_CHECK_IDS: PropertyEvalCheckId[] = [
   'schema-valid',
   'language-match',
@@ -724,6 +812,7 @@ export const ALL_CHECK_IDS: PropertyEvalCheckId[] = [
   'cta-presence',
   'cta-quality',
   'meta-description-compliance',
+  'claim-substantiation',
   'hallucination-flag',
   'sentence-case-headings',
   'minimum-heading-count',
