@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { computeEditDistance, isSignificantEdit } from '@/lib/content-test/edit-distance';
 
 const componentPatchSchema = z.object({
   isSelected: z.boolean().optional(),
@@ -72,6 +73,40 @@ export async function PATCH(
       where: { id: componentId },
       data: updateData,
     });
+
+    // ── Edit-distance signal (content-test #6.B) ─────────────
+    // Track inline-text-edits voor regression-corpus filter. Alleen
+    // bij content-change, niet voor status/rating/feedback updates.
+    if (
+      body.generatedContent !== undefined &&
+      body.generatedContent !== null &&
+      typeof component.generatedContent === 'string' &&
+      component.generatedContent !== body.generatedContent
+    ) {
+      try {
+        const distance = computeEditDistance(component.generatedContent, body.generatedContent);
+        await prisma.learningEvent.create({
+          data: {
+            workspaceId,
+            eventType: 'content.edited',
+            entityType: 'DeliverableComponent',
+            entityId: componentId,
+            editDistance: distance,
+            data: {
+              significantEdit: isSignificantEdit(distance),
+              originalLength: component.generatedContent.length,
+              editedLength: body.generatedContent.length,
+              componentType: component.componentType,
+            },
+          },
+        });
+      } catch (err) {
+        console.warn(
+          '[Component Update] edit-distance track failed:',
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
 
     return NextResponse.json(updated);
   } catch (error) {

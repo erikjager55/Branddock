@@ -5271,6 +5271,14 @@ model LearningEvent {
    */
   data Json?
 
+  /**
+   * Edit-distance signal voor `content.edited` events (content-test #6.B).
+   * Genormaliseerd Levenshtein 0.0-1.0 (1 = volledig herschreven).
+   * > 0.20 = soft-negative signal voor regression-corpus filter.
+   * Null voor non-edit events.
+   */
+  editDistance Float?
+
   timestamp DateTime @default(now())
   createdAt DateTime @default(now())
 
@@ -5278,6 +5286,7 @@ model LearningEvent {
   @@index([workspaceId, userId, timestamp])
   @@index([entityType, entityId, timestamp])
   @@index([workspaceId, eventType, timestamp])
+  @@index([workspaceId, eventType, editDistance])
 }
 
 // ============================================================
