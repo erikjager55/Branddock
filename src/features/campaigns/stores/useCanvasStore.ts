@@ -129,6 +129,28 @@ interface CanvasStoreState {
     rewritePreview: string | null;
   };
 
+  // ── Auto-iterate state (content-test #6.B) ───────────────
+  // Wordt gevuld via SSE auto_iterate_* events. Parallel aan strictRewrite
+  // maar gedreven door BrandReviewFinding-feedback ipv anti-AI-tell.
+  // Snapshot landt op Deliverable.settings.autoIterate (finalText etc).
+  autoIterate: {
+    stage: 'idle' | 'iterating' | 'complete' | 'skipped';
+    /** True wanneer iteratie threshold haalde. */
+    thresholdMet: boolean;
+    /** 0 (skipped/disabled) tot maxIterations (2 default). */
+    attemptsExecuted: number;
+    /** Reden van afsluiten: success, exhaust, fail, disabled, already_passing. */
+    stopReason: string | null;
+    /** Score voor 1e iteratie. */
+    initialScore: number | null;
+    /** Best-of score na alle iteraties. */
+    finalScore: number | null;
+    /** Per-type threshold gehanteerd. */
+    threshold: number | null;
+    /** Welke hint-templates zijn toegepast (voor attribution display). */
+    appliedTemplates: string[];
+  };
+
   // ─── Vanille baseline (demo: "Vergelijk met vanille AI") ──
   // Wordt gevuld via de POST /api/studio/[id]/vanilla-baseline SSE flow.
   // null tot user op "Vergelijk met ChatGPT" klikt; daarna stage-aware
@@ -292,6 +314,23 @@ interface CanvasStoreState {
     rewritePreview: string | null;
   }) => void;
   resetStrictRewrite: () => void;
+  setAutoIterateStarted: (data: {
+    initialScore: number;
+    threshold: number;
+    appliedTemplates?: string[];
+  }) => void;
+  setAutoIterateIterationComplete: (data: {
+    attempt: number;
+    newScore: number;
+    appliedTemplates?: string[];
+  }) => void;
+  setAutoIterateComplete: (data: {
+    attemptsExecuted: number;
+    finalScore: number;
+    thresholdMet: boolean;
+    stopReason: string;
+  }) => void;
+  resetAutoIterate: () => void;
   setVanillaStage: (stage: 'idle' | 'generating' | 'scoring' | 'complete' | 'error', errorMessage?: string) => void;
   setVanillaTextComplete: (data: { preview: string; wordCount: number; model: string }) => void;
   setVanillaScoreComplete: (data: {
@@ -440,6 +479,16 @@ const INITIAL_STATE = {
     after: null,
     decisionReason: null,
     rewritePreview: null,
+  },
+  autoIterate: {
+    stage: 'idle' as const,
+    thresholdMet: false,
+    attemptsExecuted: 0,
+    stopReason: null,
+    initialScore: null,
+    finalScore: null,
+    threshold: null,
+    appliedTemplates: [] as string[],
   },
   vanillaBaseline: {
     stage: 'idle' as const,
@@ -689,6 +738,55 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         after: null,
         decisionReason: null,
         rewritePreview: null,
+      },
+    }),
+
+  setAutoIterateStarted: ({ initialScore, threshold, appliedTemplates }) =>
+    set((state) => ({
+      autoIterate: {
+        ...state.autoIterate,
+        stage: 'iterating',
+        initialScore,
+        threshold,
+        appliedTemplates: appliedTemplates ?? state.autoIterate.appliedTemplates,
+      },
+    })),
+
+  setAutoIterateIterationComplete: ({ attempt, newScore, appliedTemplates }) =>
+    set((state) => ({
+      autoIterate: {
+        ...state.autoIterate,
+        attemptsExecuted: attempt,
+        finalScore: newScore,
+        appliedTemplates: appliedTemplates
+          ? Array.from(new Set([...state.autoIterate.appliedTemplates, ...appliedTemplates]))
+          : state.autoIterate.appliedTemplates,
+      },
+    })),
+
+  setAutoIterateComplete: ({ attemptsExecuted, finalScore, thresholdMet, stopReason }) =>
+    set((state) => ({
+      autoIterate: {
+        ...state.autoIterate,
+        stage: stopReason === 'disabled' || stopReason === 'already_passing' ? 'skipped' : 'complete',
+        attemptsExecuted,
+        finalScore,
+        thresholdMet,
+        stopReason,
+      },
+    })),
+
+  resetAutoIterate: () =>
+    set({
+      autoIterate: {
+        stage: 'idle',
+        thresholdMet: false,
+        attemptsExecuted: 0,
+        stopReason: null,
+        initialScore: null,
+        finalScore: null,
+        threshold: null,
+        appliedTemplates: [],
       },
     }),
 

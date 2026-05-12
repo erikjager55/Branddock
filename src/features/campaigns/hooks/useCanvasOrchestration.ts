@@ -63,6 +63,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
     store.setGlobalStatus('generating');
     store.resetFidelityScore();
     store.resetStrictRewrite();
+    store.resetAutoIterate();
     store.resetVisualFidelity();
     isGeneratingRef.current = true;
 
@@ -435,6 +436,56 @@ function routeEvent(eventName: string, rawData: string) {
       if (finalScore && typeof finalScore === 'object' && 'compositeScore' in finalScore) {
         store.setFidelityComplete(finalScore);
       }
+      break;
+    }
+
+    case 'auto_iterate_started': {
+      const initialScore = typeof data.initialScore === 'number' ? data.initialScore : 0;
+      const threshold = typeof data.threshold === 'number' ? data.threshold : 65;
+      store.setAutoIterateStarted({ initialScore, threshold });
+      break;
+    }
+
+    case 'auto_iterate_iteration_started': {
+      const appliedTemplates = Array.isArray(data.appliedTemplates)
+        ? (data.appliedTemplates as unknown[]).filter((t): t is string => typeof t === 'string')
+        : undefined;
+      // We tonen iteration_started niet apart in UI — we wachten op _complete.
+      // Maar appliedTemplates accumuleren we wel voor attribution.
+      if (appliedTemplates && appliedTemplates.length > 0) {
+        store.setAutoIterateIterationComplete({
+          attempt: typeof data.attempt === 'number' ? data.attempt : 1,
+          newScore: store.autoIterate.finalScore ?? store.autoIterate.initialScore ?? 0,
+          appliedTemplates,
+        });
+      }
+      break;
+    }
+
+    case 'auto_iterate_iteration_complete': {
+      const attempt = typeof data.attempt === 'number' ? data.attempt : 1;
+      const newScore = typeof data.newScore === 'number' ? data.newScore : 0;
+      store.setAutoIterateIterationComplete({ attempt, newScore });
+      break;
+    }
+
+    case 'auto_iterate_complete': {
+      const attemptsExecuted = typeof data.attemptsExecuted === 'number' ? data.attemptsExecuted : 0;
+      const finalScore = typeof data.finalScore === 'number' ? data.finalScore : 0;
+      const thresholdMet = data.thresholdMet === true;
+      const stopReason = typeof data.stopReason === 'string' ? data.stopReason : 'max_iterations';
+      store.setAutoIterateComplete({ attemptsExecuted, finalScore, thresholdMet, stopReason });
+      break;
+    }
+
+    case 'auto_iterate_skipped': {
+      const stopReason = typeof data.reason === 'string' ? data.reason : 'disabled';
+      store.setAutoIterateComplete({
+        attemptsExecuted: 0,
+        finalScore: typeof data.initialScore === 'number' ? data.initialScore : 0,
+        thresholdMet: stopReason === 'already_passing',
+        stopReason,
+      });
       break;
     }
 

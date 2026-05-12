@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: ~6 dagen
 owner: claude-code
-status: in-progress
+status: done
+completed: 2026-05-12
 created: 2026-05-12
-completed: -
 related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md §3.3 + §4 #6.B
 worktree: -
@@ -25,9 +25,10 @@ worktree: -
 - ✅ Feedback-loop dashboard panels in InsightsTab (auto-iterate / templates / edit-distance heatmap) + nieuw `/api/brand-alignment/feedback-loop-metrics` endpoint — commit 4ce7f32
 - ✅ Apply auto-iterated version endpoint (`POST /api/studio/[deliverableId]/auto-iterate/apply`) — backend mirror van strict-rewrite/apply
 
-**Pending (UI v2 follow-up)**:
-- ⏳ Canvas SSE event-handlers voor auto_iterate_* events + useCanvasStore state + AutoIterateImprovedBlock UI component (mirror van StrictImprovedBlock in FidelityScoreBar). Backend snapshot werkt al — UI moet nog wired.
+**Pending**:
 - ⏸️ Image refine-loop (defer naar post-gemini-migration per task §65-67)
+
+**6B closure 2026-05-12**: backend (7/7) + UI (volledig) compleet. Activatie via `FEATURE_AUTO_ITERATE=true` env-flag. Sub-sprint klaar voor pilot.
 
 # Probleem
 

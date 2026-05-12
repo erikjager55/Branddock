@@ -61,6 +61,7 @@ interface FidelityScoreBarProps {
 export function FidelityScoreBar({ compact = false, deliverableId = null }: FidelityScoreBarProps) {
   const fidelity = useCanvasStore((s) => s.fidelityScore);
   const strict = useCanvasStore((s) => s.strictRewrite);
+  const autoIterate = useCanvasStore((s) => s.autoIterate);
   const vanilla = useCanvasStore((s) => s.vanillaBaseline);
   const { compare: runVanillaCompare, isRunning: isVanillaRunning } = useVanillaBaseline(deliverableId);
   const [showPillars, setShowPillars] = React.useState(!compact);
@@ -160,6 +161,35 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
         />
       )}
 
+      {/* ─── Auto-iterate iterating spinner ─── */}
+      {autoIterate.stage === 'iterating' && (
+        <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-emerald-900">Auto-iterate verbetert de score…</p>
+            <p className="text-xs text-emerald-700">
+              Initial {autoIterate.initialScore} / threshold {autoIterate.threshold} — feedback-driven rewrite.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Auto-iterate complete badge ─── */}
+      {autoIterate.stage === 'complete' &&
+        autoIterate.attemptsExecuted > 0 &&
+        autoIterate.initialScore !== null &&
+        autoIterate.finalScore !== null && (
+          <AutoIterateImprovedBlock
+            initialScore={autoIterate.initialScore}
+            finalScore={autoIterate.finalScore}
+            attemptsExecuted={autoIterate.attemptsExecuted}
+            thresholdMet={autoIterate.thresholdMet}
+            stopReason={autoIterate.stopReason ?? ''}
+            appliedTemplates={autoIterate.appliedTemplates}
+            deliverableId={deliverableId}
+          />
+        )}
+
       {/* ─── Pillar breakdown ─── */}
       {isComplete && fidelity.pillars && (
         <div className="mt-3 pt-3 border-t border-gray-100">
@@ -194,6 +224,117 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
           isRunning={isVanillaRunning}
           onCompare={runVanillaCompare}
         />
+      )}
+    </div>
+  );
+}
+
+// ─── Auto-iterate improved block (content-test #6.B) ──
+
+function AutoIterateImprovedBlock({
+  initialScore,
+  finalScore,
+  attemptsExecuted,
+  thresholdMet,
+  stopReason,
+  appliedTemplates,
+  deliverableId,
+}: {
+  initialScore: number;
+  finalScore: number;
+  attemptsExecuted: number;
+  thresholdMet: boolean;
+  stopReason: string;
+  appliedTemplates: string[];
+  deliverableId: string | null;
+}) {
+  const [applyState, setApplyState] = React.useState<'idle' | 'applying' | 'applied' | 'error'>('idle');
+  const [applyError, setApplyError] = React.useState<string | null>(null);
+  const delta = finalScore - initialScore;
+
+  const handleApply = React.useCallback(async () => {
+    if (!deliverableId) return;
+    setApplyState('applying');
+    setApplyError(null);
+    try {
+      const res = await fetch(`/api/studio/${deliverableId}/auto-iterate/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error ?? `Apply failed: ${res.status}`);
+      }
+      setApplyState('applied');
+    } catch (err) {
+      setApplyError(err instanceof Error ? err.message : 'Apply mislukt');
+      setApplyState('error');
+    }
+  }, [deliverableId]);
+
+  return (
+    <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5">
+      <div className="flex items-center gap-1.5 mb-1">
+        <Sparkles className="w-4 h-4 text-emerald-600" />
+        <span className="text-sm font-semibold text-emerald-900">
+          Auto-iterate{' '}
+          {thresholdMet ? 'haalde threshold' : `kwam dichter bij threshold (${attemptsExecuted}×)`}
+        </span>
+      </div>
+      <div className="text-xs text-emerald-800">
+        Score: <span className="font-medium">{initialScore}</span>
+        <span className="mx-1.5">→</span>
+        <span className="font-medium">{finalScore}</span>
+        <span className="ml-1 text-emerald-700">
+          ({delta >= 0 ? '+' : ''}
+          {delta} punten in {attemptsExecuted} iter{attemptsExecuted > 1 ? 's' : ''})
+        </span>
+      </div>
+
+      {appliedTemplates.length > 0 && (
+        <div className="mt-2 text-[11px] text-emerald-700">
+          Templates: {appliedTemplates.slice(0, 3).join(' · ')}
+          {appliedTemplates.length > 3 && ` +${appliedTemplates.length - 3}`}
+        </div>
+      )}
+
+      {deliverableId && applyState !== 'applied' && (
+        <button
+          type="button"
+          onClick={handleApply}
+          disabled={applyState === 'applying'}
+          className="mt-2 w-full inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border border-emerald-300 bg-white text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {applyState === 'applying' ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Toepassen…
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-3.5 h-3.5" />
+              Gebruik auto-iterate versie
+            </>
+          )}
+        </button>
+      )}
+
+      {applyState === 'applied' && (
+        <div className="mt-2 text-xs text-emerald-700 font-medium inline-flex items-center gap-1">
+          <ShieldCheck className="w-3.5 h-3.5" />
+          Toegepast — ververs de pagina om de iterated tekst te zien
+        </div>
+      )}
+
+      {applyState === 'error' && applyError && (
+        <div className="mt-2 text-xs text-red-700">{applyError}</div>
+      )}
+
+      {!thresholdMet && stopReason === 'max_iterations' && (
+        <div className="mt-2 text-[11px] text-amber-700">
+          Max iteraties bereikt — handmatige finetune kan nog naar threshold tillen.
+        </div>
       )}
     </div>
   );
