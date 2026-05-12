@@ -4,6 +4,8 @@
 // Comparison Page, Campaign Microsite
 // =============================================================
 
+export const PROMPT_VERSION = '1.0.0';
+
 import type { PromptTemplate } from './helpers';
 import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './helpers';
 

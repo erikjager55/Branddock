@@ -2,7 +2,12 @@
 // Long-Form Content Templates (7 types)
 // Blog Post, Pillar Page, Whitepaper, Case Study,
 // E-book, Feature Article, Thought Leadership
+//
+// PROMPT_VERSION semver (content-test #5.A — sub-sprint goldens #5.B
+// bumpt naar 2.0.0 wanneer Plan-and-Solve chain landt).
 // =============================================================
+
+export const PROMPT_VERSION = '1.0.0';
 
 import type { PromptTemplate } from './helpers';
 import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './helpers';

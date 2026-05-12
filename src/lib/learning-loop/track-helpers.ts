@@ -13,6 +13,8 @@ import type {
   AICallResponseMetadata,
 } from "@/types/learning-loop";
 
+import { prisma } from "@/lib/prisma";
+import type { PropertyEvalRunResult } from "@/lib/content-test/types";
 import { trackAICallStart, trackAICallComplete } from "./call-tracker";
 
 /**
@@ -33,6 +35,12 @@ export interface AICallTracking {
   /** Audit-velden uit cat 2(a) decision 5. */
   wasFromCache?: boolean;
   cacheAgeSeconds?: number;
+  /**
+   * Semver van prompt-template versie (content-test #5.A foundation).
+   * Lookup via `getPromptVersionForType(contentType)` of expliciet doorgegeven.
+   * Persistent in AICallSnapshot.promptVersion voor regressie-tracking.
+   */
+  promptVersion?: string;
 }
 
 /**
@@ -54,6 +62,7 @@ export async function tryTrackStart(
       parentEntityType: tracking.parentEntityType,
       parentEntityId: tracking.parentEntityId,
       callOrder: tracking.callOrder ?? 0,
+      promptVersion: tracking.promptVersion,
     });
     return result.traceId;
   } catch (err) {
@@ -78,6 +87,43 @@ export async function tryTrackComplete(
   } catch (err) {
     console.warn(
       "[track-helpers] trackAICallComplete failed:",
+      err instanceof Error ? err.message : err,
+    );
+  }
+}
+
+/**
+ * Persisteer Layer 1 property-eval-resultaten op AICallTrace
+ * (content-test #5.A foundation).
+ *
+ * Wordt aangeroepen door de orchestrator NA sanitize-variants + property-eval
+ * orchestrator-call, ongeacht of er block-violations zijn. Block-violations
+ * worden afzonderlijk afgehandeld (SSE error-event, generation blocked) zodat
+ * de trace alsnog audit-trail bevat van wat er mis ging.
+ *
+ * Tracking-failures swallowen — observability mag niet kritiek zijn.
+ */
+export async function tryTrackPropertyEvalResults(
+  traceId: string | null,
+  evalResults: PropertyEvalRunResult,
+): Promise<void> {
+  if (!traceId) return;
+  try {
+    await prisma.aICallTrace.update({
+      where: { id: traceId },
+      data: {
+        propertyEvalResults: {
+          passed: evalResults.passed,
+          runtimeMs: evalResults.runtimeMs,
+          results: evalResults.results,
+          blockViolations: evalResults.blockViolations,
+          warnings: evalResults.warnings,
+        } as object,
+      },
+    });
+  } catch (err) {
+    console.warn(
+      "[track-helpers] tryTrackPropertyEvalResults failed:",
       err instanceof Error ? err.message : err,
     );
   }

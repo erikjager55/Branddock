@@ -55,6 +55,12 @@ export interface TrackAICallStartInput {
    * Single-call paden: 0.
    */
   callOrder?: number;
+
+  /**
+   * Prompt-template semver (content-test #5.A). Persistent in
+   * AICallSnapshot.promptVersion voor regressie-tracking bij prompt-tuning.
+   */
+  promptVersion?: string;
 }
 
 export interface TrackAICallStartResult {
@@ -95,6 +101,7 @@ export async function trackAICallStart(
     parentEntityType,
     parentEntityId,
     callOrder = 0,
+    promptVersion,
   } = input;
 
   // 1. Brand-context snapshot (optional)
@@ -109,6 +116,7 @@ export async function trackAICallStart(
     sourceType,
     sourceIdentifier,
     gitSha ?? null,
+    promptVersion,
   );
 
   // 3. Trace (always new)
@@ -244,6 +252,7 @@ async function upsertAICallSnapshot(
   sourceType: AICallSourceType,
   sourceIdentifier: string,
   gitSha: string | null,
+  promptVersion: string | undefined,
 ): Promise<string> {
   const contentHash = hashContent(payload);
 
@@ -262,6 +271,7 @@ async function upsertAICallSnapshot(
         sourceType,
         sourceIdentifier,
         gitSha,
+        promptVersion: promptVersion ?? null,
       },
       select: { id: true },
     });

@@ -39,7 +39,40 @@ import {
 } from '@/lib/brand-fidelity/fidelity-runner';
 import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer';
 import { sanitizeVariantContent } from '@/features/campaigns/lib/variant-content-sanitizer';
+import { runAllPropertyEvals } from '@/lib/content-test/property-evals';
+import type { PropertyEvalContext } from '@/lib/content-test/types';
 import OpenAI from 'openai';
+
+/**
+ * Build PropertyEvalContext uit canvas-stack. Hergebruikt door alle variant-
+ * loops zodat we niet per variant duplicate werk doen.
+ */
+function buildPropertyEvalContextBase(
+  stack: import('./canvas-context').CanvasContextStack,
+  groupType: string,
+): Omit<PropertyEvalContext, 'siblingVariants' | 'groupType'> {
+  const typeDef = stack.deliverableTypeId ? getDeliverableTypeById(stack.deliverableTypeId) : undefined;
+  const knownEntities: string[] = [];
+  if (stack.brand?.brandName) knownEntities.push(stack.brand.brandName);
+  for (const p of stack.products ?? []) {
+    if (p.name) knownEntities.push(p.name);
+  }
+  for (const persona of stack.personas ?? []) {
+    if (persona.name) knownEntities.push(persona.name);
+  }
+  void groupType; // surface in caller, dit base-helper kent groupType niet
+  return {
+    expectedLanguage: stack.brand?.contentLanguage ?? 'nl',
+    brandName: stack.brand?.brandName ?? '',
+    contentType: stack.deliverableTypeId ?? 'unknown',
+    wordBounds: {
+      min: typeDef?.constraints?.minWords ?? null,
+      max: typeDef?.constraints?.maxWords ?? null,
+    },
+    requiresCTA: typeDef?.constraints?.requiredSections?.includes('cta') ?? false,
+    knownEntities,
+  };
+}
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -324,6 +357,65 @@ export async function* orchestrateContentGeneration(
         })),
       },
     };
+  }
+
+  // ── Step 2.4: Layer 1 generic property-evals ──────────────
+  // 15 deterministic checks per variant (banned-phrases, placeholder-
+  // detection, language-match, brand-name-capitalization, etc.).
+  // Block-severity violations → SSE error + skip F-VAL pipeline.
+  // Warn/info-severity → logged in toekomstige AICallTrace integration.
+  // Sub-sprint #5.A foundation; orchestrator-niveau integration.
+  {
+    const baseContext = buildPropertyEvalContextBase(stack, 'body');
+    const totalBlockViolations: { component: string; variantIndex: number; reason: string }[] = [];
+    let totalWarnings = 0;
+    let totalRuntimeMs = 0;
+
+    for (const component of textResult.components) {
+      const siblingContents = component.variants.map((v) => v.content);
+      for (let i = 0; i < component.variants.length; i++) {
+        const variant = component.variants[i];
+        const siblings = siblingContents.filter((_, idx) => idx !== i);
+        const context: PropertyEvalContext = {
+          ...baseContext,
+          groupType: component.group,
+          siblingVariants: siblings,
+        };
+        const evalResult = runAllPropertyEvals(variant.content, context);
+        totalRuntimeMs += evalResult.runtimeMs;
+        totalWarnings += evalResult.warnings.length;
+        for (const blk of evalResult.blockViolations) {
+          totalBlockViolations.push({
+            component: component.group,
+            variantIndex: i,
+            reason: `[${blk.check}] ${blk.reason}`,
+          });
+        }
+      }
+    }
+
+    yield {
+      event: 'property_evals_complete',
+      data: {
+        passed: totalBlockViolations.length === 0,
+        blockViolationCount: totalBlockViolations.length,
+        warningCount: totalWarnings,
+        runtimeMs: Math.round(totalRuntimeMs),
+        // First 3 block-violations als diagnostic in UI; rest verborgen voor brevity
+        blockViolations: totalBlockViolations.slice(0, 3),
+      },
+    };
+
+    if (totalBlockViolations.length > 0) {
+      yield {
+        event: 'error',
+        data: {
+          message: `Content failed Layer 1 quality checks (${totalBlockViolations.length} block-violations). First: ${totalBlockViolations[0].reason}`,
+          recoverable: false,
+        },
+      };
+      return;
+    }
   }
 
   // ── Steps 2.5-2.7: F-VAL scoring pipeline ─
