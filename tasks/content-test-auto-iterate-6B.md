@@ -5,13 +5,27 @@ fase: pre-launch
 priority: now
 effort: ~6 dagen
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-05-12
 completed: -
 related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md §3.3 + §4 #6.B
 worktree: -
 ---
+
+# Status 2026-05-12
+
+**Foundation modules (5/7 deliverables — backend complete)**:
+- ✅ feedback-compiler (`src/lib/content-test/feedback-compiler.ts`, 14/14 smoke) — commit f10c3c5
+- ✅ auto-iterate orchestrator module (`src/lib/ai/auto-iterate.ts`, 17/17 smoke) — commit 4ed8045
+- ✅ per-type thresholds backend (Prisma + accessor + API) — commit e099d61
+- ✅ edit-distance signal (Prisma + Levenshtein + inline-edit hook) — commit b289fea
+- ✅ Settings → Validation UI (ThresholdsTable) — commit f71d116
+
+**Pending**:
+- ⏳ Canvas-orchestrator auto-iterate wiring (non-triviale refactor van `runFidelityScoringPipeline` om outcome te exposen aan caller, of auto-iterate na `persistVariants` met re-update flow). Beste in aparte plan-mode sessie.
+- ⏳ Feedback dashboard panels in InsightsTab (auto-iterate success-rate, hint-template effectiveness, edit-distance heatmap). Eerste twee panels hebben pas data na orchestrator-wiring; edit-distance heatmap kan al wel.
+- ⏸️ Image refine-loop (defer naar post-gemini-migration per task §65-67)
 
 # Probleem
 
