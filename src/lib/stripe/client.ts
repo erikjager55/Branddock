@@ -22,7 +22,7 @@ export function getStripeClient(): Stripe {
     // when billing is disabled. The feature flag gate in
     // feature-flags.ts prevents any Stripe calls.
     stripeInstance = new Stripe(secretKey || 'sk_test_placeholder', {
-      apiVersion: '2026-01-28.clover',
+      apiVersion: '2026-02-25.clover',
       typescript: true,
       maxNetworkRetries: 2,
       timeout: 10_000,
@@ -31,7 +31,7 @@ export function getStripeClient(): Stripe {
   }
 
   stripeInstance = new Stripe(secretKey, {
-    apiVersion: '2026-01-28.clover',
+    apiVersion: '2026-02-25.clover',
     typescript: true,
     maxNetworkRetries: 2,
     timeout: 10_000,
