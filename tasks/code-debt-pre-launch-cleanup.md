@@ -47,6 +47,7 @@ Groeperen in 3 mini-clusters voor fill-in werk tussen grote sprints. Niet als é
 |---|---|---|
 | `src/lib/design-tokens.ts:97` | Remove website-scanner temp nav entry | 15m |
 | `src/components/brand-alignment/BrandAlignmentPage.tsx` | Lazy-load via next/dynamic (optimization) | 2u |
+| `src/features/campaigns/components/canvas/accordion/Step1Context.tsx` | `Suggest from content` toont generieke "Suggestion failed — try again later" — echte 400-error body uit response.json() lezen + tonen (e.g. "Add a key message, persona, or product first") | 30m |
 | `src/features/campaigns/lib/content-type-inputs.ts:298` | Evaluate urgencyLevel deprecation overlap | 4u |
 
 # Acceptatiecriteria

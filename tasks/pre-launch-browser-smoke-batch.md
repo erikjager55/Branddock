@@ -25,16 +25,11 @@ Eén batch van 4 browser-smokes, achter elkaar uitvoerbaar in ~1-2u op een gewar
 
 # Acceptatiecriteria
 
-- [ ] **Δ-1 Surface C** — Brand Alignment Tab 3 "Content Review" UI: paste content + URL + composite-score render + findings-tabel + click-through naar deliverable
-- [ ] **claw-page-awareness vervolg** (5 stappen uit `tasks/done/claw-page-awareness-vervolg.md`):
-  - [ ] Step1Context: "vul keyMessage met 'X'" → confirm-card → veld gevuld + textarea reflecteert
-  - [ ] PersonaDetail: "vul behaviors met 3 voorbeelden" → 1 confirm-card → 1 PATCH (geen burst) → refresh persistent
-  - [ ] BrandAssetDetail: "vul proofPoints met 3 voorbeelden" → confirm → round-trip naar DB
-  - [ ] Canvas Step 4 "review deze draft" → Surface D `review_content` werkt (geen regressie door nieuwe formFillFields)
-  - [ ] Edge: PersonaDetail "Vul name met '' en clear quote" → name PATCH met `""`, quote PATCH met `null`
-- [ ] **Visual Brief Compose** — Goed-Bouw workspace (10 library images READY): pick 2-9 images + instruction → generate → check output reflecteert composition
-- [ ] **Visual Brief Trained-Style** — Goed-Bouw (1 ConsistentModel READY): pick trained model → generate → check output gebruikt trained style
-- [ ] **Locale-picker UI** — LINFI Voice DNA tab: dropdown wisselt locale, "Currently active" pill refresht na Save, auto-detected suggestion zichtbaar
+- [x] **Δ-1 Surface C** — getest 2026-05-12: paste-flow score 12 (2 findings: state-of-the-art / innovatieve), URL-flow Philips score 59 (16 findings, 5 Voice + 6 Terminology + 5 Claims, run 13.6s), Coolblue 403 graceful, severity+category filters werken. F-VAL rules-audit stem-variants + brand-language auto-detect + locale-resolver allemaal end-to-end gevalideerd.
+- [x] **claw-page-awareness vervolg** — getest 2026-05-12 door user, alle 5 sub-stappen werken (Step1Context fill / Persona behaviors fill 1-PATCH / BrandAsset proofPoints / Canvas Step 4 review-content geen regressie / null-coercion edge-case)
+- [⏸️] **Visual Brief Compose** — **deferred to post-vercel-deployment** (2026-05-12): localhost storage URLs (`/uploads/media/...`) zijn niet publiek bereikbaar voor FAL/Gemini compose-pipeline. Smoke vereist Vercel Blob / S3 / Cloudinary publieke URLs (Track C `vercel-deployment` levert die). Bovendien: pipeline-migratie naar Gemini Image (nano-banana) gepland in sprint #5 (`compose-pipeline-gemini-migration`) — smoke runt dáárna met betere quality dan huidige FAL Flux Pro Kontext.
+- [⏸️] **Visual Brief Trained-Style** — **deferred to post-vercel-deployment** (2026-05-12): zelfde storage blocker als Compose. FAL trained-LoRA model heeft publieke source-URLs nodig.
+- [x] **Locale-picker UI** — getest 2026-05-12 (eerder vandaag tijdens implementatie): dropdown wisselt, "Currently active" pill refresht na Save, auto-detected zichtbaar
 - [ ] Bug-log gepopuleerd met `[surface] severity: beschrijving → verwachte fix` voor elke P1/P2
 
 # Bestanden die ik aanraak

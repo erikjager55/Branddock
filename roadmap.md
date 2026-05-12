@@ -66,9 +66,10 @@ Pre-launch scope herzien 2026-05-12: alle items uit roadmap-inventaris naar pre-
 **Track A — Quality + Validation** (main branch)
 | ID | Titel | Effort | Sprint | Status |
 |---|---|---|---|---|
-| `content-items-test-coverage` | Testplan 53 content-types (representanten + Ronde 1 + Ronde 2 generator-evaluatie). Playbook: `docs/playbooks/testplan-content-items.md` | 3d (full) of 1d (representanten) | #4 (representanten) + #5-6 (full) | open — task-file volgt |
-| `pre-launch-browser-smoke-batch` | Bundeling: Δ-1 Surface C 9-stap + claw-page-awareness vervolg 5-stap + Visual Brief Compose/Trained-Style E2E + locale-picker browser-smoke | ~1-2u | #4 | open — task-file volgt |
-| `code-debt-pre-launch-cleanup` | Persist-TODOs (variant-selection, fix-options, persona-image) + design-tokens cleanup + Exa API replacement + ProseMirror diff. Verspreid over sprints. | ~6d totaal | #4-7 fill-in | open — task-file volgt |
+| `content-items-test-coverage` | Testplan 53 content-types (representanten + Ronde 1 + Ronde 2 generator-evaluatie). Playbook: `docs/playbooks/testplan-content-items.md` | 3d (full) of 1d (representanten) | #4 (representanten) + #5-6 (full) | open task-file |
+| `pre-launch-browser-smoke-batch` | Bundeling: Δ-1 Surface C 9-stap + claw-page-awareness vervolg 5-stap + Visual Brief Compose/Trained-Style E2E + locale-picker browser-smoke | ~1-2u | #4 (3/5 done, Visual Brief deferred) | partial — VB smokes deferred post-vercel-deployment |
+| `code-debt-pre-launch-cleanup` | Persist-TODOs (variant-selection, fix-options, persona-image) + design-tokens cleanup + Exa API replacement + ProseMirror diff + suggest-visual-briefing error-UX. Verspreid over sprints. | ~6d totaal | #4-7 fill-in | open task-file (2/12 items done) |
+| `compose-pipeline-gemini-migration` | Migreer compose-route van FAL Flux Pro Kontext naar Gemini Image (`gemini-2.5-flash-image-preview` / nano-banana). User-empirisch betere quality voor multi-reference compose. | ~1d | #5 fill-in | open task-file (2026-05-12, na sprint #4 smoke-finding) |
 
 **Track B — Brandclaw + Competitive AI** (worktree `branddock-brandclaw`)
 | ID | Titel | Effort | Sprint | Status |
