@@ -145,6 +145,14 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Smoke updates**: 31/31 pass voor property-evals (worst-case asserts aangepast — brand-name niet meer in blockCount).
 - **Severity**: P0 (gefixt) — was dead-end voor user die brand-name typo's bij AI niet zelf kon herstellen.
 
+### F16 — Brand Assistant kiest create_deliverable i.p.v. update_deliverable_brief
+- **Locatie**: `src/lib/claw/tools/write-tools.ts:create_deliverable` description + `src/lib/claw/context-assembler.ts` page-context
+- **Probleem**: User op canvas Step 1 vroeg "vul de velden". AI emit 4× `create_deliverable` voor NIEUWE LinkedIn-posts in andere campaign i.p.v. de huidige blog-post brief te vullen via `update_deliverable_brief`. User zag 4 confirm-cards in queue die niet matched met de invul-velden — frustrerend "kreeg suggesties die niet horen bij dit formulier".
+- **Twee fixes**:
+  1. `create_deliverable` tool-description versterkt met "NEVER use when pageContext.entityType === 'deliverable'" + concrete phrase-mapping ("vul de velden" / "geef suggesties" = EDIT current, niet create new).
+  2. Context-assembler deliverable-instructie met `**CRITICAL RULE**` markdown-bold + expliciete entityId reminder + reasoning "creating new deliverables instead would frustrate the user — they want their CURRENT form filled, not new content created elsewhere".
+- **Severity**: P0 (gefixt) — was complete misinterpretation van user-intent.
+
 ### F15 — Brand Assistant parallel mutation-proposals overwriten elkaar
 - **Locatie**: `useClawStore` + `InputBar.tsx` SSE handler + MutationConfirmCard
 - **Probleem**: User vroeg "vul de brief" — AI emit in 1 response drie parallel tool-uses (update_deliverable_brief + update_deliverable_visual_brief + update_deliverable_content_inputs). Backend stuurde 3× mutation_proposal SSE-events. Frontend `setPendingMutation(d)` overwrote vorige → user zag alleen de laatste (meestal visual brief). Voelde alsof AI alleen visual brief vulde.

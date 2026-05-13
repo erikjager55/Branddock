@@ -431,12 +431,17 @@ function formatPageContext(ctx: ClawPageContext): string {
       const campaignNote = ctx.campaignId
         ? ` It belongs to campaign \`${ctx.campaignId}\`.`
         : '';
+      // F-AI-tool-confusion fix (audit 2026-05-13): triple-emphasized
+      // guard tegen create_deliverable wanneer user op canvas zit. AI bleef
+      // anders 4 nieuwe deliverables voorstellen bij "vul de velden".
       lines.push(
-        `The user is INSIDE the Content Canvas for this deliverable.${campaignNote} ` +
-        'When they say "vul de velden", "fill in the briefing", "rewrite this", ' +
-        '"shorten it", "make it more formal", or anything else about THIS content, ' +
-        'they mean this deliverable. Do NOT search for a new campaign or call ' +
-        '`create_deliverable` — the deliverable already exists.'
+        `**CRITICAL RULE**: The user is INSIDE the Content Canvas for THIS deliverable (id ${ctx.entityId}).${campaignNote} ` +
+        'NEVER call `create_deliverable` in this conversation. The deliverable ALREADY EXISTS. ' +
+        'When the user says "vul de velden", "fill in the briefing", "geef suggesties", ' +
+        '"rewrite this", "shorten it", "make it more formal", or anything about THIS content, ' +
+        'they mean THIS deliverable. Use `update_deliverable_brief` / ' +
+        '`update_deliverable_content_inputs` / `update_deliverable_visual_brief` with the ' +
+        `entity id ${ctx.entityId} above. Creating new deliverables instead would frustrate the user — they want their CURRENT form filled, not new content created elsewhere.`
       );
       lines.push(
         'To fill or edit Step 1 (Review Context) fields:'
