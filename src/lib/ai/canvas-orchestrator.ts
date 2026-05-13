@@ -790,14 +790,15 @@ export async function* orchestrateContentGeneration(
   }
 
   // ── Step 2.8: Auto-iterate (sub-sprint #6.B wiring) ─
-  // Opt-in via FEATURE_AUTO_ITERATE=true env-flag voor veilige rollout.
-  // Skip wanneer STRICT al rewrite uitvoerde (humanVoiceMode = STRICT) of
+  // F8 fix (audit 2026-05-13 user-decision Option B): default ON.
+  // Skip alleen wanneer FEATURE_AUTO_ITERATE expliciet op 'false' is gezet,
+  // of wanneer STRICT al rewrite uitvoerde (humanVoiceMode = STRICT), of
   // wanneer F-VAL geen result kon berekenen. Iteraties worden gepersisteerd
   // naar Deliverable.settings.autoIterate; user-facing components blijven
   // origineel — "apply iterated version" knop is follow-up scope.
   if (
     fidelityPipelineReturn &&
-    process.env.FEATURE_AUTO_ITERATE === 'true' &&
+    process.env.FEATURE_AUTO_ITERATE !== 'false' &&
     humanVoiceMode !== 'STRICT'
   ) {
     try {
