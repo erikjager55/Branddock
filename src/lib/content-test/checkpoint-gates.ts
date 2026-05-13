@@ -216,21 +216,35 @@ export function validateVariantOutput(
     };
   }
   const length = variant.content.length;
-  if (length < 20) {
+  // F25 (audit 2026-05-13): per-group minimum-thresholds i.p.v. hardcoded 20.
+  // Korte CTAs ("Bestel nu" 9 chars, "Plan een afspraak" 17) zijn legitiem
+  // Nederlands en faalden voorheen op universele 20-cap met BLOCK-severity.
+  // Severity verlaagd van BLOCK → WARN voor length-only-failures; alleen leeg/
+  // ontbrekend blijft BLOCK (zie eerdere isNonEmptyString-check hierboven).
+  const PLAIN_GROUPS = new Set(['headline', 'subject', 'preheader', 'cta']);
+  const MIN_LENGTHS: Record<string, number> = {
+    cta: 5, // "Bestel" = 6
+    headline: 10,
+    subject: 10,
+    preheader: 10,
+    body: 50,
+  };
+  const minForGroup = MIN_LENGTHS[groupType] ?? 20;
+  if (length < minForGroup) {
     return {
       stage: 'variant-output',
       pass: false,
-      severity: 'block',
-      reasons: [`variant.content is ${length} chars — onder minimum-threshold (20)`],
+      severity: 'warn',
+      reasons: [`variant.content is ${length} chars — onder minimum-threshold (${minForGroup}) voor groep "${groupType}"`],
     };
   }
-  // Group-specifieke checks
-  const PLAIN_GROUPS = new Set(['headline', 'subject', 'preheader', 'cta']);
+  // Plain-groups: enforce ≤ 300 chars to catch runaway model output
   if (PLAIN_GROUPS.has(groupType) && length > 300) {
     reasons.push(`${groupType} is ${length} chars — verwacht ≤ 300 voor plain-group`);
   }
+  // Body-group: warn als < 100 (overlapt 50 hierboven, maar past richtlijn aan)
   if (groupType === 'body' && length < 100) {
-    reasons.push(`Body-group ${length} chars — onverwacht kort`);
+    reasons.push(`Body-group ${length} chars — onverwacht kort voor body-content`);
   }
   if (reasons.length > 0) {
     return { stage: 'variant-output', pass: false, severity: 'warn', reasons };

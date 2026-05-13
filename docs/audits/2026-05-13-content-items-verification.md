@@ -165,6 +165,17 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Niet meegenomen** (volgt later): apply-endpoint persist nog geen nieuwe `ContentFidelityScore` row, dus na een eventuele latere hard-refresh leest de canvas de oude score uit DB. Daarvoor moet apply-endpoint OF re-judgen OF de snapshot-score uit `settings.autoIterate.finalScore` persisteren als nieuw `ContentFidelityScore` record. Pakken we op als score-display na hard-refresh een storing wordt.
 - **Severity**: P1 (gefixt voor de UX-loop; persistent score-write is P2 follow-up).
 
+### F25 — Variant-output gate blokkeert korte CTAs (gefixt)
+- **Locatie**: `src/lib/content-test/checkpoint-gates.ts:validateVariantOutput`.
+- **Probleem**: Universele minimum-threshold 20 chars met severity BLOCK voor élke variant.content. Nederlandse CTAs als "Plan een afspraak" (17), "Vraag offerte aan" (17), "Bestel nu" (9) faalden allemaal → generation stopte met "Variant-output gate failed: cta[0]: variant.content is 19 chars". Opus 4.7 produceerde gewone korte CTAs, gate-design was te restrictief voor plain-groups.
+- **Fix**:
+  1. **Per-group minimums** ipv universele 20: `cta=5`, `headline=10`, `subject=10`, `preheader=10`, `body=50`, default=20.
+  2. **Severity downgrade** BLOCK → WARN voor length-only-failures. Alleen lege/missing content blijft BLOCK.
+- **Verification**:
+  - checkpoint-gates smoke: 43/43 pass (was 40 pass + 1 fail door oude assertion; geüpdatet voor F25-gedrag + 2 nieuwe asserts voor short-CTA + tiny-CTA).
+  - npx tsc --noEmit: 0 errors.
+- **Severity**: P1 (gefixt; blokkeerde generation).
+
 ### F24 — Silent auto-iterate-1 bij initial-score <70 (gefixt)
 - **Locatie**: `src/lib/ai/auto-iterate-integration.ts` (model upgrade), `src/lib/ai/canvas-orchestrator.ts` Step 2.8a (silent-trigger logic).
 - **Probleem**: Na F22a (Opus + thinking) + F22b (best-of-3) leverde initial-score 63/59 op Napking blog — verbetering t.o.v. 47, maar nog steeds onder threshold 70 die user als publish-ready beschouwt. Gap van 7-11pt blijft. Verdere prompt-engineering of best-of-5 zou marginaal effect hebben.

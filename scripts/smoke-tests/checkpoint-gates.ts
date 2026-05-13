@@ -160,8 +160,18 @@ async function main() {
   const emptyVariant = validateVariantOutput({ content: '' }, 'body');
   assert('[4] empty content blocks', !emptyVariant.pass && emptyVariant.severity === 'block');
 
+  // F25 fix (audit 2026-05-13): length-only failures zijn nu WARN, niet BLOCK.
+  // Per-group minimum: body = 50 chars; 'Too short' (9 chars) faalt met warn.
   const tinyVariant = validateVariantOutput({ content: 'Too short' }, 'body');
-  assert('[4] < 20 chars blocks', !tinyVariant.pass && tinyVariant.severity === 'block');
+  assert('[4] < 50 chars body warns', !tinyVariant.pass && tinyVariant.severity === 'warn');
+
+  // Korte CTA passes (min 5 chars voor cta-groep)
+  const shortCta = validateVariantOutput({ content: 'Plan een afspraak' }, 'cta');
+  assert('[4] short CTA passes (>= 5 chars)', shortCta.pass);
+
+  // Sub-5-char CTA warns (niet block)
+  const tinyCta = validateVariantOutput({ content: 'Hi' }, 'cta');
+  assert('[4] tiny CTA warns', !tinyCta.pass && tinyCta.severity === 'warn');
 
   const longHeadline = validateVariantOutput(
     { content: 'A '.repeat(200) },
