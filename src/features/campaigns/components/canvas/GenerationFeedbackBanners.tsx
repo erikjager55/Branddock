@@ -11,7 +11,6 @@
 
 import { useEffect, useState } from 'react';
 import {
-  ShieldCheck,
   AlertCircle,
   Pencil,
   SlidersHorizontal,
@@ -69,22 +68,11 @@ function BrandVoiceBanner() {
   const status = useCanvasStore((s) => s.brandVoiceStatus);
   if (!status.level || !status.userMessage) return null;
 
-  // Voiceguide actief = compact succes-badge; verkort de tekst zodat het
-  // visueel niet concurreert met de iteration-nudges of canvas-content.
-  if (!status.isFallback) {
-    const shortLabel = SHORT_VOICE_LABELS[status.level ?? 'voiceguide'];
-    return (
-      <div className="mx-4 mt-3 mb-1 flex items-center" data-testid="brand-voice-banner">
-        <div
-          className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50/70 border border-emerald-200/70 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700"
-          title={status.userMessage}
-        >
-          <ShieldCheck className="w-3 h-3" />
-          {shortLabel}
-        </div>
-      </div>
-    );
-  }
+  // F23 (audit 2026-05-13): success-state badge "Voiceguide actief" weg —
+  // user heeft die niet nodig (de score-display + content kwaliteit
+  // spreken voor zich). Alleen de fallback-waarschuwing blijft want
+  // het feit dat er GEEN voiceguide actief is moet de user wel weten.
+  if (!status.isFallback) return null;
 
   // Fallback (no voiceguide / partial) — duidelijker amber-banner met tip,
   // omdat de user dit ECHT moet zien om kwaliteit te begrijpen.
@@ -100,13 +88,6 @@ function BrandVoiceBanner() {
     </div>
   );
 }
-
-const SHORT_VOICE_LABELS: Record<'voiceguide' | 'tone-only' | 'language-only' | 'none', string> = {
-  voiceguide: 'Voiceguide actief',
-  'tone-only': 'Tone-of-voice actief',
-  'language-only': 'Alleen taal-instelling',
-  none: 'Neutrale toon',
-};
 
 // ─── Iteration-nudges panel ────────────────────────────────
 

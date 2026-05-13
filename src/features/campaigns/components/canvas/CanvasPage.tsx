@@ -6,7 +6,6 @@ import { useCanvasComponents } from '../../hooks/canvas.hooks';
 import { HorizontalAccordion } from './accordion/HorizontalAccordion';
 import { CanvasContextSelector } from './CanvasContextSelector';
 import { InsertImageModal } from './InsertImageModal';
-import { InheritanceBanner } from './InheritanceBanner';
 import { GenerationFeedbackBanners } from './GenerationFeedbackBanners';
 import { useCanvasOrchestration } from '../../hooks/useCanvasOrchestration';
 import { CanvasHelpButton } from '../../../claw/components/CanvasHelpButton';
@@ -633,10 +632,7 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         )}
       </div>
 
-      {/* Inheritance banner — shown when settings were auto-inherited */}
-      <InheritanceBanner />
-
-      {/* Generation feedback banners: brand-voice status + iteration nudges */}
+      {/* Generation feedback banners: brand-voice fallback warning + iteration nudges */}
       <GenerationFeedbackBanners />
 
       {/* Accordion layout */}

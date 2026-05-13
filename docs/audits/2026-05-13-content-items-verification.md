@@ -165,7 +165,13 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Niet meegenomen** (volgt later): apply-endpoint persist nog geen nieuwe `ContentFidelityScore` row, dus na een eventuele latere hard-refresh leest de canvas de oude score uit DB. Daarvoor moet apply-endpoint OF re-judgen OF de snapshot-score uit `settings.autoIterate.finalScore` persisteren als nieuw `ContentFidelityScore` record. Pakken we op als score-display na hard-refresh een storing wordt.
 - **Severity**: P1 (gefixt voor de UX-loop; persistent score-write is P2 follow-up).
 
-### F22 — Initial-score nog steeds < 70 na F21 — model upgrade + best-of-3
+### F23 — InheritanceBanner + "Voiceguide actief" success-badge weg (gefixt)
+- **Locatie**: `src/features/campaigns/components/canvas/CanvasPage.tsx` (banner-render), `InheritanceBanner.tsx` (verwijderd), `GenerationFeedbackBanners.tsx:BrandVoiceBanner` (success-state weggehaald).
+- **Probleem**: User-feedback dat de twee canvas-banners visuele ruis zijn zonder toegevoegde waarde:
+  - "Settings inherited from Pillar Page — Context, Medium, and type-specific inputs were copied." (InheritanceBanner)
+  - "Voiceguide actief" emerald-badge (BrandVoiceBanner success-state)
+- **Fix**: InheritanceBanner volledig verwijderd (file deleted + import + render-site weggehaald). De onderliggende `inheritedFrom` state in canvas-store en `settings.inheritedFrom` DB-veld blijven bestaan voor andere doeleinden (provenance-tracking in duplicate/bulk-create endpoints). BrandVoiceBanner success-state returnt nu `null`; fallback-warning (amber, "no voiceguide configured") blijft behouden — dat is genuine info die de user wel moet zien.
+- **Severity**: P2 (UX-opschoning).
 - **Locatie**: `src/lib/ai/feature-models.ts` (model-default), `src/lib/ai/canvas-orchestrator.ts:generateTextWithFallback` + `handleRegeneration` (thinking-config), plus best-of-3 helper (volgt in F22b).
 - **Probleem**: F21 prompt-restructure leverde +7pt (47→54). Doel ≥70 nog niet bereikt. Prompt-engineering alleen is uitgeput; verdere lift vraagt om model-upgrade + best-of-N candidate-pick.
 - **F22a — Model upgrade (deze commit)**:
