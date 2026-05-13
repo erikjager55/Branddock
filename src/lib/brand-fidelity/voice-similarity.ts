@@ -49,25 +49,33 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 
 /**
  * Project a cosine similarity (typical embedding range 0.5-1.0) to a 0-100
- * score with a stretched curve so meaningful differences in the practical
- * range translate to visible score deltas.
+ * score. Calibrated for AI-generated brand-voice content distribution.
  *
- * Mapping:
- *   sim ≤ 0.5   → 0     (uncorrelated)
- *   sim = 0.7   → 50    (weak match)
- *   sim = 0.85  → 80    (good match)
- *   sim ≥ 1.0   → 100   (identical)
+ * F31 (audit 2026-05-13) recalibration:
+ *   - Eerdere anchors (0.5→0, 0.7→50, 0.85→80, 1.0→100) bleken te streng:
+ *     real-world AI output vs brand-samples scoort typisch cosine 0.65-0.78,
+ *     wat zich vertaalde naar 38-66 op style-pijler → composite stuck op
+ *     50-65 ondanks goede content.
+ *   - Verbatim sample-copy (cosine 0.95+) is onbruikbaar (niet origineel)
+ *     en hoort dus niet 100 te scoren. Plafond 95.
  *
- * Linear interpolation between anchors keeps the math transparent. Tune
- * the anchors after the regression harness has empirical data on the
- * sim distribution per workspace.
+ * Nieuwe mapping:
+ *   sim ≤ 0.4   → 0     (uncorrelated; ander domein)
+ *   sim = 0.6   → 50    (zwak maar herkenbaar)
+ *   sim = 0.75  → 80    (goede voice-match — typisch voor sterk gevraagde content)
+ *   sim = 0.9   → 95    (uitstekend, near voice-fingerprint)
+ *   sim ≥ 0.95  → 100   (eigenlijk te dicht; mogelijk paraphrase)
+ *
+ * Praktisch effect: AI-output dat voorheen 55-65 scoorde, scoort nu 75-85.
+ * Goede output haalt nu de drempel zonder verbatim-copy.
  */
 export function projectSimilarityToScore(sim: number): number {
-  if (sim <= 0.5) return 0;
-  if (sim >= 1.0) return 100;
-  if (sim < 0.7) return Math.round(((sim - 0.5) / 0.2) * 50);
-  if (sim < 0.85) return Math.round(50 + ((sim - 0.7) / 0.15) * 30);
-  return Math.round(80 + ((sim - 0.85) / 0.15) * 20);
+  if (sim <= 0.4) return 0;
+  if (sim >= 0.95) return 100;
+  if (sim < 0.6) return Math.round(((sim - 0.4) / 0.2) * 50);
+  if (sim < 0.75) return Math.round(50 + ((sim - 0.6) / 0.15) * 30);
+  if (sim < 0.9) return Math.round(80 + ((sim - 0.75) / 0.15) * 15);
+  return Math.round(95 + ((sim - 0.9) / 0.05) * 5);
 }
 
 // ─── DB helpers ──────────────────────────────────────

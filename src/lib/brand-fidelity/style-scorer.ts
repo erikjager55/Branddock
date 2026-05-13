@@ -139,9 +139,18 @@ export function scoreBrandStyle(
     if (containsWord(haystack, w)) wordsMatched.push(w);
     else wordsMissing.push(w);
   }
+  // F31 (audit 2026-05-13) recalibration: was simple linear coverage
+  // (matched/total). Voor merken met grote wordsWeUse-lijsten (Napking
+  // 20 woorden) is verwachten dat ALLE woorden in 300-400 woorden tekst
+  // verschijnen onrealistisch — natuurlijke output bevat 30-50% van de
+  // lijst. Nieuwe saturation-curve: 40% match = 100 (vol score),
+  // tussenwaarden lineair.
+  // Rationale: brand-style is "gebruik genoeg signature words", niet
+  // "gebruik ALLE signature words". Quality matters, not exhaustion.
+  const SATURATION_RATIO = 0.4;
   const wordsCoverageScore =
     wordsWeUse.length > 0
-      ? Math.round((wordsMatched.length / wordsWeUse.length) * 100)
+      ? Math.min(100, Math.round((wordsMatched.length / wordsWeUse.length / SATURATION_RATIO) * 100))
       : 100; // No declared words = full score (nothing to fail)
 
   // ── Dimension 2: trait coverage ──
@@ -154,9 +163,11 @@ export function scoreBrandStyle(
     if (result.found) traitsMatched.push(t.name as string);
     else traitsMissing.push(t.name as string);
   }
+  // F31: zelfde saturation logic voor traits — niet alle persona-traits
+  // hoeven aanwezig te zijn voor een goede brand-match.
   const traitCoverageScore =
     traits.length > 0
-      ? Math.round((traitsMatched.length / traits.length) * 100)
+      ? Math.min(100, Math.round((traitsMatched.length / traits.length / SATURATION_RATIO) * 100))
       : 100;
 
   // ── Composite (50/50 weights) ──

@@ -175,6 +175,23 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F31 — F-VAL scoring projection te streng; calibratie naar realistic max (gefixt)
+- **Locatie**: `src/lib/brand-fidelity/voice-similarity.ts:projectSimilarityToScore`, `src/lib/brand-fidelity/style-scorer.ts:scoreBrandStyle`.
+- **Probleem**: Composite-score bleef rond 50-65 voor Napking ondanks goede content. Analyse (zie `docs/experiments/2026-05-13-scoring-methodology-analysis.md`) toonde dat de pre-F31 scoring zelfs voor **uitstekende output** een max van ~76 gaf (precies op threshold 75) — geen marge voor variantie:
+  - Style pijler: voice-similarity projection `cosine 0.7 → 50, cosine 0.85 → 80` betekent dat AI-output (typisch cosine 0.65-0.78) maar 38-66 scoorde. Words coverage formule eiste **100% match** van alle 20 Napking signature-woorden in 300-400 woorden tekst — onnatuurlijk gekrampeld.
+  - Judge pijler: LLM-judges hebben calibration bias, geven zelden 95+. Realistische max 75-85.
+  - Rules pijler: deterministisch, haalt redelijk 85-95.
+  - Cumulative effect: realistic composite max ~76, threshold 75 → goede content scoorde "onder drempel".
+- **F31 fix — recalibratie**:
+  1. **Voice-similarity projection** anchors verschoven: `cosine 0.4→0, 0.6→50, 0.75→80, 0.9→95, 0.95+→100`. AI-output cosine 0.7-0.78 scoort nu 65-85 i.p.v. 38-66.
+  2. **Words-coverage + trait-coverage saturation**: 40% match = score 100 i.p.v. 100% match = 100. Rationale: brand-style is "gebruik genoeg signature words", niet "gebruik ALLE". 8 van 20 woorden in 300-word output = vol score.
+  3. Threshold blijft 75 — met recalibratie haalt redelijke content dat doel zonder verbatim-copy.
+- **Verwachte impact** (zelfde output, pre vs post F31):
+  - Style 50 → 75 (voice-sim + words-saturation)
+  - Composite 68 → 77 (uitstekende output 76 → 88)
+- **Observatie persistence-bug**: `ContentFidelityScore` records voor Napking ontbreken in DB; persistFidelityScore faalt silently voor de huidige composition-engine output-shape. Pakken we op in F32 follow-up.
+- **Severity**: P1 (gefixt; calibration-bug die threshold misleidend maakte).
+
 ### F29 + F30 — Score 53 op blog-post; best-of-3 emphasis hurt + per-content-type routing (gefixt)
 - **Locatie**: `src/lib/ai/canvas-orchestrator.ts` (single-shot + routing wiring), `src/lib/ai/canvas-model-routing.ts` (NIEUW).
 - **Probleem F30 (score-regressie)**: Na F28 (Opus 4.7 default met werkende adaptive thinking) productie genereerde score 53 op Napking blog-post. Experiment toonde Opus 4.7 single-shot = composite 91 op identieke prompt. Verschil: productie gebruikt **best-of-3 met emphasis-variantie** (F22b: 3 candidates met style/judge/rules suffix-blok), terwijl experiment single-shot was. Hypothese: emphasis-suffixes produceren onevenwichtige candidates (sterk op één pijler, zwak op andere); Haiku-ranker pikt regelmatig de onbalanced winner. 91 → 53 = -38pt regressie door best-of-3.
