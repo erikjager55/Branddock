@@ -201,7 +201,13 @@ export function checkBrandNameCapitalization(
     return {
       check: 'brand-name-capitalization',
       pass: false,
-      severity: 'block',
+      // UX-fix 2026-05-13: severity verlaagd van block -> warn. Sanitizer
+      // doet sinds deze datum auto-fix op lowercase brand-name varianten
+      // (enforceBrandNameCapitalization in variant-content-sanitizer), dus
+      // deze check is nu vangnet voor edge-cases (Title-Case / ALL-CAPS) en
+      // hoeft generation niet meer te blokkeren. Block was te streng — gaf
+      // user dead-end zonder remedie.
+      severity: 'warn',
       reason: `Brand-name "${brandName}" foutief gecapitaliseerd: ${wrongCases.slice(0, 3).join(', ')}`,
       evidence: wrongCases[0],
     };

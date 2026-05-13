@@ -129,3 +129,28 @@ export function sanitizeVariantContent(
   }
   return stripped;
 }
+
+/**
+ * UX-fix 2026-05-13: enforce brand-name capitalization op AI output.
+ * AI ignoreert soms "preserve original capitalization" instructie en
+ * produceert lowercase "napking" of all-caps "NAPKING". Voorheen blokte
+ * dat de hele generatie via property-eval BLOCK; nu auto-fix tijdens
+ * sanitize. Word-boundary aware regex om sub-string matches te voorkomen
+ * (bv. "napkings" als bestaand woord — onwaarschijnlijk maar veilig).
+ *
+ * Aanroepen vanuit canvas-orchestrator persistVariants per variant.
+ */
+export function enforceBrandNameCapitalization(
+  content: string,
+  brandName: string | null | undefined,
+): string {
+  if (!brandName || brandName.length < 2 || !content) return content;
+  // Case-insensitive match. Vervang elke instance die niet exact-case matched
+  // met de canonical brandName.
+  const escaped = brandName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`\\b${escaped}\\b`, 'gi');
+  return content.replace(pattern, (matched) => {
+    // Only replace when the case differs from canonical to avoid no-op work
+    return matched === brandName ? matched : brandName;
+  });
+}

@@ -136,6 +136,15 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
   - Voice-samples uit voiceguide direct als reference-blob in regenerate-prompt embedden (anchor-content)
 - **Verbetering volgt** in: aparte taak "auto-iterate-effectiveness" (~1-2 dagen). Pre-launch: documented limitation; user kan na max iters handmatig finetunen.
 
+### F14 — Brand-name-capitalization BLOCK stopt hele generation
+- **Locatie**: `src/lib/content-test/property-evals.ts:checkBrandNameCapitalization`
+- **Probleem**: Property-eval voor brand-name capitalization fired BLOCK-severity wanneer AI lowercase "napking" produceerde i.p.v. "Napking". Generation stopte met "Content failed Layer 1 quality checks (2 block-violations)" zonder remedie voor user.
+- **Twee fixes**:
+  1. **Auto-fix in orchestrator** (primary remedie): nieuwe `enforceBrandNameCapitalization` helper in variant-content-sanitizer. Word-boundary regex vervangt non-canonical case-variants door canonical brandName. Runs in canvas-orchestrator vóór property-evals zodat content + downstream checks gelijk de fix krijgen. 8/8 smoke pass (lowercase/ALL-CAPS/mixed/canonical/word-boundary/empty/regex-escape).
+  2. **Severity downgrade**: check van BLOCK → WARN. Auto-fix is primary mitigation; check blijft als vangnet voor edge-cases (Title-Case, ALL-CAPS, mixed). Voorheen kreeg user dead-end, nu door-genereert en flagged in trace.
+- **Smoke updates**: 31/31 pass voor property-evals (worst-case asserts aangepast — brand-name niet meer in blockCount).
+- **Severity**: P0 (gefixt) — was dead-end voor user die brand-name typo's bij AI niet zelf kon herstellen.
+
 ### F-canvas-open-slow — Derive-navigation duurt lang (PERFORMANCE)
 - **Locatie**: derive → navigate → CanvasPage mount → fetch /api/studio/[id] + components + context
 - **Probleem**: Tussen klik op chip en zichtbaarheid van nieuwe canvas zit veel laadtijd. CanvasPage mount triggert ~4 sequentiële API calls (deliverable detail, components, context-stack, F-VAL persist).

@@ -103,8 +103,10 @@ gebruik.`;
   // #5 brand-name-capitalization: "napking" lowercase
   const wrongBrandContent = 'Bij napking werken we hard. We zijn napking voor jou. Vraag napking om hulp.';
   const wrongBrandResult = runAllPropertyEvals(wrongBrandContent, defaultContext());
-  assert('#5 brand-name-capitalization blocks wrong case', !find(wrongBrandResult.results, 'brand-name-capitalization').pass);
-  assert('#5 brand-name-capitalization severity = block', find(wrongBrandResult.results, 'brand-name-capitalization').severity === 'block');
+  assert('#5 brand-name-capitalization flags wrong case', !find(wrongBrandResult.results, 'brand-name-capitalization').pass);
+  // UX-fix 2026-05-13: severity verlaagd van block -> warn (auto-fix in
+  // sanitizer is primary mitigation; deze check is vangnet voor edge-cases)
+  assert('#5 brand-name-capitalization severity = warn (was: block)', find(wrongBrandResult.results, 'brand-name-capitalization').severity === 'warn');
 
   // #6 placeholder-detection: [PRICE]
   const placeholderContent = 'Bestel nu voor slechts [PRICE] per stuk. Beperkte voorraad.';
@@ -204,7 +206,9 @@ gebruik.`;
   const worstContent = `[PRICE] napking is the BEST. Click info@napking.nl. **Bold**`;
   const worstResult = runAllPropertyEvals(worstContent, defaultContext({ groupType: 'headline', requiresCTA: true, wordBounds: { min: 50, max: 200 } }));
   const blockCount = worstResult.results.filter((r) => !r.pass && r.severity === 'block').length;
-  assert(`worst-case: blockViolations ≥ 3 (placeholder + pii + brand-mismatch)`, blockCount >= 3, `got ${blockCount}`);
+  // UX-fix 2026-05-13: brand-name-capitalization downgraded block -> warn,
+  // dus worst-case heeft nu placeholder + pii als hard blockers (≥ 2).
+  assert(`worst-case: blockViolations ≥ 2 (placeholder + pii)`, blockCount >= 2, `got ${blockCount}`);
   assert(`worst-case: passed = false`, worstResult.passed === false);
 
   // ─── Runtime budget check ────────────────────────────────────

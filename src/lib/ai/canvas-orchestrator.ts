@@ -606,6 +606,29 @@ export async function* orchestrateContentGeneration(
       group: component.group.trim().toLowerCase(),
     }));
 
+  // UX-fix 2026-05-13: auto-fix brand-name capitalization in-place vóór
+  // property-evals. AI ignoreert soms "preserve original capitalization"
+  // instructie; voorheen blokten property-evals met severity=block, geen
+  // remedie voor user. Nu corrigeren we lowercase "napking" -> "Napking"
+  // automatisch, en de check is gedegradeerd naar warn (vangnet voor
+  // resterende edge-cases zoals Title-Case / ALL-CAPS).
+  const brandNameForFix = stack.brand?.brandName ?? null;
+  if (brandNameForFix && brandNameForFix.length >= 2) {
+    const { enforceBrandNameCapitalization } = await import(
+      '@/features/campaigns/lib/variant-content-sanitizer'
+    );
+    for (const component of textResult.components) {
+      for (const variant of component.variants) {
+        if (typeof variant.content === 'string') {
+          variant.content = enforceBrandNameCapitalization(variant.content, brandNameForFix);
+        }
+        if (typeof variant.cta === 'string') {
+          variant.cta = enforceBrandNameCapitalization(variant.cta, brandNameForFix);
+        }
+      }
+    }
+  }
+
   // ── Checkpoint-gate [4] validateVariantOutput (sub-sprint #6.A) ──
   // Per-variant length/empty checks vóór property-evals. Block bij empty
   // of <20 chars (model-output broken). Warn bij group-mismatch (te lange
