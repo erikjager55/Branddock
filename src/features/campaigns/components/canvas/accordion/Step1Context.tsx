@@ -9,6 +9,8 @@ import { WEBSITE_DELIVERABLE_TYPES } from '@/lib/ai/seo-pipeline.types';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
 import type { VisualBriefSource, VisualStyleDirection } from '@/lib/ai/canvas-context';
+import { suggestImageApproach, PHOTOGRAPHY_OPT_IN_COPY, type ImageSuggestion } from '@/lib/ai/image-suggestion';
+import { useConsistentModels } from '@/features/consistent-models/hooks';
 import {
   getContentTypeImageDefaults,
   getContentTypeAspectHint,
@@ -1221,6 +1223,17 @@ function VisualBriefSection() {
         </div>
       </div>
 
+      {/* F37 (audit 2026-05-13): chip-aware model-suggestion banner.
+          Toont aanbevolen model + reasoning op basis van content-type +
+          style-chip + workspace-LoRA-availability. Niet auto-applied;
+          informatief + cost-transparant. */}
+      {visualBrief.source !== 'none' && (
+        <ImageModelSuggestionBanner
+          contentTypeId={contentType ?? null}
+          styleDirection={filledChip}
+        />
+      )}
+
       {/* Style direction — chips + free text */}
       {visualBrief.source !== 'none' && (
         <div className="space-y-2">
@@ -1262,6 +1275,67 @@ function VisualBriefSection() {
           />
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── F37 (audit 2026-05-13): chip-aware model-suggestion banner ──────
+// Toont per content-type + chip-keuze + LoRA-availability welke
+// generation-approach het beste past. Pure informatie + transparantie;
+// niet auto-applied. Photography opt-in onderaan, subtiel.
+
+function ImageModelSuggestionBanner({
+  contentTypeId,
+  styleDirection,
+}: {
+  contentTypeId: string | null;
+  styleDirection: VisualStyleDirection | null;
+}) {
+  const { data: modelsData } = useConsistentModels();
+  const hasTrainedLora = React.useMemo(() => {
+    const models = modelsData?.models ?? [];
+    return models.some((m) => m.status === 'READY' && m.triggerWord);
+  }, [modelsData]);
+
+  const suggestion: ImageSuggestion = React.useMemo(
+    () =>
+      suggestImageApproach({
+        contentTypeId,
+        styleDirection,
+        hasTrainedLora,
+      }),
+    [contentTypeId, styleDirection, hasTrainedLora],
+  );
+
+  return (
+    <div className="mb-4 rounded-md bg-slate-50 border border-slate-200 p-3">
+      <div className="flex items-start gap-2">
+        <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0 text-slate-600" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-slate-900">
+            Branddock adviseert: <span className="text-slate-700">{suggestion.modelLabel}</span>
+            <span className="ml-2 text-[11px] text-slate-500">~${suggestion.costPerImageUsd.toFixed(2)}/image</span>
+          </p>
+          <p className="text-[11px] mt-1 text-slate-600 leading-relaxed">{suggestion.reasoning}</p>
+          {suggestion.strengths.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {suggestion.strengths.map((s) => (
+                <span
+                  key={s}
+                  className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded bg-white border border-slate-200 text-slate-600"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          )}
+          {/* Photography opt-in — subtiel, NIET als default-suggestion */}
+          <p className="mt-2 text-[10px] text-slate-400 italic">
+            {PHOTOGRAPHY_OPT_IN_COPY.label}{' '}
+            <span className="text-slate-500">{PHOTOGRAPHY_OPT_IN_COPY.description}</span>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
