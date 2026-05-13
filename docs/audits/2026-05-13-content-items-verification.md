@@ -90,10 +90,10 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Fix part 1 (immediate)** — gefixt nu:
   - CanvasPage gebruikt nu `globalErrorMessage` als zichtbare tekst (was: hardcoded "Generation failed")
   - Gate-block message in orchestrator herwoord naar user-actiezone: "Vul minstens een doel (objective) óf een kernboodschap (keyMessage) in vóór generatie."
-- **Fix part 2 (follow-up nodig)** — niet gefixt:
-  - Brand Assistant fill-flow race-conditie onderzoeken: vermoedelijk N parallel PATCHes via setBriefField autosave per veld → eerste PATCH wint, rest abort. Oplossing: batch-update via `setBriefBulk` + single PATCH. **Effort: ~1u onderzoek + fix.**
-  - AI tool-keuze documentatie verbeteren: AI moet bij voorkeur `update_deliverable_brief` gebruiken (server-side DB-write) i.p.v. `fill_form_fields` (client-side, race-prone).
-- **Severity**: P1 — Brand Assistant is een pilot-feature, partial-success is misleidend.
+- **Fix part 2** — gefixt 2026-05-13:
+  - `useFormFillStore.FormFillField` uitgebreid met `groupId` + `flush` velden. Velden die dezelfde groupId delen (bv. 'brief') krijgen één flush-handler ná alle setters. Step1Context registreert 4 brief-fields met `groupId: 'brief'` + `flushBrief` handler die direct PATCH'ed (bypasst debounce + autosave-race).
+  - `MutationConfirmCard` extra-handler voor `update_deliverable_brief` tool: na server-write sync de params direct naar canvas-store via `setBriefField`. UI updatet instant, geen refresh nodig.
+- **Severity**: P1 (gefixt).
 
 ### F-canvas-open-slow — Derive-navigation duurt lang (PERFORMANCE)
 - **Locatie**: derive → navigate → CanvasPage mount → fetch /api/studio/[id] + components + context

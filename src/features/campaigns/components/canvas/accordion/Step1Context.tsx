@@ -66,18 +66,38 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
     [contentType],
   );
   React.useEffect(() => {
+    // F10 fix: brief-flush — bypass debounce-autosave race wanneer Brand
+    // Assistant 2+ velden tegelijk fill. applyFill triggert dit één keer
+    // ná alle setters via groupId='brief' + flush handler.
+    const flushBrief = async () => {
+      const latestBrief = useCanvasStore.getState().brief;
+      try {
+        await fetch(`/api/studio/${deliverableId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ settings: { brief: latestBrief } }),
+        });
+      } catch (err) {
+        console.warn('[Step1Context] flushBrief failed:', err);
+      }
+    };
+
     const fields: FormFillField[] = [
       {
         key: 'objective',
         label: 'Objective',
         currentValue: brief.objective.trim() || null,
         setter: (value) => setBriefField('objective', String(value ?? '')),
+        groupId: 'brief',
+        flush: flushBrief,
       },
       {
         key: 'keyMessage',
         label: 'Key message',
         currentValue: brief.keyMessage.trim() || null,
         setter: (value) => setBriefField('keyMessage', String(value ?? '')),
+        groupId: 'brief',
+        flush: flushBrief,
       },
       {
         key: 'toneDirection',
@@ -88,12 +108,16 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
             'toneDirection',
             Array.isArray(value) ? value.join(', ') : String(value ?? ''),
           ),
+        groupId: 'brief',
+        flush: flushBrief,
       },
       {
         key: 'callToAction',
         label: 'Call to action',
         currentValue: brief.callToAction.trim() || null,
         setter: (value) => setBriefField('callToAction', String(value ?? '')),
+        groupId: 'brief',
+        flush: flushBrief,
       },
       ...contentTypeFields.map<FormFillField>((field) => ({
         key: field.key,
@@ -112,6 +136,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
     brief.toneDirection,
     brief.callToAction,
     contentTypeInputs,
+    deliverableId,
     contentTypeFields,
     setBriefField,
     setContentTypeInput,

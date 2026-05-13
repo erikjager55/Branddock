@@ -140,6 +140,42 @@ export function MutationConfirmCard() {
             );
           }
         }
+
+        // F10 fix (audit 2026-05-13): update_deliverable_brief schrijft naar
+        // DB maar canvas-store kent de nieuwe brief niet — UI bleef leeg.
+        // Sync server-write naar canvas-store voor instant UI-update via de
+        // bestaande setBriefField setter. Brief-key-naam matched canvas-store.
+        const toolName = pendingMutation?.toolName;
+        if (toolName === 'update_deliverable_brief') {
+          const params = pendingMutation?.params as
+            | {
+                objective?: string;
+                keyMessage?: string;
+                toneDirection?: string;
+                callToAction?: string;
+              }
+            | undefined;
+          if (params) {
+            // Lazy-import canvas-store om circular-dep met campaigns te
+            // vermijden + alleen laden wanneer relevant tool gebruikt wordt.
+            const { useCanvasStore } = await import(
+              '@/features/campaigns/stores/useCanvasStore'
+            );
+            const setBriefField = useCanvasStore.getState().setBriefField;
+            if (typeof params.objective === 'string' && params.objective.trim()) {
+              setBriefField('objective', params.objective);
+            }
+            if (typeof params.keyMessage === 'string' && params.keyMessage.trim()) {
+              setBriefField('keyMessage', params.keyMessage);
+            }
+            if (typeof params.toneDirection === 'string' && params.toneDirection.trim()) {
+              setBriefField('toneDirection', params.toneDirection);
+            }
+            if (typeof params.callToAction === 'string' && params.callToAction.trim()) {
+              setBriefField('callToAction', params.callToAction);
+            }
+          }
+        }
       }
 
       // Refresh any visible detail pages so they show the new values without

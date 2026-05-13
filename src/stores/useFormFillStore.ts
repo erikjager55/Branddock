@@ -22,6 +22,16 @@ export interface FormFillField {
   currentValue: string | null;
   /** Setter the page provides; receives the AI-proposed value as `unknown`. */
   setter: (value: unknown) => void;
+  /**
+   * Optionele groep-id voor flush-batching. Velden die dezelfde groupId
+   * delen worden samen geflushed via één call naar `flush` na alle setters.
+   * Voorbeeld: alle 4 brief-fields delen groupId='brief' + één flushBrief
+   * handler die N parallel-PATCH races vervangt door 1 expliciet PATCH.
+   * (F10 fix — audit 2026-05-13.)
+   */
+  groupId?: string;
+  /** Per-groupId expliciete save-handler. Genegeerd wanneer groupId ontbreekt. */
+  flush?: () => void | Promise<void>;
 }
 
 export interface FormFillAssignment {
@@ -58,14 +68,34 @@ export const useFormFillStore = create<FormFillStore>((set, get) => ({
     const applied: string[] = [];
     const missing: string[] = [];
     const { fields } = get();
+    // Collect unique flush-handlers per groupId om N parallel autosave-PATCHes
+    // te vermijden bij multi-field fill. Pages registreren flush() voor één
+    // expliciete save na alle setters (audit F10 fix 2026-05-13).
+    const flushHandlersByGroup = new Map<string, NonNullable<FormFillField['flush']>>();
     for (const { key, value } of assignments) {
       const field = fields.find((f) => f.key === key);
       if (field) {
         field.setter(value);
         applied.push(key);
+        if (field.groupId && field.flush) {
+          flushHandlersByGroup.set(field.groupId, field.flush);
+        }
       } else {
         missing.push(key);
       }
+    }
+    // Defer flushes naar microtask zodat Zustand alle setter-state-updates
+    // gepropageerd zijn voordat flush het canvas-store leest.
+    if (flushHandlersByGroup.size > 0) {
+      void Promise.resolve().then(async () => {
+        for (const handler of flushHandlersByGroup.values()) {
+          try {
+            await handler();
+          } catch (err) {
+            console.warn('[useFormFillStore] flush handler failed:', err);
+          }
+        }
+      });
     }
     return { applied, missing };
   },

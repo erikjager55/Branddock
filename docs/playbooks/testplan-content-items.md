@@ -406,6 +406,27 @@ Uit onderzoek — te verifiëren in de test-ronde, niet als aanname behandelen:
 [press-release] [...]
 ```
 
+### Round 1 — Social Media categorie-sweep (parallel-run gestart 2026-05-13)
+
+> Tester: sessie 2 incognito · Workspace: Napking · Campaign: aparte instance naast Long-Form
+> Vul severity + beschrijving in zodra bug verschijnt. Prefix `[shared]` als dezelfde bug ook in Long-Form sessie 1 optreedt.
+
+```
+[linkedin-post] [Strategy] P2 [shared-pipeline]: Content-strategy-rationale bevat letterlijk "effie-waardig" als kwaliteits-claim → leak vanuit campaign-strategy `effieRationale` veld (bewust intern bedoeld als Effie Award rubric in `src/lib/campaigns/strategy-blueprint.types.ts:643,1268,1751` + prompt-templates `src/lib/ai/prompts/campaign-strategy.ts:267,276,693-714,818`). Bij content-flow strategy-stap wordt campaign-context doorgegeven inclusief effie-jargon, model echo't term letterlijk. Fix-richting: (a) markeer `effieRationale` + Effie-instructies als `<internal_rubric>` blok in prompt met expliciete "do not surface in user-facing output" guardrail; (b) strip Effie-context bij doorgifte naar content-wizard prompts (content-strategy hoort campagne-strategie te interpreteren, niet de Effie-evaluatie ervan); (c) post-process meta-token filter als vangnet op output.
+[linkedin-article] [...]
+[linkedin-carousel] [...]
+[linkedin-ad] [...]
+[linkedin-newsletter] [...]
+[linkedin-video] [...]
+[linkedin-event] [...]
+[linkedin-poll] [...]
+[instagram-post] [...]
+[twitter-thread] [...]
+[facebook-post] [...]
+[tiktok-script] [...]
+[social-carousel] [...]
+```
+
 ### Round 2 — Varianten
 
 ```
