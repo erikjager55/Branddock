@@ -25,8 +25,14 @@ import { getThresholdForType, DEFAULT_FIDELITY_THRESHOLD } from '@/lib/content-t
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 import type { AiProvider } from '@/lib/ai/feature-models';
 
-const REWRITE_MODEL = 'claude-haiku-4-5-20251001';
+// F24 (audit 2026-05-13): rewrite-model upgrade naar Opus 4.7 met extended
+// thinking voor consistente kwaliteit met INITIAL generation (F22a). Haiku
+// 4.5 leverde te zachte rewrites op style-pijler; Opus + thinking redeneert
+// over voice-fingerprint match vóór de herschrijving. Thinking-budget 4000
+// tokens (iets lager dan INITIAL's 5000 omdat baseline al gestructureerd is).
+const REWRITE_MODEL = 'claude-opus-4-7';
 const REWRITE_MAX_TOKENS = 4096;
+const REWRITE_THINKING_BUDGET = 4000;
 
 export interface AutoIterateIntegrationInput {
   workspaceId: string;
@@ -283,12 +289,26 @@ async function regenerateWithFeedback({
         : '';
   const userPrompt = `${promptHint}\n\n# Huidige tekst\n${baselineText}\n\n# Opdracht\nHerschrijf bovenstaande met de verbeterpunten verwerkt. ${fingerprintCue}Output alleen de herziene tekst.`;
 
-  const stream = client.messages.stream({
-    model: REWRITE_MODEL,
-    max_tokens: REWRITE_MAX_TOKENS,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-  });
+  // F24: Opus 4.7 met extended thinking. Anthropic-vereiste: temperature
+  // mag NIET gezet zijn wanneer thinking aan staat. Max-tokens moet groter
+  // zijn dan thinking-budget (anders rejected). Output-budget = max-tokens
+  // - thinking-budget.
+  const useThinking = REWRITE_MODEL.includes('opus');
+  const requestParams: Anthropic.Messages.MessageStreamParams = useThinking
+    ? {
+        model: REWRITE_MODEL,
+        max_tokens: REWRITE_MAX_TOKENS + REWRITE_THINKING_BUDGET,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+        thinking: { type: 'enabled', budget_tokens: REWRITE_THINKING_BUDGET },
+      }
+    : {
+        model: REWRITE_MODEL,
+        max_tokens: REWRITE_MAX_TOKENS,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      };
+  const stream = client.messages.stream(requestParams);
 
   const finalMessage = await stream.finalMessage();
   const block = finalMessage.content.find((b) => b.type === 'text');

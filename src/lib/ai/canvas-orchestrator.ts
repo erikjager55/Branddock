@@ -840,6 +840,101 @@ export async function* orchestrateContentGeneration(
     }
   }
 
+  // ── Step 2.8a: Silent auto-iterate-1 (F24, audit 2026-05-13) ──
+  // Lift initial score >= 70 zonder dat user handmatig op CTA hoeft te
+  // klikken. Werkt 1 silent iter af op variant 0 wanneer composite < 70.
+  // F8 (auto-iterate opt-in) blijft van toepassing voor verdere iters
+  // boven de 70-grens; deze flow voegt 1 onzichtbare pass toe om de
+  // baseline op een acceptabel niveau te brengen.
+  //
+  // Result: variant 0 generatedContent + ContentFidelityScore worden
+  // direct vervangen door iter-result; user ziet alleen het hogere
+  // eindresultaat (geen banner over iter).
+  const SILENT_ITER_THRESHOLD = 70;
+  const silentIterEligible =
+    fidelityPipelineReturn &&
+    fidelityPipelineReturn.initialResult.compositeScore < SILENT_ITER_THRESHOLD &&
+    humanVoiceMode !== 'STRICT' &&
+    process.env.FEATURE_AUTO_ITERATE !== 'true'; // gewone flow, geen E2E/smoke override
+
+  if (silentIterEligible && fidelityPipelineReturn) {
+    try {
+      const { runAutoIterateIntegration } = await import(
+        '@/lib/ai/auto-iterate-integration'
+      );
+      const silentGen = runAutoIterateIntegration({
+        workspaceId,
+        deliverableId,
+        contentTypeId: stack.deliverableTypeId,
+        compositionInput: fidelityPipelineReturn.compositionInput,
+        initialResult: fidelityPipelineReturn.initialResult,
+        initialText: fidelityPipelineReturn.blobText,
+        enabled: true,
+        maxIterations: 1,
+        stack,
+        textModelProvider: textModel.provider,
+      });
+      let silentResult: import('@/lib/ai/auto-iterate').AutoIterateResult | null = null;
+      while (true) {
+        const { value, done } = await silentGen.next();
+        if (done) {
+          silentResult = value;
+          break;
+        }
+        // F24: events bewust NIET door-yielden — silent flow voor user.
+      }
+      const initialCompositeScore = fidelityPipelineReturn.initialResult.compositeScore;
+      if (
+        silentResult &&
+        silentResult.attemptsExecuted > 0 &&
+        silentResult.finalScore > initialCompositeScore &&
+        typeof silentResult.finalText === 'string' &&
+        silentResult.finalText.trim().length > 0
+      ) {
+        // Apply: replace longest first-variant generatedContent met iter-text.
+        const components = await prisma.deliverableComponent.findMany({
+          where: { deliverableId, groupIndex: 0 },
+          select: { id: true, generatedContent: true },
+        });
+        if (components.length > 0) {
+          const longest = components.reduce((a, b) =>
+            (b.generatedContent?.length ?? 0) > (a.generatedContent?.length ?? 0) ? b : a,
+          );
+          await prisma.deliverableComponent.update({
+            where: { id: longest.id },
+            data: {
+              generatedContent: silentResult.finalText,
+              iterationCount: { increment: 1 },
+              version: { increment: 1 },
+            },
+          });
+          // Yield bijgewerkt fidelity_score_complete event zodat frontend
+          // de nieuwe (hogere) score toont. variantIndex: 0 = primary.
+          // pillarScores uit silent-iter zijn niet beschikbaar; we sturen
+          // alleen compositeScore + thresholdMet update. Frontend store
+          // muteert compositeScore zonder pillars te vernieuwen (volgende
+          // re-fetch krijgt verse data).
+          const threshold = fidelityPipelineReturn.initialResult.compositeThreshold;
+          yield {
+            event: 'fidelity_score_complete',
+            data: {
+              ...buildFidelityScoreEventPayload(fidelityPipelineReturn.initialResult),
+              compositeScore: silentResult.finalScore,
+              thresholdMet: silentResult.finalScore >= threshold,
+              variantIndex: 0,
+              silentIter: true, // signal voor telemetry / future UI
+            },
+          };
+        }
+      }
+    } catch (silentErr) {
+      console.warn(
+        '[canvas-orchestrator] silent auto-iterate failed (non-blocking):',
+        (silentErr as Error).message,
+      );
+    }
+  }
+
   // ── Step 2.8: Auto-iterate (sub-sprint #6.B wiring) ─
   // UX-overhaul 2026-05-13 (F8 herzien): auto-iterate is NIET meer automatisch
   // tijdens generation. User triggert via "Verbeter automatisch" CTA in canvas

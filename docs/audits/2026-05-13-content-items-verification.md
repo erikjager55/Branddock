@@ -165,6 +165,21 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Niet meegenomen** (volgt later): apply-endpoint persist nog geen nieuwe `ContentFidelityScore` row, dus na een eventuele latere hard-refresh leest de canvas de oude score uit DB. Daarvoor moet apply-endpoint OF re-judgen OF de snapshot-score uit `settings.autoIterate.finalScore` persisteren als nieuw `ContentFidelityScore` record. Pakken we op als score-display na hard-refresh een storing wordt.
 - **Severity**: P1 (gefixt voor de UX-loop; persistent score-write is P2 follow-up).
 
+### F24 — Silent auto-iterate-1 bij initial-score <70 (gefixt)
+- **Locatie**: `src/lib/ai/auto-iterate-integration.ts` (model upgrade), `src/lib/ai/canvas-orchestrator.ts` Step 2.8a (silent-trigger logic).
+- **Probleem**: Na F22a (Opus + thinking) + F22b (best-of-3) leverde initial-score 63/59 op Napking blog — verbetering t.o.v. 47, maar nog steeds onder threshold 70 die user als publish-ready beschouwt. Gap van 7-11pt blijft. Verdere prompt-engineering of best-of-5 zou marginaal effect hebben.
+- **Fix**:
+  1. **Auto-iterate model upgrade**: `REWRITE_MODEL` van `claude-haiku-4-5-20251001` → `claude-opus-4-7` met extended thinking (`budget_tokens: 4000`). Consistente kwaliteit met INITIAL generation; thinking helpt over voice-fingerprint match vóór rewrite. Anthropic-vereiste: temperature undefined bij thinking, max_tokens > thinking_budget.
+  2. **Silent auto-iterate-trigger**: in canvas-orchestrator na F-VAL pipeline, als `compositeScore < 70` en geen FEATURE_AUTO_ITERATE override: `runAutoIterateIntegration` met `maxIterations=1`. Events worden bewust NIET door-yielded naar SSE (silent flow voor user). Op success: longest first-variant `generatedContent` wordt vervangen door iter-text; nieuwe `fidelity_score_complete` event geyield met de hogere score.
+  3. **Behavior**: User ziet alleen het hogere eindresultaat in initial-display; geen banner over silent iter. Opt-in "Verbeter automatisch" CTA blijft beschikbaar voor verdere polish boven de 70-grens.
+- **Verwacht effect**: 63/59 → 71-75 (variant 0). Score persisted in DB; voor variant 1 (secundair) blijft de F22a+b score gelden (silent-iter werkt alleen op primary). Cost: +1 Opus call met thinking + 1 judge re-score ≈ $0.15-0.30 per generation waar silent-iter triggert.
+- **Trade-off F8 (auto-iterate opt-in)**: deels overruled — silent-iter is automatisch onder threshold 70 om consistente kwaliteit te garanderen. Boven 70 blijft opt-in via CTA gelden. User heeft expliciet akkoord gegeven op deze trade-off.
+- **Verification**:
+  - npx tsc --noEmit: 0 errors
+  - scripts/smoke-tests/auto-iterate.ts: 19/19 pass
+  - scripts/smoke-tests/feedback-compiler.ts: 14/14 pass
+- **Severity**: P1 (gefixt).
+
 ### F23 — InheritanceBanner + "Voiceguide actief" success-badge weg (gefixt)
 - **Locatie**: `src/features/campaigns/components/canvas/CanvasPage.tsx` (banner-render), `InheritanceBanner.tsx` (verwijderd), `GenerationFeedbackBanners.tsx:BrandVoiceBanner` (success-state weggehaald).
 - **Probleem**: User-feedback dat de twee canvas-banners visuele ruis zijn zonder toegevoegde waarde:
