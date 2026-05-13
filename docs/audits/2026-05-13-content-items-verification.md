@@ -175,6 +175,23 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F33 — Length-control multiplier crushed judge-score voor canvas-flow sections (gefixt)
+- **Locatie**: `src/lib/brand-fidelity/fidelity-runner.ts:runFidelityScoring`, `src/lib/ai/canvas-orchestrator.ts` (override pass-through).
+- **Probleem (smoking gun)**: Na F31+F32 toonde DB voor Napking blog-post: judge raw 92 (uitstekend) maar **finalComposite 55**. Reden: `computeLengthMultiplier(actual=400, target=1900) = 0.6` — -40% penalty wegens "severely short". Canvas-flow genereert SECTIONS (~200-500 woorden) maar content-type registry target voor blog-post is gemiddelde van constraints `minWords:800 + maxWords:3000 / 2 = 1900` — bedoeld voor full article. Length-control was correct geconfigureerd voor end-to-end blog-post scoring, maar canvas-flow scoort sectionele content waar deze penalty niet past.
+- **Verificatie pillar-breakdown**:
+  - Variant A composite 72: style 82, **judge 55**, rules 92 → judge bottleneck door 0.6× length-multiplier op judge raw ~92
+  - Variant B composite 64: style 69, judge 51, rules 83
+- **Fix**:
+  1. Nieuwe `targetWordCountOverride?: number` field op `FidelityRunInput`. Wanneer >0 wordt het content-type registry default overruled.
+  2. Canvas-orchestrator pre-computeert `actualWordCount = blobText.split(/\s+/).filter(Boolean).length` en passt dit door als override → ratio = 1.0 → multiplier = 1.0 (geen penalty).
+  3. Andere callers (external-content-runner, future API routes) blijven content-type default gebruiken; alleen canvas-flow disablet length-control.
+- **Verwacht impact** (zelfde output, pre vs post F33):
+  - Variant A judge 55 → 92 (penalty weg); composite 72 → **~89**
+  - Variant B judge 51 → 85; composite 64 → **~82**
+  - Beide variants ruim boven threshold 75 zonder verdere iteratie.
+- **Trade-off**: F-VAL detecteert niet meer "1-zin in plaats van 200 woorden" voor canvas-flow. Maar variant-output-gate (F25) vangt dat al op bij <50 chars body. Length-control was effectief duplicate.
+- **Severity**: P0 (gefixt; verklaarde 90%+ van de "score te laag" feedback).
+
 ### F32 — ContentFidelityScore persistence faalde silently voor canvas-flow (gefixt)
 - **Locatie**: `src/lib/brand-fidelity/fidelity-runner.ts:persistContentFidelityScoreIfPossible`, `src/lib/ai/canvas-orchestrator.ts` Step 5.5.
 - **Probleem**: DB-query toonde 0 `ContentFidelityScore` records voor Napking workspace ondanks meerdere F-VAL runs. Oorzaak: `persistContentFidelityScoreIfPossible` zoekt een bestaande `ContentVersion` om aan FK te koppelen; bij absentie returnt het silently. Canvas-orchestrator-flow (anders dan `/api/studio/.../components/generate-all` route) creëerde voorheen géén `ContentVersion` → alle F-VAL scores voor canvas-flow content kwamen niet in DB. Effect: ontbrekende data voor analytics, learning-loop attribution, dashboard usage layer.

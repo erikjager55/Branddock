@@ -63,6 +63,15 @@ export interface FidelityRunInput {
   generatorProvider: GeneratorProvider;
   /** Skip pijler 2 judge (fast path, deterministische scoring only) */
   skipJudge?: boolean;
+  /**
+   * F33 (audit 2026-05-13): override targetWordCount voor length-control
+   * multiplier. Canvas-flow genereert sections (~200-500 woorden), maar
+   * content-type-defaults targeten full articles (blog-post 1900 woorden).
+   * Zonder override produceert dat -40% judge-penalty op valide sectionele
+   * content. Canvas-orchestrator passt nu actualWordCount door om length-
+   * control effectief te disablen voor sectionele generation.
+   */
+  targetWordCountOverride?: number;
 }
 
 // ─── Brand Personality fetcher ──────────────────────
@@ -460,7 +469,13 @@ export async function runFidelityScoring(
       }),
     ]);
 
-    const targetWordCount = resolveTargetWordCount(input.contentTypeId);
+    // F33: gebruik override (van canvas-orchestrator) als beschikbaar; anders
+    // content-type registry default. Override is nuttig voor sectionele canvas-
+    // flow content waar de content-type target (volledig artikel) niet past.
+    const targetWordCount =
+      typeof input.targetWordCountOverride === 'number' && input.targetWordCountOverride > 0
+        ? input.targetWordCountOverride
+        : resolveTargetWordCount(input.contentTypeId);
     const brandName = input.stack.brand.brandName ?? 'Brand';
     const brandVoiceSummary = summarizeBrandVoice(input.stack, personality);
     const personaSummary = summarizePersona(input.stack);

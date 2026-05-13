@@ -1457,6 +1457,12 @@ async function* runFidelityScoringPipeline(input: {
   let fidelityErrorMessage: string | null = null;
   let fidelityOutcome: Awaited<ReturnType<typeof runFidelityScoring>> = null;
   try {
+    // F33 (audit 2026-05-13): pass actualWordCount als targetWordCountOverride
+    // → length-control multiplier wordt effectief 1.0 (ratio = 1.0). Canvas-
+    // flow genereert sections (~200-500 woorden); content-type defaults
+    // mikken op full articles wat -40% judge-penalty oplevert op valide
+    // sectionele content (blog-post default = 1900 vs actual 400 → 0.6× mult).
+    const actualWordCount = blobText.trim().split(/\s+/).filter(Boolean).length;
     fidelityOutcome = await runFidelityScoring({
       workspaceId,
       deliverableId,
@@ -1464,6 +1470,7 @@ async function* runFidelityScoringPipeline(input: {
       contentText: blobText,
       stack,
       generatorProvider: textModelProvider,
+      targetWordCountOverride: actualWordCount,
     });
   } catch (fidelityErr) {
     const message = fidelityErr instanceof Error ? fidelityErr.message : 'Unknown error';
