@@ -187,25 +187,57 @@ export function compileFeedbackHint(input: FeedbackCompilerInput): FeedbackCompi
   };
 }
 
+// F13 Phase B1 (audit 2026-05-13): diagnostic pillar-targeting met
+// per-pijler concrete rewrite-instructies. Threshold verlaagd van 15 -> 10
+// (vaker triggert). Per-pillar specifieke instructies ipv generieke
+// "verbeter daar het meest". Style-pijler instructies zijn structureel
+// (anders zit het op embedding-ceiling).
+const PILLAR_INSTRUCTIONS: Record<'style' | 'judge' | 'rules', { label: string; how: string }> = {
+  style: {
+    label: 'Style-fit (woordkeuze, ritme, zinsstructuur)',
+    how:
+      'Style-pijler hangt op voice-similarity embedding. Surface-rewrites (synoniemen, herfraseren) bewegen dit NIET. Vereist STRUCTURELE wijziging: ' +
+      '(a) gebruik woorden uit het "words we use" lijstje minimaal 2× per alinea; ' +
+      '(b) match de zinslengte uit de writing-samples (kort/lang patroon); ' +
+      '(c) imiteer de openingsstijl van sample 1 (statistiek / contraire stelling / scenario); ' +
+      '(d) verwijder anti-patterns expliciet en herstructureer die alinea\'s vanaf nul.',
+  },
+  judge: {
+    label: 'Brand-fidelity (essence, do/don\'ts, message-clarity)',
+    how:
+      'Judge-pijler beoordeelt brand-essence + key-message clarity. ' +
+      '(a) Maak de key-message expliciet zichtbaar in introductie EN conclusie (niet alleen impliciet); ' +
+      '(b) verwijder claims die niet 1-op-1 te herleiden zijn naar brand-positioning; ' +
+      '(c) gebruik consistente brand-frames (geen mix tussen "premium artisanal" en "budget-friendly" bv); ' +
+      '(d) zorg dat elke sectie aan de overall brand-purpose bijdraagt.',
+  },
+  rules: {
+    label: 'Rules (banned terms, claims-substantiation)',
+    how:
+      'Rules-pijler vangt deterministische violations. ' +
+      '(a) Schrap elke voorkomen van banned terms uit de avoid-list; ' +
+      '(b) onderbouw elke superlatief of % claim met bron of cijfer-context; ' +
+      '(c) check dat geen AI-clichés erin staan ("in de wereld van vandaag", "het is belangrijk om").',
+  },
+};
+
 function buildPillarEmphasis(scores: FeedbackCompilerInput['pillarScores']): string | null {
   if (!scores) return null;
-  const pillars: Array<{ name: string; score: number; label: string }> = [];
-  if (typeof scores.style === 'number') {
-    pillars.push({ name: 'style', score: scores.style, label: 'Style-fit (woordkeuze, ritme)' });
-  }
-  if (typeof scores.judge === 'number') {
-    pillars.push({ name: 'judge', score: scores.judge, label: 'Brand-fidelity (essence, do/don\'ts)' });
-  }
-  if (typeof scores.rules === 'number') {
-    pillars.push({ name: 'rules', score: scores.rules, label: 'Rules (banned terms, claims)' });
-  }
+  const pillars: Array<{ name: 'style' | 'judge' | 'rules'; score: number }> = [];
+  if (typeof scores.style === 'number') pillars.push({ name: 'style', score: scores.style });
+  if (typeof scores.judge === 'number') pillars.push({ name: 'judge', score: scores.judge });
+  if (typeof scores.rules === 'number') pillars.push({ name: 'rules', score: scores.rules });
 
   if (pillars.length < 2) return null;
   const lowest = pillars.reduce((a, b) => (a.score < b.score ? a : b));
   const others = pillars.filter((p) => p.name !== lowest.name);
   const avgOthers = others.reduce((sum, p) => sum + p.score, 0) / others.length;
 
-  // Alleen emphasis wanneer significante gap (> 15 punten lager)
-  if (avgOthers - lowest.score < 15) return null;
-  return `**Focuspunt deze ronde**: ${lowest.label} scoort het laagst (${lowest.score} vs ${Math.round(avgOthers)} gemiddeld) — verbeter daar het meest.`;
+  // Threshold verlaagd van 15 -> 10 zodat meer iters concrete pillar-instructie krijgen
+  if (avgOthers - lowest.score < 10) return null;
+  const meta = PILLAR_INSTRUCTIONS[lowest.name];
+  return (
+    `**Focuspunt deze ronde**: ${meta.label} scoort het laagst (${lowest.score} vs ${Math.round(avgOthers)} gemiddeld).\n\n` +
+    `**Hoe deze pijler te verbeteren**: ${meta.how}`
+  );
 }

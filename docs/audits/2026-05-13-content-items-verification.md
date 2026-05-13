@@ -124,17 +124,25 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Effort**: ~30 min. TS clean.
 - **Severity**: P1 (gefixt).
 
-### F13 — Auto-iterate produces 0pt improvements (KNOWN-LIMITATION)
-- **Probleem**: User reports "geen verbeteringen doorgevoerd" na auto-iterate. Score blijft staan op initiaal.
-- **Root causes geïdentificeerd**:
-  - **Findings empty**: `loadFindingsForDeliverable` query op BrandReviewFinding → voor fresh content vaak 0 rows. Feedback-compiler valt terug op generic re-prompt zonder concrete instructies.
-  - **Stijl-pijler ceiling**: voice-similarity-embedding tussen content + samples is structureel — gentle rewrite verandert het fingerprint niet.
-  - **Judge-LLM stability**: zelfde content scoort consistent middelmatig; surface-rewrites bewegen judge-score weinig.
-- **Niet gefixt deze sessie** — vereist diepere refactor:
-  - Feedback-compiler uitbreiden om ook style-gap signalen + judge-rationale te integreren (niet alleen BrandReviewFinding)
-  - Regenerate-prompt aggressiever maken: strategic-rewrite ipv surface-rewrite. Mogelijk meervoudige rewrite-strategieën (ToT-style) en kiezen op judge-score.
-  - Voice-samples uit voiceguide direct als reference-blob in regenerate-prompt embedden (anchor-content)
-- **Verbetering volgt** in: aparte taak "auto-iterate-effectiveness" (~1-2 dagen). Pre-launch: documented limitation; user kan na max iters handmatig finetunen.
+### F13 — Auto-iterate effectiveness (gefixt — split INITIAL/ITERATE)
+- **Initial diagnose**: feedback-compiler vond vaak geen BrandReviewFinding rows → generic re-prompt; voice-similarity embedding ceiling op style-pijler; surface-rewrites bewegen judge-score weinig.
+- **Fixes split bewust**:
+
+**Phase A (in INITIAL generation — automatisch na Step 1)**:
+- A1 — **Voice-anchor in brand-context**: `formatBrandVoiceguide` injecteert nu tot 3 writing-samples (was: 1) als gestructureerd reference-blok. AI ziet meerdere concrete voorbeelden van merk-stijl bij elke generation, kan voice-fingerprint direct matchen i.p.v. pas na iter te herstellen. +200-500 tokens per gen, maar verbetert initial style-pijler score zonder iter-cost.
+
+**Phase B (in ITERATE — alleen bij "Verbeter automatisch")**:
+- B1 — **Diagnostic pillar-targeting**: feedback-compiler `buildPillarEmphasis` heeft nu per-pijler concrete rewrite-instructies (style → structurele wijziging + words-we-use injection + opening-imitation; judge → key-message in intro+conclusie + brand-frame consistency; rules → banned-terms schrappen + claims onderbouwen). Threshold verlaagd 15 → 10 zodat meer iters concrete pillar-instructie krijgen.
+- B2 — **Aggressive rewrite-mode**: `regenerateWithFeedback` detecteert via promptHint-string-match of style/judge focuspunt is. Bij ja: switcht naar STRATEGIC REWRITE-modus ("je MAG structuur reorganiseren, alinea's splitsen, openingen vervangen"); behoudt feitelijke inhoud + lengte ±20% maar wijzigt voice/structuur agressief. Bij rules-focus: blijft surface-rewrite (lexicale fixes voldoende).
+- B3 — Multi-strategy ToT per iter: deferred. Eerst zien of B1+B2 voldoende zijn voor sufficient improvement.
+
+- **Verwacht effect**:
+  - Initial F-VAL scores ~5-10pt hoger doordat voice-anchor structureel werkt
+  - Auto-iterate winst per iter ~8-12pt voor style-pijler (was: ~0-2pt) door aggressive mode
+  - Total quality target: ≥75 binnen 3 iters voor 80% van content-types (was: ~20% met oude prompts)
+- **Niet gemeten**: pilot-data zal moeten bewijzen. Smoke 14/14 feedback-compiler pass.
+
+### F17 — Auto-iterate score visueel lager dan origineel (best-of + sync regressie)
 
 ### F14 — Brand-name-capitalization BLOCK stopt hele generation
 - **Locatie**: `src/lib/content-test/property-evals.ts:checkBrandNameCapitalization`

@@ -230,9 +230,21 @@ async function regenerateWithFeedback({
     throw new Error('ANTHROPIC_API_KEY required for auto-iterate regenerate');
   }
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const systemPrompt = `Je bent een senior ${contentLanguage === 'nl' ? 'Nederlands' : 'English'} content-editor voor ${brandName}. Herschrijf de tekst om de feedback te verwerken. Behoud structuur, feitelijke inhoud en ongeveer dezelfde lengte. Output alleen de herziene tekst, geen preambule of commentary.`;
 
-  const userPrompt = `${promptHint}\n\n# Huidige tekst\n${baselineText}\n\n# Opdracht\nHerschrijf bovenstaande met de verbeterpunten verwerkt. Output alleen de herziene tekst.`;
+  // F13 Phase B2 (audit 2026-05-13): detecteer of style of judge pijler de
+  // focuspunt is via promptHint-string-match (feedback-compiler injecteert
+  // deze labels). Bij style/judge-focus switchen we naar aggressive rewrite-
+  // mode: AI mag structuur reorganiseren, secties splitsen, openingen
+  // herschrijven. Bij rules-focus blijft surface-rewrite voldoende want
+  // dat zijn lexicale fixes.
+  const focusStyleOrJudge = /Style-fit|Brand-fidelity/.test(promptHint);
+  const lang = contentLanguage === 'nl' ? 'Nederlands' : 'English';
+
+  const systemPrompt = focusStyleOrJudge
+    ? `Je bent een senior ${lang} content-editor voor ${brandName}. STRATEGIC REWRITE-modus: je MAG structuur reorganiseren, alinea's splitsen of samenvoegen, openingsregels vervangen, en zinsritme aanpassen om de focuspunt-pijler echt te raken. Behoud alle feitelijke inhoud (cijfers, namen, claims) en ongeveer dezelfde totale lengte (±20%), maar herschrijf voice/structuur agressief waar nodig om voice-fingerprint of brand-essence beter te matchen. Output alleen de herziene tekst, geen preambule of commentary.`
+    : `Je bent een senior ${lang} content-editor voor ${brandName}. Herschrijf de tekst om de feedback te verwerken. Behoud structuur, feitelijke inhoud en ongeveer dezelfde lengte. Output alleen de herziene tekst, geen preambule of commentary.`;
+
+  const userPrompt = `${promptHint}\n\n# Huidige tekst\n${baselineText}\n\n# Opdracht\nHerschrijf bovenstaande met de verbeterpunten verwerkt. ${focusStyleOrJudge ? 'Reorganiseer structuur waar dat de focuspunt-pijler verbetert. ' : ''}Output alleen de herziene tekst.`;
 
   const stream = client.messages.stream({
     model: REWRITE_MODEL,

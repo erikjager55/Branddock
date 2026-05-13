@@ -450,12 +450,22 @@ export function formatBrandVoiceguide(data: BrandVoiceguideRow): string {
     parts.push(`Anti-patterns (never write): ${data.antiPatterns.filter(Boolean).join(', ')}`);
   }
 
-  // First writing sample as voice exemplar (truncated to keep prompt lean)
+  // F13 Phase A1 (audit 2026-05-13): voice-anchor — gebruik tot 3 writing-
+  // samples als gestructureerde reference i.p.v. 1. AI ziet meerdere
+  // concrete voorbeelden van merk-stijl, kan voice-fingerprint beter
+  // matchen vanaf de eerste generation. Per-sample 400 chars (3 × 400 =
+  // 1200 chars max, ~300 tokens). Verbetert pijler 1 (style-fit) zonder
+  // dat auto-iterate gewenst is.
   if (Array.isArray(data.writingSamples) && data.writingSamples.length > 0) {
-    const first = data.writingSamples[0];
-    if (typeof first === 'string' && first.trim().length > 0) {
-      const truncated = first.length > 600 ? first.slice(0, 600) + '…' : first;
-      parts.push(`Writing sample: "${truncated}"`);
+    const samples = (data.writingSamples as unknown[])
+      .filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+      .slice(0, 3)
+      .map((s) => (s.length > 400 ? s.slice(0, 400) + '…' : s.trim()));
+    if (samples.length > 0) {
+      const sampleBlock = samples.map((s, i) => `[${i + 1}] "${s}"`).join(' ');
+      parts.push(
+        `Writing samples — match THIS voice-fingerprint exactly (woordkeuze, ritme, openingsstijl, zinsstructuur): ${sampleBlock}`,
+      );
     }
   }
 
