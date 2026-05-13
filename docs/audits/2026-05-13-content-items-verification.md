@@ -141,7 +141,29 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
   - Auto-iterate winst per iter ~8-12pt voor style-pijler (was: ~0-2pt) door aggressive mode
   - Total quality target: ≥75 binnen 3 iters voor 80% van content-types (was: ~20% met oude prompts)
 - **F13-bis (2026-05-13, na pilot-run)**: pilot toonde 55→55 op Napking blog (style 43, judge 51, rules 81). Diagnose: `regenerateWithFeedback` kreeg alleen `brandName + contentLanguage` mee — niet de voiceguide-content zelf. Pillar-instructie "imiteer sample 1 + gebruik words-we-use" was een instructie zonder bron. Fix: voiceguide-text (`stack.brand.brandVoiceguide`, met `voiceBaseline1Pager` als fallback) wordt nu doorgegeven aan `regenerateWithFeedback` en als `# Brand voice fingerprint (MUST MATCH)` block in system-prompt geïnjecteerd. Bij style/judge-focus krijgt user-prompt een fingerprint-cue die expliciet refereert aan Writing samples + Words we use + Anti-patterns. Cap op 2500 chars voor context-budget. Werkt durably voor elke workspace met `BrandVoiceguide` populated; degradeert gracefully wanneer voiceguide ontbreekt.
+- **F13-bis pilot resultaat**: 54→61 op Napking blog (+7pt in 5 iters), style-pijler beweegt nu daadwerkelijk. Door naar F18 (score display) en F19 (apply requires refresh).
 - **Niet gemeten**: pilot-data zal moeten bewijzen. Smoke 14/14 feedback-compiler pass + TS clean na F13-bis.
+
+### F18 — Drie inconsistente score-getallen rondom auto-iterate (gefixt)
+- **Locatie**: `src/features/campaigns/components/canvas/FidelityScoreBar.tsx` SSE-handler voor `auto_iterate_started`.
+- **Probleem**: Na auto-iterate completion zag user drie verschillende getallen die niet kloppen:
+  - Big-score-display: 47 (canonical canvas-store fidelityScore)
+  - Banner-initial: 54 (uit SSE `auto_iterate_started.initialScore`)
+  - Banner-final: 61 (uit SSE `auto_iterate_complete.finalScore`)
+  - Banner zegt "Verbeterd van 54 naar 61" terwijl big-display 47 toont — onmogelijk uit te leggen.
+- **Oorzaak**: Trigger-endpoint doet een fresh re-judge bij start van auto-iterate als baseline voor het iter-loop. Door judge-variance (±2-5pt) wijkt deze af van de originele canvas-displayed score. SSE-event gaf die fresh-score door als `initialScore` → banner toonde de re-judge waarde, niet de user-visible canonical-score.
+- **Fix**: in `auto_iterate_started` SSE-handler nu de canvas-store `fidelityScore.compositeScore` als banner-initial gebruikt i.p.v. de SSE-waarde. Trigger-endpoint blijft zijn re-judge doen voor interne iter-loop delta-logic; alleen UI-banner pakt de canonical score. Effect: banner-initial en big-display zijn nu altijd gelijk. Werkt voor elke workspace + content-item.
+- **Severity**: P1 (gefixt).
+
+### F19 — "Gebruik verbeterde versie" vereist page refresh (gefixt)
+- **Locatie**: `src/features/campaigns/components/canvas/FidelityScoreBar.tsx:handleApply` in `AutoIterateImprovedBlock`.
+- **Probleem**: Na klikken "Gebruik verbeterde versie" verving het apply-endpoint de `DeliverableComponent.generatedContent`, maar de frontend kreeg geen signal om te refetchen. User moest pagina refreshen, en omdat Branddock een hybride SPA is (activeSection-state-based routing, niet URL) bracht refresh de user terug naar root → opnieuw navigeren naar het content-item.
+- **Fix**: na succesvolle apply nu drie acties in handleApply:
+  1. `queryClient.invalidateQueries({ queryKey: canvasKeys.components(deliverableId) })` → TanStack Query refetcht component-rows incl. nieuwe generatedContent.
+  2. `useCanvasStore.setState` muteert `fidelityScore.compositeScore` + variant-0 in `fidelityScoresByVariantIndex` direct met `finalScore`, zodat het grote getal-display ook meteen update zonder te wachten op refetch (score-state is apart van component-state).
+  3. UI-copy "Toegepast — ververs de pagina om de verbeterde tekst te zien" → "Toegepast — verbeterde tekst is geladen".
+- **Niet meegenomen** (volgt later): apply-endpoint persist nog geen nieuwe `ContentFidelityScore` row, dus na een eventuele latere hard-refresh leest de canvas de oude score uit DB. Daarvoor moet apply-endpoint OF re-judgen OF de snapshot-score uit `settings.autoIterate.finalScore` persisteren als nieuw `ContentFidelityScore` record. Pakken we op als score-display na hard-refresh een storing wordt.
+- **Severity**: P1 (gefixt voor de UX-loop; persistent score-write is P2 follow-up).
 
 ### F17 — Auto-iterate score visueel lager dan origineel (best-of + sync regressie)
 

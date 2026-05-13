@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCanvasStore } from '../../stores/useCanvasStore';
+import { canvasKeys } from '../../hooks/canvas.hooks';
 import {
   Loader2,
   ShieldCheck,
@@ -335,7 +337,15 @@ function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
             continue;
           }
           if (eventName === 'auto_iterate_started') {
-            const fresh = typeof data.initialScore === 'number' ? data.initialScore : 0;
+            // F18 fix (audit 2026-05-13): banner-initial moet matchen met de
+            // canvas-displayed score (de grote getal-display). Trigger-endpoint
+            // doet re-judge met judge-variance van ±5pt; SSE-initialScore zou
+            // banner doen afwijken van big number (user saw "47/100" + banner
+            // "54 → 61", drie getallen die niet correleren). Canvas-store score
+            // is single source of truth voor banner-start.
+            const canvasScore = useCanvasStore.getState().fidelityScore?.compositeScore;
+            const sseScore = typeof data.initialScore === 'number' ? data.initialScore : 0;
+            const fresh = typeof canvasScore === 'number' && canvasScore > 0 ? canvasScore : sseScore;
             store.setAutoIterateStarted({
               initialScore: fresh,
               threshold: typeof data.threshold === 'number' ? data.threshold : 75,
@@ -439,6 +449,7 @@ function AutoIterateImprovedBlock({
   const [applyError, setApplyError] = React.useState<string | null>(null);
   const delta = finalScore - initialScore;
 
+  const queryClient = useQueryClient();
   const handleApply = React.useCallback(async () => {
     if (!deliverableId) return;
     setApplyState('applying');
@@ -453,12 +464,44 @@ function AutoIterateImprovedBlock({
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error ?? `Apply failed: ${res.status}`);
       }
+      // F19 fix (audit 2026-05-13): in-place refresh zonder page reload.
+      // Branddock is een hybride SPA waarbij window.location.reload() de user
+      // terug naar de root brengt — user moet opnieuw navigeren. Hier:
+      //   1) invalidate canvas-components-query → TanStack refetcht
+      //      DeliverableComponent rows incl. nieuwe generatedContent.
+      //   2) update canvas-store.fidelityScore.compositeScore + variant 0
+      //      direct met finalScore zodat het grote getal-display ook meteen
+      //      de nieuwe waarde toont (anders blijft 47 hangen totdat re-fetch
+      //      van components klaar is en dat hangt niet aan score-state).
+      //   3) reset autoIterate state zodat de improved-block sluit en de
+      //      CTA opnieuw beschikbaar is als user verder wil iterereren.
+      queryClient.invalidateQueries({ queryKey: canvasKeys.components(deliverableId) });
+      const threshold = useCanvasStore.getState().fidelityScore?.compositeThreshold ?? 75;
+      useCanvasStore.setState((state) => {
+        const variantMap = new Map(state.fidelityScoresByVariantIndex);
+        const variant0 = variantMap.get(0);
+        if (variant0) {
+          variantMap.set(0, {
+            ...variant0,
+            compositeScore: finalScore,
+            thresholdMet: finalScore >= threshold,
+          });
+        }
+        return {
+          fidelityScore: {
+            ...state.fidelityScore,
+            compositeScore: finalScore,
+            thresholdMet: finalScore >= threshold,
+          },
+          fidelityScoresByVariantIndex: variantMap,
+        };
+      });
       setApplyState('applied');
     } catch (err) {
       setApplyError(err instanceof Error ? err.message : 'Apply mislukt');
       setApplyState('error');
     }
-  }, [deliverableId]);
+  }, [deliverableId, finalScore, queryClient]);
 
   // F17 fix (audit 2026-05-13): drie copy-varianten naargelang of iteratie
   // werkelijk verbetering opleverde. Bij gelijke score / regressie geen
@@ -540,7 +583,7 @@ function AutoIterateImprovedBlock({
       {applyState === 'applied' && (
         <div className="mt-2 text-xs text-emerald-700 font-medium inline-flex items-center gap-1">
           <ShieldCheck className="w-3.5 h-3.5" />
-          Toegepast — ververs de pagina om de verbeterde tekst te zien
+          Toegepast — verbeterde tekst is geladen
         </div>
       )}
 
