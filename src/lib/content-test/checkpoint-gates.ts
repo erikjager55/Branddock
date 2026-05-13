@@ -95,11 +95,21 @@ export function validateBriefInput(brief: {
 /**
  * Gate [2] — validateContextCompleteness
  * Brand-context completeness; downstream prompts hangen op brand-info.
+ *
+ * F2 fix (audit 2026-05-13): canvas-context laadt alleen personas/products
+ * die via CampaignKnowledgeAsset aan de campaign gekoppeld zijn. Workspaces
+ * met persona/product-data maar campagne zonder link kreeg false-positive
+ * warn. Accepteer workspace-level fallback-counts wanneer campaign-linked
+ * personas leeg zijn — gate wordt dan "workspace heeft tenminste context"
+ * i.p.v. "deze specifieke campaign heeft context".
  */
 export function validateContextCompleteness(stack: {
   brand?: { brandName?: string; contentLanguage?: string };
   personas?: Array<{ name?: string }>;
   products?: Array<{ name?: string }>;
+  /** Optioneel: workspace-level fallback wanneer campaign-link leeg is. */
+  workspacePersonaCount?: number;
+  workspaceProductCount?: number;
 }): GateResult {
   const reasons: string[] = [];
   if (!stack.brand?.brandName) {
@@ -115,8 +125,21 @@ export function validateContextCompleteness(stack: {
   }
   const hasPersona = (stack.personas?.length ?? 0) > 0;
   const hasProduct = (stack.products?.length ?? 0) > 0;
+  const wsHasPersona = (stack.workspacePersonaCount ?? 0) > 0;
+  const wsHasProduct = (stack.workspaceProductCount ?? 0) > 0;
   if (!hasPersona && !hasProduct) {
-    reasons.push('Geen persona of product in context — gegenereerde content wordt generiek');
+    if (!wsHasPersona && !wsHasProduct) {
+      reasons.push(
+        'Geen persona of product in workspace — gegenereerde content wordt generiek. Maak eerst een persona of product aan in Brand Foundation.',
+      );
+    } else {
+      // Workspace heeft context, alleen campaign-link ontbreekt. Info-niveau,
+      // niet warn — content is on-brand maar zou specifieker kunnen zijn als
+      // de campaign expliciet personas linkt.
+      reasons.push(
+        `Workspace heeft ${stack.workspacePersonaCount ?? 0} persona(s) en ${stack.workspaceProductCount ?? 0} product(en), maar geen daarvan gelinkt aan deze campaign — content gebruikt brand-context, niet campaign-specific persona-fit`,
+      );
+    }
   }
   if (reasons.length > 0) {
     return { stage: 'context-completeness', pass: false, severity: 'warn', reasons };

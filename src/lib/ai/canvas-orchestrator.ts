@@ -202,6 +202,13 @@ export async function* orchestrateContentGeneration(
       }
       gateWarningsAcc.push(briefGate);
     }
+    // F2 fix (audit 2026-05-13): canvas-context.personas/products bevat
+    // alleen campaign-linked items. Voor de gate-check tellen ook
+    // workspace-level personas/products als fallback.
+    const [wsPersonaCount, wsProductCount] = await Promise.all([
+      prisma.persona.count({ where: { workspaceId } }),
+      prisma.product.count({ where: { workspaceId } }),
+    ]);
     const contextGate = validateContextCompleteness({
       brand: stack.brand
         ? {
@@ -211,6 +218,8 @@ export async function* orchestrateContentGeneration(
         : undefined,
       personas: stack.personas?.map((p) => ({ name: p.name ?? undefined })),
       products: stack.products?.map((p) => ({ name: p.name ?? undefined })),
+      workspacePersonaCount: wsPersonaCount,
+      workspaceProductCount: wsProductCount,
     });
     if (!contextGate.pass) {
       if (contextGate.severity === 'block') {
@@ -1053,9 +1062,9 @@ export async function* orchestrateContentGeneration(
   // Geef de UI concrete vervolgacties die de user kan kiezen. Cowork-stijl:
   // "wil je secties herzien / tone aanpassen / variant voor ander kanaal?"
   // Worden in UI als chips/quick-actions getoond.
+  const { buildIterationNudges } = await import('@/lib/content-test/iteration-nudges');
   const iterationNudges = buildIterationNudges({
     contentType: stack.deliverableTypeId,
-    medium: stack.medium,
     hasImageComponent: imageResults.some((r) => r !== null),
   });
 
@@ -1070,60 +1079,9 @@ export async function* orchestrateContentGeneration(
   };
 }
 
-interface IterationNudge {
-  id: string;
-  label: string;
-  intent: string;
-  /** Concrete DELIVERABLE_TYPES.id voor derive-acties. */
-  targetContentTypeId?: string;
-}
-
-function buildIterationNudges(input: {
-  contentType: string | null;
-  medium: CanvasContextStack['medium'];
-  hasImageComponent: boolean;
-}): IterationNudge[] {
-  const nudges: IterationNudge[] = [
-    { id: 'revise-section', label: 'Een sectie herzien', intent: 'revise_section' },
-    { id: 'adjust-tone', label: 'Toon aanpassen', intent: 'adjust_tone' },
-  ];
-  // Cross-channel variant-suggestie afhankelijk van huidig content-type.
-  // Mapping naar DELIVERABLE_TYPES.id zodat derive-endpoint precies weet
-  // welke target content-type aan te maken.
-  const ct = input.contentType?.toLowerCase() ?? '';
-  if (ct.includes('blog') || ct.includes('article') || ct.includes('long')) {
-    nudges.push({
-      id: 'variant-linkedin',
-      label: 'LinkedIn-variant maken',
-      intent: 'derive',
-      targetContentTypeId: 'linkedin-post',
-    });
-    nudges.push({
-      id: 'variant-email',
-      label: 'Nieuwsbrief-variant maken',
-      intent: 'derive',
-      targetContentTypeId: 'newsletter',
-    });
-  } else if (ct.includes('social') || ct.includes('linkedin') || ct.includes('twitter')) {
-    nudges.push({
-      id: 'variant-blog',
-      label: 'Blogpost-versie maken',
-      intent: 'derive',
-      targetContentTypeId: 'blog-post',
-    });
-  } else if (ct.includes('email') || ct.includes('newsletter')) {
-    nudges.push({
-      id: 'variant-landing',
-      label: 'Landingspagina maken',
-      intent: 'derive',
-      targetContentTypeId: 'landing-page',
-    });
-  }
-  if (!input.hasImageComponent && ct.includes('blog')) {
-    nudges.push({ id: 'add-hero-image', label: 'Hero-image toevoegen', intent: 'add_image' });
-  }
-  return nudges;
-}
+// Inline-functie verplaatst naar shared util src/lib/content-test/iteration-nudges.ts
+// zodat client (canvas-load persistence) en server (SSE complete event) dezelfde
+// logica gebruiken (audit 2026-05-13).
 
 // ─── Text Generation with Provider Fallback ──────────────
 //

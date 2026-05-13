@@ -9,7 +9,7 @@
 //      gegroepeerd op intent met icoon per type.
 // =============================================================
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ShieldCheck,
   AlertCircle,
@@ -21,14 +21,45 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
+import { useCampaignStore } from '../../stores/useCampaignStore';
+import { useUIState } from '@/contexts/UIStateContext';
 
 export function GenerationFeedbackBanners() {
+  // Persistence: bij canvas-load van een bestaande complete deliverable zijn
+  // de SSE-events al gepasseerd. Derive nudges client-side uit contentType
+  // + image-state zodat de panel ook bij page-reload zichtbaar blijft.
+  // Brand-voice banner persistence komt apart (vereist API-call voor voiceguide
+  // state — geplaatst in audit als follow-up).
+  useDeriveNudgesOnLoad();
   return (
     <>
       <BrandVoiceBanner />
       <IterationNudgesPanel />
     </>
   );
+}
+
+function useDeriveNudgesOnLoad() {
+  const deliverableId = useCanvasStore((s) => s.deliverableId);
+  const contentType = useCanvasStore((s) => s.contentType);
+  const variantGroups = useCanvasStore((s) => s.variantGroups);
+  const nudges = useCanvasStore((s) => s.iterationNudges);
+  const setIterationNudges = useCanvasStore((s) => s.setIterationNudges);
+
+  useEffect(() => {
+    // Skip wanneer geen deliverable geladen, of als nudges al gevuld zijn
+    // (live SSE 'complete' event), of als er geen variants zijn (deliverable
+    // is nog niet gegenereerd).
+    if (!deliverableId || !contentType) return;
+    if (nudges.length > 0) return;
+    if (variantGroups.size === 0) return;
+
+    const hasImageComponent = variantGroups.has('visual') || variantGroups.has('hero-image');
+    void import('@/lib/content-test/iteration-nudges').then(({ buildIterationNudges }) => {
+      const derived = buildIterationNudges({ contentType, hasImageComponent });
+      setIterationNudges(derived);
+    });
+  }, [deliverableId, contentType, variantGroups, nudges.length, setIterationNudges]);
 }
 
 // ─── Brand-voice banner ────────────────────────────────────
@@ -112,10 +143,17 @@ function IterationNudgesPanel() {
   const nudges = useCanvasStore((s) => s.iterationNudges);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
   const deliverableId = useCanvasStore((s) => s.deliverableId);
+  const setSelectedCampaignId = useCampaignStore((s) => s.setSelectedCampaignId);
+  const setSelectedDeliverableId = useCampaignStore((s) => s.setSelectedDeliverableId);
+  const { setActiveSection } = useUIState();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  if (globalStatus !== 'complete' || nudges.length === 0) return null;
+  // Show panel wanneer er nudges zijn én generation niet actief is.
+  // Live: globalStatus === 'complete' (SSE-set). Reload: globalStatus
+  // === 'idle' maar nudges zijn client-side gederiveerd uit contentType.
+  if (nudges.length === 0) return null;
+  if (globalStatus === 'generating') return null;
 
   async function handleNudgeClick(nudge: (typeof nudges)[number]) {
     if (nudge.intent !== 'derive' || !nudge.targetContentTypeId || !deliverableId) {
@@ -133,8 +171,17 @@ function IterationNudgesPanel() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error ?? `Derive failed: ${res.status}`);
       }
-      const data = (await res.json()) as { newDeliverableId: string };
-      window.location.href = `/?deliverableId=${data.newDeliverableId}`;
+      const data = (await res.json()) as {
+        newDeliverableId: string;
+        sourceDeliverableId: string;
+      };
+      // F-derive-nav fix (audit 2026-05-13): Branddock is hybride SPA met
+      // pagina-routing via activeSection state, niet URL. Set canvas-store
+      // selectie + flip activeSection -> canvas re-rendered met nieuwe id.
+      const sourceCampaignId = useCanvasStore.getState().campaignId;
+      if (sourceCampaignId) setSelectedCampaignId(sourceCampaignId);
+      setSelectedDeliverableId(data.newDeliverableId);
+      setActiveSection('content-canvas');
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Derive mislukt');
       setBusyId(null);

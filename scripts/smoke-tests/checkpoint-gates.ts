@@ -91,6 +91,33 @@ async function main() {
   });
   assert('[2] missing contentLanguage warns', !ctxNoLang.pass && ctxNoLang.severity === 'warn');
 
+  // F2 fix: workspace-level fallback wanneer campaign-link leeg is
+  const ctxWsFallback = validateContextCompleteness({
+    brand: { brandName: 'Napking', contentLanguage: 'nl' },
+    personas: [],
+    products: [],
+    workspacePersonaCount: 3,
+    workspaceProductCount: 2,
+  });
+  assert(
+    '[2] workspace-personas warn (info-level "niet campaign-linked")',
+    !ctxWsFallback.pass &&
+      ctxWsFallback.severity === 'warn' &&
+      ctxWsFallback.reasons[0].includes('Workspace heeft 3 persona(s)'),
+  );
+
+  const ctxFullyEmpty = validateContextCompleteness({
+    brand: { brandName: 'Napking', contentLanguage: 'nl' },
+    personas: [],
+    products: [],
+    workspacePersonaCount: 0,
+    workspaceProductCount: 0,
+  });
+  assert(
+    '[2] zero personas anywhere warns met Brand Foundation tip',
+    !ctxFullyEmpty.pass && ctxFullyEmpty.reasons[0].includes('Brand Foundation'),
+  );
+
   // ─ Gate [3] validateAngleDiversity ─
   console.log('\n## Gate [3] validateAngleDiversity\n');
   const noAngles = validateAngleDiversity(null);

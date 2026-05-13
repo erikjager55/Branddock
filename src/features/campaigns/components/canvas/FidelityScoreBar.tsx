@@ -117,11 +117,15 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
         </div>
       </div>
 
-      {/* ─── Verdict label + skipped fallback ─── */}
+      {/* ─── Verdict label + uitleg + skipped fallback ─── */}
       {verdict && !isSkipped && (
         <div className="mt-2 text-xs">
           <span className="font-medium" style={{ color: VERDICT_COLOR[verdict] }}>
             {VERDICT_LABELS[verdict]}
+          </span>
+          <span className="text-gray-400"> — meet AI-patronen. </span>
+          <span className="text-gray-500">
+            De score bovenaan combineert dit met merkstijl + strategie.
           </span>
           {isComplete && fidelity.elapsedMs !== null && (
             <span className="text-gray-500"> · gemeten in {(fidelity.elapsedMs / 1000).toFixed(0)}s</span>
@@ -137,6 +141,21 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
             : 'Score kon niet berekend worden.'}
         </div>
       )}
+
+      {/* ─── F3 fix (audit 2026-05-13): explain-discrepancy banner ─── */}
+      {/* Wanneer detector groen toont (TOP_TIER/HUMAN_BASELINE) maar composite */}
+      {/* onder drempel zit: signaal dat tekst menselijk klinkt maar nog niet bij */}
+      {/* het merk past. Voorkomt verwarring "klopt deze score wel?". */}
+      {isComplete &&
+        fidelity.compositeScore !== null &&
+        fidelity.thresholdMet === false &&
+        (verdict === 'TOP_TIER' || verdict === 'HUMAN_BASELINE') && (
+          <div className="mt-2 rounded-md bg-amber-50/60 border border-amber-200/60 px-2.5 py-1.5 text-[11px] text-amber-900 leading-relaxed">
+            <span className="font-medium">Klinkt menselijk, past nog niet bij merk.</span>{' '}
+            Detector ziet weinig AI-patronen (pin links), maar merkstijl + strategie
+            zijn lager dan ideaal. Zie pijler-breakdown hieronder voor waar te verbeteren.
+          </div>
+        )}
 
       {/* ─── STRICT mode running indicator ─── */}
       {strict.stage === 'rewriting' && (
