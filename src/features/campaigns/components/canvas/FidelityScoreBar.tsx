@@ -255,12 +255,15 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
           demo-feature die in normale workflow alleen ruis was. Comparison-flow
           kan later terug via een aparte settings-toggle. */}
 
-      {/* Opt-in "Verbeter automatisch" CTA — wanneer score < threshold +
-          auto-iterate niet al gelopen. Triggert nieuwe iteratie-flow. */}
+      {/* Opt-in "Verbeter automatisch" CTA — wanneer score < threshold.
+          UX-fix 2026-05-13: CTA blijft beschikbaar voor re-try ook na een
+          eerdere voltooide auto-iterate (was: alleen bij stage === 'idle').
+          Verborgen alleen tijdens actieve iteratie + na threshold-success. */}
       {isComplete &&
         fidelity.compositeScore !== null &&
         fidelity.thresholdMet === false &&
-        autoIterate.stage === 'idle' &&
+        autoIterate.stage !== 'iterating' &&
+        !(autoIterate.stage === 'complete' && autoIterate.thresholdMet) &&
         deliverableId && (
           <AutoIterateOptInCta deliverableId={deliverableId} />
         )}
@@ -295,6 +298,10 @@ function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
   const handleClick = React.useCallback(async () => {
     setBusy(true);
     setErrorMsg(null);
+    // Reset autoIterate-state vóór nieuwe trigger zodat oude SSE-data niet
+    // door-shifted (oude max_iterations label bv.) en de progress-display
+    // start vers. UX-fix 2026-05-13.
+    useCanvasStore.getState().resetAutoIterate();
     try {
       const res = await fetch(`/api/studio/${deliverableId}/auto-iterate/trigger`, {
         method: 'POST',
@@ -328,9 +335,32 @@ function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
             continue;
           }
           if (eventName === 'auto_iterate_started') {
+            const fresh = typeof data.initialScore === 'number' ? data.initialScore : 0;
             store.setAutoIterateStarted({
-              initialScore: typeof data.initialScore === 'number' ? data.initialScore : 0,
+              initialScore: fresh,
               threshold: typeof data.threshold === 'number' ? data.threshold : 75,
+            });
+            // UX-fix 2026-05-13: sync de canvas fidelityScore-display met de
+            // fresh re-judge die door trigger-endpoint is gedaan. Voorkomt
+            // discrepantie tussen "Brand fidelity score: 50" en
+            // "Verbeterd van 52 naar 52" (judge-LLM variance). Variant-index 0
+            // is de primary.
+            store.setFidelityCompleteForVariant(0, {
+              compositeScore: fresh,
+              thresholdMet:
+                fresh >= (typeof data.threshold === 'number' ? data.threshold : 75),
+              compositeThreshold:
+                typeof data.threshold === 'number' ? data.threshold : 75,
+              detectorVerdict:
+                useCanvasStore.getState().fidelityScore.detectorVerdict ?? 'HUMAN_BASELINE',
+              humanBaselinePosition:
+                useCanvasStore.getState().fidelityScore.humanBaselinePosition ?? 0,
+              pillars: useCanvasStore.getState().fidelityScore.pillars ?? {
+                style: null,
+                judge: null,
+                rules: null,
+              },
+              elapsedMs: useCanvasStore.getState().fidelityScore.elapsedMs ?? 0,
             });
           } else if (eventName === 'auto_iterate_iteration_complete') {
             store.setAutoIterateIterationComplete({

@@ -109,6 +109,33 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
   - context-assembler Canvas Step 1 system-prompt: "FOUR strategic textareas: objective, keyMessage, toneDirection, callToAction — always propose ALL FOUR in one call" + repeated in "CRITICAL broadly" instruction.
 - **Severity**: P1 (gefixt).
 
+### F12 — Auto-iterate CTA niet re-triggerbaar + score-display inconsistent
+- **Locaties**: FidelityScoreBar.AutoIterateOptInCta + CanvasPage mount + SSE-handler
+- **Vier samenhangende problemen**:
+  1. **OptInCta verborgen na eerste run**: render-conditie eiste `autoIterate.stage === 'idle'`. Na 1× iter is stage='complete' → CTA verdwijnt, user kan niet opnieuw triggeren.
+  2. **Chip-click doet niets**: "Score automatisch verbeteren" chip dispatched custom event, maar OptInCta-component was niet meer gemount → niemand luisterde.
+  3. **Stale DB-snapshot rendert**: oude `Deliverable.settings.autoIterate` uit pre-overhaul automatische run bleef tonen "Verbeterd van 52 naar 52 in 2 pogingen — pas brief aan" na canvas-reload, ondanks dat er niets nieuws gedaan was.
+  4. **Score-discrepancy 50 vs 52**: canvas-score (50) was van originele generation, auto-iterate snapshot (52) was van trigger-endpoint re-judge. Judge-LLM variance is ~2-3pt; deze waardes laten beide kanten zien zonder context.
+- **Fixes**:
+  - OptInCta render-conditie verlost: tonen wanneer score < threshold + stage !== 'iterating' + NIET threshold-success. Re-try mogelijk na falen.
+  - Reset autoIterate-state vóór nieuwe trigger (`useCanvasStore.getState().resetAutoIterate()` in handleClick).
+  - Reset autoIterate-state op CanvasPage mount (clear stale DB-snapshot rendering — snapshot blijft in DB voor "Apply"-flow, maar wordt niet auto-getoond).
+  - Bij `auto_iterate_started` SSE: sync canvas fidelity-score met trigger-endpoint's re-judge score via `setFidelityCompleteForVariant(0, ...)`. Voorkomt 50/52 discrepancy.
+- **Effort**: ~30 min. TS clean.
+- **Severity**: P1 (gefixt).
+
+### F13 — Auto-iterate produces 0pt improvements (KNOWN-LIMITATION)
+- **Probleem**: User reports "geen verbeteringen doorgevoerd" na auto-iterate. Score blijft staan op initiaal.
+- **Root causes geïdentificeerd**:
+  - **Findings empty**: `loadFindingsForDeliverable` query op BrandReviewFinding → voor fresh content vaak 0 rows. Feedback-compiler valt terug op generic re-prompt zonder concrete instructies.
+  - **Stijl-pijler ceiling**: voice-similarity-embedding tussen content + samples is structureel — gentle rewrite verandert het fingerprint niet.
+  - **Judge-LLM stability**: zelfde content scoort consistent middelmatig; surface-rewrites bewegen judge-score weinig.
+- **Niet gefixt deze sessie** — vereist diepere refactor:
+  - Feedback-compiler uitbreiden om ook style-gap signalen + judge-rationale te integreren (niet alleen BrandReviewFinding)
+  - Regenerate-prompt aggressiever maken: strategic-rewrite ipv surface-rewrite. Mogelijk meervoudige rewrite-strategieën (ToT-style) en kiezen op judge-score.
+  - Voice-samples uit voiceguide direct als reference-blob in regenerate-prompt embedden (anchor-content)
+- **Verbetering volgt** in: aparte taak "auto-iterate-effectiveness" (~1-2 dagen). Pre-launch: documented limitation; user kan na max iters handmatig finetunen.
+
 ### F-canvas-open-slow — Derive-navigation duurt lang (PERFORMANCE)
 - **Locatie**: derive → navigate → CanvasPage mount → fetch /api/studio/[id] + components + context
 - **Probleem**: Tussen klik op chip en zichtbaarheid van nieuwe canvas zit veel laadtijd. CanvasPage mount triggert ~4 sequentiële API calls (deliverable detail, components, context-stack, F-VAL persist).

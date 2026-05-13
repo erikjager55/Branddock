@@ -143,6 +143,11 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
     useCanvasStore.getState().setDeliverable(deliverableId, 'canvas', campaignId);
     // Clear stale title from a prior deliverable — the fetch below populates it.
     setDeliverableTitle(null);
+    // UX-fix 2026-05-13: clear stale auto-iterate state. DB-snapshots uit
+    // eerdere automatische runs (vóór 2026-05-13 UX-overhaul) zouden anders
+    // door-renderen op canvas-load. AutoIterateImprovedBlock toont alleen
+    // wanneer een NIEUWE user-triggered iteratie heeft gedraaid in deze sessie.
+    useCanvasStore.getState().resetAutoIterate();
 
     const controller = new AbortController();
 
