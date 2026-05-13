@@ -175,6 +175,22 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F41 — DAM auto-tagging via Claude Vision (gefixt — fire-and-forget pattern)
+- **Locatie**: `src/lib/ai/dam-auto-tagger.ts` (NIEUW), `src/app/api/media/route.ts` + `src/app/api/media/import-url/route.ts` + `src/app/api/media/stock/import/route.ts` (hooks).
+- **Context**: Media Library bevatte MediaAssets zonder uniforme metadata. Geen searchable tags voor cross-content reuse. DAM-best-practices 2026 (Frontify/Bynder reports) tonen dat auto-tagging via vision-AI 67% van marketing-teams betere brand-compliance levert.
+- **Fix**: `analyzeMediaAssetForDam(fileUrl)` helper roept Claude Sonnet Vision met structured-JSON prompt aan en extraheert:
+  - **description**: 1-2 zinnen neutraal-beschrijvend
+  - **contentTags**: 5-10 keywords (objecten, personen-rollen, locaties, mood)
+  - **styleTags**: 2-5 keywords visuele stijl (geprefixt met `style:` in aiTags voor searchable filtering)
+  - **authenticity**: AI_GENERATED | PHOTO_REAL | STOCK | HYBRID (geprefixt met `auth:` in aiTags)
+  - **dominantColors**: 3-5 hex-values
+- **Schrijft naar bestaande MediaAsset fields** (geen schema-uitbreiding): `aiDescription`, `aiTags`, `dominantColors`. Filterable via tag-prefix-pattern.
+- **Hook-pattern**: fire-and-forget na `prisma.mediaAsset.create` in 3 routes (file upload, URL import, stock import). Vision-call duurt 3-8s; user ziet asset direct in library, tags volgen async. Idempotent: skip wanneer aiTags al gevuld.
+- **Cost**: ~$0.02 per upload (1× Sonnet Vision).
+- **Niet meegenomen**: bulk-upload + scraped-image + AI-generated persist paden ontvangen tagging in F41-bis follow-up. Backfill-API voor bestaande assets ook follow-up.
+- **Verification**: npx tsc --noEmit: 0 errors.
+- **Severity**: P2 (gefixt; analytics + searchability win, niet user-facing-critical).
+
 ### F40 — Brand-style anchor set + style-reference injection (gefixt — backend + status-UI)
 - **Locatie**: `prisma/schema.prisma` (Workspace.brandStyleAnchorIds), `src/lib/ai/brand-style-anchors.ts` (NIEUW helper), `src/lib/integrations/fal/fal-client.ts:generateFalImage` (referenceImageUrls support), `src/app/api/studio/[deliverableId]/generate-visual/route.ts` (anchor injection), `src/app/api/workspace/brand-style-anchors/route.ts` (NIEUW management API), Step1Context status-indicator.
 - **Probleem**: image-generations konden alleen styleDirection-chip + briefingText gebruiken voor brand-look. Geen reference-images workspace-wide voor consistente brand-stijl over campagnes. Voor LoRA-tier consistency moest user een complete LoRA trainen (training-stap, time-investment); style-reference is lichter alternatief.

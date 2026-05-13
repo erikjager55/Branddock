@@ -174,6 +174,13 @@ export async function POST(request: NextRequest) {
     invalidateCache(cacheKeys.prefixes.media(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
+    // F41 (audit 2026-05-13): DAM auto-tagging fire-and-forget
+    if (asset.mediaType === 'IMAGE') {
+      void import('@/lib/ai/dam-auto-tagger').then(({ tagMediaAssetIfPossible }) => {
+        void tagMediaAssetIfPossible(asset.id);
+      });
+    }
+
     return NextResponse.json(
       {
         id: asset.id,

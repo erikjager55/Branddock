@@ -127,6 +127,11 @@ export async function POST(request: NextRequest) {
 
     invalidateCache(cacheKeys.prefixes.media(workspaceId));
 
+    // F41 (audit 2026-05-13): DAM auto-tagging fire-and-forget
+    void import('@/lib/ai/dam-auto-tagger').then(({ tagMediaAssetIfPossible }) => {
+      void tagMediaAssetIfPossible(asset.id);
+    });
+
     return NextResponse.json({ asset }, { status: 201 });
   } catch (error) {
     console.error('Error importing stock photo:', error);

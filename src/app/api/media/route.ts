@@ -266,6 +266,15 @@ export async function POST(request: NextRequest) {
     invalidateCache(cacheKeys.prefixes.media(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
+    // F41 (audit 2026-05-13): DAM auto-tagging via Claude Vision —
+    // fire-and-forget, blokkeert response niet. Vision-call duurt
+    // 3-8s; user ziet asset direct in library, tags volgen async.
+    if (asset.mediaType === 'IMAGE') {
+      void import('@/lib/ai/dam-auto-tagger').then(({ tagMediaAssetIfPossible }) => {
+        void tagMediaAssetIfPossible(asset.id);
+      });
+    }
+
     return NextResponse.json(asset, { status: 201 });
   } catch (error) {
     console.error("Error uploading media asset:", error);
