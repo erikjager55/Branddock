@@ -291,8 +291,13 @@ export function InputBar() {
           }
 
           case 'mutation_proposal':
+            // UX-fix 2026-05-13: gebruik enqueue ipv setPendingMutation om
+            // parallel mutation-proposals (bv. canvas Step 1 fill: brief +
+            // visual + content_inputs in 1 response) niet te overwriten.
+            // Eerste activeert direct; volgende komen in queue, popped na
+            // confirm via MutationConfirmCard.
             setActivityStatus(null);
-            setPendingMutation(d as never);
+            useClawStore.getState().enqueuePendingMutation(d as never);
             break;
 
           case 'done': {

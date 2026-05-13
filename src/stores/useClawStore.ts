@@ -142,6 +142,19 @@ interface ClawStore {
   // ── Pending Mutation ─────────────────────────────────────
   pendingMutation: MutationProposal | null;
   setPendingMutation: (proposal: MutationProposal | null) => void;
+  /**
+   * Queue voor parallelle mutation-proposals. AI kan in 1 response meerdere
+   * write-tools aanroepen (bv. update_deliverable_brief + visual_brief +
+   * content_inputs voor canvas Step 1). Voorheen overwrote elke nieuwe
+   * proposal de vorige -> user zag alleen de laatste. Nu append-to-queue;
+   * MutationConfirmCard pakt eerste, na confirm pop volgende. UX-fix
+   * 2026-05-13.
+   */
+  pendingMutationQueue: MutationProposal[];
+  enqueuePendingMutation: (proposal: MutationProposal) => void;
+  /** Pop volgende uit queue + activeer als pendingMutation, of clear beide. */
+  advanceMutationQueue: () => void;
+  clearMutationQueue: () => void;
 
   // ── Conversation History ─────────────────────────────────
   conversations: ClawConversationMeta[];
@@ -273,6 +286,26 @@ export const useClawStore = create<ClawStore>((set, get) => ({
   // Pending mutation
   pendingMutation: null,
   setPendingMutation: (proposal) => set({ pendingMutation: proposal }),
+  pendingMutationQueue: [],
+  enqueuePendingMutation: (proposal) =>
+    set((state) => {
+      // Wanneer geen actieve mutation: directly activate (single-proposal pad
+      // gebruikt deze setter ook, bewaart bestaand gedrag). Anders queue.
+      if (!state.pendingMutation) {
+        return { pendingMutation: proposal };
+      }
+      return { pendingMutationQueue: [...state.pendingMutationQueue, proposal] };
+    }),
+  advanceMutationQueue: () =>
+    set((state) => {
+      if (state.pendingMutationQueue.length === 0) {
+        return { pendingMutation: null, pendingMutationQueue: [] };
+      }
+      const [next, ...rest] = state.pendingMutationQueue;
+      return { pendingMutation: next, pendingMutationQueue: rest };
+    }),
+  clearMutationQueue: () =>
+    set({ pendingMutation: null, pendingMutationQueue: [] }),
 
   // Conversation history
   conversations: [],

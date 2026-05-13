@@ -267,7 +267,9 @@ export function MutationConfirmCard() {
     } catch (err) {
       console.error('Confirm error:', err);
     } finally {
-      setPendingMutation(null);
+      // UX-fix 2026-05-13: pop next van queue (parallel mutation-proposals
+      // van 1 AI response). Wanneer queue leeg: clear pendingMutation.
+      useClawStore.getState().advanceMutationQueue();
       setIsSubmitting(false);
       setIsEditing(false);
       setEditedValues({});
@@ -275,6 +277,8 @@ export function MutationConfirmCard() {
   }, [pendingMutation, activeConversationId, editedValues, isSubmitting, setPendingMutation, addMessage, queryClient, requestNavigation]);
 
   if (!pendingMutation) return null;
+  // UX-fix 2026-05-13: queue-indicator wanneer parallel proposals wachten
+  const queueRemaining = useClawStore.getState().pendingMutationQueue.length;
 
   return (
     <div className="max-w-3xl mx-auto px-4 mb-4">
@@ -283,6 +287,11 @@ export function MutationConfirmCard() {
         <div className="flex items-center gap-2 px-4 py-3 border-b border-amber-200/60">
           <Wrench size={14} className="text-amber-600 flex-shrink-0" />
           <span className="text-sm font-semibold text-amber-900">Proposed Change</span>
+          {queueRemaining > 0 && (
+            <span className="text-[10px] font-medium text-amber-700 bg-amber-200/60 px-1.5 py-0.5 rounded-full">
+              +{queueRemaining} {queueRemaining === 1 ? 'meer wijziging' : 'meer wijzigingen'} hierna
+            </span>
+          )}
           {pendingMutation.entityName && (
             <span className="text-xs text-amber-700 ml-auto truncate">
               {pendingMutation.entityType}: <span className="font-medium">{pendingMutation.entityName}</span>

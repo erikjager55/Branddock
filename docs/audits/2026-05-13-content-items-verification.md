@@ -145,6 +145,13 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Smoke updates**: 31/31 pass voor property-evals (worst-case asserts aangepast — brand-name niet meer in blockCount).
 - **Severity**: P0 (gefixt) — was dead-end voor user die brand-name typo's bij AI niet zelf kon herstellen.
 
+### F15 — Brand Assistant parallel mutation-proposals overwriten elkaar
+- **Locatie**: `useClawStore` + `InputBar.tsx` SSE handler + MutationConfirmCard
+- **Probleem**: User vroeg "vul de brief" — AI emit in 1 response drie parallel tool-uses (update_deliverable_brief + update_deliverable_visual_brief + update_deliverable_content_inputs). Backend stuurde 3× mutation_proposal SSE-events. Frontend `setPendingMutation(d)` overwrote vorige → user zag alleen de laatste (meestal visual brief). Voelde alsof AI alleen visual brief vulde.
+- **Fix**: nieuwe `pendingMutationQueue: MutationProposal[]` in useClawStore. SSE-handler in InputBar gebruikt nu `enqueuePendingMutation` ipv `setPendingMutation`: eerste proposal activeert direct, volgende komen in queue. Na confirm: `advanceMutationQueue()` popt volgende → MutationConfirmCard rendered de nieuwe automatisch.
+- **UX-toevoeging**: badge "+N meer wijzigingen hierna" in confirm-card header zodat user weet dat er nog meer cards volgen.
+- **Severity**: P1 (gefixt).
+
 ### F-canvas-open-slow — Derive-navigation duurt lang (PERFORMANCE)
 - **Locatie**: derive → navigate → CanvasPage mount → fetch /api/studio/[id] + components + context
 - **Probleem**: Tussen klik op chip en zichtbaarheid van nieuwe canvas zit veel laadtijd. CanvasPage mount triggert ~4 sequentiële API calls (deliverable detail, components, context-stack, F-VAL persist).
