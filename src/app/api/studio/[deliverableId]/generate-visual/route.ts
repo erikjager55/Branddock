@@ -234,6 +234,19 @@ export async function POST(request: Request, { params }: RouteParams) {
     const modelId = generateConfig?.model
       ?? selectModelForStyle(stack.visualBrief?.styleDirection ?? null);
 
+    // F40 (audit 2026-05-13): brand-style anchor references. Worden als
+    // image_urls doorgegeven aan multi-ref modellen (Nano Banana, Recraft,
+    // FLUX 2) zodat de output consistent matched met workspace brand-look.
+    const { fetchBrandStyleAnchors, maxAnchorsForModel } = await import('@/lib/ai/brand-style-anchors');
+    const anchors = await fetchBrandStyleAnchors(workspaceId);
+    const anchorLimit = maxAnchorsForModel(modelId);
+    const referenceImageUrls = anchors.slice(0, anchorLimit).map((a) => a.fileUrl);
+    if (referenceImageUrls.length > 0) {
+      console.log(
+        `[generate-visual] using ${referenceImageUrls.length} brand-style anchors for ${modelId}`,
+      );
+    }
+
     const startMs = Date.now();
     const generated = await Promise.all(
       finalPrompts.map(async (prompt) => {
@@ -241,6 +254,7 @@ export async function POST(request: Request, { params }: RouteParams) {
           const result = await generateFalImage(modelId, prompt, {
             imageSize: falImageSize,
             numImages: 1,
+            referenceImageUrls: referenceImageUrls.length > 0 ? referenceImageUrls : undefined,
           });
           const url = result.images?.[0]?.url;
           if (!url) return null;

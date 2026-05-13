@@ -276,6 +276,13 @@ export interface FalStandaloneGenerationOptions {
   imageSize?: string;
   seed?: number;
   numImages?: number;
+  /**
+   * F40 (audit 2026-05-13): brand-style anchor reference URLs.
+   * Wordt doorgegeven als image_urls naar modellen die multi-ref
+   * ondersteunen (Nano Banana, Recraft, FLUX 2). Cap per model is
+   * via maxAnchorsForModel; caller is verantwoordelijk voor slicing.
+   */
+  referenceImageUrls?: string[];
 }
 
 /** Models that use aspect_ratio + resolution instead of image_size */
@@ -310,6 +317,12 @@ export async function generateFalImage(
   const useAspectRatio = ASPECT_RATIO_MODELS.has(modelId);
   const imageSize = options?.imageSize ?? 'square_hd';
 
+  // F40: brand-style anchor reference URLs als image_urls voor multi-ref
+  // modellen. Nano Banana / Recraft / FLUX 2 accepteren deze; andere
+  // modellen negeren het veld (fal doet input-validation per endpoint).
+  const refUrls = options?.referenceImageUrls ?? [];
+  const hasRefs = refUrls.length > 0;
+
   const input: Record<string, unknown> = {
     prompt,
     num_images: options?.numImages ?? 1,
@@ -318,10 +331,12 @@ export async function generateFalImage(
     ...(useAspectRatio
       ? { aspect_ratio: toAspectRatio(imageSize), resolution: '1K' }
       : { image_size: imageSize }),
+    ...(hasRefs ? { image_urls: refUrls } : {}),
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await fal.subscribe(modelId, {
-    input,
+    input: input as any,
     timeout: 180_000, // 3 minutes — GPU queue can be slow
   });
 

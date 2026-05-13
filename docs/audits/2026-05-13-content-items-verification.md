@@ -175,6 +175,21 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F40 — Brand-style anchor set + style-reference injection (gefixt — backend + status-UI)
+- **Locatie**: `prisma/schema.prisma` (Workspace.brandStyleAnchorIds), `src/lib/ai/brand-style-anchors.ts` (NIEUW helper), `src/lib/integrations/fal/fal-client.ts:generateFalImage` (referenceImageUrls support), `src/app/api/studio/[deliverableId]/generate-visual/route.ts` (anchor injection), `src/app/api/workspace/brand-style-anchors/route.ts` (NIEUW management API), Step1Context status-indicator.
+- **Probleem**: image-generations konden alleen styleDirection-chip + briefingText gebruiken voor brand-look. Geen reference-images workspace-wide voor consistente brand-stijl over campagnes. Voor LoRA-tier consistency moest user een complete LoRA trainen (training-stap, time-investment); style-reference is lichter alternatief.
+- **Fix backend (compleet)**:
+  1. **Workspace.brandStyleAnchorIds**: nieuwe String[] field op Workspace model. Max 10 MediaAsset IDs als anchors.
+  2. **fetchBrandStyleAnchors helper**: hydrate anchor-IDs → MediaAssets met fileUrl + alt; filter orphans (verwijderde assets) eruit; preserve order.
+  3. **maxAnchorsForModel helper**: per-model cap (Nano Banana 14, Recraft 5, FLUX 2 5, andere 0).
+  4. **generateFalImage uitgebreid** met `referenceImageUrls` option; passt als `image_urls` array naar fal endpoints die multi-ref ondersteunen.
+  5. **generate-visual route** fetcht anchors voor workspace + slicet per model + passt door bij elke generation. Log-line bevestigt anchor-injection.
+  6. **Workspace anchor API**: `GET/PUT /api/workspace/brand-style-anchors` voor configuration. Validatie: max 10, alle IDs moeten echte MediaAssets in workspace zijn.
+- **UI**: status-indicator in F37 banner. Toont "X brand-style anchors actief — elke generation gebruikt deze" of "Geen brand-style anchors — configureer 3-10 reference-images". Full anchor-management UI in Brand Foundation page is follow-up F40-bis.
+- **Verwacht effect**: workspaces met anchor set zien drastisch hogere brand-consistency over content-items zonder LoRA-training. Geschikt voor visual-coherente campagnes.
+- **Verification**: prisma db push: 0 errors, npx tsc --noEmit: 0 errors.
+- **Severity**: P1 (backend gefixt; full-UI in F40-bis follow-up wanneer Brand Foundation panel actief uitgebreid wordt).
+
 ### F39 — Nano Banana edit-mode voor post-generation refinement (gefixt)
 - **Locatie**: `src/lib/integrations/fal/fal-client.ts:editFalImageWithInstruction` (NIEUW), `src/app/api/studio/[deliverableId]/edit-image/route.ts` (NIEUW), `src/features/campaigns/components/canvas/ImageEditModal.tsx` (NIEUW), Step2ContentVariants wiring.
 - **Probleem**: na image-generatie kon user alleen volledige regeneratie of vervangen. Geen mechanisme voor "alleen achtergrond vervagen" / "verwijder de cup" / "maak lichter". Andere modellen (FLUX 2 Pro, Imagen 4, Recraft) ondersteunen dit niet structureel; Nano Banana Pro is uniek in targeted edit-via-tekst.

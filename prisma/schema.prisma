@@ -123,6 +123,15 @@ model Workspace {
    */
   adobeFontsKitId String?
 
+  /**
+   * F40 (audit 2026-05-13): Brand-style anchor set. 3-10 MediaAsset IDs
+   * die representeren hoe de brand visueel hoort te voelen. Elke image-
+   * generation injecteert deze als style-reference (Recraft V4 style-ID
+   * — max 5 refs; Nano Banana fusion — max 14 refs). Levert harde brand-
+   * consistency over campagnes zonder LoRA-training.
+   */
+  brandStyleAnchorIds String[] @default([])
+
   // Organization koppeling
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

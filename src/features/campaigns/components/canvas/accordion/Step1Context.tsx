@@ -1297,6 +1297,23 @@ function ImageModelSuggestionBanner({
     return models.some((m) => m.status === 'READY' && m.triggerWord);
   }, [modelsData]);
 
+  // F40 (audit 2026-05-13): brand-style anchor count voor status-indicator.
+  const [anchorCount, setAnchorCount] = React.useState<number | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    void fetch('/api/workspace/brand-style-anchors')
+      .then((res) => (res.ok ? res.json() : { anchors: [] }))
+      .then((data: { anchors?: unknown[] }) => {
+        if (!cancelled) setAnchorCount(Array.isArray(data.anchors) ? data.anchors.length : 0);
+      })
+      .catch(() => {
+        if (!cancelled) setAnchorCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const suggestion: ImageSuggestion = React.useMemo(
     () =>
       suggestImageApproach({
@@ -1329,6 +1346,23 @@ function ImageModelSuggestionBanner({
               ))}
             </div>
           )}
+          {/* F40 — brand-style anchor status */}
+          {anchorCount !== null && (
+            <div className="mt-2 text-[10px] text-slate-500">
+              {anchorCount > 0 ? (
+                <>
+                  <span className="font-medium text-emerald-700">{anchorCount} brand-style anchor{anchorCount === 1 ? '' : 's'} actief</span>{' '}
+                  — elke generation gebruikt deze als style-reference voor consistente brand-look.
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-amber-700">Geen brand-style anchors</span> —
+                  configureer 3-10 reference-images via Brand Foundation voor hardere consistency over campagnes.
+                </>
+              )}
+            </div>
+          )}
+
           {/* Photography opt-in — subtiel, NIET als default-suggestion */}
           <p className="mt-2 text-[10px] text-slate-400 italic">
             {PHOTOGRAPHY_OPT_IN_COPY.label}{' '}
