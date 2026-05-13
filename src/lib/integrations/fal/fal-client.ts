@@ -7,6 +7,7 @@
  */
 
 import { fal } from '@fal-ai/client';
+import { getFalProviderById, getFalEndpoint } from './fal-providers';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -339,10 +340,11 @@ export async function generateFalImage(
   // Seedream → fal-ai/bytedance/seedream/v4/text-to-image, Ideogram →
   // fal-ai/ideogram/v3) hebben een nested-path endpoint die afwijkt
   // van hun registry-id. Voorheen passed we modelId direct → "Model
-  // not found" 404 voor deze providers.
-  const { getFalProviderById, getFalEndpoint } = await import('./fal-providers');
+  // not found" 404 voor deze providers. Static import (was dynamic;
+  // dynamic import had cache-issues bij HMR).
   const provider = getFalProviderById(modelId);
   const endpoint = provider ? getFalEndpoint(provider) : modelId;
+  console.log(`[fal-client] dispatching ${modelId} → endpoint ${endpoint}`);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await fal.subscribe(endpoint, {
