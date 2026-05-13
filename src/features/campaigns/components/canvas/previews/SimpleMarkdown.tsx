@@ -8,7 +8,7 @@ import React from 'react';
  * content. No external dependencies — just regex + JSX.
  *
  * Supported:
- * - ## Heading 2, ### Heading 3
+ * - # Heading 1 .. ###### Heading 6
  * - **bold** and *italic*
  * - - bullet list items
  * - Paragraphs (blank-line separated)
@@ -45,21 +45,48 @@ export function SimpleMarkdown({ text, className = '' }: { text: string; classNa
           return null;
         }
 
-        // Heading 2
-        if (trimmed.startsWith('## ')) {
+        // F20 fix (audit 2026-05-13): h1-h6 support. Voorheen werden alleen
+        // ## en ### herkend; AI-output met enkele # werd letterlijk gerenderd
+        // ("# Horecatextiel beheer" toonde de hash). De renderer pakt nu
+        // 1-6 hashes met de juiste tag + Tailwind-styling per niveau.
+        const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
+        if (headingMatch) {
+          const level = headingMatch[1].length;
+          const inner = renderInline(headingMatch[2]);
+          if (level === 1)
+            return (
+              <h1 key={blockIdx} className="text-2xl font-bold text-gray-900 mt-6 mb-3">
+                {inner}
+              </h1>
+            );
+          if (level === 2)
+            return (
+              <h2 key={blockIdx} className="text-lg font-bold text-gray-900 mt-5 mb-2">
+                {inner}
+              </h2>
+            );
+          if (level === 3)
+            return (
+              <h3 key={blockIdx} className="text-base font-semibold text-gray-800 mt-4 mb-1">
+                {inner}
+              </h3>
+            );
+          if (level === 4)
+            return (
+              <h4 key={blockIdx} className="text-sm font-semibold text-gray-800 mt-3 mb-1">
+                {inner}
+              </h4>
+            );
+          if (level === 5)
+            return (
+              <h5 key={blockIdx} className="text-xs font-semibold uppercase tracking-wide text-gray-700 mt-3 mb-1">
+                {inner}
+              </h5>
+            );
           return (
-            <h2 key={blockIdx} className="text-lg font-bold text-gray-900 mt-5 mb-2">
-              {renderInline(trimmed.slice(3))}
-            </h2>
-          );
-        }
-
-        // Heading 3
-        if (trimmed.startsWith('### ')) {
-          return (
-            <h3 key={blockIdx} className="text-base font-semibold text-gray-800 mt-4 mb-1">
-              {renderInline(trimmed.slice(4))}
-            </h3>
+            <h6 key={blockIdx} className="text-xs font-medium uppercase tracking-wide text-gray-600 mt-2 mb-1">
+              {inner}
+            </h6>
           );
         }
 

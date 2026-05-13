@@ -165,6 +165,12 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Niet meegenomen** (volgt later): apply-endpoint persist nog geen nieuwe `ContentFidelityScore` row, dus na een eventuele latere hard-refresh leest de canvas de oude score uit DB. Daarvoor moet apply-endpoint OF re-judgen OF de snapshot-score uit `settings.autoIterate.finalScore` persisteren als nieuw `ContentFidelityScore` record. Pakken we op als score-display na hard-refresh een storing wordt.
 - **Severity**: P1 (gefixt voor de UX-loop; persistent score-write is P2 follow-up).
 
+### F20 — `# Heading 1` wordt letterlijk gerenderd in body sections (gefixt)
+- **Locatie**: `src/features/campaigns/components/canvas/previews/SimpleMarkdown.tsx`.
+- **Probleem**: Renderer ondersteunde alleen `##` (h2) en `###` (h3). AI-output met enkele `#` (h1) viel door naar het paragraph-pad en werd letterlijk gerenderd ("# Horecatextiel beheer" toonde de hash + ruimte als platte tekst). Component-types die rijke markdown produceren (blog-post body sections, newsletter, landing-page) raakten dit.
+- **Fix**: enkele regex `/^(#{1,6})\s+(.+)$/` dekt nu alle zes heading-niveaus. Per niveau Tailwind-styling die hiërarchisch aflopend is (h1 text-2xl bold, h2 text-lg bold, h3 text-base semibold, h4 text-sm semibold, h5/h6 text-xs uppercase tracking-wide). Werkt voor elke SimpleMarkdown gebruiker (VariantCard, VideoPreview, InstagramCarouselPreview, etc.) zonder dat consumer-componenten iets hoeven aan te passen.
+- **Severity**: P1 (gefixt).
+
 ### F17 — Auto-iterate score visueel lager dan origineel (best-of + sync regressie)
 
 ### F14 — Brand-name-capitalization BLOCK stopt hele generation
