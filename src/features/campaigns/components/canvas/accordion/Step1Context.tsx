@@ -171,6 +171,33 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
 
   const handleGenerate = async () => {
     try {
+      // F-pregen-flush (audit 2026-05-13): force-save alle wijzigingen vóór
+      // generate zodat server-side gate niet leest van stale DB. Debounced
+      // autosave (500ms) is anders niet gegarandeerd gefired bij snel-typen-
+      // en-klikken. Eén combined PATCH met brief + contentTypeInputs +
+      // visualBrief is goedkoper + atomic dan 3 parallelle.
+      const store = useCanvasStore.getState();
+      const flushPayload: Record<string, unknown> = { brief: store.brief };
+      if (store.contentTypeInputsModified) {
+        flushPayload.contentTypeInputs = store.contentTypeInputs;
+      }
+      if (store.visualBriefModified) {
+        flushPayload.visualBrief = store.visualBrief;
+      }
+      try {
+        await fetch(`/api/studio/${deliverableId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ settings: flushPayload }),
+        });
+        // Reset modified-flags zodat de debounced autosave-effects geen
+        // duplicate PATCH meer schieten direct na deze flush.
+        store.resetModifiedFlags();
+      } catch (flushErr) {
+        // Non-fatal — generate fallback to whatever DB has + gate-check
+        // surfacees error naar user via globalErrorMessage.
+        console.warn('[Step1Context] pre-generate flush failed:', flushErr);
+      }
       // Trigger content generation (SSE auto-advance handles step 2 transition)
       await generate();
 
