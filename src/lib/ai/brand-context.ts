@@ -930,6 +930,7 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         antiPatterns: true,
         writingSamples: true,
         channelTones: true,
+        contentLocale: true,
       },
     }),
   ]);
@@ -940,10 +941,15 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     if (asset.slug) assetBySlug.set(asset.slug, asset);
   }
 
-  // Build context block
+  // Build context block.
+  // Language-precedence (F4 fix, audit 2026-05-13): BrandVoiceguide.contentLocale
+  // is meer specifiek (BCP-47, bv. nl-NL) en wint over Workspace.contentLanguage
+  // (free-string default 'en'). Wanneer voiceguide locale gezet is, derive de
+  // ISO 639-1 prefix als contentLanguage zodat prompt-builders correct schrijven.
+  const voiceguideLocalePrefix = voiceguide?.contentLocale?.split('-')[0]?.toLowerCase();
   const ctx: BrandContextBlock = {
     brandName: workspace?.name,
-    contentLanguage: workspace?.contentLanguage ?? 'en',
+    contentLanguage: voiceguideLocalePrefix ?? workspace?.contentLanguage ?? 'en',
   };
 
   // ─── Map brand assets by slug to context fields ──────────

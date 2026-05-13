@@ -662,7 +662,9 @@ export async function* orchestrateContentGeneration(
   {
     const baseContext = buildPropertyEvalContextBase(stack, 'body');
     const totalBlockViolations: { component: string; variantIndex: number; reason: string }[] = [];
-    let totalWarnings = 0;
+    const aggregatedResults: import('@/lib/content-test/types').PropertyEvalResult[] = [];
+    const aggregatedBlockViolations: import('@/lib/content-test/types').PropertyEvalResult[] = [];
+    const aggregatedWarnings: import('@/lib/content-test/types').PropertyEvalResult[] = [];
     let totalRuntimeMs = 0;
 
     for (const component of textResult.components) {
@@ -677,8 +679,24 @@ export async function* orchestrateContentGeneration(
         };
         const evalResult = runAllPropertyEvals(variant.content, context);
         totalRuntimeMs += evalResult.runtimeMs;
-        totalWarnings += evalResult.warnings.length;
+        // Aggregate met per-variant attribution voor trace-persistence (F1 fix).
+        for (const r of evalResult.results) {
+          aggregatedResults.push({
+            ...r,
+            reason: `[${component.group}#${i}] ${r.reason}`,
+          });
+        }
+        for (const w of evalResult.warnings) {
+          aggregatedWarnings.push({
+            ...w,
+            reason: `[${component.group}#${i}] ${w.reason}`,
+          });
+        }
         for (const blk of evalResult.blockViolations) {
+          aggregatedBlockViolations.push({
+            ...blk,
+            reason: `[${component.group}#${i}] ${blk.reason}`,
+          });
           totalBlockViolations.push({
             component: component.group,
             variantIndex: i,
@@ -693,12 +711,38 @@ export async function* orchestrateContentGeneration(
       data: {
         passed: totalBlockViolations.length === 0,
         blockViolationCount: totalBlockViolations.length,
-        warningCount: totalWarnings,
+        warningCount: aggregatedWarnings.length,
         runtimeMs: Math.round(totalRuntimeMs),
         // First 3 block-violations als diagnostic in UI; rest verborgen voor brevity
         blockViolations: totalBlockViolations.slice(0, 3),
       },
     };
+
+    // ── F1 fix (audit 2026-05-13): persist aggregated property-eval results
+    // naar laatste AICallTrace voor deze deliverable. Fire-and-forget;
+    // tracking-failures swallowen om generation niet te blokkeren.
+    try {
+      const latestTrace = await prisma.aICallTrace.findFirst({
+        where: { parentEntityType: 'Deliverable', parentEntityId: deliverableId },
+        orderBy: { startedAt: 'desc' },
+        select: { id: true },
+      });
+      if (latestTrace) {
+        const { tryTrackPropertyEvalResults } = await import('@/lib/learning-loop/track-helpers');
+        await tryTrackPropertyEvalResults(latestTrace.id, {
+          passed: aggregatedBlockViolations.length === 0,
+          results: aggregatedResults,
+          blockViolations: aggregatedBlockViolations,
+          warnings: aggregatedWarnings,
+          runtimeMs: Math.round(totalRuntimeMs),
+        });
+      }
+    } catch (err) {
+      console.warn(
+        '[canvas-orchestrator] property-eval persistence failed:',
+        (err as Error).message,
+      );
+    }
 
     if (totalBlockViolations.length > 0) {
       yield {
