@@ -175,6 +175,16 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F28 — Default terug naar Opus 4.7 + thinking (na adaptive-API fix in F27)
+- **Locatie**: `feature-models.ts` default, `auto-iterate-integration.ts` REWRITE_MODEL + adaptive-API support in direct-SDK-stream.
+- **Aanleiding**: Experiment v2 (na F27 ai-caller.ts adaptive-API fix) toonde Opus 4.7 thinking **composite 90** op blog-post — winnaar tegenover Sonnet 4.6 thinking (85), self-critique chain (86), GPT-5.4 (83). Wanneer Opus 4.7 correct wordt aangeroepen levert het meetbaar hogere kwaliteit (+5pt op composite) tegen 3× cost.
+- **Verificatie**: `scripts/experiments/verify-opus47-production-path.ts` triggert Opus 4.7 + thinking via **dezelfde `createStructuredCompletion` als canvas-orchestrator** — succeeded in 1.7s zonder API-error. Eerder zelfde call gaf 400 error → silent fallback naar GPT-5.4. Nu correct.
+- **Fix**:
+  1. `feature-models.ts` canvas-text-generate default: `claude-sonnet-4-6` → `claude-opus-4-7` (terugswitch).
+  2. `auto-iterate-integration.ts` REWRITE_MODEL terug naar `claude-opus-4-7` + direct-SDK-stream ondersteunt nu zowel adaptive (Opus 4.7+) als legacy thinking-API afhankelijk van modelnaam.
+- **Cost-impact**: ~3× per generation (Opus vs Sonnet) — acceptabel voor pre-launch kwaliteits-default. Cost-sensitive workspaces kunnen overschrijven naar Sonnet 4.6 via WorkspaceAiConfig.
+- **Severity**: P0 (gefixt; productie genereert nu daadwerkelijk met Opus 4.7).
+
 ### F27 — Opus 4.7 thinking-API silently faalde, default switch naar Sonnet 4.6 (gefixt)
 - **Locatie**: `src/lib/ai/feature-models.ts` (default model), `src/lib/ai/exploration/ai-caller.ts` (Opus 4.7 nieuwe API), `src/lib/ai/auto-iterate-integration.ts` (rewrite-model), `src/lib/ai/canvas-orchestrator.ts` (thinking-detector).
 - **Probleem**: Eigen experiment 2026-05-13 (7 condities incl. Opus 4.7 + thinking) leverde **400 error** op:

@@ -160,17 +160,14 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     label: 'Canvas Text Generation',
     description: 'Text generation for canvas content items (copy, headlines, CTAs)',
     category: 'campaign-content',
-    // F27 (audit 2026-05-13): default Sonnet 4.6 + thinking i.p.v. Opus 4.7.
-    // Reden: Opus 4.7 vereist nieuwe thinking-API (type: 'adaptive' +
-    // output_config.effort) die we voorheen niet correct aanriepen — calls
-    // faalden met 400 error en falden via fallback-provider terug naar
-    // Gemini/OpenAI (geen Opus run dus). Eigen experiment 2026-05-13 toonde
-    // Sonnet 4.6 + thinking als top-scorer (composite 88) tegenover GPT-5.4
-    // (84), Gemini 3.1 Pro (78), en sneller + 5x goedkoper dan Opus zelfs
-    // wanneer Opus correct werkt. Per-workspace override via WorkspaceAiConfig.
-    // Opus 4.7 blijft beschikbaar maar via correcte API-call (zie ai-caller.ts).
+    // F27/F28 (audit 2026-05-13): default Opus 4.7 + thinking (correcte
+    // adaptive API sinds F27). Eigen experiment 2026-05-13 v2: Opus 4.7
+    // thinking = composite 90 op blog-post, Sonnet 4.6 thinking = 85.
+    // Opus is premium-default voor pre-launch kwaliteit. Per-workspace
+    // override naar Sonnet 4.6 mogelijk via WorkspaceAiConfig voor
+    // cost-gevoelige tier.
     defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-opus-4-7',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {

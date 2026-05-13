@@ -25,12 +25,12 @@ import { getThresholdForType, DEFAULT_FIDELITY_THRESHOLD } from '@/lib/content-t
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 import type { AiProvider } from '@/lib/ai/feature-models';
 
-// F24/F27 (audit 2026-05-13): rewrite-model = Sonnet 4.6 + thinking (legacy
-// API werkt + experiment 2026-05-13 toont Sonnet 4.6 + thinking als top-
-// scorer 88 vs Opus 4.7 thinking dat silently faalde door foute API-syntax).
-// Sonnet 4.6 + thinking is sneller + ~5x goedkoper dan Opus 4.7 én scoort
-// hoger op brand-fit voor Napking voice. Thinking-budget 4000 tokens.
-const REWRITE_MODEL = 'claude-sonnet-4-6';
+// F24/F27/F28 (audit 2026-05-13): rewrite-model = Opus 4.7 met adaptive
+// thinking (correcte API sinds F27 ai-caller.ts). Experiment v2 toonde
+// Opus 4.7 thinking = composite 90 (winnaar) op blog-post. Direct-SDK-
+// call hieronder gebruikt nieuwe adaptive-API zodra REWRITE_MODEL Opus 4.7
+// is — anders legacy thinking-API.
+const REWRITE_MODEL = 'claude-opus-4-7';
 const REWRITE_MAX_TOKENS = 4096;
 const REWRITE_THINKING_BUDGET = 4000;
 
@@ -289,25 +289,34 @@ async function regenerateWithFeedback({
         : '';
   const userPrompt = `${promptHint}\n\n# Huidige tekst\n${baselineText}\n\n# Opdracht\nHerschrijf bovenstaande met de verbeterpunten verwerkt. ${fingerprintCue}Output alleen de herziene tekst.`;
 
-  // F24/F27: Sonnet 4.6 + thinking (legacy API werkt). Voor Opus 4.7 zou
-  // nieuwe adaptive-API nodig zijn maar default is Sonnet sinds F27. Bij
-  // workspace-override naar Opus 4.7 zal deze direct-SDK-call falen — dat
-  // is acceptabel tot productie correct via ai-caller.ts route loopt.
+  // F24/F27/F28: Opus 4.7+ vereist adaptive-API; Sonnet 4.x en Opus 4.5/4.6
+  // ondersteunen legacy thinking-API. Anthropic-vereiste: temperature undefined
+  // bij thinking-on. SDK-types kennen adaptive nog niet — cast via unknown.
+  const isOpus47Plus = /opus-4-7|opus-4-8|opus-5/.test(REWRITE_MODEL);
   const useThinking = REWRITE_MODEL.includes('sonnet') || REWRITE_MODEL.includes('opus');
-  const requestParams: Anthropic.Messages.MessageStreamParams = useThinking
-    ? {
-        model: REWRITE_MODEL,
-        max_tokens: REWRITE_MAX_TOKENS + REWRITE_THINKING_BUDGET,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
-        thinking: { type: 'enabled', budget_tokens: REWRITE_THINKING_BUDGET },
-      }
-    : {
-        model: REWRITE_MODEL,
-        max_tokens: REWRITE_MAX_TOKENS,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
-      };
+  const baseParams = {
+    model: REWRITE_MODEL,
+    max_tokens: useThinking ? REWRITE_MAX_TOKENS + REWRITE_THINKING_BUDGET : REWRITE_MAX_TOKENS,
+    system: systemPrompt,
+    messages: [{ role: 'user' as const, content: userPrompt }],
+  };
+  let requestParams: Anthropic.Messages.MessageStreamParams;
+  if (useThinking && isOpus47Plus) {
+    const effort: 'low' | 'medium' | 'high' =
+      REWRITE_THINKING_BUDGET < 4000 ? 'low' : REWRITE_THINKING_BUDGET < 8000 ? 'medium' : 'high';
+    requestParams = {
+      ...baseParams,
+      thinking: { type: 'adaptive' },
+      output_config: { effort },
+    } as unknown as Anthropic.Messages.MessageStreamParams;
+  } else if (useThinking) {
+    requestParams = {
+      ...baseParams,
+      thinking: { type: 'enabled', budget_tokens: REWRITE_THINKING_BUDGET },
+    };
+  } else {
+    requestParams = baseParams;
+  }
   const stream = client.messages.stream(requestParams);
 
   const finalMessage = await stream.finalMessage();
