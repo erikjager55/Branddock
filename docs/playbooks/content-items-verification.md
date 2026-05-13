@@ -6,6 +6,28 @@ Doel: verifiëren dat de 6 content-test improvements van sprint #5/#6 (formula l
 
 8 representanten (1 per category), uniforme brief, realtime walkthrough samen.
 
+## Phase 0 — Pre-flight static-analysis (verplicht vóór elke run)
+
+Voer altijd uit voordat je representanten doorloopt:
+
+```bash
+bash scripts/audits/content-items-preflight.sh
+```
+
+Het script detecteert 4 F-klasse anti-patterns die we in audit 2026-05-13 hebben gevonden:
+
+| Check | Pattern | Voorbeeld-finding |
+|---|---|---|
+| F1 | Observability-helpers defined but never called | `tryTrackPropertyEvalResults` exists maar nooit aangeroepen → property-eval data verdwijnt |
+| F2 | Gate-functies te strict | `validateContextCompleteness` accepteert geen workspace-level fallback → false-positives bij workspaces zonder campaign-link |
+| F4 | Field-precedence inconsistencies | `Workspace.contentLanguage` (en) wint over `BrandVoiceguide.contentLocale` (nl-NL) → NL-klanten krijgen Engelse output |
+| F-derive-nav | `window.location.href` voor interne navigatie | Hybride SPA routed via state, niet URL → derive-knop werkt niet |
+| Coverage | Property-eval check-count vs union-member-count | Mismatch betekent ontbrekende check of stale type |
+
+**Exit code 0 = clean → ga door naar verificatie. Exit code 1 = warnings → review elke warning vóór doorgaan.**
+
+Het script is bewust conservatief: false-positives kunnen voorkomen (bv. legitime OAuth window.location.href in IntegrationsTab). Bij twijfel: open het bron-bestand en valideer manueel.
+
 ## Setup (eenmalig)
 
 - 2 workspaces:
