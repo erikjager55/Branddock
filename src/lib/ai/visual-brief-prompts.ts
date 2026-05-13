@@ -134,25 +134,37 @@ function buildSubjectByChip(
  * picked a model.
  */
 export function selectModelForStyle(chip: VisualStyleDirection | null): string {
+  // F38 (audit 2026-05-13): intent-based routing op basis van eigen
+  // onderzoek 2026 naar SOTA image-models. Mapping:
+  //   - text-heavy (quote/infographic/data) → Nano Banana Pro
+  //     (best text-rendering per onafhankelijke comparisons; 10× cheaper
+  //      dan GPT Image 2)
+  //   - product-shot → Seedream V4 (text-in-product specialist)
+  //   - illustration → Recraft V3 (design-forward)
+  //   - photoreal scenes → FLUX 2 Pro (aesthetic photoreal)
+  //   - default → FLUX 2 Pro
+  // Override-path: visualBrief.generate.model wint over deze default.
   switch (chip) {
     case 'quote-text':
     case 'infographic':
     case 'data-driven':
-      // Text rendering is THE feature — GPT Image 2 is best in class
-      return 'openai/gpt-image-2';
+      // Text-rendering is critical — Nano Banana Pro (Gemini 3 Pro Image)
+      // levert leesbare posters waar FLUX 2 garbled text produceert.
+      // 10× cheaper dan GPT Image 2 high-quality voor zelfde of betere
+      // text-accuracy per market-comparison.
+      return 'fal-ai/nano-banana-pro';
     case 'product-shot':
-      // Product shots commonly include brand text on packaging / labels
-      // — GPT Image 2's text accuracy avoids the usual "garbled logo" issue
-      return 'openai/gpt-image-2';
+      // Product shots met tekst op packaging/labels — Seedream V4 is
+      // specialist in readable in-image text + product realism.
+      return 'fal-ai/seedream-v4-5';
     case 'illustration':
-      // Vector / drawn style — Recraft V3 is purpose-built; GPT Image 2
-      // and FLUX bias toward photoreal which fights the brief
+      // Vector / drawn style — Recraft V3 is purpose-built; FLUX bias
+      // toward photoreal which fights the brief.
       return 'fal-ai/recraft-v3';
     case 'lifestyle':
     case 'behind-the-scenes':
     case 'ugc':
-      // Photoreal scenes without critical text — FLUX.2 Pro hits the
-      // quality bar at ~7× lower cost than GPT Image 2 high
+      // Photoreal scenes zonder kritieke tekst — FLUX 2 Pro best aesthetic.
       return 'fal-ai/flux-2-pro';
     default:
       // No chip picked — pick the safe photoreal default

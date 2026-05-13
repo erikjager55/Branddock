@@ -175,6 +175,24 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F37 + F38 — Smart image-model routing op basis van content-type + style-chip (gefixt)
+- **Locatie**: `src/lib/ai/image-suggestion.ts` (NIEUW), `src/features/campaigns/components/canvas/accordion/Step1Context.tsx` (banner), `src/lib/ai/visual-brief-prompts.ts:selectModelForStyle` (routing-update).
+- **Context**: Eigen onderzoek naar 2026 image-model landschap (FLUX 2 Pro, Nano Banana 2/Pro, Recraft V4, Imagen 4, LoRA) toonde dat **geen enkel model alle use-cases dekt**. Multi-model routing levert hogere kwaliteit + lagere cost dan single-default.
+- **F37 — Decision-tree banner**: nieuwe `<ImageModelSuggestionBanner>` in Step 1 die op basis van content-type + style-chip + workspace-LoRA-availability adviseert welk model het beste past. Pure informatie + cost-transparantie; user kan altijd overrulen.
+  - Workspace heeft LoRA → trained-style (hoogste consistency)
+  - illustration chip → Recraft V4 (design-forward)
+  - quote-text / infographic / data-driven → Nano Banana 2 (text rendering)
+  - product-shot → Imagen 4 (material accuracy)
+  - text-heavy content-types (ads/carousels) → Nano Banana 2
+  - default photoreal → FLUX 2 Pro
+  - Photography wordt NIET als suggestie aangeboden — alleen subtiele opt-in onderaan voor case-studies/testimonials.
+- **F38 — Actual model routing**: `selectModelForStyle` in `visual-brief-prompts.ts` upgraded van GPT Image 2 ($0.21/img) naar Nano Banana Pro ($0.02/img) voor text-heavy chips. Onafhankelijke 2026-comparisons tonen Nano Banana = beter text-rendering bij 10× lagere cost. Seedream V4 toegevoegd voor product-shots (text-in-product specialist).
+- **Cost-impact**: gemiddelde generation cost halveert voor text-heavy chips ($0.21 → $0.02). FLUX 2 Pro blijft default voor photoreal ($0.03 ongewijzigd). Illustration via Recraft V3 ($0.04 ongewijzigd).
+- **Verwacht effect Napking**: bij volgende regenerate met chip `illustration` routet de generation naar Recraft V3, niet FLUX 2 Pro. Output is dan echt illustration-stijl, geen photorealistische restaurantkeuken.
+- **Vervolg in fase F39-F42** (volgende sprint): Nano Banana editing-mode, brand-style anchor set, DAM auto-tagging, photography-opt-in flow.
+- **Verification**: npx tsc --noEmit: 0 errors. Banner zichtbaar in Step 1 zodra source !== 'none'.
+- **Severity**: P1 (gefixt; kernfix voor brand-image flow).
+
 ### F36 — Text-overlay hallucinations op AI-images (gefixt)
 - **Locatie**: `src/lib/ai/visual-brief-prompts.ts:buildVisualBriefImagePrompts`, `src/lib/ai/canvas-orchestrator.ts:buildImagePromptInstruction`.
 - **Probleem**: Napking blog-image toonde Engels overlay-tekst "Plan a free consultation to discover how we can relieve yourtextile management concerns" — Engels op een Nederlandse blog, met typo ("yourtextile"). Stilistisch lelijk én inhoudelijk fout. Oorzaak: image-prompt builder injecteerde `Call to action context: "${callToAction}"` als gequote string in elke image-prompt. Image-models (Imagen/DALL-E/FLUX) interpreteerden de quoted text als instructie om die letterlijk op de image te renderen. Plus geen no-text guard, dus model had carte blanche voor caption-hallucinations.
