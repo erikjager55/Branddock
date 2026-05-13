@@ -13,4 +13,13 @@ export interface InsertImageSelection {
 
 export interface InsertImageTabProps {
   onSelected: (selection: InsertImageSelection) => void;
+  /**
+   * F35 (audit 2026-05-13): optional smart-default seed values from
+   * visualBrief. Tabs die search/prompt-input hebben gebruiken dit als
+   * initiële waarde — user kan altijd overschrijven.
+   *  - initialQuery: voor StockPhotosTab search-input
+   *  - initialPrompt: voor GenerateImageTab + UrlImportTab (zelden zinvol)
+   */
+  initialQuery?: string;
+  initialPrompt?: string;
 }

@@ -20,7 +20,12 @@ import type { InsertImageTabProps } from './types';
  * Model | Generate Image), same provider picker, same brand context,
  * same trained-model selector. No code duplication.
  */
-export function GenerateImageTab({ onSelected }: InsertImageTabProps) {
+export function GenerateImageTab({ onSelected, initialPrompt }: InsertImageTabProps) {
+  // F35 Stap 4 (audit 2026-05-13): initialPrompt accepteren maar nog niet
+  // door-propageren naar GenerateImageModal (vereist API-aanpassing op
+  // shared AI-Studio surface). Wel als button-tooltip getoond zodat user
+  // weet welke prompt klaar staat. Volledige pre-fill in follow-up F35-bis.
+  void initialPrompt;
   const [showModal, setShowModal] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
 

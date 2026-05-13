@@ -71,13 +71,28 @@ export type VisualStyleDirection =
   | 'data-driven';
 
 /**
- * How the visual for this content item gets sourced. Phase 1 only wires
- * `generate` and `none` end-to-end; library/compose/trained-style come
- * online in later phases (per-source pickers + pipeline branches).
+ * How the visual for this content item gets sourced.
+ *
+ * F35 (audit 2026-05-13): unified image-flow. Voorheen waren upload/url/stock
+ * alleen bereikbaar via Step 3 InsertImageModal (los van visualBrief); nu
+ * eerste-class sources in Visual Brief zodat Step 2 + Step 3 één panel
+ * delen met visualBrief.source als single source of truth.
+ *
+ *  - `generate`      — AI from prompt (Imagen / DALL-E / FLUX / Recraft / Ideogram)
+ *  - `library`       — existing MediaAsset (IMAGE type)
+ *  - `upload`        — user uploads a new file
+ *  - `url`           — paste a public image URL
+ *  - `stock`         — Pexels search + import
+ *  - `compose`       — 2-9 reference MediaAssets via FLUX 2 multi-reference
+ *  - `trained-style` — workspace-trained LoRA / consistent model
+ *  - `none`          — skip image generation for this content item
  */
 export type VisualBriefSource =
   | 'generate'
   | 'library'
+  | 'upload'
+  | 'url'
+  | 'stock'
   | 'compose'
   | 'trained-style'
   | 'none';
@@ -451,7 +466,14 @@ function parseVisualBrief(
   // New schema — stored object shape
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
     const obj = raw as Record<string, unknown>;
-    const source = (obj.source ?? 'generate') as VisualBriefSource;
+    const validSources: VisualBriefSource[] = [
+      'generate', 'library', 'upload', 'url', 'stock', 'compose', 'trained-style', 'none',
+    ];
+    const rawSource = obj.source as string | undefined;
+    const source: VisualBriefSource =
+      rawSource && validSources.includes(rawSource as VisualBriefSource)
+        ? (rawSource as VisualBriefSource)
+        : 'generate';
     const styleDirection = (obj.styleDirection ?? null) as VisualStyleDirection | null;
     const styleDirectionFreeText = (obj.styleDirectionFreeText ?? null) as string | null;
     const briefingText = (obj.briefingText ?? null) as string | null;

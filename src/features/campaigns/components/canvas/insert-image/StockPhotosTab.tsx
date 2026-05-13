@@ -11,9 +11,10 @@ import type { InsertImageTabProps } from './types';
  * Pexels stock photo search. Click a photo to import it as a MediaAsset
  * (medium size by default) and forward the URL/id to the parent modal.
  */
-export function StockPhotosTab({ onSelected }: InsertImageTabProps) {
-  const [searchInput, setSearchInput] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+export function StockPhotosTab({ onSelected, initialQuery }: InsertImageTabProps) {
+  // F35: initialQuery seedt search-input vanuit visualBrief.briefingText.
+  const [searchInput, setSearchInput] = useState(initialQuery ?? '');
+  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery ?? '');
   const [importingId, setImportingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

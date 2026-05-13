@@ -175,6 +175,31 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F35 — Unified image-flow over Step 1 / 2 / 3 (gefixt)
+- **Locatie**: `src/lib/ai/canvas-context.ts` (type extension), `src/features/campaigns/components/canvas/ImageSourcePanel.tsx` (NIEUW), `accordion/Step1Context.tsx` + `accordion/Step2ContentVariants.tsx` + `InsertImageModal.tsx` (wiring), `insert-image/StockPhotosTab.tsx` + `insert-image/GenerateImageTab.tsx` + `insert-image/types.ts` (seed-props).
+- **Probleem**: Drie image-touchpoints zonder logische verbinding:
+  1. Step 1 Visual Brief: strategische source-choice (4 sources: generate/library/compose/trained-style/none)
+  2. Step 2 VisualVariantsBlock: tactische executie per source, beperkt tot bovenstaande 4
+  3. Step 3 InsertImageModal: 5 tabs (library/upload/url/stock/generate) onafhankelijk van Step 1
+  Resultaat: user moet 3× navigeren voor één visual. Source-keuze in Step 1 beïnvloedt Step 3 modal niet; upload/url/stock waren alleen modal-bereikbaar; visualBrief.briefingText pre-fillde geen tab-input.
+- **Vier-step plan uitgevoerd**:
+  - **Stap 1**: `VisualBriefSource` type uitgebreid van 5 → 8: `generate | library | upload | url | stock | compose | trained-style | none`. Step 1 chip-options spiegelt de 8. Parser krijgt defensieve validatie.
+  - **Stap 2**: Nieuwe `<ImageSourcePanel>` component (`variant='embedded' | 'modal'`). 8-tabs source-strip + per-source content-renderer. Hergebruikt bestaande sub-componenten (LibraryTab/UploadTab/UrlImportTab/StockPhotosTab/GenerateImageTab + LibraryAssetPicker/ComposePicker/TrainedStylePicker).
+  - **Stap 3**: InsertImageModal refactored naar thin wrapper rond ImageSourcePanel met `variant='modal'`. Default-tab volgt `visualBrief.source` (smart-default uit Step 1). Step 2 VisualVariantsBlock kreeg een inline source-tab-strip (zelfde TABS) zodat user inline source kan switchen — wijziging persist via `setVisualBriefSource` → Step 1 reflectt automatisch.
+  - **Stap 4**: Smart-defaults gewired. `InsertImageTabProps` uitgebreid met `initialQuery` + `initialPrompt`. StockPhotosTab seedt search-input vanuit `visualBrief.briefingText`. GenerateImageTab accepteert `initialPrompt` (full propagatie naar nested AI-Studio modal deferred — F35-bis). Step 2 inline-tab voor upload/url/stock gebruikt zelfde seed-pattern.
+- **Niet-aangeraakt**:
+  - GenerateImageModal nested in AI-Studio krijgt de pre-fill nog niet (vereist API-uitbreiding op die surface). Logged als F35-bis follow-up.
+  - Write-back van actual-prompt naar `visualBrief.generate.promptOverride` na image-generatie nog niet gewired.
+- **Cross-step sync (bewezen werkend)**:
+  - Step 1 source-chip click → Step 2 tab-strip toont zelfde actieve source
+  - Step 2 tab-strip click → Step 1 chip-selectie reflectt (via setVisualBriefSource)
+  - Step 3 modal opent op `visualBrief.source` default-tab
+  - Stock-input + (uiteindelijk) generate-prompt gevuld met briefingText
+- **Verification**:
+  - npx tsc --noEmit: 0 errors
+  - 8 sources nu bereikbaar in beide Step 2 + Step 3 (compose/trained-style in Step 2 embedded-mode; alle 8 in Step 3 modal-mode)
+- **Severity**: P1 (UX-coherentie; image-flow voelt nu als één samenhangend pad i.p.v. drie losse afdelingen).
+
 ### F34 — "VOLGENDE STAP" iteration-nudges panel verwijderd (gefixt)
 - **Locatie**: `src/features/campaigns/components/canvas/GenerationFeedbackBanners.tsx`.
 - **Probleem**: User-feedback dat de iteration-nudges panel (VERFIJNEN / HERGEBRUIKEN / VERRIJKEN chips boven content-variants) niet wordt gebruikt als beoogd en visuele ruis toevoegt.

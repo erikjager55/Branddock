@@ -21,7 +21,9 @@ import { LibraryAssetPicker } from '../LibraryAssetPicker';
 import { ComposePicker } from '../ComposePicker';
 import { TrainedStylePicker } from '../TrainedStylePicker';
 import { FidelityScoreBar } from '../FidelityScoreBar';
+import { IMAGE_SOURCE_TABS } from '../ImageSourcePanel';
 import type { CanvasImageVariant } from '../../../types/canvas.types';
+import type { VisualBriefSource } from '@/lib/ai/canvas-context';
 
 interface Step2ContentVariantsProps {
   deliverableId: string;
@@ -567,7 +569,9 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
   const [openVisualFidelityDetail, setOpenVisualFidelityDetail] =
     React.useState<{ componentId: string; imageUrl: string } | null>(null);
 
-  if (source === 'none') return null;
+  // F35: 'none' source rendert nu een tab-strip + uitleg (i.p.v. niets).
+  // User kan terug naar generate/library/etc switchen zonder Step 1 te
+  // openen. Daarom NIET meer vroege return op 'none'.
 
   const handleSelect = (idx: number) => {
     const updated = imageVariants.map((v, i) => ({ ...v, isSelected: i === idx }));
@@ -576,6 +580,15 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
     if (picked) {
       setHeroImage({ url: picked.url, mediaAssetId: null, alt: picked.prompt });
     }
+  };
+
+  // F35 (audit 2026-05-13): inline source-tab-strip — user kan tussen 8
+  // sources switchen zonder terug naar Step 1. Wijziging persist via
+  // setVisualBriefSource → Step 1 reflectt automatisch.
+  const setSource = useCanvasStore((s) => s.setVisualBriefSource);
+  const handleSourceTabClick = (next: VisualBriefSource) => {
+    if (next === source) return;
+    setSource(next);
   };
 
   return (
@@ -590,6 +603,29 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
             </Badge>
           )}
         </div>
+      </div>
+
+      {/* F35: source-tab-strip — switch tussen 8 image-sources inline */}
+      <div className="flex flex-wrap gap-1.5 border-b border-gray-200 pb-3 mb-3">
+        {IMAGE_SOURCE_TABS.map((t) => {
+          const Icon = t.icon;
+          const active = source === t.value;
+          return (
+            <button
+              key={t.value}
+              type="button"
+              onClick={() => handleSourceTabClick(t.value)}
+              className={
+                active
+                  ? 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary text-white text-[11px] font-medium'
+                  : 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-50 text-gray-600 text-[11px] font-medium hover:bg-gray-100'
+              }
+            >
+              <Icon className="h-3 w-3" />
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* GENERATE source — empty state with "Generate visual" button */}
@@ -637,6 +673,25 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
           onCancel={hasImages ? () => setShowTrainedPicker(false) : undefined}
           onGenerated={() => setShowTrainedPicker(false)}
         />
+      )}
+
+      {/* F35 — Upload / URL / Stock inline. Modal-tabs werken hier ook;
+          onSelected schrijft heroImage + persist. Stock-tab krijgt
+          briefingText als seed-query (smart-default Stap 4). */}
+      {(source === 'upload' || source === 'url' || source === 'stock') && (
+        <InlineUrlUploadStockTab
+          deliverableId={deliverableId}
+          source={source}
+          setHeroImage={setHeroImage}
+          seedQuery={visualBrief.briefingText ?? ''}
+        />
+      )}
+
+      {/* NONE source — geen visual; subtiele uitleg. */}
+      {source === 'none' && (
+        <div className="text-xs text-gray-500 px-2 py-3 italic">
+          No visual for this content item.
+        </div>
       )}
 
       {/* Loading state — generate flow only */}
@@ -752,4 +807,72 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
       )}
     </div>
   );
+}
+
+// F35 (audit 2026-05-13): Inline wrapper voor Upload/URL/Stock tabs binnen
+// Step 2. Lazy-importeert modal-tabs zodat code splitting blijft werken;
+// onSelected schrijft heroImage + persist (zelfde flow als InsertImageModal).
+function InlineUrlUploadStockTab({
+  deliverableId,
+  source,
+  setHeroImage,
+  seedQuery,
+}: {
+  deliverableId: string;
+  source: 'upload' | 'url' | 'stock';
+  setHeroImage: (h: { url: string; mediaAssetId: string | null; alt?: string }) => void;
+  seedQuery?: string;
+}) {
+  const [TabComponent, setTabComponent] = React.useState<React.ComponentType<{
+    onSelected: (sel: { url: string; mediaAssetId: string | null; alt?: string }) => void;
+    initialQuery?: string;
+  }> | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (source === 'upload') {
+        const mod = await import('../insert-image/UploadTab');
+        if (!cancelled) setTabComponent(() => mod.UploadTab);
+      } else if (source === 'url') {
+        const mod = await import('../insert-image/UrlImportTab');
+        if (!cancelled) setTabComponent(() => mod.UrlImportTab);
+      } else {
+        const mod = await import('../insert-image/StockPhotosTab');
+        if (!cancelled) setTabComponent(() => mod.StockPhotosTab);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [source]);
+
+  const handleSelected = async (sel: { url: string; mediaAssetId: string | null; alt?: string }) => {
+    setHeroImage({ url: sel.url, mediaAssetId: sel.mediaAssetId, alt: sel.alt });
+    try {
+      await persistHeroImage(deliverableId, {
+        imageUrl: sel.url,
+        imageSource:
+          source === 'upload'
+            ? 'library'
+            : source === 'url'
+              ? 'url-import'
+              : 'stock',
+        mediaAssetId: sel.mediaAssetId,
+        alt: sel.alt ?? null,
+      });
+    } catch (err) {
+      console.error('[Step2 InlineTab] persistHeroImage failed:', err);
+    }
+  };
+
+  if (!TabComponent) {
+    return (
+      <div className="flex items-center justify-center py-6 text-xs text-gray-500">
+        Loading {source} tab…
+      </div>
+    );
+  }
+  return <TabComponent onSelected={handleSelected} initialQuery={source === 'stock' ? seedQuery : undefined} />;
 }

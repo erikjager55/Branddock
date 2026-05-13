@@ -920,6 +920,9 @@ function ContentBriefSection() {
 
 // ─── Visual Brief subsection ──────────────────────────────────
 
+// F35 (audit 2026-05-13): 8 sources — voorheen waren upload/url/stock alleen
+// bereikbaar via Step 3 InsertImageModal (los van visualBrief). Nu eerste-class
+// in Visual Brief zodat Step 2 + Step 3 één panel delen.
 const VISUAL_SOURCES: Array<{
   value: VisualBriefSource;
   label: string;
@@ -936,6 +939,24 @@ const VISUAL_SOURCES: Array<{
     value: 'library',
     label: 'From library',
     description: 'Pick existing assets from your Media Library',
+    ready: true,
+  },
+  {
+    value: 'upload',
+    label: 'Upload',
+    description: 'Upload a new image file from your device',
+    ready: true,
+  },
+  {
+    value: 'url',
+    label: 'Import URL',
+    description: 'Paste a public image URL — Branddock imports it',
+    ready: true,
+  },
+  {
+    value: 'stock',
+    label: 'Stock photos',
+    description: 'Search Pexels stock photos by keyword',
     ready: true,
   },
   {
