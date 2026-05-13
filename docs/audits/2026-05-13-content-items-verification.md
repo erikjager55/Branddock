@@ -175,6 +175,18 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F39 — Nano Banana edit-mode voor post-generation refinement (gefixt)
+- **Locatie**: `src/lib/integrations/fal/fal-client.ts:editFalImageWithInstruction` (NIEUW), `src/app/api/studio/[deliverableId]/edit-image/route.ts` (NIEUW), `src/features/campaigns/components/canvas/ImageEditModal.tsx` (NIEUW), Step2ContentVariants wiring.
+- **Probleem**: na image-generatie kon user alleen volledige regeneratie of vervangen. Geen mechanisme voor "alleen achtergrond vervagen" / "verwijder de cup" / "maak lichter". Andere modellen (FLUX 2 Pro, Imagen 4, Recraft) ondersteunen dit niet structureel; Nano Banana Pro is uniek in targeted edit-via-tekst.
+- **Fix**:
+  1. `editFalImageWithInstruction(imageUrl, instruction, options)` helper — wraps fal-ai/nano-banana-pro endpoint met `image_urls` array (1 image) + tekst-prompt als edit-instructie.
+  2. POST `/api/studio/[deliverableId]/edit-image` route met body `{imageUrl, instruction, componentId?}` — ownership-check, ZodError handling, retourneert nieuwe URL.
+  3. `<ImageEditModal>` component met natural-language textarea + voorbeeld-chips ("Vervaag de achtergrond", "Maak het lichter / warmer", etc). Toont preview van te bewerken image. Cost-transparantie ~$0.02 per bewerking.
+  4. Edit-knop per image-variant in Step 2 VisualVariantsBlock. Click → modal → instructie → API-call → edited image vervangt variant inline.
+- **Verwacht effect**: user kan iteratief fine-tunen zonder volledige regeneratie. Cost-besparing: $0.02 per edit vs $0.03-0.05 voor full regenerate, plus geen verlies van overige goede kwaliteiten.
+- **Verification**: npx tsc --noEmit: 0 errors.
+- **Severity**: P1 (gefixt; uniek differentiator t.o.v. andere image-models).
+
 ### F37 + F38 — Smart image-model routing op basis van content-type + style-chip (gefixt)
 - **Locatie**: `src/lib/ai/image-suggestion.ts` (NIEUW), `src/features/campaigns/components/canvas/accordion/Step1Context.tsx` (banner), `src/lib/ai/visual-brief-prompts.ts:selectModelForStyle` (routing-update).
 - **Context**: Eigen onderzoek naar 2026 image-model landschap (FLUX 2 Pro, Nano Banana 2/Pro, Recraft V4, Imagen 4, LoRA) toonde dat **geen enkel model alle use-cases dekt**. Multi-model routing levert hogere kwaliteit + lagere cost dan single-default.

@@ -22,6 +22,7 @@ import { ComposePicker } from '../ComposePicker';
 import { TrainedStylePicker } from '../TrainedStylePicker';
 import { FidelityScoreBar } from '../FidelityScoreBar';
 import { IMAGE_SOURCE_TABS } from '../ImageSourcePanel';
+import { ImageEditModal } from '../ImageEditModal';
 import type { CanvasImageVariant } from '../../../types/canvas.types';
 import type { VisualBriefSource } from '@/lib/ai/canvas-context';
 
@@ -582,6 +583,29 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
     }
   };
 
+  // F39 (audit 2026-05-13): Nano Banana edit-modal state.
+  const [editingImage, setEditingImage] = React.useState<{
+    url: string;
+    variantIndex: number;
+  } | null>(null);
+  const handleEditApplied = React.useCallback(
+    (editedUrl: string) => {
+      if (!editingImage) return;
+      const updated = imageVariants.map((v, i) =>
+        i === editingImage.variantIndex
+          ? { ...v, url: editedUrl, prompt: `${v.prompt} [edited]` }
+          : v,
+      );
+      setImageVariants(updated);
+      // Sync hero-image als de edited variant geselecteerd was
+      const wasSelected = imageVariants[editingImage.variantIndex]?.isSelected;
+      if (wasSelected) {
+        setHeroImage({ url: editedUrl, mediaAssetId: null, alt: updated[editingImage.variantIndex].prompt });
+      }
+    },
+    [editingImage, imageVariants, setImageVariants, setHeroImage],
+  );
+
   // F35 (audit 2026-05-13): inline source-tab-strip — user kan tussen 8
   // sources switchen zonder terug naar Step 1. Wijziging persist via
   // setVisualBriefSource → Step 1 reflectt automatisch.
@@ -755,6 +779,22 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
                     <Check className="h-3.5 w-3.5" style={{ color: '#7c3aed' }} />
                   </div>
                 )}
+                {/* F39 — Edit via tekst button. Verschijnt rechtsonder; stopPropagation
+                    om select-handler op de outer button niet te triggeren. */}
+                <div className="absolute bottom-9 right-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingImage({ url: img.url, variantIndex: idx });
+                    }}
+                    title="Bewerk met tekstinstructie (Nano Banana)"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-600/90 hover:bg-purple-700 text-white text-[10px] font-medium shadow-sm transition-colors"
+                  >
+                    <Sparkles className="h-2.5 w-2.5" />
+                    Edit
+                  </button>
+                </div>
                 <div className="px-2 py-1.5 bg-white">
                   <p className="text-[11px] text-gray-500 line-clamp-2 text-left">{img.prompt}</p>
                 </div>
@@ -805,6 +845,15 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
           onClose={() => setOpenVisualFidelityDetail(null)}
         />
       )}
+
+      {/* F39 — Nano Banana edit modal */}
+      <ImageEditModal
+        isOpen={editingImage !== null}
+        onClose={() => setEditingImage(null)}
+        deliverableId={deliverableId}
+        imageUrl={editingImage?.url ?? null}
+        onEdited={handleEditApplied}
+      />
     </div>
   );
 }

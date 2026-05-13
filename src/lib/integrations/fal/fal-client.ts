@@ -334,3 +334,52 @@ export async function generateFalImage(
     prompt: data?.prompt as string | undefined,
   };
 }
+
+/**
+ * F39 (audit 2026-05-13): Nano Banana image-edit via natural language.
+ *
+ * Takes existing image + instruction ("blur background", "remove the cup",
+ * "make the lighting warmer") and returns edited image. Uses Nano Banana
+ * Pro's targeted-edit capability — Gemini 2.5/3 Flash Image accepts both
+ * image_url and prompt for local edits. Other models (FLUX 2 Pro etc)
+ * lack this feature.
+ *
+ * Per fal.ai docs the nano-banana endpoint accepts `image_urls` array
+ * (1-14 images) alongside `prompt`. For edit mode we pass 1 image.
+ */
+export async function editFalImageWithInstruction(
+  imageUrl: string,
+  instruction: string,
+  options?: { seed?: number; aspectRatio?: string },
+): Promise<FalGenerationResult> {
+  ensureConfigured();
+
+  const editModelId = 'fal-ai/nano-banana-pro';
+  const input: Record<string, unknown> = {
+    prompt: instruction,
+    image_urls: [imageUrl],
+    num_images: 1,
+    output_format: 'png',
+    aspect_ratio: options?.aspectRatio ?? '1:1',
+    resolution: '1K',
+    ...(options?.seed != null ? { seed: options.seed } : {}),
+  };
+
+  // fal SDK heeft typed input voor nano-banana-pro; cast naar `any` voor
+  // edit-flow met image_urls (fal accepteert het runtime maar type is op
+  // generate-only flow gemodelleerd).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await fal.subscribe(editModelId, {
+    input: input as any,
+    timeout: 180_000,
+  });
+
+  const data = result.data as Record<string, unknown>;
+  const images = (data?.images as FalGenerationImage[]) ?? [];
+
+  return {
+    images,
+    seed: data?.seed as number | undefined,
+    prompt: instruction,
+  };
+}
