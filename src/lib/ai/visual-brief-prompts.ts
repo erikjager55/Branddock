@@ -230,16 +230,25 @@ export function buildVisualBriefImagePrompts(
         brandName: subject.brandName ?? brand.brandName ?? null,
       });
 
-  // Optional context blocks injected after subject when present.
-  const callToActionBlock = subject.callToAction
-    ? `Call to action context: "${truncate(subject.callToAction, 150)}".`
-    : '';
+  // F36 (audit 2026-05-13): CTA-text NIET meer als gequote string in image-
+  // prompt. Voorheen leverde dat text-overlay hallucinations: image-model
+  // (Imagen/DALL-E/FLUX) zag de quoted CTA als instructie om die letterlijk
+  // op de image te renderen. Resultaat: blog-image met overlay "Plan a free
+  // consultation to discover how we can relieve yourtextile management
+  // concerns" — Engels op een Nederlandse blog, plus typo. Block volledig
+  // verwijderd; image-model krijgt geen CTA-context meer. Subject + style
+  // + visual-identity zijn voldoende voor passende image-keuze.
   const platformBlock = subject.platform
     ? `Intended for ${subject.platform}${subject.aspectRatio ? ` (${subject.aspectRatio})` : ''}.`
     : '';
   const themeBlock = subject.creativePlatform
     ? `Campaign theme: ${truncate(subject.creativePlatform, 150)}.`
     : '';
+
+  // F36: hard no-text directive — voorkomt text-overlay hallucinations
+  // bij image-models die anders captions/signage zelf invullen.
+  const noTextDirective =
+    'CRITICAL: Absolutely no text, no captions, no signage, no typography, no words, no letters overlaid on the image anywhere. Photographic content only — pure visual storytelling without any embedded text.';
 
   // Two compositional angles per chip — "close" focuses on the subject;
   // "wide" pulls back for environmental context. Both same chip, same
@@ -258,10 +267,10 @@ export function buildVisualBriefImagePrompts(
       `Subject: ${subjectSeed}.`,
       platformBlock,
       themeBlock,
-      callToActionBlock,
       angles[i],
       freeText,
       visualIdentity,
+      noTextDirective,
     ].filter(Boolean);
     prompts.push(parts.join(' '));
   }

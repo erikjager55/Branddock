@@ -3242,7 +3242,12 @@ function formatVisualBrief(brief: VisualBrief | null): string {
 function buildImagePromptInstruction(brief: VisualBrief | null): string {
   const baseInstruction =
     '\n\nAlso generate 2 "imagePrompts" — detailed image generation prompts that match the brand visual identity. Each prompt should describe the image in detail including style, composition, and mood.';
-  if (!brief || brief.source === 'none') return baseInstruction;
+  // F36 (audit 2026-05-13): expliciete no-text guard zodat het text-LLM
+  // óók in zijn imagePrompts beschrijvingen geen quoted captions / CTA
+  // text injecteert die downstream image-model als overlay rendert.
+  const noTextGuard =
+    '\n\nIMPORTANT for imagePrompts: NEVER include quoted captions, slogans, CTA-text, signage strings or typography instructions in the prompt. The output image must be purely photographic — no embedded text, no words on screens or surfaces, no overlay. Describe scene, mood, composition only.';
+  if (!brief || brief.source === 'none') return baseInstruction + noTextGuard;
 
   const chipGuide = brief.styleDirection
     ? `\n\nIMAGE STYLE — apply this composition to BOTH imagePrompts:\n${VISUAL_STYLE_IMAGE_INSTRUCTIONS[brief.styleDirection]}`
@@ -3250,7 +3255,7 @@ function buildImagePromptInstruction(brief: VisualBrief | null): string {
   const freeTextGuide = brief.styleDirectionFreeText?.trim()
     ? `\nAdditional visual direction from the user: ${brief.styleDirectionFreeText.trim()}`
     : '';
-  return baseInstruction + chipGuide + freeTextGuide;
+  return baseInstruction + chipGuide + freeTextGuide + noTextGuard;
 }
 
 // ─── G8 visual fidelity scoring (Phase 2 wire-in) ────────────

@@ -175,6 +175,16 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F36 — Text-overlay hallucinations op AI-images (gefixt)
+- **Locatie**: `src/lib/ai/visual-brief-prompts.ts:buildVisualBriefImagePrompts`, `src/lib/ai/canvas-orchestrator.ts:buildImagePromptInstruction`.
+- **Probleem**: Napking blog-image toonde Engels overlay-tekst "Plan a free consultation to discover how we can relieve yourtextile management concerns" — Engels op een Nederlandse blog, met typo ("yourtextile"). Stilistisch lelijk én inhoudelijk fout. Oorzaak: image-prompt builder injecteerde `Call to action context: "${callToAction}"` als gequote string in elke image-prompt. Image-models (Imagen/DALL-E/FLUX) interpreteerden de quoted text als instructie om die letterlijk op de image te renderen. Plus geen no-text guard, dus model had carte blanche voor caption-hallucinations.
+- **Twee fixes**:
+  1. **CTA-block volledig verwijderd** uit `buildVisualBriefImagePrompts` parts-lijst. Subject + style + visual-identity geven voldoende richting; CTA-context hoort bij text-generation, niet bij image-generation.
+  2. **Hard no-text directive** als suffix in elke image-prompt: "Absolutely no text, no captions, no signage, no typography, no words, no letters overlaid on the image anywhere. Photographic content only." Forceert image-models om puur visueel te produceren.
+  3. **Parallel: `buildImagePromptInstruction`** (text-LLM prompt-builder voor `imagePrompts` array) krijgt zelfde no-text guard zodat ook de LLM-geproduceerde prompts geen quoted captions injecteren.
+- **Verwacht effect**: bij volgende image-regeneratie geen text-overlay meer. Alle 3 angles (close/wide/detail) leveren tekst-vrije visuals.
+- **Severity**: P1 (gefixt; image-quality fix die voor élke content-type met visual relevant is).
+
 ### F35 — Unified image-flow over Step 1 / 2 / 3 (gefixt)
 - **Locatie**: `src/lib/ai/canvas-context.ts` (type extension), `src/features/campaigns/components/canvas/ImageSourcePanel.tsx` (NIEUW), `accordion/Step1Context.tsx` + `accordion/Step2ContentVariants.tsx` + `InsertImageModal.tsx` (wiring), `insert-image/StockPhotosTab.tsx` + `insert-image/GenerateImageTab.tsx` + `insert-image/types.ts` (seed-props).
 - **Probleem**: Drie image-touchpoints zonder logische verbinding:
