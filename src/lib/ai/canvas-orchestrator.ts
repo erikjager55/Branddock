@@ -530,16 +530,22 @@ export async function* orchestrateContentGeneration(
 
     let parallelResults: TextGenerationResult[];
     try {
+      // F22b (audit 2026-05-13): per-angle best-of-3. Elke angle krijgt 3
+      // parallelle candidates met emphasis-variantie (style/judge/rules);
+      // Haiku-ranker kiest winnaar per angle. Result: 2 user-visible
+      // variants (1 per angle), maar elk best-of-3. Cost: 6 generation
+      // calls + 2 ranking calls per generation. Voor pre-launch quality.
       parallelResults = await Promise.all(
         promptPerAngle.map((p, idx) =>
-          generateTextWithFallback(
+          generateBestOfNWithFallback(
             workspaceId,
             textModel.provider,
             textModel.model,
-            p.systemPrompt,
-            p.userPrompt,
+            p,
             stack.deliverableTypeId,
             { deliverableId, brandContext: stack.brand, angleLabel: angles[idx].label },
+            stack,
+            3,
           ),
         ),
       );
@@ -557,29 +563,32 @@ export async function* orchestrateContentGeneration(
       const merged = mergeAngleResults(parallelResults, angles);
       textResult = merged;
     } else {
-      // Fallback to legacy
+      // Fallback to legacy — best-of-3 ook hier
       const { systemPrompt, userPrompt } = buildCanvasPrompt(stack, stack.medium, options, voiceDirective);
-      textResult = await generateTextWithFallback(
+      textResult = await generateBestOfNWithFallback(
         workspaceId,
         textModel.provider,
         textModel.model,
-        systemPrompt,
-        userPrompt,
+        { systemPrompt, userPrompt },
         stack.deliverableTypeId,
         { deliverableId, brandContext: stack.brand },
+        stack,
+        3,
       );
     }
   } else {
-    // ── Legacy 1-call/2-variant flow (angle generation skipped or failed) ──
+    // ── Legacy 1-call/2-variant flow (angle generation skipped of failed) ──
+    // F22b: best-of-3 met emphasis-variantie + Haiku-ranker.
     const { systemPrompt, userPrompt } = buildCanvasPrompt(stack, stack.medium, options, voiceDirective);
-    textResult = await generateTextWithFallback(
+    textResult = await generateBestOfNWithFallback(
       workspaceId,
       textModel.provider,
       textModel.model,
-      systemPrompt,
-      userPrompt,
+      { systemPrompt, userPrompt },
       stack.deliverableTypeId,
       { deliverableId, brandContext: stack.brand },
+      stack,
+      3,
     );
   }
   } // end: if (textResult.components.length === 0) — Plan-and-Solve dispatch-bypass guard
@@ -1449,6 +1458,170 @@ async function* runFidelityScoringPipeline(input: {
     compositionInput: fidelityOutcome.compositionInput,
     blobText,
   };
+}
+
+// ─────────────────────────────────────────────────────────────
+// F22b (audit 2026-05-13): best-of-N candidate-generation
+// =============================================================
+// Doel: initial-score >=70 zonder iter. Genereert N candidates
+// parallel met emphasis-variantie in system-prompt (style /
+// judge / rules focus). Eén lightweight ranking-call via Haiku
+// kiest de winnaar; loser-candidates worden weggegooid (geen
+// F-VAL kost). Het winning candidate gaat door de bestaande
+// post-generation pipeline (full F-VAL, persist, etc.).
+//
+// Cost: 3x generation tokens + 1 ranking call (~$0.05). Latency
+// ~hetzelfde als single-shot omdat candidates parallel zijn.
+// =============================================================
+
+const BEST_OF_N_EMPHASIS_VARIANTS = [
+  // Style-focus
+  '\n\n## CANDIDATE FOCUS (this generation only)\nFocus EXTRA op voice-match: imiteer ritme + openingsstijl van Writing sample [1] uit de Voice Fingerprint. Gebruik termen uit "Words we use" minimaal 2× per alinea. Match de zinslengte-variatie uit de samples.',
+  // Judge-focus (brand-essence)
+  '\n\n## CANDIDATE FOCUS (this generation only)\nFocus EXTRA op brand-essence: maak de key-message expliciet zichtbaar in zowel introductie als conclusie. Elk hoofdstuk moet aan de overall brand-purpose bijdragen. Gebruik consistente brand-frames (geen mix tussen contraire posities).',
+  // Rules-focus
+  '\n\n## CANDIDATE FOCUS (this generation only)\nFocus EXTRA op AI-tell elimination + concrete details: geen clichés ("in de wereld van vandaag", "het is belangrijk om"), elke claim met getal of zintuiglijke detail onderbouwd. Brand-name expliciet in eerste of tweede alinea.',
+];
+
+/** Extract primary text body from a generated result for ranking purposes. */
+function extractPrimaryText(result: TextGenerationResult): string {
+  if (!result?.components) return '';
+  const allVariants = result.components.flatMap((c) =>
+    Array.isArray(c.variants) ? c.variants : [],
+  );
+  if (allVariants.length === 0) return '';
+  // Pick longest content as representative of overall quality
+  return allVariants.reduce(
+    (acc, v) => (typeof v.content === 'string' && v.content.length > acc.length ? v.content : acc),
+    '',
+  );
+}
+
+interface RankingResponse {
+  winner: number;
+  scores: number[];
+  reasoning?: string;
+}
+
+/**
+ * Rank N candidates via 1 lightweight Haiku call. Returns winning index.
+ * Falls back to index 0 on failure (first candidate wins by default).
+ */
+async function pickBestCandidate(
+  candidates: TextGenerationResult[],
+  stack: CanvasContextStack,
+): Promise<number> {
+  if (candidates.length <= 1) return 0;
+  const texts = candidates.map((c) => extractPrimaryText(c));
+  if (texts.every((t) => !t.trim())) return 0;
+
+  const brandName = stack.brand.brandName ?? 'Brand';
+  const voiceguide = (stack.brand.brandVoiceguide ?? '').slice(0, 2000);
+  const lang = (stack.brand.contentLanguage ?? 'nl').startsWith('nl') ? 'Nederlands' : 'English';
+
+  const systemPrompt = `Je bent een brand-fit judge voor ${brandName}. Evalueer welke versie het beste matched bij de brand voice fingerprint. Schrijf in ${lang}.
+
+# Brand voice fingerprint
+${voiceguide}
+
+# Taak
+Hieronder ${candidates.length} versies. Score elk op 0-100 op brand-voice-match (woordkeuze + ritme + opening + brand-essence). Return JSON.`;
+
+  const userPrompt = `${texts
+    .map((t, idx) => `## Versie [${idx}]\n${t.slice(0, 1500)}`)
+    .join('\n\n---\n\n')}
+
+Return JSON: { "winner": <index>, "scores": [<score0>, <score1>, ...], "reasoning": "<korte motivatie>" }`;
+
+  try {
+    const result = await createStructuredCompletion<RankingResponse>(
+      'anthropic',
+      'claude-haiku-4-5-20251001',
+      systemPrompt,
+      userPrompt,
+      { temperature: 0.3, maxTokens: 600 },
+    );
+    const winner = Number.isInteger(result.winner) ? result.winner : 0;
+    return Math.max(0, Math.min(candidates.length - 1, winner));
+  } catch (err) {
+    console.warn(
+      '[canvas-orchestrator] pickBestCandidate failed; using candidate 0:',
+      err instanceof Error ? err.message : err,
+    );
+    return 0;
+  }
+}
+
+/**
+ * Best-of-N candidate generator. N parallel generations with system-prompt
+ * emphasis-variantie + 1 ranking call to pick the winner. Falls back to
+ * single-shot generateTextWithFallback if all candidates fail.
+ */
+async function generateBestOfNWithFallback(
+  workspaceId: string,
+  primaryProvider: AiProvider,
+  primaryModel: string,
+  basePrompt: { systemPrompt: string; userPrompt: string },
+  contentType: string | null,
+  tracking: { deliverableId: string; brandContext?: unknown; angleLabel?: string },
+  stack: CanvasContextStack,
+  n: number = 3,
+): Promise<TextGenerationResult> {
+  const variants = BEST_OF_N_EMPHASIS_VARIANTS.slice(0, n);
+  const prompts = variants.map((emp) => ({
+    systemPrompt: basePrompt.systemPrompt + emp,
+    userPrompt: basePrompt.userPrompt,
+  }));
+
+  console.log(
+    `[canvas-orchestrator] best-of-${variants.length} starting (${primaryProvider}/${primaryModel})${
+      tracking.angleLabel ? ` for angle "${tracking.angleLabel}"` : ''
+    }`,
+  );
+
+  const settled = await Promise.allSettled(
+    prompts.map((p) =>
+      generateTextWithFallback(
+        workspaceId,
+        primaryProvider,
+        primaryModel,
+        p.systemPrompt,
+        p.userPrompt,
+        contentType,
+        tracking,
+      ),
+    ),
+  );
+
+  const valid = settled
+    .map((r) => (r.status === 'fulfilled' ? r.value : null))
+    .filter(
+      (r): r is TextGenerationResult =>
+        r !== null && Array.isArray(r.components) && r.components.length > 0,
+    );
+
+  if (valid.length === 0) {
+    console.warn('[canvas-orchestrator] all best-of-N candidates failed; falling back to single-shot');
+    return generateTextWithFallback(
+      workspaceId,
+      primaryProvider,
+      primaryModel,
+      basePrompt.systemPrompt,
+      basePrompt.userPrompt,
+      contentType,
+      tracking,
+    );
+  }
+
+  if (valid.length === 1) return valid[0];
+
+  const winnerIdx = await pickBestCandidate(valid, stack);
+  console.log(
+    `[canvas-orchestrator] best-of-${variants.length} winner: candidate [${winnerIdx}] (focus: ${
+      ['style', 'judge', 'rules'][winnerIdx] ?? 'unknown'
+    })`,
+  );
+  return valid[winnerIdx];
 }
 
 async function generateTextWithFallback(

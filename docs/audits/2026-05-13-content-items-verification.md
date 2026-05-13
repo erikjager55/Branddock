@@ -173,7 +173,7 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
   - **Extended thinking enabled** wanneer provider=anthropic + model contains "opus": `thinking: { anthropic: { budgetTokens: 5000 } }`. Model redeneert intern over voice-fingerprint match + brand-fidelity vóór output. Anthropic-vereiste: temperature MUST be undefined bij thinking-on (handled in helper).
   - Aangepast in zowel `generateTextWithFallback` (main path) als `handleRegeneration` (regen path).
 - **Verwacht effect F22a**: +5-10pt initial composite door hogere model-kwaliteit + thinking-overweging. Eerst meten of dit afdoende is.
-- **F22b — Best-of-3 (volgt indien <70)**: 3 parallelle candidates per generation met emphasis-variantie (style/judge/rules), 1 lightweight ranking-call selecteert beste, full F-VAL alleen op winner. Cost +3× generation tokens + ~$0.05 ranking call.
+- **F22b — Best-of-3 (gefixt in dezelfde sessie)**: 3 parallelle candidates per generation met emphasis-variantie (style/judge/rules), 1 lightweight Haiku ranking-call selecteert beste, full F-VAL alleen op winner. Geïntegreerd in BEIDE paths: per-angle (6 gen + 2 ranking) en legacy (3 gen + 1 ranking). Helpers `generateBestOfNWithFallback` + `pickBestCandidate` toegevoegd aan canvas-orchestrator. Loser-candidates worden weggegooid; alleen winner gaat door post-generation pipeline (F-VAL, persist, etc.). Cost: +3× generation tokens per angle/legacy + ~$0.05 ranking call per pick.
 - **Cost-impact F22a**: Opus 4.7 ~5-10× duurder per call dan Gemini Flash. Thinking voegt ~5000 reasoning-tokens toe per call. Total per-generation cost ~$0.15-0.50 (was ~$0.02-0.05).
 - **Severity**: P1 (in-progress; F22a gefixt).
 
