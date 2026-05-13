@@ -181,6 +181,10 @@ function IterationNudgesPanel() {
       const sourceCampaignId = useCanvasStore.getState().campaignId;
       if (sourceCampaignId) setSelectedCampaignId(sourceCampaignId);
       setSelectedDeliverableId(data.newDeliverableId);
+      // Auto-trigger generation op nieuwe deliverable — chip-label suggereert
+      // "maken" dus user verwacht finished output, niet leeg canvas.
+      // CanvasPage useEffect picks dit op en kickt generate() af.
+      useCanvasStore.getState().setPendingAutoGenerate(data.newDeliverableId);
       setActiveSection('content-canvas');
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Derive mislukt');

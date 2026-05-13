@@ -171,6 +171,14 @@ interface CanvasStoreState {
     targetContentTypeId?: string;
   }>;
 
+  // ─── Pending auto-generate (post-derive flow) ──────────────
+  // Set door GenerationFeedbackBanners derive-handler met de nieuwe
+  // deliverableId. CanvasPage useEffect checkt op mount: wanneer
+  // pendingAutoGenerate === deliverableId, kicked het automatisch
+  // generation af. Flag wordt direct cleared om dubbele runs te
+  // voorkomen. Audit 2026-05-13 fix voor "derive opent maar genereert niet".
+  pendingAutoGenerate: string | null;
+
   // ─── Vanille baseline (demo: "Vergelijk met vanille AI") ──
   // Wordt gevuld via de POST /api/studio/[id]/vanilla-baseline SSE flow.
   // null tot user op "Vergelijk met ChatGPT" klikt; daarna stage-aware
@@ -357,6 +365,7 @@ interface CanvasStoreState {
     isFallback: boolean;
   }) => void;
   resetBrandVoiceStatus: () => void;
+  setPendingAutoGenerate: (deliverableId: string | null) => void;
   setIterationNudges: (
     nudges: Array<{
       id: string;
@@ -536,6 +545,7 @@ const INITIAL_STATE = {
     intent: string;
     targetContentTypeId?: string;
   }>,
+  pendingAutoGenerate: null as string | null,
   vanillaBaseline: {
     stage: 'idle' as const,
     preview: null,
@@ -849,6 +859,9 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
     set({
       brandVoiceStatus: { level: null, userMessage: null, isFallback: false },
     }),
+
+  setPendingAutoGenerate: (deliverableId) =>
+    set({ pendingAutoGenerate: deliverableId }),
 
   setIterationNudges: (nudges) => set({ iterationNudges: nudges }),
 

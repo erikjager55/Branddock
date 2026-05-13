@@ -72,15 +72,15 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | `content-items-test-coverage` | Handmatige testplan 53 types (representanten + Ronde 1 + Ronde 2). Playbook: `docs/playbooks/testplan-content-items.md`. Levert baseline-data voor golden-sets. | 1d representanten + 2-3d full | #4 (representanten) + parallel met #5.B | open |
 | `pre-launch-browser-smoke-batch` | Δ-1 Surface C + claw-page-awareness + locale-picker browser-smoke. VB Compose/Trained deferred post-vercel. | ~1-2u | #4 (3/5 done) | partial |
 | `code-debt-pre-launch-cleanup` | Persist-TODOs + cleanup + suggest-visual-briefing error-UX. Verspreid. | ~6d | #4-7 fill-in | 2/12 done |
-| `compose-pipeline-gemini-migration` | FAL Flux → Gemini Image (nano-banana) compose-route migratie. | ~1d | #5.B fill-in | open |
-| **`content-test-foundation-#5A`** | Layer 1 Generic property evals (10-15 deterministic checks) + prompt versioning infra + Prompt Registry UI v1. Plan §4 sub-sprint #5.A. | ~3d | #5 week 1 | task-file volgt |
-| **`content-test-goldens-#5B`** | Chain-of-prompts upgrades (CoT/Plan-and-Solve/ToT) + Layer 2 type-specific golden sets via Promptfoo voor 8 representanten + G-Eval rubrics. Plan §4 sub-sprint #5.B. | ~10d | #5 week 2-3 | task-file volgt |
-| **`content-test-wiring-gates-#6A`** | Checkpoint-helper library + orchestrator gate-integratie + 8 stage-smokes. Plan §4 sub-sprint #6.A. | ~5d | #6 week 1-2 | task-file volgt |
-| **`content-test-auto-iterate-#6B`** | Feedback-compiler + auto-iterate orchestrator + edit-distance signals + per-type fidelity thresholds + image refine-loop. Plan §4 sub-sprint #6.B. | ~6d | #6 week 2-3 | task-file volgt |
-| **`content-test-flow-analyse-#7A`** | 8 categorie-rapporten flow-analyse in `docs/specs/content-flow-*.md`. Plan §4 sub-sprint #7.A. | ~3d | #7 week 1 | task-file volgt |
-| **`content-test-regression-#7B`** | Layer 3 item-specific regression: LearningEvent → regression-corpus auto-promote + nightly run + alert. Plan §4 sub-sprint #7.B. | ~3d | #7 week 2 | task-file volgt |
-| **`video-chain-explainer-showcase`** | Multi-modal: full 5-staps chain (Plan/Script-per-scene/Storyboard/Coherence/Assembly) voor explainer-video als showcase. Lightweight chains voor video-ad + tiktok-script. Plan §3.0.5. | ~4d | #5-6 fill-in | task-file volgt |
-| **`image-quality-chain`** | Multi-modal: negative prompts + multi-candidate (3-4) selection UI + visual-fidelity dimension-breakdown + image-to-image refine-loop + OCR text-check + brand-color validation. Plan §3.0.5. | ~6d | #6 fill-in | task-file volgt |
+| `compose-pipeline-gemini-migration` | FAL Flux → Gemini Image (nano-banana) compose-route migratie. | ~1d | #5.B fill-in | ✅ done 2026-05-12 |
+| **`content-test-foundation-#5A`** | Layer 1 Generic property evals (10-15 deterministic checks) + prompt versioning infra + Prompt Registry UI v1. Plan §4 sub-sprint #5.A. | ~3d | #5 week 1 | ✅ done 2026-05-12 |
+| **`content-test-goldens-#5B`** | Chain-of-prompts upgrades (CoT/Plan-and-Solve/ToT) + Layer 2 type-specific golden sets via Promptfoo voor 8 representanten + G-Eval rubrics. Plan §4 sub-sprint #5.B. | ~10d | #5 week 2-3 | ✅ done 2026-05-12 (4 batches A-D) |
+| **`content-test-wiring-gates-#6A`** | Checkpoint-helper library + orchestrator gate-integratie + 8 stage-smokes. Plan §4 sub-sprint #6.A. | ~5d | #6 week 1-2 | 🔄 in-progress |
+| **`content-test-auto-iterate-#6B`** | Feedback-compiler + auto-iterate orchestrator + edit-distance signals + per-type fidelity thresholds + image refine-loop. Plan §4 sub-sprint #6.B. | ~6d | #6 week 2-3 | ✅ partial 5/7 (wiring + dashboard panels deferred) |
+| **`content-test-flow-analyse-#7A`** | 8 categorie-rapporten flow-analyse in `docs/specs/content-flow-*.md`. Plan §4 sub-sprint #7.A. | ~3d | #7 week 1 | open task-file |
+| **`content-test-regression-#7B`** | Layer 3 item-specific regression: LearningEvent → regression-corpus auto-promote + nightly run + alert. Plan §4 sub-sprint #7.B. | ~3d | #7 week 2 | open task-file |
+| **`video-chain-explainer-showcase`** | Multi-modal: full 5-staps chain (Plan/Script-per-scene/Storyboard/Coherence/Assembly) voor explainer-video als showcase. Lightweight chains voor video-ad + tiktok-script. Plan §3.0.5. | ~4d | #5-6 fill-in | open task-file |
+| **`image-quality-chain`** | Multi-modal: negative prompts + multi-candidate (3-4) selection UI + visual-fidelity dimension-breakdown + image-to-image refine-loop + OCR text-check + brand-color validation. Plan §3.0.5. | ~6d | #6 fill-in | open task-file |
 
 **Track B — Brandclaw + Competitive AI** (worktree `branddock-brandclaw`)
 | ID | Titel | Effort | Sprint | Status |
@@ -102,17 +102,17 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 
 ### Sprint-volgorde
 
-**Sprint #4 — Validation + Quick wins** (~1 week, geen parallelisatie nodig)
-1. Browser-smoke batch (~1-2u) — quick confidence-check
-2. Cron-infra ADR (~2u)
-3. Code-debt quick wins: design-tokens cleanup + variant-selection persist (~2-3u)
-4. testplan-content-items Ronde 1 — 8 representanten (~1d)
-5. **STOP-GATE**: review bug-log, plan sprint #5 bugfix-scope
+**Sprint #4 — Validation + Quick wins** (~95% done per 2026-05-12)
+1. ✅ Browser-smoke batch (~1-2u) — Surface C + claw-page-awareness + locale-picker done. VB Compose/Trained deferred post-vercel.
+2. ✅ Cron-infra ADR (~2u) — Vercel Cron continueren (`docs/adr/2026-05-12-cron-infra.md`)
+3. ✅ Code-debt 2/12 quick wins: design-tokens cleanup + variant-selection persist
+4. ⏳ testplan-content-items Ronde 1 — 8 representanten (~1d) — open, sluit sprint #4 af
+5. **STOP-GATE** (na #4): review bug-log, plan sprint #5 bugfix-scope
 
-**Sprint #5 — Bugfix + Foundation start** (~2 weken, parallel-start)
-- Track A: bugfix-cluster uit testplan + start full 53-types Ronde 1
-- Track B: brandclaw-tool-orchestrator (3-5d) + competitor-ai-event-classifier task-file via technical-planner
-- Track C: vercel-deployment (3d) start
+**Sprint #5 — Bugfix + Foundation start** (~2 weken, parallel-start; Track A al vooruit gestart 2026-05-12)
+- Track A: ✅ 5A foundation + ✅ 5B goldens + ✅ 6B partial + ✅ compose-Gemini + ✅ claw-page-awareness vervolg. **Open**: 6A wiring-gates (in_progress) + 6B wiring/dashboard finish + bugfix-cluster uit testplan + full 53-types Ronde 1.
+- Track B: ⏸️ niet gestart (worktree 49 commits behind main). Rebase + brandclaw-tool-orchestrator (3-5d) + competitor-ai-event-classifier task-file via technical-planner.
+- Track C: ⏸️ niet gestart (worktree 49 commits behind main). Rebase + vercel-deployment (3d) start.
 
 **Sprint #6 — Feature build + Infra** (~3 weken, 3 parallel tracks)
 - Track A: testplan Ronde 1 finish + persist-TODOs cluster + Ronde 2 generator-evaluatie
@@ -242,14 +242,16 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 
 ## 💡 Aanbeveling huidige sessie
 
-**2026-05-12**: roadmap-inventaris onthulde 5 items + ~10 code-TODOs die niet op roadmap stonden. Alle items pre-launch getrokken. 3 parallelle tracks via worktrees over 4 sprints (~6-8 weken). Strategy-analyst-stub full scope (20-27d) is het langste pad — bepaalt feitelijke pilot-projectie.
+**2026-05-12 EOD**: Sprint #4 voor ~95% klaar (4/5 done, alleen testplan-representanten open). Sprint #5 Track A vooruitgelopen met 5A/5B/6B partial + compose-Gemini + claw-page-awareness vervolg op één dag. Track B + C nog niet gestart, beide worktrees **49 commits achter op main** → rebase nodig voor start.
 
-**Direct volgende stap — Sprint #4 start** (~1 week, geen parallelisatie):
-1. **Browser-smoke batch** (~1-2u) — Δ-1 Surface C 9-stap + claw-page-awareness vervolg 5-stap + Visual Brief Compose/Trained-Style E2E + locale-picker browser-smoke. Confidence-check voor alle sprint #3-werk.
-2. **Cron-infra ADR** (~2u) — Vercel Cron vs Upstash QStash decision. Blocker voor competitor-monitoring.
-3. **Code-debt quick wins** (~2-3u) — design-tokens cleanup (15m) + variant-selection persist (2u).
-4. **testplan-content-items Ronde 1 — 8 representanten** (~1d) — blog-post / linkedin-post / search-ad / newsletter / landing-page / explainer-video / one-pager / press-release.
-5. **STOP-GATE eind sprint #4**: bug-log review, plan sprint #5 bugfix-scope.
+**Direct volgende stappen** (kortste pad pilot):
+1. **testplan-content-items Ronde 1 — 8 representanten** (~1d) — blog-post / linkedin-post / search-ad / newsletter / landing-page / explainer-video / one-pager / press-release. Sluit sprint #4 af + STOP-GATE bug-log review.
+2. **Track C activeren — `vercel-deployment`** (3d) — eerst `git rebase main` op `branddock-launch` worktree. Hard launch-blocker, ontgrendelt `pilot-onboarding-better-brands`.
+3. **Track B activeren — `brandclaw-tool-orchestrator`** (3-5d) — eerst `git rebase main` op `branddock-brandclaw` worktree. Foundation voor `strategy-analyst-stub` (langste kritieke pad 20-27d, bepaalt feitelijke pilot-projectie).
+
+**Track A vervolg parallel**: `content-test-wiring-gates-6A` (in_progress) afmaken + 6B wiring/dashboard finish + bugfix-cluster uit testplan.
+
+Pilot-projectie: **+9-11 weken vanaf 2026-05-12** (strategy-analyst-stub langste pad).
 
 **Track-allocation vanaf sprint #5**:
 - Track A (main): testplan finish + bugfixes + persist-TODOs

@@ -16,10 +16,21 @@ import React from 'react';
 export function SimpleMarkdown({ text, className = '' }: { text: string; className?: string }) {
   if (!text) return null;
 
-  // Pre-process: strip markdown anchor links [Text](#slug) → Text
+  // Pre-process:
+  //  1. Strip markdown anchor links [Text](#slug) → Text
+  //  2. Normalize: insert blank line AFTER heading-lines en VOOR bullet-blokken
+  //     zodat block-split op \n{2,} ze als losse blokken behandelt. AI-output
+  //     gebruikt vaak enkele newline waar markdown-spec dubbele vereist
+  //     (audit 2026-05-13 F6).
   const cleaned = text
     .replace(/\[([^\]]+)\]\(#[^)]*\)/g, '$1')  // [Text](#anchor) → Text
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');   // [Text](url) → Text
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')   // [Text](url) → Text
+    // Heading -> blank line erna (alleen wanneer er nog niet een staat)
+    .replace(/^(#{1,6}\s+.+)$(?!\n\n)/gm, '$1\n')
+    // Lijst-item gevolgd door non-lijst → blank line ertussen
+    .replace(/^(- .+)\n(?=[^-\s\n])/gm, '$1\n\n')
+    // Non-lijst gevolgd door lijst-item → blank line ertussen
+    .replace(/^([^-\n][^\n]*)\n(?=- )/gm, '$1\n\n');
 
   const blocks = cleaned.split(/\n{2,}/);
 

@@ -12,6 +12,16 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Voorgestelde fix**: na line 660 (na property-evals loop) een trace-lookup + `tryTrackPropertyEvalResults` call voor de latest AICallTrace. Patroon mirror van `tryTrackGateWarnings` aan einde van orchestrator (line 1013-1040 area).
 - **Effort**: ~30 min code + test.
 
+### F6 — SimpleMarkdown renderer breekt newlines bij heading + bullets
+- **Locatie**: `src/features/campaigns/components/canvas/previews/SimpleMarkdown.tsx`
+- **Probleem**: Block-split op `\n{2,}` (markdown-spec). AI produceert vaak `## Heading\n- bullet1\n- bullet2` met enkele newlines tussen heading en lijst. Resultaat: hele blok behandeld als één heading, bullets renderen inline (visible in screenshot 2026-05-13: "**Inhoudsopgave - Waarom textielbeheer - De eisen aan...**" als één lange bold-regel).
+- **Fix**: pre-processing regexes voor heading→blank-line en bullet/non-bullet transitions. Verzekert dat de AI-output door SimpleMarkdown correct in blocks gesplitst wordt zonder dat we de AI hoeven aan te passen.
+
+### F7 — Derive maakt deliverable maar genereert niet
+- **Locatie**: `src/features/campaigns/components/canvas/GenerationFeedbackBanners.tsx` derive-handler
+- **Probleem**: "LinkedIn-variant maken" chip suggereert finished output, maar derive-endpoint maakt alleen scaffold. User landt op leeg canvas en moet handmatig Generate klikken.
+- **Fix**: nieuwe `pendingAutoGenerate` flag in canvas-store. Derive-handler set flag naar nieuwe deliverableId, navigeert. CanvasPage useEffect detecteert op mount + fires `useCanvasOrchestration.generate()` automatisch. User landt op canvas met generation al actief (SSE streaming zichtbaar).
+
 ### F4 — Voiceguide-locale wordt genegeerd, workspace-language wint
 - **Locatie**: `src/lib/ai/brand-context.ts:946` — `contentLanguage: workspace?.contentLanguage ?? 'en'`
 - **Probleem**: BrandContextBlock leest alleen `Workspace.contentLanguage` (vrije string, default 'en'). `BrandVoiceguide.contentLocale` (BCP-47, bv. 'nl-NL') wordt nergens meegenomen in de prompt-context.
@@ -42,6 +52,35 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 (geen nog)
 
 ## P3 findings
+
+### F8 — Composite-score < threshold getoond als geldig resultaat (DESIGN-DECISION)
+- **Locatie**: F-VAL pipeline + canvas variant-display
+- **Probleem**: Bij representant #1 blog-post werd composite 55 (onder drempel 75) getoond als gewoon resultaat. User-feedback: "lijkt me logisch dat dit altijd minimaal 75 is en anders niet getoond kan worden als voorbeeld."
+- **Drie design-opties**:
+  - **A — Hard-gate**: composite < threshold → blokkeer variant-display, dwing regeneratie. Risk: vertraagt UX bij domein-mismatches (voiceguide hospitality + brief AI = onvermijdelijk lager).
+  - **B — Auto-iterate verplicht aanzetten**: FEATURE_AUTO_ITERATE default ON (6B-flag, nu off). Auto-rewrite tot threshold of max 2 attempts. Risk: 2× extra AI-calls per generation = ~$0.05-0.10 extra.
+  - **C — Visual warning + opt-in apply**: huidige aanpak via F3 amber-banner; user beslist of varianten zo bruikbaar zijn.
+- **Aanbeveling**: opt voor **B met user-zichtbare progress** — set FEATURE_AUTO_ITERATE=true in prod-env, tonen "Auto-iterate liep 1× om score naar 78 te tillen" als positief signaal. Composite < threshold na max-iter = user-keuze om alsnog te tonen.
+- **Severity**: P2 (design-decision, niet code-bug). Vereist user-input.
+
+### F9 — F-VAL score gerendeerd op blob, niet per-variant (DESIGN-DECISION)
+- **Locatie**: `src/lib/ai/canvas-orchestrator.ts:1052-1055` — `runFidelityScoringPipeline` blob-build
+- **Probleem**: Composite score is berekend op `textResult.components.map(c => c.variants[0]?.content).join('\n\n')` — alleen FIRST-VARIANT per component. Variant A en B krijgen IDENTIEKE score (zelfde 55), terwijl het 2 verschillende teksten zijn.
+- **Drie design-opties**:
+  - **A — Per-variant F-VAL** (2× AI-call cost): elke variant aparte score. Variant A=55, Variant B=72 → user kiest beste. Cost: 2× judge-call (~$0.04-0.10 elk).
+  - **B — Per-variant style+rules only, single judge call**: deterministisch deel (style + rules) per-variant berekenen (gratis), maar judge-call eenmaal op blob. Compromis tussen accuracy en cost.
+  - **C — Huidige aanpak doc'en**: composite is "team-score voor deze generation", niet per-variant. UI label aanpassen ("score over geselecteerde variant" → "score over generation-batch").
+- **Aanbeveling**: opt voor **A** — user-keuze is essentieel; aparte score is dat 2 variants vergelijkbaar zijn. Cost is acceptabel bij pilot-volume (~$0.10/blog).
+- **Severity**: P1 (functionele inaccuracy — variants moeten ver discrimineerbaar zijn). Vereist user-input over cost-trade-off.
+
+### F-canvas-open-slow — Derive-navigation duurt lang (PERFORMANCE)
+- **Locatie**: derive → navigate → CanvasPage mount → fetch /api/studio/[id] + components + context
+- **Probleem**: Tussen klik op chip en zichtbaarheid van nieuwe canvas zit veel laadtijd. CanvasPage mount triggert ~4 sequentiële API calls (deliverable detail, components, context-stack, F-VAL persist).
+- **Voorgestelde verbeteringen**:
+  - Parallel API calls (Promise.all) in CanvasPage mount-useEffect
+  - Optimistic-UI: render canvas-frame meteen, skeleton voor content terwijl data laadt
+  - Prefetch source-context bij derive (we hebben de campaignId al)
+- **Severity**: P3 (UX-polish). Niet pilot-blocker maar wel friction.
 
 ### F3 — F-VAL display-conflict tussen position-bar en composite-score
 - **Locatie**: `src/features/campaigns/components/canvas/FidelityScoreBar.tsx`

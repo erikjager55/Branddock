@@ -8,6 +8,7 @@ import { CanvasContextSelector } from './CanvasContextSelector';
 import { InsertImageModal } from './InsertImageModal';
 import { InheritanceBanner } from './InheritanceBanner';
 import { GenerationFeedbackBanners } from './GenerationFeedbackBanners';
+import { useCanvasOrchestration } from '../../hooks/useCanvasOrchestration';
 import { CanvasHelpButton } from '../../../claw/components/CanvasHelpButton';
 import { useClawStore } from '@/stores/useClawStore';
 import { Badge, Skeleton } from '@/components/shared';
@@ -105,6 +106,20 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
   const visualBriefModified = useCanvasStore((s) => s.visualBriefModified);
 
   const { data: componentsData, isLoading: componentsLoading } = useCanvasComponents(deliverableId);
+  const { generate: orchestrateGenerate } = useCanvasOrchestration(deliverableId);
+  const pendingAutoGenerate = useCanvasStore((s) => s.pendingAutoGenerate);
+  const setPendingAutoGenerate = useCanvasStore((s) => s.setPendingAutoGenerate);
+
+  // Auto-trigger generation na derive: GenerationFeedbackBanners derive-handler
+  // zet pendingAutoGenerate naar de nieuwe deliverableId voor navigatie.
+  // Op deze CanvasPage mount: wanneer match → vuur generate() + clear flag.
+  // Voorkomt dat user op een lege canvas land na klik op "LinkedIn-variant maken".
+  useEffect(() => {
+    if (!pendingAutoGenerate || pendingAutoGenerate !== deliverableId) return;
+    if (componentsLoading) return; // wacht tot context geladen is
+    setPendingAutoGenerate(null);
+    void orchestrateGenerate();
+  }, [pendingAutoGenerate, deliverableId, componentsLoading, orchestrateGenerate, setPendingAutoGenerate]);
   const existingComponents = componentsData?.components;
   const variantAngles = componentsData?.variantAngles ?? [];
   const persistedFidelityScore = componentsData?.fidelityScore ?? null;
