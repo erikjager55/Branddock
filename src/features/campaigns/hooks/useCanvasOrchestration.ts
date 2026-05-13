@@ -367,15 +367,20 @@ function routeEvent(eventName: string, rawData: string) {
         | 'PURE_AI'
         | undefined;
       const pos = typeof data.humanBaselinePosition === 'number' ? data.humanBaselinePosition : null;
+      const variantIdx = typeof data.variantIndex === 'number' ? data.variantIndex : 0;
       if (verdict && pos !== null) {
-        store.setFidelityDetector({ verdict, humanBaselinePosition: pos });
+        // F9: per-variant detector signal. setDetectorOnlyForVariant spiegelt
+        // variant 0 ook naar legacy fidelityScore voor backwards-compat.
+        store.setDetectorOnlyForVariant(variantIdx, { verdict, humanBaselinePosition: pos });
       }
       break;
     }
 
-    case 'fidelity_score_running':
-      store.setFidelityComputing();
+    case 'fidelity_score_running': {
+      const variantIdx = typeof data.variantIndex === 'number' ? data.variantIndex : 0;
+      store.setFidelityRunningForVariant(variantIdx);
       break;
+    }
 
     case 'fidelity_score_complete': {
       const composite = typeof data.compositeScore === 'number' ? data.compositeScore : null;
@@ -389,8 +394,9 @@ function routeEvent(eventName: string, rawData: string) {
       const pillarsRaw = data.pillars as
         | { style: number | null; judge: number | null; rules: number | null }
         | undefined;
+      const variantIdx = typeof data.variantIndex === 'number' ? data.variantIndex : 0;
       if (composite !== null && verdict && pos !== null && pillarsRaw) {
-        store.setFidelityComplete({
+        store.setFidelityCompleteForVariant(variantIdx, {
           compositeScore: composite,
           thresholdMet: data.thresholdMet === true,
           compositeThreshold: typeof data.compositeThreshold === 'number' ? data.compositeThreshold : 75,
@@ -409,7 +415,8 @@ function routeEvent(eventName: string, rawData: string) {
 
     case 'fidelity_score_skipped': {
       const reason = typeof data.reason === 'string' ? data.reason : 'Score skipped';
-      store.setFidelityScoreSkipped(reason);
+      const variantIdx = typeof data.variantIndex === 'number' ? data.variantIndex : 0;
+      store.setFidelityScoreSkippedForVariant(variantIdx, reason);
       break;
     }
 

@@ -14,6 +14,20 @@ import type {
 import type { MediumCategory, MediumVariant } from '../types/medium-config.types';
 type GenerationStatus = 'idle' | 'generating' | 'complete' | 'error';
 
+// F9 (audit 2026-05-13): per-variant fidelity score-shape, mirror van
+// canvas-store.fidelityScore inline-type voor type-safe map-storage.
+export interface FidelityScoreState {
+  stage: 'idle' | 'detector-only' | 'computing' | 'complete' | 'skipped';
+  skippedReason: string | null;
+  compositeScore: number | null;
+  thresholdMet: boolean | null;
+  compositeThreshold: number | null;
+  detectorVerdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI' | null;
+  humanBaselinePosition: number | null;
+  pillars: { style: number | null; judge: number | null; rules: number | null } | null;
+  elapsedMs: number | null;
+}
+
 export type SceneId = 'hook' | 'body' | 'cta';
 export type SceneSourceMode = 'text-to-video' | 'image-to-video' | 'existing' | 'none';
 
@@ -109,6 +123,11 @@ interface CanvasStoreState {
     /** Compute time in ms voor "computed in 22s" UI hint */
     elapsedMs: number | null;
   };
+  // F9 fix (audit 2026-05-13): per-variant fidelity scores. Map van
+  // variantIndex (0=Variant A, 1=Variant B) naar score-shape identiek aan
+  // bovenstaande fidelityScore. UI leest score op basis van currently-selected
+  // variant; fidelityScore boven blijft alias voor variant 0 (legacy compat).
+  fidelityScoresByVariantIndex: Map<number, FidelityScoreState>;
 
   // ─── STRICT mode rewrite ──────────────────────────────────
   // Wordt gevuld wanneer FidelityConfig.humanVoiceMode === STRICT en het
@@ -333,6 +352,24 @@ interface CanvasStoreState {
   }) => void;
   resetFidelityScore: () => void;
   setFidelityScoreSkipped: (reason: string) => void;
+  // F9: per-variant setters. variantIndex 0 wordt ook gespiegeld naar de
+  // legacy fidelityScore-state zodat bestaande UI niets hoeft te weten van
+  // de map (backwards-compat).
+  setFidelityRunningForVariant: (variantIndex: number) => void;
+  setFidelityCompleteForVariant: (variantIndex: number, data: {
+    compositeScore: number;
+    thresholdMet: boolean;
+    compositeThreshold: number;
+    detectorVerdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI';
+    humanBaselinePosition: number;
+    pillars: { style: number | null; judge: number | null; rules: number | null };
+    elapsedMs: number;
+  }) => void;
+  setFidelityScoreSkippedForVariant: (variantIndex: number, reason: string) => void;
+  setDetectorOnlyForVariant: (variantIndex: number, data: {
+    verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI';
+    humanBaselinePosition: number;
+  }) => void;
   setStrictRewriteRunning: () => void;
   setStrictRewriteComplete: (data: {
     improved: boolean;
@@ -516,6 +553,7 @@ const INITIAL_STATE = {
     pillars: null,
     elapsedMs: null,
   },
+  fidelityScoresByVariantIndex: new Map<number, FidelityScoreState>(),
   strictRewrite: {
     stage: 'idle' as const,
     improved: false,
@@ -755,6 +793,123 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         pillars: null,
         elapsedMs: null,
       },
+      fidelityScoresByVariantIndex: new Map<number, FidelityScoreState>(),
+    }),
+
+  setFidelityRunningForVariant: (variantIndex) =>
+    set((state) => {
+      const map = new Map(state.fidelityScoresByVariantIndex);
+      const existing = map.get(variantIndex) ?? {
+        stage: 'idle' as const,
+        skippedReason: null,
+        compositeScore: null,
+        thresholdMet: null,
+        compositeThreshold: null,
+        detectorVerdict: null,
+        humanBaselinePosition: null,
+        pillars: null,
+        elapsedMs: null,
+      };
+      map.set(variantIndex, { ...existing, stage: 'computing' });
+      const next: Partial<CanvasStoreState> = {
+        fidelityScoresByVariantIndex: map,
+      };
+      // Spiegel variant 0 naar legacy fidelityScore voor backwards-compat
+      if (variantIndex === 0) {
+        next.fidelityScore = { ...state.fidelityScore, stage: 'computing' };
+      }
+      return next as CanvasStoreState;
+    }),
+
+  setFidelityCompleteForVariant: (variantIndex, data) =>
+    set((state) => {
+      const map = new Map(state.fidelityScoresByVariantIndex);
+      map.set(variantIndex, {
+        stage: 'complete',
+        skippedReason: null,
+        compositeScore: data.compositeScore,
+        thresholdMet: data.thresholdMet,
+        compositeThreshold: data.compositeThreshold,
+        detectorVerdict: data.detectorVerdict,
+        humanBaselinePosition: data.humanBaselinePosition,
+        pillars: data.pillars,
+        elapsedMs: data.elapsedMs,
+      });
+      const next: Partial<CanvasStoreState> = {
+        fidelityScoresByVariantIndex: map,
+      };
+      if (variantIndex === 0) {
+        next.fidelityScore = {
+          stage: 'complete',
+          skippedReason: null,
+          compositeScore: data.compositeScore,
+          thresholdMet: data.thresholdMet,
+          compositeThreshold: data.compositeThreshold,
+          detectorVerdict: data.detectorVerdict,
+          humanBaselinePosition: data.humanBaselinePosition,
+          pillars: data.pillars,
+          elapsedMs: data.elapsedMs,
+        };
+      }
+      return next as CanvasStoreState;
+    }),
+
+  setFidelityScoreSkippedForVariant: (variantIndex, reason) =>
+    set((state) => {
+      const map = new Map(state.fidelityScoresByVariantIndex);
+      const existing = map.get(variantIndex) ?? {
+        stage: 'idle' as const,
+        skippedReason: null,
+        compositeScore: null,
+        thresholdMet: null,
+        compositeThreshold: null,
+        detectorVerdict: null,
+        humanBaselinePosition: null,
+        pillars: null,
+        elapsedMs: null,
+      };
+      map.set(variantIndex, { ...existing, stage: 'skipped', skippedReason: reason });
+      const next: Partial<CanvasStoreState> = {
+        fidelityScoresByVariantIndex: map,
+      };
+      if (variantIndex === 0) {
+        next.fidelityScore = { ...state.fidelityScore, stage: 'skipped', skippedReason: reason };
+      }
+      return next as CanvasStoreState;
+    }),
+
+  setDetectorOnlyForVariant: (variantIndex, data) =>
+    set((state) => {
+      const map = new Map(state.fidelityScoresByVariantIndex);
+      const existing = map.get(variantIndex) ?? {
+        stage: 'idle' as const,
+        skippedReason: null,
+        compositeScore: null,
+        thresholdMet: null,
+        compositeThreshold: null,
+        detectorVerdict: null,
+        humanBaselinePosition: null,
+        pillars: null,
+        elapsedMs: null,
+      };
+      map.set(variantIndex, {
+        ...existing,
+        stage: 'detector-only',
+        detectorVerdict: data.verdict,
+        humanBaselinePosition: data.humanBaselinePosition,
+      });
+      const next: Partial<CanvasStoreState> = {
+        fidelityScoresByVariantIndex: map,
+      };
+      if (variantIndex === 0) {
+        next.fidelityScore = {
+          ...state.fidelityScore,
+          stage: 'detector-only',
+          detectorVerdict: data.verdict,
+          humanBaselinePosition: data.humanBaselinePosition,
+        };
+      }
+      return next as CanvasStoreState;
     }),
 
   setFidelityScoreSkipped: (reason) =>

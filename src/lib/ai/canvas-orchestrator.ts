@@ -766,26 +766,41 @@ export async function* orchestrateContentGeneration(
   }
 
   // ── Steps 2.5-2.7: F-VAL scoring pipeline ─
-  // Detector + composition + (conditional) STRICT rewrite. Shared helper
-  // wordt ook door regenerate flow aangeroepen zodat de position-bar
-  // niet verdwijnt bij een group-regenerate.
+  // F9 fix (audit 2026-05-13): per-variant scoring i.p.v. blob over alleen
+  // first-variant. Iteratie over variant-indices; events krijgen
+  // variantIndex-tag zodat UI per Variant A/B aparte score kan tonen.
+  // STRICT-rewrite alleen op variant 0 (primaire variant) om cost te
+  // beheersen — secundaire variants krijgen alleen score, geen rewrite.
   let fidelityPipelineReturn: FidelityPipelineReturn | null = null;
-  {
+  const variantCount = Math.max(
+    1,
+    ...textResult.components.map((c) => c.variants.length),
+  );
+  for (let vIdx = 0; vIdx < variantCount; vIdx++) {
     const gen = runFidelityScoringPipeline({
       deliverableId,
       workspaceId,
       textResult,
       stack,
       textModelProvider: textModel.provider,
-      humanVoiceMode,
+      // STRICT alleen op variant 0; secundaire variants skip om cost te
+      // halveren. Variant 0 is wat user als 'primary' ziet en op publish-flow
+      // gebruikt; auto-iterate werkt ook alleen op variant 0.
+      humanVoiceMode: vIdx === 0 ? humanVoiceMode : 'OFF',
+      variantIndex: vIdx,
     });
+    let returned: FidelityPipelineReturn | null = null;
     while (true) {
       const { value, done } = await gen.next();
       if (done) {
-        fidelityPipelineReturn = value;
+        returned = value;
         break;
       }
       yield value;
+    }
+    if (vIdx === 0) {
+      // Bewaar primary variant outcome voor auto-iterate downstream.
+      fidelityPipelineReturn = returned;
     }
   }
 
@@ -1227,11 +1242,18 @@ async function* runFidelityScoringPipeline(input: {
   stack: CanvasContextStack;
   textModelProvider: AiProvider;
   humanVoiceMode: import('@prisma/client').HumanVoiceMode;
+  /**
+   * Welke variant-index scoren (default 0 = Variant A). F9 fix (audit
+   * 2026-05-13): per-variant scoring zodat Variant A en B aparte scores
+   * krijgen i.p.v. dezelfde aggregate.
+   */
+  variantIndex?: number;
 }): AsyncGenerator<OrchestrationEvent, FidelityPipelineReturn | null> {
   const { deliverableId, workspaceId, textResult, stack, textModelProvider, humanVoiceMode } = input;
+  const variantIndex = input.variantIndex ?? 0;
 
   const blobText = textResult.components
-    .map((c) => c.variants[0]?.content ?? '')
+    .map((c) => c.variants[variantIndex]?.content ?? '')
     .filter(Boolean)
     .join('\n\n');
   const blobWordCount = blobText.split(/\s+/).filter(Boolean).length;
@@ -1244,6 +1266,7 @@ async function* runFidelityScoringPipeline(input: {
     yield {
       event: 'tell_check_complete',
       data: {
+        variantIndex,
         verdict: tellResult.verdict,
         humanBaselinePosition: tellResult.humanBaselinePosition,
         scorePer1000Words: Math.round(tellResult.scorePer1000Words * 10) / 10,
@@ -1257,7 +1280,7 @@ async function* runFidelityScoringPipeline(input: {
   }
 
   // ── Composition ──
-  yield { event: 'fidelity_score_running', data: { stage: 'computing' } };
+  yield { event: 'fidelity_score_running', data: { stage: 'computing', variantIndex } };
   let fidelityErrorMessage: string | null = null;
   let fidelityOutcome: Awaited<ReturnType<typeof runFidelityScoring>> = null;
   try {
@@ -1279,6 +1302,7 @@ async function* runFidelityScoringPipeline(input: {
     yield {
       event: 'fidelity_score_skipped',
       data: {
+        variantIndex,
         reason:
           fidelityErrorMessage ??
           'Score could not be computed (insufficient signal or runtime issue)',
@@ -1289,7 +1313,7 @@ async function* runFidelityScoringPipeline(input: {
 
   yield {
     event: 'fidelity_score_complete',
-    data: buildFidelityScoreEventPayload(fidelityOutcome.result),
+    data: { ...buildFidelityScoreEventPayload(fidelityOutcome.result), variantIndex },
   };
 
   // ── Checkpoint-gate [6] validateFidelityComposite (sub-sprint #6.A) ──

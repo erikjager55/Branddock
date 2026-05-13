@@ -59,7 +59,25 @@ interface FidelityScoreBarProps {
  *   - complete:       full position-bar + composite badge + pillar breakdown
  */
 export function FidelityScoreBar({ compact = false, deliverableId = null }: FidelityScoreBarProps) {
-  const fidelity = useCanvasStore((s) => s.fidelityScore);
+  // F9 (audit 2026-05-13): per-variant scoring. Lees score voor currently-
+  // selected variant uit fidelityScoresByVariantIndex map. Fall back op
+  // legacy fidelityScore wanneer geen variant-specific entry (b.v. wanneer
+  // pipeline op blob-niveau geschoorde — pre-F9 deliverables).
+  const fidelityFallback = useCanvasStore((s) => s.fidelityScore);
+  const variantScores = useCanvasStore((s) => s.fidelityScoresByVariantIndex);
+  const selections = useCanvasStore((s) => s.selections);
+  const variantGroups = useCanvasStore((s) => s.variantGroups);
+  // Selected variant-index = selection van eerste group (alle groups syncen)
+  const selectedVariantIndex = React.useMemo(() => {
+    const firstGroup = variantGroups.keys().next().value;
+    if (!firstGroup) return 0;
+    return selections.get(firstGroup) ?? 0;
+  }, [variantGroups, selections]);
+  const fidelity =
+    variantScores.get(selectedVariantIndex) ??
+    variantScores.get(0) ??
+    fidelityFallback;
+
   const strict = useCanvasStore((s) => s.strictRewrite);
   const autoIterate = useCanvasStore((s) => s.autoIterate);
   const vanilla = useCanvasStore((s) => s.vanillaBaseline);
