@@ -175,6 +175,13 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F34 — "VOLGENDE STAP" iteration-nudges panel verwijderd (gefixt)
+- **Locatie**: `src/features/campaigns/components/canvas/GenerationFeedbackBanners.tsx`.
+- **Probleem**: User-feedback dat de iteration-nudges panel (VERFIJNEN / HERGEBRUIKEN / VERRIJKEN chips boven content-variants) niet wordt gebruikt als beoogd en visuele ruis toevoegt.
+- **Fix**: `IterationNudgesPanel` + bijbehorende helpers (`useDeriveNudgesOnLoad`, `NudgeGroupRow`, `classifyNudge`, GROUP_LABELS) volledig verwijderd uit GenerationFeedbackBanners. Component returnt nu alleen `<BrandVoiceBanner />` (amber fallback-warning bij ontbreken voiceguide).
+- **Niet aangeraakt**: store-side `iterationNudges` state + setters blijven; SSE-handlers in `useCanvasOrchestration.ts` blijven nudges populeren. Geen UI-consumer meer, dus dead-store maar geen breakage. Laat ruimte voor toekomstige re-introductie als panel-design wijzigt.
+- **Severity**: P2 (UX-opschoning).
+
 ### F33 — Length-control multiplier crushed judge-score voor canvas-flow sections (gefixt)
 - **Locatie**: `src/lib/brand-fidelity/fidelity-runner.ts:runFidelityScoring`, `src/lib/ai/canvas-orchestrator.ts` (override pass-through).
 - **Probleem (smoking gun)**: Na F31+F32 toonde DB voor Napking blog-post: judge raw 92 (uitstekend) maar **finalComposite 55**. Reden: `computeLengthMultiplier(actual=400, target=1900) = 0.6` — -40% penalty wegens "severely short". Canvas-flow genereert SECTIONS (~200-500 woorden) maar content-type registry target voor blog-post is gemiddelde van constraints `minWords:800 + maxWords:3000 / 2 = 1900` — bedoeld voor full article. Length-control was correct geconfigureerd voor end-to-end blog-post scoring, maar canvas-flow scoort sectionele content waar deze penalty niet past.
