@@ -974,6 +974,12 @@ const VISUAL_SOURCES: Array<{
     ready: true,
   },
   {
+    value: 'photography-request',
+    label: 'Real photography',
+    description: 'F42: AI genereert fotograaf-briefing; user upload-after-photo. Voor case-studies, testimonials, locatie-content.',
+    ready: true,
+  },
+  {
     value: 'none',
     label: 'No visual',
     description: 'Skip image generation for this content item',

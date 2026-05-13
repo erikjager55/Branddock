@@ -78,14 +78,16 @@ export type VisualStyleDirection =
  * eerste-class sources in Visual Brief zodat Step 2 + Step 3 één panel
  * delen met visualBrief.source als single source of truth.
  *
- *  - `generate`      — AI from prompt (Imagen / DALL-E / FLUX / Recraft / Ideogram)
- *  - `library`       — existing MediaAsset (IMAGE type)
- *  - `upload`        — user uploads a new file
- *  - `url`           — paste a public image URL
- *  - `stock`         — Pexels search + import
- *  - `compose`       — 2-9 reference MediaAssets via FLUX 2 multi-reference
- *  - `trained-style` — workspace-trained LoRA / consistent model
- *  - `none`          — skip image generation for this content item
+ *  - `generate`            — AI from prompt (Imagen / DALL-E / FLUX / Recraft / Ideogram)
+ *  - `library`             — existing MediaAsset (IMAGE type)
+ *  - `upload`              — user uploads a new file
+ *  - `url`                 — paste a public image URL
+ *  - `stock`               — Pexels search + import
+ *  - `compose`             — 2-9 reference MediaAssets via FLUX 2 multi-reference
+ *  - `trained-style`       — workspace-trained LoRA / consistent model
+ *  - `photography-request` — F42: AI genereert fotograaf-briefing voor real-photo
+ *                            workflow; user upload-after-photo
+ *  - `none`                — skip image generation for this content item
  */
 export type VisualBriefSource =
   | 'generate'
@@ -95,6 +97,7 @@ export type VisualBriefSource =
   | 'stock'
   | 'compose'
   | 'trained-style'
+  | 'photography-request'
   | 'none';
 
 /**
@@ -467,7 +470,7 @@ function parseVisualBrief(
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
     const obj = raw as Record<string, unknown>;
     const validSources: VisualBriefSource[] = [
-      'generate', 'library', 'upload', 'url', 'stock', 'compose', 'trained-style', 'none',
+      'generate', 'library', 'upload', 'url', 'stock', 'compose', 'trained-style', 'photography-request', 'none',
     ];
     const rawSource = obj.source as string | undefined;
     const source: VisualBriefSource =

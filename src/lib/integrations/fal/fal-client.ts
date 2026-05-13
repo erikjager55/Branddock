@@ -334,8 +334,18 @@ export async function generateFalImage(
     ...(hasRefs ? { image_urls: refUrls } : {}),
   };
 
+  // F42 (audit 2026-05-13): resolve provider endpoint via registry —
+  // sommige modellen (Recraft V3 → fal-ai/recraft/v3/text-to-image,
+  // Seedream → fal-ai/bytedance/seedream/v4/text-to-image, Ideogram →
+  // fal-ai/ideogram/v3) hebben een nested-path endpoint die afwijkt
+  // van hun registry-id. Voorheen passed we modelId direct → "Model
+  // not found" 404 voor deze providers.
+  const { getFalProviderById, getFalEndpoint } = await import('./fal-providers');
+  const provider = getFalProviderById(modelId);
+  const endpoint = provider ? getFalEndpoint(provider) : modelId;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = await fal.subscribe(modelId, {
+  const result = await fal.subscribe(endpoint, {
     input: input as any,
     timeout: 180_000, // 3 minutes — GPU queue can be slow
   });

@@ -29,6 +29,7 @@ import {
   Images,
   Layers,
   Palette,
+  Camera,
   Ban,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -42,6 +43,7 @@ import { UploadTab } from './insert-image/UploadTab';
 import { LibraryAssetPicker } from './LibraryAssetPicker';
 import { ComposePicker } from './ComposePicker';
 import { TrainedStylePicker } from './TrainedStylePicker';
+import { PhotographyBriefPanel } from './PhotographyBriefPanel';
 import type { InsertImageSelection } from './insert-image/types';
 
 interface SourceTab {
@@ -58,6 +60,7 @@ export const IMAGE_SOURCE_TABS: SourceTab[] = [
   { value: 'stock', label: 'Stock', icon: Images },
   { value: 'compose', label: 'Compose', icon: Layers },
   { value: 'trained-style', label: 'Trained', icon: Palette },
+  { value: 'photography-request', label: 'Real photo', icon: Camera },
   { value: 'none', label: 'None', icon: Ban },
 ];
 
@@ -171,6 +174,8 @@ function SourceContent({
             in Step 2 (Content Variants). Schakel over naar die view om te genereren.
           </div>
         );
+      case 'photography-request':
+        return <PhotographyBriefPanel deliverableId={deliverableId} />;
       case 'none':
         return (
           <div className="text-xs text-gray-500 px-2 py-3">
@@ -240,6 +245,8 @@ function SourceContent({
           onGenerated={onCancel}
         />
       );
+    case 'photography-request':
+      return <PhotographyBriefPanel deliverableId={deliverableId} />;
     case 'none':
       return (
         <div className="text-xs text-gray-500 px-2 py-3">

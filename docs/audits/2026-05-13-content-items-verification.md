@@ -175,6 +175,14 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F42 — Photography-request flow + endpoint-resolution-fix voor Recraft/Seedream/Ideogram (gefixt)
+- **Locatie**: `src/lib/ai/canvas-context.ts` (source enum), `src/app/api/studio/[deliverableId]/photo-brief/route.ts` (NIEUW), `src/features/campaigns/components/canvas/PhotographyBriefPanel.tsx` (NIEUW), ImageSourcePanel + Step1Context wiring, `src/lib/integrations/fal/fal-client.ts:generateFalImage` (endpoint-resolution fix).
+- **F42a — Photography-request source**: nieuwe `VisualBriefSource: 'photography-request'`. Voor authenticity-critical content (case-studies, testimonials, locatie). AI genereert markdown fotograaf-briefing op basis van Visual Brief + brand-context (POST /api/studio/[deliverableId]/photo-brief). User download .md en geeft aan fotograaf; upload-after-photo via bestaande Upload-source.
+- **F42b — Endpoint-resolution fix**: user-report toonde Recraft V3 image-gen falen met "All image generation calls failed". Oorzaak: `generateFalImage` passed `modelId` (`fal-ai/recraft-v3`) direct naar `fal.subscribe()`, maar de echte fal endpoint is `fal-ai/recraft/v3/text-to-image` (nested-path). Voorheen werkte dit via OpenAI fallback. Fix: `generateFalImage` resolved nu via `getFalProviderById(modelId) + getFalEndpoint(provider)` voor de juiste endpoint-string. Geldt voor Recraft V3, Seedream V4, Ideogram V3 (allemaal nested-path).
+- **Niet meegenomen (F42 scope-cut)**: cross-content asset reuse suggestion-rij in ImageSourcePanel. DAM auto-tagging (F41) leverde de aiTags al; UI om "similar assets" te tonen is follow-up F42-bis (geen schema-werk meer nodig).
+- **Verification**: npx tsc --noEmit: 0 errors.
+- **Severity**: P1 (F42b kritiek; F42a optionele workflow).
+
 ### F41 — DAM auto-tagging via Claude Vision (gefixt — fire-and-forget pattern)
 - **Locatie**: `src/lib/ai/dam-auto-tagger.ts` (NIEUW), `src/app/api/media/route.ts` + `src/app/api/media/import-url/route.ts` + `src/app/api/media/stock/import/route.ts` (hooks).
 - **Context**: Media Library bevatte MediaAssets zonder uniforme metadata. Geen searchable tags voor cross-content reuse. DAM-best-practices 2026 (Frontify/Bynder reports) tonen dat auto-tagging via vision-AI 67% van marketing-teams betere brand-compliance levert.
