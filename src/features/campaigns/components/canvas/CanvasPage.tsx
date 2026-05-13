@@ -94,6 +94,7 @@ async function applyInheritance(
 
 export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPageProps) {
   const globalStatus = useCanvasStore((s) => s.globalStatus);
+  const globalErrorMessage = useCanvasStore((s) => s.globalErrorMessage);
   const approvalStatus = useCanvasStore((s) => s.approvalStatus);
   const activeStep = useCanvasStore((s) => s.activeStep);
   const completedSteps = useCanvasStore((s) => s.completedSteps);
@@ -621,7 +622,9 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           <span className="text-sm text-emerald-600">Generation complete</span>
         )}
         {globalStatus === 'error' && (
-          <span className="text-sm text-red-500">Generation failed</span>
+          <span className="text-sm text-red-500" title={globalErrorMessage ?? undefined}>
+            {globalErrorMessage ?? 'Generation failed'}
+          </span>
         )}
       </div>
 

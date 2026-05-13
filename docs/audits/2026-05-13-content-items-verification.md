@@ -73,6 +73,28 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Aanbeveling**: opt voor **A** — user-keuze is essentieel; aparte score is dat 2 variants vergelijkbaar zijn. Cost is acceptabel bij pilot-volume (~$0.10/blog).
 - **Severity**: P1 (functionele inaccuracy — variants moeten ver discrimineerbaar zijn). Vereist user-input over cost-trade-off.
 
+### F10 — Brand Assistant form-fill: partial success + generic error display
+- **Locatie**: drie code-paden
+  - `src/lib/claw/tools/write-tools.ts` (`fill_form_fields` tool + `update_deliverable_brief` tool)
+  - `src/stores/useFormFillStore.ts` (applyFill key-matching)
+  - `src/features/campaigns/components/canvas/CanvasPage.tsx:623` (generic error display)
+- **Probleem-bundel**:
+  - User vroeg Brand Assistant om brief-velden te vullen voor blog-post
+  - AI stelde waarden voor, user accepteerde
+  - DB-state na confirm: alleen `toneDirection` gevuld; `objective`, `keyMessage`, `callToAction` bleven leeg-string
+  - User klikte Genereren → orchestrate hit gate [1] validateBriefInput → BLOCK
+  - UI toonde generieke "Generation failed" zonder de werkelijke reden
+- **Twee root-causes**:
+  1. **Form-fill key-mismatch of partial-save**: AI gebruikte mogelijk verkeerde keys, of `setBriefField` autosave-PATCH race-condition (server-log toonde "PATCH /api/studio/[id] error: Error: aborted"). Resultaat: alleen 1 van 4 velden gepersisteerd.
+  2. **Error message generic**: SSE error.message had de gate-reden ("Geen objective EN geen keyMessage..."), maar CanvasPage rendered hardcoded "Generation failed" zonder de echte message.
+- **Fix part 1 (immediate)** — gefixt nu:
+  - CanvasPage gebruikt nu `globalErrorMessage` als zichtbare tekst (was: hardcoded "Generation failed")
+  - Gate-block message in orchestrator herwoord naar user-actiezone: "Vul minstens een doel (objective) óf een kernboodschap (keyMessage) in vóór generatie."
+- **Fix part 2 (follow-up nodig)** — niet gefixt:
+  - Brand Assistant fill-flow race-conditie onderzoeken: vermoedelijk N parallel PATCHes via setBriefField autosave per veld → eerste PATCH wint, rest abort. Oplossing: batch-update via `setBriefBulk` + single PATCH. **Effort: ~1u onderzoek + fix.**
+  - AI tool-keuze documentatie verbeteren: AI moet bij voorkeur `update_deliverable_brief` gebruiken (server-side DB-write) i.p.v. `fill_form_fields` (client-side, race-prone).
+- **Severity**: P1 — Brand Assistant is een pilot-feature, partial-success is misleidend.
+
 ### F-canvas-open-slow — Derive-navigation duurt lang (PERFORMANCE)
 - **Locatie**: derive → navigate → CanvasPage mount → fetch /api/studio/[id] + components + context
 - **Probleem**: Tussen klik op chip en zichtbaarheid van nieuwe canvas zit veel laadtijd. CanvasPage mount triggert ~4 sequentiële API calls (deliverable detail, components, context-stack, F-VAL persist).

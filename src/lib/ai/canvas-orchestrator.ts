@@ -193,7 +193,7 @@ export async function* orchestrateContentGeneration(
         yield {
           event: 'error',
           data: {
-            message: `Pre-generation gate failed (brief-input): ${briefGate.reasons.join(' · ')}`,
+            message: `Vul minstens een doel (objective) óf een kernboodschap (keyMessage) in vóór generatie. ${briefGate.reasons.join(' · ')}`,
             recoverable: false,
             gate: 'brief-input',
           },

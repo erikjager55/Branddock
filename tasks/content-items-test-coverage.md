@@ -5,8 +5,9 @@ fase: pre-launch
 priority: now
 effort: 1d representanten + 2-3d full sweep + bugfix-cluster variabel
 owner: claude-code + user (UI-manual)
-status: open
+status: in-progress
 created: 2026-05-12
+started: 2026-05-13
 completed: -
 related-adr: -
 related-spec: docs/playbooks/testplan-content-items.md
@@ -74,6 +75,13 @@ Het playbook IS het smoke-test plan. Per type:
 # Notes
 
 **Test-workspace**: Napking (brand foundation gevuld, `contentLanguage = nl`, naam = `Napking`). Persona + product + brand asset klaar als knowledge-selectors.
+
+**Parallel-run protocol** (gestart 2026-05-13):
+- **Sessie 1** — Long-Form Content (7 types, R: `blog-post`). Hoofdbrowser-profile.
+- **Sessie 2** — Social Media (13 types, R: `linkedin-post`). Tweede browser of incognito-window om Zustand store + localStorage state-conflict te vermijden (zie regressie-hotspot `gotchas.md` 2026-04-19 stale-state cleanup).
+- Beide rondes in zelfde Napking-workspace maar **aparte campaign-instances** — Strategy/Concept-state hangt aan campaign-id dus geen kruisbevuiling zolang het verschillende campaigns zijn.
+- Bug-log: één gedeelde sectie 5 in `docs/playbooks/testplan-content-items.md`, per entry duidelijk type-prefix (`[blog-post]` vs `[linkedin-post]`).
+- Cross-bug sync-point: na elk representant pauze, bug-log openen om duplicaten/shared-code-paden te herkennen (P1-cluster signal voor STOP-GATE).
 
 **Bug-severities** (per playbook sectie 5):
 - **P1**: blokkeert (flow stopt, error-toast, crash)
