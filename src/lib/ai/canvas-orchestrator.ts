@@ -1478,12 +1478,23 @@ async function generateTextWithFallback(
         `[canvas-orchestrator] attempting text generation with ${provider}/${model}` +
           (i === 0 ? ' (primary)' : ' (fallback)'),
       );
+      // F22 (audit 2026-05-13): extended thinking voor Opus 4.7 — model
+      // reasoning verbeterd voor voice-match en brand-fidelity. Bij
+      // thinking-on moet temperature undefined zijn (Anthropic vereiste).
+      // Niet-Opus modellen blijven op temperature 0.7 als voorheen.
+      const useThinking = provider === 'anthropic' && model.includes('opus');
+      const callOptions: Parameters<typeof createStructuredCompletion>[4] = useThinking
+        ? {
+            maxTokens: resolveMaxTokens(contentType ?? null),
+            thinking: { anthropic: { budgetTokens: 5000 } },
+          }
+        : { temperature: 0.7, maxTokens: resolveMaxTokens(contentType ?? null) };
       const result = await createStructuredCompletion<TextGenerationResult>(
         provider,
         model,
         systemPrompt,
         userPrompt,
-        { temperature: 0.7, maxTokens: resolveMaxTokens(contentType ?? null) },
+        callOptions,
         tracking
           ? {
               workspaceId,
@@ -1645,12 +1656,21 @@ async function* handleRegeneration(
     const textModel = await resolveFeatureModel(workspaceId, 'canvas-text-generate');
 
     const textStart = Date.now();
+    // F22: extended thinking ook bij regeneration path (Opus only).
+    const useRegenThinking =
+      textModel.provider === 'anthropic' && textModel.model.includes('opus');
+    const regenOptions: Parameters<typeof createStructuredCompletion>[4] = useRegenThinking
+      ? {
+          maxTokens: resolveMaxTokens(stack.deliverableTypeId ?? null),
+          thinking: { anthropic: { budgetTokens: 5000 } },
+        }
+      : { temperature: 0.8, maxTokens: resolveMaxTokens(stack.deliverableTypeId ?? null) };
     const result = await createStructuredCompletion<TextGenerationResult>(
       textModel.provider,
       textModel.model,
       systemPrompt,
       userPrompt,
-      { temperature: 0.8, maxTokens: resolveMaxTokens(stack.deliverableTypeId ?? null) },
+      regenOptions,
       {
         workspaceId,
         parentEntityType: 'Deliverable',

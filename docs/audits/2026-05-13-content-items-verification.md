@@ -165,6 +165,18 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Niet meegenomen** (volgt later): apply-endpoint persist nog geen nieuwe `ContentFidelityScore` row, dus na een eventuele latere hard-refresh leest de canvas de oude score uit DB. Daarvoor moet apply-endpoint OF re-judgen OF de snapshot-score uit `settings.autoIterate.finalScore` persisteren als nieuw `ContentFidelityScore` record. Pakken we op als score-display na hard-refresh een storing wordt.
 - **Severity**: P1 (gefixt voor de UX-loop; persistent score-write is P2 follow-up).
 
+### F22 — Initial-score nog steeds < 70 na F21 — model upgrade + best-of-3
+- **Locatie**: `src/lib/ai/feature-models.ts` (model-default), `src/lib/ai/canvas-orchestrator.ts:generateTextWithFallback` + `handleRegeneration` (thinking-config), plus best-of-3 helper (volgt in F22b).
+- **Probleem**: F21 prompt-restructure leverde +7pt (47→54). Doel ≥70 nog niet bereikt. Prompt-engineering alleen is uitgeput; verdere lift vraagt om model-upgrade + best-of-N candidate-pick.
+- **F22a — Model upgrade (deze commit)**:
+  - **Default model** voor `canvas-text-generate` van `google/gemini-2.5-flash` → `anthropic/claude-opus-4-7`. Per-workspace override via `WorkspaceAiConfig` blijft mogelijk.
+  - **Extended thinking enabled** wanneer provider=anthropic + model contains "opus": `thinking: { anthropic: { budgetTokens: 5000 } }`. Model redeneert intern over voice-fingerprint match + brand-fidelity vóór output. Anthropic-vereiste: temperature MUST be undefined bij thinking-on (handled in helper).
+  - Aangepast in zowel `generateTextWithFallback` (main path) als `handleRegeneration` (regen path).
+- **Verwacht effect F22a**: +5-10pt initial composite door hogere model-kwaliteit + thinking-overweging. Eerst meten of dit afdoende is.
+- **F22b — Best-of-3 (volgt indien <70)**: 3 parallelle candidates per generation met emphasis-variantie (style/judge/rules), 1 lightweight ranking-call selecteert beste, full F-VAL alleen op winner. Cost +3× generation tokens + ~$0.05 ranking call.
+- **Cost-impact F22a**: Opus 4.7 ~5-10× duurder per call dan Gemini Flash. Thinking voegt ~5000 reasoning-tokens toe per call. Total per-generation cost ~$0.15-0.50 (was ~$0.02-0.05).
+- **Severity**: P1 (in-progress; F22a gefixt).
+
 ### F21 — Initial-score ~50 te laag voor publish-ready output (prompt-restructure)
 - **Locatie**: `src/lib/studio/brand-voice-directive.ts` + `src/lib/ai/canvas-orchestrator.ts:buildCanvasPrompt` en `buildRegenerationPrompt`.
 - **Probleem**: Pilot-run Napking blog-post toonde initial composite 47 (style 43, judge 51, rules 81). Auto-iterate haalde +7pt (54→61) maar bleef onder threshold 75. Hypothese: AI behandelt voiceguide-block in BVD als achtergrondinfo i.p.v. imitatie-target. Geen self-verification stap forceert AI om voor-output te checken of voice-fingerprint match maakt.

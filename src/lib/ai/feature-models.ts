@@ -160,8 +160,13 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     label: 'Canvas Text Generation',
     description: 'Text generation for canvas content items (copy, headlines, CTAs)',
     category: 'campaign-content',
-    defaultProvider: 'google',
-    defaultModel: 'gemini-2.5-flash',
+    // F22 (audit 2026-05-13): Opus 4.7 met extended thinking — initial-score
+    // lift van ~50 → ~65-70. Default-provider switch van Google Flash
+    // (snel, goedkoop) naar Anthropic Opus (top-tier kwaliteit voor
+    // voice-match + brand-fidelity). Per-workspace override blijft mogelijk
+    // via WorkspaceAiConfig.
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-opus-4-7',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
