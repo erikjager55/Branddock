@@ -72,12 +72,23 @@ export async function* runAutoIterateIntegration(
   const findings = await loadFindingsForDeliverable(input.workspaceId, input.deliverableId);
 
   // ── Bind regenerate callback ─────────────────────────────
+  // F13-bis (audit 2026-05-13): voiceguide-text + voiceBaseline doorgeven
+  // zodat rewriter de werkelijke voice-fingerprint ziet (writing-samples,
+  // words-we-use, anti-patterns). Zonder dit kreeg de LLM een instructie
+  // ("imiteer sample 1") zonder bron. Werkt voor elke workspace die een
+  // BrandVoiceguide heeft; degradeert gracefully naar surface-rewrite
+  // wanneer voiceguide ontbreekt.
+  const voiceguideText =
+    input.stack.brand?.brandVoiceguide?.trim() ||
+    input.stack.brand?.voiceBaseline1Pager?.trim() ||
+    null;
   const regenerate: RegenerateFn = async ({ baselineText, promptHint }) => {
     return regenerateWithFeedback({
       baselineText,
       promptHint,
       brandName: input.stack.brand?.brandName ?? 'Brand',
       contentLanguage: input.stack.brand?.contentLanguage ?? 'nl',
+      voiceguideText,
     });
   };
 
@@ -218,6 +229,14 @@ interface RegenerateContext {
   promptHint: string;
   brandName: string;
   contentLanguage: string;
+  /**
+   * F13-bis: full formatted voiceguide-text (samples + words-we-use +
+   * anti-patterns + tone). Nullable wanneer workspace geen voiceguide heeft.
+   * Wanneer aanwezig wordt het als anchor-block in de system-prompt
+   * geïnjecteerd zodat de rewriter de werkelijke voice-fingerprint kan
+   * matchen ipv enkel abstracte instructies.
+   */
+  voiceguideText: string | null;
 }
 
 async function regenerateWithFeedback({
@@ -225,6 +244,7 @@ async function regenerateWithFeedback({
   promptHint,
   brandName,
   contentLanguage,
+  voiceguideText,
 }: RegenerateContext): Promise<{ text: string }> {
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error('ANTHROPIC_API_KEY required for auto-iterate regenerate');
@@ -240,11 +260,28 @@ async function regenerateWithFeedback({
   const focusStyleOrJudge = /Style-fit|Brand-fidelity/.test(promptHint);
   const lang = contentLanguage === 'nl' ? 'Nederlands' : 'English';
 
-  const systemPrompt = focusStyleOrJudge
-    ? `Je bent een senior ${lang} content-editor voor ${brandName}. STRATEGIC REWRITE-modus: je MAG structuur reorganiseren, alinea's splitsen of samenvoegen, openingsregels vervangen, en zinsritme aanpassen om de focuspunt-pijler echt te raken. Behoud alle feitelijke inhoud (cijfers, namen, claims) en ongeveer dezelfde totale lengte (±20%), maar herschrijf voice/structuur agressief waar nodig om voice-fingerprint of brand-essence beter te matchen. Output alleen de herziene tekst, geen preambule of commentary.`
-    : `Je bent een senior ${lang} content-editor voor ${brandName}. Herschrijf de tekst om de feedback te verwerken. Behoud structuur, feitelijke inhoud en ongeveer dezelfde lengte. Output alleen de herziene tekst, geen preambule of commentary.`;
+  // F13-bis (audit 2026-05-13): voice-fingerprint block. Cap op 2500 chars
+  // (~625 tokens) zodat de rewriter context-budget houdt voor baseline + hint.
+  // Voiceguide-string van formatBrandVoiceguide is typisch 800-2000 chars.
+  const voiceBlock = voiceguideText
+    ? `\n\n# Brand voice fingerprint (MUST MATCH)\n${voiceguideText.length > 2500 ? voiceguideText.slice(0, 2500) + '…' : voiceguideText}`
+    : '';
 
-  const userPrompt = `${promptHint}\n\n# Huidige tekst\n${baselineText}\n\n# Opdracht\nHerschrijf bovenstaande met de verbeterpunten verwerkt. ${focusStyleOrJudge ? 'Reorganiseer structuur waar dat de focuspunt-pijler verbetert. ' : ''}Output alleen de herziene tekst.`;
+  const systemPrompt = focusStyleOrJudge
+    ? `Je bent een senior ${lang} content-editor voor ${brandName}. STRATEGIC REWRITE-modus: je MAG structuur reorganiseren, alinea's splitsen of samenvoegen, openingsregels vervangen, en zinsritme aanpassen om de focuspunt-pijler echt te raken. Behoud alle feitelijke inhoud (cijfers, namen, claims) en ongeveer dezelfde totale lengte (±20%), maar herschrijf voice/structuur agressief waar nodig om voice-fingerprint of brand-essence beter te matchen. Output alleen de herziene tekst, geen preambule of commentary.${voiceBlock}`
+    : `Je bent een senior ${lang} content-editor voor ${brandName}. Herschrijf de tekst om de feedback te verwerken. Behoud structuur, feitelijke inhoud en ongeveer dezelfde lengte. Output alleen de herziene tekst, geen preambule of commentary.${voiceBlock}`;
+
+  // F13-bis: bij style/judge-focus expliciet refereren aan voice-fingerprint
+  // block (alleen wanneer voiceguide aanwezig is) zodat de rewriter niet
+  // alleen abstracte pijler-instructies leest maar concreet de samples
+  // raadpleegt voor ritme/opening/woordkeuze.
+  const fingerprintCue =
+    focusStyleOrJudge && voiceguideText
+      ? 'Studeer eerst het "Brand voice fingerprint" blok in de system-prompt: imiteer woordkeuze, zinsritme en openingsstijl van de Writing samples, gebruik termen uit "Words we use" minstens 2× per alinea, vermijd elke voorkomen uit "Words we avoid" en "Anti-patterns". Reorganiseer structuur waar dat de focuspunt-pijler verbetert. '
+      : focusStyleOrJudge
+        ? 'Reorganiseer structuur waar dat de focuspunt-pijler verbetert. '
+        : '';
+  const userPrompt = `${promptHint}\n\n# Huidige tekst\n${baselineText}\n\n# Opdracht\nHerschrijf bovenstaande met de verbeterpunten verwerkt. ${fingerprintCue}Output alleen de herziene tekst.`;
 
   const stream = client.messages.stream({
     model: REWRITE_MODEL,

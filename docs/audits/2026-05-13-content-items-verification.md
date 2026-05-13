@@ -140,7 +140,8 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
   - Initial F-VAL scores ~5-10pt hoger doordat voice-anchor structureel werkt
   - Auto-iterate winst per iter ~8-12pt voor style-pijler (was: ~0-2pt) door aggressive mode
   - Total quality target: ≥75 binnen 3 iters voor 80% van content-types (was: ~20% met oude prompts)
-- **Niet gemeten**: pilot-data zal moeten bewijzen. Smoke 14/14 feedback-compiler pass.
+- **F13-bis (2026-05-13, na pilot-run)**: pilot toonde 55→55 op Napking blog (style 43, judge 51, rules 81). Diagnose: `regenerateWithFeedback` kreeg alleen `brandName + contentLanguage` mee — niet de voiceguide-content zelf. Pillar-instructie "imiteer sample 1 + gebruik words-we-use" was een instructie zonder bron. Fix: voiceguide-text (`stack.brand.brandVoiceguide`, met `voiceBaseline1Pager` als fallback) wordt nu doorgegeven aan `regenerateWithFeedback` en als `# Brand voice fingerprint (MUST MATCH)` block in system-prompt geïnjecteerd. Bij style/judge-focus krijgt user-prompt een fingerprint-cue die expliciet refereert aan Writing samples + Words we use + Anti-patterns. Cap op 2500 chars voor context-budget. Werkt durably voor elke workspace met `BrandVoiceguide` populated; degradeert gracefully wanneer voiceguide ontbreekt.
+- **Niet gemeten**: pilot-data zal moeten bewijzen. Smoke 14/14 feedback-compiler pass + TS clean na F13-bis.
 
 ### F17 — Auto-iterate score visueel lager dan origineel (best-of + sync regressie)
 
