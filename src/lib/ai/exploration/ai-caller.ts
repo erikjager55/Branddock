@@ -451,10 +451,25 @@ export async function createClaudeStructuredCompletion<T>(
       }
 
       if (useThinking) {
-        requestParams.thinking = {
-          type: 'enabled',
-          budget_tokens: options!.thinking!.budgetTokens,
-        };
+        // F27 (audit 2026-05-13): Opus 4.7 vereist NIEUWE thinking-API
+        // (type: 'adaptive' + output_config.effort) ipv legacy
+        // (type: 'enabled' + budget_tokens). Voorheen falden Opus calls
+        // silently: 400 error → fallback-provider takeover.
+        // Sonnet 4.6 + 4.5 + Opus 4.5/4.6 ondersteunen nog legacy syntax.
+        const isOpus47Plus = /opus-4-7|opus-4-8|opus-5/.test(model);
+        if (isOpus47Plus) {
+          // Adaptive thinking met effort-level afgeleid van budget-tokens.
+          // <4000 = low, 4000-8000 = medium, >8000 = high.
+          const budget = options!.thinking!.budgetTokens;
+          const effort = budget < 4000 ? 'low' : budget < 8000 ? 'medium' : 'high';
+          requestParams.thinking = { type: 'adaptive' };
+          requestParams.output_config = { effort };
+        } else {
+          requestParams.thinking = {
+            type: 'enabled',
+            budget_tokens: options!.thinking!.budgetTokens,
+          };
+        }
       }
 
       // Use streaming to avoid the Anthropic SDK's 10-minute timeout on

@@ -25,12 +25,12 @@ import { getThresholdForType, DEFAULT_FIDELITY_THRESHOLD } from '@/lib/content-t
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 import type { AiProvider } from '@/lib/ai/feature-models';
 
-// F24 (audit 2026-05-13): rewrite-model upgrade naar Opus 4.7 met extended
-// thinking voor consistente kwaliteit met INITIAL generation (F22a). Haiku
-// 4.5 leverde te zachte rewrites op style-pijler; Opus + thinking redeneert
-// over voice-fingerprint match vóór de herschrijving. Thinking-budget 4000
-// tokens (iets lager dan INITIAL's 5000 omdat baseline al gestructureerd is).
-const REWRITE_MODEL = 'claude-opus-4-7';
+// F24/F27 (audit 2026-05-13): rewrite-model = Sonnet 4.6 + thinking (legacy
+// API werkt + experiment 2026-05-13 toont Sonnet 4.6 + thinking als top-
+// scorer 88 vs Opus 4.7 thinking dat silently faalde door foute API-syntax).
+// Sonnet 4.6 + thinking is sneller + ~5x goedkoper dan Opus 4.7 én scoort
+// hoger op brand-fit voor Napking voice. Thinking-budget 4000 tokens.
+const REWRITE_MODEL = 'claude-sonnet-4-6';
 const REWRITE_MAX_TOKENS = 4096;
 const REWRITE_THINKING_BUDGET = 4000;
 
@@ -289,11 +289,11 @@ async function regenerateWithFeedback({
         : '';
   const userPrompt = `${promptHint}\n\n# Huidige tekst\n${baselineText}\n\n# Opdracht\nHerschrijf bovenstaande met de verbeterpunten verwerkt. ${fingerprintCue}Output alleen de herziene tekst.`;
 
-  // F24: Opus 4.7 met extended thinking. Anthropic-vereiste: temperature
-  // mag NIET gezet zijn wanneer thinking aan staat. Max-tokens moet groter
-  // zijn dan thinking-budget (anders rejected). Output-budget = max-tokens
-  // - thinking-budget.
-  const useThinking = REWRITE_MODEL.includes('opus');
+  // F24/F27: Sonnet 4.6 + thinking (legacy API werkt). Voor Opus 4.7 zou
+  // nieuwe adaptive-API nodig zijn maar default is Sonnet sinds F27. Bij
+  // workspace-override naar Opus 4.7 zal deze direct-SDK-call falen — dat
+  // is acceptabel tot productie correct via ai-caller.ts route loopt.
+  const useThinking = REWRITE_MODEL.includes('sonnet') || REWRITE_MODEL.includes('opus');
   const requestParams: Anthropic.Messages.MessageStreamParams = useThinking
     ? {
         model: REWRITE_MODEL,

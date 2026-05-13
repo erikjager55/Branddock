@@ -152,5 +152,17 @@ export function formatAngleInstruction(angle: CreativeAngle): string {
     `**Approach:** ${angle.approach}`,
     '',
     'Schrijf de volledige content vanuit deze angle. Maak duidelijke keuzes die deze hoek versterken — opening, register, bewijsvoering, ritme, alles. Een lezer moet "Schaal & trots" anders ervaren dan "Daglicht & lucht" zelfs als de feiten hetzelfde zijn.',
+    '',
+    // F26 (audit 2026-05-13): expliciete divergence-directive op section-niveau.
+    // Voorheen waren beide varianten naar identieke kopjes geconvergeerd ("De
+    // verborgen tijdkosten", "HACCP-compliance", etc) ondanks verschillende
+    // angles, doordat F21/F22 voice-match prioriteerden boven structurele
+    // diversity. Deze instructie dwingt expliciet ander structuurpatroon.
+    '**Structurele divergentie (kritiek):** Een sibling-variant uit een andere creative angle genereert parallel. Kies BEWUST een ander structuurpatroon dan een logisch-evidente blog-structuur:',
+    '- Vermijd dezelfde subkop-tekst als sibling kan verzinnen ("De verborgen kosten", "Hoe het werkt", "HACCP-compliance" zijn voor de hand liggend — kies een minder voor-de-hand-liggende sectionering).',
+    '- Kies één structuurarchetype: **framework** (subkopjes + lijsten + checklist) **of** **narrative** (verhaal + scène + persoonlijk moment) **of** **comparison** (voor-na, A-vs-B) **of** **case-study** (één klant, concrete data, doorbraak) — dat past bij déze angle.',
+    '- Lengte van alinea\'s + subsecties varieert: sommige angles dragen 2-3 lange alinea\'s zonder kopjes; andere dragen veel korte subsecties. Laat de angle de structuur bepalen, niet de "standaard blog-template".',
+    '',
+    'Een lezer die beide varianten naast elkaar ziet moet binnen 5 seconden ervaren: "dit zijn fundamenteel andere benaderingen, niet twee bewerkingen van hetzelfde stuk".',
   ].join('\n');
 }

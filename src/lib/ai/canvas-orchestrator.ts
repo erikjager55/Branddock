@@ -1746,11 +1746,13 @@ async function generateTextWithFallback(
         `[canvas-orchestrator] attempting text generation with ${provider}/${model}` +
           (i === 0 ? ' (primary)' : ' (fallback)'),
       );
-      // F22 (audit 2026-05-13): extended thinking voor Opus 4.7 — model
-      // reasoning verbeterd voor voice-match en brand-fidelity. Bij
-      // thinking-on moet temperature undefined zijn (Anthropic vereiste).
-      // Niet-Opus modellen blijven op temperature 0.7 als voorheen.
-      const useThinking = provider === 'anthropic' && model.includes('opus');
+      // F22/F27 (audit 2026-05-13): extended thinking voor Anthropic Sonnet
+      // 4.6+/Opus 4.5+/4.7. Bij thinking-on moet temperature undefined zijn
+      // (Anthropic vereiste). Niet-thinking-capable modellen blijven op
+      // temperature 0.7. ai-caller.ts handelt Opus 4.7 nieuwe API af.
+      const useThinking =
+        provider === 'anthropic' &&
+        (model.includes('sonnet-4') || model.includes('opus-4'));
       const callOptions: Parameters<typeof createStructuredCompletion>[4] = useThinking
         ? {
             maxTokens: resolveMaxTokens(contentType ?? null),
@@ -1924,9 +1926,11 @@ async function* handleRegeneration(
     const textModel = await resolveFeatureModel(workspaceId, 'canvas-text-generate');
 
     const textStart = Date.now();
-    // F22: extended thinking ook bij regeneration path (Opus only).
+    // F22/F27: extended thinking voor Anthropic Sonnet 4+ / Opus 4+ ook bij
+    // regeneration path. ai-caller.ts handelt Opus 4.7 nieuwe API af.
     const useRegenThinking =
-      textModel.provider === 'anthropic' && textModel.model.includes('opus');
+      textModel.provider === 'anthropic' &&
+      (textModel.model.includes('sonnet-4') || textModel.model.includes('opus-4'));
     const regenOptions: Parameters<typeof createStructuredCompletion>[4] = useRegenThinking
       ? {
           maxTokens: resolveMaxTokens(stack.deliverableTypeId ?? null),

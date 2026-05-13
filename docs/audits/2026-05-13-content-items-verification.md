@@ -165,6 +165,40 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Niet meegenomen** (volgt later): apply-endpoint persist nog geen nieuwe `ContentFidelityScore` row, dus na een eventuele latere hard-refresh leest de canvas de oude score uit DB. Daarvoor moet apply-endpoint OF re-judgen OF de snapshot-score uit `settings.autoIterate.finalScore` persisteren als nieuw `ContentFidelityScore` record. Pakken we op als score-display na hard-refresh een storing wordt.
 - **Severity**: P1 (gefixt voor de UX-loop; persistent score-write is P2 follow-up).
 
+### F26 — Variant-overlap (identieke section-kopjes A vs B) (gefixt)
+- **Locatie**: `src/lib/ai/canvas-angle-generator.ts:formatAngleInstruction`.
+- **Probleem**: Twee gegenereerde varianten gebruikten identieke subkopjes ("De verborgen tijdkosten", "De risico's van handmatig voorraadbeheer", "HACCP-compliance zonder extra inspanning", "Hoe geautomatiseerd textielbeheer werkt", "Focus terugbrengen naar waar het thuishoort") ondanks verschillende creative angles. Verklaring: F21+F22+F24 prioriteren voice-MATCH (één voiceguide → één optimum); thinking-mode reduceert sample-variance; angle-instruction beïnvloedt opening/register/bewijsvoering maar niet sectie-structuur; best-of-3 ranker kiest steeds dezelfde "meest brand-fit" candidate.
+- **Fix**: aan formatAngleInstruction toegevoegd:
+  - Expliciete waarschuwing: sibling-variant genereert parallel; vermijd voor-de-hand-liggende subkop-tekst die sibling ook kan verzinnen.
+  - Eén structuurarchetype per angle: framework / narrative / comparison / case-study — laat de angle de structuur bepalen i.p.v. de "standaard blog-template".
+  - Variabele alinea-lengte + subsectie-count: angles met persoonlijke observatie dragen langere proza-alinea's zonder kopjes; framework-angles dragen veel korte subsecties.
+- **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
+- **Severity**: P2 (UX-kwaliteit).
+
+### F27 — Opus 4.7 thinking-API silently faalde, default switch naar Sonnet 4.6 (gefixt)
+- **Locatie**: `src/lib/ai/feature-models.ts` (default model), `src/lib/ai/exploration/ai-caller.ts` (Opus 4.7 nieuwe API), `src/lib/ai/auto-iterate-integration.ts` (rewrite-model), `src/lib/ai/canvas-orchestrator.ts` (thinking-detector).
+- **Probleem**: Eigen experiment 2026-05-13 (7 condities incl. Opus 4.7 + thinking) leverde **400 error** op:
+  > `"thinking.type.enabled" is not supported for this model. Use "thinking.type.adaptive" and "output_config.effort" to control thinking behavior.`
+  - Productie-code in `ai-caller.ts:453-458` gebruikt legacy syntax `thinking: { type: 'enabled', budget_tokens: X }` die werkt voor Sonnet 4.6/Opus 4.5/4.6 maar **niet voor Opus 4.7**. Opus 4.7 calls faalden silently → provider-fallback in `generateTextWithFallback` ving error op → next provider (Gemini/OpenAI) draaide in plaats van Opus.
+  - F22a (Opus + thinking) heeft dus nooit echt Opus draaien — verklaart waarom de verwachte +5-10pt lift uitbleef en initial bleef op 54.
+- **Experiment-bevindingen** (zie `docs/experiments/2026-05-13-model-comparison-report.md`):
+  - **Sonnet 4.6 + thinking: composite 88** (winnaar, $0.031, 24s)
+  - Sonnet 4.6 self-critique chain: 86 ($0.048, 49s)
+  - GPT-5.4: 84 ($0.014, 12s)
+  - Haiku 4.5 × 3 iter: 80 ($0.015, 21s)
+  - Gemini 3.1 Pro: 78 ($0.010, 126s — zeer langzaam)
+  - Gemini 3 Flash best-of-3: 72 ($0.008, 22s)
+  - T0 Opus 4.7 thinking: **FAILED** (API rejection)
+- **Conclusies**: Sonnet 4.6 + thinking levert hogere kwaliteit dan alle alternatieven én is sneller + ~5× goedkoper dan Opus zelfs als Opus correct werkt. Self-critique chain (A2) is cheap second-place maar 2× latency. Cheap iterative (Haiku) is interessant voor cost-gevoelige tier maar -8pt vs Sonnet thinking. Gemini Pro met thinking is onbruikbaar (126s latency op simple blog-post).
+- **Fix**:
+  1. **Default model** voor canvas-text-generate: `claude-opus-4-7` → `claude-sonnet-4-6` (proven 88-score, werkende thinking-API).
+  2. **Opus 4.7 thinking-API correctie** in `ai-caller.ts`: detecteert `opus-4-7+` via regex en gebruikt nieuwe `thinking: { type: 'adaptive' } + output_config: { effort: 'low'|'medium'|'high' }` syntax. Effort-level afgeleid van budgetTokens (<4000=low, 4000-8000=medium, >8000=high). Voor workspace-overrides naar Opus 4.7 werkt thinking nu wel.
+  3. **Thinking-detector** in canvas-orchestrator: `useThinking` triggert nu op `sonnet-4` of `opus-4` (was: alleen opus). Sonnet 4.6 thinking wordt automatisch aangezet.
+  4. **Auto-iterate rewrite-model** (F24 update): `claude-opus-4-7` → `claude-sonnet-4-6` met legacy thinking-API. Consistente kwaliteit met INITIAL generation.
+- **Cost-impact**: drastische daling. Sonnet 4.6 thinking ~5× goedkoper dan Opus 4.7 zou zijn ($0.03 vs $0.15+) bij hogere kwaliteit. Best-of-3 met Sonnet (F22b nog actief) brengt cost terug naar ~$0.10 per generation in angle-path.
+- **Verwacht effect op initial-score**: Sonnet thinking is op brand-fit beter dan zogenaamde Opus-thinking-via-fallback was. Score 63/59 zou nu richting 70-75 moeten gaan zonder silent-iter (F24).
+- **Severity**: P0 (gefixt; previously silent failure dat alle modelle-claims sinds F22a invalideerde).
+
 ### F25 — Variant-output gate blokkeert korte CTAs (gefixt)
 - **Locatie**: `src/lib/content-test/checkpoint-gates.ts:validateVariantOutput`.
 - **Probleem**: Universele minimum-threshold 20 chars met severity BLOCK voor élke variant.content. Nederlandse CTAs als "Plan een afspraak" (17), "Vraag offerte aan" (17), "Bestel nu" (9) faalden allemaal → generation stopte met "Variant-output gate failed: cta[0]: variant.content is 19 chars". Opus 4.7 produceerde gewone korte CTAs, gate-design was te restrictief voor plain-groups.

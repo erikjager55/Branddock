@@ -1,0 +1,80 @@
+[
+  {
+    "conditionId": "T0",
+    "label": "Claude Opus 4.7 + thinking",
+    "model": "claude-opus-4-7",
+    "approach": "single-shot + extended thinking",
+    "output": "",
+    "latencyMs": 502,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "estimatedCostUsd": 0,
+    "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"\\\"thinking.type.enabled\\\" is not supported for this model. Use \\\"thinking.type.adaptive\\\" and \\\"output_config.effort\\\" to control thinking behavior.\"},\"request_id\":\"req_011CazpoiXaFu4zVCVkh7f4D\"}"
+  },
+  {
+    "conditionId": "E1",
+    "label": "Claude Sonnet 4.6 + thinking",
+    "model": "claude-sonnet-4-6",
+    "approach": "single-shot + extended thinking",
+    "output": "Hoeveel servetten zijn er eigenlijk nog schoon? Liggen er genoeg tafellakens klaar voor de drukke vrijdagavond? Als restauranthouder heb je geen tijd om dat bij te houden. Bij Napking heb je hier geen omkijken naar. Jij focust op je gasten en je gerechten. Het textielbeheer laat je aan ons over.\n\nHet werkt eenvoudig. Napking werkt met een abonnementssysteem: wat je als vuile was inlevert, ontvang je een week later smetteloos schoon retour. Je hoeft geen bestellingen te plaatsen en je hoeft je voorraad niet zelf bij te houden. Wij doen dat. Servetten, tafellakens, theedoeken, koksjassen, bedieningskleding — wij zorgen dat alles kraakhelder is en op het juiste moment bij je afgeleverd wordt.\n\nJe voorraad verandert mee met je bedrijf. Verwacht je een drukke periode, of ga je juist even rustig aan? Geen probleem. Het abonnement is flexibel aan te passen, zodat je altijd genoeg textiel achter de hand hebt — niet te veel, niet te weinig. Scherp beheerd, zorgeloos voor jou.\n\nKwaliteit is geen toeval. Elk stuk textiel doorloopt een vast reinigingsproces dat voldoet aan HACCP-normen. Wat niet aan de norm voldoet, gaat als afkeur uit de poule. Zo weet je zeker dat je alleen onberispelijk linnen op tafel legt. Napking is eindverantwoordelijk voor wat er bij jou binnenkomt — dat is transparant en zonder verrassingen.\n\nMeer dan 280 restaurants in de Randstad werken al op deze manier met Napking. Niet omdat ze het moeten, maar omdat het werkt. Vlekkeloos textiel op het moment dat je het nodig hebt, beheerd door mensen die daarin uitblinken. Jij doet waar jij goed in bent. Napking doet de rest.",
+    "latencyMs": 23976,
+    "inputTokens": 1506,
+    "outputTokens": 1758,
+    "estimatedCostUsd": 0.030888
+  },
+  {
+    "conditionId": "E2",
+    "label": "GPT-5.4",
+    "model": "gpt-5.4",
+    "approach": "single-shot",
+    "output": "Heb ik straks wel genoeg servetten op voorraad? Zijn de tafellakens op tijd schoon retour? En wat als er ineens extra koksjassen nodig zijn? Met Napking heb je daar geen omkijken naar. Napking beheert, reinigt en levert horecatextiel voor meer dan 280 restaurants in de Randstad. Dat gebeurt volgens een scherp en flexibel systeem, zodat jouw restaurant altijd beschikt over vlekkeloos linnen, kraakheldere tafellakens en smetteloze werkkleding. Jij richt je op je gasten en gerechten. Napking zorgt dat het textiel op de juiste plek is, precies wanneer jij het nodig hebt.\n\nDe basis is een abonnement dat meebeweegt met je zaak. Je plaatst dus niet steeds nieuwe bestellingen. Wat je als vuile was meegeeft, krijg je een week later schoon retour. Zo blijft je voorraad op peil en is het textielbeheer transparant en zorgeloos. Heb je tijdelijk meer nodig door een druk terras, een evenement of een extra shift? Dan past Napking het abonnement snel aan. Heb je juist minder nodig, dan kan dat ook. Die flexibiliteit voorkomt tekorten, onnodige voorraad en afkeur door haastwerk of slechte planning.\n\nAchter dat abonnement zit een strakke operatie. Napking sorteert, controleert en reinigt elk stuk textiel met vaste procedures en HACCP-werkwijzen. Textiel met vlekken, slijtage of rejects wordt uit de poule gehaald, zodat alleen onberispelijk textiel wordt afgeleverd. Servetten moeten vlekkeloos zijn. Theedoeken moeten fris en bruikbaar zijn. Kleding voor de bediening en de keuken moet smetteloos en representatief terugkomen. Daar is Napking eindverantwoordelijk voor. Geen gedoe, geen losse eindjes, geen twijfel over de kwaliteit van wat er retour komt.\n\nOok praktisch blijft het systeem scherp. Napking helpt je voorraad beheren, signaleert wanneer aanvulling nodig is en houdt rekening met het ritme van jouw restaurant. Daardoor voorkom je verrassingen in de spits en hoef je niet zelf achter leveringen, reiniging of vervanging aan. Dat scheelt tijd, ruimte en onrust op de vloer. Voor restauranthouders in de Randstad betekent dat vooral dit: minder regelen, minder afkeur en meer zekerheid. Napking zorgt dat het horecatextiel vlekkeloos geregeld is, zodat jij zonder omkijken door kunt.",
+    "latencyMs": 11948,
+    "inputTokens": 1176,
+    "outputTokens": 507,
+    "estimatedCostUsd": 0.013485
+  },
+  {
+    "conditionId": "E3",
+    "label": "Gemini 3.1 Pro + thinking",
+    "model": "gemini-3.1-pro-preview",
+    "approach": "single-shot + thinking",
+    "output": "Heb ik wel genoeg schone theedoeken op voorraad? Is er voldoende werkkleding voor het zaterdagpersoneel? Als restauranthouder leg je de focus liever op je gerechten en het bezorgen van een mooie beleving voor je gasten. Bij Napking heb je geen omkijken meer naar je horecatextiel. Wij beheren en reinigen het linnen voor meer dan 280 restaurants in de Randstad. Zo hoef jij je niet bezig te houden met wasschema's, en doen wij waar wij in uitblinken: jou vlekkeloos textiel leveren. Precies op het juiste moment.\n\nWij werken met een overzichtelijk abonnement dat jouw voorraad altijd strak op peil houdt. Het principe is kraakhelder: wat je in de waszakken als vuile was inlevert, sturen wij een week later schoon retour. Je hoeft dus nooit wekelijks bestellingen te plaatsen of zelf tellingen bij te houden. Wij beheren de voorraad volledig voor je. Zodra onze chauffeur binnenstapt, neemt hij de vuile was mee en komt het schone textiel direct de kast in. We komen de bestelling afleveren op een vast moment in de week dat jou goed uitkomt.\n\nDe horeca kent pieken en dalen. Daarom is de service rondom je linnen bij ons zeer flexibel. Draai je een drukke decembermaand of open je in de zomer een extra groot terras? Dan schalen we het abonnement snel op. Zodra jouw textiel in onze wasserij aankomt, sorteren en wassen we het volgens strikte hygiëne-eisen. Tafellakens of servetten met gaatjes of hardnekkige vlekken halen we er als afkeur direct uit. Deze rejects vervangen wij met fris linnen uit onze ruime poule. Je krijgt dus uitsluitend smetteloos en onberispelijk materiaal op tafel.\n\nNapking zorgt voor een proces dat transparant is van begin tot eind. Wij zijn eindverantwoordelijk voor zowel de logistiek als de kwaliteit van jouw horecatextiel. Ons wasproces voldoet aan de HACCP-richtlijnen, waardoor we garanderen dat elk kledingstuk en elke theedoek hygiënisch schoon is. We houden de lijnen kort en de afspraken scherp. Door deze gestructureerde aanpak bouwen we aan een zorgeloos systeem voor jouw restaurant. Jij levert de was in, wij zorgen dat je altijd kan dekken en draaien.",
+    "latencyMs": 126340,
+    "inputTokens": 1269,
+    "outputTokens": 547,
+    "estimatedCostUsd": 0.010185
+  },
+  {
+    "conditionId": "A1",
+    "label": "Haiku 4.5 × 3 (1 gen + 2 iter)",
+    "model": "claude-haiku-4-5-20251001",
+    "approach": "cheap iterative",
+    "output": "Heb ik wel genoeg textiel op voorraad? Is er voldoende kokskleding? Bij Napking heb je hier geen omkijken naar. Wij beheren het textielbeheer en de reiniging voor meer dan 280 restaurants in de Randstad. Het resultaat: jij concentreert je op wat je goed doet — gasten verwelkomen en gerechten bereiden.\n\nHet systeem is kraakhelder. Je levert je vuile textiel in, en precies één week later sturen wij dezelfde hoeveelheid schoon retour. Geen bestellingen plaatsen. Geen gokken naar hoeveel je nodig hebt. Je voorraad blijft altijd op peil, en je weet precies wanneer je linnen aankomt. Heb je tijdelijk meer nodig vanwege een groot event of juist minder in een stille periode? Dan passen we het abonnement snel aan. Flexibel, dus.\n\nNapking werkt volgens HACCP-normen en reinigt alles tot op de vezel schoon. Je krijgt vlekkeloos linnen terug, elke keer. Servetten zonder vlekken, tafellakens zonder sporen, koksjassen onberispelijk. Onze reinigingsprocedure is transparant: goede reinigingsmiddelen, strikte controle, niets gaat de deur uit zonder kwaliteitscheck. Dit is standaard, niet uitzondering.\n\nVoor jou betekent dit: geen omkijken meer naar voorraad, geen telefoontjes voor dringende leveringen, geen zelf wassen of strijken. Napking is eindverantwoordelijk voor je textiel. Wij doen het beheer, zodat jij je hoofd vrij hebt voor je restaurant. Je hoeft je geen zorgen te maken — wij zorgen ervoor dat je textiel smetteloos aankomt.\n\nHet abonnement geeft ook rust. Je weet precies wat je betaalt — elke maand hetzelfde, geen verrassingen, geen extra kosten voor ad-hoc bestellingen. Mocht je ooit willen stoppen? Geen lange contracten. Flexibiliteit staat centraal. Sinds 2010 zorgen wij ervoor dat horecatextiel vlekkeloos en simpel blijft — zodat jij je restaurant kan runnen zoals het hoort.",
+    "latencyMs": 21391,
+    "inputTokens": 5601,
+    "outputTokens": 1782,
+    "estimatedCostUsd": 0.014511
+  },
+  {
+    "conditionId": "A2",
+    "label": "Sonnet 4.6 self-critique chain",
+    "model": "claude-sonnet-4-6",
+    "approach": "gen → critique → revise (3 calls)",
+    "output": "Hoeveel textiel heb je nodig deze week? Bij Napking hoef je die vraag niet zelf te beantwoorden. Wij beheren de poule, bewaken de aantallen en zorgen dat jij altijd genoeg vlekkeloos linnen op de plank hebt. Servetten, tafellakens, theedoeken, koksjassen, bedieningskleding — alles wordt gereinigd volgens HACCP-normen en afgeleverd op het moment dat jij het nodig hebt.\n\nStukken die de kwaliteitscontrole niet doorstaan — afkeur of rejects — worden vervangen zonder gedoe. Je weet wat er retour gaat, wat er gewassen wordt en wat er weer aankomt. Napking is eindverantwoordelijk voor de staat van je textiel. Komt er iets niet smetteloos aan? Dan lossen wij het op. Dat is geen belofte in kleine lettertjes — dat is hoe het systeem werkt.\n\nHet abonnement is flexibel. Wat je als vuile was inlevert, ontvang je een week later schoon retour. Je hoeft zelf geen bestellingen te plaatsen, geen voorraad bij te houden en geen leveringen te plannen. Heb je tijdelijk meer textiel nodig — door een evenement, een druk seizoen of een uitbreiding van je team — dan past Napking het abonnement snel aan. Heb je minder nodig, dan ook. Je voorraad blijft op peil. Altijd.\n\nScherp is wat dit systeem onderscheidt. Niet flexibel als marketingterm, maar flexibel in de praktijk: je betaalt voor wat je daadwerkelijk gebruikt, en je zit nergens aan vast. Voor meer dan 280 restaurants in de Randstad is dat de reden om textielbeheer bij Napking onder te brengen. Niet bij gebrek aan alternatieven, maar omdat een partij die dagelijks met horecatextiel bezig is dit zorgelozer en transparanter regelt dan je het zelf zou doen.\n\nZo houd jij je aandacht bij waar die hoort: gerechten bereiden en gasten een goede avond bezorgen. Napking zorgt dat het linnen er onberispelijk bij ligt — elke week opnieuw.",
+    "latencyMs": 49353,
+    "inputTokens": 5963,
+    "outputTokens": 1984,
+    "estimatedCostUsd": 0.047649000000000004
+  },
+  {
+    "conditionId": "A3",
+    "label": "Gemini 3 Flash best-of-3",
+    "model": "gemini-3-flash-preview",
+    "approach": "parallel candidates + ranker",
+    "output": "Liggen er genoeg servetten klaar voor de avondshift? Zijn de koksbuizen weer fris en gestreken? Bij Napking heb je hier geen omkijken naar. Wij begrijpen dat je als restauranthouder je aandacht liever bij je gasten en de gerechten houdt dan bij de wasmand. Daarom zijn wij de partner die het volledige beheer van je horecatextiel overneemt. Voor meer dan 280 restaurants in de Randstad zorgen wij dat er wekelijks kraakheldere tafellakens en onberispelijke kleding voor de bediening klaarliggen. Wij leveren precies wat je nodig hebt, op de plek waar je het nodig hebt.\n\nOnze werkwijze is gebaseerd op een transparant abonnement dat met je meebeweegt. Wat je deze week aan vuil textiel bij Napking inlevert, ontvang je een week later weer schoon retour. Dit systeem zorgt ervoor dat je voorraad altijd op peil blijft zonder dat je zelf handmatig bestellingen hoeft door te geven. Heb je een groot evenement gepland of verwacht je tijdelijk extra drukte? Geen probleem. Napking is flexibel en past de poule eenvoudig aan jouw behoeften aan. Zo houd je altijd grip op je textielbeheer zonder dat het je extra tijd kost.\n\nKwaliteit is bij Napking een vlekkeloos proces. Tijdens het reinigen controleren wij elk stuk textiel strikt op eventuele beschadigingen of blijvende vlekken. Items die niet meer aan onze scherpe standaarden voldoen – de zogenaamde rejects – halen we direct uit de roulatie en vervangen we onmiddellijk. Alleen wat smetteloos is, gaat terug naar jouw restaurant. Wij zijn eindverantwoordelijk voor de uitstraling van je linnen en werken volgens de nodige HACCP-richtlijnen. Zo kun jij erop vertrouwen dat je personeel en je tafels er altijd onberispelijk uitzien voor je gasten.\n\nDoor de logistiek volledig aan Napking over te laten, kies je voor rust in de dagelijkse operatie. Wij rijden vaste routes door de Randstad en garanderen een betrouwbaar afleverschema. Je hoeft niet te bellen of te mailen om je voorraad te beheren; wij komen op de afgesproken momenten langs om de vuile was te ruilen voor schoon textiel. Wij blinken uit in deze ontzorging, zodat jij kunt uitblinken in gastvrijheid. Geen vage beloftes, maar een nuchtere en zorgeloze service waar je elke dag op kunt bouwen.",
+    "latencyMs": 22428,
+    "inputTokens": 6844,
+    "outputTokens": 2210,
+    "estimatedCostUsd": 0.0075782
+  }
+]
