@@ -44,6 +44,7 @@ import { LibraryAssetPicker } from './LibraryAssetPicker';
 import { ComposePicker } from './ComposePicker';
 import { TrainedStylePicker } from './TrainedStylePicker';
 import { PhotographyBriefPanel } from './PhotographyBriefPanel';
+import { SimilarAssetsRow } from './SimilarAssetsRow';
 import type { InsertImageSelection } from './insert-image/types';
 
 interface SourceTab {
@@ -157,7 +158,12 @@ function SourceContent({
       case 'generate':
         return <GenerateImageTab onSelected={onSelected} initialPrompt={seedPrompt} />;
       case 'library':
-        return <LibraryTab onSelected={onSelected} />;
+        return (
+          <>
+            <SimilarAssetsRow briefingText={seedQuery} onPick={onSelected} />
+            <LibraryTab onSelected={onSelected} />
+          </>
+        );
       case 'upload':
         return <UploadTab onSelected={onSelected} />;
       case 'url':

@@ -175,6 +175,19 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F40-bis / F41-bis / F42-bis — Image-flow scope-cuts uitgewerkt (gefixt)
+- **F40-bis — Anchor-management UI in Brand Foundation**:
+  - **Locatie**: `src/components/brand-foundation/BrandStyleAnchorsPanel.tsx` (NIEUW), wired in `BrandFoundationPage.tsx`.
+  - **Wat**: panel met grid van actieve anchors + "Voeg toe"-tegel die een modal opent met asset-picker uit Media Library (filtert IMAGE-type, excludes reeds-gekozen). Verwijderen via X-hover-knop per tegel. State persist via PUT /api/workspace/brand-style-anchors (uit F40 backend). Toont count-badge (3-10 aanbevolen; <3 amber, ≥3 emerald).
+- **F41-bis — DAM auto-tag in extra upload-paden**:
+  - **Locatie**: `src/app/api/media/bulk/route.ts`, `src/lib/media/import-scraped-image.ts`, `src/app/api/media/backfill-tags/route.ts` (NIEUW).
+  - **Wat**: tagMediaAssetIfPossible hook toegevoegd aan bulk-upload + scraped-image (na initial create wordt aiTags gereset zodat vision-analysis doorgaat). Plus backfill-API POST /api/media/backfill-tags voor bestaande untagged assets. Limit param max 50 per call; fire-and-forget per asset.
+- **F42-bis — Cross-content similar-assets suggestion**:
+  - **Locatie**: `src/app/api/media/similar/route.ts` (NIEUW), `src/features/campaigns/components/canvas/SimilarAssetsRow.tsx` (NIEUW), gewired in ImageSourcePanel Library-tab.
+  - **Wat**: GET /api/media/similar?keywords=… extraheert keywords uit briefingText (minus stopwords) + matcht tegen aiTags overlap (gefilterd op style:/auth: prefixes). Returnt top-6 met match-count + matched-keywords. Suggestion-rij toont thumbnails met click-to-insert; tooltip toont matched keywords + match-count.
+- **Verification**: npx tsc --noEmit: 0 errors voor alle drie.
+- **Severity**: P2 (UI/UX completions van P1 backend-werk).
+
 ### F42 — Photography-request flow + endpoint-resolution-fix voor Recraft/Seedream/Ideogram (gefixt)
 - **Locatie**: `src/lib/ai/canvas-context.ts` (source enum), `src/app/api/studio/[deliverableId]/photo-brief/route.ts` (NIEUW), `src/features/campaigns/components/canvas/PhotographyBriefPanel.tsx` (NIEUW), ImageSourcePanel + Step1Context wiring, `src/lib/integrations/fal/fal-client.ts:generateFalImage` (endpoint-resolution fix).
 - **F42a — Photography-request source**: nieuwe `VisualBriefSource: 'photography-request'`. Voor authenticity-critical content (case-studies, testimonials, locatie). AI genereert markdown fotograaf-briefing op basis van Visual Brief + brand-context (POST /api/studio/[deliverableId]/photo-brief). User download .md en geeft aan fotograaf; upload-after-photo via bestaande Upload-source.

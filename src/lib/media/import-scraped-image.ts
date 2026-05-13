@@ -170,6 +170,29 @@ export async function importScrapedImageToMediaLibrary(
       } satisfies Prisma.MediaAssetUncheckedCreateInput,
     });
 
+    // F41-bis (audit 2026-05-13): DAM auto-tag fire-and-forget.
+    // Idempotent in tagger (skip wanneer aiTags al > 0) — daarom alleen
+    // schedulen wanneer aiTags = leeg na de scrape-create. Scraped-image
+    // krijgt [scraped, context] als baseline; tagger ziet die en skipt
+    // tenzij we expliciet doortrekken naar Vision-analyse. Voor scraped
+    // assets pakken we voorkennis-tag pad: append vision-tags na de
+    // initial scrape, niet skip.
+    if (asset.mediaType === 'IMAGE') {
+      void import('@/lib/ai/dam-auto-tagger').then(async ({ tagMediaAssetIfPossible }) => {
+        // Reset minimal tags zodat de tagger doorgaat (idempotent check
+        // ziet anders >0 tags en bailt out).
+        try {
+          await prisma.mediaAsset.update({
+            where: { id: asset.id },
+            data: { aiTags: [] },
+          });
+          void tagMediaAssetIfPossible(asset.id);
+        } catch {
+          /* non-blocking */
+        }
+      });
+    }
+
     return asset.id;
   } catch (err) {
     console.warn(

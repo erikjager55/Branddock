@@ -12,6 +12,7 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { PageShell, PageHeader } from '@/components/ui/layout';
 import { BrandFoundationStats } from './BrandFoundationStats';
+import { BrandStyleAnchorsPanel } from './BrandStyleAnchorsPanel';
 import { BrandAssetFilters } from './BrandAssetFilters';
 import { BrandAssetGrid } from './BrandAssetGrid';
 import { BrandAssetDetailPanel } from '@/components/brand-assets/BrandAssetDetailPanel';
@@ -84,6 +85,7 @@ export function BrandFoundationPage({
       />
       <div className="space-y-6">
         <BrandFoundationStats />
+        <BrandStyleAnchorsPanel />
         <BrandAssetFilters />
         <BrandAssetGrid onAssetClick={handleAssetClick} />
       </div>

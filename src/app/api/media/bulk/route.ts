@@ -166,6 +166,13 @@ export async function POST(request: NextRequest) {
           },
         });
 
+        // F41-bis (audit 2026-05-13): DAM auto-tag fire-and-forget per asset
+        if (asset.mediaType === 'IMAGE') {
+          void import('@/lib/ai/dam-auto-tagger').then(({ tagMediaAssetIfPossible }) => {
+            void tagMediaAssetIfPossible(asset.id);
+          });
+        }
+
         results.push({
           id: asset.id,
           name: asset.name,
