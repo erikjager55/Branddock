@@ -263,13 +263,34 @@ async function persistContentFidelityScoreIfPossible(
 ): Promise<void> {
   try {
     // Pak de meest recente ContentVersion voor deze deliverable.
-    // Geen-version = canvas-only piece → no-op.
-    const version = await prisma.contentVersion.findFirst({
+    // F32 (audit 2026-05-13): voorheen returnde deze function bij ontbreken
+    // van ContentVersion → canvas-generated content (waar geen route-handler
+    // de ContentVersion creëert zoals components/generate-all wel doet)
+    // kreeg silently nooit een ContentFidelityScore in DB. Nu valt de
+    // function terug op een lazy-create wanneer geen version bestaat — de
+    // FK voor het score-record is dan gegarandeerd.
+    let version = await prisma.contentVersion.findFirst({
       where: { deliverableId },
       orderBy: { versionNumber: 'desc' },
       select: { id: true },
     });
-    if (!version) return;
+    if (!version) {
+      try {
+        const { createContentVersion } = await import('@/lib/learning-loop/content-version');
+        const created = await createContentVersion({
+          deliverableId,
+          workspaceId,
+          createdBy: 'AI',
+        });
+        version = { id: created.id };
+      } catch (versionErr) {
+        console.warn(
+          '[fidelity-runner] persistContentFidelityScoreIfPossible: createContentVersion fallback failed:',
+          versionErr instanceof Error ? versionErr.message : versionErr,
+        );
+        return;
+      }
+    }
 
     const pillarScoresJson = {
       style: { score: result.pillars.style.score, weight: result.pillars.style.weight },

@@ -175,6 +175,16 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F32 — ContentFidelityScore persistence faalde silently voor canvas-flow (gefixt)
+- **Locatie**: `src/lib/brand-fidelity/fidelity-runner.ts:persistContentFidelityScoreIfPossible`, `src/lib/ai/canvas-orchestrator.ts` Step 5.5.
+- **Probleem**: DB-query toonde 0 `ContentFidelityScore` records voor Napking workspace ondanks meerdere F-VAL runs. Oorzaak: `persistContentFidelityScoreIfPossible` zoekt een bestaande `ContentVersion` om aan FK te koppelen; bij absentie returnt het silently. Canvas-orchestrator-flow (anders dan `/api/studio/.../components/generate-all` route) creëerde voorheen géén `ContentVersion` → alle F-VAL scores voor canvas-flow content kwamen niet in DB. Effect: ontbrekende data voor analytics, learning-loop attribution, dashboard usage layer.
+- **Fix (twee laagdiepte vangnetten)**:
+  1. **Canvas-orchestrator Step 5.5**: na succesvolle `persistVariants` wordt `createContentVersion({deliverableId, workspaceId, createdBy: 'AI'})` aangeroepen — synchroon, non-blocking (catch + warn). Vanaf nu produceert elke canvas-generatie een `ContentVersion` snapshot.
+  2. **fidelity-runner lazy fallback**: `persistContentFidelityScoreIfPossible` valt bij ontbreken van een ContentVersion terug op een lazy-create via `createContentVersion`. Dekt race-conditions (F-VAL persist fire-and-forget, kan vóór persistVariants vuren) én legacy code-paths die ContentVersion niet zelf creëren.
+- **Note over F31 globale impact**: F31 recalibratie (voice-similarity + words-saturation) zit in `composition-engine.computeFidelityScore` — wordt aangeroepen door `runFidelityScoring` voor élke content-type via dezelfde pipeline. F31 is dus al globaal toegepast op alle content-items zonder per-type implementatie nodig.
+- **Verification**: npx tsc --noEmit: 0 errors. Eerstvolgende canvas-generatie produceert nu ContentVersion + ContentFidelityScore in DB (te verifiëren via SQL query na regenerate).
+- **Severity**: P1 (gefixt; analytics-bug, niet user-facing score-visible).
+
 ### F31 — F-VAL scoring projection te streng; calibratie naar realistic max (gefixt)
 - **Locatie**: `src/lib/brand-fidelity/voice-similarity.ts:projectSimilarityToScore`, `src/lib/brand-fidelity/style-scorer.ts:scoreBrandStyle`.
 - **Probleem**: Composite-score bleef rond 50-65 voor Napking ondanks goede content. Analyse (zie `docs/experiments/2026-05-13-scoring-methodology-analysis.md`) toonde dat de pre-F31 scoring zelfs voor **uitstekende output** een max van ~76 gaf (precies op threshold 75) — geen marge voor variantie:

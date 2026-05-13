@@ -1149,6 +1149,29 @@ export async function* orchestrateContentGeneration(
     return;
   }
 
+  // ── Step 5.5: Create ContentVersion (F32, audit 2026-05-13) ──
+  // F-VAL pipeline persist (persistContentFidelityScoreIfPossible) zoekt
+  // de meest recente ContentVersion van de deliverable om de
+  // ContentFidelityScore aan te koppelen. Voorheen werd vanuit
+  // canvas-orchestrator géén ContentVersion gecreëerd (alleen via
+  // components/generate-all route) → F-VAL scores werden silently niet
+  // gepersist voor canvas-generated content. Nu maakt orchestrator een
+  // ContentVersion zodra variants opgeslagen zijn, zodat F-VAL pipeline
+  // verderop een version-id heeft om aan te koppelen.
+  try {
+    const { createContentVersion } = await import('@/lib/learning-loop/content-version');
+    await createContentVersion({
+      deliverableId,
+      workspaceId,
+      createdBy: 'AI',
+    });
+  } catch (versionErr) {
+    console.warn(
+      '[canvas-orchestrator] createContentVersion failed (non-blocking):',
+      versionErr instanceof Error ? versionErr.message : versionErr,
+    );
+  }
+
   // ── Step 6: Visual fidelity scoring (G8) ─────────────
   // Score each generated image in parallel against brand visual identity
   // (deterministic color alignment + Claude vision judge). Fire-and-forget
