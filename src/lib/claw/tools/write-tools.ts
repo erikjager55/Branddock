@@ -804,7 +804,7 @@ export const writeTools: ClawToolDefinition[] = [
   {
     name: 'update_deliverable_brief',
     description:
-      'Fill or update the four Content Brief fields for a deliverable: objective, keyMessage, toneDirection, callToAction. Use when the user is on the Canvas Step 1 (Review Context) and asks to fill in the brief. Always inspect_current_entity first (entityType=deliverable) to see what is already filled — never overwrite a non-empty field unless the user explicitly asks. Ground proposed values in brand context and persona psychographics.',
+      'Fill or update the four Content Brief fields for a deliverable: objective, keyMessage, toneDirection, callToAction. Use when the user is on the Canvas Step 1 (Review Context) and asks to fill in the brief OR asks generic things like "vul de velden", "fill the form", "geef suggesties voor deze brief". Always inspect_current_entity first (entityType=deliverable) to see what is already filled. IMPORTANT: when the user asks to fill the brief, propose values for ALL FOUR fields (objective + keyMessage + toneDirection + callToAction) in a single call unless one of them is already non-empty AND the user did not explicitly ask to overwrite. Partial proposals frustrate users — they expect a complete brief from one request. Ground proposed values in brand context and persona psychographics.',
     inputSchema: z.object({
       deliverableId: z.string().describe('The deliverable ID from the Current Page context'),
       objective: z.string().max(2000).optional().describe('What this content should achieve. Concrete and outcome-focused.'),

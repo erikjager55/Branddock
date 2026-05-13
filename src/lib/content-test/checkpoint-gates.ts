@@ -72,17 +72,17 @@ export function validateBriefInput(brief: {
   const hasCta = isNonEmptyString(brief.callToAction);
   const filledCount = [hasObjective, hasKeyMessage, hasTone, hasCta].filter(Boolean).length;
 
+  // F-gate-strictness fix (audit 2026-05-13): UI markeert deze 4 fields NIET
+  // als required (alleen rode-stip op contentTypeInputs zoals SEO Keyword).
+  // Gate verlaagd naar warn-only zodat generation niet blokt op iets dat
+  // visueel optioneel lijkt. AI heeft sowieso brand-context + persona +
+  // contentTypeInputs als context, dus een leeg brief is generation-able.
   if (filledCount === 0) {
-    return {
-      stage: 'brief-input',
-      pass: false,
-      severity: 'block',
-      reasons: ['Brief is volledig leeg — minstens objective of keyMessage vereist'],
-    };
+    reasons.push('Brief is volledig leeg — AI gebruikt brand-context + persona als enige direction');
+    return { stage: 'brief-input', pass: false, severity: 'warn', reasons };
   }
   if (!hasObjective && !hasKeyMessage) {
-    reasons.push('Geen objective EN geen keyMessage — generation kan geen rode draad pakken');
-    return { stage: 'brief-input', pass: false, severity: 'block', reasons };
+    reasons.push('Geen objective EN geen keyMessage — generation kan minder gericht zijn');
   }
   if (!hasTone) reasons.push('toneDirection ontbreekt — AI gebruikt brand-voice fallback');
   if (!hasCta) reasons.push('callToAction ontbreekt — gegenereerde content krijgt geen explicit CTA');

@@ -45,13 +45,15 @@ async function main() {
   });
   assert('[1] full brief passes', briefFull.pass);
 
+  // F-gate-strictness fix (audit 2026-05-13): empty brief is warn-only,
+  // niet block — UI markeert deze fields niet als required.
   const briefEmpty = validateBriefInput({});
-  assert('[1] empty brief blocks', !briefEmpty.pass && briefEmpty.severity === 'block');
+  assert('[1] empty brief warns (was: block)', !briefEmpty.pass && briefEmpty.severity === 'warn');
 
   const briefMissingKey = validateBriefInput({ toneDirection: 'casual', callToAction: 'click' });
   assert(
-    '[1] geen objective + geen keyMessage blocks',
-    !briefMissingKey.pass && briefMissingKey.severity === 'block',
+    '[1] geen objective + geen keyMessage warns (was: block)',
+    !briefMissingKey.pass && briefMissingKey.severity === 'warn',
   );
 
   const briefPartial = validateBriefInput({

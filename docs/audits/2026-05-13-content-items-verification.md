@@ -95,6 +95,20 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
   - `MutationConfirmCard` extra-handler voor `update_deliverable_brief` tool: na server-write sync de params direct naar canvas-store via `setBriefField`. UI updatet instant, geen refresh nodig.
 - **Severity**: P1 (gefixt).
 
+### F11 — Brief-gate te strict + Brand Assistant fillt niet alle 4 brief-fields
+- **Locatie**:
+  - `src/lib/content-test/checkpoint-gates.ts:62` (validateBriefInput)
+  - `src/lib/claw/tools/write-tools.ts:807` (update_deliverable_brief tool description)
+  - `src/lib/claw/context-assembler.ts:448` (Canvas Step 1 system-prompt section)
+- **Twee samenhangende problemen**:
+  1. **Gate-strictness mismatch**: UI markeert objective + keyMessage + toneDirection + callToAction NIET als required (alleen content-type-specifieke fields zoals SEO Keyword zijn required). Maar gate [1] validateBriefInput blokt generation wanneer beide objective + keyMessage leeg zijn. User-perspectief: "die velden zijn toch niet verplicht?"
+  2. **Brand Assistant partial fill**: User vroeg AI om brief te vullen, maar AI vulde alleen 1-2 van 4 strategic fields. System-prompt instructie was te zwak ("vier strategische textareas" → AI behandelde als optioneel).
+- **Fix**:
+  - validateBriefInput: severity verlaagd van `block` naar `warn` voor empty-brief + only-tone+cta scenarios. Generation blijft mogelijk; user krijgt warning maar geen blocker. Smoke 41/41 pass.
+  - update_deliverable_brief tool-description: explicit "propose values for ALL FOUR fields in a single call unless one is already non-empty". Plus listing van triggers ("vul de velden", "geef suggesties").
+  - context-assembler Canvas Step 1 system-prompt: "FOUR strategic textareas: objective, keyMessage, toneDirection, callToAction — always propose ALL FOUR in one call" + repeated in "CRITICAL broadly" instruction.
+- **Severity**: P1 (gefixt).
+
 ### F-canvas-open-slow — Derive-navigation duurt lang (PERFORMANCE)
 - **Locatie**: derive → navigate → CanvasPage mount → fetch /api/studio/[id] + components + context
 - **Probleem**: Tussen klik op chip en zichtbaarheid van nieuwe canvas zit veel laadtijd. CanvasPage mount triggert ~4 sequentiële API calls (deliverable detail, components, context-stack, F-VAL persist).
