@@ -964,16 +964,25 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
     })),
 
   setAutoIterateIterationComplete: ({ attempt, newScore, appliedTemplates }) =>
-    set((state) => ({
-      autoIterate: {
-        ...state.autoIterate,
-        attemptsExecuted: attempt,
-        finalScore: newScore,
-        appliedTemplates: appliedTemplates
-          ? Array.from(new Set([...state.autoIterate.appliedTemplates, ...appliedTemplates]))
-          : state.autoIterate.appliedTemplates,
-      },
-    })),
+    set((state) => {
+      // F17 fix (audit 2026-05-13): track BEST score gedurende iteratie, niet
+      // LATEST. Bij stagnerende iters kan newScore lager zijn dan eerdere; user
+      // zou anders "verbeterd van 52 naar 50" zien tijdens iter 2 ondanks dat
+      // iter 1 wel verbeterde naar 58. finalScore reflecteert nu de hoogste
+      // bereikte waarde.
+      const prevBest = state.autoIterate.finalScore ?? state.autoIterate.initialScore ?? 0;
+      const newBest = Math.max(prevBest, newScore);
+      return {
+        autoIterate: {
+          ...state.autoIterate,
+          attemptsExecuted: attempt,
+          finalScore: newBest,
+          appliedTemplates: appliedTemplates
+            ? Array.from(new Set([...state.autoIterate.appliedTemplates, ...appliedTemplates]))
+            : state.autoIterate.appliedTemplates,
+        },
+      };
+    }),
 
   setAutoIterateComplete: ({ attemptsExecuted, finalScore, thresholdMet, stopReason }) =>
     set((state) => ({

@@ -340,28 +340,13 @@ function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
               initialScore: fresh,
               threshold: typeof data.threshold === 'number' ? data.threshold : 75,
             });
-            // UX-fix 2026-05-13: sync de canvas fidelityScore-display met de
-            // fresh re-judge die door trigger-endpoint is gedaan. Voorkomt
-            // discrepantie tussen "Brand fidelity score: 50" en
-            // "Verbeterd van 52 naar 52" (judge-LLM variance). Variant-index 0
-            // is de primary.
-            store.setFidelityCompleteForVariant(0, {
-              compositeScore: fresh,
-              thresholdMet:
-                fresh >= (typeof data.threshold === 'number' ? data.threshold : 75),
-              compositeThreshold:
-                typeof data.threshold === 'number' ? data.threshold : 75,
-              detectorVerdict:
-                useCanvasStore.getState().fidelityScore.detectorVerdict ?? 'HUMAN_BASELINE',
-              humanBaselinePosition:
-                useCanvasStore.getState().fidelityScore.humanBaselinePosition ?? 0,
-              pillars: useCanvasStore.getState().fidelityScore.pillars ?? {
-                style: null,
-                judge: null,
-                rules: null,
-              },
-              elapsedMs: useCanvasStore.getState().fidelityScore.elapsedMs ?? 0,
-            });
+            // F17 fix (audit 2026-05-13): GEEN sync van fidelity-score op
+            // started-event meer. Trigger-endpoint doet fresh F-VAL met judge-
+            // variance van ±2-3pt; vorige F12 fix sync'de canvas-score naar
+            // die fresh waarde, waardoor user "score zakte" zag voordat iters
+            // begonnen. Canvas-score blijft nu staan op origineel; alleen
+            // bij echte verbetering (auto_iterate_complete + finalScore >
+            // initialScore) syncen we de display.
           } else if (eventName === 'auto_iterate_iteration_complete') {
             store.setAutoIterateIterationComplete({
               attempt: typeof data.attempt === 'number' ? data.attempt : 1,
@@ -475,40 +460,57 @@ function AutoIterateImprovedBlock({
     }
   }, [deliverableId]);
 
-  // UX-overhaul 2026-05-13: stop-reason → user-friendly heading mapping.
-  // Geen "kwam dichter bij threshold" jargon meer.
+  // F17 fix (audit 2026-05-13): drie copy-varianten naargelang of iteratie
+  // werkelijk verbetering opleverde. Bij gelijke score / regressie geen
+  // "verbeterd" copy (misleidend) — eerlijk zeggen dat het niet lukte.
+  const improved = delta > 0;
+  // Banner-kleur volgt resultaat: emerald bij echte winst, amber bij stagnatie
+  const bannerClass = improved
+    ? 'bg-emerald-50 border-emerald-200'
+    : 'bg-amber-50 border-amber-200';
+  const titleClass = improved ? 'text-emerald-900' : 'text-amber-900';
+  const subClass = improved ? 'text-emerald-800' : 'text-amber-800';
+  const accentClass = improved ? 'text-emerald-700' : 'text-amber-700';
+  const iconClass = improved ? 'text-emerald-600' : 'text-amber-600';
+
   const stopReasonLabel = thresholdMet
     ? `Verbeterd van ${initialScore} naar ${finalScore} — klaar voor publish`
-    : stopReason === 'early_stop_stagnation'
-      ? `Verbeterd van ${initialScore} naar ${finalScore} — verdere iteraties leveren weinig op`
-      : stopReason === 'max_iterations'
-        ? `Verbeterd van ${initialScore} naar ${finalScore} in ${attemptsExecuted} pogingen — pas brief aan voor verder verbetering`
-        : `Verbeterd van ${initialScore} naar ${finalScore}`;
+    : improved
+      ? stopReason === 'early_stop_stagnation'
+        ? `Verbeterd van ${initialScore} naar ${finalScore} — verdere iteraties leveren weinig op`
+        : stopReason === 'max_iterations'
+          ? `Verbeterd van ${initialScore} naar ${finalScore} in ${attemptsExecuted} pogingen — pas brief aan voor verder verbetering`
+          : `Verbeterd van ${initialScore} naar ${finalScore}`
+      : // Geen verbetering: stagnatie of regressie
+        `Score bleef rond ${initialScore} in ${attemptsExecuted} ${attemptsExecuted === 1 ? 'poging' : 'pogingen'} — origineel content behouden`;
 
   return (
-    <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5">
+    <div className={`mt-3 rounded-lg border px-3 py-2.5 ${bannerClass}`}>
       <div className="flex items-center gap-1.5 mb-1">
-        <Sparkles className="w-4 h-4 text-emerald-600" />
-        <span className="text-sm font-semibold text-emerald-900">{stopReasonLabel}</span>
+        <Sparkles className={`w-4 h-4 ${iconClass}`} />
+        <span className={`text-sm font-semibold ${titleClass}`}>{stopReasonLabel}</span>
       </div>
-      <div className="text-xs text-emerald-800">
+      <div className={`text-xs ${subClass}`}>
         Score: <span className="font-medium">{initialScore}</span>
         <span className="mx-1.5">→</span>
         <span className="font-medium">{finalScore}</span>
-        <span className="ml-1 text-emerald-700">
+        <span className={`ml-1 ${accentClass}`}>
           ({delta >= 0 ? '+' : ''}
           {delta} punten in {attemptsExecuted} {attemptsExecuted === 1 ? 'poging' : 'pogingen'})
         </span>
       </div>
 
-      {appliedTemplates.length > 0 && (
-        <div className="mt-2 text-[11px] text-emerald-700">
+      {appliedTemplates.length > 0 && improved && (
+        <div className={`mt-2 text-[11px] ${accentClass}`}>
           Toegepast: {appliedTemplates.slice(0, 3).join(' · ')}
           {appliedTemplates.length > 3 && ` +${appliedTemplates.length - 3}`}
         </div>
       )}
 
-      {deliverableId && applyState !== 'applied' && (
+      {/* F17 fix: apply-knop alleen tonen wanneer score daadwerkelijk
+          omhoog ging. Bij stagnatie zou apply de huidige content vervangen
+          door iets met gelijke score = verwarrend; user behoudt origineel. */}
+      {deliverableId && applyState !== 'applied' && improved && (
         <button
           type="button"
           onClick={handleApply}
@@ -527,6 +529,12 @@ function AutoIterateImprovedBlock({
             </>
           )}
         </button>
+      )}
+
+      {!improved && (
+        <div className="mt-2 text-[11px] text-amber-700 italic">
+          Tip: maak de brief specifieker (concrete CTA, scherpere keyMessage) of pas voiceguide aan voor dit content-type.
+        </div>
       )}
 
       {applyState === 'applied' && (

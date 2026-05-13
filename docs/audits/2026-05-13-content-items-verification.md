@@ -145,6 +145,18 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Smoke updates**: 31/31 pass voor property-evals (worst-case asserts aangepast — brand-name niet meer in blockCount).
 - **Severity**: P0 (gefixt) — was dead-end voor user die brand-name typo's bij AI niet zelf kon herstellen.
 
+### F17 — Auto-iterate score visueel lager dan origineel (best-of + sync regressie)
+- **Locatie**: `setAutoIterateIterationComplete` in useCanvasStore + SSE handler in FidelityScoreBar + AutoIterateImprovedBlock copy
+- **Drie samenhangende oorzaken**:
+  1. **finalScore tracking schreef LATEST i.p.v. BEST** — bij iter 2 met lagere score dan iter 1 zag user "verbeterd van 52 naar 50" terwijl iter 1 wel 58 was. Display reflecteerde laatste iter, niet beste.
+  2. **F12-sync op auto_iterate_started**: trigger-endpoint deed fresh F-VAL (judge-variance ±2-3pt). Mijn vorige F12 fix sync'de canvas-score naar deze fresh waarde voordat iters begonnen → user zag al "score zakte van 52 naar 50" voordat enige iteratie was gebeurd.
+  3. **Apply-knop bij regressie/stagnatie**: "Gebruik verbeterde versie" was altijd zichtbaar, ook bij geen verbetering — replace zou geen meerwaarde bieden of zelfs regressie introduceren.
+- **Drie fixes**:
+  1. `setAutoIterateIterationComplete` tracks `Math.max(prevBest, newScore)` zodat finalScore monotoon stijgt tijdens iter-progress.
+  2. F12-sync VERWIJDERD uit auto_iterate_started handler. Canvas-score blijft op origineel staan; alleen bij echte verbetering bij complete-event syncen.
+  3. AutoIterateImprovedBlock: drie copy-varianten + amber-banner (i.p.v. emerald) bij geen-verbetering. Apply-knop alleen tonen wanneer `delta > 0`. Tip-tekst bij regressie: "maak brief specifieker of pas voiceguide aan".
+- **Severity**: P1 (gefixt) — user zag "automatisch verbeteren maakte het slechter" en verloor vertrouwen in feature.
+
 ### F16 — Brand Assistant kiest create_deliverable i.p.v. update_deliverable_brief
 - **Locatie**: `src/lib/claw/tools/write-tools.ts:create_deliverable` description + `src/lib/claw/context-assembler.ts` page-context
 - **Probleem**: User op canvas Step 1 vroeg "vul de velden". AI emit 4× `create_deliverable` voor NIEUWE LinkedIn-posts in andere campaign i.p.v. de huidige blog-post brief te vullen via `update_deliverable_brief`. User zag 4 confirm-cards in queue die niet matched met de invul-velden — frustrerend "kreeg suggesties die niet horen bij dit formulier".
