@@ -341,7 +341,18 @@ export async function* orchestrateContentGeneration(
   // categorie is 'long-form', dispatch naar runPlanAndSolveStream. Produceert
   // 1 variant met assembledContent (full markdown). Bypassed de angle-
   // generation omdat Plan-and-Solve eigen structuur-discipline heeft.
-  const textModel = await resolveFeatureModel(workspaceId, 'canvas-text-generate');
+  // F29 (audit 2026-05-13): per-content-type model routing. Experimenteel
+  // gemeten welk model best scoort per categorie (Social → GPT-5.4, Ads →
+  // Gemini 3.1 Pro, Website → Sonnet 4.6, overige → Opus 4.7). Workspace-
+  // override blijft eerste prioriteit; categorie-default tweede.
+  const { resolveCanvasModelForContentType } = await import('./canvas-model-routing');
+  const textModel = await resolveCanvasModelForContentType(
+    workspaceId,
+    stack.deliverableTypeId,
+  );
+  console.log(
+    `[canvas-orchestrator] content-type routing: ${stack.deliverableTypeId ?? '?'} → ${textModel.provider}/${textModel.model}`,
+  );
 
   for (const group of textGroups) {
     yield { event: 'text_generating', data: { group, status: 'generating' } };
@@ -530,22 +541,23 @@ export async function* orchestrateContentGeneration(
 
     let parallelResults: TextGenerationResult[];
     try {
-      // F22b (audit 2026-05-13): per-angle best-of-3. Elke angle krijgt 3
-      // parallelle candidates met emphasis-variantie (style/judge/rules);
-      // Haiku-ranker kiest winnaar per angle. Result: 2 user-visible
-      // variants (1 per angle), maar elk best-of-3. Cost: 6 generation
-      // calls + 2 ranking calls per generation. Voor pre-launch quality.
+      // F30 (audit 2026-05-13): best-of-3 met emphasis-variantie verlaagde
+      // composite-score van ~91 naar ~53 op blog-post in productie. Reden:
+      // 3 candidates met style/judge/rules emphasis-suffixes produceerden
+      // onevenwichtige outputs (sterk op één pijler, zwak op andere). Haiku-
+      // ranker pikte regelmatig de onbalanced winner. Single-shot per angle
+      // matched de experimentele baseline beter (91 voor Opus 4.7 blog-post).
+      // Cost reductie: 6 gen calls + 2 ranking → 2 gen calls per generation.
       parallelResults = await Promise.all(
         promptPerAngle.map((p, idx) =>
-          generateBestOfNWithFallback(
+          generateTextWithFallback(
             workspaceId,
             textModel.provider,
             textModel.model,
-            p,
+            p.systemPrompt,
+            p.userPrompt,
             stack.deliverableTypeId,
             { deliverableId, brandContext: stack.brand, angleLabel: angles[idx].label },
-            stack,
-            3,
           ),
         ),
       );
@@ -563,32 +575,30 @@ export async function* orchestrateContentGeneration(
       const merged = mergeAngleResults(parallelResults, angles);
       textResult = merged;
     } else {
-      // Fallback to legacy — best-of-3 ook hier
+      // F30: single-shot fallback (was best-of-3, zie F30 reden hierboven)
       const { systemPrompt, userPrompt } = buildCanvasPrompt(stack, stack.medium, options, voiceDirective);
-      textResult = await generateBestOfNWithFallback(
+      textResult = await generateTextWithFallback(
         workspaceId,
         textModel.provider,
         textModel.model,
-        { systemPrompt, userPrompt },
+        systemPrompt,
+        userPrompt,
         stack.deliverableTypeId,
         { deliverableId, brandContext: stack.brand },
-        stack,
-        3,
       );
     }
   } else {
     // ── Legacy 1-call/2-variant flow (angle generation skipped of failed) ──
-    // F22b: best-of-3 met emphasis-variantie + Haiku-ranker.
+    // F30: single-shot generation (was best-of-3 met emphasis, zie F30 hierboven).
     const { systemPrompt, userPrompt } = buildCanvasPrompt(stack, stack.medium, options, voiceDirective);
-    textResult = await generateBestOfNWithFallback(
+    textResult = await generateTextWithFallback(
       workspaceId,
       textModel.provider,
       textModel.model,
-      { systemPrompt, userPrompt },
+      systemPrompt,
+      userPrompt,
       stack.deliverableTypeId,
       { deliverableId, brandContext: stack.brand },
-      stack,
-      3,
     );
   }
   } // end: if (textResult.components.length === 0) — Plan-and-Solve dispatch-bypass guard
@@ -1923,7 +1933,12 @@ async function* handleRegeneration(
       voiceDirective,
     );
 
-    const textModel = await resolveFeatureModel(workspaceId, 'canvas-text-generate');
+    // F29: per-content-type routing ook bij regeneration path.
+    const { resolveCanvasModelForContentType } = await import('./canvas-model-routing');
+    const textModel = await resolveCanvasModelForContentType(
+      workspaceId,
+      stack.deliverableTypeId,
+    );
 
     const textStart = Date.now();
     // F22/F27: extended thinking voor Anthropic Sonnet 4+ / Opus 4+ ook bij

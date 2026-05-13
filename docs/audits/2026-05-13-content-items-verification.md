@@ -175,6 +175,29 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F29 + F30 — Score 53 op blog-post; best-of-3 emphasis hurt + per-content-type routing (gefixt)
+- **Locatie**: `src/lib/ai/canvas-orchestrator.ts` (single-shot + routing wiring), `src/lib/ai/canvas-model-routing.ts` (NIEUW).
+- **Probleem F30 (score-regressie)**: Na F28 (Opus 4.7 default met werkende adaptive thinking) productie genereerde score 53 op Napking blog-post. Experiment toonde Opus 4.7 single-shot = composite 91 op identieke prompt. Verschil: productie gebruikt **best-of-3 met emphasis-variantie** (F22b: 3 candidates met style/judge/rules suffix-blok), terwijl experiment single-shot was. Hypothese: emphasis-suffixes produceren onevenwichtige candidates (sterk op één pijler, zwak op andere); Haiku-ranker pikt regelmatig de onbalanced winner. 91 → 53 = -38pt regressie door best-of-3.
+- **Fix F30**: best-of-3 uit. Beide paths (per-angle parallel + legacy fallback) gebruiken `generateTextWithFallback` direct met single-shot model. Cost reductie van 6 generation calls + 2 ranking calls → 2 generation calls per generation (factor 3-4 cheaper).
+- **Probleem F29 (suboptimaal model per content-type)**: Eigen experiment 2026-05-13 (8 content-types × 6 modellen) toonde dat optimale model VARIEERT per categorie:
+  - Long-Form / Email / Video / PR / Sales: Opus 4.7 + thinking (91-92)
+  - Social Media: GPT-5.4 (91, beats Opus 87, **8× goedkoper**)
+  - Advertising: Gemini 3.1 Pro + thinking (90, beats Opus 89)
+  - Website & Landing: Sonnet 4.6 + thinking (91, beats Opus 89, **5× goedkoper**)
+- **Fix F29**: nieuwe `canvas-model-routing.ts` met `resolveCanvasModelForContentType(workspaceId, contentTypeId)`:
+  1. Workspace-level override (WorkspaceAiConfig) → respect explicit user choice
+  2. Categorie van content-type → optimal model uit CATEGORY_OPTIMAL_MODEL mapping
+  3. Feature-default fallback (canvas-text-generate)
+  - Gewired in canvas-orchestrator zowel main-path (Step ~344) als regeneration-path (handleRegeneration ~1937).
+  - Log-line bij elke generation: `content-type routing: blog-post → anthropic/claude-opus-4-7`.
+- **Verwacht effect**:
+  - Blog-post score: 53 → ~85-90 (single-shot Opus 4.7 zonder emphasis-corruptie)
+  - Social Media: ~70 → ~91 + 8× cost-reductie (Opus → GPT-5.4)
+  - Advertising: ~78 → ~90 + 25× cost-reductie (Opus → Gemini Pro)
+  - Website: ~83 → ~91 + 5× cost-reductie (Opus → Sonnet 4.6)
+- **Verification**: npx tsc --noEmit: 0 errors. Experiment rapport: `docs/experiments/2026-05-13-per-content-type-report.md`.
+- **Severity**: P0 (F30 score-regressie), P1 (F29 cost+kwaliteit verbeteringen).
+
 ### F28 — Default terug naar Opus 4.7 + thinking (na adaptive-API fix in F27)
 - **Locatie**: `feature-models.ts` default, `auto-iterate-integration.ts` REWRITE_MODEL + adaptive-API support in direct-SDK-stream.
 - **Aanleiding**: Experiment v2 (na F27 ai-caller.ts adaptive-API fix) toonde Opus 4.7 thinking **composite 90** op blog-post — winnaar tegenover Sonnet 4.6 thinking (85), self-critique chain (86), GPT-5.4 (83). Wanneer Opus 4.7 correct wordt aangeroepen levert het meetbaar hogere kwaliteit (+5pt op composite) tegen 3× cost.

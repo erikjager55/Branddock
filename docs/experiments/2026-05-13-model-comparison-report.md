@@ -12,72 +12,78 @@ Autonoom experiment om te valideren of Opus 4.7 + thinking de beste model-keuze 
 
 | ID | Conditie | Composite | Style | Essence | Rules | Latency | Cost | Tokens out |
 |----|----------|----------:|------:|--------:|------:|--------:|-----:|-----------:|
-| E1 | Claude Sonnet 4.6 + thinking | **88** | 85 | 88 | 92 | 24.0s | $0.0309 | 1758 |
-| A2 | Sonnet 4.6 self-critique chain | **86** | 83 | 87 | 91 | 49.4s | $0.0476 | 1984 |
-| E2 | GPT-5.4 | **84** | 80 | 85 | 90 | 11.9s | $0.0135 | 507 |
-| A1 | Haiku 4.5 × 3 (1 gen + 2 iter) | **80** | 78 | 80 | 82 | 21.4s | $0.0145 | 1782 |
-| E3 | Gemini 3.1 Pro + thinking | **78** | 75 | 78 | 85 | 126.3s | $0.0102 | 547 |
-| A3 | Gemini 3 Flash best-of-3 | **72** | 68 | 72 | 78 | 22.4s | $0.0076 | 2210 |
-| T0 | Claude Opus 4.7 + thinking | **0** | 0 | 0 | 0 | 0.5s | $0.0000 | 0 |
+| T0 | Claude Opus 4.7 + thinking | **90** | 88 | 90 | 92 | 16.3s | $0.0962 | 862 |
+| A2 | Sonnet 4.6 self-critique chain | **86** | 84 | 86 | 91 | 47.5s | $0.0485 | 2030 |
+| E1 | Claude Sonnet 4.6 + thinking | **85** | 82 | 85 | 90 | 27.0s | $0.0314 | 1794 |
+| E2 | GPT-5.4 | **83** | 80 | 83 | 88 | 11.3s | $0.0129 | 468 |
+| A3 | Gemini 3 Flash best-of-3 | **79** | 76 | 79 | 83 | 22.2s | $0.0074 | 2134 |
+| A1 | Haiku 4.5 × 3 (1 gen + 2 iter) | **77** | 75 | 78 | 80 | 14.1s | $0.0157 | 2000 |
+| E3 | Gemini 3.1 Pro + thinking | **0** | 0 | 0 | 0 | 70.3s | $0.0000 | 0 |
 
 ## Per-conditie judge-motivatie
 
-### E1 — Claude Sonnet 4.6 + thinking (composite 88)
+### T0 — Claude Opus 4.7 + thinking (composite 90)
 - Approach: single-shot + extended thinking
-- Judge: Korte declaratieve zinnen, sterke opening met herkenbare restaurantvragen, rijke inzet van merkwoorden (vlekkeloos, smetteloos, kraakhelder, afkeur, poule, onberispelijk, eindverantwoordelijk, zorgeloos, transparant, uitblinken), geen verboden woorden of anti-patterns, concrete details (HACCP, 280+) goed geïntegreerd.
+- Judge: Strak ritme, korte declaratieve zinnen, rijke inzet van merkwoorden (vlekkeloos, smetteloos, kraakhelder, onberispelijk, afkeur, rejects, poule, zorgeloos, transparant, eindverantwoordelijk), concrete details (HACCP, 280+, vaste routes), geen verboden woorden of anti-patterns — de sterkste match met de Voice Fingerprint.
 
 Sample output (eerste 500 chars):
 ```
-Hoeveel servetten zijn er eigenlijk nog schoon? Liggen er genoeg tafellakens klaar voor de drukke vrijdagavond? Als restauranthouder heb je geen tijd om dat bij te houden. Bij Napking heb je hier geen omkijken naar. Jij focust op je gasten en je gerechten. Het textielbeheer laat je aan ons over.
+Je hebt een restaurant te runnen. Gasten ontvangen, gerechten uitserveren, je team aansturen. Het laatste waar je tijd in wilt steken, is bestellingen plaatsen voor servetten of nagaan of er nog genoeg koksjassen in de kast hangen. Bij Napking hoef je dat ook niet. Wij beheren je horecatextiel van A tot Z, zodat jij je aandacht houdt waar die thuishoort: bij je gasten.
 
-Het werkt eenvoudig. Napking werkt met een abonnementssysteem: wat je als vuile was inlevert, ontvang je een week later smetteloos schoon retour. Je hoeft geen bestellingen te plaatsen en je hoeft je vo
+Het werkt via een flexibel abonnementsysteem. Wat je als vuile was inlevert, sturen wij een week later kraakhelder retour. Je h
 ```
 
 ### A2 — Sonnet 4.6 self-critique chain (composite 86)
 - Approach: gen → critique → revise (3 calls)
-- Judge: Strakke, directe zinnen met hoge merkwoorddichtheid, sterke operationele transparantie en geen verboden woorden; de zin 'Niet bij gebrek aan alternatieven' is een originele maar risicovolle formulering die net buiten de fingerprint valt.
+- Judge: Korte, heldere zinnen, goede merkwoorddichtheid (smetteloos, vlekkeloos, kraakhelder, onberispelijk, rejects, poule, zorgeloos, eindverantwoordelijk), duurzaamheidsparagraaf goed ingebed als praktijk niet als deugd, geen verboden woorden — kleine zwakte: iets minder concrete operationele details (geen vaste routes/schema vermeld).
 
 Sample output (eerste 500 chars):
 ```
-Hoeveel textiel heb je nodig deze week? Bij Napking hoef je die vraag niet zelf te beantwoorden. Wij beheren de poule, bewaken de aantallen en zorgen dat jij altijd genoeg vlekkeloos linnen op de plank hebt. Servetten, tafellakens, theedoeken, koksjassen, bedieningskleding — alles wordt gereinigd volgens HACCP-normen en afgeleverd op het moment dat jij het nodig hebt.
+Heb ik genoeg schone servetten voor het weekend? Liggen er voldoende tafellakens klaar voor die grote reservering? Als restauranthouder heb je wel wat anders aan je hoofd. Bij Napking heb je hier geen omkijken naar. Wij beheren je horecatextiel van begin tot eind — zodat jij je aandacht kunt houden bij je gasten en je gerechten.
 
-Stukken die de kwaliteitscontrole niet doorstaan — afkeur of rejects — worden vervangen zonder gedoe. Je weet wat er retour gaat
+Het systeem is eenvoudig en transparant. Wat je als vuile was inlevert, ontvang je een week later smetteloos schoon retour. Geen bestellingen plaatsen, geen voorraad bi
 ```
 
-### E2 — GPT-5.4 (composite 84)
+### E1 — Claude Sonnet 4.6 + thinking (composite 85)
+- Approach: single-shot + extended thinking
+- Judge: Goede vraagopening, consistent gebruik van merkwoorden (smetteloos, kraakhelder, onberispelijk, afkeur, poule, zorgeloos, transparant, uitblinkt, eindverantwoordelijk), iets langere zinnen dan T0 maar nog steeds strak; geen verboden woorden, lichte zwakte dat 280+ pas impliciet blijft.
+
+Sample output (eerste 500 chars):
+```
+Hoeveel textiel heb je volgende week nodig? Hoeveel tafellinnen gaan er dit weekend door? En wat doe je als je voorraad niet klopt? Voor veel restauranthouders kosten dit soort vragen tijd en aandacht — tijd die je liever besteedt aan je gasten en je gerechten. Napking neemt dat textielbeheer van je over, zodat jij er geen omkijken meer naar hebt.
+
+Dat begint bij het abonnement. Wat je als vuile was inlevert, staat een week later schoon en smetteloos bij je klaar. Je hoeft zelf geen bestellingen
+```
+
+### E2 — GPT-5.4 (composite 83)
 - Approach: single-shot
-- Judge: Hoge dichtheid aan merkwoorden en concrete details, maar zinnen zijn soms langer en meer opgesomd dan het compacte ritme van de schrijfsamples vraagt; inhoudelijk sterk en volledig compliant met regels.
+- Judge: Sterke openingsvragen in ik-perspectief (dicht bij sample [1]), rijke merkwoorddichtheid, HACCP en 280+ aanwezig, maar zinnen worden op plaatsen iets langer en beschrijvender; 'HACCP-proof' is een lichte stijlafwijking, verder geen verboden woorden.
 
 Sample output (eerste 500 chars):
 ```
-Heb ik straks wel genoeg servetten op voorraad? Zijn de tafellakens op tijd schoon retour? En wat als er ineens extra koksjassen nodig zijn? Met Napking heb je daar geen omkijken naar. Napking beheert, reinigt en levert horecatextiel voor meer dan 280 restaurants in de Randstad. Dat gebeurt volgens een scherp en flexibel systeem, zodat jouw restaurant altijd beschikt over vlekkeloos linnen, kraakheldere tafellakens en smetteloze werkkleding. Jij richt je op je gasten en gerechten. Napking zorgt 
+Heb ik straks wel genoeg servetten op voorraad? Zijn de tafellakens op tijd schoon retour? En wat als er extra kokskleding nodig is voor een druk weekend? Met Napking heb je daar geen omkijken meer naar. Napking beheert het horecatextiel voor meer dan 280 restaurants in de Randstad. Dat betekent: vlekkeloos linnen, kraakheldere tafellakens, schone theedoeken en onberispelijke kleding voor de bediening. Altijd op het juiste moment afgeleverd. Zonder dat jij daar steeds achteraan hoeft.
+
+Dat werkt
 ```
 
-### A1 — Haiku 4.5 × 3 (1 gen + 2 iter) (composite 80)
-- Approach: cheap iterative
-- Judge: Solide merkwoordgebruik en goede structuur, maar 'goede reinigingsmiddelen' is vaag en 'geen lange contracten' introduceert een claim die niet in de fingerprint zit; 'Flexibiliteit staat centraal' is licht sloganesk en grenst aan anti-pattern.
-
-Sample output (eerste 500 chars):
-```
-Heb ik wel genoeg textiel op voorraad? Is er voldoende kokskleding? Bij Napking heb je hier geen omkijken naar. Wij beheren het textielbeheer en de reiniging voor meer dan 280 restaurants in de Randstad. Het resultaat: jij concentreert je op wat je goed doet — gasten verwelkomen en gerechten bereiden.
-
-Het systeem is kraakhelder. Je levert je vuile textiel in, en precies één week later sturen wij dezelfde hoeveelheid schoon retour. Geen bestellingen plaatsen. Geen gokken naar hoeveel je nodig he
-```
-
-### E3 — Gemini 3.1 Pro + thinking (composite 78)
-- Approach: single-shot + thinking
-- Judge: Goede merkwoorddichtheid en herkenbare opening, maar zinnen lopen soms uit ('Zodra onze chauffeur binnenstapt…') en 'bezorgen van een mooie beleving' grenst aan anti-pattern-taal; 'zeer flexibel' is iets te superlatiefachtig voor de stem.
-
-Sample output (eerste 500 chars):
-```
-Heb ik wel genoeg schone theedoeken op voorraad? Is er voldoende werkkleding voor het zaterdagpersoneel? Als restauranthouder leg je de focus liever op je gerechten en het bezorgen van een mooie beleving voor je gasten. Bij Napking heb je geen omkijken meer naar je horecatextiel. Wij beheren en reinigen het linnen voor meer dan 280 restaurants in de Randstad. Zo hoef jij je niet bezig te houden met wasschema's, en doen wij waar wij in uitblinken: jou vlekkeloos textiel leveren. Precies op het ju
-```
-
-### A3 — Gemini 3 Flash best-of-3 (composite 72)
+### A3 — Gemini 3 Flash best-of-3 (composite 79)
 - Approach: parallel candidates + ranker
-- Judge: Merkwoorden aanwezig maar zinnen zijn consistent te lang en te vloeiend voor het korte declaratieve ritme; 'Wij begrijpen dat' is te empathisch-chatty, 'uitblinken in gastvrijheid' grenst aan anti-pattern, en 'geen vage beloftes' is een cliché dat de fingerprint vermijdt.
+- Judge: Solide merkwoordgebruik en goede structuur, maar 'kwaliteit is bij ons geen abstract begrip' is een clichématige wending, 'koksbuizen' is een ongebruikelijk woord buiten de merkwoordenlijst, en 'uitstraling van je linnen' voelt iets te vaag; geen harde verboden woorden maar stijl is minder scherp dan T0/E1.
 
 Sample output (eerste 500 chars):
 ```
-Liggen er genoeg servetten klaar voor de avondshift? Zijn de koksbuizen weer fris en gestreken? Bij Napking heb je hier geen omkijken naar. Wij begrijpen dat je als restauranthouder je aandacht liever bij je gasten en de gerechten houdt dan bij de wasmand. Daarom zijn wij de partner die het volledige beheer van je horecatextiel overneemt. Voor meer dan 280 restaurants in de Randstad zorgen wij dat er wekelijks kraakheldere tafellakens en onberispelijke kleding voor de bediening klaarliggen. Wij 
+Liggen er nog genoeg schone servetten? Is de kokskleding op tijd terug? Bij Napking heb je hier geen omkijken naar. Wij regelen het textielbeheer voor meer dan 280 restaurants in de Randstad. Onze aanpak is helder: wij zorgen dat jij altijd beschikt over vlekkeloos linnen, zodat jij je kunt richten op de keuken en je gasten. Geen vage beloftes, maar een strak geregelde logistiek die elke week opnieuw bewijst dat het werkt.
+
+Napking werkt met een transparant abonnement. Dit betekent dat je nooit 
+```
+
+### A1 — Haiku 4.5 × 3 (1 gen + 2 iter) (composite 77)
+- Approach: cheap iterative
+- Judge: Opening sluit nauw aan op sample [1] en merkwoorden zijn aanwezig, maar 'uniek abonnementsysteem' raakt aan een anti-pattern-sfeer, 'core business' is een anglicisme buiten de merkstijl, en 'Zij merken het verschil' is iets te chatty; verder geen harde verboden woorden.
+
+Sample output (eerste 500 chars):
+```
+Heb ik wel genoeg textiel op voorraad? Is er voldoende kokskleding? Bij Napking heb je hier geen omkijken naar. Napking is dé flexibele partner voor horecatextiel in de Randstad. Wij beheren en reinigen textiel voor meer dan 280 restaurants in de regio. Je kunt op ons rekenen voor vlekkeloze servetten, kraakheldere tafellakens, schone koksjassen, frisse theedoeken en onberispelijke kleding voor de bediening. Wij leveren je het juiste textiel op de juiste plek en op het juiste moment.
+
+Hoe werkt 
 ```
