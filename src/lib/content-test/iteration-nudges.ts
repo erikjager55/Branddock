@@ -7,7 +7,7 @@
 export interface IterationNudge {
   id: string;
   label: string;
-  intent: 'revise_section' | 'adjust_tone' | 'derive' | 'add_image';
+  intent: 'revise_section' | 'adjust_tone' | 'derive' | 'add_image' | 'auto_iterate';
   /** Concrete DELIVERABLE_TYPES.id voor derive-acties. */
   targetContentTypeId?: string;
 }
@@ -20,11 +20,23 @@ export interface IterationNudge {
 export function buildIterationNudges(input: {
   contentType: string | null;
   hasImageComponent: boolean;
+  /** True wanneer score < threshold; "Verbeter automatisch" chip wordt dan
+   *  toegevoegd om opt-in iteratie aan te bieden. */
+  scoreBelowThreshold?: boolean;
 }): IterationNudge[] {
   const nudges: IterationNudge[] = [
     { id: 'revise-section', label: 'Een sectie herzien', intent: 'revise_section' },
     { id: 'adjust-tone', label: 'Toon aanpassen', intent: 'adjust_tone' },
   ];
+  // UX-overhaul 2026-05-13: auto-verbeteren chip wanneer score laag. Geeft
+  // user een 2e entry-point naast de prominente FidelityScoreBar-CTA.
+  if (input.scoreBelowThreshold) {
+    nudges.push({
+      id: 'auto-improve',
+      label: 'Score automatisch verbeteren',
+      intent: 'auto_iterate',
+    });
+  }
   const ct = input.contentType?.toLowerCase() ?? '';
   if (ct.includes('blog') || ct.includes('article') || ct.includes('long') || ct.includes('pillar')) {
     nudges.push({

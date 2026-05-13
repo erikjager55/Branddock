@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
-import { useVanillaBaseline } from '../../hooks/useVanillaBaseline';
 import {
   Loader2,
   ShieldCheck,
@@ -10,7 +9,6 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
-  TrendingUp,
 } from 'lucide-react';
 
 // ─── Tailwind 4 purge — inline hexes voor gradient backgrounds ──
@@ -80,13 +78,14 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
 
   const strict = useCanvasStore((s) => s.strictRewrite);
   const autoIterate = useCanvasStore((s) => s.autoIterate);
-  const vanilla = useCanvasStore((s) => s.vanillaBaseline);
-  const { compare: runVanillaCompare, isRunning: isVanillaRunning } = useVanillaBaseline(deliverableId);
   const [showPillars, setShowPillars] = React.useState(!compact);
 
   if (fidelity.stage === 'idle') return null;
 
-  const position = fidelity.humanBaselinePosition ?? 0;
+  // UX-overhaul 2026-05-13: pin-positie matcht nu compositeScore (0-100) i.p.v.
+  // humanBaselinePosition. Zo komt visuele kleur (rood/oranje/groen) overeen
+  // met de score-zone die de user verwacht ("score 52 = oranje zone").
+  const position = fidelity.compositeScore ?? 0;
   const verdict = fidelity.detectorVerdict;
   const isComplete = fidelity.stage === 'complete';
   const isSkipped = fidelity.stage === 'skipped';
@@ -126,12 +125,12 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
         )}
       </div>
 
-      {/* ─── Position bar (mens↔AI schaal) met as-labels ─── */}
+      {/* ─── Score bar (composite-based) met as-labels ─── */}
       <div className="space-y-1">
         <PositionBar position={position} />
         <div className="flex items-center justify-between text-[10px] text-gray-500 font-medium uppercase tracking-wide">
-          <span>← Klinkt menselijk</span>
-          <span>Klinkt als AI →</span>
+          <span>← Klinkt als AI</span>
+          <span>Klinkt menselijk + brand-fit →</span>
         </div>
       </div>
 
@@ -252,16 +251,152 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
         </div>
       )}
 
-      {/* ─── Vergelijk-met-vanille-AI panel ─── */}
-      {isComplete && deliverableId && (
-        <VanillaComparisonPanel
-          branddockComposite={fidelity.compositeScore ?? 0}
-          branddockPosition={fidelity.humanBaselinePosition ?? 0}
-          vanilla={vanilla}
-          isRunning={isVanillaRunning}
-          onCompare={runVanillaCompare}
-        />
-      )}
+      {/* UX-overhaul 2026-05-13: VanillaComparisonPanel verwijderd — was
+          demo-feature die in normale workflow alleen ruis was. Comparison-flow
+          kan later terug via een aparte settings-toggle. */}
+
+      {/* Opt-in "Verbeter automatisch" CTA — wanneer score < threshold +
+          auto-iterate niet al gelopen. Triggert nieuwe iteratie-flow. */}
+      {isComplete &&
+        fidelity.compositeScore !== null &&
+        fidelity.thresholdMet === false &&
+        autoIterate.stage === 'idle' &&
+        deliverableId && (
+          <AutoIterateOptInCta deliverableId={deliverableId} />
+        )}
+    </div>
+  );
+}
+
+// ─── Auto-iterate opt-in CTA (UX-overhaul 2026-05-13) ──
+// Toont prominente knop wanneer score < threshold. User klikt om iteratie
+// te starten. Streamt SSE events naar canvas-store; output overgenomen door
+// AutoIterateImprovedBlock zodra complete.
+
+function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
+  const autoIterate = useCanvasStore((s) => s.autoIterate);
+  const [busy, setBusy] = React.useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+
+  // Listen voor 'canvas:trigger-auto-iterate' event uit GenerationFeedbackBanners
+  // (auto-iterate chip in volgende-stap rij). Hergebruikt dezelfde flow.
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { deliverableId?: string } | undefined;
+      if (detail?.deliverableId === deliverableId) {
+        void handleClick();
+      }
+    };
+    window.addEventListener('canvas:trigger-auto-iterate', handler);
+    return () => window.removeEventListener('canvas:trigger-auto-iterate', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deliverableId]);
+
+  const handleClick = React.useCallback(async () => {
+    setBusy(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/studio/${deliverableId}/auto-iterate/trigger`, {
+        method: 'POST',
+      });
+      if (!res.ok || !res.body) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error ?? `Iteratie-start mislukte (${res.status})`);
+      }
+      // Lees SSE-stream en route naar canvas-store via dezelfde setters
+      // die de orchestrator gebruikt. Re-import store voor concurrency-safe
+      // mutation.
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      const store = useCanvasStore.getState();
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const messages = buffer.split('\n\n');
+        buffer = messages.pop() ?? '';
+        for (const msg of messages) {
+          const eventMatch = msg.match(/^event:\s*(\S+)/m);
+          const dataMatch = msg.match(/^data:\s*(.+)$/m);
+          if (!eventMatch || !dataMatch) continue;
+          const eventName = eventMatch[1];
+          let data: Record<string, unknown>;
+          try {
+            data = JSON.parse(dataMatch[1]);
+          } catch {
+            continue;
+          }
+          if (eventName === 'auto_iterate_started') {
+            store.setAutoIterateStarted({
+              initialScore: typeof data.initialScore === 'number' ? data.initialScore : 0,
+              threshold: typeof data.threshold === 'number' ? data.threshold : 75,
+            });
+          } else if (eventName === 'auto_iterate_iteration_complete') {
+            store.setAutoIterateIterationComplete({
+              attempt: typeof data.attempt === 'number' ? data.attempt : 1,
+              newScore: typeof data.newScore === 'number' ? data.newScore : 0,
+            });
+          } else if (eventName === 'auto_iterate_complete') {
+            store.setAutoIterateComplete({
+              attemptsExecuted:
+                typeof data.attemptsExecuted === 'number' ? data.attemptsExecuted : 0,
+              finalScore: typeof data.finalScore === 'number' ? data.finalScore : 0,
+              thresholdMet: data.thresholdMet === true,
+              stopReason: typeof data.stopReason === 'string' ? data.stopReason : 'max_iterations',
+            });
+          } else if (eventName === 'error') {
+            const errMsg = typeof data.message === 'string' ? data.message : 'Iteratie faalde';
+            throw new Error(errMsg);
+          }
+        }
+      }
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Iteratie mislukt');
+    } finally {
+      setBusy(false);
+    }
+  }, [deliverableId]);
+
+  const isRunning = busy || autoIterate.stage === 'iterating';
+
+  return (
+    <div className="mt-3 rounded-lg bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 px-4 py-3">
+      <div className="flex items-start gap-3">
+        <Sparkles className="w-5 h-5 text-teal-700 mt-0.5 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900">
+            Score onder drempel — wil je dat Branddock het automatisch verbetert?
+          </p>
+          <p className="text-xs text-gray-600 mt-0.5">
+            Branddock herschrijft de tekst tot 5× en stopt zodra de score boven de
+            drempel komt of niet meer verbetert. Duurt ~30-90 seconden.
+          </p>
+          <button
+            type="button"
+            onClick={handleClick}
+            disabled={isRunning}
+            className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isRunning ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Bezig met verbeteren…
+                {autoIterate.attemptsExecuted > 0 &&
+                  ` (poging ${autoIterate.attemptsExecuted}, score ${autoIterate.finalScore ?? '—'})`}
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Verbeter automatisch
+              </>
+            )}
+          </button>
+          {errorMsg && (
+            <div className="mt-2 text-xs text-red-700">{errorMsg}</div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -310,14 +445,21 @@ function AutoIterateImprovedBlock({
     }
   }, [deliverableId]);
 
+  // UX-overhaul 2026-05-13: stop-reason → user-friendly heading mapping.
+  // Geen "kwam dichter bij threshold" jargon meer.
+  const stopReasonLabel = thresholdMet
+    ? `Verbeterd van ${initialScore} naar ${finalScore} — klaar voor publish`
+    : stopReason === 'early_stop_stagnation'
+      ? `Verbeterd van ${initialScore} naar ${finalScore} — verdere iteraties leveren weinig op`
+      : stopReason === 'max_iterations'
+        ? `Verbeterd van ${initialScore} naar ${finalScore} in ${attemptsExecuted} pogingen — pas brief aan voor verder verbetering`
+        : `Verbeterd van ${initialScore} naar ${finalScore}`;
+
   return (
     <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5">
       <div className="flex items-center gap-1.5 mb-1">
         <Sparkles className="w-4 h-4 text-emerald-600" />
-        <span className="text-sm font-semibold text-emerald-900">
-          Auto-iterate{' '}
-          {thresholdMet ? 'haalde threshold' : `kwam dichter bij threshold (${attemptsExecuted}×)`}
-        </span>
+        <span className="text-sm font-semibold text-emerald-900">{stopReasonLabel}</span>
       </div>
       <div className="text-xs text-emerald-800">
         Score: <span className="font-medium">{initialScore}</span>
@@ -325,13 +467,13 @@ function AutoIterateImprovedBlock({
         <span className="font-medium">{finalScore}</span>
         <span className="ml-1 text-emerald-700">
           ({delta >= 0 ? '+' : ''}
-          {delta} punten in {attemptsExecuted} iter{attemptsExecuted > 1 ? 's' : ''})
+          {delta} punten in {attemptsExecuted} {attemptsExecuted === 1 ? 'poging' : 'pogingen'})
         </span>
       </div>
 
       {appliedTemplates.length > 0 && (
         <div className="mt-2 text-[11px] text-emerald-700">
-          Templates: {appliedTemplates.slice(0, 3).join(' · ')}
+          Toegepast: {appliedTemplates.slice(0, 3).join(' · ')}
           {appliedTemplates.length > 3 && ` +${appliedTemplates.length - 3}`}
         </div>
       )}
@@ -351,7 +493,7 @@ function AutoIterateImprovedBlock({
           ) : (
             <>
               <Sparkles className="w-3.5 h-3.5" />
-              Gebruik auto-iterate versie
+              Gebruik verbeterde versie
             </>
           )}
         </button>
@@ -360,18 +502,12 @@ function AutoIterateImprovedBlock({
       {applyState === 'applied' && (
         <div className="mt-2 text-xs text-emerald-700 font-medium inline-flex items-center gap-1">
           <ShieldCheck className="w-3.5 h-3.5" />
-          Toegepast — ververs de pagina om de iterated tekst te zien
+          Toegepast — ververs de pagina om de verbeterde tekst te zien
         </div>
       )}
 
       {applyState === 'error' && applyError && (
         <div className="mt-2 text-xs text-red-700">{applyError}</div>
-      )}
-
-      {!thresholdMet && stopReason === 'max_iterations' && (
-        <div className="mt-2 text-[11px] text-amber-700">
-          Max iteraties bereikt — handmatige finetune kan nog naar threshold tillen.
-        </div>
       )}
     </div>
   );
@@ -483,196 +619,32 @@ function StrictImprovedBlock({
   );
 }
 
-// ─── Vanille comparison panel ─────────────────────
-
-interface VanillaComparisonPanelProps {
-  branddockComposite: number;
-  branddockPosition: number;
-  vanilla: {
-    stage: 'idle' | 'generating' | 'scoring' | 'complete' | 'error';
-    compositeScore: number | null;
-    detectorVerdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI' | null;
-    humanBaselinePosition: number | null;
-    pillars: { style: number | null; judge: number | null; rules: number | null } | null;
-    model: string | null;
-    wordCount: number | null;
-    errorMessage: string | null;
-  };
-  isRunning: boolean;
-  onCompare: () => void;
-}
-
-function VanillaComparisonPanel({
-  branddockComposite,
-  branddockPosition,
-  vanilla,
-  isRunning,
-  onCompare,
-}: VanillaComparisonPanelProps) {
-  // Idle: alleen CTA
-  if (vanilla.stage === 'idle') {
-    return (
-      <div className="mt-4 pt-3 border-t border-gray-100">
-        <button
-          type="button"
-          onClick={onCompare}
-          className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-teal-200 bg-teal-50 text-sm font-medium text-teal-700 hover:bg-teal-100 transition-colors"
-        >
-          <Sparkles className="w-4 h-4" />
-          Vergelijk met ChatGPT zonder Branddock
-        </button>
-      </div>
-    );
-  }
-
-  // Loading: stage 'generating' of 'scoring'
-  if (isRunning) {
-    return (
-      <div className="mt-4 pt-3 border-t border-gray-100">
-        <div className="rounded-lg bg-gray-50 px-3 py-3 flex items-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900">
-              {vanilla.stage === 'generating' ? 'ChatGPT schrijft de tekst…' : 'Score berekenen…'}
-            </p>
-            <p className="text-xs text-gray-500">
-              Zelfde briefing, maar zonder jouw merkcontext — meestal 30-60s totaal.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error
-  if (vanilla.stage === 'error') {
-    return (
-      <div className="mt-4 pt-3 border-t border-gray-100">
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5">
-          <p className="text-sm font-medium text-red-900">Vergelijking mislukt</p>
-          <p className="text-xs text-red-700 mt-0.5">{vanilla.errorMessage ?? 'Onbekende fout'}</p>
-          <button
-            type="button"
-            onClick={onCompare}
-            className="mt-2 text-xs font-medium text-red-700 underline hover:text-red-900"
-          >
-            Opnieuw proberen
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Complete: side-by-side comparison
-  if (vanilla.stage === 'complete' && vanilla.compositeScore !== null && vanilla.detectorVerdict) {
-    const delta = branddockComposite - vanilla.compositeScore;
-    const positionDelta = (vanilla.humanBaselinePosition ?? 0) - branddockPosition;
-    const branddockWins = delta > 0;
-
-    return (
-      <div className="mt-4 pt-3 border-t border-gray-100">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-4 h-4 text-teal-600" />
-          <h4 className="text-sm font-semibold text-gray-900">Vergelijking: met vs. zonder Branddock</h4>
-        </div>
-
-        {/* Delta hero */}
-        <div
-          className={`rounded-lg px-4 py-3 mb-3 ${
-            branddockWins ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs font-medium text-gray-600">Verschil in score</div>
-              <div
-                className={`text-3xl font-bold ${branddockWins ? 'text-emerald-700' : 'text-amber-700'}`}
-              >
-                {delta >= 0 ? '+' : ''}
-                {delta} punten
-              </div>
-              <div className="text-xs text-gray-500 mt-0.5">
-                {branddockWins ? 'beter mét Branddock' : 'beter zonder'}
-              </div>
-            </div>
-            {positionDelta !== 0 && (
-              <div className="text-right">
-                <div className="text-xs text-gray-600">menselijkheid</div>
-                <div className="text-sm font-semibold text-gray-900 inline-flex items-center gap-1">
-                  <TrendingUp className="w-4 h-4 text-emerald-600" />
-                  {positionDelta > 0 ? 'menselijker met Branddock' : 'menselijker zonder'}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Side-by-side score-mini */}
-        <div className="grid grid-cols-2 gap-2">
-          <ScoreMini
-            label="Met Branddock"
-            composite={branddockComposite}
-            position={branddockPosition}
-            highlight
-          />
-          <ScoreMini
-            label={`Zonder Branddock (${vanilla.model ?? 'GPT-4o'})`}
-            composite={vanilla.compositeScore}
-            position={vanilla.humanBaselinePosition ?? 0}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  return null;
-}
-
-function ScoreMini({
-  label,
-  composite,
-  position,
-  highlight = false,
-}: {
-  label: string;
-  composite: number;
-  position: number;
-  highlight?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-lg border px-3 py-2.5 ${
-        highlight ? 'border-teal-300 bg-teal-50/50' : 'border-gray-200 bg-white'
-      }`}
-    >
-      <div className="flex items-baseline justify-between mb-1.5">
-        <span className="text-xs font-semibold text-gray-700 truncate">{label}</span>
-        <span className="text-xl font-bold text-gray-900">{composite}</span>
-      </div>
-      <PositionBar position={position} />
-    </div>
-  );
-}
+// UX-overhaul 2026-05-13: VanillaComparisonPanel + ScoreMini sub-components
+// verwijderd. Vergelijking met vanille ChatGPT was demo-feature die in normale
+// workflow alleen ruis was. Kan terug via separate settings-toggle in followup.
 
 // ─── Sub-components ────────────────────────────────
 
 function PositionBar({ position }: { position: number }) {
-  // Zones: 0-12 TOP_TIER, 12-30 HUMAN_BASELINE, 30-50 AI_LEANING, 50-100 PURE_AI
+  // UX-overhaul 2026-05-13: PositionBar gebruikt nu compositeScore (0-100)
+  // i.p.v. humanBaselinePosition. Pin-positie matcht score, kleur-zones
+  // matchen threshold-semantiek. As-flip: links rood (klinkt als AI / niet
+  // brand-fit), rechts groen (klinkt menselijk + brand-fit). Pin direct =
+  // score, dus 0=helemaal links rood, 100=helemaal rechts groen.
   const clamped = Math.max(0, Math.min(100, position));
   return (
     <div className="relative h-2.5 rounded-full overflow-hidden bg-gray-100">
-      {/* Zone backgrounds — flex segments proportional to threshold widths */}
+      {/* Zone backgrounds — score-based: 0-50 red (under), 50-75 amber, 75-100 green */}
       <div className="absolute inset-0 flex">
-        <div className="h-full" style={{ width: '12%', backgroundColor: ZONE_HEX.topTier }} />
-        <div className="h-full" style={{ width: '18%', backgroundColor: ZONE_HEX.humanBaseline }} />
-        <div className="h-full" style={{ width: '20%', backgroundColor: ZONE_HEX.aiLeaning }} />
         <div className="h-full" style={{ width: '50%', backgroundColor: ZONE_HEX.pureAi }} />
+        <div className="h-full" style={{ width: '25%', backgroundColor: ZONE_HEX.aiLeaning }} />
+        <div className="h-full" style={{ width: '25%', backgroundColor: ZONE_HEX.topTier }} />
       </div>
-      {/* Position pin */}
+      {/* Position pin — left = score% (axis is correct directly) */}
       <div
         className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow-md"
         style={{ left: `${clamped}%`, backgroundColor: '#111827' }}
-        aria-label={`Position ${clamped} of 100`}
+        aria-label={`Score ${clamped} of 100`}
       />
     </div>
   );

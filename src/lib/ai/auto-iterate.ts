@@ -1,14 +1,14 @@
 // =============================================================
-// Auto-iterate orchestrator — sub-sprint #6.B.
-// Wraps F-VAL scoring met feedback-driven regeneration. Max 2 attempts
-// per beslissing 2026-05-12. Stop-conditions:
+// Auto-iterate orchestrator — sub-sprint #6.B + UX-overhaul 2026-05-13.
+// Wraps F-VAL scoring met feedback-driven regeneration.
+// Stop-conditions:
 //   - composite ≥ per-type threshold (success)
 //   - max-iterations reached (escalate to user)
+//   - early-stop: 2 opeenvolgende iteraties geen verbetering (< 2 pt delta)
 //   - regenerate-call faalt (abort, present last variant)
 //
 // Pure module — alle external dependencies via DI-interfaces zodat
-// smoke-tests geen DB/AI hoeven aan te raken. Wiring in canvas-
-// orchestrator gebeurt naast bestaande STRICT-mode rewrite.
+// smoke-tests geen DB/AI hoeven aan te raken.
 // =============================================================
 
 import { compileFeedbackHint } from '@/lib/content-test/feedback-compiler';
@@ -17,7 +17,12 @@ import type {
   FeedbackCompilerOutput,
 } from '@/lib/content-test/feedback-compiler';
 
-const DEFAULT_MAX_ITERATIONS = 2;
+// UX-overhaul 2026-05-13: max iteraties van 2 → 5; combineer met early-stop
+// (2 opeenvolgende iters zonder verbetering) zodat we gemiddeld 3 doen maar
+// in moeilijke gevallen tot 5 kunnen klauteren. Cost-cap: ~$0.25/run worst case.
+const DEFAULT_MAX_ITERATIONS = 5;
+const EARLY_STOP_DELTA_THRESHOLD = 2; // < 2 pt verbetering = stagnatie-signaal
+const EARLY_STOP_STAGNATION_COUNT = 2; // 2 opeenvolgende stagnatie-iters = stop
 
 export interface AutoIterateEvent {
   event:
@@ -91,7 +96,7 @@ export interface AutoIterateResult {
   /** True wanneer threshold uiteindelijk gehaald is. */
   thresholdMet: boolean;
   /** Reason waarom orchestrator stopte. */
-  stopReason: 'threshold_met' | 'max_iterations' | 'regenerate_failed' | 'disabled' | 'already_passing';
+  stopReason: 'threshold_met' | 'max_iterations' | 'early_stop_stagnation' | 'regenerate_failed' | 'disabled' | 'already_passing';
   /** Per-iteration log voor learning-loop attribution. */
   iterations: IterationLog[];
 }
@@ -159,6 +164,10 @@ export async function* runAutoIterate(
   let currentPillarScores = input.pillarScores;
   let bestText = input.initialText;
   let bestScore = currentScore;
+  // Early-stop tracking: tel hoeveel opeenvolgende iteraties stagneerden
+  // (< EARLY_STOP_DELTA_THRESHOLD verbetering). Bij EARLY_STOP_STAGNATION_COUNT
+  // = stop met reden 'early_stop_stagnation'.
+  let stagnationCount = 0;
 
   for (let attempt = 1; attempt <= maxIterations; attempt++) {
     const iterationStart = Date.now();
@@ -279,6 +288,35 @@ export async function* runAutoIterate(
         stopReason: 'threshold_met',
         iterations,
       };
+    }
+
+    // 6. Early-stop bij stagnatie — voorkomt geld verbranden aan iteraties
+    // die niet meer significante winst opleveren. Telt opeenvolgende iters
+    // met delta < EARLY_STOP_DELTA_THRESHOLD; bij 2× achter elkaar = stop.
+    const delta = currentScore - previousScore;
+    if (delta < EARLY_STOP_DELTA_THRESHOLD) {
+      stagnationCount++;
+      if (stagnationCount >= EARLY_STOP_STAGNATION_COUNT) {
+        yield {
+          event: 'auto_iterate_complete',
+          data: {
+            attemptsExecuted: attempt,
+            finalScore: bestScore,
+            thresholdMet: bestScore >= input.threshold,
+            stopReason: 'early_stop_stagnation',
+          },
+        };
+        return {
+          attemptsExecuted: attempt,
+          finalScore: bestScore,
+          finalText: bestText,
+          thresholdMet: bestScore >= input.threshold,
+          stopReason: 'early_stop_stagnation',
+          iterations,
+        };
+      }
+    } else {
+      stagnationCount = 0; // reset wanneer een iteratie wel winst gaf
     }
   }
 

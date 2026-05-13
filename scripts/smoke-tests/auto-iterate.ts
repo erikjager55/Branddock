@@ -153,29 +153,64 @@ async function main() {
     (success2.result as { thresholdMet: boolean }).thresholdMet === true,
   );
 
-  // ─── Max-iterations exhausted ───────────────────────────────
-  console.log('\n## Max-iterations\n');
+  // ─── Max-iterations + early-stop (UX-overhaul 2026-05-13) ────
+  console.log('\n## Max-iterations + early-stop\n');
 
-  const exhausted = await drain(
+  // Steady improvement < 2pt per iter triggers early-stop after 2x stagnation
+  // (iter 1: 50→51 stag=1, iter 2: 51→52 stag=2 → early-stop bij iter 2)
+  let stagCounter = 50;
+  const earlyStop = await drain(
     runAutoIterate({
       ...baseInput,
       enabled: true,
       initialScore: { compositeScore: 50, scoreId: 'sc_5' },
-      regenerate: async () => ({ text: 'still-bad' }),
-      rescore: async () => ({ compositeScore: 55, scoreId: 'sc_iter', findings: baseFindings }),
+      regenerate: async () => ({ text: 'small-improve' }),
+      rescore: async () => {
+        stagCounter += 1; // 1pt per iter (below 2pt threshold)
+        return { compositeScore: stagCounter, scoreId: 'sc_iter', findings: baseFindings };
+      },
     }),
   );
   assert(
-    'exhausted: stopReason = max_iterations',
-    (exhausted.result as { stopReason: string }).stopReason === 'max_iterations',
+    'early-stop: stopReason = early_stop_stagnation',
+    (earlyStop.result as { stopReason: string }).stopReason === 'early_stop_stagnation',
   );
   assert(
-    'exhausted: attemptsExecuted = 2',
-    (exhausted.result as { attemptsExecuted: number }).attemptsExecuted === 2,
+    'early-stop: stopt na 2 stagnerende iters',
+    (earlyStop.result as { attemptsExecuted: number }).attemptsExecuted <= 3,
+  );
+
+  // Hard max-iterations: blijft +3pt per iter zo dat geen stagnation triggert
+  // maar threshold (65) niet wordt gehaald binnen 5 iters
+  let maxCounter = 50;
+  const maxReached = await drain(
+    runAutoIterate({
+      ...baseInput,
+      enabled: true,
+      initialScore: { compositeScore: 50, scoreId: 'sc_6' },
+      regenerate: async () => ({ text: 'mod-improve' }),
+      rescore: async () => {
+        maxCounter += 3; // +3 per iter; 5 iter * 3 = 65 but starts at 50 so reaches 65 at iter 5
+        // To force max_iterations: keep below 65 over all 5 iters
+        return {
+          compositeScore: Math.min(maxCounter, 64),
+          scoreId: 'sc_iter',
+          findings: baseFindings,
+        };
+      },
+    }),
   );
   assert(
-    'exhausted: thresholdMet = false',
-    (exhausted.result as { thresholdMet: boolean }).thresholdMet === false,
+    'max-iterations: 5 attempts uitgevoerd',
+    (maxReached.result as { attemptsExecuted: number }).attemptsExecuted === 5,
+  );
+  assert(
+    'max-iterations: stopReason = max_iterations',
+    (maxReached.result as { stopReason: string }).stopReason === 'max_iterations',
+  );
+  assert(
+    'max-iterations: thresholdMet = false',
+    (maxReached.result as { thresholdMet: boolean }).thresholdMet === false,
   );
 
   // ─── Regenerate-failure recovery ────────────────────────────

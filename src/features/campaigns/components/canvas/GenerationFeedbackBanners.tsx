@@ -18,6 +18,7 @@ import {
   ArrowRight,
   ImagePlus,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
@@ -124,6 +125,8 @@ function classifyNudge(intent: string): NudgeMeta {
       return { group: 'refine', icon: Pencil };
     case 'adjust_tone':
       return { group: 'refine', icon: SlidersHorizontal };
+    case 'auto_iterate':
+      return { group: 'refine', icon: Sparkles };
     case 'derive':
       return { group: 'derive', icon: ArrowRight };
     case 'add_image':
@@ -156,6 +159,16 @@ function IterationNudgesPanel() {
   if (globalStatus === 'generating') return null;
 
   async function handleNudgeClick(nudge: (typeof nudges)[number]) {
+    // UX-overhaul 2026-05-13: auto_iterate intent triggert opt-in iteratie
+    // via dezelfde flow als de FidelityScoreBar CTA. Dispatched een custom
+    // event dat AutoIterateOptInCta op pickt; vermijdt dubbele fetch-logic.
+    if (nudge.intent === 'auto_iterate') {
+      if (!deliverableId) return;
+      window.dispatchEvent(
+        new CustomEvent('canvas:trigger-auto-iterate', { detail: { deliverableId } }),
+      );
+      return;
+    }
     if (nudge.intent !== 'derive' || !nudge.targetContentTypeId || !deliverableId) {
       return;
     }
@@ -275,7 +288,10 @@ function NudgeGroupRow({
         {items.map((n) => {
           const isBusy = busyId === n.id;
           const isDerive = group === 'derive' && !!n.targetContentTypeId;
-          const isActionable = isDerive && !!deliverableId;
+          const isAutoIter = n.intent === 'auto_iterate';
+          // UX-overhaul 2026-05-13: derive AND auto_iterate zijn beide
+          // actionable (eerste creëert deliverable, tweede triggert iteratie).
+          const isActionable = (isDerive || isAutoIter) && !!deliverableId;
           const Icon = isBusy ? Loader2 : n.icon;
           return (
             <button
@@ -283,15 +299,17 @@ function NudgeGroupRow({
               type="button"
               data-intent={n.intent}
               onClick={() => onClick(n)}
-              disabled={isBusy || (isDerive && !deliverableId)}
+              disabled={isBusy || (isActionable && !deliverableId)}
               title={
                 isDerive
                   ? 'Maakt direct een nieuwe deliverable in dit type'
-                  : 'Cue voor revisie-flow in de variant-panelen'
+                  : isAutoIter
+                    ? 'Verbetert de tekst automatisch tot 5× voor hogere score'
+                    : 'Cue voor revisie-flow in de variant-panelen'
               }
               className={
                 isActionable
-                  ? // Derive — filled accent, signals "creates new"
+                  ? // Derive + auto_iterate — filled accent, signals action
                     'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-white text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-sm'
                   : // Refine / enrich — ghost, signals "visual cue only"
                     'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'

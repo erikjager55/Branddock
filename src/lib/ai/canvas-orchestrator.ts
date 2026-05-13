@@ -805,15 +805,17 @@ export async function* orchestrateContentGeneration(
   }
 
   // ── Step 2.8: Auto-iterate (sub-sprint #6.B wiring) ─
-  // F8 fix (audit 2026-05-13 user-decision Option B): default ON.
-  // Skip alleen wanneer FEATURE_AUTO_ITERATE expliciet op 'false' is gezet,
-  // of wanneer STRICT al rewrite uitvoerde (humanVoiceMode = STRICT), of
-  // wanneer F-VAL geen result kon berekenen. Iteraties worden gepersisteerd
-  // naar Deliverable.settings.autoIterate; user-facing components blijven
-  // origineel — "apply iterated version" knop is follow-up scope.
+  // UX-overhaul 2026-05-13 (F8 herzien): auto-iterate is NIET meer automatisch
+  // tijdens generation. User triggert via "Verbeter automatisch" CTA in canvas
+  // wanneer score < threshold. Endpoint: POST /api/studio/[id]/auto-iterate/trigger.
+  // Reden: opt-in geeft gebruiker controle + verklaarbaarheid; automatische
+  // trigger zorgde voor verwarring ("kwam dichter bij threshold (2×)") en
+  // verbrandde AI-budget op generaties die user toch handmatig zou willen
+  // bekijken.
+  // Override mogelijk via FEATURE_AUTO_ITERATE=true voor smoke/E2E testing.
   if (
     fidelityPipelineReturn &&
-    process.env.FEATURE_AUTO_ITERATE !== 'false' &&
+    process.env.FEATURE_AUTO_ITERATE === 'true' &&
     humanVoiceMode !== 'STRICT'
   ) {
     try {
@@ -1079,9 +1081,16 @@ export async function* orchestrateContentGeneration(
   // "wil je secties herzien / tone aanpassen / variant voor ander kanaal?"
   // Worden in UI als chips/quick-actions getoond.
   const { buildIterationNudges } = await import('@/lib/content-test/iteration-nudges');
+  // UX-overhaul 2026-05-13: bepaal of score onder drempel was zodat
+  // "Score automatisch verbeteren" chip kan verschijnen als opt-in entry-
+  // point naast de prominente CTA in FidelityScoreBar.
+  const scoreBelowThreshold = fidelityPipelineReturn
+    ? fidelityPipelineReturn.initialResult.compositeScore < fidelityPipelineReturn.initialResult.compositeThreshold
+    : false;
   const iterationNudges = buildIterationNudges({
     contentType: stack.deliverableTypeId,
     hasImageComponent: imageResults.some((r) => r !== null),
+    scoreBelowThreshold,
   });
 
   yield {
