@@ -25,7 +25,11 @@ import type { JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 import { getPromptTemplate } from '@/lib/studio/prompt-templates';
 import { getContentTypeInputs } from '@/features/campaigns/lib/content-type-inputs';
-import { buildBrandVoiceDirectiveFromContext, getBrandVoiceStatus } from '@/lib/studio/brand-voice-directive';
+import {
+  buildBrandVoiceDirectiveFromContext,
+  buildVoiceSelfCheckDirective,
+  getBrandVoiceStatus,
+} from '@/lib/studio/brand-voice-directive';
 import { buildHumanVoiceDirective } from '@/lib/studio/human-voice-directive';
 import { resolveHumanVoiceMode } from '@/lib/brand-fidelity/fidelity-config';
 import { logBrandLanguageMismatchIfAny } from '@/lib/i18n/detect-brand-language';
@@ -1798,6 +1802,11 @@ function buildCanvasPrompt(
     formatVisualBrief(stack.visualBrief ?? null),
     contentType ? formatConstraintsForPrompt(contentType) : '',
     options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
+    // F21 (audit 2026-05-13): self-check directive LAATSTE in system-prompt
+    // zodat het de recency-positie pakt. Voiceguide-block bovenaan (BVD) +
+    // self-check onderaan = bracketing dat AI dwingt te imiteren ipv
+    // los advies te negeren.
+    buildVoiceSelfCheckDirective(stack.brand),
   ]
     .filter(Boolean)
     .join('\n');
@@ -1915,6 +1924,9 @@ function buildRegenerationPrompt(
     formatVisualBrief(stack.visualBrief ?? null),
     regenContentType ? formatConstraintsForPrompt(regenContentType) : '',
     options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
+    // F21 (audit 2026-05-13): self-check ook in regeneration-path zodat
+    // single-component-rewrites dezelfde voice-discipline volgen.
+    buildVoiceSelfCheckDirective(stack.brand),
   ]
     .filter(Boolean)
     .join('\n');

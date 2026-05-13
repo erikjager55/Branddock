@@ -165,6 +165,17 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Niet meegenomen** (volgt later): apply-endpoint persist nog geen nieuwe `ContentFidelityScore` row, dus na een eventuele latere hard-refresh leest de canvas de oude score uit DB. Daarvoor moet apply-endpoint OF re-judgen OF de snapshot-score uit `settings.autoIterate.finalScore` persisteren als nieuw `ContentFidelityScore` record. Pakken we op als score-display na hard-refresh een storing wordt.
 - **Severity**: P1 (gefixt voor de UX-loop; persistent score-write is P2 follow-up).
 
+### F21 — Initial-score ~50 te laag voor publish-ready output (prompt-restructure)
+- **Locatie**: `src/lib/studio/brand-voice-directive.ts` + `src/lib/ai/canvas-orchestrator.ts:buildCanvasPrompt` en `buildRegenerationPrompt`.
+- **Probleem**: Pilot-run Napking blog-post toonde initial composite 47 (style 43, judge 51, rules 81). Auto-iterate haalde +7pt (54→61) maar bleef onder threshold 75. Hypothese: AI behandelt voiceguide-block in BVD als achtergrondinfo i.p.v. imitatie-target. Geen self-verification stap forceert AI om voor-output te checken of voice-fingerprint match maakt.
+- **Fix (prompt-restructure, geen extra cost/latency)**:
+  1. **Stronger voiceguide framing in BVD**: `**Brand voice**: ${voiceguide}` → `**VOICE FINGERPRINT — MUST MATCH BEFORE OUTPUT**:` met inhoud op nieuwe regel. Signaleert dat dit een imitatie-target is, niet algemene context.
+  2. **Self-check directive aan EINDE van system-prompt** (`buildVoiceSelfCheckDirective`): nieuwe helper die 4-5 expliciete checks oplevert: (a) voice-fingerprint match met Writing sample [1], (b) Words we use frequentie ≥2 per alinea, (c) geen banned/anti-pattern terms, (d) brand-name expliciet aanwezig, (e) AI-clichés geschrapt. Closing line: "Als één van bovenstaande checks zou falen, herschrijf de tekst VOORDAT je antwoordt." NL/EN copy afhankelijk van contentLanguage.
+  3. **Recency-effect**: self-check staat als LAATSTE block in system-prompt (na alle context). LLMs hechten meer waarde aan recente instructies; bracketing met BVD-top + self-check-bottom dwingt voice-discipline.
+- **Verwacht effect**: +5-10pt initial composite door imitate-not-summarize framing + +3-7pt door self-check-driven inline-revisions. Total target: initial ~60-65, auto-iterate naar ≥75 (binnen 1-2 iters i.p.v. 5+).
+- **Werkt durably**: voor elke workspace met `BrandVoiceguide` populated; degradeert gracefully wanneer voiceguide ontbreekt (alleen brand-name + AI-cliché-check blijven over).
+- **Severity**: P1 (gefixt).
+
 ### F20 — `# Heading 1` wordt letterlijk gerenderd in body sections (gefixt)
 - **Locatie**: `src/features/campaigns/components/canvas/previews/SimpleMarkdown.tsx`.
 - **Probleem**: Renderer ondersteunde alleen `##` (h2) en `###` (h3). AI-output met enkele `#` (h1) viel door naar het paragraph-pad en werd letterlijk gerenderd ("# Horecatextiel beheer" toonde de hash + ruimte als platte tekst). Component-types die rijke markdown produceren (blog-post body sections, newsletter, landing-page) raakten dit.

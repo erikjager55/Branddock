@@ -157,7 +157,12 @@ export function buildBrandVoiceDirectiveFromContext(
   parts.push('');
 
   if (hasVoiceguide) {
-    parts.push(`**Brand voice**: ${ctx.brandVoiceguide}`);
+    // F21 (audit 2026-05-13): voiceguide krijgt expliciete MUST-MATCH frame
+    // i.p.v. zachte "Brand voice" label. Writing-samples + words-we-use +
+    // anti-patterns staan al in de gerenderde voiceguide-string; door de
+    // stronger frame leest AI dit als imitatie-target ipv achtergrondinfo.
+    parts.push('**VOICE FINGERPRINT — MUST MATCH BEFORE OUTPUT**:');
+    parts.push(ctx.brandVoiceguide!);
     parts.push('');
   }
 
@@ -183,6 +188,79 @@ export function buildBrandVoiceDirectiveFromContext(
   parts.push('Apply this voice identity WITHIN the structural methodology specified below. The methodology provides structure; the voice directive provides personality.');
 
   return parts.join('\n');
+}
+
+/**
+ * F21 (audit 2026-05-13): self-check directive voor het EINDE van de system-
+ * prompt zodat het de recency-positie pakt (laatste instructie wint vaak).
+ * Combineert met de stronger framing van de voiceguide block bovenaan
+ * (zie buildBrandVoiceDirectiveFromContext). Doel: initial F-VAL composite
+ * van ~50 → ≥65 zonder auto-iterate; auto-iterate doet de rest naar ≥75.
+ *
+ * Wordt afzonderlijk samengesteld zodat consumers die geen
+ * voiceguide-self-check willen (campaign-strategist, persona-analyse) het
+ * ongebruikt kunnen laten. Content-generation pipeline (canvas-orchestrator)
+ * appendt het altijd wanneer voiceguide of brand-name beschikbaar is.
+ */
+export function buildVoiceSelfCheckDirective(ctx: BrandContextBlock): string {
+  const hasVoiceguide = !!ctx.brandVoiceguide;
+  const hasBrandName = !!ctx.brandName;
+  if (!hasVoiceguide && !hasBrandName) return '';
+
+  const lang = ctx.contentLanguage ?? 'en';
+  const isNl = lang === 'nl' || lang.startsWith('nl-');
+
+  const lines: string[] = [];
+  lines.push('## SELF-CHECK BEFORE RESPONDING — PERFORM MENTALLY, REVISE INLINE IF NEEDED');
+  if (isNl) {
+    if (hasVoiceguide) {
+      lines.push(
+        '1. **Voice-fingerprint match**: Komt het ritme + openingsstijl overeen met Writing sample [1] uit de Voice Fingerprint bovenaan? Zo nee → herschrijf de eerste alinea zodat het matched (zelfde zinslengte-patroon, zelfde type opening).',
+      );
+      lines.push(
+        '2. **Words we use frequency**: Verschijnen tenminste 2 termen uit "Words we use" per alinea? Zo nee → vervang generieke woorden door brand-eigen vocabulaire uit die lijst.',
+      );
+      lines.push(
+        '3. **Geen verboden termen**: Komen er termen uit "Words we avoid" of "Anti-patterns" voor? Zo ja → vervang ze door alternatieven uit het brand-vocabulaire.',
+      );
+    }
+    if (hasBrandName) {
+      lines.push(
+        `4. **Brand-naam aanwezig**: Komt "${ctx.brandName}" expliciet voor in de hoofdtekst (niet alleen impliciet via "wij")? Zo nee → introduceer de naam in de eerste of tweede alinea.`,
+      );
+    }
+    lines.push(
+      '5. **AI-clichés geschrapt**: Geen "in de wereld van vandaag", "het is belangrijk om", "samengevat", "ontdek hoe", etc.',
+    );
+  } else {
+    if (hasVoiceguide) {
+      lines.push(
+        '1. **Voice-fingerprint match**: Does the opening rhythm + style match Writing sample [1] from the Voice Fingerprint above? If not → rewrite the first paragraph to match (same sentence-length pattern, same opening type).',
+      );
+      lines.push(
+        '2. **Words we use frequency**: Do at least 2 terms from "Words we use" appear per paragraph? If not → replace generic words with brand-specific vocabulary from that list.',
+      );
+      lines.push(
+        '3. **No banned terms**: Do any terms from "Words we avoid" or "Anti-patterns" appear? If yes → replace them with alternatives from the brand vocabulary.',
+      );
+    }
+    if (hasBrandName) {
+      lines.push(
+        `4. **Brand name present**: Does "${ctx.brandName}" appear explicitly in the body (not just implicitly via "we")? If not → introduce the name in the first or second paragraph.`,
+      );
+    }
+    lines.push(
+      '5. **AI-clichés eliminated**: No "in today\'s world", "it is important to note", "in summary", "discover how", etc.',
+    );
+  }
+  lines.push('');
+  lines.push(
+    isNl
+      ? 'Als één van bovenstaande checks zou falen, herschrijf de tekst VOORDAT je antwoordt. De gegenereerde output moet ALLE checks halen.'
+      : 'If any of the above checks would fail, rewrite the text BEFORE responding. The generated output must pass ALL checks.',
+  );
+
+  return lines.join('\n');
 }
 
 // ─── Helpers ──────────────────────────────────────────────
