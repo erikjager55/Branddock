@@ -284,6 +284,15 @@ export interface FalStandaloneGenerationOptions {
    * via maxAnchorsForModel; caller is verantwoordelijk voor slicing.
    */
   referenceImageUrls?: string[];
+  /**
+   * F42d (audit 2026-05-14): Recraft-specific style param. Recraft V3
+   * heeft een structured `style` veld dat OUTPUT-aard bepaalt: 'any' |
+   * 'digital_illustration' | 'vector_illustration' | 'realistic_image' |
+   * 'icon'. Zonder dit produceert Recraft default photoreal, óók als de
+   * prompt om illustration vraagt. Caller (generate-visual route)
+   * mapped styleDirection-chip → Recraft style value.
+   */
+  recraftStyle?: 'any' | 'digital_illustration' | 'vector_illustration' | 'realistic_image' | 'icon';
 }
 
 /** Models that use aspect_ratio + resolution instead of image_size */
@@ -370,6 +379,11 @@ export async function generateFalImage(
       ? { aspect_ratio: toAspectRatio(imageSize), resolution: '1K' }
       : { image_size: imageSize }),
     ...(hasRefs ? { image_urls: refUrls } : {}),
+    // F42d: Recraft V3 structured style param (alleen meesturen voor Recraft;
+    // andere endpoints negeren of falen op onbekend veld).
+    ...(modelId === 'fal-ai/recraft-v3' && options?.recraftStyle
+      ? { style: options.recraftStyle }
+      : {}),
   };
 
   // F42 (audit 2026-05-13): resolve provider endpoint via registry —

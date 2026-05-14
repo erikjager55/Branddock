@@ -247,6 +247,25 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
+    // F42d (audit 2026-05-14): Recraft V3 heeft een structured `style` param
+    // die OUTPUT-aard bepaalt. Zonder dit produceert het default photoreal,
+    // óók wanneer prompt om illustration vraagt. Mapping styleDirection-chip
+    // → Recraft style value:
+    const chip = stack.visualBrief?.styleDirection ?? null;
+    const recraftStyle: 'any' | 'digital_illustration' | 'vector_illustration' | 'realistic_image' | 'icon' | undefined =
+      modelId === 'fal-ai/recraft-v3'
+        ? chip === 'illustration'
+          ? 'digital_illustration'
+          : chip === 'infographic' || chip === 'data-driven'
+            ? 'vector_illustration'
+            : chip === 'quote-text'
+              ? 'icon'
+              : 'realistic_image'
+        : undefined;
+    if (recraftStyle) {
+      console.log(`[generate-visual] recraft style=${recraftStyle} (chip=${chip})`);
+    }
+
     const startMs = Date.now();
     const generated = await Promise.all(
       finalPrompts.map(async (prompt) => {
@@ -255,6 +274,7 @@ export async function POST(request: Request, { params }: RouteParams) {
             imageSize: falImageSize,
             numImages: 1,
             referenceImageUrls: referenceImageUrls.length > 0 ? referenceImageUrls : undefined,
+            recraftStyle,
           });
           const url = result.images?.[0]?.url;
           if (!url) return null;
