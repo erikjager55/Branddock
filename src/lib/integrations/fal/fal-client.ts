@@ -292,6 +292,34 @@ const ASPECT_RATIO_MODELS = new Set([
   'fal-ai/phota',
 ]);
 
+/**
+ * Per-model max prompt-length. Bewezen via empirische test (zie
+ * scripts/experiments/test-recraft-v3.ts):
+ *  - Recraft V3: 1000 chars hard cap (422 "String should have at most 1000 characters")
+ *  - Seedream V4: ~1000 chars (zelfde fal-stack)
+ *  - Ideogram V3: ~800 chars
+ *  - FLUX 2 Pro / Nano Banana / Phota: geen harde cap geobserveerd; safe ~3000
+ * Truncate beleefd, niet hard cuttend: split bij laatste punt/spatie binnen cap.
+ */
+const MAX_PROMPT_LENGTH_BY_MODEL: Record<string, number> = {
+  'fal-ai/recraft-v3': 1000,
+  'fal-ai/seedream-v4-5': 1000,
+  'fal-ai/ideogram-v3': 800,
+};
+const DEFAULT_MAX_PROMPT_LENGTH = 3000;
+
+function truncatePromptForModel(prompt: string, modelId: string): string {
+  const cap = MAX_PROMPT_LENGTH_BY_MODEL[modelId] ?? DEFAULT_MAX_PROMPT_LENGTH;
+  if (prompt.length <= cap) return prompt;
+  // Snijd af op laatste punt/spatie binnen cap zodat we niet midden in een
+  // woord stoppen.
+  const sliced = prompt.slice(0, cap);
+  const lastSentence = sliced.lastIndexOf('. ');
+  const lastSpace = sliced.lastIndexOf(' ');
+  const cutoff = lastSentence > cap * 0.7 ? lastSentence + 1 : lastSpace > cap * 0.8 ? lastSpace : cap;
+  return sliced.slice(0, cutoff).trim();
+}
+
 /** Map image_size preset to aspect_ratio string */
 function toAspectRatio(imageSize: string): string {
   const map: Record<string, string> = {
@@ -324,8 +352,17 @@ export async function generateFalImage(
   const refUrls = options?.referenceImageUrls ?? [];
   const hasRefs = refUrls.length > 0;
 
+  // F42c (audit 2026-05-14): truncate prompt naar model-specific cap.
+  // Recraft V3 / Seedream / Ideogram weigeren prompts > N chars met 422.
+  const truncatedPrompt = truncatePromptForModel(prompt, modelId);
+  if (truncatedPrompt.length < prompt.length) {
+    console.log(
+      `[fal-client] prompt truncated from ${prompt.length} → ${truncatedPrompt.length} chars for ${modelId}`,
+    );
+  }
+
   const input: Record<string, unknown> = {
-    prompt,
+    prompt: truncatedPrompt,
     num_images: options?.numImages ?? 1,
     output_format: 'png',
     ...(options?.seed != null ? { seed: options.seed } : {}),
