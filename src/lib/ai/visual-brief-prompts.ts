@@ -158,9 +158,14 @@ export function selectModelForStyle(chip: VisualStyleDirection | null): string {
       // specialist in readable in-image text + product realism.
       return 'fal-ai/seedream-v4-5';
     case 'illustration':
-      // Vector / drawn style — Recraft V3 is purpose-built; FLUX bias
-      // toward photoreal which fights the brief.
-      return 'fal-ai/recraft-v3';
+      // F42-final (audit 2026-05-14): switch illustration → Nano Banana Pro.
+      // Eigen head-to-head experiment 2026-05-14 toonde Nano Banana Pro
+      // composite 88 vs Recraft V3 digital_illustration 60 op identieke
+      // brief. Recraft produceerde wel goede style-match (88) maar
+      // catastrofale embedded-text (noText score 5). Nano Banana levert
+      // illustration + tekstvrij + sterke brandFit, plus 50% goedkoper
+      // ($0.02 vs $0.04). Recraft blijft beschikbaar via override.
+      return 'fal-ai/nano-banana-pro';
     case 'lifestyle':
     case 'behind-the-scenes':
     case 'ugc':
@@ -257,10 +262,12 @@ export function buildVisualBriefImagePrompts(
     ? `Campaign theme: ${truncate(subject.creativePlatform, 150)}.`
     : '';
 
-  // F36: hard no-text directive — voorkomt text-overlay hallucinations
-  // bij image-models die anders captions/signage zelf invullen.
-  const noTextDirective =
-    'CRITICAL: Absolutely no text, no captions, no signage, no typography, no words, no letters overlaid on the image anywhere. Photographic content only — pure visual storytelling without any embedded text.';
+  // F36: hard no-text directive — voorkomt text-overlay hallucinations.
+  // Korte variant (eerst, voor truncation-resistance) + lange variant
+  // (achteraan, voor model-met-meer-budget).
+  const noTextShort = 'NO TEXT IN IMAGE. NO captions, signage, typography, words or letters anywhere.';
+  const noTextLong =
+    'Pure visual storytelling without any embedded text — no captions, no signage, no typography overlays.';
 
   // Two compositional angles per chip — "close" focuses on the subject;
   // "wide" pulls back for environmental context. Both same chip, same
@@ -274,15 +281,20 @@ export function buildVisualBriefImagePrompts(
   const promptCount = Math.max(1, Math.min(count, angles.length));
   const prompts: string[] = [];
   for (let i = 0; i < promptCount; i++) {
+    // F42e (audit 2026-05-14): prompt-ordening na issue met truncation +
+    // weak brand-look. Essentiële guards (style, no-text, visual-identity)
+    // eerst — die overleven de 1000-char truncation. Optionele context
+    // (platform, theme, freeText) gaat achteraan en mag wegvallen.
     const parts = [
-      styleInstruction,
-      `Subject: ${subjectSeed}.`,
-      platformBlock,
-      themeBlock,
-      angles[i],
-      freeText,
-      visualIdentity,
-      noTextDirective,
+      styleInstruction,            // ~150-200 chars
+      noTextShort,                 // ~80 chars — guard #1 binnen budget
+      visualIdentity,              // ~150 chars — brand-look signaal vooraan
+      `Subject: ${subjectSeed}.`,  // 400+ chars (de echte content)
+      angles[i],                   // ~80 chars
+      freeText,                    // ~200 chars (optioneel)
+      platformBlock,               // ~50 chars (optioneel)
+      themeBlock,                  // ~100 chars (optioneel)
+      noTextLong,                  // herhaling van guard voor lange-prompt modellen
     ].filter(Boolean);
     prompts.push(parts.join(' '));
   }

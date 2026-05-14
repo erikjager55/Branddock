@@ -175,6 +175,22 @@ Per playbook: `docs/playbooks/content-items-verification.md`.
 - **Verwacht effect**: 30-50% reductie in heading-overlap; lezer ervaart binnen 5 seconden "fundamenteel andere benaderingen".
 - **Severity**: P2 (UX-kwaliteit).
 
+### F42-final — Illustration chip swap Recraft V3 → Nano Banana Pro (gefixt op basis van head-to-head)
+- **Locatie**: `src/lib/ai/visual-brief-prompts.ts:selectModelForStyle`, `src/lib/ai/image-suggestion.ts:suggestImageApproach`.
+- **Aanleiding**: user-report dat Recraft V3 met `digital_illustration` style produceerde wel illustratie-stijl maar **vol embedded tekst** + zwakke brand-fit. F42c (prompt-truncate) + F42d (Recraft style param) waren nodig maar onvoldoende.
+- **Head-to-head experiment 2026-05-14** (6 modellen, één Napking illustration-brief, Sonnet Vision judge, 4-dim scoring):
+  - **Nano Banana Pro**: composite **88** (style 82 / brand 88 / noText 95 / subject 90) — $0.02, 22s
+  - Gemini 2.5 Flash Image native: 82 (text-render 98 ✓; subject 75)
+  - **Recraft V3 digital_illustration**: 60 (style 88 ✓ maar **noText 5** door embedded captions)
+  - FLUX 2 Pro: 58 (photoreal, faalt op style)
+  - Ideogram V3: 53 (photoreal, te luxe)
+  - Recraft V3 vector_illustration: SVG output (niet bruikbaar als blog/social hero)
+- **Fix**: `illustration` chip routet nu naar `fal-ai/nano-banana-pro` (was: `fal-ai/recraft-v3`). Banner-suggestion in F37 reflectt zelfde keuze.
+- **Cost-impact**: 50% lager per illustration ($0.04 → $0.02). Plus 47% hogere composite score op brand-fit.
+- **Recraft V3 blijft beschikbaar** via WorkspaceAiConfig override of expliciete `visualBrief.generate.model` keuze. Geschikt voor pure logo/icon/packaging use-cases waar text-rendering wenselijk is.
+- **Full report**: `docs/experiments/2026-05-14-illustration-models-report.md` (+ raw JSON + lokale gemini-image).
+- **Severity**: P1 (fixt user's "tekst in illustratie + niet Napking-stijl" feedback).
+
 ### F40-bis / F41-bis / F42-bis — Image-flow scope-cuts uitgewerkt (gefixt)
 - **F40-bis — Anchor-management UI in Brand Foundation**:
   - **Locatie**: `src/components/brand-foundation/BrandStyleAnchorsPanel.tsx` (NIEUW), wired in `BrandFoundationPage.tsx`.

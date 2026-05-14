@@ -1,0 +1,94 @@
+{
+  "results": [
+    {
+      "modelId": "recraft-v3-digital",
+      "label": "Recraft V3 (digital_illustration)",
+      "imageUrl": "https://v3b.fal.media/files/b/0a9a38e9/rbSpV-WDhs649SdlzwEcJ_image.webp",
+      "latencyMs": 8900,
+      "cost": "$0.04"
+    },
+    {
+      "modelId": "recraft-v3-vector",
+      "label": "Recraft V3 (vector_illustration)",
+      "imageUrl": "https://v3b.fal.media/files/b/0a9a38eb/fRJ-Qv4YD3I6Z3dZffTRk_image.svg",
+      "latencyMs": 19500,
+      "cost": "$0.04",
+      "skipJudge": true
+    },
+    {
+      "modelId": "nano-banana-pro",
+      "label": "Nano Banana Pro",
+      "imageUrl": "https://v3b.fal.media/files/b/0a9a38eb/ote_sJRcLp3D1VPkLNV7C_qB6Wwaj6.png",
+      "latencyMs": 21700,
+      "cost": "$0.02"
+    },
+    {
+      "modelId": "gemini-flash-image",
+      "label": "Gemini 2.5 Flash Image (native)",
+      "imageUrl": "file:///Users/erikjager/Projects/branddock-app/docs/experiments/images-2026-05-14/gemini-flash-image.png",
+      "latencyMs": 8300,
+      "cost": "$0.04"
+    },
+    {
+      "modelId": "flux-2-pro",
+      "label": "FLUX 2 Pro",
+      "imageUrl": "https://v3b.fal.media/files/b/0a9a38f0/Vz19RgPrUAlFJOWKFgLHp_6ehqrUh7.png",
+      "latencyMs": 18200,
+      "cost": "$0.03"
+    },
+    {
+      "modelId": "ideogram-v3",
+      "label": "Ideogram V3",
+      "imageUrl": "https://v3b.fal.media/files/b/0a9a38f1/-BRv5QJDF2uhnIfJFaghM_image.png",
+      "latencyMs": 13500,
+      "cost": "$0.04"
+    }
+  ],
+  "scores": [
+    {
+      "modelId": "recraft-v3-digital",
+      "styleMatch": 88,
+      "brandFit": 62,
+      "noTextCompliance": 5,
+      "subjectAccuracy": 72,
+      "composite": 60,
+      "reasoning": "Duidelijk illustratie-stijl met teal kleuraccenten die goed bij Napking passen, maar de afbeelding is overladen met embedded tekst en menu-borden die de brief direct overtreden. Manager en keukenpersoneel in witte kleding zijn aanwezig, maar de setting lijkt meer een bakkerij/counter dan een restaurant."
+    },
+    {
+      "modelId": "nano-banana-pro",
+      "styleMatch": 82,
+      "brandFit": 88,
+      "noTextCompliance": 95,
+      "subjectAccuracy": 90,
+      "composite": 88,
+      "reasoning": "Sterke illustratie-stijl met uitstekende brandfit: teal muurkleur, warme verlichting, ontspannen manager met teal shirt en keukenpersoneel zichtbaar via open keukenvenster. Vrijwel geen tekst, professionele maar niet-luxe sfeer — past goed bij Napking."
+    },
+    {
+      "modelId": "gemini-flash-image",
+      "styleMatch": 80,
+      "brandFit": 78,
+      "noTextCompliance": 98,
+      "subjectAccuracy": 75,
+      "composite": 82,
+      "reasoning": "Nette illustratie-stijl met teal keukenkasten en warme sfeer, geen tekst zichtbaar. De manager draagt echter een schort wat hem meer als kok positioneert dan als manager, en het keukenpersoneel draagt grijze schorten in plaats van vlekkeloos witte kokskleding."
+    },
+    {
+      "modelId": "flux-2-pro",
+      "styleMatch": 2,
+      "brandFit": 72,
+      "noTextCompliance": 92,
+      "subjectAccuracy": 88,
+      "composite": 58,
+      "reasoning": "Fotorealistisch beeld — voldoet niet aan de illustratie-stijlvereiste. Inhoudelijk sterk: ontspannen manager vooraan, keukenpersoneel in witte koksjassen op de achtergrond, teal kleuraccenten zichtbaar, maar de setting oogt iets te upscale/luxe voor Napking."
+    },
+    {
+      "modelId": "ideogram-v3",
+      "styleMatch": 3,
+      "brandFit": 58,
+      "noTextCompliance": 95,
+      "subjectAccuracy": 80,
+      "composite": 53,
+      "reasoning": "Eveneens fotorealistisch — niet de gevraagde illustratie-stijl. De sfeer is te luxe/fine-dining (gele tafelkleden, formeel pak met stropdas, glanzende keuken) wat niet aansluit bij Napking's no-nonsense positionering, hoewel teal accenten en keukenpersoneel aanwezig zijn."
+    }
+  ]
+}

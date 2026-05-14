@@ -130,15 +130,21 @@ export function suggestImageApproach(input: SuggestInput): ImageSuggestion {
 
   // ── 2. Style chip drives model-choice when distinctive ──────
   if (chip === 'illustration') {
-    const m = MODEL_META['recraft-v4'];
+    // F42-final (audit 2026-05-14): switch illustration → Nano Banana Pro.
+    // Head-to-head experiment toonde Nano Banana 88 vs Recraft 60 op
+    // identieke illustration-brief. Recraft heeft style-match (88) maar
+    // produceert overal embedded tekst (noText score 5) plus zwakkere
+    // brandFit. Nano Banana levert tekstvrije illustration + warm/
+    // professional sfeer + 50% goedkoper.
+    const m = MODEL_META['nano-banana-pro'];
     return {
       source: 'generate',
-      modelId: 'recraft-v4',
+      modelId: 'nano-banana-pro',
       modelLabel: m.label,
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
       reasoning:
-        'Recraft V4 is design-forward gebouwd voor brand-illustraties (logos, vector-art, packaging-stijl). Style-reference systeem houdt de look consistent over generaties.',
+        'Nano Banana Pro levert illustration-stijl met sterke brand-fit en geen tekst-overlay. Per onze head-to-head (mei 2026) scoort het composite 88 vs Recraft V3 60 op identieke brief — Recraft produceerde embedded captions die de output onbruikbaar maakten.',
     };
   }
 
