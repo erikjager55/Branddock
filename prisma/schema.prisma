@@ -4214,6 +4214,14 @@ model MediaAsset {
   aiDescription  String?       @db.Text
   aiTags         String[]
   dominantColors String[] // hex values
+
+  // Pattern G2 image-quality-chain (ADR pending) — semantic-search embedding
+  // van aiDescription via OpenAI text-embedding-3-small (1536-dim). Beheerd
+  // via raw SQL (zelfde patroon als BrandVoiceguide.centroidEmbedding).
+  // Gebruikt voor reuse-detection in Canvas Step 2: similar assets in
+  // library worden voorgesteld vóór een nieuwe image-generation start.
+  embedding         Unsupported("vector(1536)")?
+  embeddingComputedAt DateTime?
   source         MediaSource   @default(UPLOAD)
   sourceUrl      String?
   attribution    String? // Pexels/Unsplash credits

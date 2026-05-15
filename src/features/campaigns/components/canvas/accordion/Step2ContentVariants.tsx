@@ -8,6 +8,7 @@ import { VariantIndexOverrideProvider } from '../previews/InlineEditableSection'
 import { FeedbackBar } from '../FeedbackBar';
 import { VisualFidelityBadge } from '../VisualFidelityBadge';
 import { RefineImageButton } from '../RefineImageButton';
+import { ReuseDetectionBanner } from '../ReuseDetectionBanner';
 import { VisualFidelityDetail } from '../VisualFidelityDetail';
 import { Badge } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
@@ -676,6 +677,29 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
       {/* GENERATE source — empty state with "Generate visual" button */}
       {source === 'generate' && !hasImages && !isGenerating && (
         <div className="space-y-2">
+          {/* Pattern G2 image-quality-chain — reuse-detection banner.
+              Toont alleen wanneer briefingText ≥ 8 chars en semantic-search
+              ≥ 1 match boven 0.75 similarity oplevert. Dismissable. */}
+          <ReuseDetectionBanner
+            onPick={(selection) => {
+              const url = typeof selection.url === 'string' ? selection.url : '';
+              if (!url) return;
+              setImageVariants([
+                {
+                  index: 0,
+                  url,
+                  prompt: selection.alt ?? 'Reused from library',
+                  isSelected: true,
+                  aspectRatio: undefined,
+                },
+              ]);
+              setHeroImage({
+                url,
+                mediaAssetId: selection.mediaAssetId ?? null,
+                alt: selection.alt ?? undefined,
+              });
+            }}
+          />
           <p className="text-xs text-gray-500">
             {visualBrief.styleDirection
               ? `Generate 2 image variants in ${visualBrief.styleDirection.replace(/-/g, ' ')} style using the brand visual identity.`

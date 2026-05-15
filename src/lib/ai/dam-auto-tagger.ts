@@ -118,7 +118,7 @@ export async function tagMediaAssetIfPossible(mediaAssetId: string): Promise<voi
   try {
     const asset = await prisma.mediaAsset.findUnique({
       where: { id: mediaAssetId },
-      select: { id: true, fileUrl: true, mediaType: true, aiTags: true },
+      select: { id: true, fileUrl: true, mediaType: true, aiTags: true, workspaceId: true },
     });
     if (!asset || asset.mediaType !== 'IMAGE') return;
     // Skip wanneer al getagged (idempotent)
@@ -145,6 +145,18 @@ export async function tagMediaAssetIfPossible(mediaAssetId: string): Promise<voi
           ? analysis.dominantColors
           : undefined,
       },
+    });
+
+    // Pattern G2 image-quality-chain — genereer semantic-search embedding
+    // van aiDescription voor reuse-detection in Canvas Step 2. Fire-and-
+    // forget; failures spoilen tagging-flow niet (embedding is verrijking).
+    void import('@/lib/media/embedding-search').then(({ generateAndStoreMediaAssetEmbedding }) => {
+      void generateAndStoreMediaAssetEmbedding(mediaAssetId, asset.workspaceId).catch((err) => {
+        console.warn(
+          '[dam-auto-tagger] embedding generation failed:',
+          err instanceof Error ? err.message : err,
+        );
+      });
     });
   } catch (err) {
     console.warn(
