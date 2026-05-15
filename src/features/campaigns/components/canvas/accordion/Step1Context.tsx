@@ -9,12 +9,9 @@ import { WEBSITE_DELIVERABLE_TYPES } from '@/lib/ai/seo-pipeline.types';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
 import type { VisualBriefSource, VisualStyleDirection } from '@/lib/ai/canvas-context';
-import { suggestImageApproach, PHOTOGRAPHY_OPT_IN_COPY, type ImageSuggestion } from '@/lib/ai/image-suggestion';
+import { suggestImageApproach, SOURCE_LABELS, PHOTOGRAPHY_OPT_IN_COPY, type ImageSuggestion } from '@/lib/ai/image-suggestion';
 import { useConsistentModels } from '@/features/consistent-models/hooks';
-import {
-  getContentTypeImageDefaults,
-  getContentTypeAspectHint,
-} from '../../../constants/image-briefing-defaults';
+import { getContentTypeImageDefaults } from '../../../constants/image-briefing-defaults';
 import { ContentTypeInputFields } from '../../shared/ContentTypeInputFields';
 import {
   getContentTypeInputs,
@@ -1024,13 +1021,25 @@ function VisualBriefSection() {
   const freeText = visualBrief.styleDirectionFreeText ?? '';
   const briefingText = visualBrief.briefingText ?? '';
 
-  // Suggest-from-content button state. On click → POST suggest-visual-briefing,
-  // fill briefing-textarea with response. Conservative: empty / parse-error
-  // leaves the field unchanged.
+  // F-LinkedIn-1c (audit 2026-05-15): "Suggest setup" combines apply-
+  // recommendation + briefing fetch. One click → source + chip from
+  // suggestImageApproach are applied, and the briefing-textarea is filled
+  // from /api/studio/[id]/suggest-visual-briefing. Conservative: an empty
+  // or failed briefing response leaves the textarea unchanged.
   const [suggestLoading, setSuggestLoading] = React.useState(false);
   const [suggestError, setSuggestError] = React.useState<string | null>(null);
-  const handleSuggestBriefing = React.useCallback(async () => {
+
+  const defaults = React.useMemo(
+    () => getContentTypeImageDefaults(contentType),
+    [contentType],
+  );
+
+  const handleSuggestSetup = React.useCallback(async () => {
     if (!deliverableId) return;
+    if (defaults) {
+      setSource(defaults.source);
+      setStyleDirection(defaults.styleDirection);
+    }
     setSuggestLoading(true);
     setSuggestError(null);
     try {
@@ -1038,7 +1047,7 @@ function VisualBriefSection() {
         method: 'POST',
       });
       if (!res.ok) {
-        setSuggestError('Suggestion failed — try again later');
+        setSuggestError('Briefing suggestion failed — source and style still applied');
         return;
       }
       const data = (await res.json()) as { briefing?: string };
@@ -1047,30 +1056,12 @@ function VisualBriefSection() {
         setBriefingText(suggestion);
       }
     } catch (err) {
-      console.error('[VisualBriefSection] suggest-visual-briefing failed', err);
-      setSuggestError('Network error');
+      console.error('[VisualBriefSection] suggest-setup briefing failed', err);
+      setSuggestError('Network error — source and style still applied');
     } finally {
       setSuggestLoading(false);
     }
-  }, [deliverableId, setBriefingText]);
-
-  // Suggestion strip — content-type-aware defaults. Dismissible per session
-  // (not persisted) so power-users can hide the nudge without it returning
-  // every reload. See canvas-image-briefing-defaults task.
-  const [suggestionDismissed, setSuggestionDismissed] = React.useState(false);
-  const defaults = React.useMemo(
-    () => getContentTypeImageDefaults(contentType),
-    [contentType],
-  );
-  const aspectHint = React.useMemo(
-    () => getContentTypeAspectHint(contentType),
-    [contentType],
-  );
-  const suggestedChipLabel = React.useMemo(() => {
-    if (!defaults) return null;
-    if (!defaults.styleDirection) return 'no chip';
-    return STYLE_CHIPS.find((c) => c.value === defaults.styleDirection)?.label ?? defaults.styleDirection;
-  }, [defaults]);
+  }, [deliverableId, defaults, setSource, setStyleDirection, setBriefingText]);
 
   // Tailwind 4 in this project only safelists the teal/primary palette
   // (see globals.css @theme inline). Violet utilities get purged, so the
@@ -1093,84 +1084,55 @@ function VisualBriefSection() {
         steers both what the AI writes and what it generates.
       </p>
 
-      {/* F-LinkedIn-1b (audit 2026-05-15): model-suggestion banner verplaatst
-          naar TOP van Visual Brief — strategische source-advies eerst, voor
-          briefing/source/chip keuzes. Was eerder onderaan. */}
+      {/* F-LinkedIn-1c (audit 2026-05-15): single "Suggest setup" button at
+          the top of Visual Brief. One click applies the recommended source
+          and chip *and* fetches a briefing — combining the previous
+          chip-suggestion strip and the inline "Suggest from content"
+          briefing button into one entry point. */}
+      <button
+        type="button"
+        onClick={handleSuggestSetup}
+        disabled={suggestLoading || !deliverableId}
+        className="mb-3 w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded transition-colors disabled:opacity-50"
+        style={{
+          backgroundColor: suggestLoading ? '#e5e7eb' : ACTIVE_BG,
+          color: suggestLoading ? '#9ca3af' : ACTIVE_HEX,
+          border: `1px solid ${ACTIVE_BORDER}`,
+        }}
+      >
+        <Sparkles className="h-3.5 w-3.5" />
+        {suggestLoading ? 'Suggesting…' : 'Suggest setup from content'}
+      </button>
+
+      {/* F-LinkedIn-1b (audit 2026-05-15): banner sits at TOP of Visual
+          Brief — strategic source advice before briefing/source/chip. */}
       {visualBrief.source !== 'none' && (
         <ImageModelSuggestionBanner
           contentTypeId={contentType ?? null}
           styleDirection={filledChip}
+          currentSource={visualBrief.source}
+          onApplySource={setSource}
+          onApplyChip={(chip) => setStyleDirection(chip)}
         />
-      )}
-
-      {/* F-LinkedIn-1 (audit 2026-05-15): oude defaults-banner verwijderd. F37
-          ImageModelSuggestionBanner (boven) is single source of truth voor
-          model + cost + reasoning. Defaults voor chip-keuze gebruiken we als
-          "Use suggested chip" knop direct boven de chip-rij — geen aparte
-          banner-real-estate meer. */}
-      {defaults && !suggestionDismissed && filledChip === null && (
-        <div className="mb-3 text-[11px] flex items-center gap-2 px-2 py-1.5 rounded bg-slate-50 border border-slate-200">
-          <Sparkles className="h-3 w-3 text-slate-500 flex-shrink-0" />
-          <span className="text-slate-700">
-            Voorgestelde chip voor {contentType ?? 'dit content-type'}:{' '}
-            <span className="font-medium">{suggestedChipLabel}</span>
-            {aspectHint ? ` · ${aspectHint}` : ''}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              setSource(defaults.source);
-              setStyleDirection(defaults.styleDirection);
-              setSuggestionDismissed(true);
-            }}
-            className="ml-auto text-[11px] font-medium text-teal-700 hover:text-teal-800 underline"
-          >
-            Toepassen
-          </button>
-          <button
-            type="button"
-            onClick={() => setSuggestionDismissed(true)}
-            className="text-slate-400 hover:text-slate-600"
-            aria-label="Verberg"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </div>
       )}
 
       {/* Briefing — concrete subject description (overrules keyMessage as
           subject-seed in image-prompt builder). Distinct from style hints
           below (style notes belong in styleDirectionFreeText). */}
       <div className="space-y-1.5 mb-4">
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-            Briefing
-          </p>
-          <button
-            type="button"
-            onClick={handleSuggestBriefing}
-            disabled={suggestLoading || !deliverableId}
-            className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded transition-colors disabled:opacity-50"
-            style={{
-              backgroundColor: suggestLoading ? '#e5e7eb' : ACTIVE_BG,
-              color: suggestLoading ? '#9ca3af' : ACTIVE_HEX,
-              border: `1px solid ${ACTIVE_BORDER}`,
-            }}
-          >
-            <Sparkles className="h-3 w-3" />
-            {suggestLoading ? 'Suggesting…' : 'Suggest from content'}
-          </button>
-        </div>
+        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+          Briefing
+        </p>
         <textarea
           value={briefingText}
           onChange={(e) => setBriefingText(e.target.value || null)}
-          placeholder="Beschrijf wat het beeld moet tonen — wie, waar, wat, sfeer"
+          placeholder="Describe what the visual should show — who, where, what, mood"
           rows={2}
           className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 resize-y"
           style={{ outlineColor: ACTIVE_HEX }}
         />
         <p className="text-[11px] text-gray-500">
-          Subject voor het beeld. Overrules je key-message als ingevuld.
+          Subject for the visual. Overrules your key message when filled.
         </p>
         {suggestError && (
           <p className="text-[11px] text-red-600">{suggestError}</p>
@@ -1270,17 +1232,24 @@ function VisualBriefSection() {
   );
 }
 
-// ─── F37 (audit 2026-05-13): chip-aware model-suggestion banner ──────
-// Toont per content-type + chip-keuze + LoRA-availability welke
-// generation-approach het beste past. Pure informatie + transparantie;
-// niet auto-applied. Photography opt-in onderaan, subtiel.
+// F37 (audit 2026-05-13) + F-LinkedIn-1c (2026-05-15):
+// Banner reports the *actual* selected source first, then surfaces
+// Branddock's recommendation as either confirmation (match) or a
+// one-click apply (divergence). Model-detail only appears for sources
+// where it matters (generate / trained-style).
 
 function ImageModelSuggestionBanner({
   contentTypeId,
   styleDirection,
+  currentSource,
+  onApplySource,
+  onApplyChip,
 }: {
   contentTypeId: string | null;
   styleDirection: VisualStyleDirection | null;
+  currentSource: VisualBriefSource;
+  onApplySource: (source: VisualBriefSource) => void;
+  onApplyChip: (chip: VisualStyleDirection | null) => void;
 }) {
   const { data: modelsData } = useConsistentModels();
   const hasTrainedLora = React.useMemo(() => {
@@ -1288,7 +1257,6 @@ function ImageModelSuggestionBanner({
     return models.some((m) => m.status === 'READY' && m.triggerWord);
   }, [modelsData]);
 
-  // F40 (audit 2026-05-13): brand-style anchor count voor status-indicator.
   const [anchorCount, setAnchorCount] = React.useState<number | null>(null);
   React.useEffect(() => {
     let cancelled = false;
@@ -1315,27 +1283,53 @@ function ImageModelSuggestionBanner({
     [contentTypeId, styleDirection, hasTrainedLora],
   );
 
-  // Model-detail block alleen tonen wanneer source = generate of trained-style;
-  // bij andere sources is model irrelevant.
+  const sourceMatches = currentSource === suggestion.source;
+  // Model-detail only matters when the *active* source is one that uses an
+  // AI model. If user picked upload/library/url/stock the model line is
+  // misleading, so hide it.
   const showModelDetail =
-    suggestion.source === 'generate' || suggestion.source === 'trained-style';
+    sourceMatches && (currentSource === 'generate' || currentSource === 'trained-style');
 
   return (
     <div className="mb-4 rounded-md bg-slate-50 border border-slate-200 p-3">
       <div className="flex items-start gap-2">
         <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0 text-slate-600" />
         <div className="flex-1 min-w-0">
-          {/* PRIMARY — source advies. Strategische keuze eerst. */}
+          {/* PRIMARY — always reflect the actual selected source. */}
           <p className="text-xs font-semibold text-slate-900">
-            Branddock adviseert source: <span className="text-teal-700">{suggestion.sourceLabel}</span>
+            Current source: <span className="text-teal-700">{SOURCE_LABELS[currentSource]}</span>
           </p>
-          <p className="text-[11px] mt-1 text-slate-700 leading-relaxed">{suggestion.sourceReasoning}</p>
 
-          {/* SECONDARY — model-detail alleen wanneer source = generate/trained */}
+          {sourceMatches ? (
+            <p className="text-[11px] mt-1 text-slate-700 leading-relaxed">
+              <span className="font-medium text-emerald-700">Matches Branddock&apos;s recommendation.</span>{' '}
+              {suggestion.sourceReasoning}
+            </p>
+          ) : (
+            <div className="mt-1.5 rounded border border-amber-200 bg-amber-50 px-2 py-1.5">
+              <p className="text-[11px] text-amber-900">
+                Branddock recommends:{' '}
+                <span className="font-medium">{suggestion.sourceLabel}</span> — {suggestion.sourceReasoning}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  onApplySource(suggestion.source);
+                  onApplyChip(styleDirection);
+                }}
+                className="mt-1 text-[11px] font-medium text-amber-800 hover:text-amber-900 underline"
+              >
+                Apply recommendation
+              </button>
+            </div>
+          )}
+
+          {/* SECONDARY — model-detail only when active source uses a model */}
           {showModelDetail && (
             <div className="mt-2.5 pt-2 border-t border-slate-200/70">
               <p className="text-[11px] text-slate-600">
-                Bij deze source kiest Branddock: <span className="font-medium text-slate-800">{suggestion.modelLabel}</span>
+                For this source, Branddock picks:{' '}
+                <span className="font-medium text-slate-800">{suggestion.modelLabel}</span>
                 <span className="ml-1.5 text-slate-500">~${suggestion.costPerImageUsd.toFixed(2)}/image</span>
               </p>
               <p className="text-[11px] mt-0.5 text-slate-500 leading-relaxed">{suggestion.modelReasoning}</p>
@@ -1354,25 +1348,26 @@ function ImageModelSuggestionBanner({
             </div>
           )}
 
-          {/* F40 — brand-style anchor status (alleen relevant voor source met multi-ref) */}
           {anchorCount !== null && showModelDetail && (
             <div className="mt-2 text-[10px] text-slate-500">
               {anchorCount > 0 ? (
                 <>
-                  <span className="font-medium text-emerald-700">{anchorCount} brand-style anchor{anchorCount === 1 ? '' : 's'} actief</span>{' '}
-                  — elke generation gebruikt deze als style-reference voor consistente brand-look.
+                  <span className="font-medium text-emerald-700">
+                    {anchorCount} brand-style anchor{anchorCount === 1 ? '' : 's'} active
+                  </span>{' '}
+                  — each generation uses these as style reference for a consistent brand look.
                 </>
               ) : (
                 <>
-                  <span className="font-medium text-amber-700">Geen brand-style anchors</span> —
-                  configureer 3-10 reference-images via Brand Foundation voor hardere consistency over campagnes.
+                  <span className="font-medium text-amber-700">No brand-style anchors</span> —
+                  configure 3–10 reference images in Brand Foundation for stronger cross-campaign consistency.
                 </>
               )}
             </div>
           )}
 
-          {/* Photography opt-in — subtiel, NIET als default-suggestion */}
-          {suggestion.source !== 'photography-request' && (
+          {/* Photography opt-in — subtle, never a default suggestion */}
+          {currentSource !== 'photography-request' && suggestion.source !== 'photography-request' && (
             <p className="mt-2 text-[10px] text-slate-400 italic">
               {PHOTOGRAPHY_OPT_IN_COPY.label}{' '}
               <span className="text-slate-500">{PHOTOGRAPHY_OPT_IN_COPY.description}</span>
