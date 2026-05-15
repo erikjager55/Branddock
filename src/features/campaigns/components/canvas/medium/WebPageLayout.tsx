@@ -8,6 +8,7 @@ import { SimpleMarkdown } from '../previews/SimpleMarkdown';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import {
+  AlertTriangle,
   CheckCircle2,
   ImagePlus,
   Play,
@@ -40,6 +41,12 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
   const heroImage = useCanvasStore((s) => s.heroImage);
   const setInsertImageModalOpen = useCanvasStore((s) => s.setInsertImageModalOpen);
   const config = useCanvasStore((s) => s.mediumConfigValues);
+  const fidelityThresholdMet = useCanvasStore((s) => s.fidelityScore.thresholdMet);
+  const fidelityStage = useCanvasStore((s) => s.fidelityScore.stage);
+  const fidelityCompositeScore = useCanvasStore((s) => s.fidelityScore.compositeScore);
+  const fidelityThreshold = useCanvasStore((s) => s.fidelityScore.compositeThreshold);
+  const belowThreshold =
+    fidelityStage === 'complete' && fidelityThresholdMet === false;
 
   const { generate } = useCanvasOrchestration(deliverableId ?? null);
   const hasExistingContent = variantGroups.size > 0;
@@ -357,7 +364,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
           <span className="text-xs font-semibold text-gray-600">Article Preview</span>
           {textEntries.length > 0 && (
             <span className="text-xs text-emerald-600 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3" /> Live preview
+              <CheckCircle2 className="h-3 w-3" /> Reflects Step 2 selection
             </span>
           )}
         </div>
@@ -369,15 +376,40 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
         </div>
       </div>
 
-      {/* Confirm button */}
-      <button
-        type="button"
-        onClick={handleConfirm}
-        className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
-      >
-        <CheckCircle2 className="h-4 w-4" />
-        Confirm & Continue
-      </button>
+      {/* Fidelity warning — surfaces below-threshold content next to CTA
+          so the user knows what they are committing to. Mirrors the
+          MediumConfigLayout treatment for consistency across Step 3
+          layouts. */}
+      {belowThreshold && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5 text-amber-600" />
+          <div>
+            <p className="font-medium">
+              Brand fidelity {fidelityCompositeScore ?? '?'}/100 — below your threshold ({fidelityThreshold ?? 75})
+            </p>
+            <p className="mt-0.5 text-amber-800">
+              You can still continue, but consider regenerating from Step 2 with feedback to lift the score before publishing.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Sticky Confirm button — keeps the decisive CTA in view on long
+          article previews. Colour-coded by fidelity-readiness. */}
+      <div className="sticky bottom-0 -mx-1 pt-3 pb-1 px-1 bg-gradient-to-t from-white via-white to-white/0">
+        <button
+          type="button"
+          onClick={handleConfirm}
+          className={
+            belowThreshold
+              ? 'w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium border-2 border-amber-500 text-amber-700 bg-amber-50 hover:bg-amber-100 shadow-sm'
+              : `w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium shadow-sm ${STUDIO.generateButton}`
+          }
+        >
+          {belowThreshold ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+          {belowThreshold ? 'Continue anyway' : 'Confirm & Continue'}
+        </button>
+      </div>
     </div>
   );
 }

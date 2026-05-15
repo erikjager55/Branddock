@@ -9,28 +9,7 @@ import { InlineEditableSection, useEditableEntry } from './InlineEditableSection
 import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, MoreHorizontal } from 'lucide-react';
-
-// AI variants sometimes emit the hook as both its own `hook` component
-// AND as the first line of `body`. Rendering both produces a duplicate
-// headline. We strip the prefix only at display time — the underlying
-// entry stays intact so inline-edit shows the full body text.
-function dedupeBodyPrefix(body: string, headline?: string): string {
-  if (!headline) return body;
-  const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
-  const headTrim = norm(headline);
-  if (!headTrim) return body;
-  // Match the headline at the very start of the body (markdown-friendly:
-  // optional leading bold/heading markers + whitespace).
-  const stripped = body.trimStart();
-  const lower = stripped.toLowerCase();
-  const headLen = headTrim.length;
-  if (norm(stripped.slice(0, headLen + 2)).startsWith(headTrim)) {
-    // Drop the matching prefix plus any trailing punctuation + newlines.
-    const rest = stripped.slice(lower.indexOf(headTrim) + headLen).replace(/^[\s.,;:!?]+/, '');
-    return rest.length > 0 ? rest : body;
-  }
-  return body;
-}
+import { dedupeBodyPrefix } from './preview-utils';
 
 /**
  * LinkedIn organic post mockup — styled to match the real LinkedIn feed.

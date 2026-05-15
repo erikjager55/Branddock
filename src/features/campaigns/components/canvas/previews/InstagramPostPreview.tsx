@@ -8,6 +8,7 @@ import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from 'lucide-rea
 import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
 import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
+import { dedupeBodyPrefix } from './preview-utils';
 
 /**
  * Instagram feed post mockup — styled to match the real Instagram app.
@@ -29,7 +30,7 @@ export function InstagramPostPreview({ previewContent, isGenerating, heroImage, 
 
   if (isGenerating) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200">
+      <div className="bg-white rounded-lg border border-gray-200 mx-auto w-full" style={{ maxWidth: '470px' }}>
         <div className="animate-pulse space-y-3 p-3">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-full bg-gray-200" />
@@ -43,7 +44,7 @@ export function InstagramPostPreview({ previewContent, isGenerating, heroImage, 
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mx-auto w-full" style={{ maxWidth: '470px' }}>
       {/* Profile header */}
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-2.5">
@@ -97,7 +98,7 @@ export function InstagramPostPreview({ previewContent, isGenerating, heroImage, 
             render={(text) => (
               <p className="text-xs text-gray-900 leading-relaxed">
                 <span className="font-semibold">{brandHandle} </span>
-                <span>{stripMarkdownForPlainText(text)}</span>
+                <span>{stripMarkdownForPlainText(dedupeBodyPrefix(text, hookLineEntry?.content))}</span>
               </p>
             )}
           />

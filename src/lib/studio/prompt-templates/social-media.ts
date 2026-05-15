@@ -632,6 +632,7 @@ Instagram algorithm priorities (2025-2026): Saves are the #1 ranking signal (a s
 ## STRUCTURE SKELETON
 - **First line / Hook** (10-15 words): This is the only text visible before "...more." It MUST be compelling enough to earn the tap. Bold claim, question, or vulnerable opener.
 - **Micro-story or insight** (40-80 words): 2-3 short paragraphs developing the hook. Use line breaks between paragraphs. Write conversationally — as if talking to one person, not broadcasting to thousands.
+  - **Opening line of micro-story MUST be declarative** — a concrete scene, observation, or fact. NEVER open by repeating or rephrasing the hook. The hook earns the tap; the body earns the save by showing evidence. Example: hook is "I almost deleted this post three times." then body opens with "Because being honest about failure isn't exactly 'on brand.'" — NOT "But have you ever wondered why we hesitate to post the real stuff?"
 - **Value or lesson** (20-40 words): The takeaway. What should the reader remember or do differently?
 - **CTA** (10-20 words): Specific action — "Save this for later", "Share with your business bestie", "Drop a fire emoji if you agree", "Comment your biggest challenge below."
 - **Line break**
@@ -672,6 +673,7 @@ Image direction: Behind-the-scenes photo of a team at a whiteboard, slightly mes
 
 ## ANTI-PATTERNS — NEVER DO THIS
 - NEVER front-load hashtags at the beginning of the caption — they belong at the bottom, separated by line breaks
+- NEVER repeat the hook as the first line of the caption body — the body must move the story forward, not restate the opener
 - NEVER use only broad hashtags like #love #inspo #motivation — these are useless for discoverability
 - NEVER write walls of text without line breaks — Instagram is a MOBILE platform, white space is critical
 - NEVER use the first line for context-setting ("Today I want to talk about...") — the first line must HOOK

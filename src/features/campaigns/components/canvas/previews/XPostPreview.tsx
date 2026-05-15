@@ -25,7 +25,7 @@ export function XPostPreview({ previewContent, isGenerating, heroImage, onAddIma
 
   if (isGenerating) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200">
+      <div className="bg-white rounded-lg border border-gray-200 mx-auto w-full" style={{ maxWidth: '598px' }}>
         <div className="p-4 animate-pulse space-y-3">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-gray-200" />
@@ -43,7 +43,7 @@ export function XPostPreview({ previewContent, isGenerating, heroImage, onAddIma
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mx-auto w-full" style={{ maxWidth: '598px' }}>
       <div className="p-4">
         {/* Header — avatar + name + handle + time */}
         <div className="flex items-start justify-between mb-2">

@@ -41,7 +41,7 @@ export function LinkedInAdPreview({ previewContent, heroImage, onAddImage, isGen
 
   if (isGenerating) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm mx-auto w-full" style={{ maxWidth: '555px' }}>
         <div className="p-4 animate-pulse space-y-3">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-full bg-gray-200" />
@@ -60,7 +60,7 @@ export function LinkedInAdPreview({ previewContent, heroImage, onAddImage, isGen
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mx-auto w-full" style={{ maxWidth: '555px' }}>
       {/* Advertiser header — LinkedIn style */}
       <div className="px-4 pt-3 pb-2">
         <div className="flex items-start justify-between">
