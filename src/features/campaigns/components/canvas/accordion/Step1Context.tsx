@@ -1127,20 +1127,29 @@ function VisualBriefSection() {
           manual → normal form (source picker, chips, separate briefing) */}
 
       {setupState === 'initial' && (
-        <button
-          type="button"
-          onClick={handleSuggestSetup}
-          disabled={suggestLoading || !deliverableId}
-          className="mb-3 w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded transition-colors disabled:opacity-50"
-          style={{
-            backgroundColor: suggestLoading ? '#e5e7eb' : ACTIVE_BG,
-            color: suggestLoading ? '#9ca3af' : ACTIVE_HEX,
-            border: `1px solid ${ACTIVE_BORDER}`,
-          }}
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          {suggestLoading ? 'Suggesting…' : 'Suggest setup from content'}
-        </button>
+        <div className="mb-3 space-y-2">
+          <button
+            type="button"
+            onClick={handleSuggestSetup}
+            disabled={suggestLoading || !deliverableId}
+            className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded transition-colors disabled:opacity-50"
+            style={{
+              backgroundColor: suggestLoading ? '#e5e7eb' : ACTIVE_BG,
+              color: suggestLoading ? '#9ca3af' : ACTIVE_HEX,
+              border: `1px solid ${ACTIVE_BORDER}`,
+            }}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            {suggestLoading ? 'Suggesting…' : 'Suggest setup from content'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSetupState('manual')}
+            className="w-full text-center text-[11px] text-slate-500 hover:text-slate-700 underline"
+          >
+            Or set it up manually
+          </button>
+        </div>
       )}
 
       {setupState === 'suggested' && (
