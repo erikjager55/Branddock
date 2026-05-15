@@ -36,18 +36,24 @@ const ANGLE_GENERATOR_SYSTEM_PROMPT = `Je bent een Nederlandse senior creatief s
 
 Een "angle" is een hoek waaruit je het verhaal vertelt — niet een samenvatting van de inhoud, maar een framing-keuze die de hele tekst vormgeeft.
 
-Twee goede angles voor dezelfde briefing zijn maximaal onderscheidend op:
-- **Opening hook** (statistiek vs persoonlijke observatie vs zintuiglijke beschrijving vs provocatie)
-- **Emotioneel register** (trots vs urgentie vs verwondering vs nuchterheid)
-- **Bewijsvoering** (cijfers/data vs verhaal/anekdote vs metafoor vs case)
-- **Lezer-rol** (expert/peer vs leerling vs partner vs jurylid)
+# KRITISCH — POLARISATIE-REGEL
+De twee angles MOETEN op minstens twee assen *tegenovergestelde* posities innemen. Niet "iets anders", maar **tegenpolen**. Een lezer die A leest en daarna B leest moet voelen: "deze posts vechten met elkaar, ze passen niet in dezelfde redactie".
 
-Output: exact 2 angles. Label kort (2-4 woorden NL, gebruik "&" als verbinder waar passend). Approach: 1-2 zinnen die de hele tekst-richting bepalen.
+Kies bewust uit tegenstellings-paren:
+- **Hook-stijl**: statistiek/data ⇄ persoonlijke anekdote · provocatie/conflict ⇄ uitnodiging/vraag · scènefoto ⇄ abstracte stelling
+- **Emotioneel register**: urgentie/alarm ⇄ rust/reflectie · trots/macht ⇄ kwetsbaarheid/twijfel · scherp/contrarian ⇄ warm/samenwerkend
+- **Bewijsvoering**: cijfers/ROI ⇄ verhaal/scene · framework/lijst ⇄ doorlopende monoloog · klant-case ⇄ branche-observatie
+- **Lezer-rol**: expert die je iets leert ⇄ peer die met je meedenkt · jury die je overtuigt ⇄ vriend die je waarschuwt
+- **Tijdsoriëntatie**: nu/urgentie ⇄ over 5 jaar/visie · gisteren-anekdote ⇄ tijdloos principe
 
-Voorbeelden van sterke angles voor verschillende briefings:
-- Voor een corporate vastgoed-pitch: { label: "Schaal & trots", approach: "Open met bouw-cijfers en statige toon, eindig op collective ambition." } versus { label: "Daglicht & lucht", approach: "Open met zintuiglijk frame ('lichtval om half negen'), persoonlijke observatie, ruimte-metaforen." }
-- Voor een SaaS feature-launch: { label: "Tijdwinst & rust", approach: "Praktische voor-na vergelijking met concrete uren-besparing." } versus { label: "Macht & controle", approach: "Power-fantasie van complete oversight, dashboard als commandocentrum." }
-- Voor een case study: { label: "Cijfers & impact", approach: "Data-driven voor-na, % stijging, ROI." } versus { label: "Mens & moment", approach: "Verhaal van één klant, scene-setting, doorbraakmoment." }
+Forbidden: "praktisch & nuchter" naast "professioneel & duidelijk" (synoniemen), of "tijdwinst" naast "efficiëntie" (zelfde frame). Voelt vlak.
+
+Output: exact 2 angles. Label kort (2-4 woorden NL, gebruik "&" als verbinder waar passend). Approach: 1-2 zinnen die de hele tekst-richting bepalen — benoem expliciet welke tegenstellings-as je hier kiest.
+
+Voorbeelden van échte polarisatie:
+- Vastgoed-pitch: { label: "Schaal & trots", approach: "Hook met bouw-cijfers, statige toon, lezer als jury die imponeerwaarde beoordeelt." } versus { label: "Daglicht & lucht", approach: "Open met zintuiglijk frame ('lichtval om half negen'), persoonlijke observatie, lezer als toekomstige bewoner die de ruimte voelt." } — *as: data-jury vs zintuig-bewoner*
+- SaaS launch: { label: "Tijdwinst & rust", approach: "Voor-na in concrete uren, framework-lijst, lezer als peer-operator." } versus { label: "Macht & controle", approach: "Power-fantasie, één persoonlijk doorbraak-moment, lezer als ambitieuze leader." } — *as: rust vs macht / lijst vs verhaal*
+- Horeca textiel-service: { label: "Cijfers & verlies", approach: "Open met % rejects/extra spoedwerk-kosten, contrarian stelling 'goedkoop is duurst', lezer als jury van inkoopbeslissing." } versus { label: "Vrijdagavond stress", approach: "Scène: keuken op piek, kok grijpt naast schone theedoek, lezer als peer die het herkent." } — *as: data-jury vs scène-peer*
 
 Return ONLY valid JSON, geen preamble.`;
 
@@ -153,12 +159,19 @@ export function formatAngleInstruction(angle: CreativeAngle): string {
     '',
     'Schrijf de volledige content vanuit deze angle. Maak duidelijke keuzes die deze hoek versterken — opening, register, bewijsvoering, ritme, alles. Een lezer moet "Schaal & trots" anders ervaren dan "Daglicht & lucht" zelfs als de feiten hetzelfde zijn.',
     '',
-    // F26 (audit 2026-05-13): expliciete divergence-directive op section-niveau.
-    // Voorheen waren beide varianten naar identieke kopjes geconvergeerd ("De
-    // verborgen tijdkosten", "HACCP-compliance", etc) ondanks verschillende
-    // angles, doordat F21/F22 voice-match prioriteerden boven structurele
-    // diversity. Deze instructie dwingt expliciet ander structuurpatroon.
-    '**Structurele divergentie (kritiek):** Een sibling-variant uit een andere creative angle genereert parallel. Kies BEWUST een ander structuurpatroon dan een logisch-evidente blog-structuur:',
+    // F-variant-polarize (audit 2026-05-15): de angle-generator forceert
+    // tegenstellings-paren. De main-LLM heeft de neiging om beide varianten
+    // naar een veilig midden te trekken (vergelijkbare tone, vergelijkbare
+    // structuur) waardoor het polarisatie-werk in de angle-stap weer wegloopt.
+    // Deze directive zegt expliciet: pak je positie, leun erin, geen
+    // middenweg.
+    '**TEGENPOOL-DIRECTIVE (kritiek):** Een sibling-variant uit een tégen-overgestelde creative angle wordt parallel gegenereerd. Jouw taak is NIET een nette compromis-tekst maar een onverbloemde positie aan jouw kant van de tegenstelling.',
+    '- Als jouw angle "data/cijfers" is → jouw sibling is "scène/anekdote". Schrijf zonder schaamte vol met cijfers, percentages, ROI. Geen verzachtende verhaal-anekdotes "om het toegankelijk te houden".',
+    '- Als jouw angle "urgentie/alarm" is → jouw sibling is "rust/reflectie". Schrijf urgent, scherp, alarm. Geen geruststellende slot-alinea.',
+    '- Als jouw angle "contrarian/conflict" is → jouw sibling is "samenwerkend/uitnodigend". Open met de provocatie, eindig met de provocatie. Geen "natuurlijk respecteren wij..." disclaimer.',
+    'Een sterke variant durft 70% naar één pool. Voorzichtig in het midden = beide varianten voelen hetzelfde = waardeloos.',
+    '',
+    '**Structurele divergentie (kritiek):** Kies BEWUST een ander structuurpatroon dan een logisch-evidente blog-structuur:',
     '- Vermijd dezelfde subkop-tekst als sibling kan verzinnen ("De verborgen kosten", "Hoe het werkt", "HACCP-compliance" zijn voor de hand liggend — kies een minder voor-de-hand-liggende sectionering).',
     '- Kies één structuurarchetype: **framework** (subkopjes + lijsten + checklist) **of** **narrative** (verhaal + scène + persoonlijk moment) **of** **comparison** (voor-na, A-vs-B) **of** **case-study** (één klant, concrete data, doorbraak) — dat past bij déze angle.',
     '- Lengte van alinea\'s + subsecties varieert: sommige angles dragen 2-3 lange alinea\'s zonder kopjes; andere dragen veel korte subsecties. Laat de angle de structuur bepalen, niet de "standaard blog-template".',
