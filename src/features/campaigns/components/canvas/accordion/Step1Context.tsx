@@ -1093,8 +1093,18 @@ function VisualBriefSection() {
         steers both what the AI writes and what it generates.
       </p>
 
+      {/* F-LinkedIn-1b (audit 2026-05-15): model-suggestion banner verplaatst
+          naar TOP van Visual Brief — strategische source-advies eerst, voor
+          briefing/source/chip keuzes. Was eerder onderaan. */}
+      {visualBrief.source !== 'none' && (
+        <ImageModelSuggestionBanner
+          contentTypeId={contentType ?? null}
+          styleDirection={filledChip}
+        />
+      )}
+
       {/* F-LinkedIn-1 (audit 2026-05-15): oude defaults-banner verwijderd. F37
-          ImageModelSuggestionBanner (verderop) is single source of truth voor
+          ImageModelSuggestionBanner (boven) is single source of truth voor
           model + cost + reasoning. Defaults voor chip-keuze gebruiken we als
           "Use suggested chip" knop direct boven de chip-rij — geen aparte
           banner-real-estate meer. */}
@@ -1212,16 +1222,8 @@ function VisualBriefSection() {
         </div>
       </div>
 
-      {/* F37 (audit 2026-05-13): chip-aware model-suggestion banner.
-          Toont aanbevolen model + reasoning op basis van content-type +
-          style-chip + workspace-LoRA-availability. Niet auto-applied;
-          informatief + cost-transparant. */}
-      {visualBrief.source !== 'none' && (
-        <ImageModelSuggestionBanner
-          contentTypeId={contentType ?? null}
-          styleDirection={filledChip}
-        />
-      )}
+      {/* F-LinkedIn-1b: banner is verplaatst naar top of Visual Brief
+          sectie. Hier slaan we de dubbele render over. */}
 
       {/* Style direction — chips + free text */}
       {visualBrief.source !== 'none' && (
@@ -1313,30 +1315,47 @@ function ImageModelSuggestionBanner({
     [contentTypeId, styleDirection, hasTrainedLora],
   );
 
+  // Model-detail block alleen tonen wanneer source = generate of trained-style;
+  // bij andere sources is model irrelevant.
+  const showModelDetail =
+    suggestion.source === 'generate' || suggestion.source === 'trained-style';
+
   return (
     <div className="mb-4 rounded-md bg-slate-50 border border-slate-200 p-3">
       <div className="flex items-start gap-2">
         <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0 text-slate-600" />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-slate-900">
-            Branddock adviseert: <span className="text-slate-700">{suggestion.modelLabel}</span>
-            <span className="ml-2 text-[11px] text-slate-500">~${suggestion.costPerImageUsd.toFixed(2)}/image</span>
+          {/* PRIMARY — source advies. Strategische keuze eerst. */}
+          <p className="text-xs font-semibold text-slate-900">
+            Branddock adviseert source: <span className="text-teal-700">{suggestion.sourceLabel}</span>
           </p>
-          <p className="text-[11px] mt-1 text-slate-600 leading-relaxed">{suggestion.reasoning}</p>
-          {suggestion.strengths.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {suggestion.strengths.map((s) => (
-                <span
-                  key={s}
-                  className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded bg-white border border-slate-200 text-slate-600"
-                >
-                  {s}
-                </span>
-              ))}
+          <p className="text-[11px] mt-1 text-slate-700 leading-relaxed">{suggestion.sourceReasoning}</p>
+
+          {/* SECONDARY — model-detail alleen wanneer source = generate/trained */}
+          {showModelDetail && (
+            <div className="mt-2.5 pt-2 border-t border-slate-200/70">
+              <p className="text-[11px] text-slate-600">
+                Bij deze source kiest Branddock: <span className="font-medium text-slate-800">{suggestion.modelLabel}</span>
+                <span className="ml-1.5 text-slate-500">~${suggestion.costPerImageUsd.toFixed(2)}/image</span>
+              </p>
+              <p className="text-[11px] mt-0.5 text-slate-500 leading-relaxed">{suggestion.modelReasoning}</p>
+              {suggestion.strengths.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {suggestion.strengths.map((s) => (
+                    <span
+                      key={s}
+                      className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded bg-white border border-slate-200 text-slate-600"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-          {/* F40 — brand-style anchor status */}
-          {anchorCount !== null && (
+
+          {/* F40 — brand-style anchor status (alleen relevant voor source met multi-ref) */}
+          {anchorCount !== null && showModelDetail && (
             <div className="mt-2 text-[10px] text-slate-500">
               {anchorCount > 0 ? (
                 <>
@@ -1353,10 +1372,12 @@ function ImageModelSuggestionBanner({
           )}
 
           {/* Photography opt-in — subtiel, NIET als default-suggestion */}
-          <p className="mt-2 text-[10px] text-slate-400 italic">
-            {PHOTOGRAPHY_OPT_IN_COPY.label}{' '}
-            <span className="text-slate-500">{PHOTOGRAPHY_OPT_IN_COPY.description}</span>
-          </p>
+          {suggestion.source !== 'photography-request' && (
+            <p className="mt-2 text-[10px] text-slate-400 italic">
+              {PHOTOGRAPHY_OPT_IN_COPY.label}{' '}
+              <span className="text-slate-500">{PHOTOGRAPHY_OPT_IN_COPY.description}</span>
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -33,13 +33,30 @@ export type SuggestedModelId =
 
 export interface ImageSuggestion {
   source: VisualBriefSource;
+  /** Mensentaal label voor source (NL). */
+  sourceLabel: string;
+  /** Waarom deze source past bij dit content-type. */
+  sourceReasoning: string;
   modelId: SuggestedModelId;
   modelLabel: string;
-  reasoning: string;
+  /** Waarom dit model wint binnen de gekozen source. Alleen relevant voor source=generate / trained-style. */
+  modelReasoning: string;
   costPerImageUsd: number;
   /** Extra strengths to surface in the banner ("text rendering excellent", etc) */
   strengths: string[];
 }
+
+const SOURCE_LABELS: Record<VisualBriefSource, string> = {
+  generate: 'AI genereren',
+  library: 'Bestaande asset uit Media Library',
+  upload: 'Eigen foto uploaden',
+  url: 'Foto importeren via URL',
+  stock: 'Stockfoto via Pexels',
+  compose: 'Compose — meerdere referentie-assets combineren',
+  'trained-style': 'Workspace trained-style model',
+  'photography-request': 'Echte foto laten maken (fotograaf-briefing)',
+  none: 'Geen visual',
+};
 
 interface SuggestInput {
   contentTypeId: string | null;
@@ -135,12 +152,14 @@ export function suggestImageApproach(input: SuggestInput): ImageSuggestion {
     const m = MODEL_META['trained-lora'];
     return {
       source: 'trained-style',
+      sourceLabel: SOURCE_LABELS['trained-style'],
+      sourceReasoning:
+        'Workspace heeft een trained model — dat levert de hoogste brand-consistency over campagnes. Stijl is écht herkenbaar als jouw merk in plaats van generieke AI.',
       modelId: 'trained-lora',
       modelLabel: m.label,
+      modelReasoning: 'Trained model = workspace-specifiek; sterker dan elk generiek model voor brand-look.',
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
-      reasoning:
-        'Je workspace heeft een trained model. Dit levert de hoogste brand-consistency over campagnes — de stijl is écht herkenbaar als jouw merk i.p.v. generieke AI-output.',
     };
   }
 
@@ -148,37 +167,38 @@ export function suggestImageApproach(input: SuggestInput): ImageSuggestion {
   const contentTypeId = input.contentTypeId ?? '';
 
   // ── 2. Style chip drives model-choice when distinctive ──────
+  const GENERATE_SOURCE_REASONING_DEFAULT =
+    'AI generation past goed bij standaard content-items: sneller dan stockfoto-zoeken, meer brand-controle dan losse uploads, lagere drempel dan fotograaf. Voor authenticity-critical content (case-studies, klant-verhalen) geldt photography als alternatief — zie opt-in onderaan.';
+
   if (chip === 'illustration') {
-    // F42-final (audit 2026-05-14): switch illustration → Nano Banana Pro.
-    // Head-to-head experiment toonde Nano Banana 88 vs Recraft 60 op
-    // identieke illustration-brief. Recraft heeft style-match (88) maar
-    // produceert overal embedded tekst (noText score 5) plus zwakkere
-    // brandFit. Nano Banana levert tekstvrije illustration + warm/
-    // professional sfeer + 50% goedkoper.
     const m = MODEL_META['nano-banana-pro'];
     return {
       source: 'generate',
+      sourceLabel: SOURCE_LABELS.generate,
+      sourceReasoning:
+        'Illustration past bij generate-flow: brand-style anchors of trained model is overkill voor visualisatie-content. AI levert sneller en consistent.',
       modelId: 'nano-banana-pro',
       modelLabel: m.label,
+      modelReasoning:
+        'Nano Banana Pro levert illustration-stijl met sterke brand-fit en geen tekst-overlay. Head-to-head 2026 toonde composite 88 vs Recraft V3 60 (Recraft produceerde embedded captions).',
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
-      reasoning:
-        'Nano Banana Pro levert illustration-stijl met sterke brand-fit en geen tekst-overlay. Per onze head-to-head (mei 2026) scoort het composite 88 vs Recraft V3 60 op identieke brief — Recraft produceerde embedded captions die de output onbruikbaar maakten.',
     };
   }
 
   if (chip === 'quote-text') {
-    // F42-final-2 (audit 2026-05-15): all-chips experiment toonde
-    // Ideogram V3 composite 78 vs Nano Banana 69 op typography-poster.
     const m = MODEL_META['ideogram-v3'];
     return {
       source: 'generate',
+      sourceLabel: SOURCE_LABELS.generate,
+      sourceReasoning:
+        'Quote-text + typography: AI generation is de enige praktische source. Library/upload mist creative-control op layout en typography-rendering.',
       modelId: 'ideogram-v3',
       modelLabel: m.label,
+      modelReasoning:
+        'Ideogram V3 is typography-specialist met crisp text-rendering, clean modern fonts en correct spacing. Head-to-head 2026: Ideogram +9pt vs Nano Banana op quote-poster briefs.',
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
-      reasoning:
-        'Ideogram V3 is typography-specialist met crisp text-rendering, clean modern fonts en correct spacing. Per onze head-to-head (mei 2026) wint Ideogram +9pt vs Nano Banana op quote-poster briefs.',
     };
   }
 
@@ -186,27 +206,31 @@ export function suggestImageApproach(input: SuggestInput): ImageSuggestion {
     const m = MODEL_META['nano-banana-2'];
     return {
       source: 'generate',
+      sourceLabel: SOURCE_LABELS.generate,
+      sourceReasoning:
+        'Infographic / data-viz vereist generate met text-rendering capable model — stock en library hebben zelden de specifieke data-presentatie die je nodig hebt.',
       modelId: 'nano-banana-2',
       modelLabel: m.label,
+      modelReasoning:
+        'Nano Banana 2 levert sterke data-viz output met world-knowledge accuracy. Marginale +1pt verschil met Ideogram V3 — Nano Banana wint op brandFit en is $0.02 goedkoper.',
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
-      reasoning:
-        'Nano Banana 2 levert sterke data-viz output met world-knowledge accuracy. Marginale +1pt verschil met Ideogram V3 — Nano Banana wint op brandFit en is $0.02 goedkoper.',
     };
   }
 
   if (chip === 'product-shot') {
-    // F42-final-2: all-chips experiment bevestigde Seedream V4 wint
-    // product-shot composite 88 (materialAccuracy 82, labelLegibility 92).
     const m = MODEL_META['seedream-v4'];
     return {
       source: 'generate',
+      sourceLabel: SOURCE_LABELS.generate,
+      sourceReasoning:
+        'Product-shot: AI generation als product nog niet bestaat of voor concept-renders. Voor échte producten in retail: photography of upload van studio-shoot is sterker.',
       modelId: 'seedream-v4',
       modelLabel: m.label,
+      modelReasoning:
+        'Seedream V4 is product-photography specialist met material-accurate textures en text-on-product label legibility. Head-to-head 2026 wint voor close-up product-shots met labels.',
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
-      reasoning:
-        'Seedream V4 is product-photography specialist met material-accurate textures en text-on-product label legibility. Per onze head-to-head (mei 2026) wint Seedream voor close-up product-shots met labels.',
     };
   }
 
@@ -215,29 +239,32 @@ export function suggestImageApproach(input: SuggestInput): ImageSuggestion {
     const m = MODEL_META['nano-banana-2'];
     return {
       source: 'generate',
+      sourceLabel: SOURCE_LABELS.generate,
+      sourceReasoning:
+        `${contentTypeId.replace(/-/g, ' ')} bevat doorgaans tekst-overlay (CTA, kop). AI generation met text-rendering specialist is hier de juiste source — stockfoto's missen je copy en upload van losse foto's vereist post-edit voor tekst.`,
       modelId: 'nano-banana-2',
       modelLabel: m.label,
+      modelReasoning:
+        'Nano Banana 2 produceert leesbare tekst waar FLUX 2 of Imagen 4 falen op tekst-overlay use-case.',
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
-      reasoning:
-        `${contentTypeId.replace(/-/g, ' ')} bevat vaak tekst-overlay. Nano Banana 2 produceert leesbare tekst waar FLUX 2 of Imagen 4 falen op deze use-case.`,
     };
   }
 
   // ── 4. Photoreal scene with people (lifestyle/behind-the-scenes/ugc) ──
   if (chip === 'lifestyle' || chip === 'behind-the-scenes' || chip === 'ugc') {
-    // F42-final-2: all-chips experiment toonde Phota composite 87 vs
-    // FLUX 2 Pro 77 op photoreal-with-people. Phota is photoreal
-    // specialist met sterkere authenticity en brand-fit (88).
     const m = MODEL_META.phota;
     return {
       source: 'generate',
+      sourceLabel: SOURCE_LABELS.generate,
+      sourceReasoning:
+        'Lifestyle / behind-the-scenes content: AI generation is snel + brand-controleerbaar. Voor klant-testimonials of authenticity-kritische content is photography sterker — zie opt-in onderaan.',
       modelId: 'phota',
       modelLabel: m.label,
+      modelReasoning:
+        'Phota is photoreal specialist voor authentic candid scenes met mensen. Head-to-head 2026: Phota +10pt vs FLUX 2 Pro op warm/professional briefs — sterker op authenticity en brand-fit.',
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
-      reasoning:
-        'Phota is photoreal specialist voor authentic candid scenes met mensen. Per onze head-to-head (mei 2026) wint Phota +10pt vs FLUX 2 Pro op warm/professional briefs — sterker op authenticity en brand-fit.',
     };
   }
 
@@ -246,12 +273,15 @@ export function suggestImageApproach(input: SuggestInput): ImageSuggestion {
     const m = MODEL_META['flux-2-pro'];
     return {
       source: 'generate',
+      sourceLabel: SOURCE_LABELS.generate,
+      sourceReasoning:
+        GENERATE_SOURCE_REASONING_DEFAULT,
       modelId: 'flux-2-pro',
       modelLabel: m.label,
+      modelReasoning:
+        'FLUX 2 Pro is safe photoreal default voor generic scenes zonder specifieke chip — geschikt voor lifestyle, scene-content en editorial-look.',
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
-      reasoning:
-        'FLUX 2 Pro is safe photoreal default voor generic scenes zonder specifieke chip. Geschikt voor lifestyle, scene-content en editorial-look images.',
     };
   }
 
@@ -259,11 +289,13 @@ export function suggestImageApproach(input: SuggestInput): ImageSuggestion {
   const m = MODEL_META['flux-2-pro'];
   return {
     source: 'generate',
+    sourceLabel: SOURCE_LABELS.generate,
+    sourceReasoning: GENERATE_SOURCE_REASONING_DEFAULT,
     modelId: 'flux-2-pro',
     modelLabel: m.label,
+    modelReasoning: 'Default keuze voor algemene image-generation.',
     costPerImageUsd: m.costPerImageUsd,
     strengths: m.strengths,
-    reasoning: 'Default keuze voor algemene image-generation.',
   };
 }
 
