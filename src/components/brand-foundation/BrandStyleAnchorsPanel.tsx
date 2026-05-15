@@ -76,7 +76,7 @@ export function BrandStyleAnchorsPanel() {
 
   const handleAdd = (asset: { id: string; fileUrl: string; name?: string | null }) => {
     if (anchors.length >= 10) {
-      setError('Maximum 10 anchors. Verwijder er eerst een.');
+      setError('Maximum 10 anchors. Remove one first.');
       return;
     }
     if (anchors.some((a) => a.mediaAssetId === asset.id)) {
@@ -92,7 +92,7 @@ export function BrandStyleAnchorsPanel() {
   };
 
   const count = anchors.length;
-  const countLabel = count < 3 ? `${count} (3-10 aanbevolen)` : `${count} actief`;
+  const countLabel = count < 3 ? `${count} (3-10 recommended)` : `${count} active`;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
@@ -112,9 +112,9 @@ export function BrandStyleAnchorsPanel() {
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-            3-10 referentie-images die representeren hoe de brand visueel hoort te voelen. Elke
-            image-generation injecteert deze als style-reference (Recraft / Nano Banana / FLUX 2)
-            voor consistente brand-look over campagnes.
+            3-10 reference images that represent how the brand should feel visually. Every image
+            generation injects these as style references (Recraft / Nano Banana / FLUX 2) for a
+            consistent brand look across campaigns.
           </p>
         </div>
         {saving && <Loader2 className="h-4 w-4 animate-spin text-purple-600" />}
@@ -150,8 +150,9 @@ export function BrandStyleAnchorsPanel() {
                   type="button"
                   onClick={() => handleRemove(anchor.mediaAssetId)}
                   disabled={saving}
-                  className="absolute top-1 right-1 p-1 rounded-full bg-white/90 hover:bg-red-50 text-gray-600 hover:text-red-600 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Verwijder anchor"
+                  className="absolute top-1 right-1 p-1 rounded-full bg-white/95 hover:bg-red-50 text-gray-700 hover:text-red-600 shadow-sm border border-gray-200 transition-colors"
+                  title="Remove anchor"
+                  aria-label="Remove anchor"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -165,15 +166,15 @@ export function BrandStyleAnchorsPanel() {
                 className="aspect-square rounded-md border-2 border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50 flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-purple-700 transition-colors disabled:opacity-50"
               >
                 <Plus className="h-5 w-5" />
-                <span className="text-[10px] font-medium">Voeg toe</span>
+                <span className="text-[10px] font-medium">Add</span>
               </button>
             )}
           </div>
 
           {count === 0 && (
             <div className="mt-3 text-[11px] text-gray-500 italic">
-              Geen anchors ingesteld. Image-generation werkt nog gewoon zonder, maar brand-consistency
-              vereist een gecureerde set anchors.
+              No anchors set. Image generation still works without them, but brand consistency
+              requires a curated set of anchors.
             </div>
           )}
         </>
@@ -217,7 +218,7 @@ function AnchorPickerModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">Kies een MediaAsset als anchor</h3>
+          <h3 className="text-sm font-semibold text-gray-900">Pick a media asset as anchor</h3>
           <button
             type="button"
             onClick={onClose}
@@ -234,7 +235,7 @@ function AnchorPickerModal({
             </div>
           ) : assets.length === 0 ? (
             <p className="text-xs text-gray-500">
-              Geen image-assets gevonden in Media Library. Upload eerst enkele referentie-images.
+              No image assets found in the Media Library. Upload some reference images first.
             </p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">

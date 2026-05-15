@@ -7,6 +7,7 @@ import { AiContentBanner } from "./AiContentBanner";
 import { EditableStringList } from "./EditableStringList";
 import { useUpdateSection } from "../hooks/useBrandstyleHooks";
 import type { BrandStyleguide, PhotographyStyle } from "../types/brandstyle.types";
+import { BrandStyleAnchorsPanel } from "@/components/brand-foundation/BrandStyleAnchorsPanel";
 
 /** Parse "OBSERVED:" or "RECOMMENDED:" prefix from a guideline string */
 function parseGuidelinePrefix(text: string): { prefix: "observed" | "recommended" | null; content: string } {
@@ -76,6 +77,9 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
 
   return (
     <div data-testid="imagery-section" className="space-y-6">
+      {/* Brand-style anchors — AI image-gen style-references */}
+      <BrandStyleAnchorsPanel />
+
       {/* Photography */}
       <Card>
         <div className="flex items-center justify-between gap-3 mb-4">
