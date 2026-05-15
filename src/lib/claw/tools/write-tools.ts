@@ -903,7 +903,7 @@ export const writeTools: ClawToolDefinition[] = [
   {
     name: 'update_deliverable_visual_brief',
     description:
-      'Fill or update the Visual Brief for a deliverable on Canvas Step 1: source (which image pipeline runs) + styleDirection (one canonical chip from 8) + optional free-text. Use when the user asks for a specific visual mood/composition. Always inspect_current_entity first to see `visualBriefValidStyles` and `visualBriefValidSources` — only send valid values. Set styleDirection to null to clear an existing chip; pass styleDirectionFreeText for additional mood notes that complement the chip.',
+      'Fill or update the Visual Brief for a deliverable on Canvas Step 1: source (which image pipeline runs) + styleDirection (one canonical chip from 8) + optional free-text. RESERVED for EXPLICIT user requests like "vul de visual brief", "stel de visual brief in", "kies een chip", "set the photo brief", "pick the visual style". Do NOT call this on broad "vul de velden" / "geef suggesties" requests — the Visual Brief has its own user-driven button ("Suggest setup from content") and should stay untouched on broad fill commands. Always inspect_current_entity first to see `visualBriefValidStyles` and `visualBriefValidSources` — only send valid values. Set styleDirection to null to clear an existing chip; pass styleDirectionFreeText for additional mood notes that complement the chip.',
     inputSchema: z.object({
       deliverableId: z.string().describe('The deliverable ID from the Current Page context'),
       source: z
