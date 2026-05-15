@@ -1021,11 +1021,19 @@ function VisualBriefSection() {
   const freeText = visualBrief.styleDirectionFreeText ?? '';
   const briefingText = visualBrief.briefingText ?? '';
 
-  // F-LinkedIn-1c (audit 2026-05-15): "Suggest setup" combines apply-
-  // recommendation + briefing fetch. One click → source + chip from
-  // suggestImageApproach are applied, and the briefing-textarea is filled
-  // from /api/studio/[id]/suggest-visual-briefing. Conservative: an empty
-  // or failed briefing response leaves the textarea unchanged.
+  // F-LinkedIn-1d (audit 2026-05-15): three-state setup flow.
+  //   initial   — user just opened the canvas, only "Suggest setup" CTA
+  //   suggested — Suggest clicked, panel shows recommendation + editable
+  //               briefing + 3 action buttons (continue / change source /
+  //               do it myself)
+  //   manual    — user committed to one of the three paths or had
+  //               pre-existing data when the canvas mounted
+  type SetupState = 'initial' | 'suggested' | 'manual';
+  const [setupState, setSetupState] = React.useState<SetupState>(() => {
+    if (visualBrief.source !== 'none' || briefingText.length > 0) return 'manual';
+    return 'initial';
+  });
+
   const [suggestLoading, setSuggestLoading] = React.useState(false);
   const [suggestError, setSuggestError] = React.useState<string | null>(null);
 
@@ -1040,6 +1048,7 @@ function VisualBriefSection() {
       setSource(defaults.source);
       setStyleDirection(defaults.styleDirection);
     }
+    setSetupState('suggested');
     setSuggestLoading(true);
     setSuggestError(null);
     try {
@@ -1063,6 +1072,30 @@ function VisualBriefSection() {
     }
   }, [deliverableId, defaults, setSource, setStyleDirection, setBriefingText]);
 
+  // "Continue with suggestion" — source/chip/briefing already applied,
+  // just collapse the panel and let the user proceed in the normal form.
+  const handleAcceptSuggestion = React.useCallback(() => {
+    setSuggestError(null);
+    setSetupState('manual');
+  }, []);
+
+  // "Change source, keep briefing" — retain briefing, leave source at the
+  // suggested value so the user can re-select via the radio cards.
+  const handleChangeSource = React.useCallback(() => {
+    setSuggestError(null);
+    setSetupState('manual');
+  }, []);
+
+  // "I'll do it myself" — start from scratch. Clear briefing + source +
+  // chip, keep the briefing field visible so the user can type their own.
+  const handleDoMyself = React.useCallback(() => {
+    setBriefingText(null);
+    setSource('none');
+    setStyleDirection(null);
+    setSuggestError(null);
+    setSetupState('manual');
+  }, [setBriefingText, setSource, setStyleDirection]);
+
   // Tailwind 4 in this project only safelists the teal/primary palette
   // (see globals.css @theme inline). Violet utilities get purged, so the
   // active states use inline hex styles to survive the build pipeline.
@@ -1084,111 +1117,116 @@ function VisualBriefSection() {
         steers both what the AI writes and what it generates.
       </p>
 
-      {/* F-LinkedIn-1c (audit 2026-05-15): single "Suggest setup" button at
-          the top of Visual Brief. One click applies the recommended source
-          and chip *and* fetches a briefing — combining the previous
-          chip-suggestion strip and the inline "Suggest from content"
-          briefing button into one entry point. */}
-      <button
-        type="button"
-        onClick={handleSuggestSetup}
-        disabled={suggestLoading || !deliverableId}
-        className="mb-3 w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded transition-colors disabled:opacity-50"
-        style={{
-          backgroundColor: suggestLoading ? '#e5e7eb' : ACTIVE_BG,
-          color: suggestLoading ? '#9ca3af' : ACTIVE_HEX,
-          border: `1px solid ${ACTIVE_BORDER}`,
-        }}
-      >
-        <Sparkles className="h-3.5 w-3.5" />
-        {suggestLoading ? 'Suggesting…' : 'Suggest setup from content'}
-      </button>
+      {/* F-LinkedIn-1d (audit 2026-05-15): three-state flow.
+          initial → only the Suggest CTA
+          suggested → panel with editable briefing + 3 actions
+          manual → normal form (source picker, chips, separate briefing) */}
 
-      {/* F-LinkedIn-1b (audit 2026-05-15): banner sits at TOP of Visual
-          Brief — strategic source advice before briefing/source/chip. */}
-      {visualBrief.source !== 'none' && (
-        <ImageModelSuggestionBanner
+      {setupState === 'initial' && (
+        <button
+          type="button"
+          onClick={handleSuggestSetup}
+          disabled={suggestLoading || !deliverableId}
+          className="mb-3 w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded transition-colors disabled:opacity-50"
+          style={{
+            backgroundColor: suggestLoading ? '#e5e7eb' : ACTIVE_BG,
+            color: suggestLoading ? '#9ca3af' : ACTIVE_HEX,
+            border: `1px solid ${ACTIVE_BORDER}`,
+          }}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          {suggestLoading ? 'Suggesting…' : 'Suggest setup from content'}
+        </button>
+      )}
+
+      {setupState === 'suggested' && (
+        <VisualBriefSuggestionPanel
           contentTypeId={contentType ?? null}
           styleDirection={filledChip}
           currentSource={visualBrief.source}
-          onApplySource={setSource}
-          onApplyChip={(chip) => setStyleDirection(chip)}
+          briefingText={briefingText}
+          briefingError={suggestError}
+          briefingLoading={suggestLoading}
+          onBriefingChange={setBriefingText}
+          onAccept={handleAcceptSuggestion}
+          onChangeSource={handleChangeSource}
+          onDoMyself={handleDoMyself}
         />
       )}
 
-      {/* Briefing — concrete subject description (overrules keyMessage as
-          subject-seed in image-prompt builder). Distinct from style hints
-          below (style notes belong in styleDirectionFreeText). */}
-      <div className="space-y-1.5 mb-4">
-        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-          Briefing
-        </p>
-        <textarea
-          value={briefingText}
-          onChange={(e) => setBriefingText(e.target.value || null)}
-          placeholder="Describe what the visual should show — who, where, what, mood"
-          rows={2}
-          className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 resize-y"
-          style={{ outlineColor: ACTIVE_HEX }}
-        />
-        <p className="text-[11px] text-gray-500">
-          Subject for the visual. Overrules your key message when filled.
-        </p>
-        {suggestError && (
-          <p className="text-[11px] text-red-600">{suggestError}</p>
-        )}
-      </div>
+      {setupState === 'manual' && (
+        <>
+          {/* Briefing — concrete subject description (overrules keyMessage as
+              subject-seed in image-prompt builder). Distinct from style hints
+              below (style notes belong in styleDirectionFreeText). */}
+          <div className="space-y-1.5 mb-4">
+            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+              Briefing
+            </p>
+            <textarea
+              value={briefingText}
+              onChange={(e) => setBriefingText(e.target.value || null)}
+              placeholder="Describe what the visual should show — who, where, what, mood"
+              rows={2}
+              className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 resize-y"
+              style={{ outlineColor: ACTIVE_HEX }}
+            />
+            <p className="text-[11px] text-gray-500">
+              Subject for the visual. Overrules your key message when filled.
+            </p>
+            {suggestError && (
+              <p className="text-[11px] text-red-600">{suggestError}</p>
+            )}
+          </div>
 
-      {/* Source — radio cards */}
-      <div className="space-y-2 mb-4">
-        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-          Source
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {VISUAL_SOURCES.map((opt) => {
-            const active = visualBrief.source === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setSource(opt.value)}
-                disabled={!opt.ready && !active}
-                className={
-                  opt.ready || active
-                    ? 'text-left rounded-md p-2.5 transition-colors'
-                    : 'text-left rounded-md p-2.5 cursor-not-allowed opacity-60'
-                }
-                style={{
-                  border: active ? `2px solid ${ACTIVE_BORDER}` : '1px solid #e5e7eb',
-                  backgroundColor: active ? ACTIVE_BG : opt.ready ? '#ffffff' : '#f9fafb',
-                  // Account for the 1px → 2px border switch so the layout
-                  // doesn't jump on selection.
-                  margin: active ? '0' : '1px',
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className="text-sm font-medium"
-                    style={{ color: active ? '#4c1d95' : '#111827' }}
+          {/* Source — radio cards */}
+          <div className="space-y-2 mb-4">
+            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+              Source
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {VISUAL_SOURCES.map((opt) => {
+                const active = visualBrief.source === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setSource(opt.value)}
+                    disabled={!opt.ready && !active}
+                    className={
+                      opt.ready || active
+                        ? 'text-left rounded-md p-2.5 transition-colors'
+                        : 'text-left rounded-md p-2.5 cursor-not-allowed opacity-60'
+                    }
+                    style={{
+                      border: active ? `2px solid ${ACTIVE_BORDER}` : '1px solid #e5e7eb',
+                      backgroundColor: active ? ACTIVE_BG : opt.ready ? '#ffffff' : '#f9fafb',
+                      margin: active ? '0' : '1px',
+                    }}
                   >
-                    {opt.label}
-                  </span>
-                  {!opt.ready && (
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider">soon</span>
-                  )}
-                </div>
-                <p className="text-[11px] text-gray-500 leading-snug mt-0.5">{opt.description}</p>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="text-sm font-medium"
+                        style={{ color: active ? '#4c1d95' : '#111827' }}
+                      >
+                        {opt.label}
+                      </span>
+                      {!opt.ready && (
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">soon</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-500 leading-snug mt-0.5">{opt.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
 
-      {/* F-LinkedIn-1b: banner is verplaatst naar top of Visual Brief
-          sectie. Hier slaan we de dubbele render over. */}
-
-      {/* Style direction — chips + free text */}
-      {visualBrief.source !== 'none' && (
+      {/* Style direction — chips + free text. Only visible once the user
+          has committed to a source (manual state with an active source). */}
+      {setupState === 'manual' && visualBrief.source !== 'none' && (
         <div className="space-y-2">
           <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
             Style direction
@@ -1232,24 +1270,35 @@ function VisualBriefSection() {
   );
 }
 
-// F37 (audit 2026-05-13) + F-LinkedIn-1c (2026-05-15):
-// Banner reports the *actual* selected source first, then surfaces
-// Branddock's recommendation as either confirmation (match) or a
-// one-click apply (divergence). Model-detail only appears for sources
-// where it matters (generate / trained-style).
+// F-LinkedIn-1d (audit 2026-05-15): Visual Brief setup flow has three
+// states — initial (only the Suggest button), suggested (this panel
+// with editable briefing + 3 action buttons), manual (normal form).
+// This panel deliberately omits model name, price, strengths chips:
+// strategic source-advice is what the user needs at this decision
+// point; tactical model details belong in the generate step.
 
-function ImageModelSuggestionBanner({
+function VisualBriefSuggestionPanel({
   contentTypeId,
   styleDirection,
   currentSource,
-  onApplySource,
-  onApplyChip,
+  briefingText,
+  briefingError,
+  briefingLoading,
+  onBriefingChange,
+  onAccept,
+  onChangeSource,
+  onDoMyself,
 }: {
   contentTypeId: string | null;
   styleDirection: VisualStyleDirection | null;
   currentSource: VisualBriefSource;
-  onApplySource: (source: VisualBriefSource) => void;
-  onApplyChip: (chip: VisualStyleDirection | null) => void;
+  briefingText: string;
+  briefingError: string | null;
+  briefingLoading: boolean;
+  onBriefingChange: (text: string | null) => void;
+  onAccept: () => void;
+  onChangeSource: () => void;
+  onDoMyself: () => void;
 }) {
   const { data: modelsData } = useConsistentModels();
   const hasTrainedLora = React.useMemo(() => {
@@ -1284,18 +1333,16 @@ function ImageModelSuggestionBanner({
   );
 
   const sourceMatches = currentSource === suggestion.source;
-  // Model-detail only matters when the *active* source is one that uses an
-  // AI model. If user picked upload/library/url/stock the model line is
-  // misleading, so hide it.
-  const showModelDetail =
-    sourceMatches && (currentSource === 'generate' || currentSource === 'trained-style');
+  // Anchor status is only relevant when the active source uses an AI model;
+  // for upload/library/url/stock the anchor configuration doesn't apply.
+  const anchorRelevant =
+    currentSource === 'generate' || currentSource === 'trained-style';
 
   return (
-    <div className="mb-4 rounded-md bg-slate-50 border border-slate-200 p-3">
+    <div className="mb-4 rounded-md bg-slate-50 border border-slate-200 p-3 space-y-3">
       <div className="flex items-start gap-2">
         <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0 text-slate-600" />
         <div className="flex-1 min-w-0">
-          {/* PRIMARY — always reflect the actual selected source. */}
           <p className="text-xs font-semibold text-slate-900">
             Current source: <span className="text-teal-700">{SOURCE_LABELS[currentSource]}</span>
           </p>
@@ -1306,49 +1353,14 @@ function ImageModelSuggestionBanner({
               {suggestion.sourceReasoning}
             </p>
           ) : (
-            <div className="mt-1.5 rounded border border-amber-200 bg-amber-50 px-2 py-1.5">
-              <p className="text-[11px] text-amber-900">
-                Branddock recommends:{' '}
-                <span className="font-medium">{suggestion.sourceLabel}</span> — {suggestion.sourceReasoning}
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  onApplySource(suggestion.source);
-                  onApplyChip(styleDirection);
-                }}
-                className="mt-1 text-[11px] font-medium text-amber-800 hover:text-amber-900 underline"
-              >
-                Apply recommendation
-              </button>
-            </div>
+            <p className="text-[11px] mt-1 text-slate-700 leading-relaxed">
+              Branddock recommends{' '}
+              <span className="font-medium text-teal-700">{suggestion.sourceLabel}</span> for this content:{' '}
+              {suggestion.sourceReasoning}
+            </p>
           )}
 
-          {/* SECONDARY — model-detail only when active source uses a model */}
-          {showModelDetail && (
-            <div className="mt-2.5 pt-2 border-t border-slate-200/70">
-              <p className="text-[11px] text-slate-600">
-                For this source, Branddock picks:{' '}
-                <span className="font-medium text-slate-800">{suggestion.modelLabel}</span>
-                <span className="ml-1.5 text-slate-500">~${suggestion.costPerImageUsd.toFixed(2)}/image</span>
-              </p>
-              <p className="text-[11px] mt-0.5 text-slate-500 leading-relaxed">{suggestion.modelReasoning}</p>
-              {suggestion.strengths.length > 0 && (
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {suggestion.strengths.map((s) => (
-                    <span
-                      key={s}
-                      className="inline-flex items-center px-1.5 py-0.5 text-[10px] rounded bg-white border border-slate-200 text-slate-600"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {anchorCount !== null && showModelDetail && (
+          {anchorCount !== null && anchorRelevant && (
             <div className="mt-2 text-[10px] text-slate-500">
               {anchorCount > 0 ? (
                 <>
@@ -1366,7 +1378,6 @@ function ImageModelSuggestionBanner({
             </div>
           )}
 
-          {/* Photography opt-in — subtle, never a default suggestion */}
           {currentSource !== 'photography-request' && suggestion.source !== 'photography-request' && (
             <p className="mt-2 text-[10px] text-slate-400 italic">
               {PHOTOGRAPHY_OPT_IN_COPY.label}{' '}
@@ -1374,6 +1385,54 @@ function ImageModelSuggestionBanner({
             </p>
           )}
         </div>
+      </div>
+
+      {/* Briefing — editable inside the suggestion panel so user can
+          refine before committing to one of the three actions. */}
+      <div className="pt-2 border-t border-slate-200/70 space-y-1">
+        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+          Briefing
+        </p>
+        <textarea
+          value={briefingText}
+          onChange={(e) => onBriefingChange(e.target.value || null)}
+          placeholder={
+            briefingLoading
+              ? 'Generating briefing from content…'
+              : 'Describe what the visual should show — who, where, what, mood'
+          }
+          rows={4}
+          disabled={briefingLoading}
+          className="w-full text-sm px-2.5 py-1.5 border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 resize-y disabled:opacity-60"
+          style={{ outlineColor: '#7c3aed' }}
+        />
+        {briefingError && (
+          <p className="text-[11px] text-red-600">{briefingError}</p>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        <button
+          type="button"
+          onClick={onAccept}
+          className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded bg-teal-600 text-white hover:bg-teal-700"
+        >
+          Continue with suggestion
+        </button>
+        <button
+          type="button"
+          onClick={onChangeSource}
+          className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+        >
+          Change source, keep briefing
+        </button>
+        <button
+          type="button"
+          onClick={onDoMyself}
+          className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded text-slate-500 hover:text-slate-700"
+        >
+          I&apos;ll do it myself
+        </button>
       </div>
     </div>
   );
