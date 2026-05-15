@@ -271,24 +271,18 @@ export async function applyFixOption(
           }
 
           // Version-snapshot van huidige voiceguide-state (best-effort, parity
-          // met non-rerouted path die ook resource-version creëert).
-          // Caveat: `resourceType` is 'STYLEGUIDE' omdat de alignment-issue
-          // origineel een Brandstyleguide targette en VersionedResourceType
-          // (nog) geen 'VOICEGUIDE' enum heeft. De snapshot-payload bevat wel
-          // de BrandVoiceguide JSON — restore-flows die op resourceType
-          // routeren moeten hier een speciale tak voor voiceguide-velden
-          // hebben. Eigen VOICEGUIDE enum kan in follow-up task worden
-          // toegevoegd (geen blocker voor data-integriteit).
-          const versionType = VERSION_TYPE_MAP[change.entityType];
-          if (versionType && userId) {
+          // met non-rerouted path). Gebruikt eigen VOICEGUIDE resourceType
+          // zodat restore-flows correct kunnen routeren — payload bevat
+          // BrandVoiceguide JSON, resourceId is de voiceguide-id.
+          if (userId) {
             try {
               const currentVoiceguide = await tx.brandVoiceguide.findUnique({
                 where: { workspaceId },
               });
               if (currentVoiceguide) {
                 await createVersion({
-                  resourceType: versionType,
-                  resourceId: change.entityId,
+                  resourceType: "VOICEGUIDE",
+                  resourceId: currentVoiceguide.id,
                   snapshot: currentVoiceguide as unknown as Record<string, unknown>,
                   changeType: "MANUAL_SAVE",
                   changeNote: `Brand Alignment fix (voiceguide reroute): ${issue.title}`,

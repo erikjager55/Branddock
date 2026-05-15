@@ -3617,6 +3617,7 @@ enum VersionedResourceType {
   PRODUCT
   STRATEGY
   STYLEGUIDE
+  VOICEGUIDE
 }
 
 enum VersionChangeType {
@@ -5466,9 +5467,7 @@ model BrandVoiceguide {
 
   // ─── Voice DNA ──────────────────────────────
   /**
-   * /**
-   * /**
-   * /** Vrije-tekst beschrijving van de merkstem. Migreert uit BrandPersonality.brandVoiceDescription.
+   * Vrije-tekst beschrijving van de merkstem. Migreert uit BrandPersonality.brandVoiceDescription.
    */
   voiceDescription String? @db.Text
 
@@ -5492,18 +5491,14 @@ model BrandVoiceguide {
 
   // ─── References ─────────────────────────────
   /**
-   * /**
-   * /**
-   * /** Gecureerde writing-samples (5-10 typisch). Bron voor centroid-embedding.
+   * Gecureerde writing-samples (5-10 typisch). Bron voor centroid-embedding.
    * Migreert van BrandPersonality.writingSample (1×) naar array.
    */
   writingSamples Json @default("[]")
 
   // ─── Vocabulary ─────────────────────────────
   /**
-   * /**
-   * /**
-   * /** Single-word level — woorden die het merk gebruikt.
+   * Single-word level — woorden die het merk gebruikt.
    */
   wordsWeUse   String[]
   /**
@@ -5513,18 +5508,14 @@ model BrandVoiceguide {
 
   // ─── Channel-Tones ──────────────────────────
   /**
-   * /**
-   * /**
-   * /** Per-kanaal tone-overrides bovenop globale toneDimensions.
+   * Per-kanaal tone-overrides bovenop globale toneDimensions.
    * Shape: { website: { formalCasual, ... }, socialMedia: {...}, email: {...}, ads: {...}, video: {...} }
    */
   channelTones Json?
 
   // ─── Anti-Patterns ──────────────────────────
   /**
-   * /**
-   * /**
-   * /** Multi-word phrases die het merk vermijdt (uitbreiding op wordsWeAvoid).
+   * Multi-word phrases die het merk vermijdt (uitbreiding op wordsWeAvoid).
    */
   antiPatterns String[]
 
@@ -5536,17 +5527,13 @@ model BrandVoiceguide {
 
   // ─── Embedding centroid (Pijler 1 fidelity) ─────
   /**
-   * /**
-   * /**
-   * /** OpenAI text-embedding-3-small van geconcateneerde writingSamples. Beheerd via raw SQL.
+   * OpenAI text-embedding-3-small van geconcateneerde writingSamples. Beheerd via raw SQL.
    */
   centroidEmbedding  Unsupported("vector(1536)")?
   centroidComputedAt DateTime?
 
   // ─── Locale (ADR-3 — per-brand routing voor heuristiek-pakketten) ─────
   /**
-   * /**
-   * /**
    * IETF BCP 47 locale-tag: `nl-NL` / `nl-BE` / `en-GB` / `de-DE` (v1).
    * Wanneer null: `getHeuristicsForBrand()` resolver valt terug op
    * `Workspace.contentLanguage` mapped naar default-locale (en→en-GB,
@@ -5577,9 +5564,7 @@ model BrandVoiceguide {
 
   // ─── Metadata ────────────────────────────────
   /**
-   * /**
-   * /**
-   * /** "manual" | "extracted" (van BrandPersonality migratie) | "analyzer" (door tekst-scanner)
+   * "manual" | "extracted" (van BrandPersonality migratie) | "analyzer" (door tekst-scanner)
    */
   source      String    @default("manual")
   publishedAt DateTime?

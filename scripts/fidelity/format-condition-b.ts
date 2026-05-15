@@ -36,7 +36,9 @@ export interface BrandPersonalityRaw {
 export interface ToneOfVoiceRaw {
   contentGuidelines?: string[];
   writingGuidelines?: string[];
-  toneSavedForAi?: boolean;
+  // Hernoemd van legacy `toneSavedForAi` naar `guidelinesSavedForAi` (ADR
+  // 2026-05-15). DTO-key matcht nu de BrandVoiceguide-schema veldnaam.
+  guidelinesSavedForAi?: boolean;
 }
 
 export interface BrandVoiceContentRaw {
@@ -225,7 +227,7 @@ export function formatConditionB(opts: FormatConditionBOptions): string {
     if (t.butNeverThat) antiPatterns.push(t.butNeverThat);
   }
   // Add ToV writingGuidelines (if "saved for AI") that read as don'ts
-  if (toneOfVoice?.toneSavedForAi && toneOfVoice.writingGuidelines) {
+  if (toneOfVoice?.guidelinesSavedForAi && toneOfVoice.writingGuidelines) {
     for (const g of toneOfVoice.writingGuidelines) {
       // Heuristic: items starting with "Geen", "Vermijd", "Niet", "Avoid", "Don't" are anti-patterns
       if (/^(geen|vermijd|niet|nooit|avoid|don't|do not)\b/i.test(g.trim())) {

@@ -271,7 +271,7 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
   // ═══════════════════════════════════════════════════════════════
   // 5. IMAGERY
   // ═══════════════════════════════════════════════════════════════
-  addSectionHeader('5. Imagery');
+  addSectionHeader('4. Imagery');
 
   if (styleguide.photographyStyle) {
     const ps = styleguide.photographyStyle;
@@ -324,7 +324,7 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
     || styleguide.layoutPrinciples || vl;
 
   if (hasDesignLanguage) {
-    addSectionHeader('6. Visual System');
+    addSectionHeader('5. Visual System');
 
     // Visual Language foundations
     if (vl) {
@@ -409,7 +409,7 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
     (shadowSystemData?.tokens?.length ?? 0) > 0;
 
   if (hasSpacing) {
-    addSectionHeader('7. Spacing & Tokens');
+    addSectionHeader('6. Spacing & Tokens');
 
     if (spacingScaleData?.tokens?.length) {
       const label = spacingScaleData.gridBase ? `Spacing Scale (${spacingScaleData.gridBase}px grid)` : 'Spacing Scale';
@@ -459,7 +459,7 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
   // 8. COMPONENTS (Fase 5)
   // ═══════════════════════════════════════════════════════════════
   if (Array.isArray(styleguide.components) && styleguide.components.length > 0) {
-    addSectionHeader('8. Components');
+    addSectionHeader('7. Components');
     doc.setTextColor(55, 65, 81);
     doc.setFontSize(10);
 

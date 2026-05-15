@@ -152,7 +152,7 @@ async function buildConditionBDirective(workspaceId: string, brandName: string, 
       ? {
           contentGuidelines: voiceguide.contentGuidelines,
           writingGuidelines: voiceguide.writingGuidelines,
-          toneSavedForAi: voiceguide.guidelinesSavedForAi,
+          guidelinesSavedForAi: voiceguide.guidelinesSavedForAi,
         }
       : undefined,
     brandVoice: brandVoice ?? undefined,
