@@ -34,6 +34,7 @@ import {
 import { tryTrackStart, tryTrackComplete } from "@/lib/learning-loop/track-helpers";
 import { emitLearningEvent } from "@/lib/learning-loop/event-emitter";
 import { extractTextFromImage, computeTextPollutionPenalty, type OcrCheckResult } from "@/lib/ai/image-quality/ocr-check";
+import { runCopyImageCoherenceJudge, type CoherenceJudgeResult } from "./copy-image-coherence-judge";
 
 const SCORER_VERSION = "visual-fidelity-v1.0";
 const COLOR_WEIGHT = 0.4;
@@ -84,6 +85,8 @@ export async function scoreImageFidelity(
     },
     select: {
       id: true,
+      deliverableId: true,
+      variantIndex: true,
       imageUrl: true,
       componentType: true,
       groupType: true,
@@ -143,6 +146,9 @@ export async function scoreImageFidelity(
   // skip wanneer GOOGLE_VISION_API_KEY ontbreekt of de Vision API niet
   // toegankelijk is voor de image-url (alleen https accepted).
   let ocrResult: OcrCheckResult | null = null;
+  // Pattern G4 image-quality-chain — copy-image coherence judge. Runs alleen
+  // wanneer er tekst-zustercomponenten gevonden worden in dezelfde variant.
+  let coherenceResult: CoherenceJudgeResult | null = null;
   try {
     // Anthropic vision accepts only HTTPS URLs. For local /uploads/ paths
     // (dev) and any non-HTTPS source, send as base64 using the buffer we
@@ -156,17 +162,28 @@ export async function scoreImageFidelity(
             data: imageBuffer.toString("base64"),
           };
 
-    // Parallelize AI-judge + OCR voor minimum latency-impact (~1s OCR vs
-    // ~12-15s judge). OCR is fire-and-forget intern (returnt null bij key-
-    // ontbreken of API-error); failures spoilen judge-flow niet.
-    const [judgeOut, ocrOut] = await Promise.all([
+    // Parallelize AI-judge + OCR + coherence-judge voor minimum latency-impact.
+    // Coherence pulls text-content van zustercomponenten (zelfde variantIndex);
+    // skip wanneer geen tekst beschikbaar of API-key ontbreekt.
+    const siblingTextPromise = fetchSiblingTextContent(
+      component.deliverableId,
+      component.variantIndex,
+    );
+    const [judgeOut, ocrOut, siblingText] = await Promise.all([
       runVisualAiJudge(imageInput, visualContext),
       component.imageUrl.startsWith("https://")
         ? extractTextFromImage(component.imageUrl)
         : Promise.resolve(null),
+      siblingTextPromise,
     ]);
     judgeResult = judgeOut;
     ocrResult = ocrOut;
+
+    // Coherence judge sequentieel na siblingText resolve — voorkomt onnodige
+    // Haiku-call wanneer geen text-content beschikbaar is in de variant.
+    if (siblingText.trim().length > 0) {
+      coherenceResult = await runCopyImageCoherenceJudge(imageInput, siblingText);
+    }
 
     await tryTrackComplete(traceId, {
       inputTokens: 0,
@@ -235,7 +252,7 @@ export async function scoreImageFidelity(
       compositeScore,
       colorAlignment: serializeColorAlignment(colorAlignment),
       aiJudgeDimensions: judgeResult
-        ? serializeJudgeResult(judgeResult, ocrResult, ocrPenalty)
+        ? serializeJudgeResult(judgeResult, ocrResult, ocrPenalty, coherenceResult)
         : { skipped: true },
       thresholdMet,
       scorerVersion: SCORER_VERSION,
@@ -392,10 +409,21 @@ function serializeJudgeResult(
   result: VisualJudgeResult,
   ocrResult: OcrCheckResult | null,
   ocrPenalty: number,
+  coherenceResult: CoherenceJudgeResult | null,
 ): object {
   const out: Record<string, { score: number; rationale: string }> = {};
   for (const key of VISUAL_DIMENSION_KEYS) {
     out[key] = result.scores[key];
+  }
+  // Pattern G4: coherence is een 7e dimensie geproduceerd door een aparte
+  // judge (text+image), niet onderdeel van VISUAL_DIMENSIONS (image-only).
+  // Sluit aan op zelfde score-0-100 conventie zodat UI het naast de
+  // visual-dimensies kan renderen via dezelfde dimension-rij.
+  if (coherenceResult) {
+    out["copy-image-coherence"] = {
+      score: coherenceResult.score,
+      rationale: coherenceResult.rationale,
+    };
   }
   return {
     composite: result.composite,
@@ -411,4 +439,40 @@ function serializeJudgeResult(
         }
       : null,
   };
+}
+
+/**
+ * Pattern G4 helper: fetch concat'd text-content van zustercomponenten in
+ * dezelfde variant. Pakt componentType='text' rows met dezelfde
+ * deliverableId + variantIndex en concateneert hun generatedContent.
+ *
+ * Returns lege string wanneer geen tekst-componenten gevonden — caller
+ * skipt de coherence-judge call.
+ */
+async function fetchSiblingTextContent(
+  deliverableId: string,
+  variantIndex: number,
+): Promise<string> {
+  const siblings = await prisma.deliverableComponent.findMany({
+    where: {
+      deliverableId,
+      variantIndex,
+      componentType: "text",
+      generatedContent: { not: null },
+    },
+    select: { variantGroup: true, generatedContent: true },
+    orderBy: { order: "asc" },
+  });
+
+  if (siblings.length === 0) return "";
+
+  const parts: string[] = [];
+  for (const s of siblings) {
+    const groupLabel = s.variantGroup ?? "content";
+    const content = (s.generatedContent ?? "").trim();
+    if (content.length > 0) {
+      parts.push(`[${groupLabel}]\n${content}`);
+    }
+  }
+  return parts.join("\n\n");
 }

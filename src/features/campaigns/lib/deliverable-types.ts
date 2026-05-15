@@ -57,6 +57,98 @@ export function getMultiCandidateDefault(deliverableTypeId: string): number {
   return MULTI_CANDIDATE_DEFAULTS[deliverableTypeId] ?? 2;
 }
 
+// ─── Modality-fit defaults (Pattern G1 image-quality-chain) ────────────
+
+/**
+ * Recommended modality per content-type. Suggesteert aan de user welke
+ * beeld-aanpak het beste past — voorkomt dat een tweet als hero-photo
+ * gegenereerd wordt of een explainer-video als infographic.
+ *
+ * Waardes:
+ * - `photo`: realistic photography (lifestyle, product-shot, behind-the-scenes)
+ * - `illustration`: vector / digital illustration (concept, metaphor, abstract)
+ * - `infographic`: data-viz, charts, diagrams (data-driven, hoe-werkt-X)
+ * - `ugc`: authentic, low-fi user-generated-content look (testimonials, tiktok)
+ * - `none`: geen visual nodig (puur tekst-content zoals scripts, briefings)
+ */
+export type RecommendedModality =
+  | "photo"
+  | "illustration"
+  | "infographic"
+  | "ugc"
+  | "none";
+
+const MODALITY_DEFAULTS: Record<string, RecommendedModality> = {
+  // Long-form & hero — krachtige photography
+  "blog-post": "photo",
+  "landing-page": "photo",
+  "case-study": "photo",
+  "press-release": "photo",
+  // Social media — context per platform
+  "instagram-post": "photo",
+  "instagram-post-carousel": "photo",
+  "linkedin-post": "photo",
+  "facebook-post": "photo",
+  "twitter-post": "illustration",
+  "tweet": "illustration",
+  // TikTok & short-form video: UGC-look
+  "tiktok-script": "ugc",
+  "video-ad": "photo",
+  "explainer-video": "illustration",
+  "linkedin-video": "photo",
+  "promo-video": "photo",
+  // Data-heavy types
+  "infographic": "infographic",
+  "one-pager": "infographic",
+  "report": "infographic",
+  // Ads & conversion
+  "search-ad": "none",
+  "google-ad": "none",
+  "display-ad": "photo",
+  "facebook-ad": "photo",
+  // Email & newsletters
+  "newsletter": "photo",
+  "email": "photo",
+  // Pure-text types — geen visual nodig
+  "voice-over-script": "none",
+  "podcast-script": "none",
+};
+
+/**
+ * Lookup recommended modality voor een content-type. Default `photo` —
+ * geschikt voor de meeste algemene content. Caller (UI hint) gebruikt
+ * dit om een suggestion-banner te tonen aan de user.
+ */
+export function getRecommendedModality(deliverableTypeId: string): RecommendedModality {
+  return MODALITY_DEFAULTS[deliverableTypeId] ?? "photo";
+}
+
+/**
+ * User-friendly label + uitleg per modality voor UI-rendering.
+ */
+export const MODALITY_LABELS: Record<RecommendedModality, { label: string; description: string }> = {
+  photo: {
+    label: "Photography",
+    description: "Realistic photo (lifestyle, product-shot, behind-the-scenes). Beste voor tastbare merkbeleving.",
+  },
+  illustration: {
+    label: "Illustration",
+    description: "Digital illustration of vector-art. Beste voor concepten, metaphors, abstracte ideeën.",
+  },
+  infographic: {
+    label: "Infographic",
+    description: "Data-visualisatie, charts, diagrammen. Beste voor cijfers en complexe ideeën uitleg.",
+  },
+  ugc: {
+    label: "UGC-style",
+    description: "Authentieke, low-fi user-generated-content look. Beste voor TikTok, testimonials, social proof.",
+  },
+  none: {
+    label: "Geen visual",
+    description: "Dit content-type werkt zonder beeld (pure-text formats zoals scripts, briefings, search ads).",
+  },
+};
+
 // ─── Category-level defaults ────────────────────────────────
 
 const LONG_FORM_DEFAULTS = {

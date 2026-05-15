@@ -45,6 +45,7 @@ import { ComposePicker } from './ComposePicker';
 import { TrainedStylePicker } from './TrainedStylePicker';
 import { PhotographyBriefPanel } from './PhotographyBriefPanel';
 import { SimilarAssetsRow } from './SimilarAssetsRow';
+import { ModalityHint } from './ModalityHint';
 import type { InsertImageSelection } from './insert-image/types';
 
 interface SourceTab {
@@ -92,6 +93,11 @@ export function ImageSourcePanel({
 
   return (
     <div className={isModal ? '' : 'rounded-lg border border-gray-200 bg-white p-4'}>
+      {/* Pattern G1 image-quality-chain — modality-fit hint per content-type.
+          Niet-blokkerend; user mag elke source kiezen. */}
+      <div className="mb-3">
+        <ModalityHint />
+      </div>
       {/* Tab-strip — 8 sources horizontal */}
       <div className="flex flex-wrap gap-1.5 border-b border-gray-200 pb-3 mb-4">
         {IMAGE_SOURCE_TABS.map((t) => {

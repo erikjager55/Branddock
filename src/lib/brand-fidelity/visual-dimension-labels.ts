@@ -56,12 +56,32 @@ export const VISUAL_DIMENSION_LABELS: Record<VisualDimensionKey, DimensionLabel>
 };
 
 /**
+ * Pattern G4: copy-image coherence-dimensie. Wordt geproduceerd door een
+ * aparte judge (Claude Haiku met text+image) ipv visual-ai-judge, maar
+ * gerendert in UI naast de 6 visual-dimensies via dezelfde getDimensionLabel
+ * lookup. Daarom apart geregistreerd buiten VISUAL_DIMENSION_LABELS Record
+ * (welke is type-gated op VisualDimensionKey).
+ */
+const EXTENDED_DIMENSION_LABELS: Record<string, DimensionLabel> = {
+  "copy-image-coherence": {
+    label: "Copy-image samenhang",
+    description:
+      "Visualiseert het beeld daadwerkelijk de tekst-boodschap van dezelfde variant (subject-match, audience-match, message-reinforcement)? Aparte AI-judge (Haiku) die text + image samen beoordeelt.",
+  },
+};
+
+/**
  * Lookup met fallback — wanneer een toekomstige dimensie aan visual-ai-judge
  * wordt toegevoegd vóór deze tabel bijgewerkt wordt, krijgt de UI nog steeds
  * een nette title-cased fallback (geen "undefined" of crash).
+ *
+ * Resolution-volgorde: VISUAL_DIMENSION_LABELS (6 visual) → EXTENDED_DIMENSION_LABELS
+ * (G4 coherence + toekomstige uitbreidingen) → title-case fallback.
  */
 export function getDimensionLabel(key: string): DimensionLabel {
-  const entry = VISUAL_DIMENSION_LABELS[key as VisualDimensionKey];
+  const entry =
+    VISUAL_DIMENSION_LABELS[key as VisualDimensionKey] ??
+    EXTENDED_DIMENSION_LABELS[key];
   if (entry) return entry;
   return {
     label: key
