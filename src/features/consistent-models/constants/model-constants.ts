@@ -337,11 +337,17 @@ export interface FalModelConfig {
 }
 
 /** Best trainer + generator per model type.
- * PERSON → portrait-trainer (optimized for face consistency)
- * PRODUCT/OBJECT → flux-2-trainer (best photorealism)
- * STYLE/BRAND_STYLE/PHOTOGRAPHY/ILLUSTRATION → flux-2-trainer (best quality) */
+ *
+ * F-training-P1 (audit 2026-05-15): PERSON trainer migrated van legacy
+ * FLUX 1 portrait-trainer naar flux-2-trainer. Uniforme stack over alle
+ * types, betere quality (per Gewoon Guus praktijkervaring), zelfde
+ * cost-profiel. Bestaande PERSON LoRAs op flux-lora generator blijven
+ * werken — training-poller reads endpoint uit DB-stored trainingConfig.
+ *
+ * Mapping: alle trainbare types → fal-ai/flux-2-trainer + fal-ai/flux-2/lora.
+ */
 export const FAL_MODEL_CONFIG: Record<ConsistentModelType, FalModelConfig> = {
-  PERSON:       { trainer: 'fal-ai/flux-lora-portrait-trainer', generator: 'fal-ai/flux-lora',   label: 'Flux Portrait Trainer' },
+  PERSON:       { trainer: 'fal-ai/flux-2-trainer',             generator: 'fal-ai/flux-2/lora',  label: 'Flux 2 Trainer' },
   PRODUCT:      { trainer: 'fal-ai/flux-2-trainer',             generator: 'fal-ai/flux-2/lora',  label: 'Flux 2 Trainer' },
   STYLE:        { trainer: 'fal-ai/flux-2-trainer',             generator: 'fal-ai/flux-2/lora',  label: 'Flux 2 Trainer' },
   OBJECT:       { trainer: 'fal-ai/flux-2-trainer',             generator: 'fal-ai/flux-2/lora',  label: 'Flux 2 Trainer' },

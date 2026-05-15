@@ -395,6 +395,10 @@ export function GenerateReferencesSection({
         )}
       </div>
 
+      {/* F-training-P3 (audit 2026-05-15): curation tips uit Gewoon Guus
+          praktijkervaring. Verschijnt zodra er beelden zijn om te cureren. */}
+      {aiImages.length > 0 && <CurationTipsCard />}
+
       {/* ─── Generated Images Grid ─────────────────────────── */}
       {aiImages.length > 0 && (
         <div className="rounded-lg border border-gray-200 bg-white p-5">
@@ -593,6 +597,72 @@ function ImageSelectCard({ image, isSelected, onToggle, caption, onCaptionChange
           />
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── F-training-P3 (audit 2026-05-15): Curation tips card ────────────
+// Lessons learned uit Gewoon Guus kinderboek-project sprint A (2026-05).
+// Curatie van 160 → 30 picks onthulde patronen die elke LoRA-training
+// drukken op. Tips hier zichtbaar op de curate-step.
+function CurationTipsCard() {
+  const [open, setOpen] = useState(true);
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-xs text-teal-700 hover:text-teal-800 font-medium underline"
+      >
+        Toon curatie-tips
+      </button>
+    );
+  }
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4">
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-amber-700" />
+          <h4 className="text-sm font-semibold text-amber-900">
+            Curatie-tips voor sterke LoRA-training
+          </h4>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="text-amber-700 hover:text-amber-900"
+          aria-label="Verberg tips"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <ul className="space-y-1.5 text-xs text-amber-900 leading-relaxed">
+        <li>
+          <span className="font-medium">Identificeer eerst de dominante aesthetic-cluster.</span>{' '}
+          Image-models leveren binnen één prompt vaak 2 stilistische varianten door elkaar
+          (bv. feathered vignet vs clean oval). Pak één cluster — mengen verwart het model.
+        </li>
+        <li>
+          <span className="font-medium">Vermijd sky-only / abstract prompts in scene-context.</span>{' '}
+          Prompts als "no land, just sky" triggeren wildlife-hallucinatie (silhouetten van dieren
+          op de horizon). Drop deze prompts of frame ze als pure abstract wash.
+        </li>
+        <li>
+          <span className="font-medium">Object-trainings: anker kleur expliciet.</span> Sunset/dawn
+          lighting laat het model object-kleuren bleichen. Gebruik neutral lighting prompts OF
+          hex-code de object-kleur per prompt-variant.
+        </li>
+        <li>
+          <span className="font-medium">Plan ruime margin in.</span> 160 outputs naar 30 picks (~19%
+          retentie) was passend bij Gewoon Guus. Bij krappe sets (40 → 30) kunnen cluster-outliers
+          + hallucinaties een tekort opleveren.
+        </li>
+        <li>
+          <span className="font-medium">Train-data moet matchen met inference-model.</span>{' '}
+          Gemini-output als training-data + FLUX-inference = domain shift. Branddock genereert
+          training-images met FLUX 2 — niet mixen.
+        </li>
+      </ul>
     </div>
   );
 }
