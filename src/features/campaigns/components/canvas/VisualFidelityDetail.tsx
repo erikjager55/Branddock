@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { X, ShieldCheck, AlertTriangle, ImageOff, Palette, Eye } from 'lucide-react';
+import { X, ShieldCheck, AlertTriangle, ImageOff, Palette, Eye, Info } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
+import { getDimensionLabel } from '@/lib/brand-fidelity/visual-dimension-labels';
 import type {
   VisualColorAlignmentDetail,
   VisualJudgeDetail,
@@ -316,11 +317,19 @@ function JudgeDimensions({ detail }: JudgeDimensionsProps) {
       {entries.map(([key, dim]) => {
         const zone = ZONE[zoneFor(dim.score)];
         const flagged = detail.flagged.includes(key);
+        const labelInfo = getDimensionLabel(key);
         return (
           <div key={key} className="border border-gray-200 rounded p-2.5">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-medium text-gray-900 capitalize flex-1">
-                {key.replace(/-/g, ' ')}
+              <span className="text-xs font-medium text-gray-900 flex-1 inline-flex items-center gap-1">
+                {labelInfo.label}
+                <span
+                  className="text-gray-400 hover:text-gray-600 cursor-help"
+                  title={labelInfo.description}
+                  aria-label={`Uitleg: ${labelInfo.description}`}
+                >
+                  <Info className="w-3 h-3" />
+                </span>
               </span>
               {flagged && (
                 <span className="text-[10px] text-red-600 font-medium uppercase">

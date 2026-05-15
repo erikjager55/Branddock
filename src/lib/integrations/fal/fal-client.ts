@@ -293,6 +293,13 @@ export interface FalStandaloneGenerationOptions {
    * mapped styleDirection-chip → Recraft style value.
    */
   recraftStyle?: 'any' | 'digital_illustration' | 'vector_illustration' | 'realistic_image' | 'icon';
+  /**
+   * Pattern A image-quality-chain: negative prompt — defaults + workspace
+   * imageryDonts. FAL Flux Pro Kontext + FLUX 2 Pro accepteren dit als
+   * native parameter. Andere endpoints negeren het (fal valideert input
+   * per endpoint).
+   */
+  negativePrompt?: string;
 }
 
 /** Models that use aspect_ratio + resolution instead of image_size */
@@ -383,6 +390,12 @@ export async function generateFalImage(
     // andere endpoints negeren of falen op onbekend veld).
     ...(modelId === 'fal-ai/recraft-v3' && options?.recraftStyle
       ? { style: options.recraftStyle }
+      : {}),
+    // Pattern A image-quality-chain: native negative-prompt parameter.
+    // FAL Flux Pro Kontext + FLUX 2 Pro consumeren dit. Endpoints zonder
+    // deze param negeren het bij input-validation (fail-soft).
+    ...(options?.negativePrompt
+      ? { negative_prompt: options.negativePrompt }
       : {}),
   };
 

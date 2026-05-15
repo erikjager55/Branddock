@@ -191,7 +191,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     const promptCount = body?.count ?? 2;
-    const prompts = buildVisualBriefImagePrompts(
+    const { prompts, negativePrompt } = buildVisualBriefImagePrompts(
       stack.visualBrief,
       stack.brand,
       {
@@ -275,6 +275,7 @@ export async function POST(request: Request, { params }: RouteParams) {
             numImages: 1,
             referenceImageUrls: referenceImageUrls.length > 0 ? referenceImageUrls : undefined,
             recraftStyle,
+            negativePrompt: negativePrompt || undefined,
           });
           const url = result.images?.[0]?.url;
           if (!url) return null;

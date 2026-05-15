@@ -5,12 +5,39 @@ fase: pre-launch
 priority: now
 effort: ~10 dagen (6d quality patterns + 4d image-sourcing strategie)
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-05-12
 completed: -
 related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md §3.0.5
 worktree: -
+phase: phase-1-of-4
+phase-1-scope: Pattern A (negative prompts) + Pattern C (dimension-breakdown UI)
+phase-2-scope: Pattern B (multi-candidate selection UI) + Pattern D (refine-loop)
+phase-3-scope: Pattern E (OCR text-check via Google Vision) + Pattern F UI exposure + subjectIdentity dimensie
+phase-4-scope: Pattern G (sourcing-strategie — modality-fit / reuse-detection / smart-search / coherence-score)
+---
+
+# Fase 1 (in_progress, 2026-05-15)
+
+**Scope**: Pattern A + Pattern C. ~1-1.5d.
+
+Bevinding tijdens verkenning 2026-05-15: infrastructuur is groter dan plan-doc
+suggereert. `ContentVisualFidelityScore.aiJudgeDimensions` JSON bestaat al met
+5 keys (`style-coherence` / `mood-fit` / `composition` / `text-in-image` /
+`logo-fidelity`). `colorAlignment` deterministische LAB-similarity bestaat al
+in `visual-color-alignment.ts`. `scoreImageFidelity` runner is feature-compleet
+(40% color + 60% AI-judge composite).
+
+Wat fase 1 toevoegt:
+- Pattern A: native `negative_prompt` parameter naar FAL Flux + Gemini-fallback,
+  defaults + workspace `imageryDonts` extension, consolideert signaal door
+  "Avoid:" segment uit `ctx.brandImageryStyle` te verwijderen.
+- Pattern C: UI rendering van bestaande `aiJudgeDimensions` + `colorAlignment`
+  in expandable VisualFidelityBar.
+
+Fase 2-4 in opvolgende rondes.
+
 ---
 
 # Probleem

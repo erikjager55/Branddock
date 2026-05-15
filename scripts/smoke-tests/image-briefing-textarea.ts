@@ -67,7 +67,7 @@ console.log('## briefingText present → overrules chip + persona + product\n');
     styleDirectionFreeText: null,
     briefingText: 'Vrouw rond de 35 in een café, laptop open, koffie in beeld, ochtendlicht door raam',
   };
-  const [prompt] = buildVisualBriefImagePrompts(brief, brand, {
+  const { prompts: [prompt] } = buildVisualBriefImagePrompts(brief, brand, {
     keyMessage: 'Brand consistency wins',
     objective: null,
     personas: [persona],
@@ -89,7 +89,7 @@ console.log('\n## briefingText empty → chip-aware fallback\n');
     styleDirectionFreeText: null,
     briefingText: null,
   };
-  const [prompt] = buildVisualBriefImagePrompts(brief, brand, {
+  const { prompts: [prompt] } = buildVisualBriefImagePrompts(brief, brand, {
     keyMessage: 'Fallback message',
     objective: null,
     personas: [persona],
@@ -108,7 +108,7 @@ console.log('\n## briefingText whitespace-only → fallback\n');
     styleDirectionFreeText: null,
     briefingText: '   \n   ',
   };
-  const [prompt] = buildVisualBriefImagePrompts(brief, brand, {
+  const { prompts: [prompt] } = buildVisualBriefImagePrompts(brief, brand, {
     keyMessage: 'Whitespace test',
     objective: null,
     personas: [persona],
@@ -126,7 +126,7 @@ console.log('\n## briefingText alone — minimal context\n');
     styleDirectionFreeText: null,
     briefingText: 'Hands holding a smartphone, soft window light',
   };
-  const [prompt] = buildVisualBriefImagePrompts(brief, brand, {
+  const { prompts: [prompt] } = buildVisualBriefImagePrompts(brief, brand, {
     keyMessage: null,
     objective: null,
   }, 1);
@@ -142,7 +142,7 @@ console.log('\n## Backwards compat — briefingText undefined\n');
     styleDirectionFreeText: null,
     // briefingText omitted → undefined
   };
-  const [prompt] = buildVisualBriefImagePrompts(brief, brand, {
+  const { prompts: [prompt] } = buildVisualBriefImagePrompts(brief, brand, {
     keyMessage: null,
     objective: null,
     products: [product],

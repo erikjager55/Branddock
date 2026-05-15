@@ -199,7 +199,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     const promptCount = body?.count ?? 2;
-    const basePrompts = buildVisualBriefImagePrompts(
+    const { prompts: basePrompts, negativePrompt } = buildVisualBriefImagePrompts(
       stack.visualBrief,
       stack.brand,
       {
@@ -223,6 +223,13 @@ export async function POST(request: Request, { params }: RouteParams) {
     const prompts = basePrompts.map((p) =>
       p.includes(triggerWord) ? p : triggerPrefix + p,
     );
+
+    // Pattern A image-quality-chain: combineer LoRA-config negative-prompt
+    // met workspace negative-prompt (defaults + imageryDonts). Beide signalen
+    // hebben waarde; comma-joined naar FAL native parameter.
+    const combinedNegativePrompt = [config.negativePrompt, negativePrompt]
+      .filter((s): s is string => !!s && s.trim().length > 0)
+      .join(', ');
 
     const finalPrompts = body?.instruction
       ? prompts.map((p) => `${p} ${body!.instruction}`)
@@ -256,7 +263,9 @@ export async function POST(request: Request, { params }: RouteParams) {
             guidance_scale: config.guidanceScale || 4.5,
             output_format: 'png',
             image_size: falSizeToDims(falImageSize),
-            ...(config.negativePrompt ? { negative_prompt: config.negativePrompt } : {}),
+            ...(combinedNegativePrompt
+              ? { negative_prompt: combinedNegativePrompt }
+              : {}),
           });
           const url = result.images?.[0]?.url;
           if (!url) return null;

@@ -1329,10 +1329,14 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       if (styleguide.photographyGuidelines.length > 0) {
         imgParts.push(`Guidelines: ${styleguide.photographyGuidelines.join('; ')}`);
       }
-      if (styleguide.imageryDonts.length > 0) {
-        imgParts.push(`Avoid: ${styleguide.imageryDonts.join('; ')}`);
-      }
       if (imgParts.length > 0) ctx.brandImageryStyle = imgParts.join('. ');
+      // imageryDonts wordt apart geëxposeerd zodat image-providers het via
+      // hun native negative-prompt parameter consumeren (Pattern A image-
+      // quality-chain). Niet meer als "Avoid: …" suffix in brandImageryStyle
+      // omdat dat het signaal duplificeert wanneer beide kanalen actief zijn.
+      if (styleguide.imageryDonts.length > 0) {
+        ctx.brandImageryDonts = styleguide.imageryDonts;
+      }
     }
 
     // Design Language — use visualLanguageSavedForAi as gate (merged Visual System tab)

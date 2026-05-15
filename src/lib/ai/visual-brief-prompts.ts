@@ -22,6 +22,7 @@ import type {
   VisualStyleDirection,
 } from './canvas-context';
 import type { BrandContextBlock } from './prompt-templates';
+import { buildNegativePrompt } from './image-quality/negative-prompts';
 
 const SUBJECT_FIELD_MAX_CHARS = 200;
 
@@ -219,6 +220,14 @@ export function formatBrandVisualIdentity(brand: BrandContextBlock): string {
   return parts.join('. ');
 }
 
+/** Resultaat van `buildVisualBriefImagePrompts`. */
+export interface VisualBriefImagePromptBundle {
+  /** N distinct positive prompts (close / wide / detail). */
+  prompts: string[];
+  /** Negative prompt — defaults + workspace imageryDonts. Lege string als geen negatives van toepassing. */
+  negativePrompt: string;
+}
+
 /**
  * Build N distinct image prompts from a Visual Brief + brand context +
  * subject hints. Used when the user explicitly triggers "Generate visual"
@@ -228,13 +237,17 @@ export function formatBrandVisualIdentity(brand: BrandContextBlock): string {
  * close-up / direct take on the subject, prompt B is a wider /
  * environmental composition. Both inherit the same chip mapping +
  * brand identity so they stay on-brand but feel distinct.
+ *
+ * Returns `{ prompts, negativePrompt }` (Pattern A image-quality-chain).
+ * Provider-laag bepaalt of negativePrompt als native parameter (FAL Flux)
+ * of als prompt-text directive (Gemini Image) wordt gestuurd.
  */
 export function buildVisualBriefImagePrompts(
   brief: VisualBrief,
   brand: BrandContextBlock,
   subject: SubjectContext,
   count = 2,
-): string[] {
+): VisualBriefImagePromptBundle {
   const chip = brief.styleDirection;
   const styleInstruction = chip ? VISUAL_STYLE_IMAGE_INSTRUCTIONS[chip] : '';
   const freeText = brief.styleDirectionFreeText?.trim() ?? '';
@@ -304,5 +317,13 @@ export function buildVisualBriefImagePrompts(
     ].filter(Boolean);
     prompts.push(parts.join(' '));
   }
-  return prompts;
+
+  // Pattern A image-quality-chain: build negative-prompt uit defaults +
+  // workspace imageryDonts. Stuurt naar provider-laag via native parameter
+  // (FAL) of prompt-text directive (Gemini).
+  const negativePrompt = buildNegativePrompt({
+    brandImageryDonts: brand.brandImageryDonts,
+  });
+
+  return { prompts, negativePrompt };
 }

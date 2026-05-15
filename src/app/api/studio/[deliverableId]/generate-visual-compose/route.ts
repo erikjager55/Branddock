@@ -209,7 +209,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     const promptCount = body?.count ?? 2;
-    const basePrompts = buildVisualBriefImagePrompts(
+    const { prompts: basePrompts, negativePrompt } = buildVisualBriefImagePrompts(
       stack.visualBrief,
       stack.brand,
       {
@@ -227,7 +227,12 @@ export async function POST(request: Request, { params }: RouteParams) {
     // The compose instruction IS the subject — prepend it so kontext/multi
     // anchors on it. buildVisualBriefImagePrompts already injects the chip's
     // composition rule + brand identity for stylistic coherence.
-    const finalPrompts = basePrompts.map((p) => `${instruction}. ${p}`);
+    // Pattern A image-quality-chain: Gemini Image heeft geen native
+    // negative-prompt parameter — appendi het als prompt-directive.
+    const negativeDirective = negativePrompt
+      ? ` Avoid: ${negativePrompt}.`
+      : '';
+    const finalPrompts = basePrompts.map((p) => `${instruction}. ${p}${negativeDirective}`);
 
     const explicitFalSize = body?.aspectRatio ? FAL_SIZE_FOR_LABEL[body.aspectRatio] : null;
     const falImageSize: FalImageSize =

@@ -46,6 +46,12 @@ export interface BrandContextBlock {
   brandTypography?: string;
   brandToneOfVoice?: string;
   brandImageryStyle?: string;
+  /**
+   * Per-workspace dont-list uit Brandstyleguide.imageryDonts. Aparte array i.p.v.
+   * suffix op brandImageryStyle zodat image-providers het via een dedicated
+   * negative-prompt kanaal kunnen consumeren (Pattern A image-quality-chain).
+   */
+  brandImageryDonts?: string[];
   brandDesignLanguage?: string;
   brandVisualLanguage?: string;
   brandVisualSystem?: string;

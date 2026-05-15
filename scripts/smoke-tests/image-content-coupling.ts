@@ -67,7 +67,7 @@ console.log('\n=== image-content-coupling smoke ===\n');
 // ── Lifestyle chip with persona + product ──
 console.log('## lifestyle chip — persona + product injection\n');
 {
-  const prompts = buildVisualBriefImagePrompts(
+  const { prompts } = buildVisualBriefImagePrompts(
     { ...baseBrief, styleDirection: 'lifestyle' },
     brand,
     {
@@ -99,7 +99,7 @@ console.log('## lifestyle chip — persona + product injection\n');
 // ── Product-shot chip with product ──
 console.log('\n## product-shot chip — product subject\n');
 {
-  const prompts = buildVisualBriefImagePrompts(
+  const { prompts } = buildVisualBriefImagePrompts(
     { ...baseBrief, styleDirection: 'product-shot' },
     brand,
     {
@@ -124,7 +124,7 @@ console.log('\n## product-shot chip — fallback (no product)\n');
   console.warn = (...args: unknown[]) => { consoleSpy.calls.push(args.map(String).join(' ')); };
 
   try {
-    const prompts = buildVisualBriefImagePrompts(
+    const { prompts } = buildVisualBriefImagePrompts(
       { ...baseBrief, styleDirection: 'product-shot' },
       brand,
       {
@@ -149,7 +149,7 @@ console.log('\n## product-shot chip — fallback (no product)\n');
 // ── Quote-text chip ──
 console.log('\n## quote-text chip — uses callToAction or keyMessage\n');
 {
-  const prompts = buildVisualBriefImagePrompts(
+  const { prompts } = buildVisualBriefImagePrompts(
     { ...baseBrief, styleDirection: 'quote-text' },
     brand,
     {
@@ -167,7 +167,7 @@ console.log('\n## quote-text chip — uses callToAction or keyMessage\n');
 // ── No chip, no context — pure fallback ──
 console.log('\n## No chip + no context — pure fallback\n');
 {
-  const prompts = buildVisualBriefImagePrompts(
+  const { prompts } = buildVisualBriefImagePrompts(
     baseBrief,
     brand,
     { keyMessage: null, objective: null },
@@ -186,7 +186,7 @@ console.log('\n## Truncation — long persona serialized\n');
     name: 'Long Persona',
     serialized: 'A'.repeat(500),
   };
-  const prompts = buildVisualBriefImagePrompts(
+  const { prompts } = buildVisualBriefImagePrompts(
     { ...baseBrief, styleDirection: 'lifestyle' },
     brand,
     {
@@ -204,7 +204,7 @@ console.log('\n## Truncation — long persona serialized\n');
 // ── Backwards compatibility: no new fields ──
 console.log('\n## Backwards compat — minimal call (only keyMessage + objective)\n');
 {
-  const prompts = buildVisualBriefImagePrompts(
+  const { prompts } = buildVisualBriefImagePrompts(
     { ...baseBrief, styleDirection: 'lifestyle' },
     brand,
     {
