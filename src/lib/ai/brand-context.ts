@@ -928,6 +928,7 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         typeScale: true,
         photographyStyle: true,
         photographyGuidelines: true,
+        imageryDonts: true,
         colorsSavedForAi: true,
         typographySavedForAi: true,
         imagerySavedForAi: true,
@@ -1327,6 +1328,9 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       if (photoStyle?.composition) imgParts.push(`Composition: ${photoStyle.composition}`);
       if (styleguide.photographyGuidelines.length > 0) {
         imgParts.push(`Guidelines: ${styleguide.photographyGuidelines.join('; ')}`);
+      }
+      if (styleguide.imageryDonts.length > 0) {
+        imgParts.push(`Avoid: ${styleguide.imageryDonts.join('; ')}`);
       }
       if (imgParts.length > 0) ctx.brandImageryStyle = imgParts.join('. ');
     }
