@@ -15,12 +15,9 @@ import { ReferencesSection } from "./sections/ReferencesSection";
 
 interface BrandVoiceguidePageProps {
   onNavigateToAnalyzer: () => void;
-  /** Cross-module navigator (e.g. setActiveSection). Used by Voice DNA tab
-   * to surface a "style guidelines live in Brandstyle" cross-link. */
-  onNavigate?: (section: string) => void;
 }
 
-export function BrandVoiceguidePage({ onNavigateToAnalyzer, onNavigate }: BrandVoiceguidePageProps) {
+export function BrandVoiceguidePage({ onNavigateToAnalyzer }: BrandVoiceguidePageProps) {
   const { data, isLoading, isError } = useVoiceguide();
   const activeTab = useVoiceguideStore((s) => s.activeTab);
   const setActiveTab = useVoiceguideStore((s) => s.setActiveTab);
@@ -66,7 +63,7 @@ export function BrandVoiceguidePage({ onNavigateToAnalyzer, onNavigate }: BrandV
         <div className="col-span-12 lg:col-span-9">
           <VoiceguideTabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {activeTab === "voice-dna" && <VoiceDnaSection voiceguide={voiceguide} onNavigate={onNavigate} />}
+          {activeTab === "voice-dna" && <VoiceDnaSection voiceguide={voiceguide} />}
           {activeTab === "vocabulary" && <VocabularySection voiceguide={voiceguide} />}
           {activeTab === "channel-tones" && <ChannelTonesSection voiceguide={voiceguide} />}
           {activeTab === "references" && <ReferencesSection voiceguide={voiceguide} />}

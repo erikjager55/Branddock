@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   User, Plus, X, ChevronDown, ChevronUp, Info,
-  MessageCircle, Palette, Type, Image, Sliders, Volume2,
+  MessageCircle, Palette, Type, Image, Sliders,
 } from 'lucide-react';
 import type {
   BrandPersonalityFrameworkData,
@@ -478,59 +478,8 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
         </div>
       </div>
 
-      {/* ─── Card 4 + 5: MOVED to Brand Voice ─── */}
-      {/* Voice & Tone, Words we use/avoid, Writing sample and Communication
-          Style now live in the dedicated Brand Voice module (see sidebar).
-          The legacy fields below stay rendered read-only for one migration
-          window so users can verify what's already there. */}
-      <div className="bg-teal-50/40 border-2 border-teal-200 rounded-2xl p-6">
-        <div className="flex items-start gap-3 mb-3">
-          <div className="h-10 w-10 rounded-xl bg-teal-100 flex items-center justify-center flex-shrink-0">
-            <Volume2 className="h-5 w-5 text-teal-600" />
-          </div>
-          <div className="flex-1">
-            <h2 className="text-lg font-bold text-gray-900">Voice, Tone & Communication Style — moved</h2>
-            <p className="text-sm text-gray-600">
-              Voice description, 4-axis tone dimensions, vocabulary (words we use / avoid),
-              writing samples and channel-specific tones now live in the
-              <strong> Brand Voice </strong>
-              module. Edit them there. The fields below stay visible read-only during the
-              migration window.
-            </p>
-          </div>
-        </div>
-
-        {/* Read-only summary of the voice fields still in frameworkData */}
-        <div className="mt-4 grid sm:grid-cols-2 gap-3 text-xs">
-          {d.brandVoiceDescription && (
-            <div className="p-3 bg-white rounded-md border border-gray-200">
-              <p className="font-semibold text-gray-700 mb-1">Voice description</p>
-              <p className="text-gray-600">{d.brandVoiceDescription}</p>
-            </div>
-          )}
-          {(d.wordsWeUse?.length ?? 0) > 0 && (
-            <div className="p-3 bg-white rounded-md border border-gray-200">
-              <p className="font-semibold text-gray-700 mb-1">Words we use ({d.wordsWeUse.length})</p>
-              <p className="text-gray-600">{d.wordsWeUse.join(", ")}</p>
-            </div>
-          )}
-          {(d.wordsWeAvoid?.length ?? 0) > 0 && (
-            <div className="p-3 bg-white rounded-md border border-gray-200">
-              <p className="font-semibold text-gray-700 mb-1">Words we avoid ({d.wordsWeAvoid.length})</p>
-              <p className="text-gray-600">{d.wordsWeAvoid.join(", ")}</p>
-            </div>
-          )}
-          {d.writingSample && (
-            <div className="p-3 bg-white rounded-md border border-gray-200">
-              <p className="font-semibold text-gray-700 mb-1">Writing sample</p>
-              <p className="text-gray-600 italic">
-                &ldquo;{d.writingSample.length > 200 ? d.writingSample.slice(0, 200) + "…" : d.writingSample}&rdquo;
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
+      {/* Voice, Tone & Communication Style — migratie-banner verwijderd (ADR 2026-05-15).
+          De voice-velden leven volledig in de Brand Voice module. */}
 
       {/* ─── Card 6: Visual Expression ─── */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">

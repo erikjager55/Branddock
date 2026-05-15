@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 
+// tone-of-voice verwijderd: leeft nu in BrandVoiceguide (ADR 2026-05-15) —
+// gebruik /api/brandvoiceguide/[section]/save-for-ai voor voice-secties.
 const SECTION_FIELD_MAP: Record<string, string> = {
   logo: "logoSavedForAi",
   colors: "colorsSavedForAi",
   typography: "typographySavedForAi",
-  "tone-of-voice": "toneSavedForAi",
   imagery: "imagerySavedForAi",
   "design-language": "designLanguageSavedForAi",
   "visual-language": "visualLanguageSavedForAi",

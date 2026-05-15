@@ -30,6 +30,11 @@ export interface ChannelToneEntry {
 
 export type ChannelTones = Partial<Record<ChannelKey, ChannelToneEntry>>;
 
+export interface ExamplePhrase {
+  text: string;
+  type: "do" | "dont";
+}
+
 export interface BrandVoiceguide {
   id: string;
   workspaceId: string;
@@ -41,12 +46,19 @@ export interface BrandVoiceguide {
   wordsWeAvoid: string[];
   channelTones: ChannelTones | null;
   antiPatterns: string[];
+  // Verhuisd uit BrandStyleguide (ADR 2026-05-15)
+  contentGuidelines: string[];
+  writingGuidelines: string[];
+  examplePhrases: ExamplePhrase[] | null;
   centroidComputedAt: string | null;
   voiceDnaSavedForAi: boolean;
   vocabularySavedForAi: boolean;
   channelTonesSavedForAi: boolean;
   antiPatternsSavedForAi: boolean;
   referencesSavedForAi: boolean;
+  // Verhuisd uit BrandStyleguide.toneSavedForAi gesplitst (ADR 2026-05-15)
+  guidelinesSavedForAi: boolean;
+  examplePhrasesSavedForAi: boolean;
   source: string;
   publishedAt: string | null;
   createdAt: string;
@@ -67,11 +79,16 @@ export interface UpdateBrandVoiceguideBody {
   wordsWeAvoid?: string[];
   channelTones?: ChannelTones | null;
   antiPatterns?: string[];
+  contentGuidelines?: string[];
+  writingGuidelines?: string[];
+  examplePhrases?: ExamplePhrase[] | null;
   voiceDnaSavedForAi?: boolean;
   vocabularySavedForAi?: boolean;
   channelTonesSavedForAi?: boolean;
   antiPatternsSavedForAi?: boolean;
   referencesSavedForAi?: boolean;
+  guidelinesSavedForAi?: boolean;
+  examplePhrasesSavedForAi?: boolean;
   source?: string;
 }
 
@@ -80,7 +97,9 @@ export type SaveForAiSection =
   | "vocabulary"
   | "channel-tones"
   | "anti-patterns"
-  | "references";
+  | "references"
+  | "guidelines"
+  | "example-phrases";
 
 export interface RecomputeCentroidResponse {
   ok: true;

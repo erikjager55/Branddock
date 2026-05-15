@@ -1570,10 +1570,8 @@ async function writeResultToDb(
       additionalFonts,
       typeScale: result.typeScale || null,
 
-      // Tone of Voice
-      contentGuidelines: result.contentGuidelines || [],
-      writingGuidelines: result.writingGuidelines || [],
-      examplePhrases: result.examplePhrases || null,
+      // Tone of Voice velden verhuisd naar BrandVoiceguide (ADR 2026-05-15) —
+      // upsert hieronder na de styleguide update.
 
       // Imagery — guard against empty objects from AI
       photographyStyle: isNonEmptyObject(result.photographyStyle)
@@ -1610,6 +1608,41 @@ async function writeResultToDb(
       ...(spacingTokenFields),
     },
   });
+
+  // Tone of voice content schrijven naar BrandVoiceguide (verhuisd uit
+  // BrandStyleguide, ADR 2026-05-15). Partial update: schrijft alleen velden
+  // die de analyzer non-empty retourneert — bestaande user-edits in andere
+  // velden blijven intact bij re-runs.
+  if (sgMeta?.workspaceId) {
+    const tovUpdate: {
+      contentGuidelines?: string[];
+      writingGuidelines?: string[];
+      examplePhrases?: Prisma.InputJsonValue;
+    } = {};
+    if (result.contentGuidelines && result.contentGuidelines.length > 0) {
+      tovUpdate.contentGuidelines = result.contentGuidelines;
+    }
+    if (result.writingGuidelines && result.writingGuidelines.length > 0) {
+      tovUpdate.writingGuidelines = result.writingGuidelines;
+    }
+    // Examples: alleen overschrijven bij non-empty array. Vermijdt wegspoelen
+    // van bestaande user-curated examples wanneer analyzer leeg [] retourneert.
+    if (Array.isArray(result.examplePhrases) && result.examplePhrases.length > 0) {
+      tovUpdate.examplePhrases = result.examplePhrases as Prisma.InputJsonValue;
+    }
+
+    if (Object.keys(tovUpdate).length > 0) {
+      await prisma.brandVoiceguide.upsert({
+        where: { workspaceId: sgMeta.workspaceId },
+        create: {
+          workspaceId: sgMeta.workspaceId,
+          source: 'analyzer',
+          ...tovUpdate,
+        },
+        update: tovUpdate,
+      });
+    }
+  }
 
   // Create color records with computed values (RGB, HSL, CMYK, contrast)
   // Uses the RESOLVED palette — exact hexes from scraping with AI names merged in.

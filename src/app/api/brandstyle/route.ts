@@ -98,9 +98,8 @@ const updateSchema = z.object({
   primaryFontUrl: z.string().optional(),
   additionalFonts: z.array(z.string()).optional(),
   typeScale: z.any().optional(),
-  contentGuidelines: z.array(z.string()).optional(),
-  writingGuidelines: z.array(z.string()).optional(),
-  examplePhrases: z.any().optional(),
+  // contentGuidelines / writingGuidelines / examplePhrases verhuisd naar
+  // BrandVoiceguide (ADR 2026-05-15) — PATCH gaat nu via /api/brandvoiceguide.
   photographyStyle: z.any().optional(),
   photographyGuidelines: z.array(z.string()).optional(),
   illustrationGuidelines: z.array(z.string()).optional(),
@@ -134,7 +133,7 @@ export async function PATCH(request: NextRequest) {
 
     // Convert null → Prisma.JsonNull for nullable JSON fields
     const NULLABLE_JSON_FIELDS = [
-      "typeScale", "examplePhrases", "photographyStyle", "brandImages",
+      "typeScale", "photographyStyle", "brandImages",
       "graphicElements", "patternsTextures", "iconographyStyle", "gradientsEffects", "layoutPrinciples",
       "semanticTokens",
     ] as const;

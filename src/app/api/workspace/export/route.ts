@@ -36,6 +36,7 @@ export async function GET() {
       strategies,
       knowledgeResources,
       styleguide,
+      voiceguide,
     ] = await Promise.all([
       // Workspace info
       prisma.workspace.findUnique({
@@ -267,7 +268,6 @@ export async function GET() {
           logos: { select: { variant: true, fileUrl: true, fileName: true, description: true } },
           logoGuidelines: true, logoDonts: true,
           primaryFontName: true, primaryFontUrl: true, typeScale: true,
-          contentGuidelines: true, writingGuidelines: true, examplePhrases: true,
           photographyStyle: true, photographyGuidelines: true, illustrationGuidelines: true, imageryDonts: true,
           graphicElements: true, patternsTextures: true, iconographyStyle: true, gradientsEffects: true,
           layoutPrinciples: true,
@@ -275,6 +275,24 @@ export async function GET() {
           colors: {
             select: { id: true, hex: true, name: true, category: true, tags: true, notes: true },
           },
+        },
+      }),
+
+      // Voiceguide — tone-of-voice content (verhuisd uit Brandstyleguide, ADR 2026-05-15)
+      prisma.brandVoiceguide.findUnique({
+        where: { workspaceId },
+        select: {
+          voiceDescription: true,
+          toneDimensions: true,
+          contentGuidelines: true,
+          writingGuidelines: true,
+          examplePhrases: true,
+          wordsWeUse: true,
+          wordsWeAvoid: true,
+          antiPatterns: true,
+          writingSamples: true,
+          channelTones: true,
+          contentLocale: true,
         },
       }),
     ]);
@@ -300,6 +318,7 @@ export async function GET() {
       strategies,
       knowledgeResources,
       brandstyle: styleguide,
+      voiceguide,
     };
 
     const json = JSON.stringify(exportPayload, null, 2);

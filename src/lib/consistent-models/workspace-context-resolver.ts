@@ -42,7 +42,6 @@ export async function resolveWorkspaceBrandContext(
         photographyStyle: true,
         photographyGuidelines: true,
         designLanguageSavedForAi: true,
-        toneSavedForAi: true,
         imagerySavedForAi: true,
         logos: {
           orderBy: { sortOrder: 'asc' },
@@ -83,9 +82,10 @@ export async function resolveWorkspaceBrandContext(
     }),
     // BV-WIRE W-4: voiceguide is single source of truth for voice signals.
     // Falls back to personalityAsset.frameworkData below when voiceguide is absent.
+    // guidelinesSavedForAi verhuisd van Brandstyleguide.toneSavedForAi (ADR 2026-05-15).
     prisma.brandVoiceguide.findUnique({
       where: { workspaceId },
-      select: { voiceDescription: true },
+      select: { voiceDescription: true, guidelinesSavedForAi: true },
     }),
   ]);
 
@@ -121,7 +121,7 @@ export async function resolveWorkspaceBrandContext(
   if (styleguide?.designLanguageSavedForAi) {
     ctx.brandDesignLanguage = 'Design language saved for AI context';
   }
-  if (styleguide?.toneSavedForAi) {
+  if (voiceguide?.guidelinesSavedForAi) {
     ctx.toneOfVoice = 'Tone of voice saved for AI context';
   }
 

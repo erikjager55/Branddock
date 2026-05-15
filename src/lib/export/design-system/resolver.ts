@@ -51,9 +51,16 @@ export async function buildDesignSystemModel(
     throw new Error(`Workspace ${workspaceId} not found`);
   }
 
-  const styleguide = await prisma.brandStyleguide.findFirst({
-    where: { workspaceId },
-  });
+  // Guidelines + examplePhrases verhuisd naar BrandVoiceguide (ADR 2026-05-15).
+  const [styleguide, voiceguide] = await Promise.all([
+    prisma.brandStyleguide.findFirst({
+      where: { workspaceId },
+    }),
+    prisma.brandVoiceguide.findUnique({
+      where: { workspaceId },
+      select: { contentGuidelines: true, writingGuidelines: true, examplePhrases: true },
+    }),
+  ]);
 
   const tokens = await ensureSemanticTokens(styleguide);
 
@@ -80,7 +87,7 @@ export async function buildDesignSystemModel(
     elevation: buildElevationMap(tokens?.resolved.elevation),
     components: buildComponentTokens(tokens),
     prose: buildProse(styleguide),
-    extensions: buildExtensions(styleguide, brandAssets, personas, competitors),
+    extensions: buildExtensions(styleguide, voiceguide, brandAssets, personas, competitors),
   };
 }
 
@@ -235,12 +242,14 @@ function buildProse(styleguide: unknown): ProseBlocks {
 
 function buildExtensions(
   styleguide: unknown,
+  voiceguide: unknown,
   brandAssets: BrandFoundationAssetSummary[],
   personas: PersonaSummary[],
   competitors: CompetitorSummary[],
 ): Extensions {
   const sg = (styleguide ?? {}) as Record<string, unknown>;
-  const voice = buildVoiceExtension(sg);
+  const vg = (voiceguide ?? {}) as Record<string, unknown>;
+  const voice = buildVoiceExtension(vg);
   const imagery = buildImageryExtension(sg);
   const iconography = buildIconographyExtension(sg.iconographyStyle);
 
@@ -257,16 +266,23 @@ function buildExtensions(
   return ext;
 }
 
-function buildVoiceExtension(sg: Record<string, unknown>): VoiceExtension | undefined {
-  const principles = asStringArray(sg.contentGuidelines);
-  const writing = asStringArray(sg.writingGuidelines);
-  const phrases = sg.examplePhrases;
+function buildVoiceExtension(vg: Record<string, unknown>): VoiceExtension | undefined {
+  // Velden komen nu uit BrandVoiceguide (ADR 2026-05-15).
+  const principles = asStringArray(vg.contentGuidelines);
+  const writing = asStringArray(vg.writingGuidelines);
+  const phrases = vg.examplePhrases;
   const doSay: string[] = [];
   const dontSay: string[] = [];
-  if (phrases && typeof phrases === 'object') {
-    const p = phrases as Record<string, unknown>;
-    for (const s of asStringArray(p.doSay)) doSay.push(s);
-    for (const s of asStringArray(p.dontSay)) dontSay.push(s);
+  // ExamplePhrases shape: { text: string; type: 'do' | 'dont' }[]
+  if (Array.isArray(phrases)) {
+    for (const e of phrases) {
+      if (e && typeof e === 'object' && 'text' in e && 'type' in e) {
+        const entry = e as { text: unknown; type: unknown };
+        if (typeof entry.text !== 'string') continue;
+        if (entry.type === 'do') doSay.push(entry.text);
+        else if (entry.type === 'dont') dontSay.push(entry.text);
+      }
+    }
   }
   if (!principles.length && !writing.length && !doSay.length && !dontSay.length) return undefined;
   return {

@@ -4,7 +4,6 @@ import type {
   LogoSection,
   ColorsSection,
   TypographySection,
-  ToneOfVoiceSection,
   ImagerySection,
   DesignLanguageSection,
   StyleguideColor,
@@ -142,21 +141,8 @@ export async function updateTypographySection(data: Partial<TypographySection>):
   return res.json();
 }
 
-export async function fetchToneOfVoiceSection(): Promise<{ toneOfVoice: ToneOfVoiceSection }> {
-  const res = await fetch(`${BASE}/tone-of-voice`);
-  if (!res.ok) throw new Error("Failed to fetch tone of voice section");
-  return res.json();
-}
-
-export async function updateToneOfVoiceSection(data: Partial<ToneOfVoiceSection>): Promise<{ toneOfVoice: ToneOfVoiceSection }> {
-  const res = await fetch(`${BASE}/tone-of-voice`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Failed to update tone of voice section");
-  return res.json();
-}
+// fetchToneOfVoiceSection / updateToneOfVoiceSection verwijderd —
+// tone-of-voice consolideert in /api/brandvoiceguide (ADR 2026-05-15).
 
 export async function fetchImagerySection(): Promise<{ imagery: ImagerySection }> {
   const res = await fetch(`${BASE}/imagery`);

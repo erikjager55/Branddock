@@ -1,13 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mic2, RefreshCcw, AlertCircle, Type, Globe, Sparkles, Loader2 } from "lucide-react";
-import { Button, CrossLinkCard } from "@/components/shared";
+import { Mic2, RefreshCcw, AlertCircle, Globe, Sparkles, Loader2, CheckCircle, Eye, Lightbulb } from "lucide-react";
+import { Button } from "@/components/shared";
 import { AiContentBanner } from "../AiContentBanner";
+import { EditableStringList } from "@/features/brandstyle/components/EditableStringList";
 import { useUpdateVoiceguide, useRecomputeCentroid } from "../../hooks";
-import { useBrandstyleStore } from "@/features/brandstyle/stores/useBrandstyleStore";
 import { useSuggestedLocale } from "@/hooks/useSuggestedLocale";
 import type { BrandVoiceguide, ToneAxis, ToneDimensions } from "../../types/voiceguide.types";
+
+/** Parse "OBSERVED:" or "RECOMMENDED:" prefix from a guideline string (verhuisd uit Brandstyle ToneOfVoiceSection, ADR 2026-05-15). */
+function parseGuidelinePrefix(text: string): { prefix: "observed" | "recommended" | null; content: string } {
+  const upper = text.trimStart().toUpperCase();
+  if (upper.startsWith("OBSERVED:")) return { prefix: "observed", content: text.replace(/^OBSERVED:\s*/i, "") };
+  if (upper.startsWith("RECOMMENDED:")) return { prefix: "recommended", content: text.replace(/^RECOMMENDED:\s*/i, "") };
+  return { prefix: null, content: text };
+}
+
+/** Visual badge for OBSERVED/RECOMMENDED guidelines */
+function GuidelineBadge({ type }: { type: "observed" | "recommended" }) {
+  if (type === "observed") {
+    return (
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-blue-50 text-blue-600 flex-shrink-0">
+        <Eye className="w-3 h-3" />
+        Observed
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-600 flex-shrink-0">
+      <Lightbulb className="w-3 h-3" />
+      Recommended
+    </span>
+  );
+}
 
 type ContentLocale = NonNullable<BrandVoiceguide["contentLocale"]>;
 
@@ -36,9 +62,6 @@ const ACTIVE_SOURCE_LABEL: Record<
 
 interface VoiceDnaSectionProps {
   voiceguide: BrandVoiceguide;
-  /** Cross-module navigator. When provided, renders a "style guidelines live
-   * in Brandstyle" cross-link card at the top of the section. */
-  onNavigate?: (section: string) => void;
 }
 
 const TONE_AXES: { key: ToneAxis; left: string; right: string }[] = [
@@ -55,7 +78,7 @@ const DEFAULT_TONE: ToneDimensions = {
   matterOfFactEnthusiastic: 4,
 };
 
-export function VoiceDnaSection({ voiceguide, onNavigate }: VoiceDnaSectionProps) {
+export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
   const update = useUpdateVoiceguide();
   const recompute = useRecomputeCentroid();
   const suggested = useSuggestedLocale();
@@ -101,23 +124,6 @@ export function VoiceDnaSection({ voiceguide, onNavigate }: VoiceDnaSectionProps
 
   return (
     <div className="space-y-6">
-      {/* Cross-link to brandstyle tone-of-voice (BV-WIRE) */}
-      {onNavigate && (
-        <CrossLinkCard
-          icon={Type}
-          accent="violet"
-          title="Style guidelines live in Brandstyle"
-          description="Do/don't examples and writing guidelines for human writers are managed on the Brandstyle Tone of Voice tab. This page captures the machine-readable voice signals used by AI generation."
-          ctaLabel="Open Brandstyle"
-          onClick={() => {
-            // Pre-set the destination tab so the user lands directly on
-            // Tone of Voice (brandstyle's default tab is brand_assets).
-            useBrandstyleStore.getState().setActiveTab("tone_of_voice");
-            onNavigate("brandstyle-guide");
-          }}
-        />
-      )}
-
       {/* Voice description */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-center gap-2 mb-3">
@@ -262,6 +268,74 @@ export function VoiceDnaSection({ voiceguide, onNavigate }: VoiceDnaSectionProps
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Content Guidelines — verhuisd uit Brandstyle (ADR 2026-05-15) */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <EditableStringList
+          title="Content guidelines"
+          items={voiceguide.contentGuidelines}
+          canEdit={true}
+          isSaving={update.isPending}
+          placeholder="Add a content guideline..."
+          onSave={(items) => update.mutate({ contentGuidelines: items })}
+        >
+          {(items) =>
+            items.length > 0 ? (
+              <ol className="space-y-3">
+                {items.map((g, i) => {
+                  const { prefix, content } = parseGuidelinePrefix(g);
+                  return (
+                    <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
+                      <span className="w-5 h-5 rounded-full bg-teal-50 text-teal-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                        {i + 1}
+                      </span>
+                      <div className="flex flex-col gap-1">
+                        {prefix && <GuidelineBadge type={prefix} />}
+                        <span>{content}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <p className="text-sm text-gray-400">No content guidelines yet.</p>
+            )
+          }
+        </EditableStringList>
+      </div>
+
+      {/* Writing Guidelines — verhuisd uit Brandstyle (ADR 2026-05-15) */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <EditableStringList
+          title="Writing guidelines"
+          items={voiceguide.writingGuidelines}
+          canEdit={true}
+          isSaving={update.isPending}
+          placeholder="Add a writing guideline..."
+          onSave={(items) => update.mutate({ writingGuidelines: items })}
+        >
+          {(items) =>
+            items.length > 0 ? (
+              <ul className="space-y-3">
+                {items.map((g, i) => {
+                  const { prefix, content } = parseGuidelinePrefix(g);
+                  return (
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex flex-col gap-1">
+                        {prefix && <GuidelineBadge type={prefix} />}
+                        <span>{content}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-400">No writing guidelines yet.</p>
+            )
+          }
+        </EditableStringList>
       </div>
 
       {/* Centroid status */}

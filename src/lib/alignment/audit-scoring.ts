@@ -71,7 +71,7 @@ export interface AssetCompletenessRow {
 export async function computeActivationReadiness(
   workspaceId: string
 ): Promise<number> {
-  const [personaCount, productCount, styleguide, strategyCount] =
+  const [personaCount, productCount, styleguide, voiceguide, strategyCount] =
     await Promise.all([
       prisma.persona.count({ where: { workspaceId } }),
       prisma.product.count({ where: { workspaceId } }),
@@ -79,9 +79,12 @@ export async function computeActivationReadiness(
         where: { workspaceId },
         select: {
           primaryFontName: true,
-          contentGuidelines: true,
           colors: { select: { id: true } },
         },
+      }),
+      prisma.brandVoiceguide.findUnique({
+        where: { workspaceId },
+        select: { contentGuidelines: true },
       }),
       prisma.businessStrategy.count({ where: { workspaceId } }),
     ]);
@@ -94,10 +97,10 @@ export async function computeActivationReadiness(
   // Products (20 points): at least 2
   score += Math.min(productCount, 2) * 10;
 
-  // Brandstyle (25 points): font + guidelines + colors
+  // Brandstyle (25 points): font + guidelines (uit voiceguide) + colors
   if (styleguide) {
     if (styleguide.primaryFontName) score += 8;
-    if (styleguide.contentGuidelines) score += 8;
+    if (voiceguide?.contentGuidelines?.length) score += 8;
     if ((styleguide.colors?.length ?? 0) >= 3) score += 9;
   }
 

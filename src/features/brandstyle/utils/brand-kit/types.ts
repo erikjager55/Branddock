@@ -43,12 +43,23 @@ export interface BrandKitStyleguide {
   primaryFontUrl: string | null;
   additionalFonts: string[];
   typeScale: TypeScaleLevel[] | null;
-  contentGuidelines: string[];
-  writingGuidelines: string[];
+  // contentGuidelines / writingGuidelines / examplePhrases verhuisd naar
+  // BrandKitVoiceguide (ADR 2026-05-15).
   photographyStyle: unknown;
   photographyGuidelines: string[];
   illustrationGuidelines: string[];
   imageryDonts: string[];
+}
+
+export interface BrandKitExamplePhrase {
+  text: string;
+  type: "do" | "dont";
+}
+
+export interface BrandKitVoiceguide {
+  contentGuidelines: string[];
+  writingGuidelines: string[];
+  examplePhrases: BrandKitExamplePhrase[] | null;
 }
 
 export interface BrandKitBrandAsset {
@@ -139,6 +150,7 @@ export interface BrandKitCompetitor {
 export interface BrandKitData {
   workspace: BrandKitWorkspace;
   styleguide: BrandKitStyleguide | null;
+  voiceguide: BrandKitVoiceguide | null;
   brandAssets: BrandKitBrandAsset[];
   personas: BrandKitPersona[];
   products: BrandKitProduct[];

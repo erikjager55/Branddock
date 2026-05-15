@@ -264,20 +264,9 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
     y += 2;
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // 4. TONE OF VOICE
-  // ═══════════════════════════════════════════════════════════════
-  addSectionHeader('4. Tone of Voice');
-
-  addList('Content Guidelines', styleguide.contentGuidelines);
-  addList('Writing Guidelines', styleguide.writingGuidelines);
-
-  if (styleguide.examplePhrases && styleguide.examplePhrases.length > 0) {
-    const dos = styleguide.examplePhrases.filter(p => p.type === 'do');
-    const donts = styleguide.examplePhrases.filter(p => p.type === 'dont');
-    if (dos.length > 0) addList('Do Say', dos.map(p => p.text));
-    if (donts.length > 0) addList("Don't Say", donts.map(p => p.text));
-  }
+  // Tone of voice sectie verwijderd uit Brand Styleguide PDF (ADR 2026-05-15):
+  // guidelines + do/don't examples leven nu in BrandVoiceguide en worden via de
+  // brand-kit composite PDF (of een toekomstige Brand Voice PDF) geëxporteerd.
 
   // ═══════════════════════════════════════════════════════════════
   // 5. IMAGERY

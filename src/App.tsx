@@ -544,7 +544,6 @@ function AppContent() {
         return (
           <BrandStyleguidePage
             onNavigateToAnalyzer={() => handleSetActiveSection('brandstyle-analyze')}
-            onNavigate={handleSetActiveSection}
           />
         );
       case 'brandstyle-analyze':
@@ -560,7 +559,6 @@ function AppContent() {
         return (
           <BrandVoiceguidePage
             onNavigateToAnalyzer={() => handleSetActiveSection('brandvoice-analyze')}
-            onNavigate={handleSetActiveSection}
           />
         );
       case 'brandvoice-analyze':

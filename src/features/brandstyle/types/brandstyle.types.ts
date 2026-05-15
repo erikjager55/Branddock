@@ -131,10 +131,7 @@ export interface TypeScaleLevel {
   usage?: string;
 }
 
-export interface ExamplePhrase {
-  text: string;
-  type: "do" | "dont";
-}
+// ExamplePhrase verhuisd naar BrandVoiceguide types (ADR 2026-05-15)
 
 export interface PhotographyStyle {
   mood?: string;
@@ -240,11 +237,7 @@ export interface BrandStyleguide {
   typeScale: TypeScaleLevel[] | null;
   typographySavedForAi: boolean;
 
-  // Tone of Voice
-  contentGuidelines: string[];
-  writingGuidelines: string[];
-  examplePhrases: ExamplePhrase[] | null;
-  toneSavedForAi: boolean;
+  // Tone of Voice velden verhuisd naar BrandVoiceguide (ADR 2026-05-15).
 
   // Imagery
   photographyStyle: PhotographyStyle | null;
@@ -327,12 +320,7 @@ export interface TypographySection {
   typographySavedForAi: boolean;
 }
 
-export interface ToneOfVoiceSection {
-  contentGuidelines: string[];
-  writingGuidelines: string[];
-  examplePhrases: ExamplePhrase[] | null;
-  toneSavedForAi: boolean;
-}
+// ToneOfVoiceSection interface verwijderd — verhuisd naar BrandVoiceguide (ADR 2026-05-15)
 
 export interface ImagerySection {
   photographyStyle: PhotographyStyle | null;
@@ -371,6 +359,7 @@ export interface UpdateReviewBody {
   referenceImageUrl?: string | null;
 }
 
-export type StyleguideTab = "brand_assets" | "colors" | "typography" | "spacing" | "components" | "tone_of_voice" | "imagery" | "visual_system" | "design_system" | "history";
+// tone_of_voice + tone-of-voice verwijderd — verhuisd naar Brand Voice (ADR 2026-05-15)
+export type StyleguideTab = "brand_assets" | "colors" | "typography" | "spacing" | "components" | "imagery" | "visual_system" | "design_system" | "history";
 
-export type SaveForAiSection = "logo" | "colors" | "typography" | "tone-of-voice" | "imagery" | "design-language" | "visual-language";
+export type SaveForAiSection = "logo" | "colors" | "typography" | "imagery" | "design-language" | "visual-language";

@@ -704,32 +704,8 @@ const styleguideData = {
     highlight: { font: 'Reenie Beanie Regular', size: '24px', lineHeight: '1.2' },
   },
   typographySavedForAi: true,
-  contentGuidelines: [
-    'Spreek de taal van de ondernemer, niet die van de jurist.',
-    'Vermijd juridisch jargon zonder uitleg.',
-    'Stel de werkgever centraal — gebruik tweede persoon ("jij/jou") en partnerschap-taal ("wij staan naast je").',
-    'Wees nuchter en helder; geen dramatische framing.',
-  ],
-  writingGuidelines: [
-    'Korte zinnen, actieve vorm, concrete voorbeelden.',
-    'Laat het beste gevoel (rust, grip, vertrouwen) doorklinken in de toon.',
-    'Gebruik headlines die direct herkenning oproepen ("Wie staat er aan jouw kant?").',
-    'Sluit af met een duidelijke vervolgstap of geruststelling.',
-  ],
-  examplePhrases: {
-    do: [
-      'Jouw recht. Onze zaak.',
-      'Wij staan naast je.',
-      'Wij regelen het, zodat jij kunt ondernemen.',
-      'Geen ingewikkelde trajecten. Geen juridisch jargon.',
-    ],
-    dont: [
-      'Wij behartigen uw belangen conform de geldende rechtspraak.',
-      'Onze rechtsverhouding zal worden vastgelegd.',
-      'Wij streven ernaar de aangelegenheid in goede orde af te wikkelen.',
-    ],
-  },
-  toneSavedForAi: true,
+  // contentGuidelines / writingGuidelines / examplePhrases / toneSavedForAi verhuisd
+  // naar BrandVoiceguide (ADR 2026-05-15) — zie voiceguideToneOfVoice hieronder.
   photographyGuidelines: [
     'Echte MKB-ondernemers in hun eigen omgeving (bedrijfspand, kantoor, werkvloer).',
     'Geen geposeerde stockfoto\'s van advocaten of juridische kantoren.',
@@ -1086,7 +1062,6 @@ async function main() {
       workspaceId: WORKSPACE_ID,
       createdById: USER_ID,
       typeScale: styleguideData.typeScale as Prisma.InputJsonValue,
-      examplePhrases: styleguideData.examplePhrases as Prisma.InputJsonValue,
       logos: {
         create: logoRecords.map((l) => ({ ...l, workspaceId: WORKSPACE_ID })),
       },
@@ -1100,6 +1075,60 @@ async function main() {
     });
     console.log(`  ✅ Color: ${color.name} (${color.hex})`);
   }
+
+  // Tone of voice content (verhuisd uit BrandStyleguide naar BrandVoiceguide, ADR 2026-05-15)
+  await prisma.brandVoiceguide.upsert({
+    where: { workspaceId: WORKSPACE_ID },
+    create: {
+      workspaceId: WORKSPACE_ID,
+      source: 'manual',
+      contentGuidelines: [
+        'Spreek de taal van de ondernemer, niet die van de jurist.',
+        'Vermijd juridisch jargon zonder uitleg.',
+        'Stel de werkgever centraal — gebruik tweede persoon ("jij/jou") en partnerschap-taal ("wij staan naast je").',
+        'Wees nuchter en helder; geen dramatische framing.',
+      ],
+      writingGuidelines: [
+        'Korte zinnen, actieve vorm, concrete voorbeelden.',
+        'Laat het beste gevoel (rust, grip, vertrouwen) doorklinken in de toon.',
+        'Gebruik headlines die direct herkenning oproepen ("Wie staat er aan jouw kant?").',
+        'Sluit af met een duidelijke vervolgstap of geruststelling.',
+      ],
+      examplePhrases: [
+        { text: 'Jouw recht. Onze zaak.', type: 'do' },
+        { text: 'Wij staan naast je.', type: 'do' },
+        { text: 'Wij regelen het, zodat jij kunt ondernemen.', type: 'do' },
+        { text: 'Geen ingewikkelde trajecten. Geen juridisch jargon.', type: 'do' },
+        { text: 'Wij behartigen uw belangen conform de geldende rechtspraak.', type: 'dont' },
+        { text: 'Onze rechtsverhouding zal worden vastgelegd.', type: 'dont' },
+        { text: 'Wij streven ernaar de aangelegenheid in goede orde af te wikkelen.', type: 'dont' },
+      ],
+    },
+    update: {
+      contentGuidelines: [
+        'Spreek de taal van de ondernemer, niet die van de jurist.',
+        'Vermijd juridisch jargon zonder uitleg.',
+        'Stel de werkgever centraal — gebruik tweede persoon ("jij/jou") en partnerschap-taal ("wij staan naast je").',
+        'Wees nuchter en helder; geen dramatische framing.',
+      ],
+      writingGuidelines: [
+        'Korte zinnen, actieve vorm, concrete voorbeelden.',
+        'Laat het beste gevoel (rust, grip, vertrouwen) doorklinken in de toon.',
+        'Gebruik headlines die direct herkenning oproepen ("Wie staat er aan jouw kant?").',
+        'Sluit af met een duidelijke vervolgstap of geruststelling.',
+      ],
+      examplePhrases: [
+        { text: 'Jouw recht. Onze zaak.', type: 'do' },
+        { text: 'Wij staan naast je.', type: 'do' },
+        { text: 'Wij regelen het, zodat jij kunt ondernemen.', type: 'do' },
+        { text: 'Geen ingewikkelde trajecten. Geen juridisch jargon.', type: 'do' },
+        { text: 'Wij behartigen uw belangen conform de geldende rechtspraak.', type: 'dont' },
+        { text: 'Onze rechtsverhouding zal worden vastgelegd.', type: 'dont' },
+        { text: 'Wij streven ernaar de aangelegenheid in goede orde af te wikkelen.', type: 'dont' },
+      ],
+    },
+  });
+  console.log(`  ✅ BrandVoiceguide tone-of-voice upserted`);
 
   // 3. Detected Trends
   console.log('\n📈 Trends');

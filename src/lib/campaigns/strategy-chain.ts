@@ -284,15 +284,16 @@ async function buildTrendContext(workspaceId: string, trendIds?: string[]): Prom
 }
 
 async function buildStyleguideContext(workspaceId: string): Promise<string> {
-  const sg = await prisma.brandStyleguide.findFirst({
+  // Guidelines + examples verhuisd naar BrandVoiceguide (ADR 2026-05-15).
+  const voiceguide = await prisma.brandVoiceguide.findUnique({
     where: { workspaceId },
     select: { writingGuidelines: true, contentGuidelines: true, examplePhrases: true },
   });
-  if (!sg) return '';
+  if (!voiceguide) return '';
   const parts: string[] = [];
-  if (sg.contentGuidelines?.length) parts.push(`Content guidelines: ${sg.contentGuidelines.join('; ')}`);
-  if (sg.writingGuidelines?.length) parts.push(`Writing guidelines: ${sg.writingGuidelines.join('; ')}`);
-  if (sg.examplePhrases) parts.push(`Example phrases: ${JSON.stringify(sg.examplePhrases)}`);
+  if (voiceguide.contentGuidelines?.length) parts.push(`Content guidelines: ${voiceguide.contentGuidelines.join('; ')}`);
+  if (voiceguide.writingGuidelines?.length) parts.push(`Writing guidelines: ${voiceguide.writingGuidelines.join('; ')}`);
+  if (voiceguide.examplePhrases) parts.push(`Example phrases: ${JSON.stringify(voiceguide.examplePhrases)}`);
   return parts.join('\n');
 }
 

@@ -10,7 +10,8 @@ import type { ValidationStatus } from '@/features/campaigns/types/canvas.types';
 
 // ---------------------------------------------------------------------------
 // POST /api/studio/[deliverableId]/tone-check
-// Analyzes content against the workspace's BrandStyleguide tone-of-voice data.
+// Analyzes content against the workspace's BrandVoiceguide tone-of-voice data
+// (verhuisd uit BrandStyleguide, ADR 2026-05-15).
 // ---------------------------------------------------------------------------
 
 interface ToneCheckAIResponse {
@@ -62,19 +63,21 @@ export async function POST(
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
     }
 
-    // Fetch brand styleguide tone data
-    const styleguide = await prisma.brandStyleguide.findFirst({
+    // Fetch tone-of-voice content uit BrandVoiceguide (verhuisd uit BrandStyleguide,
+    // ADR 2026-05-15). guidelinesSavedForAi gate vervangt toneSavedForAi.
+    const voiceguide = await prisma.brandVoiceguide.findUnique({
       where: { workspaceId },
       select: {
         contentGuidelines: true,
         writingGuidelines: true,
         examplePhrases: true,
-        toneSavedForAi: true,
+        guidelinesSavedForAi: true,
+        examplePhrasesSavedForAi: true,
       },
     });
 
-    // No styleguide or tone not saved for AI → quick return
-    if (!styleguide || !styleguide.toneSavedForAi) {
+    // No voiceguide or guidelines not saved for AI → quick return
+    if (!voiceguide || !voiceguide.guidelinesSavedForAi) {
       return NextResponse.json({
         toneCheck: { status: 'warn' as ValidationStatus, message: 'No tone guidelines configured' },
         brandVoice: { score: 0, alignment: 'Pending' as const },
@@ -82,10 +85,14 @@ export async function POST(
       });
     }
 
+    const examplePhrasesAvailable =
+      voiceguide.examplePhrasesSavedForAi &&
+      voiceguide.examplePhrases &&
+      typeof voiceguide.examplePhrases === 'object';
     const hasGuidelines =
-      styleguide.contentGuidelines.length > 0 ||
-      styleguide.writingGuidelines.length > 0 ||
-      (styleguide.examplePhrases && typeof styleguide.examplePhrases === 'object');
+      voiceguide.contentGuidelines.length > 0 ||
+      voiceguide.writingGuidelines.length > 0 ||
+      examplePhrasesAvailable;
 
     if (!hasGuidelines) {
       return NextResponse.json({
@@ -123,14 +130,14 @@ export async function POST(
 
     // Build guidelines section
     const guidelinesText = [
-      styleguide.contentGuidelines.length > 0
-        ? `Content Guidelines:\n${styleguide.contentGuidelines.map((g) => `- ${g}`).join('\n')}`
+      voiceguide.contentGuidelines.length > 0
+        ? `Content Guidelines:\n${voiceguide.contentGuidelines.map((g) => `- ${g}`).join('\n')}`
         : '',
-      styleguide.writingGuidelines.length > 0
-        ? `Writing Guidelines:\n${styleguide.writingGuidelines.map((g) => `- ${g}`).join('\n')}`
+      voiceguide.writingGuidelines.length > 0
+        ? `Writing Guidelines:\n${voiceguide.writingGuidelines.map((g) => `- ${g}`).join('\n')}`
         : '',
-      styleguide.examplePhrases
-        ? `Example Phrases (do/don't):\n${JSON.stringify(styleguide.examplePhrases, null, 2)}`
+      voiceguide.examplePhrases && voiceguide.examplePhrasesSavedForAi
+        ? `Example Phrases (do/don't):\n${JSON.stringify(voiceguide.examplePhrases, null, 2)}`
         : '',
     ]
       .filter(Boolean)

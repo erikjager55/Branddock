@@ -1445,29 +1445,8 @@ async function main() {
       ],
       typographySavedForAi: true,
 
-      // Tone of Voice
-      contentGuidelines: [
-        "Write in active voice — direct and engaging",
-        "Use simple, clear language — avoid jargon unless audience-specific",
-        "Lead with benefits, not features",
-        "Be confident but not arrogant",
-        "Address the reader directly with 'you' and 'your'",
-      ],
-      writingGuidelines: [
-        "Headlines: Max 8 words, action-oriented",
-        "Body text: Short paragraphs (2-3 sentences max)",
-        "CTAs: Start with a verb, create urgency",
-        "Tone: Professional yet approachable",
-        "Avoid: Exclamation marks, ALL CAPS, buzzwords",
-      ],
-      examplePhrases: [
-        { text: "Build your brand strategy with AI-powered insights", type: "do" },
-        { text: "Transform how your team creates on-brand content", type: "do" },
-        { text: "Simple tools for complex brand challenges", type: "do" },
-        { text: "THE BEST BRAND TOOL EVER!!!", type: "dont" },
-        { text: "Leverage synergies to optimize brand paradigms", type: "dont" },
-      ],
-      toneSavedForAi: true,
+      // Tone of Voice velden verhuisd naar BrandVoiceguide (ADR 2026-05-15) —
+      // upsert volgt na deze create.
 
       // Imagery
       photographyStyle: {
@@ -1521,6 +1500,59 @@ async function main() {
       data: { ...color, styleguideId: styleguide.id },
     });
   }
+
+  // Tone of voice content (verhuisd uit BrandStyleguide naar BrandVoiceguide, ADR 2026-05-15)
+  await prisma.brandVoiceguide.upsert({
+    where: { workspaceId: workspace.id },
+    create: {
+      workspaceId: workspace.id,
+      source: "manual",
+      contentGuidelines: [
+        "Write in active voice — direct and engaging",
+        "Use simple, clear language — avoid jargon unless audience-specific",
+        "Lead with benefits, not features",
+        "Be confident but not arrogant",
+        "Address the reader directly with 'you' and 'your'",
+      ],
+      writingGuidelines: [
+        "Headlines: Max 8 words, action-oriented",
+        "Body text: Short paragraphs (2-3 sentences max)",
+        "CTAs: Start with a verb, create urgency",
+        "Tone: Professional yet approachable",
+        "Avoid: Exclamation marks, ALL CAPS, buzzwords",
+      ],
+      examplePhrases: [
+        { text: "Build your brand strategy with AI-powered insights", type: "do" },
+        { text: "Transform how your team creates on-brand content", type: "do" },
+        { text: "Simple tools for complex brand challenges", type: "do" },
+        { text: "THE BEST BRAND TOOL EVER!!!", type: "dont" },
+        { text: "Leverage synergies to optimize brand paradigms", type: "dont" },
+      ],
+    },
+    update: {
+      contentGuidelines: [
+        "Write in active voice — direct and engaging",
+        "Use simple, clear language — avoid jargon unless audience-specific",
+        "Lead with benefits, not features",
+        "Be confident but not arrogant",
+        "Address the reader directly with 'you' and 'your'",
+      ],
+      writingGuidelines: [
+        "Headlines: Max 8 words, action-oriented",
+        "Body text: Short paragraphs (2-3 sentences max)",
+        "CTAs: Start with a verb, create urgency",
+        "Tone: Professional yet approachable",
+        "Avoid: Exclamation marks, ALL CAPS, buzzwords",
+      ],
+      examplePhrases: [
+        { text: "Build your brand strategy with AI-powered insights", type: "do" },
+        { text: "Transform how your team creates on-brand content", type: "do" },
+        { text: "Simple tools for complex brand challenges", type: "do" },
+        { text: "THE BEST BRAND TOOL EVER!!!", type: "dont" },
+        { text: "Leverage synergies to optimize brand paradigms", type: "dont" },
+      ],
+    },
+  });
 
   // ============================================
   // PERSONAS SEED DATA (Fase 4) — 3 demo personas

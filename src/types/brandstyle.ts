@@ -27,7 +27,7 @@ export interface BrandStyleguide {
   logo: LogoSection;
   colors: ColorsSection;
   typography: TypographySection;
-  toneOfVoice: ToneOfVoiceSection;
+  // toneOfVoice verhuisd naar BrandVoiceguide (ADR 2026-05-15)
   imagery: ImagerySection;
 }
 
@@ -81,17 +81,7 @@ export interface TypeScaleItem {
   letterSpacing: string;
 }
 
-export interface ToneOfVoiceSection {
-  contentGuidelines: string[];
-  writingGuidelines: string[];
-  examplePhrases: ExamplePhrase[];
-  savedForAi: boolean;
-}
-
-export interface ExamplePhrase {
-  text: string;
-  type: "do" | "dont";
-}
+// ToneOfVoiceSection + ExamplePhrase verhuisd naar BrandVoiceguide types (ADR 2026-05-15)
 
 export interface ImagerySection {
   photographyStyle: {
@@ -145,16 +135,15 @@ export interface AiContextResponse {
   logo: LogoSection | null;
   colors: ColorsSection | null;
   typography: TypographySection | null;
-  toneOfVoice: ToneOfVoiceSection | null;
+  // toneOfVoice verhuisd naar BrandVoiceguide ai-context (ADR 2026-05-15)
   imagery: ImagerySection | null;
 }
 
-// Tab config
+// Tab config — tone_of_voice verwijderd, verhuisd naar Brand Voice (ADR 2026-05-15)
 export type StyleguideTab =
   | "logo"
   | "colors"
   | "typography"
-  | "tone_of_voice"
   | "imagery";
 
 export const STYLEGUIDE_TAB_CONFIG: Record<
@@ -164,7 +153,6 @@ export const STYLEGUIDE_TAB_CONFIG: Record<
   logo: { label: "Logo", icon: "Image" },
   colors: { label: "Colors", icon: "Palette" },
   typography: { label: "Typography", icon: "Type" },
-  tone_of_voice: { label: "Tone of Voice", icon: "MessageCircle" },
   imagery: { label: "Imagery", icon: "Camera" },
 };
 

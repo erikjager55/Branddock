@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, X, Hash, Ban } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Plus, X, Hash, Ban, CheckCircle, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/shared";
 import { AiContentBanner } from "../AiContentBanner";
 import { useUpdateVoiceguide } from "../../hooks";
-import type { BrandVoiceguide } from "../../types/voiceguide.types";
+import type { BrandVoiceguide, ExamplePhrase } from "../../types/voiceguide.types";
 
 interface VocabularySectionProps {
   voiceguide: BrandVoiceguide;
@@ -99,6 +99,196 @@ function ChipList({ label, description, items, placeholder, onChange, accent, ic
   );
 }
 
+/** Do/Don't fraserings-voorbeelden — verhuisd uit BrandStyleguide.examplePhrases (ADR 2026-05-15). */
+function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
+  const update = useUpdateVoiceguide();
+  const examples = voiceguide.examplePhrases ?? [];
+  const doExamples = examples.filter((e) => e.type === "do");
+  const dontExamples = examples.filter((e) => e.type === "dont");
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editItems, setEditItems] = useState<ExamplePhrase[]>([]);
+
+  const startEdit = useCallback(() => {
+    setEditItems(examples.map((e) => ({ ...e })));
+    setIsEditing(true);
+  }, [examples]);
+
+  const cancel = () => setIsEditing(false);
+
+  const save = () => {
+    const cleaned = editItems.filter((e) => e.text.trim());
+    update.mutate(
+      { examplePhrases: cleaned.length > 0 ? cleaned : null },
+      { onSuccess: () => setIsEditing(false) },
+    );
+  };
+
+  const updateText = (idx: number, text: string) => {
+    setEditItems((prev) => prev.map((e, i) => (i === idx ? { ...e, text } : e)));
+  };
+
+  const remove = (idx: number) => {
+    setEditItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const addExample = (type: "do" | "dont") => {
+    setEditItems((prev) => [...prev, { text: "", type }]);
+  };
+
+  const editDo = editItems
+    .map((e, i) => ({ ...e, originalIndex: i }))
+    .filter((e) => e.type === "do");
+  const editDont = editItems
+    .map((e, i) => ({ ...e, originalIndex: i }))
+    .filter((e) => e.type === "dont");
+
+  if (isEditing) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">Do / Don&apos;t examples</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="text-sm font-semibold text-emerald-700 mb-3">Do</h4>
+            <div className="space-y-2">
+              {editDo.map((e) => (
+                <div key={e.originalIndex} className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                  <input
+                    value={e.text}
+                    onChange={(ev) => updateText(e.originalIndex, ev.target.value)}
+                    placeholder="e.g. We're here to help you succeed."
+                    className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 italic"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => remove(e.originalIndex)}
+                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    aria-label="Remove"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addExample("do")}
+                className="flex items-center gap-1.5 text-sm text-teal-700 hover:text-teal-900 transition-colors mt-1"
+              >
+                <Plus className="w-4 h-4" />
+                Add &ldquo;do&rdquo;
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-red-700 mb-3">Don&apos;t</h4>
+            <div className="space-y-2">
+              {editDont.map((e) => (
+                <div key={e.originalIndex} className="flex items-center gap-2">
+                  <X className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  <input
+                    value={e.text}
+                    onChange={(ev) => updateText(e.originalIndex, ev.target.value)}
+                    placeholder="e.g. Dear valued customer..."
+                    className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 italic"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => remove(e.originalIndex)}
+                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    aria-label="Remove"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addExample("dont")}
+                className="flex items-center gap-1.5 text-sm text-teal-700 hover:text-teal-900 transition-colors mt-1"
+              >
+                <Plus className="w-4 h-4" />
+                Add &ldquo;don&apos;t&rdquo;
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2 pt-4">
+          <Button variant="primary" size="sm" onClick={save} isLoading={update.isPending}>
+            Save
+          </Button>
+          <Button variant="secondary" size="sm" onClick={cancel}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (examples.length === 0) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <h3 className="text-sm font-semibold text-gray-900 mb-2">Do / Don&apos;t examples</h3>
+        <p className="text-xs text-gray-500 mb-3">
+          Concrete fraserings-voorbeelden die laten zien hoe het merk wel en niet schrijft.
+        </p>
+        <button
+          type="button"
+          onClick={startEdit}
+          className="inline-flex items-center gap-1.5 text-sm text-teal-700 hover:text-teal-900 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Add examples
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-6 relative">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-gray-900">Do / Don&apos;t examples</h3>
+        <button
+          onClick={startEdit}
+          className="p-1 text-gray-400 hover:text-primary transition-colors"
+          aria-label="Edit examples"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {doExamples.length > 0 && (
+          <div>
+            <h4 className="text-xs font-semibold text-emerald-700 mb-2">Do</h4>
+            <div className="space-y-2">
+              {doExamples.map((e, i) => (
+                <div key={i} className="flex items-start gap-2 text-sm text-gray-600 p-2 bg-emerald-50 rounded-md">
+                  <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                  <span className="italic">&ldquo;{e.text}&rdquo;</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {dontExamples.length > 0 && (
+          <div>
+            <h4 className="text-xs font-semibold text-red-700 mb-2">Don&apos;t</h4>
+            <div className="space-y-2">
+              {dontExamples.map((e, i) => (
+                <div key={i} className="flex items-start gap-2 text-sm text-gray-600 p-2 bg-red-50 rounded-md">
+                  <X className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <span className="italic">&ldquo;{e.text}&rdquo;</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function VocabularySection({ voiceguide }: VocabularySectionProps) {
   const update = useUpdateVoiceguide();
 
@@ -133,6 +323,8 @@ export function VocabularySection({ voiceguide }: VocabularySectionProps) {
         icon={Ban}
         onChange={(items) => update.mutate({ antiPatterns: items })}
       />
+
+      <ExamplePhrasesEditor voiceguide={voiceguide} />
 
       <div className="grid sm:grid-cols-2 gap-4">
         <AiContentBanner section="vocabulary" savedForAi={voiceguide.vocabularySavedForAi} />

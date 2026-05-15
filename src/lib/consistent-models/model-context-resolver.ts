@@ -100,7 +100,8 @@ export async function resolveModelBrandContext(
     }),
 
     // Styleguide — colors, fonts, imagery, design language
-    (needs.brandColors || needs.brandFonts || needs.brandImageryStyle || needs.brandDesignLanguage || needs.toneOfVoice)
+    // toneOfVoice gate verhuisd naar voiceguide.guidelinesSavedForAi (ADR 2026-05-15).
+    (needs.brandColors || needs.brandFonts || needs.brandImageryStyle || needs.brandDesignLanguage)
       ? prisma.brandStyleguide.findFirst({
           where: { workspaceId },
           select: {
@@ -109,7 +110,6 @@ export async function resolveModelBrandContext(
             photographyStyle: true,
             photographyGuidelines: true,
             designLanguageSavedForAi: true,
-            toneSavedForAi: true,
             imagerySavedForAi: true,
           },
         })
@@ -164,12 +164,11 @@ export async function resolveModelBrandContext(
       : null,
 
     // BV-WIRE W-4: BrandVoiceguide is single source of truth for voice signals.
-    // Falls back to personalityAsset.frameworkData.brandVoiceDescription below
-    // when voiceguide absent (unmigrated workspace).
-    needs.brandPersonality
+    // guidelinesSavedForAi verhuisd van Brandstyleguide.toneSavedForAi (ADR 2026-05-15).
+    (needs.brandPersonality || needs.toneOfVoice)
       ? prisma.brandVoiceguide.findUnique({
           where: { workspaceId },
-          select: { voiceDescription: true },
+          select: { voiceDescription: true, guidelinesSavedForAi: true },
         })
       : null,
   ]);
@@ -209,7 +208,7 @@ export async function resolveModelBrandContext(
   }
 
   // Tone of voice (savedForAi is a boolean flag — no content string available at this level)
-  if (needs.toneOfVoice && styleguide?.toneSavedForAi) {
+  if (needs.toneOfVoice && voiceguide?.guidelinesSavedForAi) {
     ctx.toneOfVoice = 'Tone of voice saved for AI context';
   }
 

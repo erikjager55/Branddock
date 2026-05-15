@@ -178,19 +178,26 @@ export async function fetchContextData(
     }
 
     case "brandstyle": {
-      const styleguide = await prisma.brandStyleguide.findFirst({
-        where: { id: sourceId, workspaceId },
-        select: {
-          contentGuidelines: true,
-          photographyStyle: true,
-          primaryFontName: true,
-        },
-      });
+      // contentGuidelines verhuisd naar BrandVoiceguide (ADR 2026-05-15).
+      // Styleguide levert visuele velden, voiceguide levert guidelines.
+      const [styleguide, voiceguide] = await Promise.all([
+        prisma.brandStyleguide.findFirst({
+          where: { id: sourceId, workspaceId },
+          select: {
+            photographyStyle: true,
+            primaryFontName: true,
+          },
+        }),
+        prisma.brandVoiceguide.findUnique({
+          where: { workspaceId },
+          select: { contentGuidelines: true },
+        }),
+      ]);
       if (!styleguide) return null;
       return {
         name: "Brand Styleguide",
         contextData: {
-          contentGuidelines: styleguide.contentGuidelines,
+          contentGuidelines: voiceguide?.contentGuidelines ?? [],
           photographyStyle: styleguide.photographyStyle,
           primaryFont: styleguide.primaryFontName,
         },

@@ -637,7 +637,8 @@ export const readTools: ClawToolDefinition[] = [
     requiresConfirmation: false,
     category: 'read',
     execute: async (_params, ctx: ToolExecutionContext) => {
-      const styleguide = await prisma.brandStyleguide.findFirst({
+      const [styleguide, voiceguide] = await Promise.all([
+        prisma.brandStyleguide.findFirst({
         where: { workspaceId: ctx.workspaceId },
         include: {
           colors: {
@@ -649,7 +650,12 @@ export const readTools: ClawToolDefinition[] = [
             orderBy: { sortOrder: 'asc' },
           },
         },
-      });
+      }),
+        prisma.brandVoiceguide.findUnique({
+          where: { workspaceId: ctx.workspaceId },
+          select: { contentGuidelines: true, writingGuidelines: true },
+        }),
+      ]);
 
       if (!styleguide) return { error: 'No styleguide found' };
 
@@ -664,8 +670,8 @@ export const readTools: ClawToolDefinition[] = [
         colors: styleguide.colors,
         primaryFontName: styleguide.primaryFontName,
         additionalFonts: styleguide.additionalFonts,
-        contentGuidelines: styleguide.contentGuidelines,
-        writingGuidelines: styleguide.writingGuidelines,
+        contentGuidelines: voiceguide?.contentGuidelines ?? [],
+        writingGuidelines: voiceguide?.writingGuidelines ?? [],
         photographyStyle: styleguide.photographyStyle,
         visualLanguage: styleguide.visualLanguage,
       };

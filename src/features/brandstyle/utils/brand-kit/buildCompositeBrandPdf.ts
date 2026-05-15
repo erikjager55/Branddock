@@ -21,6 +21,7 @@ import type {
   BrandKitProduct,
   BrandKitCompetitor,
   BrandKitStyleguide,
+  BrandKitVoiceguide,
 } from "./types";
 
 const BRAND_PURPLE: [number, number, number] = [147, 51, 234];
@@ -286,7 +287,12 @@ export interface EmbeddedLogo {
   aspectRatio: number; // width / height
 }
 
-function renderStyleguide(ctx: Ctx, sg: BrandKitStyleguide, logos: EmbeddedLogo[] = []) {
+function renderStyleguide(
+  ctx: Ctx,
+  sg: BrandKitStyleguide,
+  voiceguide: BrandKitVoiceguide | null,
+  logos: EmbeddedLogo[] = [],
+) {
   ctx.addPage();
   ctx.addSectionHeader("1. Visual Identity");
 
@@ -387,11 +393,23 @@ function renderStyleguide(ctx: Ctx, sg: BrandKitStyleguide, logos: EmbeddedLogo[
     }
   }
 
-  // Tone of voice
-  if (sg.contentGuidelines.length > 0 || sg.writingGuidelines.length > 0) {
-    ctx.addSubHeader("Tone of Voice");
-    ctx.addList("Content guidelines", sg.contentGuidelines);
-    ctx.addList("Writing guidelines", sg.writingGuidelines);
+  // Tone of voice — leest uit voiceguide (verhuisd uit styleguide, ADR 2026-05-15).
+  // Render het blok als er minstens één voice-veld is — examples renderen
+  // onafhankelijk van guidelines.
+  if (voiceguide) {
+    const hasGuidelines = voiceguide.contentGuidelines.length > 0 || voiceguide.writingGuidelines.length > 0;
+    const hasExamples = !!voiceguide.examplePhrases && voiceguide.examplePhrases.length > 0;
+    if (hasGuidelines || hasExamples) {
+      ctx.addSubHeader("Tone of Voice");
+      if (voiceguide.contentGuidelines.length > 0) ctx.addList("Content guidelines", voiceguide.contentGuidelines);
+      if (voiceguide.writingGuidelines.length > 0) ctx.addList("Writing guidelines", voiceguide.writingGuidelines);
+      if (hasExamples && voiceguide.examplePhrases) {
+        const dos = voiceguide.examplePhrases.filter((p) => p.type === "do").map((p) => p.text);
+        const donts = voiceguide.examplePhrases.filter((p) => p.type === "dont").map((p) => p.text);
+        if (dos.length > 0) ctx.addList("Do say", dos);
+        if (donts.length > 0) ctx.addList("Don't say", donts);
+      }
+    }
   }
 
   // Imagery
@@ -760,7 +778,7 @@ export function buildCompositeBrandPdf(
 
   renderCover(ctx, data);
   renderTOC(ctx, data);
-  if (data.styleguide) renderStyleguide(ctx, data.styleguide, logos);
+  if (data.styleguide) renderStyleguide(ctx, data.styleguide, data.voiceguide, logos);
 
   if (data.brandAssets.length > 0) {
     ctx.addPage();

@@ -34,7 +34,8 @@ test.describe('Brandstyle Styleguide', () => {
     );
     await expect(tabsContainer).toBeVisible();
 
-    // Verify all 5 tab buttons are present
+    // Verify core tabs are present (tone_of_voice tab verwijderd in ADR 2026-05-15
+    // — guidelines + do/don't examples leven nu in Brand Voice).
     await expect(
       authenticatedPage.locator('[data-testid="tab-logo"]'),
     ).toBeVisible();
@@ -43,9 +44,6 @@ test.describe('Brandstyle Styleguide', () => {
     ).toBeVisible();
     await expect(
       authenticatedPage.locator('[data-testid="tab-typography"]'),
-    ).toBeVisible();
-    await expect(
-      authenticatedPage.locator('[data-testid="tab-tone_of_voice"]'),
     ).toBeVisible();
     await expect(
       authenticatedPage.locator('[data-testid="tab-imagery"]'),
@@ -120,21 +118,9 @@ test.describe('Brandstyle Styleguide', () => {
     ).toBeVisible();
   });
 
-  test('Tone of Voice tab shows guidelines', async ({
-    authenticatedPage,
-  }) => {
-    await navigateToStyleguide(authenticatedPage);
-
-    // Click Tone of Voice tab
-    await authenticatedPage
-      .locator('[data-testid="tab-tone_of_voice"]')
-      .click();
-
-    // Verify tone of voice section is visible
-    await expect(
-      authenticatedPage.locator('[data-testid="tone-of-voice-section"]'),
-    ).toBeVisible();
-  });
+  // 'Tone of Voice tab shows guidelines' test verwijderd — tab is verhuisd naar
+  // Brand Voice (Voice DNA + Vocabulary tabs) per ADR 2026-05-15. Coverage
+  // hoort thuis in `e2e/tests/brandvoice/` testsuite.
 
   test('Imagery tab shows imagery guidelines', async ({
     authenticatedPage,
@@ -153,11 +139,12 @@ test.describe('Brandstyle Styleguide', () => {
   test('styleguide tabs switch content', async ({ authenticatedPage }) => {
     await navigateToStyleguide(authenticatedPage);
 
+    // tone_of_voice tab verwijderd in ADR 2026-05-15 — guidelines + examples
+    // leven nu in Brand Voice (Voice DNA + Vocabulary tabs).
     const tabIds = [
       'tab-logo',
       'tab-colors',
       'tab-typography',
-      'tab-tone_of_voice',
       'tab-imagery',
     ] as const;
 
@@ -165,7 +152,6 @@ test.describe('Brandstyle Styleguide', () => {
       'logo-section',
       'colors-section',
       'typography-section',
-      'tone-of-voice-section',
       'imagery-section',
     ] as const;
 

@@ -230,8 +230,102 @@ export async function applyFixOption(
     newValue: string;
   }[] = [];
 
+  // Velden die zijn verhuisd van BrandStyleguide naar BrandVoiceguide
+  // (ADR 2026-05-15). String-array velden die alignment-fix kan targetten.
+  // examplePhrases is buiten scope: JSON-shape, niet wijzigbaar via simpele
+  // alignment-fix path.
+  const STYLEGUIDE_FIELDS_MOVED_TO_VOICEGUIDE = new Set([
+    "contentGuidelines",
+    "writingGuidelines",
+  ]);
+
   await prisma.$transaction(async (tx) => {
     for (const change of selectedOption.changes ?? []) {
+      // Reroute Brandstyle entity updates for voice-fields to BrandVoiceguide.
+      // Lock-check + version-snapshot lopen op de originele Brandstyleguide
+      // (parity met non-rerouted path) — alleen de write zelf gaat naar
+      // BrandVoiceguide.
+      if (
+        change.entityType === "Brandstyle" &&
+        STYLEGUIDE_FIELDS_MOVED_TO_VOICEGUIDE.has(change.field)
+      ) {
+        try {
+          // Lock-check op de Brandstyleguide entity die de alignment-issue
+          // origineel target was — voice-fields zijn data-geconsolideerd in
+          // voiceguide, maar governance-laag is nog steeds de styleguide-lock.
+          const sgEntity = await tx.brandStyleguide.findUnique({
+            where: { id: change.entityId },
+            select: { id: true, isLocked: true, workspaceId: true },
+          });
+          if (!sgEntity) {
+            console.warn(
+              `[fix-generator] Brandstyle not found for voiceguide reroute: ${change.entityId}`,
+            );
+            continue;
+          }
+          if (sgEntity.isLocked) {
+            console.warn(
+              `[fix-generator] Brandstyle is locked, skipping voiceguide reroute: ${change.entityId}`,
+            );
+            continue;
+          }
+
+          // Version-snapshot van huidige voiceguide-state (best-effort, parity
+          // met non-rerouted path die ook resource-version creëert).
+          // Caveat: `resourceType` is 'STYLEGUIDE' omdat de alignment-issue
+          // origineel een Brandstyleguide targette en VersionedResourceType
+          // (nog) geen 'VOICEGUIDE' enum heeft. De snapshot-payload bevat wel
+          // de BrandVoiceguide JSON — restore-flows die op resourceType
+          // routeren moeten hier een speciale tak voor voiceguide-velden
+          // hebben. Eigen VOICEGUIDE enum kan in follow-up task worden
+          // toegevoegd (geen blocker voor data-integriteit).
+          const versionType = VERSION_TYPE_MAP[change.entityType];
+          if (versionType && userId) {
+            try {
+              const currentVoiceguide = await tx.brandVoiceguide.findUnique({
+                where: { workspaceId },
+              });
+              if (currentVoiceguide) {
+                await createVersion({
+                  resourceType: versionType,
+                  resourceId: change.entityId,
+                  snapshot: currentVoiceguide as unknown as Record<string, unknown>,
+                  changeType: "MANUAL_SAVE",
+                  changeNote: `Brand Alignment fix (voiceguide reroute): ${issue.title}`,
+                  userId,
+                  workspaceId,
+                });
+              }
+            } catch (versionError) {
+              console.warn(
+                "[fix-generator] Voiceguide version snapshot failed:",
+                versionError,
+              );
+            }
+          }
+
+          const updateData = buildUpdateData(change.field, change.newValue);
+          await tx.brandVoiceguide.upsert({
+            where: { workspaceId },
+            update: updateData,
+            create: { workspaceId, source: "alignment-fix", ...updateData },
+          });
+          updatedEntities.push({
+            type: "BrandVoiceguide",
+            id: workspaceId,
+            field: change.field,
+            oldValue: change.currentValue,
+            newValue: change.newValue,
+          });
+        } catch (err) {
+          console.error(
+            `[fix-generator] Voiceguide update failed for ${change.field}:`,
+            err,
+          );
+        }
+        continue;
+      }
+
       const modelName = MODEL_MAP[change.entityType];
       if (!modelName) {
         console.warn(
@@ -425,6 +519,8 @@ function buildUpdateData(
       "behaviors",
       "keyAssumptions",
       "conflictsWith",
+      // Verhuisd van Brandstyleguide naar BrandVoiceguide (ADR 2026-05-15) —
+      // blijven string-array shape, alleen target-model verschoven.
       "contentGuidelines",
       "writingGuidelines",
     ].includes(field)
@@ -469,8 +565,6 @@ function summarizeEntity(data: Record<string, unknown>): string {
   if (Array.isArray(data.coreValues) && data.coreValues.length > 0)
     parts.push(`Core Values: ${data.coreValues.join(", ")}`);
   if (data.frameworkType) parts.push(`Framework: ${data.frameworkType}`);
-  if (Array.isArray(data.contentGuidelines) && data.contentGuidelines.length > 0)
-    parts.push(`Content Guidelines: ${data.contentGuidelines.join("; ")}`);
 
   return parts.length > 0 ? parts.join("\n") : "No detailed content available";
 }

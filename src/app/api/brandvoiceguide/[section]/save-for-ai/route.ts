@@ -11,6 +11,9 @@ const SECTION_FIELD_MAP: Record<string, string> = {
   "channel-tones": "channelTonesSavedForAi",
   "anti-patterns": "antiPatternsSavedForAi",
   references: "referencesSavedForAi",
+  // Verhuisd uit Brandstyleguide.toneSavedForAi gesplitst (ADR 2026-05-15)
+  guidelines: "guidelinesSavedForAi",
+  "example-phrases": "examplePhrasesSavedForAi",
 };
 
 // =============================================================

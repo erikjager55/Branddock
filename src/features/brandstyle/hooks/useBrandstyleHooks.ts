@@ -7,7 +7,6 @@ import {
   updateLogoSection,
   updateColorsSection,
   updateTypographySection,
-  updateToneOfVoiceSection,
   updateImagerySection,
   updateDesignLanguageSection,
   saveForAi,
@@ -101,7 +100,7 @@ export function useUpdateSection(section: string) {
     logo: updateLogoSection,
     colors: updateColorsSection,
     typography: updateTypographySection,
-    "tone-of-voice": updateToneOfVoiceSection,
+    // tone-of-voice verhuisd naar Brand Voice (ADR 2026-05-15)
     imagery: updateImagerySection,
     "design-language": updateDesignLanguageSection,
   };

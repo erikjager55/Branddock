@@ -1667,11 +1667,7 @@ model BrandStyleguide {
   typeScale            Json?
   typographySavedForAi Boolean  @default(false)
 
-  // Tone of Voice
-  contentGuidelines String[]
-  writingGuidelines String[]
-  examplePhrases    Json?
-  toneSavedForAi    Boolean  @default(false)
+  // Tone of Voice velden verhuisd naar BrandVoiceguide (ADR 2026-05-15).
 
   // Imagery
   photographyStyle       Json?
@@ -5481,6 +5477,19 @@ model BrandVoiceguide {
    */
   toneDimensions Json?
 
+  /**
+   * Content-niveau guidelines voor hoe het merk schrijft. Verhuisd van BrandStyleguide
+   * (ADR 2026-05-15). Strings mogen prefix `OBSERVED:` of `RECOMMENDED:` bevatten voor
+   * provenance-badges in UI.
+   */
+  contentGuidelines String[]
+
+  /**
+   * Schrijfstijl-regels (zinsbouw, leesbaarheid, etc.). Verhuisd van BrandStyleguide
+   * (ADR 2026-05-15). OBSERVED/RECOMMENDED prefix-conventie identiek aan contentGuidelines.
+   */
+  writingGuidelines String[]
+
   // ─── References ─────────────────────────────
   /**
    * /**
@@ -5519,6 +5528,12 @@ model BrandVoiceguide {
    */
   antiPatterns String[]
 
+  /**
+   * Do/Don't fraserings-voorbeelden. Verhuisd van BrandStyleguide.examplePhrases
+   * (ADR 2026-05-15). Shape: { text: string; type: 'do' | 'dont' }[].
+   */
+  examplePhrases Json?
+
   // ─── Embedding centroid (Pijler 1 fidelity) ─────
   /**
    * /**
@@ -5542,14 +5557,23 @@ model BrandVoiceguide {
   contentLocale String?
 
   // ─── Save-for-AI per sectie ──────────────────
-  voiceDnaSavedForAi     Boolean @default(true)
-  vocabularySavedForAi   Boolean @default(true)
-  channelTonesSavedForAi Boolean @default(true)
-  antiPatternsSavedForAi Boolean @default(true)
+  voiceDnaSavedForAi       Boolean @default(true)
+  vocabularySavedForAi     Boolean @default(true)
+  channelTonesSavedForAi   Boolean @default(true)
+  antiPatternsSavedForAi   Boolean @default(true)
+  /**
+   * Content + writing guidelines (Voice DNA tab). Verhuisd van BrandStyleguide.toneSavedForAi
+   * (ADR 2026-05-15). Default true — actief meegenomen in AI-context na consolidatie.
+   */
+  guidelinesSavedForAi     Boolean @default(true)
+  /**
+   * Do/Don't examples (Vocabulary tab). Verhuisd van BrandStyleguide.toneSavedForAi gesplitst.
+   */
+  examplePhrasesSavedForAi Boolean @default(true)
   /**
    * References zijn verbose — default off.
    */
-  referencesSavedForAi   Boolean @default(false)
+  referencesSavedForAi     Boolean @default(false)
 
   // ─── Metadata ────────────────────────────────
   /**

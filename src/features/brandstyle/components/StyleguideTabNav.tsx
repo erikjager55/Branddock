@@ -1,6 +1,6 @@
 "use client";
 
-import { Package, Palette, Type, Ruler, Blocks, MessageCircle, Camera, Layers, Code2, Clock } from "lucide-react";
+import { Package, Palette, Type, Ruler, Blocks, Camera, Layers, Code2, Clock } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { StyleguideTab } from "../types/brandstyle.types";
 
@@ -16,7 +16,8 @@ const TABS: Tab[] = [
   { id: "typography", label: "Typography", icon: Type },
   { id: "spacing", label: "Spacing", icon: Ruler },
   { id: "components", label: "Components", icon: Blocks },
-  { id: "tone_of_voice", label: "Tone of Voice", icon: MessageCircle },
+  // tone_of_voice tab verwijderd — guidelines + do/don't examples leven nu in
+  // Brand Voice (Voice DNA + Vocabulary tabs), zie ADR 2026-05-15.
   { id: "imagery", label: "Imagery", icon: Camera },
   { id: "visual_system", label: "Visual System", icon: Layers },
   { id: "design_system", label: "Design System", icon: Code2 },

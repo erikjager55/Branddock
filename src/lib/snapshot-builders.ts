@@ -76,9 +76,8 @@ export function buildStyleguideSnapshot(sg: BrandStyleguide): Record<string, unk
     primaryFontName: sg.primaryFontName,
     primaryFontUrl: sg.primaryFontUrl,
     typeScale: sg.typeScale,
-    contentGuidelines: sg.contentGuidelines,
-    writingGuidelines: sg.writingGuidelines,
-    examplePhrases: sg.examplePhrases,
+    // contentGuidelines / writingGuidelines / examplePhrases verhuisd naar
+    // BrandVoiceguide (ADR 2026-05-15) en horen niet meer in een styleguide-snapshot.
     photographyStyle: sg.photographyStyle,
     photographyGuidelines: sg.photographyGuidelines,
     illustrationGuidelines: sg.illustrationGuidelines,

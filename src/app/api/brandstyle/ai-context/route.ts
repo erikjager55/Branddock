@@ -12,13 +12,26 @@ export async function GET() {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const styleguide = await prisma.brandStyleguide.findUnique({
-      where: { workspaceId },
-      include: {
-        colors: { orderBy: { sortOrder: "asc" } },
-        logos: { orderBy: { sortOrder: "asc" } },
-      },
-    });
+    // Tone-of-voice content verhuisd naar BrandVoiceguide (ADR 2026-05-15).
+    const [styleguide, voiceguide] = await Promise.all([
+      prisma.brandStyleguide.findUnique({
+        where: { workspaceId },
+        include: {
+          colors: { orderBy: { sortOrder: "asc" } },
+          logos: { orderBy: { sortOrder: "asc" } },
+        },
+      }),
+      prisma.brandVoiceguide.findUnique({
+        where: { workspaceId },
+        select: {
+          contentGuidelines: true,
+          writingGuidelines: true,
+          examplePhrases: true,
+          guidelinesSavedForAi: true,
+          examplePhrasesSavedForAi: true,
+        },
+      }),
+    ]);
 
     if (!styleguide) {
       return NextResponse.json({ context: null });
@@ -57,11 +70,11 @@ export async function GET() {
       };
     }
 
-    if (styleguide.toneSavedForAi) {
+    if (voiceguide?.guidelinesSavedForAi) {
       sections.toneOfVoice = {
-        contentGuidelines: styleguide.contentGuidelines,
-        writingGuidelines: styleguide.writingGuidelines,
-        examplePhrases: styleguide.examplePhrases,
+        contentGuidelines: voiceguide.contentGuidelines,
+        writingGuidelines: voiceguide.writingGuidelines,
+        examplePhrases: voiceguide.examplePhrasesSavedForAi ? voiceguide.examplePhrases : null,
       };
     }
 

@@ -101,18 +101,26 @@ export async function fetchEntityById(
         return strategy as Record<string, unknown> | null;
       }
       case "Brandstyle": {
-        // Try direct ID lookup first
+        // Guidelines verhuisd naar BrandVoiceguide (ADR 2026-05-15).
         const styleguide = await prisma.brandStyleguide.findUnique({
           where: { id: entityId },
           select: {
             id: true,
-            contentGuidelines: true,
-            writingGuidelines: true,
+            workspaceId: true,
             primaryFontName: true,
             colors: { select: { name: true, hex: true, category: true } },
           },
         });
-        return styleguide as Record<string, unknown> | null;
+        if (!styleguide) return null;
+        const voiceguide = await prisma.brandVoiceguide.findUnique({
+          where: { workspaceId: styleguide.workspaceId },
+          select: { contentGuidelines: true, writingGuidelines: true },
+        });
+        return {
+          ...styleguide,
+          contentGuidelines: voiceguide?.contentGuidelines ?? [],
+          writingGuidelines: voiceguide?.writingGuidelines ?? [],
+        } as Record<string, unknown>;
       }
       case "Persona": {
         const persona = await prisma.persona.findUnique({
@@ -241,27 +249,37 @@ async function fetchBusinessStrategy(
 }
 
 async function fetchBrandstyle(workspaceId: string): Promise<ModuleData> {
-  const styleguide = await prisma.brandStyleguide.findFirst({
-    where: { workspaceId },
-    select: {
-      id: true,
-      contentGuidelines: true,
-      writingGuidelines: true,
-      primaryFontName: true,
-      typeScale: true,
-      photographyStyle: true,
-      graphicElements: true,
-      colors: {
-        select: { name: true, hex: true, category: true },
+  // Guidelines verhuisd naar BrandVoiceguide (ADR 2026-05-15).
+  const [styleguide, voiceguide] = await Promise.all([
+    prisma.brandStyleguide.findFirst({
+      where: { workspaceId },
+      select: {
+        id: true,
+        primaryFontName: true,
+        typeScale: true,
+        photographyStyle: true,
+        graphicElements: true,
+        colors: {
+          select: { name: true, hex: true, category: true },
+        },
       },
-    },
-  });
+    }),
+    prisma.brandVoiceguide.findUnique({
+      where: { workspaceId },
+      select: { contentGuidelines: true, writingGuidelines: true },
+    }),
+  ]);
+  const merged = styleguide
+    ? {
+        ...styleguide,
+        contentGuidelines: voiceguide?.contentGuidelines ?? [],
+        writingGuidelines: voiceguide?.writingGuidelines ?? [],
+      }
+    : null;
   return {
     moduleName: "BRANDSTYLE",
-    items: styleguide
-      ? [styleguide as unknown as Record<string, unknown>]
-      : [],
-    itemCount: styleguide ? 1 : 0,
+    items: merged ? [merged as unknown as Record<string, unknown>] : [],
+    itemCount: merged ? 1 : 0,
   };
 }
 

@@ -397,6 +397,11 @@ interface BrandVoiceguideRow {
   antiPatterns?: string[];
   writingSamples?: unknown;
   channelTones?: unknown;
+  contentGuidelines?: string[];
+  writingGuidelines?: string[];
+  examplePhrases?: unknown;
+  guidelinesSavedForAi?: boolean;
+  examplePhrasesSavedForAi?: boolean;
 }
 
 /**
@@ -448,6 +453,19 @@ export function formatBrandVoiceguide(data: BrandVoiceguideRow): string {
   }
   if (Array.isArray(data.antiPatterns) && data.antiPatterns.length > 0) {
     parts.push(`Anti-patterns (never write): ${data.antiPatterns.filter(Boolean).join(', ')}`);
+  }
+
+  // Do/Don't examples (verhuisd van Brandstyleguide, ADR 2026-05-15) — gate
+  // op savedForAi-flag, default schema is true dus truthy check correct.
+  if (data.examplePhrasesSavedForAi && Array.isArray(data.examplePhrases) && data.examplePhrases.length > 0) {
+    const examples = (data.examplePhrases as unknown[]).filter(
+      (e): e is { text: string; type: "do" | "dont" } =>
+        !!e && typeof e === "object" && typeof (e as { text?: unknown }).text === "string",
+    );
+    const doExamples = examples.filter((e) => e.type === "do").map((e) => `"${e.text}"`);
+    const dontExamples = examples.filter((e) => e.type === "dont").map((e) => `"${e.text}"`);
+    if (doExamples.length > 0) parts.push(`Do examples: ${doExamples.join(", ")}`);
+    if (dontExamples.length > 0) parts.push(`Don't examples: ${dontExamples.join(", ")}`);
   }
 
   // F13 Phase A1 (audit 2026-05-13): voice-anchor — gebruik tot 3 writing-
@@ -894,13 +912,10 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         colors: { select: { name: true, hex: true, category: true } },
         primaryFontName: true,
         typeScale: true,
-        contentGuidelines: true,
-        writingGuidelines: true,
         photographyStyle: true,
         photographyGuidelines: true,
         colorsSavedForAi: true,
         typographySavedForAi: true,
-        toneSavedForAi: true,
         imagerySavedForAi: true,
         graphicElements: true,
         graphicElementsDonts: true,
@@ -941,6 +956,11 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         writingSamples: true,
         channelTones: true,
         contentLocale: true,
+        contentGuidelines: true,
+        writingGuidelines: true,
+        examplePhrases: true,
+        guidelinesSavedForAi: true,
+        examplePhrasesSavedForAi: true,
       },
     }),
   ]);
@@ -1268,14 +1288,18 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       if (typoParts.length > 0) ctx.brandTypography = typoParts.join('. ');
     }
 
-    // Tone of Voice
-    if (styleguide.toneSavedForAi) {
+    // Tone of Voice — guidelines (verhuisd naar BrandVoiceguide, ADR 2026-05-15).
+    // ctx.brandToneOfVoice blijft als guidelines-only veld voor backwards compat
+    // met campaign brief render + studio brand-voice-directive fallback paths.
+    // Gate-semantiek consistent met andere ai-context readers: truthy check
+    // (schema-default is true, dus ongezet = niet meenemen).
+    if (voiceguide?.guidelinesSavedForAi) {
       const toneParts: string[] = [];
-      if (styleguide.contentGuidelines.length > 0) {
-        toneParts.push(`Content guidelines: ${styleguide.contentGuidelines.join('; ')}`);
+      if (Array.isArray(voiceguide.contentGuidelines) && voiceguide.contentGuidelines.length > 0) {
+        toneParts.push(`Content guidelines: ${voiceguide.contentGuidelines.join('; ')}`);
       }
-      if (styleguide.writingGuidelines.length > 0) {
-        toneParts.push(`Writing style: ${styleguide.writingGuidelines.join('; ')}`);
+      if (Array.isArray(voiceguide.writingGuidelines) && voiceguide.writingGuidelines.length > 0) {
+        toneParts.push(`Writing style: ${voiceguide.writingGuidelines.join('; ')}`);
       }
       if (toneParts.length > 0) ctx.brandToneOfVoice = toneParts.join('. ');
     }

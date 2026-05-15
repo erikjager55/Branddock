@@ -38,12 +38,18 @@ const VOICEGUIDE_SELECT = {
   wordsWeAvoid: true,
   channelTones: true,
   antiPatterns: true,
+  // Verhuisd uit BrandStyleguide (ADR 2026-05-15)
+  contentGuidelines: true,
+  writingGuidelines: true,
+  examplePhrases: true,
   centroidComputedAt: true,
   voiceDnaSavedForAi: true,
   vocabularySavedForAi: true,
   channelTonesSavedForAi: true,
   antiPatternsSavedForAi: true,
   referencesSavedForAi: true,
+  guidelinesSavedForAi: true,
+  examplePhrasesSavedForAi: true,
   source: true,
   publishedAt: true,
   createdAt: true,
@@ -117,15 +123,29 @@ const updateSchema = z.object({
     .nullable()
     .optional(),
   antiPatterns: z.array(z.string()).optional(),
+  // Tone-of-voice content (verhuisd uit BrandStyleguide, ADR 2026-05-15)
+  contentGuidelines: z.array(z.string()).optional(),
+  writingGuidelines: z.array(z.string()).optional(),
+  examplePhrases: z
+    .array(
+      z.object({
+        text: z.string(),
+        type: z.enum(["do", "dont"]),
+      }),
+    )
+    .nullable()
+    .optional(),
   voiceDnaSavedForAi: z.boolean().optional(),
   vocabularySavedForAi: z.boolean().optional(),
   channelTonesSavedForAi: z.boolean().optional(),
   antiPatternsSavedForAi: z.boolean().optional(),
   referencesSavedForAi: z.boolean().optional(),
+  guidelinesSavedForAi: z.boolean().optional(),
+  examplePhrasesSavedForAi: z.boolean().optional(),
   source: z.string().optional(),
 });
 
-const NULLABLE_JSON_FIELDS = ["toneDimensions", "channelTones"] as const;
+const NULLABLE_JSON_FIELDS = ["toneDimensions", "channelTones", "examplePhrases"] as const;
 
 export async function PATCH(request: NextRequest) {
   try {

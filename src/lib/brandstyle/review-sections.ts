@@ -16,7 +16,7 @@ export type ReviewSectionKey =
   // Secties (Fase 2 — live)
   | "colors"
   | "typography"
-  | "tone-of-voice"
+  // "tone-of-voice" verwijderd — verhuisd naar BrandVoiceguide (ADR 2026-05-15)
   | "imagery"
   | "visual-system"
   // Fase 3 — komt later
@@ -73,7 +73,7 @@ export const REVIEW_SECTION_LABELS: Record<ReviewSectionKey, string> = {
   "brand-assets-fonts": "Fonts",
   colors: "Colors",
   typography: "Typography",
-  "tone-of-voice": "Tone of Voice",
+  // "tone-of-voice" verwijderd — verhuisd naar BrandVoiceguide (ADR 2026-05-15)
   imagery: "Imagery",
   "visual-system": "Visual System",
   "colors-brand": "Brand colors",

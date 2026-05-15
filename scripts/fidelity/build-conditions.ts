@@ -126,9 +126,10 @@ async function buildConditionBDirective(workspaceId: string, brandName: string, 
     where: { workspaceId, frameworkType: 'BRAND_PERSONALITY' },
     select: { frameworkData: true },
   });
-  const styleguide = await prisma.brandStyleguide.findFirst({
+  // Guidelines verhuisd van Brandstyleguide naar BrandVoiceguide (ADR 2026-05-15).
+  const voiceguide = await prisma.brandVoiceguide.findUnique({
     where: { workspaceId },
-    select: { contentGuidelines: true, writingGuidelines: true, toneSavedForAi: true },
+    select: { contentGuidelines: true, writingGuidelines: true, guidelinesSavedForAi: true },
   });
   const brandVoice = await prisma.brandVoice.findFirst({
     where: { workspaceId, isDefault: true },
@@ -147,7 +148,13 @@ async function buildConditionBDirective(workspaceId: string, brandName: string, 
     channelKey,
     channelLabel,
     personality,
-    toneOfVoice: styleguide ?? undefined,
+    toneOfVoice: voiceguide
+      ? {
+          contentGuidelines: voiceguide.contentGuidelines,
+          writingGuidelines: voiceguide.writingGuidelines,
+          toneSavedForAi: voiceguide.guidelinesSavedForAi,
+        }
+      : undefined,
     brandVoice: brandVoice ?? undefined,
   });
 }

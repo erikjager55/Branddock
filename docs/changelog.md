@@ -37,6 +37,32 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 252. Tone of Voice tab consolidatie — BrandStyleguide → BrandVoiceguide
+
+Schema-consolidatie van 3 velden (`contentGuidelines`, `writingGuidelines`, `examplePhrases`) plus de save-for-AI toggle (`toneSavedForAi` gesplitst in `guidelinesSavedForAi` + `examplePhrasesSavedForAi`) van `BrandStyleguide` naar `BrandVoiceguide`. Voice DNA tab in Brand Voice toont nu Content + Writing Guidelines (met OBSERVED/RECOMMENDED prefix-parsing), Vocabulary tab krijgt Do/Don't examples. Brand Styleguide "Tone of Voice" tab + `/api/brandstyle/tone-of-voice/` route + `ToneOfVoiceSection.tsx` zijn verwijderd. De migratie-banner "Voice, Tone & Communication Style — moved" in BrandPersonalitySection is opgeruimd.
+
+**Migratie-pad** (additief eerst, data-loss laatst):
+1. Prisma schema: ADD nieuwe kolommen op `BrandVoiceguide`
+2. Data-migratie: idempotent script kopieerde 13 workspaces (10 nieuwe voiceguides, 3 updates) — script zelf na uitvoering verwijderd voor lint-conformiteit, ADR documenteert het pad
+3. ~25 lees-sites omgeschakeld: AI-context-builders (`brand-context.ts`, `knowledge-context-fetcher.ts`), F-VAL alignment (`audit-scoring`, `data-fetcher`, `fix-generator`), claw read-tools, campaign-strategy-chain, snapshot-builders, consistent-models resolvers, design-system resolver/emitters, brand-kit composite PDF, Studio tone-check, brandstyle/ai-context route, workspace export route
+4. UI: Voice DNA + Vocabulary section components uitgebreid; brandvoice API routes accepteren nieuwe velden via Zod
+5. Cleanup: Tone of Voice tab/section/route weg, moved-banner weg, types opgeruimd
+6. Prisma schema: REMOVE oude kolommen + `db push --accept-data-loss`
+7. Formele Prisma migration toegevoegd (`20260515140000_consolidate_tone_of_voice_to_voiceguide`) voor reproducibility
+
+**Alignment fix-generator reroute** — wanneer een Brand Alignment-fix `contentGuidelines` / `writingGuidelines` op een Brandstyle entity wil schrijven, routeren we de update transactioneel naar BrandVoiceguide. Lock-check op de Brandstyleguide entity behoudt governance-parity; best-effort version-snapshot van de voiceguide-state.
+
+**Finalize review-loop** — 3 iteraties:
+- Round 1: 2 CRITICAL gefixt (analysis-engine partial upsert preserve user-edits; fix-generator Brandstyle→Voiceguide reroute), 4 WARNING gefixt (legacy StyleguideTab union, snapshot-comment, brand-context gate-semantics, onNavigate dead-prop)
+- Round 2: 1 CRITICAL gefixt (formele Prisma migration toegevoegd zodat andere environments kunnen reproduceren), 1 CRITICAL gefixt (fix-generator reroute toegevoegd met lock-check + version-snapshot)
+- Round 3: 1 CRITICAL gefixt (e2e tests verwijderd voor tone_of_voice tab + section), 1 WARNING geaccepteerd met comment (ResourceVersion gebruikt STYLEGUIDE enum voor voiceguide-payload — geen VOICEGUIDE enum yet, follow-up)
+
+**Files**:
+- Task: [tasks/done/tone-of-voice-merge-into-brand-voice.md](tasks/done/tone-of-voice-merge-into-brand-voice.md)
+- ADR: [adr/2026-05-15-tone-of-voice-consolidation.md](adr/2026-05-15-tone-of-voice-consolidation.md)
+- Spec: -
+- Commit: COMMIT_HASH
+
 ### 222. Documentatie-architectuur migratie (week 1)
 
 CLAUDE.md teruggebracht van 2323 → 270 regels, repo root van 37 → 5 .md bestanden. Nieuwe `docs/` structuur (adr/playbooks/specs/archive), `tasks/<id>.md` pattern, `roadmap.md` met Now/Next/Later, `START_HERE.md` als entry point, 8 retroactieve ADRs en `docs/changelog.md` als doorgaand register.

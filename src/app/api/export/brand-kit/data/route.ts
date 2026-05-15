@@ -24,6 +24,7 @@ export async function GET() {
     const [
       workspace,
       styleguide,
+      voiceguide,
       brandAssets,
       personas,
       products,
@@ -48,6 +49,17 @@ export async function GET() {
         include: {
           colors: { orderBy: { sortOrder: "asc" } },
           logos: { orderBy: { sortOrder: "asc" } },
+        },
+      }),
+
+      // Voiceguide bevat de tone-of-voice content (verhuisd uit Brandstyleguide,
+      // ADR 2026-05-15) — composite brand-kit PDF leest hieruit.
+      prisma.brandVoiceguide.findUnique({
+        where: { workspaceId },
+        select: {
+          contentGuidelines: true,
+          writingGuidelines: true,
+          examplePhrases: true,
         },
       }),
 
@@ -161,6 +173,7 @@ export async function GET() {
     return NextResponse.json({
       workspace,
       styleguide,
+      voiceguide,
       brandAssets,
       personas,
       products,
