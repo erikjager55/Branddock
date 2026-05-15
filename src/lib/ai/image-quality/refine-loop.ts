@@ -50,6 +50,8 @@ const DIMENSION_REFINE_HINTS: Record<VisualDimensionKey, string> = {
     "remove ALL text from the image — no captions, no signage, no typography overlays, no logo letters, no embedded words",
   "logo-fidelity":
     "remove any logos or brand marks — the image must not contain competitor logos or hallucinated brand identifiers",
+  "subject-identity":
+    "preserve the original subject more faithfully — maintain recognizable identity, pose, and key visual traits from the source",
 };
 
 /**

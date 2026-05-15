@@ -53,10 +53,21 @@ export interface VisualJudgeDimensionDetail {
   rationale: string;
 }
 
+export interface VisualOcrDetail {
+  text: string;
+  blockCount: number;
+  confidence: number | null;
+  source: "google-vision";
+  /** 0-100 deduction applied to text-in-image dimension. */
+  penalty: number;
+}
+
 export interface VisualJudgeDetail {
   composite: number;
   flagged: string[];
   dimensions: Record<string, VisualJudgeDimensionDetail>;
+  /** Pattern E image-quality-chain: optional OCR enrichment. */
+  ocr?: VisualOcrDetail | null;
 }
 
 export interface PersistedVisualFidelityScore {

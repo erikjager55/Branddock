@@ -88,11 +88,23 @@ export function VisualFidelityBadge({
     const Icon = zone === 'good' ? ShieldCheck : AlertTriangle;
     const label =
       zone === 'good' ? 'On-brand' : zone === 'warn' ? 'Off-target' : 'Off-brand';
+    // Pattern F UI exposure: signal off-brand swatches direct in badge.
+    // Score-pill blijft de hoofdmetric; off-brand-count komt als kleine
+    // secundaire pill ernaast — alleen wanneer ≥1 unmatched color gevonden.
+    const offBrandCount = score.colorAlignment?.unmatchedColors?.length ?? 0;
     body = (
       <>
         <Icon className="h-3 w-3" />
         <span className="tabular-nums font-semibold">{composite}</span>
         <span className="text-[10px] opacity-70">{label}</span>
+        {offBrandCount > 0 && (
+          <span
+            className="ml-0.5 inline-flex items-center gap-0.5 px-1 py-[1px] rounded-full text-[9px] font-medium bg-red-50 text-red-700 border border-red-200"
+            title={`${offBrandCount} off-brand color${offBrandCount > 1 ? 's' : ''} detected`}
+          >
+            ●{offBrandCount}
+          </span>
+        )}
       </>
     );
     fg = ZONE_HEX[zone];
@@ -101,6 +113,8 @@ export function VisualFidelityBadge({
       ? `${composite}/100 — color match only (AI judge unavailable). Click for breakdown.`
       : `${composite}/100 visual fidelity${
           score.thresholdMet ? '' : ' — below threshold 70'
+        }${
+          offBrandCount > 0 ? ` — ${offBrandCount} off-brand color${offBrandCount > 1 ? 's' : ''}` : ''
         }. Click for breakdown.`;
   } else {
     return null;

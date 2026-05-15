@@ -48,6 +48,11 @@ export const VISUAL_DIMENSION_LABELS: Record<VisualDimensionKey, DimensionLabel>
     description:
       "Bij beelden met merk-elementen: hoe getrouw het logo wordt weergegeven of dat het niet door competitor-logos wordt vervangen.",
   },
+  "subject-identity": {
+    label: "Subject-identiteit",
+    description:
+      "Voor compose-flow + consistent-model output: blijft het subject (persoon, product, scene) herkenbaar uit de source-images? Voor pure text-to-image zonder source default 100.",
+  },
 };
 
 /**

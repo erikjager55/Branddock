@@ -30,6 +30,7 @@ const VISUAL_DIMENSIONS = [
   "composition",
   "text-in-image",
   "logo-fidelity",
+  "subject-identity",
 ] as const;
 
 export type VisualDimensionKey = (typeof VISUAL_DIMENSIONS)[number];
@@ -99,7 +100,7 @@ function buildPrompt(ctx: VisualBrandContext): { system: string; user: string } 
     );
   }
 
-  const system = `You are a senior brand designer evaluating whether a generated image is on-brand. Score across 5 dimensions, each 0-100.
+  const system = `You are a senior brand designer evaluating whether a generated image is on-brand. Score across 6 dimensions, each 0-100.
 
 ## SCORING RUBRIC
 - 0-30: severe failure on this dimension
@@ -120,11 +121,13 @@ function buildPrompt(ctx: VisualBrandContext): { system: string; user: string } 
 
 5. **logo-fidelity** — If a logo is depicted, is it accurate to the brand's logo? **Higher score = MORE accurate.** 100 = no logo expected/present, or logo is exact. 50 = logo present but distorted. 0 = wrong logo prominently shown. If brand has no declared logo, default to 100.
 
+6. **subject-identity** — Especially relevant voor compose-flow (image-to-image) en consistent-model output: blijft het subject (persoon, product, scene) herkenbaar uit de source-images? **Higher score = MORE faithful to source-subject.** 100 = subject visueel identiek en herkenbaar. 50 = subject herkenbaar maar met merkbare drift (andere belichting, andere pose, etc.). 0 = subject is volledig vervangen of niet meer herkenbaar. For pure text-to-image generations zonder source-subject: default 100 (geen drift mogelijk).
+
 ## OUTPUT
 Return JSON exactly matching: { "scores": [{ "key": string, "score": number, "rationale": string }] }
-Include ALL 5 dimension keys. Each rationale 1-2 sentences citing concrete evidence from the image.`;
+Include ALL 6 dimension keys. Each rationale 1-2 sentences citing concrete evidence from the image.`;
 
-  const user = `${lines.join("\n\n")}\n\nScore the attached image across all 5 dimensions. Return JSON only.`;
+  const user = `${lines.join("\n\n")}\n\nScore the attached image across all 6 dimensions. Return JSON only.`;
 
   return { system, user };
 }

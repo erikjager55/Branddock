@@ -33,6 +33,7 @@ import {
 } from "@/types/learning-loop";
 import { tryTrackStart, tryTrackComplete } from "@/lib/learning-loop/track-helpers";
 import { emitLearningEvent } from "@/lib/learning-loop/event-emitter";
+import { extractTextFromImage, computeTextPollutionPenalty, type OcrCheckResult } from "@/lib/ai/image-quality/ocr-check";
 
 const SCORER_VERSION = "visual-fidelity-v1.0";
 const COLOR_WEIGHT = 0.4;
@@ -138,6 +139,10 @@ export async function scoreImageFidelity(
 
   const startedAt = Date.now();
   let judgeResult: VisualJudgeResult | null = null;
+  // Pattern E image-quality-chain — OCR runs parallel met AI-judge. Graceful
+  // skip wanneer GOOGLE_VISION_API_KEY ontbreekt of de Vision API niet
+  // toegankelijk is voor de image-url (alleen https accepted).
+  let ocrResult: OcrCheckResult | null = null;
   try {
     // Anthropic vision accepts only HTTPS URLs. For local /uploads/ paths
     // (dev) and any non-HTTPS source, send as base64 using the buffer we
@@ -151,7 +156,17 @@ export async function scoreImageFidelity(
             data: imageBuffer.toString("base64"),
           };
 
-    judgeResult = await runVisualAiJudge(imageInput, visualContext);
+    // Parallelize AI-judge + OCR voor minimum latency-impact (~1s OCR vs
+    // ~12-15s judge). OCR is fire-and-forget intern (returnt null bij key-
+    // ontbreken of API-error); failures spoilen judge-flow niet.
+    const [judgeOut, ocrOut] = await Promise.all([
+      runVisualAiJudge(imageInput, visualContext),
+      component.imageUrl.startsWith("https://")
+        ? extractTextFromImage(component.imageUrl)
+        : Promise.resolve(null),
+    ]);
+    judgeResult = judgeOut;
+    ocrResult = ocrOut;
 
     await tryTrackComplete(traceId, {
       inputTokens: 0,
@@ -175,8 +190,32 @@ export async function scoreImageFidelity(
     judgeResult = null;
   }
 
-  // 5. Composite
+  // 5. Composite — apply OCR penalty op text-in-image dimensie indien gepresent.
+  // Penalty trekt rechtstreeks van de judge text-in-image score af; composite
+  // recalculatie volgt automatisch via VisualJudgeResult.composite. Voor v1
+  // herrekenen we composite NIET — de OCR penalty leeft als enricher-data
+  // beschikbaar voor UI/refine-loop, maar muteert niet retroactief judge.composite.
   const judgeSkipped = judgeResult === null;
+  let ocrPenalty = 0;
+  if (judgeResult && ocrResult && ocrResult.text.length > 0) {
+    ocrPenalty = computeTextPollutionPenalty(ocrResult);
+    const textDim = judgeResult.scores["text-in-image"];
+    if (textDim) {
+      const adjusted = Math.max(0, textDim.score - Math.round(ocrPenalty * 0.5));
+      const ocrSummary = ocrResult.text.length > 60
+        ? ocrResult.text.slice(0, 60) + "…"
+        : ocrResult.text;
+      judgeResult.scores["text-in-image"] = {
+        score: adjusted,
+        rationale: `${textDim.rationale} [OCR detected: "${ocrSummary}" (${ocrResult.text.length} chars, ${ocrResult.blockCount} blocks) — penalty -${Math.round(ocrPenalty * 0.5)}]`,
+      };
+      // Flag automatically wanneer aangepaste score onder threshold zakt
+      if (adjusted < 50 && !judgeResult.flagged.includes("text-in-image")) {
+        judgeResult.flagged.push("text-in-image");
+      }
+    }
+  }
+
   const compositeScore = judgeSkipped
     ? colorAlignment.score
     : Math.round(
@@ -195,7 +234,9 @@ export async function scoreImageFidelity(
       judgeCallTraceId: traceId,
       compositeScore,
       colorAlignment: serializeColorAlignment(colorAlignment),
-      aiJudgeDimensions: judgeResult ? serializeJudgeResult(judgeResult) : { skipped: true },
+      aiJudgeDimensions: judgeResult
+        ? serializeJudgeResult(judgeResult, ocrResult, ocrPenalty)
+        : { skipped: true },
       thresholdMet,
       scorerVersion: SCORER_VERSION,
     },
@@ -347,7 +388,11 @@ function serializeColorAlignment(result: ColorAlignmentResult): object {
   };
 }
 
-function serializeJudgeResult(result: VisualJudgeResult): object {
+function serializeJudgeResult(
+  result: VisualJudgeResult,
+  ocrResult: OcrCheckResult | null,
+  ocrPenalty: number,
+): object {
   const out: Record<string, { score: number; rationale: string }> = {};
   for (const key of VISUAL_DIMENSION_KEYS) {
     out[key] = result.scores[key];
@@ -356,5 +401,14 @@ function serializeJudgeResult(result: VisualJudgeResult): object {
     composite: result.composite,
     flagged: result.flagged,
     dimensions: out,
+    ocr: ocrResult
+      ? {
+          text: ocrResult.text,
+          blockCount: ocrResult.blockCount,
+          confidence: ocrResult.confidence,
+          source: ocrResult.source,
+          penalty: ocrPenalty,
+        }
+      : null,
   };
 }
