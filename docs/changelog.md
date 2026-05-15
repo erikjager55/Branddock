@@ -61,7 +61,7 @@ Schema-consolidatie van 3 velden (`contentGuidelines`, `writingGuidelines`, `exa
 - Task: [tasks/done/tone-of-voice-merge-into-brand-voice.md](tasks/done/tone-of-voice-merge-into-brand-voice.md)
 - ADR: [adr/2026-05-15-tone-of-voice-consolidation.md](adr/2026-05-15-tone-of-voice-consolidation.md)
 - Spec: -
-- Commit: COMMIT_HASH
+- Commit: `3288adec`
 
 ### 222. Documentatie-architectuur migratie (week 1)
 
