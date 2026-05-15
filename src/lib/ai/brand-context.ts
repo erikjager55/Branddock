@@ -397,8 +397,8 @@ interface BrandVoiceguideRow {
   antiPatterns?: string[];
   writingSamples?: unknown;
   channelTones?: unknown;
-  contentGuidelines?: string[];
-  writingGuidelines?: string[];
+  contentGuidelines?: string[] | null;
+  writingGuidelines?: string[] | null;
   examplePhrases?: unknown;
   guidelinesSavedForAi?: boolean;
   examplePhrasesSavedForAi?: boolean;
@@ -453,6 +453,20 @@ export function formatBrandVoiceguide(data: BrandVoiceguideRow): string {
   }
   if (Array.isArray(data.antiPatterns) && data.antiPatterns.length > 0) {
     parts.push(`Anti-patterns (never write): ${data.antiPatterns.filter(Boolean).join(', ')}`);
+  }
+
+  // Content + writing guidelines (verhuisd van Brandstyleguide, ADR 2026-05-15)
+  // — gate op savedForAi-flag, default schema is true.
+  // Emitten binnen formatBrandVoiceguide zodat de canonical voiceguide-string
+  // ze meedraagt; voorheen werden ze in ctx.brandToneOfVoice gezet wat door
+  // prompt-templates gated wordt achter `!ctx.brandVoiceguide` — dood pad.
+  if (data.guidelinesSavedForAi) {
+    if (Array.isArray(data.contentGuidelines) && data.contentGuidelines.length > 0) {
+      parts.push(`Content guidelines: ${data.contentGuidelines.join('; ')}`);
+    }
+    if (Array.isArray(data.writingGuidelines) && data.writingGuidelines.length > 0) {
+      parts.push(`Writing style: ${data.writingGuidelines.join('; ')}`);
+    }
   }
 
   // Do/Don't examples (verhuisd van Brandstyleguide, ADR 2026-05-15) — gate
