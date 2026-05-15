@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { resolvePreviewComponent } from '../previews/preview-map';
 import { STUDIO } from '@/lib/constants/design-tokens';
-import { CheckCircle2, Video } from 'lucide-react';
+import { CheckCircle2, Video, AlertTriangle } from 'lucide-react';
 import type { PreviewContent } from '../../../types/canvas.types';
 
 interface MediumConfigLayoutProps {
@@ -36,6 +36,18 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
   const setInsertImageModalOpen = useCanvasStore((s) => s.setInsertImageModalOpen);
   const mediumConfigValues = useCanvasStore((s) => s.mediumConfigValues);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
+  const fidelityThresholdMet = useCanvasStore((s) => s.fidelityScore.thresholdMet);
+  const fidelityStage = useCanvasStore((s) => s.fidelityScore.stage);
+  const fidelityCompositeScore = useCanvasStore((s) => s.fidelityScore.compositeScore);
+  const fidelityThreshold = useCanvasStore((s) => s.fidelityScore.compositeThreshold);
+  const belowThreshold =
+    fidelityStage === 'complete' && fidelityThresholdMet === false;
+
+  // Step 3 A/B variant toggle — lets the user see how the not-selected
+  // variant would render in the medium without navigating back to Step 2.
+  // Defaults to the Step 2 selection but overrides per-group selections
+  // when the user picks the other variant.
+  const [previewVariantOverride, setPreviewVariantOverride] = useState<number | null>(null);
 
   const { generate } = useCanvasOrchestration(deliverableId ?? null);
 
@@ -50,14 +62,46 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
   const previewContent = useMemo<PreviewContent>(() => {
     const content: PreviewContent = {};
     for (const [group, variants] of variantGroups) {
-      const selectedIdx = selections.get(group) ?? 0;
+      // When the A/B toggle is active, ignore per-group selections and
+      // force the chosen variant index across all groups so the entire
+      // post renders coherently as Variant A or B.
+      const selectedIdx =
+        previewVariantOverride !== null
+          ? Math.min(previewVariantOverride, variants.length - 1)
+          : selections.get(group) ?? 0;
       const selected = variants[selectedIdx];
       if (selected) {
         content[group] = { content: selected.content, type: 'text' };
       }
     }
     return content;
-  }, [variantGroups, selections]);
+  }, [variantGroups, selections, previewVariantOverride]);
+
+  // Variant count across groups — drives whether the A/B toggle shows.
+  // Single-variant runs (count=1) hide the toggle since there's nothing
+  // to compare.
+  const variantCount = useMemo(() => {
+    let max = 0;
+    for (const [, variants] of variantGroups) {
+      if (variants.length > max) max = variants.length;
+    }
+    return max;
+  }, [variantGroups]);
+
+  const currentVariantIndex = useMemo(() => {
+    if (previewVariantOverride !== null) return previewVariantOverride;
+    // No override: read the first group's selection as the "current" one.
+    // All variant-groups for a single post share the same variantIndex
+    // when generated together, so the first group's selection is canonical.
+    for (const [, variants] of variantGroups) {
+      if (variants.length > 0) {
+        for (const [group] of variantGroups) {
+          return selections.get(group) ?? 0;
+        }
+      }
+    }
+    return 0;
+  }, [previewVariantOverride, selections, variantGroups]);
 
   const textEntries = Object.entries(previewContent).filter(
     ([, v]) => v.type === 'text' && v.content,
@@ -131,19 +175,45 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
           panel below. Long-term goal (TODO 9.0b): make each preview component
           inline-editable per section so the panel disappears entirely. */}
       <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-gray-50 border-b border-gray-200">
           <span className="text-xs font-semibold text-gray-600">
             {composedVideoUrl ? 'Generated Video' : `${previewEntry.label} Preview`}
           </span>
-          {composedVideoUrl ? (
-            <span className="text-xs text-emerald-600 flex items-center gap-1">
-              <Video className="h-3 w-3" /> Video ready
-            </span>
-          ) : textEntries.length > 0 ? (
-            <span className="text-xs text-emerald-600 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3" /> Live preview
-            </span>
-          ) : null}
+          <div className="flex items-center gap-3">
+            {/* A/B variant toggle — only when more than one variant exists.
+                Last-chance review without navigating back to Step 2. */}
+            {variantCount > 1 && !composedVideoUrl && (
+              <div className="flex items-center gap-0.5 rounded-md border border-gray-200 bg-white p-0.5">
+                {Array.from({ length: variantCount }).map((_, idx) => {
+                  const label = String.fromCharCode(65 + idx); // 0→A, 1→B, ...
+                  const active = currentVariantIndex === idx;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setPreviewVariantOverride(idx)}
+                      className={
+                        active
+                          ? 'px-2 py-0.5 rounded text-[11px] font-semibold bg-teal-600 text-white'
+                          : 'px-2 py-0.5 rounded text-[11px] font-medium text-gray-600 hover:bg-gray-100'
+                      }
+                    >
+                      Variant {label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {composedVideoUrl ? (
+              <span className="text-xs text-emerald-600 flex items-center gap-1">
+                <Video className="h-3 w-3" /> Video ready
+              </span>
+            ) : textEntries.length > 0 ? (
+              <span className="text-xs text-emerald-600 flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Reflects Step 2 selection
+              </span>
+            ) : null}
+          </div>
         </div>
 
         <div className="p-4">
@@ -185,15 +255,41 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
         </div>
       )}
 
-      {/* Confirm button */}
-      <button
-        type="button"
-        onClick={handleConfirm}
-        className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
-      >
-        <CheckCircle2 className="h-4 w-4" />
-        Confirm & Continue
-      </button>
+      {/* Fidelity warning — actionable context when content scored below
+          the brand threshold. Connects the "Generation complete" header
+          signal to a real review prompt. */}
+      {belowThreshold && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5 text-amber-600" />
+          <div>
+            <p className="font-medium">
+              Brand fidelity {fidelityCompositeScore ?? '?'}/100 — below your threshold ({fidelityThreshold ?? 75})
+            </p>
+            <p className="mt-0.5 text-amber-800">
+              You can still continue, but consider regenerating from Step 2 with feedback to lift the score before publishing.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Sticky Confirm button — stays in view while user scrolls through
+          longer post-previews, so the decisive CTA is always one click
+          away. Colour-coded by readiness: solid green for ready, amber-
+          bordered "Continue anyway" when fidelity is below threshold. */}
+      <div className="sticky bottom-0 -mx-1 pt-3 pb-1 px-1 bg-gradient-to-t from-white via-white to-white/0">
+        <button
+          type="button"
+          onClick={handleConfirm}
+          className={
+            belowThreshold
+              ? 'w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium border-2 border-amber-500 text-amber-700 bg-amber-50 hover:bg-amber-100 shadow-sm'
+              : `w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium shadow-sm ${STUDIO.generateButton}`
+          }
+        >
+          {belowThreshold ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+          {belowThreshold ? 'Continue anyway' : 'Confirm & Continue'}
+        </button>
+      </div>
     </div>
   );
 }

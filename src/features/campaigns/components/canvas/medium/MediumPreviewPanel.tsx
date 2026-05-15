@@ -4,7 +4,7 @@ import React, { useMemo, useCallback } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { resolvePreviewComponent } from '../previews/preview-map';
 import { STUDIO } from '@/lib/constants/design-tokens';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { PreviewContent } from '../../../types/canvas.types';
 
 interface MediumPreviewPanelProps {
@@ -21,6 +21,12 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
   const mediumConfigValues = useCanvasStore((s) => s.mediumConfigValues);
   const heroImage = useCanvasStore((s) => s.heroImage);
   const setInsertImageModalOpen = useCanvasStore((s) => s.setInsertImageModalOpen);
+  const fidelityThresholdMet = useCanvasStore((s) => s.fidelityScore.thresholdMet);
+  const fidelityStage = useCanvasStore((s) => s.fidelityScore.stage);
+  const fidelityCompositeScore = useCanvasStore((s) => s.fidelityScore.compositeScore);
+  const fidelityThreshold = useCanvasStore((s) => s.fidelityScore.compositeThreshold);
+  const belowThreshold =
+    fidelityStage === 'complete' && fidelityThresholdMet === false;
 
   const platform = contextStack?.medium?.platform ?? null;
   const format = contextStack?.medium?.format ?? null;
@@ -111,14 +117,37 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
         </div>
       )}
 
-      {/* Confirm button */}
+      {/* Fidelity warning — surfaces a real issue (below-threshold content)
+          next to the Confirm CTA so the user has context before committing.
+          Connects the "Generation complete" header signal to actionable
+          state instead of leaving the user with a generic green tick. */}
+      {belowThreshold && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5 text-amber-600" />
+          <div>
+            <p className="font-medium">
+              Brand fidelity {fidelityCompositeScore ?? '?'}/100 — below your threshold ({fidelityThreshold ?? 75})
+            </p>
+            <p className="mt-0.5 text-amber-800">
+              You can still continue, but consider regenerating from Step 2 with feedback to lift the score before publishing.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm button — colour-coded by readiness so the CTA itself signals
+          whether confirmation is a clean ship or a knowing override. */}
       <button
         type="button"
         onClick={handleConfirm}
-        className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
+        className={
+          belowThreshold
+            ? 'w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium border-2 border-amber-500 text-amber-700 bg-amber-50 hover:bg-amber-100'
+            : `w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`
+        }
       >
-        <CheckCircle2 className="h-4 w-4" />
-        Confirm & Continue
+        {belowThreshold ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+        {belowThreshold ? 'Continue anyway' : 'Confirm & Continue'}
       </button>
     </div>
   );

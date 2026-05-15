@@ -94,6 +94,8 @@ async function applyInheritance(
 export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPageProps) {
   const globalStatus = useCanvasStore((s) => s.globalStatus);
   const globalErrorMessage = useCanvasStore((s) => s.globalErrorMessage);
+  const fidelityThresholdMet = useCanvasStore((s) => s.fidelityScore.thresholdMet);
+  const fidelityStage = useCanvasStore((s) => s.fidelityScore.stage);
   const approvalStatus = useCanvasStore((s) => s.approvalStatus);
   const activeStep = useCanvasStore((s) => s.activeStep);
   const completedSteps = useCanvasStore((s) => s.completedSteps);
@@ -623,7 +625,15 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           <span className="text-sm text-primary animate-pulse">Generating...</span>
         )}
         {globalStatus === 'complete' && (
-          <span className="text-sm text-emerald-600">Generation complete</span>
+          // Semantically connect generation-complete state to the fidelity
+          // signal so the header reflects whether content is ready to ship
+          // or needs review. "Complete" alone next to a below-threshold
+          // fidelity-bar looked contradictory.
+          fidelityStage === 'complete' && fidelityThresholdMet === false ? (
+            <span className="text-sm text-amber-600">Generation complete · fidelity below threshold</span>
+          ) : (
+            <span className="text-sm text-emerald-600">Generation complete</span>
+          )
         )}
         {globalStatus === 'error' && (
           <span className="text-sm text-red-500" title={globalErrorMessage ?? undefined}>

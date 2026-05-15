@@ -53,6 +53,7 @@ LinkedIn algorithm priorities: dwell time (long posts read fully beat short post
 - **Hook** (15-25 words): Bold claim, counterintuitive insight, or pattern interrupt. Must be visible before the "see more" fold (first 2 lines). No fluff, no setup — lead with the punch.
 - **White space**: One empty line after the hook. This is non-negotiable for readability.
 - **Expansion** (3-4 short paragraphs, 30-50 words each): Develop the argument. Each paragraph is 1-2 sentences max. Use line breaks between every paragraph. Short sentences. Punchy rhythm.
+  - **Opening line of expansion MUST be declarative** — a concrete observation, scene, or statement of fact. NEVER open the body with a second question or rephrased hook. The hook already does the question/provocation work; the body earns the right to that hook by showing evidence. Example: hook ends with "...is the cheapest expense you'll ever skip on." then expansion opens with "Last Tuesday, a restaurant in Utrecht lost €4k on a sold-out night because three chef-jackets didn't return from the laundry." — NOT "But have you ever wondered how much you actually lose?"
 - **Personal angle** (1 paragraph, 30-50 words): Share a personal experience, client story, or lesson learned. This is what separates thought leadership from generic advice.
 - **CTA question** (1 sentence): Ask a specific, easy-to-answer question that invites the reader to share their perspective. Open-ended, not yes/no.
 - **Hashtags** (3-5): Mix of 1 broad hashtag (500K+ posts), 2 mid-range (10K-100K posts), and 1-2 niche hashtags specific to the topic.
@@ -87,6 +88,7 @@ What's the hardest 'no' you've said in your career?
 - NEVER use generic hooks like "In today's fast-paced world...", "As we all know...", or "It goes without saying..."
 - NEVER write walls of text without line breaks — LinkedIn is a MOBILE-FIRST platform
 - NEVER use emoji as bullet points (no "star" "rocket" "fire" lists) — it reads as amateur
+- NEVER repeat the hook as the first line of the body — the body must move the argument forward, not restate the question
 - NEVER tag people just for visibility — only tag if genuinely relevant to the content
 - NEVER end with "Thoughts?" alone — be specific about what kind of response you want
 
