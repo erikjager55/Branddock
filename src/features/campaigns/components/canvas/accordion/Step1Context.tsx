@@ -1029,10 +1029,14 @@ function VisualBriefSection() {
   //   manual    — user committed to one of the three paths or had
   //               pre-existing data when the canvas mounted
   type SetupState = 'initial' | 'suggested' | 'manual';
-  const [setupState, setSetupState] = React.useState<SetupState>(() => {
-    if (visualBrief.source !== 'none' || briefingText.length > 0) return 'manual';
-    return 'initial';
-  });
+  // Default canvas source is 'generate', so source alone can't tell us
+  // whether the user has interacted with this canvas before. Use the
+  // briefing-text presence as the persistence signal: empty briefing on
+  // mount → fresh canvas → show the Suggest CTA; existing briefing →
+  // returning user, jump straight to the manual form.
+  const [setupState, setSetupState] = React.useState<SetupState>(() =>
+    briefingText.length > 0 ? 'manual' : 'initial',
+  );
 
   const [suggestLoading, setSuggestLoading] = React.useState(false);
   const [suggestError, setSuggestError] = React.useState<string | null>(null);
