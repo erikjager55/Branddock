@@ -1093,55 +1093,38 @@ function VisualBriefSection() {
         steers both what the AI writes and what it generates.
       </p>
 
-      {/* Suggestion strip — content-type-aware starting point. Not auto-applied;
-          user clicks "Use defaults" to fill source + chip. */}
-      {defaults && !suggestionDismissed && (
-        <div
-          className="mb-3 rounded-md p-2.5 flex items-start gap-2.5"
-          style={{
-            backgroundColor: ACTIVE_BG,
-            border: `1px solid ${ACTIVE_BORDER}`,
-          }}
-        >
-          <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: ACTIVE_HEX }} />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium" style={{ color: '#4c1d95' }}>
-              Suggested for {contentType ?? 'this content'}: {suggestedChipLabel}
-              {aspectHint ? ` · ${aspectHint}` : ''}
-              {defaults.modelHint ? ` · ${defaults.modelHint}` : ''}
-            </p>
-            <p className="text-[11px] mt-0.5" style={{ color: '#5b21b6' }}>
-              {defaults.rationale}
-            </p>
-            <div className="flex items-center gap-2 mt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setSource(defaults.source);
-                  setStyleDirection(defaults.styleDirection);
-                }}
-                className="text-xs font-medium px-2.5 py-1 rounded transition-colors"
-                style={{
-                  backgroundColor: ACTIVE_HEX,
-                  color: '#ffffff',
-                }}
-              >
-                Use defaults
-              </button>
-              <button
-                type="button"
-                onClick={() => setSuggestionDismissed(true)}
-                className="text-xs font-medium px-2.5 py-1 rounded transition-colors"
-                style={{
-                  backgroundColor: '#ffffff',
-                  color: '#5b21b6',
-                  border: `1px solid ${CHIP_ACTIVE_BORDER}`,
-                }}
-              >
-                Customize
-              </button>
-            </div>
-          </div>
+      {/* F-LinkedIn-1 (audit 2026-05-15): oude defaults-banner verwijderd. F37
+          ImageModelSuggestionBanner (verderop) is single source of truth voor
+          model + cost + reasoning. Defaults voor chip-keuze gebruiken we als
+          "Use suggested chip" knop direct boven de chip-rij — geen aparte
+          banner-real-estate meer. */}
+      {defaults && !suggestionDismissed && filledChip === null && (
+        <div className="mb-3 text-[11px] flex items-center gap-2 px-2 py-1.5 rounded bg-slate-50 border border-slate-200">
+          <Sparkles className="h-3 w-3 text-slate-500 flex-shrink-0" />
+          <span className="text-slate-700">
+            Voorgestelde chip voor {contentType ?? 'dit content-type'}:{' '}
+            <span className="font-medium">{suggestedChipLabel}</span>
+            {aspectHint ? ` · ${aspectHint}` : ''}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setSource(defaults.source);
+              setStyleDirection(defaults.styleDirection);
+              setSuggestionDismissed(true);
+            }}
+            className="ml-auto text-[11px] font-medium text-teal-700 hover:text-teal-800 underline"
+          >
+            Toepassen
+          </button>
+          <button
+            type="button"
+            onClick={() => setSuggestionDismissed(true)}
+            className="text-slate-400 hover:text-slate-600"
+            aria-label="Verberg"
+          >
+            <X className="h-3 w-3" />
+          </button>
         </div>
       )}
 
