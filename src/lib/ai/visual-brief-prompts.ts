@@ -146,12 +146,14 @@ export function selectModelForStyle(chip: VisualStyleDirection | null): string {
   // Override-path: visualBrief.generate.model wint over deze default.
   switch (chip) {
     case 'quote-text':
+      // F42-final-2 (audit 2026-05-15): all-chips experiment toonde
+      // Ideogram V3 composite 78 vs Nano Banana 69 voor typography-poster
+      // briefs. Typography-specialist > generalist op deze chip.
+      return 'fal-ai/ideogram-v3';
     case 'infographic':
     case 'data-driven':
-      // Text-rendering is critical — Nano Banana Pro (Gemini 3 Pro Image)
-      // levert leesbare posters waar FLUX 2 garbled text produceert.
-      // 10× cheaper dan GPT Image 2 high-quality voor zelfde of betere
-      // text-accuracy per market-comparison.
+      // Marginaal verschil tussen Ideogram (83) en Nano Banana (82); Nano
+      // Banana wint op brandFit (88 vs 75) en is $0.02 cheaper. Keep.
       return 'fal-ai/nano-banana-pro';
     case 'product-shot':
       // Product shots met tekst op packaging/labels — Seedream V4 is
@@ -169,10 +171,14 @@ export function selectModelForStyle(chip: VisualStyleDirection | null): string {
     case 'lifestyle':
     case 'behind-the-scenes':
     case 'ugc':
-      // Photoreal scenes zonder kritieke tekst — FLUX 2 Pro best aesthetic.
-      return 'fal-ai/flux-2-pro';
+      // F42-final-2 (audit 2026-05-15): all-chips experiment toonde
+      // Phota composite 87 vs FLUX 2 Pro 77 op photoreal-with-people
+      // briefs. Phota is photoreal specialist met sterkere brand-fit
+      // (88) en authenticity (85) voor warm/professional scenes.
+      return 'fal-ai/phota';
     default:
-      // No chip picked — pick the safe photoreal default
+      // No chip picked — FLUX 2 Pro blijft safe photoreal default voor
+      // generic gevallen (Phota over-specialiseert in candid people).
       return 'fal-ai/flux-2-pro';
   }
 }

@@ -26,6 +26,9 @@ export type SuggestedModelId =
   | 'nano-banana-pro'
   | 'recraft-v4'
   | 'imagen-4'
+  | 'phota'
+  | 'ideogram-v3'
+  | 'seedream-v4'
   | 'trained-lora';
 
 export interface ImageSuggestion {
@@ -75,6 +78,22 @@ const MODEL_META: Record<SuggestedModelId, { label: string; costPerImageUsd: num
     label: 'Workspace Trained Model',
     costPerImageUsd: 0.05,
     strengths: ['Custom brand-look', 'Highest consistency', 'Brand-specific characters'],
+  },
+  // F42-final-2 (audit 2026-05-15): added per all-chips experiment winners
+  phota: {
+    label: 'Phota',
+    costPerImageUsd: 0.03,
+    strengths: ['Photoreal with people', 'Authentic candid scenes', 'Warm professional mood'],
+  },
+  'ideogram-v3': {
+    label: 'Ideogram V3',
+    costPerImageUsd: 0.04,
+    strengths: ['Typography specialist', 'Crisp text rendering', 'Poster / quote design'],
+  },
+  'seedream-v4': {
+    label: 'Seedream V4',
+    costPerImageUsd: 0.04,
+    strengths: ['Product detail accuracy', 'Label legibility', 'Material textures'],
   },
 };
 
@@ -148,7 +167,22 @@ export function suggestImageApproach(input: SuggestInput): ImageSuggestion {
     };
   }
 
-  if (chip === 'quote-text' || chip === 'infographic' || chip === 'data-driven') {
+  if (chip === 'quote-text') {
+    // F42-final-2 (audit 2026-05-15): all-chips experiment toonde
+    // Ideogram V3 composite 78 vs Nano Banana 69 op typography-poster.
+    const m = MODEL_META['ideogram-v3'];
+    return {
+      source: 'generate',
+      modelId: 'ideogram-v3',
+      modelLabel: m.label,
+      costPerImageUsd: m.costPerImageUsd,
+      strengths: m.strengths,
+      reasoning:
+        'Ideogram V3 is typography-specialist met crisp text-rendering, clean modern fonts en correct spacing. Per onze head-to-head (mei 2026) wint Ideogram +9pt vs Nano Banana op quote-poster briefs.',
+    };
+  }
+
+  if (chip === 'infographic' || chip === 'data-driven') {
     const m = MODEL_META['nano-banana-2'];
     return {
       source: 'generate',
@@ -157,20 +191,22 @@ export function suggestImageApproach(input: SuggestInput): ImageSuggestion {
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
       reasoning:
-        'Nano Banana 2 is in de markt de beste op tekst-in-image rendering en accurate data-viz. FLUX 2 produceert garbled text bij infographics; Nano Banana levert leesbare resultaten.',
+        'Nano Banana 2 levert sterke data-viz output met world-knowledge accuracy. Marginale +1pt verschil met Ideogram V3 — Nano Banana wint op brandFit en is $0.02 goedkoper.',
     };
   }
 
   if (chip === 'product-shot') {
-    const m = MODEL_META['imagen-4'];
+    // F42-final-2: all-chips experiment bevestigde Seedream V4 wint
+    // product-shot composite 88 (materialAccuracy 82, labelLegibility 92).
+    const m = MODEL_META['seedream-v4'];
     return {
       source: 'generate',
-      modelId: 'imagen-4',
+      modelId: 'seedream-v4',
       modelLabel: m.label,
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
       reasoning:
-        'Imagen 4 wint product-photography met material-accurate output (leer, glas, metaal). Voor close-up product-shots is dit de juiste keuze boven photorealistic scene-modellen.',
+        'Seedream V4 is product-photography specialist met material-accurate textures en text-on-product label legibility. Per onze head-to-head (mei 2026) wint Seedream voor close-up product-shots met labels.',
     };
   }
 
@@ -188,8 +224,25 @@ export function suggestImageApproach(input: SuggestInput): ImageSuggestion {
     };
   }
 
-  // ── 4. Default — photorealistic scene ───────────────────────
-  if (PHOTOREAL_SCENE_CONTENT_TYPES.has(contentTypeId) || !chip || chip === 'lifestyle' || chip === 'behind-the-scenes' || chip === 'ugc') {
+  // ── 4. Photoreal scene with people (lifestyle/behind-the-scenes/ugc) ──
+  if (chip === 'lifestyle' || chip === 'behind-the-scenes' || chip === 'ugc') {
+    // F42-final-2: all-chips experiment toonde Phota composite 87 vs
+    // FLUX 2 Pro 77 op photoreal-with-people. Phota is photoreal
+    // specialist met sterkere authenticity en brand-fit (88).
+    const m = MODEL_META.phota;
+    return {
+      source: 'generate',
+      modelId: 'phota',
+      modelLabel: m.label,
+      costPerImageUsd: m.costPerImageUsd,
+      strengths: m.strengths,
+      reasoning:
+        'Phota is photoreal specialist voor authentic candid scenes met mensen. Per onze head-to-head (mei 2026) wint Phota +10pt vs FLUX 2 Pro op warm/professional briefs — sterker op authenticity en brand-fit.',
+    };
+  }
+
+  // ── 5. Generic photoreal default (text-content types zonder specifieke chip) ──
+  if (PHOTOREAL_SCENE_CONTENT_TYPES.has(contentTypeId) || !chip) {
     const m = MODEL_META['flux-2-pro'];
     return {
       source: 'generate',
@@ -198,7 +251,7 @@ export function suggestImageApproach(input: SuggestInput): ImageSuggestion {
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
       reasoning:
-        'FLUX 2 Pro levert de beste aesthetic photorealism met cinematic lighting. Geschikt voor lifestyle, scene-content, en editorial-look images. Snel + cost-efficient.',
+        'FLUX 2 Pro is safe photoreal default voor generic scenes zonder specifieke chip. Geschikt voor lifestyle, scene-content en editorial-look images.',
     };
   }
 
