@@ -25,6 +25,8 @@ import { prisma } from '@/lib/prisma';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleCanvasContext, type CanvasContextStack } from '@/lib/ai/canvas-context';
 import { buildVisualBriefImagePrompts, selectModelForStyle } from '@/lib/ai/visual-brief-prompts';
+import { getMultiCandidateDefault } from '@/features/campaigns/lib/deliverable-types';
+import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer';
 import { generateFalImage } from '@/lib/integrations/fal/fal-client';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { getStorageProvider } from '@/lib/storage';
@@ -190,7 +192,11 @@ export async function POST(request: Request, { params }: RouteParams) {
       };
     }
 
-    const promptCount = body?.count ?? 2;
+    // Multi-candidate default per content-type (Pattern B image-quality-chain).
+    // Expensive types (landing-page, explainer-video, social hero) krijgen 3
+    // candidates voor head-to-head selectie; rest 2.
+    const promptCount = body?.count
+      ?? getMultiCandidateDefault(stack.deliverableTypeId ?? '');
     const { prompts, negativePrompt } = buildVisualBriefImagePrompts(
       stack.visualBrief,
       stack.brand,
@@ -349,6 +355,19 @@ export async function POST(request: Request, { params }: RouteParams) {
     });
 
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+
+    // Pattern B parity (image-quality-chain): auto-trigger fidelity scoring
+    // voor elke gegenereerde variant. Was tot 2026-05-15 alleen op -compose
+    // en -trained routes; vandaag aangevuld voor lifestyle-flow. Fire-and-
+    // forget (~$0.04 + 12-15s per call); de UI haalt scores binnen via de
+    // bestaande components-query refetch.
+    void Promise.allSettled(
+      components.map((c) =>
+        scoreImageFidelity({ componentId: c.id, workspaceId }),
+      ),
+    ).catch(() => {
+      /* individual failures worden binnen scoreImageFidelity gelogd */
+    });
 
     return NextResponse.json({
       variants: components,

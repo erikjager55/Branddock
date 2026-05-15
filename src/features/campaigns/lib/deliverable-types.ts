@@ -29,6 +29,34 @@ export interface DeliverableTypeDefinition {
   exportFormats?: string[];
 }
 
+// ─── Multi-candidate image generation (Pattern B image-quality-chain) ───
+
+/**
+ * Default aantal image-candidates dat parallel wordt gegenereerd per content-type.
+ *
+ * 3-4 voor "expensive types" waar visuele variatie cruciaal is en cost-toename
+ * (~3× per generation) gerechtvaardigd. 2 voor de rest — voldoende voor user-keuze
+ * zonder ongegronde cost-impact. Caller (generate-visual* routes) gebruikt deze
+ * default wanneer body.count niet expliciet meegegeven wordt.
+ */
+const MULTI_CANDIDATE_DEFAULTS: Record<string, number> = {
+  // Long-form & hero visuals — beeld bepaalt sterk de perceptie
+  "landing-page": 3,
+  "blog-post": 3,
+  "explainer-video": 3,
+  // Social media hero — head-to-head test loont voor scroll-stopper
+  "instagram-post-carousel": 3,
+  "instagram-post": 3,
+  // Standaard 2 — alle andere types vallen in default-tak
+};
+
+/**
+ * Lookup default multi-candidate count voor een content-type. Default 2.
+ */
+export function getMultiCandidateDefault(deliverableTypeId: string): number {
+  return MULTI_CANDIDATE_DEFAULTS[deliverableTypeId] ?? 2;
+}
+
 // ─── Category-level defaults ────────────────────────────────
 
 const LONG_FORM_DEFAULTS = {

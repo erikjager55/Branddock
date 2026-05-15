@@ -21,6 +21,7 @@ import { prisma } from '@/lib/prisma';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleCanvasContext, type CanvasContextStack } from '@/lib/ai/canvas-context';
 import { buildVisualBriefImagePrompts } from '@/lib/ai/visual-brief-prompts';
+import { getMultiCandidateDefault } from '@/features/campaigns/lib/deliverable-types';
 import {
   composeFromImages,
   ComposeInvalidImageError,
@@ -208,7 +209,8 @@ export async function POST(request: Request, { params }: RouteParams) {
       };
     }
 
-    const promptCount = body?.count ?? 2;
+    const promptCount = body?.count
+      ?? getMultiCandidateDefault(stack.deliverableTypeId ?? '');
     const { prompts: basePrompts, negativePrompt } = buildVisualBriefImagePrompts(
       stack.visualBrief,
       stack.brand,

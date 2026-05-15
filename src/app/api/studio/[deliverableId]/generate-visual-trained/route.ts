@@ -16,6 +16,7 @@ import { prisma } from '@/lib/prisma';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleCanvasContext, type CanvasContextStack } from '@/lib/ai/canvas-context';
 import { buildVisualBriefImagePrompts } from '@/lib/ai/visual-brief-prompts';
+import { getMultiCandidateDefault } from '@/features/campaigns/lib/deliverable-types';
 import { runFalGeneration } from '@/lib/integrations/fal/fal-client';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { getStorageProvider } from '@/lib/storage';
@@ -198,7 +199,8 @@ export async function POST(request: Request, { params }: RouteParams) {
       };
     }
 
-    const promptCount = body?.count ?? 2;
+    const promptCount = body?.count
+      ?? getMultiCandidateDefault(stack.deliverableTypeId ?? '');
     const { prompts: basePrompts, negativePrompt } = buildVisualBriefImagePrompts(
       stack.visualBrief,
       stack.brand,

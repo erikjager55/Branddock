@@ -7,6 +7,7 @@ import { resolvePreviewComponent } from '../previews/preview-map';
 import { VariantIndexOverrideProvider } from '../previews/InlineEditableSection';
 import { FeedbackBar } from '../FeedbackBar';
 import { VisualFidelityBadge } from '../VisualFidelityBadge';
+import { RefineImageButton } from '../RefineImageButton';
 import { VisualFidelityDetail } from '../VisualFidelityDetail';
 import { Badge } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
@@ -795,6 +796,18 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
                     Edit
                   </button>
                 </div>
+                {/* Pattern D image-quality-chain: Improve-button voor refine
+                    bij composite-score &lt; 65. Toont alleen wanneer score
+                    geladen + onder threshold; server enforced ook max-2
+                    iterationCount guard. */}
+                {img.componentId && (
+                  <RefineImageButton
+                    deliverableId={deliverableId}
+                    componentId={img.componentId}
+                    // Geen explicit refetch — de bestaande canvas-orchestration
+                    // polling pickt nieuwe imageUrl + score automatisch op.
+                  />
+                )}
                 <div className="px-2 py-1.5 bg-white">
                   <p className="text-[11px] text-gray-500 line-clamp-2 text-left">{img.prompt}</p>
                 </div>
