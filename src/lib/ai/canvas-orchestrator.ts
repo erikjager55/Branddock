@@ -2444,7 +2444,17 @@ function formatMediumConfig(config: Record<string, unknown>): string {
     if (ctaStyleSocial && ctaStyleSocial !== 'none') {
       parts.push(`- CTA: End with a clear "${ctaStyleSocial.replace(/-/g, ' ')}" call-to-action.`);
     }
-    if (includeEmoji) parts.push('- Use emoji naturally throughout the post to increase engagement.');
+    if (includeEmoji) {
+      // F-emoji-fix (audit 2026-05-15): single "use emoji naturally" line is
+      // outvoted by the platform template few-shot (zero emojis) and the
+      // "NEVER use emoji as bullet points" antipattern, so the toggle was
+      // effectively a no-op. Concrete count + placement guidance overrides
+      // the conservative default. The few-shot example does NOT include
+      // emojis, so we explicitly tell the model this post is the exception.
+      parts.push(
+        '- EMOJI USAGE (REQUIRED): Include 2-4 emojis in this post, weaved into the body at emotional inflection points or to anchor a key sentence. This overrides any "no emoji" tendency from the platform examples — the user has explicitly opted in. Do NOT use emojis as bullet-list markers or stack them at sentence ends; they must feel intentional, not decorative.',
+      );
+    }
   }
 
   // ── Carousel ───────────────────────────────────────────
