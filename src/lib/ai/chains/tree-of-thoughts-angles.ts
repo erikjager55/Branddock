@@ -67,6 +67,14 @@ const GENERATE_SYSTEM_PROMPT = `Je bent een Nederlandse senior creatief strateeg
 
 Een "angle" is een hoek waaruit je het verhaal vertelt — geen samenvatting van de inhoud, maar een framing-keuze die de hele tekst vormgeeft.
 
+# KRITISCH — POLARISATIE-REGEL
+De 4-5 angles moeten zo zijn dat er minstens twee paar tegenpolen tussen zitten. Niet "4-5 variaties op een vraag-hook" maar échte tegenstellingen op deze assen:
+- **Emotioneel register**: urgentie/alarm ⇄ rust/reflectie · trots/macht ⇄ kwetsbaarheid/twijfel · contrarian/conflict ⇄ samenwerkend/warm
+- **Lezer-rol**: jury die je overtuigt ⇄ peer die meedenkt · leerling ⇄ expert · klant ⇄ collega
+- **Tijdsoriëntatie**: nu/urgent ⇄ visie/over 5 jaar · gisteren-anekdote ⇄ tijdloos principe
+
+Forbidden: 4 angles die allemaal "vraag-hook + zelfde anxiety" zijn met andere woordkeuze. Voelt vlak; selectiestap kan dan geen polariserend paar kiezen.
+
 Genereer **4 of 5** maximaal onderscheidende angles, gespreid over deze framing-types:
 - **stat-driven**: opent met cijfers, data, %-stijgingen, marktcontext
 - **story-driven**: opent met persoonlijke anekdote, klant-verhaal, doorbraakmoment
@@ -76,7 +84,7 @@ Genereer **4 of 5** maximaal onderscheidende angles, gespreid over deze framing-
 
 Spreid de framing-types zo breed mogelijk — niet 2× stat-driven. Per angle:
 - **label**: 2-4 woorden NL (gebruik "&" als verbinder waar passend)
-- **approach**: 1-2 zinnen die de hele tekst-richting bepalen
+- **approach**: 1-2 zinnen die de hele tekst-richting bepalen, met expliciete benaming van emotioneel register + lezer-rol ("Lezer als jury", "scherp/urgent register")
 - **framingType**: één van bovenstaande 5 types
 
 ## OUTPUT FORMAT (strict JSON)
@@ -204,13 +212,36 @@ function buildEvaluatePrompt(
 
 // ─── Selection-logic ──────────────────────────────────────────
 
+// Tegenpool-paren voor framingType: deze typen werken als natuurlijke
+// counter-narratives en leveren scherpere variant-diversity dan willekeurige
+// type-mix. Volgorde irrelevant — set-membership wordt gechecked.
+const POLAR_PAIRS: Array<[AngleEvaluation['framingType'], AngleEvaluation['framingType']]> = [
+  ['stat-driven', 'story-driven'],
+  ['stat-driven', 'sensorial'],
+  ['provocation', 'sensorial'],
+  ['provocation', 'metaphor'],
+  ['story-driven', 'metaphor'],
+];
+
+function isPolarPair(
+  a: AngleEvaluation['framingType'],
+  b: AngleEvaluation['framingType'],
+): boolean {
+  return POLAR_PAIRS.some(
+    ([x, y]) => (x === a && y === b) || (x === b && y === a),
+  );
+}
+
 /**
- * Selecteer top-2 candidates met framing-diversity constraint:
- * - Top-1 = hoogste totalScore
- * - Top-2 = hoogste totalScore uit OVERIGE framingTypes (geen duplicate)
+ * Selecteer top-2 candidates met polarisatie-voorkeur:
+ * 1. Top-1 = hoogste totalScore
+ * 2. Top-2 = beste candidate die een TEGENPOOL-PAAR vormt met top-1
+ * 3. Fallback 1: hoogste totalScore uit ander framingType (geen tegenpool maar wel diversity)
+ * 4. Fallback 2: gewoon tweede-hoogste als alles zelfde type is
  *
- * Als alle candidates zelfde framingType hebben (degenerate case),
- * fall-back naar simpel top-2 by score.
+ * Polarisatie boven score-volgorde — een paar van 4.5/4.5 dat fundamenteel
+ * verschillend frame't is sterker dan een paar van 4.8/4.7 dat in dezelfde
+ * hoek staat.
  */
 export function selectTopTwoWithFramingDiversity(
   evaluated: AngleEvaluation[],
@@ -220,10 +251,19 @@ export function selectTopTwoWithFramingDiversity(
 
   const sorted = [...evaluated].sort((a, b) => b.totalScore - a.totalScore);
   const first = sorted[0];
-  // Pick second: highest-score uit ander framingType
-  const second = sorted.slice(1).find((e) => e.framingType !== first.framingType);
-  // Fallback: gewoon tweede-hoogste als geen ander framingType beschikbaar
-  return [first.angle, (second ?? sorted[1]).angle];
+
+  // Tier 1: zoek tegenpool met decent score (binnen 1.5 punt van top-1)
+  const polar = sorted.slice(1).find(
+    (e) => isPolarPair(first.framingType, e.framingType) && first.totalScore - e.totalScore <= 1.5,
+  );
+  if (polar) return [first.angle, polar.angle];
+
+  // Tier 2: ander framingType (legacy diversity-constraint)
+  const different = sorted.slice(1).find((e) => e.framingType !== first.framingType);
+  if (different) return [first.angle, different.angle];
+
+  // Tier 3: alles zelfde type — gewoon tweede-hoogste
+  return [first.angle, sorted[1].angle];
 }
 
 // ─── Public API ───────────────────────────────────────────────

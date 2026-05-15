@@ -288,13 +288,17 @@ export function buildVisualBriefImagePrompts(
   const noTextLong =
     'Pure visual storytelling without any embedded text — no captions, no signage, no typography overlays.';
 
-  // Two compositional angles per chip — "close" focuses on the subject;
-  // "wide" pulls back for environmental context. Both same chip, same
-  // brand, different framing.
+  // F-visual-polarize (audit 2026-05-15): de oude angles (close/wide/detail
+  // van zelfde subject) leverden tweelingbeelden — dezelfde persoon, ander
+  // zoom-niveau. Nieuwe angles forceren SUBJECT-DIFFERENTIE: variant 1 toont
+  // het product/touchpoint zelf (stil-leven van het deliverable, geen mens
+  // of subtiele aanwezigheid), variant 2 toont de menselijke interactie
+  // (klant/team gebruikt het product, scène). Zo zijn de twee beelden niet
+  // alleen anders gecadreerd maar vertellen ze een ander verhaal.
   const angles = [
-    'Close composition: subject prominent, fills most of the frame.',
-    'Wider composition: subject in environmental context with negative space.',
-    'Detail-focused: tight crop on the most expressive element.',
+    'Product-as-hero composition: the brand deliverable itself is the focal point as a still-life or detail shot — clean staging, minimal human presence (hands at edge of frame at most). Show the actual artifact (folded linen, stacked towels, plated dish, dashboard screen) with intentional negative space. NO portrait pose, NO smiling staff facing camera.',
+    'Human-interaction composition: real candid scene of customer or staff actually USING the deliverable mid-action — pouring, folding, plating, swiping, serving. Caught moment, not a posed portrait. Wide enough to see the environment and the interaction together.',
+    'Atmosphere composition: environmental wide shot showing the place at a specific moment (early morning prep, golden-hour service, after-close stillness). No primary subject; the place tells the story through light, layout, and texture.',
   ];
 
   const promptCount = Math.max(1, Math.min(count, angles.length));
