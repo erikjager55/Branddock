@@ -220,6 +220,7 @@ export interface GenerateVisualResponse {
   provider: string;
   model: string;
   generationDuration: number;
+  aspectRatio: string;
 }
 
 /**

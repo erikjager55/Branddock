@@ -241,6 +241,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
               url: v.url,
               prompt: v.prompt,
               isSelected: i === 0,
+              aspectRatio: result.aspectRatio,
             }));
             setImageVariants(mapped);
             const first = mapped[0];

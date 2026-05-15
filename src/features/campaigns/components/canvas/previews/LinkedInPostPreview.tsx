@@ -10,6 +10,28 @@ import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, MoreHorizontal } from 'lucide-react';
 
+// AI variants sometimes emit the hook as both its own `hook` component
+// AND as the first line of `body`. Rendering both produces a duplicate
+// headline. We strip the prefix only at display time — the underlying
+// entry stays intact so inline-edit shows the full body text.
+function dedupeBodyPrefix(body: string, headline?: string): string {
+  if (!headline) return body;
+  const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
+  const headTrim = norm(headline);
+  if (!headTrim) return body;
+  // Match the headline at the very start of the body (markdown-friendly:
+  // optional leading bold/heading markers + whitespace).
+  const stripped = body.trimStart();
+  const lower = stripped.toLowerCase();
+  const headLen = headTrim.length;
+  if (norm(stripped.slice(0, headLen + 2)).startsWith(headTrim)) {
+    // Drop the matching prefix plus any trailing punctuation + newlines.
+    const rest = stripped.slice(lower.indexOf(headTrim) + headLen).replace(/^[\s.,;:!?]+/, '');
+    return rest.length > 0 ? rest : body;
+  }
+  return body;
+}
+
 /**
  * LinkedIn organic post mockup — styled to match the real LinkedIn feed.
  * Uses LinkedIn's actual font sizes, spacing, and color palette.
@@ -55,23 +77,39 @@ export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, o
       {/* Post header — LinkedIn style */}
       <div className="px-4 pt-3 pb-2">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-sm flex items-center justify-center" style={{ backgroundColor: '#dbeafe' }}>
-              <span className="text-sm font-bold" style={{ color: '#1d4ed8' }}>{(brandName ?? 'B').charAt(0).toUpperCase()}</span>
+          <div className="flex items-center gap-2">
+            <div
+              className="h-12 w-12 rounded-md flex items-center justify-center ring-1 ring-gray-200"
+              style={{ backgroundColor: '#0a66c2' }}
+            >
+              <span className="text-base font-semibold text-white">
+                {(brandName ?? 'B').charAt(0).toUpperCase()}
+              </span>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900 leading-tight">{brandName ?? 'Brand Name'}</p>
-              <p className="text-xs text-gray-500 leading-tight">1,234 followers</p>
-              <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                Just now · <Globe className="h-2.5 w-2.5" />
+            <div className="leading-tight">
+              <p className="text-[14px] font-semibold text-gray-900 flex items-center gap-1">
+                {brandName ?? 'Brand Name'}
+                <span className="text-[11px] font-normal text-gray-500">· 1st</span>
+              </p>
+              <p className="text-[12px] text-gray-500">1,234 followers</p>
+              <p className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                Just now · <Globe className="h-3 w-3" />
               </p>
             </div>
           </div>
-          <MoreHorizontal className="h-5 w-5 text-gray-400" />
+          <div className="flex items-start gap-3 text-gray-500">
+            <span className="text-[13px] font-semibold" style={{ color: '#0a66c2' }}>+ Follow</span>
+            <MoreHorizontal className="h-5 w-5" />
+          </div>
         </div>
       </div>
 
-      {/* Post content — sections are inline-editable on hover */}
+      {/* Post content — sections are inline-editable on hover.
+          Defensive de-duplication: AI sometimes emits the hook as both a
+          `hook` component AND the first line of `body`, which renders the
+          headline twice in a row. When that overlap exists we strip the
+          duplicate prefix from the body text only (the underlying entry
+          stays untouched so inline editing still shows the full content). */}
       <div className="px-4 pb-2">
         {headlineEntry && (
           <InlineEditableSection
@@ -86,7 +124,7 @@ export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, o
             entry={bodyEntry}
             render={(text) => (
               <div className="text-sm text-gray-800 leading-relaxed">
-                <SimpleMarkdown text={text} />
+                <SimpleMarkdown text={dedupeBodyPrefix(text, headlineEntry?.content)} />
               </div>
             )}
           />
@@ -104,46 +142,46 @@ export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, o
       {/* Image */}
       <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[1.91/1]" rounded="rounded-none" />
 
-      {/* CTA — prefers the generated `cta` component (inline-editable);
-          falls back to extracting a CTA from the body or to the medium-config
-          ctaStyle so the preview still looks like a finished post even when
-          the AI didn't emit a separate CTA component. */}
+      {/* Link-preview card — LinkedIn renders shared URLs as a card with a
+          thumbnail-spot, headline, and domain. We mirror that layout: small
+          square thumbnail placeholder on the left, headline + domain on the
+          right, then a generic "Visit" pill so the button label doesn't
+          duplicate the headline (the previous render copy/pasted the CTA
+          text into the button which read awkwardly). */}
       {(() => {
+        const renderCard = (text: string) => (
+          <div className="flex items-stretch rounded-lg border border-gray-200 overflow-hidden">
+            <div className="h-14 w-14 flex-shrink-0 bg-gray-100 flex items-center justify-center">
+              <Globe className="h-5 w-5 text-gray-400" />
+            </div>
+            <div className="flex-1 px-3 py-2 min-w-0">
+              <p className="text-[13px] font-medium text-gray-900 truncate">
+                {stripMarkdownForPlainText(text).slice(0, 80)}
+              </p>
+              <p className="text-[11px] text-gray-500 truncate">
+                {(brandName ?? 'brand').toLowerCase().replace(/\s+/g, '')}.com
+              </p>
+            </div>
+            <div className="flex items-center pr-3">
+              <span
+                className="px-3 py-1 rounded-full text-[12px] font-semibold border"
+                style={{ color: '#0A66C2', borderColor: '#0A66C2' }}
+              >
+                Visit
+              </span>
+            </div>
+          </div>
+        );
         if (ctaEntry) {
           return (
-            <div className="px-4 py-2 border-t border-gray-100">
-              <InlineEditableSection
-                entry={ctaEntry}
-                render={(text) => (
-                  <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{stripMarkdownForPlainText(text).slice(0, 80)}</p>
-                      <p className="text-xs text-gray-500">{(brandName ?? 'brand').toLowerCase().replace(/\s+/g, '')}.com</p>
-                    </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold border" style={{ color: '#0A66C2', borderColor: '#0A66C2' }}>
-                      {stripMarkdownForPlainText(text).slice(0, 24)}
-                    </span>
-                  </div>
-                )}
-              />
+            <div className="px-4 pb-3">
+              <InlineEditableSection entry={ctaEntry} render={renderCard} />
             </div>
           );
         }
         const ctaText = extractCta(previewContent) ?? (ctaStyle && ctaStyle !== 'none' ? (ctaStyle === 'sign-up' ? 'Sign Up' : 'Learn More') : null);
         if (!ctaText) return null;
-        return (
-          <div className="px-4 py-2 border-t border-gray-100">
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
-              <div>
-                <p className="text-sm font-medium text-gray-900">{ctaText}</p>
-                <p className="text-xs text-gray-500">{(brandName ?? 'brand').toLowerCase().replace(/\s+/g, '')}.com</p>
-              </div>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold border" style={{ color: '#0A66C2', borderColor: '#0A66C2' }}>
-                {ctaText}
-              </span>
-            </div>
-          </div>
-        );
+        return <div className="px-4 pb-3">{renderCard(ctaText)}</div>;
       })()}
 
       {/* Additional generated components that don't fit the curated slots */}
@@ -151,19 +189,21 @@ export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, o
         <AdditionalComponentsSection handledGroups={['headline', 'hook', 'body', 'caption', 'hashtags', 'cta']} />
       </div>
 
-      {/* Engagement counts */}
-      <div className="px-4 py-1.5">
-        <div className="flex items-center justify-between text-xs text-gray-500">
+      {/* Engagement counts — three overlapping reaction badges to match
+          LinkedIn's stacked-emoji pattern. */}
+      <div className="px-4 pt-2 pb-1.5">
+        <div className="flex items-center justify-between text-[12px] text-gray-500">
           <div className="flex items-center gap-1">
             <span className="flex -space-x-1">
-              <span className="h-4 w-4 rounded-full bg-blue-500 border border-white flex items-center justify-center">
-                <ThumbsUp className="h-2 w-2 text-white" />
+              <span className="h-[18px] w-[18px] rounded-full bg-blue-500 border-2 border-white flex items-center justify-center">
+                <ThumbsUp className="h-2.5 w-2.5 text-white" fill="currentColor" />
               </span>
-              <span className="h-4 w-4 rounded-full bg-red-400 border border-white flex items-center justify-center text-[8px] text-white">❤</span>
+              <span className="h-[18px] w-[18px] rounded-full bg-red-500 border-2 border-white flex items-center justify-center text-[10px] text-white">❤</span>
+              <span className="h-[18px] w-[18px] rounded-full bg-yellow-400 border-2 border-white flex items-center justify-center text-[10px]">👏</span>
             </span>
-            <span>24</span>
+            <span className="ml-1 hover:underline cursor-default">24</span>
           </div>
-          <span>3 comments · 1 repost</span>
+          <span className="hover:underline cursor-default">3 comments · 1 repost</span>
         </div>
       </div>
 

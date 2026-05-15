@@ -27,6 +27,25 @@ import { ImageEditModal } from '../ImageEditModal';
 import type { CanvasImageVariant } from '../../../types/canvas.types';
 import type { VisualBriefSource } from '@/lib/ai/canvas-context';
 
+// Map the aspect-ratio label returned by the generate-visual endpoint to a
+// CSS `aspect-ratio` value so the variant card renders with the actual
+// generated ratio instead of being clamped to a square crop.
+function aspectRatioCss(label?: string): string {
+  switch (label) {
+    case '16:9':
+      return '16 / 9';
+    case '9:16':
+      return '9 / 16';
+    case '4:3':
+      return '4 / 3';
+    case '3:4':
+      return '3 / 4';
+    case '1:1':
+    default:
+      return '1 / 1';
+  }
+}
+
 interface Step2ContentVariantsProps {
   deliverableId: string;
   onAdvance: () => void;
@@ -89,6 +108,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
           url: v.url,
           prompt: v.prompt,
           isSelected: i === 0,
+          aspectRatio: result.aspectRatio,
         }));
         setImageVariants(mapped);
         if (mapped[0]) promoteToHero(mapped[0]);
@@ -755,7 +775,12 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
                   borderColor: img.isSelected ? '#7c3aed' : '#e5e7eb',
                 }}
               >
-                <img src={img.url} alt={img.prompt} className="w-full aspect-square object-cover" />
+                <img
+                  src={img.url}
+                  alt={img.prompt}
+                  className="w-full object-cover"
+                  style={{ aspectRatio: aspectRatioCss(img.aspectRatio) }}
+                />
                 {/* G8 — visual fidelity badge in top-left when scored.
                     Click opens the detail panel; outer button's click handler
                     (variant select) is suppressed via stopPropagation in the

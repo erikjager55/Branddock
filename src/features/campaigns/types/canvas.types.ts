@@ -31,6 +31,10 @@ export interface CanvasImageVariant {
   /** DeliverableComponent id — needed to look up the matching G8 visual
    *  fidelity score in `useCanvasStore.visualFidelityScores`. */
   componentId?: string;
+  /** Aspect-ratio label ('1:1' | '16:9' | '9:16' | '4:3' | '3:4') returned
+   *  by the generate-visual endpoint so the variant card can render with
+   *  the actual ratio instead of forcing square. */
+  aspectRatio?: string;
 }
 
 export interface CanvasComponentResponse {

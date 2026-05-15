@@ -186,7 +186,7 @@ export function selectModelForStyle(chip: VisualStyleDirection | null): string {
 
 export const VISUAL_STYLE_IMAGE_INSTRUCTIONS: Record<VisualStyleDirection, string> = {
   lifestyle:
-    'Lifestyle photography: real people in authentic situations using the product/service. Natural lighting, candid composition, environmental context. Avoid posed studio shots.',
+    'Lifestyle photography: real people interacting with the brand\'s actual product or service touchpoint. The deliverable MUST be visible and central — if the brand delivers textile/linen service, show clean folded linen, fresh aprons, or stacked towels in the scene; if it sells food, the food is the subject; if it provides software, the laptop screen is the focal point. Generic action shots without a brand-touchpoint are wrong. Natural lighting, candid composition, environmental context. Avoid posed studio shots.',
   'product-shot':
     'Clean product photography: isolated subject on simple background, controlled studio lighting, hero composition. Focus is the product itself with crisp details.',
   'quote-text':
