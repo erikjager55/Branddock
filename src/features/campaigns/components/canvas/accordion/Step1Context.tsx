@@ -21,6 +21,8 @@ import {
   type ContentTypeInputValue,
 } from '../../../lib/content-type-inputs';
 import { useFormFillStore, type FormFillField } from '@/stores/useFormFillStore';
+import { generateCanvasVisual, setHeroImage as persistHeroImage } from '../../../api/canvas.api';
+import type { CanvasImageVariant } from '../../../types/canvas.types';
 
 /**
  * Format een ContentTypeInputValue naar de preview-string die de AI ziet
@@ -54,6 +56,14 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
   const brief = useCanvasStore((s) => s.brief);
   const setBriefField = useCanvasStore((s) => s.setBriefField);
   const setContentTypeInput = useCanvasStore((s) => s.setContentTypeInput);
+  // Visual brief is read here (Pad B) so the Step 1 CTA can trigger
+  // visual generation in parallel with text-gen for auto-sources
+  // (generate, photography-request). Picker-sources only get text gen
+  // — the asset picker remains the user-action in Step 2.
+  const visualBriefSource = useCanvasStore((s) => s.visualBrief.source);
+  const setImageVariants = useCanvasStore((s) => s.setImageVariants);
+  const setHeroImage = useCanvasStore((s) => s.setHeroImage);
+  const setVisualGenerationStatus = useCanvasStore((s) => s.setVisualGenerationStatus);
   const { generate, isGenerating } = useCanvasOrchestration(deliverableId);
 
   // Form-fill registry — exposeert briefing-velden aan de Brand Assistant
@@ -164,6 +174,26 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
 
   const hasMissingRequired = missingRequired.length > 0;
 
+  // Pad B (audit 2026-05-15): adaptive CTA label so Step 1 makes the
+  // Step 1 → Step 2 handoff explicit. Auto-sources trigger text + visual
+  // together; picker-sources only trigger text and route the user to
+  // the asset picker in Step 2.
+  const generateCtaLabel = React.useMemo(() => {
+    if (isGenerating) return 'Generating…';
+    switch (visualBriefSource) {
+      case 'generate':
+        return 'Generate text & visual';
+      case 'photography-request':
+        return 'Generate text & photo brief';
+      case 'none':
+        return 'Generate text variants';
+      default:
+        // library, compose, trained-style, upload, url, stock — visual
+        // asset is picked manually in Step 2.
+        return 'Generate text — pick visual in Step 2';
+    }
+  }, [isGenerating, visualBriefSource]);
+
   const handleContinue = () => {
     onAdvance?.();
   };
@@ -197,8 +227,57 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
         // surfacees error naar user via globalErrorMessage.
         console.warn('[Step1Context] pre-generate flush failed:', flushErr);
       }
+      // Pad B (audit 2026-05-15): for auto-sources, fire visual generation
+      // in parallel with text-gen so Step 2 already has (or is finalising)
+      // the image when the user lands. Picker-sources skip this — Step 2
+      // still renders the picker for them.
+      const visualGenPromise = (async () => {
+        if (visualBriefSource === 'generate') {
+          setVisualGenerationStatus('generating');
+          try {
+            const result = await generateCanvasVisual(deliverableId, { count: 2 });
+            const mapped: CanvasImageVariant[] = result.variants.map((v, i) => ({
+              index: i,
+              url: v.url,
+              prompt: v.prompt,
+              isSelected: i === 0,
+            }));
+            setImageVariants(mapped);
+            const first = mapped[0];
+            if (first) {
+              setHeroImage({ url: first.url, mediaAssetId: null, alt: first.prompt });
+              persistHeroImage(deliverableId, {
+                imageUrl: first.url,
+                imageSource: 'ai-generated',
+                mediaAssetId: null,
+                alt: first.prompt ?? null,
+              }).catch((err) => {
+                console.error('[Step1Context] hero persist failed', err);
+              });
+            }
+            setVisualGenerationStatus('idle');
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Visual generation failed';
+            setVisualGenerationStatus('error', message);
+          }
+          return;
+        }
+        if (visualBriefSource === 'photography-request') {
+          // Photographer brief is markdown — generated lazily by
+          // PhotographyBriefPanel when the user opens that tab. We fire
+          // the endpoint here as a warmup so the panel renders the brief
+          // immediately on Step 2 mount.
+          fetch(`/api/studio/${deliverableId}/photo-brief`, { method: 'POST' }).catch((err) => {
+            console.warn('[Step1Context] photo-brief warmup failed', err);
+          });
+        }
+      })();
+
       // Trigger content generation (SSE auto-advance handles step 2 transition)
       await generate();
+      // Visual gen runs in parallel — we don't await it so the user can
+      // already see text-variants land while the image finishes.
+      void visualGenPromise;
 
       // Read fresh state after async generation (avoid stale closures)
       const state = useCanvasStore.getState();
@@ -422,7 +501,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
             className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <Sparkles className="h-4 w-4" />
-            {isGenerating ? 'Generating...' : 'Generate Content'}
+            {generateCtaLabel}
           </button>
         )}
       </div>

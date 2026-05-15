@@ -96,6 +96,13 @@ interface CanvasStoreState {
   // ─── Image variants ───────────────────────────────────────
   imageVariants: CanvasImageVariant[];
 
+  // ─── Visual generation lifecycle ──────────────────────────
+  // Lifted from Step2ContentVariants local state so Step 1 can also
+  // drive visual generation (Pad B, audit 2026-05-15) and Step 2
+  // reflects the in-progress state regardless of who started it.
+  visualGenerationStatus: 'idle' | 'generating' | 'error';
+  visualGenerationError: string | null;
+
   // ─── Publish suggestion ───────────────────────────────────
   publishSuggestion: { suggestedDate: string; reasoning: string } | null;
 
@@ -338,6 +345,10 @@ interface CanvasStoreState {
   setGenerationStatus: (group: string, status: GenerationStatus) => void;
   setGlobalStatus: (status: GenerationStatus, errorMessage?: string) => void;
   setImageVariants: (variants: CanvasImageVariant[]) => void;
+  setVisualGenerationStatus: (
+    status: 'idle' | 'generating' | 'error',
+    errorMessage?: string | null,
+  ) => void;
   setPublishSuggestion: (suggestion: { suggestedDate: string; reasoning: string } | null) => void;
   setFidelityDetector: (data: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number }) => void;
   setFidelityComputing: () => void;
@@ -541,6 +552,8 @@ const INITIAL_STATE = {
   globalStatus: 'idle' as GenerationStatus,
   globalErrorMessage: null as string | null,
   imageVariants: [],
+  visualGenerationStatus: 'idle' as 'idle' | 'generating' | 'error',
+  visualGenerationError: null as string | null,
   publishSuggestion: null,
   fidelityScore: {
     stage: 'idle' as const,
@@ -747,6 +760,12 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
   setGlobalStatus: (status, errorMessage) => set({ globalStatus: status, globalErrorMessage: errorMessage ?? (status === 'error' ? 'An unknown error occurred' : null) }),
 
   setImageVariants: (variants) => set({ imageVariants: variants }),
+
+  setVisualGenerationStatus: (status, errorMessage) =>
+    set({
+      visualGenerationStatus: status,
+      visualGenerationError: errorMessage ?? null,
+    }),
 
   setPublishSuggestion: (suggestion) => set({ publishSuggestion: suggestion }),
 

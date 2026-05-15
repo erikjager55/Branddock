@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { resolvePreviewComponent } from '../previews/preview-map';
@@ -49,14 +49,16 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
   const setHeroImage = useCanvasStore((s) => s.setHeroImage);
   const visualBrief = useCanvasStore((s) => s.visualBrief);
+  const visualStatus = useCanvasStore((s) => s.visualGenerationStatus);
+  const visualError = useCanvasStore((s) => s.visualGenerationError);
+  const setVisualGenerationStatus = useCanvasStore((s) => s.setVisualGenerationStatus);
   const { regenerate, abort } = useCanvasOrchestration(deliverableId);
 
   // Visual generation lifted from VisualVariantsBlock so the unified
   // FeedbackBar at the bottom can also trigger it. The empty-state
   // "Generate visual" button still lives in VisualVariantsBlock and
-  // calls back into this handler.
-  const [visualStatus, setVisualStatus] = useState<'idle' | 'generating' | 'error'>('idle');
-  const [visualError, setVisualError] = useState<string | null>(null);
+  // calls back into this handler. Status is on the canvas store so
+  // Step 1 (Pad B) can drive the same lifecycle on advance.
 
   const promoteToHero = useCallback(
     (variant: { url: string; prompt: string }) => {
@@ -75,8 +77,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
 
   const handleGenerateVisual = useCallback(
     async (instruction?: string) => {
-      setVisualStatus('generating');
-      setVisualError(null);
+      setVisualGenerationStatus('generating');
       try {
         const result = await generateCanvasVisual(deliverableId, {
           count: 2,
@@ -90,14 +91,13 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
         }));
         setImageVariants(mapped);
         if (mapped[0]) promoteToHero(mapped[0]);
-        setVisualStatus('idle');
+        setVisualGenerationStatus('idle');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to generate visual';
-        setVisualError(message);
-        setVisualStatus('error');
+        setVisualGenerationStatus('error', message);
       }
     },
-    [deliverableId, setImageVariants, promoteToHero],
+    [deliverableId, setImageVariants, promoteToHero, setVisualGenerationStatus],
   );
 
   const hasVariants = variantGroups.size > 0;
