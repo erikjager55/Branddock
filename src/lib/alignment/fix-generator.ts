@@ -14,8 +14,15 @@ import {
 } from "@/lib/ai/prompts/brand-alignment";
 import { createClaudeStructuredCompletion } from "@/lib/ai/exploration/ai-caller";
 import { createVersion } from "@/lib/versioning";
-import { invalidateCache } from "@/lib/api/cache";
+import { invalidateCache, getCached, setCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+
+// 60-min TTL on cached fix-options. Long enough for the typical review →
+// apply pattern (user opens an issue, reviews the 3 options, clicks Apply
+// minutes later), short enough that stale entity-state from a parallel
+// edit gets re-evaluated on the next preview.
+const FIX_OPTIONS_CACHE_TTL_MS = 60 * 60 * 1000;
+const fixOptionsCacheKey = (issueId: string) => `fix-options:${issueId}`;
 import type { VersionedResourceType } from "@prisma/client";
 
 // =============================================================
@@ -46,8 +53,18 @@ const VERSION_TYPE_MAP: Record<string, VersionedResourceType> = {
  */
 export async function generateFixOptions(
   issueId: string,
-  workspaceId: string
+  workspaceId: string,
+  cacheOpts: { bypassCache?: boolean } = {},
 ): Promise<FixOptionsResponse> {
+  // Cache hit short-circuits the AI call. The previously-generated options
+  // are what the user saw in the preview, so applyFixOption needs to
+  // resolve to the same array to avoid temp 0.3 drift between preview and
+  // commit. bypassCache is reserved for explicit regenerate-now requests.
+  if (!cacheOpts.bypassCache) {
+    const cached = getCached<FixOptionsResponse>(fixOptionsCacheKey(issueId));
+    if (cached) return cached;
+  }
+
   const issue = await prisma.alignmentIssue.findFirst({
     where: { id: issueId, workspaceId },
   });
@@ -131,7 +148,7 @@ export async function generateFixOptions(
     });
   }
 
-  return {
+  const response: FixOptionsResponse = {
     issueId: issue.id,
     issueSummary: issue.description,
     currentContent: {
@@ -150,6 +167,13 @@ export async function generateFixOptions(
     },
     options,
   };
+
+  // Persist for subsequent applyFixOption calls — same array, no temp 0.3
+  // drift between preview and commit. Cache is shared globally
+  // (lib/api/cache uses globalThis) so any later request to apply A/B can
+  // resolve to the exact previewed shape.
+  setCache(fixOptionsCacheKey(issueId), response, FIX_OPTIONS_CACHE_TTL_MS);
+  return response;
 }
 
 /**
@@ -183,6 +207,7 @@ export async function applyFixOption(
 
     invalidateCache(cacheKeys.prefixes.alignment(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+    invalidateCache(fixOptionsCacheKey(issueId));
 
     return {
       success: true,
@@ -192,10 +217,14 @@ export async function applyFixOption(
     };
   }
 
-  // For options A and B, regenerate fix options to get the changes array.
-  // TODO: Persist fix options after generation and read them back here
-  // instead of regenerating. With temperature 0.3, results will be similar
-  // but not identical to what the user previewed.
+  // For options A and B we need the changes array. generateFixOptions
+  // caches its output keyed by issueId (see lib/api/cache + the
+  // fixOptionsCacheKey helper above) — when the user previews and applies
+  // within the 60-min TTL, the cache hit returns the exact array shown in
+  // the preview. On cache miss (server restart, TTL expiry) we regenerate;
+  // results may differ slightly because temperature 0.3 introduces drift
+  // but the user is one cache-window removed from their preview so the
+  // mismatch is acceptable.
   const fixResponse = await generateFixOptions(issueId, workspaceId);
   const selectedOption = fixResponse.options.find((o) => o.key === optionKey);
 
@@ -212,6 +241,7 @@ export async function applyFixOption(
 
     invalidateCache(cacheKeys.prefixes.alignment(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+    invalidateCache(fixOptionsCacheKey(issueId));
 
     return {
       success: true,
@@ -430,6 +460,7 @@ export async function applyFixOption(
   invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
   invalidateCache(cacheKeys.prefixes.personas(workspaceId));
   invalidateCache(cacheKeys.prefixes.products(workspaceId));
+  invalidateCache(fixOptionsCacheKey(issueId));
   invalidateBrandContext(workspaceId);
 
   if (updatedEntities.length === 0) {
