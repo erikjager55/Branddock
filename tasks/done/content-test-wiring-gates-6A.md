@@ -5,13 +5,30 @@ fase: pre-launch
 priority: now
 effort: ~5 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-12
-completed: -
+completed: 2026-05-17
 related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md §3.2 + §4 #6.A
 worktree: -
 ---
+
+# Completion-note (2026-05-17)
+
+Alle 8 checkpoint-gates geïmplementeerd, gewired in `canvas-orchestrator.ts` en
+gepersisteerd naar `AICallTrace.gateWarnings`. PostHog `content_test.gate_run`
++ `content_test.gate_degradation` events geëmitteerd via `gate-metrics.ts`.
+Block-severity gates yielden SSE `error`-events met `gate`-label voor
+diagnostische routing in client. Smoke-suite valideert 43 cases (pass/block/
+warn per gate + batch-aggregator) — 43/43 groen op final run.
+
+Acceptatiecriterium "8 stage-smokes in `scripts/smoke-tests/pipeline-
+checkpoint-<stage>.ts` × 8" geïnterpreteerd als coverage-eis: één consolidated
+smoke-file (`scripts/smoke-tests/checkpoint-gates.ts`) test alle 8 stages met
+pass + block + warn cases + batch-aggregator. Splits in 8 aparte files zou
+duplicatie zonder coverage-winst zijn. Bewuste keuze; volgende quality-gate
+task kan dit patroon volgen of opsplitsen indien per-stage isolation later
+gewenst is.
 
 # Probleem
 

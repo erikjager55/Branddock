@@ -37,6 +37,31 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 254. Content-test sub-sprint #6.A — checkpoint-gates volledig gewired + closed
+
+Closure-entry voor `content-test-wiring-gates-6A` task. Alle 8 checkpoint-gates
+(brief-input / context-completeness / angle-diversity / variant-output /
+sanitization / fidelity-composite / strict-rewrite / persistence) zijn
+gedefinieerd in `src/lib/content-test/checkpoint-gates.ts` en gewired in
+`canvas-orchestrator.ts`. Block-severity gates yielden SSE `error`-events met
+`gate`-label voor client routing; warn-severity worden geaccumuleerd en
+gepersisteerd naar `AICallTrace.gateWarnings`. PostHog telemetry via
+`gate-metrics.ts` (`emitGateRunMetrics` + `checkGateDegradation`,
+default-threshold 95% pass-rate over rolling 20-runs window) volgt de
+infrastructuur op die productie-pipeline-health surfaceert.
+
+Smoke-suite `scripts/smoke-tests/checkpoint-gates.ts` valideert 43 cases
+(pass + block + warn per stage + batch-aggregator) — 43/43 groen op final
+run. Bewuste interpretatie van acceptatie-bullet "8 stage-smokes × 8 files":
+consolidated coverage gekozen boven 8 aparte files zonder coverage-winst.
+
+Sub-sprint #6 Track A foundation hiermee volledig groen.
+
+- Task: [tasks/done/content-test-wiring-gates-6A.md](tasks/done/content-test-wiring-gates-6A.md)
+- ADR: -
+- Spec: [docs/specs/content-test-improvement-plan.md §3.2](specs/content-test-improvement-plan.md)
+- Commit: close-only entry (gates code in eerdere sprint-commits)
+
 ### 253. Image-quality-chain — 7 patterns A-G volledig geland
 
 Multi-modal image quality pipeline volledig live: van prompt-construction tot
