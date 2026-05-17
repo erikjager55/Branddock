@@ -275,6 +275,10 @@ model Workspace {
   // Brand Voiceguide (parallel aan brandStyleguide — verbale identity)
   brandVoiceguide BrandVoiceguide?
 
+  // Brandclaw — immutable point-in-time inputs voor Strategy Analyst observations
+  // (ADR 2026-05-08-brandclaw-agent-architectuur).
+  dataSnapshots DataSnapshot[]
+
   // Per-type fidelity thresholds (content-test #6.B)
   contentTypeThresholds WorkspaceContentTypeThreshold[]
 
@@ -5608,4 +5612,41 @@ model WorkspaceContentTypeThreshold {
 
   @@unique([workspaceId, contentTypeId])
   @@index([workspaceId])
+}
+
+// =============================================================
+// Brandclaw — Strategy Analyst foundation (ADR 2026-05-08)
+// =============================================================
+// Immutable point-in-time inputs voor agent-reasoning. Elke
+// StrategyAnalyst-run materializeert de data die de agent zag in
+// DataSnapshot-rijen zodat past observations reproduceerbaar zijn
+// nadat live tables muteren. Payload is JSON-serialized; large
+// content-text wordt afgeknipt met char-offset voor herleidbaarheid.
+//
+// SourceType waarden (v1): 'alignment_scan' / 'content_fidelity' /
+// 'review_log' / 'voiceguide'. Uitbreiding zonder schema-migration
+// — gewoon een nieuwe source-accessor toevoegen aan de registry.
+// =============================================================
+
+model DataSnapshot {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// Source-type identifier. Geen DB-enum zodat nieuwe sources zonder
+  /// migration kunnen worden toegevoegd; validation via TS-union in
+  /// data-source-registry.
+  sourceType String
+
+  /// ID van de live-row die werd gesnapshot. Niet FK want source-type
+  /// bepaalt welk model dit is — registry routeert.
+  sourceId String
+
+  /// Immutable copy van source-data op snapshot-moment.
+  payload Json
+
+  snapshotAt DateTime @default(now())
+
+  @@index([workspaceId, sourceType, snapshotAt])
+  @@index([sourceType, sourceId])
 }
