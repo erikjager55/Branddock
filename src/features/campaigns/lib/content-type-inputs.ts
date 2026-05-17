@@ -745,16 +745,12 @@ function adCtaType(): ContentTypeInputField {
   };
 }
 
-function urgencyLevel(): ContentTypeInputField {
-  return {
-    key: "urgencyLevel",
-    label: "Urgency Level (1–5)",
-    category: "engagement",
-    type: "number",
-    placeholder: "2",
-    helpText: "1 = evergreen, 5 = high urgency / scarcity",
-  };
-}
+// urgencyLevel deprecated 2026-05-17 — input-type number (1-5) but the
+// canvas-orchestrator block compared against string 'high', so the
+// urgency-language branch never fired. Overlapped with adCtaType,
+// hookFormat, and (for promo email) urgencyMechanism which now carry the
+// strategic urgency-signal more precisely. Function + adContentStyleFields
+// usage removed; old stored values are gracefully ignored.
 
 function socialProof(): ContentTypeInputField {
   return {
@@ -767,10 +763,10 @@ function socialProof(): ContentTypeInputField {
 }
 
 function adContentStyleFields(): ContentTypeInputField[] {
-  // TODO(post-build): evaluate deprecation of urgencyLevel — overlaps with
-  // conversion-bundle hookFormat + payoffPromise + (for promo-email)
-  // urgencyMechanism. See canvas-tweaks-conversion-shortform task notes.
-  return [adCtaType(), urgencyLevel(), socialProof()];
+  // urgencyLevel removed 2026-05-17 (deprecated, see helper-comment above).
+  // Strategic urgency now flows through adCtaType + hookFormat + (for
+  // promo email) urgencyMechanism instead.
+  return [adCtaType(), socialProof()];
 }
 
 // ── Conversion Hook bundle (short-form / direct-response content) ──

@@ -2501,14 +2501,18 @@ function formatMediumConfig(config: Record<string, unknown>): string {
   }
 
   // ── Advertising ────────────────────────────────────────
+  // urgencyLevel deprecated 2026-05-17: input-type was number (1-5) but
+  // this branch compared against string 'high', so the urgency-language
+  // branch never fired. Plus it overlapped with adCtaType (which has
+  // limited-time-offer) + hookFormat (drives opener tone) + (for promo
+  // email) urgencyMechanism. Strategic urgency now flows through those
+  // three more-specific fields. Old data ignored — storage stays.
   const adFormat = config.adFormat as string | undefined;
-  const urgencyLevel = config.urgencyLevel as string | undefined;
   const socialProof = config.socialProof as boolean | undefined;
 
-  if (adFormat || urgencyLevel) {
-    if (adFormat) parts.push(`- Ad format: ${adFormat}. Follow platform best practices for this format.`);
+  if (adFormat) {
+    parts.push(`- Ad format: ${adFormat}. Follow platform best practices for this format.`);
     if (config.ctaType && !ctaType) parts.push(`- CTA: ${config.ctaType as string}.`);
-    if (urgencyLevel && urgencyLevel !== 'none') parts.push(`- Urgency level: ${urgencyLevel}. ${urgencyLevel === 'high' ? 'Use time-limited language and scarcity.' : 'Suggest value without pressure.'}`);
     if (socialProof) parts.push('- Include social proof (numbers, testimonials, or trust signals).');
   }
 
@@ -2756,8 +2760,8 @@ const MEDIUM_CONFIG_HANDLED_KEYS = new Set<string>([
   // Podcast
   'episodeFormat', 'duration', 'segmentCount', 'introStyle',
   'includeShowNotes', 'includeTranscript',
-  // Advertising
-  'adFormat', 'urgencyLevel', 'socialProof',
+  // Advertising (urgencyLevel deprecated 2026-05-17 — see block above)
+  'adFormat', 'socialProof',
   // Sales (migrated 2026-05-08)
   'salesAngle', 'includePricing',
   // PR-HR (migrated 2026-05-08; hasEmbargo dropped 2026-04-28 als irrelevant voor HR/internal/career)

@@ -1140,7 +1140,21 @@ function VisualBriefSection() {
         method: 'POST',
       });
       if (!res.ok) {
-        setSuggestError('Briefing suggestion failed — source and style still applied');
+        // Surface the real server-side error when it gives us one — most
+        // useful case is the 400 "Insufficient context — add a key message,
+        // persona, or product first" which the user can act on directly.
+        // Falls back to a generic message for 5xx or non-JSON bodies.
+        const fallback = 'Briefing suggestion failed — source and style still applied';
+        let detail: string | null = null;
+        try {
+          const body = (await res.json()) as { error?: unknown };
+          if (typeof body?.error === 'string' && body.error.trim().length > 0) {
+            detail = body.error.trim();
+          }
+        } catch {
+          // Non-JSON response — keep the fallback message.
+        }
+        setSuggestError(detail ?? fallback);
         return;
       }
       const data = (await res.json()) as { briefing?: string };
