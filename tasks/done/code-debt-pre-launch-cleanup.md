@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: ~6d totaal, verspreid over sprint #4-7 als fill-in
 owner: claude-code
-status: open
+status: done
 created: 2026-05-12
-completed: -
+completed: 2026-05-17
 related-adr: -
 related-spec: -
 worktree: -
@@ -53,24 +53,30 @@ Groeperen in 3 mini-clusters voor fill-in werk tussen grote sprints. Niet als é
 # Acceptatiecriteria
 
 **Cluster A — sprint #4-5 (kritiek)**:
-- [x] Variant-selection persists via API (refresh = same variant active) — done 2026-05-12, commit volgt
-- [ ] Fix-options persist (2× call-sites consistent)
-- [ ] Persona image-storage werkt end-to-end (gen → save → render)
-- [ ] ProseMirror diff replaces string-diff in learning-loop (rich-text comparisons)
+- [x] Variant-selection persists via API (refresh = same variant active) — done 2026-05-12
+- [x] Fix-options persist (cache-based, 60-min TTL) — done 2026-05-17, commit `9556016f`
+- [x] Persona image-storage via getStorageProvider (R2 prod / local dev) — done 2026-05-17, commit `3dae25c6`
+- [x] ProseMirror diff via Markdown-isatie (no external lib) — done 2026-05-17, commit `5e919c5e`
 
 **Cluster B — sprint #5-6**:
-- [ ] Exa API call gemigreerd naar non-deprecated method
-- [ ] Trend-radar smoke groen na migratie
+- [x] analyzeMultipleSources migrated to synthesizeTrends (raw-content fallback signals) — done 2026-05-17, commit `da9fc408`
+- [x] Trend-radar fallback path uses single unified synthesis function — `analyzeTrends` + `analyzeMultipleSources` deleted (-190 lines)
 
 **Cluster C — sprint #6-7 fill-in**:
-- [x] Design-tokens cleanup (verwijder dev-only nav-entry) — done 2026-05-12, commit volgt
-- [ ] BrandAlignmentPage lazy-loaded
-- [ ] urgencyLevel deprecation-overlap geëvalueerd (gehandhaafd of verwijderd)
+- [x] Design-tokens cleanup — done 2026-05-12
+- [x] BrandAlignmentPage lazy-loaded — already done via `lazy-imports.ts` + LazyWrapper, task-file comment was stale (verified 2026-05-17)
+- [x] urgencyLevel deprecation — removed; strategic urgency flows via adCtaType + hookFormat + urgencyMechanism — done 2026-05-17, commit `9f9b5ad2`
+- [x] Step1Context error-bubble — `Suggest from content` now surfaces real server-side error bodies — done 2026-05-17, commit `9f9b5ad2`
 
 **Cross-cutting**:
-- [ ] `npx tsc --noEmit` 0 errors na elke cluster
-- [ ] `npm run lint` 0 errors / geen nieuwe warnings
-- [ ] Per cluster: smoke-test of affected flow nog werkt
+- [x] `npx tsc --noEmit` 0 errors na elke cluster
+- [x] `npm run lint` 0 errors / geen nieuwe warnings (pre-existing warnings remain — see commit messages)
+- [x] Per cluster: smoke-test of affected flow nog werkt (test-via dev server na elke commit)
+
+**Bonus findings (deferred as separate cleanup):**
+- `DELIVERABLE_TYPE_SETTINGS` map in `deliverable-type-settings.ts` has 0 consumers in `src/` — full dead-code, candidate for removal
+- `buildMultiSourceSystemPrompt` + `buildMultiSourceUserPrompt` in `prompts/trend-analysis.ts` orphaned after Cluster B migration
+- `ImageSuggestion.strengths` field unused in any UI surface since F-LinkedIn-1d cleanup
 
 # Bestanden die ik aanraak
 

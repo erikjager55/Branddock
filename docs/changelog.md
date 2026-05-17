@@ -37,6 +37,56 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 255. Track A code-debt phase close-out — Cluster A + B + C done
+
+Closure-entry voor `code-debt-pre-launch-cleanup`. Alle drie de clusters (A
+persist-TODOs / B API-deprecation / C cleanup) zijn afgerond binnen één
+sessie 2026-05-17 plus eerder werk op 2026-05-12.
+
+**Cluster A — Persist-TODOs (kritiek voor pilot UX):**
+- Variant-selection persist via API (2026-05-12)
+- Fix-options cache-based persist met 60-min TTL: `generateFixOptions` schrijft
+  `FixOptionsResponse` naar `fix-options:${issueId}` cache, `applyFixOption`
+  leest cache-hit zodat preview ↔ apply consistent zijn (geen temperature 0.3
+  drift). Geen schema-change — gebruikt bestaande `lib/api/cache`.
+- Persona image-storage via `getStorageProvider()`: base64 data-URI (~500KB
+  per row) vervangen door stable storage URL (R2 prod, local dev). Best-effort
+  cleanup van oude bestanden bij regeneratie. Persona-row shrinkt naar ~50
+  bytes per avatar.
+- ProseMirror diff via Markdown-isatie: rich-text inputs (headings, lists,
+  blockquotes, marks bold/italic/code/underline/strike/link) serialiseren naar
+  Markdown vóór paragraph-LCS, zodat formatting + structurele changes als
+  remove+add entries verschijnen i.p.v. "no change". Geen externe lib —
+  TipTap camelCase + canonical PM snake_case beide gehandhaafd.
+
+**Cluster B — API-deprecation:**
+- `analyzeMultipleSources` (deprecated) gemigreerd naar `synthesizeTrends` in
+  researcher.ts: fallback bouwt raw-content `Signal[]` met long claim/evidence,
+  zelfde patroon als de bestaande below-threshold augmentation. Twee
+  deprecated functies + interne types verwijderd uit trend-analyzer.ts.
+  Net -190 regels code.
+
+**Cluster C — Cleanup:**
+- Design-tokens dev-only nav-entry weg (2026-05-12).
+- BrandAlignmentPage lazy-load — al gedaan via `lazy-imports.ts` + LazyWrapper
+  (task-file comment was stale, verified 2026-05-17).
+- urgencyLevel deprecation: input-type was number 1-5 maar canvas-orchestrator
+  compareerde tegen string `'high'` — branch nooit gevuurd. Removed; strategic
+  urgency loopt via adCtaType + hookFormat + urgencyMechanism.
+- Step1Context `Suggest from content` error-bubble: parsed nu echte server 400
+  body ("Insufficient context — add a key message, persona, or product first")
+  i.p.v. generieke fallback.
+
+**Bonus findings (deferred):**
+- `DELIVERABLE_TYPE_SETTINGS` map heeft 0 consumers — full dead-code
+- `buildMultiSource*` helpers in `prompts/trend-analysis.ts` orphaned na B
+- `ImageSuggestion.strengths` field niet meer gerenderd sinds F-LinkedIn-1d
+
+- Task: [tasks/done/code-debt-pre-launch-cleanup.md](tasks/done/code-debt-pre-launch-cleanup.md)
+- ADR: -
+- Spec: -
+- Commits: 9f9b5ad2 (C: error-bubble + urgencyLevel), da9fc408 (B: analyze→synthesize), 9556016f (A: fix-options cache), 3dae25c6 (A: persona avatar storage), 5e919c5e (A: PM diff)
+
 ### 254. Content-test sub-sprint #6.A — checkpoint-gates volledig gewired + closed
 
 Closure-entry voor `content-test-wiring-gates-6A` task. Alle 8 checkpoint-gates
