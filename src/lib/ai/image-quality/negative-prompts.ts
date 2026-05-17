@@ -54,6 +54,56 @@ export interface BuildNegativePromptOptions {
    * is). Default false — defaults staan altijd aan.
    */
   includeDefaults?: boolean;
+  /**
+   * User-typed exclusions detected in briefingText / styleDirectionFreeText
+   * via patterns like "no X", "no X in background", "without X", "avoid X",
+   * "geen X". Routed to negative so the positive prompt stays a clean
+   * subject description.
+   */
+  userNegations?: string[];
+}
+
+// Patterns that capture user-typed negation in briefing/free-text. Lower-case
+// match; the captured group (1) is the thing to avoid. Order matters —
+// longer phrases first so "no X in background" beats "no X".
+const NEGATION_PATTERNS: Array<{ re: RegExp; group: number }> = [
+  { re: /\bno\s+([a-z][a-z0-9 \-']{1,40}?)\s+in\s+(?:the\s+)?background\b/gi, group: 1 },
+  { re: /\bgeen\s+([a-z][a-z0-9 \-']{1,40}?)\s+op\s+(?:de\s+)?achtergrond\b/gi, group: 1 },
+  { re: /\bwithout\s+(?:any\s+)?([a-z][a-z0-9 \-']{1,40})\b/gi, group: 1 },
+  { re: /\bzonder\s+([a-z][a-z0-9 \-']{1,40})\b/gi, group: 1 },
+  { re: /\bavoid\s+(?:any\s+)?([a-z][a-z0-9 \-']{1,40})\b/gi, group: 1 },
+  { re: /\bvermijd\s+([a-z][a-z0-9 \-']{1,40})\b/gi, group: 1 },
+  { re: /\bno\s+([a-z][a-z0-9 \-']{1,40})\b/gi, group: 1 },
+  { re: /\bgeen\s+([a-z][a-z0-9 \-']{1,40})\b/gi, group: 1 },
+];
+
+/**
+ * Extract negation phrases from free-form briefing text. Strips "no X" /
+ * "without X" / "avoid X" / Dutch equivalents and returns the captured
+ * objects so the caller can route them to the negative-prompt slot.
+ *
+ * Conservative: keeps phrases short (max 40 chars per capture) and skips
+ * obvious sentence-end punctuation. Returns an empty array when no patterns
+ * match — caller can pass through to the default-only negative.
+ */
+export function extractUserNegations(...texts: Array<string | null | undefined>): string[] {
+  const collected: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of texts) {
+    if (!raw) continue;
+    for (const { re, group } of NEGATION_PATTERNS) {
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(raw)) !== null) {
+        const captured = m[group]?.trim().replace(/[.,;:!?]+$/, '');
+        if (!captured || captured.length < 2) continue;
+        const key = captured.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        collected.push(captured);
+      }
+    }
+  }
+  return collected;
 }
 
 /**
@@ -63,7 +113,7 @@ export interface BuildNegativePromptOptions {
  * naar FAL kan, of als directive ("avoid: ...") in de prompt-text voor Gemini.
  */
 export function buildNegativePrompt(options: BuildNegativePromptOptions = {}): string {
-  const { brandImageryDonts = [], includeDefaults = true } = options;
+  const { brandImageryDonts = [], includeDefaults = true, userNegations = [] } = options;
 
   const segments: string[] = [];
   if (includeDefaults) {
@@ -72,6 +122,14 @@ export function buildNegativePrompt(options: BuildNegativePromptOptions = {}): s
 
   for (const dont of brandImageryDonts) {
     const trimmed = dont.trim();
+    if (trimmed.length > 0) segments.push(trimmed);
+  }
+
+  // User-typed negations parsed from briefingText / styleDirectionFreeText
+  // come last — most specific wins position-wise on providers that respect
+  // ordering.
+  for (const neg of userNegations) {
+    const trimmed = neg.trim();
     if (trimmed.length > 0) segments.push(trimmed);
   }
 

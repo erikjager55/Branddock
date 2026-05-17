@@ -32,7 +32,7 @@ export function InstagramCarouselPreview({ previewContent, imageVariants, isGene
 
   if (isGenerating) {
     return (
-      <PreviewFrame platformLabel="Instagram Carousel" platformColor={INSTAGRAM_GRADIENT}>
+      <PreviewFrame platformLabel="Instagram Carousel" platformColor={INSTAGRAM_GRADIENT} maxWidthPx={470}>
         <div className="animate-pulse space-y-3">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-full bg-gray-200" />
@@ -50,7 +50,7 @@ export function InstagramCarouselPreview({ previewContent, imageVariants, isGene
   }
 
   return (
-    <PreviewFrame platformLabel="Instagram Carousel" platformColor={INSTAGRAM_GRADIENT}>
+    <PreviewFrame platformLabel="Instagram Carousel" platformColor={INSTAGRAM_GRADIENT} maxWidthPx={470}>
       {/* Profile header */}
       <div className="flex items-center gap-2 mb-3">
         <div className="h-8 w-8 rounded-full bg-pink-100 flex items-center justify-center">

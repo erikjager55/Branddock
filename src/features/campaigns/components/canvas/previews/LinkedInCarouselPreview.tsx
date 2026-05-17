@@ -35,7 +35,7 @@ export function LinkedInCarouselPreview({ previewContent, imageVariants, isGener
 
   if (isGenerating) {
     return (
-      <PreviewFrame platformLabel="LinkedIn Carousel" platformColor={LINKEDIN_BLUE}>
+      <PreviewFrame platformLabel="LinkedIn Carousel" platformColor={LINKEDIN_BLUE} maxWidthPx={555}>
         <div className="animate-pulse space-y-3">
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 rounded-full bg-gray-200" />
@@ -52,7 +52,7 @@ export function LinkedInCarouselPreview({ previewContent, imageVariants, isGener
   }
 
   return (
-    <PreviewFrame platformLabel="LinkedIn Carousel" platformColor={LINKEDIN_BLUE}>
+    <PreviewFrame platformLabel="LinkedIn Carousel" platformColor={LINKEDIN_BLUE} maxWidthPx={555}>
       {/* Author header */}
       <div className="flex items-center gap-2 mb-3">
         <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">

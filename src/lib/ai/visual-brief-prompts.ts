@@ -22,7 +22,7 @@ import type {
   VisualStyleDirection,
 } from './canvas-context';
 import type { BrandContextBlock } from './prompt-templates';
-import { buildNegativePrompt } from './image-quality/negative-prompts';
+import { buildNegativePrompt, extractUserNegations } from './image-quality/negative-prompts';
 import { getIllustrationTemplateForType } from './image-quality/illustration-templates';
 import { suggestImageApproach, MODEL_META } from './image-suggestion';
 
@@ -366,10 +366,13 @@ export function buildVisualBriefImagePrompts(
   }
 
   // Pattern A image-quality-chain: build negative-prompt uit defaults +
-  // workspace imageryDonts. Stuurt naar provider-laag via native parameter
-  // (FAL) of prompt-text directive (Gemini).
+  // workspace imageryDonts + user-typed negations parsed uit briefing /
+  // freeText. Stuurt naar provider-laag via native parameter (FAL) of
+  // prompt-text directive (Gemini).
+  const userNegations = extractUserNegations(brief.briefingText, freeText);
   const negativePrompt = buildNegativePrompt({
     brandImageryDonts: brand.brandImageryDonts,
+    userNegations,
   });
 
   return { prompts, negativePrompt };
