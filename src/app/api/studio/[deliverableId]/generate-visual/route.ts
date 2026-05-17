@@ -208,6 +208,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         products: stack.products,
         creativePlatform: stack.concept?.creativePlatform ?? null,
         platform: stack.medium?.platform ?? null,
+        deliverableTypeId: stack.deliverableTypeId ?? null,
       },
       promptCount,
     );
@@ -236,9 +237,18 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     // Auto-route to the best model for this chip. Honour an explicit
     // visualBrief.generate.model override when the user has picked one.
+    // Pass contentTypeId so chip-less briefs on text-heavy content types
+    // (search-ad, social-ad, linkedin-carousel, etc.) still route to a
+    // text-rendering capable model — matching what Layer 1 promised in
+    // the Step-1 banner. hasTrainedLora is explicitly false here: the
+    // trained-style source has its own dedicated endpoint
+    // (generate-visual-trained), so this endpoint never serves LoRA work.
     const generateConfig = visualBrief?.generate as { model?: string } | undefined;
     const modelId = generateConfig?.model
-      ?? selectModelForStyle(stack.visualBrief?.styleDirection ?? null);
+      ?? selectModelForStyle(stack.visualBrief?.styleDirection ?? null, {
+        contentTypeId: stack.deliverableTypeId ?? null,
+        hasTrainedLora: false,
+      });
 
     // F40 (audit 2026-05-13): brand-style anchor references. Worden als
     // image_urls doorgegeven aan multi-ref modellen (Nano Banana, Recraft,
