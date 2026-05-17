@@ -16,7 +16,7 @@ import { searchWithGrounding } from '@/lib/ai/gemini-client';
 import { getBrandContext } from '@/lib/ai/brand-context';
 import { generateDiverseQueries } from './query-generator';
 import { extractSignalsFromSources, type Signal } from './signal-extractor';
-import { synthesizeTrends, analyzeMultipleSources, type SanitizedTrend } from './trend-analyzer';
+import { synthesizeTrends, type SanitizedTrend } from './trend-analyzer';
 import { calculatePartialScores, filterByQuality, QUALITY_THRESHOLD, type TrendScores } from './trend-scorer';
 import { judgeTrends } from './trend-judge';
 
@@ -379,33 +379,56 @@ export async function runTrendResearch(
       state.errors.push(synthesis.error);
     }
 
-    // If Claude synthesis failed or returned 0 trends, fall back to Gemini multi-source
-    // TODO: analyzeMultipleSources is @deprecated — replace with non-deprecated alternative when available
+    // If structured-signal synthesis returned 0 trends, retry with raw-content
+    // signals. The first call uses micro-claims extracted by
+    // extractSignalsFromSources; the retry feeds long raw-content claims so
+    // the synthesizer sees wider context. Same model, different input shape.
+    // Migrated 2026-05-17 from deprecated analyzeMultipleSources to the
+    // unified synthesizeTrends path (Cluster B code-debt cleanup).
     if (synthesis.trends.length === 0 && scrapedSources.length > 0) {
-      const fallbackMsg = 'Claude synthesis returned 0 trends, falling back to Gemini multi-source analysis';
+      const fallbackMsg = 'Structured-signal synthesis returned 0 trends, retrying with raw-content fallback signals';
       allErrors.push(fallbackMsg);
       state.errors.push(fallbackMsg);
 
       try {
-        // Gemini fallback only runs when Claude produced 0 trends,
-        // so no slug/title collision between the two sets is possible.
-        const geminiSynthesis = await analyzeMultipleSources({
-          query,
-          sources: scrapedSources.filter((s) => !s.url.startsWith('search:')).slice(0, 10),
-          workspaceId,
-          researchJobId: jobId,
-          brandContext,
-          maxTrends: MAX_TRENDS_TOTAL,
-        });
+        const rawFallbackSources = scrapedSources
+          .filter((s) => !s.url.startsWith('search:'))
+          .slice(0, 10);
+        const rawFallbackSignals: Signal[] = rawFallbackSources.map((src) => ({
+          claim: src.content.slice(0, 2000),
+          evidence: src.content.slice(0, 3000),
+          dataPoints: [],
+          entities: [],
+          sourceUrl: src.url,
+          sourceName: src.name,
+          sourceType: 'other' as const,
+          publicationDate: null,
+          sourceAuthority: 'unknown' as const,
+        }));
 
-        if (geminiSynthesis.error) {
-          allErrors.push(`Gemini fallback: ${geminiSynthesis.error}`);
-          state.errors.push(`Gemini fallback: ${geminiSynthesis.error}`);
+        if (rawFallbackSignals.length === 0) {
+          allErrors.push('Raw-content fallback skipped: no eligible scraped sources');
+          state.errors.push('Raw-content fallback skipped: no eligible scraped sources');
+        } else {
+          const fallbackSynthesis = await synthesizeTrends({
+            query,
+            signals: rawFallbackSignals,
+            sourceCount: rawFallbackSources.length,
+            workspaceId,
+            researchJobId: jobId,
+            brandContext,
+            maxTrends: MAX_TRENDS_TOTAL,
+          });
+
+          if (fallbackSynthesis.error) {
+            allErrors.push(`Raw-content fallback: ${fallbackSynthesis.error}`);
+            state.errors.push(`Raw-content fallback: ${fallbackSynthesis.error}`);
+          }
+
+          synthesis.trends.push(...fallbackSynthesis.trends);
         }
-
-        synthesis.trends.push(...geminiSynthesis.trends);
       } catch (fallbackError) {
-        const msg = `Gemini fallback crashed: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`;
+        const msg = `Raw-content fallback crashed: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`;
         allErrors.push(msg);
         state.errors.push(msg);
       }

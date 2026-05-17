@@ -1,22 +1,27 @@
 // =============================================================
 // Trend Analyzer — AI-powered trend detection from signals
 //
-// Two modes:
-//  1. synthesizeTrends() — NEW: signal-based synthesis (Phase 3)
-//  2. analyzeTrends() / analyzeMultipleSources() — Legacy (cron)
+// Single mode: synthesizeTrends() — signal-based synthesis. The
+// researcher.ts pipeline extracts structured signals via
+// extractSignalsFromSources, then calls synthesizeTrends to
+// cross-reference them into trends. A raw-content fallback in
+// researcher.ts retries with whole-source signals when structured
+// synthesis returns 0 trends.
+//
+// Legacy single-source analyzeTrends() and multi-source
+// analyzeMultipleSources() were removed 2026-05-17 (Cluster B
+// code-debt cleanup). Their prompt helpers in prompts/trend-analysis.ts
+// (buildTrendAnalysisSystemPrompt / buildTrendAnalysisUserPrompt /
+// buildMultiSourceSystemPrompt / buildMultiSourceUserPrompt) are also
+// dead code but live in a separate file; cleanup deferred.
 //
 // Includes dedup check against existing trends in workspace.
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
-import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 import { createStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import {
-  buildTrendAnalysisSystemPrompt,
-  buildTrendAnalysisUserPrompt,
-  buildMultiSourceSystemPrompt,
-  buildMultiSourceUserPrompt,
   buildSynthesisSystemPrompt,
   buildSynthesisUserPrompt,
 } from '@/lib/ai/prompts/trend-analysis';
@@ -257,224 +262,6 @@ export async function synthesizeTrends(params: {
     return { trends: sanitized };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error during trend synthesis';
-    return { trends: [], error: message };
-  }
-}
-
-// ─── Legacy: Single-source analysis (cron/source-scan) ──────
-
-interface DetectedTrendRaw {
-  title: string;
-  description: string;
-  category: string;
-  scope: string;
-  impactLevel: string;
-  timeframe: string;
-  relevanceScore: number;
-  direction?: string;
-  confidence?: number;
-  sourceUrl?: string;
-  rawExcerpt?: string;
-  industries?: string[];
-  tags?: string[];
-  howToUse?: string[];
-}
-
-interface TrendAnalysisResult {
-  trends: DetectedTrendRaw[];
-}
-
-/**
- * Analyze scraped content for trends using Gemini AI (single source).
- * @deprecated Use synthesizeTrends() for the new pipeline.
- */
-export async function analyzeTrends(params: {
-  sourceName: string;
-  sourceUrl: string;
-  content: string;
-  workspaceId: string;
-  researchJobId?: string;
-  brandContext?: BrandContextBlock;
-  maxTrends?: number;
-  detectionSource?: 'MANUAL' | 'AI_RESEARCH';
-}): Promise<{
-  trends: SanitizedTrend[];
-  error?: string;
-}> {
-  try {
-    const systemPrompt = buildTrendAnalysisSystemPrompt(params.brandContext);
-    const userPrompt = buildTrendAnalysisUserPrompt({
-      sourceName: params.sourceName,
-      sourceUrl: params.sourceUrl,
-      newContent: params.content,
-    });
-
-    const result = await createGeminiStructuredCompletion<TrendAnalysisResult>(
-      systemPrompt,
-      userPrompt,
-      { temperature: 0.3, maxOutputTokens: 8000 },
-      {
-        workspaceId: params.workspaceId,
-        parentEntityType: params.researchJobId ? 'TrendResearchJob' : 'Workspace',
-        parentEntityId: params.researchJobId ?? params.workspaceId,
-        brandContext: params.brandContext,
-        sourceIdentifier: 'src/lib/trend-radar/trend-analyzer.ts:analyzeTrends',
-      },
-    );
-
-    if (!result?.trends?.length) {
-      return { trends: [] };
-    }
-
-    const existingTrends = await prisma.detectedTrend.findMany({
-      where: { workspaceId: params.workspaceId },
-      select: { title: true, slug: true },
-    });
-    const existingTitles = new Set(existingTrends.map((t) => t.title.toLowerCase()));
-    const existingSlugs = new Set(existingTrends.map((t) => t.slug));
-
-    const maxCount = params.maxTrends ?? 5;
-    const sanitized: SanitizedTrend[] = [];
-    for (const raw of result.trends.slice(0, maxCount)) {
-      if (existingTitles.has(raw.title.toLowerCase())) continue;
-
-      const slug = await generateUniqueSlug(raw.title, existingSlugs);
-      existingTitles.add(raw.title.toLowerCase());
-
-      sanitized.push({
-        title: raw.title.slice(0, 200),
-        slug,
-        description: raw.description || '',
-        category: sanitizeEnum(raw.category, VALID_CATEGORIES, 'TECHNOLOGY'),
-        scope: sanitizeEnum(raw.scope, VALID_SCOPES, 'MICRO'),
-        impactLevel: sanitizeEnum(raw.impactLevel, VALID_IMPACTS, 'MEDIUM'),
-        timeframe: sanitizeEnum(raw.timeframe, VALID_TIMEFRAMES, 'SHORT_TERM'),
-        relevanceScore: Math.max(0, Math.min(100, raw.relevanceScore ?? 75)),
-        direction: raw.direction && (VALID_DIRECTIONS as readonly string[]).includes(raw.direction)
-          ? raw.direction
-          : null,
-        confidence: raw.confidence != null ? Math.max(0, Math.min(100, raw.confidence)) : null,
-        rawExcerpt: raw.rawExcerpt?.slice(0, 2000) ?? null,
-        aiAnalysis: raw.description ? `AI-detected from ${params.sourceName}: ${raw.description}` : null,
-        industries: Array.isArray(raw.industries) ? raw.industries.slice(0, 10) : [],
-        tags: Array.isArray(raw.tags) ? raw.tags.slice(0, 10) : [],
-        howToUse: Array.isArray(raw.howToUse) ? raw.howToUse.slice(0, 5) : [],
-        sourceUrl: params.sourceUrl,
-        detectionSource: params.detectionSource ?? 'AI_RESEARCH',
-        researchJobId: params.researchJobId,
-        workspaceId: params.workspaceId,
-        dataPoints: [],
-        evidenceCount: 1,
-        sourceUrls: [params.sourceUrl],
-        whyNow: null,
-      });
-    }
-
-    return { trends: sanitized };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error during trend analysis';
-    return { trends: [], error: message };
-  }
-}
-
-/**
- * Analyze multiple scraped sources at once for cross-referenced trends.
- * @deprecated Use synthesizeTrends() for the new signal-based pipeline.
- */
-export async function analyzeMultipleSources(params: {
-  query: string;
-  sources: Array<{ name: string; url: string; content: string }>;
-  workspaceId: string;
-  researchJobId?: string;
-  brandContext?: BrandContextBlock;
-  maxTrends?: number;
-}): Promise<{
-  trends: SanitizedTrend[];
-  error?: string;
-}> {
-  try {
-    if (params.sources.length === 0) {
-      return { trends: [] };
-    }
-
-    const systemPrompt = buildMultiSourceSystemPrompt(params.brandContext);
-    const userPrompt = buildMultiSourceUserPrompt({
-      query: params.query,
-      sources: params.sources,
-    });
-
-    const result = await createGeminiStructuredCompletion<TrendAnalysisResult>(
-      systemPrompt,
-      userPrompt,
-      { temperature: 0.4, maxOutputTokens: 10000 },
-      {
-        workspaceId: params.workspaceId,
-        parentEntityType: params.researchJobId ? 'TrendResearchJob' : 'Workspace',
-        parentEntityId: params.researchJobId ?? params.workspaceId,
-        brandContext: params.brandContext,
-        sourceIdentifier: 'src/lib/trend-radar/trend-analyzer.ts:analyzeMultipleSources',
-      },
-    );
-
-    if (!result?.trends?.length) {
-      return { trends: [] };
-    }
-
-    const existingTrends = await prisma.detectedTrend.findMany({
-      where: { workspaceId: params.workspaceId },
-      select: { title: true, slug: true },
-    });
-    const existingTitles = new Set(existingTrends.map((t) => t.title.toLowerCase()));
-    const existingSlugs = new Set(existingTrends.map((t) => t.slug));
-
-    const validSourceUrls = new Set(params.sources.map((s) => s.url));
-    const fallbackSourceUrl = params.sources[0]?.url ?? '';
-
-    const maxCount = params.maxTrends ?? 10;
-    const sanitized: SanitizedTrend[] = [];
-
-    for (const raw of result.trends.slice(0, maxCount)) {
-      if (existingTitles.has(raw.title.toLowerCase())) continue;
-
-      const slug = await generateUniqueSlug(raw.title, existingSlugs);
-      existingTitles.add(raw.title.toLowerCase());
-
-      const trendSourceUrl = raw.sourceUrl && validSourceUrls.has(raw.sourceUrl)
-        ? raw.sourceUrl
-        : fallbackSourceUrl;
-
-      sanitized.push({
-        title: raw.title.slice(0, 200),
-        slug,
-        description: raw.description || '',
-        category: sanitizeEnum(raw.category, VALID_CATEGORIES, 'TECHNOLOGY'),
-        scope: sanitizeEnum(raw.scope, VALID_SCOPES, 'MESO'),
-        impactLevel: sanitizeEnum(raw.impactLevel, VALID_IMPACTS, 'MEDIUM'),
-        timeframe: sanitizeEnum(raw.timeframe, VALID_TIMEFRAMES, 'MEDIUM_TERM'),
-        relevanceScore: Math.max(0, Math.min(100, raw.relevanceScore ?? 75)),
-        direction: raw.direction && (VALID_DIRECTIONS as readonly string[]).includes(raw.direction)
-          ? raw.direction
-          : null,
-        confidence: raw.confidence != null ? Math.max(0, Math.min(100, raw.confidence)) : null,
-        rawExcerpt: raw.rawExcerpt?.slice(0, 2000) ?? null,
-        aiAnalysis: `Synthesized from ${params.sources.length} sources: ${raw.description}`,
-        industries: Array.isArray(raw.industries) ? raw.industries.slice(0, 10) : [],
-        tags: Array.isArray(raw.tags) ? raw.tags.slice(0, 10) : [],
-        howToUse: Array.isArray(raw.howToUse) ? raw.howToUse.slice(0, 5) : [],
-        sourceUrl: trendSourceUrl,
-        detectionSource: 'AI_RESEARCH',
-        researchJobId: params.researchJobId,
-        workspaceId: params.workspaceId,
-        dataPoints: [],
-        evidenceCount: 1,
-        sourceUrls: [trendSourceUrl],
-        whyNow: null,
-      });
-    }
-
-    return { trends: sanitized };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error during multi-source analysis';
     return { trends: [], error: message };
   }
 }
