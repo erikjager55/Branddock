@@ -83,36 +83,28 @@ async function main() {
 
   const registry = await getDataSourceRegistry();
   const types = registry.listSourceTypes();
-  assert(
-    "v1 registry has alignment_scan registered",
-    types.includes("alignment_scan"),
-    `got: [${types.join(", ")}]`,
-  );
-
-  const source = registry.getSource("alignment_scan");
-  assert("getSource('alignment_scan') returns accessor", source.sourceType === "alignment_scan");
-
-  try {
-    registry.getSource("review_log");
-    assert("getSource('review_log') throws (not registered v1)", false, "did not throw");
-  } catch (err) {
+  for (const expected of ["alignment_scan", "content_fidelity", "review_log", "voiceguide"] as const) {
     assert(
-      "getSource('review_log') throws (not registered v1)",
-      err instanceof Error && err.message.includes("no accessor"),
+      `v1 registry has ${expected} registered`,
+      types.includes(expected),
+      `got: [${types.join(", ")}]`,
     );
   }
 
-  // ─ AlignmentScanSource query op fictieve workspace ─
-  console.log("\n## AlignmentScanSource query (empty workspace)\n");
+  // ─ All 4 sources query op fictieve workspace ─
+  console.log("\n## Source queries (empty workspace)\n");
 
-  const result = await source.query({
-    workspaceId: "smoke-test-nonexistent-workspace",
-    window: sinceNDaysAgo(30),
-  });
-  assert("empty workspace returns 0 rows", result.rows.length === 0);
-  assert("empty workspace returns 0 snapshotIds", result.snapshotIds.length === 0);
-  assert("meta.sourceType correct", result.meta.sourceType === "alignment_scan");
-  assert("meta.windowLabel reflects input", result.meta.windowLabel === "last-30-days");
+  const window = sinceNDaysAgo(30);
+  const fakeWorkspace = "smoke-test-nonexistent-workspace";
+
+  for (const sourceType of ["alignment_scan", "content_fidelity", "review_log", "voiceguide"] as const) {
+    const source = registry.getSource(sourceType);
+    const result = await source.query({ workspaceId: fakeWorkspace, window });
+    assert(`${sourceType}: empty workspace returns 0 rows`, result.rows.length === 0);
+    assert(`${sourceType}: empty workspace returns 0 snapshotIds`, result.snapshotIds.length === 0);
+    assert(`${sourceType}: meta.sourceType correct`, result.meta.sourceType === sourceType);
+    assert(`${sourceType}: meta.windowLabel reflects input`, result.meta.windowLabel === "last-30-days");
+  }
 
   console.log(`\n=== RESULT: ${pass} pass, ${fail} fail ===\n`);
   process.exit(fail === 0 ? 0 : 1);

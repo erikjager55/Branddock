@@ -71,12 +71,17 @@ let initialized = false;
 export async function getDataSourceRegistry(): Promise<DataSourceRegistryImpl> {
   if (!initialized) {
     initialized = true;
-    // Importeer v1 sources zodat hun register-side-effects vuren.
-    // Aparte sources worden in volgende fases toegevoegd:
-    //  - content-fidelity-source (Fase 2)
-    //  - review-log-source (Fase 2, hangt aan Δ-1)
-    //  - voiceguide-source (Fase 2)
-    await import("./alignment-scan-source");
+    // Importeer v1 sources parallel zodat hun register-side-effects vuren.
+    // Alle 4 v1-sources geactiveerd in Fase 2 (ADR-2 plug-and-play
+    // doelstelling). Toekomstige sources voor Campaign Builder /
+    // Measurement / Optimization nodes registreren via dezelfde
+    // pattern — alleen toevoegen aan deze import-lijst.
+    await Promise.all([
+      import("./alignment-scan-source"),
+      import("./content-fidelity-source"),
+      import("./review-log-source"),
+      import("./voiceguide-source"),
+    ]);
   }
   return registry;
 }
