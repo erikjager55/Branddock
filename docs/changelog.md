@@ -59,7 +59,7 @@ smoke-cases groen. STOP-GATE genomen — representanten-test kan hervatten.
 - Bug-log: `docs/playbooks/testplan-content-items.md` sectie 5 (linkedin-post FIXED 2026-05-17)
 - Gotcha: `gotchas.md` 2026-05-17 "Internal-rubric prompt-jargon lekt via NL-vertaling"
 - Follow-ups out-of-scope: veldnaam-rename `effieRationale` → `strategicQualityRationale`, hardcoded UI-labels in ConceptReviewView/ReviewStep/StrategySection, studio promo-video bio-leak
-- Commit: <hash-after-commit>
+- Commit: `e849a1ed`
 
 ### 255. Track A code-debt phase close-out — Cluster A + B + C done
 
