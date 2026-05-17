@@ -16,15 +16,67 @@ import { anthropicClient } from '@/lib/ai/anthropic-client';
 // See: tasks/canvas-image-briefing-textarea.md decision 2026-05-08.
 // ---------------------------------------------------------------------------
 
-const SYSTEM_PROMPT = `Je bent een art-director die in 1-2 zinnen omschrijft wat een beeld moet tonen voor een marketing-content-item.
+// System prompt is chip-aware: each style chip wants a different kind of
+// briefing. A photo-style briefing (wie/waar/wat/sfeer) is useful for
+// lifestyle / BTS / UGC, but for quote-text the briefing should describe
+// typography intent + layout, and for infographic the briefing should
+// describe data hierarchy + chart type. Generic art-director prose was
+// producing scene-descriptions even for chips that needed something else.
+function buildSystemPrompt(chip: string | null | undefined): string {
+  const base = `Je bent een art-director die in 1-2 zinnen omschrijft wat een beeld moet tonen voor een marketing-content-item.
 
-Schrijf zoals iemand een fotograaf zou briefen: WIE staat er, WAAR speelt het, WAT gebeurt er, welke SFEER. Maximaal 2 zinnen, geen marketing-jargon, geen "engaging" of "compelling".
+Maximaal 2 zinnen, geen marketing-jargon, geen "engaging" of "compelling". Pas de output-taal aan de content-taal aan (NL voor Nederlandse brand, EN voor Engelse brand).`;
+
+  switch (chip) {
+    case 'quote-text':
+      return `${base}
+
+Voor een quote-text / typography-poster brief:
+- Beschrijf welke quote of phrase centraal staat (noem 'm letterlijk)
+- Beschrijf compositie: centered hero / asymmetric / full-bleed
+- Beschrijf background-keuze: solid brand color / gradient / texture
+Geen persona of scene-beschrijving — typography is het hele beeld.`;
+
+    case 'infographic':
+    case 'data-driven':
+      return `${base}
+
+Voor een infographic / data-driven brief:
+- Beschrijf welk type viz (bar-chart / pie / flow / single-stat hero)
+- Beschrijf welk datapunt of cijfer prominent is
+- Beschrijf hiërarchie: 1 hero-cijfer + supporting elements, of stap-voor-stap flow
+Geen persona of sfeer — data en hiërarchie zijn het verhaal.`;
+
+    case 'product-shot':
+      return `${base}
+
+Voor een product-shot brief:
+- Noem het product expliciet (naam + categorie)
+- Beschrijf camera-perspectief (front-on / drie-kwart / top-down / macro)
+- Beschrijf staging: clean studio / contextual props / material details
+Persona is afwezig of perifeer — het product is de held.`;
+
+    case 'illustration':
+      return `${base}
+
+Voor een illustration brief:
+- Beschrijf de gekozen metafoor of het concept (letterlijk vs abstract)
+- Beschrijf style-richting: vector / line-art / painterly / geometric
+- Beschrijf wat de illustration overbrengt — geen photoreal scene-beschrijving.`;
+
+    case 'lifestyle':
+    case 'behind-the-scenes':
+    case 'ugc':
+    default:
+      return `${base}
+
+Schrijf zoals iemand een fotograaf zou briefen: WIE staat er, WAAR speelt het, WAT gebeurt er, welke SFEER.
 
 Als persona-info beschikbaar is: gebruik leeftijd + rol + setting (geen echte naam — werk met archetype).
 Als product-info beschikbaar is: noem product expliciet, niet abstract.
-Als geen persona/product: geef een metaforisch of conceptueel beeld dat de key-message uitdrukt.
-
-Pas de output-taal aan de content-taal aan (NL voor Nederlandse brand, EN voor Engelse brand).`;
+Als geen persona/product: geef een metaforisch of conceptueel beeld dat de key-message uitdrukt.`;
+  }
+}
 
 const MAX_BRIEFING_TOKENS = 200;
 
@@ -86,9 +138,10 @@ export async function POST(
       );
     }
 
+    const systemPrompt = buildSystemPrompt(stack.visualBrief?.styleDirection ?? null);
     const result = await anthropicClient.createChatCompletion(
       [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
       {

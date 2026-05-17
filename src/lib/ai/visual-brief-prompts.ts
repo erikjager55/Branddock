@@ -23,6 +23,7 @@ import type {
 } from './canvas-context';
 import type { BrandContextBlock } from './prompt-templates';
 import { buildNegativePrompt } from './image-quality/negative-prompts';
+import { suggestImageApproach, MODEL_META } from './image-suggestion';
 
 const SUBJECT_FIELD_MAX_CHARS = 200;
 
@@ -134,54 +135,82 @@ function buildSubjectByChip(
  * the endpoint. This map fires only when the user hasn't explicitly
  * picked a model.
  */
-export function selectModelForStyle(chip: VisualStyleDirection | null): string {
-  // F38 (audit 2026-05-13): intent-based routing op basis van eigen
-  // onderzoek 2026 naar SOTA image-models. Mapping:
-  //   - text-heavy (quote/infographic/data) → Nano Banana Pro
-  //     (best text-rendering per onafhankelijke comparisons; 10× cheaper
-  //      dan GPT Image 2)
-  //   - product-shot → Seedream V4 (text-in-product specialist)
-  //   - illustration → Recraft V3 (design-forward)
-  //   - photoreal scenes → FLUX 2 Pro (aesthetic photoreal)
-  //   - default → FLUX 2 Pro
-  // Override-path: visualBrief.generate.model wint over deze default.
-  switch (chip) {
-    case 'quote-text':
-      // F42-final-2 (audit 2026-05-15): all-chips experiment toonde
-      // Ideogram V3 composite 78 vs Nano Banana 69 voor typography-poster
-      // briefs. Typography-specialist > generalist op deze chip.
-      return 'fal-ai/ideogram-v3';
-    case 'infographic':
-    case 'data-driven':
-      // Marginaal verschil tussen Ideogram (83) en Nano Banana (82); Nano
-      // Banana wint op brandFit (88 vs 75) en is $0.02 cheaper. Keep.
-      return 'fal-ai/nano-banana-pro';
-    case 'product-shot':
-      // Product shots met tekst op packaging/labels — Seedream V4 is
-      // specialist in readable in-image text + product realism.
-      return 'fal-ai/seedream-v4-5';
-    case 'illustration':
-      // F42-final (audit 2026-05-14): switch illustration → Nano Banana Pro.
-      // Eigen head-to-head experiment 2026-05-14 toonde Nano Banana Pro
-      // composite 88 vs Recraft V3 digital_illustration 60 op identieke
-      // brief. Recraft produceerde wel goede style-match (88) maar
-      // catastrofale embedded-text (noText score 5). Nano Banana levert
-      // illustration + tekstvrij + sterke brandFit, plus 50% goedkoper
-      // ($0.02 vs $0.04). Recraft blijft beschikbaar via override.
-      return 'fal-ai/nano-banana-pro';
-    case 'lifestyle':
-    case 'behind-the-scenes':
-    case 'ugc':
-      // F42-final-2 (audit 2026-05-15): all-chips experiment toonde
-      // Phota composite 87 vs FLUX 2 Pro 77 op photoreal-with-people
-      // briefs. Phota is photoreal specialist met sterkere brand-fit
-      // (88) en authenticity (85) voor warm/professional scenes.
-      return 'fal-ai/phota';
-    default:
-      // No chip picked — FLUX 2 Pro blijft safe photoreal default voor
-      // generic gevallen (Phota over-specialiseert in candid people).
-      return 'fal-ai/flux-2-pro';
-  }
+/**
+ * Server-side fal-slug picker. Reads from the same MODEL_META map that
+ * the Step-1 suggestion banner uses (Layer 1), so the banner cannot
+ * recommend "Nano Banana 2" while the generator silently routes to a
+ * different model. The suggestion engine (suggestImageApproach) carries
+ * the full decision tree (chip + LoRA + content-type). When the caller
+ * has content-type / LoRA-info, pass it through for accurate routing;
+ * otherwise the chip-only call still gives the right default per chip.
+ *
+ * Override-path: visualBrief.generate.model still wins over this default
+ * — the endpoint reads that first before calling selectModelForStyle.
+ */
+export function selectModelForStyle(
+  chip: VisualStyleDirection | null,
+  options?: { contentTypeId?: string | null; hasTrainedLora?: boolean },
+): string {
+  const suggestion = suggestImageApproach({
+    contentTypeId: options?.contentTypeId ?? null,
+    styleDirection: chip,
+    hasTrainedLora: options?.hasTrainedLora ?? false,
+  });
+  return MODEL_META[suggestion.modelId].falSlug;
+}
+
+// Chip-specific angle-sets — each chip gets 3 polarised composition
+// alternatives so variant A and B can diverge meaningfully within the
+// chip's own visual language instead of getting a generic "product-hero"
+// directive for typography or infographic briefs.
+const ANGLE_SETS: Record<VisualStyleDirection, string[]> = {
+  lifestyle: [
+    'Product-as-hero composition: the brand deliverable is the focal point as a still-life or detail shot — clean staging, minimal human presence (hands at edge of frame at most). Intentional negative space. NO portrait pose facing camera.',
+    'Human-interaction composition: real candid scene of customer or staff USING the deliverable mid-action — pouring, folding, plating, swiping, serving. Caught moment, not a posed portrait. Wide enough to see environment and interaction together.',
+    'Atmosphere composition: environmental wide shot showing the place at a specific moment (early morning prep, golden-hour service, after-close stillness). No primary subject; the place tells the story through light, layout, and texture.',
+  ],
+  'behind-the-scenes': [
+    'Process detail: tight shot of hands at work — kneading, folding, sorting, prepping. The doing itself is the subject, faces partially out of frame.',
+    'Team-in-action wide shot: 2-3 people coordinating in a real workspace, not posed. Available light, mid-task energy. Each person clearly doing something different.',
+    'Workspace-after-hours: empty room post-shift with traces of the work (folded stacks, clean stations, tools at rest). Quiet documentary tone.',
+  ],
+  ugc: [
+    'Phone-camera selfie POV: slight tilt, mid-conversation candor, natural indoor lighting, one person interacting with the product.',
+    'Over-the-shoulder phone shot: user looking at the product on a counter or table, casual environment in background, slightly imperfect framing.',
+    'Hand-held mid-action: motion-blur acceptable, product mid-use (pouring, applying, opening), authentic and slightly unpolished.',
+  ],
+  'product-shot': [
+    'Three-quarter studio composition: product centered, soft shadow, clean seamless background, controlled key + fill lighting. Hero pose.',
+    'Top-down flat-lay: product surrounded by 2-3 contextual props (ingredients, packaging, complementary items) on a textured surface. Editorial styling.',
+    'Macro detail crop: extreme close-up on a single material, texture, or feature of the product. Shallow depth of field, focus on craftsmanship.',
+  ],
+  'quote-text': [
+    'Centered hero typography: quote occupies 60-70% of frame, single solid brand-color background, modern sans-serif. Type-only design, no supporting imagery.',
+    'Asymmetric layout: quote split across the frame with a strong off-center break, accent color block on one side. Editorial-magazine feel.',
+    'Full-bleed typographic poster: quote fills the entire frame edge-to-edge, large display weight, subtle texture or gradient background. Statement piece.',
+  ],
+  illustration: [
+    'Literal conceptual illustration: drawn or vector depiction of the subject directly. Confident line work, brand-color palette, no photorealism.',
+    'Metaphorical illustration: a visual metaphor or analogy for the message (a journey, a bridge, a key, etc.). Symbolic rather than literal.',
+    'Abstract pattern composition: shapes, gradients, and geometric forms that evoke the brand mood without depicting a subject. Decorative + on-brand.',
+  ],
+  infographic: [
+    'Single-stat hero layout: one large number or percentage dominates the frame, supporting caption beneath, brand-color accent. Magazine-quality.',
+    'Comparison split: two-panel before-after or A-vs-B layout with parallel data points. Clear visual hierarchy guiding eye top-to-bottom.',
+    'Sequential flow diagram: 3-4 numbered steps or stages arranged horizontally or as a circular flow. Icons + short labels per step.',
+  ],
+  'data-driven': [
+    'Bar-chart hero: prominent bar or column chart fills 60% of the frame, headline number large above, source/footnote small below. Magazine-style data viz.',
+    'Trend-line editorial: line chart showing change over time as the focal element, with one inflection point highlighted in accent color.',
+    'Pie / donut composition: circular data viz with the standout segment in brand color, other segments muted. Single key takeaway as headline.',
+  ],
+};
+
+function pickAnglesForChip(chip: VisualStyleDirection | null): string[] {
+  if (chip && ANGLE_SETS[chip]) return ANGLE_SETS[chip];
+  // No chip — fall back to the lifestyle set since it covers the widest
+  // generic photoreal scene language.
+  return ANGLE_SETS.lifestyle;
 }
 
 export const VISUAL_STYLE_IMAGE_INSTRUCTIONS: Record<VisualStyleDirection, string> = {
@@ -282,24 +311,27 @@ export function buildVisualBriefImagePrompts(
     : '';
 
   // F36: hard no-text directive — voorkomt text-overlay hallucinations.
-  // Korte variant (eerst, voor truncation-resistance) + lange variant
-  // (achteraan, voor model-met-meer-budget).
-  const noTextShort = 'NO TEXT IN IMAGE. NO captions, signage, typography, words or letters anywhere.';
-  const noTextLong =
-    'Pure visual storytelling without any embedded text — no captions, no signage, no typography overlays.';
+  // CRITICAL chip-aware gate: quote-text + infographic + data-driven chips
+  // REQUIRE text in the image (typography-led design, data labels, headline
+  // numbers). Suppressing text for those chips defeats the entire purpose.
+  // For all other chips the guard stays on — text overlays in lifestyle /
+  // product-shot / illustration are usually hallucinations.
+  const chipRequiresText = chip === 'quote-text' || chip === 'infographic' || chip === 'data-driven';
+  const noTextShort = chipRequiresText
+    ? ''
+    : 'NO TEXT IN IMAGE. NO captions, signage, typography, words or letters anywhere.';
+  const noTextLong = chipRequiresText
+    ? ''
+    : 'Pure visual storytelling without any embedded text — no captions, no signage, no typography overlays.';
 
-  // F-visual-polarize (audit 2026-05-15): de oude angles (close/wide/detail
-  // van zelfde subject) leverden tweelingbeelden — dezelfde persoon, ander
-  // zoom-niveau. Nieuwe angles forceren SUBJECT-DIFFERENTIE: variant 1 toont
-  // het product/touchpoint zelf (stil-leven van het deliverable, geen mens
-  // of subtiele aanwezigheid), variant 2 toont de menselijke interactie
-  // (klant/team gebruikt het product, scène). Zo zijn de twee beelden niet
-  // alleen anders gecadreerd maar vertellen ze een ander verhaal.
-  const angles = [
-    'Product-as-hero composition: the brand deliverable itself is the focal point as a still-life or detail shot — clean staging, minimal human presence (hands at edge of frame at most). Show the actual artifact (folded linen, stacked towels, plated dish, dashboard screen) with intentional negative space. NO portrait pose, NO smiling staff facing camera.',
-    'Human-interaction composition: real candid scene of customer or staff actually USING the deliverable mid-action — pouring, folding, plating, swiping, serving. Caught moment, not a posed portrait. Wide enough to see the environment and the interaction together.',
-    'Atmosphere composition: environmental wide shot showing the place at a specific moment (early morning prep, golden-hour service, after-close stillness). No primary subject; the place tells the story through light, layout, and texture.',
-  ];
+  // F-visual-angles-chip-aware (2026-05-17): the previous 3 angles
+  // (product-hero / human-interaction / atmosphere) only made sense for
+  // lifestyle / BTS / UGC chips. For quote-text the angles were
+  // misleading (a "product-hero stil-leven" is wrong when the brief is
+  // a typography poster). Each chip now has its own 3 polarised
+  // angle-options so variant A and B can diverge meaningfully within
+  // the chip's own language.
+  const angles = pickAnglesForChip(chip);
 
   const promptCount = Math.max(1, Math.min(count, angles.length));
   const prompts: string[] = [];
