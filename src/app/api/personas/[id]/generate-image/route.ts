@@ -7,6 +7,7 @@ import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { createVersion } from "@/lib/versioning";
 import { buildPersonaSnapshot } from "@/lib/snapshot-builders";
+import { getStorageProvider } from "@/lib/storage";
 
 type GeminiImagePart = {
   inlineData?: { mimeType?: string; data?: string };
@@ -106,16 +107,54 @@ export async function POST(
       return NextResponse.json({ avatarUrl, provider: "fallback" });
     }
 
-    // Convert base64 to data URI for direct display
-    // Production: upload to persistent storage (see TODO.md Fase 2.2)
-    const mimeType = imagePart.inlineData.mimeType;
+    // Persist the generated image to storage instead of stuffing the raw
+    // base64 into avatarUrl. Data-URIs there bloated the Persona row
+    // (~500KB+ each) which slowed queries and broke JSON serialization in
+    // downstream consumers (export, brand-kit PDF, etc.). The storage
+    // provider returns a stable URL — local file path in dev, R2 URL in
+    // prod once R2_* env vars are set.
+    const mimeType = imagePart.inlineData.mimeType ?? "image/png";
     const base64Data = imagePart.inlineData.data;
-    const avatarUrl = `data:${mimeType};base64,${base64Data}`;
+    const imageBuffer = Buffer.from(base64Data, "base64");
+
+    // Capture the previous avatar URL so we can clean up the old file
+    // after the new one is in place. Skip the cleanup when the previous
+    // value was a data: URI (nothing on disk) or an external URL like
+    // DiceBear (not ours to delete).
+    const previousAvatarUrl = persona.avatarUrl;
+
+    const storage = getStorageProvider();
+    const extension = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : "png";
+    const upload = await storage.upload(imageBuffer, {
+      workspaceId,
+      fileName: `persona-${id}.${extension}`,
+      contentType: mimeType,
+      generateThumbnail: false,
+    });
+    const avatarUrl = upload.url;
 
     await prisma.persona.update({
       where: { id },
       data: { avatarUrl, avatarSource: "AI_GENERATED" },
     });
+
+    // Best-effort cleanup of the previous file. Only attempt deletion when
+    // the URL looks like one we created (relative /uploads/... path or an
+    // R2 URL); leave DiceBear / data: / external URLs alone.
+    if (
+      previousAvatarUrl &&
+      previousAvatarUrl !== avatarUrl &&
+      !previousAvatarUrl.startsWith("data:") &&
+      !previousAvatarUrl.includes("dicebear.com")
+    ) {
+      try {
+        await storage.delete(previousAvatarUrl);
+      } catch (deleteError) {
+        // Non-fatal — old file may already be gone or live on a different
+        // provider after a storage migration.
+        console.warn("[persona avatar cleanup]", deleteError);
+      }
+    }
 
     // Create AI generation version snapshot
     try {
