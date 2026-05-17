@@ -64,7 +64,7 @@ deliverables.
 - Spec: -
 - Gotcha: `gotchas.md` 2026-05-17 "Silent auto-iterate clobbert variants + shrinkt long-form onder F-VAL gate"
 - Plan: `~/.claude/plans/eager-hatching-planet.md`
-- Commit: `<hash>` (filled post-commit)
+- Commit: `cdd0e074`
 
 ### 256. Fix — Effie-rubric leak uit content-flow Strategy-step (P2 shared-pipeline)
 
