@@ -37,6 +37,48 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 256. Brandclaw tool-orchestrator — Anthropic agent-loop + 4 query-tools live
+
+Track B vervolg op data-collection (#255). Orchestrator is volledig
+functioneel; `strategy-analyst-stub` (eerste agent-node) heeft hiermee
+alle benodigde infrastructuur. Twee sub-fasen, beide groen.
+
+**Fase 1 (commit b426d064)** — orchestrator infrastructure:
+- 5 modules in `src/lib/brandclaw/orchestrator/`: types / tool-registry /
+  cost-calculator / persistence / agent-loop + public index.ts.
+- NodeType union (strategy_analyst / campaign_builder / measurement_eval
+  / optimization), BrandclawRunContext, BrandclawTool, AgentLoopResult.
+- Tool-registry per-node-type met cross-node isolation.
+- Cost-calculator: Sonnet 4.6 / Opus 4.7 / Haiku 4.5 pricing + fallback.
+  6-decimal precision matched Decimal(10,6).
+- Persistence: createRunRow placeholder + persistRun finalize in
+  transaction. ToolCallTrace per-entry getrunceerd naar 4KB voor jsonb
+  size-budget.
+- Agent-loop: multi-turn Anthropic tool-use met hard-timeout (5min),
+  max-tool-calls (20), parallel tool-execute per turn, isError-result
+  voor unknown/throwing tools, lenient JSON-parse voor observations.
+
+**Fase 2 (deze commit)** — query-tools + telemetry:
+- 4 strategy_analyst tools: `query_alignment_history`,
+  `query_content_fidelity`, `query_review_history`,
+  `query_brand_voice_drift` (default 90d window). Allen wrappen
+  data-source via registry.
+- tools/index.ts: side-effect register-imports.
+- Agent-loop emit `brandclaw_run_completed` PostHog event fire-and-
+  forget na persistRun.
+
+**Smoke-test**: 23/23 → 29/29 groen. Tool-registry isolation +
+cost-calculator + persistence E2E + v1 tools auto-register +
+empty-workspace query execute. Anthropic API niet aangeroepen — real-API
+test deferred naar strategy-analyst-stub.
+
+**Unblockt**: `strategy-analyst-stub` (Phase 3 first node).
+
+- Task: [tasks/done/brandclaw-tool-orchestrator.md](tasks/done/brandclaw-tool-orchestrator.md)
+- ADR: [adr/2026-05-08-brandclaw-agent-architectuur.md](adr/2026-05-08-brandclaw-agent-architectuur.md)
+- Spec: -
+- Commits: `b426d064` (Fase 1) + commit deze entry
+
 ### 255. Brandclaw data-collection — DataSnapshot + 4 sources + Strategy Observation schema
 
 Track B foundation pre-launch. ADR-2 schema-laag volledig live op

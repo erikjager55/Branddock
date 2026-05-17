@@ -5,13 +5,62 @@ fase: pre-launch
 priority: now
 effort: 3-5 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-05-08
-completed: -
+completed: 2026-05-17
 related-adr: 2026-05-08-brandclaw-agent-architectuur
 related-spec: tasks/_drafts/idea-brand-control-program.md
 worktree: branddock-brandclaw
 ---
+
+# Completion-note (2026-05-17)
+
+Geleverd in twee sub-fasen op worktree `branddock-brandclaw`.
+
+**Fase 1 (commit b426d064)** — orchestrator infrastructure:
+- Types module (NodeType / BrandclawRunContext / BrandclawTool /
+  AgentLoopResult / ToolCallTraceEntry / ObservationDraft).
+- Tool-registry: per-node-type Map met cross-node isolation; register /
+  getTool / getToolsForNode / listToolNames / reset.
+- Cost-calculator: Sonnet 4.6 / Opus 4.7 / Haiku 4.5 pricing constants
+  + fallback. 6-decimal precision matched aan Prisma Decimal(10,6).
+- Persistence: createRunRow (idempotent upsert placeholder) +
+  persistRun (transaction met run-update + observations.createMany).
+  ToolCallTrace JSON truncated per-entry naar 4KB voor jsonb size-budget.
+- Agent-loop: multi-turn Anthropic tool-use met hard-timeout (5min),
+  max-tool-calls (20), parallel tool-execute per turn, isError-result
+  voor unknown/throwing tools, lenient JSON-parse uit final-message
+  voor observation-drafts. Singleton client (cached).
+
+**Fase 2 (deze commit)** — 4 query-tools + PostHog telemetry:
+- query_alignment_history (wraps alignment-scan source-accessor).
+- query_content_fidelity (wraps content-fidelity source).
+- query_review_history (wraps review-log source).
+- query_brand_voice_drift (wraps voiceguide source, default 90d window).
+- tools/index.ts: side-effect register-imports + named re-exports.
+- Agent-loop emit `brandclaw_run_completed` PostHog event fire-and-forget
+  na persistRun met workspaceId + node-type + agent-version +
+  latency/cost/tokens + tool-calls + observations-count + truncated-flag.
+
+**Smoke-test**: 16/16 → 23/23 → 29/29 groen. Tool-registry isolation
+(5 asserts) + cost-calculator pricing (7) + persistence E2E met real
+DB (9) + v1-tools auto-register + alignment-tool execute op empty
+workspace (8). Anthropic API niet aangeroepen — agent-loop real-API
+integration test deferred naar strategy-analyst-stub task (samen met
+system-prompt + UI implementatie).
+
+**Unblockt**: `strategy-analyst-stub` (Phase 3 first node — system-prompt
++ UI Brand Alignment Tab 4 "Insights" + e2e met BB workspace). Orchestrator
+is volledig functioneel — Analyst-stub registreert zijn agent-version,
+formuleert system-prompt, en roept `runAgentLoop()` aan. De 4 query-tools
+zijn al beschikbaar voor de Analyst.
+
+**Out of scope** (vervolg-tasks):
+- Streaming response (v1 wacht op complete response per turn).
+- Prompt-caching (Anthropic 5-min cache, ~90% korting op system-prompt).
+- Per-tool retry-strategie (v1: retry=0, isError direct naar agent).
+- Cross-node tool-sharing (`query_strategy_observations` voor Campaign
+  Builder die Analyst-output leest).
 
 # Probleem
 

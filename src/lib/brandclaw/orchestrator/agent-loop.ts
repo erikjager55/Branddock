@@ -301,7 +301,40 @@ export async function runAgentLoop(input: RunAgentLoopInput): Promise<AgentLoopR
   // observations persisted zijn vóór return (audit-trail eis).
   await persistRun(result, cost);
 
+  // PostHog telemetry — fire-and-forget zoals gate-metrics patroon.
+  // Failures spoilen het run-result niet; PostHog kan offline zijn.
+  void emitBrandclawRunCompleted(result, cost, toolCallCount).catch(() => {
+    /* logged binnen trackEvent */
+  });
+
   return result;
+}
+
+async function emitBrandclawRunCompleted(
+  result: AgentLoopResult,
+  cost: ReturnType<typeof computeRunCost>,
+  toolCallCount: number,
+): Promise<void> {
+  const { trackEvent } = await import("@/lib/analytics/posthog");
+  await trackEvent({
+    event: "brandclaw_run_completed",
+    workspaceId: result.workspaceId,
+    properties: {
+      run_id: result.runId,
+      node_type: result.nodeType,
+      agent_version: result.agentVersion,
+      prompt_version: result.promptVersion,
+      latency_ms: result.latencyMs,
+      total_cost_usd: cost.totalUsd,
+      input_tokens: result.totalInputTokens,
+      output_tokens: result.totalOutputTokens,
+      tool_calls: toolCallCount,
+      observations_count: result.observations.length,
+      truncated: result.truncated,
+      model: cost.model,
+      pricing_fallback: cost.fallback,
+    },
+  });
 }
 
 /**

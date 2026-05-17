@@ -46,8 +46,52 @@ function mockTool(name: string): BrandclawTool {
 async function main() {
   console.log("\n=== Brandclaw orchestrator foundation smoke ===\n");
 
+  // ─ V1 tools auto-registration ─
+  console.log("## V1 tools auto-registration\n");
+  // Side-effect import: registreert alle 4 strategy_analyst query-tools.
+  await import("../../src/lib/brandclaw/tools");
+  const v1Registry = getToolRegistry();
+  const v1AnalystTools = v1Registry.listToolNames("strategy_analyst");
+  for (const expected of [
+    "query_alignment_history",
+    "query_content_fidelity",
+    "query_review_history",
+    "query_brand_voice_drift",
+  ]) {
+    assert(
+      `v1 tool registered: ${expected}`,
+      v1AnalystTools.includes(expected),
+      `got: [${v1AnalystTools.join(", ")}]`,
+    );
+  }
+
+  // Validate dat een tool execute() echt een data-source query doet —
+  // empty workspace returns 0 rows zonder errors.
+  const alignmentTool = v1Registry.getTool("strategy_analyst", "query_alignment_history");
+  if (alignmentTool) {
+    const result = await alignmentTool.execute(
+      { sinceDays: 30 },
+      {
+        workspaceId: "smoke-nonexistent-workspace",
+        nodeType: "strategy_analyst",
+        agentVersion: "smoke@0.0.1",
+        promptVersion: "smoke-v1",
+        runId: "smoke-run-id",
+        triggerType: "manual",
+        triggerSource: "smoke-test",
+      },
+    );
+    const content = result.content as { sourceType: string; rowCount: number };
+    assert("query_alignment_history empty-workspace returns 0 rows", content.rowCount === 0);
+    assert("query_alignment_history reports source-type", content.sourceType === "alignment_scan");
+  } else {
+    assert("query_alignment_history exists", false);
+  }
+
+  v1Registry.reset();
+
   // ─ Tool-registry isolation ─
-  console.log("## Tool-registry per-node isolation\n");
+  console.log("\n## Tool-registry per-node isolation\n");
   const registry = getToolRegistry();
   registry.reset();
 
