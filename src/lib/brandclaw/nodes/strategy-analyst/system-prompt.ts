@@ -5,9 +5,11 @@
 // (content-hash) worden op elke observation gestempeld, zodat
 // A/B-testing van prompt-changes over tijd mogelijk is.
 //
-// Phase A: één dimension (voice_drift) actief. Andere 4 dimensions
-// volgen in Phase B en worden later geconcateneerd in de DIMENSIONS-
-// sectie van de prompt.
+// Phase B: alle 5 dimensions actief (voice_drift + fidelity_decline +
+// review_pattern + alignment_gap + publish_quality_trend).
+// AgentVersion bumped naar 0.2.0 — prompt-hash verandert automatisch
+// (computePromptVersion), zodat Phase A-observations herleidbaar
+// blijven via promptVersion-stamp.
 //
 // Methodology-anchors:
 //  - §11 two-reasons-test: observation requires ≥2 evidence-points.
@@ -18,9 +20,13 @@
 
 import { createHash } from "crypto";
 import { VOICE_DRIFT_PROMPT_FRAGMENT } from "./dimensions/voice-drift";
+import { FIDELITY_DECLINE_PROMPT_FRAGMENT } from "./dimensions/fidelity-decline";
+import { REVIEW_PATTERN_PROMPT_FRAGMENT } from "./dimensions/review-pattern";
+import { ALIGNMENT_GAP_PROMPT_FRAGMENT } from "./dimensions/alignment-gap";
+import { PUBLISH_QUALITY_TREND_PROMPT_FRAGMENT } from "./dimensions/publish-quality-trend";
 
 /** Semver van de Analyst-implementatie. Bump bij feature-cycle. */
-export const STRATEGY_ANALYST_AGENT_VERSION = "strategy-analyst@0.1.0";
+export const STRATEGY_ANALYST_AGENT_VERSION = "strategy-analyst@0.2.0";
 
 const PROMPT_TEMPLATE_HEADER = `You are the Strategy Analyst — the first observation-only node of the Brandclaw agent-loop for a multi-tenant brand-strategy SaaS platform.
 
@@ -95,13 +101,18 @@ Before producing the final JSON:
 Now run the analysis.`;
 
 /**
- * Bouw de full system-prompt voor de Strategy Analyst. Phase A bevat
- * alleen de voice_drift dimension; Phase B concatenates de andere 4.
+ * Bouw de full system-prompt voor de Strategy Analyst. Phase B bevat
+ * alle 5 dimensions; volgorde is deterministisch zodat
+ * computePromptVersion stabiel blijft tussen runs.
  */
 export function buildStrategyAnalystSystemPrompt(): string {
   return [
     PROMPT_TEMPLATE_HEADER,
     VOICE_DRIFT_PROMPT_FRAGMENT,
+    FIDELITY_DECLINE_PROMPT_FRAGMENT,
+    REVIEW_PATTERN_PROMPT_FRAGMENT,
+    ALIGNMENT_GAP_PROMPT_FRAGMENT,
+    PUBLISH_QUALITY_TREND_PROMPT_FRAGMENT,
     PROMPT_TEMPLATE_FOOTER,
   ].join("\n");
 }

@@ -56,7 +56,13 @@ async function main() {
     "query_review_history",
     "query_brand_voice_drift",
   ].every((t) => prompt.includes(t)));
-  assert("prompt has voice_drift dimension fragment", prompt.includes("Dimension: voice_drift"));
+  assert("prompt has all 5 dimension fragments", [
+    "Dimension: voice_drift",
+    "Dimension: fidelity_decline",
+    "Dimension: review_pattern",
+    "Dimension: alignment_gap",
+    "Dimension: publish_quality_trend",
+  ].every((d) => prompt.includes(d)));
   assert("prompt has JSON-output template", prompt.includes("\"observations\""));
   assert("prompt has self-check section", prompt.includes("SELF-CHECK"));
 
@@ -72,8 +78,8 @@ async function main() {
   // ─ agentVersion constant ─
   console.log("\n## agentVersion constant\n");
   assert(
-    "agentVersion is strategy-analyst@0.1.0",
-    STRATEGY_ANALYST_AGENT_VERSION === "strategy-analyst@0.1.0",
+    "agentVersion is strategy-analyst@0.2.0",
+    STRATEGY_ANALYST_AGENT_VERSION === "strategy-analyst@0.2.0",
   );
 
   // ─ Real-API end-to-end (optional) ─

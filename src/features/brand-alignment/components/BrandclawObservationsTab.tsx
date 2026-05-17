@@ -8,6 +8,8 @@ import {
   AlertCircle,
   Inbox,
   Filter,
+  LayoutList,
+  LayoutGrid,
 } from "lucide-react";
 import {
   useRunStrategyAnalyst,
@@ -36,6 +38,23 @@ const DIMENSION_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "publish_quality_trend", label: "Publish quality trend" },
 ];
 
+type ViewMode = "grouped" | "flat";
+
+const SEVERITY_RANK: Record<ObservationSeverity, number> = {
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+};
+
+function compareObservations(
+  a: StrategyObservationResponse,
+  b: StrategyObservationResponse,
+): number {
+  const sev = SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity];
+  if (sev !== 0) return sev;
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+}
+
 /**
  * Brand Alignment Tab 5 — Strategy Analyst observations (Phase A).
  *
@@ -47,6 +66,7 @@ export function BrandclawObservationsTab() {
   const [severityFilter, setSeverityFilter] = React.useState<ObservationSeverity | "all">("all");
   const [dimensionFilter, setDimensionFilter] = React.useState<string>("");
   const [includeDismissed, setIncludeDismissed] = React.useState(false);
+  const [viewMode, setViewMode] = React.useState<ViewMode>("grouped");
   const [evidenceObs, setEvidenceObs] = React.useState<StrategyObservationResponse | null>(null);
 
   const { data, isLoading, isError, error } = useStrategyObservations({
@@ -63,13 +83,22 @@ export function BrandclawObservationsTab() {
   );
   const lastRun = data?.lastRun ?? null;
 
-  // Group per dimension
+  // Flat severity-sorted list (HIGH → MEDIUM → LOW, then newest-first)
+  const sortedFlat = React.useMemo(
+    () => [...observations].sort(compareObservations),
+    [observations],
+  );
+
+  // Group per dimension; binnen elke groep zelfde severity-sort
   const grouped = React.useMemo(() => {
     const map = new Map<string, StrategyObservationResponse[]>();
     for (const obs of observations) {
       const arr = map.get(obs.dimension) ?? [];
       arr.push(obs);
       map.set(obs.dimension, arr);
+    }
+    for (const arr of map.values()) {
+      arr.sort(compareObservations);
     }
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [observations]);
@@ -164,7 +193,37 @@ export function BrandclawObservationsTab() {
           />
           Include dismissed
         </label>
-        <span className="text-gray-400 ml-auto">{observations.length} total</span>
+        <div className="ml-auto inline-flex items-center gap-2">
+          <div className="inline-flex rounded-md border border-gray-300 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setViewMode("grouped")}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs ${
+                viewMode === "grouped"
+                  ? "bg-violet-50 text-violet-700"
+                  : "bg-white text-gray-500 hover:text-gray-700"
+              }`}
+              title="Group per dimension"
+            >
+              <LayoutGrid className="w-3 h-3" />
+              Group
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("flat")}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs border-l border-gray-300 ${
+                viewMode === "flat"
+                  ? "bg-violet-50 text-violet-700"
+                  : "bg-white text-gray-500 hover:text-gray-700"
+              }`}
+              title="Sort by severity"
+            >
+              <LayoutList className="w-3 h-3" />
+              Severity
+            </button>
+          </div>
+          <span className="text-gray-400">{observations.length} total</span>
+        </div>
       </div>
 
       {/* List */}
@@ -184,6 +243,16 @@ export function BrandclawObservationsTab() {
           <p className="text-xs text-gray-400">
             Klik &ldquo;Run Analyst&rdquo; bovenaan om de eerste run te starten.
           </p>
+        </div>
+      ) : viewMode === "flat" ? (
+        <div className="space-y-2">
+          {sortedFlat.map((obs) => (
+            <ObservationCard
+              key={obs.id}
+              observation={obs}
+              onOpenEvidence={() => setEvidenceObs(obs)}
+            />
+          ))}
         </div>
       ) : (
         <div className="space-y-4">
