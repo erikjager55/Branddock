@@ -5,17 +5,17 @@ fase: pre-launch
 priority: now
 effort: ~10 dagen (6d quality patterns + 4d image-sourcing strategie)
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-12
-completed: -
+completed: 2026-05-17
 related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md §3.0.5
 worktree: -
-phase: phase-1-of-4
-phase-1-scope: Pattern A (negative prompts) + Pattern C (dimension-breakdown UI)
-phase-2-scope: Pattern B (multi-candidate selection UI) + Pattern D (refine-loop)
-phase-3-scope: Pattern E (OCR text-check via Google Vision) + Pattern F UI exposure + subjectIdentity dimensie
-phase-4-scope: Pattern G (sourcing-strategie — modality-fit / reuse-detection / smart-search / coherence-score)
+phase: phase-4-of-4-done
+phase-1-scope: Pattern A (negative prompts) + Pattern C (dimension-breakdown UI) — done 2026-05-15
+phase-2-scope: Pattern B (multi-candidate selection) + Pattern D (refine-loop) — done 2026-05-15
+phase-3-scope: Pattern E (OCR via Google Vision) + Pattern F UI exposure + subjectIdentity dimensie — done 2026-05-15
+phase-4-scope: Pattern G1/G2/G3/G4/G5 (modality-fit + reuse-detection + smart-search + coherence + illustration templates) — done 2026-05-17
 ---
 
 # Fase 1 (in_progress, 2026-05-15)

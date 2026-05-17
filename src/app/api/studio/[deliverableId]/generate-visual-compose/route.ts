@@ -222,6 +222,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         products: stack.products,
         creativePlatform: stack.concept?.creativePlatform ?? null,
         platform: stack.medium?.platform ?? null,
+        deliverableTypeId: stack.deliverableTypeId ?? null,
       },
       promptCount,
     );

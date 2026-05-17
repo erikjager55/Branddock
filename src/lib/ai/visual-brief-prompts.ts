@@ -23,6 +23,7 @@ import type {
 } from './canvas-context';
 import type { BrandContextBlock } from './prompt-templates';
 import { buildNegativePrompt } from './image-quality/negative-prompts';
+import { getIllustrationTemplateForType } from './image-quality/illustration-templates';
 import { suggestImageApproach, MODEL_META } from './image-suggestion';
 
 const SUBJECT_FIELD_MAX_CHARS = 200;
@@ -49,6 +50,8 @@ interface SubjectContext {
   aspectRatio?: string | null;
   /** Brand fallback when subject can't be built. */
   brandName?: string | null;
+  /** Content-type id (Pattern G5 image-quality-chain) — drives illustration-style template lookup wanneer chip='illustration'. */
+  deliverableTypeId?: string | null;
 }
 
 /**
@@ -278,7 +281,15 @@ export function buildVisualBriefImagePrompts(
   count = 2,
 ): VisualBriefImagePromptBundle {
   const chip = brief.styleDirection;
-  const styleInstruction = chip ? VISUAL_STYLE_IMAGE_INSTRUCTIONS[chip] : '';
+  // Pattern G5 image-quality-chain: wanneer chip='illustration', overschrijf
+  // de generieke styleInstruction met een content-type-specifieke template
+  // (flat/3d/hand-drawn/minimalist/editorial). Houdt style-consistency
+  // tussen content-items binnen één campagne.
+  let styleInstruction = chip ? VISUAL_STYLE_IMAGE_INSTRUCTIONS[chip] : '';
+  if (chip === 'illustration' && subject.deliverableTypeId) {
+    const { template } = getIllustrationTemplateForType(subject.deliverableTypeId);
+    styleInstruction = `${template} ${styleInstruction}`.trim();
+  }
   const freeText = brief.styleDirectionFreeText?.trim() ?? '';
   const visualIdentity = formatBrandVisualIdentity(brand);
 

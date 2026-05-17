@@ -37,6 +37,88 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 253. Image-quality-chain — 7 patterns A-G volledig geland
+
+Multi-modal image quality pipeline volledig live: van prompt-construction tot
+post-gen scoring + refine-loop + sourcing-strategie. Sluit Track A pre-launch
+sprint #6/#7 image-quality scope (~10d effort over 4 sessies).
+
+**7 patterns geleverd**:
+
+- **Pattern A — Negative prompts** (commit 2645ee32/f9dc1180): defaults +
+  per-workspace `imageryDonts` extension. Native `negative_prompt` parameter
+  naar FAL Flux, Avoid-directive fallback voor Gemini Image. Consolideert
+  signaal door duplicate "Avoid:" segment uit `ctx.brandImageryStyle` te
+  verwijderen.
+- **Pattern B — Multi-candidate** (commit 17f8ac4d): per-content-type
+  default (`landing-page`/`blog-post`/`explainer-video`/`instagram-post(-carousel)`
+  = 3, rest 2) via `getMultiCandidateDefault`. Auto-scoring parity:
+  generate-visual (lifestyle FLUX) ontbrak fire-and-forget
+  `scoreImageFidelity`; toegevoegd zodat alle 3 routes consistent zijn.
+- **Pattern C — Dimension-breakdown UI** (commit f9dc1180): user-friendly NL
+  labels + tooltips voor 5 visual-judge dimensies in
+  `visual-dimension-labels.ts`. VisualFidelityDetail JudgeDimensions
+  gebruikt `getDimensionLabel` ipv ruwe key-replace.
+- **Pattern D — Image-to-image refine-loop** (commit 17f8ac4d):
+  `refine-loop.ts` met `extractRefineHint` + `buildRefinePromptModification`
+  heuristiek (5 dimension-templates, severity-sorted, max 3 hints).
+  REFINE_TRIGGER_THRESHOLD 65, REFINE_MAX_ITERATIONS 2. POST endpoint
+  `/api/studio/[id]/components/[componentId]/refine-visual` met lock-check
+  + version-snapshot guards. UI `RefineImageButton` (groene Wand2 icoon)
+  bij composite &lt; 65.
+- **Pattern E — OCR text-in-image** (commit 94535a01): `ocr-check.ts` via
+  Google Vision API. Penalty trekt 50% van OCR-deductie af van text-in-image
+  dimension. OCR-data persisted in `aiJudgeDimensions.ocr` (geen schema-
+  change). Smoke-script + `.env.example` documentatie.
+- **Pattern F — Brand-color UI exposure** (commit 94535a01):
+  VisualFidelityBadge toont nu off-brand count als kleine red pill naast
+  composite-score, alleen wanneer `colorAlignment.unmatchedColors > 0`.
+- **subjectIdentity 6e dimensie** (commit 94535a01): VISUAL_DIMENSIONS
+  uitgebreid voor compose-flow drift-detection.
+- **Pattern G1 — Modality-fit** (commit b33b767a): `recommendedModality`
+  (photo/illustration/infographic/ugc/none) helper + 25+ content-types
+  gemapped. ModalityHint banner met icoon + accent-color in ImageSourcePanel.
+- **Pattern G2 — Reuse-detection** (commit eaf90808): pgvector embedding
+  op MediaAsset.aiDescription via OpenAI text-embedding-3-small. Formele
+  Prisma migration met IVFFlat cosine-index. Endpoint
+  `/api/media/similar-semantic`, upload-trigger in `dam-auto-tagger`,
+  `ReuseDetectionBanner` met dismissible UI (threshold 0.75).
+- **Pattern G3 — Unified smart-search** (commit d45d126e): nieuwe tab in
+  ImageSourcePanel combineert workspace library (semantic via pgvector,
+  threshold 0.5) + Pexels (keyword). SmartSearchTab met source-badges +
+  similarity-percentage + Pexels attribution footer.
+- **Pattern G4 — Copy-image coherence-score** (commit b33b767a): Claude
+  Haiku judge die image + variant text-content samen beoordeelt op
+  subject-match / audience-match / message-reinforcement. 7e dimensie
+  geïntegreerd in `aiJudgeDimensions.dimensions` onder
+  `copy-image-coherence` key, gerendert via bestaande `getDimensionLabel`
+  lookup.
+- **Pattern G5 — Illustration pipeline templates** (commit deze entry):
+  `illustration-templates.ts` met 5 styles (flat/3d/hand-drawn/minimalist/
+  editorial) + per-content-type defaults (twitter→flat, blog→editorial,
+  explainer-video→3d, tiktok-script→minimalist). Auto-injected vooraan
+  positive-prompt wanneer chip='illustration'. Style-consistency over
+  content-items binnen één campagne.
+
+**Cost-impact per image-scoring totaal**: ~$0.04 (Sonnet visual-judge) +
+~$0.001 (Haiku coherence) + ~$0.0015 (Vision OCR) = ~$0.043/image. Multi-
+candidate 3× voor 5 expensive content-types = ~$0.13 per generation run.
+Reuse-event bespaart 100% generation-cost.
+
+**Quality-gates per fase**: TypeScript 0 errors, lint 0 errors, formele
+Prisma migrations toegevoegd voor andere environments (MediaAsset.embedding,
+VOICEGUIDE enum, MediaAsset.embeddingComputedAt + IVFFlat cosine-index).
+
+**Out-of-scope** (vervolg-tasks): Backfill MediaAsset embeddings voor
+bestaande workspaces (admin endpoint), Unsplash + Brandfetch integraties
+(geen API keys; LATER roadmap, $99/mnd Brandfetch), v2 illustration via
+ConsistentModel LoRA's (post-launch).
+
+- Task: [tasks/done/image-quality-chain.md](tasks/done/image-quality-chain.md)
+- ADR: -
+- Spec: [docs/specs/content-test-improvement-plan.md §3.0.5](specs/content-test-improvement-plan.md)
+- Commits: `2645ee32` + `f9dc1180` + `17f8ac4d` + `94535a01` + `b33b767a` + `eaf90808` + `d45d126e` + final G5
+
 ### 252. Tone of Voice tab consolidatie — BrandStyleguide → BrandVoiceguide
 
 Schema-consolidatie van 3 velden (`contentGuidelines`, `writingGuidelines`, `examplePhrases`) plus de save-for-AI toggle (`toneSavedForAi` gesplitst in `guidelinesSavedForAi` + `examplePhrasesSavedForAi`) van `BrandStyleguide` naar `BrandVoiceguide`. Voice DNA tab in Brand Voice toont nu Content + Writing Guidelines (met OBSERVED/RECOMMENDED prefix-parsing), Vocabulary tab krijgt Do/Don't examples. Brand Styleguide "Tone of Voice" tab + `/api/brandstyle/tone-of-voice/` route + `ToneOfVoiceSection.tsx` zijn verwijderd. De migratie-banner "Voice, Tone & Communication Style — moved" in BrandPersonalitySection is opgeruimd.
