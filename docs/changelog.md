@@ -37,6 +37,50 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 255. Brandclaw data-collection — DataSnapshot + 4 sources + Strategy Observation schema
+
+Track B foundation pre-launch. ADR-2 schema-laag volledig live op
+worktree `branddock-brandclaw`. Twee sub-fasen, beide groen.
+
+**Schema (2 nieuwe models + 1 input-laag, 2 enums)**:
+- `DataSnapshot` — immutable point-in-time inputs (workspaceId,
+  sourceType TEXT, sourceId, payload JSONB, snapshotAt). Indexed op
+  (workspaceId, sourceType, snapshotAt) + (sourceType, sourceId).
+- `StrategyObservation` — versioned agent-output (agentVersion +
+  promptVersion stempels voor drift-detection + A/B-testing).
+  Evidence-veld linkt DataSnapshot rows.
+- `StrategyObservationRun` — run-metadata met toolCallTrace JSON,
+  totalCostUsd Decimal(10,6), latencyMs, triggerType.
+- Enums ObservationSeverity (HIGH/MEDIUM/LOW) + Confidence per
+  two-reasons-toets §11 — bewust apart van IssueSeverity.
+- 2 formele Prisma migrations.
+
+**Time-window primitives** (`src/lib/brandclaw/time-window.ts`): 4
+helpers (`sinceNDaysAgo` / `between` / `sinceVersion` / `allTime`)
+met `TimeWindow.toWhere(field)` Prisma-fragment-helper.
+
+**DataSource registry + 4 v1 sources**:
+- Singleton registry met lazy-init via `getDataSourceRegistry()`,
+  importeert alle 4 v1 sources parallel via Promise.all.
+- `alignment-scan-source.ts`: AlignmentScan + issue-counts per severity.
+- `content-fidelity-source.ts`: ContentFidelityScore + BrandReviewFinding
+  per severity/category.
+- `review-log-source.ts`: ContentReviewLog (Δ-1) met source-mix +
+  duration + finding-distribution.
+- `voiceguide-source.ts`: drift via ResourceVersion VOICEGUIDE-historie
+  + current voiceguide-state als baseline voor diff-walk.
+
+**Smoke-test**: 16/16 (Fase 1) → 29/29 (Fase 2) groen.
+
+**Unblockt**: `brandclaw-tool-orchestrator` (volgende task — Anthropic
+tool-use die deze 4 sources via tools exposed aan Strategy Analyst
+agent-loop).
+
+- Task: [tasks/done/brandclaw-data-collection.md](tasks/done/brandclaw-data-collection.md)
+- ADR: [adr/2026-05-08-brandclaw-agent-architectuur.md](adr/2026-05-08-brandclaw-agent-architectuur.md)
+- Spec: -
+- Commits: `90aa24ab` (Fase 1) + `1088b83a` (Fase 2)
+
 ### 254. Content-test sub-sprint #6.A — checkpoint-gates volledig gewired + closed
 
 Closure-entry voor `content-test-wiring-gates-6A` task. Alle 8 checkpoint-gates

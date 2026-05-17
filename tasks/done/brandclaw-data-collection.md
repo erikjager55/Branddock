@@ -5,13 +5,51 @@ fase: pre-launch
 priority: now
 effort: 5-7 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-05-08
-completed: -
+completed: 2026-05-17
 related-adr: 2026-05-08-brandclaw-agent-architectuur
 related-spec: tasks/_drafts/idea-brand-control-program.md
-worktree: branddock-program-p3
+worktree: branddock-brandclaw
 ---
+
+# Completion-note (2026-05-17)
+
+Foundation geleverd in twee sub-fasen op `branddock-brandclaw` worktree
+(rebased onto main, 132 commits, fast-forward 0 ahead bij start).
+
+**Fase 1 (commit 90aa24ab)**:
+- DataSnapshot Prisma model + formele migration met IVFFlat-ready
+  indexes (workspaceId+sourceType+snapshotAt, sourceType+sourceId).
+- Time-window primitives: `sinceNDaysAgo` / `between` / `sinceVersion`
+  / `allTime` met `TimeWindow.toWhere(field)` Prisma-fragment-helper.
+- DataSource registry singleton + lazy-init pattern.
+- alignment_scan source-accessor met snapshot-materializatie per scan
+  in transaction.
+
+**Fase 2 (commit 1088b83a)**:
+- StrategyObservation + StrategyObservationRun models (versioned met
+  agentVersion + promptVersion) + 2 enums (ObservationSeverity /
+  ObservationConfidence per ADR-2 two-reasons-toets).
+- content_fidelity source: ContentFidelityScore + BrandReviewFinding
+  counts per severity/category in snapshot-payload.
+- review_log source: ContentReviewLog uit Δ-1 paste-in flow.
+- voiceguide source: drift via ResourceVersion-historie (VOICEGUIDE
+  enum) + huidige state als baseline voor diff-walk.
+- Registry lazy-importeert nu alle 4 v1 sources parallel via
+  Promise.all.
+
+Smoke-test van 16/16 (Fase 1) naar 29/29 (Fase 2) — time-window
+edge-cases + alle 4 sources empty-workspace queries + registry
+isolation.
+
+Worktree-naam in frontmatter aangepast naar branddock-brandclaw (oude
+"branddock-program-p3" was draft-naam in task-file; actual worktree
+heet branddock-brandclaw conform roadmap.md track-naming).
+
+Unblockt: `brandclaw-tool-orchestrator` (volgende task — Anthropic
+tool-use orchestrator die deze 4 sources via tools exposed aan
+Strategy Analyst agent-loop).
 
 # Probleem
 
