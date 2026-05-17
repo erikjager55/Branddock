@@ -11,6 +11,7 @@ import { formatBrandContext, formatBrandContextTier } from '@/lib/ai/prompt-temp
 import { buildSelectedPersonasContext } from '@/lib/ai/persona-context';
 import { createClaudeStructuredCompletion, createStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
+import { scrubStrategyLayer } from '@/lib/ai/sanitize-strategy-output';
 import type { AICallTracking } from '@/lib/learning-loop';
 import { calculateBlueprintConfidence } from './confidence-calculator';
 import { computePhaseSchedule } from './phase-scheduler';
@@ -375,7 +376,7 @@ function formatAngleForPrompt(angle: CreativeAngleDefinition): string {
     angle.description,
     `Output signature: ${angle.outputSignature}`,
     `Famous examples: ${angle.famousExamples.join('; ')}`,
-    `Risk level: ${angle.riskLevel} | Effie/Cannes potential: ${angle.effieCannesPotential}`,
+    `Risk level: ${angle.riskLevel} | Award potential: ${angle.effieCannesPotential}`,
   ];
   if (angle.subMethodologies?.length) {
     parts.push(`Sub-methodologies: ${angle.subMethodologies.join(', ')}`);
@@ -904,7 +905,9 @@ export async function regenerateBlueprintLayer(
       ),
     );
     const fullVariant = fullVariantSchema.parse(fullVariantRaw);
-    blueprint.strategy = validateOrWarn(strategyLayerSchema, fullVariant.strategy, 'Regenerate Strategy');
+    blueprint.strategy = scrubStrategyLayer(
+      validateOrWarn(strategyLayerSchema, fullVariant.strategy, 'Regenerate Strategy'),
+    );
     blueprint.architecture = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, fullVariant.architecture, 'Regenerate Architecture'));
 
     // Clear stale persona validation — it was scored against the previous strategy.
@@ -1984,15 +1987,17 @@ Bisociation: ${approvedConcept.bisociationDomain.domain} — ${approvedConcept.b
     throw new Error('Strategy build returned invalid JSON');
   }
 
-  // Ensure the concept fields are preserved on the strategy layer
-  const strategy = {
+  // Ensure the concept fields are preserved on the strategy layer.
+  // Scrub Effie-rubric vocabulary uit LLM-output (interne kwaliteits-criteria
+  // mogen niet user-facing lekken — zie gotchas.md 2026-05-17).
+  const strategy = scrubStrategyLayer({
     ...(parsed.strategy as Record<string, unknown>),
     humanInsight: approvedInsight.insightStatement,
     creativePlatform: approvedConcept.bigIdea,
     creativeTerritory: approvedConcept.creativeTerritory,
     memorableDevice: approvedConcept.memorableDevice,
     campaignTheme: approvedConcept.campaignLine,
-  } as StrategyLayer;
+  }) as StrategyLayer;
 
   if (!parsed.architecture) {
     console.warn('[buildConceptDrivenStrategy] AI did not return architecture object — journey phases will be generated in elaborateJourney()');

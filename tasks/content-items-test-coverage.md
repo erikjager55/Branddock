@@ -89,3 +89,5 @@ Het playbook IS het smoke-test plan. Per type:
 - **P3**: UX-nit (style-issue, kleine copywriting-fout)
 
 **STOP-GATE eind sprint #4**: na 8 representanten een bug-log review. Bepaalt sprint #5 bugfix-scope + of varianten parallel kunnen of bugfix-eerst nodig is.
+
+**2026-05-17 — Tussentijdse STOP-GATE genomen**: P2 [shared-pipeline] effie-waardig leak gefixt vóór representanten-testen wordt hervat. Defense-in-depth (prompt-guard + output-sanitizer) toegepast in `campaign-strategy.ts` / `campaign-strategy-agents.ts` / `strategy-chain.ts` / `creative-angles.ts` + nieuwe utility `src/lib/ai/sanitize-strategy-output.ts` (24/24 smoke-test groen). Re-test linkedin-post Strategy-step in Napking single-content-mode om fix te verifiëren vóór door te gaan met overige 7 types. Zie `gotchas.md` 2026-05-17 (internal-rubric leak) + bug-log entry sectie 5 voor details.

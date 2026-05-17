@@ -264,7 +264,7 @@ const EFFIE_STRATEGY_JSON_SCHEMA = `
   creativeTerritory: Description of the visual and emotional world this concept lives in (2-3 sentences),
   brandRole: How the brand uniquely resolves the tension or fulfills the insight (1-2 sentences),
   memorableDevice: The distinctive mechanism that makes this concept unforgettable (optional — a ritual, a format, a catchphrase, a visual motif),
-  effieRationale: One paragraph explaining why this concept has Effie Award potential — reference insight depth, creative distinctiveness, and results potential
+  effieRationale: One paragraph explaining why this concept is strategically distinctive and likely to drive results — reference insight depth, creative distinctiveness, and KPI-impact potential. Do NOT use the words "Effie", "Effie Award", "effie-waardig", or any award-name reference in this text.
 }`;
 
 export function buildFullVariantAPrompt(params: FullVariantPromptParams): { system: string; user: string } {
@@ -273,7 +273,9 @@ export function buildFullVariantAPrompt(params: FullVariantPromptParams): { syst
   const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
-  const system = `You are a senior brand strategist who creates Effie Award-winning campaigns grounded in evidence-based strategy and behavioral science.
+  const system = `You are a senior brand strategist who creates strategically rigorous and creatively distinctive campaigns grounded in evidence-based strategy and behavioral science.
+
+**Output language guard**: Your output is user-facing. Never use the words "Effie", "Effie Award", "effie-waardig" or similar award-name references in any output field. The internal quality criteria below are your INTERNAL rubric only — apply them silently. Phrase rationale fields in terms of insight depth, strategic distinctiveness, behavioral plausibility, and KPI-impact potential.
 
 Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response. Your output must be AWARD-WORTHY — not just strategically correct, but creatively distinctive.
 ${INSIGHT_MINING_INSTRUCTIONS}
@@ -690,14 +692,16 @@ STEP 2: STRENGTHEN WITH ELEMENTS FROM OTHERS
 - Incorporate the best touchpoint ideas
 - But NEVER dilute the winning creative platform, human insight, or brand role
 
-STEP 3: EFFIE TEST
-Before finalizing, pass your synthesis through the Effie Award criteria:
+<internal_rubric purpose="quality-check" surface_in_output="false">
+STEP 3: STRATEGIC QUALITY TEST (internal — do NOT name in any output field)
+Before finalizing, silently pass your synthesis through these criteria:
 1. Strategic Thinking: Is there a clear insight-to-strategy-to-execution logic?
 2. Creative Idea: Is the Big Idea genuinely surprising and ownable?
 3. Bringing the Idea to Life: Does every touchpoint express the same creative platform?
 4. Results Potential: Can you point to specific KPIs this concept would move?
 
 If it fails any criterion, go back to Step 2.
+</internal_rubric>
 
 Synthesis rules:
 1. The winning variant's humanInsight, creativePlatform, and brandRole MUST survive intact
@@ -711,7 +715,7 @@ Synthesis rules:
 9. The memorableDevice should be distinctive and ownable
 
 Output a complete combined result with TWO top-level keys:
-- "strategy": The elevated StrategyLayer (same schema as input, with the winning platform strengthened). MUST include: humanInsight, creativePlatform, creativeTerritory, brandRole, and effieRationale.
+- "strategy": The elevated StrategyLayer (same schema as input, with the winning platform strengthened). MUST include: humanInsight, creativePlatform, creativeTerritory, brandRole, and effieRationale (write the rationale as plain strategic reasoning — never reference the word "Effie" or any award name).
 - "architecture": The synthesized ArchitectureLayer (best of A+B+C, unified under the winning creative platform)
 
 CRITICAL JSON SCHEMA — the architecture object MUST use these EXACT field names:
@@ -815,7 +819,7 @@ SYNTHESIS GUIDANCE (with debate context):
 4. Incorporate persona message rewrites where they improve resonance
 5. Address any remaining risks flagged by the critic that defense didn't fully resolve
 6. If a persona named a DEALBREAKER, the synthesized strategy MUST address it
-7. The effieRationale should reference that this strategy was stress-tested: "This strategy survived adversarial review and persona validation..."` : ''}`;
+7. The effieRationale should reference that this strategy was stress-tested against the strategic quality rubric: "This strategy survived adversarial review and persona validation..." (still without using the word "Effie")` : ''}`;
 
   return { system, user };
 }
@@ -1565,6 +1569,8 @@ export function buildStrategyBuildPrompt(params: StrategyBuildPromptParams): { s
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a senior strategist building the execution plan for an ALREADY APPROVED creative concept.
+
+**Output language guard**: Your output is user-facing. Never use the words "Effie", "Effie Award", "effie-waardig" or similar award-name references in any output field. The internal quality criteria from the schema below are your INTERNAL rubric only — apply them silently. Phrase rationale fields in plain strategic reasoning (insight depth, distinctiveness, behavioral plausibility, KPI-impact).
 
 THE CONCEPT IS LOCKED. Your job is to make it WORK, not to change it.
 

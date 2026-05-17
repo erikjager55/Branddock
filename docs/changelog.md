@@ -37,6 +37,30 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 256. Fix — Effie-rubric leak uit content-flow Strategy-step (P2 shared-pipeline)
+
+Bugfix tijdens handmatige content-items-test-coverage Ronde 1: `linkedin-post`
+Strategy-step bevatte letterlijk "effie-waardig" in de rationale-tekst — leak
+uit interne Effie Award kwaliteits-rubric in `campaign-strategy.ts` prompts
+(gedeeld tussen campaign-mode en single-content-mode via `selectedContentType`
+parameter). 3-laagse defense-in-depth: (a) prompt-guards (EFFIE TEST → STRATEGIC
+QUALITY TEST in `<internal_rubric>` + output-language-guards in 4 system-prompts
+incl. buildStrategyBuildPrompt), (b) nieuwe `src/lib/ai/sanitize-strategy-output.ts`
+utility met `scrubStrategyLayer()` toegepast op alle 3 StrategyLayer-productie-sites
+(regeneration + concept-driven + quick-concept route), (c) `Effie/Cannes potential:`
+labels in angle-context → `Award potential:`. Regex met word-boundary handelt
+edge cases (Éffie accent, effie_award underscore, Effie/Cannes slash, Effie's
+possessive) zonder onschuldige woorden (effectief, Jeffie) te raken. 30/30
+smoke-cases groen. STOP-GATE genomen — representanten-test kan hervatten.
+
+- Task: [tasks/content-items-test-coverage.md](tasks/content-items-test-coverage.md) (parent, still in-progress)
+- ADR: -
+- Spec: -
+- Bug-log: `docs/playbooks/testplan-content-items.md` sectie 5 (linkedin-post FIXED 2026-05-17)
+- Gotcha: `gotchas.md` 2026-05-17 "Internal-rubric prompt-jargon lekt via NL-vertaling"
+- Follow-ups out-of-scope: veldnaam-rename `effieRationale` → `strategicQualityRationale`, hardcoded UI-labels in ConceptReviewView/ReviewStep/StrategySection, studio promo-video bio-leak
+- Commit: <hash-after-commit>
+
 ### 255. Track A code-debt phase close-out — Cluster A + B + C done
 
 Closure-entry voor `code-debt-pre-launch-cleanup`. Alle drie de clusters (A

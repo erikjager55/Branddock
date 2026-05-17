@@ -515,7 +515,7 @@ export function formatCreativeAnglesForPrompt(): string {
   const lines = ['## Creative Angles Library (20 angles)', ''];
   for (const angle of Object.values(CREATIVE_ANGLES)) {
     lines.push(`### ${angle.name} [${angle.id}]`);
-    lines.push(`Family: ${angle.insightFamily} | Risk: ${angle.riskLevel} | Effie potential: ${angle.effieCannesPotential}`);
+    lines.push(`Family: ${angle.insightFamily} | Risk: ${angle.riskLevel} | Award potential: ${angle.effieCannesPotential}`);
     lines.push(`Starting insight: ${angle.startingInsightType}`);
     lines.push(angle.description);
     lines.push(`Output: ${angle.outputSignature}`);

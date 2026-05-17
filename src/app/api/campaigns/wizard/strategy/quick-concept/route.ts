@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { buildCreativePipelineContext, generateQuickConcept } from '@/lib/campaigns/strategy-chain';
+import { scrubStrategyLayer } from '@/lib/ai/sanitize-strategy-output';
 import type {
   StrategicIntent,
   StrategyLayer,
@@ -59,7 +60,10 @@ function buildMinimalStrategyFromConcept(
     journeyPhases: [],
   };
 
-  return { strategy, architecture };
+  // Defense-in-depth: scrub eventuele award-jargon residue uit LLM-derived
+  // insight/concept-velden (zelfde rationale als strategy-chain.ts:1993).
+  const scrubbed = scrubStrategyLayer(strategy as unknown as Record<string, unknown>);
+  return { strategy: scrubbed as unknown as StrategyLayer, architecture };
 }
 
 export const maxDuration = 120;

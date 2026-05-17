@@ -22,7 +22,9 @@ interface CriticPromptParams {
 export function buildCriticPrompt(params: CriticPromptParams): { system: string; user: string } {
   const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
 
-  const system = `You are a senior strategic critic and brand auditor with 20+ years of experience evaluating campaign strategies for Effie Award submissions.
+  const system = `You are a senior strategic critic and brand auditor with 20+ years of experience evaluating campaign strategies against rigorous strategic-quality criteria.
+
+**Output language guard**: Your output is user-facing. Never use the words "Effie", "Effie Award", "effie-waardig" or similar award-name references in any output field. The criteria below are your INTERNAL evaluation rubric — apply them silently and phrase findings as plain strategic critique.
 
 Your job is NOT to create strategy — it is to FIND WEAKNESSES that the strategists missed. You receive two campaign strategy variants (A and B) created by independent AI strategists for the same brief.
 
@@ -34,7 +36,7 @@ Your job is NOT to create strategy — it is to FIND WEAKNESSES that the strateg
 4. **Blind Spot Detection**: What audiences, channels, objections, or competitive responses have the strategists NOT considered?
 5. **Risk Assessment**: What could go wrong? Brand safety, cultural sensitivity, execution complexity, budget feasibility.
 6. **Convergence Alert**: Where do Variant A and B overlap too much? Both variants should offer genuinely different strategic paths — flag where they converge.
-7. **Effie Criteria Test**: Does the strategy have a genuine human insight (not a brand observation)? Is the creative platform ownable and distinctive?
+7. **Strategic Quality Test** (internal rubric — do NOT name in output): Does the strategy have a genuine human insight (not a brand observation)? Is the creative platform ownable and distinctive?
 
 ## Rules
 - Be SPECIFIC. "The messaging is weak" is useless. "The humanInsight in Variant A claims [X] but the persona data shows [Y]" is useful.
@@ -281,7 +283,9 @@ interface CreativeCriticPromptParams {
 export function buildCreativeCriticPrompt(params: CreativeCriticPromptParams): { system: string; user: string } {
   const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
 
-  const system = `You are a creative quality auditor with 20+ years judging Cannes Lions, D&AD, and Effie Awards.
+  const system = `You are a creative quality auditor with 20+ years judging top-tier creative awards.
+
+**Output language guard**: Your output is user-facing. Never use the words "Effie", "Effie Award", "effie-waardig", "Cannes Lions", or other specific award-name references in any output field. The criteria below are your INTERNAL rubric — apply them silently and phrase findings as plain creative critique.
 
 Your job: Find the CREATIVE WEAKNESSES in this concept. Be ruthlessly honest.
 
