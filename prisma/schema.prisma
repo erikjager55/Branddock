@@ -5704,8 +5704,19 @@ model StrategyObservation {
 
   createdAt DateTime @default(now())
 
+  /// User-flag: observation is gelezen door owner.
+  markedReadAt  DateTime?
+  /// User-flag: gebruiker heeft het probleem extern opgelost.
+  markedActedAt DateTime?
+  /// User-flag: observation gemarkeerd als niet-relevant of false-positive.
+  /// Sluit aan op confidence-calibration roadmap (LATER).
+  dismissedAt   DateTime?
+  /// Optionele reason — voedt promptVersion-iteration cycle.
+  dismissReason String?
+
   @@index([workspaceId, createdAt])
   @@index([workspaceId, dimension])
+  @@index([workspaceId, dismissedAt])
   @@index([runId])
 }
 
