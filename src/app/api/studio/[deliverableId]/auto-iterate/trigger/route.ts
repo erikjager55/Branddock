@@ -24,6 +24,7 @@ import { assembleCanvasContext } from '@/lib/ai/canvas-context';
 import { runFidelityScoring } from '@/lib/brand-fidelity/fidelity-runner';
 import { runAutoIterateIntegration } from '@/lib/ai/auto-iterate-integration';
 import type { AutoIterateEvent } from '@/lib/ai/auto-iterate';
+import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 
 interface RouteParams {
   params: Promise<{ deliverableId: string }>;
@@ -75,9 +76,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return;
         }
 
-        // Haal current variant-0 content op (de "primary" variant)
+        // Haal current variant-0 content op (de "primary" variant). Skip
+        // image/video/voiceover-componenten — die hebben null/non-tekstuele
+        // generatedContent en vervuilen de telling of leveren rare longest-picks.
         const components = await prisma.deliverableComponent.findMany({
-          where: { deliverableId, variantIndex: 0 },
+          where: {
+            deliverableId,
+            variantIndex: 0,
+            componentType: { notIn: ['image', 'video', 'voiceover'] },
+          },
           orderBy: { order: 'asc' },
           select: { generatedContent: true, componentType: true },
         });
@@ -85,8 +92,42 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           .map((c) => c.generatedContent ?? '')
           .filter((s) => s.length > 0)
           .join('\n\n');
-        if (blobText.split(/\s+/).filter(Boolean).length < 50) {
-          sendError('Niet genoeg content om te verbeteren — genereer eerst content');
+        const wordCount = blobText.split(/\s+/).filter(Boolean).length;
+        // Gate floor = F-VAL hard floor (50). Hier NIET type-aware: F-VAL
+        // weigert <50 woorden in `fidelity-runner.ts:455`, dus accepteren
+        // onder 50 zou alleen leiden tot "Score-berekening faalde — probeer
+        // opnieuw" (line ~129) — misleidende error voor unfixable state.
+        // typeMinWords is alleen voor error-message context.
+        const typeDef = stack.deliverableTypeId
+          ? getDeliverableTypeById(stack.deliverableTypeId)
+          : undefined;
+        if (stack.deliverableTypeId && !typeDef) {
+          console.warn('[auto-iterate/trigger] registry miss', {
+            deliverableId,
+            contentTypeId: stack.deliverableTypeId,
+          });
+        }
+        const typeMinWords = typeDef?.constraints?.minWords ?? 50;
+        const FVAL_FLOOR = 50;
+        if (wordCount < FVAL_FLOOR) {
+          console.warn('[auto-iterate/trigger] gate rejected', {
+            deliverableId,
+            contentTypeId: stack.deliverableTypeId,
+            wordCount,
+            typeMinWords,
+            fvalFloor: FVAL_FLOOR,
+            componentCount: components.length,
+          });
+          const typeLabel = typeDef?.name ?? 'dit content-type';
+          // Splits gate-floor (F-VAL hard requirement) van type-target
+          // (advies); voor short-form types waar minWords < 50, voorkomt dit
+          // dat de error "minimum 50" zegt terwijl content-type docs e.g. 20
+          // noemen — beide expliciet maken haalt verwarring weg.
+          const msg =
+            typeMinWords < FVAL_FLOOR
+              ? `Variant A bevat ${wordCount} woorden. Minimum ${FVAL_FLOOR} woorden nodig voor fidelity-scoring (richtlijn voor ${typeLabel}: ${typeMinWords}+ woorden). Genereer opnieuw of vul handmatig aan.`
+              : `Variant A bevat ${wordCount} woorden, minimum voor ${typeLabel} is ${typeMinWords} woorden. Genereer opnieuw of vul handmatig aan.`;
+          sendError(msg);
           controller.close();
           return;
         }

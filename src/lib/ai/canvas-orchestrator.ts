@@ -901,41 +901,123 @@ export async function* orchestrateContentGeneration(
         typeof silentResult.finalText === 'string' &&
         silentResult.finalText.trim().length > 0
       ) {
-        // Apply: replace longest first-variant generatedContent met iter-text.
+        // Apply: replace longest variant-0 text-component met iter-text.
+        // Scope-fix 2026-05-17: variantIndex: 0 + skip image/video/voiceover-
+        // rows, anders kan silent-iter variant B/C/D clobberen of een non-text
+        // row raken. Don't-shrink guard: respecteer content-type minWords EN
+        // relatieve shrink-floor (70% van origineel) zodat long-form niet
+        // silently 50% wordt afgekapt; maxWords-cap prevents balloon-rewrites.
         const components = await prisma.deliverableComponent.findMany({
-          where: { deliverableId, groupIndex: 0 },
+          where: {
+            deliverableId,
+            groupIndex: 0,
+            variantIndex: 0,
+            componentType: { notIn: ['image', 'video', 'voiceover'] },
+            generatedContent: { not: null },
+          },
           select: { id: true, generatedContent: true },
         });
-        if (components.length > 0) {
-          const longest = components.reduce((a, b) =>
-            (b.generatedContent?.length ?? 0) > (a.generatedContent?.length ?? 0) ? b : a,
-          );
-          await prisma.deliverableComponent.update({
-            where: { id: longest.id },
-            data: {
-              generatedContent: silentResult.finalText,
-              iterationCount: { increment: 1 },
-              version: { increment: 1 },
-            },
+        const newWordCount = silentResult.finalText.trim().split(/\s+/).filter(Boolean).length;
+        const typeDef = stack.deliverableTypeId
+          ? getDeliverableTypeById(stack.deliverableTypeId)
+          : undefined;
+        if (stack.deliverableTypeId && !typeDef) {
+          console.warn('[silent-iter] registry miss', {
+            deliverableId,
+            contentTypeId: stack.deliverableTypeId,
           });
-          // Yield bijgewerkt fidelity_score_complete event zodat frontend
-          // de nieuwe (hogere) score toont. variantIndex: 0 = primary.
-          // pillarScores uit silent-iter zijn niet beschikbaar; we sturen
-          // alleen compositeScore + thresholdMet update. Frontend store
-          // muteert compositeScore zonder pillars te vernieuwen (volgende
-          // re-fetch krijgt verse data).
-          const threshold = fidelityPipelineReturn.initialResult.compositeThreshold;
-          yield {
-            event: 'fidelity_score_complete',
-            data: {
-              ...buildFidelityScoreEventPayload(fidelityPipelineReturn.initialResult),
-              compositeScore: silentResult.finalScore,
-              thresholdMet: silentResult.finalScore >= threshold,
-              variantIndex: 0,
-              silentIter: true, // signal voor telemetry / future UI
-            },
-          };
         }
+        const typeMinWords = typeDef?.constraints?.minWords ?? 50;
+        const typeMaxWords = typeDef?.constraints?.maxWords ?? Infinity;
+        const longest = components.length > 0
+          ? components.reduce((a, b) =>
+              (b.generatedContent?.length ?? 0) > (a.generatedContent?.length ?? 0) ? b : a,
+            )
+          : null;
+        if (!longest) {
+          // Symmetric warn met andere skip-paden; geen yield (originele score-
+          // event is al gepost door runFidelityScoringPipeline). Verdere
+          // silent-iter logic geskipt via guard hieronder zodat we niet
+          // wastefully oldWordCount/floors berekenen over null component.
+          console.warn('[silent-iter] skipped: no eligible component', {
+            deliverableId,
+            contentTypeId: stack.deliverableTypeId,
+            reason: 'variant-0 leverde 0 text-componenten (geregenererd, of niet-text deliverable)',
+          });
+        } else {
+          const oldWordCount = (longest.generatedContent ?? '')
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean).length;
+          // Floor combineert content-type minimum + relatieve shrink-guard.
+          // De relatieve 70%-floor (gekozen als pragmatische balans: kortere
+          // tightenings van 30% zijn typisch voor F-VAL rewrites, scherper dan
+          // 50% zou de meeste accepts blokkeren) voorkomt dat een ebook
+          // (minWords 5000) van 6000→4500 silently 25% verliest — absolute
+          // floor (5000) zou een 5000-w rewrite accepteren maar dat is alleen
+          // length-correctness, niet shrink-protection. Voor short-form waar
+          // typeMinWords > 0.7×old (bv push 20 minWords op 25 oldWordCount =
+          // floor 20 > 17.5) is de relatieve guard dead code — bewust trade-off.
+          // maxWords-cap geldt alleen voor types die `maxWords` declareren;
+          // types met enkel `maxChars` (bv tweet) krijgen Infinity-cap (no-op).
+          const shrinkFloor = Math.max(typeMinWords, Math.floor(oldWordCount * 0.7));
+          const passesFloor = newWordCount >= shrinkFloor;
+          const passesCap = newWordCount <= typeMaxWords;
+          if (passesFloor && passesCap) {
+            await prisma.deliverableComponent.update({
+              where: { id: longest.id },
+              data: {
+                generatedContent: silentResult.finalText,
+                iterationCount: { increment: 1 },
+                version: { increment: 1 },
+              },
+            });
+            // console.warn (niet .info) zodat prod log-aggregators (Vercel,
+            // Datadog default surface alleen warn/error) deze accept-events zien.
+            console.warn('[silent-iter] accepted', {
+              deliverableId,
+              variantIndex: 0,
+              componentId: longest.id,
+              oldWordCount,
+              newWordCount,
+              shrinkFloor,
+              oldScore: initialCompositeScore,
+              newScore: silentResult.finalScore,
+            });
+            // Yield bijgewerkt fidelity_score_complete event zodat frontend
+            // de nieuwe (hogere) score toont. variantIndex: 0 = primary.
+            // pillarScores uit silent-iter zijn niet beschikbaar; we sturen
+            // alleen compositeScore + thresholdMet update. Frontend store
+            // muteert compositeScore zonder pillars te vernieuwen (volgende
+            // re-fetch krijgt verse data). Yield alleen bij persistence —
+            // anders zou UI nieuwe score tonen terwijl DB oude content houdt.
+            const threshold = fidelityPipelineReturn.initialResult.compositeThreshold;
+            yield {
+              event: 'fidelity_score_complete',
+              data: {
+                ...buildFidelityScoreEventPayload(fidelityPipelineReturn.initialResult),
+                compositeScore: silentResult.finalScore,
+                thresholdMet: silentResult.finalScore >= threshold,
+                variantIndex: 0,
+                silentIter: true, // signal voor telemetry / future UI
+              },
+            };
+          } else {
+            // Beide guards kunnen tegelijk falen — toon ze allebei i.p.v.
+            // binary picker die de andere reden verbergt.
+            const reasons: string[] = [];
+            if (!passesFloor) reasons.push('below_shrink_floor');
+            if (!passesCap) reasons.push('above_max_words');
+            console.warn(`[silent-iter] skipped: ${reasons.join(',')}`, {
+              deliverableId,
+              contentTypeId: stack.deliverableTypeId,
+              oldWordCount,
+              newWordCount,
+              shrinkFloor,
+              typeMaxWords: typeMaxWords === Infinity ? null : typeMaxWords,
+            });
+          }
+        } // end: else (longest != null branch)
       }
     } catch (silentErr) {
       console.warn(

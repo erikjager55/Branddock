@@ -37,6 +37,35 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 257. Fix — Auto-iterate "Verbeter automatisch" gate + silent-iter scope-fix
+
+User klikte op de "Verbeter automatisch" CTA in canvas FidelityScoreBar (long-form
+deliverable, blog/landing-page/newsletter) en kreeg `"Niet genoeg content om te
+verbeteren — genereer eerst content"` terwijl content visueel zichtbaar was. Twee
+compounding bugs gefixt: (1) silent auto-iterate (`canvas-orchestrator.ts:863-920`)
+miste `variantIndex: 0` filter in zijn query — `groupIndex` defaultt naar 0 dus de
+"variant-0" query matchte ALLE componenten, silent-iter kon variant B/C/D body
+clobberen. (2) silent-iter pakte de langste text-component en verving die met een
+F-VAL tightening rewrite (typisch ~40 woorden voor long-form), waarna variant-0
+onder de hardcoded 50-woorden gate van `/auto-iterate/trigger` viel. Fix: (a)
+scope-filter `variantIndex: 0` + `componentType notIn ['image', 'video', 'voiceover']`
++ `generatedContent: { not: null }` op silent-iter én beide apply-routes
+(`/auto-iterate/apply`, `/strict-rewrite/apply`). (b) don't-shrink guard via
+`getDeliverableTypeById().constraints.minWords` + relatieve 70%-floor +
+`maxWords` cap (silent-iter alleen; apply-routes blijven user-explicit). (c)
+trigger-gate met split error-message (F-VAL floor vs content-type richtlijn) +
+type-aware label via `typeDef.name`. (d) `console.warn` op alle silent-return
+paden inclusief no-eligible-component branch zodat smoke divergence kan zien.
+5 review-iteraties, code-level integratie smoke 13/14 passes op 5 long-form
+deliverables.
+
+- Task: [tasks/done/auto-iterate-trigger-content-gate.md](tasks/done/auto-iterate-trigger-content-gate.md)
+- ADR: -
+- Spec: -
+- Gotcha: `gotchas.md` 2026-05-17 "Silent auto-iterate clobbert variants + shrinkt long-form onder F-VAL gate"
+- Plan: `~/.claude/plans/eager-hatching-planet.md`
+- Commit: `<hash>` (filled post-commit)
+
 ### 256. Fix — Effie-rubric leak uit content-flow Strategy-step (P2 shared-pipeline)
 
 Bugfix tijdens handmatige content-items-test-coverage Ronde 1: `linkedin-post`

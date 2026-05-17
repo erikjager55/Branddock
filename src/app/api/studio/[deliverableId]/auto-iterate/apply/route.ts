@@ -67,13 +67,30 @@ export async function POST(
 
     let targetComponentId = body.componentId;
     if (!targetComponentId) {
+      // Scope-fix 2026-05-17: variantIndex: 0 + skip image/video/voiceover-
+      // rows, anders kan auto-iterate variant B/C/D clobberen of een non-text
+      // row raken bij longest-pick (mirror van canvas-orchestrator silent-iter fix).
+      // Bewuste asymmetrie met silent-iter: hier GEEN shrink/maxWords guard —
+      // apply is een expliciete user-actie (klik "Apply Improved Version"),
+      // user heeft de score-uplift al gezien en akkoord. Silent-iter is
+      // autonoom en moet defensiever zijn.
       const components = await prisma.deliverableComponent.findMany({
-        where: { deliverableId, groupIndex: 0 },
+        where: {
+          deliverableId,
+          groupIndex: 0,
+          variantIndex: 0,
+          componentType: { notIn: ['image', 'video', 'voiceover'] },
+          generatedContent: { not: null },
+        },
         select: { id: true, generatedContent: true, componentType: true },
       });
       if (components.length === 0) {
+        console.warn('[auto-iterate/apply] no target component', {
+          deliverableId,
+          reason: 'no variant-0 text-component with content found',
+        });
         return NextResponse.json(
-          { error: 'No first-variant components found on this deliverable' },
+          { error: 'No first-variant text components found on this deliverable' },
           { status: 400 },
         );
       }
