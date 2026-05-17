@@ -2,10 +2,18 @@
  * Diff-builder — produces structured diff and aggregate summary
  * between two ContentVersion snapshots.
  *
- * V1: plain-text paragraph-level diff. Format-aware via content-type
- * from `deliverable-types.ts`. Rich-text (TipTap/ProseMirror) and HTML
- * formats fall back to plain-text-extraction for now — full structural
- * diff TODO when ProseMirror-diff lib is added.
+ * V2 (2026-05-17): ProseMirror-aware paragraph-level diff via Markdown-
+ * isation. Rich-text inputs (TipTap/ProseMirror JSON) are converted to
+ * Markdown before paragraph-diffing, so formatting and structural
+ * changes surface as content changes — bolding a phrase, promoting a
+ * paragraph to a heading, wrapping text in a blockquote, etc. all
+ * become visible diff entries. Plain text and HTML inputs continue to
+ * work via the existing extraction path.
+ *
+ * No external diff library: the Markdown round-trip is cheap and the
+ * existing paragraph-LCS handles the rest. The DiffEntry shape stays
+ * unchanged so all downstream consumers (classifyEdit, UI render) get
+ * richer signal without code changes.
  *
  * Cat 4 — leerlus-werkstroom sessie 2.
  */
@@ -59,18 +67,22 @@ export function buildPlainTextDiff(
 }
 
 /**
- * Format-aware entry-point. Extract plain text from rich-text formats
- * for v1, then run plain-text-diff.
+ * Format-aware entry-point. Detects ProseMirror JSON / HTML / plain text
+ * and reduces all three to Markdown before running paragraph-LCS. The
+ * Markdown round-trip captures structural and mark-level changes that
+ * pure text-extraction missed (bolding text, promoting paragraphs to
+ * headings, wrapping in lists or blockquotes).
  *
- * @param contentTypeId from `deliverable-types.ts` — used to detect format
+ * @param contentTypeId from `deliverable-types.ts` — reserved for future
+ *   format-specific tweaks (e.g. table-aware diff for content-types that
+ *   render tabular data). Unused in V2.
  */
 export function buildDiff(
   before: string,
   after: string,
   contentTypeId?: string,
 ): DiffResult {
-  // V1: all formats fall back to plain-text-extraction.
-  // TODO: ProseMirror-diff for rich-text once lib is added.
+  void contentTypeId; // reserved for future format-specific routing
   const beforeText = extractPlainText(before);
   const afterText = extractPlainText(after);
   return buildPlainTextDiff(beforeText, afterText);
@@ -111,36 +123,157 @@ function extractPlainText(input: string): string {
     .trim();
 }
 
+interface ProseMirrorMark {
+  type?: string;
+  attrs?: Record<string, unknown>;
+}
+
 interface ProseMirrorNode {
   type?: string;
   text?: string;
+  attrs?: Record<string, unknown>;
+  marks?: ProseMirrorMark[];
   content?: ProseMirrorNode[];
 }
 
-/** Recursively extract text from ProseMirror JSON node. */
-function extractTextFromProseMirror(node: ProseMirrorNode | unknown): string {
+interface PMContext {
+  /** True when the current walk is inside a list — drives `- ` / `1. ` prefixes for list_item children. */
+  listType?: "bullet" | "ordered";
+  /** Index of the current list_item within its parent list — used for ordered-list numbering. */
+  listIndex?: number;
+}
+
+/**
+ * Recursively serialise ProseMirror JSON to a Markdown-flavoured string.
+ *
+ * Captures:
+ *  - headings as `# ` / `## ` / `### ` (level from attrs.level, default 1)
+ *  - bullet / ordered list items as `- text` / `1. text`
+ *  - blockquote children prefixed with `> `
+ *  - code_block wrapped in triple-backticks
+ *  - inline marks: bold → `**text**`, italic → `*text*`, code → `` `text` ``,
+ *    underline → `__text__`, strike → `~~text~~`, link → `[text](href)`
+ *
+ * Block-level nodes emit a trailing blank line so splitParagraphs sees them
+ * as separate paragraphs — that's what makes formatting changes show up as
+ * removed+added pairs in the diff entries.
+ */
+function extractTextFromProseMirror(
+  node: ProseMirrorNode | unknown,
+  ctx: PMContext = {},
+): string {
   if (!node || typeof node !== "object") return "";
   const n = node as ProseMirrorNode;
-  if (typeof n.text === "string") return n.text;
 
-  if (Array.isArray(n.content)) {
-    const parts = n.content.map(extractTextFromProseMirror);
-    // Block-level types get newline separator
-    const blockTypes = new Set([
-      "paragraph",
-      "heading",
-      "blockquote",
-      "list_item",
-      "bullet_list",
-      "ordered_list",
-      "code_block",
-    ]);
-    if (n.type && blockTypes.has(n.type)) {
-      return parts.join("") + "\n";
-    }
-    return parts.join("");
+  // Leaf text node — wrap by marks from inside out.
+  if (typeof n.text === "string") {
+    return applyMarks(n.text, n.marks);
   }
-  return "";
+
+  const children = Array.isArray(n.content) ? n.content : [];
+
+  switch (n.type) {
+    case "heading": {
+      const level = clampHeadingLevel(n.attrs?.level);
+      const inner = children.map((c) => extractTextFromProseMirror(c, {})).join("");
+      return `${"#".repeat(level)} ${inner}\n\n`;
+    }
+    case "blockquote": {
+      const inner = children.map((c) => extractTextFromProseMirror(c, {})).join("");
+      // Prefix every non-empty line with "> " so the structural marker
+      // survives the paragraph split.
+      return (
+        inner
+          .split("\n")
+          .map((line) => (line.trim().length > 0 ? `> ${line}` : line))
+          .join("\n") + "\n"
+      );
+    }
+    case "bullet_list":
+    case "bulletList": {
+      const inner = children
+        .map((c, i) => extractTextFromProseMirror(c, { listType: "bullet", listIndex: i }))
+        .join("");
+      return inner + "\n";
+    }
+    case "ordered_list":
+    case "orderedList": {
+      const inner = children
+        .map((c, i) => extractTextFromProseMirror(c, { listType: "ordered", listIndex: i }))
+        .join("");
+      return inner + "\n";
+    }
+    case "list_item":
+    case "listItem": {
+      const prefix =
+        ctx.listType === "ordered" ? `${(ctx.listIndex ?? 0) + 1}. ` : "- ";
+      const inner = children.map((c) => extractTextFromProseMirror(c, {})).join("").trimEnd();
+      return `${prefix}${inner}\n`;
+    }
+    case "code_block":
+    case "codeBlock": {
+      const inner = children.map((c) => extractTextFromProseMirror(c, {})).join("");
+      const lang = typeof n.attrs?.language === "string" ? (n.attrs.language as string) : "";
+      return `\`\`\`${lang}\n${inner}\n\`\`\`\n\n`;
+    }
+    case "paragraph": {
+      const inner = children.map((c) => extractTextFromProseMirror(c, {})).join("");
+      return inner.length > 0 ? `${inner}\n\n` : "";
+    }
+    case "hard_break":
+    case "hardBreak":
+      return "\n";
+    default:
+      // doc / unknown wrappers — recurse through children without a wrapper.
+      return children.map((c) => extractTextFromProseMirror(c, ctx)).join("");
+  }
+}
+
+function clampHeadingLevel(raw: unknown): number {
+  if (typeof raw !== "number") return 1;
+  if (!Number.isFinite(raw)) return 1;
+  return Math.min(6, Math.max(1, Math.round(raw)));
+}
+
+/**
+ * Wrap text with Markdown syntax for each mark, inside-out. Order matters
+ * (bold-italic vs italic-bold render the same in Markdown so the result is
+ * deterministic). Unknown marks are ignored.
+ */
+function applyMarks(text: string, marks?: ProseMirrorMark[]): string {
+  if (!marks || marks.length === 0) return text;
+  let wrapped = text;
+  for (const mark of marks) {
+    switch (mark.type) {
+      case "bold":
+      case "strong":
+        wrapped = `**${wrapped}**`;
+        break;
+      case "italic":
+      case "em":
+        wrapped = `*${wrapped}*`;
+        break;
+      case "code":
+        wrapped = `\`${wrapped}\``;
+        break;
+      case "underline":
+        wrapped = `__${wrapped}__`;
+        break;
+      case "strike":
+      case "strikethrough":
+        wrapped = `~~${wrapped}~~`;
+        break;
+      case "link": {
+        const href = typeof mark.attrs?.href === "string" ? (mark.attrs.href as string) : "";
+        wrapped = href ? `[${wrapped}](${href})` : wrapped;
+        break;
+      }
+      default:
+        // Unknown mark — preserve text but skip the wrapper.
+        break;
+    }
+  }
+  return wrapped;
 }
 
 /** Split text into paragraphs by double-newline; trim each. */
