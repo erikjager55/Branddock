@@ -95,6 +95,7 @@ export type VisualBriefSource =
   | 'upload'
   | 'url'
   | 'stock'
+  | 'smart-search'
   | 'compose'
   | 'trained-style'
   | 'photography-request'
@@ -470,7 +471,7 @@ function parseVisualBrief(
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
     const obj = raw as Record<string, unknown>;
     const validSources: VisualBriefSource[] = [
-      'generate', 'library', 'upload', 'url', 'stock', 'compose', 'trained-style', 'photography-request', 'none',
+      'generate', 'library', 'upload', 'url', 'stock', 'smart-search', 'compose', 'trained-style', 'photography-request', 'none',
     ];
     const rawSource = obj.source as string | undefined;
     const source: VisualBriefSource =

@@ -52,6 +52,7 @@ export const SOURCE_LABELS: Record<VisualBriefSource, string> = {
   upload: 'Upload',
   url: 'Import URL',
   stock: 'Stock photos',
+  'smart-search': 'Smart search — library + Pexels combined',
   compose: 'Compose — combine reference assets',
   'trained-style': 'Trained-style model',
   'photography-request': 'Real photography (photographer brief)',
@@ -65,52 +66,66 @@ interface SuggestInput {
   hasTrainedLora: boolean;
 }
 
-const MODEL_META: Record<SuggestedModelId, { label: string; costPerImageUsd: number; strengths: string[] }> = {
+// MODEL_META is the single source-of-truth for: label + cost + strengths +
+// fal-ai slug. Both the suggestion banner (Layer 1) and the server-side
+// model-selector (Layer 4) read from this map so they cannot drift out of
+// sync — previously the banner could claim "Nano Banana 2" while the
+// generator routed to "Nano Banana Pro".
+const MODEL_META: Record<SuggestedModelId, { label: string; costPerImageUsd: number; strengths: string[]; falSlug: string }> = {
   'flux-2-pro': {
     label: 'FLUX 2 Pro',
     costPerImageUsd: 0.03,
     strengths: ['Aesthetic photorealism', 'Cinematic lighting', 'Editorial-look'],
+    falSlug: 'fal-ai/flux-2-pro',
   },
   'nano-banana-2': {
     label: 'Nano Banana 2 (Gemini 2.5 Flash Image)',
     costPerImageUsd: 0.04,
     strengths: ['Text rendering', 'Multi-character consistency', 'World-knowledge accuracy'],
+    falSlug: 'fal-ai/nano-banana-pro',
   },
   'nano-banana-pro': {
     label: 'Nano Banana Pro (Gemini 3 Pro Image)',
     costPerImageUsd: 0.13,
     strengths: ['Production-ready posters', 'Multi-reference fusion (14 imgs)', 'Targeted edits'],
+    falSlug: 'fal-ai/nano-banana-pro',
   },
   'recraft-v4': {
     label: 'Recraft V4',
     costPerImageUsd: 0.04,
     strengths: ['Brand illustration', 'Style-reference (1-5 refs)', 'Vector / design-forward'],
+    falSlug: 'fal-ai/recraft-v3',
   },
   'imagen-4': {
     label: 'Imagen 4',
     costPerImageUsd: 0.04,
     strengths: ['Luxury product detail', 'Tekst-in-image', 'Material accuracy'],
+    falSlug: 'fal-ai/imagen4',
   },
   'trained-lora': {
     label: 'Workspace Trained Model',
     costPerImageUsd: 0.05,
     strengths: ['Custom brand-look', 'Highest consistency', 'Brand-specific characters'],
+    falSlug: 'fal-ai/flux-lora',
   },
   // F42-final-2 (audit 2026-05-15): added per all-chips experiment winners
   phota: {
     label: 'Phota',
     costPerImageUsd: 0.03,
     strengths: ['Photoreal with people', 'Authentic candid scenes', 'Warm professional mood'],
+    falSlug: 'fal-ai/phota',
   },
   'ideogram-v3': {
     label: 'Ideogram V3',
     costPerImageUsd: 0.04,
     strengths: ['Typography specialist', 'Crisp text rendering', 'Poster / quote design'],
+    falSlug: 'fal-ai/ideogram-v3',
   },
   'seedream-v4': {
     label: 'Seedream V4',
     costPerImageUsd: 0.04,
     strengths: ['Product detail accuracy', 'Label legibility', 'Material textures'],
+    falSlug: 'fal-ai/seedream-v4-5',
   },
 };
 

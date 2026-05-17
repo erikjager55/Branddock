@@ -31,6 +31,7 @@ import {
   Palette,
   Camera,
   Ban,
+  Search,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { VisualBriefSource } from '@/lib/ai/canvas-context';
@@ -38,6 +39,7 @@ import { useCanvasStore } from '../../stores/useCanvasStore';
 import { LibraryTab } from './insert-image/LibraryTab';
 import { UrlImportTab } from './insert-image/UrlImportTab';
 import { StockPhotosTab } from './insert-image/StockPhotosTab';
+import { SmartSearchTab } from './insert-image/SmartSearchTab';
 import { GenerateImageTab } from './insert-image/GenerateImageTab';
 import { UploadTab } from './insert-image/UploadTab';
 import { LibraryAssetPicker } from './LibraryAssetPicker';
@@ -55,6 +57,7 @@ interface SourceTab {
 }
 
 export const IMAGE_SOURCE_TABS: SourceTab[] = [
+  { value: 'smart-search', label: 'Smart search', icon: Search },
   { value: 'generate', label: 'Generate', icon: Wand2 },
   { value: 'library', label: 'Library', icon: Library },
   { value: 'upload', label: 'Upload', icon: Upload },
@@ -161,6 +164,8 @@ function SourceContent({
       return <div className="text-xs text-gray-500">No selection handler wired.</div>;
     }
     switch (source) {
+      case 'smart-search':
+        return <SmartSearchTab onSelected={onSelected} initialQuery={seedQuery} />;
       case 'generate':
         return <GenerateImageTab onSelected={onSelected} initialPrompt={seedPrompt} />;
       case 'library':
@@ -204,6 +209,12 @@ function SourceContent({
     return <div className="text-xs text-gray-500">No deliverable loaded.</div>;
   }
   switch (source) {
+    case 'smart-search':
+      return onSelected ? (
+        <SmartSearchTab onSelected={onSelected} initialQuery={seedQuery} />
+      ) : (
+        <div className="text-xs text-gray-500">Smart search via Step 3 (Medium).</div>
+      );
     case 'generate':
       // Generate-flow zit nog in VisualVariantsBlock (button → orchestrator
       // → variant-grid). F35 Stap 3 verwijdert die en routet via deze
