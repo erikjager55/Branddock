@@ -37,6 +37,55 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 260. Brandclaw Strategy Analyst — model-ID hotfix
+
+Anthropic API gaf 404 op `claude-sonnet-4-6-20251001` (de dated suffix is geen
+geldige model-ID). DEFAULT_MODEL in `agent-loop.ts` aangepast naar
+`claude-sonnet-4-6`. Real-API smoke daarna 17/17 pass tegen Branddock Demo
+workspace (4 tool-calls, $0.0549 cost, 24.9s latency, 0 false-positive
+observations door two-reasons-test enforcement).
+
+- Task: [tasks/strategy-analyst-stub.md](tasks/strategy-analyst-stub.md) (Phase B vervolg)
+- ADR: -
+- Spec: -
+- Commit: `d488298c`
+
+### 259. Brandclaw Strategy Analyst Phase B — 4 extra dimensions + UI sort/group
+
+Phase B van de Strategy Analyst-stub levert de overige 4 observation-dimensies:
+`fidelity_decline` (F-VAL composite-decline ≥10pt/30d per contentType),
+`review_pattern` (top-3 finding-categorie herhaalt over 2-4 weken),
+`alignment_gap` (AlignmentScan severity-distribution stagnant/worsening over
+60+d met manual-fix-rate <50%), `publish_quality_trend` (publish-time F-VAL
+daalt OF PublishGateOverride frequency stijgt). System-prompt bump
+`strategy-analyst@0.1.0` → `0.2.0` met deterministische volgorde van
+prompt-fragments zodat `computePromptVersion` stabiel blijft. UI: view-mode
+toggle (Group per dimension / Severity flat-list) met SEVERITY_RANK comparator
+(HIGH → MEDIUM → LOW, dan newest-first). Smoke-test breidt assertion uit naar
+alle 5 dimension-fragments.
+
+- Task: [tasks/strategy-analyst-stub.md](tasks/strategy-analyst-stub.md) (Phase B)
+- ADR: [adr/2026-05-08-brandclaw-agent-architectuur.md](adr/2026-05-08-brandclaw-agent-architectuur.md)
+- Spec: -
+- Commit: `58094f8e`
+
+### 258. Brandclaw Strategy Analyst Phase A vervolg — UI Tab 5
+
+Phase A's UI-laag gewired: BrandclawObservationsTab in BrandAlignmentPage als
+Tab 5 "Strategy Analyst" met Brain-icon. GET `/api/brandclaw/observations`
+met dimension/severity/includeDismissed filters; PATCH
+`/api/brandclaw/observations/[id]` met markRead/markActed/dismiss/undo
+actions. ObservationCard rendert severity/confidence badges + action-buttons
++ dismiss-reden input. EvidenceModal toont DataSnapshot drilldown per
+observation. TanStack Query 5 hooks (`useStrategyObservations`,
+`useRunStrategyAnalyst`, `usePatchObservation`). `AlignmentTab` union type
+uitgebreid met `brandclaw` variant.
+
+- Task: [tasks/strategy-analyst-stub.md](tasks/strategy-analyst-stub.md) (Phase A vervolg)
+- ADR: [adr/2026-05-08-brandclaw-agent-architectuur.md](adr/2026-05-08-brandclaw-agent-architectuur.md)
+- Spec: -
+- Commit: `8f09d2e3`
+
 ### 256. Brandclaw tool-orchestrator — Anthropic agent-loop + 4 query-tools live
 
 Track B vervolg op data-collection (#255). Orchestrator is volledig
