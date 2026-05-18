@@ -11,6 +11,7 @@ import {
   ClipboardCheck,
   FileSearch,
   BarChart3,
+  Brain,
 } from 'lucide-react';
 import {
   EmptyState,
@@ -46,6 +47,7 @@ import { BrandAuditView } from './BrandAuditView';
 import { ContentReviewTab } from './ContentReviewTab';
 import { InsightsTab } from './InsightsTab';
 import { VoiceBaseline1Pager } from '@/features/brand-alignment/components/VoiceBaseline1Pager';
+import { BrandclawObservationsTab } from '@/features/brand-alignment/components/BrandclawObservationsTab';
 
 // ─── Relative time helper ───────────────────────────────────
 
@@ -216,6 +218,7 @@ export function BrandAlignmentPage() {
           { key: 'audit' as AlignmentTab, label: 'Brand Audit', icon: ClipboardCheck },
           { key: 'review' as AlignmentTab, label: 'Content Review', icon: FileSearch },
           { key: 'insights' as AlignmentTab, label: 'Insights', icon: BarChart3 },
+          { key: 'brandclaw' as AlignmentTab, label: 'Strategy Analyst', icon: Brain },
         ]).map((tab) => {
           const isActive = activeTab === tab.key;
           const TabIcon = tab.icon;
@@ -300,6 +303,11 @@ export function BrandAlignmentPage() {
       {/* ── Insights tab — pilot-feedback dashboard ──────── */}
       {activeTab === 'insights' && (
         <InsightsTab />
+      )}
+
+      {/* ── Brandclaw Strategy Analyst tab (Phase A) ─────── */}
+      {activeTab === 'brandclaw' && (
+        <BrandclawObservationsTab />
       )}
 
       {/* ── Scan Progress Modal ──────────────────────────── */}

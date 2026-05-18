@@ -37,7 +37,56 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
-### 257. Fix — Auto-iterate "Verbeter automatisch" gate + silent-iter scope-fix
+### 262. Brandclaw Strategy Analyst — model-ID hotfix
+
+Anthropic API gaf 404 op `claude-sonnet-4-6-20251001` (de dated suffix is geen
+geldige model-ID). DEFAULT_MODEL in `agent-loop.ts` aangepast naar
+`claude-sonnet-4-6`. Real-API smoke daarna 17/17 pass tegen Branddock Demo
+workspace (4 tool-calls, $0.0549 cost, 24.9s latency, 0 false-positive
+observations door two-reasons-test enforcement).
+
+- Task: [tasks/strategy-analyst-stub.md](tasks/strategy-analyst-stub.md) (Phase B vervolg)
+- ADR: -
+- Spec: -
+- Commit: `d488298c`
+
+### 261. Brandclaw Strategy Analyst Phase B — 4 extra dimensions + UI sort/group
+
+Phase B van de Strategy Analyst-stub levert de overige 4 observation-dimensies:
+`fidelity_decline` (F-VAL composite-decline ≥10pt/30d per contentType),
+`review_pattern` (top-3 finding-categorie herhaalt over 2-4 weken),
+`alignment_gap` (AlignmentScan severity-distribution stagnant/worsening over
+60+d met manual-fix-rate <50%), `publish_quality_trend` (publish-time F-VAL
+daalt OF PublishGateOverride frequency stijgt). System-prompt bump
+`strategy-analyst@0.1.0` → `0.2.0` met deterministische volgorde van
+prompt-fragments zodat `computePromptVersion` stabiel blijft. UI: view-mode
+toggle (Group per dimension / Severity flat-list) met SEVERITY_RANK comparator
+(HIGH → MEDIUM → LOW, dan newest-first). Smoke-test breidt assertion uit naar
+alle 5 dimension-fragments.
+
+- Task: [tasks/strategy-analyst-stub.md](tasks/strategy-analyst-stub.md) (Phase B)
+- ADR: [adr/2026-05-08-brandclaw-agent-architectuur.md](adr/2026-05-08-brandclaw-agent-architectuur.md)
+- Spec: -
+- Commit: `58094f8e`
+
+### 260. Brandclaw Strategy Analyst Phase A vervolg — UI Tab 5
+
+Phase A's UI-laag gewired: BrandclawObservationsTab in BrandAlignmentPage als
+Tab 5 "Strategy Analyst" met Brain-icon. GET `/api/brandclaw/observations`
+met dimension/severity/includeDismissed filters; PATCH
+`/api/brandclaw/observations/[id]` met markRead/markActed/dismiss/undo
+actions. ObservationCard rendert severity/confidence badges + action-buttons
++ dismiss-reden input. EvidenceModal toont DataSnapshot drilldown per
+observation. TanStack Query 5 hooks (`useStrategyObservations`,
+`useRunStrategyAnalyst`, `usePatchObservation`). `AlignmentTab` union type
+uitgebreid met `brandclaw` variant.
+
+- Task: [tasks/strategy-analyst-stub.md](tasks/strategy-analyst-stub.md) (Phase A vervolg)
+- ADR: [adr/2026-05-08-brandclaw-agent-architectuur.md](adr/2026-05-08-brandclaw-agent-architectuur.md)
+- Spec: -
+- Commit: `8f09d2e3`
+
+### 259. Fix — Auto-iterate "Verbeter automatisch" gate + silent-iter scope-fix
 
 User klikte op de "Verbeter automatisch" CTA in canvas FidelityScoreBar (long-form
 deliverable, blog/landing-page/newsletter) en kreeg `"Niet genoeg content om te
@@ -66,7 +115,7 @@ deliverables.
 - Plan: `~/.claude/plans/eager-hatching-planet.md`
 - Commit: `cdd0e074`
 
-### 256. Fix — Effie-rubric leak uit content-flow Strategy-step (P2 shared-pipeline)
+### 258. Fix — Effie-rubric leak uit content-flow Strategy-step (P2 shared-pipeline)
 
 Bugfix tijdens handmatige content-items-test-coverage Ronde 1: `linkedin-post`
 Strategy-step bevatte letterlijk "effie-waardig" in de rationale-tekst — leak
@@ -90,7 +139,7 @@ smoke-cases groen. STOP-GATE genomen — representanten-test kan hervatten.
 - Follow-ups out-of-scope: veldnaam-rename `effieRationale` → `strategicQualityRationale`, hardcoded UI-labels in ConceptReviewView/ReviewStep/StrategySection, studio promo-video bio-leak
 - Commit: `e849a1ed`
 
-### 255. Track A code-debt phase close-out — Cluster A + B + C done
+### 257. Track A code-debt phase close-out — Cluster A + B + C done
 
 Closure-entry voor `code-debt-pre-launch-cleanup`. Alle drie de clusters (A
 persist-TODOs / B API-deprecation / C cleanup) zijn afgerond binnen één
@@ -139,6 +188,91 @@ sessie 2026-05-17 plus eerder werk op 2026-05-12.
 - ADR: -
 - Spec: -
 - Commits: 9f9b5ad2 (C: error-bubble + urgencyLevel), da9fc408 (B: analyze→synthesize), 9556016f (A: fix-options cache), 3dae25c6 (A: persona avatar storage), 5e919c5e (A: PM diff)
+### 256. Brandclaw tool-orchestrator — Anthropic agent-loop + 4 query-tools live
+
+Track B vervolg op data-collection (#255). Orchestrator is volledig
+functioneel; `strategy-analyst-stub` (eerste agent-node) heeft hiermee
+alle benodigde infrastructuur. Twee sub-fasen, beide groen.
+
+**Fase 1 (commit b426d064)** — orchestrator infrastructure:
+- 5 modules in `src/lib/brandclaw/orchestrator/`: types / tool-registry /
+  cost-calculator / persistence / agent-loop + public index.ts.
+- NodeType union (strategy_analyst / campaign_builder / measurement_eval
+  / optimization), BrandclawRunContext, BrandclawTool, AgentLoopResult.
+- Tool-registry per-node-type met cross-node isolation.
+- Cost-calculator: Sonnet 4.6 / Opus 4.7 / Haiku 4.5 pricing + fallback.
+  6-decimal precision matched Decimal(10,6).
+- Persistence: createRunRow placeholder + persistRun finalize in
+  transaction. ToolCallTrace per-entry getrunceerd naar 4KB voor jsonb
+  size-budget.
+- Agent-loop: multi-turn Anthropic tool-use met hard-timeout (5min),
+  max-tool-calls (20), parallel tool-execute per turn, isError-result
+  voor unknown/throwing tools, lenient JSON-parse voor observations.
+
+**Fase 2 (deze commit)** — query-tools + telemetry:
+- 4 strategy_analyst tools: `query_alignment_history`,
+  `query_content_fidelity`, `query_review_history`,
+  `query_brand_voice_drift` (default 90d window). Allen wrappen
+  data-source via registry.
+- tools/index.ts: side-effect register-imports.
+- Agent-loop emit `brandclaw_run_completed` PostHog event fire-and-
+  forget na persistRun.
+
+**Smoke-test**: 23/23 → 29/29 groen. Tool-registry isolation +
+cost-calculator + persistence E2E + v1 tools auto-register +
+empty-workspace query execute. Anthropic API niet aangeroepen — real-API
+test deferred naar strategy-analyst-stub.
+
+**Unblockt**: `strategy-analyst-stub` (Phase 3 first node).
+
+- Task: [tasks/done/brandclaw-tool-orchestrator.md](tasks/done/brandclaw-tool-orchestrator.md)
+- ADR: [adr/2026-05-08-brandclaw-agent-architectuur.md](adr/2026-05-08-brandclaw-agent-architectuur.md)
+- Spec: -
+- Commits: `b426d064` (Fase 1) + commit deze entry
+
+### 255. Brandclaw data-collection — DataSnapshot + 4 sources + Strategy Observation schema
+
+Track B foundation pre-launch. ADR-2 schema-laag volledig live op
+worktree `branddock-brandclaw`. Twee sub-fasen, beide groen.
+
+**Schema (2 nieuwe models + 1 input-laag, 2 enums)**:
+- `DataSnapshot` — immutable point-in-time inputs (workspaceId,
+  sourceType TEXT, sourceId, payload JSONB, snapshotAt). Indexed op
+  (workspaceId, sourceType, snapshotAt) + (sourceType, sourceId).
+- `StrategyObservation` — versioned agent-output (agentVersion +
+  promptVersion stempels voor drift-detection + A/B-testing).
+  Evidence-veld linkt DataSnapshot rows.
+- `StrategyObservationRun` — run-metadata met toolCallTrace JSON,
+  totalCostUsd Decimal(10,6), latencyMs, triggerType.
+- Enums ObservationSeverity (HIGH/MEDIUM/LOW) + Confidence per
+  two-reasons-toets §11 — bewust apart van IssueSeverity.
+- 2 formele Prisma migrations.
+
+**Time-window primitives** (`src/lib/brandclaw/time-window.ts`): 4
+helpers (`sinceNDaysAgo` / `between` / `sinceVersion` / `allTime`)
+met `TimeWindow.toWhere(field)` Prisma-fragment-helper.
+
+**DataSource registry + 4 v1 sources**:
+- Singleton registry met lazy-init via `getDataSourceRegistry()`,
+  importeert alle 4 v1 sources parallel via Promise.all.
+- `alignment-scan-source.ts`: AlignmentScan + issue-counts per severity.
+- `content-fidelity-source.ts`: ContentFidelityScore + BrandReviewFinding
+  per severity/category.
+- `review-log-source.ts`: ContentReviewLog (Δ-1) met source-mix +
+  duration + finding-distribution.
+- `voiceguide-source.ts`: drift via ResourceVersion VOICEGUIDE-historie
+  + current voiceguide-state als baseline voor diff-walk.
+
+**Smoke-test**: 16/16 (Fase 1) → 29/29 (Fase 2) groen.
+
+**Unblockt**: `brandclaw-tool-orchestrator` (volgende task — Anthropic
+tool-use die deze 4 sources via tools exposed aan Strategy Analyst
+agent-loop).
+
+- Task: [tasks/done/brandclaw-data-collection.md](tasks/done/brandclaw-data-collection.md)
+- ADR: [adr/2026-05-08-brandclaw-agent-architectuur.md](adr/2026-05-08-brandclaw-agent-architectuur.md)
+- Spec: -
+- Commits: `90aa24ab` (Fase 1) + `1088b83a` (Fase 2)
 
 ### 254. Content-test sub-sprint #6.A — checkpoint-gates volledig gewired + closed
 

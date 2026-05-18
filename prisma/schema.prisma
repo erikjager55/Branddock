@@ -275,6 +275,12 @@ model Workspace {
   // Brand Voiceguide (parallel aan brandStyleguide — verbale identity)
   brandVoiceguide BrandVoiceguide?
 
+  // Brandclaw — immutable point-in-time inputs voor Strategy Analyst observations
+  // (ADR 2026-05-08-brandclaw-agent-architectuur).
+  dataSnapshots            DataSnapshot[]
+  strategyObservations     StrategyObservation[]
+  strategyObservationRuns  StrategyObservationRun[]
+
   // Per-type fidelity thresholds (content-test #6.B)
   contentTypeThresholds WorkspaceContentTypeThreshold[]
 
@@ -5608,4 +5614,140 @@ model WorkspaceContentTypeThreshold {
 
   @@unique([workspaceId, contentTypeId])
   @@index([workspaceId])
+}
+
+// =============================================================
+// Brandclaw — Strategy Analyst foundation (ADR 2026-05-08)
+// =============================================================
+// Immutable point-in-time inputs voor agent-reasoning. Elke
+// StrategyAnalyst-run materializeert de data die de agent zag in
+// DataSnapshot-rijen zodat past observations reproduceerbaar zijn
+// nadat live tables muteren. Payload is JSON-serialized; large
+// content-text wordt afgeknipt met char-offset voor herleidbaarheid.
+//
+// SourceType waarden (v1): 'alignment_scan' / 'content_fidelity' /
+// 'review_log' / 'voiceguide'. Uitbreiding zonder schema-migration
+// — gewoon een nieuwe source-accessor toevoegen aan de registry.
+// =============================================================
+
+model DataSnapshot {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// Source-type identifier. Geen DB-enum zodat nieuwe sources zonder
+  /// migration kunnen worden toegevoegd; validation via TS-union in
+  /// data-source-registry.
+  sourceType String
+
+  /// ID van de live-row die werd gesnapshot. Niet FK want source-type
+  /// bepaalt welk model dit is — registry routeert.
+  sourceId String
+
+  /// Immutable copy van source-data op snapshot-moment.
+  payload Json
+
+  snapshotAt DateTime @default(now())
+
+  @@index([workspaceId, sourceType, snapshotAt])
+  @@index([sourceType, sourceId])
+}
+
+// =============================================================
+// Brandclaw — Strategy Observations (ADR 2026-05-08)
+// =============================================================
+// Versioned + immutable agent-output. Elke observation is gestempeld
+// met agentVersion + promptVersion zodat drift-detection en
+// A/B-testing van prompt-changes mogelijk zijn over tijd. Evidence-
+// veld linkt DataSnapshot-rijen die de redenering ondersteunden,
+// waardoor past observations point-in-time reproduceerbaar zijn.
+// =============================================================
+
+enum ObservationSeverity {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ObservationConfidence {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model StrategyObservation {
+  id          String @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  runId String
+  run   StrategyObservationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  /// Observation-dimensie: 'voice_drift' / 'fidelity_decline' /
+  /// 'review_pattern' / 'alignment_gap' / future dimensies. Plain TEXT
+  /// zodat nieuwe dimensies geen migration vereisen.
+  dimension String
+
+  severity   ObservationSeverity
+  /// Two-reasons-toets (methodology §11) confidence.
+  confidence ObservationConfidence
+
+  summary  String @db.Text
+  /// Citation-keys naar DataSnapshot rows + tool-call-trace.
+  /// Shape: { snapshotIds: string[]; toolCalls?: Array<{name,inputHash}> }.
+  evidence Json
+
+  /// Semver van Analyst-implementatie. Drift-detection over tijd.
+  agentVersion  String
+  /// Hash of versie-tag van system-prompt. A/B-testing handvat.
+  promptVersion String
+
+  createdAt DateTime @default(now())
+
+  /// User-flag: observation is gelezen door owner.
+  markedReadAt  DateTime?
+  /// User-flag: gebruiker heeft het probleem extern opgelost.
+  markedActedAt DateTime?
+  /// User-flag: observation gemarkeerd als niet-relevant of false-positive.
+  /// Sluit aan op confidence-calibration roadmap (LATER).
+  dismissedAt   DateTime?
+  /// Optionele reason — voedt promptVersion-iteration cycle.
+  dismissReason String?
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, dimension])
+  @@index([workspaceId, dismissedAt])
+  @@index([runId])
+}
+
+model StrategyObservationRun {
+  id          String @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// 'manual' / 'scheduled' / 'event_driven'. Plain TEXT zodat nieuwe
+  /// triggers (bv. 'webhook') zonder migration kunnen worden toegevoegd.
+  triggerType String
+  /// User-id voor manual-runs, cron-name voor scheduled, event-id voor
+  /// event-driven. NULL bij autonomous startup-runs.
+  triggerSource String?
+
+  agentVersion  String
+  promptVersion String
+
+  /// Sequence van tool-calls + results voor audit + replay.
+  /// Shape: Array<{ name, input, result, latencyMs, errorCode? }>.
+  toolCallTrace Json
+
+  /// Total Anthropic-API cost (input+output tokens × model-pricing).
+  totalCostUsd Decimal @db.Decimal(10, 6)
+  /// Wall-clock duration agent-loop start → end.
+  latencyMs    Int
+
+  createdAt DateTime @default(now())
+
+  observations StrategyObservation[]
+
+  @@index([workspaceId, createdAt])
+  @@index([triggerType])
 }
