@@ -7,14 +7,15 @@
 
 ## Huidige fase
 
-**Pre-launch — peildatum 2026-05-12 EOD: sprint #4 ~95% klaar + sprint #5 Track A vooruitgelopen**
+**Pre-launch — peildatum 2026-05-18: Sprint #4 dicht + Track A 5/6 + Track B Phase A+B gemerged**
 
 Actuele sprint-status:
 
-- ✅ Sprint #4 quick-wins (4/5): cron-infra ADR, Surface C smoke, claw-page-awareness smoke, locale-picker smoke, code-debt 2/12. **Open**: testplan-representanten 8 stuks + STOP-GATE bug-log review. VB Compose/Trained smoke deferred post-vercel.
-- ✅ Sprint #5 Track A vooruitgelopen 2026-05-12: `content-test-foundation-5A`, `content-test-goldens-5B`, `content-test-auto-iterate-6B` (5/7 backend, wiring + dashboard deferred), `compose-pipeline-gemini-migration`, `claw-page-awareness-vervolg`. **In progress**: `content-test-wiring-gates-6A`.
-- ⏸️ Track B (worktree `branddock-brandclaw`): 0 eigen commits, **49 commits achter op main**. Rebase nodig voor start.
-- ⏸️ Track C (worktree `branddock-launch`): 0 eigen commits, **49 commits achter op main**. Rebase nodig voor start.
+- ✅ Sprint #4 quick-wins (5/5): cron-infra ADR, Surface C smoke, claw-page-awareness smoke, locale-picker smoke, code-debt 2/12 + close-out cluster A/B/C (#257). VB Compose/Trained smoke deferred post-vercel. STOP-GATE genomen 2026-05-17 (P2 shared-pipeline `effie-waardig` leak fixt via prompt-guards + sanitizer, commit `e849a1ed` = entry #258). Auto-iterate variant-clobber fix gemerged 2026-05-17 (`cdd0e074` = #259).
+- ✅ Sprint #5 Track A vooruitgelopen: `content-test-foundation-5A`, `content-test-goldens-5B`, `content-test-auto-iterate-6B` (5/7 backend, wiring + dashboard deferred), `content-test-wiring-gates-6A` ✅, `compose-pipeline-gemini-migration`, `claw-page-awareness-vervolg`. **Open**: 6B wiring/dashboard panels + bugfix-cluster uit Ronde 1.
+- ✅ **Track B Phase A + B gemerged 2026-05-18** (merge-commit `a0e59a5b`): `brandclaw-data-collection`, `brandclaw-tool-orchestrator`, `strategy-analyst-stub` Phase A (node entry + manual trigger + UI Tab 5) + Phase A vervolg + Phase B (4 dimensions + UI sort/group) + model-ID hotfix (#260-262). Worktree `branddock-brandclaw` blijft actief voor Phase C.
+- ⏸️ **Track B Phase C open** (5-7d, in `branddock-brandclaw` worktree): Vercel Cron weekly `0 9 * * 1` + per-workspace concurrency-cap + cost-budget alerts (>$10/ws/maand → PostHog) + BB pilot smoke met productie-data. **Sequential dep**: Vercel Cron heeft `vercel-deployment` nodig — Track C moet eerst.
+- ⏸️ Track C (worktree `branddock-launch`): 0 eigen commits, **~58 commits achter op main** (49 + 9 brandclaw). Rebase nodig voor start. Hard launch-blocker.
 
 Eerdere afronding (sprint #1-3):
 
@@ -45,18 +46,18 @@ Pilot-start projectie: **+9-11 weken** (content-test verbeterplan Optie B Full g
 
 ## Top 3 actieve pre-launch tasks
 
-> Sprint #4 dichten + Track B/C activeren. Track A heeft sprint #5 al deels verlegd. Zie roadmap.md NOW voor volledige sprint-volgorde.
+> Effie-blocker weg + Track B Phase A+B gemerged. Kritieke pad voor pilot ligt nu bij Track C (vercel = hard launch-blocker, ontgrendelt zowel pilot-onboarding als Phase C Vercel Cron).
 
-1. **testplan-content-items Ronde 1 — 8 representanten** (~1d) — blog-post / linkedin-post / search-ad / newsletter / landing-page / explainer-video / one-pager / press-release. Sluit sprint #4 af → STOP-GATE bug-log review + sprint #5 scope-bepaling.
+1. **Track C activeren — `vercel-deployment`** (3d) — eerst `git rebase main` op worktree `branddock-launch` (~58 commits achter). Hard launch-blocker. Ontgrendelt `pilot-onboarding-better-brands` (2d) én `Phase C Vercel Cron` van Track B.
 
-2. **Track C activeren — `vercel-deployment`** (3d) — eerst `git rebase main` op worktree `branddock-launch` (49 commits achter). Hard launch-blocker, ontgrendelt `pilot-onboarding-better-brands` (2d).
+2. **testplan-content-items Ronde 1 — 8 representanten** (~1d) — blog-post / linkedin-post / search-ad / newsletter / landing-page / explainer-video / one-pager / press-release. STOP-GATE is genomen (effie-fix gemerged), kan hervatten. Effie-fix wordt mee-geverifieerd tijdens deze sweep (DOM grep `/effie/gi` per representant op Strategy-step).
 
-3. **Track B activeren — `brandclaw-tool-orchestrator`** (3-5d) — eerst `git rebase main` op worktree `branddock-brandclaw` (49 commits achter). Foundation voor `strategy-analyst-stub` (langste kritieke pad, 20-27d).
+3. **Track B Phase C** (5-7d, in `branddock-brandclaw` worktree) — Vercel Cron weekly + per-workspace concurrency-cap + cost-budget alerts naar PostHog (>$10/ws/maand) + BB pilot smoke met productie-data. **Wacht op vercel-deployment** voor de Cron-config + productie-smoke.
 
-**Track A vervolg (binnen sprint #5)**:
-- `content-test-wiring-gates-6A` (in_progress) — afmaken
+**Track A vervolg (binnen sprint #5/6)**:
 - `content-test-auto-iterate-6B` wiring + dashboard panels (deferred deel afmaken)
-- `content-items-test-coverage` full 53-types Ronde 1 (parallel met 5.B)
+- `code-debt-pre-launch-cleanup` overige clusters (2/12 done → close-out per #257 deed grootste deel; resterende fill-in)
+- `content-items-test-coverage` full 53-types Ronde 1 + Ronde 2
 
 **Track C follow-on**:
 - `stripe-billing-live` (1w) parallel mogelijk
@@ -99,18 +100,31 @@ Volledige gids: [`docs/playbooks/feature-discovery.md`](docs/playbooks/feature-d
 
 ---
 
-## Recent afgeronde tasks (sessies 2026-05-10 t/m 2026-05-12)
+## Recent afgeronde tasks (sessies 2026-05-10 t/m 2026-05-18)
 
-> Track A op `main`. 243 commits in laatste 7 dagen.
+> Track A op `main`. Track B Phase A+B gemerged via `a0e59a5b` op 2026-05-18.
+
+**Track B landing 2026-05-18** (changelog #255/#256/#260/#261/#262 na renumber-collision):
+- `brandclaw-data-collection` ✅ — DataSnapshot model + registry + alignment + 4 v1 sources live
+- `brandclaw-tool-orchestrator` ✅ — types + registry + agent-loop + persistence + 4 query-tools + PostHog
+- `strategy-analyst-stub` Phase A ✅ — node entry + manual trigger + UI Tab 5
+- `strategy-analyst-stub` Phase A vervolg ✅ — UI uitbreiding
+- `strategy-analyst-stub` Phase B ✅ — 4 extra dimensions + UI sort/group
+- Brandclaw model-ID hotfix ✅ (correct Anthropic agent-loop default)
+
+**Track A 2026-05-17 (Sprint #4 close + bugfixes)**:
+- `code-debt-pre-launch-cleanup` ✅ close-out (cluster A persist-TODOs + B API-deprecation + C cleanup, #257)
+- Effie-rubric leak fix in content-flow Strategy ✅ (#258, commit `e849a1ed`) — prompt-guards + `scrubStrategyLayer()` utility + 30/30 smoke groen
+- Auto-iterate gate-floor + silent-iter scope-fix ✅ (#259, `cdd0e074`) — variant-clobber + long-form shrinkage bugfix
 
 **Sprint #4 quick-wins (2026-05-10/12)**:
 - Cron-infra ADR — Vercel Cron continueren (`docs/adr/2026-05-12-cron-infra.md`)
 - Browser-smoke partial: Surface C ✅ + claw-page-awareness ✅ + locale-picker ✅. VB Compose/Trained deferred post-vercel.
-- Code-debt 2/12 done
 
 **Sprint #5 Track A vooruitgelopen (2026-05-12)**:
 - `content-test-foundation-5A` ✅ — Layer 1 generic property evals + Prompt Registry UI v1
 - `content-test-goldens-5B` ✅ — chain-of-prompts upgrades (4 batches A-D) + golden sets via Promptfoo
+- `content-test-wiring-gates-6A` ✅ — alle 8 gates gewired
 - `content-test-auto-iterate-6B` ✅ partial (5/7 backend) — feedback-compiler + auto-iterate orchestrator + edit-distance + per-type thresholds + Canvas SSE + InsightsTab dashboard. Wiring + dashboard panels deferred.
 - `compose-pipeline-gemini-migration` ✅ — FAL Flux Pro Kontext → Gemini nano-banana
 - `claw-page-awareness-vervolg` ✅ — Step1Context + PersonaDetail + BrandAssetDetail wiring

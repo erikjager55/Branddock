@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Laatst bijgewerkt**: 2026-05-12 (content-test verbeterplan Optie B Full geaccepteerd — Track A draagt nu 6 sub-sprints + chain-of-prompts + multi-modal upgrades, totaal ~40d. Pilot-projectie verschoven naar +9-11 weken).
+> **Laatst bijgewerkt**: 2026-05-18 (Track B Phase A + B gemerged naar main via `a0e59a5b` — `brandclaw-data-collection` ✅, `brandclaw-tool-orchestrator` ✅, `strategy-analyst-stub` Phase A + A vervolg + B ✅; Phase C 5-7d open in `branddock-brandclaw` worktree, sequential dep op vercel-deployment. Sprint #4 dicht 2026-05-17 — STOP-GATE genomen via Effie-rubric leak fix + auto-iterate variant-clobber fix).
 > **Update-cadans**: Now continu (na elke afgeronde task), Next wekelijks (vrijdagretro), Later maandelijks.
 > **Bron**: gedistilleerd uit oude TODO.md, BRANDCLAW-ROADMAP.md, STRATEGISCHE-VERVOLGSTAPPEN.md (allen in `docs/archive/old-lists/`).
 
@@ -28,7 +28,7 @@
 | **Phase 0 — Foundation** | [`tech-debt-any-types`](tasks/done/tech-debt-any-types.md), [`claw-page-awareness`](tasks/done/claw-page-awareness.md) (scope-cut: foundation only) | 3-5d | ✅ done 2026-05-08 |
 | **Phase 1 — F-VAL extension** | [`bv-wire-w1-full-centroid`](tasks/done/bv-wire-w1-full-centroid.md) ✅, [`heuristics-packages-multilingual`](tasks/done/heuristics-packages-multilingual.md) ✅ (Δ-2 done), [`voice-baseline-1pager`](tasks/done/voice-baseline-1pager.md) ✅ (Δ-3 done) | 8-11d | ✅ done 2026-05-08 — Phase 2 review-surfaces unblocked |
 | **Phase 2 — Review surfaces** | Δ-1 Surface C ✅ (Brand Alignment Tab 3), Δ-1 Surface D ✅ (Brand Assistant chat-tool), Δ-1 Surface E ✅ (PublishGate findings-block), Δ-1 cleanup-pack ✅, [`brand-alignment-insights-tab`](tasks/done/brand-alignment-insights-tab.md) ✅, [`canvas-inline-edit-overlays`](tasks/done/canvas-inline-edit-overlays.md) ✅, claw-page-awareness vervolg-cluster (open) | 13-17d | Δ-1 + Insights done; claw-vervolg task-file volgt. **Δ-4 verplaatst naar post-launch** 2026-05-12 — geen pilot-evidence dat F-VAL gaps heeft die een 2nd-opinion zou vangen; preventief bouwen risico op false-positive moeheid + cost/latency tax zonder bewezen baat. |
-| **Phase 3 — Strategy Analyst** | brandclaw-data-collection, Strategy Analyst stub (agent-architecture v1) | 20-27d | task-files volgen |
+| **Phase 3 — Strategy Analyst** | brandclaw-data-collection ✅, brandclaw-tool-orchestrator ✅, strategy-analyst-stub Phase A+B ✅ (gemerged 2026-05-18 via `a0e59a5b`), Phase C open (Vercel Cron + concurrency-cap + cost-budget alerts + BB pilot smoke) | 15-20d landed + 5-7d resterend | ✅ Phase A+B done; Phase C wacht op `vercel-deployment` |
 
 **ADR's**:
 - ✅ [`2026-05-08-fval-output-schema-bevindingen`](docs/adr/2026-05-08-fval-output-schema-bevindingen.md) — additive `BrandReviewFinding` model
@@ -59,9 +59,9 @@
 
 ---
 
-## ⚡ NOW (pre-launch — 4 sprints, ~9-11 weken)
+## ⚡ NOW (pre-launch — sprint #6-7, ~5-7 weken resterend)
 
-Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit roadmap-inventaris naar pre-launch + Strategy Analyst full scope + Competitor AI dubbel + **content-test verbeterplan Optie B Full** (chain-of-prompts + multi-modal). 3 parallelle tracks via worktrees. Pilot-projectie: **+9-11 weken**.
+Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit roadmap-inventaris naar pre-launch + Strategy Analyst full scope + Competitor AI dubbel + **content-test verbeterplan Optie B Full** (chain-of-prompts + multi-modal). 3 parallelle tracks via worktrees. Pilot-projectie: **+5-7 weken vanaf 2026-05-18** (eerder +9-11 weken vanaf 2026-05-12; Track B Phase A+B 15-20d landed in 6 dagen via parallel-track, +2 weken winst).
 
 **Track A — Quality + Validation** (main branch)
 
@@ -82,12 +82,14 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | **`video-chain-explainer-showcase`** | Multi-modal: full 5-staps chain (Plan/Script-per-scene/Storyboard/Coherence/Assembly) voor explainer-video als showcase. Lightweight chains voor video-ad + tiktok-script. Plan §3.0.5. | ~4d | #5-6 fill-in | open task-file |
 | **`image-quality-chain`** | Multi-modal: negative prompts + multi-candidate (3-4) selection UI + visual-fidelity dimension-breakdown + image-to-image refine-loop + OCR text-check + brand-color validation. Plan §3.0.5. | ~6d | #6 fill-in | open task-file |
 
-**Track B — Brandclaw + Competitive AI** (worktree `branddock-brandclaw`)
+**Track B — Brandclaw + Competitive AI** (worktree `branddock-brandclaw`, Phase A+B gemerged 2026-05-18)
 | ID | Titel | Effort | Sprint | Status |
 |---|---|---|---|---|
-| [`brandclaw-tool-orchestrator`](tasks/brandclaw-tool-orchestrator.md) | Shared Anthropic tool-orchestrator voor alle Brandclaw nodes. Foundation. | 3-5d | #5 | open task-file |
-| [`strategy-analyst-stub`](tasks/strategy-analyst-stub.md) | Strategy Analyst node — leest data, suggesteert insights. Volledige MVP-scope pre-launch (beslissing 2026-05-12). | 20-27d | #5-7 | open task-file |
-| `competitor-ai-event-classifier` | AI-pattern-detector voor 5 strategische CompetitorActivity-types (CATEGORY_REPOSITIONING / VISUAL_REBRAND / etc.). Idea: `tasks/_drafts/idea-competitor-ai-event-classifier.md` ready-to-build. | 3-5d | #5-6 | needs task-file via technical-planner |
+| `brandclaw-data-collection` | DataSnapshot model + registry + 4 v1 sources live | 5-7d | #5 | ✅ done 2026-05-18 (#255) |
+| `brandclaw-tool-orchestrator` | Shared Anthropic tool-orchestrator + agent-loop + 4 query-tools + PostHog | 3-5d | #5 | ✅ done 2026-05-18 (#256) |
+| [`strategy-analyst-stub`](tasks/strategy-analyst-stub.md) Phase A+B | Strategy Analyst node — node entry + manual trigger + UI Tab 5 + 4 dimensions + sort/group | 15-20d landed | #5-6 | ✅ done 2026-05-18 (#260/#261/#262) |
+| `strategy-analyst-stub` Phase C | Vercel Cron weekly `0 9 * * 1` + per-workspace concurrency-cap + cost-budget alerts (>$10/ws/maand → PostHog) + BB pilot smoke met productie-data | 5-7d | #6-7 | open — **sequential dep op vercel-deployment** |
+| `competitor-ai-event-classifier` | AI-pattern-detector voor 5 strategische CompetitorActivity-types (CATEGORY_REPOSITIONING / VISUAL_REBRAND / etc.). Idea: `tasks/_drafts/idea-competitor-ai-event-classifier.md` ready-to-build. | 3-5d | #6 | needs task-file via technical-planner |
 | `competitor-content-item-discovery` | Discovery van competitor-content via crawl/RSS. Idea: `tasks/_drafts/idea-competitor-content-item-discovery.md` ready-to-build. | onbekend (5d?) | #6-7 | needs task-file via technical-planner |
 | ~~`cron-infra-adr`~~ | ✅ Done 2026-05-12 — Vercel Cron continueren, zie `docs/adr/2026-05-12-cron-infra.md` | ~2u | #4 | ✅ done |
 
@@ -102,17 +104,17 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 
 ### Sprint-volgorde
 
-**Sprint #4 — Validation + Quick wins** (~95% done per 2026-05-12)
+**Sprint #4 — Validation + Quick wins** (DICHT per 2026-05-17)
 1. ✅ Browser-smoke batch (~1-2u) — Surface C + claw-page-awareness + locale-picker done. VB Compose/Trained deferred post-vercel.
 2. ✅ Cron-infra ADR (~2u) — Vercel Cron continueren (`docs/adr/2026-05-12-cron-infra.md`)
-3. ✅ Code-debt 2/12 quick wins: design-tokens cleanup + variant-selection persist
-4. ⏳ testplan-content-items Ronde 1 — 8 representanten (~1d) — open, sluit sprint #4 af
-5. **STOP-GATE** (na #4): review bug-log, plan sprint #5 bugfix-scope
+3. ✅ Code-debt 2/12 quick wins + close-out cluster A/B/C (#257, 2026-05-17)
+4. ✅ STOP-GATE genomen 2026-05-17: P2 [shared-pipeline] Effie-rubric leak gefixt (#258 `e849a1ed`) + auto-iterate variant-clobber + long-form shrinkage fix (#259 `cdd0e074`)
+5. ⏳ testplan-content-items Ronde 1 — 8 representanten (~1d) — **kan hervatten**, effie-fix mee-verifiëren via DOM grep tijdens normale sweep
 
-**Sprint #5 — Bugfix + Foundation start** (~2 weken, parallel-start; Track A al vooruit gestart 2026-05-12)
-- Track A: ✅ 5A foundation + ✅ 5B goldens + ✅ 6B partial + ✅ compose-Gemini + ✅ claw-page-awareness vervolg. **Open**: 6A wiring-gates (in_progress) + 6B wiring/dashboard finish + bugfix-cluster uit testplan + full 53-types Ronde 1.
-- Track B: ⏸️ niet gestart (worktree 49 commits behind main). Rebase + brandclaw-tool-orchestrator (3-5d) + competitor-ai-event-classifier task-file via technical-planner.
-- Track C: ⏸️ niet gestart (worktree 49 commits behind main). Rebase + vercel-deployment (3d) start.
+**Sprint #5 — Bugfix + Foundation start** (Track A klaar, Track B Phase A+B gemerged 2026-05-18)
+- Track A: ✅ 5A foundation + ✅ 5B goldens + ✅ 6A wiring-gates + ✅ 6B partial + ✅ compose-Gemini + ✅ claw-page-awareness vervolg. **Open**: 6B wiring/dashboard finish + bugfix-cluster uit Ronde 1 + full 53-types Ronde 1.
+- Track B: ✅ Phase A+B gemerged via `a0e59a5b` — data-collection + tool-orchestrator + strategy-analyst Phase A+vervolg+B + model-ID hotfix (#255/256/260/261/262). **Open**: Phase C in worktree `branddock-brandclaw` — sequential dep op Track C.
+- Track C: ⏸️ niet gestart (worktree ~58 commits behind main inclusief brandclaw-merge). Rebase + vercel-deployment (3d) start. **Hard launch-blocker + ontgrendelt Phase C Vercel Cron.**
 
 **Sprint #6 — Feature build + Infra** (~3 weken, 3 parallel tracks)
 - Track A: testplan Ronde 1 finish + persist-TODOs cluster + Ronde 2 generator-evaluatie
@@ -133,6 +135,24 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | Retention-ADR (data-lifecycle snapshot-tabel) | Wanneer snapshot-tabel >100k rijen of privacy-incident |
 
 > **Δ-4 PublishGate 2nd-opinion verplaatst naar post-launch (2026-05-12)** — geen pilot-evidence dat F-VAL gaten heeft die een 2nd-opinion zou vangen. Pas overwegen na pilot-data.
+
+**Recent voltooid (Track B Phase A+B, gemerged 2026-05-18 via `a0e59a5b`)**
+
+> Track B parallel-track op `track/brandclaw` worktree, 9 commits gemerged naar main. Changelog #255/#256/#260/#261/#262 (chronologisch renumberd na collision met Track A's #255/#256).
+
+- **Brandclaw data-collection (#255)**: DataSnapshot model + registry + alignment + 4 v1 sources live (5-7d effort)
+- **Brandclaw tool-orchestrator (#256)**: types + registry + agent-loop + persistence + 4 query-tools + PostHog (3-5d effort)
+- **Strategy Analyst Phase A (#260, 2 commits)**: node entry + manual trigger + UI Tab 5 + Phase A vervolg
+- **Strategy Analyst Phase B (#261)**: 4 extra dimensions + UI sort/group
+- **Brandclaw model-ID hotfix (#262)**: correct Anthropic agent-loop default
+
+**Recent voltooid (sprint #4 close + bugfixes, 2026-05-17)**
+
+> Track A sprint #4 dichten + STOP-GATE-blokkers oplossen. Changelog #257/#258/#259.
+
+- **Code-debt-pre-launch-cleanup close-out (#257)**: cluster A persist-TODOs (variant-selection persist, fix-options cache, persona image-storage, ProseMirror diff via Markdown) + B API-deprecation + C cleanup
+- **Effie-rubric leak fix in content-flow Strategy (#258, `e849a1ed`)**: P2 [shared-pipeline] — prompt-guards (EFFIE TEST → STRATEGIC QUALITY TEST + output-language-guards in 4 system-prompts), `scrubStrategyLayer()` utility (`src/lib/ai/sanitize-strategy-output.ts`) op 3 productie-sites, "Effie/Cannes potential" labels → "Award potential". 30/30 smoke-cases groen. STOP-GATE genomen voor Ronde 1 representanten.
+- **Auto-iterate gate-floor + silent-iter scope-fix (#259, `cdd0e074`)**: silent auto-iterate clobberde variant B/C/D body (missing `variantIndex: 0` filter) + long-form types vielen onder 50-woorden gate door F-VAL tightening rewrite. Defense-in-depth: don't-shrink guard via registry minWords + diagnostic logging op silent-returns.
 
 **Recent voltooid (sprint #3, 2026-05-09 t/m 2026-05-11)**
 
@@ -242,21 +262,21 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 
 ## 💡 Aanbeveling huidige sessie
 
-**2026-05-12 EOD**: Sprint #4 voor ~95% klaar (4/5 done, alleen testplan-representanten open). Sprint #5 Track A vooruitgelopen met 5A/5B/6B partial + compose-Gemini + claw-page-awareness vervolg op één dag. Track B + C nog niet gestart, beide worktrees **49 commits achter op main** → rebase nodig voor start.
+**2026-05-18**: Sprint #4 dicht. Track B Phase A+B gemerged (15-20d landed in `a0e59a5b`). Effie-blocker weg. Kritieke pad voor pilot ligt nu bij **Track C — `vercel-deployment`** want dat is een dubbele dependency: (a) hard launch-blocker voor pilot-onboarding, (b) sequential dep voor Phase C Vercel Cron van Track B.
 
 **Direct volgende stappen** (kortste pad pilot):
-1. **testplan-content-items Ronde 1 — 8 representanten** (~1d) — blog-post / linkedin-post / search-ad / newsletter / landing-page / explainer-video / one-pager / press-release. Sluit sprint #4 af + STOP-GATE bug-log review.
-2. **Track C activeren — `vercel-deployment`** (3d) — eerst `git rebase main` op `branddock-launch` worktree. Hard launch-blocker, ontgrendelt `pilot-onboarding-better-brands`.
-3. **Track B activeren — `brandclaw-tool-orchestrator`** (3-5d) — eerst `git rebase main` op `branddock-brandclaw` worktree. Foundation voor `strategy-analyst-stub` (langste kritieke pad 20-27d, bepaalt feitelijke pilot-projectie).
+1. **Track C activeren — `vercel-deployment`** (3d) — eerst `git rebase main` op `branddock-launch` worktree (~58 commits achter). Ontgrendelt zowel `pilot-onboarding-better-brands` (2d) als `Phase C Vercel Cron` (5-7d) van Track B.
+2. **testplan-content-items Ronde 1 — 8 representanten** (~1d) — parallel jouw browser-werk. STOP-GATE genomen, effie-fix wordt mee-geverifieerd via DOM grep per representant.
+3. **Track B Phase C** (5-7d) — in `branddock-brandclaw` worktree na vercel-deployment landed. Vercel Cron weekly + concurrency-cap + cost-budget alerts + BB pilot smoke.
 
-**Track A vervolg parallel**: `content-test-wiring-gates-6A` (in_progress) afmaken + 6B wiring/dashboard finish + bugfix-cluster uit testplan.
+**Track A vervolg parallel**: `content-test-auto-iterate-6B` wiring + dashboard panels (deferred deel afmaken) + `code-debt` fill-in werk.
 
-Pilot-projectie: **+9-11 weken vanaf 2026-05-12** (strategy-analyst-stub langste pad).
+Pilot-projectie: **+5-7 weken vanaf 2026-05-18** (eerder geprojecteerd +9-11 weken vanaf 2026-05-12, met 6 dagen verstreken + strategy-analyst-stub Phase A+B 15-20d landed = ~2 weken winst).
 
-**Track-allocation vanaf sprint #5**:
-- Track A (main): testplan finish + bugfixes + persist-TODOs
-- Track B (worktree branddock-brandclaw): brandclaw-tool-orchestrator → strategy-analyst-stub (parallel: competitor-ai-event-classifier)
-- Track C (worktree branddock-launch): vercel-deployment → stripe-billing-live → pilot-onboarding
+**Track-allocation vanaf sprint #6**:
+- Track A (main): Ronde 1 + Ronde 2 + 6B wiring + code-debt fill-in
+- Track B (worktree branddock-brandclaw): Phase C — Vercel Cron + concurrency + cost alerts + BB pilot smoke (parallel: competitor-ai-event-classifier + competitor-content-item-discovery via technical-planner)
+- Track C (worktree branddock-launch): vercel-deployment → stripe-billing-live → pilot-onboarding → marketing-site-pricing → onboarding-flow-test
 
 **Validatie-acties competitive-intel Fase 2/4** (vóór technical-planner promotion):
 - Pilot-priority-check (3 leads): is competitor-intelligence in top-3 needs?
