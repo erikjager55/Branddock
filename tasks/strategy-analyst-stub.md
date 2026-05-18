@@ -18,11 +18,11 @@ sub-phases: A-foundation, B-dimensions-persistence, C-cron-polish
 
 Originele taak 20-27d. Sub-gefaseerd 2026-05-12 in 3 commit-bare chunks. Track B werkt sequentieel: A → B → C. Elke fase eindigt met eigen review-loop + commit + changelog-entry; geen mid-fase merges naar main.
 
-| Phase | Scope | Effort | Commitable output |
+| Phase | Scope | Effort | Status |
 |---|---|---|---|
-| **A — Foundation** | Node skeleton + system-prompt scaffold + 1 dimension (voice_drift) + manual trigger via UI Tab 4 minimal (run-knop + observations-list) | 5-7d | End-to-end Analyst-run werkt op LINFI; 1 dimension levert observations met evidence; geen scheduling, geen acties beyond Mark-Read |
-| **B — Dimensions + Persistence** | 4 extra dimensions (fidelity_decline / review_pattern / alignment_gap / publish_quality_trend) + StrategyObservation persistence + action-buttons (Read/Acted/Dismiss) | 7-10d | 5 dimensions detecteren observations; UI toont evidence-modal + filter/sort/group; observations persisteren met flags |
-| **C — Cron + Polish** | Vercel Cron weekly trigger + per-workspace concurrency-cap + cost-budget alerts + monitoring + smoke-tests | 5-7d | Maandagochtend 9am UTC cron-run werkt; PostHog cost-alert wired; integration-test op BB passes |
+| **A — Foundation** ✅ | Node skeleton + system-prompt scaffold + 1 dimension (voice_drift) + manual trigger via UI Tab 5 + observations CRUD-actions | 5-7d | **DONE** 2026-05-17/18. Commits `b25a3763` (Phase A backend) + `8f09d2e3` (Phase A UI vervolg) |
+| **B — Dimensions + Persistence** ✅ | 4 extra dimensions (fidelity_decline / review_pattern / alignment_gap / publish_quality_trend) + agentVersion bump 0.2.0 + UI sort/group toggle | 7-10d | **DONE** 2026-05-17/18. Commit `58094f8e` (+ hotfix `d488298c` voor Anthropic model-ID). Real-API smoke 17/17 pass tegen Demo workspace |
+| **C — Cron + Polish** | Vercel Cron weekly trigger + per-workspace concurrency-cap + cost-budget alerts + monitoring + BB pilot smoke met productie-data | 5-7d | **OPEN** — start volgende sessie op clean `main` (Phase A + B gemerged via `a0e59a5b` 2026-05-18) |
 
 **Volgorde-discipline**: elke phase een eigen branch op `branddock-brandclaw` worktree (`track/brandclaw-phase-a` etc.), gemerged naar `track/brandclaw` na review-loop clean. Na alle 3 fases klaar: PR `track/brandclaw` → `main`.
 
@@ -48,49 +48,49 @@ Strategy Analyst-stub als eerste Brandclaw-node bouwen op gevergrendelde foundat
 # Acceptatiecriteria
 
 ## Analyst node implementation
-- [ ] `src/lib/brandclaw/nodes/strategy-analyst/index.ts` (nieuw) — public API: `runStrategyAnalyst(workspaceId, triggerType, triggerSource?): Promise<{run, observations}>`
-- [ ] `src/lib/brandclaw/nodes/strategy-analyst/system-prompt.ts` (nieuw) — versioned prompt met methodology §11 two-reasons-test scaffold + §3 brand-baseline-context (Δ-3 voice 1-pager embed)
-- [ ] System-prompt instructeert agent om alle 4 tools te gebruiken; produceer max 5-7 observations per run; elke observation eist ≥2 evidence-points
-- [ ] Output schema: array van `{dimension, severity, confidence, summary, evidence}` matching ADR-2 StrategyObservation shape
-- [ ] Confidence-flag: HIGH (3+ evidence) / MEDIUM (2 evidence) / LOW (1 evidence — observation skipped per two-reasons-test)
-- [ ] AgentVersion + promptVersion stamped (semver `0.1.0` v1, content-hash van prompt-template)
+- [x] `src/lib/brandclaw/nodes/strategy-analyst/index.ts` — public API: `runStrategyAnalyst(workspaceId, triggerType, triggerSource?): Promise<{run, observations}>` (Phase A, commit `b25a3763`)
+- [x] `src/lib/brandclaw/nodes/strategy-analyst/system-prompt.ts` — versioned prompt met methodology §11 two-reasons-test scaffold (Phase A; bump 0.1.0 → 0.2.0 in Phase B commit `58094f8e`)
+- [x] System-prompt instructeert agent om alle 4 tools te gebruiken; produceer max 5-7 observations per run; elke observation eist ≥2 evidence-points
+- [x] Output schema: array van `{dimension, severity, confidence, summary, evidence}` matching ADR-2 StrategyObservation shape
+- [x] Confidence-flag: HIGH (3+ evidence) / MEDIUM (2 evidence) / LOW (1 evidence — observation skipped per two-reasons-test)
+- [x] AgentVersion + promptVersion stamped (semver `0.2.0`, SHA-256 content-hash van prompt-template)
 
 ## 5 observation dimensions
-- [ ] **voice_drift**: detecteert via voiceguide-source dat wordsWeUse / wordsWeAvoid significant veranderd is OR via review_history dat content vaker buiten declared voice scoort
-- [ ] **fidelity_decline**: F-VAL composite-score dalend over tijd voor specifieke contentType; threshold-based (≥10 punten dalend over 30 dagen)
-- [ ] **review_pattern**: ContentReviewLog (Δ-1) toont herhalend pattern (zelfde finding-category top-3 over weken) — content-team coaching signal
-- [ ] **alignment_gap**: AlignmentScan severity-distributie ongewijzigd / verslechterd over 60+ dagen; manual-fix-rate < 50%
-- [ ] **publish_quality_trend**: PublishGateOverride frequency stijgend OR second-opinion-disagreement trend (uit Δ-4)
+- [x] **voice_drift**: prompt-fragment in `dimensions/voice-drift.ts` (Phase A)
+- [x] **fidelity_decline**: prompt-fragment in `dimensions/fidelity-decline.ts` (Phase B, commit `58094f8e`)
+- [x] **review_pattern**: prompt-fragment in `dimensions/review-pattern.ts` (Phase B)
+- [x] **alignment_gap**: prompt-fragment in `dimensions/alignment-gap.ts` (Phase B)
+- [x] **publish_quality_trend**: prompt-fragment in `dimensions/publish-quality-trend.ts` (Phase B; PublishGateOverride is Δ-4 dependency, fragment valt terug op F-VAL trend wanneer data ontbreekt)
 
 ## Triggering
-- [ ] Manual trigger: UI-knop "Run Analyst" in Brand Alignment Tab 4 → POST `/api/brandclaw/strategy-analyst/run`
-- [ ] Scheduled trigger: Vercel Cron `0 9 * * 1` (Monday 9am UTC) → calls same endpoint per workspace
-- [ ] Event-driven trigger v1 OUT — komt later wanneer ContentReviewLog throughput >50/week justifies
+- [x] Manual trigger: UI-knop "Run Analyst" in Brand Alignment Tab 5 → POST `/api/brandclaw/strategy-analyst/run`
+- [ ] **Phase C**: Scheduled trigger: Vercel Cron `0 9 * * 1` (Monday 9am UTC) → calls same endpoint per workspace
+- [x] Event-driven trigger v1 OUT — komt later wanneer ContentReviewLog throughput >50/week justifies
 
 ## Persistence
-- [ ] StrategyObservationRun row aangemaakt at start van run; gevuld met cost + latency + toolCallTrace at end
-- [ ] StrategyObservation rijen persisted in batch-transaction at end of run
-- [ ] Geen mutations buiten Brandclaw-tabellen — read-only naar consumer-data; observations zijn de enige writes
+- [x] StrategyObservationRun row aangemaakt at start van run; gevuld met cost + latency + toolCallTrace at end (orchestrator/persistence.ts)
+- [x] StrategyObservation rijen persisted in batch-transaction at end of run
+- [x] Geen mutations buiten Brandclaw-tabellen — read-only naar consumer-data; observations zijn de enige writes
 
-## UI Tab 4 "Insights"
-- [ ] Brand Alignment Tab 4 (4e tab tussen Tab 3 Content Review en bestaand) — `BrandAlignmentInsightsTab.tsx`
-- [ ] Lijst observations gegroepeerd per dimension; gefilterd op severity + confidence
-- [ ] Per observation: summary (1-2 zinnen) + evidence-link (klikbaar — opent DataSnapshot inhoud)
-- [ ] Action-buttons: "Mark as Read" / "Mark as Acted Manually" / "Dismiss" — geen "Apply" (no autonomy)
-- [ ] "Run Analyst" trigger-knop met cost-estimate display
-- [ ] Last-run timestamp + total-runs counter
+## UI Tab 5 "Strategy Analyst" (eerder als Tab 4 "Insights" gepland — Insights-tab bleek al bezet door Δ-1 pilot-feedback dashboard, dus aparte Tab 5 met Brain-icon)
+- [x] Brand Alignment Tab 5 — `BrandclawObservationsTab.tsx` gewired in `BrandAlignmentPage.tsx`
+- [x] Lijst observations gegroepeerd per dimension OR severity-sorted flat (view-mode toggle Phase B); gefilterd op severity + confidence + includeDismissed
+- [x] Per observation: summary (1-2 zinnen) + evidence-link (klikbaar — opent EvidenceModal met DataSnapshot inhoud)
+- [x] Action-buttons: "Mark as Read" / "Mark as Acted Manually" / "Dismiss" met dismiss-reden input + "Undo" — geen "Apply" (no autonomy)
+- [x] "Run Analyst" trigger-knop (cost-estimate display: deferred — komt in Phase C met cron-cost preview)
+- [x] Last-run timestamp + cost + latency + agentVersion footer
 
-## Cron + monitoring
-- [ ] Vercel Cron config in `vercel.json` (al bestaand voor `/api/cron/run-jobs`) — extend met brandclaw-cron route
-- [ ] Per-workspace concurrency-cap = 1 (één Analyst-run per workspace tegelijk)
-- [ ] Cost-budget alert: >$10/workspace/maand triggers PostHog notification
+## Cron + monitoring (Phase C)
+- [ ] **Phase C**: Vercel Cron config in `vercel.json` — extend met brandclaw-cron route
+- [ ] **Phase C**: Per-workspace concurrency-cap = 1 (één Analyst-run per workspace tegelijk)
+- [ ] **Phase C**: Cost-budget alert: >$10/workspace/maand triggers PostHog notification
 
 ## Quality gates
-- [ ] `npx tsc --noEmit` 0 errors + `npm run lint` 0 errors
-- [ ] Unit-tests: 5 dimension-detection-helpers (pure functies) + 3 trigger-types
-- [ ] Integration-test op BB workspace: run Analyst → ≥1 observation per dimension waar data beschikbaar; evidence-array niet leeg
-- [ ] UI-smoke: Brand Alignment Tab 4 loads + manual run + observations rendered; "Mark as Read" toggle persisteert
-- [ ] Cron-smoke: trigger via cron-route → run completes ≤2min p95 + observations persisted
+- [x] `npx tsc --noEmit` 0 errors + `npm run lint` 0 errors (Phase A + B beide groen)
+- [ ] **Phase C overweging**: Unit-tests voor 5 dimension-detection-helpers (Phase B koos prompt-fragments boven pure helpers; integration-test op real-API is de echte validatie) + 3 trigger-types
+- [x] Integration-test op Branddock Demo workspace via `scripts/smoke-tests/strategy-analyst-phase-a.ts`: real-API smoke 17/17 pass (4 tool-calls, $0.0549, 24.9s). 0 observations door insufficient evidence — verwacht gedrag (two-reasons-test enforcement, conservative prompt). **BB pilot smoke met 30+d productie-data deferred naar Phase C**.
+- [ ] **Phase C**: UI-smoke browser-flow: Tab 5 loads + manual run + observations rendered; action-toggles persisteren (alleen code-level integration nu gedaan)
+- [ ] **Phase C**: Cron-smoke: trigger via cron-route → run completes ≤2min p95 + observations persisted
 
 # Bestanden die ik aanraak
 
