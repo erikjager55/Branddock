@@ -75,16 +75,18 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 ## 4 · Test matrix per categorie
 
 > Legend: **R** = Representant (als eerste testen) · Check-boxes: `[ ] Gedaan` · `[ ] Passed` · `[ ] Bugs` (noteer onderaan)
+>
+> **⚠️ Asset-pipeline scope (2026-05-18)**: Asset-generator-registry voor multi-asset document-types (Cover + chapter dividers + page headers + stats visualisatie + carousel slide-set) is **post-launch feature**. Tijdens pre-launch Ronde 1 verwacht je voor document-types (ebook / whitepaper / case-study / one-pager / proposal-template / impact-report / linkedin-carousel / social-carousel) **tekst-only output** met optionele hero-image via Step 3 InsertImageModal. De Asset-patroon kolom hieronder beschrijft de **doel-state**, niet de huidige pre-launch state. Markeer een type als `Passed` wanneer tekst-kwaliteit voldoet + hero-image (indien content-type dat heeft) genereert. Volledige scope-analyse in `tasks/_drafts/idea-ebook-quality-verbeterplan.md` H2.
 
 ### 📚 Long-Form Content (7)
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R blog-post** | Hero image met headline overlay | ☐ | ☐ | ☐ | |
-| pillar-page | Hero + section illustraties | ☐ | ☐ | ☐ | |
-| whitepaper | Cover + page headers (PDF) | ☐ | ☐ | ☐ | |
-| case-study | Cover + stats visualisatie | ☐ | ☐ | ☐ | |
-| ebook | Cover + chapter dividers | ☐ | ☐ | ☐ | |
+| **R blog-post** | Hero image met headline overlay | ☑ | ☑ | ☐ | 2026-05-18 LINFI |
+| pillar-page | Hero + section illustraties | ☑ | ☑ | ☐ | 2026-05-18 LINFI |
+| whitepaper | Cover + page headers (PDF) | ☑ | ☑ | ☐ | 2026-05-18 LINFI — text-content passed. Asset-patroon "Cover + page headers" = zelfde post-launch gap als ebook (zie testplan §4 asset-pipeline disclaimer). WHITEPAPER_SYSTEM prompt-structureel NIET kwetsbaar voor ebook's H1/H7/H4-H6 (Finding 1/2/3 namen zijn by-design semi-static, structure is uniform — geen progressive-shortening curve). H3 fidelity-runner fix toegepast 2026-05-18 raakt whitepaper Strategy-pillar score ook positief. |
+| case-study | Cover + stats visualisatie | ☑ | ☑ | ☐ | 2026-05-18 LINFI |
+| ebook | Cover + chapter dividers | ☑ | ☐ | ☑ | 2026-05-18 LINFI — 5 issues; zie bug-log sectie 5 + `tasks/_drafts/idea-ebook-quality-verbeterplan.md` |
 | article | Hero image | ☐ | ☐ | ☐ | |
 | thought-leadership | Hero met quote overlay | ☐ | ☐ | ☐ | |
 
@@ -404,6 +406,28 @@ Uit onderzoek — te verifiëren in de test-ronde, niet als aanname behandelen:
 [explainer-video] [...]
 [one-pager] [...]
 [press-release] [...]
+```
+
+### Round 1 — Long-Form categorie-sweep (2026-05-18)
+
+> Workspace: LINFI (architect-audience, luxury interior brand "voorluiken")
+> Status: 4/7 types getest en passed; e-book toont issues — verbeterplan apart.
+
+```
+[blog-post] PASSED 2026-05-18 — alle stappen door, content + asset patronen ok
+[case-study] PASSED 2026-05-18 — alle stappen door
+[whitepaper] PASSED 2026-05-18 — alle stappen door
+[pillar-page] PASSED 2026-05-18 — alle stappen door
+[ebook] FAIL 2026-05-18 — 5 issues op één output (composite 85, Strategy-pillar 73). Volledige diagnose + scope in `tasks/_drafts/idea-ebook-quality-verbeterplan.md`. Samenvatting:
+  - H1 P2: chapter-titel duplicate (H4 "Van meting tot montage" + H6 "Van netting tot montage") — root cause `src/lib/studio/prompt-templates/long-form.ts:255-312` EBOOK_SYSTEM mist uniqueness-constraint
+  - H2 NIET-bug-maar-feature-gap: asset-patroon "Cover + chapter dividers (PDF)" never built — `canvas-orchestrator.ts:1110-1119` auto-image-gen gedisabled + geen ebook entry in `preview-map.ts`. Aanbeveling: testplan-verwachting bijstellen naar text-only pre-launch
+  - H3 P2: Strategy-pillar 73 (=judge pillar 45% weight). Root cause persona-context cap 240 chars in `fidelity-runner.ts:169-178` + strategy-summary fallback returns undefined wanneer brief/concept leeg (content-mode)
+  - H4-H6 P3 cluster: rigide 8-hoofdstukken structuur, geen TOC, geen "Key Takeaway" callouts, geen narrative bridges, geen lead-magnet CTA-block — EBOOK_SYSTEM prompt mist sub-sprint 5B/6A upgrades
+  - H7 P2: chapter-length asymmetry. Hoofdstuk 1 te lang, daarna progressief korter. Root cause single 16K-token call + prompt-instructie "chapters get SHORTER after chapter 3" zonder hard min/max — front-loading + greedy token-allocatie
+  - Pre-launch fix-bundle: ~2-2.5d totaal (H1 + H7-A + H3.1 + H3.2 + H4-H6 + H2-A docs). Post-launch backlog: ~8-19d (H2-B/C feature + H3.3 per-type rubric + H7-B multi-call chain)
+  - Effie-fix verifieerbaar in deze content? Niet expliciet door tester gecheckt — DOM grep `document.body.innerText.match(/effie/gi)` bij re-test toevoegen
+[article] [...]
+[thought-leadership] [...]
 ```
 
 ### Round 1 — Social Media categorie-sweep (parallel-run gestart 2026-05-13)

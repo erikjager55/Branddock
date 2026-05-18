@@ -7,7 +7,7 @@
 // bumpt naar 2.0.0 wanneer Plan-and-Solve chain landt).
 // =============================================================
 
-export const PROMPT_VERSION = '1.2.0';
+export const PROMPT_VERSION = '1.3.0';
 
 import type { PromptTemplate } from './helpers';
 import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './helpers';
@@ -262,26 +262,30 @@ Each chapter follows a four-part arc: Hook, Teach, Apply, Bridge.
 1. **Hook** — Open each chapter with a scenario, question, or provocative statement that makes the reader feel this chapter is essential.
 2. **Teach** — Deliver the core concept, framework, or insight. Use visuals, examples, and analogies to make complex ideas accessible.
 3. **Apply** — Give the reader an exercise, template, checklist, or prompt they can use immediately. Application cements learning.
-4. **Bridge** — Connect this chapter to the next one. Create momentum so the reader wants to continue.
+4. **Bridge** — Specifically promise what the next chapter will deliver, referencing one concrete element they just learned. Format: "In chapter N+1, we'll [verb + specific outcome], building on the [concept from this chapter] you just mastered." Avoid generic phrasings like "Next we will look at..." — that signals filler.
 
-Critical design insight: chapters get SHORTER after chapter 3. Research shows engagement drops 40% after the midpoint of any long-form content.
-- Chapter 1 = longest (sets the scene, builds commitment)
-- Chapters 2-3 = medium (core frameworks and methods)
-- Chapters 4-5 = shorter (application and advanced topics)
-- Final chapter = shortest (call to action, next steps)
+Critical design insight: chapters get SHORTER after chapter 3. Research shows engagement drops 40% after the midpoint of any long-form content. **Chapter word counts below are HARD CONSTRAINTS, not suggestions** — if you exceed Chapter 1's maximum, cut content to fit; do NOT steal budget from later chapters.
+- Chapter 1 = longest (sets the scene, builds commitment) — 800-1000 words
+- Chapters 2-3 = medium (core frameworks and methods) — 600-700 words each
+- Chapter 4 = shorter (advanced application) — 400-500 words
+- Final chapter = shortest (call to action, next steps) — 300-400 words
 
-Include a "Key Takeaway" box at the end of each chapter — scanners need them, and they serve as a built-in summary for people who flip through.
+Include a "Key Takeaway" box at the end of each chapter as a single-sentence summary in this exact markdown format:
+\`> **Key Takeaway**: [one sentence summarizing the chapter's transferable insight]\`
 
-## STRUCTURE SKELETON (3000-5000 words total)
-- **Title page** — Title, subtitle, author/company, one-sentence value proposition
-- **Table of contents** — Chapter titles with page references
-- **Introduction** (200-300 words) — Why this e-book exists, who it is for, what the reader will be able to do after reading it. Include a "what you will learn" bullet list.
-- **Chapter 1: Foundation** (600-800 words, H2) — Set the context, define the problem, establish the framework. This is your longest chapter. Hook → Teach → Apply → Bridge. Key Takeaway box.
-- **Chapter 2: Core Method** (500-700 words, H2) — Your primary framework or methodology. Include a visual or diagram suggestion. Hook → Teach → Apply → Bridge. Key Takeaway box.
-- **Chapter 3: Deep Dive** (500-600 words, H2) — Apply the framework to a specific scenario or case study. Hook → Teach → Apply → Bridge. Key Takeaway box.
-- **Chapter 4: Advanced Application** (400-500 words, H2) — Edge cases, advanced tactics, expert tips. Hook → Teach → Apply → Bridge. Key Takeaway box.
-- **Chapter 5: Action Plan** (300-400 words, H2) — Step-by-step implementation plan, resources, tools. Hook → Teach → Apply → Bridge. Key Takeaway box.
-- **Conclusion** (150-200 words) — Reinforce the main thesis, celebrate what the reader has learned, provide a clear and specific CTA
+## CHAPTER-TITLE UNIQUENESS (hard rule)
+Each chapter's H2 title MUST be lexically distinct from every other chapter's H2 title. The same concept rephrased ("Van meting tot montage" vs "Van netting tot montage") counts as a duplicate. If your outline uses a phrase, USE THAT EXACT PHRASE in the body — do NOT paraphrase chapter titles between outline and content. Before outputting, scan all your chapter H2 headings: if any two share more than 50% of words or describe the same topic with different wording, rewrite one with a genuinely distinct angle.
+
+## STRUCTURE SKELETON (3000-5000 words total, 5 chapters)
+- **Title page** — Title (max 80 chars), subtitle (max 120 chars), author/company, one-sentence value proposition
+- **Table of Contents** — Format: "Chapter N — [Title] — [1-sentence preview of what reader will learn]" for each chapter. NOT just a list of titles.
+- **Introduction** (200-300 words) — Why this e-book exists, who it is for, what the reader will be able to do after reading it. MUST include a clearly-labeled "What you will learn" section with 4-6 bullet points, each starting with an action verb (Master / Apply / Diagnose / Build / Avoid / etc).
+- **Chapter 1: Foundation** (800-1000 words, H2 unique title) — Set the context, define the problem, establish the framework. This is your longest chapter. Hook → Teach → Apply → Bridge. Key Takeaway box.
+- **Chapter 2: Core Method** (600-700 words, H2 unique title) — Your primary framework or methodology. Include a visual or diagram suggestion. Hook → Teach → Apply → Bridge. Key Takeaway box.
+- **Chapter 3: Deep Dive** (600-700 words, H2 unique title) — Apply the framework to a specific scenario or case study. Hook → Teach → Apply → Bridge. Key Takeaway box.
+- **Chapter 4: Advanced Application** (400-500 words, H2 unique title) — Edge cases, advanced tactics, expert tips. Hook → Teach → Apply → Bridge. Key Takeaway box.
+- **Chapter 5: Action Plan** (300-400 words, H2 unique title) — Step-by-step implementation plan, resources, tools. Hook → Teach → Apply → Bridge. Key Takeaway box.
+- **Conclusion** (150-200 words) — Reinforce the main thesis, celebrate what the reader has learned, then deliver a **specific CTA-block** with: (a) a single action verb ("Download" / "Book" / "Start"), (b) a quantified promise ("save 4 hours per week" / "in 30 minutes"), and (c) a clear next step (URL, contact, or product).
 
 ## FEW-SHOT EXAMPLE — Strong Chapter Opening
 Here is an example of an effective e-book chapter opening:
@@ -290,24 +294,37 @@ Here is an example of an effective e-book chapter opening:
 
 Notice: it validates a common experience, names the real problem (unusable, not wrong), and promises a specific outcome.
 
+## FEW-SHOT EXAMPLE — Strong Bridge Sentence
+End of chapter 2: "In chapter 3, we'll apply the Audience-Brand-Channel diagnostic you just learned to a real B2B SaaS case, showing how a 40% drop in CPL was reversed by a single positioning shift."
+
+Notice: names a specific framework just taught, promises a specific outcome (40% drop / single shift), references a concrete genre (B2B SaaS case). NOT generic ("Next chapter covers more").
+
 ## ANTI-PATTERNS — NEVER DO
-- NEVER make all chapters the same length — reader fatigue is real. Progressive shortening maintains engagement.
+- NEVER reuse or paraphrase chapter H2 titles — each H2 must be lexically distinct. "Van meting tot montage" + "Van netting tot montage" is a paraphrase-drift error; both cannot ship.
+- NEVER exceed the word-count maximum for Chapter 1 — that token-budget belongs to chapters 4 and 5 and stealing it makes the e-book lopsided.
+- NEVER write a chapter under the word-count minimum — it signals you ran out of value to deliver.
+- NEVER make all chapters the same length — progressive shortening (1000 → 700 → 700 → 500 → 400) maintains engagement.
 - NEVER skip the "Key Takeaway" boxes — scanners need them, and they are the most shared parts of any e-book.
 - NEVER front-load all the value in chapter 1 — distribute value evenly to give readers a reason to continue.
-- NEVER write an e-book that reads like a series of disconnected blog posts — each chapter must build on the previous one.
+- NEVER write an e-book that reads like a series of disconnected blog posts — each chapter's Bridge must reference the next chapter's specific learning, not just the topic.
 - NEVER forget the "Apply" step in each chapter — without application, the content is just information, not transformation.
-- NEVER use the conclusion as a sales pitch — it should be a genuine wrap-up that reinforces learning, with the CTA as a natural next step.
-- NEVER skip the introduction or make it generic — the introduction is your sales page for the rest of the e-book.
+- NEVER use the conclusion as a sales pitch — it should be a genuine wrap-up that reinforces learning, with the CTA-block as a natural next step.
+- NEVER skip the introduction or make it generic — the introduction is your sales page for the rest of the e-book. "What you will learn" bullet list is non-negotiable.
+- NEVER output a TOC that's just chapter titles without 1-sentence previews — scanners decide whether to read based on the TOC.
 
 ## COMPLETENESS CHECKLIST
 Before outputting, verify:
 - [ ] Opening hook would make the target reader stop scrolling and start reading
+- [ ] All 5 chapter H2 titles are lexically unique (run a self-check for paraphrase pairs)
 - [ ] Every chapter has a clear H2 heading and follows the Hook-Teach-Apply-Bridge structure
-- [ ] Key Takeaway box is present at the end of each chapter
-- [ ] Chapters get progressively shorter (chapter 1 longest, final chapter shortest)
+- [ ] Each Bridge sentence names a specific element from the current chapter + a specific promise for the next
+- [ ] Key Takeaway box (\`> **Key Takeaway**: ...\`) is present at the end of each chapter
+- [ ] Chapter 1 is 800-1000 words; Chapters 2-3 are 600-700 words each; Chapter 4 is 400-500 words; Chapter 5 is 300-400 words
+- [ ] Total body word count lands in 3000-3500 range (not 5000+ — that breaks engagement curve)
+- [ ] TOC entries include 1-sentence previews, not just titles
+- [ ] Introduction includes a labeled "What you will learn" bullet list with 4-6 action-verb bullets
+- [ ] Conclusion ends with a CTA-block: action verb + quantified promise + specific next step
 - [ ] Specific data, examples, or frameworks are included (not just opinions)
-- [ ] CTA is specific and actionable
-- [ ] The piece provides genuine value — would you recommend this to a colleague?
 - [ ] No filler sentences that could be deleted without losing meaning`,
 );
 

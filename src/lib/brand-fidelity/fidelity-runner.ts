@@ -169,12 +169,14 @@ function resolveTargetWordCount(contentTypeId: string | null): number {
 function summarizePersona(stack: CanvasContextStack): string | undefined {
   const persona = stack.personas[0];
   if (!persona) return undefined;
-  // serialized is the human-readable persona blob — first ~240 chars give
-  // the judge enough context (role + frustrations + key triggers) without
-  // exploding token usage.
+  // serialized is the human-readable persona blob. Cap at 800 chars (was 240
+  // pre-2026-05-18) — judge-rubric strategicAnchoring + audienceFit dimensies
+  // hadden te weinig context met 240 (architect-persona pains/triggers vielen
+  // af, score zakte naar ~73 op B2B long-form). 800 chars dekt role + 2-3
+  // pains + 2-3 triggers + key-quote zonder token-budget materieel te raken.
   const blob = persona.serialized?.trim();
   if (!blob) return persona.name;
-  return `${persona.name} — ${blob.slice(0, 240)}`;
+  return `${persona.name} — ${blob.slice(0, 800)}`;
 }
 
 function summarizeStrategy(stack: CanvasContextStack): string | undefined {
@@ -182,7 +184,18 @@ function summarizeStrategy(stack: CanvasContextStack): string | undefined {
   if (objective && objective.trim().length > 0) return objective.slice(0, 240);
   const platform = stack.concept?.creativePlatform;
   if (platform) return platform.slice(0, 240);
-  return undefined;
+  // Fallback voor content-mode (single-content flow zonder brief/concept):
+  // bouw een strategic-anchor uit BrandAsset PURPOSE/POSITIONING/PROMISE.
+  // Voorheen returned undefined wat resulteerde in 0 strategicAnchoring-context
+  // in judge-prompt → onnodig lage Strategy-pillar score (H3.2 fix 2026-05-18).
+  const brand = stack.brand;
+  const fallbackParts: string[] = [];
+  if (brand.brandPromise) fallbackParts.push(`Promise: ${brand.brandPromise}`);
+  else if (brand.brandPurpose) fallbackParts.push(`Purpose: ${brand.brandPurpose}`);
+  if (brand.brandEssence) fallbackParts.push(`Essence: ${brand.brandEssence}`);
+  if (fallbackParts.length === 0 && brand.brandMission) fallbackParts.push(`Mission: ${brand.brandMission}`);
+  if (fallbackParts.length === 0) return undefined;
+  return fallbackParts.join(' | ').slice(0, 480);
 }
 
 function summarizeBrandVoice(stack: CanvasContextStack, personality: BrandPersonalityInput | null): string {
