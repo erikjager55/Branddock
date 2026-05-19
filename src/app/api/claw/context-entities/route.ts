@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest) {
   const workspaceId = await resolveWorkspaceId();
   if (!workspaceId) return new Response('No workspace', { status: 400 });
 
-  const [brandAssets, personas, products, competitors, strategies, campaigns] = await Promise.all([
+  const [brandAssets, personas, products, competitors, strategies, campaigns, observations] = await Promise.all([
     prisma.brandAsset.findMany({
       where: { workspaceId },
       select: { id: true, name: true, frameworkType: true },
@@ -45,6 +45,12 @@ export async function GET(_req: NextRequest) {
       orderBy: { updatedAt: 'desc' },
       take: 20,
     }),
+    prisma.strategyObservation.findMany({
+      where: { workspaceId, dismissedAt: null },
+      select: { id: true, dimension: true, summary: true, severity: true },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    }),
   ]);
 
   return Response.json({
@@ -54,5 +60,10 @@ export async function GET(_req: NextRequest) {
     competitors: competitors.map((c) => ({ id: c.id, label: c.name, meta: c.tier })),
     strategies: strategies.map((s) => ({ id: s.id, label: s.name, meta: s.status })),
     campaigns: campaigns.map((c) => ({ id: c.id, label: c.title, meta: c.status })),
+    observations: observations.map((o) => ({
+      id: o.id,
+      label: `${o.dimension}: ${o.summary.slice(0, 80)}`,
+      meta: o.severity,
+    })),
   });
 }

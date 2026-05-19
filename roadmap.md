@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Laatst bijgewerkt**: 2026-05-18 (Track B Phase A + B gemerged naar main via `a0e59a5b` — `brandclaw-data-collection` ✅, `brandclaw-tool-orchestrator` ✅, `strategy-analyst-stub` Phase A + A vervolg + B ✅; Phase C 5-7d open in `branddock-brandclaw` worktree, sequential dep op vercel-deployment. Sprint #4 dicht 2026-05-17 — STOP-GATE genomen via Effie-rubric leak fix + auto-iterate variant-clobber fix).
+> **Laatst bijgewerkt**: 2026-05-19 (context-picker audit Brand Assistant + Persona chat → 1 Tier-1 gap: `context-picker-strategy-observations` toegevoegd aan Track A NOW. 2026-05-18 Track B Phase A + B gemerged naar main via `a0e59a5b` — `brandclaw-data-collection` ✅, `brandclaw-tool-orchestrator` ✅, `strategy-analyst-stub` Phase A + A vervolg + B ✅; Phase C 5-7d open in `branddock-brandclaw` worktree, sequential dep op vercel-deployment).
 > **Update-cadans**: Now continu (na elke afgeronde task), Next wekelijks (vrijdagretro), Later maandelijks.
 > **Bron**: gedistilleerd uit oude TODO.md, BRANDCLAW-ROADMAP.md, STRATEGISCHE-VERVOLGSTAPPEN.md (allen in `docs/archive/old-lists/`).
 
@@ -81,6 +81,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | **`content-test-regression-#7B`** | Layer 3 item-specific regression: LearningEvent → regression-corpus auto-promote + nightly run + alert. Plan §4 sub-sprint #7.B. | ~3d | #7 week 2 | open task-file |
 | **`video-chain-explainer-showcase`** | Multi-modal: full 5-staps chain (Plan/Script-per-scene/Storyboard/Coherence/Assembly) voor explainer-video als showcase. Lightweight chains voor video-ad + tiktok-script. Plan §3.0.5. | ~4d | #5-6 fill-in | open task-file |
 | **`image-quality-chain`** | Multi-modal: negative prompts + multi-candidate (3-4) selection UI + visual-fidelity dimension-breakdown + image-to-image refine-loop + OCR text-check + brand-color validation. Plan §3.0.5. | ~6d | #6 fill-in | open task-file |
+| [`context-picker-strategy-observations`](tasks/done/context-picker-strategy-observations.md) | Brand Assistant context-picker: `StrategyObservation` toevoegen (Tier-1 gap uit audit 2026-05-19). Hardcoded Claw-pattern, geen registry-entry. Tier-2 cleanups (Campaign → registry, Deliverable workaround) als follow-up. | ~4u | #6 fill-in | ✅ done 2026-05-19 (smoke partial — 0 observations in DB) |
 
 **Track B — Brandclaw + Competitive AI** (worktree `branddock-brandclaw`, Phase A+B gemerged 2026-05-18)
 | ID | Titel | Effort | Sprint | Status |
@@ -89,7 +90,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | `brandclaw-tool-orchestrator` | Shared Anthropic tool-orchestrator + agent-loop + 4 query-tools + PostHog | 3-5d | #5 | ✅ done 2026-05-18 (#256) |
 | [`strategy-analyst-stub`](tasks/strategy-analyst-stub.md) Phase A+B | Strategy Analyst node — node entry + manual trigger + UI Tab 5 + 4 dimensions + sort/group | 15-20d landed | #5-6 | ✅ done 2026-05-18 (#260/#261/#262) |
 | `strategy-analyst-stub` Phase C | Vercel Cron weekly `0 9 * * 1` + per-workspace concurrency-cap + cost-budget alerts (>$10/ws/maand → PostHog) + BB pilot smoke met productie-data | 5-7d | #6-7 | open — **sequential dep op vercel-deployment** |
-| `competitor-ai-event-classifier` | AI-pattern-detector voor 5 strategische CompetitorActivity-types (CATEGORY_REPOSITIONING / VISUAL_REBRAND / etc.). Idea: `tasks/_drafts/idea-competitor-ai-event-classifier.md` ready-to-build. | 3-5d | #6 | needs task-file via technical-planner |
+| [`competitor-ai-event-classifier`](tasks/competitor-ai-event-classifier.md) | AI-pattern-detector voor CATEGORY_REPOSITIONING + TARGET_AUDIENCE_CHANGED bovenop deterministische diff-engine. A1 96,7% accuracy. Task-file gepromoot 2026-05-12 + tech-review-patches 2026-05-19. | 3-4d | #6 | open — ready-to-build |
 | `competitor-content-item-discovery` | Discovery van competitor-content via crawl/RSS. Idea: `tasks/_drafts/idea-competitor-content-item-discovery.md` ready-to-build. | onbekend (5d?) | #6-7 | needs task-file via technical-planner |
 | ~~`cron-infra-adr`~~ | ✅ Done 2026-05-12 — Vercel Cron continueren, zie `docs/adr/2026-05-12-cron-infra.md` | ~2u | #4 | ✅ done |
 

@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 263. Brand Assistant context-picker: `StrategyObservation` toegevoegd
+
+Audit van Brand Assistant + Persona chat context-pickers (2026-05-19) wees 1 Tier-1 gap aan: AI-gegenereerde brand observations van Brandclaw Strategy Analyst (Phase A+B) waren wel zichtbaar in Brand Alignment UI, maar niet selecteerbaar als context in de chat. Nieuwe `ContextModule` `'observations'` toegevoegd (hardcoded Claw-pattern, geen `CONTEXT_REGISTRY`-entry — Persona chat / Canvas hebben observations niet nodig). Module is opt-in (niet in `DEFAULT_CONTEXT_MODULES`), drillable per observation, met `dismissedAt: null` default-filter die door explicit entity-IDs wordt overruled. Tier-2 cleanups (`Campaign` naar registry, `Deliverable` workspaceFilter-workaround) zijn vastgelegd als follow-up-tasks. Smoke partial: stap 1-5 runtime OK; 6-10 niet uitvoerbaar omdat er nog 0 observations in de hele DB bestaan (Strategy Analyst nog nooit gedraaid — geen manual trigger, Phase C cron niet live). Implementatie volgt 1:1 het bewezen `fetchTrendContext`-pattern.
+
+- Task: [tasks/done/context-picker-strategy-observations.md](tasks/done/context-picker-strategy-observations.md)
+- ADR: [docs/adr/2026-05-08-brandclaw-agent-architectuur.md](docs/adr/2026-05-08-brandclaw-agent-architectuur.md) (referentie — niet nieuw)
+- Spec: -
+- Commit: `<backfill>`
+
 ### 262. Brandclaw Strategy Analyst — model-ID hotfix
 
 Anthropic API gaf 404 op `claude-sonnet-4-6-20251001` (de dated suffix is geen

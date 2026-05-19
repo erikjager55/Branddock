@@ -219,6 +219,9 @@ async function fetchModuleContext(
     case 'dashboard':
       return fetchDashboardContext(workspaceId);
 
+    case 'observations':
+      return fetchObservationContext(workspaceId, entityIds);
+
     default:
       return null;
   }
@@ -325,6 +328,25 @@ async function fetchTrendContext(workspaceId: string): Promise<string | null> {
   for (const t of trends) {
     lines.push(`- **${t.title}** (${t.category}, ${t.impactLevel}, relevance: ${t.relevanceScore})`);
     if (t.description) lines.push(`  ${truncate(t.description, 150)}`);
+  }
+  return lines.join('\n');
+}
+
+async function fetchObservationContext(workspaceId: string, ids?: string[]): Promise<string | null> {
+  const observations = await prisma.strategyObservation.findMany({
+    where: ids?.length
+      ? { workspaceId, id: { in: ids } }
+      : { workspaceId, dismissedAt: null },
+    select: { dimension: true, severity: true, confidence: true, summary: true },
+    orderBy: { createdAt: 'desc' },
+    take: ids?.length ? ids.length : 10,
+  });
+  if (!observations.length) return null;
+
+  const lines = ['## Brand Observations (Brandclaw)'];
+  for (const o of observations) {
+    lines.push(`- **${o.dimension}** (severity: ${o.severity}, confidence: ${o.confidence})`);
+    lines.push(`  ${truncate(o.summary, 200)}`);
   }
   return lines.join('\n');
 }

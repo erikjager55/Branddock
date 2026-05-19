@@ -16,7 +16,7 @@ interface EntityOption {
 type EntityMap = Partial<Record<string, EntityOption[]>>;
 
 const DRILLABLE_MODULES: ContextModule[] = [
-  'brand_assets', 'personas', 'products', 'competitors', 'strategies', 'campaigns',
+  'brand_assets', 'personas', 'products', 'competitors', 'strategies', 'campaigns', 'observations',
 ];
 
 const MODULE_LABELS: Record<ContextModule, { label: string; description: string }> = {
@@ -31,6 +31,7 @@ const MODULE_LABELS: Record<ContextModule, { label: string; description: string 
   alignment: { label: 'Brand Alignment', description: 'Consistency issues between brand elements' },
   knowledge: { label: 'Knowledge Library', description: 'Articles, case studies, and resources' },
   dashboard: { label: 'Dashboard Stats', description: 'Workspace health metrics and readiness' },
+  observations: { label: 'Brand Observations', description: 'AI-generated brand signals from Brandclaw analysis (drift, fidelity, alignment)' },
 };
 
 function estimateContextTokens(moduleCount: number): number {

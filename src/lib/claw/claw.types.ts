@@ -99,7 +99,8 @@ export type ContextModule =
   | 'campaigns'
   | 'alignment'
   | 'knowledge'
-  | 'dashboard';
+  | 'dashboard'
+  | 'observations';
 
 export const ALL_CONTEXT_MODULES: ContextModule[] = [
   'brand_assets',
@@ -113,6 +114,7 @@ export const ALL_CONTEXT_MODULES: ContextModule[] = [
   'alignment',
   'knowledge',
   'dashboard',
+  'observations',
 ];
 
 export const DEFAULT_CONTEXT_MODULES: ContextModule[] = [
