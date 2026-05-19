@@ -1,6 +1,7 @@
 import type { PreviewRegistryEntry } from '../../../types/canvas.types';
 import { LinkedInPostPreview } from './LinkedInPostPreview';
 import { LinkedInAdPreview } from './LinkedInAdPreview';
+import { LinkedInVideoAdPreview } from './LinkedInVideoAdPreview';
 import { LinkedInCarouselPreview } from './LinkedInCarouselPreview';
 import { InstagramPostPreview } from './InstagramPostPreview';
 import { InstagramCarouselPreview } from './InstagramCarouselPreview';
@@ -20,6 +21,7 @@ const PLATFORM_PREVIEW_MAP: Record<string, Record<string, PreviewRegistryEntry>>
   linkedin: {
     'organic-post': { component: LinkedInPostPreview, label: 'LinkedIn Post' },
     ad: { component: LinkedInAdPreview, label: 'LinkedIn Ad' },
+    'video-ad': { component: LinkedInVideoAdPreview, label: 'LinkedIn Video Ad' },
     carousel: { component: LinkedInCarouselPreview, label: 'LinkedIn Carousel' },
   },
   instagram: {

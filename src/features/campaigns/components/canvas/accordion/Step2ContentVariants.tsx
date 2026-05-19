@@ -410,6 +410,80 @@ const SCENE_CONFIG: { id: SceneId; label: string; icon: typeof Film; borderColor
   { id: 'cta', label: 'CTA', icon: MousePointerClick, borderColor: '#10b981', bgColor: '#ecfdf5', textColor: '#065f46' },
 ];
 
+/**
+ * Parse scene-script tekst naar gestructureerde segments.
+ *
+ * Input formaten die het script-prompt produceert:
+ *   - `**spoken phrase**` → bold spoken text
+ *   - `## Heading` → markdown heading prefix (vaak een titel-cue)
+ *   - `[VISUAL: directie + setting]` → camera/scene directie
+ *   - `[CAPTION] caption-tekst` (caption loopt door tot volgende [ of einde) → on-screen caption
+ *   - rest → normale gesproken tekst
+ *
+ * 2026-05-19: parser vervangt eerdere raw-text rendering die literal
+ * asterisks/hash-prefix en [VISUAL]/[CAPTION] markers inline toonde.
+ * Gerapporteerd: "Pas de styling van de scene breakdown tekst aan".
+ */
+type SceneSegment =
+  | { kind: 'text'; content: string }
+  | { kind: 'bold'; content: string }
+  | { kind: 'visual'; content: string }
+  | { kind: 'caption'; content: string };
+
+function parseSceneSegments(raw: string): SceneSegment[] {
+  // Strip leading markdown headings (## title); behoud rest van tekst.
+  let text = raw.replace(/^#{1,6}\s+/gm, '');
+  // Trim opening/closing whitespace.
+  text = text.trim();
+
+  const segments: SceneSegment[] = [];
+  let i = 0;
+  let buf = '';
+  const flushText = () => {
+    if (buf.trim()) segments.push({ kind: 'text', content: buf.trim() });
+    buf = '';
+  };
+
+  while (i < text.length) {
+    // **bold**
+    if (text.startsWith('**', i)) {
+      const end = text.indexOf('**', i + 2);
+      if (end > -1) {
+        flushText();
+        segments.push({ kind: 'bold', content: text.substring(i + 2, end).trim() });
+        i = end + 2;
+        continue;
+      }
+    }
+    // [VISUAL: content]
+    if (text.startsWith('[VISUAL:', i) || text.startsWith('[Visual:', i) || text.startsWith('[visual:', i)) {
+      const end = text.indexOf(']', i);
+      if (end > -1) {
+        flushText();
+        const inner = text.substring(i + '[VISUAL:'.length, end).trim();
+        segments.push({ kind: 'visual', content: inner });
+        i = end + 1;
+        continue;
+      }
+    }
+    // [CAPTION] content (until next [ or end)
+    if (text.startsWith('[CAPTION]', i) || text.startsWith('[Caption]', i) || text.startsWith('[caption]', i)) {
+      const headerLen = '[CAPTION]'.length;
+      const nextBracket = text.indexOf('[', i + headerLen);
+      const end = nextBracket === -1 ? text.length : nextBracket;
+      flushText();
+      const inner = text.substring(i + headerLen, end).trim();
+      if (inner) segments.push({ kind: 'caption', content: inner });
+      i = end;
+      continue;
+    }
+    buf += text[i];
+    i++;
+  }
+  flushText();
+  return segments;
+}
+
 function SceneBreakdown({
   variantGroups,
   selectedVariantIndex,
@@ -429,6 +503,7 @@ function SceneBreakdown({
           if (!variants) return null;
           const text = variants[selectedVariantIndex]?.content ?? variants[0]?.content ?? '';
           if (!text) return null;
+          const segments = parseSceneSegments(text);
 
           return (
             <div
@@ -439,9 +514,61 @@ function SceneBreakdown({
               <div className="flex-shrink-0 mt-0.5">
                 <Icon className="h-4 w-4" style={{ color: borderColor }} />
               </div>
-              <div className="min-w-0">
-                <span className="text-xs font-semibold" style={{ color: textColor }}>{label}</span>
-                <p className="text-xs text-gray-700 mt-0.5 leading-relaxed">{text}</p>
+              <div className="min-w-0 space-y-1.5 flex-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: textColor }}>
+                  {label}
+                </span>
+                <div className="space-y-1.5">
+                  {segments.map((seg, idx) => {
+                    if (seg.kind === 'text') {
+                      return (
+                        <p key={idx} className="text-sm text-gray-800 leading-relaxed">
+                          {seg.content}
+                        </p>
+                      );
+                    }
+                    if (seg.kind === 'bold') {
+                      return (
+                        <p key={idx} className="text-sm font-semibold text-gray-900 leading-relaxed">
+                          {seg.content}
+                        </p>
+                      );
+                    }
+                    if (seg.kind === 'visual') {
+                      return (
+                        <div
+                          key={idx}
+                          className="flex gap-2 items-start rounded border border-gray-200 bg-white px-2.5 py-1.5"
+                        >
+                          <Film className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-gray-400" />
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 block">
+                              Visual
+                            </span>
+                            <p className="text-xs text-gray-700 leading-snug italic mt-0.5">{seg.content}</p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    if (seg.kind === 'caption') {
+                      return (
+                        <div
+                          key={idx}
+                          className="flex gap-2 items-start rounded border border-gray-200 bg-white px-2.5 py-1.5"
+                        >
+                          <MessageSquare className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-gray-400" />
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 block">
+                              Caption
+                            </span>
+                            <p className="text-xs text-gray-700 leading-snug mt-0.5">{seg.content}</p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
               </div>
             </div>
           );
