@@ -348,8 +348,8 @@ Core principles:
 - **Opening scene/anecdote** (150-250 words) — Specific person, specific moment, specific stakes. The reader should be able to visualize this scene.
 - **The pivot** (100-150 words) — Zoom from the individual to the industry. "But [Name]'s story is not unique. Across the industry, ..."
 - **Context section** (300-400 words, H2) — Industry backdrop, trend data, market forces at play. Include 2-3 data points from credible sources.
-- **Deep-dive section 1** (300-400 words, H2) — Return to narrative. Follow the subject or introduce a second source. Show the human side of the trend.
-- **Deep-dive section 2** (300-400 words, H2) — Analysis layer. Expert perspectives, counterpoints, nuanced examination of the issue.
+- **Deep-dive section 1** (300-400 words, H2 with content-specific title — NOT "Deep-dive 1") — Return to narrative. Follow the subject or introduce a second source. Show the human side of the trend.
+- **Deep-dive section 2** (300-400 words, H2 with content-specific title — must explore a GENUINELY DIFFERENT angle from section 1, e.g. analytical vs personal, or industry-wide vs single-case) — Analysis layer. Expert perspectives, counterpoints, nuanced examination of the issue.
 - **The turning point** (200-300 words, H2) — What changed, what was discovered, what shift is happening. This is the "aha" moment of the article.
 - **Implications** (200-300 words) — Forward-looking analysis. What does this mean for the reader and their industry? End with a thought-provoking insight, not a summary.
 
@@ -368,11 +368,13 @@ Notice: it is a specific scene (Tuesday morning, brand wall, $340,000), it has a
 - NEVER end with a summary of what you just said — end with what comes next. The reader should feel propelled forward.
 - NEVER use the article as a disguised product pitch — maintain journalistic integrity. If the brand is mentioned, it should be in context, not as a hero.
 - NEVER write transitions that feel forced — "Speaking of X, let us now discuss Y" is amateur. Use narrative bridges.
+- NEVER name the two Deep-dive H2 sections similarly — they MUST explore genuinely different angles. "X examined" + "X further examined" is paraphrase-drift, not narrative depth. If your two Deep-dive titles share more than 50% of content words or describe the same angle, rewrite one with a distinctly different lens (personal vs analytical, single-case vs industry-wide, present vs historical).
 
 ## COMPLETENESS CHECKLIST
 Before outputting, verify:
 - [ ] Opening hook puts the reader inside a specific scene with a specific person
 - [ ] Every section has a clear H2 subheading (no walls of text)
+- [ ] The two Deep-dive H2 titles are lexically distinct AND explore genuinely different angles
 - [ ] At least 2-3 named sources (or clearly marked placeholders) are included
 - [ ] Data and narrative alternate rhythmically throughout the piece
 - [ ] Counterpoints or nuanced perspectives are present

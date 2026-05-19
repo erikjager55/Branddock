@@ -87,8 +87,8 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 | whitepaper | Cover + page headers (PDF) | ☑ | ☑ | ☐ | 2026-05-18 LINFI — text-content passed. Asset-patroon "Cover + page headers" = zelfde post-launch gap als ebook (zie testplan §4 asset-pipeline disclaimer). WHITEPAPER_SYSTEM prompt-structureel NIET kwetsbaar voor ebook's H1/H7/H4-H6 (Finding 1/2/3 namen zijn by-design semi-static, structure is uniform — geen progressive-shortening curve). H3 fidelity-runner fix toegepast 2026-05-18 raakt whitepaper Strategy-pillar score ook positief. |
 | case-study | Cover + stats visualisatie | ☑ | ☑ | ☐ | 2026-05-18 LINFI |
 | ebook | Cover + chapter dividers | ☑ | ☐ | ☑ | 2026-05-18 LINFI — 5 issues; zie bug-log sectie 5 + `tasks/_drafts/idea-ebook-quality-verbeterplan.md` |
-| article | Hero image | ☐ | ☐ | ☐ | |
-| thought-leadership | Hero met quote overlay | ☐ | ☐ | ☐ | |
+| article | Hero image | ☐ | ☐ | ☐ | Pre-emptive prompt-guard 2026-05-19: ARTICLE_SYSTEM 2× Deep-dive H2 sections uniqueness rule + completeness check toegevoegd (medium paraphrase-drift risk, kleinere schaal dan ebook). H7/H4-H6 NIET applicable (journalistic genre, uniforme word-counts, geen lead-magnet). H3 fidelity-fix raakt auto. |
+| thought-leadership | Hero met quote overlay | ☐ | ☐ | ☐ | Pre-emptive analyse 2026-05-19: THOUGHT_LEADERSHIP_SYSTEM structureel schoon — 3 H2's zijn by-design distinct narrative-beats, 1000-2000w heeft ruim 16K-call headroom, "The call" is al provocation-CTA. Geen prompt-changes nodig. H3 fidelity-fix raakt auto. |
 
 **Category-specific checks**
 - SEO pipeline loopt (8 stappen zichtbaar in progress view)
