@@ -402,11 +402,11 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
           Persists in `settings.visualBrief`. Phase 1 wires the `generate`
           source end-to-end; library/compose/trained-style are placeholders.
 
-          2026-05-19 — hidden for video-script types. Per-scene visuals
-          live in Step 2 (each Scene Breakdown card embeds its own
-          VisualVariantsBlock), so the workspace-level Visual Brief is
-          redundant and confuses the user about which visual is leading. */}
-      {!(contentType && VIDEO_ADJACENT_TYPES.has(contentType)) && <VisualBriefSection />}
+          2026-05-19 — hidden for video-script types (per-scene visuals
+          take over in Step 2) AND for linkedin-poll (LinkedIn polls cannot
+          attach images — showing the slot misleads the user into
+          generating a visual that never lands). */}
+      {!(contentType && (VIDEO_ADJACENT_TYPES.has(contentType) || contentType === 'linkedin-poll')) && <VisualBriefSection />}
 
       {/* Knowledge context */}
       {additionalContextItems.size > 0 && (

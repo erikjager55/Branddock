@@ -3,6 +3,7 @@ import { LinkedInPostPreview } from './LinkedInPostPreview';
 import { LinkedInAdPreview } from './LinkedInAdPreview';
 import { LinkedInVideoAdPreview } from './LinkedInVideoAdPreview';
 import { LinkedInCarouselPreview } from './LinkedInCarouselPreview';
+import { LinkedInPollPreview } from './LinkedInPollPreview';
 import { InstagramPostPreview } from './InstagramPostPreview';
 import { InstagramCarouselPreview } from './InstagramCarouselPreview';
 import { FacebookPostPreview } from './FacebookPostPreview';
@@ -23,6 +24,7 @@ const PLATFORM_PREVIEW_MAP: Record<string, Record<string, PreviewRegistryEntry>>
     ad: { component: LinkedInAdPreview, label: 'LinkedIn Ad' },
     'video-ad': { component: LinkedInVideoAdPreview, label: 'LinkedIn Video Ad' },
     carousel: { component: LinkedInCarouselPreview, label: 'LinkedIn Carousel' },
+    'poll-post': { component: LinkedInPollPreview, label: 'LinkedIn Poll' },
   },
   instagram: {
     'feed-post': { component: InstagramPostPreview, label: 'Instagram Post' },
@@ -81,6 +83,7 @@ const CONTENT_TYPE_PREVIEW_MAP: Record<string, PreviewRegistryEntry> = {
   'linkedin-ad': { component: LinkedInAdPreview, label: 'LinkedIn Ad' },
   'linkedin-post': { component: LinkedInPostPreview, label: 'LinkedIn Post' },
   'linkedin-carousel': { component: LinkedInCarouselPreview, label: 'LinkedIn Carousel' },
+  'linkedin-poll': { component: LinkedInPollPreview, label: 'LinkedIn Poll' },
   'instagram-post': { component: InstagramPostPreview, label: 'Instagram Post' },
   'instagram-carousel': { component: InstagramCarouselPreview, label: 'Instagram Carousel' },
   'facebook-post': { component: FacebookPostPreview, label: 'Facebook Post' },

@@ -629,7 +629,11 @@ Before outputting, verify:
         params.userPrompt,
         params.context,
         params.settings,
-        'Platform: LinkedIn Poll. Question + 2-4 options (max 30 chars each). Include context paragraph, a suggested follow-up comment, and hashtags.',
+        // 2026-05-19 — group structure made explicit so the orchestrator
+        // emits one DeliverableComponent per poll element. The poll preview
+        // (LinkedInPollPreview) reads each group separately to render the
+        // question + option bars + suggested comment widget.
+        'Platform: LinkedIn Poll. Output exactly these component groups: (1) "context" — 30-50 word framing paragraph above the poll, 2-3 sentences setting up the debate. (2) "question" — the poll question itself, plain text under 140 chars, no markdown, no quotes around it. (3) "option-1" — first option string, plain text max 30 chars. (4) "option-2" — second option string, plain text max 30 chars. (5) "option-3" — OPTIONAL third option string, max 30 chars; emit only when the question genuinely benefits from 3+ choices. (6) "option-4" — OPTIONAL fourth option (e.g. "It depends" / "None of the above"), max 30 chars. (7) "follow-up-comment" — 40-60 word first comment the author should post immediately after going live, explaining their own position and inviting others to share theirs. (8) "hashtags" — 2-3 topic-relevant hashtags. NEVER bundle the question and options into a single body field; the preview renders each group separately.',
       ),
   },
 

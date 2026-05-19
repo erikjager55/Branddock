@@ -70,6 +70,20 @@ const FALLBACK_BY_CONTENT_TYPE: Record<string, ComponentTemplateItem[]> = {
     { type: 'body', required: true, isScriptedScene: true },
     { type: 'cta', required: true, isScriptedScene: true },
   ],
+  // 2026-05-19 — LinkedIn poll has a distinct widget structure (question +
+  // 2-4 option bars + vote counter). Without these structured groups the
+  // model bundles everything into a `body` blob, and the preview can't
+  // render the poll widget. Options 3 + 4 are optional per platform spec.
+  'linkedin-poll': [
+    { type: 'context', required: true, maxLength: 350 },
+    { type: 'question', required: true, maxLength: 140 },
+    { type: 'option-1', required: true, maxLength: 30 },
+    { type: 'option-2', required: true, maxLength: 30 },
+    { type: 'option-3', required: false, maxLength: 30 },
+    { type: 'option-4', required: false, maxLength: 30 },
+    { type: 'follow-up-comment', required: true, maxLength: 400 },
+    { type: 'hashtags', required: false, maxLength: 200 },
+  ],
 };
 
 /** Resolve a fallback component template for a content type. Returns
