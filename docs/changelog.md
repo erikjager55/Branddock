@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 263. Competitor AI-event-classifier — pattern-detection bovenop diff-engine
+
+AI-pattern-classifier toegevoegd die CATEGORY_REPOSITIONING (MAJOR) + TARGET_AUDIENCE_CHANGED (NOTABLE) detecteert bovenop de 7 deterministische diff-rules. Architectuur: async wrapper `computeDiffWithClassifier` draait BUITEN `prisma.$transaction` (refresh-route stap 8) zodat de 1-2s Haiku 4.5-call geen TX-locks vasthoudt; `applyCompetitorRefreshDualWrite` kreeg optionele `precomputedDetected` param. Inline Jaccard pre-filter bespaart ~33% AI-calls bij cosmetic shifts. Probe-baseline herbevestigd: 29/30 (96,7%) — geen Haiku-drift sinds 2026-05-08. Smoke 15/15 over 5 scenarios incl NL-fixture. Implementatie-afwijking gedocumenteerd in task-file: GEEN auto-severity-downgrade bij confidence<0,7 (audit toonde spread 0,92-0,98 te smal), alleen `[low-confidence]` summary-prefix.
+
+- Task: [tasks/done/competitor-ai-event-classifier.md](tasks/done/competitor-ai-event-classifier.md)
+- ADR: [`2026-05-08-competitor-snapshot-historie`](docs/adr/2026-05-08-competitor-snapshot-historie.md) (Fase 1 schema-context, geen nieuwe ADR)
+- Spec: [tasks/_drafts/idea-competitor-ai-event-classifier.md](tasks/_drafts/idea-competitor-ai-event-classifier.md), audit [docs/audits/2026-05-08-competitor-classifier-events-accuracy.md](docs/audits/2026-05-08-competitor-classifier-events-accuracy.md)
+- Commit: `9b448d2d`
+
 ### 262. Brandclaw Strategy Analyst — model-ID hotfix
 
 Anthropic API gaf 404 op `claude-sonnet-4-6-20251001` (de dated suffix is geen
