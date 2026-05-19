@@ -33,7 +33,15 @@ import {
  *   - hashtags             → topic-relevant hashtags, rendered between widget
  *                            and action bar
  */
-export function LinkedInPollPreview({ isGenerating, brandName }: PlatformPreviewProps) {
+// LinkedIn poll-duration labels — Dutch UI copy matching real LinkedIn.
+const POLL_DURATION_LABELS: Record<string, string> = {
+  '1d': 'Nog 1 dag',
+  '3d': 'Nog 3 dagen',
+  '1w': 'Nog 1 week',
+  '2w': 'Nog 2 weken',
+};
+
+export function LinkedInPollPreview({ isGenerating, brandName, mediumConfig }: PlatformPreviewProps) {
   // Inline-edit entries — call hooks unconditionally so order stays stable
   // across renders. Each `useEditableEntry` returns null when the group
   // isn't present yet, so we just gate the render below.
@@ -164,12 +172,15 @@ export function LinkedInPollPreview({ isGenerating, brandName }: PlatformPreview
             ))
           )}
         </div>
-        {/* Vote counter footer — static mockup numbers; real LinkedIn shows
-            running count + countdown. We surface "Closes in 1 week" because
-            it's the LinkedIn default per the linkedin-poll prompt. */}
+        {/* Vote counter footer — static mockup numbers; the remaining-time
+            label reflects the pollDuration mediumConfig key (1d / 3d / 1w /
+            2w — LinkedIn's allowed values). Real LinkedIn shows running
+            vote count + countdown that ticks down. */}
         <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-          <span className="text-xs text-gray-500">245 votes · 6d remaining</span>
-          <span className="text-xs text-gray-400">Anonymous voting</span>
+          <span className="text-xs text-gray-500">
+            245 stemmen · {POLL_DURATION_LABELS[(mediumConfig?.pollDuration as string) ?? '1w'] ?? 'Nog 1 week'}
+          </span>
+          <span className="text-xs text-gray-400">Anoniem stemmen</span>
         </div>
       </div>
 

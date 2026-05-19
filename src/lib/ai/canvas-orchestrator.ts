@@ -1220,6 +1220,7 @@ export async function* orchestrateContentGeneration(
       imageResults,
       { provider: textModel.provider, textDurationMs, imageDurationMs },
       publishSuggestion,
+      stack.deliverableTypeId ?? null,
     );
     imageComponentIds = result.imageComponentIds;
     // ── Checkpoint-gate [5] absorb sanitization-warnings (sub-sprint #6.A) ──
@@ -3129,6 +3130,10 @@ async function persistVariants(
   imageResults: Array<ImageResult | null>,
   meta: { provider: string; textDurationMs: number; imageDurationMs: number },
   publishSuggestion: PublishSuggestion | null,
+  /** Content-type id for type-specific post-processing (e.g. linkedin-poll
+   *  char-cap on question / option-* groups). Nullable for callers that
+   *  don't have it in scope; type-specific branches are skipped. */
+  contentTypeId: string | null,
 ): Promise<{
   imageComponentIds: string[];
   sanitizationWarnings: import('@/lib/content-test/checkpoint-gates').GateResult[];
@@ -3195,6 +3200,21 @@ async function persistVariants(
           }
           sanitizationWarnings.push(sanGate);
         }
+        // 2026-05-19 — LinkedIn poll char limits are hard cutoffs on the
+        // platform (option > 30 chars truncates on mobile; question > 140
+        // chars is rejected by the LinkedIn poll composer). Models often
+        // overshoot despite explicit prompt instructions, so we cap server-
+        // side as a vangnet. Ellipsis suffix signals the limit was hit so
+        // the user can shorten and regenerate or inline-edit.
+        let cappedContent = normalizedContent;
+        if (contentTypeId === 'linkedin-poll') {
+          const trimmed = normalizedContent.trim();
+          if (component.group === 'question' && trimmed.length > 140) {
+            cappedContent = trimmed.slice(0, 139) + '…';
+          } else if (/^option-[1-4]$/.test(component.group) && trimmed.length > 30) {
+            cappedContent = trimmed.slice(0, 29) + '…';
+          }
+        }
         textComponentCount++;
         await tx.deliverableComponent.create({
           data: {
@@ -3205,7 +3225,7 @@ async function persistVariants(
             variantGroup: component.group,
             variantIndex,
             isSelected: variantIndex === 0,
-            generatedContent: normalizedContent,
+            generatedContent: cappedContent,
             visualBrief: normalizedCta ? JSON.stringify({ cta: normalizedCta }) : null,
             aiProvider: meta.provider,
             generationDuration: meta.textDurationMs,

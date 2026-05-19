@@ -192,7 +192,7 @@ const CONTENT_TYPE_TO_MEDIUM: Record<string, { platform: string; format: string 
   'linkedin-newsletter': { platform: 'linkedin', format: 'organic-post' },
   'linkedin-video': { platform: 'linkedin', format: 'organic-post' },
   'linkedin-event': { platform: 'linkedin', format: 'organic-post' },
-  'linkedin-poll': { platform: 'linkedin', format: 'organic-post' },
+  'linkedin-poll': { platform: 'linkedin', format: 'poll-post' },
   'instagram-post': { platform: 'instagram', format: 'feed-post' },
   'social-carousel': { platform: 'instagram', format: 'carousel' },
   'tiktok-script': { platform: 'tiktok', format: 'video' },

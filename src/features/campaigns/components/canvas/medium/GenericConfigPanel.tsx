@@ -18,6 +18,10 @@ interface GenericConfigPanelProps {
 /** Registry-driven config panel for non-video categories */
 export function GenericConfigPanel({ category, onAdvance, deliverableId }: GenericConfigPanelProps) {
   const config = MEDIUM_CATEGORY_CONFIGS[category];
+  const contentType = useCanvasStore((s) => s.contentType);
+  const pollDuration = useCanvasStore((s) => s.mediumConfigValues.pollDuration as string | undefined);
+  const setConfigValue = useCanvasStore((s) => s.setMediumConfigValue);
+  const isLinkedInPoll = contentType === 'linkedin-poll';
 
   // Initialize defaults on mount / category change; reset stale keys from previous category
   useEffect(() => {
@@ -31,6 +35,15 @@ export function GenericConfigPanel({ category, onAdvance, deliverableId }: Gener
         validKeys.add(field.key);
         defaults[field.key] = field.defaultValue;
       }
+    }
+
+    // 2026-05-19 — LinkedIn poll-specific config-key. Mirrors the 4 poll-
+    // duration options the LinkedIn composer offers (1 day / 3 days /
+    // 1 week / 2 weeks). Default 1 week matches LinkedIn's pre-selected
+    // value and the poll-prompt's "1 week performs best" guidance.
+    if (isLinkedInPoll) {
+      validKeys.add('pollDuration');
+      defaults.pollDuration = '1w';
     }
 
     // Build new config: defaults first, then current values for valid keys only
@@ -51,7 +64,7 @@ export function GenericConfigPanel({ category, onAdvance, deliverableId }: Gener
     if (needsUpdate) {
       useCanvasStore.getState().setMediumConfigValues(merged);
     }
-  }, [category]); // eslint-disable-line react-hooks/exhaustive-deps -- config is derived from category
+  }, [category, isLinkedInPoll]); // eslint-disable-line react-hooks/exhaustive-deps -- config is derived from category
 
   // Web-page has its own layout with article-specific rendering (hero
   // styles, layout modes, CTA). All other categories use the unified
@@ -67,6 +80,42 @@ export function GenericConfigPanel({ category, onAdvance, deliverableId }: Gener
           ))}
         </ConfigSection>
       ))}
+      {/* 2026-05-19 — LinkedIn poll duration picker. Lives outside the
+          category registry because it's specific to one content-type
+          (linkedin-poll), not the whole social-post category. */}
+      {isLinkedInPoll && (
+        <ConfigSection title="Poll Settings">
+          <div>
+            <label className="text-xs font-medium text-gray-700 mb-1.5 block">Poll duration</label>
+            <div className="flex gap-1.5 flex-wrap">
+              {[
+                { value: '1d', label: '1 day' },
+                { value: '3d', label: '3 days' },
+                { value: '1w', label: '1 week' },
+                { value: '2w', label: '2 weeks' },
+              ].map((opt) => {
+                const active = (pollDuration ?? '1w') === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setConfigValue('pollDuration', opt.value)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      active ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    style={active ? { backgroundColor: '#0d9488' } : undefined}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-gray-500 mt-1.5">
+              LinkedIn limits polls to these four durations. 1 week is the platform default and typically performs best.
+            </p>
+          </div>
+        </ConfigSection>
+      )}
     </Layout>
   );
 }
