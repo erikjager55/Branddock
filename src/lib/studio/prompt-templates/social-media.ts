@@ -5,7 +5,7 @@
 // Social Carousel
 // =============================================================
 
-export const PROMPT_VERSION = '1.2.0';
+export const PROMPT_VERSION = '1.3.0';
 
 import type { PromptTemplate } from './helpers';
 import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './helpers';
@@ -168,11 +168,13 @@ Body: 'Save this carousel and follow @handle for weekly brand strategy insights.
 - NEVER put the most important insight on the last content slide — front-load value
 - NEVER use stock photo backgrounds with text overlay — it looks cheap and reduces readability
 - NEVER create carousels shorter than 5 slides — the algorithm rewards more swipes
+- NEVER label two slides with paraphrase-duplicate headings — "Inconsistent Visual Identity" + "Inconsistent Visual Brand" describe the same concept. If two slide-headings share more than 50% of content words OR cover the same idea, rewrite one with a genuinely different angle (different framework, different counter-example, different timeframe).
 
 ## COMPLETENESS CHECKLIST
 Before outputting, verify:
 - [ ] Slide 1 headline would make a professional stop scrolling and start swiping
 - [ ] Each slide has ONE clear idea with a bold heading
+- [ ] All content-slide headings are lexically AND conceptually distinct (no paraphrase-duplicates across the deck)
 - [ ] Total slides are between 7-10 (the engagement sweet spot)
 - [ ] Visual direction is consistent and professional across all slides
 - [ ] Final slide has a specific, actionable CTA
@@ -792,6 +794,7 @@ If this was useful:
 - NEVER exceed 12 tweets — thread fatigue is real, and completion rates drop sharply after 12
 - NEVER forget the final CTA tweet — this is where you convert readers into followers
 - NEVER use hashtags in threads — they look spammy and break the reading flow on X/Twitter
+- NEVER make two numbered patterns/insights overlap conceptually — if "Pattern 3: Own a word" already covers brand-positioning-via-vocabulary, "Pattern 5: Be consistent in messaging" is too close. Each numbered point must address a genuinely different facet (different framework, different counter-example, different dimension).
 
 ## COMPLETENESS CHECKLIST
 Before outputting, verify:
@@ -799,6 +802,7 @@ Before outputting, verify:
 - [ ] Each tweet is under 280 characters and makes sense when read in isolation
 - [ ] The thread escalates in value — the best insight is in the middle or near the end
 - [ ] Variety in tweet structure (statements, questions, one-liners, examples)
+- [ ] Each numbered pattern/insight names a distinct concept (no near-synonyms or conceptual overlaps across the list)
 - [ ] Final tweet includes a clear RT + follow CTA
 - [ ] Thread is between 7-12 tweets (the completion sweet spot)
 - [ ] Would you bookmark this thread to reference later?`,
@@ -1031,11 +1035,13 @@ Body: 'Follow @handle for weekly brand strategy tips that actually work.'"
 - NEVER create carousels shorter than 5 slides — the swipe momentum needs at least 5 slides to build
 - NEVER frontload with too much context — get to the value by slide 3 at the latest
 - NEVER make slides text-heavy — if a slide looks like a paragraph, it needs to be split into two slides
+- NEVER label two content slides with paraphrase-duplicate headings — "Mistake 4: Inconsistent voice" + "Mistake 6: Voice inconsistency" describe the same concept. If two slide-headings share more than 50% of content words OR cover the same idea, rewrite one with a genuinely different angle.
 
 ## COMPLETENESS CHECKLIST
 Before outputting, verify:
 - [ ] Slide 1 headline would make someone stop scrolling and start swiping
 - [ ] Each slide has ONE clear idea with a bold heading
+- [ ] All content-slide headings are lexically AND conceptually distinct (no paraphrase-duplicates across the deck)
 - [ ] Total slides are between 7-10 (the engagement sweet spot)
 - [ ] Visual direction is consistent and professional across all slides
 - [ ] A summary/cheat sheet slide is included (the most-saved slide)

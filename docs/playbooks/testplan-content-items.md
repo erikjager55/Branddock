@@ -103,19 +103,19 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R linkedin-post** | Inline image met text overlay | ☐ | ☐ | ☐ | |
-| linkedin-article | Hero image | ☐ | ☐ | ☐ | |
-| linkedin-carousel | 5-10 slide set (gedesigned) | ☐ | ☐ | ☐ | |
-| linkedin-ad | Ad creative met CTA | ☐ | ☐ | ☐ | |
-| linkedin-newsletter | Header + hero | ☐ | ☐ | ☐ | |
-| linkedin-video | Thumbnail + script storyboard | ☐ | ☐ | ☐ | |
-| linkedin-event | Event banner | ☐ | ☐ | ☐ | |
-| linkedin-poll | Geen asset (text-only) | ☐ | ☐ | ☐ | |
-| instagram-post | Square image met caption styling | ☐ | ☐ | ☐ | |
-| twitter-thread | Optionele image per tweet | ☐ | ☐ | ☐ | |
-| facebook-post | Inline image | ☐ | ☐ | ☐ | |
-| tiktok-script | Storyboard frames | ☐ | ☐ | ☐ | |
-| social-carousel | Multi-slide gedesigned | ☐ | ☐ | ☐ | |
+| **R linkedin-post** | Inline image met text overlay | ☐ | ☐ | ☐ | Single text-blob. Anti-pattern #91 verbiedt al hook-repeat. H3 fidelity-fix raakt auto. Step-1-skip-bug bij inheritance gefixt 2026-05-19 (commit 478bae78). |
+| linkedin-article | Hero image | ☐ | ☐ | ☐ | Long-form pad — erft pillar-page/article guards. H3 fidelity-fix raakt auto. |
+| linkedin-carousel | 5-10 slide set (gedesigned) | ☐ | ☐ | ☐ | Pre-emptive paraphrase-guard 2026-05-19: anti-pattern + completeness check tegen duplicate slide-headings (mild risk uit ebook H1 lesson, kleinere schaal — 7-10 slides × 15-30w). H2 asset-pipeline post-launch — slide-designs zijn handmatig in Step 3. |
+| linkedin-ad | Ad creative met CTA | ☐ | ☐ | ☐ | Single ad-copy. H3 fidelity-fix raakt auto. |
+| linkedin-newsletter | Header + hero | ☐ | ☐ | ☐ | Single text. H3 fidelity-fix raakt auto. |
+| linkedin-video | Thumbnail + script storyboard | ☐ | ☐ | ☐ | Hook/Body/CTA beats — by-design distinct. H3 fidelity-fix raakt auto. |
+| linkedin-event | Event banner | ☐ | ☐ | ☐ | Single text. H3 fidelity-fix raakt auto. |
+| linkedin-poll | Geen asset (text-only) | ☐ | ☐ | ☐ | 2-4 options met explicit "meaningfully different positions" guard (anti-pattern #521 al aanwezig). H3 fidelity-fix raakt auto. |
+| instagram-post | Square image met caption styling | ☐ | ☐ | ☐ | Single text-blob. H3 fidelity-fix raakt auto. |
+| twitter-thread | Optionele image per tweet | ☐ | ☐ | ☐ | Pre-emptive paraphrase-guard 2026-05-19: anti-pattern + completeness check tegen overlappende numbered-pattern concepten (mild risk uit ebook H1 lesson). H3 fidelity-fix raakt auto. |
+| facebook-post | Inline image | ☐ | ☐ | ☐ | Single text-blob. H3 fidelity-fix raakt auto. |
+| tiktok-script | Storyboard frames | ☐ | ☐ | ☐ | Hook/Setup/Body/Payoff/CTA — by-design distinct beats. H3 fidelity-fix raakt auto. |
+| social-carousel | Multi-slide gedesigned | ☐ | ☐ | ☐ | Pre-emptive paraphrase-guard 2026-05-19: idem als linkedin-carousel. H2 asset-pipeline post-launch. |
 
 **Category-specific checks**
 - Character limits per platform gerespecteerd (LinkedIn 3000, X 280, Instagram 2200)
