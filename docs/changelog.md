@@ -44,7 +44,7 @@ AI-pattern-classifier toegevoegd die CATEGORY_REPOSITIONING (MAJOR) + TARGET_AUD
 - Task: [tasks/done/competitor-ai-event-classifier.md](tasks/done/competitor-ai-event-classifier.md)
 - ADR: [`2026-05-08-competitor-snapshot-historie`](docs/adr/2026-05-08-competitor-snapshot-historie.md) (Fase 1 schema-context, geen nieuwe ADR)
 - Spec: [tasks/_drafts/idea-competitor-ai-event-classifier.md](tasks/_drafts/idea-competitor-ai-event-classifier.md), audit [docs/audits/2026-05-08-competitor-classifier-events-accuracy.md](docs/audits/2026-05-08-competitor-classifier-events-accuracy.md)
-- Commit: TBD
+- Commit: `9b448d2d`
 
 ### 262. Brandclaw Strategy Analyst — model-ID hotfix
 
