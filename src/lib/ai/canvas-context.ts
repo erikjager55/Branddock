@@ -184,6 +184,11 @@ const CONTENT_TYPE_TO_MEDIUM: Record<string, { platform: string; format: string 
   'linkedin-article': { platform: 'linkedin', format: 'organic-post' },
   'linkedin-carousel': { platform: 'linkedin', format: 'carousel' },
   'linkedin-ad': { platform: 'linkedin', format: 'ad' },
+  // 2026-05-19: paid video-ad — apart van organic 'linkedin-video' zodat
+  // publish-timing checklist + canvas-orchestrator video-script branch
+  // niet hoeven branchen op format-string. Eigen content-type heeft eigen
+  // medium-format 'video-ad'.
+  'linkedin-video-ad': { platform: 'linkedin', format: 'video-ad' },
   'linkedin-newsletter': { platform: 'linkedin', format: 'organic-post' },
   'linkedin-video': { platform: 'linkedin', format: 'organic-post' },
   'linkedin-event': { platform: 'linkedin', format: 'organic-post' },

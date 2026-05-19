@@ -8,20 +8,21 @@
 // en canvas-orchestrator injecteerde de raw string. Inconsistencies
 // blokkeerden format-specific gedrag (prompt-branching, checklist).
 //
-// Pre-launch scope (Q1): 3 formats supported. Carousel-ad uitgesteld
-// (afhankelijk van algemene carousel-pipeline) + Text Ad uitgesloten
-// (LinkedIn heeft dit format gedeprecateerd, niet meer aanbevolen voor
-// nieuwe campagnes).
+// Pre-launch scope: 2 formats supported in linkedin-ad. Video-ad is sinds
+// 2026-05-19 een **eigen content-type** (`linkedin-video-ad`) met eigen
+// prompt + video-generation pipeline; te selecteren in Add Content modal.
+// Carousel-ad uitgesteld (afhankelijk van algemene carousel-pipeline);
+// Text Ad uitgesloten (LinkedIn heeft format gedeprecateerd).
 // =============================================================
 
-export type LinkedInAdFormat = 'single-image' | 'video-ad' | 'message-ad';
+export type LinkedInAdFormat = 'single-image' | 'message-ad';
 
 export interface LinkedInAdFormatDef {
   value: LinkedInAdFormat;
   label: string;
   description: string;
   /** Welke output-componenten verwacht worden in de gegenereerde content. */
-  expectedComponents: ReadonlyArray<'image' | 'video-script' | 'thumbnail' | 'subject' | 'sender' | 'body' | 'cta'>;
+  expectedComponents: ReadonlyArray<'image' | 'subject' | 'sender' | 'body' | 'cta'>;
 }
 
 export const LINKEDIN_AD_FORMATS: ReadonlyArray<LinkedInAdFormatDef> = [
@@ -30,12 +31,6 @@ export const LINKEDIN_AD_FORMATS: ReadonlyArray<LinkedInAdFormatDef> = [
     label: 'Single Image',
     description: 'Sponsored content met 1 hero-image, intro-text, headline en CTA.',
     expectedComponents: ['image', 'body', 'cta'],
-  },
-  {
-    value: 'video-ad',
-    label: 'Video',
-    description: 'Video-script (3s-30min) met thumbnail, intro-text en CTA.',
-    expectedComponents: ['video-script', 'thumbnail', 'body', 'cta'],
   },
   {
     value: 'message-ad',

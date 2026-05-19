@@ -20,6 +20,8 @@ Pre-launch quick-wins (Q1-Q4, 2026-05-19) maken LinkedIn-ad sub-format-aware op:
 - Q3: Format-specific prompt-sectie in `canvas-orchestrator.ts` (output-shape per format).
 - Q4: Format-aware publication-checklist in `publish-timing.ts`.
 
+**Update later 2026-05-19**: `video-ad` subformat is split-out naar **eigen content-type `linkedin-video-ad`** (Optie C uit gesprek). linkedin-ad heeft nu alleen Single Image + Message Ad. F1/F2/F3 follow-ups hieronder slaan op die 2 resterende formats. linkedin-video-ad is een aparte content-type met eigen video-generation pipeline (VIDEO_ADJACENT_TYPES set) — F1-F3 toelichting hieronder loopt parallel maar elke fase moet beslissen of linkedin-video-ad meegenomen wordt of een eigen follow-up traject krijgt.
+
 Drie items zijn bewust uitgesteld omdat ze meer UI-/architectural werk vergen dan een pre-launch sprint kan opvangen. Dit plan documenteert die items + effort + dependencies zodat ze post-launch oppakbaar zijn.
 
 **Out of scope voor deze follow-up (per user 2026-05-19)**:

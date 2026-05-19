@@ -129,13 +129,10 @@ export function getChecklistForPlatform(
   }
 
   // LinkedIn-ad sub-format aware checklist (Q4 2026-05-19). Andere social
-  // platforms krijgen generic checklist hieronder.
+  // platforms krijgen generic checklist hieronder. video-ad subformat is
+  // split-out naar eigen content-type linkedin-video-ad met format 'video-ad'.
   if (platform === 'linkedin' && format === 'ad') {
-    if (adFormat === 'video-ad') {
-      items.push({ id: 'has-image', label: 'Thumbnail added', required: true });
-      items.push({ id: 'has-cta', label: 'Call-to-action included', required: true });
-      items.push({ id: 'char-limit', label: 'Within character limit', required: true });
-    } else if (adFormat === 'message-ad') {
+    if (adFormat === 'message-ad') {
       items.push({ id: 'has-subject', label: 'Subject line is set', required: true });
       items.push({ id: 'has-cta', label: 'Call-to-action button label is set', required: true });
       // Message Ad heeft GEEN hero-image — InMail-format
@@ -145,6 +142,12 @@ export function getChecklistForPlatform(
       items.push({ id: 'has-cta', label: 'Call-to-action included', required: true });
       items.push({ id: 'char-limit', label: 'Within character limit', required: true });
     }
+  } else if (platform === 'linkedin' && format === 'video-ad') {
+    // 2026-05-19: linkedin-video-ad (paid video-ad) — script + thumbnail
+    // + landing-page CTA. Geen hashtags (ads). Char-limit op intro-caption.
+    items.push({ id: 'has-image', label: 'Thumbnail added', required: true });
+    items.push({ id: 'has-cta', label: 'Call-to-action included', required: true });
+    items.push({ id: 'char-limit', label: 'Within character limit', required: true });
   } else if (platform === 'linkedin' || platform === 'instagram' || platform === 'facebook' || platform === 'tiktok') {
     items.push({ id: 'has-image', label: 'Hero image added', required: true });
     items.push({ id: 'has-hashtags', label: 'Hashtags included', required: false });

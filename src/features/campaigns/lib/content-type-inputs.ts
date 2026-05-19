@@ -167,6 +167,10 @@ const CATEGORY_BY_TYPE: Record<string, ContentCategory> = {
   'testimonial-video': 'video',
   'promo-video': 'video',
   'linkedin-video': 'video',
+  // 2026-05-19 paid LinkedIn video-ad (split-out van linkedin-ad
+  // video-ad subformat). Hybrid: conversion-ad + video category, hier
+  // primair als 'video' geclassificeerd voor input-field samenstelling.
+  'linkedin-video-ad': 'video',
   'employer-brand-video': 'video',
   'video-ad': 'ad',
   // web-page
@@ -1495,19 +1499,17 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       label: "Ad Format",
       category: "format-specs",
       type: "select",
-      // Q1+Q2 (2026-05-19): scope teruggebracht naar 3 ondersteunde formats
-      // + value/label shape geunificeerd via LINKEDIN_AD_FORMATS. Step 3
-      // medium-config + canvas-orchestrator prompt-builder + publish-timing
-      // checklist lezen uit dezelfde bron. Carousel-ad + Text Ad gedropt.
+      // 2026-05-19 update: video-ad subformat is split-out naar eigen
+      // content-type `linkedin-video-ad` (eigen prompt + video-generation
+      // pipeline). linkedin-ad heeft nu alleen Single Image en Message Ad.
       options: [
         { value: "single-image", label: "Single Image" },
-        { value: "video-ad", label: "Video" },
         { value: "message-ad", label: "Message Ad" },
       ],
       required: true,
-      helpText: "LinkedIn ad placement format — bepaalt prompt-output structuur + publish-checklist items",
+      helpText: "LinkedIn ad placement format — voor video-ads selecteer 'LinkedIn Video Ad' content-type",
       aiDerivable: true,
-      aiHint: "Based on campaign goal: awareness→single-image, story→video-ad, conversion-1-on-1→message-ad",
+      aiHint: "Based on campaign goal: awareness→single-image, conversion-1-op-1→message-ad",
     },
   ],
 
@@ -1717,6 +1719,43 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       type: "text",
       placeholder: "e.g. 'Day in the life' format, trending audio XYZ",
       helpText: "TikTok trend or sound to leverage",
+    },
+  ],
+
+  // 2026-05-19 nieuw content-type — paid LinkedIn Video Ad
+  "linkedin-video-ad": [
+    ...conversionContentStyleFields(),
+    valueProposition(),
+    ...videoContentStyleFields(),
+    videoDuration(),
+    landingPageUrl(),
+    {
+      key: "hookStrategy",
+      label: "Hook Strategy (eerste 3s)",
+      category: "creative-direction",
+      type: "select",
+      options: [
+        { value: "bold-statement", label: "Bold statement / counterintuitive claim" },
+        { value: "question", label: "Open question" },
+        { value: "pattern-interrupt", label: "Pattern-interrupt visual" },
+        { value: "stat-shock", label: "Surprising statistic" },
+        { value: "story-open", label: "Mid-scene story-open" },
+      ],
+      helpText: "Hoe stop je de scroll in de eerste 3 seconden (silent autoplay)",
+      aiDerivable: true,
+      aiHint: "Based on persona pain-point + campaign goal: awareness→bold-statement, conversion→stat-shock",
+    },
+    {
+      key: "captionStyle",
+      label: "On-screen Caption Style",
+      category: "format-specs",
+      type: "select",
+      options: [
+        { value: "burned-in", label: "Burned-in captions (always visible)" },
+        { value: "auto-closed", label: "Auto-generated closed captions" },
+        { value: "key-phrases", label: "Key-phrase overlays (highlights only)" },
+      ],
+      helpText: "LinkedIn autoplay is silent — captions zijn essentieel voor watch-time. Default: burned-in.",
     },
   ],
 

@@ -54,6 +54,9 @@ const MULTI_CANDIDATE_DEFAULTS: Record<string, number> = {
   // Social media hero — head-to-head test loont voor scroll-stopper
   "instagram-post-carousel": 3,
   "instagram-post": 3,
+  // 2026-05-19: LinkedIn Video Ad — 3 thumbnail-candidates voor selectie
+  // (thumbnail bepaalt stop-scroll-rate sterker dan caption alleen)
+  "linkedin-video-ad": 3,
   // Standaard 2 — alle andere types vallen in default-tak
 };
 
@@ -405,7 +408,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
   {
     id: "linkedin-ad",
     name: "LinkedIn Sponsored Post",
-    description: "Paid LinkedIn ad with intro text and creative",
+    description: "Paid LinkedIn ad (Single Image or Message Ad — for video-ads use 'LinkedIn Video Ad')",
     category: "Social Media",
     funnelStage: "conversion",
     outputFormats: ["Text", "Image"],
@@ -419,6 +422,27 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
       { name: 'Creative Impact', weight: 0.10, description: 'Visual-text synergy, stopping power' },
     ],
     exportFormats: LINKEDIN_DEFAULTS.exportFormats,
+  },
+  {
+    // 2026-05-19 nieuw content-type (split-out van linkedin-ad video-ad
+    // subformat). Eigen content-type heeft eigen prompt, eigen video-
+    // generation pipeline via VIDEO_ADJACENT_TYPES, eigen checklist.
+    id: "linkedin-video-ad",
+    name: "LinkedIn Video Ad",
+    description: "Paid LinkedIn video ad with script + thumbnail + ad-copy. Generates actual video via fal.ai providers.",
+    category: "Social Media",
+    funnelStage: "conversion",
+    outputFormats: ["Text", "Video"],
+    icon: "Film",
+    constraints: { minWords: 80, maxWords: 250, maxChars: 600 },
+    qualityCriteria: [
+      { name: 'Hook Impact', weight: 0.30, description: 'First 3 seconds stop the scroll on autoplay-silent' },
+      { name: 'Conversion Focus', weight: 0.25, description: 'CTA strength, value-proposition clarity' },
+      { name: 'Visual-Script Synergy', weight: 0.20, description: 'Script + [VISUAL] cues align coherent' },
+      { name: 'Platform Compliance', weight: 0.15, description: 'LinkedIn video-ad specs (length, aspect, captions)' },
+      { name: 'Brand Voice', weight: 0.10, description: 'Authenticity, persona-fit, professional credibility' },
+    ],
+    exportFormats: ['txt', 'mp4'],
   },
   {
     id: "linkedin-newsletter",
@@ -996,6 +1020,9 @@ export const VIDEO_ADJACENT_TYPES = new Set([
   'brand-video-script',
   'radio-script',
   'podcast-ad-script',
+  // 2026-05-19: LinkedIn Video Ad (paid) — split-out van linkedin-ad
+  // video-ad subformat. Triggert dezelfde "Generate Video" flow.
+  'linkedin-video-ad',
 ]);
 
 /** Default video generation config per deliverable type */
@@ -1005,6 +1032,12 @@ export function getDefaultVideoConfig(typeId: string): {
   provider: string;
 } {
   const isVertical = ['tiktok-script'].includes(typeId);
+  // LinkedIn Video Ad: 16:9 landscape (LinkedIn's preferred ad-aspect),
+  // 8-15s sweet-spot voor sponsored video (sweet-spot tussen attention
+  // span en hook-development).
+  if (typeId === 'linkedin-video-ad') {
+    return { aspectRatio: '16:9', duration: 8, provider: 'kling-v3-pro' };
+  }
   return {
     aspectRatio: isVertical ? '9:16' : '16:9',
     duration: typeId === 'tiktok-script' ? 6 : 8,

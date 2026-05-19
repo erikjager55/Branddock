@@ -2604,15 +2604,13 @@ function formatMediumConfig(config: Record<string, unknown>): string {
       parts.push(
         '  Required output shape: (1) intro-text 100-150w, (2) headline max 70 chars, (3) one-line description max 100 chars, (4) clear CTA matching campaign goal. Visual is hero-image with text overlay.',
       );
-    } else if (adFormat === 'video-ad') {
-      parts.push(
-        '  Required output shape: (1) intro-text 80-120w, (2) video-script structured as Hook (0-3s) / Body (3-25s) / CTA (25-30s) with explicit [VISUAL] cues, (3) thumbnail description for static preview, (4) closing CTA. Length 15-30s sweet-spot.',
-      );
     } else if (adFormat === 'message-ad') {
       parts.push(
         '  Required output shape: (1) subject line max 60 chars (personal-tone, no marketing jargon), (2) sender name + role, (3) body 100-150w in first-person warm tone like a 1-op-1 InMail, (4) CTA-button label max 25 chars. NO hero-image — this is inMail format. Avoid generic "Dear [Name]" — make it specific to persona.',
       );
     }
+    // Note: video-ad subformat split-out naar dedicated content-type
+    // `linkedin-video-ad` (2026-05-19). Geen video-branch hier nodig.
 
     if (config.ctaType && !ctaType) parts.push(`- CTA: ${config.ctaType as string}.`);
     if (socialProof) parts.push('- Include social proof (numbers, testimonials, or trust signals).');
