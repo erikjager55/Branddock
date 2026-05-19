@@ -37,6 +37,17 @@ import { z } from 'zod';
 const VISUAL_GROUP = 'visual';
 
 /**
+ * Resolve het variantGroup-label voor opslag. Workspace-level = 'visual'
+ * (huidige flow). Scene-scoped (2026-05-19 Fase 1) = 'visual:<sceneId>'
+ * (bv 'visual:hook') zodat per-scene variants los gepersisteerd worden
+ * zonder Prisma-schema-migratie. Client-side hydration in CanvasPage
+ * en VisualVariantsBlock leest dezelfde encoding.
+ */
+function resolveVisualGroup(sceneId: 'hook' | 'body' | 'cta' | undefined): string {
+  return sceneId ? `${VISUAL_GROUP}:${sceneId}` : VISUAL_GROUP;
+}
+
+/**
  * The route auto-routes between FLUX.2 Pro / GPT Image 2 / Recraft V3
  * based on the chosen style chip — see selectModelForStyle() in
  * visual-brief-prompts.ts. Fallback when no chip is set is FLUX.2 Pro.
@@ -118,6 +129,13 @@ const requestSchema = z
     aspectRatio: z.enum(['1:1', '16:9', '9:16', '4:3', '3:4']).optional(),
     /** How many variants to generate (1-3). Default 2. */
     count: z.number().int().min(1).max(3).optional(),
+    /**
+     * Optional scene-scope (2026-05-19 Fase 1). Wanneer set, variants
+     * worden gepersisteerd onder `settings.scenes[sceneId].imageVariants`
+     * ipv top-level. Voor video-script types waar elke scene (hook/body/
+     * cta) eigen visual heeft. Niet-set = workspace-level (huidige flow).
+     */
+    sceneId: z.enum(['hook', 'body', 'cta']).optional(),
   })
   .strict()
   .or(z.undefined());
@@ -327,12 +345,14 @@ export async function POST(request: Request, { params }: RouteParams) {
       }),
     );
 
-    // Persist as DeliverableComponent variantGroup='visual'. Replace any
-    // existing visual variants — the user clicked Generate, they want fresh.
+    // Persist as DeliverableComponent variantGroup='visual' of
+    // 'visual:<sceneId>'. Replace any existing visual variants in dezelfde
+    // group — workspace-level vs scene-scoped staan los van elkaar.
     const elapsedMs = Date.now() - startMs;
+    const variantGroup = resolveVisualGroup(body?.sceneId);
     const components = await prisma.$transaction(async (tx) => {
       await tx.deliverableComponent.deleteMany({
-        where: { deliverableId, variantGroup: VISUAL_GROUP },
+        where: { deliverableId, variantGroup },
       });
       const baseOrder = await tx.deliverableComponent.count({ where: { deliverableId } });
       const created: Array<{ id: string; url: string; prompt: string }> = [];
@@ -344,7 +364,7 @@ export async function POST(request: Request, { params }: RouteParams) {
             componentType: 'image',
             groupType: 'variant',
             order: baseOrder + i,
-            variantGroup: VISUAL_GROUP,
+            variantGroup,
             variantIndex: i,
             isSelected: i === 0,
             imageUrl: u.url,
@@ -385,6 +405,9 @@ export async function POST(request: Request, { params }: RouteParams) {
       model: modelId,
       aspectRatio: aspectLabel,
       generationDuration: elapsedMs,
+      // 2026-05-19 Fase 1: echo sceneId terug zodat client kan routen
+      // naar sceneImageVariants[sceneId] ipv workspace-level state.
+      sceneId: body?.sceneId ?? null,
     });
   } catch (err) {
     console.error('[generate-visual] error:', err);

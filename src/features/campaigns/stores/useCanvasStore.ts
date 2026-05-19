@@ -96,6 +96,14 @@ interface CanvasStoreState {
   // ─── Image variants ───────────────────────────────────────
   imageVariants: CanvasImageVariant[];
 
+  // ─── Scene-scoped image variants (video-script types) ─────
+  // 2026-05-19 Fase 1: per-scene visual sectie split. Voor video-script
+  // types (linkedin-video-ad, tiktok-script, etc.) krijgt elke scene
+  // (hook/body/cta) eigen imageVariants set. Workspace-level
+  // imageVariants blijft voor non-scene flows.
+  sceneImageVariants: Record<SceneId, CanvasImageVariant[]>;
+  sceneHeroImage: Record<SceneId, { url: string; mediaAssetId: string | null; alt?: string } | null>;
+
   // ─── Visual generation lifecycle ──────────────────────────
   // Lifted from Step2ContentVariants local state so Step 1 can also
   // drive visual generation (Pad B, audit 2026-05-15) and Step 2
@@ -345,6 +353,10 @@ interface CanvasStoreState {
   setGenerationStatus: (group: string, status: GenerationStatus) => void;
   setGlobalStatus: (status: GenerationStatus, errorMessage?: string) => void;
   setImageVariants: (variants: CanvasImageVariant[]) => void;
+
+  // ─── Scene-scoped image setters (video-script types) ──────
+  setSceneImageVariants: (sceneId: SceneId, variants: CanvasImageVariant[]) => void;
+  setSceneHeroImage: (sceneId: SceneId, image: { url: string; mediaAssetId: string | null; alt?: string } | null) => void;
   setVisualGenerationStatus: (
     status: 'idle' | 'generating' | 'error',
     errorMessage?: string | null,
@@ -552,6 +564,8 @@ const INITIAL_STATE = {
   globalStatus: 'idle' as GenerationStatus,
   globalErrorMessage: null as string | null,
   imageVariants: [],
+  sceneImageVariants: { hook: [], body: [], cta: [] },
+  sceneHeroImage: { hook: null, body: null, cta: null },
   visualGenerationStatus: 'idle' as 'idle' | 'generating' | 'error',
   visualGenerationError: null as string | null,
   publishSuggestion: null,
@@ -760,6 +774,15 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
   setGlobalStatus: (status, errorMessage) => set({ globalStatus: status, globalErrorMessage: errorMessage ?? (status === 'error' ? 'An unknown error occurred' : null) }),
 
   setImageVariants: (variants) => set({ imageVariants: variants }),
+
+  setSceneImageVariants: (sceneId, variants) =>
+    set((state) => ({
+      sceneImageVariants: { ...state.sceneImageVariants, [sceneId]: variants },
+    })),
+  setSceneHeroImage: (sceneId, image) =>
+    set((state) => ({
+      sceneHeroImage: { ...state.sceneHeroImage, [sceneId]: image },
+    })),
 
   setVisualGenerationStatus: (status, errorMessage) =>
     set({

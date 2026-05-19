@@ -339,14 +339,14 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
     }
 
     // Image variants — separate code path. variantGroup === 'visual' carries
-    // image rows (imageUrl + imagePromptUsed), populated by the
-    // /generate-visual endpoint when the user clicks "Generate visual" on
-    // Step 2. Hydrate into the store's imageVariants slot.
-    const visualComps = existingComponents.filter(
+    // workspace-level image rows; variantGroup === 'visual:<sceneId>'
+    // (2026-05-19 Fase 1) carries scene-scoped variants voor video-script
+    // types. Hydrate into respective store slots.
+    const workspaceVisualComps = existingComponents.filter(
       (c) => c.variantGroup === 'visual' && c.imageUrl,
     );
-    if (visualComps.length > 0) {
-      const sortedVisuals = [...visualComps].sort(
+    if (workspaceVisualComps.length > 0) {
+      const sortedVisuals = [...workspaceVisualComps].sort(
         (a, b) => (a.variantIndex ?? 0) - (b.variantIndex ?? 0),
       );
       storeState.setImageVariants(
@@ -360,6 +360,28 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
       );
     }
 
+    // Scene-scoped visual hydration: 'visual:hook' / 'visual:body' / 'visual:cta'
+    for (const sceneId of ['hook', 'body', 'cta'] as const) {
+      const sceneComps = existingComponents.filter(
+        (c) => c.variantGroup === `visual:${sceneId}` && c.imageUrl,
+      );
+      if (sceneComps.length > 0) {
+        const sortedSceneVisuals = [...sceneComps].sort(
+          (a, b) => (a.variantIndex ?? 0) - (b.variantIndex ?? 0),
+        );
+        storeState.setSceneImageVariants(
+          sceneId,
+          sortedSceneVisuals.map((c, i) => ({
+            index: c.variantIndex ?? i,
+            url: c.imageUrl ?? '',
+            prompt: c.imagePromptUsed ?? '',
+            isSelected: c.isSelected,
+            componentId: c.id,
+          })),
+        );
+      }
+    }
+
     // Text variants — only load if store is empty (avoid clobbering an
     // in-flight orchestration).
     if (storeState.variantGroups.size > 0) return;
@@ -368,7 +390,15 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
     for (const comp of existingComponents) {
       // Skip hero-image (handled above) and visual-group image variants
       // (handled directly into imageVariants above)
-      if (!comp.variantGroup || comp.variantGroup === 'hero-image' || comp.variantGroup === 'visual') continue;
+      // Skip image-group rows: 'visual' (workspace) of 'visual:hook/body/cta' (scene-scoped).
+      if (
+        !comp.variantGroup ||
+        comp.variantGroup === 'hero-image' ||
+        comp.variantGroup === 'visual' ||
+        comp.variantGroup.startsWith('visual:')
+      ) {
+        continue;
+      }
       const existing = groups.get(comp.variantGroup) ?? [];
       existing.push(comp);
       groups.set(comp.variantGroup, existing);
