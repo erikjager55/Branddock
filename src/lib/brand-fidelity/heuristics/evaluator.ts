@@ -38,10 +38,18 @@ export interface HeuristicEvaluationResult {
  * Performance: regex compilation per call. Acceptable voor F-VAL latency-budget
  * (Pijler 3 is sub-millisecond budget; ~120 entries × O(n) text-scan blijft <10ms
  * voor typical 500-1500 word content).
+ *
+ * 2026-05-19: optionele `brandAllowlist` (typisch BrandVoiceguide.wordsWeUse)
+ * skipt heuristic-entries waarvan de term lexically matcht met een brand-
+ * defining vocabulary-item. Voor luxe-merken (bv LINFI) waar "maatwerk" /
+ * "op maat" core brand-vocabulary is, voorkomt dit false-positive vague-
+ * quality flags op woorden die het merk juist wíl gebruiken. Case-
+ * insensitive whole-term match (geen substring).
  */
 export async function evaluateHeuristics(
   workspaceId: string,
   text: string,
+  options?: { brandAllowlist?: string[] },
 ): Promise<HeuristicEvaluationResult> {
   const pkg = await getHeuristicsForBrand(workspaceId);
   if (!pkg) {
@@ -51,6 +59,13 @@ export async function evaluateHeuristics(
       entriesEvaluated: 0,
     };
   }
+
+  // Normalize brand-allowlist naar lowercase Set voor O(1) lookup.
+  const allowlist = new Set(
+    (options?.brandAllowlist ?? [])
+      .filter((w): w is string => typeof w === 'string' && w.trim().length > 0)
+      .map((w) => w.trim().toLowerCase()),
+  );
 
   const violations: RuleViolation[] = [];
   const counts: Record<HeuristicSeverity, number> = {
@@ -64,6 +79,9 @@ export async function evaluateHeuristics(
     if (!entries) continue;
     for (const entry of entries) {
       entriesEvaluated++;
+      // Brand-allowlist skip: als de heuristic-term is gemarkeerd als brand-
+      // vocabulary, is het by-design niet vague — overslaan vóór regex-scan.
+      if (allowlist.has(entry.term.trim().toLowerCase())) continue;
       const matches = findMatches(text, entry.term);
       if (matches.length === 0) continue;
 

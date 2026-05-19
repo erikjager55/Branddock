@@ -342,9 +342,15 @@ export async function computeFidelityScore(
   // Pijler 3: parallel-fetch BrandRule evaluator (DB-backed) + heuristics
   // evaluator (Δ-2 — locale-package). Merge into single RuleEvaluationResult
   // zodat downstream pillar3 score-logic ongewijzigd blijft.
+  //
+  // 2026-05-19: brand-allowlist doorgegeven aan heuristic-evaluator zodat
+  // brand-defining vocabulary (bv "maatwerk" / "op maat" voor luxe-merken)
+  // niet als vague-quality wordt geflagd. wordsWeUse fungeert als
+  // explicit-brand-signal lijst die heuristic-overlap overruled.
+  const brandAllowlist = input.personality?.wordsWeUse ?? [];
   const [brandRulesResult, heuristicsResult] = await Promise.all([
     evaluateBrandRules(input.workspaceId, input.contentText),
-    evaluateHeuristics(input.workspaceId, input.contentText),
+    evaluateHeuristics(input.workspaceId, input.contentText, { brandAllowlist }),
   ]);
   const rulesResult = mergeRuleResults(brandRulesResult, heuristicsResult.violations);
 
