@@ -408,8 +408,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
   {
     id: "linkedin-ad",
     name: "LinkedIn Sponsored Post",
-    description: "Paid LinkedIn ad (Single Image or Message Ad — for video-ads use 'LinkedIn Video Ad')",
-    category: "Social Media",
+    description: "Paid LinkedIn ad (Single Image or Message Ad)",
+    category: "Advertising & Paid",
     funnelStage: "conversion",
     outputFormats: ["Text", "Image"],
     icon: "Linkedin",
@@ -833,6 +833,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 500, maxWords: 3000, requiredSections: ['agenda', 'slides', 'talking-points'] },
     qualityCriteria: VIDEO_AUDIO_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'pdf'],
+    // 2026-05-19 — hele "Video & Audio" categorie verwijderd uit Add Content.
+    hidden: true,
   },
   {
     id: "podcast-outline",
@@ -845,6 +847,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 300, maxWords: 2000, requiredSections: ['intro', 'segments', 'questions', 'outro'] },
     qualityCriteria: VIDEO_AUDIO_DEFAULTS.qualityCriteria,
     exportFormats: VIDEO_AUDIO_DEFAULTS.exportFormats,
+    // 2026-05-19 — hele "Video & Audio" categorie verwijderd uit Add Content.
+    hidden: true,
   },
 
   // ─── Sales Enablement (4) ──────────────────────────────
