@@ -209,8 +209,8 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const platform = contextStack?.medium?.platform ?? null;
   const format = contextStack?.medium?.format ?? null;
   const previewEntry = useMemo(
-    () => resolvePreviewComponent(platform, format),
-    [platform, format],
+    () => resolvePreviewComponent(platform, format, contentType),
+    [platform, format, contentType],
   );
 
   // Determine the max variant count across all groups (typically 2)

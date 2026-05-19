@@ -71,8 +71,39 @@ const GENERIC_ENTRY: PreviewRegistryEntry = {
   label: 'Content Preview',
 };
 
-/** Resolve the preview component for a platform + format pair */
-export function resolvePreviewComponent(platform: string | null, format: string | null): PreviewRegistryEntry {
-  if (!platform || !format) return GENERIC_ENTRY;
-  return PLATFORM_PREVIEW_MAP[platform]?.[format] ?? GENERIC_ENTRY;
+// 2026-05-19 — contentType-based fallback for cases where the
+// MediumEnrichment row is missing or has no platform/format set.
+// Without this, linkedin-video-ad (and other types without a seed row)
+// fell back to GenericPreview which renders all variant groups as plain
+// text sections instead of the platform-styled mockup.
+const CONTENT_TYPE_PREVIEW_MAP: Record<string, PreviewRegistryEntry> = {
+  'linkedin-video-ad': { component: LinkedInVideoAdPreview, label: 'LinkedIn Video Ad' },
+  'linkedin-ad': { component: LinkedInAdPreview, label: 'LinkedIn Ad' },
+  'linkedin-post': { component: LinkedInPostPreview, label: 'LinkedIn Post' },
+  'linkedin-carousel': { component: LinkedInCarouselPreview, label: 'LinkedIn Carousel' },
+  'instagram-post': { component: InstagramPostPreview, label: 'Instagram Post' },
+  'instagram-carousel': { component: InstagramCarouselPreview, label: 'Instagram Carousel' },
+  'facebook-post': { component: FacebookPostPreview, label: 'Facebook Post' },
+  'x-post': { component: XPostPreview, label: 'X Post' },
+  'video-script': { component: VideoPreview, label: 'Video Script' },
+  'tiktok-script': { component: VideoPreview, label: 'TikTok Script' },
+  'explainer-video-script': { component: VideoPreview, label: 'Explainer Video' },
+  'brand-video-script': { component: VideoPreview, label: 'Brand Video' },
+};
+
+/** Resolve the preview component for a platform + format pair, with
+ *  contentType-based fallback when platform/format aren't seeded. */
+export function resolvePreviewComponent(
+  platform: string | null,
+  format: string | null,
+  contentType?: string | null,
+): PreviewRegistryEntry {
+  if (platform && format) {
+    const match = PLATFORM_PREVIEW_MAP[platform]?.[format];
+    if (match) return match;
+  }
+  if (contentType && CONTENT_TYPE_PREVIEW_MAP[contentType]) {
+    return CONTENT_TYPE_PREVIEW_MAP[contentType];
+  }
+  return GENERIC_ENTRY;
 }

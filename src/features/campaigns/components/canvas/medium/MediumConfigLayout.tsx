@@ -55,9 +55,10 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
   const platform = contextStack?.medium?.platform ?? null;
   const format = contextStack?.medium?.format ?? null;
 
+  const contentTypeForPreview = useCanvasStore((s) => s.contentType);
   const previewEntry = useMemo(
-    () => resolvePreviewComponent(platform, format),
-    [platform, format],
+    () => resolvePreviewComponent(platform, format, contentTypeForPreview),
+    [platform, format, contentTypeForPreview],
   );
 
   const previewContent = useMemo<PreviewContent>(() => {
