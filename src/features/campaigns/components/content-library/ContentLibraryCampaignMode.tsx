@@ -379,8 +379,22 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* 2026-05-19 header-toolbar simplificatie per feedback:
+                'Generate more' / 'Export' / 'Repeat last' verwijderd
+                (functionaliteit elders bereikbaar of niet pre-launch);
+                'Add Deliverable' nu primary (teal), 'Generate Drafts'
+                secondary (white outline). */}
             <Button
               variant="primary"
+              size="sm"
+              icon={Plus}
+              onClick={() => setShowAddModal(true)}
+              disabled={lock.isLocked}
+            >
+              Add Deliverable
+            </Button>
+            <Button
+              variant="secondary"
               size="sm"
               icon={Sparkles}
               onClick={() => bulkGenerate.start(filteredNotStartedIds)}
@@ -388,41 +402,6 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
               isLoading={bulkGenerate.isGenerating}
             >
               Generate Drafts ({notStartedCount})
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Wand2}
-              onClick={() => setShowBulkGenerateModal(true)}
-              disabled={lock.isLocked || bulkGenerate.isGenerating}
-              title="Generate a batch of new deliverables from a prompt or source"
-            >
-              Generate more
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Download}
-              onClick={handleExportApproved}
-              disabled={completedCount === 0 || isExporting}
-              isLoading={isExporting}
-            >
-              Export ({completedCount})
-            </Button>
-            <RepeatSplitButton
-              deliverables={deliverables ?? []}
-              disabled={lock.isLocked}
-              isPending={addDeliverable.isPending}
-              onRepeat={handleRepeat}
-            />
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Plus}
-              onClick={() => setShowAddModal(true)}
-              disabled={lock.isLocked}
-            >
-              Add Deliverable
             </Button>
             <LockShield
               isLocked={lock.isLocked}

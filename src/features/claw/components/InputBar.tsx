@@ -314,16 +314,48 @@ export function InputBar() {
             break;
           }
 
-          case 'error':
-            // Stream-error mid-run laat eventueel verzamelde tool-results
-            // achter — geen finalized assistant-message wordt aangemaakt
-            // (geen `done` event). Acceptabel: een halve message tonen met
-            // alleen tool-cards zonder afsluitende AI-tekst zou verwarrender
-            // zijn dan helemaal geen message. User kan retry'en.
+          case 'error': {
+            // Stream-error mid-run: in plaats van alleen console.error
+            // (waar de gebruiker niets van ziet) plaatsen we een
+            // assistant-message in de chat met een classificatie van de
+            // fout. Specifiek voor credit-balance / rate-limit errors
+            // krijgt de user direct een actionable melding i.p.v. een
+            // generieke "iets ging fout". 2026-05-19.
             console.error('Chat SSE error:', d.message);
+            const raw = String(d.message ?? '');
+            const isCreditError = /credit balance.*too low|insufficient[\s_-]*credits|out of credits|billing.*limit/i.test(raw);
+            const isRateLimit = /rate[\s_-]*limit|429|too many requests/i.test(raw);
+            const isAuth = /\b401\b|unauthorized|invalid[\s_-]*api[\s_-]*key/i.test(raw);
+
+            let userText: string;
+            if (isCreditError) {
+              userText =
+                '**Anthropic API credits zijn op.** De AI-assistent kan niet reageren tot er credits zijn bijgevuld. ' +
+                'Ga naar [console.anthropic.com](https://console.anthropic.com/settings/billing) → Plans & Billing om credits toe te voegen. ' +
+                'Andere AI-flows (OpenAI / Gemini) blijven werken — alleen Anthropic-calls falen tot aanvulling.';
+            } else if (isRateLimit) {
+              userText =
+                '**Even pauze.** De AI-assistent ontving te veel verzoeken in korte tijd. ' +
+                'Wacht 30 seconden en probeer opnieuw. Als dit vaker gebeurt: rate-limit op het API-account verhogen.';
+            } else if (isAuth) {
+              userText =
+                '**API-sleutel ongeldig.** Controleer `ANTHROPIC_API_KEY` in de environment-config. ' +
+                'Tot dat is gefixt blijft de AI-assistent onbeschikbaar.';
+            } else {
+              const detail = raw.length > 0 ? raw.slice(0, 200) : 'onbekende fout';
+              userText = `**Fout bij AI-assistent**\n\n${detail}\n\nProbeer het opnieuw. Als de fout aanhoudt, controleer de server-logs.`;
+            }
+
+            addMessage({
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: userText,
+              createdAt: new Date().toISOString(),
+            });
             setActivityStatus(null);
             setIsStreaming(false);
             break;
+          }
         }
       }
     } catch (err) {
