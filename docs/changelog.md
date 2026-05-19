@@ -44,7 +44,7 @@ Audit van Brand Assistant + Persona chat context-pickers (2026-05-19) wees 1 Tie
 - Task: [tasks/done/context-picker-strategy-observations.md](tasks/done/context-picker-strategy-observations.md)
 - ADR: [docs/adr/2026-05-08-brandclaw-agent-architectuur.md](docs/adr/2026-05-08-brandclaw-agent-architectuur.md) (referentie — niet nieuw)
 - Spec: -
-- Commit: `<backfill>`
+- Commit: `711fdd19`
 
 ### 262. Brandclaw Strategy Analyst — model-ID hotfix
 
