@@ -38,6 +38,14 @@ jobs:
 
       - run: npm ci
 
+      # 2026-05-19: Prisma Client niet auto-gegenereerd door npm ci (geen
+      # postinstall-script in package.json). Smoke-tests importeren
+      # `@prisma/client` transitief via `src/lib/prisma.ts`; zonder generate
+      # gooien ze "Cannot find module '.prisma/client/default'" en crashen.
+      # Schema-only generate (geen DB-connectie nodig) is ~2-3s op CI.
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
       - name: Verify Promptfoo installation
         run: npx promptfoo --version
 
