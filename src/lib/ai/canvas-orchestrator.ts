@@ -22,7 +22,7 @@ import { formatBrandContext, type BrandContextBlock } from './prompt-templates';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import type { JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
-import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
+import { getDeliverableTypeById, VIDEO_ADJACENT_TYPES } from '@/features/campaigns/lib/deliverable-types';
 import { getPromptTemplate } from '@/lib/studio/prompt-templates';
 import { getComponentTemplateFallback } from './component-templates-fallback';
 import { getContentTypeInputs } from '@/features/campaigns/lib/content-type-inputs';
@@ -1408,6 +1408,12 @@ function resolveMaxTokens(contentType: string | null): number {
   ]);
   if (longForm.has(contentType ?? '')) return 16000;
   if (mediumForm.has(contentType ?? '')) return 8000;
+  // 2026-05-19 — video-script types now emit 6 component groups (intro-caption,
+  // hook, body, cta, thumbnail, captions) × 2 variants × per-scene VISUAL +
+  // B-ROLL + CAPTION pillars. Previous 4000-cap truncated Gemini output to
+  // ~250 tokens of content. 8000 gives the model headroom for the full
+  // schema plus its own reasoning/JSON-overhead.
+  if (contentType && VIDEO_ADJACENT_TYPES.has(contentType)) return 8000;
   return 4000; // short-form: social posts, ads, carousels
 }
 
