@@ -152,12 +152,23 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
         </div>
       )}
 
-      {/* ─── Skipped state — composite faalde maar detector heeft signaal ─── */}
+      {/* ─── Skipped state — composite faalde maar detector heeft signaal.
+              2026-05-19 — surface skippedReason inline so failures aren't
+              silent. Reason comes from the orchestrator's
+              fidelity_score_skipped event (judge LLM error, voiceguide
+              missing, target wordCount mismatch, etc). ─── */}
       {isSkipped && (
-        <div className="mt-2 text-xs text-gray-500 italic">
-          {verdict
-            ? `${VERDICT_LABELS[verdict]} — uitgebreide score niet beschikbaar.`
-            : 'Score kon niet berekend worden.'}
+        <div className="mt-2 text-xs text-gray-500 italic space-y-1">
+          <div>
+            {verdict
+              ? `${VERDICT_LABELS[verdict]} — uitgebreide score niet beschikbaar.`
+              : 'Score kon niet berekend worden.'}
+          </div>
+          {fidelity.skippedReason && (
+            <div className="text-[11px] not-italic text-amber-700">
+              Reden: {fidelity.skippedReason}
+            </div>
+          )}
         </div>
       )}
 

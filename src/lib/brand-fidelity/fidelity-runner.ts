@@ -564,8 +564,25 @@ export async function runFidelityScoring(
 
     return { result, compositionInput };
   } catch (err) {
-    console.warn('[fidelity-runner] Scoring failed (non-fatal):', (err as Error).message);
-    return null;
+    // 2026-05-19 — log full stack so we can diagnose why composite scoring
+    // skips silently. Previously only the message was logged which made it
+    // impossible to tell whether the judge LLM call failed, voiceguide
+    // fetch threw, or computeFidelityScore itself crashed.
+    const errMsg = err instanceof Error ? err.message : String(err);
+    const errStack = err instanceof Error ? err.stack : undefined;
+    console.warn(
+      '[fidelity-runner] Scoring failed (non-fatal) for content-type %s, workspace %s: %s',
+      input.contentTypeId,
+      input.workspaceId,
+      errMsg,
+    );
+    if (errStack) {
+      console.warn('[fidelity-runner] Stack trace:\n' + errStack);
+    }
+    // Re-throw so the orchestrator's fidelity_score_skipped reason field
+    // gets the actual error message instead of a generic "insufficient
+    // signal" placeholder. The orchestrator already catches and surfaces.
+    throw err;
   }
 }
 
