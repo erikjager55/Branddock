@@ -6,6 +6,7 @@ import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { Building2, Lightbulb, Route, Monitor, BookOpen, Plus, X, Sparkles, Search, Trash2, FileText, Image as ImageIcon } from 'lucide-react';
 import { Badge, Skeleton, SkeletonText } from '@/components/shared';
 import { WEBSITE_DELIVERABLE_TYPES } from '@/lib/ai/seo-pipeline.types';
+import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
 import type { VisualBriefSource, VisualStyleDirection } from '@/lib/ai/canvas-context';
@@ -399,8 +400,13 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
           Source picks which pipeline runs at generate-time; style chips
           drive both text-prompt mediumConfig and image-prompt instructions.
           Persists in `settings.visualBrief`. Phase 1 wires the `generate`
-          source end-to-end; library/compose/trained-style are placeholders. */}
-      <VisualBriefSection />
+          source end-to-end; library/compose/trained-style are placeholders.
+
+          2026-05-19 — hidden for video-script types. Per-scene visuals
+          live in Step 2 (each Scene Breakdown card embeds its own
+          VisualVariantsBlock), so the workspace-level Visual Brief is
+          redundant and confuses the user about which visual is leading. */}
+      {!(contentType && VIDEO_ADJACENT_TYPES.has(contentType)) && <VisualBriefSection />}
 
       {/* Knowledge context */}
       {additionalContextItems.size > 0 && (

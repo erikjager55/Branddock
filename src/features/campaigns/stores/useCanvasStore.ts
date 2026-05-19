@@ -104,6 +104,24 @@ interface CanvasStoreState {
   sceneImageVariants: Record<SceneId, CanvasImageVariant[]>;
   sceneHeroImage: Record<SceneId, { url: string; mediaAssetId: string | null; alt?: string } | null>;
 
+  // 2026-05-19 Fase 2 fix — per-scene visual source (generate / library /
+  // compose / trained / upload / url / stock / none). Without this each
+  // scene's source-tab click wrote to the workspace `visualBrief.source`
+  // and all three scene-blocks visually jumped together.
+  sceneVisualSource: Partial<Record<SceneId, VisualBriefSource>>;
+
+  // 2026-05-19 Fase 2 fix — per-scene manual overrides for the [VISUAL],
+  // [B-ROLL] and [CAPTION] markers parsed out of the script content.
+  // When set, the Scene Breakdown renders these instead of the parsed
+  // marker text, and downstream video-gen uses them as the source-of-
+  // truth for visual direction / motion-prompt / burned-in caption.
+  // Stored only client-side for now; the variant.content text is left
+  // untouched. B-ROLL was added 2026-05-19 follow-up — feeds image-to-
+  // video motion-prompt so montage-feel survives single-keyframe gen.
+  sceneOverrides: Partial<
+    Record<SceneId, { visualText?: string; bRollText?: string; captionText?: string }>
+  >;
+
   // ─── Visual generation lifecycle ──────────────────────────
   // Lifted from Step2ContentVariants local state so Step 1 can also
   // drive visual generation (Pad B, audit 2026-05-15) and Step 2
@@ -357,6 +375,11 @@ interface CanvasStoreState {
   // ─── Scene-scoped image setters (video-script types) ──────
   setSceneImageVariants: (sceneId: SceneId, variants: CanvasImageVariant[]) => void;
   setSceneHeroImage: (sceneId: SceneId, image: { url: string; mediaAssetId: string | null; alt?: string } | null) => void;
+  setSceneVisualSource: (sceneId: SceneId, source: VisualBriefSource) => void;
+  setSceneVisualOverride: (
+    sceneId: SceneId,
+    patch: { visualText?: string; bRollText?: string; captionText?: string },
+  ) => void;
   setVisualGenerationStatus: (
     status: 'idle' | 'generating' | 'error',
     errorMessage?: string | null,
@@ -566,6 +589,8 @@ const INITIAL_STATE = {
   imageVariants: [],
   sceneImageVariants: { hook: [], body: [], cta: [] },
   sceneHeroImage: { hook: null, body: null, cta: null },
+  sceneVisualSource: {},
+  sceneOverrides: {},
   visualGenerationStatus: 'idle' as 'idle' | 'generating' | 'error',
   visualGenerationError: null as string | null,
   publishSuggestion: null,
@@ -782,6 +807,17 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
   setSceneHeroImage: (sceneId, image) =>
     set((state) => ({
       sceneHeroImage: { ...state.sceneHeroImage, [sceneId]: image },
+    })),
+  setSceneVisualSource: (sceneId, source) =>
+    set((state) => ({
+      sceneVisualSource: { ...state.sceneVisualSource, [sceneId]: source },
+    })),
+  setSceneVisualOverride: (sceneId, patch) =>
+    set((state) => ({
+      sceneOverrides: {
+        ...state.sceneOverrides,
+        [sceneId]: { ...(state.sceneOverrides[sceneId] ?? {}), ...patch },
+      },
     })),
 
   setVisualGenerationStatus: (status, errorMessage) =>

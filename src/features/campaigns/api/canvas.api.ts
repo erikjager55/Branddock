@@ -221,6 +221,10 @@ export interface GenerateVisualResponse {
   model: string;
   generationDuration: number;
   aspectRatio: string;
+  /** Echoed back when the request scoped to a scene — lets the client
+   *  route freshly generated variants to scene state (Fase 1 of the
+   *  scene-visual-split). */
+  sceneId?: 'hook' | 'body' | 'cta';
 }
 
 /**
@@ -231,7 +235,22 @@ export interface GenerateVisualResponse {
  */
 export async function generateCanvasVisual(
   deliverableId: string,
-  options?: { instruction?: string; aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4'; count?: number },
+  options?: {
+    instruction?: string;
+    aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+    count?: number;
+    /** Scope visual to a scene (hook/body/cta) for video-script types.
+     *  Server persists DeliverableComponent.variantGroup as
+     *  `visual:<sceneId>` — hydration on the client reads scene-scoped
+     *  image variants instead of the workspace-level visual. */
+    sceneId?: 'hook' | 'body' | 'cta';
+    /** Scene-specific visual direction. Sent when `sceneId` is set so the
+     *  server uses this as the image-prompt subject-seed instead of the
+     *  workspace-level brief. Resolution: client prefers user edits in
+     *  `sceneOverrides[sceneId].visualText`, falls back to the parsed
+     *  `[VISUAL: …]` segment from the scene's script content. */
+    sceneVisualPrompt?: string;
+  },
 ): Promise<GenerateVisualResponse> {
   const res = await fetch(`/api/studio/${deliverableId}/generate-visual`, {
     method: 'POST',

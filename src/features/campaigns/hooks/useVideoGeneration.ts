@@ -53,6 +53,10 @@ export function useVideoGeneration(deliverableId: string | null) {
     scriptText: string,
     sceneId: SceneId | 'full' = 'full',
     sourceImageUrl?: string,
+    /** Optional motion direction (B-ROLL override). When the scene was
+     *  written with `[B-ROLL: …]` we pass that as REQUIRED motion-prompt
+     *  to fal.ai so the keyframe animates per the writer's intent. */
+    motionPrompt?: string,
   ) => {
     if (!deliverableId) return;
 
@@ -71,6 +75,7 @@ export function useVideoGeneration(deliverableId: string | null) {
     try {
       const body: Record<string, unknown> = { scriptText, provider, duration, aspectRatio, sceneId };
       if (sourceImageUrl) body.sourceImageUrl = sourceImageUrl;
+      if (motionPrompt && motionPrompt.trim()) body.motionPrompt = motionPrompt.trim();
 
       const response = await fetch(`/api/studio/${deliverableId}/generate-video`, {
         method: 'POST',

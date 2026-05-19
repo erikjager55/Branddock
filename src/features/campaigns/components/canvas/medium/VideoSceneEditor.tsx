@@ -43,9 +43,48 @@ export function VideoSceneEditor() {
   const setConfigValue = useCanvasStore((s) => s.setMediumConfigValue);
   const heroImage = useCanvasStore((s) => s.heroImage);
   const imageVariants = useCanvasStore((s) => s.imageVariants);
+  const sceneHeroImage = useCanvasStore((s) => s.sceneHeroImage);
+  const sceneImageVariants = useCanvasStore((s) => s.sceneImageVariants);
+  const sceneOverrides = useCanvasStore((s) => s.sceneOverrides);
+  const updateScene = useCanvasStore((s) => s.updateScene);
 
   const { generateVideo } = useVideoGeneration(deliverableId);
   const autoKickedRef = useRef(false);
+
+  // 2026-05-19 Fase 3 scene-visual-split: per-scene source resolver.
+  // Prefers scene-scoped imagery (from Step 2's per-scene VisualVariantsBlock)
+  // over workspace-level hero/variants, so each scene's video uses its own
+  // visual when one exists. Falls back to workspace state when the user
+  // hasn't generated a scene-scoped visual yet (legacy single-image flow).
+  const resolveSceneSourceImage = useCallback(
+    (sceneId: SceneId): string | undefined => {
+      const sHero = sceneHeroImage[sceneId];
+      if (sHero?.url) return sHero.url;
+      const sVariants = sceneImageVariants[sceneId];
+      const selected = sVariants?.find((v) => v.isSelected) ?? sVariants?.[0];
+      if (selected?.url) return selected.url;
+      return heroImage?.url ?? imageVariants[0]?.url ?? undefined;
+    },
+    [sceneHeroImage, sceneImageVariants, heroImage, imageVariants],
+  );
+
+  // 2026-05-19 — Resolve scene B-ROLL motion-prompt. Override wins, else
+  // parse [B-ROLL: …] from the selected variant's script content. Used
+  // by the video-gen call so fal.ai motion follows the writer's intent
+  // (cuts, intercuts, camera moves) instead of a generic pan.
+  const resolveSceneMotionPrompt = useCallback(
+    (sceneId: SceneId): string | undefined => {
+      const override = sceneOverrides[sceneId]?.bRollText?.trim();
+      if (override) return override;
+      const variants = variantGroups.get(sceneId);
+      if (!variants) return undefined;
+      const idx = selections.get(sceneId) ?? 0;
+      const content = variants[idx]?.content ?? variants[0]?.content ?? '';
+      const match = content.match(/\[\s*b[-\s]?roll\s*:\s*([^\]]+)\]/i);
+      return match?.[1]?.trim() || undefined;
+    },
+    [sceneOverrides, variantGroups, selections],
+  );
 
   // Parse total duration and split points from medium config
   const totalDuration = useMemo(() => {
@@ -103,14 +142,41 @@ export function VideoSceneEditor() {
 
     autoKickedRef.current = true;
 
-    // Default source-image: hero (Step 3 unified image) of eerste image-variant.
-    // SceneCard UI laat user later per-scene een andere source kiezen.
-    const defaultSourceImage = heroImage?.url ?? imageVariants[0]?.url ?? undefined;
-
+    // 2026-05-19 Fase 3 scene-visual-split: per-scene source resolution.
+    //   • Each scene picks its own visual via resolveSceneSourceImage
+    //     (scene-scoped first, workspace fallback) so per-scene visuals
+    //     from Step 2 drive Step 3 video-gen.
+    //   • Scenes in 'existing' mode are skipped — user pasted a Video URL
+    //     and doesn't want auto-generation overriding it.
     for (const { sceneId, script } of scenesWithScript) {
-      generateVideo(script, sceneId, defaultSourceImage);
+      const scene = sceneVideos.find((s) => s.sceneId === sceneId);
+      if (scene?.sourceMode === 'existing') continue;
+      const sourceImageUrl = resolveSceneSourceImage(sceneId);
+      const motionPrompt = resolveSceneMotionPrompt(sceneId);
+      generateVideo(script, sceneId, sourceImageUrl, motionPrompt);
     }
-  }, [deliverableId, sceneVideos, getSceneScript, generateVideo, heroImage, imageVariants]);
+  }, [deliverableId, sceneVideos, getSceneScript, generateVideo, resolveSceneSourceImage, resolveSceneMotionPrompt]);
+
+  // 2026-05-19 Fase 3 scene-visual-split: sync scene-scoped imagery into the
+  // SceneCard's source-mode UI. When the user generated a per-scene visual in
+  // Step 2 the SceneCard should default to image-to-video with that URL as
+  // source — without forcing a switch when the user has already chosen
+  // 'existing' (Video URL) or has set a manual sourceUrl. Runs whenever the
+  // scene-scoped imagery changes.
+  useEffect(() => {
+    for (const sceneId of SCENE_IDS) {
+      const scene = sceneVideos.find((s) => s.sceneId === sceneId);
+      if (!scene) continue;
+      // Don't override completed videos, explicit existing-mode, or generating.
+      if (scene.status === 'complete' || scene.sourceMode === 'existing') continue;
+      if (scene.sourceUrl) continue; // user (or previous sync) already set one
+      const sceneScoped = sceneHeroImage[sceneId]?.url
+        ?? sceneImageVariants[sceneId]?.find((v) => v.isSelected)?.url
+        ?? sceneImageVariants[sceneId]?.[0]?.url;
+      if (!sceneScoped) continue;
+      updateScene(sceneId, { sourceMode: 'image-to-video', sourceUrl: sceneScoped });
+    }
+  }, [sceneHeroImage, sceneImageVariants, sceneVideos, updateScene]);
 
   const allScenesComplete = sceneVideos.every((s) => s.status === 'complete' || s.sourceMode === 'none');
   const scenesWithVideo = sceneVideos.filter((s) => s.videoUrl);
@@ -243,7 +309,14 @@ export function VideoSceneEditor() {
             falDuration={getSceneFalDuration(sceneId)}
             deliverableId={deliverableId}
             onGenerate={(sourceImageUrl) => {
-              generateVideo(getSceneScript(sceneId), sceneId, sourceImageUrl);
+              // Fall back to scene-scoped imagery when the SceneCard didn't
+              // pass an explicit URL (text-to-video mode) — keeps per-scene
+              // visuals leading when a user manually triggers Generate.
+              // Motion-prompt resolution follows the same override → parsed
+              // [B-ROLL: …] chain so manual regen also honours edits.
+              const resolved = sourceImageUrl ?? resolveSceneSourceImage(sceneId);
+              const motionPrompt = resolveSceneMotionPrompt(sceneId);
+              generateVideo(getSceneScript(sceneId), sceneId, resolved, motionPrompt);
             }}
           />
         ))}

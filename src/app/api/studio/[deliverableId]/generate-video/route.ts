@@ -29,6 +29,11 @@ const bodySchema = z.object({
   sourceImageUrl: z.string().max(2000).optional(),
   existingVideoUrl: z.string().max(2000).optional(),
   sceneId: z.enum(['hook', 'body', 'cta', 'full']).optional().default('full'),
+  /** Explicit motion direction (typically the scene's [B-ROLL: …] tekst
+   *  of een handmatige override). Wordt doorgegeven aan
+   *  buildVideoPromptFromScript zodat fal.ai's motion-prompt de bedoelde
+   *  cuts/camera-moves volgt ipv generieke pan. */
+  motionPrompt: z.string().max(800).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -75,7 +80,7 @@ export async function POST(
       );
     }
 
-    const { scriptText, provider: providerId, duration, aspectRatio, sourceImageUrl, existingVideoUrl, sceneId } = parsed.data;
+    const { scriptText, provider: providerId, duration, aspectRatio, sourceImageUrl, existingVideoUrl, sceneId, motionPrompt } = parsed.data;
 
     const provider = getFalVideoProviderById(providerId);
     if (!provider) {
@@ -149,6 +154,7 @@ export async function POST(
             workspaceId,
             sceneId,
             deliverableId,
+            motionPrompt,
           );
 
           sendEvent('video_prompt_ready', { prompt: videoPrompt });

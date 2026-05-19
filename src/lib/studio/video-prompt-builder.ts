@@ -38,10 +38,22 @@ function buildUserPrompt(
   brandContext: BrandContextBlock | null,
   contentType: string,
   sceneType: SceneType = 'full',
+  motionPrompt?: string,
 ): string {
   const parts: string[] = [];
 
   parts.push(`## Script\n${scriptText}`);
+
+  // 2026-05-19 — explicit B-roll / motion direction overrides Claude's
+  // best-guess camera moves. Scene-script writers put the dominant frame
+  // in [VISUAL: …] and the motion intent in [B-ROLL: …]; this block
+  // surfaces the B-roll so the final prompt to fal.ai animates the
+  // keyframe correctly (cuts, pans, intercuts) instead of a generic pan.
+  if (motionPrompt && motionPrompt.trim().length > 0) {
+    parts.push(
+      `## Motion Direction (REQUIRED — obey verbatim, do not paraphrase)\n${motionPrompt.trim()}`,
+    );
+  }
 
   if (brandContext) {
     const visualParts: string[] = [];
@@ -100,6 +112,11 @@ export async function buildVideoPromptFromScript(
   workspaceId: string,
   sceneType: SceneType = 'full',
   deliverableId?: string,
+  /** Optional motion-direction (typically the scene's [B-ROLL: …]
+   *  content or a user override). When provided, forwarded into the
+   *  user prompt as REQUIRED guidance so fal.ai's motion matches the
+   *  scene's intended cuts/camera moves instead of a generic pan. */
+  motionPrompt?: string,
 ): Promise<string> {
   const { provider, model } = await resolveFeatureModel(workspaceId, 'content-generate');
 
@@ -107,7 +124,7 @@ export async function buildVideoPromptFromScript(
     provider,
     model,
     SYSTEM_PROMPT,
-    buildUserPrompt(scriptText, brandContext, contentType, sceneType),
+    buildUserPrompt(scriptText, brandContext, contentType, sceneType, motionPrompt),
     { temperature: 0.7, maxTokens: 1024 },
     deliverableId
       ? {

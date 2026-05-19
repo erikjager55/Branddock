@@ -28,6 +28,21 @@ import { ImageEditModal } from '../ImageEditModal';
 import type { CanvasImageVariant } from '../../../types/canvas.types';
 import type { VisualBriefSource } from '@/lib/ai/canvas-context';
 
+/**
+ * Scene/script variantGroups for video-script content types. These are
+ * surfaced in the Scene Breakdown below the Content Preview, so we
+ * exclude them from the Preview itself to avoid showing the same script
+ * twice. Preview keeps only what publishes to the feed
+ * (e.g. `intro-caption` for linkedin-video-ad).
+ */
+const VIDEO_SCENE_GROUPS_IN_BREAKDOWN = new Set([
+  'hook',
+  'body',
+  'cta',
+  'thumbnail',
+  'captions',
+]);
+
 // Map the aspect-ratio label returned by the generate-visual endpoint to a
 // CSS `aspect-ratio` value so the variant card renders with the actual
 // generated ratio instead of being clamped to a square crop.
@@ -69,11 +84,21 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const heroImage = useCanvasStore((s) => s.heroImage);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
   const setHeroImage = useCanvasStore((s) => s.setHeroImage);
+  const setSceneImageVariants = useCanvasStore((s) => s.setSceneImageVariants);
+  const setSceneHeroImage = useCanvasStore((s) => s.setSceneHeroImage);
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const visualStatus = useCanvasStore((s) => s.visualGenerationStatus);
   const visualError = useCanvasStore((s) => s.visualGenerationError);
   const setVisualGenerationStatus = useCanvasStore((s) => s.setVisualGenerationStatus);
   const { regenerate, abort } = useCanvasOrchestration(deliverableId);
+
+  // 2026-05-19 — track which scope is currently generating so only that
+  // scene's (or workspace's) VisualVariantsBlock shows the spinner.
+  // Without this, the workspace-global `visualGenerationStatus` flipped
+  // every block to 'generating' simultaneously when the user clicked
+  // Generate on one scene. The scope stays set after generation so the
+  // matching block also surfaces the error if any.
+  const [generatingScope, setGeneratingScope] = React.useState<SceneId | 'workspace' | null>(null);
 
   // Visual generation lifted from VisualVariantsBlock so the unified
   // FeedbackBar at the bottom can also trigger it. The empty-state
@@ -97,12 +122,35 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   );
 
   const handleGenerateVisual = useCallback(
-    async (instruction?: string) => {
+    async (instruction?: string, sceneId?: SceneId) => {
+      setGeneratingScope(sceneId ?? 'workspace');
       setVisualGenerationStatus('generating');
+      // For scene-scoped gen: resolve the scene-specific visual direction
+      // so the image matches the scene's [VISUAL: …] cue instead of the
+      // workspace-level brief. User inline-edits in sceneOverrides win
+      // over the parsed cue from the script content.
+      let sceneVisualPrompt: string | undefined;
+      if (sceneId) {
+        const store = useCanvasStore.getState();
+        const override = store.sceneOverrides[sceneId]?.visualText?.trim();
+        if (override) {
+          sceneVisualPrompt = override;
+        } else {
+          const idx = store.selections.get(sceneId) ?? 0;
+          const sceneContent =
+            store.variantGroups.get(sceneId)?.[idx]?.content
+            ?? store.variantGroups.get(sceneId)?.[0]?.content
+            ?? '';
+          const match = sceneContent.match(/\[\s*[Vv][Ii][Ss][Uu][Aa][Ll]\s*:\s*([^\]]+)\]/);
+          sceneVisualPrompt = match?.[1]?.trim();
+        }
+      }
       try {
         const result = await generateCanvasVisual(deliverableId, {
           count: 2,
           instruction: instruction?.trim() || undefined,
+          sceneId,
+          sceneVisualPrompt,
         });
         const mapped: CanvasImageVariant[] = result.variants.map((v, i) => ({
           index: i,
@@ -111,15 +159,36 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
           isSelected: i === 0,
           aspectRatio: result.aspectRatio,
         }));
-        setImageVariants(mapped);
-        if (mapped[0]) promoteToHero(mapped[0]);
+        // Scene-scoped generation persists under variantGroup `visual:<sceneId>`
+        // server-side (Fase 1) — client routes the response to the scene state
+        // so each scene's visual remains independent across re-renders.
+        if (sceneId) {
+          setSceneImageVariants(sceneId, mapped);
+          if (mapped[0]) {
+            setSceneHeroImage(sceneId, {
+              url: mapped[0].url,
+              mediaAssetId: null,
+              alt: mapped[0].prompt,
+            });
+          }
+        } else {
+          setImageVariants(mapped);
+          if (mapped[0]) promoteToHero(mapped[0]);
+        }
         setVisualGenerationStatus('idle');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to generate visual';
         setVisualGenerationStatus('error', message);
       }
     },
-    [deliverableId, setImageVariants, promoteToHero, setVisualGenerationStatus],
+    [
+      deliverableId,
+      setImageVariants,
+      setSceneImageVariants,
+      setSceneHeroImage,
+      promoteToHero,
+      setVisualGenerationStatus,
+    ],
   );
 
   const hasVariants = variantGroups.size > 0;
@@ -154,20 +223,32 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   }, [variantGroups]);
 
   // Build a full PreviewContent for each variant index (A=0, B=1, etc.)
+  // For video-script types: strip [VISUAL: …], [CAPTION] …, and
+  // "Tekstoverlay: …" / "Caption: …" lines from the preview text. The
+  // Scene Breakdown below renders these as label-pills per scene — having
+  // them inline in the preview prose is duplicate and visually noisy.
+  // 2026-05-19 follow-up: for video-types, also EXCLUDE the scene/script
+  // groups themselves (hook / body / cta / thumbnail / captions) from
+  // the Preview. Scene Breakdown is the single source for those — Preview
+  // shows only what publishes to the feed (the intro-caption sponsored-
+  // post text). Reduces Preview from ~30 lines to ~5.
+  // Stored content is untouched; we only filter what feeds the Preview.
   const composedVariants = useMemo(() => {
     const result: PreviewContent[] = [];
     for (let i = 0; i < variantCount; i++) {
       const content: PreviewContent = {};
       for (const [group, variants] of variantGroups) {
+        if (isVideoScript && VIDEO_SCENE_GROUPS_IN_BREAKDOWN.has(group)) continue;
         const variant = variants[i] ?? variants[0];
         if (variant) {
-          content[group] = { content: variant.content, type: 'text' };
+          const text = isVideoScript ? stripSceneMarkers(variant.content) : variant.content;
+          content[group] = { content: text, type: 'text' };
         }
       }
       result.push(content);
     }
     return result;
-  }, [variantGroups, variantCount]);
+  }, [variantGroups, variantCount, isVideoScript]);
 
   // Resolve angle label per variant index. Alle component groups van
   // dezelfde variantIndex delen dezelfde angle (parallelle Claude calls per
@@ -349,9 +430,21 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
         })}
       </div>
 
-      {/* Scene breakdown — shown when variant groups include hook/body/cta */}
+      {/* Scene breakdown — shown when variant groups include hook/body/cta.
+          For video-script types each scene-card embeds its own
+          VisualVariantsBlock so the user can generate/select/pick a visual
+          per scene. Workspace-level visual block below is hidden in that
+          case (hasSceneGroups). */}
       {hasSceneGroups && hasVariants && !isGenerating && (
-        <SceneBreakdown variantGroups={variantGroups} selectedVariantIndex={selectedVariantIndex} />
+        <SceneBreakdown
+          variantGroups={variantGroups}
+          selectedVariantIndex={selectedVariantIndex}
+          deliverableId={deliverableId}
+          onGenerateScene={(sceneId) => handleGenerateVisual(undefined, sceneId)}
+          visualStatus={visualStatus}
+          visualError={visualError}
+          generatingScope={generatingScope}
+        />
       )}
 
       {/* Visual generation — routes by Visual Brief source:
@@ -360,12 +453,12 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
           • compose / trained-style → "soon" placeholder
           Refining a generate-source result happens via the FeedbackBar's
           Visual dropdown below. */}
-      {hasVariants && !isGenerating && (
+      {hasVariants && !isGenerating && !hasSceneGroups && (
         <VisualVariantsBlock
           deliverableId={deliverableId}
           onGenerate={() => handleGenerateVisual()}
-          status={visualStatus}
-          errorMessage={visualError}
+          status={generatingScope === 'workspace' ? visualStatus : 'idle'}
+          errorMessage={generatingScope === 'workspace' ? visualError : null}
         />
       )}
 
@@ -428,7 +521,45 @@ type SceneSegment =
   | { kind: 'text'; content: string }
   | { kind: 'bold'; content: string }
   | { kind: 'visual'; content: string }
+  | { kind: 'broll'; content: string }
   | { kind: 'caption'; content: string };
+
+/**
+ * Strip scene-marker syntax from the variant preview for video-script
+ * types. The Scene Breakdown renders these markers as label-pills per
+ * scene; leaving them inline in the Content Preview duplicates the
+ * info and reads as noise next to the spoken-script prose.
+ *
+ * Removes:
+ *   - `[VISUAL: …]` / `[Visual: …]` / `[visual: …]` blocks anywhere
+ *   - `[CAPTION] …` blocks (inline)
+ *   - Whole lines starting with `Tekstoverlay:` / `Caption:` (label-prefixed)
+ *   - Scene-timing prefixes like `[HOOK — 0s]`, `[PROOF - 3s]` (model
+ *     adds these on top of the group-name; we already render the group
+ *     header)
+ *   - Empty consecutive blank lines collapsed
+ */
+function stripSceneMarkers(raw: string): string {
+  if (!raw) return raw;
+  let out = raw;
+  // [VISUAL: …] — may contain ] in nested edge cases, but the model never
+  // produces those in practice. Use non-greedy match.
+  out = out.replace(/\[\s*[Vv][Ii][Ss][Uu][Aa][Ll]:[^\]]*\]/g, '');
+  // [B-ROLL: …] — secondary motion direction, also handled in Scene Breakdown.
+  out = out.replace(/\[\s*b[-\s]?roll\s*:[^\]]*\]/gi, '');
+  // [CAPTION] followed by inline caption — strip the marker, keep nothing
+  // (Scene Breakdown shows captions). Match until next "[" or end-of-line.
+  out = out.replace(/\[\s*[Cc][Aa][Pp][Tt][Ii][Oo][Nn]\s*\][^\[\n]*/g, '');
+  // Scene-timing prefixes `[HOOK — 0s]`, `[PROOF - 3s]`, `[OFFER - 10s]`,
+  // `[THUMBNAIL]` — these duplicate the group header.
+  out = out.replace(/\[\s*(HOOK|PROOF|OFFER|BODY|CTA|THUMBNAIL|INTRO|CONCLUSION)[^\]]*\]/gi, '');
+  // Whole-line label prefixes like "Tekstoverlay: ..." / "Caption: ..." /
+  // "Voiceover: ..." — keep only spoken-script prose.
+  out = out.replace(/^[ \t]*(Tekstoverlay|Caption|Voiceover|On-screen text)\s*:\s*.*$/gim, '');
+  // Collapse 3+ consecutive blank lines into 2.
+  out = out.replace(/\n{3,}/g, '\n\n');
+  return out.trim();
+}
 
 function parseSceneSegments(raw: string): SceneSegment[] {
   // Strip leading markdown headings (## title); behoud rest van tekst.
@@ -466,6 +597,22 @@ function parseSceneSegments(raw: string): SceneSegment[] {
         continue;
       }
     }
+    // [B-ROLL: content] — secondary motion direction for video-gen.
+    // Accept variants: [B-ROLL:], [B-Roll:], [b-roll:], [BROLL:], [B ROLL:].
+    {
+      const brollPrefix = text.slice(i, i + 10).match(/^\[\s*b[-\s]?roll\s*:/i);
+      if (brollPrefix) {
+        const headerLen = brollPrefix[0].length;
+        const end = text.indexOf(']', i);
+        if (end > -1) {
+          flushText();
+          const inner = text.substring(i + headerLen, end).trim();
+          segments.push({ kind: 'broll', content: inner });
+          i = end + 1;
+          continue;
+        }
+      }
+    }
     // [CAPTION] content (until next [ or end)
     if (text.startsWith('[CAPTION]', i) || text.startsWith('[Caption]', i) || text.startsWith('[caption]', i)) {
       const headerLen = '[CAPTION]'.length;
@@ -487,9 +634,24 @@ function parseSceneSegments(raw: string): SceneSegment[] {
 function SceneBreakdown({
   variantGroups,
   selectedVariantIndex,
+  deliverableId,
+  onGenerateScene,
+  visualStatus,
+  visualError,
+  generatingScope,
 }: {
   variantGroups: Map<string, { content: string }[]>;
   selectedVariantIndex: number;
+  deliverableId: string;
+  /** Trigger image generation for a specific scene — parent wires this to
+   *  `handleGenerateVisual(undefined, sceneId)` so generation lands in
+   *  scene-scoped state instead of the workspace-level visual. */
+  onGenerateScene: (sceneId: SceneId) => void;
+  visualStatus: 'idle' | 'generating' | 'error';
+  visualError: string | null;
+  /** Which scope is currently generating — used to gate the spinner/
+   *  error display to only the scene that triggered the call. */
+  generatingScope: SceneId | 'workspace' | null;
 }) {
   const hasSceneGroups = variantGroups.has('hook') || variantGroups.has('body') || variantGroups.has('cta');
   if (!hasSceneGroups) return null;
@@ -498,82 +660,261 @@ function SceneBreakdown({
     <div className="rounded-lg border border-gray-200 bg-white p-4">
       <h4 className="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wider">Scene Breakdown</h4>
       <div className="space-y-2">
-        {SCENE_CONFIG.map(({ id, label, icon: Icon, borderColor, bgColor, textColor }) => {
-          const variants = variantGroups.get(id);
+        {SCENE_CONFIG.map((config) => {
+          const variants = variantGroups.get(config.id);
           if (!variants) return null;
           const text = variants[selectedVariantIndex]?.content ?? variants[0]?.content ?? '';
           if (!text) return null;
-          const segments = parseSceneSegments(text);
-
+          // Only the scene that triggered generation shows the spinner /
+          // error state — other scenes stay idle even though the global
+          // visualGenerationStatus is 'generating'.
+          const scopedStatus = generatingScope === config.id ? visualStatus : 'idle';
+          const scopedError = generatingScope === config.id ? visualError : null;
           return (
-            <div
-              key={id}
-              className="flex gap-3 rounded-lg p-3"
-              style={{ backgroundColor: bgColor, borderLeft: `3px solid ${borderColor}` }}
-            >
-              <div className="flex-shrink-0 mt-0.5">
-                <Icon className="h-4 w-4" style={{ color: borderColor }} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wider block mb-2" style={{ color: textColor }}>
-                  {label}
-                </span>
-                {/* 2026-05-19 herzien: segments inline geïntegreerd binnen
-                    de scene-card (was eerder genest in aparte mini-panels
-                    met eigen borders — visueel rommelig). Visual/Caption
-                    krijgen nu een kleine inline-label-pill in de flow ipv
-                    een aparte box. Spoken-text vormt de hoofdtekst. */}
-                <div className="space-y-2">
-                  {segments.map((seg, idx) => {
-                    if (seg.kind === 'text') {
-                      return (
-                        <p key={idx} className="text-sm text-gray-800 leading-relaxed">
-                          {seg.content}
-                        </p>
-                      );
-                    }
-                    if (seg.kind === 'bold') {
-                      return (
-                        <p key={idx} className="text-sm font-semibold text-gray-900 leading-relaxed">
-                          {seg.content}
-                        </p>
-                      );
-                    }
-                    if (seg.kind === 'visual') {
-                      return (
-                        <p key={idx} className="text-xs text-gray-600 leading-snug">
-                          <span
-                            className="inline-block mr-1.5 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider align-middle"
-                            style={{ backgroundColor: 'rgba(0,0,0,0.05)', color: textColor }}
-                          >
-                            Visual
-                          </span>
-                          <span className="italic">{seg.content}</span>
-                        </p>
-                      );
-                    }
-                    if (seg.kind === 'caption') {
-                      return (
-                        <p key={idx} className="text-xs text-gray-600 leading-snug">
-                          <span
-                            className="inline-block mr-1.5 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider align-middle"
-                            style={{ backgroundColor: 'rgba(0,0,0,0.05)', color: textColor }}
-                          >
-                            Caption
-                          </span>
-                          <span>{seg.content}</span>
-                        </p>
-                      );
-                    }
-                    return null;
-                  })}
-                </div>
-              </div>
-            </div>
+            <SceneBreakdownCard
+              key={config.id}
+              config={config}
+              scriptText={text}
+              deliverableId={deliverableId}
+              onGenerateScene={onGenerateScene}
+              visualStatus={scopedStatus}
+              visualError={scopedError}
+            />
           );
         })}
       </div>
     </div>
+  );
+}
+
+/**
+ * One scene-card in the breakdown. Owns inline-edit state for the
+ * scene's Visual + Caption so the user can rewrite the direction or
+ * the burned-in caption text without regenerating the whole variant.
+ * Edits persist client-side in `sceneOverrides[sceneId]` — when set,
+ * the override replaces the parsed marker content; subsequent parsed
+ * visual/caption markers stay read-only.
+ */
+function SceneBreakdownCard({
+  config,
+  scriptText,
+  deliverableId,
+  onGenerateScene,
+  visualStatus,
+  visualError,
+}: {
+  config: { id: SceneId; label: string; icon: typeof Film; borderColor: string; bgColor: string; textColor: string };
+  scriptText: string;
+  deliverableId: string;
+  onGenerateScene: (sceneId: SceneId) => void;
+  visualStatus: 'idle' | 'generating' | 'error';
+  visualError: string | null;
+}) {
+  const { id, label, icon: Icon, borderColor, bgColor, textColor } = config;
+  const segments = React.useMemo(() => parseSceneSegments(scriptText), [scriptText]);
+
+  const override = useCanvasStore((s) => s.sceneOverrides[id]);
+  const setOverride = useCanvasStore((s) => s.setSceneVisualOverride);
+
+  // Track which Visual / B-Roll / Caption segment is the "first" one —
+  // only that one is editable so override-state stays unambiguous.
+  // Subsequent markers (rare, but the prompt allows multiple) render
+  // read-only.
+  let firstVisualIdx = -1;
+  let firstBRollIdx = -1;
+  let firstCaptionIdx = -1;
+  for (let i = 0; i < segments.length; i++) {
+    if (firstVisualIdx === -1 && segments[i].kind === 'visual') firstVisualIdx = i;
+    if (firstBRollIdx === -1 && segments[i].kind === 'broll') firstBRollIdx = i;
+    if (firstCaptionIdx === -1 && segments[i].kind === 'caption') firstCaptionIdx = i;
+  }
+
+  return (
+    <div
+      className="flex gap-3 rounded-lg p-3"
+      style={{ backgroundColor: bgColor, borderLeft: `3px solid ${borderColor}` }}
+    >
+      <div className="flex-shrink-0 mt-0.5">
+        <Icon className="h-4 w-4" style={{ color: borderColor }} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <span className="text-[11px] font-semibold uppercase tracking-wider block mb-2" style={{ color: textColor }}>
+          {label}
+        </span>
+        {/* 2026-05-19 herzien: segments inline geïntegreerd binnen
+            de scene-card (was eerder genest in aparte mini-panels
+            met eigen borders — visueel rommelig). Visual/Caption
+            krijgen nu een kleine inline-label-pill in de flow ipv
+            een aparte box. Spoken-text vormt de hoofdtekst.
+            2026-05-19 follow-up: Visual + Caption inline editable per
+            scene zodat user de directie / caption-tekst zelf kan
+            bijschaven zonder regeneratie. */}
+        <div className="space-y-2">
+          {segments.map((seg, idx) => {
+            if (seg.kind === 'text') {
+              return (
+                <p key={idx} className="text-sm text-gray-800 leading-relaxed">
+                  {seg.content}
+                </p>
+              );
+            }
+            if (seg.kind === 'bold') {
+              return (
+                <p key={idx} className="text-sm font-semibold text-gray-900 leading-relaxed">
+                  {seg.content}
+                </p>
+              );
+            }
+            if (seg.kind === 'visual') {
+              const isEditable = idx === firstVisualIdx;
+              const effective = isEditable ? (override?.visualText ?? seg.content) : seg.content;
+              return (
+                <div key={idx} className="text-xs text-gray-600 leading-snug flex items-start gap-1.5">
+                  <span
+                    className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider flex-shrink-0 mt-[3px]"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.05)', color: textColor }}
+                  >
+                    Visual
+                  </span>
+                  {isEditable ? (
+                    <EditableInlineText
+                      value={effective}
+                      onSave={(next) => setOverride(id, { visualText: next })}
+                      italic
+                      placeholder="Beschrijf de on-screen actie / camera"
+                    />
+                  ) : (
+                    <span className="italic">{effective}</span>
+                  )}
+                </div>
+              );
+            }
+            if (seg.kind === 'broll') {
+              const isEditable = idx === firstBRollIdx;
+              const effective = isEditable ? (override?.bRollText ?? seg.content) : seg.content;
+              return (
+                <div key={idx} className="text-xs text-gray-500 leading-snug flex items-start gap-1.5">
+                  <span
+                    className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider flex-shrink-0 mt-[3px]"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.05)', color: textColor }}
+                  >
+                    B-roll
+                  </span>
+                  {isEditable ? (
+                    <EditableInlineText
+                      value={effective}
+                      onSave={(next) => setOverride(id, { bRollText: next })}
+                      italic
+                      placeholder="Motion-direction voor video-gen — camera pan, intercut, dolly, etc."
+                    />
+                  ) : (
+                    <span className="italic">{effective}</span>
+                  )}
+                </div>
+              );
+            }
+            if (seg.kind === 'caption') {
+              const isEditable = idx === firstCaptionIdx;
+              const effective = isEditable ? (override?.captionText ?? seg.content) : seg.content;
+              return (
+                <div key={idx} className="text-xs text-gray-600 leading-snug flex items-start gap-1.5">
+                  <span
+                    className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider flex-shrink-0 mt-[3px]"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.05)', color: textColor }}
+                  >
+                    Caption
+                  </span>
+                  {isEditable ? (
+                    <EditableInlineText
+                      value={effective}
+                      onSave={(next) => setOverride(id, { captionText: next })}
+                      placeholder="Burned-in caption — max ~32 tekens per regel"
+                    />
+                  ) : (
+                    <span>{effective}</span>
+                  )}
+                </div>
+              );
+            }
+            return null;
+          })}
+        </div>
+        {/* 2026-05-19 Fase 2 scene-visual-split: per-scene visual block.
+            Same routing logic as the workspace VisualVariantsBlock —
+            generate / library / compose / trained / upload / url /
+            stock — but state lives in `sceneImageVariants[id]` and
+            `sceneHeroImage[id]`. Server persists with
+            `variantGroup: 'visual:<id>'`. */}
+        <div className="mt-3">
+          <VisualVariantsBlock
+            deliverableId={deliverableId}
+            onGenerate={() => onGenerateScene(id)}
+            status={visualStatus}
+            errorMessage={visualError}
+            sceneId={id}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Click-to-edit inline text. Click → textarea + autofocus. Blur or Cmd/Ctrl-Enter
+ * saves; Escape cancels. Used for per-scene Visual + Caption overrides.
+ */
+function EditableInlineText({
+  value,
+  onSave,
+  italic,
+  placeholder,
+}: {
+  value: string;
+  onSave: (next: string) => void;
+  italic?: boolean;
+  placeholder?: string;
+}) {
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState(value);
+
+  const enterEdit = () => {
+    setDraft(value);
+    setEditing(true);
+  };
+
+  if (editing) {
+    return (
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          setEditing(false);
+          if (draft.trim() !== value.trim()) onSave(draft.trim());
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            (e.currentTarget as HTMLTextAreaElement).blur();
+          } else if (e.key === 'Escape') {
+            setDraft(value);
+            setEditing(false);
+          }
+        }}
+        autoFocus
+        rows={Math.max(1, Math.min(4, Math.ceil(draft.length / 60)))}
+        className={`flex-1 min-w-0 bg-white border border-gray-300 rounded px-1.5 py-0.5 text-xs ${italic ? 'italic' : ''} focus:outline-none focus:ring-1 focus:ring-teal-500 resize-none`}
+        placeholder={placeholder}
+      />
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={enterEdit}
+      className={`flex-1 min-w-0 text-left ${italic ? 'italic' : ''} cursor-text hover:bg-white/60 rounded px-0.5 -mx-0.5 transition-colors`}
+      title="Klik om te bewerken (Cmd/Ctrl+Enter om op te slaan, Esc om te annuleren)"
+    >
+      {value || <span className="text-gray-400">{placeholder ?? 'Klik om in te vullen'}</span>}
+    </button>
   );
 }
 
@@ -708,6 +1049,12 @@ interface VisualVariantsBlockProps {
   onGenerate: () => void;
   status: 'idle' | 'generating' | 'error';
   errorMessage: string | null;
+  /** Scene scope for video-script types (Fase 2 of the scene-visual-split).
+   *  When set the block reads from `sceneImageVariants[sceneId]` /
+   *  `sceneHeroImage[sceneId]` instead of the workspace-level state, so each
+   *  scene's visual remains independent. Selection/edits also write back to
+   *  the scene-scoped state. */
+  sceneId?: SceneId;
 }
 
 /**
@@ -721,13 +1068,44 @@ interface VisualVariantsBlockProps {
  * Refinement (feedback) on generate-source images runs through the
  * unified FeedbackBar's Visual dropdown option below this block.
  */
-function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }: VisualVariantsBlockProps) {
+function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, sceneId }: VisualVariantsBlockProps) {
   const visualBrief = useCanvasStore((s) => s.visualBrief);
-  const imageVariants = useCanvasStore((s) => s.imageVariants);
-  const setImageVariants = useCanvasStore((s) => s.setImageVariants);
-  const setHeroImage = useCanvasStore((s) => s.setHeroImage);
+  const workspaceImageVariants = useCanvasStore((s) => s.imageVariants);
+  const sceneImageVariantsAll = useCanvasStore((s) => s.sceneImageVariants);
+  const setWorkspaceImageVariants = useCanvasStore((s) => s.setImageVariants);
+  const setWorkspaceHeroImage = useCanvasStore((s) => s.setHeroImage);
+  const setSceneImageVariantsAction = useCanvasStore((s) => s.setSceneImageVariants);
+  const setSceneHeroImageAction = useCanvasStore((s) => s.setSceneHeroImage);
 
-  const source = visualBrief.source;
+  // Route reads/writes to scene-scoped state when sceneId is set, otherwise
+  // workspace-level. Keeps the rest of the component logic identical so the
+  // generate / library / compose / upload / url / stock branches all work
+  // unchanged per scene.
+  const imageVariants = sceneId ? sceneImageVariantsAll[sceneId] : workspaceImageVariants;
+  const setImageVariants = React.useCallback(
+    (variants: CanvasImageVariant[]) => {
+      if (sceneId) setSceneImageVariantsAction(sceneId, variants);
+      else setWorkspaceImageVariants(variants);
+    },
+    [sceneId, setSceneImageVariantsAction, setWorkspaceImageVariants],
+  );
+  const setHeroImage = React.useCallback(
+    (image: { url: string; mediaAssetId: string | null; alt?: string } | null) => {
+      if (sceneId) setSceneHeroImageAction(sceneId, image);
+      else setWorkspaceHeroImage(image);
+    },
+    [sceneId, setSceneHeroImageAction, setWorkspaceHeroImage],
+  );
+
+  // Scene-scoped source overrides the workspace-level visualBrief.source
+  // so each scene's tab-strip is independent. Without this, clicking
+  // "Library" on one scene flipped all three (workspace state shared).
+  // Falls back to workspace source when the scene hasn't picked one yet.
+  const sceneVisualSourceMap = useCanvasStore((s) => s.sceneVisualSource);
+  const setSceneVisualSourceAction = useCanvasStore((s) => s.setSceneVisualSource);
+  const source: VisualBriefSource = sceneId
+    ? sceneVisualSourceMap[sceneId] ?? visualBrief.source
+    : visualBrief.source;
   const hasImages = imageVariants.length > 0;
   const isGenerating = status === 'generating';
   const [showLibraryPicker, setShowLibraryPicker] = React.useState(false);
@@ -773,12 +1151,15 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }
   );
 
   // F35 (audit 2026-05-13): inline source-tab-strip — user kan tussen 8
-  // sources switchen zonder terug naar Step 1. Wijziging persist via
-  // setVisualBriefSource → Step 1 reflectt automatisch.
-  const setSource = useCanvasStore((s) => s.setVisualBriefSource);
+  // sources switchen zonder terug naar Step 1. Workspace-flow persist via
+  // setVisualBriefSource → Step 1 reflectt automatisch. Scene-scoped flow
+  // (sceneId set) schrijft naar `sceneVisualSource[sceneId]` zodat de
+  // andere scenes niet meeverspringen.
+  const setWorkspaceSource = useCanvasStore((s) => s.setVisualBriefSource);
   const handleSourceTabClick = (next: VisualBriefSource) => {
     if (next === source) return;
-    setSource(next);
+    if (sceneId) setSceneVisualSourceAction(sceneId, next);
+    else setWorkspaceSource(next);
   };
 
   return (

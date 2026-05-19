@@ -5,8 +5,9 @@ import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { resolvePreviewComponent } from '../previews/preview-map';
 import { STUDIO } from '@/lib/constants/design-tokens';
-import { CheckCircle2, Video, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, Video, AlertTriangle, Loader2 } from 'lucide-react';
 import type { PreviewContent } from '../../../types/canvas.types';
+import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
 
 interface MediumConfigLayoutProps {
   children: React.ReactNode;
@@ -139,6 +140,11 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
   const PreviewComponent = previewEntry.component;
 
   const composedVideoUrl = useCanvasStore((s) => s.composedVideoUrl);
+  const sceneVideos = useCanvasStore((s) => s.sceneVideos);
+  const contentType = useCanvasStore((s) => s.contentType);
+  const isVideoScript = contentType ? VIDEO_ADJACENT_TYPES.has(contentType) : false;
+  const generatedScenes = isVideoScript ? sceneVideos.filter((s) => s.videoUrl) : [];
+  const anyGeneratingScene = isVideoScript && sceneVideos.some((s) => s.status === 'generating');
 
   const configBadges = useMemo(() => {
     return Object.entries(mediumConfigValues)
@@ -177,7 +183,11 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
       <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-gray-50 border-b border-gray-200">
           <span className="text-xs font-semibold text-gray-600">
-            {composedVideoUrl ? 'Generated Video' : `${previewEntry.label} Preview`}
+            {composedVideoUrl
+              ? 'Generated Video'
+              : generatedScenes.length > 0
+                ? `Scene Videos (${generatedScenes.length}/${sceneVideos.length})`
+                : `${previewEntry.label} Preview`}
           </span>
           <div className="flex items-center gap-3">
             {/* Variant indicator — READ-ONLY badge showing which variant is
@@ -214,6 +224,59 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
           {composedVideoUrl ? (
             <div className="rounded-lg overflow-hidden bg-black">
               <video src={composedVideoUrl} controls playsInline className="w-full" style={{ maxHeight: 400 }} />
+            </div>
+          ) : isVideoScript && (generatedScenes.length > 0 || anyGeneratingScene) ? (
+            // 2026-05-19 — Per-scene video preview. Before the user clicks
+            // "Render Final Video" in VideoSceneEditor (composes the 3
+            // scene clips into one), Step 3 had nothing to show — the
+            // platform mockup is a static frame, not a video. Now each
+            // completed scene plays inline so the user can review/iterate
+            // per scene without leaving the canvas.
+            <div className="space-y-3">
+              {(['hook', 'body', 'cta'] as const).map((sceneId) => {
+                const scene = sceneVideos.find((s) => s.sceneId === sceneId);
+                if (!scene) return null;
+                return (
+                  <div key={sceneId} className="rounded-lg overflow-hidden border border-gray-200 bg-black">
+                    <div className="flex items-center justify-between px-3 py-1.5 bg-gray-900 text-white">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider">
+                        {sceneId}
+                      </span>
+                      {scene.status === 'generating' && (
+                        <span className="text-[11px] flex items-center gap-1 text-gray-300">
+                          <Loader2 className="h-3 w-3 animate-spin" /> Generating…
+                        </span>
+                      )}
+                      {scene.status === 'error' && (
+                        <span className="text-[11px] text-red-400">Error</span>
+                      )}
+                    </div>
+                    {scene.videoUrl ? (
+                      <video
+                        src={scene.videoUrl}
+                        controls
+                        playsInline
+                        muted
+                        className="w-full"
+                        style={{ maxHeight: 220 }}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center bg-gray-100 text-xs text-gray-500 py-8">
+                        {scene.status === 'generating'
+                          ? 'Generating scene clip…'
+                          : scene.status === 'error'
+                            ? scene.error ?? 'Generation failed'
+                            : 'No clip yet'}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {generatedScenes.length === sceneVideos.length && (
+                <p className="text-[11px] text-gray-500 italic px-1">
+                  Click <strong>Render Final Video</strong> below to compose the scenes into one clip.
+                </p>
+              )}
             </div>
           ) : (
             <PreviewComponent
