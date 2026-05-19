@@ -15,13 +15,22 @@
 //   6. STATUS_CHANGED        — workflow event (snapshot-onafhankelijk)
 //   7. TIER_CHANGED          — workflow event (snapshot-onafhankelijk)
 //
+// Async wrapper:
+//   `computeDiffWithClassifier` — concat deterministische events met
+//   AI-pattern-events (CATEGORY_REPOSITIONING + TARGET_AUDIENCE_CHANGED)
+//   via een geïnjecteerde `ClassifierFn`. Wordt vóór de TX-start
+//   aangeroepen zodat de Anthropic call nooit binnen `prisma.$transaction`
+//   valt.
+//
 // Niet hier (vervolg-tasks):
-//   - AI-classified events (NEW_FORMAT_EMERGING, CATEGORY_REPOSITIONING,
-//     VISUAL_REBRAND, FUNDING_EVENT, LEADERSHIP_CHANGE)
+//   - VISUAL_REBRAND (vereist visual-signaal capture)
+//   - FUNDING_EVENT / LEADERSHIP_CHANGE (vereisen externe data-sources)
+//   - NEW_FORMAT_EMERGING (depend op competitor-content-item-discovery)
 //   - Content-item discovery events (NEW_BLOG_POST, NEW_PRESS_RELEASE)
 // =============================================================
 import type {
   CanonicalExtracted,
+  ClassifierFn,
   DetectedActivity,
   ManualEventContext,
 } from './types';
@@ -299,4 +308,41 @@ function pushWorkflowChanges(
       confidence: null,
     });
   }
+}
+
+// ─── Async wrapper met optionele AI-classifier ──────────
+
+/**
+ * Async wrapper rond `computeDiff` die optioneel een AI-classifier
+ * uitvoert en de resulterende pattern-events appendert aan de
+ * deterministische output.
+ *
+ * Wordt aangeroepen in refresh-route VÓÓR `prisma.$transaction` —
+ * resultaat gaat als `precomputedDetected` door naar dual-write zodat
+ * de async classifier-call niet binnen een DB-transactie valt.
+ *
+ * Graceful: bij classifier-error wordt de error gelogd en wordt
+ * alleen de deterministische output teruggegeven (refresh blijft werken).
+ */
+export async function computeDiffWithClassifier(
+  prev: CanonicalExtracted | null,
+  next: CanonicalExtracted,
+  ctx: ManualEventContext,
+  opts?: { classifier?: ClassifierFn; competitorId?: string },
+): Promise<DetectedActivity[]> {
+  const deterministic = computeDiff(prev, next, ctx);
+
+  if (!opts?.classifier) return deterministic;
+
+  let classified: DetectedActivity[] = [];
+  try {
+    classified = await opts.classifier(prev, next);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(
+      `[competitors/diff-engine] classifier threw for competitor ${opts.competitorId ?? 'unknown'}: ${message}`,
+    );
+  }
+
+  return [...deterministic, ...classified];
 }

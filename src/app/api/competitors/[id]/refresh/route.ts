@@ -24,7 +24,9 @@ import {
   applyCompetitorRefreshDualWrite,
   safeSocialLinks,
 } from "@/lib/competitors/refresh-write";
-import type { CanonicalExtracted } from "@/lib/competitors/types";
+import { computeDiffWithClassifier } from "@/lib/competitors/diff-engine";
+import { classifyPatternEvents } from "@/lib/competitors/ai-classifier";
+import type { CanonicalExtracted, ClassifierFn } from "@/lib/competitors/types";
 import type { Prisma } from "@prisma/client";
 
 /**
@@ -200,7 +202,24 @@ export async function POST(
     //    archived bij refresh (ze zouden anders silent un-archive'd worden).
     const nextStatus = existing.status === 'DRAFT' ? 'ANALYZED' : existing.status;
 
-    // 8. Dual-write transaction — helper handles snapshot, activities,
+    // 8. Compute events BUITEN de transactie — wrapper runt deterministische
+    //    diff-rules + (opt-in) AI pattern-classifier. AI-call mag NOOIT
+    //    binnen prisma.$transaction omdat een 1-2s netwerk-IO de TX-locks
+    //    onnodig vasthoudt. Classifier-error is graceful: alleen
+    //    deterministic events worden geretourneerd.
+    const classifier: ClassifierFn = (prev, next) =>
+      classifyPatternEvents(prev, next, { workspaceId, competitorId: id });
+    const precomputedDetected = await computeDiffWithClassifier(
+      prevCanonical,
+      nextCanonical,
+      {
+        workflowBefore: { status: existing.status, tier: existing.tier },
+        workflowAfter: { status: nextStatus, tier: existing.tier },
+      },
+      { classifier, competitorId: id },
+    );
+
+    // 9. Dual-write transaction — helper handles snapshot, activities,
     //    pointer update + collision-detection. Cast naar TransactionClient:
     //    extension `withTokenEncryption` produceert een DynamicClientExtension
     //    type-shape die structureel compatible is voor onze 3 modellen, maar
@@ -224,6 +243,7 @@ export async function POST(
           description: scraped.description ?? null,
           bodyTextLength: scraped.bodyText.length,
         },
+        precomputedDetected,
       }),
     );
 

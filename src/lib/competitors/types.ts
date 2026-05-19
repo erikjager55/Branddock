@@ -93,11 +93,32 @@ export interface WorkflowChangePayload extends BaseDiffPayload {
   after: string;
 }
 
+/**
+ * AI-classifier output payload — pattern-level shifts die meerdere
+ * velden combineren (CATEGORY_REPOSITIONING, TARGET_AUDIENCE_CHANGED).
+ * Bevat de classifier rationale + welke canonical fields de detectie
+ * gedreven hebben, zodat UI en debug-tools de bron kunnen tonen.
+ */
+export interface PatternChangePayload extends BaseDiffPayload {
+  kind: 'pattern-change';
+  /**
+   * Canonical fields die de classifier *als kandidaten* heeft bekeken voor
+   * dit event-type. Voor CATEGORY_REPOSITIONING zijn dat alle 4 snapshot-
+   * velden (valueProposition + targetAudience + differentiators + mainOfferings);
+   * voor TARGET_AUDIENCE_CHANGED alleen targetAudience. Dit is NIET een
+   * lijst van velden die daadwerkelijk wijzigden — die info zit in `rationale`.
+   */
+  fields: Array<keyof CanonicalExtracted>;
+  /** 1-zin AI-uitleg, direct uit classifier-output. */
+  rationale: string;
+}
+
 export type DiffPayload =
   | FieldChangePayload
   | ListChangePayload
   | PricingChangePayload
-  | WorkflowChangePayload;
+  | WorkflowChangePayload
+  | PatternChangePayload;
 
 // ─── Detected activity (wat de diff-engine produceert) ───
 
@@ -111,11 +132,21 @@ export interface DetectedActivity {
   severity: ActivitySeverity;
   diffPayload: DiffPayload;
   summary: string; // 1-zin human-readable
-  detectionMethod: 'hash-diff' | 'manual';
+  detectionMethod: 'hash-diff' | 'manual' | 'ai-classified';
   /** Null voor deterministische diff-rules; gevuld door AI-classifier
-   *  in vervolg-task `competitor-ai-event-classifier`. */
+   *  (zie `src/lib/competitors/ai-classifier.ts`). */
   confidence: number | null;
 }
+
+/**
+ * Signature voor de AI-pattern-classifier. Wordt geïnjecteerd in
+ * `computeDiffWithClassifier` (diff-engine.ts) zodat tests een mock
+ * kunnen passen ipv de echte Anthropic-call.
+ */
+export type ClassifierFn = (
+  prev: CanonicalExtracted | null,
+  next: CanonicalExtracted,
+) => Promise<DetectedActivity[]>;
 
 // ─── Manual event context ───────────────────────────────
 
