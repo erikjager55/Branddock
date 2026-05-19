@@ -27,7 +27,8 @@ interface ScrapeResult {
   costUSD: number | null;
 }
 
-const TEST_URLS = [
+// V1 sample (publieke SaaS landings, allemaal SEO-vriendelijk).
+const EASY_URLS = [
   'https://linear.app',
   'https://www.notion.so',
   'https://stripe.com',
@@ -37,8 +38,19 @@ const TEST_URLS = [
   'https://www.bunq.com',
 ];
 
+// V2 toevoeging: deliberately-difficult URLs (Cloudflare-protected,
+// JS-heavy SPAs, bekende anti-bot). Daar moet Apify in theorie winnen.
+const HARD_URLS = [
+  'https://www.cloudflare.com',
+  'https://www.zendesk.com',
+  'https://www.figma.com',
+  'https://www.snowflake.com',
+];
+
+const TEST_URLS = [...EASY_URLS, ...HARD_URLS];
+
 const APIFY_ACTOR_ID = 'apify/website-content-crawler';
-const APIFY_TIMEOUT_SECS = 60;
+const APIFY_TIMEOUT_SECS = 120;
 // Minimum content-length voor "success" — onder dit beschouw je het als
 // effectieve scrape-failure (lege landing of bot-block met dunne stub).
 const MIN_CONTENT_LENGTH = 200;
@@ -79,14 +91,18 @@ async function runApifyScraper(client: ApifyClient, url: string): Promise<Scrape
         startUrls: [{ url }],
         maxCrawlDepth: 0,
         maxCrawlPages: 1,
-        crawlerType: 'playwright:adaptive',
+        // V2: force playwright (geen adaptive switching dat Linear/Stripe stuk maakt)
+        crawlerType: 'playwright:firefox',
         saveMarkdown: true,
         saveHtml: false,
-        proxyConfiguration: { useApifyProxy: true },
+        // V2: explicit Readability-extracted body — vs default extractor die soms te aggressief filtert
+        htmlTransformer: 'readableText',
+        proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ['RESIDENTIAL'] },
       },
       {
         timeout: APIFY_TIMEOUT_SECS,
-        memory: 2048,
+        // V2: 4096MB i.p.v. 2048 — geeft Firefox meer ruimte voor JS-heavy SPAs
+        memory: 4096,
       },
     );
 
@@ -94,21 +110,18 @@ async function runApifyScraper(client: ApifyClient, url: string): Promise<Scrape
 
     const dataset = await client.dataset(run.defaultDatasetId).listItems({ limit: 1 });
     const firstItem = dataset.items[0];
-    const text =
-      typeof firstItem?.text === 'string'
-        ? firstItem.text
-        : typeof firstItem?.markdown === 'string'
-          ? firstItem.markdown
-          : '';
-    const bodyTextLength = text.length;
+    // V2: pak het LANGSTE van text/markdown/html — extractors kunnen verschillen
+    const candidates: string[] = [];
+    if (typeof firstItem?.text === 'string') candidates.push(firstItem.text);
+    if (typeof firstItem?.markdown === 'string') candidates.push(firstItem.markdown);
+    if (typeof firstItem?.html === 'string') candidates.push(firstItem.html);
+    const longest = candidates.reduce((a, b) => (a.length >= b.length ? a : b), '');
+    const bodyTextLength = longest.length;
 
-    // Apify run.usage rapporteert compute units consumed.
-    // Aangenomen Scale-plan tariefn ($0.16/CU); valt terug op null als usage ontbreekt.
-    const computeUnits =
-      typeof run.usage === 'object' && run.usage !== null && 'COMPUTE_UNITS' in run.usage
-        ? (run.usage as { COMPUTE_UNITS: number }).COMPUTE_UNITS
-        : null;
-    const costUSD = computeUnits !== null ? computeUnits * 0.16 : null;
+    // V2: Apify run-object exposeert usageUsd direct (geen handmatige CU-berekening nodig).
+    // Niet in `ActorRun`-types maar wel in API-response (zie Apify API docs).
+    const runRecord = run as unknown as Record<string, unknown>;
+    const usageUsd = typeof runRecord.usageUsd === 'number' ? runRecord.usageUsd : null;
 
     return {
       scraper: 'apify',
@@ -117,7 +130,7 @@ async function runApifyScraper(client: ApifyClient, url: string): Promise<Scrape
       bodyTextLength,
       latencyMs,
       errorMessage: run.status === 'SUCCEEDED' ? null : `run status: ${run.status}`,
-      costUSD,
+      costUSD: usageUsd,
     };
   } catch (err) {
     return {

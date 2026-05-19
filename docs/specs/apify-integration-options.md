@@ -84,6 +84,45 @@ Greenlight-batch nu: A + B + D (volgt zodra discovery-task open). Defer: C, E.
 
 ---
 
+---
+
+## SPIKE-RESULTATEN (2026-05-19)
+
+Probe-iteraties op branch `spike/apify-url-crawler` — zie `scripts/probes/apify-*.ts`.
+
+**Probe v1** (`apify-vs-current-scraper.ts`, 7 publieke SaaS-landings, default config):
+Current 7/7 success (~948ms, ~7218 chars), Apify 5/7 success (~31418ms, ~2027 chars). Linear + Stripe failed bij Apify door `crawlerType: 'playwright:adaptive'` switching-bug. **Verdict: NO-GO als replacement.**
+
+**Probe v2** (zelfde script, tuned config: forced `playwright:firefox` + residential proxy + `htmlTransformer: 'readableText'` + 4096MB + 4 hard URLs toegevoegd):
+Beide 10/11 (91%) success maar **complementaire failure-modes**:
+- Current faalt op Snowflake (0 chars) — JS-heavy SPA, geen browser-runtime
+- Apify faalt op Stripe (138 chars) — `readableText` extractor te aggressief op visual-heavy landings
+
+Apify wint duidelijk waar het ertoe doet: Linear +7045, Salesforce +3069, Snowflake APIFY-UNLOCKS. Op normale SaaS-landings is current ~4-7× méér content (deels door 8000-char cap in current die "winnaar" maskeert).
+
+**Probe v3** (`apify-hybrid-render.ts`, 4 hard URLs, Apify als rendering-only + cheerio-extractie):
+Hybrid-arm faalde door tooling-bug (`saveHtmlToFile: true` populeert `htmlUrl` niet zoals verwacht). Side-result wel waardevol: Apify-direct (b) bevestigt patroon — wint op JS-render cases, verliest op visual landings.
+
+**Stripe-debug** (`apify-stripe-debug.ts`): Apify zag pagina correct (title+description perfect ge-extract in `metadata`), maar `readableText` extract slechts 104 chars omdat Stripe's homepage genuinely sparse aan body-text is. Niet een Apify-bug.
+
+### Architectuur-verdict
+
+**Apify als simpele fallback** in refresh-route — geen hybride render-extractor complexiteit nodig:
+
+```
+try scrapeProductUrl(url)
+  if bodyText < 500 chars OR throw → try Apify-direct
+    if still < 500 chars → fallback Gemini (huidige laatste-redmiddel)
+```
+
+**Cost-projectie**: ~10% van competitors faalt op current → ~10 Apify-calls × ~$0.002 × 100 competitors × 4 refreshes/maand = **~$0.80/maand**. Triviaal.
+
+**Latency**: alleen het ~10% fail-pad krijgt +30s. Voor weekly cron-refreshes onzichtbaar; voor interactive refresh ziet user alleen wachttijd op problematische sites.
+
+**Implementatie-task**: `tasks/competitor-scraping-apify-fallback.md` — ~1d werk (apify-client wrapper + refresh-route 3-step chain + smoke).
+
+---
+
 ## BRONNEN
 
 - [Apify pricing](https://apify.com/pricing) — plan-tiers + CU-rates
