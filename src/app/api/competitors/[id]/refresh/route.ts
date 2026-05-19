@@ -202,6 +202,13 @@ export async function POST(
     //    archived bij refresh (ze zouden anders silent un-archive'd worden).
     const nextStatus = existing.status === 'DRAFT' ? 'ANALYZED' : existing.status;
 
+    // Single source-of-truth voor workflow-context — gebruikt door zowel de
+    // pre-TX classifier-call (stap 8) als de dual-write (stap 9). Houden ze
+    // identiek anders zou een mismatch silent missing STATUS_CHANGED /
+    // TIER_CHANGED events produceren (caller-contract op precomputedDetected).
+    const workflowBefore = { status: existing.status, tier: existing.tier };
+    const workflowAfter = { status: nextStatus, tier: existing.tier };
+
     // 8. Compute events BUITEN de transactie — wrapper runt deterministische
     //    diff-rules + (opt-in) AI pattern-classifier. AI-call mag NOOIT
     //    binnen prisma.$transaction omdat een 1-2s netwerk-IO de TX-locks
@@ -212,10 +219,7 @@ export async function POST(
     const precomputedDetected = await computeDiffWithClassifier(
       prevCanonical,
       nextCanonical,
-      {
-        workflowBefore: { status: existing.status, tier: existing.tier },
-        workflowAfter: { status: nextStatus, tier: existing.tier },
-      },
+      { workflowBefore, workflowAfter },
       { classifier, competitorId: id },
     );
 
@@ -228,8 +232,8 @@ export async function POST(
       applyCompetitorRefreshDualWrite(tx as unknown as Prisma.TransactionClient, {
         competitorId: id,
         workspaceId,
-        workflowBefore: { status: existing.status, tier: existing.tier },
-        workflowAfter: { status: nextStatus, tier: existing.tier },
+        workflowBefore,
+        workflowAfter,
         prevCanonical,
         nextCanonical,
         newContentHash,

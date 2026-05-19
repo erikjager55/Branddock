@@ -47,11 +47,14 @@ const MAX_INPUT_CHARS_PER_FIELD = 2000;
 const MAX_INPUT_CHARS_PER_LIST_ITEM = 200;
 const MAX_OUTPUT_TOKENS = 300;
 
-// Pre-filter: CATEGORY_REPOSITIONING triggert AI-call als ≥ 2/3 van
-// {valueProposition, targetAudience, differentiators} ≥ 50% Jaccard-distance
-// verschillen. Lager → cosmetic noise; hoger → echte herpositionering.
-// mainOfferings bewust uit pre-filter: pure offering-uitbreiding is vaak
-// productie-event (NEW_PRODUCT) en geen category-shift.
+// Pre-filter: CATEGORY_REPOSITIONING triggert AI-call als ≥ 2/4 van
+// {valueProposition, targetAudience, differentiators, mainOfferings}
+// ≥ 50% Jaccard-distance verschillen. SYSTEM_PROMPT noemt mainOfferings
+// expliciet als category-signaal ("mainOfferings expanded substantially
+// with new categories"), dus pre-filter moet het ook checken. De
+// ≥2-of-4 drempel voorkomt dat een pure single-offering-add per ongeluk
+// als CATEGORY_REPOSITIONING wordt geclassificeerd (NEW_PRODUCT-pad
+// blijft deterministisch).
 const CATEGORY_FIELD_JACCARD_THRESHOLD = 0.5;
 const CATEGORY_MIN_FIELDS_CHANGED = 2;
 
@@ -163,10 +166,17 @@ function shouldRunClassifier(prev: CanonicalExtracted, next: CanonicalExtracted)
     prev.differentiators.join(' '),
     next.differentiators.join(' '),
   );
+  const mainOfferingsDistance = jaccardDistance(
+    prev.mainOfferings.join(' '),
+    next.mainOfferings.join(' '),
+  );
 
-  const categoryFieldHits = [valuePropDistance, audienceDistance, differentiatorsDistance].filter(
-    (d) => d >= CATEGORY_FIELD_JACCARD_THRESHOLD,
-  ).length;
+  const categoryFieldHits = [
+    valuePropDistance,
+    audienceDistance,
+    differentiatorsDistance,
+    mainOfferingsDistance,
+  ].filter((d) => d >= CATEGORY_FIELD_JACCARD_THRESHOLD).length;
 
   if (categoryFieldHits >= CATEGORY_MIN_FIELDS_CHANGED) return true;
   if (audienceDistance >= AUDIENCE_JACCARD_THRESHOLD) return true;
@@ -234,7 +244,15 @@ export async function classifyPatternEvents(
   ctx?: { workspaceId: string; competitorId: string },
 ): Promise<DetectedActivity[]> {
   if (!prev) return [];
-  if (!shouldRunClassifier(prev, next)) return [];
+  if (!shouldRunClassifier(prev, next)) {
+    // Observability voor pre-filter tuning — telt skip-rate over tijd zodat
+    // we kunnen meten of de drempel te streng staat (task: re-evaluate
+    // na 30 dagen productie-data).
+    console.info(
+      `[competitor-ai-classifier] pre-filter skip for competitor ${ctx?.competitorId ?? 'unknown'} — no AI-call`,
+    );
+    return [];
+  }
 
   const tracking: AICallTracking | undefined = ctx
     ? {
