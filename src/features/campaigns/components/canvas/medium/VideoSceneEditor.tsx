@@ -41,8 +41,11 @@ export function VideoSceneEditor() {
   const composedVideoStatus = useCanvasStore((s) => s.composedVideoStatus);
   const videoProviderConfig = useCanvasStore((s) => s.videoProviderConfig);
   const setConfigValue = useCanvasStore((s) => s.setMediumConfigValue);
+  const heroImage = useCanvasStore((s) => s.heroImage);
+  const imageVariants = useCanvasStore((s) => s.imageVariants);
 
   const { generateVideo } = useVideoGeneration(deliverableId);
+  const autoKickedRef = useRef(false);
 
   // Parse total duration and split points from medium config
   const totalDuration = useMemo(() => {
@@ -72,6 +75,42 @@ export function VideoSceneEditor() {
     const idx = selections.get(sceneId) ?? 0;
     return variants[idx]?.content ?? '';
   }, [variantGroups, selections]);
+
+  // Auto-kick (2026-05-19): bij eerste mount na Step 2 confirm voor een
+  // VIDEO_ADJACENT_TYPE deliverable — kick scene-generation automatisch.
+  // Gerapporteerd: "in stap 3 wordt geen video gegenereerd. Volgens mij
+  // moet dit gebeuren na bevestiging van stap 2".
+  // Veiligheidsschakelaars:
+  //  - autoKickedRef voorkomt re-kick bij re-mount (component-reuse,
+  //    React-strict-mode dev double-invoke)
+  //  - Skip als er al een scene generating / complete / heeft videoUrl is
+  //    (user heeft mogelijk handmatig gestart of we keren terug naar
+  //    een eerdere sessie)
+  //  - Skip als deliverableId nog niet beschikbaar
+  //  - Skip als geen scripts beschikbaar
+  useEffect(() => {
+    if (autoKickedRef.current) return;
+    if (!deliverableId) return;
+
+    const scripts = SCENE_IDS.map((id) => ({ sceneId: id, script: getSceneScript(id) }));
+    const scenesWithScript = scripts.filter((s) => s.script.length > 0);
+    if (scenesWithScript.length === 0) return;
+
+    const someStartedOrComplete = sceneVideos.some(
+      (s) => s.status === 'generating' || s.status === 'complete' || !!s.videoUrl,
+    );
+    if (someStartedOrComplete) return;
+
+    autoKickedRef.current = true;
+
+    // Default source-image: hero (Step 3 unified image) of eerste image-variant.
+    // SceneCard UI laat user later per-scene een andere source kiezen.
+    const defaultSourceImage = heroImage?.url ?? imageVariants[0]?.url ?? undefined;
+
+    for (const { sceneId, script } of scenesWithScript) {
+      generateVideo(script, sceneId, defaultSourceImage);
+    }
+  }, [deliverableId, sceneVideos, getSceneScript, generateVideo, heroImage, imageVariants]);
 
   const allScenesComplete = sceneVideos.every((s) => s.status === 'complete' || s.sourceMode === 'none');
   const scenesWithVideo = sceneVideos.filter((s) => s.videoUrl);
