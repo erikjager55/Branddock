@@ -443,6 +443,11 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
       { name: 'Brand Voice', weight: 0.10, description: 'Authenticity, persona-fit, professional credibility' },
     ],
     exportFormats: ['txt', 'mp4'],
+    // 2026-05-19 — verborgen uit Add Content. Scene-visual-split + per-scene
+    // video-gen pipeline pre-launch te complex om consistent te leveren;
+    // re-enable post-launch wanneer Optie C (multi-shot per scene + compose)
+    // af is. Bestaande deliverables van dit type blijven werken.
+    hidden: true,
   },
   {
     id: "linkedin-newsletter",
@@ -551,6 +556,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
       { name: 'Replay Value', weight: 0.10, description: 'Rewatchability, share-worthiness' }
     ],
     exportFormats: SOCIAL_MEDIA_DEFAULTS.exportFormats,
+    // 2026-05-19 — verborgen uit Add Content (zie linkedin-video-ad voor reden).
+    hidden: true,
   },
   {
     id: "social-carousel",
@@ -784,6 +791,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 150, maxWords: 500 },
     qualityCriteria: VIDEO_AUDIO_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'pdf', 'srt'],
+    // 2026-05-19 — verborgen uit Add Content (zie linkedin-video-ad voor reden).
+    hidden: true,
   },
   {
     id: "testimonial-video",
@@ -796,6 +805,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 100, maxWords: 400, requiredSections: ['intro', 'questions', 'closing'] },
     qualityCriteria: VIDEO_AUDIO_DEFAULTS.qualityCriteria,
     exportFormats: VIDEO_AUDIO_DEFAULTS.exportFormats,
+    // 2026-05-19 — verborgen uit Add Content (zie linkedin-video-ad voor reden).
+    hidden: true,
   },
   {
     id: "promo-video",
@@ -808,6 +819,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 50, maxWords: 200 },
     qualityCriteria: VIDEO_AUDIO_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'pdf', 'srt'],
+    // 2026-05-19 — verborgen uit Add Content (zie linkedin-video-ad voor reden).
+    hidden: true,
   },
   {
     id: "webinar-outline",
