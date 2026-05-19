@@ -514,11 +514,16 @@ function SceneBreakdown({
               <div className="flex-shrink-0 mt-0.5">
                 <Icon className="h-4 w-4" style={{ color: borderColor }} />
               </div>
-              <div className="min-w-0 space-y-1.5 flex-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: textColor }}>
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider block mb-2" style={{ color: textColor }}>
                   {label}
                 </span>
-                <div className="space-y-1.5">
+                {/* 2026-05-19 herzien: segments inline geïntegreerd binnen
+                    de scene-card (was eerder genest in aparte mini-panels
+                    met eigen borders — visueel rommelig). Visual/Caption
+                    krijgen nu een kleine inline-label-pill in de flow ipv
+                    een aparte box. Spoken-text vormt de hoofdtekst. */}
+                <div className="space-y-2">
                   {segments.map((seg, idx) => {
                     if (seg.kind === 'text') {
                       return (
@@ -536,34 +541,28 @@ function SceneBreakdown({
                     }
                     if (seg.kind === 'visual') {
                       return (
-                        <div
-                          key={idx}
-                          className="flex gap-2 items-start rounded border border-gray-200 bg-white px-2.5 py-1.5"
-                        >
-                          <Film className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-gray-400" />
-                          <div className="min-w-0">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 block">
-                              Visual
-                            </span>
-                            <p className="text-xs text-gray-700 leading-snug italic mt-0.5">{seg.content}</p>
-                          </div>
-                        </div>
+                        <p key={idx} className="text-xs text-gray-600 leading-snug">
+                          <span
+                            className="inline-block mr-1.5 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider align-middle"
+                            style={{ backgroundColor: 'rgba(0,0,0,0.05)', color: textColor }}
+                          >
+                            Visual
+                          </span>
+                          <span className="italic">{seg.content}</span>
+                        </p>
                       );
                     }
                     if (seg.kind === 'caption') {
                       return (
-                        <div
-                          key={idx}
-                          className="flex gap-2 items-start rounded border border-gray-200 bg-white px-2.5 py-1.5"
-                        >
-                          <MessageSquare className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-gray-400" />
-                          <div className="min-w-0">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 block">
-                              Caption
-                            </span>
-                            <p className="text-xs text-gray-700 leading-snug mt-0.5">{seg.content}</p>
-                          </div>
-                        </div>
+                        <p key={idx} className="text-xs text-gray-600 leading-snug">
+                          <span
+                            className="inline-block mr-1.5 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider align-middle"
+                            style={{ backgroundColor: 'rgba(0,0,0,0.05)', color: textColor }}
+                          >
+                            Caption
+                          </span>
+                          <span>{seg.content}</span>
+                        </p>
                       );
                     }
                     return null;
