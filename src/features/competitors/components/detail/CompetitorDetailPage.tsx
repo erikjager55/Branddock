@@ -20,6 +20,7 @@ import { PositioningSection } from "./PositioningSection";
 import { OfferingsSection } from "./OfferingsSection";
 import { StrengthsWeaknessesSection } from "./StrengthsWeaknessesSection";
 import { BrandSignalsSection } from "./BrandSignalsSection";
+import { ActivityTimelineSection } from "./ActivityTimelineSection";
 import { CompetitiveScoreCard } from "./CompetitiveScoreCard";
 import { QuickActionsCard } from "./QuickActionsCard";
 import { SourceInfoCard } from "./SourceInfoCard";
@@ -324,6 +325,8 @@ export function CompetitorDetailPage({
                 editDifferentiators={editDifferentiators}
                 setEditDifferentiators={setEditDifferentiators}
               />
+
+              <ActivityTimelineSection competitorId={competitorId} />
 
               <OfferingsSection
                 competitor={competitor}

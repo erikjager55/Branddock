@@ -11,6 +11,11 @@ import type {
   AnalyzeJobResponse,
   CompetitorProductsResponse,
 } from "../types/competitor.types";
+import type {
+  ActivityFilters,
+  ActivityListResponse,
+  ActivitySummaryResponse,
+} from "../types/activity";
 
 const BASE = "/api/competitors";
 
@@ -200,6 +205,54 @@ export interface DiscoveredCompetitor {
   relevanceScore: number;
   relevanceReason: string;
   tier: 'DIRECT' | 'INDIRECT' | 'ASPIRATIONAL';
+}
+
+// ─── Activities ─────────────────────────────────────────────
+
+export async function fetchCompetitorActivities(
+  competitorId: string,
+  filters: ActivityFilters = {},
+): Promise<ActivityListResponse> {
+  const url = new URL(`${BASE}/${competitorId}/activities`, window.location.origin);
+  if (filters.severity) url.searchParams.set("severity", filters.severity);
+  if (filters.type) url.searchParams.set("type", filters.type);
+  if (filters.detectionMethod) url.searchParams.set("detectionMethod", filters.detectionMethod);
+  if (filters.offset !== undefined) url.searchParams.set("offset", String(filters.offset));
+  if (filters.limit !== undefined) url.searchParams.set("limit", String(filters.limit));
+
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Failed to fetch competitor activities (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function acknowledgeCompetitorActivities(
+  competitorId: string,
+  body: { activityIds: string[] } | { all: true },
+): Promise<{ acknowledgedCount: number }> {
+  const res = await fetch(`${BASE}/${competitorId}/activities/acknowledge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? `Failed to acknowledge activities (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function fetchCompetitorActivitySummary(
+  window: "7d" | "30d" = "7d",
+): Promise<ActivitySummaryResponse> {
+  const res = await fetch(`${BASE}/activity-summary?window=${window}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? `Failed to fetch activity summary (${res.status})`);
+  }
+  return res.json();
 }
 
 export async function discoverCompetitors(): Promise<{ competitors: DiscoveredCompetitor[] }> {
