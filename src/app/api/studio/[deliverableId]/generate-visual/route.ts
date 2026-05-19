@@ -261,16 +261,25 @@ export async function POST(request: Request, { params }: RouteParams) {
         // so position cue ("rechtsonder", "top-left", etc.) is preserved.
         const intent = parseLogoIntent(sceneVisualText);
         if (intent.wantLogo) {
-          const brandLogo = await getBrandLogo(workspaceId);
-          if (brandLogo) {
-            logoOverlay = { position: intent.position, logo: brandLogo };
-            // Drop logo mention from the briefing — image-gen leaves the
-            // corner clean for the real-asset overlay.
-            sceneVisualText = stripLogoMentions(sceneVisualText);
-          } else {
-            console.warn(
-              `[generate-visual] scene ${body.sceneId} asks for logo but workspace ${workspaceId} has no styleguide logo — skipping overlay`,
+          // ALWAYS strip logo mentions — even when we can't overlay (no
+          // asset, in-scene placement) — because the image-model will
+          // otherwise hallucinate a fake logo wherever the prompt asks.
+          // Clean image > hallucinated mark.
+          sceneVisualText = stripLogoMentions(sceneVisualText);
+
+          if (intent.isInScenePlacement) {
+            console.info(
+              `[generate-visual] scene ${body.sceneId}: logo placement is in-scene (on screen/wall) — skipping corner overlay; stripped mention so model doesn't hallucinate`,
             );
+          } else {
+            const brandLogo = await getBrandLogo(workspaceId);
+            if (brandLogo) {
+              logoOverlay = { position: intent.position, logo: brandLogo };
+            } else {
+              console.warn(
+                `[generate-visual] scene ${body.sceneId} asks for logo but workspace ${workspaceId} has no styleguide logo — skipping overlay (mention stripped from prompt)`,
+              );
+            }
           }
         }
         if (sceneVisualText) {

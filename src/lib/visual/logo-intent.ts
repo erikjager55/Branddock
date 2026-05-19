@@ -19,6 +19,12 @@ export type LogoPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-ri
 export interface LogoIntent {
   wantLogo: boolean;
   position: LogoPosition;
+  /** When true the scene asks for the logo to appear IN the scene (on a
+   *  display, wall, sign, etc.) rather than as a corner watermark. The
+   *  corner-composite can't place a logo on an in-scene surface, so the
+   *  route logs and skips the overlay — but we still strip the mention
+   *  from the prompt so the image-model doesn't hallucinate a fake mark. */
+  isInScenePlacement: boolean;
 }
 
 // Position cues — Dutch + English. Match the most specific corner
@@ -32,6 +38,18 @@ const POSITION_PATTERNS: Array<{ regex: RegExp; position: LogoPosition }> = [
 
 const LOGO_KEYWORD = /\b(logo|beeldmerk|brand[\s-]?mark|wordmark|logo[\s-]?lockup|brand[\s-]?logo)\b/i;
 
+// In-scene placement cues — phrases that put the logo ON an object IN
+// the frame (a screen, a wall, a sign, a card) rather than as a corner
+// watermark. Corner-compositing can't do that; the route skips overlay
+// for these and image-gen would hallucinate the logo anyway.
+const IN_SCENE_PATTERNS = [
+  /\b(op|in)\s+(het\s+)?(scherm|display|monitor|screen|tv)\b/i,
+  /\b(op|in)\s+(de\s+|een\s+)?(muur|wall|poster|achtergrond|sign|bord)\b/i,
+  /\b(achtergrondscherm|background[\s-]?screen)\b/i,
+  /\bin\s+beeld\b/i,
+  /\b(on|in)\s+the\s+(screen|wall|background|sign|poster|monitor)\b/i,
+];
+
 /**
  * Parse a scene visual-prompt for logo intent. Returns
  * `{ wantLogo: false, … }` when no logo keyword found. Default
@@ -40,37 +58,46 @@ const LOGO_KEYWORD = /\b(logo|beeldmerk|brand[\s-]?mark|wordmark|logo[\s-]?locku
  */
 export function parseLogoIntent(prompt: string): LogoIntent {
   if (!prompt || !LOGO_KEYWORD.test(prompt)) {
-    return { wantLogo: false, position: 'bottom-right' };
+    return { wantLogo: false, position: 'bottom-right', isInScenePlacement: false };
   }
+  const isInScenePlacement = IN_SCENE_PATTERNS.some((p) => p.test(prompt));
   for (const { regex, position } of POSITION_PATTERNS) {
-    if (regex.test(prompt)) return { wantLogo: true, position };
+    if (regex.test(prompt)) return { wantLogo: true, position, isInScenePlacement };
   }
-  return { wantLogo: true, position: 'bottom-right' };
+  return { wantLogo: true, position: 'bottom-right', isInScenePlacement };
 }
 
 /**
- * Remove logo mentions from the image-gen prompt so the model
- * leaves the corner clean (no hallucinated mark). Drops sentences
- * containing "logo …rechtsonder", "Logo Linfi …", "wordmark …",
- * etc. Keeps the rest of the prompt intact so the scene's other
- * visual direction (composition, subject, lighting) survives.
+ * Remove logo mentions from the image-gen prompt so the model leaves
+ * no chance to hallucinate a fake mark. Logo phrases inside a scene
+ * description tend to be one clause in a longer comma-list ("speaker
+ * confident, Linfi-logo rechtsonder, branded CTA-card in foreground");
+ * dropping the whole SENTENCE is too aggressive, so we split on
+ * comma + sentence-boundary punctuation and drop only the clauses
+ * containing the logo keyword.
  *
- * Strategy: split on sentence-boundary punctuation, drop any
- * sentence containing the logo keyword, rejoin. Safer than a
- * surgical token-strip because logo mentions tend to be whole
- * sentences ("Logo Linfi rechtsonder.").
+ * Also handles the also-stripped position-cue residue ("Linfi-" or
+ * trailing "rechtsonder"/"op scherm" left over after logo word
+ * removal) so the prompt stays grammatical.
  */
 export function stripLogoMentions(prompt: string): string {
   if (!prompt) return prompt;
-  // Sentence split keeps the trailing punctuation on each part so we
-  // can rejoin without losing rhythm.
-  const sentences = prompt.split(/(?<=[.!?])\s+/);
-  const kept = sentences.filter((s) => !LOGO_KEYWORD.test(s));
-  // Defensive: if every sentence got dropped (rare — whole prompt was
-  // logo direction), return a minimal subject seed so the model still
-  // has something to render against.
+  // Split on commas, semicolons, periods, line breaks — anything that
+  // separates clauses. Keep the original separators by reconstructing
+  // with `, ` so the prompt reads naturally.
+  const clauses = prompt.split(/[,;\n]|\.\s+/);
+  const kept = clauses
+    .map((c) => c.trim())
+    .filter((c) => c.length > 0 && !LOGO_KEYWORD.test(c));
   if (kept.length === 0) {
-    return prompt.replace(LOGO_KEYWORD, '').trim();
+    // Whole prompt was logo direction — fall back to a tight regex
+    // strip so we don't return an empty string (model needs something).
+    return prompt
+      .replace(LOGO_KEYWORD, '')
+      .replace(/\b(rechts[\s-]?onder|links[\s-]?onder|rechts[\s-]?boven|links[\s-]?boven|bottom[\s-]?right|bottom[\s-]?left|top[\s-]?right|top[\s-]?left)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .replace(/\s*[-]\s*/g, ' ')
+      .trim();
   }
-  return kept.join(' ').trim();
+  return kept.join(', ').replace(/\s+/g, ' ').trim();
 }

@@ -13,6 +13,8 @@
 // =============================================================
 
 import sharp from 'sharp';
+import { readFile } from 'fs/promises';
+import path from 'path';
 import type { LogoPosition } from './logo-intent';
 
 interface CompositeArgs {
@@ -99,6 +101,14 @@ export async function compositeLogoOverlay({
 }
 
 async function fetchAsBuffer(url: string, label: string): Promise<Buffer> {
+  // Local-storage assets are persisted under public/uploads/... and served
+  // by Next.js as relative URLs ("/uploads/media/…"). Server-side fetch()
+  // can't resolve those without a base host, so we read straight from disk
+  // — matches the path-resolution used by LocalStorageProvider.delete.
+  if (url.startsWith('/')) {
+    const filePath = path.join('public', url.replace(/^\//, ''));
+    return readFile(filePath);
+  }
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch ${label} (${res.status}): ${url}`);
   const arrayBuf = await res.arrayBuffer();
