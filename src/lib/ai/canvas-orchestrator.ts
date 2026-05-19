@@ -1414,7 +1414,12 @@ function resolveMaxTokens(contentType: string | null): number {
   // ~250 tokens of content. 8000 gives the model headroom for the full
   // schema plus its own reasoning/JSON-overhead.
   if (contentType && VIDEO_ADJACENT_TYPES.has(contentType)) return 8000;
-  return 4000; // short-form: social posts, ads, carousels
+  // 2026-05-19 — short-form bumped from 4000 → 6000. Gemini 2.5+ thinking
+  // tokens count against maxOutputTokens, and rich schemas (linkedin-poll
+  // context+options+follow-up; twitter-thread 7-12 tweets; carousel slides)
+  // routinely truncated at 4000 with 3000+ chars of output already produced.
+  // 6000 covers thinking budget + JSON overhead while keeping short-form snappy.
+  return 6000;
 }
 
 /**

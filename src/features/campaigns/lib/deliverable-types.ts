@@ -635,6 +635,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 30, maxWords: 150 },
     qualityCriteria: ADVERTISING_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'srt'],
+    // 2026-05-19 — verborgen uit Add Content (zie linkedin-video-ad voor reden).
+    hidden: true,
   },
   {
     id: "native-ad",
@@ -985,6 +987,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 100, maxWords: 500 },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'srt'],
+    // 2026-05-19 — verborgen uit Add Content (zie linkedin-video-ad voor reden).
+    hidden: true,
   },
   {
     id: "impact-report",
