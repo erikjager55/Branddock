@@ -450,6 +450,7 @@ enum NotificationType {
   RESEARCH_INSIGHT_ADDED
   NEW_PERSONA_CREATED
   NEW_RESEARCH_STARTED
+  COMPETITOR_MAJOR_EVENT
 }
 
 enum NotificationCategory {
