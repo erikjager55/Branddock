@@ -1141,6 +1141,12 @@ function textOverlay(): ContentTypeInputField {
       { value: "minimal", label: "Minimal" },
       { value: "dynamic-captions", label: "Dynamic Captions" },
     ],
+    helpText: "Style van on-screen tekst — drives caption-rhythm en visuele dichtheid",
+    // 2026-05-19: aiDerivable + aiHint toegevoegd zodat brand-assistant
+    // ("vul de velden") ook deze content-style velden invult. Voorheen
+    // werd dit veld stilzwijgend overgeslagen.
+    aiDerivable: true,
+    aiHint: "Bepaal op basis van persona-aandacht + platform: silent-autoplay platforms (LinkedIn, IG) → 'dynamic-captions'; brand-driven content → 'bold-headlines'; understated tone → 'minimal'",
   };
 }
 
@@ -1157,6 +1163,9 @@ function colorGrade(): ContentTypeInputField {
       { value: "natural", label: "Natural" },
     ],
     helpText: "Visual mood — beïnvloedt phrasing en tone (warm = nostalgisch, cool = professioneel, vibrant = energiek, natural = documentary)",
+    // 2026-05-19: aiDerivable + aiHint toegevoegd, zelfde reden als textOverlay.
+    aiDerivable: true,
+    aiHint: "Leid af uit brand visual-direction + tone-of-voice: corporate/B2B → 'cool', lifestyle/wellness → 'warm', youth/energy → 'vibrant', documentary/educational → 'natural'",
   };
 }
 
@@ -1756,6 +1765,8 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
         { value: "key-phrases", label: "Key-phrase overlays (highlights only)" },
       ],
       helpText: "LinkedIn autoplay is silent — captions zijn essentieel voor watch-time. Default: burned-in.",
+      aiDerivable: true,
+      aiHint: "Default 'burned-in' voor LinkedIn paid (silent autoplay vereist altijd-zichtbare captions). 'key-phrases' wanneer brand-tone minimalistisch is en spoken-script kort genoeg om visueel ruimte te hebben.",
     },
   ],
 
