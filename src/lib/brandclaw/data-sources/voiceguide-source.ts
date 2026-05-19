@@ -62,7 +62,11 @@ class VoiceguideSource implements DataSourceAccessor<VoiceguideSnapshotPayload> 
   ): Promise<DataSourceQueryResult<VoiceguideSnapshotPayload>> {
     const { workspaceId, window } = input;
 
-    const [voiceguide, versions] = await Promise.all([
+    // 2026-05-19: voiceguide-primary + legacy BrandPersonality fallback voor
+    // unmigrated workspaces. Strategy Analyst data-source moest anders een
+    // 'no-voiceguide' snapshot opslaan ondanks dat de workspace wel
+    // brand-voice signalen had in de legacy frameworkData structuur.
+    const [voiceguide, versions, personalityAsset] = await Promise.all([
       prisma.brandVoiceguide.findUnique({
         where: { workspaceId },
         select: {
@@ -95,7 +99,45 @@ class VoiceguideSource implements DataSourceAccessor<VoiceguideSnapshotPayload> 
         orderBy: { createdAt: "asc" },
         take: 50,
       }),
+      prisma.brandAsset.findFirst({
+        where: { workspaceId, frameworkType: 'BRAND_PERSONALITY' },
+        select: { frameworkData: true, updatedAt: true },
+      }),
     ]);
+
+    // Legacy fallback: bouw voiceguide-shape uit BrandPersonality.frameworkData
+    // wanneer de nieuwe voiceguide-rij ontbreekt of leeg is. Gebruikt zelfde
+    // veld-namen waar mogelijk; values zijn defensive-cast naar verwachte types.
+    const personalityData = (personalityAsset?.frameworkData ?? null) as
+      | Record<string, unknown>
+      | null;
+    const legacyVoiceShape = personalityData
+      ? {
+          voiceDescription:
+            typeof personalityData.brandVoiceDescription === 'string'
+              ? personalityData.brandVoiceDescription
+              : typeof personalityData.voiceDescription === 'string'
+                ? personalityData.voiceDescription
+                : null,
+          wordsWeUse: Array.isArray(personalityData.wordsWeUse)
+            ? (personalityData.wordsWeUse as unknown[]).filter((v): v is string => typeof v === 'string')
+            : [],
+          wordsWeAvoid: Array.isArray(personalityData.wordsWeAvoid)
+            ? (personalityData.wordsWeAvoid as unknown[]).filter((v): v is string => typeof v === 'string')
+            : [],
+          contentGuidelines: Array.isArray(personalityData.contentGuidelines)
+            ? (personalityData.contentGuidelines as unknown[]).filter((v): v is string => typeof v === 'string')
+            : [],
+          writingGuidelines: Array.isArray(personalityData.writingGuidelines)
+            ? (personalityData.writingGuidelines as unknown[]).filter((v): v is string => typeof v === 'string')
+            : [],
+        }
+      : null;
+    const hasLegacyVoiceData =
+      legacyVoiceShape !== null &&
+      (legacyVoiceShape.voiceDescription !== null ||
+        legacyVoiceShape.wordsWeUse.length > 0 ||
+        legacyVoiceShape.contentGuidelines.length > 0);
 
     const payload: VoiceguideSnapshotPayload = {
       voiceguideId: voiceguide?.id ?? null,
@@ -111,7 +153,19 @@ class VoiceguideSource implements DataSourceAccessor<VoiceguideSnapshotPayload> 
             contentLocale: voiceguide.contentLocale,
             updatedAt: voiceguide.updatedAt.toISOString(),
           }
-        : null,
+        : hasLegacyVoiceData
+          ? {
+              voiceDescription: legacyVoiceShape!.voiceDescription,
+              toneDimensions: null,
+              wordsWeUse: legacyVoiceShape!.wordsWeUse,
+              wordsWeAvoid: legacyVoiceShape!.wordsWeAvoid,
+              antiPatterns: [],
+              contentGuidelines: legacyVoiceShape!.contentGuidelines,
+              writingGuidelines: legacyVoiceShape!.writingGuidelines,
+              contentLocale: null,
+              updatedAt: (personalityAsset?.updatedAt ?? new Date()).toISOString(),
+            }
+          : null,
       versions: versions.map((v) => ({
         versionId: v.id,
         version: v.version,

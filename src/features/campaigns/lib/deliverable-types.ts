@@ -27,6 +27,13 @@ export interface DeliverableTypeDefinition {
   constraints?: DeliverableTypeConstraints;
   qualityCriteria?: QualityCriterion[];
   exportFormats?: string[];
+  /**
+   * Wanneer true, wordt het type uit de "Add Content"-modal verborgen.
+   * Type blijft bestaan in code (prompts, F-VAL, exporters) zodat
+   * historische deliverables van dit type blijven werken. Toggle terug
+   * door `hidden` te verwijderen of false te zetten.
+   */
+  hidden?: boolean;
 }
 
 // ─── Multi-candidate image generation (Pattern B image-quality-chain) ───
@@ -389,6 +396,11 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 100, maxWords: 300, maxSlides: 10, maxChars: 3000, maxHashtags: 5 },
     qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
     exportFormats: ['pdf', 'png'],
+    // 2026-05-19 verborgen uit Add Content per user — carousel asset-
+    // pipeline nog niet productie-klaar (zie idea-linkedin-carousel-
+    // verbeterplan.md). Toggle terug zodra full multi-slide visual deck
+    // pipeline post-launch beschikbaar is.
+    hidden: true,
   },
   {
     id: "linkedin-ad",
@@ -419,6 +431,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 300, maxWords: 2000, maxHashtags: 5 },
     qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'html'],
+    // 2026-05-19 verborgen uit Add Content per user.
+    hidden: true,
   },
   {
     id: "linkedin-video",
@@ -431,6 +445,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 50, maxWords: 500 },
     qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'srt'],
+    // 2026-05-19 verborgen uit Add Content per user.
+    hidden: true,
   },
   {
     id: "linkedin-event",
@@ -523,6 +539,9 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 100, maxWords: 300, maxSlides: 10, maxChars: 2200 },
     qualityCriteria: SOCIAL_MEDIA_DEFAULTS.qualityCriteria,
     exportFormats: ['pdf', 'png'],
+    // 2026-05-19 verborgen uit Add Content per user — carousel asset-
+    // pipeline nog niet productie-klaar. Toggle terug post-launch.
+    hidden: true,
   },
 
   // ─── Advertising & Paid (6) ─────────────────────────────

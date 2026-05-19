@@ -637,7 +637,7 @@ export const readTools: ClawToolDefinition[] = [
     requiresConfirmation: false,
     category: 'read',
     execute: async (_params, ctx: ToolExecutionContext) => {
-      const [styleguide, voiceguide] = await Promise.all([
+      const [styleguide, voiceguide, personalityAsset] = await Promise.all([
         prisma.brandStyleguide.findFirst({
         where: { workspaceId: ctx.workspaceId },
         include: {
@@ -651,13 +651,32 @@ export const readTools: ClawToolDefinition[] = [
           },
         },
       }),
+        // 2026-05-19: voiceguide is primaire bron; legacy fallback voor
+        // unmigrated workspaces (BrandPersonality.frameworkData.contentGuidelines
+        // bestaat als shape "guidelines" in oude data).
         prisma.brandVoiceguide.findUnique({
           where: { workspaceId: ctx.workspaceId },
           select: { contentGuidelines: true, writingGuidelines: true },
         }),
+        prisma.brandAsset.findFirst({
+          where: { workspaceId: ctx.workspaceId, frameworkType: 'BRAND_PERSONALITY' },
+          select: { frameworkData: true },
+        }),
       ]);
 
       if (!styleguide) return { error: 'No styleguide found' };
+
+      // Legacy fallback voor unmigrated workspaces: BrandPersonality.frameworkData
+      // bevat soms contentGuidelines / writingGuidelines als legacy shape.
+      const personalityData = (personalityAsset?.frameworkData ?? null) as
+        | Record<string, unknown>
+        | null;
+      const legacyContentGuidelines = Array.isArray(personalityData?.contentGuidelines)
+        ? (personalityData.contentGuidelines as unknown[]).filter((v): v is string => typeof v === 'string')
+        : [];
+      const legacyWritingGuidelines = Array.isArray(personalityData?.writingGuidelines)
+        ? (personalityData.writingGuidelines as unknown[]).filter((v): v is string => typeof v === 'string')
+        : [];
 
       return {
         id: styleguide.id,
@@ -670,8 +689,14 @@ export const readTools: ClawToolDefinition[] = [
         colors: styleguide.colors,
         primaryFontName: styleguide.primaryFontName,
         additionalFonts: styleguide.additionalFonts,
-        contentGuidelines: voiceguide?.contentGuidelines ?? [],
-        writingGuidelines: voiceguide?.writingGuidelines ?? [],
+        contentGuidelines:
+          (voiceguide?.contentGuidelines?.length ?? 0) > 0
+            ? voiceguide!.contentGuidelines
+            : legacyContentGuidelines,
+        writingGuidelines:
+          (voiceguide?.writingGuidelines?.length ?? 0) > 0
+            ? voiceguide!.writingGuidelines
+            : legacyWritingGuidelines,
         photographyStyle: styleguide.photographyStyle,
         visualLanguage: styleguide.visualLanguage,
       };

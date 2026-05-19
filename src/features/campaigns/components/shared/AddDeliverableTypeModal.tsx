@@ -31,8 +31,12 @@ export function AddDeliverableTypeModal({
   const [error, setError] = useState<string | null>(null);
 
   const filteredTypes = useMemo(() => {
-    if (!categoryFilter) return DELIVERABLE_TYPES;
-    return DELIVERABLE_TYPES.filter((dt) => dt.category === categoryFilter);
+    // 2026-05-19: skip types met `hidden: true` (per type-registry flag).
+    // Type blijft bestaan in code zodat bestaande deliverables blijven werken,
+    // maar verschijnt niet in de "Add Content" picker.
+    const visible = DELIVERABLE_TYPES.filter((dt) => !dt.hidden);
+    if (!categoryFilter) return visible;
+    return visible.filter((dt) => dt.category === categoryFilter);
   }, [categoryFilter]);
 
   const resetAndClose = useCallback(() => {

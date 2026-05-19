@@ -65,7 +65,13 @@ export async function POST(
 
     // Fetch tone-of-voice content uit BrandVoiceguide (verhuisd uit BrandStyleguide,
     // ADR 2026-05-15). guidelinesSavedForAi gate vervangt toneSavedForAi.
-    const voiceguide = await prisma.brandVoiceguide.findUnique({
+    //
+    // 2026-05-19: legacy fallback toegevoegd voor unmigrated workspaces.
+    // BrandPersonality.frameworkData.contentGuidelines / .writingGuidelines
+    // bestaan in oudere data-shape. Eerst voiceguide proberen; bij gemis
+    // synthese uit legacy zodat de tone-check niet onnodig "no tone guidelines
+    // configured" terugkrijgt.
+    const voiceguideRow = await prisma.brandVoiceguide.findUnique({
       where: { workspaceId },
       select: {
         contentGuidelines: true,
@@ -76,8 +82,50 @@ export async function POST(
       },
     });
 
-    // No voiceguide or guidelines not saved for AI → quick return
-    if (!voiceguide || !voiceguide.guidelinesSavedForAi) {
+    type VoiceguideShape = {
+      contentGuidelines: string[];
+      writingGuidelines: string[];
+      examplePhrases: unknown;
+      examplePhrasesSavedForAi: boolean;
+    };
+
+    let voiceguide: VoiceguideShape | null =
+      voiceguideRow && voiceguideRow.guidelinesSavedForAi
+        ? {
+            contentGuidelines: voiceguideRow.contentGuidelines,
+            writingGuidelines: voiceguideRow.writingGuidelines,
+            examplePhrases: voiceguideRow.examplePhrases,
+            examplePhrasesSavedForAi: voiceguideRow.examplePhrasesSavedForAi,
+          }
+        : null;
+
+    // Legacy fallback wanneer voiceguide ontbreekt/niet-saved-for-AI
+    if (!voiceguide) {
+      const personalityAssetForGuidelines = await prisma.brandAsset.findFirst({
+        where: { workspaceId, frameworkType: 'BRAND_PERSONALITY' },
+        select: { frameworkData: true },
+      });
+      const legacyData = (personalityAssetForGuidelines?.frameworkData ?? null) as
+        | Record<string, unknown>
+        | null;
+      const legacyContent = Array.isArray(legacyData?.contentGuidelines)
+        ? (legacyData.contentGuidelines as unknown[]).filter((v): v is string => typeof v === 'string')
+        : [];
+      const legacyWriting = Array.isArray(legacyData?.writingGuidelines)
+        ? (legacyData.writingGuidelines as unknown[]).filter((v): v is string => typeof v === 'string')
+        : [];
+      if (legacyContent.length > 0 || legacyWriting.length > 0) {
+        voiceguide = {
+          contentGuidelines: legacyContent,
+          writingGuidelines: legacyWriting,
+          examplePhrases: null,
+          examplePhrasesSavedForAi: false,
+        };
+      }
+    }
+
+    // No voiceguide AND no legacy guidelines → quick return
+    if (!voiceguide) {
       return NextResponse.json({
         toneCheck: { status: 'warn' as ValidationStatus, message: 'No tone guidelines configured' },
         brandVoice: { score: 0, alignment: 'Pending' as const },

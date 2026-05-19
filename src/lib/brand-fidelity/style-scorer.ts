@@ -151,13 +151,15 @@ export function scoreBrandStyle(
   // 200w, instagram-post 150w) heeft minder surface om brand-vocab in te
   // embedden. Verwachten dat 40% van de lijst in 200w verschijnt is
   // onrealistisch. Tiered:
-  //   < 200w: 0.25 (25% match = full score — short-form quotum)
-  //   200-500w: 0.30
-  //   > 500w: 0.40 (long-form baseline, ongewijzigd)
-  // Effect: short-form social Merkstijl-pillar baseline gaat van ~50
-  // naar ~65-70 met realistisch 2-3 matches op een 10-woord lijst.
+  //   < 200w: 0.33 (≈ 3/10 = 91, 4/10 = 100)
+  //   200-500w: 0.37 (medium gradient)
+  //   ≥ 500w: 0.40 (long-form baseline, ongewijzigd)
+  // Eerste iteratie (0.25/0.30/0.40) was te agressief — gaf score 100
+  // bij slechts 3 matches in 200w content (gerapporteerd 2026-05-19
+  // "Merkstijl geeft standaard 100"). Nieuwe waardes geven gradient:
+  // 1/10 → 30, 2/10 → 61, 3/10 → 91, 4+/10 → 100 voor 200w content.
   const SATURATION_RATIO =
-    wordCount < 200 ? 0.25 : wordCount < 500 ? 0.30 : 0.40;
+    wordCount < 200 ? 0.33 : wordCount < 500 ? 0.37 : 0.40;
   const wordsCoverageScore =
     wordsWeUse.length > 0
       ? Math.min(100, Math.round((wordsMatched.length / wordsWeUse.length / SATURATION_RATIO) * 100))
