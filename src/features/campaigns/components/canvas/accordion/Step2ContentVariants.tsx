@@ -456,10 +456,17 @@ function SceneBreakdown({
 /**
  * Variant selector — pill toggle. Per variant ofwel de creative angle
  * (bv "Schaal & trots") of fallback "Variant A". Letter-circle voor visuele
- * landmark, blue-tinted highlight bij selected (matches design screenshot).
+ * landmark, blauw-getinte highlight bij selected.
  *
- * Tailwind 4 purge-safe: actieve blauwe kleuren via inline style omdat
- * specifieke shades anders gepurged kunnen worden.
+ * Styling 2026-05-19 herzien:
+ * - box-shadow ring (geen border-2 → geen layout-shift active↔inactive)
+ * - subtle shadow-sm voor elevation
+ * - smooth hover-state op inactive met avatar-darkening via group-hover
+ * - sterker contrast inactive avatar (gray-200) voor leesbaarheid
+ * - actieve text-kleur naar blue-800 (was 700) voor extra confidence
+ *
+ * Tailwind 4 purge-safe: blauwe shades via inline style omdat
+ * specifieke utility-classes uit src/index.css gepurged kunnen zijn.
  */
 function VariantSelector({
   count,
@@ -486,23 +493,30 @@ function VariantSelector({
             key={idx}
             type="button"
             onClick={() => onSelect(idx)}
-            className={`group inline-flex items-center gap-2 py-1.5 pl-1.5 pr-4 rounded-full text-sm transition-all ${
+            className={`group inline-flex items-center gap-2.5 py-1.5 pl-1.5 pr-4 rounded-full text-sm transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
               isSelected
-                ? 'border-2 font-semibold'
-                : 'border-2 border-transparent font-medium text-gray-700 hover:bg-gray-50'
+                ? 'font-semibold'
+                : 'font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
             style={
               isSelected
-                ? { backgroundColor: '#eff6ff', borderColor: '#bfdbfe', color: '#1d4ed8' }
+                ? {
+                    backgroundColor: '#eff6ff',
+                    color: '#1e40af',
+                    boxShadow:
+                      '0 0 0 1px #93c5fd, 0 1px 2px 0 rgba(15, 23, 42, 0.06)',
+                  }
                 : undefined
             }
             aria-pressed={isSelected}
           >
             <span
-              className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold flex-shrink-0 ${
-                isSelected ? 'text-white' : 'bg-gray-100 text-gray-600'
+              className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold flex-shrink-0 transition-colors duration-150 ${
+                isSelected
+                  ? 'text-white'
+                  : 'bg-gray-200 text-gray-600 group-hover:bg-gray-300 group-hover:text-gray-800'
               }`}
-              style={isSelected ? { backgroundColor: '#1d4ed8' } : undefined}
+              style={isSelected ? { backgroundColor: '#2563eb' } : undefined}
             >
               {letter}
             </span>

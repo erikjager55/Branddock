@@ -39,7 +39,9 @@ const STATUS_BADGE: Record<ApprovalStatus, {
 // Hydrates the store first (so UI reflects the change immediately), then
 // PATCHes the deliverable with a merged settings blob that carries the
 // inherited values plus an `inheritedFrom` marker so this code path doesn't
-// fire twice. Finally, fast-forwards the accordion to Variants.
+// fire twice. User remains on step 1 (Context) to review the inherited brief
+// — both 'context' and 'medium' are marked completed so navigating to
+// Variants is one click away once the review is satisfactory.
 async function applyInheritance(
   deliverableId: string,
   candidate: { id: string; title: string; settings: Record<string, unknown> | null },
@@ -64,7 +66,12 @@ async function applyInheritance(
   }
   store.setInheritedFrom({ id: candidate.id, title: candidate.title });
   store.setCompletedSteps(['context', 'medium']);
-  store.setActiveStep('variants');
+  // 2026-05-19: do NOT fast-forward to 'variants'. Previously skipped step 1
+  // entirely, leaving user wondering why they couldn't review/edit the
+  // inherited brief. Inherited values are now visible in step 1 (Context) with
+  // the InheritedFrom banner; user clicks next when ready. completedSteps
+  // still marks both 'context' + 'medium' so navigation to 'variants' is one
+  // click away if the user trusts the inheritance.
 
   try {
     await fetch(`/api/studio/${deliverableId}`, {
