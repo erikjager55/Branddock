@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { withAiRateLimit } from "@/lib/ai/middleware";
-import { scrapeProductUrl } from "@/lib/products/url-scraper";
-import { scrapeUrlViaGemini } from "@/lib/products/gemini-url-fallback";
+import { runScraperChain } from "@/lib/scraping/scraper-chain";
 import { createStructuredCompletion } from "@/lib/ai/exploration/ai-caller";
 import { getBrandContext } from "@/lib/ai/brand-context";
 import { formatBrandContext } from "@/lib/ai/prompt-templates";
@@ -87,19 +86,19 @@ export async function POST(
       return NextResponse.json({ error: "No website URL to refresh from" }, { status: 400 });
     }
 
-    // 1. Scrape (direct fetch, fallback to Gemini if blocked)
-    let scraped;
-    try {
-      scraped = await scrapeProductUrl(existing.websiteUrl);
-    } catch {
-      scraped = await scrapeUrlViaGemini(existing.websiteUrl);
-    }
+    // 1. Scrape via 3-step fallback chain (current → Apify → Gemini).
+    //    Zie `src/lib/scraping/scraper-chain.ts` voor volgorde-rationale.
+    const { scraped, scraperUsed } = await runScraperChain(existing.websiteUrl);
     if (!scraped.bodyText || scraped.bodyText.length < 50) {
       return NextResponse.json(
         { error: "Not enough content found on the website to analyze" },
         { status: 422 },
       );
     }
+
+    console.info(
+      `[competitors/refresh] scrape OK via ${scraperUsed} for ${existing.websiteUrl} (${scraped.bodyText.length} chars)`,
+    );
 
     // 2. Brand context (optional)
     let brandContextStr: string | undefined;
