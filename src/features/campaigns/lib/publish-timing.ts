@@ -89,11 +89,34 @@ export interface ChecklistItem {
   required: boolean;
 }
 
+/**
+ * Formats die structureel een aparte title/headline group produceren in de
+ * prompt-output. Long-form web (blog-article + landing-page) heeft een
+ * dedicated title; short-form social (organic-post / feed-post / carousel)
+ * heeft géén separate title-group — de hook zit in de body zelf.
+ *
+ * 2026-05-19 fix: voorheen was `has-title` als universele required-check
+ * toegevoegd voor alle platforms, wat altijd faalde voor short-form social
+ * content (LinkedIn-post / Instagram-post / Facebook-post / TikTok-script
+ * / Twitter-thread / carousels / polls / ads). Gerapporteerd:
+ * "Title or headline is set niet uitgevoerd voor LinkedIn-post".
+ * E-mail wordt al gedekt door has-subject hieronder; carousels embedden
+ * de title in slide-1-content (geen separate group).
+ */
+const TITLE_REQUIRED_FORMATS = new Set([
+  'blog-article',  // blog-post, pillar-page, case-study, whitepaper, ebook, article, thought-leadership
+  'landing-page',  // landing-page, product-page, faq-page, comparison-page, microsite
+]);
+
 export function getChecklistForPlatform(platform: string | null, format: string | null): ChecklistItem[] {
   const items: ChecklistItem[] = [
-    { id: 'has-title', label: 'Title or headline is set', required: true },
     { id: 'has-body', label: 'Body content is complete', required: true },
   ];
+  if (format && TITLE_REQUIRED_FORMATS.has(format)) {
+    // Title-check alleen bij formats die er structureel één produceren —
+    // anders is het een gegarandeerde false-negative.
+    items.unshift({ id: 'has-title', label: 'Title or headline is set', required: true });
+  }
 
   if (platform === 'linkedin' || platform === 'instagram' || platform === 'facebook' || platform === 'tiktok') {
     items.push({ id: 'has-image', label: 'Hero image added', required: true });
