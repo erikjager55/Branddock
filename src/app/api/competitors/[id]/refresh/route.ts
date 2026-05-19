@@ -26,6 +26,7 @@ import {
 } from "@/lib/competitors/refresh-write";
 import { computeDiffWithClassifier } from "@/lib/competitors/diff-engine";
 import { classifyPatternEvents } from "@/lib/competitors/ai-classifier";
+import { notifyMajorEvents } from "@/lib/competitors/notify-major-events";
 import type { CanonicalExtracted, ClassifierFn } from "@/lib/competitors/types";
 import type { Prisma } from "@prisma/client";
 
@@ -253,6 +254,17 @@ export async function POST(
 
     invalidateCache(cacheKeys.prefixes.competitors(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
+    // Fire-and-forget notifications voor MAJOR-events. Wachten op
+    // email-IO zou de refresh-response onnodig vertragen.
+    if (writeResult.detected.some((d) => d.severity === 'MAJOR')) {
+      void notifyMajorEvents({
+        workspaceId,
+        competitorId: id,
+        competitorName: writeResult.competitor.name,
+        activities: writeResult.detected,
+      });
+    }
 
     return NextResponse.json({
       ...writeResult.competitor,

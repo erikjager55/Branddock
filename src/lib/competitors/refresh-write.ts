@@ -94,6 +94,9 @@ export interface DualWriteParams {
 export interface DualWriteOutcome {
   outcome: 'snapshot-written' | 'no-op-hash-match';
   activitiesCreated: number;
+  /** Volledige set gedetecteerde activities — caller gebruikt dit
+   *  na de transactie voor side-effects (notificaties bij MAJOR). */
+  detected: DetectedActivity[];
   /** Geüpdate competitor-row na de transactie. Caller hoeft geen
    *  aparte findUnique meer te doen voor de response payload. */
   competitor: Awaited<ReturnType<PrismaTxClient['competitor']['update']>>;
@@ -249,6 +252,7 @@ export async function applyCompetitorRefreshDualWrite(
   return {
     outcome,
     activitiesCreated: detected.length,
+    detected,
     competitor: updatedCompetitor,
   };
 }
