@@ -32,6 +32,9 @@ import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { parseLogoIntent, stripLogoMentions, type LogoPosition } from '@/lib/visual/logo-intent';
+import { compositeLogoOverlay } from '@/lib/visual/logo-overlay';
+import { getBrandLogo, type BrandLogo } from '@/lib/brand/get-brand-logo';
 import { z } from 'zod';
 
 const VISUAL_GROUP = 'visual';
@@ -136,6 +139,16 @@ const requestSchema = z
      * cta) eigen visual heeft. Niet-set = workspace-level (huidige flow).
      */
     sceneId: z.enum(['hook', 'body', 'cta']).optional(),
+    /**
+     * Scene-specific visual direction. Wanneer `sceneId` set is, gebruikt
+     * de route deze tekst als primaire subject-seed (briefingText) i.p.v.
+     * de workspace-level Visual Brief. Bron: client parseert eerst
+     * `sceneOverrides[sceneId].visualText` (user-edit in Step 2), valt
+     * terug op de parsed `[VISUAL: …]` uit de scene-script. Geleverd
+     * 2026-05-19 omdat scene-images anders generic uitkomen — workspace
+     * brief is voor 1 visual, niet voor 3 verschillende scenes.
+     */
+    sceneVisualPrompt: z.string().max(1500).optional(),
   })
   .strict()
   .or(z.undefined());
@@ -208,6 +221,65 @@ export async function POST(request: Request, { params }: RouteParams) {
         styleDirection: null,
         styleDirectionFreeText: null,
       };
+    }
+
+    // 2026-05-19 — Scene-scoped generation: when sceneId is set, override
+    // the briefingText with the scene-specific [VISUAL: …] direction so
+    // each scene's image matches its own script-scene instead of the
+    // workspace-level brief. Resolution order:
+    //   1. Client-provided `sceneVisualPrompt` (covers user inline edits)
+    //   2. Server-side: fetch the scene's DeliverableComponent, parse the
+    //      first [VISUAL: …] block from its generatedContent
+    //   3. Fall back to existing workspace briefingText (legacy behaviour)
+    // Track logo overlay intent across the gen → upload pipeline. When
+    // the scene asks for a logo and the workspace has one in its
+    // styleguide, we strip the logo mention from the prompt (image-gen
+    // hallucinates logos) and composite the real asset post-generation.
+    let logoOverlay: { position: LogoPosition; logo: BrandLogo } | null = null;
+
+    if (body?.sceneId) {
+      let sceneVisualText = body?.sceneVisualPrompt?.trim();
+      if (!sceneVisualText) {
+        const sceneComponent = await prisma.deliverableComponent.findFirst({
+          where: {
+            deliverableId,
+            variantGroup: body.sceneId,
+            isSelected: true,
+          },
+          select: { generatedContent: true },
+        }) ?? await prisma.deliverableComponent.findFirst({
+          where: { deliverableId, variantGroup: body.sceneId },
+          orderBy: { variantIndex: 'asc' },
+          select: { generatedContent: true },
+        });
+        const raw = sceneComponent?.generatedContent ?? '';
+        const match = raw.match(/\[\s*[Vv][Ii][Ss][Uu][Aa][Ll]\s*:\s*([^\]]+)\]/);
+        sceneVisualText = match?.[1]?.trim();
+      }
+      if (sceneVisualText) {
+        // 2026-05-19 — logo-overlay path. Parse intent BEFORE stripping
+        // so position cue ("rechtsonder", "top-left", etc.) is preserved.
+        const intent = parseLogoIntent(sceneVisualText);
+        if (intent.wantLogo) {
+          const brandLogo = await getBrandLogo(workspaceId);
+          if (brandLogo) {
+            logoOverlay = { position: intent.position, logo: brandLogo };
+            // Drop logo mention from the briefing — image-gen leaves the
+            // corner clean for the real-asset overlay.
+            sceneVisualText = stripLogoMentions(sceneVisualText);
+          } else {
+            console.warn(
+              `[generate-visual] scene ${body.sceneId} asks for logo but workspace ${workspaceId} has no styleguide logo — skipping overlay`,
+            );
+          }
+        }
+        if (sceneVisualText) {
+          stack.visualBrief = {
+            ...stack.visualBrief,
+            briefingText: sceneVisualText,
+          };
+        }
+      }
     }
 
     // Multi-candidate default per content-type (Pattern B image-quality-chain).
@@ -331,10 +403,32 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     // Download from fal.ai's hosted URL (signed, expires) and upload to
     // our storage so the URL remains stable for downstream usage.
+    // When a logo overlay is requested, composite the brand-logo asset
+    // onto each generated image before upload — image models hallucinate
+    // logos, so we keep them out of the prompt and stamp the real mark
+    // on post-gen. Per-image try/catch so an overlay failure falls back
+    // to the raw image instead of failing the whole request.
     const storage = getStorageProvider();
     const uploads = await Promise.all(
       successful.map(async (img, idx) => {
-        const bytes = await fetchWithSizeLimit(img.hostedUrl, AI_IMAGE_SIZE_CAP);
+        const rawBytes = await fetchWithSizeLimit(img.hostedUrl, AI_IMAGE_SIZE_CAP);
+        let bytes: Buffer = rawBytes;
+        if (logoOverlay) {
+          try {
+            bytes = await compositeLogoOverlay({
+              imageUrl: img.hostedUrl,
+              logoUrl: logoOverlay.logo.url,
+              logoFileType: logoOverlay.logo.fileType,
+              position: logoOverlay.position,
+            });
+          } catch (err) {
+            console.warn(
+              `[generate-visual] logo overlay failed for variant ${idx}, uploading raw image:`,
+              err instanceof Error ? err.message : err,
+            );
+            bytes = rawBytes;
+          }
+        }
         const fileName = `canvas-visual-${deliverableId}-${Date.now()}-${idx}.png`;
         const upload = await storage.upload(bytes, {
           workspaceId,
