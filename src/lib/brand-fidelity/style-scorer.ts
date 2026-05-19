@@ -143,11 +143,21 @@ export function scoreBrandStyle(
   // (matched/total). Voor merken met grote wordsWeUse-lijsten (Napking
   // 20 woorden) is verwachten dat ALLE woorden in 300-400 woorden tekst
   // verschijnen onrealistisch — natuurlijke output bevat 30-50% van de
-  // lijst. Nieuwe saturation-curve: 40% match = 100 (vol score),
-  // tussenwaarden lineair.
+  // lijst. Saturation-curve: ratio% match = 100 (vol score), tussenwaarden lineair.
   // Rationale: brand-style is "gebruik genoeg signature words", niet
   // "gebruik ALLE signature words". Quality matters, not exhaustion.
-  const SATURATION_RATIO = 0.4;
+  //
+  // 2026-05-19 length-aware saturation: short-form content (LinkedIn-post
+  // 200w, instagram-post 150w) heeft minder surface om brand-vocab in te
+  // embedden. Verwachten dat 40% van de lijst in 200w verschijnt is
+  // onrealistisch. Tiered:
+  //   < 200w: 0.25 (25% match = full score — short-form quotum)
+  //   200-500w: 0.30
+  //   > 500w: 0.40 (long-form baseline, ongewijzigd)
+  // Effect: short-form social Merkstijl-pillar baseline gaat van ~50
+  // naar ~65-70 met realistisch 2-3 matches op een 10-woord lijst.
+  const SATURATION_RATIO =
+    wordCount < 200 ? 0.25 : wordCount < 500 ? 0.30 : 0.40;
   const wordsCoverageScore =
     wordsWeUse.length > 0
       ? Math.min(100, Math.round((wordsMatched.length / wordsWeUse.length / SATURATION_RATIO) * 100))

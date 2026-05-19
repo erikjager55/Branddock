@@ -506,8 +506,15 @@ function AutoIterateImprovedBlock({
   // F17 fix (audit 2026-05-13): drie copy-varianten naargelang of iteratie
   // werkelijk verbetering opleverde. Bij gelijke score / regressie geen
   // "verbeterd" copy (misleidend) — eerlijk zeggen dat het niet lukte.
+  //
+  // 2026-05-19: bug-fix volgorde-fout. Voorheen overrulet de thresholdMet-
+  // check de improved-check, waardoor regressies van bv. 88 → 68 als
+  // "Verbeterd ... klaar voor publish" werden getoond (eindscore boven
+  // drempel, maar -20 punten = regressie). Nu: improved-check eerst,
+  // threshold-suffix als modifier alleen op echte verbetering.
   const improved = delta > 0;
-  // Banner-kleur volgt resultaat: emerald bij echte winst, amber bij stagnatie
+  const regressed = delta < 0;
+  // Banner-kleur volgt resultaat: emerald bij echte winst, amber bij stagnatie/regressie
   const bannerClass = improved
     ? 'bg-emerald-50 border-emerald-200'
     : 'bg-amber-50 border-amber-200';
@@ -516,16 +523,21 @@ function AutoIterateImprovedBlock({
   const accentClass = improved ? 'text-emerald-700' : 'text-amber-700';
   const iconClass = improved ? 'text-emerald-600' : 'text-amber-600';
 
-  const stopReasonLabel = thresholdMet
-    ? `Verbeterd van ${initialScore} naar ${finalScore} — klaar voor publish`
-    : improved
-      ? stopReason === 'early_stop_stagnation'
+  const pogingen = `${attemptsExecuted} ${attemptsExecuted === 1 ? 'poging' : 'pogingen'}`;
+  const stopReasonLabel = improved
+    ? thresholdMet
+      ? `Verbeterd van ${initialScore} naar ${finalScore} — klaar voor publish`
+      : stopReason === 'early_stop_stagnation'
         ? `Verbeterd van ${initialScore} naar ${finalScore} — verdere iteraties leveren weinig op`
         : stopReason === 'max_iterations'
-          ? `Verbeterd van ${initialScore} naar ${finalScore} in ${attemptsExecuted} pogingen — pas brief aan voor verder verbetering`
+          ? `Verbeterd van ${initialScore} naar ${finalScore} in ${pogingen} — pas brief aan voor verdere verbetering`
           : `Verbeterd van ${initialScore} naar ${finalScore}`
-      : // Geen verbetering: stagnatie of regressie
-        `Score bleef rond ${initialScore} in ${attemptsExecuted} ${attemptsExecuted === 1 ? 'poging' : 'pogingen'} — origineel content behouden`;
+    : regressed
+      ? // Regressie: eindscore is lager dan start — auto-iterate maakte het slechter,
+        // orchestrator heeft daarom origineel behouden.
+        `Score daalde van ${initialScore} naar ${finalScore} in ${pogingen} — origineel content behouden (auto-iterate leverde geen winst)`
+      : // delta === 0: stagnatie, geen verschuiving.
+        `Score bleef gelijk op ${initialScore} in ${pogingen} — origineel content behouden`;
 
   return (
     <div className={`mt-3 rounded-lg border px-3 py-2.5 ${bannerClass}`}>

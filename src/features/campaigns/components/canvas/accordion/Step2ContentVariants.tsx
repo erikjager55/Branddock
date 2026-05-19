@@ -496,7 +496,7 @@ function VariantSelector({
             className={`group inline-flex items-center gap-2.5 py-1.5 pl-1.5 pr-4 rounded-full text-sm transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
               isSelected
                 ? 'font-semibold'
-                : 'font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                : 'font-medium text-gray-600 bg-white hover:text-gray-900 hover:bg-gray-50'
             }`}
             style={
               isSelected
@@ -506,7 +506,11 @@ function VariantSelector({
                     boxShadow:
                       '0 0 0 1px #93c5fd, 0 1px 2px 0 rgba(15, 23, 42, 0.06)',
                   }
-                : undefined
+                : {
+                    // 2026-05-19: inactive state krijgt zichtbare pill-outline
+                    // (was unstyled tekst). Anders oogt het als label ipv toggle.
+                    boxShadow: '0 0 0 1px #e2e8f0',
+                  }
             }
             aria-pressed={isSelected}
           >
