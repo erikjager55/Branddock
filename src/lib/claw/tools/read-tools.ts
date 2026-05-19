@@ -775,4 +775,81 @@ export const readTools: ClawToolDefinition[] = [
       return { deliverables, count: deliverables.length };
     },
   },
+
+  // ─── Competitor Activities ──────────────────────────────
+  {
+    name: 'review_competitor_activities',
+    description:
+      'Get recent competitor activities (detected positioning shifts, pricing changes, content events, MAJOR repositionings) for the workspace. Optionally filter by competitor and time window. Use for strategy questions like "what shifted at <comp> last month?" or "show me MAJOR events this week".',
+    inputSchema: z.object({
+      competitorId: z
+        .string()
+        .optional()
+        .describe('Filter to one competitor; omit for workspace-wide.'),
+      severityMin: z
+        .enum(['INFO', 'NOTABLE', 'MAJOR'])
+        .optional()
+        .describe('Minimum severity (INFO returns all, NOTABLE returns NOTABLE+MAJOR, MAJOR returns only MAJOR).'),
+      windowDays: z
+        .number()
+        .int()
+        .min(1)
+        .max(90)
+        .optional()
+        .describe('Look-back window in days. Default 7, max 90.'),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(50)
+        .optional()
+        .describe('Max items, default 20.'),
+    }),
+    requiresConfirmation: false,
+    category: 'read',
+    execute: async (params, ctx: ToolExecutionContext) => {
+      const p = params as {
+        competitorId?: string;
+        severityMin?: 'INFO' | 'NOTABLE' | 'MAJOR';
+        windowDays?: number;
+        limit?: number;
+      };
+      const days = p.windowDays ?? 7;
+      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      const severityIn =
+        p.severityMin === 'MAJOR'
+          ? (['MAJOR'] as const)
+          : p.severityMin === 'NOTABLE'
+            ? (['MAJOR', 'NOTABLE'] as const)
+            : null;
+
+      const items = await prisma.competitorActivity.findMany({
+        where: {
+          workspaceId: ctx.workspaceId,
+          detectedAt: { gte: since },
+          ...(p.competitorId ? { competitorId: p.competitorId } : {}),
+          ...(severityIn ? { severity: { in: [...severityIn] } } : {}),
+        },
+        orderBy: [{ severity: 'desc' }, { detectedAt: 'desc' }],
+        take: p.limit ?? 20,
+        include: { competitor: { select: { id: true, name: true } } },
+      });
+
+      return {
+        activities: items.map((i) => ({
+          competitorId: i.competitor.id,
+          competitorName: i.competitor.name,
+          type: i.type,
+          severity: i.severity,
+          summary: i.summary,
+          detectedAt: i.detectedAt.toISOString(),
+          confidence: i.confidence,
+          detectionMethod: i.detectionMethod,
+          acknowledged: i.acknowledgedAt !== null,
+        })),
+        count: items.length,
+        window: `${days}d`,
+      };
+    },
+  },
 ];
