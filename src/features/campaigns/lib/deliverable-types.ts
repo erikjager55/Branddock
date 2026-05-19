@@ -356,7 +356,12 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Text", "Image"],
     icon: "Linkedin",
-    constraints: { maxChars: 3000, maxHashtags: 5 },
+    // 2026-05-19 added minWords/maxWords: zonder word-bounds viel
+    // fidelity-runner's targetWordCount terug op 500, wat een 200-woord
+    // LinkedIn-post 40% van target maakte -> length-control multiplier
+    // 0.8 -> -15-25 punten op composite. Sweet-spot per LinkedIn-prompt
+    // is 150-300w; bounds 100-400 geven targetWordCount=250.
+    constraints: { minWords: 100, maxWords: 400, maxChars: 3000, maxHashtags: 5 },
     qualityCriteria: SOCIAL_MEDIA_DEFAULTS.qualityCriteria,
     exportFormats: SOCIAL_MEDIA_DEFAULTS.exportFormats,
   },
@@ -380,7 +385,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Carousel"],
     icon: "GalleryHorizontalEnd",
-    constraints: { maxSlides: 10, maxChars: 3000, maxHashtags: 5 },
+    // 7-10 slides x 15-30 words = ~100-300w total text content.
+    constraints: { minWords: 100, maxWords: 300, maxSlides: 10, maxChars: 3000, maxHashtags: 5 },
     qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
     exportFormats: ['pdf', 'png'],
   },
@@ -392,7 +398,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "conversion",
     outputFormats: ["Text", "Image"],
     icon: "Linkedin",
-    constraints: { maxChars: 600, maxWords: 150 },
+    constraints: { minWords: 40, maxWords: 150, maxChars: 600 },
     qualityCriteria: [
       { name: 'Conversion Focus', weight: 0.30, description: 'CTA strength, value proposition clarity' },
       { name: 'Professional Tone', weight: 0.25, description: 'Business credibility, industry relevance' },
@@ -434,7 +440,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Text", "Image"],
     icon: "Linkedin",
-    constraints: { maxChars: 3000, maxHashtags: 5 },
+    constraints: { minWords: 80, maxWords: 350, maxChars: 3000, maxHashtags: 5 },
     qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
     exportFormats: LINKEDIN_DEFAULTS.exportFormats,
   },
@@ -446,7 +452,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Text"],
     icon: "Linkedin",
-    constraints: { maxChars: 140, maxHashtags: 3 },
+    // Context-paragraph (30-50w) + 2-4 options (8-12w total) + suggested follow-up comment (40-60w).
+    constraints: { minWords: 60, maxWords: 200, maxChars: 140, maxHashtags: 3 },
     qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
     exportFormats: LINKEDIN_DEFAULTS.exportFormats,
   },
@@ -458,7 +465,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Image", "Carousel"],
     icon: "Instagram",
-    constraints: { maxChars: 2200, maxHashtags: 30 },
+    constraints: { minWords: 50, maxWords: 250, maxChars: 2200, maxHashtags: 30 },
     qualityCriteria: SOCIAL_MEDIA_DEFAULTS.qualityCriteria,
     exportFormats: SOCIAL_MEDIA_DEFAULTS.exportFormats,
   },
@@ -470,7 +477,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Text"],
     icon: "Twitter",
-    constraints: { maxHashtags: 3 },
+    // 7-12 tweets × 30-60w/tweet (within 280-char limit) = ~150-400w total
+    constraints: { minWords: 150, maxWords: 500, maxHashtags: 3 },
     qualityCriteria: SOCIAL_MEDIA_DEFAULTS.qualityCriteria,
     exportFormats: SOCIAL_MEDIA_DEFAULTS.exportFormats,
   },
@@ -482,7 +490,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Text", "Image"],
     icon: "Facebook",
-    constraints: { maxChars: 63206, maxHashtags: 10 },
+    constraints: { minWords: 40, maxWords: 200, maxChars: 63206, maxHashtags: 10 },
     qualityCriteria: SOCIAL_MEDIA_DEFAULTS.qualityCriteria,
     exportFormats: SOCIAL_MEDIA_DEFAULTS.exportFormats,
   },
@@ -512,7 +520,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Carousel"],
     icon: "GalleryHorizontalEnd",
-    constraints: { maxSlides: 10, maxChars: 2200 },
+    constraints: { minWords: 100, maxWords: 300, maxSlides: 10, maxChars: 2200 },
     qualityCriteria: SOCIAL_MEDIA_DEFAULTS.qualityCriteria,
     exportFormats: ['pdf', 'png'],
   },

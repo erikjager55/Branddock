@@ -12,7 +12,7 @@
 //   4. Content-type is text-heavy ad?   → suggest GENERATE met Nano Banana
 //   5. Style chip = product-shot + luxury? → suggest GENERATE met Imagen 4
 //   6. Style chip = infographic?        → suggest GENERATE met Nano Banana (world-knowledge)
-//   7. Default (lifestyle/scene/etc)    → suggest GENERATE met FLUX 2 Pro
+//   7. Default (lifestyle/scene/etc)    → suggest GENERATE met Nano Banana Pro
 //
 // Photography is NIET default — alleen subtiele opt-in onderaan voor
 // authenticity-critical use-cases (case-studies, testimonials).
@@ -268,47 +268,55 @@ export function suggestImageApproach(input: SuggestInput): ImageSuggestion {
   }
 
   // ── 4. Photoreal scene with people (lifestyle/behind-the-scenes/ugc) ──
+  // 2026-05-19: switched Phota -> Nano Banana Pro per user-feedback on
+  // lifestyle output quality. Nano Banana Pro (Gemini 3 Pro Image) has
+  // strong multi-reference fusion (up to 14 imgs) which pairs well with
+  // the always-on workspace reference-image injection (see canvas-
+  // orchestrator). For warm-candid use-cases Phota remains a manual
+  // override-option in the UI.
   if (chip === 'lifestyle' || chip === 'behind-the-scenes' || chip === 'ugc') {
-    const m = MODEL_META.phota;
+    const m = MODEL_META['nano-banana-pro'];
     return {
       source: 'generate',
       sourceLabel: SOURCE_LABELS.generate,
       sourceReasoning:
         'Lifestyle / behind-the-scenes content: AI generation is fast and brand-controllable. For customer testimonials or authenticity-critical content, photography is stronger — see opt-in below.',
-      modelId: 'phota',
+      modelId: 'nano-banana-pro',
       modelLabel: m.label,
       modelReasoning:
-        'Phota is a photoreal specialist for authentic candid scenes with people. Head-to-head 2026: Phota +10pt vs FLUX 2 Pro on warm/professional briefs — stronger on authenticity and brand fit.',
+        'Nano Banana Pro (Gemini 3 Pro Image) — production-ready output with strong multi-reference fusion (up to 14 ref images) and targeted-edit capability. Pairs with always-on workspace reference-injection for consistent brand-look across generations.',
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
     };
   }
 
   // ── 5. Generic photoreal default (text-content types zonder specifieke chip) ──
+  // 2026-05-19: fallback default ook naar Nano Banana Pro voor consistency
+  // met lifestyle-route + sterkere multi-ref handling.
   if (PHOTOREAL_SCENE_CONTENT_TYPES.has(contentTypeId) || !chip) {
-    const m = MODEL_META['flux-2-pro'];
+    const m = MODEL_META['nano-banana-pro'];
     return {
       source: 'generate',
       sourceLabel: SOURCE_LABELS.generate,
       sourceReasoning: GENERATE_SOURCE_REASONING_DEFAULT,
-      modelId: 'flux-2-pro',
+      modelId: 'nano-banana-pro',
       modelLabel: m.label,
       modelReasoning:
-        'FLUX 2 Pro is a safe photoreal default for generic scenes without a specific chip — suitable for lifestyle, scene content, and editorial-look images.',
+        'Nano Banana Pro is the default photoreal generator — production-ready posters, strong multi-reference fusion, targeted edits. Used for generic scenes + as fallback when no chip is set.',
       costPerImageUsd: m.costPerImageUsd,
       strengths: m.strengths,
     };
   }
 
   // Final fallback — shouldn't usually hit
-  const m = MODEL_META['flux-2-pro'];
+  const m = MODEL_META['nano-banana-pro'];
   return {
     source: 'generate',
     sourceLabel: SOURCE_LABELS.generate,
     sourceReasoning: GENERATE_SOURCE_REASONING_DEFAULT,
-    modelId: 'flux-2-pro',
+    modelId: 'nano-banana-pro',
     modelLabel: m.label,
-    modelReasoning: 'Default choice for generic image generation.',
+    modelReasoning: 'Default choice for generic image generation (Nano Banana Pro).',
     costPerImageUsd: m.costPerImageUsd,
     strengths: m.strengths,
   };

@@ -635,7 +635,16 @@ export function detectAiTells(text: string): AiTellResult {
     });
   }
 
-  const scorePer1000Words = wordCount > 0 ? (score / wordCount) * 1000 : 0;
+  // 2026-05-19: minimum-denominator floor (NORMALIZATION_FLOOR_WORDS=300) om
+  // short-form content niet onevenredig te bestraffen. Een 200-woord LinkedIn-
+  // post met 5 tells gaf voorheen scorePer1000=25 (HUMAN_BASELINE op het randje
+  // van AI_LEANING). Met floor=300: (5/300)*1000=16.7 (gezond HUMAN_BASELINE).
+  // Effect: false-positive AI_LEANING/PURE_AI verdict op short-form social
+  // content vermindert. 300w = ~1.5× sweet-spot LinkedIn-post target;
+  // long-form content (>300w) is onaangetast want max(wordCount, 300) = wordCount.
+  const NORMALIZATION_FLOOR_WORDS = 300;
+  const denom = Math.max(wordCount, NORMALIZATION_FLOOR_WORDS);
+  const scorePer1000Words = denom > 0 ? (score / denom) * 1000 : 0;
 
   return {
     score,

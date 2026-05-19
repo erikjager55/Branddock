@@ -166,6 +166,33 @@ function resolveTargetWordCount(contentTypeId: string | null): number {
   return 500;
 }
 
+/**
+ * Per-content-type composite-threshold. Short-form content (social media,
+ * paid ads) heeft natuurlijk lager ceiling op fidelity-dimensies door
+ * korte tekst (minder ruimte voor brand-markers + speed-of-reading geeft
+ * minder coherence/concreteness signal). Default 75 voor long-form, 65
+ * voor short-form.
+ *
+ * 2026-05-19: nieuwe helper als deel van Fix C uit F-VAL short-form
+ * verbeterplan (gerapporteerd 55/100 score op linkedin-post). Alternatief
+ * voor per-workspace per-type override via WorkspaceContentTypeThreshold
+ * model — die UI-config laag bestaat nog niet, dus hier hardcoded per
+ * category. Future: leen uit DB als die UI er is.
+ */
+const SHORT_FORM_CATEGORIES = new Set([
+  'Social Media',
+  'Advertising & Paid',
+]);
+function resolveCompositeThreshold(contentTypeId: string | null | undefined): number {
+  const DEFAULT = 75;
+  const SHORT_FORM = 65;
+  if (!contentTypeId) return DEFAULT;
+  const def = getDeliverableTypeById(contentTypeId);
+  if (!def) return DEFAULT;
+  if (SHORT_FORM_CATEGORIES.has(def.category)) return SHORT_FORM;
+  return DEFAULT;
+}
+
 function summarizePersona(stack: CanvasContextStack): string | undefined {
   const persona = stack.personas[0];
   if (!persona) return undefined;
@@ -515,6 +542,9 @@ export async function runFidelityScoring(
       personality,
       generatorProvider: input.generatorProvider,
       targetWordCount,
+      // Fix C 2026-05-19: per-content-type threshold ipv DEFAULT 75 voor
+      // iedereen. Short-form (Social Media, Advertising) krijgt 65.
+      compositeThreshold: resolveCompositeThreshold(input.contentTypeId),
       pillarWeights: {
         style: config.styleWeight,
         judge: config.judgeWeight,
