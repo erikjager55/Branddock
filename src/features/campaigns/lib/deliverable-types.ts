@@ -1006,7 +1006,11 @@ export const DELIVERABLE_CATEGORIES = [
   "Advertising & Paid",
   "Email & Automation",
   "Website & Landing Pages",
-  "Video & Audio",
+  // 2026-05-19 — "Video & Audio" verwijderd; alle items in die categorie zijn
+  // hidden tot post-launch (zie hidden-flags op explainer-video / promo-video /
+  // testimonial-video / webinar-outline / podcast-outline). Categorie-string
+  // blijft elders bestaan op de items zelf zodat re-enable enkel hidden→false
+  // vereist.
   "Sales Enablement",
   "PR, HR & Communications",
 ] as const;
