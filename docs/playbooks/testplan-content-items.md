@@ -89,6 +89,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 | ebook | Cover + chapter dividers | ☑ | ☐ | ☑ | 2026-05-18 LINFI — 5 issues; zie bug-log sectie 5 + `tasks/_drafts/idea-ebook-quality-verbeterplan.md` |
 | article | Hero image | ☐ | ☐ | ☐ | Pre-emptive prompt-guard 2026-05-19: ARTICLE_SYSTEM 2× Deep-dive H2 sections uniqueness rule + completeness check toegevoegd (medium paraphrase-drift risk, kleinere schaal dan ebook). H7/H4-H6 NIET applicable (journalistic genre, uniforme word-counts, geen lead-magnet). H3 fidelity-fix raakt auto. |
 | thought-leadership | Hero met quote overlay | ☐ | ☐ | ☐ | Pre-emptive analyse 2026-05-19: THOUGHT_LEADERSHIP_SYSTEM structureel schoon — 3 H2's zijn by-design distinct narrative-beats, 1000-2000w heeft ruim 16K-call headroom, "The call" is al provocation-CTA. Geen prompt-changes nodig. H3 fidelity-fix raakt auto. |
+| linkedin-article | Hero image | ☐ | ☐ | ☐ | Verplaatst van Social Media naar Long-Form 2026-05-19: prompt is AUTHORITY ARTICLE (1000-2000w long-form structuur), `qualityCriteria: LONG_FORM_DEFAULTS`, input-field categorie `'long-form'`. Erft preventieve guards van article/thought-leadership pad. H3 fidelity-fix raakt auto. |
 
 **Category-specific checks**
 - SEO pipeline loopt (8 stappen zichtbaar in progress view)
@@ -104,7 +105,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
 | **R linkedin-post** | Inline image met text overlay | ☐ | ☐ | ☐ | Single text-blob. Anti-pattern #91 verbiedt al hook-repeat. H3 fidelity-fix raakt auto. Step-1-skip-bug bij inheritance gefixt 2026-05-19 (commit 478bae78). |
-| linkedin-article | Hero image | ☐ | ☐ | ☐ | Long-form pad — erft pillar-page/article guards. H3 fidelity-fix raakt auto. |
+| ~~linkedin-article~~ | Verplaatst → Long-Form (2026-05-19) | — | — | — | Categorie was inconsistent: prompt is long-form (1000-2000w), maar listing stond bij Social Media. Zie Long-Form sectie. |
 | linkedin-carousel | 5-10 slide set (gedesigned) | ☐ | ☐ | ☐ | Pre-emptive paraphrase-guard 2026-05-19: anti-pattern + completeness check tegen duplicate slide-headings (mild risk uit ebook H1 lesson, kleinere schaal — 7-10 slides × 15-30w). H2 asset-pipeline post-launch — slide-designs zijn handmatig in Step 3. |
 | linkedin-ad | Ad creative met CTA | ☐ | ☐ | ☐ | Single ad-copy. H3 fidelity-fix raakt auto. |
 | linkedin-newsletter | Header + hero | ☐ | ☐ | ☐ | Single text. H3 fidelity-fix raakt auto. |

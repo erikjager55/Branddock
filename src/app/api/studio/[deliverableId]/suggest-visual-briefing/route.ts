@@ -159,7 +159,26 @@ export async function POST(
 
     return NextResponse.json({ briefing });
   } catch (err) {
-    console.error('[POST /api/studio/:id/suggest-visual-briefing]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // Diagnostic surface (2026-05-19): voorheen genericke "Internal server
+    // error" verborg de echte oorzaak — voor social-media items
+    // gerapporteerde 500s waren niet te traceren zonder server-logs.
+    // In dev/development env tonen we nu de message + name; in prod
+    // (NODE_ENV === 'production') blijft de message generiek.
+    const errorObj = err instanceof Error ? err : new Error(String(err));
+    console.error('[POST /api/studio/:id/suggest-visual-briefing]', {
+      name: errorObj.name,
+      message: errorObj.message,
+      stack: errorObj.stack,
+    });
+    const isProd = process.env.NODE_ENV === 'production';
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        ...(isProd
+          ? {}
+          : { details: errorObj.message, kind: errorObj.name }),
+      },
+      { status: 500 },
+    );
   }
 }

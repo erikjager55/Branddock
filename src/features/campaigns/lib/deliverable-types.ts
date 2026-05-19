@@ -363,8 +363,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
   {
     id: "linkedin-article",
     name: "LinkedIn Article",
-    description: "Long-form LinkedIn native article",
-    category: "Social Media",
+    description: "Long-form LinkedIn native article (1000-2000 words)",
+    category: "Long-Form Content",
     funnelStage: "awareness",
     outputFormats: ["Text"],
     icon: "Linkedin",

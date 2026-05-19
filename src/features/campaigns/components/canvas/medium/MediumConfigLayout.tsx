@@ -180,29 +180,23 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
             {composedVideoUrl ? 'Generated Video' : `${previewEntry.label} Preview`}
           </span>
           <div className="flex items-center gap-3">
-            {/* A/B variant toggle — only when more than one variant exists.
-                Last-chance review without navigating back to Step 2. */}
+            {/* Variant indicator — READ-ONLY badge showing which variant is
+                currently rendered. User toggles in Step 2 only (per
+                feedback 2026-05-19); preserving the choice here means
+                Step 3 reflects the canonical selection without offering a
+                second toggle that can drift from Step 2's state. */}
             {variantCount > 1 && !composedVideoUrl && (
-              <div className="flex items-center gap-0.5 rounded-md border border-gray-200 bg-white p-0.5">
-                {Array.from({ length: variantCount }).map((_, idx) => {
-                  const label = String.fromCharCode(65 + idx); // 0→A, 1→B, ...
-                  const active = currentVariantIndex === idx;
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setPreviewVariantOverride(idx)}
-                      className={
-                        active
-                          ? 'px-2 py-0.5 rounded text-[11px] font-semibold bg-teal-600 text-white'
-                          : 'px-2 py-0.5 rounded text-[11px] font-medium text-gray-600 hover:bg-gray-100'
-                      }
-                    >
-                      Variant {label}
-                    </button>
-                  );
-                })}
-              </div>
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                style={{
+                  backgroundColor: '#eff6ff',
+                  color: '#1e40af',
+                  boxShadow: '0 0 0 1px #bfdbfe',
+                }}
+                title={`Tonen Variant ${String.fromCharCode(65 + currentVariantIndex)} — wijzig in stap 2`}
+              >
+                Variant {String.fromCharCode(65 + currentVariantIndex)}
+              </span>
             )}
             {composedVideoUrl ? (
               <span className="text-xs text-emerald-600 flex items-center gap-1">
