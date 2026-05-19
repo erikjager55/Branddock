@@ -1495,17 +1495,19 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       label: "Ad Format",
       category: "format-specs",
       type: "select",
+      // Q1+Q2 (2026-05-19): scope teruggebracht naar 3 ondersteunde formats
+      // + value/label shape geunificeerd via LINKEDIN_AD_FORMATS. Step 3
+      // medium-config + canvas-orchestrator prompt-builder + publish-timing
+      // checklist lezen uit dezelfde bron. Carousel-ad + Text Ad gedropt.
       options: [
-        "Single Image",
-        "Carousel",
-        "Video",
-        "Message Ad",
-        "Text Ad",
+        { value: "single-image", label: "Single Image" },
+        { value: "video-ad", label: "Video" },
+        { value: "message-ad", label: "Message Ad" },
       ],
       required: true,
-      helpText: "LinkedIn ad placement format",
+      helpText: "LinkedIn ad placement format — bepaalt prompt-output structuur + publish-checklist items",
       aiDerivable: true,
-      aiHint: "Based on campaign goal: awareness→image, conversion→carousel/message",
+      aiHint: "Based on campaign goal: awareness→single-image, story→video-ad, conversion-1-on-1→message-ad",
     },
   ],
 

@@ -110,9 +110,16 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   );
 
   // Publication checklist
+  // Q4 (2026-05-19): adFormat doorgegeven zodat linkedin-ad sub-format
+  // (single-image / video-ad / message-ad) format-specific checklist krijgt.
+  // 2026-05-19 update: adFormat is single source of truth in Step 1
+  // contentTypeInputs (was duplicated in Step 3 mediumConfig — verwarrend +
+  // stale-state risico). Step 3 ad-format-sectie is verwijderd.
+  const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
+  const adFormat = (contentTypeInputs.adFormat as string | undefined) ?? null;
   const checklist = useMemo(
-    () => getChecklistForPlatform(platform, format),
-    [platform, format],
+    () => getChecklistForPlatform(platform, format, adFormat),
+    [platform, format, adFormat],
   );
 
   const checklistResults = useMemo(() => {
@@ -142,15 +149,30 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         case 'has-subject':
           passed = textGroups.some((g) => g === 'subject' || g === 'subject-line');
           break;
-        case 'has-cta':
-          // Check group keys + cta field on groups + text extraction
-          passed = textGroups.some((g) => g === 'cta' || g === 'call-to-action') ||
+        case 'has-cta': {
+          // 2026-05-19 verbreed:
+          // - textGroup met 'cta'/'call-to-action' name (zelden gegenereerd
+          //   als aparte group, alleen bij structured-output prompts)
+          // - variant.cta field op preview (alleen bij visualBrief.cta —
+          //   narrow case)
+          // - regex match op CTA-verbs (NL + EN) zonder verplichte
+          //   markdown-bold prefix (was te strict — Dutch ad-copy is
+          //   meestal niet bold-wrapped)
+          // - URL-aanwezigheid als sterk CTA-signaal (CTA leidt vaak naar
+          //   landing-page link)
+          const CTA_VERB_PATTERN =
+            /\b(get|start|join|sign\s?up|sign\s?in|book|claim|download|discover|learn|try|shop|buy|register|subscribe|explore|request|schedule|apply|contact|begin|ontdek|probeer|klik|lees|vraag|plan|bel|mail|bestel|koop|krijg|schrijf|abonneer|registreer|neem|ga|reserveer|aanvraag|kies|word|meld)\b/i;
+          const URL_PATTERN = /https?:\/\/\S+|www\.\S+/i;
+          passed =
+            textGroups.some((g) => g === 'cta' || g === 'call-to-action' || g.includes('cta')) ||
             Object.values(previewContent).some((v) => !!v?.cta) ||
             textGroups.some((g) => {
               const content = previewContent[g]?.content;
-              return content ? /\*\*(get|start|join|sign|book|claim|download|discover|learn|try|shop|buy|register|subscribe|explore|request|schedule|apply|contact)\b/i.test(content) : false;
+              if (!content) return false;
+              return CTA_VERB_PATTERN.test(content) || URL_PATTERN.test(content);
             });
           break;
+        }
         case 'has-meta':
           passed = textGroups.some((g) => g.includes('meta'));
           break;

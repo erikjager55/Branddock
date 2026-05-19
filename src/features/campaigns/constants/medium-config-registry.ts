@@ -266,27 +266,15 @@ export const MEDIUM_CATEGORY_CONFIGS: Record<MediumCategory, MediumCategoryConfi
   advertising: {
     category: 'advertising',
     label: 'Advertising',
-    sections: [
-      {
-        id: 'ad-format',
-        title: 'Ad Format',
-        fields: [
-          {
-            key: 'adFormat',
-            label: 'Format',
-            type: 'button-group',
-            options: [
-              { value: 'single-image', label: 'Single Image' },
-              { value: 'carousel-ad', label: 'Carousel' },
-              { value: 'video-ad', label: 'Video' },
-              { value: 'text-ad', label: 'Text Only' },
-            ],
-            defaultValue: 'single-image',
-            columns: 4,
-          },
-        ],
-      },
-    ],
+    // 2026-05-19: ad-format sectie verwijderd uit Step 3. Format wordt
+    // geselecteerd in Step 1 (`contentTypeInputs.adFormat`) en is single
+    // source of truth voor alle downstream consumers (canvas-orchestrator
+    // prompt-builder + publish-timing checklist + preview-router). Step 3
+    // Medium toonde dezelfde keuze opnieuw — verwarrend en stale-state risico.
+    // Andere ad-specific config (zoals socialProof of ctaType) zou hier
+    // kunnen blijven; momenteel zijn er geen andere advertising-medium-
+    // configs, dus sections-array is leeg.
+    sections: [],
   },
 
   video: {

@@ -108,7 +108,17 @@ const TITLE_REQUIRED_FORMATS = new Set([
   'landing-page',  // landing-page, product-page, faq-page, comparison-page, microsite
 ]);
 
-export function getChecklistForPlatform(platform: string | null, format: string | null): ChecklistItem[] {
+export function getChecklistForPlatform(
+  platform: string | null,
+  format: string | null,
+  /**
+   * Q4 (2026-05-19): adFormat sub-type voor LinkedIn-ad (en in toekomst
+   * andere paid platforms). Bepaalt format-specific checklist-items zoals
+   * has-thumbnail (video-ad), has-subject (message-ad). null/undefined =
+   * generieke ad-checklist.
+   */
+  adFormat?: string | null,
+): ChecklistItem[] {
   const items: ChecklistItem[] = [
     { id: 'has-body', label: 'Body content is complete', required: true },
   ];
@@ -118,7 +128,24 @@ export function getChecklistForPlatform(platform: string | null, format: string 
     items.unshift({ id: 'has-title', label: 'Title or headline is set', required: true });
   }
 
-  if (platform === 'linkedin' || platform === 'instagram' || platform === 'facebook' || platform === 'tiktok') {
+  // LinkedIn-ad sub-format aware checklist (Q4 2026-05-19). Andere social
+  // platforms krijgen generic checklist hieronder.
+  if (platform === 'linkedin' && format === 'ad') {
+    if (adFormat === 'video-ad') {
+      items.push({ id: 'has-image', label: 'Thumbnail added', required: true });
+      items.push({ id: 'has-cta', label: 'Call-to-action included', required: true });
+      items.push({ id: 'char-limit', label: 'Within character limit', required: true });
+    } else if (adFormat === 'message-ad') {
+      items.push({ id: 'has-subject', label: 'Subject line is set', required: true });
+      items.push({ id: 'has-cta', label: 'Call-to-action button label is set', required: true });
+      // Message Ad heeft GEEN hero-image — InMail-format
+    } else {
+      // Default = single-image (of onbekend → fallback naar image-pattern)
+      items.push({ id: 'has-image', label: 'Hero image added', required: true });
+      items.push({ id: 'has-cta', label: 'Call-to-action included', required: true });
+      items.push({ id: 'char-limit', label: 'Within character limit', required: true });
+    }
+  } else if (platform === 'linkedin' || platform === 'instagram' || platform === 'facebook' || platform === 'tiktok') {
     items.push({ id: 'has-image', label: 'Hero image added', required: true });
     items.push({ id: 'has-hashtags', label: 'Hashtags included', required: false });
     if (platform === 'linkedin' || platform === 'instagram') {
