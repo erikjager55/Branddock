@@ -25,7 +25,9 @@ import { anthropicClient } from '@/lib/ai/anthropic-client';
 function buildSystemPrompt(chip: string | null | undefined): string {
   const base = `Je bent een art-director die in 1-2 zinnen omschrijft wat een beeld moet tonen voor een marketing-content-item.
 
-Maximaal 2 zinnen, geen marketing-jargon, geen "engaging" of "compelling". Pas de output-taal aan de content-taal aan (NL voor Nederlandse brand, EN voor Engelse brand).`;
+Maximaal 2 zinnen, geen marketing-jargon, geen "engaging" of "compelling". Pas de output-taal aan de content-taal aan (NL voor Nederlandse brand, EN voor Engelse brand).
+
+**Output format**: plain text only. NO markdown formatting — geen **bold**, geen _italic_, geen # headings, geen bullet-points. De output wordt in een textarea getoond die markdown niet rendert; asterisks en hashes verschijnen letterlijk en zien er slordig uit. Schrijf gewoon natuurlijke zinnen.`;
 
   switch (chip) {
     case 'quote-text':
@@ -152,7 +154,25 @@ export async function POST(
       },
     );
 
-    const briefing = (result.content ?? '').trim();
+    // Defense-in-depth: strip markdown formatting voor het geval het LLM
+    // de plain-text-instructie negeert. De textarea rendert geen markdown,
+    // dus **bold** / _italic_ / # heading / - bullet zien er slordig uit.
+    // Conservative regex: alleen wrapper-syntax, geen content-mangling.
+    function stripMarkdown(text: string): string {
+      return text
+        .replace(/\*\*\*([^*\n]+)\*\*\*/g, '$1') // ***bold-italic***
+        .replace(/\*\*([^*\n]+)\*\*/g, '$1')      // **bold**
+        .replace(/(?<!\w)_([^_\n]+)_(?!\w)/g, '$1') // _italic_ (skip identifiers)
+        .replace(/(?<!\w)\*([^*\n]+)\*(?!\w)/g, '$1') // *italic*
+        .replace(/`([^`\n]+)`/g, '$1')            // `inline-code`
+        .replace(/^#{1,6}\s+/gm, '')              // # heading prefix
+        .replace(/^[-*+]\s+/gm, '')               // - bullet prefix
+        .replace(/^\d+\.\s+/gm, '')               // 1. numbered-list prefix
+        .replace(/\n{3,}/g, '\n\n')               // collapse triple-newlines
+        .trim();
+    }
+    const rawBriefing = (result.content ?? '').trim();
+    const briefing = stripMarkdown(rawBriefing);
     if (!briefing) {
       return NextResponse.json({ error: 'Empty AI response — try again' }, { status: 502 });
     }

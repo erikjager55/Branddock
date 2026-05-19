@@ -1495,7 +1495,10 @@ function VisualBriefSuggestionPanel({
       </div>
 
       {/* Briefing — editable inside the suggestion panel so user can
-          refine before committing to one of the three actions. */}
+          refine before committing to one of the three actions.
+          2026-05-19: rows 4 -> 7 (was te krap voor multi-zin briefings).
+          Focus-ring naar teal voor consistency met rest van UI (was
+          purple #7c3aed — restant van legacy chip-styling). */}
       <div className="pt-2 border-t border-slate-200/70 space-y-1">
         <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
           Briefing
@@ -1508,10 +1511,9 @@ function VisualBriefSuggestionPanel({
               ? 'Generating briefing from content…'
               : 'Describe what the visual should show — who, where, what, mood'
           }
-          rows={4}
+          rows={7}
           disabled={briefingLoading}
-          className="w-full text-sm px-2.5 py-1.5 border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 resize-y disabled:opacity-60"
-          style={{ outlineColor: '#7c3aed' }}
+          className="w-full text-sm leading-relaxed px-3 py-2 border border-slate-200 rounded-md bg-white focus:outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600 resize-y disabled:opacity-60"
         />
         {briefingError && (
           <p className="text-[11px] text-red-600">{briefingError}</p>
