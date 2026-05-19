@@ -271,9 +271,8 @@ export const readTools: ClawToolDefinition[] = [
           // keys that actually exist in the current registry so Claw doesn't
           // see (and try to update) stale keys from previous schemas.
           const { getContentTypeInputs } = await import('@/features/campaigns/lib/content-type-inputs');
-          const validKeys = new Set(
-            getContentTypeInputs(deliverable.contentType).map((f) => f.key),
-          );
+          const registryFields = getContentTypeInputs(deliverable.contentType);
+          const validKeys = new Set(registryFields.map((f) => f.key));
           const contentTypeInputPreviews: Record<string, ReturnType<typeof preview>> = {};
           for (const [k, v] of Object.entries(contentTypeInputs)) {
             if (validKeys.has(k)) contentTypeInputPreviews[k] = preview(v);
@@ -283,6 +282,26 @@ export const readTools: ClawToolDefinition[] = [
           for (const k of validKeys) {
             if (!(k in contentTypeInputPreviews)) availableContentTypeKeys.push(k);
           }
+
+          // 2026-05-19 — Surface the registry's `aiHint` / options metadata
+          // for each empty key so the brand-assistant has actionable guidance
+          // when filling content-style fields (textOverlay, colorGrade,
+          // footageType, etc.). Without this the model only sees a flat list
+          // of key-names and silently skips fields it can't ground a value
+          // for. Reported as the recurring "wel content brief, geen content
+          // style" issue on linkedin-video-ad.
+          const availableContentTypeFields = registryFields
+            .filter((f) => availableContentTypeKeys.includes(f.key))
+            .map((f) => ({
+              key: f.key,
+              label: f.label,
+              category: f.category,
+              type: f.type,
+              required: f.required ?? false,
+              aiHint: f.aiHint,
+              helpText: f.helpText,
+              options: f.options?.map((o) => (typeof o === 'string' ? o : o.value)),
+            }));
 
           // Visual Brief — strategic visual direction (source + style chip).
           // Lives in settings.visualBrief; updated via update_deliverable_visual_brief.
@@ -305,13 +324,14 @@ export const readTools: ClawToolDefinition[] = [
             briefFields,
             contentTypeInputs: contentTypeInputPreviews,
             availableContentTypeKeys,
+            availableContentTypeFields,
             visualBrief: visualBriefPreview,
             visualBriefValidStyles: [
               'lifestyle', 'product-shot', 'quote-text', 'behind-the-scenes',
               'ugc', 'infographic', 'illustration', 'data-driven',
             ],
             visualBriefValidSources: ['generate', 'library', 'compose', 'trained-style', 'none'],
-            tip: 'Three write-tools fill the Step 1 Content Brief: (1) update_deliverable_brief for the four strategic textareas (objective, keyMessage, toneDirection, callToAction). (2) update_deliverable_content_inputs for type-specific keys — ONLY keys listed in `availableContentTypeKeys` or already in `contentTypeInputs` are valid. (3) update_deliverable_visual_brief for the Visual Brief subsection (source from `visualBriefValidSources`, styleDirection from `visualBriefValidStyles`, plus optional free text). All three apply via the user confirmation card.',
+            tip: 'Three write-tools fill the Step 1 Content Brief: (1) update_deliverable_brief for the four strategic textareas (objective, keyMessage, toneDirection, callToAction). (2) update_deliverable_content_inputs for type-specific keys — ONLY keys listed in `availableContentTypeKeys` or already in `contentTypeInputs` are valid. **Use `availableContentTypeFields` to ground your values**: each entry has `label`, `type`, `aiHint` (concrete guidance — read it!), `options` (for select fields, value MUST be one of these strings), `category`, `helpText`. Fields with `category: "content-style"` (footageType, textOverlay, colorGrade, etc.) are part of the Content Brief — propose values for them in the same call as the strategic fields. NEVER skip a content-style field just because its semantics are visual; the aiHint tells you how to derive it from brand context. (3) update_deliverable_visual_brief for the Visual Brief subsection (source from `visualBriefValidSources`, styleDirection from `visualBriefValidStyles`, plus optional free text). All three apply via the user confirmation card.',
           };
         }
       }

@@ -353,6 +353,10 @@ LinkedIn paid-video algorithm: 85% silent viewing, autoplay-muted by default. Bu
 - **Thumbnail spec**: Static preview-frame for non-autoplay contexts. Describe hero-shot: subject, composition, brand-color overlay, on-screen text.
 - **Captions**: All spoken dialog as burned-in captions. Max 32 chars per line for mobile-readable.
 
+## VISUAL vs B-ROLL — the single-frame rule
+Each scene gets exactly ONE \`[VISUAL: …]\` cue describing ONE dominant frame. The image-generator renders this frame, so it MUST be ONE coherent shot: one subject, one framing, one moment. NEVER pack multiple shots into a single [VISUAL] ("snelle cut van X, Y, Z" is wrong — that\'s three shots).
+When the scene needs montage-feel (rapid inserts, intercuts, camera moves), use an OPTIONAL \`[B-ROLL: …]\` line BELOW the [VISUAL]. The video-generator reads B-ROLL as motion direction over the dominant frame ("camera pans to detail of …", "intercut with shots of …"). Keep B-ROLL ONE sentence, max ~25 words.
+
 ## FEW-SHOT EXAMPLE
 "[INTRO CAPTION — sponsored-post text]
 Most B2B marketers spend 4 hours/week wrestling with brand consistency. Our customers cut that to 30 minutes. Here is how — and why CMOs at TechCorp and Acme switched in Q1.
@@ -364,11 +368,13 @@ Most B2B marketers spend 4 hours/week wrestling with brand consistency. Our cust
 Caption: 'Stop doing 4-hour brand reviews.'
 
 [PROOF — 3s]
-[VISUAL: Cut to dashboard mockup; numbers animate from 4hrs → 30min. Text overlay: '4 HRS → 30 MIN']
+[VISUAL: Dashboard mockup mid-shot, number "4 HRS → 30 MIN" prominently visible on screen, clean studio lighting.]
+[B-ROLL: Quick inserts of the number animating, sticky-notes being swept off-frame.]
 Caption: 'Branddock cuts brand-review time by 87%. CMOs at TechCorp and Acme switched in Q1.'
 
 [OFFER — 10s]
-[VISUAL: Speaker confident, points at branded CTA card. Logo lock-up bottom-right. CTA-button mockup: 'Try Free 30 Days']
+[VISUAL: Speaker confident close-up, branded CTA card in foreground with button mockup "Try Free 30 Days".]
+[B-ROLL: Camera pulls back to reveal full setup as the speaker gestures toward the card.]
 Caption: 'Try free for 30 days. Setup in 5 minutes. No credit card.'
 
 [THUMBNAIL]
@@ -400,7 +406,11 @@ Before outputting, verify:
         params.userPrompt,
         params.context,
         params.settings,
-        'Platform: LinkedIn Video Ad (paid). Output structure: (1) intro-caption 80-120 words sponsored-post text, (2) video-script with HOOK / PROOF / OFFER beats and [VISUAL] cues, (3) thumbnail description, (4) burned-in captions per spoken line. 8-15s duration, 16:9 aspect, silent-first design.',
+        // 2026-05-19 — group structure made explicit so the orchestrator's
+        // scene-split (hook/body/cta as separate variantGroups) lands
+        // correctly. Drives the Step 2 Scene Breakdown + per-scene Visual
+        // block + Step 3 per-scene video generation end-to-end.
+        'Platform: LinkedIn Video Ad (paid). Output exactly these six component groups: (1) "intro-caption" — sponsored-post text shown above the video, 80-120 words, plain prose with hook+proof+CTA. (2) "hook" — SCRIPTED SCENE for 0-3s pattern-interrupt: 8-12 spoken words + EXACTLY ONE `[VISUAL: …]` cue describing ONE dominant frame (not a comma-list of shots) + optional `[B-ROLL: motion direction]` for cinematic detail + `[CAPTION]` burned-in caption. (3) "body" — SCRIPTED SCENE for 3-10s proof beat: 25-40 spoken words + single `[VISUAL]` + optional `[B-ROLL]` + `[CAPTION]`. (4) "cta" — SCRIPTED SCENE for 10-15s offer beat: 15-25 spoken words + single `[VISUAL]` + optional `[B-ROLL]` + `[CAPTION]`. NOT a button label; the button-text lives on the variant\'s top-level cta field. (5) "thumbnail" — static preview-frame description, plain prose. (6) "captions" — full burned-in captions list (one per spoken line). CRITICAL: `[VISUAL]` describes ONE coherent frame for the image-generator; multi-shot intent goes in `[B-ROLL]` as motion direction. Total video 8-15s, 16:9 aspect, silent-first design.',
       ),
   },
 

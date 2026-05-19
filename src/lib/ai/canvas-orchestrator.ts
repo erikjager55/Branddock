@@ -24,6 +24,7 @@ import { cacheKeys } from '@/lib/api/cache-keys';
 import type { JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 import { getPromptTemplate } from '@/lib/studio/prompt-templates';
+import { getComponentTemplateFallback } from './component-templates-fallback';
 import { getContentTypeInputs } from '@/features/campaigns/lib/content-type-inputs';
 import { getLinkedInAdFormatLabel } from '@/features/campaigns/lib/linkedin-ad-formats';
 import {
@@ -129,7 +130,29 @@ interface ComponentTemplateItem {
   type: string;
   required?: boolean;
   maxLength?: number;
+  /** When true: group is a scripted scene (markdown-rich prose with
+   *  [VISUAL] cues + Caption: lines), not button-text. Drives the
+   *  scripted-scene formatting override in the user-prompt — supplied
+   *  by the fallback registry for video-script content types. */
+  isScriptedScene?: boolean;
   [key: string]: unknown;
+}
+
+/**
+ * Resolve the component template for a deliverable. Prefers the
+ * MediumEnrichment row (DB-seeded per platform/format) but falls back
+ * to the in-memory registry when the row is missing or has an empty
+ * template — without the fallback, video-script types end up with zero
+ * group instructions and the model collapses everything to a single
+ * `script` group, breaking the Scene Breakdown.
+ */
+function resolveComponentTemplate(
+  medium: { componentTemplate?: unknown[] } | null | undefined,
+  contentType: string | null | undefined,
+): ComponentTemplateItem[] {
+  const fromMedium = (medium?.componentTemplate ?? []) as ComponentTemplateItem[];
+  if (fromMedium.length > 0) return fromMedium;
+  return (getComponentTemplateFallback(contentType) ?? []) as ComponentTemplateItem[];
 }
 
 // ─── OpenAI Singleton ─────────────────────────────────────
@@ -252,7 +275,11 @@ export async function* orchestrateContentGeneration(
   }
 
   // ── Determine component groups from template ──────────
-  const componentTemplate = (stack.medium?.componentTemplate ?? []) as ComponentTemplateItem[];
+  // Falls back to the in-memory registry for video-script types whose
+  // MediumEnrichment row is missing/empty — otherwise the model gets
+  // zero group instructions and collapses everything into one `script`
+  // blob, breaking the Scene Breakdown + per-scene visual flow.
+  const componentTemplate = resolveComponentTemplate(stack.medium, stack.deliverableTypeId);
   const textGroups = componentTemplate
     .filter((t) => t.type !== 'image' && t.type !== 'hero-image' && t.type !== 'sound')
     .map((t) => t.type);
@@ -2184,21 +2211,23 @@ function buildCanvasPrompt(
    *  When null: legacy fallback — prompt asks for 2 variants in one call. */
   angle?: CreativeAngle | null,
 ): { systemPrompt: string; userPrompt: string } {
-  const componentTemplate = (medium?.componentTemplate ?? []) as ComponentTemplateItem[];
+  // Use type-specific prompt template if available (expert persona, methodology, anti-patterns)
+  const contentType = stack.deliverableTypeId ?? '';
+  const typeTemplate = getPromptTemplate(contentType);
+
+  const componentTemplate = resolveComponentTemplate(medium, contentType);
   const textGroups = componentTemplate
     .filter((t) => t.type !== 'image' && t.type !== 'hero-image' && t.type !== 'sound')
     .map((t) => ({
       type: t.type,
       maxLength: t.maxLength,
       required: t.required ?? false,
+      isScriptedScene: t.isScriptedScene ?? false,
     }));
   const hasImageComponent = componentTemplate.some(
     (t) => t.type === 'image' || t.type === 'hero-image',
   );
-
-  // Use type-specific prompt template if available (expert persona, methodology, anti-patterns)
-  const contentType = stack.deliverableTypeId ?? '';
-  const typeTemplate = getPromptTemplate(contentType);
+  const hasScriptedScenes = textGroups.some((g) => g.isScriptedScene);
 
   const systemPrompt = [
     voiceDirective || '',
@@ -2288,6 +2317,35 @@ function buildCanvasPrompt(
     '- Short-form (social/ads/email): tight paragraphs, bold for hooks.',
     '- Never output a wall of unformatted text in body groups — always visual hierarchy.',
     '',
+    // 2026-05-19 — Override for video-script content types. The
+    // hook/body/cta groups are SCRIPTED SCENES (markdown-rich prose with
+    // [VISUAL] cues + Caption: lines), not button-text. This block flips
+    // the "cta = SHORT button" rule above for video types so the model
+    // can emit a full Offer-beat scripted scene under the `cta` group.
+    hasScriptedScenes
+      ? [
+          '### Scripted-scene override (THIS DELIVERABLE IS A VIDEO SCRIPT)',
+          'The "hook" / "body" / "cta" groups are SCRIPTED SCENES, not plain-text fields. The cta-as-button-text rule above does NOT apply here — for this video script, "cta" = the Offer scene (15-25 words spoken + visual + caption), NOT a 2-5 word button label.',
+          'Each scripted-scene group MUST contain:',
+          '  - Spoken dialogue / voiceover lines (bold the most stopping line with **…**).',
+          '  - EXACTLY ONE `[VISUAL: …]` cue — the SINGLE DOMINANT shot. This is what the image-generator renders, so it must be ONE coherent frame, NOT a comma-list of shots ("inmeten, werkplaats, montage"). Pick the most important moment of the scene and describe just that frame: subject, composition, framing, on-screen text overlay if any. NEVER describe multiple shots inside `[VISUAL: …]`.',
+          '  - OPTIONAL `[B-ROLL: …]` line — secondary motion / cut details that animate the dominant shot. Use this when the scene needs montage-feel: "rapid cut to detail of …", "camera pans to …", "intercut with …". The video-generator picks this up as motion direction over the dominant VISUAL still. Keep it ONE sentence, max ~25 words.',
+          '  - A `[CAPTION]` line with the burned-in caption text (silent autoplay readability).',
+          'Scene durations (typical paid LinkedIn video, 8-15s total):',
+          '  - hook: 0-3s, 8-12 words spoken, pattern-interrupt visual',
+          '  - body: 3-10s, 25-40 words spoken, proof/credibility',
+          '  - cta: 10-15s, 15-25 words spoken, specific offer + next step',
+          'Keep scenes self-contained — viewer may drop off after Hook. Each scene must read as a complete beat on its own.',
+          'The button-text CTA still appears on each variant\'s top-level "cta" field (2-6 words) — that\'s separate from the cta-scene group content.',
+          '',
+          'Example BODY scene (correct VISUAL + B-ROLL split):',
+          '  **Bewijs in beeld: gespecificeerd in 50%+ van high-end woningprojecten.**',
+          '  [VISUAL: Naadloos afgewerkt vloerluik in een hoogwaardig parket-interieur, lage cameraframing op vloerniveau.]',
+          '  [B-ROLL: Snelle inserts van inmeten met rolmaat en werkplaats-detail, camera dolly van detail naar wide shot.]',
+          '  [CAPTION] Gespecificeerd in 50%+ van high-end woningprojecten.',
+          '',
+        ].join('\n')
+      : '',
     'Response schema:',
     '{',
     '  "components": [',
