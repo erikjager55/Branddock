@@ -176,7 +176,19 @@ export function buildBrandVoiceDirectiveFromContext(
 
   const channelKey = resolveChannelKey(options);
   if (channelKey) {
-    parts.push(`**Channel**: This content is for the "${channelKey}" channel. Adapt tone accordingly — match the channel-specific communication style defined in the brand personality above.`);
+    // 2026-05-20 — sharper instruction. Previously "adapt accordingly" was
+    // too soft; models often defaulted to the global tone even when the
+    // voiceguide block contained an explicit channel-override. Now we
+    // explicitly tell the model the channel-specific entry overrules the
+    // global tone for THIS generation. The actual per-channel tone-string
+    // is already in the brandVoiceguide block above via
+    // formatBrandVoiceguide → channelTones serialisation.
+    parts.push(
+      `**Channel — ${channelKey}**: This content publishes on the "${channelKey}" channel. ` +
+        `Locate the "Channel-specific tone" entry for "${channelKey}" in the VOICE FINGERPRINT block above. ` +
+        `That channel-specific tone OVERRIDES the global tone-of-voice for this generation — write in the channel-specific register, not the global default. ` +
+        `When the channel entry is missing for "${channelKey}", fall back to the global tone unchanged.`,
+    );
     parts.push('');
   }
 
