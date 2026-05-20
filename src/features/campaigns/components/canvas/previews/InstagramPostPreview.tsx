@@ -19,10 +19,18 @@ import { dedupeBodyPrefix } from './preview-utils';
  * the "...more" truncation).
  */
 export function InstagramPostPreview({ previewContent, isGenerating, heroImage, onAddImage, brandName }: PlatformPreviewProps) {
+  // 2026-05-20 — broader fallback chain. The orchestrator's JSON-schema
+  // example uses literal "hook" / "content" / "body" group names, so the
+  // model often emits those instead of the seeded "hook-line" / "caption".
+  // Without these fallbacks the preview would only show hashtags and the
+  // user sees a near-empty Instagram mockup despite generated content.
   const captionPrimary = useEditableEntry('caption');
-  const captionFallback = useEditableEntry('body');
-  const captionEntry = captionPrimary ?? captionFallback;
-  const hookLineEntry = useEditableEntry('hook-line');
+  const captionFallback1 = useEditableEntry('body');
+  const captionFallback2 = useEditableEntry('content');
+  const captionEntry = captionPrimary ?? captionFallback1 ?? captionFallback2;
+  const hookLinePrimary = useEditableEntry('hook-line');
+  const hookLineFallback = useEditableEntry('hook');
+  const hookLineEntry = hookLinePrimary ?? hookLineFallback;
   const hashtagsEntry = useEditableEntry('hashtags');
 
   const cta = extractCta(previewContent);
@@ -114,7 +122,7 @@ export function InstagramPostPreview({ previewContent, isGenerating, heroImage, 
         <p className="text-xs text-gray-400 mt-1">View all 8 comments</p>
         <p className="text-[10px] text-gray-400 mt-1 uppercase">2 hours ago</p>
         <AdditionalComponentsSection
-          handledGroups={['caption', 'body', 'hook-line', 'hashtags']}
+          handledGroups={['caption', 'body', 'content', 'hook-line', 'hook', 'hashtags']}
         />
       </div>
 

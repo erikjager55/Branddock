@@ -790,7 +790,11 @@ Before outputting, verify:
         params.userPrompt,
         params.context,
         params.settings,
-        'Platform: Instagram. Caption limit: 2200 chars. First line must hook before the "...more" fold. Include image direction suggestion and hashtag block (3-5 highly relevant).',
+        // 2026-05-20 — explicit group structure mirroring the seeded
+        // MediumEnrichment componentTemplate. The orchestrator's generic
+        // schema example uses "group": "hook" literal which models then
+        // copy, so we override with named groups + a CRITICAL line.
+        'Platform: Instagram. Output exactly these component groups: (1) "hook-line" — the FIRST line of the caption, ≤125 chars, designed to hook before the "...more" fold. Bold-curious, sensory or contrarian. (2) "caption" — the rest of the caption body, plain prose with line breaks, micro-story or insight, max 2200 chars total (incl. hook-line). End with a specific CTA (save / share / comment / tag). (3) "hashtags" — 8-15 hashtags mixing broad + niche, space-separated, prefixed with #. CRITICAL: use exactly these group names ("hook-line", "caption", "hashtags") — not "hook" / "content" / "body". The preview maps each group to a separate Instagram caption block, so naming matters.',
       ),
   },
 
