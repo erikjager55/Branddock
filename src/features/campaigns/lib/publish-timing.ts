@@ -119,6 +119,22 @@ export function getChecklistForPlatform(
    */
   adFormat?: string | null,
 ): ChecklistItem[] {
+  // 2026-05-20 — LinkedIn poll has a fundamentally different group
+  // structure (context / question / option-1..4 / follow-up-comment /
+  // hashtags). The generic has-body / has-image checks both false-flag
+  // because polls have no body group and can't attach images. Return a
+  // poll-specific checklist instead of the generic post one.
+  if (platform === 'linkedin' && format === 'poll-post') {
+    return [
+      { id: 'has-question', label: 'Poll question is set', required: true },
+      { id: 'has-options', label: 'At least 2 options provided', required: true },
+      { id: 'has-context', label: 'Context paragraph framing the poll', required: true },
+      { id: 'has-follow-up-comment', label: 'Suggested first comment drafted', required: false },
+      { id: 'has-hashtags', label: 'Hashtags included', required: false },
+      { id: 'char-limit', label: 'Within character limit', required: true },
+    ];
+  }
+
   const items: ChecklistItem[] = [
     { id: 'has-body', label: 'Body content is complete', required: true },
   ];

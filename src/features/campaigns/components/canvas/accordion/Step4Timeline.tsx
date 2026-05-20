@@ -176,6 +176,30 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         case 'has-meta':
           passed = textGroups.some((g) => g.includes('meta'));
           break;
+        // 2026-05-20 — LinkedIn-poll specific checks (group structure:
+        // context / question / option-1..4 / follow-up-comment / hashtags).
+        case 'has-question':
+          passed = textGroups.some((g) => g === 'question');
+          break;
+        case 'has-options':
+          // At least 2 option-* groups with non-empty content.
+          passed =
+            textGroups.filter(
+              (g) => /^option-[1-4]$/.test(g) && (previewContent[g]?.content?.trim().length ?? 0) > 0,
+            ).length >= 2;
+          break;
+        case 'has-context':
+          passed = textGroups.some(
+            (g) => g === 'context' && (previewContent[g]?.content?.trim().length ?? 0) > 0,
+          );
+          break;
+        case 'has-follow-up-comment':
+          passed = textGroups.some(
+            (g) =>
+              g === 'follow-up-comment' &&
+              (previewContent[g]?.content?.trim().length ?? 0) > 0,
+          );
+          break;
         case 'has-shownotes':
           passed = textGroups.some((g) => g.includes('show') || g.includes('notes'));
           break;
