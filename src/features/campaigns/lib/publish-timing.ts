@@ -118,13 +118,20 @@ export function getChecklistForPlatform(
    * generieke ad-checklist.
    */
   adFormat?: string | null,
+  /**
+   * 2026-05-20 — contentType fallback. When MediumEnrichment has no
+   * matching row (e.g. linkedin/poll-post isn't seeded), platform/format
+   * land null and platform-based branches all miss. ContentType is a
+   * stable signal independent of enrichment seeding.
+   */
+  contentType?: string | null,
 ): ChecklistItem[] {
   // 2026-05-20 — LinkedIn poll has a fundamentally different group
   // structure (context / question / option-1..4 / follow-up-comment /
   // hashtags). The generic has-body / has-image checks both false-flag
   // because polls have no body group and can't attach images. Return a
   // poll-specific checklist instead of the generic post one.
-  if (platform === 'linkedin' && format === 'poll-post') {
+  if ((platform === 'linkedin' && format === 'poll-post') || contentType === 'linkedin-poll') {
     return [
       { id: 'has-question', label: 'Poll question is set', required: true },
       { id: 'has-options', label: 'At least 2 options provided', required: true },

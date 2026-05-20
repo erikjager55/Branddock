@@ -98,9 +98,15 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
       .join('\n\n');
   }, [previewContent]);
 
+  // 2026-05-20 — contentType is the stable signal for content-type-aware
+  // routing. Used as a fallback for preview-map + checklist resolution
+  // when MediumEnrichment doesn't have a matching row (e.g.
+  // linkedin/poll-post isn't seeded → platform/format end up null).
+  const contentType = useCanvasStore((s) => s.contentType);
+
   const previewEntry = useMemo(
-    () => resolvePreviewComponent(platform, format),
-    [platform, format],
+    () => resolvePreviewComponent(platform, format, contentType),
+    [platform, format, contentType],
   );
 
   // Optimal timing suggestion
@@ -118,8 +124,8 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
   const adFormat = (contentTypeInputs.adFormat as string | undefined) ?? null;
   const checklist = useMemo(
-    () => getChecklistForPlatform(platform, format, adFormat),
-    [platform, format, adFormat],
+    () => getChecklistForPlatform(platform, format, adFormat, contentType),
+    [platform, format, adFormat, contentType],
   );
 
   const checklistResults = useMemo(() => {
