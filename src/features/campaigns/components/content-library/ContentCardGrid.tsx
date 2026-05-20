@@ -201,13 +201,13 @@ export function ContentCardGrid({
 
               {/* Footer actions — Open in Canvas uses an outline button so
                   it doesn't fight the campaign brand colors of the card stripe.
-                  When the QuickPublishMenu is shown, the Canvas button shrinks
-                  to make room and the menu sits on its right. Right padding is
-                  pr-6 (matches the content area above) so the button's stark
-                  outline doesn't visually merge with the card edge — the 6px
-                  stripe absorbs visual weight on the left, so the right side
-                  needs slightly more breathing room to look balanced. */}
-              <div className="pl-4 pr-6 pb-4 flex items-center gap-2">
+                  2026-05-20: padding rolled back to symmetric px-4. The
+                  earlier asymmetric pr-6 was meant to balance the 6px left
+                  stripe, but in narrower grid columns the extra right pad
+                  pushed the button outside the visible card edge for some
+                  states. Symmetric padding renders cleaner on every column
+                  width. */}
+              <div className="px-4 pb-4 flex items-center gap-2">
                 <Button
                   variant="secondary"
                   size="sm"

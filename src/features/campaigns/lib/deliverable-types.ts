@@ -488,6 +488,8 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 80, maxWords: 350, maxChars: 3000, maxHashtags: 5 },
     qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
     exportFormats: LINKEDIN_DEFAULTS.exportFormats,
+    // 2026-05-20 — verborgen uit Add Content per user.
+    hidden: true,
   },
   {
     id: "linkedin-poll",
