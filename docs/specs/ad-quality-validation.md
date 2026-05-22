@@ -235,13 +235,41 @@ Nieuwe ad-type registreren: nieuw file in `rules/<platform>/<type>.ts`, exportee
 
 > NB: dit zijn 18 regel-IDs maar veel zijn varianten van dezelfde check (char-overflow per groep). Implementatie kan compact via één `charOverflowRule()` factory die over alle relevant groups itereert — daarmee kleiner dan 18 lines code.
 
-### 4.5 L1 rule-sets voor andere ad-types — placeholders
+### 4.5 L1 rule-sets voor andere ad-types
 
-- `display-ad`: char-overflow per-size, distinct-headlines-across-sizes (rectangle ≠ skyscraper), text-on-image warning bij visual-direction die "text overlay" noemt, coverage per-size.
+#### display-ad (RDA — updated 2026-05-22)
+
+> Update na display-ad RDA migration (commit `10ff435e`). Eerdere "per-size" rules (`distinct-headlines-across-sizes`) zijn obsolete — Responsive Display Ads hebben geen vaste sizes meer; Google's ML componeert assets per placement. Nieuwe rule-set spiegelt Google's eigen Ad Strength score-componenten.
+
+| Rule ID | Category | Check | Severity bij hit | Suggestion-template |
+|---|---|---|---|---|
+| `display-ad.char-overflow.short-headlines` | mechanical | any `short-headline-N` (1-5) >30 chars | fail | "Short headline {N} is {len} tekens — Google rejecteert >30." |
+| `display-ad.char-overflow.long-headline` | mechanical | `long-headline` >90 chars | fail | "Long headline is {len} tekens — max 90." |
+| `display-ad.char-overflow.descriptions` | mechanical | any `description-N` (1-5) >90 chars | fail | "Description {N} is {len} tekens — max 90." |
+| `display-ad.char-overflow.business-name` | mechanical | `business-name` >25 chars | fail | "Business name is {len} tekens — max 25." |
+| `display-ad.all-caps.headlines` | mechanical | any short-headline of long-headline = uppercase | warn | "{group} is ALL CAPS — Google policy schendt." |
+| `display-ad.exclamation.headlines` | mechanical | any short-headline of long-headline bevat `!` | warn | "{group} bevat `!` — Google staat `!` niet toe in headlines." |
+| `display-ad.banned-superlatives` | mechanical | regex match `\b(best|#1|top-rated|nummer.?1)\b` zonder proof-marker over alle assets | warn | "{group} bevat ongesubstantieerde superlatief '{word}'." |
+| `display-ad.duplicate-short-headlines` | structural | exact-of-quasi-duplicate dedup over short-headline-1..5 (Jaccard ≥0.8 of identiek na lower+trim) | fail | "Short headline {A} en {B} zijn (bijna) identiek — verspilde rotation-slot." |
+| `display-ad.duplicate-descriptions` | structural | idem voor description-1..5 | fail | "Description {A} en {B} zijn (bijna) identiek — Google's diversity-signal lijdt." |
+| `display-ad.coverage.short-headlines-min` | coverage | <1 short-headline gevuld | fail | "Geen short-headlines gevuld — minimum 1 vereist (5 voor Excellent Ad Strength)." |
+| `display-ad.coverage.short-headlines-full` | coverage | <5 short-headlines gevuld | warn | "Slechts {N}/5 short-headlines gevuld. Vol = Excellent Ad Strength." |
+| `display-ad.coverage.long-headline` | coverage | `long-headline` niet gevuld | fail | "Long headline ontbreekt — vereist door Google." |
+| `display-ad.coverage.descriptions-min` | coverage | <1 description gevuld | fail | "Geen descriptions gevuld — minimum 1 vereist." |
+| `display-ad.coverage.descriptions-full` | coverage | <5 descriptions gevuld | warn | "Slechts {N}/5 descriptions gevuld. Vol = Excellent Ad Strength." |
+| `display-ad.coverage.business-name` | coverage | `business-name` niet gevuld | fail | "Business name ontbreekt — vereist door Google RDA." |
+| `display-ad.coverage.image` | coverage | geen `imagePrompts` of `heroImage` | fail | "Image asset ontbreekt — vereist landscape 1.91:1 + square 1:1." |
+| `display-ad.image-direction-no-text-overlay` | structural | regex check op image-prompt prose voor `\b(text\s?overlay|logo\s?(top|bottom|left|right)|tagline\s?on|headline\s?on\s?image)\b` | warn | "Image direction noemt text-overlay/logo-placement. Google downranks ads met >20% text-on-image." |
+
+#### facebook-ad
+
 - `facebook-ad`: body ≤125 hard fail, headline ≤40, cta-button match-Meta-presets warning, no-hashtag-in-body, no-link-in-body.
+
+#### linkedin-ad
+
 - `linkedin-ad`: headline ≤70, body ≤150, description ≤100, professional-tone warnings (informal contractions).
 
-Detail-rule-sets schrijven we in A.5.2/3/4 implementation-phases — per platform een eigen sub-spec-update.
+Detail-rule-sets voor facebook-ad + linkedin-ad worden geschreven in A.5.3/4 implementation-phases — per platform een eigen sub-spec-update.
 
 ---
 
@@ -290,9 +318,11 @@ Dimensions per platform/type (vast schema, per judge gedefinieerd):
 | Platform / Type | Dimensions |
 |---|---|
 | `google/search-ad` | hook-strength, headline-uniqueness, cta-clarity, keyword-relevance |
-| `google/display-ad` | visual-text-fit, scanning-pattern-fit, headline-distinction |
+| `google/display-ad` | asset-quantity, asset-diversity, asset-quality-per-type, image-direction-multi-aspect |
 | `meta/facebook-ad` | hook-stop-power, body-cta-alignment, image-text-synergy |
 | `linkedin/linkedin-ad` | professional-tone, value-prop-clarity, b2b-relevance |
+
+> **display-ad dimensions updated 2026-05-22** — Eerdere dimensions (visual-text-fit / scanning-pattern-fit / headline-distinction-across-sizes) zijn obsolete na RDA migration. RDA heeft geen vaste sizes meer; nieuwe dimensions spiegelen Google's eigen Ad Strength score-componenten: `asset-quantity` (count short-headlines + descriptions), `asset-diversity` (5 verschillende hook-angles vs paraphrases), `asset-quality-per-type` (readability + value-prop per slot), `image-direction-multi-aspect` (werkt in landscape 1.91:1 én square 1:1).
 
 ### 5.2.1 Runner orchestratie (`runner.ts`)
 
@@ -627,15 +657,20 @@ No core framework-wijziging (runner.ts, aggregation.ts, content-hash.ts, dispatc
 - [ ] L2-judge respondtime <2s (Haiku 4.5)
 - [ ] Unit-tests voor alle 15 L1-regels met edge-cases (boundary values, lege content, special chars)
 
-### A.5.2 — Display-ad
+### A.5.2 — Display-ad (RDA — updated 2026-05-22)
 
-Multi-size aware rules:
-- Char-overflow per-size (leaderboard-headline ≤25, rectangle-headline ≤25, etc.)
-- `distinct-headlines-across-sizes` regel (rectangle-headline ≠ skyscraper-headline letterlijk)
-- `text-on-image-warning` regex op `*-visual` fields die "text overlay", "logo top", "tagline" noemen
-- Coverage per-size (alle 3 sizes hebben hun verplichte velden)
+> Update na RDA migration (commit `10ff435e`). Display-ad is Responsive Display Ads geworden — geen vaste banner-sizes meer. L1 rules + L2 dimensions hieronder zijn de RDA-aligned versies; eerdere "per-size" rules zijn obsolete.
 
-L2-judge dimensions: visual-text-fit, scanning-pattern-fit, headline-distinction-across-sizes.
+**L1 rules** (zie sectie 4.5 voor full tabel — 16 rules totaal):
+- Mechanical: char-overflow per asset-type (short-headline ≤30, long-headline ≤90, description ≤90, business-name ≤25), all-caps-headlines warn, exclamation-headlines warn, banned-superlatives warn
+- Structural: duplicate-short-headlines (Jaccard ≥0.8 dedup), duplicate-descriptions, image-direction-no-text-overlay warn
+- Coverage: short-headlines-min/full (1 req, 5 voor Excellent), long-headline req, descriptions-min/full (1 req, 5 voor Excellent), business-name req, image req
+
+**L2-judge dimensions** (Google Ad Strength-aligned):
+- `asset-quantity` — count short-headlines + descriptions, score scales from 0 (1 of each) to 100 (5 of each)
+- `asset-diversity` — semantic-similarity tussen de 5 short-headlines + 5 descriptions; lager = beter (Google penaliseert paraphrase-clusters)
+- `asset-quality-per-type` — readability + value-prop clarity per asset, geaggregeerd
+- `image-direction-multi-aspect` — werkt de art-direction in zowel landscape (1.91:1) als square (1:1)? Subject + composition translatable?
 
 ### A.5.3 — Facebook-ad
 
@@ -739,11 +774,14 @@ Pre-merge: developer opent Linfi workspace, genereert search-ad, ziet badge + op
 - [ ] L2-call respondtime <2s P95 in development
 - [ ] Smoke in Linfi: search-ad scoort, breakdown is lezbaar, suggestions zijn actionable
 
-### A.5.2 — Display-ad
+### A.5.2 — Display-ad (RDA)
 
-- [ ] Multi-size aware rules + L2-judge implemented per A.5.2 scope hierboven
-- [ ] Cross-size distinctness rule werkt voor "headlines verschillen per size" check
-- [ ] Smoke in Linfi: display-ad scoort + drawer toont per-size breakdown
+- [ ] 16 L1 rules implemented (zie sectie 4.5 tabel) — char-overflow per asset-type, duplicate-detection within-pool, coverage min/full, image-direction-no-text-overlay
+- [ ] 4 L2-judge dimensions implemented: asset-quantity, asset-diversity, asset-quality-per-type, image-direction-multi-aspect
+- [ ] Duplicate-detection gebruikt Jaccard-similarity ≥0.8 als threshold (test fixtures voor edge cases)
+- [ ] Smoke in Linfi: display-ad scoort + drawer toont 16 L1-rules + 4 L2-dimensions met expandable details
+- [ ] Known-good RDA fixture (5 distinct headlines + 5 distinct descriptions + business-name + long-headline + image-direction) scoort ≥80 (Excellent)
+- [ ] Known-broken RDA fixture (5 paraphrased headlines + 3 duplicate descriptions + char-overflow + ALL CAPS) scoort ≤30 (Poor)
 
 ### A.5.3 — Facebook-ad
 

@@ -54,7 +54,6 @@ export function DisplayAdPreview({ isGenerating, heroImage, onAddImage, brandNam
     label: `Description ${n}`,
   }));
   const businessName = useEditableEntry('business-name');
-  const imageDirection = useEditableEntry('image');
 
   const name = brandName ?? 'Brand Name';
   const initial = name.charAt(0).toUpperCase();
@@ -107,33 +106,18 @@ export function DisplayAdPreview({ isGenerating, heroImage, onAddImage, brandNam
         </div>
       </AssetSection>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <AssetSection icon={Tag} title="Business name" subtitle="≤25 chars · appears in ad header">
-          {businessName ? (
-            <InlineEditableSection
-              entry={businessName}
-              render={(text) => (
-                <p className="text-base font-semibold text-gray-900">{stripMarkdownForPlainText(text)}</p>
-              )}
-            />
-          ) : (
-            <EmptySlotMessage required label="Business name" />
-          )}
-        </AssetSection>
-
-        <AssetSection icon={ImageIcon} title="Image direction" subtitle="Used for landscape 1.91:1 + square 1:1 crops">
-          {imageDirection ? (
-            <InlineEditableSection
-              entry={imageDirection}
-              render={(text) => (
-                <p className="text-xs text-gray-700 leading-relaxed">{stripMarkdownForPlainText(text)}</p>
-              )}
-            />
-          ) : (
-            <EmptySlotMessage label="Image direction" />
-          )}
-        </AssetSection>
-      </div>
+      <AssetSection icon={Tag} title="Business name" subtitle="≤25 chars · appears in ad header">
+        {businessName ? (
+          <InlineEditableSection
+            entry={businessName}
+            render={(text) => (
+              <p className="text-base font-semibold text-gray-900">{stripMarkdownForPlainText(text)}</p>
+            )}
+          />
+        ) : (
+          <EmptySlotMessage required label="Business name" />
+        )}
+      </AssetSection>
 
       <AssetSection icon={ImageIcon} title="Sample rendering" subtitle="How Google might compose your assets in an in-feed placement">
         <SampleAdCard
