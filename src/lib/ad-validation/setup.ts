@@ -19,6 +19,10 @@ import { facebookAdRules } from './rules/meta/facebook-ad';
 import { metaFacebookAdJudge } from './judge/meta-facebook-judge';
 import { linkedinAdRules } from './rules/linkedin/linkedin-ad';
 import { linkedinAdJudge } from './judge/linkedin-ad-judge';
+import { nativeAdRules } from './rules/native/native-ad';
+import { nativeAdJudge } from './judge/native-ad-judge';
+import { retargetingAdRules } from './rules/meta/retargeting-ad';
+import { retargetingAdJudge } from './judge/retargeting-ad-judge';
 
 let isRegistered = false;
 
@@ -56,8 +60,25 @@ export function setupAdValidators(): void {
     weights: { l1: 0.40, l2: 0.60 },
   });
 
-  // Future: native-ad, retargeting-ad — registered in volgende
-  // sub-fases (eigen judge dimensions per spec).
+  // A.5.5 — native-ad (publisher-style sponsored article).
+  // L1=0.40/L2=0.60 — structural rules (brand-position, mention-count,
+  // disclosure) zijn hard, maar editorial naturalness is L2-dominant.
+  registerValidator('native-ad', {
+    rules: nativeAdRules,
+    judge: nativeAdJudge,
+    weights: { l1: 0.4, l2: 0.6 },
+  });
+
+  // A.5.6 — retargeting-ad (Meta, 3 audience scenarios × 6 fields).
+  // L1=0.35/L2=0.65 — scenario-emotional-fit en novelty/objection-
+  // removal zijn primair semantische judgements; structural rules
+  // (no-discount op past-customer, no-urgency op cart-abandoner)
+  // zijn hard maar dekken slechts deelaspect.
+  registerValidator('retargeting-ad', {
+    rules: retargetingAdRules,
+    judge: retargetingAdJudge,
+    weights: { l1: 0.35, l2: 0.65 },
+  });
 
   isRegistered = true;
 }

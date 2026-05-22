@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 265. Ad-quality A.5.5 + A.5.6 — native-ad + retargeting-ad validators
+
+Quality validation layer uitgebreid van 4 ad-types (search/display/facebook/linkedin) naar 6 met two new validators die structureel afwijken van de eerder geland set. **native-ad** volgt journalism rules in plaats van advertising rules: 13 L1-rules enforce dat headline + opening-paragraph zonder brand-mention werken, totaal brand-mentions ≤2 in body+brand-integration+closing (BuzzFeed Principle), en closing-takeaway geen sales-pitch is. L2-judge meet 4 editorial dimensions: editorial-voice-match, value-first-not-sales, brand-integration-naturalness, buzzfeed-principle (zou een lezer dit sharen zónder brand?). Weights L1=0.40/L2=0.60. **retargeting-ad** dekt 18 named groups (3 audience-scenarios × 6 fields) met scenario-aware rules: cart-abandoner mag geen aggressive urgency ("LAST CHANCE") gebruiken en moet specifieke friction adresseren (shipping/return/trust/payment-keyword), page-visitor moet new-angle hebben (Jaccard <0.6 met cart-abandoner copy), past-customer mag geen discount-language hebben (verspilt marge op trusted audience) en moet novelty leveren. L2-judge meet 4 scenario-fit dimensions: scenario-emotional-fit, friction-removal-precision, new-angle-quality, past-customer-novelty. Weights L1=0.35/L2=0.65 — scenario-fit is primair semantisch. `SUPPORTED_CONTENT_TYPES` in canvas-indicator uitgebreid naar set van 6.
+
+- Task: -
+- ADR: [docs/adr/2026-05-22-ad-quality-validation.md](docs/adr/2026-05-22-ad-quality-validation.md)
+- Spec: [docs/specs/ad-quality-validation.md](docs/specs/ad-quality-validation.md)
+- Commit: _(deze commit)_
+
 ### 264. Brand Assistant context-picker: `StrategyObservation` toegevoegd
 
 Audit van Brand Assistant + Persona chat context-pickers (2026-05-19) wees 1 Tier-1 gap aan: AI-gegenereerde brand observations van Brandclaw Strategy Analyst (Phase A+B) waren wel zichtbaar in Brand Alignment UI, maar niet selecteerbaar als context in de chat. Nieuwe `ContextModule` `'observations'` toegevoegd (hardcoded Claw-pattern, geen `CONTEXT_REGISTRY`-entry — Persona chat / Canvas hebben observations niet nodig). Module is opt-in (niet in `DEFAULT_CONTEXT_MODULES`), drillable per observation, met `dismissedAt: null` default-filter die door explicit entity-IDs wordt overruled. Tier-2 cleanups (`Campaign` naar registry, `Deliverable` workspaceFilter-workaround) zijn vastgelegd als follow-up-tasks. Smoke partial: stap 1-5 runtime OK; 6-10 niet uitvoerbaar omdat er nog 0 observations in de hele DB bestaan (Strategy Analyst nog nooit gedraaid — geen manual trigger, Phase C cron niet live). Implementatie volgt 1:1 het bewezen `fetchTrendContext`-pattern.
