@@ -7,6 +7,7 @@ import { LinkedInPollPreview } from './LinkedInPollPreview';
 import { InstagramPostPreview } from './InstagramPostPreview';
 import { InstagramCarouselPreview } from './InstagramCarouselPreview';
 import { FacebookPostPreview } from './FacebookPostPreview';
+import { FacebookAdPreview } from './FacebookAdPreview';
 import { XPostPreview } from './XPostPreview';
 import { XThreadPreview } from './XThreadPreview';
 import { EmailPreview } from './EmailPreview';
@@ -53,7 +54,7 @@ const PLATFORM_PREVIEW_MAP: Record<string, Record<string, PreviewRegistryEntry>>
   },
   facebook: {
     'organic-post': { component: FacebookPostPreview, label: 'Facebook Post' },
-    ad: { component: FacebookPostPreview, label: 'Facebook Ad' },
+    ad: { component: FacebookAdPreview, label: 'Facebook Ad' },
   },
   x: {
     post: { component: XPostPreview, label: 'X Post' },
@@ -88,6 +89,7 @@ const CONTENT_TYPE_PREVIEW_MAP: Record<string, PreviewRegistryEntry> = {
   'instagram-post': { component: InstagramPostPreview, label: 'Instagram Post' },
   'instagram-carousel': { component: InstagramCarouselPreview, label: 'Instagram Carousel' },
   'facebook-post': { component: FacebookPostPreview, label: 'Facebook Post' },
+  'facebook-ad': { component: FacebookAdPreview, label: 'Facebook Ad' },
   'x-post': { component: XPostPreview, label: 'X Post' },
   'twitter-thread': { component: XThreadPreview, label: 'X Thread' },
   'video-script': { component: VideoPreview, label: 'Video Script' },

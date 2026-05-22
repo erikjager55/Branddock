@@ -424,6 +424,24 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     exportFormats: LINKEDIN_DEFAULTS.exportFormats,
   },
   {
+    id: "facebook-ad",
+    name: "Facebook Sponsored Post",
+    description: "Paid Meta link-card ad (Facebook + Instagram feed)",
+    category: "Advertising & Paid",
+    funnelStage: "conversion",
+    outputFormats: ["Text", "Image"],
+    icon: "Facebook",
+    constraints: { minWords: 15, maxWords: 50, maxChars: 220 },
+    qualityCriteria: [
+      { name: 'Hook Strength', weight: 0.30, description: 'First 75 chars stop the scroll before See more fold' },
+      { name: 'Conversion Focus', weight: 0.25, description: 'CTA-body alignment, button matches funnel stage' },
+      { name: 'Platform Compliance', weight: 0.20, description: 'Meta ad policies, <20% text-on-image, char-caps per veld' },
+      { name: 'Targeting Precision', weight: 0.15, description: 'Audience relevance, persona alignment' },
+      { name: 'Creative Impact', weight: 0.10, description: 'Image-text synergy, mobile-first readability' },
+    ],
+    exportFormats: SOCIAL_MEDIA_DEFAULTS.exportFormats,
+  },
+  {
     // 2026-05-19 nieuw content-type (split-out van linkedin-ad video-ad
     // subformat). Eigen content-type heeft eigen prompt, eigen video-
     // generation pipeline via VIDEO_ADJACENT_TYPES, eigen checklist.

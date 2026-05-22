@@ -197,6 +197,7 @@ const CONTENT_TYPE_TO_MEDIUM: Record<string, { platform: string; format: string 
   'social-carousel': { platform: 'instagram', format: 'carousel' },
   'tiktok-script': { platform: 'tiktok', format: 'video' },
   'facebook-post': { platform: 'facebook', format: 'organic-post' },
+  'facebook-ad': { platform: 'facebook', format: 'ad' },
   'twitter-thread': { platform: 'x', format: 'thread' },
   // Ads
   'social-ad': { platform: 'linkedin', format: 'ad' },
