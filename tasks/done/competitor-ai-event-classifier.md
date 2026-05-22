@@ -3,11 +3,11 @@ id: competitor-ai-event-classifier
 title: Competitor AI-event-classifier — pattern-detection bovenop diff-engine
 fase: pre-launch
 priority: now
-effort: 3-4 dagen
+effort: 3-4 dagen (werkelijk: ~1d)
 owner: claude-code
-status: open
+status: done
 created: 2026-05-12
-completed: -
+completed: 2026-05-19
 related-adr: 2026-05-08-competitor-snapshot-historie
 related-spec: tasks/_drafts/idea-competitor-ai-event-classifier.md
 worktree: branddock-brandclaw
@@ -111,3 +111,35 @@ A1 validatie-probe al uitgevoerd 2026-05-08 — zie `docs/audits/2026-05-08-comp
 Idea-draft (180+ regels) blijft als detailed reference in `tasks/_drafts/idea-competitor-ai-event-classifier.md`.
 
 Volgorde binnen Track B: na `brandclaw-tool-orchestrator` (3-5d). Parallel mogelijk met Strategy Analyst Phase A want raakt verschillende bestanden.
+
+---
+
+## Implementatie-summary (2026-05-19)
+
+**Architectuur**: classifier-call zit BUITEN `prisma.$transaction` (refresh-route stap 8, vóór de TX). Async wrapper `computeDiffWithClassifier` runt deterministische `computeDiff` + (opt-in) AI classifier, concat'eert events. `applyCompetitorRefreshDualWrite` kreeg optionele `precomputedDetected?: DetectedActivity[]` param zodat hij z'n interne `computeDiff` skipt.
+
+**Implementatie-afwijkingen vs initiële spec**:
+- **Geen severity-downgrade bij confidence < 0,7** — alleen `[low-confidence]` summary-prefix. Per A1-audit-aanbeveling: confidence-spread 0,92-0,98 is te smal voor zinvol thresholding. Re-evaluate post-launch na 30d productie-data.
+- **Hardcoded model `claude-haiku-4-5-20251001`** — geen feature-models registry entry (gebruiker-keuze voor MVP-eenvoud).
+- **`PatternChangePayload.fields`** is candidate-fields, niet actual-driver-fields (rationale bevat de echte uitleg).
+
+**Files gewijzigd**:
+- NEW: `src/lib/competitors/ai-classifier.ts` (~280 LOC) — classifier core + Jaccard pre-filter + SYSTEM_PROMPT (identiek aan probe)
+- NEW: `scripts/smoke-tests/competitor-ai-classifier.ts` (~210 LOC) — 5 scenarios incl NL-fixture
+- MOD: `src/lib/competitors/types.ts` — `PatternChangePayload` + `'ai-classified'` detectionMethod + `ClassifierFn` type
+- MOD: `src/lib/competitors/diff-engine.ts` — async `computeDiffWithClassifier` wrapper
+- MOD: `src/lib/competitors/refresh-write.ts` — `precomputedDetected` optional param
+- MOD: `src/app/api/competitors/[id]/refresh/route.ts` — wrapper-call vóór TX
+
+**Quality gates**:
+- `npx tsc --noEmit` 0 errors
+- `npx eslint` 0 errors, 0 warnings
+- Probe re-run: 29/30 = 96,7% accuracy (identiek aan 2026-05-08 baseline, geen Haiku-drift)
+- Smoke: 15/15 PASS over 5 scenarios
+
+**Code review**: 2 rondes (4 subagents), 0 CRITICAL final. WARNINGs deels gefixt (timeout, schema-mismatch logging, enum-key brittleness, tokenize short tokens, JSDoc precomputed contract), deels expliciet als MVP-trade-off geaccepteerd (mainOfferings blind spot, console.warn-zonder-PostHog, smoke structural-equality gaps).
+
+**Open follow-ups** (uit code-review, expliciet niet geblokt):
+- Pre-filter mainOfferings-uitbreiding overwegen na 30d skip-rate data
+- Classifier-error observability naar PostHog/Sentry (MVP gebruikt Vercel logs)
+- Sourceidentifier in classifier hardcoded path — overweeg `__filename` bij rename-risico

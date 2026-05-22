@@ -29,7 +29,7 @@ import type { Prisma } from '@prisma/client';
 import { computeDiff } from './diff-engine';
 import type {
   CanonicalExtracted,
-  ManualEventContext,
+  DetectedActivity,
 } from './types';
 
 // Het project gebruikt een geëxtende PrismaClient via
@@ -73,11 +73,30 @@ export interface DualWriteParams {
     | 'GOOGLE_ALERT';
   triggeredById: string | null;
   scrapedJsonInfo: Prisma.InputJsonValue | undefined;
+
+  /**
+   * Optional: caller heeft de detection al berekend (typisch via
+   * `computeDiffWithClassifier` om de async AI-classifier-call BUITEN
+   * de TX uit te voeren). Indien gegeven slaat dual-write zijn eigen
+   * `computeDiff`-call over en gebruikt deze events. Bevat zowel
+   * deterministische als AI-classified events.
+   *
+   * **Caller-contract**: deze events MOETEN berekend zijn met DEZELFDE
+   * `workflowBefore` / `workflowAfter` als hierboven doorgegeven —
+   * dual-write valideert dat niet runtime. Een mismatch produceert
+   * stille missing of stale STATUS_CHANGED / TIER_CHANGED events.
+   * Een lege array `[]` is een geldige "geen events" precomputed-input
+   * en triggert geen fallback naar `computeDiff`.
+   */
+  precomputedDetected?: DetectedActivity[];
 }
 
 export interface DualWriteOutcome {
   outcome: 'snapshot-written' | 'no-op-hash-match';
   activitiesCreated: number;
+  /** Volledige set gedetecteerde activities — caller gebruikt dit
+   *  na de transactie voor side-effects (notificaties bij MAJOR). */
+  detected: DetectedActivity[];
   /** Geüpdate competitor-row na de transactie. Caller hoeft geen
    *  aparte findUnique meer te doen voor de response payload. */
   competitor: Awaited<ReturnType<PrismaTxClient['competitor']['update']>>;
@@ -125,10 +144,12 @@ export async function applyCompetitorRefreshDualWrite(
     signalSource,
     triggeredById,
     scrapedJsonInfo,
+    precomputedDetected,
   } = params;
 
-  const workflowCtx: ManualEventContext = { workflowBefore, workflowAfter };
-  const detected = computeDiff(prevCanonical, nextCanonical, workflowCtx);
+  const detected =
+    precomputedDetected ??
+    computeDiff(prevCanonical, nextCanonical, { workflowBefore, workflowAfter });
 
   // Hash-match check — als er al een snapshot met deze contentHash
   // bestaat is dit een no-op (refresh op identieke content).
@@ -231,6 +252,7 @@ export async function applyCompetitorRefreshDualWrite(
   return {
     outcome,
     activitiesCreated: detected.length,
+    detected,
     competitor: updatedCompetitor,
   };
 }

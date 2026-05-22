@@ -6,6 +6,7 @@ import { EmptyState, SkeletonCard, StatCard, Button, Badge, Card } from "@/compo
 import { PageShell, PageHeader } from "@/components/ui/layout";
 import { useCompetitors, useDiscoverCompetitors, useCreateCompetitor } from "../hooks";
 import { CompetitorCard } from "./CompetitorCard";
+import { CompetitorActivityDigest } from "./CompetitorActivityDigest";
 import type { DiscoveredCompetitor } from "../api/competitors.api";
 
 interface CompetitorsOverviewPageProps {
@@ -139,6 +140,9 @@ export function CompetitorsOverviewPage({
             {discover.error instanceof Error ? discover.error.message : 'Failed to discover competitors'}
           </div>
         )}
+
+        {/* Activity digest */}
+        <CompetitorActivityDigest onNavigateToDetail={onNavigateToDetail} />
 
         {/* Stats */}
         {stats && (

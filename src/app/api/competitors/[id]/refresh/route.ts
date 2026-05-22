@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { withAiRateLimit } from "@/lib/ai/middleware";
-import { scrapeProductUrl } from "@/lib/products/url-scraper";
-import { scrapeUrlViaGemini } from "@/lib/products/gemini-url-fallback";
+import { runScraperChain } from "@/lib/scraping/scraper-chain";
 import { createStructuredCompletion } from "@/lib/ai/exploration/ai-caller";
 import { getBrandContext } from "@/lib/ai/brand-context";
 import { formatBrandContext } from "@/lib/ai/prompt-templates";
@@ -24,7 +23,10 @@ import {
   applyCompetitorRefreshDualWrite,
   safeSocialLinks,
 } from "@/lib/competitors/refresh-write";
-import type { CanonicalExtracted } from "@/lib/competitors/types";
+import { computeDiffWithClassifier } from "@/lib/competitors/diff-engine";
+import { classifyPatternEvents } from "@/lib/competitors/ai-classifier";
+import { notifyMajorEvents } from "@/lib/competitors/notify-major-events";
+import type { CanonicalExtracted, ClassifierFn } from "@/lib/competitors/types";
 import type { Prisma } from "@prisma/client";
 
 /**
@@ -85,19 +87,19 @@ export async function POST(
       return NextResponse.json({ error: "No website URL to refresh from" }, { status: 400 });
     }
 
-    // 1. Scrape (direct fetch, fallback to Gemini if blocked)
-    let scraped;
-    try {
-      scraped = await scrapeProductUrl(existing.websiteUrl);
-    } catch {
-      scraped = await scrapeUrlViaGemini(existing.websiteUrl);
-    }
+    // 1. Scrape via 3-step fallback chain (current → Apify → Gemini).
+    //    Zie `src/lib/scraping/scraper-chain.ts` voor volgorde-rationale.
+    const { scraped, scraperUsed } = await runScraperChain(existing.websiteUrl);
     if (!scraped.bodyText || scraped.bodyText.length < 50) {
       return NextResponse.json(
         { error: "Not enough content found on the website to analyze" },
         { status: 422 },
       );
     }
+
+    console.info(
+      `[competitors/refresh] scrape OK via ${scraperUsed} for ${existing.websiteUrl} (${scraped.bodyText.length} chars)`,
+    );
 
     // 2. Brand context (optional)
     let brandContextStr: string | undefined;
@@ -200,7 +202,28 @@ export async function POST(
     //    archived bij refresh (ze zouden anders silent un-archive'd worden).
     const nextStatus = existing.status === 'DRAFT' ? 'ANALYZED' : existing.status;
 
-    // 8. Dual-write transaction — helper handles snapshot, activities,
+    // Single source-of-truth voor workflow-context — gebruikt door zowel de
+    // pre-TX classifier-call (stap 8) als de dual-write (stap 9). Houden ze
+    // identiek anders zou een mismatch silent missing STATUS_CHANGED /
+    // TIER_CHANGED events produceren (caller-contract op precomputedDetected).
+    const workflowBefore = { status: existing.status, tier: existing.tier };
+    const workflowAfter = { status: nextStatus, tier: existing.tier };
+
+    // 8. Compute events BUITEN de transactie — wrapper runt deterministische
+    //    diff-rules + (opt-in) AI pattern-classifier. AI-call mag NOOIT
+    //    binnen prisma.$transaction omdat een 1-2s netwerk-IO de TX-locks
+    //    onnodig vasthoudt. Classifier-error is graceful: alleen
+    //    deterministic events worden geretourneerd.
+    const classifier: ClassifierFn = (prev, next) =>
+      classifyPatternEvents(prev, next, { workspaceId, competitorId: id });
+    const precomputedDetected = await computeDiffWithClassifier(
+      prevCanonical,
+      nextCanonical,
+      { workflowBefore, workflowAfter },
+      { classifier, competitorId: id },
+    );
+
+    // 9. Dual-write transaction — helper handles snapshot, activities,
     //    pointer update + collision-detection. Cast naar TransactionClient:
     //    extension `withTokenEncryption` produceert een DynamicClientExtension
     //    type-shape die structureel compatible is voor onze 3 modellen, maar
@@ -209,8 +232,8 @@ export async function POST(
       applyCompetitorRefreshDualWrite(tx as unknown as Prisma.TransactionClient, {
         competitorId: id,
         workspaceId,
-        workflowBefore: { status: existing.status, tier: existing.tier },
-        workflowAfter: { status: nextStatus, tier: existing.tier },
+        workflowBefore,
+        workflowAfter,
         prevCanonical,
         nextCanonical,
         newContentHash,
@@ -224,11 +247,23 @@ export async function POST(
           description: scraped.description ?? null,
           bodyTextLength: scraped.bodyText.length,
         },
+        precomputedDetected,
       }),
     );
 
     invalidateCache(cacheKeys.prefixes.competitors(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
+    // Fire-and-forget notifications voor MAJOR-events. Wachten op
+    // email-IO zou de refresh-response onnodig vertragen.
+    if (writeResult.detected.some((d) => d.severity === 'MAJOR')) {
+      void notifyMajorEvents({
+        workspaceId,
+        competitorId: id,
+        competitorName: writeResult.competitor.name,
+        activities: writeResult.detected,
+      });
+    }
 
     return NextResponse.json({
       ...writeResult.competitor,

@@ -17,6 +17,7 @@ export async function GET() {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     const [
       draftAssets,
@@ -25,6 +26,7 @@ export async function GET() {
       urgentCampaigns,
       campaignsWithoutDeliverables,
       lastScan,
+      majorCompetitorActivities,
     ] = await Promise.all([
       // Brand assets not READY → priority 4
       prisma.brandAsset.findMany({
@@ -66,6 +68,18 @@ export async function GET() {
         orderBy: { startedAt: 'desc' },
         select: { startedAt: true },
       }),
+      // Unacknowledged MAJOR competitor activities ≤ 7 days → priority 2
+      prisma.competitorActivity.findMany({
+        where: {
+          workspaceId,
+          severity: 'MAJOR',
+          acknowledgedAt: null,
+          detectedAt: { gte: sevenDaysAgo },
+        },
+        orderBy: { detectedAt: 'desc' },
+        take: 3,
+        include: { competitor: { select: { id: true, name: true } } },
+      }),
     ]);
 
     const items: AttentionItem[] = [];
@@ -84,6 +98,23 @@ export async function GET() {
         actionType: 'fix',
         actionLabel: 'Review',
         actionHref: 'campaign-detail',
+      });
+    }
+
+    // MAJOR competitor activities (priority 2)
+    for (const act of majorCompetitorActivities) {
+      items.push({
+        id: `competitor-activity-${act.id}`,
+        entityId: act.competitor.id,
+        entityType: 'competitor',
+        priority: 2,
+        title: act.competitor.name,
+        description: act.summary.slice(0, 120),
+        icon: 'AlertTriangle',
+        iconColor: 'text-red-500',
+        actionType: 'fix',
+        actionLabel: 'Review',
+        actionHref: 'competitor-detail',
       });
     }
 
