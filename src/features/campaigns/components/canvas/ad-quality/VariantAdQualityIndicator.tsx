@@ -19,7 +19,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { AdQualityBadge, AdQualityBadgeSkeleton } from './AdQualityBadge';
 import { AdQualityDrawer } from './AdQualityDrawer';
 import { useAdQualityScore, triggerAdQualityScore } from './useAdQualityScore';
-import { isFallback, type AdQualityLabel, type L2JudgeResult, type RuleResult } from '@/lib/ad-validation';
+import { isFallback, type AdQualityLabel, type L2JudgeResult, type RuleResult } from '@/lib/ad-validation/types';
 
 // Keep in sync with src/lib/ad-validation/setup.ts registrations.
 const SUPPORTED_CONTENT_TYPES = new Set<string>(['search-ad']);

@@ -17,7 +17,7 @@
 
 import React from 'react';
 import { Sparkles, AlertTriangle } from 'lucide-react';
-import type { AdQualityLabel } from '@/lib/ad-validation';
+import type { AdQualityLabel } from '@/lib/ad-validation/types';
 
 interface AdQualityBadgeProps {
   score: number;

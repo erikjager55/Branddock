@@ -16,8 +16,8 @@
 
 import React, { useState } from 'react';
 import { CheckCircle2, AlertTriangle, XCircle, ChevronRight, AlertCircle } from 'lucide-react';
-import type { RuleResult, RuleCategory, RuleStatus, L2JudgeResult } from '@/lib/ad-validation';
-import { isFallback } from '@/lib/ad-validation';
+import type { RuleResult, RuleCategory, RuleStatus, L2JudgeResult } from '@/lib/ad-validation/types';
+import { isFallback } from '@/lib/ad-validation/types';
 
 interface AdQualityDrawerProps {
   open: boolean;
