@@ -119,3 +119,37 @@ Toekomstige vervolg-ADRs te verwachten:
 - L3 Marketing API integration: ground-truth Ad Strength scores rechtstreeks uit Google/Meta na Fase B publish-pipeline live is.
 - AI improvement-engine architectuur — gebruikt quality-scores als signal voor welke ads een rewrite-cycle verdienen.
 - `AdQualityScore` Prisma-model voor persistente score-history per deliverable + variant.
+
+---
+
+## Addendum 2026-05-22 — Display-ad dimensions update na RDA migration
+
+**Context**: Op dezelfde dag dat deze ADR is geschreven werd display-ad gemigreerd van een legacy 3-fixed-size banner-brief (728×90 + 300×250 + 160×600) naar Google's current Responsive Display Ads (RDA) asset-library paradigm. Zie commit `10ff435e` en memory [[branddock-display-ad-rda-migration-2026-05-22]].
+
+**Impact op deze ADR**: De display-ad L2-judge dimensions die in deze ADR genoemd zijn — `visual-text-fit / scanning-pattern-fit / headline-distinction-across-sizes` — zijn **OBSOLETE** voor RDA omdat:
+- Er zijn geen vaste sizes meer (Google's ML composeert assets per placement)
+- `scanning-pattern-fit` heeft geen betekenis zonder vaste banner-layouts
+- `headline-distinction-across-sizes` is vervangen door distinction-binnen-de-asset-pool (5 short-headlines moeten 5 verschillende hook-angles zijn)
+
+**Nieuwe dimensions voor `google/display-ad` L2-judge** (vervangen de eerdere drie):
+- `asset-quantity` — count short-headlines + descriptions (target: 5 elk voor "Excellent")
+- `asset-diversity` — zijn de 5 short-headlines fundamenteel verschillende hook-angles (claim/question/stat/contrarian/outcome), of zijn ze paraphrases van één angle?
+- `asset-quality-per-type` — readability + value-prop clarity per slot, geaggregeerd
+- `image-direction-multi-aspect` — werkt de art-direction in zowel landscape (1.91:1) als square (1:1) crops?
+
+**L1 rules voor RDA** (vervangen de eerdere `distinct-headlines-across-sizes` etc.):
+- Char-overflow per asset-type (30/90/25 ipv 25/35/15)
+- All-CAPS / `!` / banned-superlatives over ALLE assets
+- `duplicate-headlines-within-pool` — exact-of-quasi-duplicate detection binnen de 5 short-headline slots
+- `duplicate-descriptions-within-pool` — idem voor descriptions
+- `coverage-headlines-recommended` — 5/5 short-headlines voor "Excellent" Ad Strength
+- `coverage-descriptions-recommended` — 5/5 descriptions
+- `has-long-headline-required` — long-headline aanwezig
+- `has-business-name-required` — business-name aanwezig
+- `image-direction-no-text-overlay-warning` — regex-check op "text overlay", "logo top", etc. in image-direction prose (>20% text-on-image is Google policy violation)
+
+**Aggregate-weights voor `google/display-ad`** blijven `L1_WEIGHT: 0.35 / L2_WEIGHT: 0.65` (semantic visual-text-fit oordeel was/is zwaarder dan mechanical).
+
+**Score-aggregatie methodologie** blijft consistent met deze ADR's hoofdtekst — Ad Strength mapping naar Poor/Average/Good/Excellent labels via 0-25/26-50/51-75/76-100 thresholds.
+
+**Volgt nog**: feature-spec [`docs/specs/ad-quality-validation.md`](../specs/ad-quality-validation.md) sectie 4.4 ("L1 rule-sets per ad-type — placeholders" voor display-ad) en sectie 9 (A.5.2 — Display-ad implementation phase) moeten geactualiseerd worden met deze RDA-aligned regels. Niet in scope van dit addendum — wordt opgepakt bij A.5.2 implementatie.
