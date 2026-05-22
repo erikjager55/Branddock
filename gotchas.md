@@ -165,3 +165,14 @@ PostToolUse hook (`post-edit-typecheck.sh`) DOES already run `npx eslint --fix` 
 - Roep hooks NOOIT aan in `.map()`, `.filter()`, `for`/`while`, of conditionals. Voor N gelijksoortige hook-calls: schrijf N expliciete aanroepingen + assemble naar array daarna.
 - Vóór elke push naar main: run lokaal `npx eslint <gewijzigde-files>` als laatste check naast `npx tsc --noEmit`. TS-check vangt type-fouten; ESLint vangt React-rules + style-violations die tsc ontgaan.
 - Voor toekomst: overweeg `blocking: true` op de post-edit hook voor "error"-level lint-output (niet warnings). Of: pre-push git hook met `npm run lint --silent` die push blokkeert bij errors.
+
+## 2026-05-22: Client component import-chain trekt server-only modules (`tls`/`pg`/`prisma`) in browser bundle
+**What went wrong**: Step2ContentVariants (client component, `'use client'`) importeerde `VariantAdQualityIndicator` die `isFallback` haalde uit `@/lib/ad-validation` (barrel `index.ts`). Die barrel re-exports `runner.ts` (server-only — imports `prisma` → `pg` → `tls`). Next.js build crashte met `Module not found: Can't resolve 'tls'` ondanks `npx tsc --noEmit` exit 0 en `npm run lint` 0 errors. Type-check + lint vangen dit NIET — alleen de Next-build bundler-resolve doet dat.
+
+Import-chain trace: client component → barrel `@/lib/ad-validation` → `runner.ts` → `@/lib/prisma` → `pg` → `tls` (Node-only API).
+
+**Rule**:
+- Client components mogen NOOIT importen via een barrel die server-only modules re-exports. Voor types + pure-data utilities (type guards zoals `isFallback`, constants, enums): import direct vanuit subpath (`@/lib/X/types`), niet via barrel.
+- Library design: split barrel als type/runtime grens niet duidelijk is. Pattern: `lib/X/types.ts` (client-safe) + `lib/X/server.ts` (Node-only) + `lib/X/index.ts` (re-exports beide, alleen voor server-side gebruik).
+- Vóór elke push die runner / Prisma / pg / fs / tls / crypto raakt: run lokaal `DATABASE_URL=... BETTER_AUTH_SECRET=... npm run build` — duurt ~1-2 min maar vangt bundler-resolve issues die tsc + eslint missen.
+- Pre-existing PostToolUse hook runt geen build (terecht — te duur per-edit). Pre-push hook met `npm run build --silent` is een toekomstige defense-laag voor projecten die client/server-grens-fouten vaak missen.

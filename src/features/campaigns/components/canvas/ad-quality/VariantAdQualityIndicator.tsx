@@ -22,7 +22,7 @@ import { useAdQualityScore, triggerAdQualityScore } from './useAdQualityScore';
 import { isFallback, type AdQualityLabel, type L2JudgeResult, type RuleResult } from '@/lib/ad-validation/types';
 
 // Keep in sync with src/lib/ad-validation/setup.ts registrations.
-const SUPPORTED_CONTENT_TYPES = new Set<string>(['search-ad']);
+const SUPPORTED_CONTENT_TYPES = new Set<string>(['search-ad', 'display-ad']);
 
 interface VariantAdQualityIndicatorProps {
   deliverableId: string;
