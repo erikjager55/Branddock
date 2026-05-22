@@ -405,8 +405,10 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
           2026-05-19 — hidden for video-script types (per-scene visuals
           take over in Step 2) AND for linkedin-poll (LinkedIn polls cannot
           attach images — showing the slot misleads the user into
-          generating a visual that never lands). */}
-      {!(contentType && (VIDEO_ADJACENT_TYPES.has(contentType) || contentType === 'linkedin-poll')) && <VisualBriefSection />}
+          generating a visual that never lands).
+          2026-05-22 — added search-ad (text-only Google SERP ads, no image
+          rendered in preview). */}
+      {!(contentType && (VIDEO_ADJACENT_TYPES.has(contentType) || contentType === 'linkedin-poll' || contentType === 'search-ad')) && <VisualBriefSection />}
 
       {/* Knowledge context */}
       {additionalContextItems.size > 0 && (

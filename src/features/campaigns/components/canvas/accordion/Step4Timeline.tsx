@@ -210,6 +210,53 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         case 'char-limit':
           passed = !charLimit || charCount <= charLimit;
           break;
+        // 2026-05-22 — Google Search Ad (RSA) check-cases. Per-field
+        // structure (headline-1..3, description-1..2, path-1/2,
+        // sitelink-N-*) so the generic has-body etc. don't apply.
+        case 'has-search-headlines': {
+          const filled = ['headline-1', 'headline-2', 'headline-3'].filter(
+            (g) => (previewContent[g]?.content?.trim().length ?? 0) > 0,
+          ).length;
+          passed = filled >= 3;
+          break;
+        }
+        case 'has-search-descriptions': {
+          const filled = ['description-1', 'description-2'].filter(
+            (g) => (previewContent[g]?.content?.trim().length ?? 0) > 0,
+          ).length;
+          passed = filled >= 2;
+          break;
+        }
+        case 'has-search-paths': {
+          const filled = ['path-1', 'path-2'].filter(
+            (g) => (previewContent[g]?.content?.trim().length ?? 0) > 0,
+          ).length;
+          passed = filled >= 1;
+          break;
+        }
+        case 'has-search-sitelinks': {
+          const completeCount = [1, 2, 3, 4].filter((n) =>
+            (previewContent[`sitelink-${n}-title`]?.content?.trim().length ?? 0) > 0 &&
+            (previewContent[`sitelink-${n}-description`]?.content?.trim().length ?? 0) > 0,
+          ).length;
+          passed = completeCount >= 1;
+          break;
+        }
+        case 'search-char-limits': {
+          // Hard caps per Google RSA spec
+          const caps: Record<string, number> = {
+            'headline-1': 30, 'headline-2': 30, 'headline-3': 30,
+            'description-1': 90, 'description-2': 90,
+            'path-1': 15, 'path-2': 15,
+            'sitelink-1-title': 25, 'sitelink-2-title': 25, 'sitelink-3-title': 25, 'sitelink-4-title': 25,
+            'sitelink-1-description': 35, 'sitelink-2-description': 35, 'sitelink-3-description': 35, 'sitelink-4-description': 35,
+          };
+          passed = Object.entries(caps).every(([group, cap]) => {
+            const content = previewContent[group]?.content ?? '';
+            return content.length <= cap;
+          });
+          break;
+        }
         default:
           passed = false;
       }

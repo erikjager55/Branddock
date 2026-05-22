@@ -453,7 +453,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
           • compose / trained-style → "soon" placeholder
           Refining a generate-source result happens via the FeedbackBar's
           Visual dropdown below. */}
-      {hasVariants && !isGenerating && !hasSceneGroups && contentType !== 'linkedin-poll' && (
+      {hasVariants && !isGenerating && !hasSceneGroups && contentType !== 'linkedin-poll' && contentType !== 'search-ad' && (
         <VisualVariantsBlock
           deliverableId={deliverableId}
           onGenerate={() => handleGenerateVisual()}

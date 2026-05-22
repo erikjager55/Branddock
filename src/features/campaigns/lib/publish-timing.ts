@@ -142,6 +142,22 @@ export function getChecklistForPlatform(
     ];
   }
 
+  // 2026-05-22 — Google Search Ad (RSA) has its own group structure:
+  // headline-1..3 (each ≤30), description-1..2 (each ≤90), path-1/2
+  // (≤15), sitelink-N-title (≤25) + sitelink-N-description (≤35).
+  // Text-only ad — no image. Generic has-body / has-image both
+  // false-flag because the model emits per-field groups, not a
+  // single body. Return a search-ad-specific checklist.
+  if ((platform === 'google' && format === 'search-ad') || contentType === 'search-ad') {
+    return [
+      { id: 'has-search-headlines', label: 'At least 3 headlines provided (each ≤30 chars)', required: true },
+      { id: 'has-search-descriptions', label: 'At least 2 descriptions provided (each ≤90 chars)', required: true },
+      { id: 'has-search-paths', label: 'Display URL paths set (≤15 chars each)', required: false },
+      { id: 'has-search-sitelinks', label: 'At least 1 complete sitelink (title + description)', required: false },
+      { id: 'search-char-limits', label: 'All fields within Google RSA character limits', required: true },
+    ];
+  }
+
   const items: ChecklistItem[] = [
     { id: 'has-body', label: 'Body content is complete', required: true },
   ];
