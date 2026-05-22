@@ -10,6 +10,7 @@ import { VisualFidelityBadge } from '../VisualFidelityBadge';
 import { RefineImageButton } from '../RefineImageButton';
 import { ReuseDetectionBanner } from '../ReuseDetectionBanner';
 import { VisualFidelityDetail } from '../VisualFidelityDetail';
+import { VariantAdQualityIndicator } from '../ad-quality/VariantAdQualityIndicator';
 import { Badge } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { PreviewContent } from '../../../types/canvas.types';
@@ -403,7 +404,20 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
               <div className={`flex items-center justify-between px-3 py-2 text-xs font-semibold ${
                 isSelected ? 'bg-teal-50 text-teal-700' : 'bg-gray-50 text-gray-600'
               }`}>
-                <span>Variant {VARIANT_LABELS[idx] ?? idx + 1}</span>
+                <div className="flex items-center gap-2">
+                  <span>Variant {VARIANT_LABELS[idx] ?? idx + 1}</span>
+                  {/* Ad Quality badge — only for ad content-types with
+                      validators registered (currently search-ad). Auto-
+                      triggers fire-and-forget POST on first render. */}
+                  {contentType && (
+                    <VariantAdQualityIndicator
+                      deliverableId={deliverableId}
+                      variantIndex={idx}
+                      contentType={contentType}
+                      hasContent={!!content && Object.keys(content).length > 0}
+                    />
+                  )}
+                </div>
                 {isSelected && (
                   <Badge variant="success" size="sm">Selected</Badge>
                 )}
