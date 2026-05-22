@@ -158,19 +158,21 @@ export function getChecklistForPlatform(
     ];
   }
 
-  // 2026-05-22 — Google Display Ad has 11 per-size groups: each of
-  // leaderboard (728×90) / rectangle (300×250) / skyscraper (160×600)
-  // emits its own headline + cta + visual-direction (plus body for
-  // rectangle + skyscraper). Generic has-body false-flags because
-  // there is no single body group — only per-size pieces. Image is
-  // shared across sizes.
+  // 2026-05-22 — Google Display Ad migrated to Responsive Display Ads
+  // (RDA) asset-library paradigm. Checklist mirrors Google's own
+  // Ad Strength score components: asset quantity (5 short headlines +
+  // 5 descriptions for "Excellent") + required slots (long-headline,
+  // business-name, image) + char-limits per asset type.
   if ((platform === 'google' && format === 'display-ad') || contentType === 'display-ad') {
     return [
-      { id: 'has-display-headlines', label: 'Headline set for all 3 banner sizes', required: true },
-      { id: 'has-display-ctas', label: 'CTA button set for all 3 banner sizes', required: true },
-      { id: 'has-display-visuals', label: 'Visual direction set for all 3 banner sizes', required: true },
-      { id: 'has-image', label: 'Hero image added', required: true },
-      { id: 'display-char-limits', label: 'All fields within GDN character limits (25/35/15)', required: true },
+      { id: 'has-rda-short-headline-min', label: 'At least 1 short headline (≤30 chars)', required: true },
+      { id: 'has-rda-short-headlines-full', label: 'All 5 short headlines filled (Ad Strength "Excellent" requirement)', required: false },
+      { id: 'has-rda-long-headline', label: 'Long headline filled (≤90 chars)', required: true },
+      { id: 'has-rda-description-min', label: 'At least 1 description (≤90 chars)', required: true },
+      { id: 'has-rda-descriptions-full', label: 'All 5 descriptions filled (boosts Ad Strength)', required: false },
+      { id: 'has-rda-business-name', label: 'Business name set (≤25 chars)', required: true },
+      { id: 'has-image', label: 'Image asset added (landscape 1.91:1 + square 1:1)', required: true },
+      { id: 'rda-char-limits', label: 'All assets within Google RDA character limits', required: true },
     ];
   }
 

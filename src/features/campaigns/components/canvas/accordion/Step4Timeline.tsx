@@ -257,33 +257,51 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           });
           break;
         }
-        // 2026-05-22 — Google Display Ad multi-size per-banner checks.
-        case 'has-display-headlines': {
-          const filled = ['leaderboard-headline', 'rectangle-headline', 'skyscraper-headline'].filter(
-            (g) => (previewContent[g]?.content?.trim().length ?? 0) > 0,
+        // 2026-05-22 — Google Responsive Display Ads (RDA) asset-library
+        // checks. Mirror Google's Ad Strength score components: quantity
+        // of unique assets per type.
+        case 'has-rda-short-headline-min': {
+          const filled = [1, 2, 3, 4, 5].filter(
+            (n) => (previewContent[`short-headline-${n}`]?.content?.trim().length ?? 0) > 0,
           ).length;
-          passed = filled === 3;
+          passed = filled >= 1;
           break;
         }
-        case 'has-display-ctas': {
-          const filled = ['leaderboard-cta', 'rectangle-cta', 'skyscraper-cta'].filter(
-            (g) => (previewContent[g]?.content?.trim().length ?? 0) > 0,
+        case 'has-rda-short-headlines-full': {
+          const filled = [1, 2, 3, 4, 5].filter(
+            (n) => (previewContent[`short-headline-${n}`]?.content?.trim().length ?? 0) > 0,
           ).length;
-          passed = filled === 3;
+          passed = filled === 5;
           break;
         }
-        case 'has-display-visuals': {
-          const filled = ['leaderboard-visual', 'rectangle-visual', 'skyscraper-visual'].filter(
-            (g) => (previewContent[g]?.content?.trim().length ?? 0) > 0,
+        case 'has-rda-long-headline':
+          passed = (previewContent['long-headline']?.content?.trim().length ?? 0) > 0;
+          break;
+        case 'has-rda-description-min': {
+          const filled = [1, 2, 3, 4, 5].filter(
+            (n) => (previewContent[`description-${n}`]?.content?.trim().length ?? 0) > 0,
           ).length;
-          passed = filled === 3;
+          passed = filled >= 1;
           break;
         }
-        case 'display-char-limits': {
+        case 'has-rda-descriptions-full': {
+          const filled = [1, 2, 3, 4, 5].filter(
+            (n) => (previewContent[`description-${n}`]?.content?.trim().length ?? 0) > 0,
+          ).length;
+          passed = filled === 5;
+          break;
+        }
+        case 'has-rda-business-name':
+          passed = (previewContent['business-name']?.content?.trim().length ?? 0) > 0;
+          break;
+        case 'rda-char-limits': {
           const caps: Record<string, number> = {
-            'leaderboard-headline': 25, 'rectangle-headline': 25, 'skyscraper-headline': 25,
-            'rectangle-body': 35, 'skyscraper-body': 35,
-            'leaderboard-cta': 15, 'rectangle-cta': 15, 'skyscraper-cta': 15,
+            'short-headline-1': 30, 'short-headline-2': 30, 'short-headline-3': 30,
+            'short-headline-4': 30, 'short-headline-5': 30,
+            'long-headline': 90,
+            'description-1': 90, 'description-2': 90, 'description-3': 90,
+            'description-4': 90, 'description-5': 90,
+            'business-name': 25,
           };
           passed = Object.entries(caps).every(([group, cap]) => {
             const content = previewContent[group]?.content ?? '';

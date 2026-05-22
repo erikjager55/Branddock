@@ -5343,45 +5343,70 @@ Respond only with valid JSON.`,
     {
       platform: "google",
       format: "display-ad",
+      // 2026-05-22 — Migrated from legacy 3-fixed-size brief (leaderboard
+      // + rectangle + skyscraper) to Google's current 2026-standard
+      // Responsive Display Ads (RDA) asset-library paradigm. Google's ML
+      // composes assets dynamically into available placements; quantity
+      // + diversity of unique assets drive Ad Strength score.
       specs: {
-        sizes: [
-          { name: "leaderboard", width: 728, height: 90 },
-          { name: "rectangle", width: 300, height: 250 },
-          { name: "skyscraper", width: 160, height: 600 },
-        ],
-        maxChars: { headline: 25, body: 35, cta: 15 },
-        textOnImageMax: 0.20,
+        format: "responsive-display-ad",
+        maxChars: { shortHeadline: 30, longHeadline: 90, description: 90, businessName: 25 },
+        assetCounts: {
+          shortHeadlines: { min: 1, recommended: 5, max: 5 },
+          longHeadline: { min: 1, max: 1 },
+          descriptions: { min: 1, recommended: 5, max: 5 },
+          businessName: { required: true },
+        },
+        imageAspectRatios: {
+          landscape: { ratio: "1.91:1", recommended: "1200x628", minimum: "600x314", required: true },
+          square: { ratio: "1:1", recommended: "1200x1200", minimum: "300x300", required: true },
+          portrait: { ratio: "4:5", recommended: "1200x1500", minimum: "320x400", required: false },
+        },
+        logoAspectRatios: {
+          square: { ratio: "1:1", recommended: "1200x1200", minimum: "128x128", required: true },
+          wide: { ratio: "4:1", recommended: "1200x300", minimum: "512x128", required: false },
+        },
+        videoSupport: { ratio: "16:9", platform: "YouTube", maxDuration: 30, required: false },
       },
       componentTemplate: [
-        { type: "leaderboard-headline", required: true, maxLength: 25 },
-        { type: "leaderboard-cta", required: true, maxLength: 15 },
-        { type: "leaderboard-visual", required: true, maxLength: 250 },
-        { type: "rectangle-headline", required: true, maxLength: 25 },
-        { type: "rectangle-body", required: true, maxLength: 35 },
-        { type: "rectangle-cta", required: true, maxLength: 15 },
-        { type: "rectangle-visual", required: true, maxLength: 250 },
-        { type: "skyscraper-headline", required: true, maxLength: 25 },
-        { type: "skyscraper-body", required: true, maxLength: 35 },
-        { type: "skyscraper-cta", required: true, maxLength: 15 },
-        { type: "skyscraper-visual", required: true, maxLength: 250 },
+        // 5 short headlines — Google rotates pairs; diversity > repetition.
+        // First is required for Ad Strength minimum; rest optional but
+        // filling all 5 drives Ad Strength to Excellent.
+        { type: "short-headline-1", required: true, maxLength: 30 },
+        { type: "short-headline-2", required: false, maxLength: 30 },
+        { type: "short-headline-3", required: false, maxLength: 30 },
+        { type: "short-headline-4", required: false, maxLength: 30 },
+        { type: "short-headline-5", required: false, maxLength: 30 },
+        // Long headline — single, used when ad-placement allows longer text.
+        { type: "long-headline", required: true, maxLength: 90 },
+        // 5 descriptions — same rotation logic as headlines.
+        { type: "description-1", required: true, maxLength: 90 },
+        { type: "description-2", required: false, maxLength: 90 },
+        { type: "description-3", required: false, maxLength: 90 },
+        { type: "description-4", required: false, maxLength: 90 },
+        { type: "description-5", required: false, maxLength: 90 },
+        // Business name — appears in headers of rendered ads.
+        { type: "business-name", required: true, maxLength: 25 },
+        // Image marker — visual pipeline produces landscape + square crops.
         { type: "image", required: true },
       ],
       bestPractices: [
-        "Leaderboard 728x90: headline-only execution; no room for body. Horizontal scan, left-to-right",
-        "Medium rectangle 300x250: most versatile; image-top + headline-center + body + CTA-bottom. Vertical scan",
-        "Skyscraper 160x600: vertical stack — logo top, image middle, headline below, CTA bottom",
-        "Headlines max 25 chars; body max 35 chars; CTA max 15 chars — non-negotiable on Google Display Network",
-        "Face on image looking toward CTA increases CTR (gaze-direction effect)",
-        "<20% text-on-image (Google policy); copy lives in the banner UI, not baked into the image",
-        "High contrast against expected page background (most pages are white → dark backgrounds stand out)",
-        "Each size needs distinct copy — don't reuse the rectangle headline in the skyscraper; different scanning patterns",
+        "Provide ALL 5 short headlines + 5 descriptions for 'Excellent' Ad Strength — Google rotates pairs and serves best-performing combos per placement",
+        "Each short headline (30 chars) must work standalone AND pair coherently with any other; avoid 'continuation' phrasing that breaks rotation",
+        "Long headline (90 chars) shines in placements that allow extended text — make it standalone value-prop, not a longer rephrase of short-headline-1",
+        "Descriptions (90 chars each) must add NEW info per slot; duplicates hurt Ad Strength 'diversity' signal",
+        "Provide BOTH landscape (1.91:1) AND square (1:1) images — required by Google; add portrait (4:5) for more inventory coverage",
+        "Logo: square 1:1 required, wide 4:1 optional but boosts inventory eligibility",
+        "<20% text-on-image — Google downranks heavily; copy lives in headlines/descriptions, not baked into images",
+        "Business name appears in ad header — use the brand-name exactly as it should appear publicly",
+        "Optional YouTube video (≤30s) extends to video-enabled placements; consider for upper-funnel awareness",
       ],
       phaseGuidance: {
-        awareness: { toneShift: "curiosity", messageFrame: "pattern-interrupt", ctaType: "Learn More", hookStrategy: "bold benefit or contrarian claim in headline", visualDirection: "single subject with directional gaze, high contrast" },
-        consideration: { toneShift: "informative", messageFrame: "specific-outcome", ctaType: "Get Quote / See Pricing", hookStrategy: "numeric outcome ('Cut X by 40%')", visualDirection: "product-in-context with implied result" },
-        decision: { toneShift: "urgent", messageFrame: "offer-or-proof", ctaType: "Shop Now / Try Free", hookStrategy: "limited-time signal or customer outcome", visualDirection: "product detail or social proof image" },
-        retention: { toneShift: "exclusive", messageFrame: "loyalty-benefit", ctaType: "Get Access", hookStrategy: "subscriber-only feature or upgrade path", visualDirection: "premium product feature highlight" },
-        advocacy: { toneShift: "celebratory", messageFrame: "customer-story", ctaType: "Refer & Earn", hookStrategy: "user transformation or community win", visualDirection: "UGC-style customer photo" },
+        awareness: { toneShift: "curiosity", messageFrame: "pattern-interrupt-or-bold-claim", ctaType: "Learn More", hookStrategy: "varied short-headlines (claim / question / stat / contrarian) to test which lands per placement", visualDirection: "single subject high-contrast in landscape + square; optional portrait for mobile" },
+        consideration: { toneShift: "informative", messageFrame: "specific-outcome", ctaType: "Get Quote / See Pricing", hookStrategy: "numeric outcomes ('40% sneller') varied with framework-mentions across the 5 headlines", visualDirection: "product-in-context + result-implication in landscape AND square crops" },
+        decision: { toneShift: "decisive", messageFrame: "offer-or-proof", ctaType: "Shop Now / Try Free / Book Demo", hookStrategy: "offer + proof + urgency varied across 5 headlines so Google can A/B test", visualDirection: "product detail + customer-result image" },
+        retention: { toneShift: "exclusive", messageFrame: "loyalty-benefit", ctaType: "Get Access / Member-Only", hookStrategy: "5 distinct loyalty-angles for ML rotation", visualDirection: "premium feature highlight in both aspect ratios" },
+        advocacy: { toneShift: "celebratory", messageFrame: "user-outcome", ctaType: "Refer & Earn", hookStrategy: "5 different customer-transformation angles", visualDirection: "UGC-style customer photo + brand-mark overlay" },
       },
       optimalPublishTimes: { dayOfWeek: [1, 2, 3, 4, 5], hourRange: [9, 17], timezone: "Europe/Amsterdam" },
     },

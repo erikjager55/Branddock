@@ -6,46 +6,55 @@ import { HeroImageSlot } from './HeroImageSlot';
 import { InlineEditableSection, useEditableEntry, type InlineEditableEntry } from './InlineEditableSection';
 import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
+import { Sparkles, Layout, FileText, Tag, ImageIcon } from 'lucide-react';
 
 const CTA_BG = '#0D9488';
 
 const HANDLED_GROUPS = [
-  'leaderboard-headline', 'leaderboard-body', 'leaderboard-cta', 'leaderboard-visual',
+  'short-headline-1', 'short-headline-2', 'short-headline-3', 'short-headline-4', 'short-headline-5',
+  'long-headline',
+  'description-1', 'description-2', 'description-3', 'description-4', 'description-5',
+  'business-name',
+  'image',
+  // Suppress legacy per-size groups that may linger from older generations
+  'leaderboard-headline', 'leaderboard-cta', 'leaderboard-visual',
   'rectangle-headline', 'rectangle-body', 'rectangle-cta', 'rectangle-visual',
   'skyscraper-headline', 'skyscraper-body', 'skyscraper-cta', 'skyscraper-visual',
-  // Suppress legacy single-format groups
-  'headline', 'body', 'cta', 'cta-button',
+  // Suppress generic fallbacks the model might emit
+  'headline', 'body', 'description', 'cta', 'cta-button',
 ];
 
-interface SizeSlots {
-  headline: InlineEditableEntry | null;
-  body: InlineEditableEntry | null;
-  cta: InlineEditableEntry | null;
+interface AssetSlot {
+  group: string;
+  entry: InlineEditableEntry | null;
+  maxLength: number;
+  label: string;
 }
 
 /**
- * Display-ad creative brief preview — renders the 3 standard Google Display
- * Network sizes side-by-side: 728x90 leaderboard (horizontal scan), 300x250
- * medium rectangle (top-down scan), 160x600 skyscraper (vertical stack).
- * Each size pulls its copy from named groups (leaderboard-*, rectangle-*,
- * skyscraper-*) so the model can tune the message to the scanning pattern.
+ * Google Responsive Display Ad (RDA) asset-library preview. Shows all
+ * 13 component slots — 5 short headlines, 1 long headline, 5
+ * descriptions, 1 business name, 1 image direction — plus a
+ * "sample rendering" panel showing how Google's ML might compose the
+ * assets in a feed-card placement. Replaces the legacy 3-fixed-banner
+ * mockup (728×90/300×250/160×600) which doesn't reflect how RDA works.
  */
 export function DisplayAdPreview({ isGenerating, heroImage, onAddImage, brandName, imageVariants }: PlatformPreviewProps) {
-  const leaderboard: SizeSlots = {
-    headline: useEditableEntry('leaderboard-headline'),
-    body: useEditableEntry('leaderboard-body'),
-    cta: useEditableEntry('leaderboard-cta'),
-  };
-  const rectangle: SizeSlots = {
-    headline: useEditableEntry('rectangle-headline'),
-    body: useEditableEntry('rectangle-body'),
-    cta: useEditableEntry('rectangle-cta'),
-  };
-  const skyscraper: SizeSlots = {
-    headline: useEditableEntry('skyscraper-headline'),
-    body: useEditableEntry('skyscraper-body'),
-    cta: useEditableEntry('skyscraper-cta'),
-  };
+  const shortHeadlines: AssetSlot[] = [1, 2, 3, 4, 5].map((n) => ({
+    group: `short-headline-${n}`,
+    entry: useEditableEntry(`short-headline-${n}`),
+    maxLength: 30,
+    label: `Short headline ${n}`,
+  }));
+  const longHeadline = useEditableEntry('long-headline');
+  const descriptions: AssetSlot[] = [1, 2, 3, 4, 5].map((n) => ({
+    group: `description-${n}`,
+    entry: useEditableEntry(`description-${n}`),
+    maxLength: 90,
+    label: `Description ${n}`,
+  }));
+  const businessName = useEditableEntry('business-name');
+  const imageDirection = useEditableEntry('image');
 
   const name = brandName ?? 'Brand Name';
   const initial = name.charAt(0).toUpperCase();
@@ -56,265 +65,295 @@ export function DisplayAdPreview({ isGenerating, heroImage, onAddImage, brandNam
     return <DisplayAdSkeleton />;
   }
 
-  return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 p-2">
-      <Leaderboard
-        slots={leaderboard}
-        imageUrl={imageUrl}
-        onAddImage={onAddImage}
-        brandName={name}
-        initial={initial}
-      />
+  const filledShorts = shortHeadlines.filter((s) => s.entry).length;
+  const filledDescriptions = descriptions.filter((s) => s.entry).length;
+  const strength = computeAdStrength(filledShorts, filledDescriptions, !!longHeadline, !!businessName, !!imageUrl);
 
-      <div className="flex flex-wrap gap-6 items-start justify-center">
-        <MediumRectangle
-          slots={rectangle}
-          imageUrl={imageUrl}
-          onAddImage={onAddImage}
-          brandName={name}
-        />
-        <Skyscraper
-          slots={skyscraper}
-          imageUrl={imageUrl}
-          onAddImage={onAddImage}
-          brandName={name}
-          initial={initial}
-        />
+  // Pick assets for the sample-rendering panel: first available short
+  // headline + first available description + the business name.
+  const sampleShort = shortHeadlines.find((s) => s.entry)?.entry ?? null;
+  const sampleDescription = descriptions.find((s) => s.entry)?.entry ?? null;
+
+  return (
+    <div className="mx-auto w-full max-w-4xl space-y-5 p-2">
+      <AdStrengthBadge strength={strength} filledShorts={filledShorts} filledDescriptions={filledDescriptions} hasLong={!!longHeadline} hasBusinessName={!!businessName} hasImage={!!imageUrl} />
+
+      <AssetSection icon={Layout} title="Short headlines" subtitle="Each ≤30 chars · Google rotates pairs · 5 distinct angles drives Excellent">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {shortHeadlines.map((slot, idx) => (
+            <AssetRow key={slot.group} slot={slot} required={idx === 0} />
+          ))}
+        </div>
+      </AssetSection>
+
+      <AssetSection icon={Sparkles} title="Long headline" subtitle="≤90 chars · single asset · used in placements that allow extended text">
+        {longHeadline ? (
+          <InlineEditableSection
+            entry={longHeadline}
+            render={(text) => (
+              <p className="text-base text-gray-900 leading-snug">{stripMarkdownForPlainText(text)}</p>
+            )}
+          />
+        ) : (
+          <EmptySlotMessage required label="Long headline" />
+        )}
+      </AssetSection>
+
+      <AssetSection icon={FileText} title="Descriptions" subtitle="Each ≤90 chars · 5 distinct slots add new info per row">
+        <div className="space-y-2">
+          {descriptions.map((slot, idx) => (
+            <AssetRow key={slot.group} slot={slot} required={idx === 0} />
+          ))}
+        </div>
+      </AssetSection>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <AssetSection icon={Tag} title="Business name" subtitle="≤25 chars · appears in ad header">
+          {businessName ? (
+            <InlineEditableSection
+              entry={businessName}
+              render={(text) => (
+                <p className="text-base font-semibold text-gray-900">{stripMarkdownForPlainText(text)}</p>
+              )}
+            />
+          ) : (
+            <EmptySlotMessage required label="Business name" />
+          )}
+        </AssetSection>
+
+        <AssetSection icon={ImageIcon} title="Image direction" subtitle="Used for landscape 1.91:1 + square 1:1 crops">
+          {imageDirection ? (
+            <InlineEditableSection
+              entry={imageDirection}
+              render={(text) => (
+                <p className="text-xs text-gray-700 leading-relaxed">{stripMarkdownForPlainText(text)}</p>
+              )}
+            />
+          ) : (
+            <EmptySlotMessage label="Image direction" />
+          )}
+        </AssetSection>
       </div>
+
+      <AssetSection icon={ImageIcon} title="Sample rendering" subtitle="How Google might compose your assets in an in-feed placement">
+        <SampleAdCard
+          imageUrl={imageUrl}
+          onAddImage={onAddImage}
+          name={(businessName?.content?.trim()) || name}
+          initial={initial}
+          shortHeadline={sampleShort}
+          description={sampleDescription}
+        />
+      </AssetSection>
 
       <AdditionalComponentsSection handledGroups={HANDLED_GROUPS} />
     </div>
   );
 }
 
-interface BannerProps {
-  slots: SizeSlots;
+interface AdStrengthInfo {
+  label: 'Incomplete' | 'Poor' | 'Average' | 'Good' | 'Excellent';
+  score: number;
+  color: string;
+  bg: string;
+}
+
+function computeAdStrength(
+  filledShorts: number,
+  filledDescriptions: number,
+  hasLong: boolean,
+  hasBusinessName: boolean,
+  hasImage: boolean,
+): AdStrengthInfo {
+  if (!hasImage || !hasBusinessName || filledShorts === 0 || filledDescriptions === 0 || !hasLong) {
+    return { label: 'Incomplete', score: 0, color: '#6B7280', bg: '#F3F4F6' };
+  }
+  // Google Ad Strength heuristic — primary signal is quantity + diversity
+  // of headlines + descriptions. We approximate with filled-slot counts.
+  const headlineScore = (filledShorts / 5) * 50;
+  const descriptionScore = (filledDescriptions / 5) * 40;
+  const longHeadlineScore = hasLong ? 10 : 0;
+  const score = Math.round(headlineScore + descriptionScore + longHeadlineScore);
+  if (score >= 90) return { label: 'Excellent', score, color: '#16A34A', bg: '#DCFCE7' };
+  if (score >= 70) return { label: 'Good', score, color: '#CA8A04', bg: '#FEF3C7' };
+  if (score >= 40) return { label: 'Average', score, color: '#EA580C', bg: '#FED7AA' };
+  return { label: 'Poor', score, color: '#DC2626', bg: '#FECACA' };
+}
+
+function AdStrengthBadge({
+  strength,
+  filledShorts,
+  filledDescriptions,
+  hasLong,
+  hasBusinessName,
+  hasImage,
+}: {
+  strength: AdStrengthInfo;
+  filledShorts: number;
+  filledDescriptions: number;
+  hasLong: boolean;
+  hasBusinessName: boolean;
+  hasImage: boolean;
+}) {
+  const missing: string[] = [];
+  if (filledShorts < 5) missing.push(`${5 - filledShorts} short headline${5 - filledShorts === 1 ? '' : 's'}`);
+  if (filledDescriptions < 5) missing.push(`${5 - filledDescriptions} description${5 - filledDescriptions === 1 ? '' : 's'}`);
+  if (!hasLong) missing.push('long headline');
+  if (!hasBusinessName) missing.push('business name');
+  if (!hasImage) missing.push('image');
+
+  return (
+    <div className="rounded-lg border border-gray-200 p-3 flex items-center justify-between" style={{ backgroundColor: strength.bg }}>
+      <div className="flex items-center gap-2.5">
+        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: strength.color }} />
+        <div>
+          <p className="text-sm font-semibold" style={{ color: strength.color }}>
+            Ad Strength: {strength.label} {strength.label !== 'Incomplete' && `· ${strength.score}/100`}
+          </p>
+          {missing.length > 0 && (
+            <p className="text-xs text-gray-600 mt-0.5">Add {missing.join(', ')} to boost Ad Strength.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AssetSection({
+  icon: Icon,
+  title,
+  subtitle,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-4">
+      <div className="flex items-start gap-2 mb-3">
+        <Icon className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+        <div>
+          <p className="text-sm font-semibold text-gray-900">{title}</p>
+          <p className="text-xs text-gray-500">{subtitle}</p>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function AssetRow({ slot, required }: { slot: AssetSlot; required: boolean }) {
+  if (!slot.entry) {
+    return <EmptySlotMessage required={required} label={slot.label} />;
+  }
+  return (
+    <div className="flex items-baseline gap-2">
+      <span className="text-[10px] uppercase tracking-wide text-gray-400 flex-shrink-0">{slot.label}</span>
+      <InlineEditableSection
+        entry={slot.entry}
+        render={(text) => {
+          const clean = stripMarkdownForPlainText(text);
+          const overCap = clean.length > slot.maxLength;
+          return (
+            <span className={`text-sm leading-snug ${overCap ? 'text-red-600' : 'text-gray-900'}`}>
+              {clean}
+              {overCap && <span className="text-[10px] ml-1 text-red-500">({clean.length}/{slot.maxLength})</span>}
+            </span>
+          );
+        }}
+      />
+    </div>
+  );
+}
+
+function EmptySlotMessage({ required, label }: { required?: boolean; label: string }) {
+  return (
+    <p className={`text-xs italic ${required ? 'text-amber-600' : 'text-gray-400'}`}>
+      [{label}] {required ? 'required for Ad Strength' : 'optional — boosts Ad Strength'}
+    </p>
+  );
+}
+
+function SampleAdCard({
+  imageUrl,
+  onAddImage,
+  name,
+  initial,
+  shortHeadline,
+  description,
+}: {
   imageUrl: string | null;
   onAddImage?: () => void;
-  brandName: string;
-  initial?: string;
-}
-
-function Leaderboard({ slots, imageUrl, onAddImage, brandName, initial }: BannerProps) {
+  name: string;
+  initial: string;
+  shortHeadline: InlineEditableEntry | null;
+  description: InlineEditableEntry | null;
+}) {
   return (
-    <div>
-      <SizeLabel size="728 × 90" name="Leaderboard" />
-      <div
-        className="bg-white rounded border border-gray-300 shadow-sm overflow-hidden flex items-stretch"
-        style={{ width: 728, height: 90 }}
-      >
-        <div className="flex-shrink-0" style={{ width: 90 }}>
-          {imageUrl ? (
-            <img src={imageUrl} alt={brandName} className="w-full h-full object-cover" />
-          ) : (
-            <HeroImageSlot image={null} onAddImage={onAddImage} aspectRatio="aspect-square" rounded="rounded-none" />
-          )}
-        </div>
-        <div className="flex-1 flex items-center px-3 min-w-0">
-          {slots.headline ? (
-            <InlineEditableSection
-              entry={slots.headline}
-              render={(text) => (
-                <p className="text-base font-bold text-gray-900 leading-tight line-clamp-2 truncate">
-                  {stripMarkdownForPlainText(text)}
-                </p>
-              )}
-            />
-          ) : (
-            <p className="text-sm text-gray-400 italic">[headline]</p>
-          )}
-        </div>
-        <div className="flex items-center pr-3 flex-shrink-0">
-          {slots.cta ? (
-            <InlineEditableSection
-              entry={slots.cta}
-              size="compact"
-              render={(text) => (
-                <button
-                  type="button"
-                  className="px-3 py-1.5 text-xs font-semibold rounded text-white whitespace-nowrap"
-                  style={{ backgroundColor: CTA_BG }}
-                >
-                  {stripMarkdownForPlainText(text).slice(0, 24)}
-                </button>
-              )}
-            />
-          ) : (
-            <button type="button" className="px-3 py-1.5 text-xs font-semibold rounded text-white" style={{ backgroundColor: CTA_BG }}>
-              Learn More
-            </button>
-          )}
-        </div>
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mx-auto" style={{ maxWidth: '380px' }}>
+      <div style={{ aspectRatio: '1.91 / 1' }}>
+        {imageUrl ? (
+          <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+        ) : (
+          <HeroImageSlot image={null} onAddImage={onAddImage} aspectRatio="aspect-[1.91/1]" rounded="rounded-none" />
+        )}
       </div>
-      <BrandFooter name={brandName} initial={initial ?? '?'} />
-    </div>
-  );
-}
-
-function MediumRectangle({ slots, imageUrl, onAddImage, brandName }: BannerProps) {
-  return (
-    <div>
-      <SizeLabel size="300 × 250" name="Medium Rectangle" />
-      <div
-        className="bg-white rounded border border-gray-300 shadow-sm overflow-hidden flex flex-col"
-        style={{ width: 300, height: 250 }}
-      >
-        <div className="flex-shrink-0" style={{ height: 110 }}>
-          {imageUrl ? (
-            <img src={imageUrl} alt={brandName} className="w-full h-full object-cover" />
-          ) : (
-            <HeroImageSlot image={null} onAddImage={onAddImage} aspectRatio="aspect-[300/110]" rounded="rounded-none" />
-          )}
-        </div>
-        <div className="flex-1 flex flex-col justify-between px-3 py-2.5 min-h-0">
-          <div className="space-y-1">
-            {slots.headline ? (
-              <InlineEditableSection
-                entry={slots.headline}
-                render={(text) => (
-                  <p className="text-base font-bold text-gray-900 leading-tight line-clamp-2">{stripMarkdownForPlainText(text)}</p>
-                )}
-              />
-            ) : (
-              <p className="text-sm text-gray-400 italic">[headline]</p>
-            )}
-            {slots.body && (
-              <InlineEditableSection
-                entry={slots.body}
-                render={(text) => (
-                  <p className="text-xs text-gray-600 leading-tight line-clamp-2">{stripMarkdownForPlainText(text)}</p>
-                )}
-              />
-            )}
+      <div className="p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: CTA_BG }}>
+            <span className="text-[10px] font-bold text-white">{initial}</span>
           </div>
-          {slots.cta ? (
-            <InlineEditableSection
-              entry={slots.cta}
-              size="compact"
-              render={(text) => (
-                <button
-                  type="button"
-                  className="self-start px-3 py-1.5 text-xs font-semibold rounded text-white"
-                  style={{ backgroundColor: CTA_BG }}
-                >
-                  {stripMarkdownForPlainText(text).slice(0, 24)}
-                </button>
-              )}
-            />
-          ) : (
-            <button type="button" className="self-start px-3 py-1.5 text-xs font-semibold rounded text-white" style={{ backgroundColor: CTA_BG }}>
-              Learn More
-            </button>
-          )}
+          <p className="text-xs font-semibold text-gray-700 truncate">{name}</p>
+          <span className="text-[10px] text-gray-400 ml-auto">Ad · Sponsored</span>
         </div>
+        {shortHeadline ? (
+          <InlineEditableSection
+            entry={shortHeadline}
+            render={(text) => (
+              <p className="text-base font-semibold text-gray-900 leading-tight line-clamp-2">{stripMarkdownForPlainText(text)}</p>
+            )}
+          />
+        ) : (
+          <p className="text-sm text-gray-400 italic">[short headline]</p>
+        )}
+        {description ? (
+          <InlineEditableSection
+            entry={description}
+            render={(text) => (
+              <p className="text-xs text-gray-600 leading-snug line-clamp-2">{stripMarkdownForPlainText(text)}</p>
+            )}
+          />
+        ) : (
+          <p className="text-xs text-gray-400 italic">[description]</p>
+        )}
+        <button
+          type="button"
+          className="w-full mt-2 px-3 py-2 text-sm font-semibold rounded text-white"
+          style={{ backgroundColor: CTA_BG }}
+        >
+          Learn More
+        </button>
       </div>
     </div>
-  );
-}
-
-function Skyscraper({ slots, imageUrl, onAddImage, brandName, initial }: BannerProps) {
-  return (
-    <div>
-      <SizeLabel size="160 × 600" name="Skyscraper" />
-      <div
-        className="bg-white rounded border border-gray-300 shadow-sm overflow-hidden flex flex-col"
-        style={{ width: 160, height: 600 }}
-      >
-        <div className="flex items-center gap-1.5 px-2 py-2 border-b border-gray-100 flex-shrink-0">
-          <div className="h-5 w-5 rounded-sm flex items-center justify-center flex-shrink-0" style={{ backgroundColor: CTA_BG }}>
-            <span className="text-[10px] font-bold text-white">{initial ?? '?'}</span>
-          </div>
-          <p className="text-[10px] font-semibold text-gray-700 truncate">{brandName}</p>
-        </div>
-        <div className="flex-shrink-0" style={{ height: 220 }}>
-          {imageUrl ? (
-            <img src={imageUrl} alt={brandName} className="w-full h-full object-cover" />
-          ) : (
-            <HeroImageSlot image={null} onAddImage={onAddImage} aspectRatio="aspect-[160/220]" rounded="rounded-none" />
-          )}
-        </div>
-        <div className="flex-1 flex flex-col justify-between px-3 py-3 min-h-0">
-          <div className="space-y-2">
-            {slots.headline ? (
-              <InlineEditableSection
-                entry={slots.headline}
-                render={(text) => (
-                  <p className="text-sm font-bold text-gray-900 leading-tight line-clamp-3">{stripMarkdownForPlainText(text)}</p>
-                )}
-              />
-            ) : (
-              <p className="text-sm text-gray-400 italic">[headline]</p>
-            )}
-            {slots.body && (
-              <InlineEditableSection
-                entry={slots.body}
-                render={(text) => (
-                  <p className="text-xs text-gray-600 leading-snug line-clamp-4">{stripMarkdownForPlainText(text)}</p>
-                )}
-              />
-            )}
-          </div>
-          {slots.cta ? (
-            <InlineEditableSection
-              entry={slots.cta}
-              size="compact"
-              render={(text) => (
-                <button
-                  type="button"
-                  className="w-full px-2 py-2 text-xs font-semibold rounded text-white"
-                  style={{ backgroundColor: CTA_BG }}
-                >
-                  {stripMarkdownForPlainText(text).slice(0, 16)}
-                </button>
-              )}
-            />
-          ) : (
-            <button type="button" className="w-full px-2 py-2 text-xs font-semibold rounded text-white" style={{ backgroundColor: CTA_BG }}>
-              Learn More
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SizeLabel({ size, name }: { size: string; name: string }) {
-  return (
-    <p className="text-xs text-gray-500 mb-1.5">
-      <span className="font-mono">{size}</span> <span className="text-gray-400">· {name}</span>
-    </p>
-  );
-}
-
-function BrandFooter({ name, initial }: { name: string; initial: string }) {
-  return (
-    <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
-      <span className="h-3 w-3 rounded-sm flex items-center justify-center" style={{ backgroundColor: CTA_BG }}>
-        <span className="text-[8px] font-bold text-white">{initial}</span>
-      </span>
-      Ad by {name}
-    </p>
   );
 }
 
 function DisplayAdSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 p-2 animate-pulse">
-      <div>
-        <div className="h-3 w-32 bg-gray-200 rounded mb-1.5" />
-        <div className="bg-gray-200 rounded" style={{ width: 728, height: 90 }} />
-      </div>
-      <div className="flex gap-6">
-        <div>
-          <div className="h-3 w-40 bg-gray-200 rounded mb-1.5" />
-          <div className="bg-gray-200 rounded" style={{ width: 300, height: 250 }} />
+    <div className="mx-auto w-full max-w-4xl space-y-5 p-2 animate-pulse">
+      <div className="h-14 bg-gray-200 rounded-lg" />
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="h-3 w-32 bg-gray-200 rounded mb-3" />
+          <div className="space-y-2">
+            <div className="h-3 w-full bg-gray-200 rounded" />
+            <div className="h-3 w-4/5 bg-gray-200 rounded" />
+            <div className="h-3 w-3/4 bg-gray-200 rounded" />
+          </div>
         </div>
-        <div>
-          <div className="h-3 w-32 bg-gray-200 rounded mb-1.5" />
-          <div className="bg-gray-200 rounded" style={{ width: 160, height: 600 }} />
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
