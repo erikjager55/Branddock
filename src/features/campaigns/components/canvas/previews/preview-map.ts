@@ -8,6 +8,7 @@ import { InstagramPostPreview } from './InstagramPostPreview';
 import { InstagramCarouselPreview } from './InstagramCarouselPreview';
 import { FacebookPostPreview } from './FacebookPostPreview';
 import { XPostPreview } from './XPostPreview';
+import { XThreadPreview } from './XThreadPreview';
 import { EmailPreview } from './EmailPreview';
 import { VideoPreview } from './VideoPreview';
 import { PodcastPreview } from './PodcastPreview';
@@ -56,11 +57,11 @@ const PLATFORM_PREVIEW_MAP: Record<string, Record<string, PreviewRegistryEntry>>
   },
   x: {
     post: { component: XPostPreview, label: 'X Post' },
-    thread: { component: XPostPreview, label: 'X Thread' },
+    thread: { component: XThreadPreview, label: 'X Thread' },
   },
   twitter: {
     post: { component: XPostPreview, label: 'X Post' },
-    thread: { component: XPostPreview, label: 'X Thread' },
+    thread: { component: XThreadPreview, label: 'X Thread' },
   },
   web: {
     'landing-page': { component: LandingPagePreview, label: 'Landing Page' },
@@ -88,6 +89,7 @@ const CONTENT_TYPE_PREVIEW_MAP: Record<string, PreviewRegistryEntry> = {
   'instagram-carousel': { component: InstagramCarouselPreview, label: 'Instagram Carousel' },
   'facebook-post': { component: FacebookPostPreview, label: 'Facebook Post' },
   'x-post': { component: XPostPreview, label: 'X Post' },
+  'twitter-thread': { component: XThreadPreview, label: 'X Thread' },
   'video-script': { component: VideoPreview, label: 'Video Script' },
   'tiktok-script': { component: VideoPreview, label: 'TikTok Script' },
   'explainer-video-script': { component: VideoPreview, label: 'Explainer Video' },

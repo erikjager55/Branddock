@@ -5275,6 +5275,42 @@ Respond only with valid JSON.`,
       },
       optimalPublishTimes: { dayOfWeek: [1, 2, 3], hourRange: [5, 7], timezone: "Europe/Amsterdam" },
     },
+    {
+      platform: "x",
+      format: "thread",
+      specs: {
+        maxChars: { tweet: 280, premium: 25000 },
+        tweetsPerThread: { min: 2, max: 7, sweetSpot: "5-7" },
+        media: { imagesPerTweet: 4, videoPerTweet: 1, gifPerTweet: 1 },
+      },
+      componentTemplate: [
+        { type: "hook", required: true, maxLength: 280 },
+        { type: "tweet-2", required: false, maxLength: 280 },
+        { type: "tweet-3", required: false, maxLength: 280 },
+        { type: "tweet-4", required: false, maxLength: 280 },
+        { type: "tweet-5", required: false, maxLength: 280 },
+        { type: "tweet-6", required: false, maxLength: 280 },
+        { type: "cta-tweet", required: false, maxLength: 280 },
+        { type: "hashtags", required: false, maxLength: 200 },
+      ],
+      bestPractices: [
+        "Tweet 1 (hook) drives ~90% of impressions — make it standalone-valuable, no 'thread below' teaser",
+        "Optimal thread length 5-7 tweets; longer threads drop completion rate",
+        "Each tweet must work in isolation — readers may land mid-thread via quote-tweets",
+        "Bookmarks > Likes as algorithm signal; write bookmark-worthy content (lists, frameworks, contrarian takes)",
+        "End with an explicit CTA tweet (reply, follow, bookmark, or link)",
+        "Stay under 280 chars per tweet — no continuation arrows or '1/' numbering inside the text",
+        "Use line breaks within tweets for scannability on mobile",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "punchy", messageFrame: "contrarian-or-curiosity", ctaType: "follow-for-more", hookStrategy: "bold claim or counterintuitive take in tweet 1", visualDirection: "single image on leader tweet — chart, screenshot, or bold typography" },
+        consideration: { toneShift: "educational", messageFrame: "framework-or-listicle", ctaType: "bookmark-this", hookStrategy: "promise specific value ('5 lessons from X')", visualDirection: "diagram or before/after image on leader" },
+        decision: { toneShift: "credible", messageFrame: "case-study-or-proof", ctaType: "dm-for-details", hookStrategy: "result-first hook ('We did X, here is how')", visualDirection: "screenshot of results or social proof" },
+        retention: { toneShift: "insider", messageFrame: "behind-the-scenes", ctaType: "reply-with-yours", hookStrategy: "share lesson learned or stack reveal", visualDirection: "candid product or workflow shot" },
+        advocacy: { toneShift: "celebratory", messageFrame: "user-story", ctaType: "quote-tweet-yours", hookStrategy: "spotlight a customer or community win", visualDirection: "user-generated screenshot or testimonial" },
+      },
+      optimalPublishTimes: { dayOfWeek: [2, 3, 4], hourRange: [8, 10], timezone: "Europe/Amsterdam" },
+    },
   ];
 
   for (const me of mediumEnrichmentData) {

@@ -84,6 +84,19 @@ const FALLBACK_BY_CONTENT_TYPE: Record<string, ComponentTemplateItem[]> = {
     { type: 'follow-up-comment', required: true, maxLength: 400 },
     { type: 'hashtags', required: false, maxLength: 200 },
   ],
+  // 2026-05-20 — X thread: hook + tweet-2..6 body slots + cta-tweet + hashtags.
+  // Hook required (tweet 1 = ~90% impressions), body slots optional so model
+  // can choose 5-7 sweet-spot length. Each tweet maxLength 280 chars.
+  'twitter-thread': [
+    { type: 'hook', required: true, maxLength: 280 },
+    { type: 'tweet-2', required: false, maxLength: 280 },
+    { type: 'tweet-3', required: false, maxLength: 280 },
+    { type: 'tweet-4', required: false, maxLength: 280 },
+    { type: 'tweet-5', required: false, maxLength: 280 },
+    { type: 'tweet-6', required: false, maxLength: 280 },
+    { type: 'cta-tweet', required: false, maxLength: 280 },
+    { type: 'hashtags', required: false, maxLength: 200 },
+  ],
 };
 
 /** Resolve a fallback component template for a content type. Returns
