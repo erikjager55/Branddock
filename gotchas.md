@@ -155,3 +155,13 @@ Lokaal werkt het dus prima, CI crasht. Asymmetrie geeft "werkt op mijn machine" 
 **Rule**: Voeg `.npmrc` met `legacy-peer-deps=true` toe aan elk Node-project. Geldt voor zowel lokaal `npm install` als CI `npm ci`, dus identical resolution-strategy in alle install-paden. Bij toekomstige peer-conflicts is de keuze: (a) update de conflict-veroorzaker (cleaner), (b) accept als legacy via deze setting (pragmatisch). Geen `.npmrc` = asymmetrisch gedrag bij elk peer-conflict.
 
 Voor diagnose: `npm ls <package>` toont de full dep-tree origin van het conflict. `npm ci --dry-run` simuleert CI's strict-install lokaal.
+
+## 2026-05-22: React hooks-rules violation valt door tsc maar wordt door lint gevangen
+**What went wrong**: In `DisplayAdPreview.tsx` riep ik `useEditableEntry(\`short-headline-${n}\`)` aan inside een `.map((n) => ({...}))` callback voor 5 short-headline slots + 5 description slots. React's hooks-rules vereist dat hooks **direct in de component body** worden aangeroepen (constante volgorde tussen renders) — niet in loops/callbacks. `npx tsc --noEmit` rapporteerde 0 errors (het is een ESLint regel, geen type-check). CI's `npm run lint` step crashte met 2 errors van `react-hooks/rules-of-hooks`.
+
+PostToolUse hook (`post-edit-typecheck.sh`) DOES already run `npx eslint --fix` na elke Edit/Write, met output naar stderr — maar `blocking: false` zodat het de flow niet stopt. De error-output landde dus alleen in stderr en werd gemist tijdens iterative editing.
+
+**Rule**:
+- Roep hooks NOOIT aan in `.map()`, `.filter()`, `for`/`while`, of conditionals. Voor N gelijksoortige hook-calls: schrijf N expliciete aanroepingen + assemble naar array daarna.
+- Vóór elke push naar main: run lokaal `npx eslint <gewijzigde-files>` als laatste check naast `npx tsc --noEmit`. TS-check vangt type-fouten; ESLint vangt React-rules + style-violations die tsc ontgaan.
+- Voor toekomst: overweeg `blocking: true` op de post-edit hook voor "error"-level lint-output (niet warnings). Of: pre-push git hook met `npm run lint --silent` die push blokkeert bij errors.
