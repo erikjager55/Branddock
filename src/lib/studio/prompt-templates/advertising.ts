@@ -511,6 +511,21 @@ Before submitting your output, verify:
       `## EXPERT PERSONA
 You are a senior native advertising writer and content strategist with 11+ years creating sponsored content for premium publishers including The New York Times, The Atlantic, Wired, Business Insider, and HubSpot's blog network. You have written native content that achieved 4x the engagement of banner ads and 2x the time-on-page of editorial content. You understand the delicate balance between editorial value and brand objectives. Your work has been shared organically over 5M times across social platforms because readers chose to share it — not because they were retargeted.
 
+## CRITICAL OUTPUT CONTRACT (read before anything else)
+This native-ad deliverable is a sponsored article rendered by an editorial preview (publisher-style mockup). Emit EXACTLY these 7 named component groups per variant:
+
+- "headline" — large editorial headline, ≤90 chars. Standalone clickbait-worthy on curiosity/value, NO brand mention, journalism-style formula (How/Why/What + outcome, numbered list, contrarian claim, or question)
+- "subheadline" — optional deck/sub, ≤140 chars, 1 sentence expanding the headline with a specific data point or detail
+- "opening-paragraph" — lead paragraph, ≤500 chars (~50-80 words). PURE editorial value — relatable scenario, surprising statistic, or timely observation. NO brand mention, NO product mention.
+- "body" — main editorial content, ≤2500 chars (~150-300 words). Markdown supported. Develop with data, expert quotes, case studies, trend analysis. Brand can appear from paragraph 3 onward but as ONE element of the story, not the hero.
+- "brand-integration" — natural brand mention, ≤600 chars (~50-100 words). The brand emerges as a solution/example/case study ("One platform addressing this..." or "Tools like [Brand] have emerged..."). NOT a sales pitch.
+- "closing" — thought-provoking takeaway or forward-looking statement, ≤300 chars (~30-50 words). NOT a CTA, NOT a sales pitch. If CTA needed: natural recommendation ("For more on this topic, [Brand] offers...").
+- "disclosure-position" — meta-note about WHERE the "Sponsored by [Brand]" tag appears (e.g., "Top byline area, small text"). Required for FTC/ASA compliance.
+
+Plus "image" — hero-image art direction.
+
+DO NOT emit a generic "content" or "article" group containing everything. DO NOT bury the headline IN the body. DO NOT include the disclosure-tag inside the headline (it goes in disclosure-position, a separate meta-field). Each group is a distinct asset that the editorial preview renders separately.
+
 ## METHODOLOGY: EDITORIAL VOICE TECHNIQUE
 Native advertising succeeds when it follows the rules of journalism, not the rules of advertising. The moment it reads like an ad, it fails. Apply the Editorial Voice technique:
 
@@ -588,7 +603,10 @@ Before submitting your output, verify:
         params.userPrompt,
         params.context,
         params.settings,
-        'Format: Native ad / sponsored article. Must feel editorial, not promotional. 300-600 words with subtle brand integration (no earlier than paragraph 3) and natural CTA. Include disclosure tag placement.',
+        // 2026-05-22 — named-group output contract. Editorial article rendered
+        // door publisher-style preview met disclosure-tag, byline, hero, lead
+        // paragraph + body + brand-integration aside + closing.
+        'Format: Sponsored editorial article rendered as native-ad on publisher feed. Emit EXACTLY these 7 named component groups: headline (≤90 chars, journalism-style, NO brand), subheadline (optional, ≤140 chars), opening-paragraph (≤500 chars, NO brand mention), body (≤2500 chars markdown, brand emerges from paragraph 3+), brand-integration (≤600 chars, natural mention as solution/example), closing (≤300 chars, thought-provoking takeaway NOT sales pitch), disclosure-position (≤120 chars meta-note about where Sponsored tag appears). Plus image marker. CRITICAL: use these exact kebab-case group names — NOT a generic "content" or "article" blob. 300-600 words total optimal (sweet spot 400-500). Match publication tone. Bury brand mention (max 2 mentions, first ≥paragraph 3). FTC/ASA disclosure compliance required.',
       ),
   },
 };

@@ -158,6 +158,23 @@ export function getChecklistForPlatform(
     ];
   }
 
+  // 2026-05-22 — Native-ad / sponsored article (publisher-side
+  // editorial content). 7 named groups + image. Checklist enforces
+  // editorial structure (headline + opening + body + brand-integration
+  // + closing + disclosure) plus char-limits per asset.
+  if ((platform === 'native' && format === 'sponsored-article') || contentType === 'native-ad') {
+    return [
+      { id: 'has-native-headline', label: 'Headline set (≤90 chars, editorial style)', required: true },
+      { id: 'has-native-opening', label: 'Opening paragraph set (≤500 chars, no brand mention)', required: true },
+      { id: 'has-native-body', label: 'Body content set (≤2500 chars, editorial markdown)', required: true },
+      { id: 'has-native-brand-integration', label: 'Brand integration paragraph set (≤600 chars)', required: true },
+      { id: 'has-native-closing', label: 'Closing takeaway set (≤300 chars)', required: true },
+      { id: 'has-native-disclosure', label: 'Disclosure tag placement specified', required: true },
+      { id: 'has-image', label: 'Hero image added', required: true },
+      { id: 'native-char-limits', label: 'All assets within native-ad character limits', required: true },
+    ];
+  }
+
   // 2026-05-22 — Google Display Ad migrated to Responsive Display Ads
   // (RDA) asset-library paradigm. Checklist mirrors Google's own
   // Ad Strength score components: asset quantity (5 short headlines +

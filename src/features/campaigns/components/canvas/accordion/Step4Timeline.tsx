@@ -294,6 +294,41 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         case 'has-rda-business-name':
           passed = (previewContent['business-name']?.content?.trim().length ?? 0) > 0;
           break;
+        // 2026-05-22 — Native-ad (sponsored article) per-asset checks.
+        case 'has-native-headline':
+          passed = (previewContent['headline']?.content?.trim().length ?? 0) > 0;
+          break;
+        case 'has-native-opening':
+          passed = (previewContent['opening-paragraph']?.content?.trim().length ?? 0) > 0;
+          break;
+        case 'has-native-body':
+          passed = (previewContent['body']?.content?.trim().length ?? 0) > 0;
+          break;
+        case 'has-native-brand-integration':
+          passed = (previewContent['brand-integration']?.content?.trim().length ?? 0) > 0;
+          break;
+        case 'has-native-closing':
+          passed = (previewContent['closing']?.content?.trim().length ?? 0) > 0;
+          break;
+        case 'has-native-disclosure':
+          passed = (previewContent['disclosure-position']?.content?.trim().length ?? 0) > 0;
+          break;
+        case 'native-char-limits': {
+          const caps: Record<string, number> = {
+            'headline': 90,
+            'subheadline': 140,
+            'opening-paragraph': 500,
+            'body': 2500,
+            'brand-integration': 600,
+            'closing': 300,
+            'disclosure-position': 120,
+          };
+          passed = Object.entries(caps).every(([group, cap]) => {
+            const content = previewContent[group]?.content ?? '';
+            return content.length <= cap;
+          });
+          break;
+        }
         case 'rda-char-limits': {
           const caps: Record<string, number> = {
             'short-headline-1': 30, 'short-headline-2': 30, 'short-headline-3': 30,
