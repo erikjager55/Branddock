@@ -144,3 +144,14 @@ useEffect(() => {
 ## 2026-04-12: Incomplete phase removal broke error paths
 **What went wrong**: Removed the `review_insights` render block and its stepProceedOverride, but didn't update the 2 error handlers in `handleGenerateConcepts` that fell back to `review_insights` on failure. Any concept generation error → phase set to a phase with no render → fallback "Something went wrong". Also: `setIsGenerating(false)` before chaining to the next handler created a one-frame render gap where no condition matched.
 **Rule**: When removing a strategy phase from the render tree, ALWAYS grep for ALL references to that phase name across the entire file. Update every error handler, guard, and state transition that references it. Test the error path, not just the happy path.
+
+## 2026-05-22: CI `npm ci` faalt op transitive peer-dep conflicts terwijl lokaal `npm install` slaagt
+**What went wrong**: Na commit `bad57cb5` (apify-client install + Prisma regenerate) faalde de `CI / check` workflow met "Missing: gcp-metadata@7.0.1 from lock file" + "Missing: @swc/helpers@0.5.21 from lock file". Beide packages zijn TRANSITIVE deps (gcp-metadata: mongodb→mongoose→natural→promptfoo wil ^7.0.1, google-auth-library installed 8.1.2; @swc/helpers: promptfoo→@swc/core wil ≥0.5.17, Next.js installed 0.5.15). Beide werken runtime prima via npm's dedup, maar:
+- `npm install` (loose) tolereert peer-mismatches en update lockfile asymmetrisch
+- `npm ci` (strict) eist dat lockfile-entries voor alle gerefereerde versions aanwezig zijn, faalt op deze mismatch
+
+Lokaal werkt het dus prima, CI crasht. Asymmetrie geeft "werkt op mijn machine" frustratie.
+
+**Rule**: Voeg `.npmrc` met `legacy-peer-deps=true` toe aan elk Node-project. Geldt voor zowel lokaal `npm install` als CI `npm ci`, dus identical resolution-strategy in alle install-paden. Bij toekomstige peer-conflicts is de keuze: (a) update de conflict-veroorzaker (cleaner), (b) accept als legacy via deze setting (pragmatisch). Geen `.npmrc` = asymmetrisch gedrag bij elk peer-conflict.
+
+Voor diagnose: `npm ls <package>` toont de full dep-tree origin van het conflict. `npm ci --dry-run` simuleert CI's strict-install lokaal.
