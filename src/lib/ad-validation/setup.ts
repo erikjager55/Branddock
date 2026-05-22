@@ -15,6 +15,10 @@ import { searchAdRules } from './rules/google/search-ad';
 import { googleSearchAdJudge } from './judge/google-search-judge';
 import { displayAdRules } from './rules/google/display-ad';
 import { googleDisplayAdJudge } from './judge/google-display-judge';
+import { facebookAdRules } from './rules/meta/facebook-ad';
+import { metaFacebookAdJudge } from './judge/meta-facebook-judge';
+import { linkedinAdRules } from './rules/linkedin/linkedin-ad';
+import { linkedinAdJudge } from './judge/linkedin-ad-judge';
 
 let isRegistered = false;
 
@@ -36,8 +40,24 @@ export function setupAdValidators(): void {
     weights: { l1: 0.35, l2: 0.65 },
   });
 
-  // Future: facebook-ad (A.5.3), linkedin-ad (A.5.4), native-ad,
-  // retargeting-ad — registered in volgende sub-fases.
+  // A.5.3 — facebook-ad (Meta link-card). L1=0.30/L2=0.70 per spec
+  // (hook-stop-power is dominant signal voor feed-scrolling).
+  registerValidator('facebook-ad', {
+    rules: facebookAdRules,
+    judge: metaFacebookAdJudge,
+    weights: { l1: 0.30, l2: 0.70 },
+  });
+
+  // A.5.4 — linkedin-ad (Sponsored Post). L1=0.40/L2=0.60 per spec
+  // (professional-tone gating weegt zwaarder dan andere social ads).
+  registerValidator('linkedin-ad', {
+    rules: linkedinAdRules,
+    judge: linkedinAdJudge,
+    weights: { l1: 0.40, l2: 0.60 },
+  });
+
+  // Future: native-ad, retargeting-ad — registered in volgende
+  // sub-fases (eigen judge dimensions per spec).
 
   isRegistered = true;
 }
