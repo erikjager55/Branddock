@@ -24,6 +24,8 @@
     "smoke:voice-baseline": "tsx scripts/smoke-tests/voice-baseline-1pager.ts",
     "smoke:brief-render": "tsx scripts/smoke-tests/campaign-brief-render.ts",
     "smoke:inline-edit": "tsx scripts/smoke-tests/inline-edit-coverage.ts",
+    "smoke:ad-encryption": "tsx scripts/smoke-tests/ad-encryption.ts",
+    "smoke:ad-creative-validation": "tsx scripts/smoke-tests/ad-creative-validation.ts",
     "seed:test": "SEED_CONFIRM=yes npx prisma db seed",
     "db:backup": "mkdir -p backups && pg_dump \"$DATABASE_URL\" > backups/db-manual-$(date +%Y%m%d-%H%M).sql",
     "db:migrate": "npx prisma migrate dev",

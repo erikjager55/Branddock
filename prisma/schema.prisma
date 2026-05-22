@@ -284,6 +284,9 @@ model Workspace {
   // Per-type fidelity thresholds (content-test #6.B)
   contentTypeThresholds WorkspaceContentTypeThreshold[]
 
+  // Fase B — Ad publishing
+  connectedAdAccounts ConnectedAdAccount[]
+
   @@index([organizationId])
 }
 
@@ -397,6 +400,10 @@ model User {
 
   // Δ-1 Content Review (paste-in/URL/file pad)
   contentReviewLogs ContentReviewLog[]
+
+  // Fase B — Ad publishing
+  connectedAdAccounts ConnectedAdAccount[] @relation("ConnectedAdAccountConnector")
+  publishedAdCampaigns AdCampaign[]        @relation("AdCampaignPublisher")
 
   @@index([workspaceId])
 }
@@ -1099,6 +1106,9 @@ model Deliverable {
 
   // Fase A.5 — Ad Quality Validation Layer (per ADR 2026-05-22-ad-quality-validation)
   adQualityScores AdQualityScore[]
+
+  // Fase B — Ad Publishing (per spec ad-publishing.md)
+  adCampaigns AdCampaign[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -5182,6 +5192,112 @@ model AdQualityScore {
   @@unique([deliverableId, variantIndex, contentHash])
   @@index([deliverableId])
   @@index([platform, contentType])
+}
+
+// ============================================================
+// Fase B — Ad Publishing pipeline (per ADR/spec ad-publishing.md).
+// 3 models: ConnectedAdAccount (workspace ↔ Meta/LinkedIn/Google
+// ad-account met encrypted OAuth tokens), AdCampaign (één row per
+// gepubliceerd creative naar een platform), AdMetricSnapshot
+// (lege table voor Fase C measurement; structuur klaar zodat
+// fetch-job later additief is, geen migratie nodig).
+// ============================================================
+
+model ConnectedAdAccount {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  platform          String // "meta" | "linkedin" | "google"
+  externalAccountId String // Meta: act_1234, LinkedIn: sponsoredAccount URN, Google: customer-id
+  accountName       String?
+  currency          String? // ISO 4217 (EUR/USD)
+  timezone          String? // IANA timezone (Europe/Amsterdam)
+
+  // Encrypted with TOKEN_ENCRYPTION_KEY at write-time, decrypted via helper at read-time.
+  accessTokenEncrypted  String
+  refreshTokenEncrypted String?
+  tokenExpiresAt        DateTime?
+
+  scopes           String[] // gegranteerde OAuth scopes
+  status           String // "active" | "expired" | "revoked" | "error"
+  lastRefreshedAt  DateTime?
+  lastErrorMessage String?
+
+  connectedById String
+  connectedBy   User   @relation("ConnectedAdAccountConnector", fields: [connectedById], references: [id])
+
+  campaigns AdCampaign[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, platform, externalAccountId])
+  @@index([workspaceId, platform, status])
+}
+
+model AdCampaign {
+  id            String      @id @default(cuid())
+  deliverableId String
+  deliverable   Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  connectedAccountId String
+  connectedAccount   ConnectedAdAccount @relation(fields: [connectedAccountId], references: [id], onDelete: Restrict)
+
+  // External IDs — naming volgt Meta-conventie, abstract genoeg voor LinkedIn/Google.
+  externalCampaignId String? // Meta campaign-id, LinkedIn campaign-id, Google campaign resource name
+  externalAdSetId    String? // Meta ad-set-id, LinkedIn campaign-group, Google ad-group
+  externalCreativeId String? // Meta creative-id, LinkedIn creative URN, Google ad-asset
+  externalAdId       String? // Meta ad-id, LinkedIn creative-id, Google ad-id
+
+  status           String // "draft" | "publishing" | "active" | "paused" | "rejected" | "failed"
+  statusMessage    String? @db.Text // platform reason bij rejected/failed
+  lastStatusSyncAt DateTime? // bumped door status-sync job, NULL bij eerste publish
+
+  publishedAt       DateTime?
+  publishedByUserId String?
+  publishedByUser   User?     @relation("AdCampaignPublisher", fields: [publishedByUserId], references: [id])
+
+  // Snapshot van wat naar de API ging, voor audit + later re-submission
+  publishedPayload Json?
+
+  metrics AdMetricSnapshot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([deliverableId])
+  @@index([connectedAccountId, status])
+  @@index([externalCampaignId])
+}
+
+model AdMetricSnapshot {
+  id         String     @id @default(cuid())
+  campaignId String
+  campaign   AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  capturedAt  DateTime
+  windowStart DateTime // metric-bucket start
+  windowEnd   DateTime // metric-bucket end
+
+  impressions     Int?
+  reach           Int?
+  clicks          Int?
+  ctr             Float?
+  cpm             Float?
+  cpc             Float?
+  spend           Float?
+  conversions     Int?
+  conversionValue Float?
+
+  // Platform-specifieke breakdowns (Meta engagement breakdown, LinkedIn lead-form fills,
+  // Google quality-score). Query-able via Postgres JSON-operatoren zonder schema-migratie.
+  raw Json
+
+  createdAt DateTime @default(now())
+
+  @@unique([campaignId, windowStart, windowEnd])
+  @@index([campaignId, capturedAt])
 }
 
 // ============================================================

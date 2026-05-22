@@ -119,6 +119,8 @@ export const cacheKeys = {
     notifications: (wsId: string) => `notifications:${wsId}`,
     studio: (wsId: string) => `studio:${wsId}`,
     contentVersions: (deliverableId: string) => `content-versions:${deliverableId}`,
+    adAccounts: (wsId: string) => `ad-accounts:${wsId}`,
+    adCampaigns: (wsId: string) => `ad-campaigns:${wsId}`,
     allDashboards: 'dashboard:',
     allStatic: 'static:',
   },
