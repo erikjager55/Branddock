@@ -52,7 +52,7 @@ const PLATFORM_PREVIEW_MAP: Record<string, Record<string, PreviewRegistryEntry>>
     'show-notes': { component: PodcastPreview, label: 'Show Notes' },
   },
   facebook: {
-    post: { component: FacebookPostPreview, label: 'Facebook Post' },
+    'organic-post': { component: FacebookPostPreview, label: 'Facebook Post' },
     ad: { component: FacebookPostPreview, label: 'Facebook Ad' },
   },
   x: {

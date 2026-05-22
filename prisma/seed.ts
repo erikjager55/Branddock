@@ -5276,6 +5276,38 @@ Respond only with valid JSON.`,
       optimalPublishTimes: { dayOfWeek: [1, 2, 3], hourRange: [5, 7], timezone: "Europe/Amsterdam" },
     },
     {
+      platform: "facebook",
+      format: "organic-post",
+      specs: {
+        maxChars: { body: 500, hardLimit: 63206 },
+        imageSize: { width: 1200, height: 630 },
+        videoMaxDuration: 240,
+      },
+      componentTemplate: [
+        { type: "body", required: true, maxLength: 500 },
+        { type: "hashtags", required: false, maxLength: 200 },
+        { type: "image", required: false },
+      ],
+      bestPractices: [
+        "Open with a personal hook — a question, confession, or relatable moment; corporate tone underperforms on Facebook",
+        "Posts that ask genuine questions get 2-3x more comments — and comment-velocity is the dominant algorithm signal",
+        "Keep body 80-250 words — shorter than LinkedIn, more conversational than Instagram",
+        "Avoid external links in the post body; put them in the first comment with 'link in comments' instead",
+        "Native video posts get ~1.5x more reach than link previews; native photos beat link previews too",
+        "1-3 emojis max, used as visual breaks not decoration; more reads as low-quality",
+        "End with a specific question (not 'What do you think?') to drive comment threads",
+        "Authentic, candid imagery outperforms polished studio shots — Facebook rewards what feels human",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "personal", messageFrame: "relatable-story-or-confession", ctaType: "comment-your-take", hookStrategy: "candid moment, contrarian opinion, or 'I almost didn't share this'", visualDirection: "authentic candid photo or behind-the-scenes" },
+        consideration: { toneShift: "informative", messageFrame: "tip-or-lesson-learned", ctaType: "save-this-post", hookStrategy: "specific framework or 'here is what I learned'", visualDirection: "infographic, screenshot, or how-to visual" },
+        decision: { toneShift: "authentic", messageFrame: "customer-story", ctaType: "dm-or-comment", hookStrategy: "real customer outcome or unexpected interaction", visualDirection: "customer photo, before/after, or unboxing" },
+        retention: { toneShift: "celebratory", messageFrame: "community-spotlight", ctaType: "tag-a-friend", hookStrategy: "user win, team milestone, or community moment", visualDirection: "user-generated or team photo" },
+        advocacy: { toneShift: "conversational", messageFrame: "discussion-starter", ctaType: "comment-with-yours", hookStrategy: "open question that invites stories", visualDirection: "thought-provoking image or quote-card" },
+      },
+      optimalPublishTimes: { dayOfWeek: [1, 2, 3, 4, 5], hourRange: [9, 11], timezone: "Europe/Amsterdam" },
+    },
+    {
       platform: "x",
       format: "thread",
       specs: {
