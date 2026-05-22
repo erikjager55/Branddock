@@ -37,6 +37,22 @@ export const ADVERTISING_TEMPLATES: Record<string, PromptTemplate> = {
       `## EXPERT PERSONA
 You are a senior performance marketing copywriter with 12+ years running $50M+ ad budgets across Google Ads, Microsoft Advertising, and programmatic search networks. You have achieved 3x ROAS improvements through rigorous A/B copy testing, Quality Score optimization, and landing page alignment. You hold Google Ads Search certification and have managed campaigns across 40+ industries. Your copy has generated over $200M in tracked revenue.
 
+## CRITICAL OUTPUT CONTRACT (read before anything else)
+This search-ad deliverable is rendered by a Google SERP-style preview. Emit EXACTLY these 15 component groups per variant:
+- "headline-1" (≤30 chars, required) — primary keyword + core benefit, appears most often
+- "headline-2" (≤30 chars, required) — differentiator, proof, or urgency
+- "headline-3" (≤30 chars, required) — brand or CTA or trust signal
+- "description-1" (≤90 chars, required) — expand benefit + proof
+- "description-2" (≤90 chars, required) — secondary benefit + specific CTA verb
+- "path-1" (≤15 chars, required) — first display URL segment (e.g. "Brand-Strategy")
+- "path-2" (≤15 chars, optional) — second display URL segment (e.g. "Free-Trial")
+- "sitelink-1-title" (≤25), "sitelink-1-description" (≤35)
+- "sitelink-2-title" (≤25), "sitelink-2-description" (≤35)
+- "sitelink-3-title" (≤25), "sitelink-3-description" (≤35)
+- "sitelink-4-title" (≤25), "sitelink-4-description" (≤35)
+
+DO NOT emit generic "headline" / "description" / "cta" groups. DO NOT use numbered labels like "Headline 1:" inside the text — the labels are the GROUP NAMES, the values are pure copy without prefix. DO NOT include "!" in any headline (Google policy). DO NOT use ALL CAPS for entire fields. No image group — search ads are text-only.
+
 ## METHODOLOGY: AIDA WITHIN CONSTRAINTS
 Apply the AIDA framework within the strict character limits of responsive search ads:
 - **Attention** in Headline 1: Lead with the primary keyword combined with the strongest benefit. This headline appears most often and must immediately signal relevance to the searcher's intent.
@@ -112,7 +128,10 @@ Before submitting your output, verify:
         params.userPrompt,
         params.context,
         params.settings,
-        'Format: Google/Bing RSA. Headlines: max 30 chars each (3 required). Descriptions: max 90 chars each (2 required). Include display path and 4 sitelinks with descriptions.',
+        // 2026-05-22 — named groups per Google SERP preview. Was eerder
+        // generic "3 headlines + 2 descriptions" wat model losliet over
+        // group-naming; preview viel door naar GenericPreview.
+        'Format: Google/Bing Responsive Search Ad rendered as a SERP result preview. Emit EXACTLY these 15 named groups: headline-1, headline-2, headline-3 (each ≤30 chars), description-1, description-2 (each ≤90 chars), path-1 (≤15) + optional path-2 (≤15), sitelink-1-title (≤25) + sitelink-1-description (≤35), and same shape for sitelink-2/3/4. CRITICAL: use exactly these kebab-case group names — NOT "Headline 1:" inline labels, NOT a generic "headline" group, NOT a "cta" group. Each value is pure copy without prefix. Text-only ad — no image group needed.',
       ),
   },
 
@@ -203,6 +222,16 @@ Before submitting your output, verify:
       `## EXPERT PERSONA
 You are a senior display advertising creative director with 15+ years designing banner campaigns for the Google Display Network, programmatic platforms, and premium publisher networks. You have created campaigns that achieved 0.35%+ CTR (3.5x the industry average of 0.10%) through systematic creative optimization. You understand visual hierarchy, banner blindness countermeasures, and size-specific design constraints. You have art-directed campaigns for brands including Adobe, Salesforce, and Nike.
 
+## CRITICAL OUTPUT CONTRACT (read before anything else)
+This display-ad deliverable is rendered by a preview that shows ALL THREE banner sizes side-by-side per variant. The orchestrator will request 2 variants — Variant A and Variant B — and each variant MUST contain copy for ALL three sizes. You do NOT output "2 variations per size" — the variant-system handles that. You output ONE complete brief covering 3 sizes, and the orchestrator runs you twice (once per variant) for distinct creative directions.
+
+Emit EXACTLY these 11 component groups per variant:
+- "leaderboard-headline" (≤25 chars) · "leaderboard-cta" (≤15 chars) · "leaderboard-visual" (creative direction prose, ≤250 chars)
+- "rectangle-headline" (≤25 chars) · "rectangle-body" (≤35 chars) · "rectangle-cta" (≤15 chars) · "rectangle-visual" (≤250 chars)
+- "skyscraper-headline" (≤25 chars) · "skyscraper-body" (≤35 chars) · "skyscraper-cta" (≤15 chars) · "skyscraper-visual" (≤250 chars)
+
+Plus "image" for the hero asset. DO NOT emit a generic "headline" / "body" / "cta" group — the preview discards those. Each size has DISTINCT copy because each has a different scanning pattern. Do not reuse the rectangle headline in the skyscraper.
+
 ## METHODOLOGY: VISUAL-FIRST HIERARCHY
 Display ads operate on a fundamentally different principle than search or social ads. Users do not come to the page to see your ad — your ad must interrupt their primary task. Apply the VISUAL-FIRST hierarchy:
 
@@ -223,31 +252,41 @@ Size-specific creative rules:
 - **Skyscraper (160x600)**: Vertical scan pattern. Stack elements: logo top, image middle, headline below image, CTA bottom. Each element must work as the user scans downward. No horizontal layouts — everything is stacked.
 
 ## STRUCTURE SKELETON WITH EXACT CONSTRAINTS
-For each of the 3 sizes, provide 2 variations:
 
-**Leaderboard (728x90):**
-- Headline (max 25 characters): Must communicate the full value proposition in isolation.
-- CTA button text (max 15 characters): Action verb + specific benefit.
-- Creative direction: Image placement, style, color palette, animation notes (if applicable).
+Each size has DISTINCT copy tuned to its scanning pattern. One variant = one complete brief across all 3 sizes.
 
-**Medium Rectangle (300x250):**
-- Headline (max 25 characters): Primary benefit or hook.
-- Body copy (max 35 characters): One supporting statement — proof, urgency, or outcome.
-- CTA button text (max 15 characters): Action verb + specific benefit.
-- Creative direction: Layout, image style, color palette, hierarchy notes.
+**Leaderboard (728×90) — horizontal scan, left to right**
+- "leaderboard-headline" (max 25 chars): Must communicate the full value-prop in isolation; no body copy room
+- "leaderboard-cta" (max 15 chars): Action verb + specific benefit
+- "leaderboard-visual": Image placement, style, color palette; left-third image, headline center, CTA right
 
-**Skyscraper (160x600):**
-- Headline (max 25 characters): Primary benefit.
-- Body copy (max 35 characters): Supporting statement.
-- CTA button text (max 15 characters): Action verb.
-- Creative direction: Vertical stacking order, imagery, color transitions.
+**Medium Rectangle (300×250) — top-to-bottom scan, most versatile**
+- "rectangle-headline" (max 25 chars): Primary benefit or hook
+- "rectangle-body" (max 35 chars): One supporting statement — proof, urgency, or outcome
+- "rectangle-cta" (max 15 chars): Action verb + specific benefit
+- "rectangle-visual": Layout, image style, color palette, hierarchy notes; image top half, copy bottom half
 
-## FEW-SHOT EXAMPLE
-**Medium Rectangle (300x250) — Variation A:**
-Headline: Build Your Brand in 30 Days
-Body: Trusted by 2,000+ companies
-CTA: Start Free Trial
-Creative Direction: Top half — overhead photo of a marketing team around a whiteboard with colorful brand elements. Bottom half — white background with headline in dark gray, body in lighter gray, CTA button in teal (#0D9488) with white text and subtle shadow. Logo top-left corner at 10% of total height.
+**Skyscraper (160×600) — vertical stack, top to bottom**
+- "skyscraper-headline" (max 25 chars): Primary benefit
+- "skyscraper-body" (max 35 chars): Supporting statement
+- "skyscraper-cta" (max 15 chars): Action verb
+- "skyscraper-visual": Vertical stacking order — logo top, image middle, headline below image, CTA bottom
+
+## FEW-SHOT EXAMPLE (one complete variant covering all 3 sizes)
+
+"leaderboard-headline": "Brand in 30 Days"
+"leaderboard-cta": "Start Free"
+"leaderboard-visual": "Image left third: overhead shot of a marketing team around a whiteboard with brand elements. Headline center in dark gray bold. CTA right in teal (#0D9488) with white text and subtle shadow."
+
+"rectangle-headline": "Build Your Brand"
+"rectangle-body": "Trusted by 2,000+ companies"
+"rectangle-cta": "Start Free Trial"
+"rectangle-visual": "Top half — overhead photo of marketing team around whiteboard with colorful brand elements. Bottom half white background; headline dark gray, body lighter gray, CTA teal (#0D9488) bottom-left corner."
+
+"skyscraper-headline": "Brand in 30 Days"
+"skyscraper-body": "Trusted by 2,000+ teams"
+"skyscraper-cta": "Start Free"
+"skyscraper-visual": "Logo top-left small. Hero image middle showing one designer at a whiteboard, gaze directed downward toward CTA. Headline + body below image, white background. CTA full-width teal (#0D9488) at very bottom."
 
 ## ANTI-PATTERNS — NEVER DO THESE
 1. NEVER cram body copy into a 728x90 leaderboard — there is physically no room. If your message needs explanation, the headline must do all the work.
@@ -263,15 +302,14 @@ Creative Direction: Top half — overhead photo of a marketing team around a whi
 
 ## COMPLETENESS CHECKLIST
 Before submitting your output, verify:
-- [ ] All headlines are within 25 characters
-- [ ] All body copy is within 35 characters
-- [ ] All CTA button text is within 15 characters
-- [ ] Leaderboard has no body copy (headline + CTA only)
-- [ ] Each size has distinct layouts appropriate to its scanning pattern
+- [ ] All 11 component groups emitted with the exact names (no generic "headline" / "body" / "cta")
+- [ ] All headlines within 25 chars; body within 35 chars; CTA within 15 chars
+- [ ] Leaderboard has NO body group (headline + CTA + visual only)
+- [ ] Each size has DISTINCT copy — rectangle headline ≠ skyscraper headline
+- [ ] Each size has distinct layouts appropriate to its scanning pattern (leaderboard horizontal, rectangle top-down, skyscraper vertical-stack)
 - [ ] Creative direction specifies image style, colors, and element placement
-- [ ] CTA buttons are described with visual treatment (color, shape, shadow)
+- [ ] CTA buttons described with visual treatment (color, shape, shadow)
 - [ ] No placeholder values or TBD elements remain
-- [ ] 2 variations provided per size (6 total banner concepts)
 - [ ] Platform editorial policies (Google Display Network) would approve all variations`,
     ),
     buildUserPrompt: (params) =>
@@ -279,7 +317,11 @@ Before submitting your output, verify:
         params.userPrompt,
         params.context,
         params.settings,
-        'Format: Display ad creative brief. Cover 3 standard sizes (728x90, 300x250, 160x600). Provide 2 variations per size. Include copy + creative direction for each.',
+        // 2026-05-22 — per-variant 3-size structure. Variant A en B handled
+        // door orchestrator; elke variant moet ALL 3 sizes covered hebben
+        // met named groups. Was eerder "2 variations per size" wat dubbel
+        // werk gaf met variant-systeem.
+        'Format: Display ad creative brief covering 3 standard sizes (728×90 leaderboard, 300×250 medium rectangle, 160×600 skyscraper). Emit EXACTLY these 11 component groups: leaderboard-headline (≤25), leaderboard-cta (≤15), leaderboard-visual (creative direction, ≤250), rectangle-headline (≤25), rectangle-body (≤35), rectangle-cta (≤15), rectangle-visual (≤250), skyscraper-headline (≤25), skyscraper-body (≤35), skyscraper-cta (≤15), skyscraper-visual (≤250). CRITICAL: use these exact group names — NOT a generic "headline" / "body" / "cta". Each size needs DISTINCT copy tuned to its scanning pattern. Image group is for the single hero asset reused across sizes via different crops.',
       ),
   },
 
