@@ -158,6 +158,22 @@ export function getChecklistForPlatform(
     ];
   }
 
+  // 2026-05-22 — Google Display Ad has 11 per-size groups: each of
+  // leaderboard (728×90) / rectangle (300×250) / skyscraper (160×600)
+  // emits its own headline + cta + visual-direction (plus body for
+  // rectangle + skyscraper). Generic has-body false-flags because
+  // there is no single body group — only per-size pieces. Image is
+  // shared across sizes.
+  if ((platform === 'google' && format === 'display-ad') || contentType === 'display-ad') {
+    return [
+      { id: 'has-display-headlines', label: 'Headline set for all 3 banner sizes', required: true },
+      { id: 'has-display-ctas', label: 'CTA button set for all 3 banner sizes', required: true },
+      { id: 'has-display-visuals', label: 'Visual direction set for all 3 banner sizes', required: true },
+      { id: 'has-image', label: 'Hero image added', required: true },
+      { id: 'display-char-limits', label: 'All fields within GDN character limits (25/35/15)', required: true },
+    ];
+  }
+
   const items: ChecklistItem[] = [
     { id: 'has-body', label: 'Body content is complete', required: true },
   ];

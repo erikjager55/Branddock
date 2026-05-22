@@ -257,6 +257,40 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           });
           break;
         }
+        // 2026-05-22 — Google Display Ad multi-size per-banner checks.
+        case 'has-display-headlines': {
+          const filled = ['leaderboard-headline', 'rectangle-headline', 'skyscraper-headline'].filter(
+            (g) => (previewContent[g]?.content?.trim().length ?? 0) > 0,
+          ).length;
+          passed = filled === 3;
+          break;
+        }
+        case 'has-display-ctas': {
+          const filled = ['leaderboard-cta', 'rectangle-cta', 'skyscraper-cta'].filter(
+            (g) => (previewContent[g]?.content?.trim().length ?? 0) > 0,
+          ).length;
+          passed = filled === 3;
+          break;
+        }
+        case 'has-display-visuals': {
+          const filled = ['leaderboard-visual', 'rectangle-visual', 'skyscraper-visual'].filter(
+            (g) => (previewContent[g]?.content?.trim().length ?? 0) > 0,
+          ).length;
+          passed = filled === 3;
+          break;
+        }
+        case 'display-char-limits': {
+          const caps: Record<string, number> = {
+            'leaderboard-headline': 25, 'rectangle-headline': 25, 'skyscraper-headline': 25,
+            'rectangle-body': 35, 'skyscraper-body': 35,
+            'leaderboard-cta': 15, 'rectangle-cta': 15, 'skyscraper-cta': 15,
+          };
+          passed = Object.entries(caps).every(([group, cap]) => {
+            const content = previewContent[group]?.content ?? '';
+            return content.length <= cap;
+          });
+          break;
+        }
         default:
           passed = false;
       }

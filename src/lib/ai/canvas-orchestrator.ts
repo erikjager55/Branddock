@@ -2361,13 +2361,20 @@ function buildCanvasPrompt(
     'Response schema:',
     '{',
     '  "components": [',
-    '    { "group": "hook", "variants": [{ "content": "## Heading\\n\\nIntro paragraph with **bold emphasis**...\\n\\n### Sub-section\\n\\n- Bullet point one\\n- Bullet point two", "tone": "...", "cta": "Get Started Now" }, ...] }',
+    '    { "group": "<group-name-from-list-above>", "variants": [{ "content": "...", "tone": "...", "cta": "..." }, ...] },',
+    '    { "group": "<another-group-name>", "variants": [...] },',
+    `    // ... ONE entry per group listed above (total: ${textGroups.length} component(s))`,
     '  ],',
     hasImageComponent
       ? '  "imagePrompts": [{ "description": "...", "style": "..." }]'
       : '',
     '}',
     '',
+    // 2026-05-22 — multi-group content-types (display-ad with 11 groups,
+    // search-ad with 15) need explicit reinforcement that the schema example
+    // shows SHAPE not COUNT. Otherwise model emits 1 generic "description"
+    // group and 10 banner-fields stay empty in the preview.
+    `CRITICAL: The "components" array MUST contain exactly ${textGroups.length} ${textGroups.length === 1 ? 'entry' : 'entries'} — one per group listed above. Skipping any group leaves its UI slot empty (placeholder text instead of generated content). Do NOT collapse multiple groups into one generic "description" or "content" group.`,
     angle
       ? 'Each group has exactly 1 variant — make it fully express the angle.'
       : 'Each group must have exactly 2 variants with different creative approaches.',
