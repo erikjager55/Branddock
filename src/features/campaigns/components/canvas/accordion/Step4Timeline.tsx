@@ -294,6 +294,46 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         case 'has-rda-business-name':
           passed = (previewContent['business-name']?.content?.trim().length ?? 0) > 0;
           break;
+        // 2026-05-22 — Retargeting-ad multi-scenario checks. Each
+        // scenario requires 6 assets (primary-text, headline, cta,
+        // creative-direction, offer-strategy, frequency-cap).
+        case 'has-retargeting-cart-abandoner': {
+          const required = ['primary-text', 'headline', 'cta', 'creative-direction', 'offer-strategy', 'frequency-cap'];
+          passed = required.every(
+            (f) => (previewContent[`cart-abandoner-${f}`]?.content?.trim().length ?? 0) > 0,
+          );
+          break;
+        }
+        case 'has-retargeting-page-visitor': {
+          const required = ['primary-text', 'headline', 'cta', 'creative-direction', 'offer-strategy', 'frequency-cap'];
+          passed = required.every(
+            (f) => (previewContent[`page-visitor-${f}`]?.content?.trim().length ?? 0) > 0,
+          );
+          break;
+        }
+        case 'has-retargeting-past-customer': {
+          const required = ['primary-text', 'headline', 'cta', 'creative-direction', 'offer-strategy', 'frequency-cap'];
+          passed = required.every(
+            (f) => (previewContent[`past-customer-${f}`]?.content?.trim().length ?? 0) > 0,
+          );
+          break;
+        }
+        case 'retargeting-char-limits': {
+          const caps: Record<string, number> = {};
+          for (const scenario of ['cart-abandoner', 'page-visitor', 'past-customer']) {
+            caps[`${scenario}-primary-text`] = 300;
+            caps[`${scenario}-headline`] = 40;
+            caps[`${scenario}-cta`] = 20;
+            caps[`${scenario}-creative-direction`] = 250;
+            caps[`${scenario}-offer-strategy`] = 200;
+            caps[`${scenario}-frequency-cap`] = 150;
+          }
+          passed = Object.entries(caps).every(([group, cap]) => {
+            const content = previewContent[group]?.content ?? '';
+            return content.length <= cap;
+          });
+          break;
+        }
         // 2026-05-22 — Native-ad (sponsored article) per-asset checks.
         case 'has-native-headline':
           passed = (previewContent['headline']?.content?.trim().length ?? 0) > 0;

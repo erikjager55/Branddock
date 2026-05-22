@@ -158,6 +158,20 @@ export function getChecklistForPlatform(
     ];
   }
 
+  // 2026-05-22 — Retargeting-ad (meta/retargeting) heeft 3 audience
+  // scenarios (cart-abandoner / page-visitor / past-customer) elk met
+  // 6 assets = 18 named groups + image. Checklist enforces alle 3
+  // scenarios compleet (geen fall-through naar cart-only).
+  if ((platform === 'meta' && format === 'retargeting') || contentType === 'retargeting-ad') {
+    return [
+      { id: 'has-retargeting-cart-abandoner', label: 'Cart Abandoner scenario complete (6 assets)', required: true },
+      { id: 'has-retargeting-page-visitor', label: 'Page Visitor scenario complete (6 assets)', required: true },
+      { id: 'has-retargeting-past-customer', label: 'Past Customer scenario complete (6 assets)', required: true },
+      { id: 'has-image', label: 'Hero image added (shared across scenarios)', required: true },
+      { id: 'retargeting-char-limits', label: 'All assets within retargeting character limits', required: true },
+    ];
+  }
+
   // 2026-05-22 — Native-ad / sponsored article (publisher-side
   // editorial content). 7 named groups + image. Checklist enforces
   // editorial structure (headline + opening + body + brand-integration

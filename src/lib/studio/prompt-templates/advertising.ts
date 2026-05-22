@@ -329,6 +329,29 @@ Before submitting your output, verify:
       `## EXPERT PERSONA
 You are a retargeting and remarketing specialist with 12+ years building advanced audience segmentation and sequential messaging strategies. You have recovered $80M+ in abandoned revenue through precision retargeting campaigns. You understand behavioral psychology, purchase decision cycles, and the critical differences between audience segments at different stages of intent. You have built retargeting frameworks for e-commerce, SaaS, and B2B companies with budgets from $10K to $5M/month.
 
+## CRITICAL OUTPUT CONTRACT (read before anything else)
+This retargeting-ad deliverable is rendered by a preview that shows 3 audience scenarios side-by-side per variant — each with distinct copy because their emotional states fundamentally differ. Emit EXACTLY these 18 named component groups per variant (6 fields × 3 scenarios):
+
+**Cart abandoner scenario** (felt desire, hit friction):
+- "cart-abandoner-primary-text" (≤300 chars) — hook acknowledging cart-state + specific friction-removal message + CTA
+- "cart-abandoner-headline" (≤40 chars) — benefit + urgency when truthful
+- "cart-abandoner-cta" (≤20 chars) — specific action verb ("Complete My Order")
+- "cart-abandoner-creative-direction" (≤250 chars) — image/video style for THIS scenario
+- "cart-abandoner-offer-strategy" (≤200 chars) — what incentive is appropriate (free-shipping, % off, free-onboarding)
+- "cart-abandoner-frequency-cap" (≤150 chars) — how often this audience sees this ad
+
+**Page visitor scenario** (curious but not convinced):
+- "page-visitor-primary-text" (≤300 chars) · "page-visitor-headline" (≤40) · "page-visitor-cta" (≤20)
+- "page-visitor-creative-direction" (≤250) · "page-visitor-offer-strategy" (≤200) · "page-visitor-frequency-cap" (≤150)
+
+**Past customer scenario** (trusted you before — novelty/upsell only):
+- "past-customer-primary-text" (≤300 chars) · "past-customer-headline" (≤40) · "past-customer-cta" (≤20)
+- "past-customer-creative-direction" (≤250) · "past-customer-offer-strategy" (≤200) · "past-customer-frequency-cap" (≤150)
+
+Plus "image" — single hero image works across audience-targeting (different audience-sets see same creative).
+
+DO NOT collapse multiple scenarios into one generic "primary-text" group. DO NOT emit a single "headline" group. The 3 scenarios serve fundamentally different emotional states — one-size-fits-all retargeting fails. Each scenario must have its own 6 assets.
+
 ## METHODOLOGY: EMOTIONAL STATE MAPPING
 Retargeting is not "show the same ad again." Each retargeting audience is in a fundamentally different emotional and cognitive state. You must map the right psychology to the right audience:
 
@@ -403,7 +426,11 @@ Before submitting your output, verify:
         params.userPrompt,
         params.context,
         params.settings,
-        'Format: Retargeting ad copy for 3 separate audience scenarios (cart abandoners, page visitors, past customers). Each with primary text, headline, CTA, creative direction, offer strategy, and frequency cap.',
+        // 2026-05-22 — named-group output contract. 3 audience scenarios in
+        // één deliverable, elk met 6 assets (primary-text, headline, cta,
+        // creative-direction, offer-strategy, frequency-cap) = 18 groups
+        // + image. Preview rendert 3 columns side-by-side.
+        'Format: Retargeting ad copy met 3 distinct audience scenarios (cart-abandoner, page-visitor, past-customer). Emit EXACTLY 18 named component groups + image: voor elk van de 3 scenarios: <scenario>-primary-text (≤300), <scenario>-headline (≤40), <scenario>-cta (≤20), <scenario>-creative-direction (≤250), <scenario>-offer-strategy (≤200), <scenario>-frequency-cap (≤150). CRITICAL: use these exact kebab-case names (e.g. "cart-abandoner-headline") — NOT generic "headline"/"primary-text" of een gecombineerde blob. Each scenario serves a fundamentally different emotional state — never combine into one ad set. Hottest audience (past-customer) krijgt lichtste incentive; coldest (page-visitor) mag stronger offer hebben.',
       ),
   },
 

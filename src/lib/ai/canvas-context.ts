@@ -201,6 +201,7 @@ const CONTENT_TYPE_TO_MEDIUM: Record<string, { platform: string; format: string 
   'display-ad': { platform: 'google', format: 'display-ad' },
   'search-ad': { platform: 'google', format: 'search-ad' },
   'native-ad': { platform: 'native', format: 'sponsored-article' },
+  'retargeting-ad': { platform: 'meta', format: 'retargeting' },
   'twitter-thread': { platform: 'x', format: 'thread' },
   // Ads
   'social-ad': { platform: 'linkedin', format: 'ad' },

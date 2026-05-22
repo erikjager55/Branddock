@@ -11,6 +11,7 @@ import { FacebookAdPreview } from './FacebookAdPreview';
 import { DisplayAdPreview } from './DisplayAdPreview';
 import { SearchAdPreview } from './SearchAdPreview';
 import { NativeAdPreview } from './NativeAdPreview';
+import { RetargetingAdPreview } from './RetargetingAdPreview';
 import { XPostPreview } from './XPostPreview';
 import { XThreadPreview } from './XThreadPreview';
 import { EmailPreview } from './EmailPreview';
@@ -78,6 +79,9 @@ const PLATFORM_PREVIEW_MAP: Record<string, Record<string, PreviewRegistryEntry>>
   native: {
     'sponsored-article': { component: NativeAdPreview, label: 'Native Ad' },
   },
+  meta: {
+    retargeting: { component: RetargetingAdPreview, label: 'Retargeting Ad' },
+  },
 };
 
 const GENERIC_ENTRY: PreviewRegistryEntry = {
@@ -103,6 +107,7 @@ const CONTENT_TYPE_PREVIEW_MAP: Record<string, PreviewRegistryEntry> = {
   'display-ad': { component: DisplayAdPreview, label: 'Display Ad' },
   'search-ad': { component: SearchAdPreview, label: 'Search Ad' },
   'native-ad': { component: NativeAdPreview, label: 'Native Ad' },
+  'retargeting-ad': { component: RetargetingAdPreview, label: 'Retargeting Ad' },
   'x-post': { component: XPostPreview, label: 'X Post' },
   'twitter-thread': { component: XThreadPreview, label: 'X Thread' },
   'video-script': { component: VideoPreview, label: 'Video Script' },
