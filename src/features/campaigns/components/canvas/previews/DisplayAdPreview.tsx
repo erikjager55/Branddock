@@ -40,20 +40,36 @@ interface AssetSlot {
  * mockup (728×90/300×250/160×600) which doesn't reflect how RDA works.
  */
 export function DisplayAdPreview({ isGenerating, heroImage, onAddImage, brandName, imageVariants }: PlatformPreviewProps) {
-  const shortHeadlines: AssetSlot[] = [1, 2, 3, 4, 5].map((n) => ({
-    group: `short-headline-${n}`,
-    entry: useEditableEntry(`short-headline-${n}`),
-    maxLength: 30,
-    label: `Short headline ${n}`,
-  }));
+  // Hooks must be called directly in the component body (not in map/loop/
+  // callback) — react-hooks/rules-of-hooks. Call each useEditableEntry
+  // explicitly, then assemble into asset-slot arrays.
+  const sh1 = useEditableEntry('short-headline-1');
+  const sh2 = useEditableEntry('short-headline-2');
+  const sh3 = useEditableEntry('short-headline-3');
+  const sh4 = useEditableEntry('short-headline-4');
+  const sh5 = useEditableEntry('short-headline-5');
   const longHeadline = useEditableEntry('long-headline');
-  const descriptions: AssetSlot[] = [1, 2, 3, 4, 5].map((n) => ({
-    group: `description-${n}`,
-    entry: useEditableEntry(`description-${n}`),
-    maxLength: 90,
-    label: `Description ${n}`,
-  }));
+  const d1 = useEditableEntry('description-1');
+  const d2 = useEditableEntry('description-2');
+  const d3 = useEditableEntry('description-3');
+  const d4 = useEditableEntry('description-4');
+  const d5 = useEditableEntry('description-5');
   const businessName = useEditableEntry('business-name');
+
+  const shortHeadlines: AssetSlot[] = [
+    { group: 'short-headline-1', entry: sh1, maxLength: 30, label: 'Short headline 1' },
+    { group: 'short-headline-2', entry: sh2, maxLength: 30, label: 'Short headline 2' },
+    { group: 'short-headline-3', entry: sh3, maxLength: 30, label: 'Short headline 3' },
+    { group: 'short-headline-4', entry: sh4, maxLength: 30, label: 'Short headline 4' },
+    { group: 'short-headline-5', entry: sh5, maxLength: 30, label: 'Short headline 5' },
+  ];
+  const descriptions: AssetSlot[] = [
+    { group: 'description-1', entry: d1, maxLength: 90, label: 'Description 1' },
+    { group: 'description-2', entry: d2, maxLength: 90, label: 'Description 2' },
+    { group: 'description-3', entry: d3, maxLength: 90, label: 'Description 3' },
+    { group: 'description-4', entry: d4, maxLength: 90, label: 'Description 4' },
+    { group: 'description-5', entry: d5, maxLength: 90, label: 'Description 5' },
+  ];
 
   const name = brandName ?? 'Brand Name';
   const initial = name.charAt(0).toUpperCase();
