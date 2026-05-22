@@ -1097,6 +1097,9 @@ model Deliverable {
   // App-code lookup: prisma.aICallTrace.findUnique({ where: { id: deliverable.primaryCallTraceId } })
   primaryCallTraceId String?
 
+  // Fase A.5 — Ad Quality Validation Layer (per ADR 2026-05-22-ad-quality-validation)
+  adQualityScores AdQualityScore[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -5124,6 +5127,61 @@ model ContentFidelityScore {
   @@index([contentVersionId])
   @@index([judgeCallTraceId])
   @@index([workspaceId, scoredAt])
+}
+
+// ============================================================
+// Ad Quality Validation Layer (Fase A.5 per ADR
+// 2026-05-22-ad-quality-validation) — platform-bewuste kwaliteits-
+// score per ad-deliverable variant, gebaseerd op L1 static rules +
+// L2 AI-judge, weighted naar 0-100 score + Google Ad Strength label
+// (Poor/Average/Good/Excellent). Roll-out: search-ad eerst (A.5.1),
+// dan display-ad (RDA), facebook-ad, linkedin-ad.
+// ============================================================
+
+model AdQualityScore {
+  id            String      @id @default(cuid())
+  deliverableId String
+  deliverable   Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  variantIndex Int // 0 = Variant A, 1 = Variant B
+  platform     String // "google" | "meta" | "linkedin" | "native"
+  contentType  String // "search-ad" | "display-ad" | "facebook-ad" | "linkedin-ad" | "native-ad" | "retargeting-ad"
+
+  /**
+   * 0-100 weighted aggregate van L1 + L2 (per spec sectie 6.1).
+   */
+  overallScore Int
+
+  /**
+   * "poor" | "average" | "good" | "excellent" — matched aan Google
+   * Ad Strength labels via thresholds 0-25 / 26-50 / 51-75 / 76-100.
+   */
+  ratingLabel String
+
+  /**
+   * L1 deterministic rule results — array van { ruleId, category,
+   * status, message, suggestion?, fieldGroup? }.
+   */
+  l1Results Json
+
+  /**
+   * L2 AI-judge results — { dimensions: { [name]: { score, rationale,
+   * suggestion } }, summary } OR { error, fallback: true } bij L2-failure.
+   */
+  l2Results Json
+
+  /**
+   * SHA-256 over canonical-JSON van (groups + primaryKeyword +
+   * platform + contentType + ruleVersion + judgeVersion + weightsVersion)
+   * voor idempotency-check. Zie content-hash.ts.
+   */
+  contentHash String
+
+  generatedAt DateTime @default(now())
+
+  @@unique([deliverableId, variantIndex, contentHash])
+  @@index([deliverableId])
+  @@index([platform, contentType])
 }
 
 // ============================================================
