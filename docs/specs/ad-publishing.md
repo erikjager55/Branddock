@@ -11,6 +11,7 @@
 ### In scope (deze spec dekt)
 
 - **Fase A — Ads-generation polish**: alle ad-deliverable-types renderen clean in Content Canvas via het 6-laagse routing-pattern.
+- **Fase A.5 — Quality Validation Layer** (toegevoegd 2026-05-22): platform-bewuste kwaliteitsfeedback per ad-generation. L1 static rules + L2 AI-judge, soft-warn UI badge + breakdown drawer, F-VAL judge-architectuur als template. Roll-out: search-ad eerst, dan display-ad + facebook-ad. **Zie [ADR 2026-05-22-ad-quality-validation](../adr/2026-05-22-ad-quality-validation.md)** voor architectuur-keuzes; detail-spec in `docs/specs/ad-quality-validation.md` (separate, niet hier gedupliceerd).
 - **Fase B — Account-link + publish-pipeline**: OAuth per platform, `ConnectedAdAccount` model, "Publish to Meta" UI, creative-spec validatie, status-sync via polling, token-refresh job.
 - **Fase C — Measurement-foundation**: `AdCampaign` + `AdMetricSnapshot` schema, externe-ID storage in publish-flow. Geen UI, geen fetch-job, geen AI.
 - **Platforms**: Meta (Fase B/C primary), LinkedIn (Fase B/C secondary, na MDP approval), Google (Fase A only — search-ad rendert; publish post-spec).
