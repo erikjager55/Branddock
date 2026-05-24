@@ -389,7 +389,12 @@ export async function createClaudeStructuredCompletion<T>(
 ): Promise<T> {
   const client = getAnthropicClient();
   const model = options?.model ?? CLAUDE_SONNET;
-  const maxTokens = options?.maxTokens ?? 8000;
+  // 2026-05-24: default verhoogd 8000 → 16000. SEO pipeline Step 8
+  // (Publication Prep) hit het 8K-limit met 16749 chars output;
+  // pipeline-aggregate steps die alle voorgaande outputs samenbrengen
+  // groeien snel boven 8K JSON. Callers met short-output (kleine
+  // structured-extraction) kunnen alsnog explicit lager zetten.
+  const maxTokens = options?.maxTokens ?? 16000;
   const useThinking = !!options?.thinking;
   // 2026-05-24: Opus 4.7+ heeft `temperature` deprecated (Anthropic API
   // returnt 400 `temperature is deprecated for this model`). Geldt voor

@@ -382,6 +382,17 @@ function extractText(result: unknown): string {
   return String(result);
 }
 
+// 2026-05-24: Per-step maxTokens override. Late pipeline-steps (5+
+// Outline / 7 Editorial / 8 Publication) aggregeren voorgaande outputs
+// en produceren forser JSON. Step 8 (Publication Prep) hit 8K met
+// 16749 chars output → krijgt 32K. Earlier steps blijven op 16K
+// (createClaudeStructuredCompletion default).
+const STEP_MAX_TOKENS: Record<number, number> = {
+  5: 24000,  // Outline & Internal Links — full article outline
+  7: 24000,  // Editorial Review — accumulated revision-tracking
+  8: 32000,  // Publication Prep — pipeline-aggregate JSON output
+};
+
 async function runStructuredStep(
   step: number,
   seoInput: SeoInput,
@@ -407,13 +418,14 @@ async function runStructuredStep(
   };
 
   const { systemPrompt, userPrompt } = buildSeoStepPrompt(step, ctx);
+  const maxTokens = STEP_MAX_TOKENS[step]; // undefined → caller default
 
   const result = await createStructuredCompletion(
     textModel.provider,
     textModel.model,
     systemPrompt,
     userPrompt,
-    { timeoutMs: 120_000 },
+    { timeoutMs: 120_000, maxTokens },
     stepTracking
       ? {
           workspaceId: stepTracking.workspaceId,
