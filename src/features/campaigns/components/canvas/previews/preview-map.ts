@@ -1,5 +1,4 @@
 import type { PreviewRegistryEntry } from '../../../types/canvas.types';
-import { LandingPageVariantPreview } from './LandingPageVariantPreview';
 import { LinkedInPostPreview } from './LinkedInPostPreview';
 import { LinkedInAdPreview } from './LinkedInAdPreview';
 import { LinkedInVideoAdPreview } from './LinkedInVideoAdPreview';
@@ -119,23 +118,18 @@ const CONTENT_TYPE_PREVIEW_MAP: Record<string, PreviewRegistryEntry> = {
 
 // Web-page builder MVP (per ADR 2026-05-22-landing-page-builder-architectuur).
 //
-// Phase 6.4a (2026-05-24): Step 2 ContentVariants voor de 5 Puck-types krijgt
-// een mini `<Puck.Preview>` rendering (LandingPageVariantPreview) ipv de
-// legacy plain-text LandingPagePreview. Helpt de gebruiker variants visueel
-// vergelijken met dezelfde brand-tokens + template als Step 3 — geen
-// verrassingen na doorklik.
+// Phase 6.4 (2026-05-24): Step 2 ContentVariants behoudt de legacy
+// LandingPagePreview (plain-text + image-suggestion) voor de 5 web-page
+// types — user-feedback wees uit dat die opzet beter werkt voor variant-
+// compare dan een mini Puck thumbnail. De LandingPageVariantPreview mini-
+// thumbnail bestaat nog in src/.../previews/ maar wordt niet meer
+// gedispatcht; bewaard voor toekomstig hergebruik in een Step 3-tab of
+// publisher-flow.
 //
-// PuckPageBuilder zelf (Step 3, fullscreen drag-drop + AI-toolbar) blijft via
-// `GenericConfigPanel` → `PuckLayoutWrapper` routing, niet via deze map. Dat
-// patroon staat los van Step 2 zodat we de twee preview-flows onafhankelijk
-// kunnen ontwerpen (preview-thumbnail vs editor).
-const CONTENT_TYPE_PREVIEW_OVERRIDE: Record<string, PreviewRegistryEntry> = {
-  'landing-page': { component: LandingPageVariantPreview, label: 'Landing Page' },
-  'product-page': { component: LandingPageVariantPreview, label: 'Product / Service Page' },
-  'faq-page': { component: LandingPageVariantPreview, label: 'FAQ Page' },
-  'comparison-page': { component: LandingPageVariantPreview, label: 'Comparison Page' },
-  'microsite': { component: LandingPageVariantPreview, label: 'Campaign Microsite' },
-};
+// PuckPageBuilder zelf (Step 3, preview-first met fullscreen layout-editor
+// modal) routet via `GenericConfigPanel` → `PuckLayoutWrapper`, niet via
+// deze map.
+const CONTENT_TYPE_PREVIEW_OVERRIDE: Record<string, PreviewRegistryEntry> = {};
 
 /** Resolve the preview component for a platform + format pair, with
  *  contentType-based fallback when platform/format aren't seeded. */

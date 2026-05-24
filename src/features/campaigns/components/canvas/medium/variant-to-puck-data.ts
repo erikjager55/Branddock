@@ -32,6 +32,17 @@ export function variantToPuckData(
  * by purpose. Falls back to ConceptContext + sensible defaults so templates
  * never receive empty strings (they render their own placeholders).
  *
+ * Two-pass strategy:
+ *  1. Keyed lookup — variant-groups die headline/sub/feature/etc. heten
+ *     worden direct gemapped (snelle path voor gestructureerde generators).
+ *  2. Markdown-blob fallback — wanneer de keyed lookup leeg blijft maar er
+ *     wel een lange tekst-blob is (typisch SEO-pipeline output: één variant
+ *     met "BODY" key + complete markdown-article van 500+ woorden), parse
+ *     die als markdown article en extract headline / sub / features /
+ *     FAQ-items / longText. Lost het Phase 6.4 issue op waar landing-page
+ *     deliverables alleen placeholder-tekst zagen omdat de SEO-output niet
+ *     de verwachte keyed-shape had.
+ *
  * Exported so smoke-tests + future phases can validate the extraction layer
  * separately from template-rendering.
  */
@@ -56,19 +67,57 @@ export function extractFilledFields(
       .map(([, v]) => v.content ?? '')
       .filter(Boolean);
 
+  // Markdown-blob fallback: parse the longest variant content as a full
+  // article when no structured keys match. SEO pipelines write everything
+  // into one "body" group; without this fallback the user only saw
+  // template-default placeholders in Step 3.
+  const longestBlob = textEntries
+    .map(([, v]) => v.content ?? '')
+    .filter((s) => s.length >= 300)
+    .sort((a, b) => b.length - a.length)[0] ?? null;
+  const blobParse = longestBlob ? parseMarkdownArticle(longestBlob) : null;
+
   const headline = stripMarkers(
-    find('headline', 'hero', 'title') ?? ctx?.concept?.campaignTheme ?? '',
+    find('headline', 'hero', 'title')
+      ?? blobParse?.headline
+      ?? ctx?.concept?.campaignTheme
+      ?? '',
   );
   const sub = stripMarkers(
-    find('sub', 'description', 'value', 'tagline') ?? ctx?.concept?.positioningStatement ?? '',
+    find('sub', 'description', 'value', 'tagline')
+      ?? blobParse?.sub
+      ?? ctx?.concept?.positioningStatement
+      ?? '',
   );
-  const ctaLabel = stripMarkers(find('cta', 'button') ?? '').slice(0, 60);
+  const ctaLabel = stripMarkers(find('cta', 'button') ?? blobParse?.ctaLabel ?? '').slice(0, 60);
 
-  const featureItems = parseFeatureItems(findAll('feature', 'benefit'));
-  const faqItems = parseFaqItems(findAll('faq', 'question'));
-  const testimonialQuote = stripMarkers(find('testimonial', 'quote', 'social-proof') ?? '');
+  const keyedFeatures = parseFeatureItems(findAll('feature', 'benefit'));
+  const featureItems = keyedFeatures.length > 0
+    ? keyedFeatures
+    : (blobParse?.featureItems ?? []);
+
+  const keyedFaq = parseFaqItems(findAll('faq', 'question'));
+  const faqItems = keyedFaq.length > 0
+    ? keyedFaq
+    : (blobParse?.faqItems ?? []);
+
+  const testimonialQuote = stripMarkers(
+    find('testimonial', 'quote', 'social-proof')
+      ?? blobParse?.testimonialQuote
+      ?? '',
+  );
   const pricingTiers = parsePricingTiers(findAll('pricing', 'tier', 'plan'));
-  const longText = stripMarkers(findAll('body', 'narrative', 'long', 'content').join('\n\n'));
+  const longTextRaw = stripMarkers(
+    findAll('body', 'narrative', 'long', 'content').join('\n\n')
+    || blobParse?.longText
+    || '',
+  );
+  // Cap longText at 1500 chars so a SEO-pipeline 2000-woorden article doesn't
+  // overwhelm the RichText component default; truncation marker signals the
+  // user that the source content is longer than what landed in the page.
+  const longText = longTextRaw.length > 1500
+    ? longTextRaw.slice(0, 1497) + '…'
+    : longTextRaw;
 
   return {
     headline,
@@ -82,6 +131,118 @@ export function extractFilledFields(
     pricingTiers,
     longText,
   };
+}
+
+/**
+ * Parse a markdown-blob variant (typical SEO-pipeline output) into a
+ * partial FilledFields. Heuristics:
+ *
+ *  - First H1/H2/H3 line → headline.
+ *  - First non-header paragraph after the headline → sub (max 2 sentences).
+ *  - All subsequent H2-H4 sections become:
+ *      - FAQ items when the title ends with "?" (max 6)
+ *      - FeatureGrid items otherwise (max 6, title + first sentence of body)
+ *  - First blockquote (line starting with ">") → testimonialQuote.
+ *  - Whole blob → longText fallback.
+ *
+ * Pure function — testable without DB / React rendering.
+ */
+function parseMarkdownArticle(text: string): Partial<FilledFields> {
+  const lines = text.split('\n').map((l) => l.replace(/\s+$/, ''));
+
+  let headlineIdx = -1;
+  let headline = '';
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^#{1,4}\s+(.+)$/);
+    if (m) {
+      const candidate = m[1].trim();
+      // Skip generic section labels like "BODY", "INTRO" — those are
+      // SEO-pipeline placeholder headers, not the actual page title.
+      if (/^[A-Z]{3,}$/.test(candidate)) continue;
+      headline = candidate;
+      headlineIdx = i;
+      break;
+    }
+  }
+
+  let sub = '';
+  if (headlineIdx >= 0) {
+    for (let i = headlineIdx + 1; i < Math.min(lines.length, headlineIdx + 12); i++) {
+      const trimmed = lines[i].trim();
+      if (!trimmed) continue;
+      if (trimmed.startsWith('#') || trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.startsWith('>')) {
+        continue;
+      }
+      const sentences = trimmed.split(/(?<=[.!?])\s+/).slice(0, 2).join(' ');
+      sub = sentences.length > 200 ? sentences.slice(0, 197) + '…' : sentences;
+      break;
+    }
+  }
+
+  const sections: { title: string; body: string }[] = [];
+  let current: { title: string; body: string } | null = null;
+  for (const line of lines) {
+    const m = line.match(/^#{2,4}\s+(.+)$/);
+    if (m) {
+      if (current) sections.push(current);
+      const title = m[1].trim();
+      if (/^[A-Z]{3,}$/.test(title)) {
+        current = null;
+        continue;
+      }
+      current = { title, body: '' };
+    } else if (current) {
+      current.body += line + '\n';
+    }
+  }
+  if (current) sections.push(current);
+
+  const headlineSection = sections.findIndex((s) => s.title === headline);
+  const remaining = headlineSection >= 0
+    ? sections.slice(headlineSection + 1)
+    : sections;
+
+  const faqItems = remaining
+    .filter((s) => s.title.endsWith('?'))
+    .slice(0, 6)
+    .map((s) => ({
+      question: s.title,
+      answer: firstSentence(s.body) || 'TBD',
+    }));
+
+  const featureItems = remaining
+    .filter((s) => !s.title.endsWith('?'))
+    .slice(0, 6)
+    .map((s) => ({
+      title: s.title,
+      description: firstSentence(s.body) || '',
+    }));
+
+  let testimonialQuote = '';
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('>')) {
+      testimonialQuote = trimmed.replace(/^>\s*/, '').slice(0, 220);
+      break;
+    }
+  }
+
+  return {
+    headline,
+    sub,
+    ctaLabel: '',
+    featureItems,
+    faqItems,
+    testimonialQuote,
+    longText: text.slice(0, 1500),
+  };
+}
+
+function firstSentence(text: string): string {
+  const cleaned = stripMarkers(text.trim());
+  if (!cleaned) return '';
+  const sentence = cleaned.split(/(?<=[.!?])\s+/)[0] ?? cleaned;
+  return sentence.length > 160 ? sentence.slice(0, 157) + '…' : sentence;
 }
 
 /**
