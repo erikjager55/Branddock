@@ -16,6 +16,10 @@ import { getBrandContext } from './brand-context';
 import type { BrandContextBlock } from './prompt-templates';
 import { detectJourneyPhase, type JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
 import { serializePersona } from './context/persona-serializer';
+import {
+  extractBrandTokensFromStyleguide,
+  type BrandTokens,
+} from '@/lib/landing-pages/brand-tokens';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -181,6 +185,14 @@ export interface CanvasContextStack {
    * from variantToPuckData() at that point.
    */
   puckData?: unknown;
+  /**
+   * Structurally-extracted brand tokens (primary/secondary/accent/neutral
+   * hex + heading/body font-family). Loaded server-side from BrandStyleguide
+   * + StyleguideFont per ADR 2026-05-22-landing-page-builder-architectuur.
+   * Always present (uses Branddock defaults when no styleguide exists), so
+   * downstream consumers never branch on null.
+   */
+  brandTokens: BrandTokens;
 }
 
 // ─── Content Type → Platform/Format Mapping ──────────────────
@@ -471,10 +483,24 @@ export async function assembleCanvasContext(
   // Null when never edited — Canvas store seeds via variantToPuckData() on first mount.
   const puckData = settings.puckData ?? null;
 
+  // Structural brand-tokens for the Puck builder — read once, pure-function.
+  // BrandStyleguide is workspace-unique (@@unique([workspaceId])); we eagerly
+  // load colors + fonts so extractBrandTokensFromStyleguide can pick the right
+  // record per category/role without N+1 fetches.
+  const styleguide = await prisma.brandStyleguide.findUnique({
+    where: { workspaceId },
+    select: {
+      primaryFontName: true,
+      colors: { select: { hex: true, category: true, sortOrder: true } },
+      fonts: { select: { name: true, role: true, fontFamily: true, sortOrder: true } },
+    },
+  });
+  const brandTokens = extractBrandTokensFromStyleguide(styleguide);
+
   return {
     brand, concept, journeyPhase, medium,
     deliverableTypeId: deliverable.contentType ?? null,
-    personas, brief, products, contentTypeInputs, visualBrief, puckData,
+    personas, brief, products, contentTypeInputs, visualBrief, puckData, brandTokens,
   };
 }
 
