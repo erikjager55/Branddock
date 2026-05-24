@@ -242,7 +242,7 @@ function testPerTypeTemplates(): void {
       );
     }
     for (const required of c.mustInclude) {
-      assert(`${c.type} contains ${required}`, types.includes(required));
+      assert(`${c.type} contains ${required}`, (types as string[]).includes(required));
     }
   }
 }
@@ -294,7 +294,7 @@ function testHeroSeeding(): void {
     hero?.ctaLabel,
   );
 
-  const cta = data.content.find((c) => c.type === 'BrandCTA')?.props as
+  const cta = data.content.find((c) => (c as { type: string }).type === 'BrandCTA')?.props as
     | { personaId?: string }
     | undefined;
   assert(
