@@ -391,8 +391,12 @@ export async function createClaudeStructuredCompletion<T>(
   const model = options?.model ?? CLAUDE_SONNET;
   const maxTokens = options?.maxTokens ?? 8000;
   const useThinking = !!options?.thinking;
-  // When extended thinking is enabled, temperature MUST be undefined (Anthropic requirement)
-  const temperature = useThinking ? undefined : (options?.temperature ?? 0.3);
+  // 2026-05-24: Opus 4.7+ heeft `temperature` deprecated (Anthropic API
+  // returnt 400 `temperature is deprecated for this model`). Geldt voor
+  // alle Opus 4.7/4.8/5 + Sonnet 4.6+ variants. Behandel net als
+  // thinking-mode: temperature undefined laten.
+  const isTempDeprecated = /opus-4-[789]|opus-5|sonnet-4-[6789]|sonnet-5/.test(model);
+  const temperature = (useThinking || isTempDeprecated) ? undefined : (options?.temperature ?? 0.3);
   // Extended thinking needs more time (thinking + generation) — default 10 min
   const defaultTimeout = useThinking ? 600_000 : 90_000;
 
