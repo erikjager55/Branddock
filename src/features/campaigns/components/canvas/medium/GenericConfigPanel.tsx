@@ -6,6 +6,19 @@ import { MEDIUM_CATEGORY_CONFIGS } from '../../../constants/medium-config-regist
 import type { MediumCategory } from '../../../types/medium-config.types';
 import { MediumConfigLayout } from './MediumConfigLayout';
 import { WebPageLayout } from './WebPageLayout';
+import { PuckLayoutWrapper } from './PuckLayoutWrapper';
+
+// Web-page content-types that route to the Puck-powered builder
+// (per ADR 2026-05-22-landing-page-builder-architectuur). Other web-page
+// types (blog-post / pillar-page / article / etc. — format='blog-article')
+// keep using WebPageLayout's article-preview rendering.
+const PUCK_WEBPAGE_TYPES = new Set([
+  'landing-page',
+  'product-page',
+  'faq-page',
+  'comparison-page',
+  'microsite',
+]);
 import { ConfigSection } from './ConfigSection';
 import { ConfigFieldRenderer } from './ConfigFieldRenderer';
 
@@ -66,10 +79,21 @@ export function GenericConfigPanel({ category, onAdvance, deliverableId }: Gener
     }
   }, [category, isLinkedInPoll]); // eslint-disable-line react-hooks/exhaustive-deps -- config is derived from category
 
-  // Web-page has its own layout with article-specific rendering (hero
-  // styles, layout modes, CTA). All other categories use the unified
-  // MediumConfigLayout (config top, preview bottom).
-  const Layout = category === 'web-page' ? WebPageLayout : MediumConfigLayout;
+  // Web-page split path:
+  //   - 5 Puck-powered types (landing-page / product-page / faq-page /
+  //     comparison-page / microsite) → PuckLayoutWrapper with drag-drop editor
+  //   - blog-article web-page types (blog-post / pillar-page / etc.) →
+  //     legacy WebPageLayout with EditableArticleSection rendering
+  //   - All non-web categories → unified MediumConfigLayout
+  const isPuckWebPage =
+    category === 'web-page'
+    && contentType !== null
+    && PUCK_WEBPAGE_TYPES.has(contentType);
+  const Layout = isPuckWebPage
+    ? PuckLayoutWrapper
+    : category === 'web-page'
+      ? WebPageLayout
+      : MediumConfigLayout;
 
   return (
     <Layout onAdvance={onAdvance} deliverableId={deliverableId}>

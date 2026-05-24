@@ -118,17 +118,17 @@ const CONTENT_TYPE_PREVIEW_MAP: Record<string, PreviewRegistryEntry> = {
 };
 
 // Web-page builder MVP (per ADR 2026-05-22-landing-page-builder-architectuur)
-// Alle 5 web-page content-types renderen via PuckPageBuilder als visual editor.
-// CONTENT_TYPE_PREVIEW_OVERRIDE krijgt voorrang boven PLATFORM_PREVIEW_MAP zodat
-// we per-type kunnen overschrijven zonder de platform/format fallback te raken
-// voor non-web content-types (48 overige types blijven via PLATFORM_PREVIEW_MAP).
-const CONTENT_TYPE_PREVIEW_OVERRIDE: Record<string, PreviewRegistryEntry> = {
-  'landing-page': { component: PuckPageBuilder, label: 'Landing Page' },
-  'product-page': { component: PuckPageBuilder, label: 'Product / Service Page' },
-  'faq-page': { component: PuckPageBuilder, label: 'FAQ Page' },
-  'comparison-page': { component: PuckPageBuilder, label: 'Comparison Page' },
-  'microsite': { component: PuckPageBuilder, label: 'Campaign Microsite' },
-};
+//
+// Phase 6.3 (2026-05-24): PuckPageBuilder dispatch verhuisd van preview-map
+// (Step 2 + Step 3 + Step 4 dispatcher) naar GenericConfigPanel → PuckLayoutWrapper
+// (Step 3 only). preview-map's `resolvePreviewComponent` wordt vanuit Step 2
+// ContentVariants aangeroepen voor variant-preview — daar hoort de oude
+// LandingPagePreview met variant-text-rendering, NIET de Puck-editor (die
+// hoort thuis in Step 3 als Medium-renderer met variant-content als seed).
+// CONTENT_TYPE_PREVIEW_OVERRIDE is daarom leeg gelaten zodat Step 2 weer
+// het originele preview-flow toont. PuckPageBuilder rendert nu via
+// GenericConfigPanel's Layout-switch op contentType ∈ PUCK_WEBPAGE_TYPES.
+const CONTENT_TYPE_PREVIEW_OVERRIDE: Record<string, PreviewRegistryEntry> = {};
 
 /** Resolve the preview component for a platform + format pair, with
  *  contentType-based fallback when platform/format aren't seeded. */
