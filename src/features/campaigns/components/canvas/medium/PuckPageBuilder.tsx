@@ -3,12 +3,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Puck, type Data } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Lock, Unlock } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
 import { variantToPuckData } from './variant-to-puck-data';
 import { ComponentDiffPreviewModal } from './ComponentDiffPreviewModal';
+import {
+  listInstructions,
+  type AiInstructionId,
+} from '@/lib/landing-pages/ai-edit-instructions';
+import { isComponentLocked, toggleComponentLock } from '@/lib/landing-pages/component-lock';
 
 type SpikeData = Data<SpikePuckProps>;
 type ComponentInstance = SpikeData['content'][number];
@@ -108,56 +113,78 @@ export function PuckPageBuilder({
     [persistPuckData],
   );
 
-  const handleShortenHero = useCallback(async () => {
-    setAiError(null);
-    const current = puckData.content.find((c) => c.type === 'BrandHero');
-    if (!current) {
-      setAiError('Geen BrandHero op de pagina om te bewerken');
-      return;
-    }
-    setAiBusy(true);
-    try {
-      const res = await fetch('/api/landing-pages/component-edit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          componentType: current.type,
-          currentProps: current.props,
-          instruction: 'Maak de headline en sub korter en directer.',
-          brandVoiceTone: contextStack?.brand?.brandToneOfVoice ?? null,
-          brandName: contextStack?.brand?.brandName ?? null,
-        }),
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`AI-edit failed: ${res.status} ${txt}`);
-      }
-      const json = (await res.json()) as {
-        proposedProps: Record<string, string>;
-        editDistance: number;
-      };
-      const idx = puckData.content.findIndex((c) => c.type === 'BrandHero');
-      if (idx < 0) {
-        setAiError('BrandHero verdween tijdens AI-call');
+  // Phase 5 minimum-viable target picker: first text-editable component in
+  // the tree. Phase 6+ will hook this into Puck's selection state via
+  // usePuck so the toolbar reflects the user's current canvas selection.
+  const targetIndex = useMemo(() => {
+    const editable = new Set(['BrandHero', 'BrandCTA', 'Testimonial', 'RichText', 'Footer']);
+    return puckData.content.findIndex((c) => editable.has(c.type));
+  }, [puckData]);
+
+  const targetComponent = targetIndex >= 0 ? puckData.content[targetIndex] : null;
+  const targetComponentId = (targetComponent?.props as { id?: string } | undefined)?.id ?? '';
+  const targetLocked = targetComponent
+    ? isComponentLocked(puckData as never, targetComponentId)
+    : false;
+
+  const handleAiEdit = useCallback(
+    async (instructionId: AiInstructionId) => {
+      setAiError(null);
+      if (!targetComponent || targetIndex < 0) {
+        setAiError('Geen text-editable component op de pagina');
         return;
       }
-      const sourceComponent = puckData.content[idx];
-      const proposedComponent = {
-        ...sourceComponent,
-        props: { ...sourceComponent.props, ...json.proposedProps },
-      } as ComponentInstance;
-      setPendingEdit({
-        componentIndex: idx,
-        current: sourceComponent,
-        proposed: proposedComponent,
-        editDistance: json.editDistance,
-      });
-    } catch (err) {
-      setAiError(err instanceof Error ? err.message : 'AI-edit onbekende fout');
-    } finally {
-      setAiBusy(false);
-    }
-  }, [contextStack, puckData]);
+      if (targetLocked) {
+        setAiError('Component is locked — unlock eerst');
+        return;
+      }
+      setAiBusy(true);
+      try {
+        const res = await fetch('/api/landing-pages/component-edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            componentType: targetComponent.type,
+            currentProps: targetComponent.props,
+            instructionId,
+            locked: targetLocked,
+            brandVoiceTone: contextStack?.brand?.brandToneOfVoice ?? null,
+            brandName: contextStack?.brand?.brandName ?? null,
+          }),
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`AI-edit failed: ${res.status} ${txt}`);
+        }
+        const json = (await res.json()) as {
+          proposedProps: Record<string, string>;
+          editDistance: number;
+        };
+        const proposedComponent = {
+          ...targetComponent,
+          props: { ...targetComponent.props, ...json.proposedProps },
+        } as ComponentInstance;
+        setPendingEdit({
+          componentIndex: targetIndex,
+          current: targetComponent,
+          proposed: proposedComponent,
+          editDistance: json.editDistance,
+        });
+      } catch (err) {
+        setAiError(err instanceof Error ? err.message : 'AI-edit onbekende fout');
+      } finally {
+        setAiBusy(false);
+      }
+    },
+    [contextStack, targetComponent, targetIndex, targetLocked],
+  );
+
+  const handleToggleLock = useCallback(() => {
+    if (!targetComponentId) return;
+    const nextData = toggleComponentLock(puckData as never, targetComponentId) as SpikeData;
+    setPuckData(nextData);
+    persistPuckData(nextData);
+  }, [puckData, persistPuckData, targetComponentId]);
 
   const handleAcceptEdit = useCallback(() => {
     if (!pendingEdit) return;
@@ -203,36 +230,63 @@ export function PuckPageBuilder({
         }}
       >
         <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>
-          Web-page builder (Phase 1 — alleen BrandHero + BrandCTA)
+          Web-page builder{targetComponent ? ` — bewerkt: ${targetComponent.type}` : ''}
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           {aiError ? (
-            <span style={{ fontSize: 12, color: '#dc2626' }}>{aiError}</span>
+            <span style={{ fontSize: 12, color: '#dc2626', marginRight: 4 }}>{aiError}</span>
           ) : null}
+          {listInstructions().map((instruction) => (
+            <button
+              key={instruction.id}
+              type="button"
+              onClick={() => handleAiEdit(instruction.id)}
+              disabled={aiBusy || targetLocked || !targetComponent}
+              title={instruction.labelNl ?? instruction.label}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '6px 10px',
+                borderRadius: 6,
+                border: '1px solid #0f172a',
+                background: aiBusy ? '#f1f5f9' : '#0f172a',
+                color: aiBusy ? '#64748b' : '#ffffff',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: aiBusy || targetLocked ? 'not-allowed' : 'pointer',
+                opacity: targetLocked || !targetComponent ? 0.5 : 1,
+              }}
+            >
+              {aiBusy ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <Sparkles size={12} />
+              )}
+              {instruction.labelNl ?? instruction.label}
+            </button>
+          ))}
           <button
             type="button"
-            onClick={handleShortenHero}
-            disabled={aiBusy}
+            onClick={handleToggleLock}
+            disabled={!targetComponent}
+            title={targetLocked ? 'Unlock component' : 'Lock component'}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 6,
-              padding: '8px 14px',
+              gap: 4,
+              padding: '6px 10px',
               borderRadius: 6,
-              border: '1px solid #0f172a',
-              background: aiBusy ? '#f1f5f9' : '#0f172a',
-              color: aiBusy ? '#64748b' : '#ffffff',
-              fontSize: 13,
+              border: `1px solid ${targetLocked ? '#dc2626' : '#cbd5e1'}`,
+              background: targetLocked ? '#fef2f2' : '#ffffff',
+              color: targetLocked ? '#dc2626' : '#475569',
+              fontSize: 12,
               fontWeight: 600,
-              cursor: aiBusy ? 'wait' : 'pointer',
+              cursor: targetComponent ? 'pointer' : 'not-allowed',
             }}
           >
-            {aiBusy ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Sparkles size={14} />
-            )}
-            {aiBusy ? 'Bezig…' : 'AI: maak hero korter'}
+            {targetLocked ? <Lock size={12} /> : <Unlock size={12} />}
+            {targetLocked ? 'Locked' : 'Unlocked'}
           </button>
         </div>
       </div>

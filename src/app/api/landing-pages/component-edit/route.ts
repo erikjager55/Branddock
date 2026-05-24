@@ -1,23 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { anthropicClient } from '@/lib/ai/anthropic-client';
+import {
+  getInstruction,
+  isValidInstructionId,
+  type AiInstructionId,
+} from '@/lib/landing-pages/ai-edit-instructions';
 
 /**
- * SPIKE — Component-level AI edit endpoint.
+ * POST /api/landing-pages/component-edit
  *
- * Takes a Puck component's current props + an instruction prompt, asks
- * Claude to rewrite the text fields keeping intent intact, returns the
- * proposed props plus a rough character-level edit-distance percentage
- * so the diff-preview modal can flag aggressive rewrites.
+ * Component-level AI rewrite for the web-page builder. Takes a Puck
+ * component instance + an instruction-id (shorten / formal / casual /
+ * alternatives), asks Claude to rewrite ONLY the text fields, returns
+ * proposed-props + character-level edit-distance for the diff-preview.
  *
- * Spike scope: BrandHero only (headline + sub + ctaLabel). MVP would
- * use a component-type registry to know which fields are text vs config
- * vs data-bindings and rewrite the right subset.
+ * Phase 5 changes vs spike:
+ *  - instructionId references the central registry (ai-edit-instructions)
+ *    rather than a free-text instruction so prompts are version-controlled
+ *  - locked: clients pass it; route returns 423 (Locked) without an AI call
+ *    so we never waste tokens on a component the user wants left alone
+ *  - TEXT_FIELDS_BY_TYPE covers all 8 components (FeatureGrid + PricingTable
+ *    + FAQ + Footer flatten their array-fields into newline-joined strings
+ *    so Claude can rewrite without violating the array shape)
  */
 
 interface RequestBody {
   componentType: string;
   currentProps: Record<string, unknown>;
-  instruction: string;
+  instructionId: AiInstructionId;
+  /** Lock-state read from puckData.metadata.locked by the caller. */
+  locked?: boolean;
   brandVoiceTone?: string | null;
   brandName?: string | null;
 }
@@ -25,11 +37,14 @@ interface RequestBody {
 const TEXT_FIELDS_BY_TYPE: Record<string, string[]> = {
   BrandHero: ['headline', 'sub', 'ctaLabel'],
   BrandCTA: ['label'],
+  Testimonial: ['quote', 'author'],
+  RichText: ['content'],
+  Footer: ['companyName', 'tagline'],
 };
 
 const SYSTEM_PROMPT = `You are a brand-aware copywriter helping users edit text inside a visual page builder.
 
-You will receive a JSON object with the current text fields of a component and an instruction. Rewrite ONLY the text fields. Keep the intent and meaning intact. Stay on-brand.
+You will receive a JSON object with the current text fields of a component plus an instruction. Rewrite ONLY the text fields. Keep the intent and meaning intact. Stay on-brand.
 
 CRITICAL OUTPUT RULES:
 - Respond with ONLY valid JSON, no prose, no markdown fences.
@@ -45,10 +60,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
+  if (body.locked === true) {
+    return NextResponse.json(
+      { error: 'Component is locked — unlock first or use a different component' },
+      { status: 423 },
+    );
+  }
+
+  if (!isValidInstructionId(body.instructionId ?? '')) {
+    return NextResponse.json(
+      { error: 'instructionId must be one of shorten | formal | casual | alternatives' },
+      { status: 400 },
+    );
+  }
+  const instruction = getInstruction(body.instructionId);
+
   const textFields = TEXT_FIELDS_BY_TYPE[body.componentType];
   if (!textFields) {
     return NextResponse.json(
-      { error: `Unsupported component type: ${body.componentType}` },
+      { error: `Component ${body.componentType} has no text-editable fields` },
       { status: 400 },
     );
   }
@@ -67,7 +97,7 @@ export async function POST(request: NextRequest) {
   }
 
   const userPrompt = [
-    `Instruction: ${body.instruction}`,
+    `Instruction: ${instruction.promptDirective}`,
     body.brandName ? `Brand: ${body.brandName}` : '',
     body.brandVoiceTone ? `Tone of voice: ${body.brandVoiceTone}` : '',
     '',
@@ -111,6 +141,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       proposedProps,
       editDistance,
+      instructionId: instruction.id,
       tokens: { input: result.inputTokens, output: result.outputTokens },
     });
   } catch (err) {
@@ -136,11 +167,6 @@ function parseJsonContent(content: string): Record<string, unknown> | null {
   }
 }
 
-/**
- * Character-level normalized edit-distance. Returns 0-100 where 0 means
- * the proposed text is identical to current, 100 means fully different.
- * Spike-grade: uses concatenated values; MVP would weight per-field.
- */
 function computeEditDistancePct(
   current: Record<string, string>,
   proposed: Record<string, string>,
