@@ -1,5 +1,5 @@
 import type { PreviewRegistryEntry } from '../../../types/canvas.types';
-import { PuckPageBuilder } from '../medium/PuckPageBuilder';
+import { LandingPageVariantPreview } from './LandingPageVariantPreview';
 import { LinkedInPostPreview } from './LinkedInPostPreview';
 import { LinkedInAdPreview } from './LinkedInAdPreview';
 import { LinkedInVideoAdPreview } from './LinkedInVideoAdPreview';
@@ -117,18 +117,25 @@ const CONTENT_TYPE_PREVIEW_MAP: Record<string, PreviewRegistryEntry> = {
   'brand-video-script': { component: VideoPreview, label: 'Brand Video' },
 };
 
-// Web-page builder MVP (per ADR 2026-05-22-landing-page-builder-architectuur)
+// Web-page builder MVP (per ADR 2026-05-22-landing-page-builder-architectuur).
 //
-// Phase 6.3 (2026-05-24): PuckPageBuilder dispatch verhuisd van preview-map
-// (Step 2 + Step 3 + Step 4 dispatcher) naar GenericConfigPanel → PuckLayoutWrapper
-// (Step 3 only). preview-map's `resolvePreviewComponent` wordt vanuit Step 2
-// ContentVariants aangeroepen voor variant-preview — daar hoort de oude
-// LandingPagePreview met variant-text-rendering, NIET de Puck-editor (die
-// hoort thuis in Step 3 als Medium-renderer met variant-content als seed).
-// CONTENT_TYPE_PREVIEW_OVERRIDE is daarom leeg gelaten zodat Step 2 weer
-// het originele preview-flow toont. PuckPageBuilder rendert nu via
-// GenericConfigPanel's Layout-switch op contentType ∈ PUCK_WEBPAGE_TYPES.
-const CONTENT_TYPE_PREVIEW_OVERRIDE: Record<string, PreviewRegistryEntry> = {};
+// Phase 6.4a (2026-05-24): Step 2 ContentVariants voor de 5 Puck-types krijgt
+// een mini `<Puck.Preview>` rendering (LandingPageVariantPreview) ipv de
+// legacy plain-text LandingPagePreview. Helpt de gebruiker variants visueel
+// vergelijken met dezelfde brand-tokens + template als Step 3 — geen
+// verrassingen na doorklik.
+//
+// PuckPageBuilder zelf (Step 3, fullscreen drag-drop + AI-toolbar) blijft via
+// `GenericConfigPanel` → `PuckLayoutWrapper` routing, niet via deze map. Dat
+// patroon staat los van Step 2 zodat we de twee preview-flows onafhankelijk
+// kunnen ontwerpen (preview-thumbnail vs editor).
+const CONTENT_TYPE_PREVIEW_OVERRIDE: Record<string, PreviewRegistryEntry> = {
+  'landing-page': { component: LandingPageVariantPreview, label: 'Landing Page' },
+  'product-page': { component: LandingPageVariantPreview, label: 'Product / Service Page' },
+  'faq-page': { component: LandingPageVariantPreview, label: 'FAQ Page' },
+  'comparison-page': { component: LandingPageVariantPreview, label: 'Comparison Page' },
+  'microsite': { component: LandingPageVariantPreview, label: 'Campaign Microsite' },
+};
 
 /** Resolve the preview component for a platform + format pair, with
  *  contentType-based fallback when platform/format aren't seeded. */

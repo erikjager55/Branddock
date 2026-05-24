@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Puck, type Data } from '@puckeditor/core';
+import { Puck, Render, type Data } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
-import { Sparkles, Loader2, Lock, Unlock, Wand2, Pencil, FileText } from 'lucide-react';
+import { Sparkles, Loader2, Lock, Unlock, Wand2, Pencil, FileText, Layout, X } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
@@ -29,28 +29,27 @@ interface PendingEdit {
 const AUTOSAVE_DEBOUNCE_MS = 1500;
 
 /**
- * Puck-based visual editor mounted as the Step 3 Medium-renderer for the 5
- * web-page content-types (landing-page / product-page / faq-page /
- * comparison-page / microsite). Drop-in for `LandingPagePreview` via the
- * `CONTENT_TYPE_PREVIEW_OVERRIDE` map in `preview-map.ts`.
+ * Preview-first web-page builder for the 5 Puck-powered web-page types
+ * (Phase 6.4b — 2026-05-24 refactor).
  *
- * Data-flow (Phase 1 minimum):
- *  - Hydrate from `contextStack.puckData` (assembled server-side from
- *    `deliverable.settings.puckData` in `assembleCanvasContext`).
- *  - Seed via {@link variantToPuckData} on first mount when nothing is
- *    persisted yet — uses Step 2 variant output + brand context.
- *  - Persist via debounced PATCH to `/api/studio/[deliverableId]` with a
- *    `{ settings: { puckData } }` payload (1500ms debounce). The studio
- *    route shallow-merges existing settings so other keys stay intact.
+ * Default view = full-width `<Render>` of the page so the user immediately
+ * sees the generated result rather than the editor chrome. AI buttons + lock-
+ * toggle + page-level actions live in fixed toolbars above + below the render.
  *
- * AI-edit (Laag 2 in edit-paradigma): the "Maak hero korter" button posts
- * to `/api/landing-pages/component-edit`, opens a side-by-side diff-preview
- * modal, and applies the proposal only on explicit accept (Optie B —
- * always diff-preview).
+ * Drag-drop reorder + Blocks-library + Puck sidebar are reachable via the
+ * "Bewerk layout" button which opens a fullscreen `<Puck>` editor modal —
+ * power-user feature, not the default-flow distraction.
  *
- * Phase 2+ TODO: move puckData to a dedicated Zustand slice with proper
- * modified-flag handling, extend AI-edit menu with more prompts + lock-toggle,
- * add page-level auto-iterate trigger.
+ * Data-flow + persistence (unchanged from Phase 1+6.1):
+ *  - Hydrate from `contextStack.puckData` (server-loaded via
+ *    `assembleCanvasContext`).
+ *  - Seed via {@link variantToPuckData} on first mount when nothing
+ *    persisted yet (uses Step 2 variant-content + brand context).
+ *  - Persist via debounced 1500ms PATCH to /api/studio/[deliverableId].
+ *
+ * Phase 6.5+ TODO: click-to-select on rendered components → AI-toolbar
+ * context-aware. For 6.4b minimum the target-picker stays on "first editable
+ * component" (BrandHero by template-default).
  */
 export function PuckPageBuilder({
   previewContent,
@@ -79,8 +78,8 @@ export function PuckPageBuilder({
   const [pendingEdit, setPendingEdit] = useState<PendingEdit | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
 
-  // Phase 6.1 — page-level state
   type PagePending = {
     current: SpikeData;
     proposed: SpikeData;
@@ -129,9 +128,6 @@ export function PuckPageBuilder({
     [persistPuckData],
   );
 
-  // Phase 5 minimum-viable target picker: first text-editable component in
-  // the tree. Phase 6+ will hook this into Puck's selection state via
-  // usePuck so the toolbar reflects the user's current canvas selection.
   const targetIndex = useMemo(() => {
     const editable = new Set(['BrandHero', 'BrandCTA', 'Testimonial', 'RichText', 'Footer']);
     return puckData.content.findIndex((c) => editable.has(c.type));
@@ -202,8 +198,6 @@ export function PuckPageBuilder({
     persistPuckData(nextData);
   }, [puckData, persistPuckData, targetComponentId]);
 
-  // ─── Phase 6.1 — page-level handlers ────────────────────────
-
   const handleAutoIterate = useCallback(async () => {
     setPageError(null);
     setPageBusy('auto-iterate');
@@ -213,6 +207,7 @@ export function PuckPageBuilder({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           puckData,
+          deliverableId,
           brandVoiceTone: contextStack?.brand?.brandToneOfVoice ?? null,
           brandName: contextStack?.brand?.brandName ?? null,
         }),
@@ -242,7 +237,7 @@ export function PuckPageBuilder({
     } finally {
       setPageBusy(null);
     }
-  }, [puckData, contextStack]);
+  }, [puckData, contextStack, deliverableId]);
 
   const handleStrictRewriteSubmit = useCallback(async (instruction: string) => {
     setPageError(null);
@@ -360,6 +355,7 @@ export function PuckPageBuilder({
 
   return (
     <div>
+      {/* AI-toolbar — bovenkant, component-level edits */}
       <div
         style={{
           display: 'flex',
@@ -370,10 +366,12 @@ export function PuckPageBuilder({
           background: '#f8fafc',
           border: '1px solid #e2e8f0',
           borderRadius: 8,
+          gap: 8,
+          flexWrap: 'wrap',
         }}
       >
         <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>
-          Web-page builder{targetComponent ? ` — bewerkt: ${targetComponent.type}` : ''}
+          AI-bewerkingen{targetComponent ? ` — ${targetComponent.type}` : ''}
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           {aiError ? (
@@ -431,11 +429,41 @@ export function PuckPageBuilder({
             {targetLocked ? <Lock size={12} /> : <Unlock size={12} />}
             {targetLocked ? 'Locked' : 'Unlocked'}
           </button>
+          <button
+            type="button"
+            onClick={() => setEditorOpen(true)}
+            title="Open drag-and-drop layout-editor (componenten herordenen, toevoegen, verwijderen)"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '6px 10px',
+              borderRadius: 6,
+              border: '1px solid #0891b2',
+              background: '#ffffff',
+              color: '#0891b2',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              marginLeft: 8,
+            }}
+          >
+            <Layout size={12} />
+            Bewerk layout
+          </button>
         </div>
       </div>
 
-      <div style={{ height: 720, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-        <Puck config={config} data={puckData} onChange={handlePuckChange} />
+      {/* Full-width page render — preview-first (Phase 6.4b) */}
+      <div
+        style={{
+          border: '1px solid #e2e8f0',
+          borderRadius: 8,
+          overflow: 'hidden',
+          background: '#ffffff',
+        }}
+      >
+        <Render config={config} data={puckData} />
       </div>
 
       {pendingEdit ? (
@@ -449,7 +477,7 @@ export function PuckPageBuilder({
         />
       ) : null}
 
-      {/* Page-level toolbar (Phase 6.1) */}
+      {/* Page-level toolbar */}
       <div
         style={{
           display: 'flex',
@@ -534,6 +562,15 @@ export function PuckPageBuilder({
           onChange={setPromptValue}
           onSubmit={handlePromptSubmit}
           onCancel={() => { setPromptModal(null); setPromptValue(''); }}
+        />
+      ) : null}
+
+      {editorOpen ? (
+        <FullscreenEditorModal
+          config={config}
+          data={puckData}
+          onChange={handlePuckChange}
+          onClose={() => setEditorOpen(false)}
         />
       ) : null}
     </div>
@@ -655,6 +692,92 @@ function PromptInputModal({
             Versturen
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Fullscreen modal that wraps the full `<Puck>` editor for drag-drop / Blocks-
+ * library / properties access. Hidden behind the "Bewerk layout" button so the
+ * preview-first default-view stays uncluttered.
+ *
+ * onChange propagates Puck-edits to the parent state (which also persists
+ * via the 1500ms debounced save). Close button + ESC + backdrop click all
+ * dismiss back to preview.
+ */
+function FullscreenEditorModal({
+  config,
+  data,
+  onChange,
+  onClose,
+}: {
+  config: ReturnType<typeof buildSpikePuckConfig>;
+  data: SpikeData;
+  onChange: (data: SpikeData) => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: '#ffffff',
+        zIndex: 10000,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 20px',
+          borderBottom: '1px solid #e2e8f0',
+          background: '#0f172a',
+          color: '#ffffff',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Layout size={16} />
+          <span style={{ fontWeight: 600, fontSize: 14 }}>Layout-editor</span>
+          <span style={{ fontSize: 12, opacity: 0.7, marginLeft: 8 }}>
+            Sleep componenten · pas volgorde aan · klik X om terug naar preview
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Sluiten — terug naar preview"
+          style={{
+            background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.3)',
+            color: '#ffffff',
+            padding: '6px 12px',
+            borderRadius: 6,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          <X size={14} />
+          Sluit editor
+        </button>
+      </div>
+      <div style={{ flex: 1, overflow: 'hidden' }}>
+        <Puck config={config} data={data} onChange={onChange} />
       </div>
     </div>
   );
