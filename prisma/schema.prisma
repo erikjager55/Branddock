@@ -252,6 +252,10 @@ model Workspace {
   // Emailit campaign sends (4.2 step 4)
   campaignSends CampaignSend[]
 
+  // Web-page builder MVP (per ADR 2026-05-22-landing-page-builder-architectuur)
+  landingPages   LandingPage[]
+  domainMappings DomainMapping[]
+
   // Agent memory (4.3 — pgvector)
   agentMemories AgentMemory[]
 
@@ -1109,6 +1113,11 @@ model Deliverable {
 
   // Fase B — Ad Publishing (per spec ad-publishing.md)
   adCampaigns AdCampaign[]
+
+  // Web-page builder MVP (per ADR 2026-05-22-landing-page-builder-architectuur)
+  // Een deliverable van een web-page contentType krijgt 0..n LandingPage snapshots
+  // (één per publish — immutable per slug-versie).
+  landingPages LandingPage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -5925,4 +5934,71 @@ model StrategyObservationRun {
 
   @@index([workspaceId, createdAt])
   @@index([triggerType])
+}
+
+// ─── Web-page builder MVP (per ADR 2026-05-22-landing-page-builder-architectuur) ───
+
+/**
+ * Snapshot van een gepubliceerde web-page (landing-page / product-page /
+ * faq-page / comparison-page / microsite). Immutable per slug-versie zodat
+ * de live URL stabiel rendert ook al wordt de bron-deliverable in Canvas
+ * verder bewerkt. Pattern volgt CompetitorSnapshot-ADR (immutable snapshots
+ * voor publieke artefacten).
+ */
+model LandingPage {
+  id            String      @id @default(cuid())
+  workspaceId   String
+  deliverableId String
+  /// URL-slug binnen workspace-subdomain — `<slug>` in `<workspace>.branddock.app/<slug>`.
+  slug          String
+  /// Frozen Puck data-tree snapshot bij publish-tijd. Shape: `Data<SpikePuckProps>`
+  /// (Puck core types). Niet gemuteerd na publish — verdere edits leven op
+  /// de bron-deliverable.settings.puckData totdat user opnieuw publisht.
+  puckData      Json
+  status        PageStatus  @default(DRAFT)
+  publishedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deliverable Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId, status])
+  @@index([deliverableId])
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/**
+ * Custom-domain registratie voor een workspace. Phase 1 schema-only (v2-feature
+ * activeert provisioning via Vercel Domains API). `domain` is globally unique
+ * zodat we tijdens host-resolution in middleware één DB-lookup doen.
+ */
+model DomainMapping {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  /// Volledige hostname zoals `pages.klant.nl` — globally unique.
+  domain         String    @unique
+  verifiedAt     DateTime?
+  sslStatus      SslStatus @default(PENDING)
+  /// Vercel Domains API record-id voor revoke/refresh. Null tot v2-flow.
+  vercelDomainId String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+enum SslStatus {
+  PENDING
+  PROVISIONING
+  ACTIVE
+  FAILED
 }

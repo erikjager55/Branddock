@@ -1,4 +1,5 @@
 import type { PreviewRegistryEntry } from '../../../types/canvas.types';
+import { PuckPageBuilder } from '../medium/PuckPageBuilder';
 import { LinkedInPostPreview } from './LinkedInPostPreview';
 import { LinkedInAdPreview } from './LinkedInAdPreview';
 import { LinkedInVideoAdPreview } from './LinkedInVideoAdPreview';
@@ -116,6 +117,19 @@ const CONTENT_TYPE_PREVIEW_MAP: Record<string, PreviewRegistryEntry> = {
   'brand-video-script': { component: VideoPreview, label: 'Brand Video' },
 };
 
+// Web-page builder MVP (per ADR 2026-05-22-landing-page-builder-architectuur)
+// Alle 5 web-page content-types renderen via PuckPageBuilder als visual editor.
+// CONTENT_TYPE_PREVIEW_OVERRIDE krijgt voorrang boven PLATFORM_PREVIEW_MAP zodat
+// we per-type kunnen overschrijven zonder de platform/format fallback te raken
+// voor non-web content-types (48 overige types blijven via PLATFORM_PREVIEW_MAP).
+const CONTENT_TYPE_PREVIEW_OVERRIDE: Record<string, PreviewRegistryEntry> = {
+  'landing-page': { component: PuckPageBuilder, label: 'Landing Page' },
+  'product-page': { component: PuckPageBuilder, label: 'Product / Service Page' },
+  'faq-page': { component: PuckPageBuilder, label: 'FAQ Page' },
+  'comparison-page': { component: PuckPageBuilder, label: 'Comparison Page' },
+  'microsite': { component: PuckPageBuilder, label: 'Campaign Microsite' },
+};
+
 /** Resolve the preview component for a platform + format pair, with
  *  contentType-based fallback when platform/format aren't seeded. */
 export function resolvePreviewComponent(
@@ -123,6 +137,9 @@ export function resolvePreviewComponent(
   format: string | null,
   contentType?: string | null,
 ): PreviewRegistryEntry {
+  if (contentType && CONTENT_TYPE_PREVIEW_OVERRIDE[contentType]) {
+    return CONTENT_TYPE_PREVIEW_OVERRIDE[contentType];
+  }
   if (platform && format) {
     const match = PLATFORM_PREVIEW_MAP[platform]?.[format];
     if (match) return match;

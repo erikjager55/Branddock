@@ -173,6 +173,14 @@ export interface CanvasContextStack {
   contentTypeInputs?: Record<string, string | string[] | number | boolean>;
   /** Strategic visual direction for this content item — see VisualBrief. */
   visualBrief?: VisualBrief | null;
+  /**
+   * Puck data-tree for web-page content-types (landing-page / product-page /
+   * faq-page / comparison-page / microsite). Stored on `deliverable.settings.puckData`
+   * and hydrated into the Canvas store via `setContextStack`. Null when the
+   * deliverable hasn't been edited in the Puck builder yet — caller seeds
+   * from variantToPuckData() at that point.
+   */
+  puckData?: unknown;
 }
 
 // ─── Content Type → Platform/Format Mapping ──────────────────
@@ -459,10 +467,14 @@ export async function assembleCanvasContext(
   // don't lose their visual hint after the schema migration.
   const visualBrief = parseVisualBrief(settings.visualBrief, contentTypeInputs);
 
+  // Puck data-tree for web-page builder (per ADR 2026-05-22-landing-page-builder-architectuur).
+  // Null when never edited — Canvas store seeds via variantToPuckData() on first mount.
+  const puckData = settings.puckData ?? null;
+
   return {
     brand, concept, journeyPhase, medium,
     deliverableTypeId: deliverable.contentType ?? null,
-    personas, brief, products, contentTypeInputs, visualBrief,
+    personas, brief, products, contentTypeInputs, visualBrief, puckData,
   };
 }
 
