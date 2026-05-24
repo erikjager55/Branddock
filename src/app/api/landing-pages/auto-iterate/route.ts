@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { evaluatePageQuality } from '@/lib/landing-pages/page-quality';
+import {
+  evaluatePageQuality,
+  evaluatePageQualityViaFVAL,
+  type PageQualityResult,
+} from '@/lib/landing-pages/page-quality';
 import { wordCount, type PuckLikeData } from '@/lib/landing-pages/puck-data-flatten';
 import { anthropicClient } from '@/lib/ai/anthropic-client';
+import { runFidelityScoring } from '@/lib/brand-fidelity/fidelity-runner';
+import { assembleCanvasContext } from '@/lib/ai/canvas-context';
+import { prisma } from '@/lib/prisma';
 
 /**
  * POST /api/landing-pages/auto-iterate
@@ -28,6 +35,13 @@ interface RequestBody {
   puckData: PuckLikeData;
   brandVoiceTone?: string | null;
   brandName?: string | null;
+  /**
+   * Optional — when supplied + the deliverable exists, swap the heuristic
+   * page-quality stub for the real F-VAL judge composite (3-pillar
+   * style + judge + rules). Falls back to heuristic when the deliverable
+   * lookup fails or the F-VAL run returns null (insufficient signal).
+   */
+  deliverableId?: string;
 }
 
 const SYSTEM_PROMPT = `You are a brand-aware copywriter helping rewrite a published landing-page so it scores higher on a brand-voice + content-quality judge.
@@ -52,7 +66,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'puckData required' }, { status: 400 });
   }
 
-  const judgement = evaluatePageQuality(body.puckData);
+  const judgement = await scoreWithFvalOrFallback(body);
   if (judgement.thresholdMet) {
     return NextResponse.json({
       status: 'skipped',
@@ -100,7 +114,10 @@ export async function POST(request: NextRequest) {
       root: body.puckData.root,
       content: (parsed as { content: PuckLikeData['content'] }).content,
     };
-    const projected = evaluatePageQuality(proposedTree);
+    const projected = await scoreWithFvalOrFallback({
+      ...body,
+      puckData: proposedTree,
+    });
 
     return NextResponse.json({
       status: 'proposal',
@@ -126,5 +143,61 @@ function parseJsonContent(content: string): unknown {
     return JSON.parse(stripped);
   } catch {
     return null;
+  }
+}
+
+/**
+ * Adapter that bridges runFidelityScoring → the FvalRunner contract
+ * expected by evaluatePageQualityViaFVAL. Maps FidelityRunOutcome.result
+ * to the minimal { composite, compositeThreshold, pillars } shape.
+ */
+async function scoreWithFvalOrFallback(body: RequestBody): Promise<PageQualityResult> {
+  if (!body.deliverableId) {
+    return evaluatePageQuality(body.puckData);
+  }
+  try {
+    const deliverable = await prisma.deliverable.findUnique({
+      where: { id: body.deliverableId },
+      select: {
+        id: true,
+        contentType: true,
+        campaign: { select: { workspaceId: true } },
+      },
+    });
+    if (!deliverable) return evaluatePageQuality(body.puckData);
+
+    const workspaceId = deliverable.campaign.workspaceId;
+    const ctx = await assembleCanvasContext(deliverable.id, workspaceId);
+
+    return await evaluatePageQualityViaFVAL({
+      data: body.puckData,
+      ctx,
+      workspaceId,
+      deliverableId: deliverable.id,
+      contentTypeId: deliverable.contentType ?? null,
+      runFVal: async (input) => {
+        const outcome = await runFidelityScoring({
+          workspaceId: input.workspaceId,
+          deliverableId: input.deliverableId,
+          contentTypeId: input.contentTypeId,
+          contentText: input.contentText,
+          stack: input.stack,
+          generatorProvider: 'anthropic',
+        });
+        if (!outcome) return null;
+        return {
+          composite: outcome.result.compositeScore,
+          compositeThreshold: outcome.result.compositeThreshold,
+          pillars: {
+            style: outcome.result.pillars.style?.score ?? null,
+            judge: outcome.result.pillars.judge?.score ?? null,
+            rules: outcome.result.pillars.rules?.score ?? null,
+          },
+        };
+      },
+    });
+  } catch (err) {
+    console.warn('[auto-iterate] FVAL judge failed, using heuristic fallback', err);
+    return evaluatePageQuality(body.puckData);
   }
 }

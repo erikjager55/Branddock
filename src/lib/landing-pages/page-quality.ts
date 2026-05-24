@@ -1,4 +1,5 @@
-import { wordCount, componentTypeCounts, type PuckLikeData } from './puck-data-flatten';
+import { wordCount, componentTypeCounts, flattenPuckText, type PuckLikeData } from './puck-data-flatten';
+import type { CanvasContextStack } from '../ai/canvas-context';
 
 /**
  * Page-quality stub for Phase 6 auto-iterate. Production replaces this
@@ -59,6 +60,86 @@ export function evaluatePageQuality(data: PuckLikeData): PageQualityResult {
       hasHero,
       hasCta,
       hasProof,
+      components: counts,
+    },
+  };
+}
+
+// ─── F-VAL judge integration (production path) ───────────────
+
+/**
+ * Inputs for the F-VAL-backed page-quality evaluator. Mirrors the runtime
+ * dependencies of `runFidelityScoring` but kept loose so smoke-tests can
+ * inject mocks without spinning up Prisma + Anthropic.
+ *
+ * `runFVal` is the injection point: in production routes wire the real
+ * `runFidelityScoring` from `@/lib/brand-fidelity/fidelity-runner`; in
+ * smoke-tests pass a mock that returns a deterministic composite score.
+ */
+export interface FvalEvaluatorInputs {
+  data: PuckLikeData;
+  ctx: CanvasContextStack;
+  workspaceId: string;
+  deliverableId: string;
+  contentTypeId: string | null;
+  runFVal: FvalRunner;
+}
+
+/** Minimal contract over `runFidelityScoring` — keeps page-quality.ts free
+ *  of brand-fidelity imports so the smoke-test can stub it. */
+export type FvalRunner = (input: {
+  workspaceId: string;
+  deliverableId: string;
+  contentTypeId: string | null;
+  contentText: string;
+  stack: CanvasContextStack;
+}) => Promise<{
+  composite: number;
+  compositeThreshold: number;
+  pillars: { style: number | null; judge: number | null; rules: number | null };
+} | null>;
+
+/**
+ * Production page-quality evaluator backed by the existing F-VAL pipeline.
+ *
+ * Flow:
+ *   1. flattenPuckText → contentText for the judge
+ *   2. runFidelityScoring (3-pillar composite) via injected runner
+ *   3. Map FidelityRunOutcome → PageQualityResult shape so callers stay
+ *      identical to the heuristic stub
+ *
+ * Fallback: when the runner returns null (word count < 50, missing brand
+ * personality, etc.) we fall back to the heuristic stub so the route never
+ * crashes — same defense-in-depth pattern as the spike auto-iterate flow.
+ */
+export async function evaluatePageQualityViaFVAL(
+  input: FvalEvaluatorInputs,
+): Promise<PageQualityResult> {
+  const contentText = flattenPuckText(input.data);
+  const fvalOutcome = await input.runFVal({
+    workspaceId: input.workspaceId,
+    deliverableId: input.deliverableId,
+    contentTypeId: input.contentTypeId,
+    contentText,
+    stack: input.ctx,
+  });
+
+  if (!fvalOutcome) {
+    return evaluatePageQuality(input.data);
+  }
+
+  const counts = componentTypeCounts(input.data);
+  return {
+    score: Math.round(fvalOutcome.composite),
+    threshold: fvalOutcome.compositeThreshold,
+    thresholdMet: fvalOutcome.composite >= fvalOutcome.compositeThreshold,
+    signals: {
+      wordCount: wordCount(input.data),
+      hasHero: (counts.BrandHero ?? 0) > 0,
+      hasCta: (counts.BrandCTA ?? 0) > 0,
+      hasProof: (counts.Testimonial ?? 0) > 0
+        || (counts.PricingTable ?? 0) > 0
+        || (counts.FAQ ?? 0) > 0,
       components: counts,
     },
   };
