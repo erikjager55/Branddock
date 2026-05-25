@@ -119,6 +119,25 @@ export async function POST(request: NextRequest) {
       puckData: proposedTree,
     });
 
+    // Hard guard: alleen proposals teruggeven die de page-quality strict
+    // verbeteren. Een proposal die gelijk-blijft of de score verlaagt is per
+    // definitie geen "iteratie" — geeft de user alleen verwarrende
+    // diff-modals waarbij Accepteren netto schade aanricht (bug-vondst
+    // 2026-05-25: Auto-iterate gaf 62 → 60 proposal voor vloerluik-page).
+    if (projected.score <= judgement.score) {
+      return NextResponse.json({
+        status: 'no_improvement',
+        reason: projected.score < judgement.score
+          ? 'projected_score_below_current'
+          : 'projected_score_equal_to_current',
+        score: judgement.score,
+        scoreProjected: projected.score,
+        threshold: judgement.threshold,
+        delta: projected.score - judgement.score,
+        tokens: { input: result.inputTokens, output: result.outputTokens },
+      });
+    }
+
     return NextResponse.json({
       status: 'proposal',
       score: judgement.score,

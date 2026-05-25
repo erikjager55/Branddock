@@ -155,10 +155,18 @@ export function PuckPageBuilder({
       });
       const json = (await res.json()) as
         | { status: 'skipped'; reason: string; score: number; threshold: number }
+        | { status: 'no_improvement'; reason: string; score: number; scoreProjected: number; threshold: number; delta: number }
         | { status: 'proposal'; score: number; scoreProjected: number; threshold: number; proposedPuckData: SpikeData }
         | { status: 'error'; error: string };
       if (json.status === 'skipped') {
         setPageError(`Page passeert al de kwaliteitsdrempel (${json.score}/${json.threshold})`);
+        return;
+      }
+      if (json.status === 'no_improvement') {
+        const sign = json.delta === 0 ? '±0' : `${json.delta}`;
+        setPageError(
+          `Auto-iterate vond geen verbetering (huidig ${json.score} → voorstel ${json.scoreProjected}, Δ${sign}). De huidige page-tekst blijft het beste voorstel.`,
+        );
         return;
       }
       if (json.status === 'error') {
