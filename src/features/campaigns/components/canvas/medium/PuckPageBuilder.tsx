@@ -266,37 +266,7 @@ export function PuckPageBuilder({
 
   return (
     <div className="space-y-3">
-      {/* Page-render met floating action buttons rechtsboven */}
-      <div className="relative rounded-lg border border-gray-200 bg-white overflow-hidden">
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleToggleLock}
-            disabled={!lockTargetComponentId}
-            title={lockTargetLocked ? 'Unlock — sta wijzigingen toe' : 'Lock — bevries huidige inhoud'}
-            className={
-              lockTargetLocked
-                ? 'inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 shadow-sm hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50'
-                : 'inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50'
-            }
-          >
-            {lockTargetLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
-            {lockTargetLocked ? 'Vergrendeld' : 'Ontgrendeld'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditorOpen(true)}
-            title="Open layout-editor — herorden, voeg toe of verwijder componenten"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-          >
-            <Layout className="h-3.5 w-3.5" />
-            Bewerk layout
-          </button>
-        </div>
-        <Render config={config} data={puckData} />
-      </div>
-
-      {/* Page-level toolbar */}
+      {/* Page-level toolbar — boven de render zodat alle acties direct zichtbaar zijn */}
       <div className="flex items-center justify-between gap-2 flex-wrap rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5">
         <div className="text-xs font-semibold text-gray-700">
           Pagina-acties (AI op hele page)
@@ -348,6 +318,36 @@ export function PuckPageBuilder({
             Generate from prompt
           </button>
         </div>
+      </div>
+
+      {/* Page-render met floating action buttons rechtsboven (lock + bewerk-layout) */}
+      <div className="relative rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleToggleLock}
+            disabled={!lockTargetComponentId}
+            title={lockTargetLocked ? 'Unlock — sta wijzigingen toe' : 'Lock — bevries huidige inhoud'}
+            className={
+              lockTargetLocked
+                ? 'inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 shadow-sm hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50'
+                : 'inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50'
+            }
+          >
+            {lockTargetLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+            {lockTargetLocked ? 'Vergrendeld' : 'Ontgrendeld'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditorOpen(true)}
+            title="Open layout-editor — herorden, voeg toe of verwijder componenten"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+          >
+            <Layout className="h-3.5 w-3.5" />
+            Bewerk layout
+          </button>
+        </div>
+        <Render config={config} data={puckData} />
       </div>
 
       {pagePending ? (
