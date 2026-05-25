@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Puck, Render, type Data } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
 import { Loader2, Shield, Wand2, Layout, X } from 'lucide-react';
@@ -362,6 +363,23 @@ function LockToggle({
  * Blocks-library / properties-panel) voor power-user layout-werk. Verstopt
  * achter de "Bewerk layout" knop zodat de preview-first default-view
  * uncluttered blijft.
+ *
+ * Implementation-keuze: React.createPortal naar `document.body` ipv
+ * inline-render in de Step 3 React-tree — voorkomt stacking-context-trap
+ * waar `fixed inset-0` constrained werd tot een transformed parent in
+ * Branddock's app-shell (bug 2026-05-25: Sluit-editor topbar onzichtbaar
+ * + Confirm-Continue knop nog steeds zichtbaar bij open editor).
+ *
+ * UI-keuze: ipv aparte slate-900 topbar BOVEN Puck, vervangen we Puck's
+ * default Publish-knop via `overrides.headerActions` met een Branddock-
+ * primary pill "Sluit editor". Dit consolideert tot één header (Puck's
+ * eigen, met viewport-toggles + zoom + undo/redo behouden) en haalt
+ * Puck's Publish-knop weg (we hebben eigen `/api/landing-pages/publish`).
+ *
+ * Theming: CSS-variable overrides op de wrapper-div mappen Puck's
+ * `--puck-color-azure-*` blauw-palet naar Branddock primary cyan tones,
+ * zodat selection-outlines, focus-rings, en hover-states matchen met
+ * de rest van de app.
  */
 function FullscreenEditorModal({
   config,
@@ -382,29 +400,40 @@ function FullscreenEditorModal({
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  return (
-    <div className="fixed inset-0 z-[10000] flex flex-col bg-white">
-      <div className="flex items-center justify-between border-b border-slate-700 bg-slate-900 px-5 py-3 text-white">
-        <div className="flex items-center gap-2">
-          <Layout className="h-4 w-4" />
-          <span className="text-sm font-semibold">Layout-editor</span>
-          <span className="ml-2 text-xs opacity-70">
-            Sleep componenten · pas volgorde aan · klik buiten om terug naar preview
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Sluiten — terug naar preview"
-          className="inline-flex items-center gap-1.5 rounded-md border border-white/30 px-3 py-1.5 text-xs font-semibold hover:bg-white/10"
-        >
-          <X className="h-3.5 w-3.5" />
-          Sluit editor
-        </button>
-      </div>
-      <div className="flex-1 overflow-hidden">
-        <Puck config={config} data={data} onChange={onChange} />
-      </div>
-    </div>
+  if (typeof window === 'undefined') return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[10000] flex flex-col bg-white"
+      style={{
+        // Map Puck's azure-blauw accent-palette → Branddock primary cyan
+        // (#1FD1B2 + darker hover). Geldt voor selection-outlines, focus-
+        // rings, button-bg, en hover-tints binnen de Puck-editor.
+        ['--puck-color-azure-04' as string]: '#1FD1B2',
+        ['--puck-color-azure-05' as string]: '#0DAFA0',
+        ['--puck-color-azure-11' as string]: '#e8faf7',
+        ['--puck-color-azure-12' as string]: '#f0fdfa',
+      } as React.CSSProperties}
+    >
+      <Puck
+        config={config}
+        data={data}
+        onChange={onChange}
+        overrides={{
+          headerActions: () => (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Sluiten — terug naar preview"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 transition-opacity"
+            >
+              <X className="h-4 w-4" />
+              Sluit editor
+            </button>
+          ),
+        }}
+      />
+    </div>,
+    document.body,
   );
 }
