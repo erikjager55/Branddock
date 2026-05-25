@@ -85,7 +85,7 @@ export function PuckLayoutWrapper({ children: _children, onAdvance, deliverableI
         <div>
           <p className="font-medium">Web-page builder actief</p>
           <p className="text-xs text-emerald-800 mt-0.5">
-            Drag-and-drop editor met brand-aware components. AI-knoppen + diff-preview voor every change.
+            Live preview met brand-tokens uit jouw BrandStyleguide. Gebruik &lsquo;Bewerk layout&rsquo; om componenten te herordenen, of de pagina-acties voor AI-verbeteringen op pagina-niveau.
           </p>
         </div>
       </div>
