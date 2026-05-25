@@ -101,6 +101,11 @@ export function PuckPageBuilder({
 
   const handlePuckChange = useCallback(
     (data: SpikeData) => {
+      // Defense-in-depth: zelfs als de "Bewerk layout"-knop disabled is bij
+      // pageLocked, mag een onChange-event van een al-open editor de page
+      // niet alsnog muteren. Locked = bevries de hele content-tree.
+      const currentRoot = (data.root?.props ?? {}) as Record<string, unknown>;
+      if (currentRoot.locked === true) return;
       setPuckData(data);
       persistPuckData(data);
     },
@@ -213,7 +218,10 @@ export function PuckPageBuilder({
           icon={<Layout className="h-4 w-4" />}
           label="Bewerk layout"
           onClick={() => setEditorOpen(true)}
-          title="Open layout-editor — herorden, voeg toe of verwijder componenten"
+          disabled={pageLocked}
+          title={pageLocked
+            ? 'Pagina is vergrendeld — ontgrendel om de layout te bewerken'
+            : 'Open layout-editor — herorden, voeg toe of verwijder componenten'}
         />
         <LockToggle
           locked={pageLocked}
@@ -284,10 +292,20 @@ function ActionButton({
 }
 
 /**
- * Emerald pill-shape lock-toggle in Branddock-stijl (zoals de Lock-toggle
- * op Brand Styleguide / Personas / Products header). Click toggle't tussen
- * unlocked (emerald-100 bg, handle links) en locked (amber-100 bg, handle
- * rechts) — kleurkeuze mirrort Branddock's bestaande lock-color-coding.
+ * High-contrast pill-shape lock-toggle met expliciete animatie + tekst-label.
+ *
+ * Color-rationale:
+ *  - Unlocked → bg-emerald-500 (helder groen, "page is open voor edits")
+ *  - Locked → bg-amber-500 (helder oranje-geel, "page bevroren")
+ *  - White handle met colored Shield-icon (text-emerald-700 / text-amber-700)
+ *    geeft een tweede contrast-laag bovenop de track-color.
+ *
+ * Animatie: expliciete `duration-300 ease-out` op zowel track-color als
+ * handle-transform, zodat de overgang ~300ms duurt en duidelijk zichtbaar
+ * is (default Tailwind 150ms voelt als "schieten").
+ *
+ * Tekst-label rechts van de toggle bevestigt de state in woorden voor users
+ * die het kleurverschil moeilijk zien.
  */
 function LockToggle({
   locked,
@@ -297,25 +315,30 @@ function LockToggle({
   onToggle: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      role="switch"
-      aria-checked={locked}
-      aria-label={locked ? 'Pagina is vergrendeld — klik om te ontgrendelen' : 'Pagina is ontgrendeld — klik om te vergrendelen'}
-      title={locked ? 'Vergrendeld — klik om te ontgrendelen' : 'Ontgrendeld — klik om te vergrendelen'}
-      className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-        locked ? 'bg-amber-100' : 'bg-emerald-100'
-      }`}
-    >
-      <span
-        className={`absolute inline-flex h-6 w-6 items-center justify-center rounded-full text-white shadow-sm transition-transform ${
-          locked ? 'translate-x-7 bg-amber-600' : 'translate-x-1 bg-emerald-600'
+    <div className="inline-flex items-center gap-2">
+      <button
+        type="button"
+        onClick={onToggle}
+        role="switch"
+        aria-checked={locked}
+        aria-label={locked ? 'Pagina is vergrendeld — klik om te ontgrendelen' : 'Pagina is ontgrendeld — klik om te vergrendelen'}
+        title={locked ? 'Vergrendeld — klik om te ontgrendelen' : 'Ontgrendeld — klik om te vergrendelen'}
+        className={`relative inline-flex h-8 w-14 items-center rounded-full shadow-inner transition-colors duration-300 ease-out ${
+          locked ? 'bg-amber-500' : 'bg-emerald-500'
         }`}
       >
-        <Shield className="h-3.5 w-3.5" />
+        <span
+          className={`absolute inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md transition-transform duration-300 ease-out ${
+            locked ? 'translate-x-7' : 'translate-x-1'
+          }`}
+        >
+          <Shield className={`h-3.5 w-3.5 ${locked ? 'text-amber-600' : 'text-emerald-600'}`} />
+        </span>
+      </button>
+      <span className={`text-sm font-medium ${locked ? 'text-amber-700' : 'text-emerald-700'}`}>
+        {locked ? 'Vergrendeld' : 'Ontgrendeld'}
       </span>
-    </button>
+    </div>
   );
 }
 
