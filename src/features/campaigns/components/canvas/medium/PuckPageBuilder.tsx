@@ -3,53 +3,36 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Puck, Render, type Data } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
-import { Sparkles, Loader2, Lock, Unlock, Wand2, Pencil, FileText, Layout, X } from 'lucide-react';
+import { Loader2, Lock, Unlock, Wand2, Pencil, FileText, Layout, X } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
 import { variantToPuckData } from './variant-to-puck-data';
-import { ComponentDiffPreviewModal } from './ComponentDiffPreviewModal';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
-import {
-  listInstructions,
-  type AiInstructionId,
-} from '@/lib/landing-pages/ai-edit-instructions';
 import { isComponentLocked, toggleComponentLock } from '@/lib/landing-pages/component-lock';
 
 type SpikeData = Data<SpikePuckProps>;
-type ComponentInstance = SpikeData['content'][number];
-
-interface PendingEdit {
-  componentIndex: number;
-  current: ComponentInstance;
-  proposed: ComponentInstance;
-  editDistance: number;
-}
 
 const AUTOSAVE_DEBOUNCE_MS = 1500;
 
 /**
- * Preview-first web-page builder for the 5 Puck-powered web-page types
- * (Phase 6.4b — 2026-05-24 refactor).
+ * Preview-first web-page builder voor de 5 Puck-types (Phase 6.6 — 2026-05-25).
  *
- * Default view = full-width `<Render>` of the page so the user immediately
- * sees the generated result rather than the editor chrome. AI buttons + lock-
- * toggle + page-level actions live in fixed toolbars above + below the render.
+ * UX-keuze (user-feedback browser-smoke): de pagina is geschreven in brand-voice
+ * via Step 2; component-level AI-rewrite (shorten/formal/casual/alternatives)
+ * voegt weinig waarde toe en is verwijderd. Page-level AI (Auto-iterate /
+ * Strict-rewrite / Generate-from-prompt) blijft voor structurele iteraties.
  *
- * Drag-drop reorder + Blocks-library + Puck sidebar are reachable via the
- * "Bewerk layout" button which opens a fullscreen `<Puck>` editor modal —
- * power-user feature, not the default-flow distraction.
+ * Layout:
+ *  - Full-width `<Render>` van puckData = hoofd-view (preview-first)
+ *  - Floating action-buttons rechtsboven: lock-toggle + "Bewerk layout"
+ *  - Page-level toolbar onderaan (3 page-AI actions)
+ *  - Fullscreen Puck editor modal voor drag-drop / Blocks-library / properties
  *
- * Data-flow + persistence (unchanged from Phase 1+6.1):
- *  - Hydrate from `contextStack.puckData` (server-loaded via
- *    `assembleCanvasContext`).
- *  - Seed via {@link variantToPuckData} on first mount when nothing
- *    persisted yet (uses Step 2 variant-content + brand context).
- *  - Persist via debounced 1500ms PATCH to /api/studio/[deliverableId].
- *
- * Phase 6.5+ TODO: click-to-select on rendered components → AI-toolbar
- * context-aware. For 6.4b minimum the target-picker stays on "first editable
- * component" (BrandHero by template-default).
+ * Data-flow (ongewijzigd sinds Phase 1):
+ *  - Hydrate uit `contextStack.puckData` (server-loaded)
+ *  - Seed via {@link variantToPuckData} op first-mount
+ *  - Persist via debounced 1500ms PATCH naar /api/studio/[deliverableId]
  */
 export function PuckPageBuilder({
   previewContent,
@@ -61,7 +44,6 @@ export function PuckPageBuilder({
 
   const config = useMemo(() => buildSpikePuckConfig(contextStack), [contextStack]);
 
-  // Seed once: prefer hydrated data from server, fall back to variant-derived seed.
   const initialData = useMemo<SpikeData>(() => {
     if (
       hydratedPuckData &&
@@ -75,9 +57,6 @@ export function PuckPageBuilder({
   }, []);
 
   const [puckData, setPuckData] = useState<SpikeData>(initialData);
-  const [pendingEdit, setPendingEdit] = useState<PendingEdit | null>(null);
-  const [aiBusy, setAiBusy] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
 
   type PagePending = {
@@ -128,75 +107,28 @@ export function PuckPageBuilder({
     [persistPuckData],
   );
 
-  const targetIndex = useMemo(() => {
+  // Lock-toggle target: first editable component in de tree. Lock geldt
+  // semantisch voor de hele pagina ("bevries de huidige tekst"); in de
+  // fullscreen editor kan per-component locks gezet via Puck sidebar.
+  const lockTargetIndex = useMemo(() => {
     const editable = new Set(['BrandHero', 'BrandCTA', 'Testimonial', 'RichText', 'Footer']);
     return puckData.content.findIndex((c) => editable.has(c.type));
   }, [puckData]);
 
-  const targetComponent = targetIndex >= 0 ? puckData.content[targetIndex] : null;
-  const targetComponentId = (targetComponent?.props as { id?: string } | undefined)?.id ?? '';
-  const targetLocked = targetComponent
-    ? isComponentLocked(puckData as never, targetComponentId)
+  const lockTargetComponentId =
+    lockTargetIndex >= 0
+      ? ((puckData.content[lockTargetIndex].props as { id?: string }).id ?? '')
+      : '';
+  const lockTargetLocked = lockTargetComponentId
+    ? isComponentLocked(puckData as never, lockTargetComponentId)
     : false;
 
-  const handleAiEdit = useCallback(
-    async (instructionId: AiInstructionId) => {
-      setAiError(null);
-      if (!targetComponent || targetIndex < 0) {
-        setAiError('Geen text-editable component op de pagina');
-        return;
-      }
-      if (targetLocked) {
-        setAiError('Component is locked — unlock eerst');
-        return;
-      }
-      setAiBusy(true);
-      try {
-        const res = await fetch('/api/landing-pages/component-edit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            componentType: targetComponent.type,
-            currentProps: targetComponent.props,
-            instructionId,
-            locked: targetLocked,
-            brandVoiceTone: contextStack?.brand?.brandToneOfVoice ?? null,
-            brandName: contextStack?.brand?.brandName ?? null,
-          }),
-        });
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(`AI-edit failed: ${res.status} ${txt}`);
-        }
-        const json = (await res.json()) as {
-          proposedProps: Record<string, string>;
-          editDistance: number;
-        };
-        const proposedComponent = {
-          ...targetComponent,
-          props: { ...targetComponent.props, ...json.proposedProps },
-        } as ComponentInstance;
-        setPendingEdit({
-          componentIndex: targetIndex,
-          current: targetComponent,
-          proposed: proposedComponent,
-          editDistance: json.editDistance,
-        });
-      } catch (err) {
-        setAiError(err instanceof Error ? err.message : 'AI-edit onbekende fout');
-      } finally {
-        setAiBusy(false);
-      }
-    },
-    [contextStack, targetComponent, targetIndex, targetLocked],
-  );
-
   const handleToggleLock = useCallback(() => {
-    if (!targetComponentId) return;
-    const nextData = toggleComponentLock(puckData as never, targetComponentId) as SpikeData;
+    if (!lockTargetComponentId) return;
+    const nextData = toggleComponentLock(puckData as never, lockTargetComponentId) as SpikeData;
     setPuckData(nextData);
     persistPuckData(nextData);
-  }, [puckData, persistPuckData, targetComponentId]);
+  }, [puckData, persistPuckData, lockTargetComponentId]);
 
   const handleAutoIterate = useCallback(async () => {
     setPageError(null);
@@ -324,209 +256,95 @@ export function PuckPageBuilder({
     }
   }, [promptValue, promptModal, handleStrictRewriteSubmit, handleGeneratePageSubmit]);
 
-  const handleAcceptEdit = useCallback(() => {
-    if (!pendingEdit) return;
-    const nextContent = [...puckData.content];
-    nextContent[pendingEdit.componentIndex] = pendingEdit.proposed;
-    const nextData = { ...puckData, content: nextContent };
-    setPuckData(nextData);
-    persistPuckData(nextData);
-    setPendingEdit(null);
-  }, [pendingEdit, puckData, persistPuckData]);
-
   if (isGenerating) {
     return (
-      <div
-        style={{
-          height: 480,
-          border: '1px dashed #cbd5e1',
-          borderRadius: 8,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#64748b',
-          fontSize: 14,
-        }}
-      >
+      <div className="flex items-center justify-center h-[480px] rounded-lg border border-dashed border-gray-200 bg-gray-50 text-sm text-gray-500">
         Wachten op variant-generatie…
       </div>
     );
   }
 
   return (
-    <div>
-      {/* AI-toolbar — bovenkant, component-level edits */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 12,
-          padding: '10px 14px',
-          background: '#f8fafc',
-          border: '1px solid #e2e8f0',
-          borderRadius: 8,
-          gap: 8,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>
-          AI-bewerkingen{targetComponent ? ` — ${targetComponent.type}` : ''}
-        </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-          {aiError ? (
-            <span style={{ fontSize: 12, color: '#dc2626', marginRight: 4 }}>{aiError}</span>
-          ) : null}
-          {listInstructions().map((instruction) => (
-            <button
-              key={instruction.id}
-              type="button"
-              onClick={() => handleAiEdit(instruction.id)}
-              disabled={aiBusy || targetLocked || !targetComponent}
-              title={instruction.labelNl ?? instruction.label}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '6px 10px',
-                borderRadius: 6,
-                border: '1px solid #0f172a',
-                background: aiBusy ? '#f1f5f9' : '#0f172a',
-                color: aiBusy ? '#64748b' : '#ffffff',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: aiBusy || targetLocked ? 'not-allowed' : 'pointer',
-                opacity: targetLocked || !targetComponent ? 0.5 : 1,
-              }}
-            >
-              {aiBusy ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <Sparkles size={12} />
-              )}
-              {instruction.labelNl ?? instruction.label}
-            </button>
-          ))}
+    <div className="space-y-3">
+      {/* Page-render met floating action buttons rechtsboven */}
+      <div className="relative rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
           <button
             type="button"
             onClick={handleToggleLock}
-            disabled={!targetComponent}
-            title={targetLocked ? 'Unlock component' : 'Lock component'}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '6px 10px',
-              borderRadius: 6,
-              border: `1px solid ${targetLocked ? '#dc2626' : '#cbd5e1'}`,
-              background: targetLocked ? '#fef2f2' : '#ffffff',
-              color: targetLocked ? '#dc2626' : '#475569',
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: targetComponent ? 'pointer' : 'not-allowed',
-            }}
+            disabled={!lockTargetComponentId}
+            title={lockTargetLocked ? 'Unlock — sta wijzigingen toe' : 'Lock — bevries huidige inhoud'}
+            className={
+              lockTargetLocked
+                ? 'inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 shadow-sm hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50'
+                : 'inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50'
+            }
           >
-            {targetLocked ? <Lock size={12} /> : <Unlock size={12} />}
-            {targetLocked ? 'Locked' : 'Unlocked'}
+            {lockTargetLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+            {lockTargetLocked ? 'Vergrendeld' : 'Ontgrendeld'}
           </button>
           <button
             type="button"
             onClick={() => setEditorOpen(true)}
-            title="Open drag-and-drop layout-editor (componenten herordenen, toevoegen, verwijderen)"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '6px 10px',
-              borderRadius: 6,
-              border: '1px solid #0891b2',
-              background: '#ffffff',
-              color: '#0891b2',
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              marginLeft: 8,
-            }}
+            title="Open layout-editor — herorden, voeg toe of verwijder componenten"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
           >
-            <Layout size={12} />
+            <Layout className="h-3.5 w-3.5" />
             Bewerk layout
           </button>
         </div>
-      </div>
-
-      {/* Full-width page render — preview-first (Phase 6.4b) */}
-      <div
-        style={{
-          border: '1px solid #e2e8f0',
-          borderRadius: 8,
-          overflow: 'hidden',
-          background: '#ffffff',
-        }}
-      >
         <Render config={config} data={puckData} />
       </div>
 
-      {pendingEdit ? (
-        <ComponentDiffPreviewModal
-          config={config}
-          current={pendingEdit.current}
-          proposed={pendingEdit.proposed}
-          editDistance={pendingEdit.editDistance}
-          onAccept={handleAcceptEdit}
-          onReject={() => setPendingEdit(null)}
-        />
-      ) : null}
-
       {/* Page-level toolbar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginTop: 12,
-          padding: '10px 14px',
-          background: '#f1f5f9',
-          border: '1px solid #cbd5e1',
-          borderRadius: 8,
-          gap: 8,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div style={{ fontSize: 12, color: '#334155', fontWeight: 600 }}>
+      <div className="flex items-center justify-between gap-2 flex-wrap rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5">
+        <div className="text-xs font-semibold text-gray-700">
           Pagina-acties (AI op hele page)
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="flex items-center gap-2 flex-wrap">
           {pageError ? (
-            <span style={{ fontSize: 12, color: '#dc2626' }}>{pageError}</span>
+            <span className="text-xs text-red-600">{pageError}</span>
           ) : null}
           <button
             type="button"
             onClick={handleAutoIterate}
             disabled={pageBusy !== null}
-            title="Verbeter automatisch wanneer score &lt; threshold"
-            style={pageButtonStyle(pageBusy === 'auto-iterate')}
+            title="Verbeter automatisch wanneer de paginakwaliteit onder de drempel zit"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
           >
-            {pageBusy === 'auto-iterate' ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+            {pageBusy === 'auto-iterate' ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Wand2 className="h-3.5 w-3.5" />
+            )}
             Auto-iterate
           </button>
           <button
             type="button"
             onClick={() => { setPromptModal('strict-rewrite'); setPromptValue(''); }}
             disabled={pageBusy !== null}
-            title="Herschrijf de hele page met jouw instructie"
-            style={pageButtonStyle(pageBusy === 'strict-rewrite')}
+            title="Herschrijf de hele pagina met jouw instructie"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
           >
-            {pageBusy === 'strict-rewrite' ? <Loader2 size={12} className="animate-spin" /> : <Pencil size={12} />}
+            {pageBusy === 'strict-rewrite' ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Pencil className="h-3.5 w-3.5" />
+            )}
             Strict-rewrite
           </button>
           <button
             type="button"
             onClick={() => { setPromptModal('generate-page'); setPromptValue(''); }}
             disabled={pageBusy !== null}
-            title="Bouw page vanaf nul met een prompt — overschrijft huidige content"
-            style={pageButtonStyle(pageBusy === 'generate-page')}
+            title="Genereer een nieuwe pagina vanaf nul met een prompt"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60"
           >
-            {pageBusy === 'generate-page' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
+            {pageBusy === 'generate-page' ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <FileText className="h-3.5 w-3.5" />
+            )}
             Generate from prompt
           </button>
         </div>
@@ -577,22 +395,6 @@ export function PuckPageBuilder({
   );
 }
 
-function pageButtonStyle(busy: boolean) {
-  return {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 4,
-    padding: '6px 10px',
-    borderRadius: 6,
-    border: '1px solid #0891b2',
-    background: busy ? '#cffafe' : '#0891b2',
-    color: busy ? '#0e7490' : '#ffffff',
-    fontSize: 12,
-    fontWeight: 600,
-    cursor: busy ? 'wait' : 'pointer',
-  } as const;
-}
-
 function PromptInputModal({
   title,
   placeholder,
@@ -618,59 +420,26 @@ function PromptInputModal({
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(15, 23, 42, 0.6)',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-      }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-6"
       onClick={onCancel}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: '#ffffff',
-          borderRadius: 12,
-          width: '100%',
-          maxWidth: 560,
-          padding: 24,
-        }}
+        className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl"
       >
-        <h2 style={{ margin: '0 0 16px', fontSize: 17, color: '#0f172a' }}>{title}</h2>
+        <h2 className="mb-4 text-base font-semibold text-slate-900">{title}</h2>
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           autoFocus
-          style={{
-            width: '100%',
-            minHeight: 100,
-            padding: 10,
-            border: '1px solid #cbd5e1',
-            borderRadius: 8,
-            fontSize: 14,
-            fontFamily: 'inherit',
-            resize: 'vertical',
-          }}
+          className="w-full min-h-[100px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-y"
         />
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+        <div className="mt-4 flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 6,
-              border: '1px solid #cbd5e1',
-              background: '#ffffff',
-              fontWeight: 500,
-              fontSize: 13,
-              cursor: 'pointer',
-              color: '#334155',
-            }}
+            className="rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Annuleren
           </button>
@@ -678,16 +447,7 @@ function PromptInputModal({
             type="button"
             onClick={onSubmit}
             disabled={value.trim().length < 3}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 6,
-              border: 'none',
-              background: value.trim().length < 3 ? '#cbd5e1' : '#0f172a',
-              color: '#ffffff',
-              fontWeight: 600,
-              fontSize: 13,
-              cursor: value.trim().length < 3 ? 'not-allowed' : 'pointer',
-            }}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Versturen
           </button>
@@ -698,13 +458,10 @@ function PromptInputModal({
 }
 
 /**
- * Fullscreen modal that wraps the full `<Puck>` editor for drag-drop / Blocks-
- * library / properties access. Hidden behind the "Bewerk layout" button so the
- * preview-first default-view stays uncluttered.
- *
- * onChange propagates Puck-edits to the parent state (which also persists
- * via the 1500ms debounced save). Close button + ESC + backdrop click all
- * dismiss back to preview.
+ * Fullscreen modal die de volledige `<Puck>` editor opent (drag-drop /
+ * Blocks-library / properties-panel) voor power-user layout-werk. Verstopt
+ * achter de "Bewerk layout" knop zodat de preview-first default-view
+ * uncluttered blijft.
  */
 function FullscreenEditorModal({
   config,
@@ -726,57 +483,26 @@ function FullscreenEditorModal({
   }, [onClose]);
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: '#ffffff',
-        zIndex: 10000,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 20px',
-          borderBottom: '1px solid #e2e8f0',
-          background: '#0f172a',
-          color: '#ffffff',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Layout size={16} />
-          <span style={{ fontWeight: 600, fontSize: 14 }}>Layout-editor</span>
-          <span style={{ fontSize: 12, opacity: 0.7, marginLeft: 8 }}>
-            Sleep componenten · pas volgorde aan · klik X om terug naar preview
+    <div className="fixed inset-0 z-[10000] flex flex-col bg-white">
+      <div className="flex items-center justify-between border-b border-slate-700 bg-slate-900 px-5 py-3 text-white">
+        <div className="flex items-center gap-2">
+          <Layout className="h-4 w-4" />
+          <span className="text-sm font-semibold">Layout-editor</span>
+          <span className="ml-2 text-xs opacity-70">
+            Sleep componenten · pas volgorde aan · klik buiten om terug naar preview
           </span>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="Sluiten — terug naar preview"
-          style={{
-            background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.3)',
-            color: '#ffffff',
-            padding: '6px 12px',
-            borderRadius: 6,
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 13,
-            fontWeight: 600,
-          }}
+          className="inline-flex items-center gap-1.5 rounded-md border border-white/30 px-3 py-1.5 text-xs font-semibold hover:bg-white/10"
         >
-          <X size={14} />
+          <X className="h-3.5 w-3.5" />
           Sluit editor
         </button>
       </div>
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      <div className="flex-1 overflow-hidden">
         <Puck config={config} data={data} onChange={onChange} />
       </div>
     </div>
