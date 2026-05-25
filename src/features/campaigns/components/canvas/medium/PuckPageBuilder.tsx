@@ -428,25 +428,25 @@ function FullscreenEditorModal({
         ['--puck-color-azure-12' as string]: '#f0fdfa',
       } as React.CSSProperties}
     >
-      {/* Branddock-stijl topbar BOVEN Puck — garandeert dat "Sluit editor"
-          altijd zichtbaar is op viewport-top, onafhankelijk van Puck's
-          eigen header-layout of eventuele CSS-conflicten. */}
+      {/* Branddock-style topbar ABOVE Puck — guarantees that "Close editor"
+          is always visible at viewport-top, independent of Puck's own
+          header-layout or any CSS conflicts. */}
       <div className="flex items-center justify-between border-b border-gray-200 bg-white px-5 py-3 shadow-sm">
         <div className="flex items-center gap-2">
           <Layout className="h-4 w-4 text-gray-600" />
-          <span className="text-sm font-semibold text-gray-900">Layout-editor</span>
+          <span className="text-sm font-semibold text-gray-900">Layout editor</span>
           <span className="ml-2 text-xs text-gray-500">
-            Sleep componenten · pas volgorde aan · ESC of &lsquo;Sluit editor&rsquo; om terug
+            Drag components · reorder · ESC or &lsquo;Close editor&rsquo; to return
           </span>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Sluiten — terug naar preview"
+          aria-label="Close — back to preview"
           className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 transition-opacity"
         >
           <X className="h-4 w-4" />
-          Sluit editor
+          Close editor
         </button>
       </div>
       <div style={{ flex: 1, overflow: 'hidden' }}>
