@@ -404,8 +404,21 @@ function FullscreenEditorModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[10000] flex flex-col bg-white"
       style={{
+        // Inline-style fixed-positioning + max z-index om Tailwind-JIT-
+        // compile issues (`z-[10000]` werd niet altijd opgepikt) en
+        // stacking-context-traps van Branddock's app-chrome (z-30 sticky
+        // top-nav + sidebar) te bypassen. Max int32 = 2147483647 garandeert
+        // dat geen ander element ooit boven dit modal komt te liggen.
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 2147483647,
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#ffffff',
         // Map Puck's azure-blauw accent-palette → Branddock primary cyan
         // (#1FD1B2 + darker hover). Geldt voor selection-outlines, focus-
         // rings, button-bg, en hover-tints binnen de Puck-editor.
@@ -415,24 +428,42 @@ function FullscreenEditorModal({
         ['--puck-color-azure-12' as string]: '#f0fdfa',
       } as React.CSSProperties}
     >
-      <Puck
-        config={config}
-        data={data}
-        onChange={onChange}
-        overrides={{
-          headerActions: () => (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Sluiten — terug naar preview"
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 transition-opacity"
-            >
-              <X className="h-4 w-4" />
-              Sluit editor
-            </button>
-          ),
-        }}
-      />
+      {/* Branddock-stijl topbar BOVEN Puck — garandeert dat "Sluit editor"
+          altijd zichtbaar is op viewport-top, onafhankelijk van Puck's
+          eigen header-layout of eventuele CSS-conflicten. */}
+      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-5 py-3 shadow-sm">
+        <div className="flex items-center gap-2">
+          <Layout className="h-4 w-4 text-gray-600" />
+          <span className="text-sm font-semibold text-gray-900">Layout-editor</span>
+          <span className="ml-2 text-xs text-gray-500">
+            Sleep componenten · pas volgorde aan · ESC of &lsquo;Sluit editor&rsquo; om terug
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Sluiten — terug naar preview"
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 transition-opacity"
+        >
+          <X className="h-4 w-4" />
+          Sluit editor
+        </button>
+      </div>
+      <div style={{ flex: 1, overflow: 'hidden' }}>
+        <Puck
+          config={config}
+          data={data}
+          onChange={onChange}
+          overrides={{
+            // Vervang Puck's default Publish-knop met een lege fragment —
+            // we hebben eigen `/api/landing-pages/publish` flow buiten de
+            // editor. De close-knop zit in onze eigen topbar hierboven.
+            // Fragment ipv null omdat Puck's RenderFunc een ReactElement
+            // verwacht (geen null).
+            headerActions: () => <></>,
+          }}
+        />
+      </div>
     </div>,
     document.body,
   );
