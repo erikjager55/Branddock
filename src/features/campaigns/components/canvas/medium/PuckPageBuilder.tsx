@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Puck, Render, type Data } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
-import { Loader2, Lock, Unlock, Wand2, Pencil, FileText, Layout, X } from 'lucide-react';
+import { Loader2, Shield, Wand2, Layout, X } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
@@ -65,13 +65,11 @@ export function PuckPageBuilder({
     scoreBefore: number;
     scoreProjected: number;
     threshold: number;
-    source: 'auto-iterate' | 'strict-rewrite';
+    source: 'auto-iterate';
   };
   const [pagePending, setPagePending] = useState<PagePending | null>(null);
-  const [pageBusy, setPageBusy] = useState<null | 'auto-iterate' | 'strict-rewrite' | 'generate-page'>(null);
+  const [pageBusy, setPageBusy] = useState<null | 'auto-iterate'>(null);
   const [pageError, setPageError] = useState<string | null>(null);
-  const [promptModal, setPromptModal] = useState<null | 'strict-rewrite' | 'generate-page'>(null);
-  const [promptValue, setPromptValue] = useState('');
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -171,69 +169,6 @@ export function PuckPageBuilder({
     }
   }, [puckData, contextStack, deliverableId]);
 
-  const handleStrictRewriteSubmit = useCallback(async (instruction: string) => {
-    setPageError(null);
-    setPageBusy('strict-rewrite');
-    try {
-      const res = await fetch('/api/landing-pages/strict-rewrite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          puckData,
-          instruction,
-          brandVoiceTone: contextStack?.brand?.brandToneOfVoice ?? null,
-          brandName: contextStack?.brand?.brandName ?? null,
-        }),
-      });
-      const json = (await res.json()) as
-        | { status: 'proposal'; score: number; scoreProjected: number; threshold: number; proposedPuckData: SpikeData }
-        | { status: 'error'; error: string };
-      if (json.status === 'error') {
-        setPageError(json.error);
-        return;
-      }
-      setPagePending({
-        current: puckData,
-        proposed: json.proposedPuckData,
-        scoreBefore: json.score,
-        scoreProjected: json.scoreProjected,
-        threshold: json.threshold,
-        source: 'strict-rewrite',
-      });
-    } catch (err) {
-      setPageError(err instanceof Error ? err.message : 'strict-rewrite failed');
-    } finally {
-      setPageBusy(null);
-    }
-  }, [puckData, contextStack]);
-
-  const handleGeneratePageSubmit = useCallback(async (prompt: string) => {
-    if (!deliverableId) {
-      setPageError('Geen deliverableId — kan generate niet starten');
-      return;
-    }
-    setPageError(null);
-    setPageBusy('generate-page');
-    try {
-      const res = await fetch('/api/landing-pages/generate-page', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deliverableId, prompt }),
-      });
-      const json = (await res.json()) as { puckData?: SpikeData; error?: string };
-      if (!res.ok || !json.puckData) {
-        setPageError(json.error ?? 'generate-page failed');
-        return;
-      }
-      setPuckData(json.puckData);
-      persistPuckData(json.puckData);
-    } catch (err) {
-      setPageError(err instanceof Error ? err.message : 'generate-page failed');
-    } finally {
-      setPageBusy(null);
-    }
-  }, [deliverableId, persistPuckData]);
-
   const handlePageAccept = useCallback(
     (merged: SpikeData) => {
       setPuckData(merged);
@@ -242,19 +177,6 @@ export function PuckPageBuilder({
     },
     [persistPuckData],
   );
-
-  const handlePromptSubmit = useCallback(() => {
-    const value = promptValue.trim();
-    if (value.length < 3) return;
-    const mode = promptModal;
-    setPromptModal(null);
-    setPromptValue('');
-    if (mode === 'strict-rewrite') {
-      void handleStrictRewriteSubmit(value);
-    } else if (mode === 'generate-page') {
-      void handleGeneratePageSubmit(value);
-    }
-  }, [promptValue, promptModal, handleStrictRewriteSubmit, handleGeneratePageSubmit]);
 
   if (isGenerating) {
     return (
@@ -266,87 +188,34 @@ export function PuckPageBuilder({
 
   return (
     <div className="space-y-3">
-      {/* Page-level toolbar — boven de render zodat alle acties direct zichtbaar zijn */}
-      <div className="flex items-center justify-between gap-2 flex-wrap rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5">
-        <div className="text-xs font-semibold text-gray-700">
-          Pagina-acties (AI op hele page)
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {pageError ? (
-            <span className="text-xs text-red-600">{pageError}</span>
-          ) : null}
-          <button
-            type="button"
-            onClick={handleAutoIterate}
-            disabled={pageBusy !== null}
-            title="Verbeter automatisch wanneer de paginakwaliteit onder de drempel zit"
-            className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
-          >
-            {pageBusy === 'auto-iterate' ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Wand2 className="h-3.5 w-3.5" />
-            )}
-            Auto-iterate
-          </button>
-          <button
-            type="button"
-            onClick={() => { setPromptModal('strict-rewrite'); setPromptValue(''); }}
-            disabled={pageBusy !== null}
-            title="Herschrijf de hele pagina met jouw instructie"
-            className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
-          >
-            {pageBusy === 'strict-rewrite' ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Pencil className="h-3.5 w-3.5" />
-            )}
-            Strict-rewrite
-          </button>
-          <button
-            type="button"
-            onClick={() => { setPromptModal('generate-page'); setPromptValue(''); }}
-            disabled={pageBusy !== null}
-            title="Genereer een nieuwe pagina vanaf nul met een prompt"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60"
-          >
-            {pageBusy === 'generate-page' ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <FileText className="h-3.5 w-3.5" />
-            )}
-            Generate from prompt
-          </button>
-        </div>
+      {/* Top action-bar — Branddock-stijl outline buttons + lock-toggle (zoals
+          Brand Styleguide header). Rechts-uitgelijnd boven de page-render. */}
+      <div className="flex items-center justify-end gap-2 flex-wrap">
+        {pageError ? (
+          <span className="text-xs text-red-600 mr-2">{pageError}</span>
+        ) : null}
+        <ActionButton
+          icon={pageBusy === 'auto-iterate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+          label="Auto-iterate"
+          onClick={handleAutoIterate}
+          disabled={pageBusy !== null}
+          title="Verbeter automatisch wanneer de paginakwaliteit onder de drempel zit"
+        />
+        <ActionButton
+          icon={<Layout className="h-4 w-4" />}
+          label="Bewerk layout"
+          onClick={() => setEditorOpen(true)}
+          title="Open layout-editor — herorden, voeg toe of verwijder componenten"
+        />
+        <LockToggle
+          locked={lockTargetLocked}
+          disabled={!lockTargetComponentId}
+          onToggle={handleToggleLock}
+        />
       </div>
 
-      {/* Page-render met floating action buttons rechtsboven (lock + bewerk-layout) */}
-      <div className="relative rounded-lg border border-gray-200 bg-white overflow-hidden">
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleToggleLock}
-            disabled={!lockTargetComponentId}
-            title={lockTargetLocked ? 'Unlock — sta wijzigingen toe' : 'Lock — bevries huidige inhoud'}
-            className={
-              lockTargetLocked
-                ? 'inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 shadow-sm hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50'
-                : 'inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50'
-            }
-          >
-            {lockTargetLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
-            {lockTargetLocked ? 'Vergrendeld' : 'Ontgrendeld'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditorOpen(true)}
-            title="Open layout-editor — herorden, voeg toe of verwijder componenten"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-          >
-            <Layout className="h-3.5 w-3.5" />
-            Bewerk layout
-          </button>
-        </div>
+      {/* Page-render */}
+      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
         <Render config={config} data={puckData} />
       </div>
 
@@ -364,25 +233,6 @@ export function PuckPageBuilder({
         />
       ) : null}
 
-      {promptModal ? (
-        <PromptInputModal
-          title={
-            promptModal === 'strict-rewrite'
-              ? 'Strict-rewrite — instructie voor de hele page'
-              : 'Generate from prompt — beschrijf de page'
-          }
-          placeholder={
-            promptModal === 'strict-rewrite'
-              ? 'Bijv. Maak alles 30% formeler'
-              : 'Bijv. Landing page voor product-launch met persona Marit'
-          }
-          value={promptValue}
-          onChange={setPromptValue}
-          onSubmit={handlePromptSubmit}
-          onCancel={() => { setPromptModal(null); setPromptValue(''); }}
-        />
-      ) : null}
-
       {editorOpen ? (
         <FullscreenEditorModal
           config={config}
@@ -395,65 +245,74 @@ export function PuckPageBuilder({
   );
 }
 
-function PromptInputModal({
+/**
+ * Branddock-stijl secondary outline button voor de top action-bar
+ * (zoals Edit / New analysis / Export op de Brand Styleguide page).
+ * Rounded-full pill met Lucide icon + label.
+ */
+function ActionButton({
+  icon,
+  label,
+  onClick,
+  disabled,
   title,
-  placeholder,
-  value,
-  onChange,
-  onSubmit,
-  onCancel,
 }: {
-  title: string;
-  placeholder: string;
-  value: string;
-  onChange: (next: string) => void;
-  onSubmit: () => void;
-  onCancel: () => void;
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  title?: string;
 }) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onCancel]);
-
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-6"
-      onClick={onCancel}
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl"
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+/**
+ * Emerald pill-shape lock-toggle in Branddock-stijl (zoals de Lock-toggle
+ * op Brand Styleguide / Personas / Products header). Click toggle't tussen
+ * unlocked (emerald-100 bg, handle links) en locked (amber-100 bg, handle
+ * rechts) — kleurkeuze mirrort Branddock's bestaande lock-color-coding.
+ */
+function LockToggle({
+  locked,
+  disabled,
+  onToggle,
+}: {
+  locked: boolean;
+  disabled?: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={disabled}
+      role="switch"
+      aria-checked={locked}
+      aria-label={locked ? 'Pagina is vergrendeld — klik om te ontgrendelen' : 'Pagina is ontgrendeld — klik om te vergrendelen'}
+      title={locked ? 'Vergrendeld — klik om te ontgrendelen' : 'Ontgrendeld — klik om te vergrendelen'}
+      className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+        locked ? 'bg-amber-100' : 'bg-emerald-100'
+      }`}
+    >
+      <span
+        className={`absolute inline-flex h-6 w-6 items-center justify-center rounded-full text-white shadow-sm transition-transform ${
+          locked ? 'translate-x-7 bg-amber-600' : 'translate-x-1 bg-emerald-600'
+        }`}
       >
-        <h2 className="mb-4 text-base font-semibold text-slate-900">{title}</h2>
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          autoFocus
-          className="w-full min-h-[100px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-y"
-        />
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Annuleren
-          </button>
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={value.trim().length < 3}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Versturen
-          </button>
-        </div>
-      </div>
-    </div>
+        <Shield className="h-3.5 w-3.5" />
+      </span>
+    </button>
   );
 }
 
