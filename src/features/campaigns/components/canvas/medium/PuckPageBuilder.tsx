@@ -9,7 +9,9 @@ import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
 import { variantToPuckData } from './variant-to-puck-data';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
-import { isComponentLocked, toggleComponentLock } from '@/lib/landing-pages/component-lock';
+// Page-level lock is stored op `puckData.root.props.locked` (boolean).
+// Per-component lock-utils (component-lock.ts) blijven beschikbaar voor
+// de fullscreen Puck-editor (sidebar metadata) — niet meer in default-view.
 
 type SpikeData = Data<SpikePuckProps>;
 
@@ -105,30 +107,34 @@ export function PuckPageBuilder({
     [persistPuckData],
   );
 
-  // Lock-toggle target: first editable component in de tree. Lock geldt
-  // semantisch voor de hele pagina ("bevries de huidige tekst"); in de
-  // fullscreen editor kan per-component locks gezet via Puck sidebar.
-  const lockTargetIndex = useMemo(() => {
-    const editable = new Set(['BrandHero', 'BrandCTA', 'Testimonial', 'RichText', 'Footer']);
-    return puckData.content.findIndex((c) => editable.has(c.type));
+  // Page-level lock — semantisch "bevries de hele pagina, geen AI-mutaties".
+  // Opgeslagen als boolean op `root.props.locked` zodat de toggle altijd
+  // werkt onafhankelijk van content-id-shape (Puck normaliseert IDs bij
+  // onChange en bij hydratatie zijn seed-IDs niet meer betrouwbaar).
+  const pageLocked = useMemo(() => {
+    const rootProps = puckData.root?.props as { locked?: boolean } | undefined;
+    return rootProps?.locked === true;
   }, [puckData]);
 
-  const lockTargetComponentId =
-    lockTargetIndex >= 0
-      ? ((puckData.content[lockTargetIndex].props as { id?: string }).id ?? '')
-      : '';
-  const lockTargetLocked = lockTargetComponentId
-    ? isComponentLocked(puckData as never, lockTargetComponentId)
-    : false;
-
   const handleToggleLock = useCallback(() => {
-    if (!lockTargetComponentId) return;
-    const nextData = toggleComponentLock(puckData as never, lockTargetComponentId) as SpikeData;
+    const currentRootProps = (puckData.root?.props ?? {}) as Record<string, unknown>;
+    const currentLocked = currentRootProps.locked === true;
+    const nextData = {
+      ...puckData,
+      root: {
+        ...(puckData.root ?? {}),
+        props: { ...currentRootProps, locked: !currentLocked },
+      },
+    } as SpikeData;
     setPuckData(nextData);
     persistPuckData(nextData);
-  }, [puckData, persistPuckData, lockTargetComponentId]);
+  }, [puckData, persistPuckData]);
 
   const handleAutoIterate = useCallback(async () => {
+    if (pageLocked) {
+      setPageError('Pagina is vergrendeld — ontgrendel eerst om AI-iteraties toe te staan.');
+      return;
+    }
     setPageError(null);
     setPageBusy('auto-iterate');
     try {
@@ -167,7 +173,7 @@ export function PuckPageBuilder({
     } finally {
       setPageBusy(null);
     }
-  }, [puckData, contextStack, deliverableId]);
+  }, [puckData, contextStack, deliverableId, pageLocked]);
 
   const handlePageAccept = useCallback(
     (merged: SpikeData) => {
@@ -198,8 +204,10 @@ export function PuckPageBuilder({
           icon={pageBusy === 'auto-iterate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
           label="Auto-iterate"
           onClick={handleAutoIterate}
-          disabled={pageBusy !== null}
-          title="Verbeter automatisch wanneer de paginakwaliteit onder de drempel zit"
+          disabled={pageBusy !== null || pageLocked}
+          title={pageLocked
+            ? 'Pagina is vergrendeld — ontgrendel om AI-iteraties toe te staan'
+            : 'Verbeter automatisch wanneer de paginakwaliteit onder de drempel zit'}
         />
         <ActionButton
           icon={<Layout className="h-4 w-4" />}
@@ -208,16 +216,14 @@ export function PuckPageBuilder({
           title="Open layout-editor — herorden, voeg toe of verwijder componenten"
         />
         <LockToggle
-          locked={lockTargetLocked}
-          disabled={!lockTargetComponentId}
+          locked={pageLocked}
           onToggle={handleToggleLock}
         />
       </div>
 
-      {/* Page-render */}
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-        <Render config={config} data={puckData} />
-      </div>
+      {/* Page-render — flat op de pagina-achtergrond, geen kader/wrapper-bg
+          zodat de preview naadloos in het Step 3 layout zit. */}
+      <Render config={config} data={puckData} />
 
       {pagePending ? (
         <PageDiffPreviewModal
@@ -285,23 +291,20 @@ function ActionButton({
  */
 function LockToggle({
   locked,
-  disabled,
   onToggle,
 }: {
   locked: boolean;
-  disabled?: boolean;
   onToggle: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onToggle}
-      disabled={disabled}
       role="switch"
       aria-checked={locked}
       aria-label={locked ? 'Pagina is vergrendeld — klik om te ontgrendelen' : 'Pagina is ontgrendeld — klik om te vergrendelen'}
       title={locked ? 'Vergrendeld — klik om te ontgrendelen' : 'Ontgrendeld — klik om te vergrendelen'}
-      className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+      className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
         locked ? 'bg-amber-100' : 'bg-emerald-100'
       }`}
     >

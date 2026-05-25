@@ -90,17 +90,15 @@ export function PuckLayoutWrapper({ children: _children, onAdvance, deliverableI
         </div>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-        <PuckPageBuilder
-          previewContent={previewContent}
-          imageVariants={imageVariants}
-          isGenerating={false}
-          heroImage={heroImage}
-          onAddImage={() => setInsertImageModalOpen(true)}
-          mediumConfig={mediumConfigValues}
-          brandName={contextStack?.brand?.brandName ?? undefined}
-        />
-      </div>
+      <PuckPageBuilder
+        previewContent={previewContent}
+        imageVariants={imageVariants}
+        isGenerating={false}
+        heroImage={heroImage}
+        onAddImage={() => setInsertImageModalOpen(true)}
+        mediumConfig={mediumConfigValues}
+        brandName={contextStack?.brand?.brandName ?? undefined}
+      />
 
       {/* Sticky Confirm button — same pattern as MediumConfigLayout so the
           stepper-progression UX stays consistent across all content-types. */}
