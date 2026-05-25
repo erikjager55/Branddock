@@ -142,14 +142,7 @@ export function PageDiffPreviewModal({
               type="button"
               onClick={onReject}
               aria-label="Sluiten"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                padding: 8,
-                borderRadius: 6,
-                color: '#64748b',
-              }}
+              className="inline-flex items-center justify-center rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
             >
               <X size={20} />
             </button>
@@ -265,37 +258,37 @@ export function PageDiffPreviewModal({
             gap: 12,
           }}
         >
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setAcceptedIds(new Set(changedIds))}
-              style={btnSecondaryStyle}
+              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
             >
               Selecteer alle
             </button>
             <button
               type="button"
               onClick={() => setAcceptedIds(new Set())}
-              style={btnSecondaryStyle}
+              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
             >
               Deselecteer alle
             </button>
           </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <button type="button" onClick={onReject} style={btnSecondaryStyle}>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onReject}
+              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
+            >
               Afwijzen
             </button>
             <button
               type="button"
               onClick={handleAcceptSelected}
               disabled={acceptedCount === 0}
-              style={{
-                ...btnPrimaryStyle,
-                opacity: acceptedCount === 0 ? 0.5 : 1,
-                cursor: acceptedCount === 0 ? 'not-allowed' : 'pointer',
-              }}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 transition-opacity"
             >
-              <Check size={16} />
+              <Check className="h-4 w-4" />
               {acceptedCount === current.content.length
                 ? 'Alle accepteren'
                 : `${acceptedCount} accepteren`}
@@ -375,27 +368,3 @@ function ScoreBadge({
   );
 }
 
-const btnPrimaryStyle = {
-  padding: '10px 20px',
-  borderRadius: 8,
-  border: 'none',
-  background: '#0f172a',
-  color: '#ffffff',
-  fontWeight: 600,
-  fontSize: 14,
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-} as const;
-
-const btnSecondaryStyle = {
-  padding: '10px 20px',
-  borderRadius: 8,
-  border: '1px solid #cbd5e1',
-  background: '#ffffff',
-  fontWeight: 500,
-  fontSize: 14,
-  cursor: 'pointer',
-  color: '#334155',
-} as const;

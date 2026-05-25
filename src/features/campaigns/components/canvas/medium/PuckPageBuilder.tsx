@@ -292,20 +292,26 @@ function ActionButton({
 }
 
 /**
- * High-contrast pill-shape lock-toggle met expliciete animatie + tekst-label.
+ * High-contrast pill-shape lock-toggle met inline-style transform (Tailwind-
+ * purge-proof) + zichtbare animatie + tekst-label.
  *
  * Color-rationale:
  *  - Unlocked → bg-emerald-500 (helder groen, "page is open voor edits")
  *  - Locked → bg-amber-500 (helder oranje-geel, "page bevroren")
- *  - White handle met colored Shield-icon (text-emerald-700 / text-amber-700)
- *    geeft een tweede contrast-laag bovenop de track-color.
+ *  - White handle met colored Shield-icon = tweede contrast-laag.
  *
- * Animatie: expliciete `duration-300 ease-out` op zowel track-color als
- * handle-transform, zodat de overgang ~300ms duurt en duidelijk zichtbaar
- * is (default Tailwind 150ms voelt als "schieten").
+ * Implementation-keuze: handle-positionering via inline-style `transform`
+ * ipv Tailwind translate-x-* utilities — voorkomt JIT-purge issues waar
+ * dynamische class-names uit template-literals niet meegenomen worden in
+ * de gecompileerde CSS (was de oorzaak van het "handle schuift niet"-issue
+ * in Phase 6.9). Animatie via `transition-transform duration-300 ease-out`.
  *
- * Tekst-label rechts van de toggle bevestigt de state in woorden voor users
- * die het kleurverschil moeilijk zien.
+ * Focus-state: explicit `focus:outline-none` kill de browser-default focus-
+ * ring (was de "groene outline" rond de toggle), plus accessibility via
+ * conditionele `focus-visible:ring-2` matching de state-kleur.
+ *
+ * Tekst-label rechts bevestigt de state in woorden — derde contrast-laag
+ * voor users die kleurverschil minder zien.
  */
 function LockToggle({
   locked,
@@ -323,14 +329,15 @@ function LockToggle({
         aria-checked={locked}
         aria-label={locked ? 'Pagina is vergrendeld — klik om te ontgrendelen' : 'Pagina is ontgrendeld — klik om te vergrendelen'}
         title={locked ? 'Vergrendeld — klik om te ontgrendelen' : 'Ontgrendeld — klik om te vergrendelen'}
-        className={`relative inline-flex h-8 w-14 items-center rounded-full shadow-inner transition-colors duration-300 ease-out ${
-          locked ? 'bg-amber-500' : 'bg-emerald-500'
+        className={`relative inline-flex h-8 w-14 items-center rounded-full shadow-inner transition-colors duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+          locked
+            ? 'bg-amber-500 focus-visible:ring-amber-400'
+            : 'bg-emerald-500 focus-visible:ring-emerald-400'
         }`}
       >
         <span
-          className={`absolute inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md transition-transform duration-300 ease-out ${
-            locked ? 'translate-x-7' : 'translate-x-1'
-          }`}
+          className="absolute left-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(${locked ? '30px' : '4px'})` }}
         >
           <Shield className={`h-3.5 w-3.5 ${locked ? 'text-amber-600' : 'text-emerald-600'}`} />
         </span>
