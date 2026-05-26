@@ -157,6 +157,44 @@ group("Prompt-builder — graceful met missing context");
   assert("fallback-tekst voor lege persona", minimal.user.includes("geen persona aangeleverd"));
 }
 
+group("Prompt-builder — persona.serialized (canvas-context shape)");
+{
+  // Fase 6a wiring: canvas-context PersonaContext heeft alleen {id, name, serialized};
+  // generator moet de serialized-tekst in user-prompt opnemen voor brede context.
+  const withSerialized = buildLandingPageVariantPrompt({
+    brand: { brandName: "Branddock" },
+    persona: {
+      name: "Marketing Manager",
+      serialized: "B2B marketeer 28-40 jaar, ervaren met SaaS-tools, frustreert op fragmentatie",
+    },
+    userPrompt: "Test",
+  });
+  assert(
+    "persona.name in user-prompt",
+    withSerialized.user.includes("Marketing Manager"),
+  );
+  assert(
+    "persona.serialized opgenomen onder Beschrijving",
+    withSerialized.user.includes("Beschrijving") && withSerialized.user.includes("B2B marketeer"),
+  );
+}
+{
+  // Backward-compat: structured persona fields blijven werken
+  const structured = buildLandingPageVariantPrompt({
+    brand: {},
+    persona: {
+      name: "Persona X",
+      role: "Manager",
+      painPoints: ["pijn-1", "pijn-2"],
+      goals: ["doel-1"],
+    },
+    userPrompt: "Test",
+  });
+  assert("structured persona.role nog steeds gerendered", structured.user.includes("Manager"));
+  assert("structured painPoints gerendered", structured.user.includes("pijn-1"));
+  assert("structured goals gerendered", structured.user.includes("doel-1"));
+}
+
 // ─── Tests: response-parser ────────────────────────────
 
 group("Response-parser — clean JSON");

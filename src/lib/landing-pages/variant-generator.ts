@@ -44,6 +44,10 @@ export interface LandingPageGenerationParams {
     role?: string;
     painPoints?: string[];
     goals?: string[];
+    /** Geserialiseerde persona-beschrijving uit canvas-context (vrije tekst).
+     *  Wordt onder de structured velden gerendered zodat de generator brede
+     *  context heeft. */
+    serialized?: string;
   };
   /** User-prompt — wat moet deze landing-page bereiken. */
   userPrompt: string;
@@ -172,6 +176,9 @@ function buildUserPrompt(
   }
   if (persona?.goals && persona.goals.length > 0) {
     personaLines.push(`- Doelen:\n  ${persona.goals.map((g) => `* ${g}`).join("\n  ")}`);
+  }
+  if (persona?.serialized && persona.serialized.trim().length > 0) {
+    personaLines.push(`- Beschrijving:\n  ${persona.serialized.split("\n").map((l) => `  ${l}`).join("\n")}`);
   }
   const personaBlock = personaLines.length > 0 ? personaLines.join("\n") : "- (geen persona aangeleverd — schrijf voor breed publiek)";
 
