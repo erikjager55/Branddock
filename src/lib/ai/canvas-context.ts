@@ -492,6 +492,7 @@ export async function assembleCanvasContext(
     select: {
       primaryFontName: true,
       layoutStyle: true,
+      archetype: true,
       colors: { select: {
         hex: true, category: true, sortOrder: true,
         tags: true, contrastWhite: true, contrastBlack: true, confidence: true,

@@ -7,6 +7,7 @@ import {
   extractBrandTokensFromContext,
   type BrandTokens,
 } from '@/lib/landing-pages/brand-tokens';
+import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 
 // ─── Component prop types ────────────────────────────────────
 
@@ -126,7 +127,33 @@ export function buildSpikePuckConfig(
 
 // ─── Component definitions ───────────────────────────────────
 
+/**
+ * BrandHero — brand-emergent render (Pad C Sub-Sprint B Phase 3).
+ *
+ * Consumeert computeBrandRenderHints(archetype, designSystem) zodat de
+ * visuele beslissingen (background-type, text-positie, typography-emphasis,
+ * button-shape) emergeren uit brand-archetype + layoutStyle. Geen
+ * hardcoded template — elke combinatie produceert eigen visuele uitstraling.
+ *
+ * Vier hero-layouts:
+ *  - full-bleed-image: foto met overlay-gradient (RULER/MAGICIAN/EXPLORER/HERO/
+ *    LOVER/OUTLAW × MINIMAL/EDITORIAL/EXPERIENTIAL) — Zwarthout-stijl premium
+ *  - solid-brand: brand-color fill (COMMERCIAL altijd; default fallback)
+ *  - solid-surface: wit/light met dark text (SAGE/CARETAKER × MINIMAL/EDITORIAL)
+ *  - gradient-brand: brand-color gradient (INNOCENT/JESTER × PLAYFUL)
+ *
+ * Backward-compat: tokens zonder v3 designSystem → fallback solid-brand
+ * pattern uit v2-render (zelfde gedrag als pre-Pad-C).
+ */
 function brandHeroComponent(tokens: BrandTokens) {
+  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
+  const { heroLayout, displayTypography, buttonStyle, sectionPadding } = hints;
+  const ds = tokens.designSystem;
+
+  // Section padding op basis van layoutStyle (sparse = grote, tight = klein)
+  const sectionPaddingY = sectionPadding;
+  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+
   return {
     fields: {
       headline: { type: 'text' as const },
@@ -140,62 +167,161 @@ function brandHeroComponent(tokens: BrandTokens) {
       ctaLabel: 'Get started',
       heroVisualUrl: '',
     },
-    render: ({ headline, sub, ctaLabel, heroVisualUrl }: SpikeBrandHeroProps) => (
-      <section
-        style={{
-          background: tokens.brand,
-          color: tokens.onBrand,
-          fontFamily: tokens.headingFont,
-          padding: '64px 32px',
-          textAlign: 'center',
-        }}
-      >
-        <h1 style={{ fontSize: 42, lineHeight: 1.1, margin: '0 0 16px', fontWeight: 700 }}>
-          {headline}
-        </h1>
-        <p
-          style={{
-            fontFamily: tokens.bodyFont,
-            fontSize: 18,
-            lineHeight: 1.5,
-            maxWidth: 560,
-            margin: '0 auto 24px',
-            opacity: 0.9,
-          }}
-        >
-          {sub}
-        </p>
-        <button
-          type="button"
-          style={{
-            background: tokens.onBrand,
-            color: tokens.brand,
-            fontFamily: tokens.headingFont,
-            fontWeight: 600,
-            fontSize: 16,
-            border: 'none',
-            padding: '12px 28px',
-            borderRadius: 8,
-            cursor: 'pointer',
-          }}
-        >
-          {ctaLabel}
-        </button>
-        {heroVisualUrl && heroVisualUrl.trim().length > 0 ? (
-          <div style={{ marginTop: 32, maxWidth: 720, marginLeft: 'auto', marginRight: 'auto' }}>
-            {/* Puck render-context (iframe/portal) ondersteunt geen next/image
-                optimalisatie betrouwbaar — plain <img> voor MVP. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={heroVisualUrl}
-              alt=""
-              style={{ width: '100%', height: 'auto', borderRadius: 12, display: 'block' }}
-            />
+    render: ({ headline, sub, ctaLabel, heroVisualUrl }: SpikeBrandHeroProps) => {
+      // ── Resolve background-style ──────────────────────────
+      const hasHeroVisual = !!heroVisualUrl && heroVisualUrl.trim().length > 0;
+      const useFullBleed = heroLayout.background === 'full-bleed-image' && hasHeroVisual;
+      const usePlaceholderFrame =
+        heroLayout.background === 'full-bleed-image' && !hasHeroVisual
+        && ds.imageStrategy.placeholderStyle === 'dark-framed';
+
+      let sectionBg: string;
+      let sectionColor: string;
+      let backgroundImage: string | undefined;
+      if (useFullBleed) {
+        // Foto met overlay-gradient (Zwarthout-pattern)
+        const onSurfaceRGB = hexToRgbString(tokens.onSurface);
+        const overlay = heroLayout.overlayOpacity;
+        backgroundImage = `linear-gradient(to top, rgba(${onSurfaceRGB},${overlay}) 0%, rgba(${onSurfaceRGB},0.2) 100%), url(${heroVisualUrl})`;
+        sectionBg = tokens.onSurface;  // donker fallback bg
+        sectionColor = '#FFFFFF';      // wit op donkere overlay altijd safe
+      } else if (usePlaceholderFrame) {
+        // Donker architectuur-frame placeholder (RULER/MAGICIAN style)
+        sectionBg = tokens.onSurface;
+        sectionColor = '#FFFFFF';
+      } else if (heroLayout.background === 'solid-surface') {
+        sectionBg = tokens.surface;
+        sectionColor = tokens.onSurface;
+      } else if (heroLayout.background === 'gradient-brand') {
+        const brandRGB = hexToRgbString(tokens.brand);
+        backgroundImage = `linear-gradient(135deg, rgba(${brandRGB},1) 0%, ${tokens.brandSubtle} 100%)`;
+        sectionBg = tokens.brand;
+        sectionColor = tokens.onBrand;
+      } else {
+        // solid-brand (default)
+        sectionBg = tokens.brand;
+        sectionColor = tokens.onBrand;
+      }
+
+      // ── Flex-alignment op basis van hint ───────────────────
+      const justifyContent =
+        heroLayout.textVerticalPosition === 'top' ? 'flex-start'
+        : heroLayout.textVerticalPosition === 'bottom' ? 'flex-end'
+        : 'center';
+      const alignItems =
+        heroLayout.textAlignment === 'left' ? 'flex-start'
+        : heroLayout.textAlignment === 'right' ? 'flex-end'
+        : 'center';
+
+      // ── Typography uit hints ───────────────────────────────
+      // Brand-specifieke fonts (tokens.headingFont/bodyFont uit styleguide
+      // primaryFontName) overrulen layoutStyle-default display-font wanneer
+      // expliciet ingesteld. system-ui = default = niet expliciet.
+      const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
+      const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+      const displayFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.display.fontFamily;
+      const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+      const subSize = ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 2)] ?? 18;
+      const subWeight = ds.typography.body.weights[0] ?? 400;
+
+      // ── Section style ──────────────────────────────────────
+      const sectionStyle: React.CSSProperties = {
+        background: backgroundImage ?? sectionBg,
+        backgroundSize: backgroundImage ? 'cover' : undefined,
+        backgroundPosition: backgroundImage ? 'center' : undefined,
+        color: sectionColor,
+        fontFamily: displayFont,
+        padding: `${sectionPaddingY}px ${sectionPaddingX}px`,
+        minHeight: heroLayout.fullViewportHeight ? '100vh' : undefined,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent,
+        alignItems,
+        textAlign: heroLayout.textAlignment,
+        position: 'relative',
+      };
+
+      // ── Button-style uit hints ─────────────────────────────
+      const buttonRender: React.CSSProperties = {
+        background: useFullBleed || sectionBg === tokens.onSurface ? '#FFFFFF' : tokens.onBrand,
+        color: useFullBleed || sectionBg === tokens.onSurface ? tokens.onSurface : tokens.brand,
+        fontFamily: ds.typography.label.fontFamily,
+        fontWeight: buttonStyle.fontWeight,
+        fontSize: 16,
+        border: 'none',
+        padding: `${buttonStyle.paddingY}px ${buttonStyle.paddingX}px`,
+        borderRadius: buttonStyle.radiusPx,
+        cursor: 'pointer',
+        textTransform: buttonStyle.textTransform,
+        letterSpacing: buttonStyle.letterSpacing,
+        textDecoration: buttonStyle.underlineHover ? 'underline' : 'none',
+        textUnderlineOffset: buttonStyle.underlineHover ? '4px' : undefined,
+      };
+
+      return (
+        <section style={sectionStyle}>
+          {usePlaceholderFrame ? (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'rgba(255,255,255,0.3)',
+                fontFamily: ds.typography.label.fontFamily,
+                fontSize: 11,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                pointerEvents: 'none',
+              }}
+            >
+              {ds.imageStrategy.placeholderLabel}
+            </div>
+          ) : null}
+          <div style={{ position: 'relative', maxWidth: 800, width: '100%' }}>
+            <h1
+              style={{
+                fontSize: displayTypography.size,
+                lineHeight: displayTypography.lineHeight,
+                fontWeight: displayTypography.weight,
+                letterSpacing: displayTypography.letterSpacing,
+                margin: `0 0 ${ds.spacing[Math.min(ds.spacing.length - 1, 3)] ?? 16}px`,
+              }}
+            >
+              {headline}
+            </h1>
+            <p
+              style={{
+                fontFamily: bodyFont,
+                fontSize: subSize,
+                lineHeight: ds.typography.body.lineHeight,
+                fontWeight: subWeight,
+                maxWidth: 560,
+                margin: heroLayout.textAlignment === 'center'
+                  ? `0 auto ${ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24}px`
+                  : `0 0 ${ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24}px`,
+                opacity: useFullBleed ? 0.85 : 0.95,
+              }}
+            >
+              {sub}
+            </p>
+            <button type="button" style={buttonRender}>
+              {ctaLabel}
+            </button>
           </div>
-        ) : null}
-      </section>
-    ),
+        </section>
+      );
+    },
   };
+}
+
+function hexToRgbString(hex: string): string {
+  const cleaned = hex.replace(/^#/, '');
+  if (cleaned.length !== 6) return '0,0,0';
+  const num = parseInt(cleaned, 16);
+  if (Number.isNaN(num)) return '0,0,0';
+  return `${(num >> 16) & 0xff},${(num >> 8) & 0xff},${num & 0xff}`;
 }
 
 function brandCtaComponent(

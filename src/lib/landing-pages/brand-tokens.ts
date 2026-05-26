@@ -26,6 +26,7 @@ import {
   DEFAULT_LAYOUT_STYLE,
   getDesignSystemForLayoutStyle,
 } from './design-system';
+import type { BrandArchetype } from './brand-archetype-classifier';
 
 // ─── Public interface ─────────────────────────────────────────
 
@@ -78,6 +79,11 @@ export interface BrandTokens {
   /** Volledige design-system bundle: spacing-scale, typography-scale, radius,
    *  image-strategy, section-alternation. Consumer-friendly voor renderers. */
   designSystem: DesignSystem;
+
+  // ─── v3 — Brand-archetype (Pad C Sub-Sprint B Phase 1) ───
+  /** Jung archetype voor brand-emergent rendering decisions. Null = nog
+   *  niet geclassificeerd — renderer valt terug op layoutStyle-only. */
+  archetype: BrandArchetype | null;
 }
 
 export const DEFAULT_BRAND_TOKENS: BrandTokens = {
@@ -106,6 +112,8 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
   // v3 — Design-system
   layoutStyle: DEFAULT_LAYOUT_STYLE,
   designSystem: getDesignSystemForLayoutStyle(DEFAULT_LAYOUT_STYLE),
+  // v3 — Brand-archetype (null = unclassified)
+  archetype: null,
 };
 
 // ─── Input shapes ─────────────────────────────────────────────
@@ -136,6 +144,9 @@ interface StyleguideShape {
   primaryFontName?: string | null;
   /** Pad C Sub-Sprint A — LayoutStyle uit Prisma. Default COMMERCIAL. */
   layoutStyle?: LayoutStyle | null;
+  /** Pad C Sub-Sprint B Phase 1 — Jung archetype uit Prisma. Null = nog
+   *  niet geclassificeerd. */
+  archetype?: BrandArchetype | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -413,6 +424,7 @@ export function extractBrandTokensFromStyleguide(
   // ── v3 — Design-system resolutie (Pad C Sub-Sprint A) ──
   const layoutStyle = styleguide.layoutStyle ?? DEFAULT_LAYOUT_STYLE;
   const designSystem = getDesignSystemForLayoutStyle(layoutStyle);
+  const archetype = styleguide.archetype ?? null;
 
   return {
     // Legacy aliases (semantisch correct na v2-mapping + WCAG-gate)
@@ -440,6 +452,7 @@ export function extractBrandTokensFromStyleguide(
     // v3 Design-system
     layoutStyle,
     designSystem,
+    archetype,
   };
 }
 
@@ -566,6 +579,7 @@ export function extractBrandTokensFromContext(
     // v3 Design-system
     layoutStyle,
     designSystem,
+    archetype: null,  // fallback-pad: geen archetype-info beschikbaar
     // Typography
     headingFont,
     bodyFont,
