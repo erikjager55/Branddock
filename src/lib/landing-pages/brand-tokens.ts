@@ -20,6 +20,12 @@
  */
 
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
+import {
+  type LayoutStyle,
+  type DesignSystem,
+  DEFAULT_LAYOUT_STYLE,
+  getDesignSystemForLayoutStyle,
+} from './design-system';
 
 // ─── Public interface ─────────────────────────────────────────
 
@@ -65,6 +71,13 @@ export interface BrandTokens {
   // ─── Typografie ──────────────────────────────────────────
   headingFont: string;
   bodyFont: string;
+
+  // ─── v3 — Design-system (Pad C Sub-Sprint A) ─────────────
+  /** LayoutStyle uit BrandStyleguide — bepaalt design-system primitives. */
+  layoutStyle: LayoutStyle;
+  /** Volledige design-system bundle: spacing-scale, typography-scale, radius,
+   *  image-strategy, section-alternation. Consumer-friendly voor renderers. */
+  designSystem: DesignSystem;
 }
 
 export const DEFAULT_BRAND_TOKENS: BrandTokens = {
@@ -90,6 +103,9 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
   // Typography
   headingFont: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
   bodyFont: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  // v3 — Design-system
+  layoutStyle: DEFAULT_LAYOUT_STYLE,
+  designSystem: getDesignSystemForLayoutStyle(DEFAULT_LAYOUT_STYLE),
 };
 
 // ─── Input shapes ─────────────────────────────────────────────
@@ -118,6 +134,8 @@ interface StyleguideShape {
   colors?: StyleguideColorLike[] | null;
   fonts?: StyleguideFontLike[] | null;
   primaryFontName?: string | null;
+  /** Pad C Sub-Sprint A — LayoutStyle uit Prisma. Default COMMERCIAL. */
+  layoutStyle?: LayoutStyle | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -392,6 +410,10 @@ export function extractBrandTokensFromStyleguide(
     ?? styleguide.primaryFontName
     ?? DEFAULT_BRAND_TOKENS.bodyFont;
 
+  // ── v3 — Design-system resolutie (Pad C Sub-Sprint A) ──
+  const layoutStyle = styleguide.layoutStyle ?? DEFAULT_LAYOUT_STYLE;
+  const designSystem = getDesignSystemForLayoutStyle(layoutStyle);
+
   return {
     // Legacy aliases (semantisch correct na v2-mapping + WCAG-gate)
     primaryHex: brand,
@@ -415,6 +437,9 @@ export function extractBrandTokensFromStyleguide(
     // Typography
     headingFont,
     bodyFont,
+    // v3 Design-system
+    layoutStyle,
+    designSystem,
   };
 }
 
@@ -513,6 +538,11 @@ export function extractBrandTokensFromContext(
   const bodyFont = extractFontFromFonts(brand.brandFonts, /body|paragraph|text/i)
     ?? DEFAULT_BRAND_TOKENS.bodyFont;
 
+  // v3 design-system: fallback-pad gebruikt altijd DEFAULT_LAYOUT_STYLE
+  // (geen styleguide = geen layoutStyle-info beschikbaar).
+  const layoutStyle = DEFAULT_LAYOUT_STYLE;
+  const designSystem = getDesignSystemForLayoutStyle(layoutStyle);
+
   return {
     // Legacy aliases
     primaryHex: brandColor,
@@ -533,6 +563,9 @@ export function extractBrandTokensFromContext(
     onAction: onBrand,
     // Accent
     accent,
+    // v3 Design-system
+    layoutStyle,
+    designSystem,
     // Typography
     headingFont,
     bodyFont,
