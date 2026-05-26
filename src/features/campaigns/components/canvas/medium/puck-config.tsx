@@ -8,6 +8,7 @@ import {
   type BrandTokens,
 } from '@/lib/landing-pages/brand-tokens';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
+import { IconBlock } from './lucide-icon-map';
 
 // ─── Component prop types ────────────────────────────────────
 
@@ -493,22 +494,22 @@ function featureGridComponent(tokens: BrandTokens) {
             } : {};
             return (
               <div key={i} style={cardWrapper}>
-                {f.icon && f.icon.trim().length > 0 ? (
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: tokens.brand,
-                      fontFamily: ds.typography.label.fontFamily,
-                      textTransform: ds.typography.label.textTransform ?? 'uppercase',
-                      letterSpacing: ds.typography.label.letterSpacing,
-                      marginBottom: 8,
-                      fontWeight: 600,
-                    }}
-                    aria-hidden
-                  >
-                    {f.icon}
-                  </div>
-                ) : null}
+                <IconBlock
+                  name={f.icon ?? ''}
+                  color={tokens.brand}
+                  size={28}
+                  wrapperStyle={{ marginBottom: 12 }}
+                  fallbackTextStyle={{
+                    fontSize: 12,
+                    color: tokens.brand,
+                    fontFamily: ds.typography.label.fontFamily,
+                    textTransform: ds.typography.label.textTransform ?? 'uppercase',
+                    letterSpacing: ds.typography.label.letterSpacing,
+                    marginBottom: 8,
+                    fontWeight: 600,
+                  }}
+                />
+
                 <h3
                   style={{
                     fontFamily: headingFont,
