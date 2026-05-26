@@ -3,8 +3,9 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
-import { generateLandingPageVariant } from "@/lib/landing-pages/variant-generator";
-import { variantToPuckDataFromStructured } from "@/features/campaigns/components/canvas/medium/variant-to-puck-data";
+import {
+  generateLandingPageVariantBatch,
+} from "@/lib/landing-pages/variant-generator";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 
@@ -41,6 +42,8 @@ interface RequestBody {
   userPrompt?: string;
   includeProblem?: boolean;
   includePricing?: boolean;
+  /** Aantal variants om te genereren (1 of 2, default 2). 2 levert user-keuze. */
+  count?: 1 | 2;
 }
 
 export async function POST(
@@ -123,31 +126,38 @@ export async function POST(
       }
     : undefined;
 
-  let result;
+  const count: 1 | 2 = body.count === 1 ? 1 : 2;
+
+  let results;
   try {
-    result = await generateLandingPageVariant({
-      brand: ctx.brand,
-      persona: personaForGenerator,
-      userPrompt,
-      locale: "nl-NL",
-      includeProblem: body.includeProblem ?? true,
-      includePricing: body.includePricing ?? false,
-    });
+    results = await generateLandingPageVariantBatch(
+      {
+        brand: ctx.brand,
+        persona: personaForGenerator,
+        userPrompt,
+        locale: "nl-NL",
+        includeProblem: body.includeProblem ?? true,
+        includePricing: body.includePricing ?? false,
+      },
+      count,
+    );
   } catch (err) {
-    console.error("[generate-structured-variant] Generator failed", err);
+    console.error("[generate-structured-variant] Batch failed", err);
     return NextResponse.json(
       {
-        error: "Variant generation failed after retry",
+        error: "Variant generation failed",
         detail: err instanceof Error ? err.message : String(err),
       },
       { status: 502 },
     );
   }
 
-  // Map structured → Puck-tree zodat Step 3 direct kan rendren
-  const puckData = variantToPuckDataFromStructured(result.variant, ctx);
+  const variants = results.map((r) => r.variant);
+  const totalInputTokens = results.reduce((s, r) => s + r.inputTokens, 0);
+  const totalOutputTokens = results.reduce((s, r) => s + r.outputTokens, 0);
 
-  // Persist beide in settings JSON-blob (geen schema-migratie nodig)
+  // Persist options-array — geen .structuredVariant + .puckData hier, dat
+  // wordt gezet wanneer user een variant kiest via PATCH /api/studio/[id].
   const existingSettings =
     deliverable.settings && typeof deliverable.settings === "object" && !Array.isArray(deliverable.settings)
       ? (deliverable.settings as Record<string, unknown>)
@@ -158,28 +168,28 @@ export async function POST(
     data: {
       settings: {
         ...existingSettings,
-        structuredVariant: result.variant,
-        puckData,
+        structuredVariantOptions: variants,
         structuredGenerationMeta: {
           generatedAt: new Date().toISOString(),
-          retried: result.retried,
-          inputTokens: result.inputTokens,
-          outputTokens: result.outputTokens,
+          count,
+          requestedCount: count,
+          deliveredCount: variants.length,
+          inputTokens: totalInputTokens,
+          outputTokens: totalOutputTokens,
         },
       },
     },
   });
 
   // Cache-invalidatie per CLAUDE.md API conventies (verplicht na mutatie)
-  // Studio + campaigns prefixes — beide raken deliverable-mutations
   invalidateCache(cacheKeys.prefixes.studio(workspaceId));
   invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
 
   return NextResponse.json({
-    variant: result.variant,
-    puckData,
-    retried: result.retried,
-    inputTokens: result.inputTokens,
-    outputTokens: result.outputTokens,
+    variants,
+    deliveredCount: variants.length,
+    requestedCount: count,
+    inputTokens: totalInputTokens,
+    outputTokens: totalOutputTokens,
   });
 }

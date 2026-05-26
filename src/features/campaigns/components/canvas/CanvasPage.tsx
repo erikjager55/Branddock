@@ -194,10 +194,16 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           publishedVia: d.publishedVia ?? null,
         });
 
-        // Fase 6b — hydrate structured variant slice voor PUCK_WEBPAGE_TYPES.
-        // Generated door /api/landing-pages/[id]/generate-structured-variant
-        // en opgeslagen in settings.structuredVariant. Rendered vorm leeft als
-        // settings.puckData en wordt apart gehydrateerd via contextStack.puckData.
+        // Fase 6b — hydrate structured variant slices voor PUCK_WEBPAGE_TYPES.
+        // Twee shapes mogelijk:
+        //  - structuredVariantOptions (array, na initial generation, vóór user-keuze)
+        //  - structuredVariant (single object, na user-keuze in Step 2)
+        // Rendered vorm puckData wordt apart gehydrateerd via contextStack.puckData.
+        if (Array.isArray(d.settings?.structuredVariantOptions)) {
+          useCanvasStore.getState().setStructuredVariantOptions(
+            d.settings.structuredVariantOptions,
+          );
+        }
         if (d.settings?.structuredVariant) {
           useCanvasStore.getState().setStructuredVariant(d.settings.structuredVariant);
         }

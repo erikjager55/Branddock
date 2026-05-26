@@ -305,17 +305,20 @@ export interface GenerationResult {
 /**
  * Genereer een landing-page variant via Anthropic. Single-shot — geen
  * generator-level retry. anthropicClient.createChatCompletion doet zelf
- * al 3 retries op transient errors (5xx/timeouts) met exponential backoff
- * (1-10s). Een tweede generator-call zou de totale wachttijd verdubbelen
- * tot 6+ min in worst-case (gezien LINFI-incident 2026-05-26).
+ * al 3 retries op transient errors (5xx/timeouts) met exponential backoff.
+ *
+ * Optionele `temperature` override stelt batch-callers in staat 2 variants
+ * te produceren met verschillende creativiteits-niveaus (zie
+ * generateLandingPageVariantBatch). Default = STRUCTURED-config (0.1).
  *
  * Bij JSON-validation-fail throw met detailed errors — caller toont een
- * "Probeer opnieuw" knop in UI (fresh attempt > automatic retry voor user-UX).
+ * "Probeer opnieuw" knop in UI.
  *
  * Verbruikt ANTHROPIC_API_KEY env-var via anthropicClient singleton.
  */
 export async function generateLandingPageVariant(
   params: LandingPageGenerationParams,
+  opts?: { temperature?: number },
 ): Promise<GenerationResult> {
   const prompt = buildLandingPageVariantPrompt(params);
 
@@ -324,7 +327,12 @@ export async function generateLandingPageVariant(
       { role: "system", content: prompt.system },
       { role: "user", content: prompt.user },
     ],
-    { useCase: "STRUCTURED", maxTokens: 3500, timeoutMs: 90_000 },
+    {
+      useCase: "STRUCTURED",
+      maxTokens: 3500,
+      timeoutMs: 90_000,
+      ...(opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
+    },
   );
 
   const parse = parseLandingPageVariantResponse(response.content);
@@ -343,6 +351,46 @@ export async function generateLandingPageVariant(
     outputTokens: response.outputTokens,
     retried: false,
   };
+}
+
+/**
+ * Genereer N variants parallel met verschillende temperature-waarden voor
+ * meaningful variation. 2 variants is de geadviseerde count voor user-keuze:
+ *   - variant A (conservative, temp 0.3) — close to spec-by-the-book
+ *   - variant B (creative, temp 0.7)     — more adventurous tone/framing
+ *
+ * Parallel via Promise.all zodat totale wachttijd ≈ max(call_1, call_2),
+ * niet de som. Bij partial failure (1 valid, 1 fail) returns we de valid;
+ * bij beide fail re-throw met details.
+ */
+export async function generateLandingPageVariantBatch(
+  params: LandingPageGenerationParams,
+  count: 1 | 2 = 2,
+): Promise<GenerationResult[]> {
+  const TEMPERATURES = count === 2 ? [0.3, 0.7] : [0.3];
+
+  const settled = await Promise.allSettled(
+    TEMPERATURES.map((temperature) =>
+      generateLandingPageVariant(params, { temperature }),
+    ),
+  );
+
+  const successes: GenerationResult[] = [];
+  const failures: string[] = [];
+  for (const result of settled) {
+    if (result.status === "fulfilled") {
+      successes.push(result.value);
+    } else {
+      failures.push(result.reason instanceof Error ? result.reason.message : String(result.reason));
+    }
+  }
+
+  if (successes.length === 0) {
+    throw new Error(
+      `All ${count} variant-generations failed. Errors: ${failures.join(" | ")}`,
+    );
+  }
+  return successes;
 }
 
 // Re-export schema voor convenient consumer-import
