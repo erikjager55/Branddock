@@ -143,8 +143,8 @@ function brandHeroComponent(tokens: BrandTokens) {
     render: ({ headline, sub, ctaLabel, heroVisualUrl }: SpikeBrandHeroProps) => (
       <section
         style={{
-          background: tokens.primaryHex,
-          color: '#ffffff',
+          background: tokens.brand,
+          color: tokens.onBrand,
           fontFamily: tokens.headingFont,
           padding: '64px 32px',
           textAlign: 'center',
@@ -168,8 +168,8 @@ function brandHeroComponent(tokens: BrandTokens) {
         <button
           type="button"
           style={{
-            background: '#ffffff',
-            color: tokens.primaryHex,
+            background: tokens.onBrand,
+            color: tokens.brand,
             fontFamily: tokens.headingFont,
             fontWeight: 600,
             fontSize: 16,
@@ -229,8 +229,8 @@ function brandCtaComponent(
             href={href}
             style={{
               display: 'inline-block',
-              background: tokens.primaryHex,
-              color: '#ffffff',
+              background: tokens.brand,
+              color: tokens.onBrand,
               fontFamily: tokens.headingFont,
               fontWeight: 600,
               fontSize: 16,
@@ -434,13 +434,13 @@ function pricingTableComponent(tokens: BrandTokens) {
               key={i}
               style={{
                 border: t.highlighted
-                  ? `2px solid ${tokens.primaryHex}`
-                  : `1px solid ${tokens.neutralHex}`,
+                  ? `2px solid ${tokens.brand}`
+                  : `1px solid ${tokens.surfaceBorder}`,
                 borderRadius: 12,
                 padding: 24,
                 textAlign: 'center',
                 transform: t.highlighted ? 'scale(1.05)' : 'none',
-                boxShadow: t.highlighted ? `0 8px 24px ${tokens.primaryHex}22` : 'none',
+                boxShadow: t.highlighted ? `0 8px 24px ${tokens.brand}22` : 'none',
                 position: 'relative',
               }}
             >
@@ -451,8 +451,8 @@ function pricingTableComponent(tokens: BrandTokens) {
                     top: -12,
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    background: tokens.primaryHex,
-                    color: '#ffffff',
+                    background: tokens.brand,
+                    color: tokens.onBrand,
                     fontSize: 11,
                     fontFamily: tokens.headingFont,
                     fontWeight: 600,

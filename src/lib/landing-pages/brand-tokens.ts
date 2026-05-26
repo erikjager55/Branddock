@@ -203,13 +203,27 @@ function confidenceRank(c: StyleguideColorLike): number {
  */
 
 function pickSurface(colors: StyleguideColorLike[]): StyleguideColorLike | null {
-  // Tagged "surface" of "background" + light (L > 0.85)
-  const tagged = colors.filter(
-    (c) => hasAnyTag(c, ['surface']) || hasAnyTag(c, ['background', 'light']),
+  // Tier 1: expliciet "surface" tag + L>0.85
+  const surfaceTagged = colors.find(
+    (c) => hasAnyTag(c, ['surface']) && relativeLuminance(c.hex) > 0.85,
   );
-  const lightTagged = tagged.find((c) => relativeLuminance(c.hex) > 0.85);
-  if (lightTagged) return lightTagged;
-  // Lightest color overall
+  if (surfaceTagged) return surfaceTagged;
+  // Tier 2: tagged "background" of "light" + L>0.85, prefereer NEUTRAL
+  // boven SECONDARY (SECONDARY-background is vaak een accent-light zoals
+  // soft-cream, NEUTRAL-background is vaak echte page-surface zoals white)
+  const taggedNeutral = colors.find(
+    (c) =>
+      c.category === 'NEUTRAL'
+      && hasAnyTag(c, ['background', 'light'])
+      && relativeLuminance(c.hex) > 0.85,
+  );
+  if (taggedNeutral) return taggedNeutral;
+  // Tier 3: any color tagged background/light + L>0.85
+  const taggedAny = colors.find(
+    (c) => hasAnyTag(c, ['background', 'light']) && relativeLuminance(c.hex) > 0.85,
+  );
+  if (taggedAny) return taggedAny;
+  // Tier 4: lightest color overall met L>0.85
   const sorted = [...colors].sort((a, b) => relativeLuminance(b.hex) - relativeLuminance(a.hex));
   const lightest = sorted[0];
   if (lightest && relativeLuminance(lightest.hex) > 0.85) return lightest;
