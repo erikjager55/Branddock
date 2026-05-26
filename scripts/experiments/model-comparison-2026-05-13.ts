@@ -141,22 +141,37 @@ const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // ─── Helpers per provider ─────────────────────────────────
 async function callAnthropic(model: string, withThinking: boolean): Promise<{ text: string; in: number; out: number }> {
-  const params: Anthropic.Messages.MessageCreateParamsNonStreaming = withThinking
-    ? {
-        model,
-        max_tokens: 4096 + 4000,
-        thinking: { type: 'enabled', budget_tokens: 4000 },
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: USER_PROMPT }],
-      }
-    : {
-        model,
-        max_tokens: 4096,
-        temperature: 0.7,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: USER_PROMPT }],
-      };
-  const res = await anthropic.messages.create(params);
+  // F27: Opus 4.7+ vereist nieuwe thinking-API (adaptive + output_config.effort).
+  // Sonnet 4.6 + 4.5 + Opus 4.5/4.6 ondersteunen nog legacy (type: 'enabled').
+  const isOpus47Plus = /opus-4-7|opus-4-8|opus-5/.test(model);
+  let params: unknown;
+  if (withThinking && isOpus47Plus) {
+    params = {
+      model,
+      max_tokens: 4096 + 4000,
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'medium' },
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: USER_PROMPT }],
+    };
+  } else if (withThinking) {
+    params = {
+      model,
+      max_tokens: 4096 + 4000,
+      thinking: { type: 'enabled', budget_tokens: 4000 },
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: USER_PROMPT }],
+    };
+  } else {
+    params = {
+      model,
+      max_tokens: 4096,
+      temperature: 0.7,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: USER_PROMPT }],
+    };
+  }
+  const res = await anthropic.messages.create(params as Anthropic.Messages.MessageCreateParamsNonStreaming);
   const textBlock = res.content.find((b) => b.type === 'text');
   const text = textBlock && 'text' in textBlock ? textBlock.text : '';
   return {
