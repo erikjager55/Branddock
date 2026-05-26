@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Loader2, Sparkles, AlertCircle, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { generateCanvasVisual } from '../../../api/canvas.api';
@@ -16,16 +16,18 @@ interface LandingPageGenerateBlockProps {
 /**
  * Step 2 voor PUCK_WEBPAGE_TYPES (web-page-builder spec §4b paradigma B).
  *
- * Twee-fasen UI:
- *   Fase A — geen variant nog: brief-summary uit Step 1 + "Genereer" knop
- *   Fase B — variant gegenereerd: 8-section copy preview + optionele
- *     hero-image generatie + "Bevestig & ga naar editor" / "Regenereer"
+ * Auto-generate on mount: wanneer er nog geen variant is en de brief uit
+ * Step 1 compleet is, start de generator direct. Gebruiker landt in een
+ * spinner → 8-section copy-preview (Fase B). Brief-summary review is
+ * geschrapt (user-feedback 2026-05-26: overbodig — info staat al in Step 1).
+ *
+ * Drie weergaven:
+ *   - Briefing incompleet → amber-banner + Step 1-link
+ *   - Genereren bezig → spinner met "20-40 sec" ETA
+ *   - Klaar → 8 section-cards + hero-visual knop + "Bevestig & ga naar editor"
  *
  * Geen multi-variant ABCD-flow — per spec §1 #5 single-CTA discipline.
  * Refinement via auto-iterate (Phase 6) op de Puck-tree in Step 3.
- *
- * 2026-05-26: gemaakt om copy + image-suggestions in Step 2 te tonen
- * (eerste versie alleen click-through). Briefing-input komt uit Step 1.
  */
 export function LandingPageGenerateBlock({
   deliverableId,
@@ -148,34 +150,98 @@ export function LandingPageGenerateBlock({
     }
   }, [contextStack, deliverableId, existingVariant, setImageVariants, setStructuredVariant]);
 
-  // ─── Fase A — geen variant nog ───────────────────────────
-  if (!existingVariant) {
+  // ─── Auto-trigger op mount ──────────────────────────────────
+  // User-feedback 2026-05-26: brief-summary review is overbodig —
+  // start direct met generatie wanneer Step 2 opent (brief compleet + nog
+  // geen variant). autoTriggeredRef voorkomt double-fire bij React Strict-mode
+  // dubbele effect-run.
+  const autoTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (
+      !existingVariant
+      && !isGenerating
+      && !briefIncomplete
+      && !error
+      && !autoTriggeredRef.current
+    ) {
+      autoTriggeredRef.current = true;
+      void handleGenerate();
+    }
+  }, [existingVariant, isGenerating, briefIncomplete, error, handleGenerate]);
+
+  // ─── Briefing incompleet — guard met Step 1-link ──────────────
+  if (briefIncomplete) {
     return (
       <div className="space-y-6">
-        <IntroBanner />
-        <BriefSummaryCard
-          brief={brief}
-          contentTypeInputs={contentTypeInputs}
-          includeProblem={includeProblem}
-          includePricing={includePricing}
-          briefIncomplete={briefIncomplete}
-          onEditBrief={() => setActiveStep('context')}
-        />
-        {error && !briefIncomplete ? <ErrorBanner message={error} /> : null}
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium">Brief incompleet</p>
+              <p className="text-xs text-amber-800 mt-1">
+                Vul eerst minimaal Doel of Value Proposition in Step 1 vóór de
+                landing-page automatisch gegenereerd kan worden.
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveStep('context')}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-amber-900 underline hover:text-amber-700"
+              >
+                <ArrowLeft className="h-3 w-3" />Terug naar Step 1
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Genereren bezig — spinner ─────────────────────────────
+  if (!existingVariant && isGenerating) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-8 flex flex-col items-center gap-3 text-center">
+          <Loader2 className="h-6 w-6 text-teal-600 animate-spin" />
+          <div>
+            <p className="text-sm font-medium text-teal-900">Landing-page genereren...</p>
+            <p className="text-xs text-teal-800 mt-1">
+              We bouwen 8 anatomie-secties op basis van je brief — kan 20-40 seconden duren.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Generatie-fout — retry-knop ──────────────────────────
+  if (!existingVariant && error) {
+    return (
+      <div className="space-y-6">
+        <ErrorBanner message={error} />
         <button
           type="button"
-          onClick={handleGenerate}
-          disabled={isGenerating || briefIncomplete}
-          className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+          onClick={() => {
+            setError(null);
+            void handleGenerate();
+          }}
+          className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
         >
-          {isGenerating ? (
-            <><Loader2 className="h-4 w-4 animate-spin" />Genereren — kan 20-40 seconden duren...</>
-          ) : (
-            <><Sparkles className="h-4 w-4" />Genereer landing-page</>
-          )}
+          <Sparkles className="h-4 w-4" />Probeer opnieuw
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveStep('context')}
+          className="w-full inline-flex items-center justify-center gap-1 text-xs text-gray-600 underline hover:text-gray-900"
+        >
+          <ArrowLeft className="h-3 w-3" />Brief aanpassen in Step 1
         </button>
       </div>
     );
+  }
+
+  // No variant + no generating + no error = should never reach here
+  if (!existingVariant) {
+    return null;
   }
 
   // ─── Fase B — variant gegenereerd, preview + image + confirm ──
@@ -376,98 +442,6 @@ export function LandingPageGenerateBlock({
 
 // ─── Sub-componenten ──────────────────────────────────────
 
-function IntroBanner() {
-  return (
-    <div className="rounded-lg border border-teal-200 bg-teal-50/60 px-4 py-3 flex items-start gap-3">
-      <Sparkles className="h-4 w-4 text-teal-600 flex-shrink-0 mt-0.5" />
-      <div className="text-sm">
-        <p className="font-medium text-teal-900">Web-page builder — single structured variant</p>
-        <p className="text-xs text-teal-800 mt-1">
-          Op basis van je brief uit Step 1 genereren we 1 schema-valide pagina-structuur.
-          Refinement gebeurt via auto-iterate / strict-rewrite — geen variant-vergelijking.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function BriefSummaryCard({
-  brief,
-  contentTypeInputs,
-  includeProblem,
-  includePricing,
-  briefIncomplete,
-  onEditBrief,
-}: {
-  brief: { objective: string; keyMessage: string; toneDirection: string; callToAction: string };
-  contentTypeInputs: Record<string, string | string[] | number | boolean>;
-  includeProblem: boolean;
-  includePricing: boolean;
-  briefIncomplete: boolean;
-  onEditBrief: () => void;
-}) {
-  if (briefIncomplete) {
-    return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        <div className="flex items-start gap-2">
-          <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="font-medium">Brief incompleet</p>
-            <p className="text-xs text-amber-800 mt-1">
-              Vul eerst minimaal Doel of Value Proposition in Step 1.
-            </p>
-            <button
-              type="button"
-              onClick={onEditBrief}
-              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-amber-900 underline hover:text-amber-700"
-            >
-              <ArrowLeft className="h-3 w-3" />Terug naar Step 1
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-      <p className="text-sm font-medium text-gray-700 mb-2">Brief-velden die de generator gebruikt:</p>
-      <div className="space-y-1.5 text-xs text-gray-600">
-        {brief.objective?.trim() && <BriefRow label="Doel" value={brief.objective} />}
-        {typeof contentTypeInputs.valueProposition === 'string' && contentTypeInputs.valueProposition.trim() && (
-          <BriefRow label="Value proposition" value={contentTypeInputs.valueProposition} />
-        )}
-        {typeof contentTypeInputs.targetObjection === 'string' && contentTypeInputs.targetObjection.trim() && (
-          <BriefRow label="Belangrijkste bezwaar" value={contentTypeInputs.targetObjection} />
-        )}
-        {typeof contentTypeInputs.conversionGoal === 'string' && contentTypeInputs.conversionGoal.trim() && (
-          <BriefRow label="Conversie-doel" value={contentTypeInputs.conversionGoal} />
-        )}
-        {brief.callToAction?.trim() && <BriefRow label="Gewenste CTA-tekst" value={brief.callToAction} />}
-        {brief.toneDirection?.trim() && <BriefRow label="Tone" value={brief.toneDirection} />}
-      </div>
-      <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500 space-y-1">
-        <p>
-          <span className="font-medium text-gray-700">Probleem-articulatie:</span>{' '}
-          {includeProblem ? 'aan (target-objection ingevuld)' : 'uit (geen target-objection)'}
-        </p>
-        <p>
-          <span className="font-medium text-gray-700">Pricing-sectie:</span>{' '}
-          {includePricing
-            ? `aan (conversie-doel = ${contentTypeInputs.conversionGoal})`
-            : 'uit (geen koop-actie)'}
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={onEditBrief}
-        className="mt-3 inline-flex items-center gap-1 text-xs text-gray-600 underline hover:text-gray-900"
-      >
-        <ArrowLeft className="h-3 w-3" />Brief aanpassen in Step 1
-      </button>
-    </div>
-  );
-}
-
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
@@ -482,15 +456,6 @@ function FieldRow({ label, value, accent }: { label: string; value: string; acce
     <div className="text-sm">
       <span className="text-xs font-medium text-gray-500">{label}: </span>
       <span className={accent ? 'font-semibold text-gray-900' : 'text-gray-700'}>{value}</span>
-    </div>
-  );
-}
-
-function BriefRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex gap-2">
-      <span className="font-medium text-gray-700 flex-shrink-0">{label}:</span>
-      <span className="text-gray-600 line-clamp-2">{value}</span>
     </div>
   );
 }
