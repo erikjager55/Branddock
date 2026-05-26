@@ -41,6 +41,7 @@ function heroSection(v: LandingPageVariantContent): PuckInstance {
     headline: v.hero.headline,
     sub: v.hero.subhead,
     ctaLabel: v.hero.primaryCta,
+    heroVisualUrl: v.hero.heroVisualUrl ?? "",
   });
 }
 
