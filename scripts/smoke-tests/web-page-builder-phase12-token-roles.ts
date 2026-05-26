@@ -199,9 +199,12 @@ group('Better Brands extraction — straightforward SaaS pattern');
     'brand = #0D9488 (PRIMARY tagged brand)',
     tokens.brand === '#0D9488',
   );
+  // Sprint 2 WCAG-gate: wit op teal-600 (#0D9488) heeft ratio ~3.67:1 <
+  // AA 4.5:1 → fallback naar zwart (ratio ~5.7:1) ondanks DB contrastWhite=AAA tag.
+  // Gate overrult DB-tags op basis van werkelijke WCAG-formule.
   assert(
-    'onBrand = #FFFFFF (white — contrastWhite=AAA op teal)',
-    tokens.onBrand === '#FFFFFF',
+    'onBrand = #000000 (black via WCAG-fallback op teal-600)',
+    tokens.onBrand === '#000000',
   );
   assert('accent = #F59E0B (ACCENT category)', tokens.accent === '#F59E0B');
   assert('surfaceMuted = #64748B', tokens.surfaceMuted === '#64748B');

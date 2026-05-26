@@ -22,6 +22,8 @@
  */
 
 import { componentTypeCounts, flattenPuckText, type PuckLikeData } from "./puck-data-flatten";
+import type { BrandTokens } from "./brand-tokens";
+import { validateTokenPairs } from "./wcag";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -38,6 +40,9 @@ export interface LandingPageDimensionScores {
   anatomyCompleteness: number;
   /** 0-100. FAQ dekt minimaal 3 koop-barrières. */
   objectionCoverage: number;
+  /** 0-100. WCAG-compliance check op brand-tokens. Optional — alleen
+   *  meegerekend als brandTokens aanwezig is. */
+  wcagCompliance?: number;
 }
 
 export interface LandingPageQualityResult {
@@ -61,17 +66,27 @@ export interface LandingPageQualityInputs {
   heroClarityJudgeScore?: number;
   /** Optionele AI-judge-resultaat voor objection-coverage (categorisering FAQ). */
   objectionCategoriesJudgeCount?: number;
+  /** BrandTokens voor WCAG-compliance check (dimensie 7).
+   *  Wanneer afwezig: dimensie krijgt geen gewicht in composite. */
+  brandTokens?: BrandTokens;
 }
 
 // ─── Constanten per spec §4d ─────────────────────────────
 
+/**
+ * Gewichten per spec §4d, met Sprint 2 herbalancering om WCAG (10%) toe te
+ * voegen. Hero-clarity en anatomie-completeness elk 5% lager om ruimte te maken.
+ * Totaal = 100% — als brandTokens afwezig is voor WCAG, wordt het gewicht
+ * herverdeeld over de overige 6 dimensies (proportioneel).
+ */
 const WEIGHTS = {
-  heroClarity: 0.2,
+  heroClarity: 0.15,
   singleCtaDiscipline: 0.15,
   readability: 0.15,
   socialProofPresence: 0.15,
-  anatomyCompleteness: 0.2,
+  anatomyCompleteness: 0.15,
   objectionCoverage: 0.15,
+  wcagCompliance: 0.10,
 } as const;
 
 const QUALITY_THRESHOLD = 70;
@@ -97,6 +112,10 @@ export function evaluateLandingPageQuality(
   const distinctCtas = collectDistinctCtas(input.data);
   const faqItemCount = countFaqItems(input.data);
 
+  const wcagScore = input.brandTokens
+    ? scoreWCAGCompliance(input.brandTokens)
+    : undefined;
+
   const dimensions: LandingPageDimensionScores = {
     heroClarity: scoreHeroClarity(input.data, input.heroClarityJudgeScore),
     singleCtaDiscipline: scoreSingleCtaDiscipline(distinctCtas),
@@ -107,15 +126,14 @@ export function evaluateLandingPageQuality(
       faqItemCount,
       input.objectionCategoriesJudgeCount,
     ),
+    wcagCompliance: wcagScore,
   };
 
-  const composite =
-    dimensions.heroClarity * WEIGHTS.heroClarity +
-    dimensions.singleCtaDiscipline * WEIGHTS.singleCtaDiscipline +
-    dimensions.readability * WEIGHTS.readability +
-    dimensions.socialProofPresence * WEIGHTS.socialProofPresence +
-    dimensions.anatomyCompleteness * WEIGHTS.anatomyCompleteness +
-    dimensions.objectionCoverage * WEIGHTS.objectionCoverage;
+  // Wanneer geen brandTokens: WCAG-gewicht herverdelen over overige 6 dims
+  // proportioneel om totaal op 100% te houden.
+  const composite = wcagScore === undefined
+    ? computeCompositeWithoutWcag(dimensions)
+    : computeCompositeWithWcag(dimensions, wcagScore);
 
   return {
     composite: Math.round(composite),
@@ -133,7 +151,71 @@ export function evaluateLandingPageQuality(
   };
 }
 
+// ─── Composite-berekening ────────────────────────────────
+
+function computeCompositeWithWcag(
+  d: LandingPageDimensionScores,
+  wcag: number,
+): number {
+  return (
+    d.heroClarity * WEIGHTS.heroClarity +
+    d.singleCtaDiscipline * WEIGHTS.singleCtaDiscipline +
+    d.readability * WEIGHTS.readability +
+    d.socialProofPresence * WEIGHTS.socialProofPresence +
+    d.anatomyCompleteness * WEIGHTS.anatomyCompleteness +
+    d.objectionCoverage * WEIGHTS.objectionCoverage +
+    wcag * WEIGHTS.wcagCompliance
+  );
+}
+
+function computeCompositeWithoutWcag(d: LandingPageDimensionScores): number {
+  // Herverdeel WCAG-gewicht (10%) proportioneel over 6 dims (1.67% elk).
+  const SCALE = 1 / (1 - WEIGHTS.wcagCompliance);
+  return (
+    d.heroClarity * WEIGHTS.heroClarity * SCALE +
+    d.singleCtaDiscipline * WEIGHTS.singleCtaDiscipline * SCALE +
+    d.readability * WEIGHTS.readability * SCALE +
+    d.socialProofPresence * WEIGHTS.socialProofPresence * SCALE +
+    d.anatomyCompleteness * WEIGHTS.anatomyCompleteness * SCALE +
+    d.objectionCoverage * WEIGHTS.objectionCoverage * SCALE
+  );
+}
+
 // ─── Per-dimensie scorers ────────────────────────────────
+
+/**
+ * Dimensie 7 — WCAG-compliance. Valideert kern-token-pairs uit BrandTokens:
+ *   - onSurface op surface (body-text)
+ *   - surfaceMuted op surface (sub-text)
+ *   - onBrand op brand (button-text)
+ *   - onAction op action (CTA-text)
+ *   - surfaceBorder vs surface (non-text)
+ *
+ * Score:
+ *   - 100 = 0 failures (alle pairs AA+)
+ *   - 75  = 1 failure
+ *   - 50  = 2 failures
+ *   - 25  = 3 failures
+ *   - 0   = 4+ failures
+ *
+ * Pre-render gate in extractor zou bij ideal geval alle failures al
+ * voorkomen via fallback. WCAG-dimensie hier vangt edge-cases op.
+ */
+function scoreWCAGCompliance(tokens: BrandTokens): number {
+  const result = validateTokenPairs({
+    onSurface: { fg: tokens.onSurface, bg: tokens.surface },
+    surfaceMuted: { fg: tokens.surfaceMuted, bg: tokens.surface },
+    onBrand: { fg: tokens.onBrand, bg: tokens.brand },
+    onAction: { fg: tokens.onAction, bg: tokens.action },
+    surfaceBorder: { fg: tokens.surfaceBorder, bg: tokens.surface },
+  });
+  const failures = result.failureCount;
+  if (failures === 0) return 100;
+  if (failures === 1) return 75;
+  if (failures === 2) return 50;
+  if (failures === 3) return 25;
+  return 0;
+}
 
 /**
  * Dimensie 1 — Hero clarity (2s-test, 4 vragen). Default deterministische

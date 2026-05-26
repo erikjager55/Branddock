@@ -370,6 +370,13 @@ export function extractBrandTokensFromStyleguide(
   const accentColor = pickAccent(colors, brand);
   const accent = accentColor?.hex ?? DEFAULT_BRAND_TOKENS.accent;
 
+  // ── WCAG pre-render gate (Sprint 2 §3b) ──
+  // Forceer veilige fallbacks bij contrast-fail: voorkomt unreadable
+  // body-text / button-text bij classifier-fouten of marginal kleuren.
+  const safeOnSurface = enforceContrastFallback(onSurface, surface, 'normal');
+  const safeOnBrand = enforceContrastFallback(onBrand, brand, 'normal');
+  const safeSurfaceMuted = enforceContrastFallback(surfaceMuted, surface, 'normal');
+
   // ── Fonts ──
   const fontByRole = (role: string): string | null => {
     const match = fonts.find((f) => f.role === role);
@@ -386,29 +393,57 @@ export function extractBrandTokensFromStyleguide(
     ?? DEFAULT_BRAND_TOKENS.bodyFont;
 
   return {
-    // Legacy aliases (semantisch correct na v2-mapping)
+    // Legacy aliases (semantisch correct na v2-mapping + WCAG-gate)
     primaryHex: brand,
-    secondaryHex: onSurface,
+    secondaryHex: safeOnSurface,
     accentHex: accent,
-    neutralHex: surfaceMuted,
-    // Surface roles
+    neutralHex: safeSurfaceMuted,
+    // Surface roles (WCAG-validated)
     surface,
-    onSurface,
-    surfaceMuted,
+    onSurface: safeOnSurface,
+    surfaceMuted: safeSurfaceMuted,
     surfaceBorder,
-    // Brand roles
+    // Brand roles (WCAG-validated)
     brand,
-    onBrand,
+    onBrand: safeOnBrand,
     brandSubtle,
     // Action roles (default = brand)
     action: brand,
-    onAction: onBrand,
+    onAction: safeOnBrand,
     // Accent
     accent,
     // Typography
     headingFont,
     bodyFont,
   };
+}
+
+/**
+ * WCAG-fallback: als fg/bg contrast onder AA-threshold valt, vervang fg
+ * door safe black-or-white. Log warning voor diagnostics.
+ */
+function enforceContrastFallback(
+  fg: string,
+  bg: string,
+  size: 'normal' | 'large',
+): string {
+  // Lazy import om circular dep te vermijden — wcag.ts importeert
+  // relativeLuminance uit deze file
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { contrastRatio, getMinRatio, blackOrWhiteFor } = require('./wcag') as {
+    contrastRatio: (a: string, b: string) => number;
+    getMinRatio: (level: 'AA', size: 'normal' | 'large') => number;
+    blackOrWhiteFor: (bg: string) => '#000000' | '#FFFFFF';
+  };
+  const ratio = contrastRatio(fg, bg);
+  const minRatio = getMinRatio('AA', size);
+  if (ratio >= minRatio) return fg;
+  // Fallback naar black-or-white
+  const safe = blackOrWhiteFor(bg);
+  console.warn(
+    `[brand-tokens] WCAG-gate fallback: ${fg} op ${bg} ratio ${ratio.toFixed(2)}:1 < ${minRatio}:1 → ${safe}`,
+  );
+  return safe;
 }
 
 /**
