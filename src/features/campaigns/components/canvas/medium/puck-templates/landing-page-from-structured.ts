@@ -67,6 +67,7 @@ function featuresSection(v: LandingPageVariantContent): PuckInstance {
   const features = v.features.items.map((item) => ({
     title: item.heading,
     description: item.body,
+    icon: item.icon,
   }));
   const columns: "2" | "3" | "4" =
     features.length >= 4 ? "4" : features.length === 2 ? "2" : "3";
@@ -112,6 +113,7 @@ function pricingSection(v: LandingPageVariantContent): PuckInstance | null {
     name: t.name,
     price: t.price,
     features: t.features.join("\n"),
+    highlighted: t.highlighted,
   }));
   return instance("PricingTable", { tiers });
 }
@@ -127,21 +129,23 @@ function finalCtaSection(
   const personaId = ctx?.personas?.[0]?.id ?? "";
   // Per spec §1 #5: primaryCta MOET identiek zijn aan hero.primaryCta —
   // afgedwongen via Zod schema cross-field check. Hier vertrouwen we daarop.
+  // Fase 5: riskReducer is nu native prop op BrandCTA (geen RichText-workaround).
   return instance("BrandCTA", {
     label: v.finalCta.primaryCta,
     href: "#",
     personaId,
+    riskReducer: v.finalCta.riskReducer,
   });
 }
 
-function finalCtaRiskReducerSection(
+function finalCtaHeadingSection(
   v: LandingPageVariantContent,
 ): PuckInstance {
-  // BrandCTA component heeft geen riskReducer slot — workaround via
-  // RichText eronder. Spec §4a v2: BrandCTA uitbreiden met optionele
-  // riskReducer prop.
+  // Heading-zin (belofte-herhaling) blijft RichText boven de BrandCTA.
+  // BrandCTA component heeft alleen label + riskReducer; heading-context
+  // hoort daar buiten.
   return instance("RichText", {
-    content: `**${v.finalCta.heading}**\n\n${v.finalCta.riskReducer}`,
+    content: `## ${v.finalCta.heading}`,
   });
 }
 
@@ -187,8 +191,8 @@ export function buildLandingPageTemplateFromStructured(
     impactStatsSection(variant), // 5b. Impact stats (optional)
     pricingSection(variant), // 6. Pricing (conditional)
     faqSection(variant), // 7. FAQ
-    finalCtaSection(variant, ctx), // 8a. Final CTA
-    finalCtaRiskReducerSection(variant), // 8b. Risk-reducer (workaround)
+    finalCtaHeadingSection(variant), // 8a. Final CTA heading-zin
+    finalCtaSection(variant, ctx), // 8b. Final CTA (incl. riskReducer)
     footerSection(variant, ctx), // Footer
   ];
 

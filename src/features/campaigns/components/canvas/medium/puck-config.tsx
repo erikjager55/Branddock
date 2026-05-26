@@ -14,15 +14,27 @@ export type SpikeBrandHeroProps = {
   headline: string;
   sub: string;
   ctaLabel: string;
+  /** Optional hero-visual URL (afbeelding of GIF). Fase 5 spec §4a v2-stap;
+   *  v2 wordt dit een dedicated animatie-slot. */
+  heroVisualUrl?: string;
 };
 
 export type SpikeBrandCtaProps = {
   label: string;
   href: string;
   personaId: string;
+  /** Optional risico-reductie subhead ("Geen creditcard nodig"). Fase 5
+   *  spec §4a — voorheen werd dit als losse RichText onder de CTA gerenderd. */
+  riskReducer?: string;
 };
 
-export type FeatureItem = { title: string; description: string };
+export type FeatureItem = {
+  title: string;
+  description: string;
+  /** Optional lucide-icon naam (bv "zap", "shield", "users"). MVP rendert
+   *  alleen het label; v2 voegt dynamic lucide-icon rendering toe. */
+  icon?: string;
+};
 export type FeatureGridProps = {
   columns: '2' | '3' | '4';
   features: FeatureItem[];
@@ -38,6 +50,9 @@ export type PricingTier = {
   name: string;
   price: string;
   features: string;
+  /** Decoy-effect highlight (spec §1 #16). Middle-tier krijgt highlighted=true
+   *  voor sterkere visuele aandacht. Optional voor backward-compat. */
+  highlighted?: boolean;
 };
 export type PricingTableProps = {
   tiers: PricingTier[];
@@ -117,13 +132,15 @@ function brandHeroComponent(tokens: BrandTokens) {
       headline: { type: 'text' as const },
       sub: { type: 'textarea' as const },
       ctaLabel: { type: 'text' as const },
+      heroVisualUrl: { type: 'text' as const },
     },
     defaultProps: {
       headline: 'Headline placeholder',
       sub: 'Subtitle placeholder',
       ctaLabel: 'Get started',
+      heroVisualUrl: '',
     },
-    render: ({ headline, sub, ctaLabel }: SpikeBrandHeroProps) => (
+    render: ({ headline, sub, ctaLabel, heroVisualUrl }: SpikeBrandHeroProps) => (
       <section
         style={{
           background: tokens.primaryHex,
@@ -164,6 +181,18 @@ function brandHeroComponent(tokens: BrandTokens) {
         >
           {ctaLabel}
         </button>
+        {heroVisualUrl && heroVisualUrl.trim().length > 0 ? (
+          <div style={{ marginTop: 32, maxWidth: 720, marginLeft: 'auto', marginRight: 'auto' }}>
+            {/* Puck render-context (iframe/portal) ondersteunt geen next/image
+                optimalisatie betrouwbaar — plain <img> voor MVP. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroVisualUrl}
+              alt=""
+              style={{ width: '100%', height: 'auto', borderRadius: 12, display: 'block' }}
+            />
+          </div>
+        ) : null}
       </section>
     ),
   };
@@ -179,13 +208,15 @@ function brandCtaComponent(
       label: { type: 'text' as const },
       href: { type: 'text' as const },
       personaId: { type: 'select' as const, options: personaOptions },
+      riskReducer: { type: 'text' as const },
     },
     defaultProps: {
       label: 'Start your trial',
       href: '#',
       personaId: '',
+      riskReducer: '',
     },
-    render: ({ label, href, personaId }: SpikeBrandCtaProps) => {
+    render: ({ label, href, personaId, riskReducer }: SpikeBrandCtaProps) => {
       const persona = personas.find((p) => p.id === personaId);
       return (
         <section style={{ padding: '48px 32px', textAlign: 'center', fontFamily: tokens.bodyFont }}>
@@ -210,6 +241,18 @@ function brandCtaComponent(
           >
             {label}
           </a>
+          {riskReducer && riskReducer.trim().length > 0 ? (
+            <p
+              style={{
+                marginTop: 12,
+                fontSize: 13,
+                color: tokens.neutralHex,
+                fontFamily: tokens.bodyFont,
+              }}
+            >
+              {riskReducer}
+            </p>
+          ) : null}
         </section>
       );
     },
@@ -232,17 +275,18 @@ function featureGridComponent(tokens: BrandTokens) {
         arrayFields: {
           title: { type: 'text' as const },
           description: { type: 'textarea' as const },
+          icon: { type: 'text' as const },
         },
-        defaultItemProps: { title: 'Feature', description: 'Korte beschrijving' },
+        defaultItemProps: { title: 'Feature', description: 'Korte beschrijving', icon: '' },
         getItemSummary: (item: FeatureItem) => item.title || 'Untitled feature',
       },
     },
     defaultProps: {
       columns: '3' as const,
       features: [
-        { title: 'Snel', description: 'In minuten opgezet, niet weken.' },
-        { title: 'Eenvoudig', description: 'Geen technische kennis nodig.' },
-        { title: 'Schaalbaar', description: 'Groeit mee met je business.' },
+        { title: 'Snel', description: 'In minuten opgezet, niet weken.', icon: 'zap' },
+        { title: 'Eenvoudig', description: 'Geen technische kennis nodig.', icon: 'sparkles' },
+        { title: 'Schaalbaar', description: 'Groeit mee met je business.', icon: 'trending-up' },
       ],
     },
     render: ({ columns, features }: FeatureGridProps) => (
@@ -258,6 +302,23 @@ function featureGridComponent(tokens: BrandTokens) {
         >
           {features.map((f, i) => (
             <div key={i}>
+              {f.icon && f.icon.trim().length > 0 ? (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: tokens.primaryHex,
+                    fontFamily: tokens.bodyFont,
+                    textTransform: 'uppercase',
+                    letterSpacing: 1,
+                    marginBottom: 8,
+                    fontWeight: 600,
+                  }}
+                  aria-hidden
+                >
+                  {/* MVP: text-label voor lucide-icon naam. v2: dynamic lucide-icon render. */}
+                  {f.icon}
+                </div>
+              ) : null}
               <h3
                 style={{
                   fontFamily: tokens.headingFont,
@@ -338,15 +399,23 @@ function pricingTableComponent(tokens: BrandTokens) {
           name: { type: 'text' as const },
           price: { type: 'text' as const },
           features: { type: 'textarea' as const },
+          highlighted: {
+            type: 'radio' as const,
+            options: [
+              { label: 'Normaal', value: false },
+              { label: 'Uitgelicht (decoy-middle)', value: true },
+            ],
+          },
         },
-        defaultItemProps: { name: 'Tier', price: '€0/mnd', features: 'Feature 1\nFeature 2' },
-        getItemSummary: (item: PricingTier) => `${item.name} — ${item.price}`,
+        defaultItemProps: { name: 'Tier', price: '€0/mnd', features: 'Feature 1\nFeature 2', highlighted: false },
+        getItemSummary: (item: PricingTier) =>
+          `${item.name} — ${item.price}${item.highlighted ? ' ★' : ''}`,
       },
     },
     defaultProps: {
       tiers: [
-        { name: 'Starter', price: '€19/mnd', features: 'Basis features\nE-mail support' },
-        { name: 'Pro', price: '€49/mnd', features: 'Alle features\nPriority support' },
+        { name: 'Starter', price: '€19/mnd', features: 'Basis features\nE-mail support', highlighted: false },
+        { name: 'Pro', price: '€49/mnd', features: 'Alle features\nPriority support', highlighted: true },
       ],
     },
     render: ({ tiers }: PricingTableProps) => (
@@ -364,12 +433,38 @@ function pricingTableComponent(tokens: BrandTokens) {
             <div
               key={i}
               style={{
-                border: `1px solid ${tokens.neutralHex}`,
+                border: t.highlighted
+                  ? `2px solid ${tokens.primaryHex}`
+                  : `1px solid ${tokens.neutralHex}`,
                 borderRadius: 12,
                 padding: 24,
                 textAlign: 'center',
+                transform: t.highlighted ? 'scale(1.05)' : 'none',
+                boxShadow: t.highlighted ? `0 8px 24px ${tokens.primaryHex}22` : 'none',
+                position: 'relative',
               }}
             >
+              {t.highlighted ? (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: -12,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: tokens.primaryHex,
+                    color: '#ffffff',
+                    fontSize: 11,
+                    fontFamily: tokens.headingFont,
+                    fontWeight: 600,
+                    padding: '4px 12px',
+                    borderRadius: 12,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Aanbevolen
+                </div>
+              ) : null}
               <h3
                 style={{
                   fontFamily: tokens.headingFont,
