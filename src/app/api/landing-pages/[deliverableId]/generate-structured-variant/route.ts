@@ -7,6 +7,7 @@ import {
   generateLandingPageVariantBatch,
 } from "@/lib/landing-pages/variant-generator";
 import { ensureBrandArchetype } from "@/lib/landing-pages/ensure-archetype";
+import { ensureLayoutStyle } from "@/lib/landing-pages/ensure-layout-style";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 
@@ -138,6 +139,16 @@ export async function POST(
     ctx.brand,
   );
 
+  // V2-2 lazy layout-style inference — deterministisch (geen AI), gebruikt
+  // archetype + tone-signalen voor "best-guess default". Persisted; user kan
+  // later overrulen via brand-styling UI.
+  const layoutResult = await ensureLayoutStyle(
+    workspaceId,
+    ctx.brandTokens.layoutStyle ?? null,
+    archetypeResult.archetype,
+    ctx.brand,
+  );
+
   let results;
   try {
     results = await generateLandingPageVariantBatch(
@@ -150,7 +161,7 @@ export async function POST(
         includePricing: body.includePricing ?? false,
         // Sub-Sprint E — brand-archetype + layoutStyle hints voor tone + depth
         archetype: archetypeResult.archetype,
-        layoutStyle: ctx.brandTokens.layoutStyle ?? null,
+        layoutStyle: layoutResult.layoutStyle,
       },
       count,
     );
@@ -192,6 +203,9 @@ export async function POST(
           archetypeClassified: archetypeResult.classified,
           archetype: archetypeResult.archetype,
           archetypeConfidence: archetypeResult.confidence ?? null,
+          layoutStyleInferred: layoutResult.inferred,
+          layoutStyle: layoutResult.layoutStyle,
+          layoutStyleConfidence: layoutResult.confidence ?? null,
         },
       },
     },
