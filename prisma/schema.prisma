@@ -1678,6 +1678,13 @@ model BrandStyleguide {
   // Auto-detected door brandstyle-scraper, user kan overriden in onboarding.
   layoutStyle        LayoutStyle      @default(COMMERCIAL)
 
+  // Pad C Sub-Sprint B — Jung's brand-archetype. AI-classified uit
+  // BrandAssetVersion content. Null = nog niet geclassificeerd; renderer
+  // valt terug op layoutStyle-only beslissingen.
+  archetype           BrandArchetype?
+  archetypeConfidence String?  // "high" | "medium" | "low"
+  archetypeReasoning  String?  @db.Text  // 1-2 zinnen waarom de classifier dit koos
+
   // Logo (logoVariations JSON vervangen door StyleguideLogo relatie — Fase 0)
   logos          StyleguideLogo[]
   logoGuidelines String[]
@@ -2031,6 +2038,26 @@ enum LayoutStyle {
   COMMERCIAL    // Coolblue, Bol.com, HubSpot — conversion-focused, dense info-grid
   EXPERIENTIAL  // Patagonia, Tony's Chocolonely — story-driven, immersive
   PLAYFUL       // Notion marketing, MailerLite — colorful, illustration-heavy
+}
+
+// Pad C Sub-Sprint B — Jung's 12 Brand Archetypes (industriestandaard
+// voor brand-personality classification). Drijft visuele design-keuzes
+// in brand-render-rules.ts: bg-style, typography-emphasis, button-shape,
+// micro-copy-tone, etc. AI-classified uit BrandAssetVersion content;
+// cached op styleguide; user kan overrulen via onboarding-UI.
+enum BrandArchetype {
+  INNOCENT       // Coca-Cola, Dove — purity, optimism, simplicity
+  EXPLORER       // Patagonia, Jeep — freedom, adventure, individuality
+  SAGE           // Google, BBC, McKinsey — wisdom, knowledge, expertise
+  HERO           // Nike, BMW — courage, mastery, achievement
+  OUTLAW         // Harley-Davidson, Virgin — rebellion, revolution, disruption
+  MAGICIAN       // Disney, Apple — transformation, vision, mystery
+  REGULAR_GUY    // IKEA, eBay — belonging, down-to-earth, accessibility
+  LOVER          // Chanel, Häagen-Dazs — passion, intimacy, sensuality
+  JESTER         // Old Spice, M&Ms — joy, humor, lightheartedness
+  CARETAKER      // Johnson & Johnson, Volvo — service, protection, nurture
+  CREATOR        // Lego, Adobe — innovation, imagination, self-expression
+  RULER          // Mercedes, Rolex, LINFI — control, leadership, premium quality
 }
 
 enum StyleguideSource {
