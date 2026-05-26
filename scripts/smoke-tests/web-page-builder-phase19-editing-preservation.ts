@@ -120,7 +120,6 @@ group('Render-functions resilient — edge cases');
   const tryRender = (name: string, props: Record<string, unknown>) => {
     try {
       const comp = (config.components as Record<string, { render: (p: unknown) => unknown; defaultProps: Record<string, unknown> }>)[name];
-      // @ts-expect-error — Puck's render is callable
       const element = comp.render({ ...comp.defaultProps, ...props });
       const html = renderToStaticMarkup(element as React.ReactElement);
       return html.length > 50;  // some non-empty output
@@ -151,7 +150,6 @@ group('Puck-data-tree shape compatibel met auto-iterate + lock-toggle');
   for (const name of ['BrandHero', 'BrandCTA', 'FeatureGrid', 'Testimonial', 'PricingTable', 'FAQ', 'Footer', 'RichText']) {
     const comp = (config.components as Record<string, { render: (p: unknown) => unknown; defaultProps: Record<string, unknown> }>)[name];
     try {
-      // @ts-expect-error — Puck render
       const el = comp.render(comp.defaultProps);
       assert(`${name} produces React-element`, el !== null && el !== undefined && typeof el === 'object');
     } catch {
@@ -174,7 +172,6 @@ group('Render-output bij verschillende layoutStyles geen errors');
     for (const name of ['BrandHero', 'BrandCTA', 'FeatureGrid', 'Testimonial', 'PricingTable', 'FAQ', 'Footer', 'RichText']) {
       try {
         const comp = (config.components as Record<string, { render: (p: unknown) => unknown; defaultProps: Record<string, unknown> }>)[name];
-        // @ts-expect-error — Puck render
         const el = comp.render(comp.defaultProps);
         renderToStaticMarkup(el as React.ReactElement);
       } catch {

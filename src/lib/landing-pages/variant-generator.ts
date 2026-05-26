@@ -32,6 +32,8 @@ import {
   type LandingPageVariantContent,
   validateLandingPageVariant,
 } from "./variant-schema";
+import type { BrandArchetype } from "./brand-archetype-classifier";
+import type { LayoutStyle } from "./design-system";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -57,6 +59,10 @@ export interface LandingPageGenerationParams {
   includeProblem?: boolean;
   /** Of we pricing-sectie willen (default false voor lead-gen LPs). */
   includePricing?: boolean;
+  /** Sub-Sprint E — Brand-archetype voor tone-aware micro-copy. */
+  archetype?: BrandArchetype | null;
+  /** Sub-Sprint E — LayoutStyle bepaalt content-depth (MINIMAL=sparse, EDITORIAL=lush). */
+  layoutStyle?: LayoutStyle | null;
 }
 
 export interface BuiltPrompt {
@@ -77,19 +83,58 @@ export function buildLandingPageVariantPrompt(
   const includeProblem = params.includeProblem ?? true;
   const includePricing = params.includePricing ?? false;
 
-  const system = buildSystemPrompt({ locale, includeProblem, includePricing });
+  const system = buildSystemPrompt({
+    locale,
+    includeProblem,
+    includePricing,
+    archetype: params.archetype ?? null,
+    layoutStyle: params.layoutStyle ?? null,
+  });
   const user = buildUserPrompt(params, { locale });
   return { system, user };
 }
+
+// ─── Tone + content-depth hints (Sub-Sprint E) ────────────
+
+const ARCHETYPE_TONE_HINTS: Record<BrandArchetype, string> = {
+  INNOCENT: 'optimistic, simple, honest, hopeful — use positive verbs, avoid corporate jargon',
+  EXPLORER: 'adventurous, independent, authentic — speak to autonomy and discovery',
+  SAGE: 'authoritative, considered, knowledgeable — evidence-led, no exaggeration',
+  HERO: 'bold, confident, action-led — strong verbs, no hedging, "you can"-framing',
+  OUTLAW: 'rebellious, direct, anti-establishment — challenge conventions explicitly',
+  MAGICIAN: 'visionary, transformative, mysterious — speak to possibility and change',
+  REGULAR_GUY: 'down-to-earth, friendly, inclusive — plain language, no superlatives',
+  LOVER: 'intimate, passionate, sensual — evoke emotion and beauty',
+  JESTER: 'playful, witty, light — humor where appropriate, never preachy',
+  CARETAKER: 'warm, protective, supportive — empathy first, reassurance throughout',
+  CREATOR: 'inventive, original, expressive — celebrate craft and intentionality',
+  RULER: 'premium, authoritative, refined — quiet confidence, no sales-y exclamation',
+};
+
+const LAYOUT_DEPTH_HINTS: Record<LayoutStyle, string> = {
+  MINIMAL: 'Sparse content. Body sentences max 14 words. Each section feels considered. White-space respect — say less.',
+  EDITORIAL: 'Magazine-style depth. Body paragraphs 2-3 sentences. Sub-headlines that develop the theme. Reward attentive readers.',
+  COMMERCIAL: 'Tight, scannable. Direct value-prop. Bullet-friendly. Quick wins above the fold.',
+  EXPERIENTIAL: 'Story-driven. Hero headline emotional. Build narrative through sections. Pay off at final CTA.',
+  PLAYFUL: 'Warm + casual. Conversational tone. Concrete examples over abstract claims. Joy in micro-copy.',
+};
 
 function buildSystemPrompt(opts: {
   locale: string;
   includeProblem: boolean;
   includePricing: boolean;
+  archetype: BrandArchetype | null;
+  layoutStyle: LayoutStyle | null;
 }): string {
+  const toneBlock = opts.archetype
+    ? `\n# BRAND-ARCHETYPE: ${opts.archetype}\nTone: ${ARCHETYPE_TONE_HINTS[opts.archetype]}\n`
+    : '';
+  const depthBlock = opts.layoutStyle
+    ? `\n# CONTENT-DEPTH (LayoutStyle: ${opts.layoutStyle})\n${LAYOUT_DEPTH_HINTS[opts.layoutStyle]}\n`
+    : '';
   return `# ROL
 Je bent een conversion rate optimization (CRO) specialist met 12+ jaar ervaring met B2B SaaS en breed bedrijfsleven landing-pages. Je weet dat elk woord op een landing-page de bezoeker richting conversie beweegt of er vanaf — neutrale copy bestaat niet.
-
+${toneBlock}${depthBlock}
 # OPDRACHT
 Genereer een complete landing-page variant als **gestructureerd JSON** volgens het schema hieronder. Geen prose, geen toelichting, geen code-fences — alleen het JSON-object als response.
 

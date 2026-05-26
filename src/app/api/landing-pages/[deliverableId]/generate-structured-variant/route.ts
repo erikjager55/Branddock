@@ -138,6 +138,9 @@ export async function POST(
         locale: "nl-NL",
         includeProblem: body.includeProblem ?? true,
         includePricing: body.includePricing ?? false,
+        // Sub-Sprint E — brand-archetype + layoutStyle hints voor tone + depth
+        archetype: ctx.brandTokens.archetype ?? null,
+        layoutStyle: ctx.brandTokens.layoutStyle ?? null,
       },
       count,
     );
