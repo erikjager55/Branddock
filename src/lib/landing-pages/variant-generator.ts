@@ -359,35 +359,65 @@ export async function generateLandingPageVariant(
  *   - variant A (conservative, temp 0.3) — close to spec-by-the-book
  *   - variant B (creative, temp 0.7)     — more adventurous tone/framing
  *
- * Parallel via Promise.all zodat totale wachttijd ≈ max(call_1, call_2),
- * niet de som. Bij partial failure (1 valid, 1 fail) returns we de valid;
- * bij beide fail re-throw met details.
+ * Twee-fase strategie:
+ *  1. Parallel via Promise.allSettled (snel, ~max(call_1, call_2))
+ *  2. Bij partial failure: sequential retry per failed index met recovery-temp
+ *     (creative 0.7 → 0.5; conservative 0.3 → 0.4). Levert reliability boost
+ *     zonder elk de happy-path 2× zo lang te maken.
+ *
+ * Worst-case timing: 90s × 2 (2 sequential retries) + 90s parallel = ~4.5 min.
+ * Typische timing: parallel ~30-50s, geen retry nodig.
+ *
+ * Bij alle attempts fail throw met aggregated error-details.
  */
 export async function generateLandingPageVariantBatch(
   params: LandingPageGenerationParams,
   count: 1 | 2 = 2,
 ): Promise<GenerationResult[]> {
   const TEMPERATURES = count === 2 ? [0.3, 0.7] : [0.3];
+  const RECOVERY_TEMPERATURES: Record<number, number> = { 0.3: 0.4, 0.7: 0.5 };
 
-  const settled = await Promise.allSettled(
+  // Fase 1: parallel attempt
+  const initial = await Promise.allSettled(
     TEMPERATURES.map((temperature) =>
       generateLandingPageVariant(params, { temperature }),
     ),
   );
 
-  const successes: GenerationResult[] = [];
-  const failures: string[] = [];
-  for (const result of settled) {
-    if (result.status === "fulfilled") {
-      successes.push(result.value);
-    } else {
-      failures.push(result.reason instanceof Error ? result.reason.message : String(result.reason));
+  const results: (GenerationResult | null)[] = initial.map((r) =>
+    r.status === "fulfilled" ? r.value : null,
+  );
+
+  // Log failures voor diagnostics
+  initial.forEach((r, i) => {
+    if (r.status === "rejected") {
+      const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
+      console.warn(
+        `[variant-batch] Initial attempt for temp=${TEMPERATURES[i]} failed: ${msg}`,
+      );
+    }
+  });
+
+  // Fase 2: sequential retry voor failed slots met recovery-temperature
+  for (let i = 0; i < results.length; i++) {
+    if (results[i] === null) {
+      const retryTemp = RECOVERY_TEMPERATURES[TEMPERATURES[i]] ?? 0.4;
+      try {
+        console.warn(
+          `[variant-batch] Retrying slot ${i} with recovery-temp ${retryTemp}...`,
+        );
+        results[i] = await generateLandingPageVariant(params, { temperature: retryTemp });
+      } catch (retryErr) {
+        const msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+        console.error(`[variant-batch] Slot ${i} retry also failed: ${msg}`);
+      }
     }
   }
 
+  const successes = results.filter((r): r is GenerationResult => r !== null);
   if (successes.length === 0) {
     throw new Error(
-      `All ${count} variant-generations failed. Errors: ${failures.join(" | ")}`,
+      `All ${count} variant-generations failed (incl. recovery retries). See server logs.`,
     );
   }
   return successes;

@@ -54,6 +54,7 @@ export function LandingPageGenerateBlock({
   const [isChoosing, setIsChoosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [visualError, setVisualError] = useState<string | null>(null);
+  const [partialDelivery, setPartialDelivery] = useState<{ delivered: number; requested: number } | null>(null);
 
   const builtPrompt = useMemo(() => {
     const parts: string[] = [];
@@ -110,10 +111,24 @@ export function LandingPageGenerateBlock({
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error ?? `HTTP ${res.status}`);
       }
-      const data = (await res.json()) as { variants: LandingPageVariantContent[] };
+      const data = (await res.json()) as {
+        variants: LandingPageVariantContent[];
+        deliveredCount?: number;
+        requestedCount?: number;
+      };
       setStructuredVariantOptions(data.variants);
       // Reset chosen variant zodat user-keuze opnieuw moet plaatsvinden
       setStructuredVariant(null);
+      // Partial delivery: 1 van 2 variants gelukt — banner tonen
+      if (
+        typeof data.requestedCount === 'number'
+        && typeof data.deliveredCount === 'number'
+        && data.deliveredCount < data.requestedCount
+      ) {
+        setPartialDelivery({ delivered: data.deliveredCount, requested: data.requestedCount });
+      } else {
+        setPartialDelivery(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Generatie mislukt');
     } finally {
@@ -296,6 +311,21 @@ export function LandingPageGenerateBlock({
             {variantOptions.length} variant{variantOptions.length === 1 ? '' : 'en'} klaar — kies welke past
           </p>
         </div>
+        {partialDelivery ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium">
+                {partialDelivery.delivered} van {partialDelivery.requested} varianten geleverd
+              </p>
+              <p className="text-xs text-amber-800 mt-1">
+                Eén variant is niet gelukt (timeout of validatie-fail). Klik &lsquo;Genereer
+                2 nieuwe varianten&rsquo; om opnieuw te proberen, of werk verder met de
+                geleverde.
+              </p>
+            </div>
+          </div>
+        ) : null}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {variantOptions.map((v, i) => (
             <VariantCompareCard
