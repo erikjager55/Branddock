@@ -6,6 +6,7 @@ import { assembleCanvasContext } from "@/lib/ai/canvas-context";
 import {
   generateLandingPageVariantBatch,
 } from "@/lib/landing-pages/variant-generator";
+import { ensureBrandArchetype } from "@/lib/landing-pages/ensure-archetype";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 
@@ -128,6 +129,15 @@ export async function POST(
 
   const count: 1 | 2 = body.count === 1 ? 1 : 2;
 
+  // V2-1 lazy classification — wanneer archetype nog null is, classify nu zodat
+  // tone-hints + brand-render-rules vanaf deze generation actief zijn. Bij
+  // failure: archetype blijft null, generator valt terug op layoutStyle-only.
+  const archetypeResult = await ensureBrandArchetype(
+    workspaceId,
+    ctx.brandTokens.archetype ?? null,
+    ctx.brand,
+  );
+
   let results;
   try {
     results = await generateLandingPageVariantBatch(
@@ -139,7 +149,7 @@ export async function POST(
         includeProblem: body.includeProblem ?? true,
         includePricing: body.includePricing ?? false,
         // Sub-Sprint E — brand-archetype + layoutStyle hints voor tone + depth
-        archetype: ctx.brandTokens.archetype ?? null,
+        archetype: archetypeResult.archetype,
         layoutStyle: ctx.brandTokens.layoutStyle ?? null,
       },
       count,
@@ -177,8 +187,11 @@ export async function POST(
           count,
           requestedCount: count,
           deliveredCount: variants.length,
-          inputTokens: totalInputTokens,
-          outputTokens: totalOutputTokens,
+          inputTokens: totalInputTokens + (archetypeResult.inputTokens ?? 0),
+          outputTokens: totalOutputTokens + (archetypeResult.outputTokens ?? 0),
+          archetypeClassified: archetypeResult.classified,
+          archetype: archetypeResult.archetype,
+          archetypeConfidence: archetypeResult.confidence ?? null,
         },
       },
     },
