@@ -8,6 +8,8 @@ import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { generateCanvasVisual } from '../../../api/canvas.api';
 import { variantToPuckDataFromStructured } from '../medium/variant-to-puck-data';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
+import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
+import type { BrandTokens } from '@/lib/landing-pages/brand-tokens';
 import { STUDIO } from '@/lib/constants/design-tokens';
 
 interface LandingPageGenerateBlockProps {
@@ -169,9 +171,7 @@ export function LandingPageGenerateBlock({
       }
       setStructuredVariant(variant);
       // Fetch /context expliciet zodat contextStack.puckData synchroon
-      // ververst is vóór user naar Step 3 doorklikt. PuckPageBuilder
-      // useMemo[] leest contextStack op first-mount — als die stale is
-      // zien we de gekozen variant niet in Step 3.
+      // ververst is vóór user naar Step 3 doorklikt.
       try {
         const ctxRes = await fetch(`/api/studio/${deliverableId}/context`);
         if (ctxRes.ok) {
@@ -186,6 +186,41 @@ export function LandingPageGenerateBlock({
       window.dispatchEvent(
         new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
       );
+      // Sub-Sprint C: auto-trigger hero-visual generatie (non-blocking).
+      // User kan ondertussen naar Step 3 → ziet placeholder-frame tot visual klaar.
+      // Image-prompt brand-aware via computeBrandRenderHints +
+      // contextStack.brand.brandImageryStyle.
+      setIsGeneratingVisual(true);
+      void (async () => {
+        try {
+          const instruction = buildHeroVisualInstruction(variant, contextStack);
+          const result = await generateCanvasVisual(deliverableId, {
+            instruction, aspectRatio: '16:9', count: 1,
+          });
+          const firstUrl = result.variants?.[0]?.url;
+          if (firstUrl) {
+            const updated: LandingPageVariantContent = {
+              ...variant,
+              hero: { ...variant.hero, heroVisualUrl: firstUrl },
+            };
+            setStructuredVariant(updated);
+            const updatedPuck = variantToPuckDataFromStructured(updated, contextStack);
+            await fetch(`/api/studio/${deliverableId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ settings: { structuredVariant: updated, puckData: updatedPuck } }),
+            });
+            window.dispatchEvent(
+              new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
+            );
+          }
+        } catch (visErr) {
+          // Niet-blocking — user kan handmatig knop gebruiken voor retry
+          console.warn('[LandingPage] auto-hero-visual failed:', visErr);
+        } finally {
+          setIsGeneratingVisual(false);
+        }
+      })();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Variant-keuze opslaan mislukt');
     } finally {
@@ -198,7 +233,7 @@ export function LandingPageGenerateBlock({
     setIsGeneratingVisual(true);
     setVisualError(null);
     try {
-      const heroVisualInstruction = `Hero-visual voor landing-page: ${chosenVariant.hero.headline}. Stijl: ${chosenVariant.hero.subhead}`;
+      const heroVisualInstruction = buildHeroVisualInstruction(chosenVariant, contextStack);
       const result = await generateCanvasVisual(deliverableId, {
         instruction: heroVisualInstruction,
         aspectRatio: '16:9',
@@ -650,6 +685,42 @@ function FieldRow({ label, value, accent }: { label: string; value: string; acce
       <span className={accent ? 'font-semibold text-gray-900' : 'text-gray-700'}>{value}</span>
     </div>
   );
+}
+
+/**
+ * Sub-Sprint C — Hero-visual prompt brand-aware. Combineert
+ * heroImagePromptFragment (computeBrandRenderHints) + brand.brandImageryStyle
+ * + headline/subhead + brandImageryDonts.
+ */
+function buildHeroVisualInstruction(
+  variant: LandingPageVariantContent,
+  contextStack: {
+    brand?: {
+      brandImageryStyle?: string | null;
+      brandImageryDonts?: string[] | null;
+      brandName?: string | null;
+    } | null;
+    brandTokens?: BrandTokens;
+  } | null,
+): string {
+  const brand = contextStack?.brand;
+  const tokens = contextStack?.brandTokens;
+  const hints = tokens
+    ? computeBrandRenderHints(tokens.archetype, tokens.designSystem)
+    : null;
+  const parts: string[] = [];
+  parts.push(`Hero-visual for landing-page about: ${variant.hero.headline}`);
+  parts.push(`Subject context: ${variant.hero.subhead}`);
+  if (hints) parts.push(`Photography style: ${hints.heroImagePromptFragment}`);
+  if (brand?.brandImageryStyle) parts.push(`Brand imagery: ${brand.brandImageryStyle}`);
+  if (brand?.brandName) parts.push(`Brand: ${brand.brandName}`);
+  const donts = brand?.brandImageryDonts;
+  if (donts && donts.length > 0) {
+    parts.push(`Avoid: ${donts.join(', ')}`);
+  } else {
+    parts.push('Avoid: stock photo people, generic SaaS illustrations, text overlays, lens flares');
+  }
+  return parts.join('. ') + '.';
 }
 
 function ErrorBanner({ message }: { message: string }) {
