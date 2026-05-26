@@ -114,7 +114,7 @@ group('Response-parser — clean JSON');
   const result = parseClassifierResponse(json);
   assert('clean valid JSON parses', result.success && result.data?.archetype === 'RULER');
   assert('confidence preserved', result.data?.confidence === 'high');
-  assert('reasoning preserved', result.data?.reasoning.includes('Premium'));
+  assert('reasoning preserved', result.data?.reasoning.includes('Premium') ?? false);
 }
 
 group('Response-parser — code-fenced JSON');
