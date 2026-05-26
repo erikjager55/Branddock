@@ -3,6 +3,8 @@ import type { PreviewContent } from '../../../types/canvas.types';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 import type { SpikePuckProps } from './puck-config';
 import { resolveTemplateBuilder, type FilledFields } from './puck-templates';
+import { buildLandingPageTemplateFromStructured } from './puck-templates/landing-page-from-structured';
+import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
 
 type SpikeData = Data<SpikePuckProps>;
 
@@ -328,4 +330,27 @@ function stripMarkers(text: string): string {
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .trim();
+}
+
+// ────────────────────────────────────────────────────────────
+// Fase 3 — Structured variant entry point
+// ────────────────────────────────────────────────────────────
+
+/**
+ * Fase 3 entry voor structured-variant flow (docs/specs/web-page-types/
+ * landing-page.md §4b). Bypasst heuristic FilledFields-extractie en
+ * mapt direct van LandingPageVariantContent naar Puck-tree.
+ *
+ * Caller is verantwoordelijk voor het valideren van de variant via
+ * validateLandingPageVariant() vóór deze functie aan te roepen.
+ *
+ * Naast variantToPuckData (legacy markdown-blob route) — wiring beslist
+ * welke route gebruikt wordt op basis van of de variant gestructureerd is.
+ * Die dispatch komt in Fase 5 of bij de canvas-orchestrator integratie.
+ */
+export function variantToPuckDataFromStructured(
+  variant: LandingPageVariantContent,
+  ctx: CanvasContextStack | null,
+): SpikeData {
+  return buildLandingPageTemplateFromStructured(variant, ctx);
 }
