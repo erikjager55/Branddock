@@ -205,7 +205,8 @@ export function LandingPageGenerateBlock({
           <div>
             <p className="text-sm font-medium text-teal-900">Landing-page genereren...</p>
             <p className="text-xs text-teal-800 mt-1">
-              We bouwen 8 anatomie-secties op basis van je brief — kan 20-40 seconden duren.
+              We bouwen 8 anatomie-secties op basis van je brief — kan 30-90 seconden duren.
+              Bij time-out (server &gt; 90s) verschijnt een &lsquo;Probeer opnieuw&rsquo; knop.
             </p>
           </div>
         </div>

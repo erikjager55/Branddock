@@ -303,9 +303,14 @@ export interface GenerationResult {
 }
 
 /**
- * Genereer een landing-page variant via Anthropic. Bij validation-failure
- * één retry waarbij de errors als feedback worden teruggegeven. Bij 2e fail
- * throw — caller moet vangen en gracefully degraden (bv fallback naar markdown-route).
+ * Genereer een landing-page variant via Anthropic. Single-shot — geen
+ * generator-level retry. anthropicClient.createChatCompletion doet zelf
+ * al 3 retries op transient errors (5xx/timeouts) met exponential backoff
+ * (1-10s). Een tweede generator-call zou de totale wachttijd verdubbelen
+ * tot 6+ min in worst-case (gezien LINFI-incident 2026-05-26).
+ *
+ * Bij JSON-validation-fail throw met detailed errors — caller toont een
+ * "Probeer opnieuw" knop in UI (fresh attempt > automatic retry voor user-UX).
  *
  * Verbruikt ANTHROPIC_API_KEY env-var via anthropicClient singleton.
  */
@@ -314,59 +319,30 @@ export async function generateLandingPageVariant(
 ): Promise<GenerationResult> {
   const prompt = buildLandingPageVariantPrompt(params);
 
-  const firstResponse = await anthropicClient.createChatCompletion(
+  const response = await anthropicClient.createChatCompletion(
     [
       { role: "system", content: prompt.system },
       { role: "user", content: prompt.user },
     ],
-    { useCase: "CHAT", maxTokens: 4096 },
+    { useCase: "STRUCTURED", maxTokens: 3500, timeoutMs: 90_000 },
   );
 
-  const firstParse = parseLandingPageVariantResponse(firstResponse.content);
-  if (firstParse.success) {
-    return {
-      variant: firstParse.data,
-      inputTokens: firstResponse.inputTokens,
-      outputTokens: firstResponse.outputTokens,
-      retried: false,
-    };
+  const parse = parseLandingPageVariantResponse(response.content);
+  if (!parse.success) {
+    const errorList = parse.errors
+      .map((e) => `${e.path || "(root)"}: ${e.message}`)
+      .join("; ");
+    throw new Error(
+      `Landing-page variant validation failed. Errors: ${errorList}`,
+    );
   }
 
-  // Retry with error feedback
-  const errorFeedback = firstParse.errors
-    .map((e) => `- ${e.path || "(root)"}: ${e.message}`)
-    .join("\n");
-  const retryUserPrompt = `${prompt.user}
-
-# VORIGE POGING WAS ONGELDIG
-De vorige JSON-output schond het schema:
-${errorFeedback}
-
-Genereer opnieuw, deze keer schema-conform. JSON-only output.`;
-
-  const retryResponse = await anthropicClient.createChatCompletion(
-    [
-      { role: "system", content: prompt.system },
-      { role: "user", content: retryUserPrompt },
-    ],
-    { useCase: "CHAT", maxTokens: 4096 },
-  );
-
-  const retryParse = parseLandingPageVariantResponse(retryResponse.content);
-  if (retryParse.success) {
-    return {
-      variant: retryParse.data,
-      inputTokens: firstResponse.inputTokens + retryResponse.inputTokens,
-      outputTokens: firstResponse.outputTokens + retryResponse.outputTokens,
-      retried: true,
-    };
-  }
-
-  throw new Error(
-    `Landing-page variant generation failed after retry. Errors: ${retryParse.errors
-      .map((e) => `${e.path}: ${e.message}`)
-      .join("; ")}`,
-  );
+  return {
+    variant: parse.data,
+    inputTokens: response.inputTokens,
+    outputTokens: response.outputTokens,
+    retried: false,
+  };
 }
 
 // Re-export schema voor convenient consumer-import
