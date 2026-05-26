@@ -65,7 +65,7 @@ function mockContext(typeId: string, overrides?: Partial<CanvasContextStack>): C
     journeyPhase: null,
     medium: null,
     deliverableTypeId: typeId,
-    personas: [{ id: 'p-1', name: 'Marketing Marit', serialized: '' }],
+    personas: [{ id: 'p-1', name: 'Marketing Marit', serialized: '', avatarUrl: null }],
     brief: null,
     products: [],
     brandTokens: DEFAULT_TOKENS,

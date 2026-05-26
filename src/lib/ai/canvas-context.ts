@@ -47,6 +47,9 @@ export interface PersonaContext {
   id: string;
   name: string;
   serialized: string;
+  /** Avatar URL voor visual use (TestimonialBlock). Null wanneer geen avatar
+   *  geüpload (renderer toont initial-fallback). */
+  avatarUrl: string | null;
 }
 
 export interface BriefContext {
@@ -417,6 +420,7 @@ export async function assembleCanvasContext(
         id: p.id,
         name: p.name,
         serialized: serializePersona(record),
+        avatarUrl: p.avatarUrl ?? null,
       });
     }
   }

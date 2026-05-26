@@ -42,6 +42,7 @@ const persona: PersonaContext = {
   id: 'p-1',
   name: 'Marketing Director Maria',
   serialized: '37-year-old Marketing Director, B2B SaaS background',
+  avatarUrl: null,
 };
 
 const product: ProductContext = {

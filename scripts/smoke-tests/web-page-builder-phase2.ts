@@ -79,7 +79,7 @@ const MOCK_TOKENS_FROM_STYLEGUIDE: BrandTokens = {
   bodyFont: 'Inter, sans-serif',
 };
 
-const MOCK_PERSONA = { id: 'persona-1', name: 'Marketing Marit', serialized: '' };
+const MOCK_PERSONA = { id: 'persona-1', name: 'Marketing Marit', serialized: '', avatarUrl: null };
 
 function mockContext(overrides?: Partial<CanvasContextStack>): CanvasContextStack {
   return {

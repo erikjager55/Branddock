@@ -331,7 +331,7 @@ function hexToRgbString(hex: string): string {
  */
 function brandCtaComponent(
   tokens: BrandTokens,
-  personas: { id: string; name: string }[],
+  personas: { id: string; name: string; avatarUrl: string | null }[],
   personaOptions: { label: string; value: string }[],
 ) {
   const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
@@ -539,7 +539,7 @@ function featureGridComponent(tokens: BrandTokens) {
  */
 function testimonialComponent(
   tokens: BrandTokens,
-  personas: { id: string; name: string }[],
+  personas: { id: string; name: string; avatarUrl: string | null }[],
   personaOptions: { label: string; value: string }[],
 ) {
   const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
@@ -565,6 +565,10 @@ function testimonialComponent(
     },
     render: ({ quote, author, personaId }: TestimonialProps) => {
       const persona = personas.find((p) => p.id === personaId);
+      const displayName = persona?.name ?? author;
+      const avatarUrl = persona?.avatarUrl ?? null;
+      const initial = (displayName || '?').trim().charAt(0).toUpperCase() || '?';
+      const avatarSize = 56;
       return (
         <section
           style={{
@@ -587,20 +591,67 @@ function testimonialComponent(
           >
             {quote}
           </blockquote>
-          <cite
+          <div
             style={{
-              display: 'block',
-              color: tokens.surfaceMuted,
-              fontStyle: 'normal',
-              fontSize: 14,
-              fontFamily: ds.typography.label.fontFamily,
-              letterSpacing: ds.typography.label.letterSpacing,
-              textTransform: ds.typography.label.textTransform ?? 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              marginTop: 12,
             }}
           >
-            — {author}
-            {persona ? ` (${persona.name})` : ''}
-          </cite>
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- Puck-renderer draait buiten Next image-pipeline (iframe + server-side renderToStaticMarkup voor F-VAL); next/image vereist Next-context die hier niet beschikbaar is
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                width={avatarSize}
+                height={avatarSize}
+                style={{
+                  width: avatarSize,
+                  height: avatarSize,
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: `2px solid ${tokens.surface}`,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                }}
+              />
+            ) : (
+              <div
+                aria-hidden="true"
+                style={{
+                  width: avatarSize,
+                  height: avatarSize,
+                  borderRadius: '50%',
+                  background: tokens.brand,
+                  color: tokens.onBrand,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontFamily: headingFont,
+                  fontSize: Math.round(avatarSize * 0.4),
+                  fontWeight: 600,
+                  flexShrink: 0,
+                }}
+              >
+                {initial}
+              </div>
+            )}
+            <cite
+              style={{
+                color: tokens.surfaceMuted,
+                fontStyle: 'normal',
+                fontSize: 14,
+                fontFamily: ds.typography.label.fontFamily,
+                letterSpacing: ds.typography.label.letterSpacing,
+                textTransform: ds.typography.label.textTransform ?? 'none',
+                textAlign: 'left',
+              }}
+            >
+              {author}
+              {persona && persona.name !== author ? ` · ${persona.name}` : ''}
+            </cite>
+          </div>
         </section>
       );
     },

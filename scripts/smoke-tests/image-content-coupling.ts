@@ -42,6 +42,7 @@ const persona: PersonaContext = {
   id: 'persona-1',
   name: 'Marketing Director Maria',
   serialized: '37-year-old Marketing Director, working in a coworking space in Amsterdam, B2B SaaS background, prefers data-driven decisions, struggles with brand consistency across her team of 8',
+  avatarUrl: null,
 };
 
 const product: ProductContext = {
@@ -185,6 +186,7 @@ console.log('\n## Truncation — long persona serialized\n');
     id: 'persona-long',
     name: 'Long Persona',
     serialized: 'A'.repeat(500),
+    avatarUrl: null,
   };
   const { prompts } = buildVisualBriefImagePrompts(
     { ...baseBrief, styleDirection: 'lifestyle' },
