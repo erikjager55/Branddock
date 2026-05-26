@@ -324,11 +324,23 @@ function hexToRgbString(hex: string): string {
   return `${(num >> 16) & 0xff},${(num >> 8) & 0xff},${num & 0xff}`;
 }
 
+/**
+ * BrandCTA — brand-emergent (Pad C Sub-Sprint B Phase 4).
+ * Consumeert buttonStyle + sectionPadding hints; button-shape/typography
+ * passen bij archetype (RULER uppercase 0.1em / JESTER lowercase friendly).
+ */
 function brandCtaComponent(
   tokens: BrandTokens,
   personas: { id: string; name: string }[],
   personaOptions: { label: string; value: string }[],
 ) {
+  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
+  const { buttonStyle, sectionPadding } = hints;
+  const ds = tokens.designSystem;
+  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+
   return {
     fields: {
       label: { type: 'text' as const },
@@ -345,9 +357,23 @@ function brandCtaComponent(
     render: ({ label, href, personaId, riskReducer }: SpikeBrandCtaProps) => {
       const persona = personas.find((p) => p.id === personaId);
       return (
-        <section style={{ padding: '48px 32px', textAlign: 'center', fontFamily: tokens.bodyFont }}>
+        <section
+          style={{
+            padding: `${sectionPadding}px ${sectionPaddingX}px`,
+            textAlign: 'center',
+            fontFamily: bodyFont,
+            background: tokens.surface,
+          }}
+        >
           {persona ? (
-            <p style={{ fontSize: 14, color: tokens.neutralHex, marginBottom: 12, fontStyle: 'italic' }}>
+            <p
+              style={{
+                fontSize: 14,
+                color: tokens.surfaceMuted,
+                marginBottom: ds.spacing[Math.min(ds.spacing.length - 1, 2)] ?? 12,
+                fontStyle: 'italic',
+              }}
+            >
               Voor: {persona.name}
             </p>
           ) : null}
@@ -357,12 +383,14 @@ function brandCtaComponent(
               display: 'inline-block',
               background: tokens.brand,
               color: tokens.onBrand,
-              fontFamily: tokens.headingFont,
-              fontWeight: 600,
+              fontFamily: ds.typography.label.fontFamily,
+              fontWeight: buttonStyle.fontWeight,
               fontSize: 16,
               textDecoration: 'none',
-              padding: '14px 32px',
-              borderRadius: 8,
+              padding: `${buttonStyle.paddingY}px ${buttonStyle.paddingX}px`,
+              borderRadius: buttonStyle.radiusPx,
+              textTransform: buttonStyle.textTransform,
+              letterSpacing: buttonStyle.letterSpacing,
             }}
           >
             {label}
@@ -370,10 +398,10 @@ function brandCtaComponent(
           {riskReducer && riskReducer.trim().length > 0 ? (
             <p
               style={{
-                marginTop: 12,
+                marginTop: ds.spacing[Math.min(ds.spacing.length - 1, 2)] ?? 12,
                 fontSize: 13,
-                color: tokens.neutralHex,
-                fontFamily: tokens.bodyFont,
+                color: tokens.surfaceMuted,
+                fontFamily: bodyFont,
               }}
             >
               {riskReducer}
@@ -385,7 +413,24 @@ function brandCtaComponent(
   };
 }
 
+/**
+ * FeatureGrid — brand-emergent (Phase 5). Heading-font + spacing + cardStyle
+ * consumeren designSystem + archetype.
+ */
 function featureGridComponent(tokens: BrandTokens) {
+  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
+  const { cardStyle, sectionPadding } = hints;
+  const ds = tokens.designSystem;
+  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+  const gap = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+  const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const headingSize = ds.typography.heading.sizes[Math.min(ds.typography.heading.sizes.length - 1, 1)] ?? 22;
+  const headingWeight = ds.typography.heading.weights[0] ?? 600;
+  const bodySize = ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 1)] ?? 15;
+
   return {
     fields: {
       columns: {
@@ -416,59 +461,97 @@ function featureGridComponent(tokens: BrandTokens) {
       ],
     },
     render: ({ columns, features }: FeatureGridProps) => (
-      <section style={{ padding: '64px 32px', fontFamily: tokens.bodyFont }}>
+      <section
+        style={{
+          padding: `${sectionPadding}px ${sectionPaddingX}px`,
+          fontFamily: bodyFont,
+          background: tokens.surface,
+        }}
+      >
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-            gap: 32,
+            gap,
             maxWidth: 1100,
             margin: '0 auto',
           }}
         >
-          {features.map((f, i) => (
-            <div key={i}>
-              {f.icon && f.icon.trim().length > 0 ? (
-                <div
+          {features.map((f, i) => {
+            // cardStyle bepaalt of features in cards staan of flat
+            const useCard = cardStyle.elevation !== 'flat';
+            const cardBoxShadow =
+              cardStyle.elevation === 'subtle-shadow' ? '0 2px 8px rgba(0,0,0,0.06)' :
+              cardStyle.elevation === 'strong-shadow' ? '0 8px 24px rgba(0,0,0,0.12)' :
+              undefined;
+            const cardWrapper: React.CSSProperties = useCard ? {
+              padding: `${cardStyle.paddingY}px ${cardStyle.paddingX}px`,
+              borderRadius: cardStyle.radiusPx,
+              border: cardStyle.elevation === 'border-only' ? `${cardStyle.borderWidth}px solid ${tokens.surfaceBorder}` : undefined,
+              boxShadow: cardBoxShadow,
+              background: tokens.surface,
+            } : {};
+            return (
+              <div key={i} style={cardWrapper}>
+                {f.icon && f.icon.trim().length > 0 ? (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: tokens.brand,
+                      fontFamily: ds.typography.label.fontFamily,
+                      textTransform: ds.typography.label.textTransform ?? 'uppercase',
+                      letterSpacing: ds.typography.label.letterSpacing,
+                      marginBottom: 8,
+                      fontWeight: 600,
+                    }}
+                    aria-hidden
+                  >
+                    {f.icon}
+                  </div>
+                ) : null}
+                <h3
                   style={{
-                    fontSize: 12,
-                    color: tokens.primaryHex,
-                    fontFamily: tokens.bodyFont,
-                    textTransform: 'uppercase',
-                    letterSpacing: 1,
-                    marginBottom: 8,
-                    fontWeight: 600,
+                    fontFamily: headingFont,
+                    fontSize: headingSize,
+                    fontWeight: headingWeight,
+                    lineHeight: ds.typography.heading.lineHeight,
+                    margin: '0 0 8px',
+                    color: tokens.onSurface,
                   }}
-                  aria-hidden
                 >
-                  {/* MVP: text-label voor lucide-icon naam. v2: dynamic lucide-icon render. */}
-                  {f.icon}
-                </div>
-              ) : null}
-              <h3
-                style={{
-                  fontFamily: tokens.headingFont,
-                  fontSize: 22,
-                  margin: '0 0 8px',
-                  color: tokens.secondaryHex,
-                }}
-              >
-                {f.title}
-              </h3>
-              <p style={{ color: tokens.neutralHex, fontSize: 15, margin: 0 }}>{f.description}</p>
-            </div>
-          ))}
+                  {f.title}
+                </h3>
+                <p style={{ color: tokens.surfaceMuted, fontSize: bodySize, margin: 0 }}>
+                  {f.description}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </section>
     ),
   };
 }
 
+/**
+ * Testimonial — brand-emergent (Phase 5). Background uit brandSubtle,
+ * blockquote uit heading-typography, alternation-aware.
+ */
 function testimonialComponent(
   tokens: BrandTokens,
   personas: { id: string; name: string }[],
   personaOptions: { label: string; value: string }[],
 ) {
+  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
+  const { sectionPadding } = hints;
+  const ds = tokens.designSystem;
+  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+  const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const quoteSize = ds.typography.heading.sizes[Math.min(ds.typography.heading.sizes.length - 1, 1)] ?? 24;
+
   return {
     fields: {
       quote: { type: 'textarea' as const },
@@ -485,18 +568,18 @@ function testimonialComponent(
       return (
         <section
           style={{
-            background: '#f8fafc',
-            padding: '64px 32px',
+            background: tokens.brandSubtle,
+            padding: `${sectionPadding}px ${sectionPaddingX}px`,
             textAlign: 'center',
-            fontFamily: tokens.bodyFont,
+            fontFamily: bodyFont,
           }}
         >
           <blockquote
             style={{
-              fontFamily: tokens.headingFont,
-              fontSize: 24,
-              lineHeight: 1.4,
-              color: tokens.secondaryHex,
+              fontFamily: headingFont,
+              fontSize: quoteSize,
+              lineHeight: ds.typography.heading.lineHeight,
+              color: tokens.onSurface,
               maxWidth: 640,
               margin: '0 auto 16px',
               fontStyle: 'italic',
@@ -505,7 +588,15 @@ function testimonialComponent(
             {quote}
           </blockquote>
           <cite
-            style={{ display: 'block', color: tokens.neutralHex, fontStyle: 'normal', fontSize: 14 }}
+            style={{
+              display: 'block',
+              color: tokens.surfaceMuted,
+              fontStyle: 'normal',
+              fontSize: 14,
+              fontFamily: ds.typography.label.fontFamily,
+              letterSpacing: ds.typography.label.letterSpacing,
+              textTransform: ds.typography.label.textTransform ?? 'none',
+            }}
           >
             — {author}
             {persona ? ` (${persona.name})` : ''}
@@ -517,6 +608,14 @@ function testimonialComponent(
 }
 
 function pricingTableComponent(tokens: BrandTokens) {
+  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
+  const { cardStyle, sectionPadding } = hints;
+  const ds = tokens.designSystem;
+  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+  const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   return {
     fields: {
       tiers: {
@@ -545,87 +644,117 @@ function pricingTableComponent(tokens: BrandTokens) {
       ],
     },
     render: ({ tiers }: PricingTableProps) => (
-      <section style={{ padding: '64px 32px', fontFamily: tokens.bodyFont }}>
+      <section
+        style={{
+          padding: `${sectionPadding}px ${sectionPaddingX}px`,
+          fontFamily: bodyFont,
+          background: tokens.surface,
+        }}
+      >
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: `repeat(${Math.min(Math.max(tiers.length, 1), 4)}, minmax(0, 1fr))`,
-            gap: 24,
+            gap: ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24,
             maxWidth: 1100,
             margin: '0 auto',
           }}
         >
-          {tiers.map((t, i) => (
-            <div
-              key={i}
-              style={{
-                border: t.highlighted
-                  ? `2px solid ${tokens.brand}`
-                  : `1px solid ${tokens.surfaceBorder}`,
-                borderRadius: 12,
-                padding: 24,
-                textAlign: 'center',
-                transform: t.highlighted ? 'scale(1.05)' : 'none',
-                boxShadow: t.highlighted ? `0 8px 24px ${tokens.brand}22` : 'none',
-                position: 'relative',
-              }}
-            >
-              {t.highlighted ? (
-                <div
+          {tiers.map((t, i) => {
+            const baseShadow =
+              cardStyle.elevation === 'subtle-shadow' ? '0 2px 8px rgba(0,0,0,0.06)' :
+              cardStyle.elevation === 'strong-shadow' ? '0 8px 24px rgba(0,0,0,0.12)' :
+              undefined;
+            return (
+              <div
+                key={i}
+                style={{
+                  border: t.highlighted
+                    ? `2px solid ${tokens.brand}`
+                    : `1px solid ${tokens.surfaceBorder}`,
+                  borderRadius: cardStyle.radiusPx,
+                  padding: `${cardStyle.paddingY}px ${cardStyle.paddingX}px`,
+                  textAlign: 'center',
+                  transform: t.highlighted ? 'scale(1.05)' : 'none',
+                  boxShadow: t.highlighted ? `0 8px 24px ${tokens.brand}22` : baseShadow,
+                  position: 'relative',
+                  background: tokens.surface,
+                }}
+              >
+                {t.highlighted ? (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: -12,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: tokens.brand,
+                      color: tokens.onBrand,
+                      fontSize: 11,
+                      fontFamily: ds.typography.label.fontFamily,
+                      fontWeight: 600,
+                      padding: '4px 12px',
+                      borderRadius: cardStyle.radiusPx >= 999 ? 999 : 12,
+                      textTransform: 'uppercase',
+                      letterSpacing: ds.typography.label.letterSpacing,
+                    }}
+                  >
+                    Aanbevolen
+                  </div>
+                ) : null}
+                <h3
                   style={{
-                    position: 'absolute',
-                    top: -12,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: tokens.brand,
-                    color: tokens.onBrand,
-                    fontSize: 11,
-                    fontFamily: tokens.headingFont,
-                    fontWeight: 600,
-                    padding: '4px 12px',
-                    borderRadius: 12,
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.5,
+                    fontFamily: headingFont,
+                    fontSize: 20,
+                    margin: '0 0 8px',
+                    color: tokens.onSurface,
                   }}
                 >
-                  Aanbevolen
+                  {t.name}
+                </h3>
+                <p
+                  style={{
+                    fontFamily: headingFont,
+                    fontSize: 32,
+                    fontWeight: 700,
+                    color: tokens.brand,
+                    margin: '0 0 16px',
+                  }}
+                >
+                  {t.price}
+                </p>
+                <div
+                  style={{
+                    color: tokens.surfaceMuted,
+                    fontSize: 14,
+                    whiteSpace: 'pre-line',
+                    textAlign: 'left',
+                    fontFamily: bodyFont,
+                  }}
+                >
+                  {t.features}
                 </div>
-              ) : null}
-              <h3
-                style={{
-                  fontFamily: tokens.headingFont,
-                  fontSize: 20,
-                  margin: '0 0 8px',
-                  color: tokens.secondaryHex,
-                }}
-              >
-                {t.name}
-              </h3>
-              <p
-                style={{
-                  fontFamily: tokens.headingFont,
-                  fontSize: 32,
-                  fontWeight: 700,
-                  color: tokens.primaryHex,
-                  margin: '0 0 16px',
-                }}
-              >
-                {t.price}
-              </p>
-              <div
-                style={{ color: tokens.neutralHex, fontSize: 14, whiteSpace: 'pre-line', textAlign: 'left' }}
-              >
-                {t.features}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     ),
   };
 }
 
+/**
+ * FAQ — brand-emergent (Phase 6). Heading-typography + designSystem.spacing.
+ */
 function faqComponent(tokens: BrandTokens) {
+  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
+  const { sectionPadding } = hints;
+  const ds = tokens.designSystem;
+  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+  const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   return {
     fields: {
       items: {
@@ -645,28 +774,34 @@ function faqComponent(tokens: BrandTokens) {
       ],
     },
     render: ({ items }: FAQProps) => (
-      <section style={{ padding: '64px 32px', fontFamily: tokens.bodyFont }}>
+      <section
+        style={{
+          padding: `${sectionPadding}px ${sectionPaddingX}px`,
+          fontFamily: bodyFont,
+          background: tokens.surface,
+        }}
+      >
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
           {items.map((item, i) => (
             <details
               key={i}
               style={{
-                borderBottom: `1px solid ${tokens.neutralHex}33`,
+                borderBottom: `1px solid ${tokens.surfaceBorder}`,
                 padding: '16px 0',
               }}
             >
               <summary
                 style={{
-                  fontFamily: tokens.headingFont,
+                  fontFamily: headingFont,
                   fontSize: 18,
-                  fontWeight: 600,
-                  color: tokens.secondaryHex,
+                  fontWeight: ds.typography.heading.weights[0] ?? 600,
+                  color: tokens.onSurface,
                   cursor: 'pointer',
                 }}
               >
                 {item.question}
               </summary>
-              <p style={{ marginTop: 8, color: tokens.neutralHex, fontSize: 15 }}>{item.answer}</p>
+              <p style={{ marginTop: 8, color: tokens.surfaceMuted, fontSize: 15 }}>{item.answer}</p>
             </details>
           ))}
         </div>
@@ -675,7 +810,19 @@ function faqComponent(tokens: BrandTokens) {
   };
 }
 
+/**
+ * Footer — brand-emergent (Phase 6). Donker bg uit onSurface, typography
+ * uit designSystem.label voor nav-links.
+ */
 function footerComponent(tokens: BrandTokens) {
+  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
+  const ds = tokens.designSystem;
+  const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+  const footerPaddingY = Math.round(hints.sectionPadding * 0.5);
   return {
     fields: {
       companyName: { type: 'text' as const },
@@ -702,10 +849,10 @@ function footerComponent(tokens: BrandTokens) {
     render: ({ companyName, tagline, links }: FooterProps) => (
       <footer
         style={{
-          background: tokens.secondaryHex,
-          color: '#ffffff',
-          padding: '40px 32px',
-          fontFamily: tokens.bodyFont,
+          background: tokens.onSurface,
+          color: tokens.surface,
+          padding: `${footerPaddingY}px ${sectionPaddingX}px`,
+          fontFamily: bodyFont,
         }}
       >
         <div
@@ -720,7 +867,13 @@ function footerComponent(tokens: BrandTokens) {
           }}
         >
           <div>
-            <div style={{ fontFamily: tokens.headingFont, fontWeight: 700, fontSize: 18 }}>
+            <div
+              style={{
+                fontFamily: headingFont,
+                fontWeight: ds.typography.heading.weights[ds.typography.heading.weights.length - 1] ?? 700,
+                fontSize: 18,
+              }}
+            >
               {companyName}
             </div>
             <div style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>{tagline}</div>
@@ -730,7 +883,15 @@ function footerComponent(tokens: BrandTokens) {
               <a
                 key={i}
                 href={l.href}
-                style={{ color: '#ffffff', textDecoration: 'none', fontSize: 14, opacity: 0.85 }}
+                style={{
+                  color: tokens.surface,
+                  textDecoration: 'none',
+                  fontSize: 14,
+                  opacity: 0.85,
+                  fontFamily: ds.typography.label.fontFamily,
+                  letterSpacing: ds.typography.label.letterSpacing,
+                  textTransform: ds.typography.label.textTransform ?? 'none',
+                }}
               >
                 {l.label}
               </a>
@@ -742,8 +903,19 @@ function footerComponent(tokens: BrandTokens) {
   };
 }
 
+/**
+ * RichText — brand-emergent (Phase 6). Markdown-render met designSystem-
+ * typography (heading-font, body-font, body-size). Section-padding adaptief.
+ */
 function richTextComponent(tokens: BrandTokens) {
   const markdownComponents = buildRichTextMarkdownComponents(tokens);
+  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
+  const ds = tokens.designSystem;
+  const sectionPaddingY = Math.round(hints.sectionPadding * 0.6);
+  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const bodySize = ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 2)] ?? 16;
   return {
     fields: {
       content: { type: 'textarea' as const },
@@ -752,14 +924,20 @@ function richTextComponent(tokens: BrandTokens) {
       content: 'Schrijf hier je inhoud.',
     },
     render: ({ content }: RichTextProps) => (
-      <section style={{ padding: '48px 32px', fontFamily: tokens.bodyFont }}>
+      <section
+        style={{
+          padding: `${sectionPaddingY}px ${sectionPaddingX}px`,
+          fontFamily: bodyFont,
+          background: tokens.surface,
+        }}
+      >
         <div
           style={{
             maxWidth: 720,
             margin: '0 auto',
-            color: tokens.secondaryHex,
-            fontSize: 16,
-            lineHeight: 1.6,
+            color: tokens.onSurface,
+            fontSize: bodySize,
+            lineHeight: ds.typography.body.lineHeight,
           }}
         >
           <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
