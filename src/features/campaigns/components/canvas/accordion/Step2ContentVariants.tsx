@@ -16,6 +16,17 @@ import { STUDIO } from '@/lib/constants/design-tokens';
 import type { PreviewContent } from '../../../types/canvas.types';
 import { Loader2, Sparkles, ArrowRight, Check, Film, MessageSquare, MousePointerClick, Image as ImageIcon, RefreshCw, X } from 'lucide-react';
 import { SeoProgressPanel } from '../SeoProgressPanel';
+import { LandingPageGenerateBlock } from './LandingPageGenerateBlock';
+
+// Web-page builder PUCK types (web-page-builder spec §4b paradigma B) —
+// vervangen multi-variant flow met single structured generation.
+const PUCK_WEBPAGE_TYPES = new Set([
+  'landing-page',
+  'product-page',
+  'faq-page',
+  'comparison-page',
+  'microsite',
+]);
 import { getEstimatedDuration } from '../../../lib/content-type-inputs';
 import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
 import type { SceneId } from '../../../stores/useCanvasStore';
@@ -299,6 +310,19 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   // ─── SEO pipeline active ────────────────────────────────────
   const seoSteps = useCanvasStore((s) => s.seoSteps);
   const hasSeoSteps = seoSteps.length > 0;
+
+  // ─── PUCK web-page types (Fase 6c) ────────────────────────
+  // Voor landing-page / product-page / faq-page / comparison-page / microsite
+  // vervangt LandingPageGenerateBlock de multi-variant grid (spec §4b paradigma B).
+  // Geen ABCD-vergelijking — 1 structured variant + auto-iterate refinement.
+  if (contentType !== null && PUCK_WEBPAGE_TYPES.has(contentType)) {
+    return (
+      <LandingPageGenerateBlock
+        deliverableId={deliverableId}
+        onAdvance={onAdvance}
+      />
+    );
+  }
 
   // ─── Generating state ──────────────────────────────────────
   if (isGenerating && !hasVariants) {
