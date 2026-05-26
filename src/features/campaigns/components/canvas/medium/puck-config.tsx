@@ -2,6 +2,7 @@
 
 import type { Config } from '@puckeditor/core';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
+import ReactMarkdown from 'react-markdown';
 import {
   extractBrandTokensFromContext,
   type BrandTokens,
@@ -521,6 +522,7 @@ function footerComponent(tokens: BrandTokens) {
 }
 
 function richTextComponent(tokens: BrandTokens) {
+  const markdownComponents = buildRichTextMarkdownComponents(tokens);
   return {
     fields: {
       content: { type: 'textarea' as const },
@@ -537,12 +539,68 @@ function richTextComponent(tokens: BrandTokens) {
             color: tokens.secondaryHex,
             fontSize: 16,
             lineHeight: 1.6,
-            whiteSpace: 'pre-wrap',
           }}
         >
-          {content}
+          <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
         </div>
       </section>
+    ),
+  };
+}
+
+/**
+ * Brand-aware markdown component-map voor de Puck RichText-render.
+ * Heading-fonts gebruiken tokens.headingFont; body-elementen tokens.bodyFont
+ * en tokens.secondaryHex. Links gebruiken tokens.primaryHex zodat de
+ * brand-kleur consistent doorloopt.
+ */
+function buildRichTextMarkdownComponents(tokens: BrandTokens) {
+  const headingFont = tokens.headingFont;
+  const bodyFont = tokens.bodyFont;
+  const primary = tokens.primaryHex;
+  const text = tokens.secondaryHex;
+  return {
+    h1: ({ children }: { children?: React.ReactNode }) => (
+      <h1 style={{ fontFamily: headingFont, color: text, fontSize: 32, fontWeight: 700, marginTop: 24, marginBottom: 12 }}>{children}</h1>
+    ),
+    h2: ({ children }: { children?: React.ReactNode }) => (
+      <h2 style={{ fontFamily: headingFont, color: text, fontSize: 26, fontWeight: 700, marginTop: 20, marginBottom: 10 }}>{children}</h2>
+    ),
+    h3: ({ children }: { children?: React.ReactNode }) => (
+      <h3 style={{ fontFamily: headingFont, color: text, fontSize: 21, fontWeight: 600, marginTop: 16, marginBottom: 8 }}>{children}</h3>
+    ),
+    h4: ({ children }: { children?: React.ReactNode }) => (
+      <h4 style={{ fontFamily: headingFont, color: text, fontSize: 18, fontWeight: 600, marginTop: 14, marginBottom: 6 }}>{children}</h4>
+    ),
+    p: ({ children }: { children?: React.ReactNode }) => (
+      <p style={{ fontFamily: bodyFont, color: text, marginBottom: 12 }}>{children}</p>
+    ),
+    ul: ({ children }: { children?: React.ReactNode }) => (
+      <ul style={{ fontFamily: bodyFont, color: text, paddingLeft: 24, marginBottom: 12, listStyleType: 'disc' }}>{children}</ul>
+    ),
+    ol: ({ children }: { children?: React.ReactNode }) => (
+      <ol style={{ fontFamily: bodyFont, color: text, paddingLeft: 24, marginBottom: 12, listStyleType: 'decimal' }}>{children}</ol>
+    ),
+    li: ({ children }: { children?: React.ReactNode }) => (
+      <li style={{ marginBottom: 4 }}>{children}</li>
+    ),
+    strong: ({ children }: { children?: React.ReactNode }) => (
+      <strong style={{ fontWeight: 700, color: text }}>{children}</strong>
+    ),
+    em: ({ children }: { children?: React.ReactNode }) => (
+      <em style={{ fontStyle: 'italic' }}>{children}</em>
+    ),
+    a: ({ children, href }: { children?: React.ReactNode; href?: string }) => (
+      <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: primary, textDecoration: 'underline' }}>{children}</a>
+    ),
+    blockquote: ({ children }: { children?: React.ReactNode }) => (
+      <blockquote style={{ fontFamily: bodyFont, borderLeft: `4px solid ${primary}`, paddingLeft: 16, fontStyle: 'italic', color: text, margin: '12px 0' }}>{children}</blockquote>
+    ),
+    code: ({ children }: { children?: React.ReactNode }) => (
+      <code style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', backgroundColor: '#f3f4f6', padding: '2px 6px', borderRadius: 4, fontSize: 14 }}>{children}</code>
+    ),
+    hr: () => (
+      <hr style={{ border: 0, borderTop: '1px solid #e5e7eb', margin: '20px 0' }} />
     ),
   };
 }
