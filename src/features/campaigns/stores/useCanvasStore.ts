@@ -82,6 +82,16 @@ interface CanvasStoreState {
   campaignId: string | null;
   contentType: string | null;
 
+  /**
+   * Structured landing-page variant (web-page-builder spec §4b paradigma B).
+   * Bron-van-waarheid voor PUCK_WEBPAGE_TYPES. Server-side gegenereerd via
+   * /api/landing-pages/[id]/generate-structured-variant en gehydrateerd uit
+   * deliverable.settings.structuredVariant. Zijn rendered vorm (puckData)
+   * leeft in contextStack.puckData — wat Step 3 daadwerkelijk toont. Deze
+   * slice is voor audit / auto-iterate-source / regenerate-from-variant flows.
+   */
+  structuredVariant: unknown | null;
+
   // ─── Variants — Map<group, VariantData[]> ─────────────────
   variantGroups: Map<string, CanvasVariant[]>;
 
@@ -365,6 +375,7 @@ interface CanvasStoreState {
 
   // ─── Actions ──────────────────────────────────────────────
   setContextStack: (stack: CanvasContextStack) => void;
+  setStructuredVariant: (variant: unknown | null) => void;
   setDeliverable: (id: string, type: string, campaignId?: string) => void;
   addVariantGroup: (group: string, variants: CanvasVariant[]) => void;
   setSelection: (group: string, index: number) => void;
@@ -581,6 +592,7 @@ const INITIAL_STATE = {
   deliverableId: null,
   campaignId: null,
   contentType: null,
+  structuredVariant: null,
   variantGroups: new Map<string, CanvasVariant[]>(),
   selections: new Map<string, number>(),
   generationStatus: new Map<string, GenerationStatus>(),
@@ -714,6 +726,7 @@ const INITIAL_STATE = {
 export const useCanvasStore = create<CanvasStoreState>((set) => ({
   ...INITIAL_STATE,
 
+  setStructuredVariant: (variant) => set({ structuredVariant: variant }),
   setContextStack: (stack) =>
     set((state) => {
       // Hydrate contentTypeInputs from the context stack on first load.
