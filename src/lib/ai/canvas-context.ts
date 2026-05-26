@@ -491,7 +491,10 @@ export async function assembleCanvasContext(
     where: { workspaceId },
     select: {
       primaryFontName: true,
-      colors: { select: { hex: true, category: true, sortOrder: true } },
+      colors: { select: {
+        hex: true, category: true, sortOrder: true,
+        tags: true, contrastWhite: true, contrastBlack: true, confidence: true,
+      } },
       fonts: { select: { name: true, role: true, fontFamily: true, sortOrder: true } },
     },
   });

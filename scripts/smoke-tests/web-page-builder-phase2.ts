@@ -62,10 +62,19 @@ const MOCK_STYLEGUIDE = {
 };
 
 const MOCK_TOKENS_FROM_STYLEGUIDE: BrandTokens = {
+  ...DEFAULT_BRAND_TOKENS,
   primaryHex: '#0D9488',
   secondaryHex: '#1E293B',
   accentHex: '#F59E0B',
   neutralHex: '#64748B',
+  surface: '#FFFFFF',
+  onSurface: '#1E293B',
+  surfaceMuted: '#64748B',
+  brand: '#0D9488',
+  onBrand: '#FFFFFF',
+  action: '#0D9488',
+  onAction: '#FFFFFF',
+  accent: '#F59E0B',
   headingFont: 'Poppins, sans-serif',
   bodyFont: 'Inter, sans-serif',
 };

@@ -21,7 +21,7 @@
 import { extractFilledFields } from '../../src/features/campaigns/components/canvas/medium/variant-to-puck-data';
 import type { PreviewContent } from '../../src/features/campaigns/types/canvas.types';
 import type { CanvasContextStack } from '../../src/lib/ai/canvas-context';
-import type { BrandTokens } from '../../src/lib/landing-pages/brand-tokens';
+import { DEFAULT_BRAND_TOKENS, type BrandTokens } from '../../src/lib/landing-pages/brand-tokens';
 
 let pass = 0;
 let fail = 0;
@@ -41,8 +41,8 @@ function group(name: string): void {
 }
 
 const TOKENS: BrandTokens = {
-  primaryHex: '#1FD1B2', secondaryHex: '#0F172A', accentHex: '#F59E0B',
-  neutralHex: '#64748B', headingFont: 'sans-serif', bodyFont: 'sans-serif',
+  ...DEFAULT_BRAND_TOKENS,
+  headingFont: 'sans-serif', bodyFont: 'sans-serif',
 };
 
 const EMPTY_CTX: CanvasContextStack = {

@@ -25,7 +25,7 @@ import {
 } from '../../src/features/campaigns/components/canvas/medium/puck-templates';
 import type { CanvasContextStack } from '../../src/lib/ai/canvas-context';
 import type { PreviewContent } from '../../src/features/campaigns/types/canvas.types';
-import type { BrandTokens } from '../../src/lib/landing-pages/brand-tokens';
+import { DEFAULT_BRAND_TOKENS, type BrandTokens } from '../../src/lib/landing-pages/brand-tokens';
 
 let pass = 0;
 let fail = 0;
@@ -45,10 +45,7 @@ function group(name: string): void {
 }
 
 const DEFAULT_TOKENS: BrandTokens = {
-  primaryHex: '#1FD1B2',
-  secondaryHex: '#0F172A',
-  accentHex: '#F59E0B',
-  neutralHex: '#64748B',
+  ...DEFAULT_BRAND_TOKENS,
   headingFont: 'sans-serif',
   bodyFont: 'sans-serif',
 };
