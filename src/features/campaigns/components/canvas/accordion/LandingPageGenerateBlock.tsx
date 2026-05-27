@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
-  Loader2, Sparkles, AlertCircle, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon,
+  Loader2, Sparkles, AlertCircle, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon, Pencil,
 } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { generateCanvasVisual } from '../../../api/canvas.api';
@@ -369,7 +369,7 @@ export function LandingPageGenerateBlock({
               label={i === 0 ? 'Variant A — conservative' : 'Variant B — creative'}
               accent={i === 0 ? 'emerald' : 'violet'}
               disabled={isChoosing}
-              onChoose={() => void handleChooseVariant(v)}
+              onChoose={(edited) => void handleChooseVariant(edited)}
             />
           ))}
         </div>
@@ -588,7 +588,7 @@ export function LandingPageGenerateBlock({
 // ─── Sub-componenten ──────────────────────────────────────
 
 function VariantCompareCard({
-  variant,
+  variant: initialVariant,
   label,
   accent,
   disabled,
@@ -598,66 +598,196 @@ function VariantCompareCard({
   label: string;
   accent: 'emerald' | 'violet';
   disabled: boolean;
-  onChoose: () => void;
+  onChoose: (variant: LandingPageVariantContent) => void;
 }) {
+  // Local edit-state: user kan inline velden bewerken voordat hij "Kies"
+  // klikt. Pennetje naast elk veld toggled edit-mode.
+  const [v, setV] = useState<LandingPageVariantContent>(initialVariant);
+
+  // Re-sync wanneer parent een nieuwe variant levert (regenerate).
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- bewust: state-reset bij prop-change, niet derived state
+  useEffect(() => { setV(initialVariant); }, [initialVariant]);
+
   const ringClass = accent === 'emerald' ? 'border-emerald-200' : 'border-violet-200';
   const tagClass =
     accent === 'emerald'
       ? 'bg-emerald-100 text-emerald-800'
       : 'bg-violet-100 text-violet-800';
+
   return (
-    <div className={`rounded-lg border-2 ${ringClass} bg-white p-4 flex flex-col gap-3`}>
-      <div>
+    <div className={`rounded-lg border-2 ${ringClass} bg-white p-4 flex flex-col gap-4 max-h-[calc(100vh-200px)] overflow-y-auto`}>
+      <div className="sticky top-0 bg-white pb-2 border-b border-gray-100 -mx-4 px-4 -mt-4 pt-4 z-10">
         <span className={`inline-block text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded ${tagClass}`}>
           {label}
         </span>
       </div>
-      <div className="space-y-2">
-        <div>
-          <p className="text-xs font-medium text-gray-500 uppercase">Headline</p>
-          <p className="text-base font-semibold text-gray-900">{variant.hero.headline}</p>
-        </div>
-        <div>
-          <p className="text-xs font-medium text-gray-500 uppercase">Subhead</p>
-          <p className="text-sm text-gray-700">{variant.hero.subhead}</p>
-        </div>
-        <div>
-          <p className="text-xs font-medium text-gray-500 uppercase">Primary CTA</p>
-          <p className="text-sm font-medium text-teal-700">{variant.hero.primaryCta}</p>
-        </div>
-        {variant.problem ? (
+
+      {/* HERO */}
+      <VariantSection title="Hero">
+        <EditableField
+          label="Headline"
+          value={v.hero.headline}
+          onChange={(val) => setV({ ...v, hero: { ...v.hero, headline: val } })}
+          fontClass="text-base font-semibold text-gray-900"
+        />
+        <EditableField
+          label="Subhead"
+          value={v.hero.subhead}
+          onChange={(val) => setV({ ...v, hero: { ...v.hero, subhead: val } })}
+          multiline
+          fontClass="text-sm text-gray-700"
+        />
+        {v.hero.eyebrow ? (
+          <EditableField
+            label="Eyebrow"
+            value={v.hero.eyebrow}
+            onChange={(val) => setV({ ...v, hero: { ...v.hero, eyebrow: val } })}
+            fontClass="text-xs uppercase tracking-wider text-gray-600"
+          />
+        ) : null}
+        <EditableField
+          label="Primary CTA"
+          value={v.hero.primaryCta}
+          onChange={(val) => setV({ ...v, hero: { ...v.hero, primaryCta: val } })}
+          fontClass="text-sm font-medium text-teal-700"
+        />
+      </VariantSection>
+
+      {/* TRUST */}
+      <VariantSection title={`Trust (${v.trust.type} · ${v.trust.items.length})`}>
+        {v.trust.items.map((item, i) => (
+          <div key={i} className="text-xs text-gray-600">• {item.label}</div>
+        ))}
+      </VariantSection>
+
+      {/* PROBLEM */}
+      {v.problem ? (
+        <VariantSection title="Probleem">
+          <EditableField
+            label="Heading"
+            value={v.problem.heading}
+            onChange={(val) => setV({ ...v, problem: { ...v.problem!, heading: val } })}
+            fontClass="text-sm font-medium text-gray-800"
+          />
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase">Probleem-framing</p>
-            <p className="text-sm text-gray-700 italic">{variant.problem.heading}</p>
+            <p className="text-xs font-medium text-gray-500 uppercase mb-1">Pijnpunten</p>
+            <ul className="text-xs text-gray-600 list-disc list-inside space-y-1">
+              {v.problem.painBullets.map((p, i) => <li key={i}>{p}</li>)}
+            </ul>
+          </div>
+          <div className="text-xs italic text-gray-600 pt-1">{v.problem.bridgingSentence}</div>
+        </VariantSection>
+      ) : null}
+
+      {/* FEATURES */}
+      <VariantSection title={`Features (${v.features.items.length})`}>
+        <EditableField
+          label="Section Heading"
+          value={v.features.sectionHeading}
+          onChange={(val) => setV({ ...v, features: { ...v.features, sectionHeading: val } })}
+          fontClass="text-sm font-medium text-gray-800"
+        />
+        {v.features.items.map((f, i) => (
+          <div key={i} className="border-l-2 border-gray-200 pl-3 space-y-1">
+            <div className="text-xs text-gray-500">{f.icon}</div>
+            <EditableField
+              label="Heading"
+              value={f.heading}
+              onChange={(val) => {
+                const items = [...v.features.items];
+                items[i] = { ...items[i], heading: val };
+                setV({ ...v, features: { ...v.features, items } });
+              }}
+              compact
+              fontClass="text-sm font-semibold text-gray-900"
+            />
+            <EditableField
+              label="Body"
+              value={f.body}
+              onChange={(val) => {
+                const items = [...v.features.items];
+                items[i] = { ...items[i], body: val };
+                setV({ ...v, features: { ...v.features, items } });
+              }}
+              multiline
+              compact
+              fontClass="text-xs text-gray-700"
+            />
+          </div>
+        ))}
+      </VariantSection>
+
+      {/* SOCIAL PROOF */}
+      <VariantSection title={`Social proof (${v.socialProof.testimonials.length} testimonials)`}>
+        {v.socialProof.testimonials.map((t, i) => (
+          <div key={i} className="text-xs text-gray-700 italic border-l-2 border-gray-200 pl-3">
+            <p>&ldquo;{t.quote}&rdquo;</p>
+            <p className="text-gray-500 mt-1 not-italic">— {t.authorName}, {t.authorRole}{t.authorCompany ? `, ${t.authorCompany}` : ''}</p>
+          </div>
+        ))}
+        {v.socialProof.impactStats && v.socialProof.impactStats.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+            {v.socialProof.impactStats.map((s, i) => (
+              <div key={i} className="text-center">
+                <div className="text-sm font-bold text-gray-900">{s.value}</div>
+                <div className="text-xs text-gray-500">{s.label}</div>
+              </div>
+            ))}
           </div>
         ) : null}
-        <div>
-          <p className="text-xs font-medium text-gray-500 uppercase">Features ({variant.features.items.length})</p>
-          <ul className="text-xs text-gray-600 list-disc list-inside">
-            {variant.features.items.slice(0, 3).map((f, i) => (
-              <li key={i}>{f.heading}</li>
+      </VariantSection>
+
+      {/* PRICING */}
+      {v.pricing ? (
+        <VariantSection title={`Pricing (${v.pricing.tiers.length} tiers)`}>
+          <div className="grid grid-cols-3 gap-2">
+            {v.pricing.tiers.map((tier, i) => (
+              <div key={i} className={`text-xs p-2 rounded border ${tier.highlighted ? 'border-teal-400 bg-teal-50' : 'border-gray-200'}`}>
+                <div className="font-semibold text-gray-900">{tier.name}</div>
+                <div className="text-gray-700">{tier.price}</div>
+                <ul className="mt-1 text-gray-600 space-y-0.5">
+                  {tier.features.slice(0, 3).map((f, j) => <li key={j}>• {f}</li>)}
+                </ul>
+              </div>
             ))}
-            {variant.features.items.length > 3 ? (
-              <li className="text-gray-400">+ {variant.features.items.length - 3} meer...</li>
-            ) : null}
-          </ul>
-        </div>
-        <div>
-          <p className="text-xs font-medium text-gray-500 uppercase">FAQ ({variant.faq.items.length})</p>
-          <p className="text-xs text-gray-600 line-clamp-2">
-            {variant.faq.items.map((q) => q.question).join(' · ')}
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 pt-1 border-t border-gray-100">
-          <span>{variant.problem ? 'Probleem ✓' : 'Probleem —'}</span>
-          <span>{variant.pricing ? 'Pricing ✓' : 'Pricing —'}</span>
-        </div>
-      </div>
+          </div>
+        </VariantSection>
+      ) : null}
+
+      {/* FAQ */}
+      <VariantSection title={`FAQ (${v.faq.items.length} items)`}>
+        {v.faq.items.map((q, i) => (
+          <details key={i} className="text-xs">
+            <summary className="font-medium text-gray-800 cursor-pointer">{q.question}</summary>
+            <p className="text-gray-600 mt-1 pl-3">{q.answer}</p>
+          </details>
+        ))}
+      </VariantSection>
+
+      {/* FINAL CTA */}
+      <VariantSection title="Final CTA">
+        <EditableField
+          label="Heading"
+          value={v.finalCta.heading}
+          onChange={(val) => setV({ ...v, finalCta: { ...v.finalCta, heading: val } })}
+          fontClass="text-sm font-medium text-gray-900"
+        />
+        <EditableField
+          label="Primary CTA"
+          value={v.finalCta.primaryCta}
+          onChange={(val) => setV({ ...v, finalCta: { ...v.finalCta, primaryCta: val } })}
+          fontClass="text-sm font-medium text-teal-700"
+        />
+        {v.finalCta.riskReducer ? (
+          <p className="text-xs text-gray-500 italic">{v.finalCta.riskReducer}</p>
+        ) : null}
+      </VariantSection>
+
       <button
         type="button"
-        onClick={onChoose}
+        onClick={() => onChoose(v)}
         disabled={disabled}
-        className={`mt-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50`}
+        className={`mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 sticky bottom-0`}
       >
         {disabled ? (
           <><Loader2 className="h-4 w-4 animate-spin" />Opslaan...</>
@@ -665,6 +795,90 @@ function VariantCompareCard({
           <><CheckCircle2 className="h-4 w-4" />Kies deze variant</>
         )}
       </button>
+    </div>
+  );
+}
+
+function VariantSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2 pb-3 border-b border-gray-100 last:border-b-0">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{title}</p>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function EditableField({
+  label,
+  value,
+  onChange,
+  multiline,
+  compact,
+  fontClass,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  multiline?: boolean;
+  compact?: boolean;
+  fontClass?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- state-reset bij value-change uit parent
+  useEffect(() => { setDraft(value); }, [value]);
+
+  const save = () => {
+    if (draft.trim() !== value) onChange(draft.trim());
+    setEditing(false);
+  };
+  const cancel = () => { setDraft(value); setEditing(false); };
+
+  return (
+    <div className={compact ? '' : 'group relative'}>
+      {!compact ? (
+        <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{label}</p>
+      ) : null}
+      {editing ? (
+        <div className="space-y-1">
+          {multiline ? (
+            <textarea
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={2}
+              className="w-full text-sm border border-teal-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            />
+          ) : (
+            <input
+              autoFocus
+              type="text"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); }}
+              className="w-full text-sm border border-teal-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            />
+          )}
+          <div className="flex gap-1 text-xs">
+            <button onClick={save} className="text-teal-700 font-medium hover:underline">Opslaan</button>
+            <span className="text-gray-400">·</span>
+            <button onClick={cancel} className="text-gray-500 hover:underline">Annuleer</button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-start justify-between gap-2 group">
+          <span className={fontClass ?? 'text-sm text-gray-800'}>{value}</span>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-teal-700 transition-opacity flex-shrink-0"
+            title="Bewerken"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
