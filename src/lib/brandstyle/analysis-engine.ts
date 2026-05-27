@@ -22,6 +22,7 @@ import {
   type ColorFrequency,
 } from './url-scraper';
 import { parsePdf, type ParsedPdfData } from './pdf-parser';
+import { inferLayoutStyleFromSiteData } from './infer-layout-style';
 import {
   buildVisualIdentityPrompt,
   buildVoiceImageryPrompt,
@@ -233,7 +234,7 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         scraped = await scrapeUrlViaGeminiFallback(url);
         usedGeminiFallback = true;
         console.log(`[brandstyle-analysis] Gemini fallback succeeded for ${url}`);
-      } catch (fallbackErr) {
+      } catch {
         // Both methods failed — report the original scrape error (more useful to the user)
         await markError(styleguideId, `Failed to fetch URL: ${scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr)}`);
         return;
@@ -719,6 +720,55 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       );
     }
 
+    // V2-2b — infereer layoutStyle uit site-DNA signals voor de styleguide
+    // COMPLETE wordt gemarkeerd. Pure heuristic op photographyMood-keywords
+    // + brand-color signals. Persist met layoutStyleInferred=true zodat
+    // ensureLayoutStyle (V2-2) deze niet later overschrijft.
+    try {
+      const styleguideForInfer = await prisma.brandStyleguide.findUnique({
+        where: { id: styleguideId },
+        select: {
+          photographyStyle: true,
+          layoutStyleInferred: true,
+          colors: {
+            where: { category: 'PRIMARY' },
+            orderBy: { sortOrder: 'asc' },
+            select: { hex: true },
+            take: 1,
+          },
+        },
+      });
+      if (styleguideForInfer && !styleguideForInfer.layoutStyleInferred) {
+        const photographyMood =
+          styleguideForInfer.photographyStyle &&
+          typeof styleguideForInfer.photographyStyle === 'object' &&
+          !Array.isArray(styleguideForInfer.photographyStyle) &&
+          'mood' in styleguideForInfer.photographyStyle
+            ? String((styleguideForInfer.photographyStyle as { mood?: unknown }).mood ?? '')
+            : null;
+        const brandHex = styleguideForInfer.colors[0]?.hex ?? null;
+        const inferred = inferLayoutStyleFromSiteData({
+          photographyMood,
+          brandHex,
+        });
+        if (inferred && inferred.confidence !== 'low') {
+          await prisma.brandStyleguide.update({
+            where: { id: styleguideId },
+            data: {
+              layoutStyle: inferred.layoutStyle,
+              layoutStyleInferred: true,
+            },
+          });
+        }
+      }
+    } catch (inferErr) {
+      // Niet-blocking — layoutStyle blijft op schema-default, lazy flow
+      // pakt het later in landing-page generation.
+      console.warn(
+        `[analysis-engine] layoutStyle-inference failed (non-critical): ${inferErr instanceof Error ? inferErr.message : String(inferErr)}`,
+      );
+    }
+
     // Done — clear any stale errorMessage from previous failed runs
     await prisma.brandStyleguide.update({
       where: { id: styleguideId },
@@ -831,6 +881,55 @@ export async function analyzePdf(
       })
       .filter((c): c is ResolvedColor => c !== null);
     await writeResultToDb(styleguideId, result, pdfResolvedColors, [], []);
+
+    // V2-2b — infereer layoutStyle uit site-DNA signals voor de styleguide
+    // COMPLETE wordt gemarkeerd. Pure heuristic op photographyMood-keywords
+    // + brand-color signals. Persist met layoutStyleInferred=true zodat
+    // ensureLayoutStyle (V2-2) deze niet later overschrijft.
+    try {
+      const styleguideForInfer = await prisma.brandStyleguide.findUnique({
+        where: { id: styleguideId },
+        select: {
+          photographyStyle: true,
+          layoutStyleInferred: true,
+          colors: {
+            where: { category: 'PRIMARY' },
+            orderBy: { sortOrder: 'asc' },
+            select: { hex: true },
+            take: 1,
+          },
+        },
+      });
+      if (styleguideForInfer && !styleguideForInfer.layoutStyleInferred) {
+        const photographyMood =
+          styleguideForInfer.photographyStyle &&
+          typeof styleguideForInfer.photographyStyle === 'object' &&
+          !Array.isArray(styleguideForInfer.photographyStyle) &&
+          'mood' in styleguideForInfer.photographyStyle
+            ? String((styleguideForInfer.photographyStyle as { mood?: unknown }).mood ?? '')
+            : null;
+        const brandHex = styleguideForInfer.colors[0]?.hex ?? null;
+        const inferred = inferLayoutStyleFromSiteData({
+          photographyMood,
+          brandHex,
+        });
+        if (inferred && inferred.confidence !== 'low') {
+          await prisma.brandStyleguide.update({
+            where: { id: styleguideId },
+            data: {
+              layoutStyle: inferred.layoutStyle,
+              layoutStyleInferred: true,
+            },
+          });
+        }
+      }
+    } catch (inferErr) {
+      // Niet-blocking — layoutStyle blijft op schema-default, lazy flow
+      // pakt het later in landing-page generation.
+      console.warn(
+        `[analysis-engine] layoutStyle-inference failed (non-critical): ${inferErr instanceof Error ? inferErr.message : String(inferErr)}`,
+      );
+    }
 
     // Done — clear any stale errorMessage from previous failed runs
     await prisma.brandStyleguide.update({
