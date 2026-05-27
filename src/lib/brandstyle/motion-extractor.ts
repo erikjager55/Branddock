@@ -154,6 +154,14 @@ function getProp(block: string, prop: string): string | null {
 
 // ─── Main extraction ──────────────────────────────────────
 
+/**
+ * Filter cap: transition-duration > 1500ms is bijna nooit een UI-interaction
+ * (button hover, link fade) — meestal een animation-keyframe (scroll-reveal,
+ * splash, marquee). Voor BrandTokens.motion willen we de UI-feel, niet de
+ * splash-effect.
+ */
+const MOTION_OUTLIER_CAP_MS = 1500;
+
 export function extractMotionProfile(css: string): MotionProfile {
   const rules = parseCssRules(css);
   const samples: MotionSample[] = [];
@@ -197,14 +205,18 @@ export function extractMotionProfile(css: string): MotionProfile {
     }
   }
 
-  // Categorize dominant + average + dominant easing
+  // Strip outliers (animation-keyframes) voor average + dominant berekening.
+  // Behoud ze wel in `samples` voor debug-doeleinden.
+  const uiSamples = samples.filter((s) => s.durationMs <= MOTION_OUTLIER_CAP_MS);
+
+  // Categorize dominant + average + dominant easing — op uiSamples
   const counts: Record<MotionCategory, number> = {
     instant: 0,
     quick: 0,
     comfortable: 0,
     slow: 0,
   };
-  for (const s of samples) counts[s.category]++;
+  for (const s of uiSamples) counts[s.category]++;
   let dominantCategory: MotionCategory = "comfortable";
   let topCount = -1;
   for (const [cat, count] of Object.entries(counts) as [MotionCategory, number][]) {
@@ -215,13 +227,13 @@ export function extractMotionProfile(css: string): MotionProfile {
   }
 
   const average =
-    samples.length === 0
+    uiSamples.length === 0
       ? null
-      : samples.reduce((sum, s) => sum + s.durationMs, 0) / samples.length;
+      : uiSamples.reduce((sum, s) => sum + s.durationMs, 0) / uiSamples.length;
 
   // Dominant easing — meest-voorkomend, exclusief null
   const easingCounts = new Map<string, number>();
-  for (const s of samples) {
+  for (const s of uiSamples) {
     if (s.easing) easingCounts.set(s.easing, (easingCounts.get(s.easing) ?? 0) + 1);
   }
   let dominantEasing: string | null = null;

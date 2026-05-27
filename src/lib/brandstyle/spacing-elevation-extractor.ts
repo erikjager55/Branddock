@@ -121,7 +121,12 @@ function getProp(block: string, prop: string): string | null {
 
 function splitPadding(value: string | null): SpacingSample {
   if (!value) return { paddingY: null, paddingX: null };
-  const parts = value.trim().split(/\s+/);
+  const trimmed = value.trim();
+  // Skip calc()/var()/min()/max() expressies — split kan haakjes splitsen
+  if (/\bcalc\s*\(|\bvar\s*\(|\bmin\s*\(|\bmax\s*\(/i.test(trimmed)) {
+    return { paddingY: null, paddingX: null };
+  }
+  const parts = trimmed.split(/\s+/);
   if (parts.length === 1) return { paddingY: parts[0], paddingX: parts[0] };
   if (parts.length === 2) return { paddingY: parts[0], paddingX: parts[1] };
   if (parts.length >= 3) return { paddingY: parts[0], paddingX: parts[1] };
@@ -149,15 +154,27 @@ function classifyShadow(raw: string): ElevationSample["category"] {
 
 function pickTypical(samples: SpacingSample[]): SpacingSample | null {
   if (samples.length === 0) return null;
-  // Group by paddingY value
+  // Skip calc()/var()/min()/max() en niet-px-achtige waardes; skip OOK
+  // "0" / "0px" — dat is CSS-reset (browser defaults), niet brand-signal.
+  // Behoud only static units met value > 0.
+  const isMeaningfulUnit = (v: string | null): boolean => {
+    if (!v) return false;
+    const trimmed = v.trim();
+    if (/calc|var|min|max/i.test(trimmed)) return false;
+    const match = trimmed.match(/^(\d+(?:\.\d+)?)(px|rem|em)?$/i);
+    if (!match) return false;
+    return parseFloat(match[1]) > 0;
+  };
+
   const byY = new Map<string, number>();
   const byX = new Map<string, number>();
   for (const s of samples) {
-    if (s.paddingY) byY.set(s.paddingY, (byY.get(s.paddingY) ?? 0) + 1);
-    if (s.paddingX) byX.set(s.paddingX, (byX.get(s.paddingX) ?? 0) + 1);
+    if (isMeaningfulUnit(s.paddingY)) byY.set(s.paddingY!, (byY.get(s.paddingY!) ?? 0) + 1);
+    if (isMeaningfulUnit(s.paddingX)) byX.set(s.paddingX!, (byX.get(s.paddingX!) ?? 0) + 1);
   }
   const topY = pickTopKey(byY);
   const topX = pickTopKey(byX);
+  if (!topY && !topX) return null;
   return { paddingY: topY, paddingX: topX };
 }
 

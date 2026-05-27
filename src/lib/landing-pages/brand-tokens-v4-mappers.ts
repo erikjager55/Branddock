@@ -63,13 +63,33 @@ interface ScrapedButtonStyleLike {
 function pickPrimaryButton(buttonProfile: unknown): ScrapedButtonStyleLike | null {
   if (!Array.isArray(buttonProfile)) return null;
   const buttons = buttonProfile as ScrapedButtonStyleLike[];
-  // Prefer primary > secondary > unknown > ghost
-  const order = ["primary", "secondary", "unknown", "ghost"];
+  // Prefer primary > secondary > unknown > ghost; binnen rol-groep mergen
+  // we alle samples zodat ontbrekende velden door later-matchende samples
+  // worden ingevuld (eerste-rule heeft vaak niet alle properties).
+  const order: ScrapedButtonStyleLike["role"][] = ["primary", "secondary", "unknown", "ghost"];
   for (const target of order) {
-    const found = buttons.find((b) => b.role === target);
-    if (found) return found;
+    const matches = buttons.filter((b) => b.role === target);
+    if (matches.length === 0) continue;
+    return mergeButtonSamples(matches);
   }
   return null;
+}
+
+function mergeButtonSamples(samples: ScrapedButtonStyleLike[]): ScrapedButtonStyleLike {
+  const merged: ScrapedButtonStyleLike = { ...samples[0] };
+  for (const sample of samples) {
+    if (!merged.paddingY && sample.paddingY) merged.paddingY = sample.paddingY;
+    if (!merged.paddingX && sample.paddingX) merged.paddingX = sample.paddingX;
+    if (!merged.fontWeight && sample.fontWeight) merged.fontWeight = sample.fontWeight;
+    if (!merged.fontSize && sample.fontSize) merged.fontSize = sample.fontSize;
+    if (!merged.textTransform && sample.textTransform) merged.textTransform = sample.textTransform;
+    if (!merged.letterSpacing && sample.letterSpacing) merged.letterSpacing = sample.letterSpacing;
+    if (!merged.borderRadius && sample.borderRadius) merged.borderRadius = sample.borderRadius;
+    if (!merged.background && sample.background) merged.background = sample.background;
+    if (!merged.hoverBackground && sample.hoverBackground) merged.hoverBackground = sample.hoverBackground;
+    if (!merged.hoverTransform && sample.hoverTransform) merged.hoverTransform = sample.hoverTransform;
+  }
+  return merged;
 }
 
 function inferHoverStyle(
