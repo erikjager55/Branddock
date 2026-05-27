@@ -527,8 +527,22 @@ export async function createClaudeStructuredCompletion<T>(
       try {
         parsed = JSON.parse(cleaned) as T;
       } catch (parseError) {
-        const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
-        throw new Error(`Failed to parse Claude response as JSON: ${msg}. Response starts with: "${cleaned.slice(0, 200)}"`);
+        // Bad escape sequences komen vooral voor wanneer Claude lange markdown-
+        // content in een JSON-string verpakt en daarbij chars als `\€`, `\(`,
+        // `\;` produceert die geen valide JSON-escape zijn (JSON staat alleen
+        // `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t`, `\uXXXX` toe).
+        // Repair-pass: dubbele elke backslash die NIET gevolgd wordt door een
+        // valide escape-char, en probeer opnieuw te parsen. Voorkomt dat een
+        // anders volledig valide response sneuvelt op één illegale char.
+        const repaired = cleaned.replace(/\\(?!["\\\/bfnrtu])/g, '\\\\');
+        try {
+          parsed = JSON.parse(repaired) as T;
+          console.warn('[ai-caller] JSON parse needed escape-repair (Claude produced invalid \\X sequence in string)');
+        } catch (repairError) {
+          const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+          const repairMsg = repairError instanceof Error ? repairError.message : 'unknown';
+          throw new Error(`Failed to parse Claude response as JSON: ${msg} (escape-repair also failed: ${repairMsg}). Response starts with: "${cleaned.slice(0, 200)}"`);
+        }
       }
 
       // Success — track met fine response-metadata

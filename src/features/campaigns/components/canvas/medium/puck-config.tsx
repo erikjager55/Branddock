@@ -164,9 +164,13 @@ export function buildSpikePuckConfig(
 function statsBlockComponent(tokens: BrandTokens) {
   const ds = tokens.designSystem;
   const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
-  const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
+  // 'system-ui' staat nu ALTIJD in de stack (fallback-chain in brand-tokens),
+  // dus we kunnen niet meer op die substring detecteren. Check op het EERSTE
+  // token (de echte brand-font naam). Als die uit DEFAULT_BRAND_TOKENS komt
+  // (begint met 'system-ui'), is er geen custom font.
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.display.fontFamily;
-  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   const tbr = tokens.typographyByRole;
 
@@ -270,7 +274,7 @@ function statsBlockComponent(tokens: BrandTokens) {
 function stickyCtaBarComponent(tokens: BrandTokens) {
   const { button: btn, motion } = tokens;
   const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
-  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : tokens.designSystem.typography.body.fontFamily;
   return {
     fields: {
@@ -450,8 +454,12 @@ function brandHeroComponent(tokens: BrandTokens) {
       // Brand-specifieke fonts (tokens.headingFont/bodyFont uit styleguide
       // primaryFontName) overrulen layoutStyle-default display-font wanneer
       // expliciet ingesteld. system-ui = default = niet expliciet.
-      const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
-      const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+      // 'system-ui' staat nu ALTIJD in de stack (fallback-chain in brand-tokens),
+  // dus we kunnen niet meer op die substring detecteren. Check op het EERSTE
+  // token (de echte brand-font naam). Als die uit DEFAULT_BRAND_TOKENS komt
+  // (begint met 'system-ui'), is er geen custom font.
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+      const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
       const displayFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.display.fontFamily;
       const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
       // tokens.typographyByRole wint van archetype-preset wanneer scraped
@@ -535,6 +543,7 @@ function brandHeroComponent(tokens: BrandTokens) {
             ) : null}
             <h1
               style={{
+                fontFamily: displayFont,
                 fontSize: tbr.display.fontSize ?? displayTypography.size,
                 lineHeight: tbr.display.lineHeight ?? displayTypography.lineHeight,
                 fontWeight: tbr.display.fontWeight ?? displayTypography.weight,
@@ -592,7 +601,7 @@ function brandCtaComponent(
   // archetype-default) i.p.v. hints.buttonStyle. tokens.sectionRhythm
   // levert section-padding direct.
   const { button: btn, sectionRhythm, motion } = tokens;
-  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
 
   return {
@@ -687,8 +696,12 @@ function featureGridComponent(tokens: BrandTokens) {
     ? 'border-only'
     : elevation.cardElevationCategory;
   const gap = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
-  const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
-  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  // 'system-ui' staat nu ALTIJD in de stack (fallback-chain in brand-tokens),
+  // dus we kunnen niet meer op die substring detecteren. Check op het EERSTE
+  // token (de echte brand-font naam). Als die uit DEFAULT_BRAND_TOKENS komt
+  // (begint met 'system-ui'), is er geen custom font.
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   // Scraped per-rol typography wint van archetype-preset
@@ -816,8 +829,12 @@ function testimonialComponent(
   // Verbeterplan #2: tokens.sectionRhythm vervangt hints.sectionPadding
   const { sectionRhythm } = tokens;
   const ds = tokens.designSystem;
-  const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
-  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  // 'system-ui' staat nu ALTIJD in de stack (fallback-chain in brand-tokens),
+  // dus we kunnen niet meer op die substring detecteren. Check op het EERSTE
+  // token (de echte brand-font naam). Als die uit DEFAULT_BRAND_TOKENS komt
+  // (begint met 'system-ui'), is er geen custom font.
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   const quoteSize = ds.typography.heading.sizes[Math.min(ds.typography.heading.sizes.length - 1, 1)] ?? 24;
@@ -935,8 +952,12 @@ function pricingTableComponent(tokens: BrandTokens) {
   const { sectionRhythm } = tokens;
   const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
   const ds = tokens.designSystem;
-  const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
-  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  // 'system-ui' staat nu ALTIJD in de stack (fallback-chain in brand-tokens),
+  // dus we kunnen niet meer op die substring detecteren. Check op het EERSTE
+  // token (de echte brand-font naam). Als die uit DEFAULT_BRAND_TOKENS komt
+  // (begint met 'system-ui'), is er geen custom font.
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   return {
@@ -1073,8 +1094,12 @@ function faqComponent(tokens: BrandTokens) {
   // Verbeterplan #2: section-padding uit tokens.sectionRhythm
   const { sectionRhythm } = tokens;
   const ds = tokens.designSystem;
-  const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
-  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  // 'system-ui' staat nu ALTIJD in de stack (fallback-chain in brand-tokens),
+  // dus we kunnen niet meer op die substring detecteren. Check op het EERSTE
+  // token (de echte brand-font naam). Als die uit DEFAULT_BRAND_TOKENS komt
+  // (begint met 'system-ui'), is er geen custom font.
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   return {
@@ -1140,8 +1165,12 @@ function footerComponent(tokens: BrandTokens) {
   const ds = tokens.designSystem;
   // C8 — max-width uit constraints
   const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
-  const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
-  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  // 'system-ui' staat nu ALTIJD in de stack (fallback-chain in brand-tokens),
+  // dus we kunnen niet meer op die substring detecteren. Check op het EERSTE
+  // token (de echte brand-font naam). Als die uit DEFAULT_BRAND_TOKENS komt
+  // (begint met 'system-ui'), is er geen custom font.
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   // Verbeterplan #2: section-padding uit tokens.sectionRhythm; footer compacter
@@ -1237,7 +1266,7 @@ function richTextComponent(tokens: BrandTokens) {
   // Verbeterplan #2: section-padding uit tokens.sectionRhythm; richtext compacter
   const sectionPaddingY = Math.round(tokens.sectionRhythm.sectionPaddingY * 0.6);
   const sectionPaddingX = tokens.sectionRhythm.sectionPaddingX;
-  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   const bodySize = ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 2)] ?? 16;
   return {

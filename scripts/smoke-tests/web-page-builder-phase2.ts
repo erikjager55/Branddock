@@ -125,7 +125,8 @@ function testBrandTokens(): void {
   );
   assert(
     'uses primaryFontName when no DISPLAY font',
-    minimal.headingFont === 'Fallback Font',
+    minimal.headingFont.includes('Fallback Font'),
+    minimal.headingFont,
   );
 
   const nothing = extractBrandTokensFromStyleguide(null);

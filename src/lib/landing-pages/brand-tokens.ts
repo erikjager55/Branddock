@@ -600,18 +600,42 @@ export function extractBrandTokensFromStyleguide(
   const safeSurfaceMuted = enforceContrastFallback(surfaceMuted, surface, 'normal');
 
   // ── Fonts ──
-  const fontByRole = (role: string): string | null => {
+  // Bouw font-stacks MET semantische fallback (serif voor display, sans-serif
+  // voor body) zodat als de custom Google Font traag laadt of faalt, de
+  // browser-fallback visueel correct categorisch is. Zonder fallback valt
+  // browser terug op systeem-default (sans-serif op Chrome/Safari macOS)
+  // wat de display-typografie compleet anders maakt dan bedoeld.
+  const SERIF_KEYWORDS = /serif|garamond|playfair|oranienbaum|cormorant|merriweather|lora|prata|abril/i;
+  const wrapFontStack = (name: string, role: 'display' | 'body'): string => {
+    // Input is al een stack (bv. "Poppins, sans-serif" uit DB.fontFamily)?
+    // Geen double-wrap; respecteer de auteur-bedoelde fallback-chain.
+    if (name.includes(',')) return name;
+    const quoted = name.includes(' ') ? `"${name}"` : name;
+    const looksLikeSerif = SERIF_KEYWORDS.test(name);
+    // Display: prefer serif fallback wanneer naam serif-achtig is (Oranienbaum
+    // → Georgia → serif); anders ui-sans-serif fallback voor moderne sans
+    // displays. Body: altijd sans-serif chain — bodies zijn vrijwel altijd
+    // sans op moderne LPs.
+    if (role === 'display') {
+      return looksLikeSerif
+        ? `${quoted}, Georgia, "Times New Roman", serif`
+        : `${quoted}, ui-sans-serif, system-ui, -apple-system, sans-serif`;
+    }
+    return `${quoted}, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+  };
+  const fontByRole = (role: string, scope: 'display' | 'body'): string | null => {
     const match = fonts.find((f) => f.role === role);
     if (!match) return null;
-    return match.fontFamily ?? match.name;
+    const raw = match.fontFamily ?? match.name;
+    return wrapFontStack(raw, scope);
   };
   const headingFont =
-    fontByRole('DISPLAY')
-    ?? styleguide.primaryFontName
+    fontByRole('DISPLAY', 'display')
+    ?? (styleguide.primaryFontName ? wrapFontStack(styleguide.primaryFontName, 'display') : null)
     ?? DEFAULT_BRAND_TOKENS.headingFont;
   const bodyFont =
-    fontByRole('BODY')
-    ?? styleguide.primaryFontName
+    fontByRole('BODY', 'body')
+    ?? (styleguide.primaryFontName ? wrapFontStack(styleguide.primaryFontName, 'body') : null)
     ?? DEFAULT_BRAND_TOKENS.bodyFont;
 
   // ── v3 — Design-system resolutie (Pad C Sub-Sprint A) ──

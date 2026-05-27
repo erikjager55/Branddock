@@ -398,28 +398,26 @@ export function LandingPageGenerateBlock({
   }
 
   // ─── Variant gekozen — full preview + hero-visual + advance ─
+  // De groene 'Variant gekozen' bevestigingsbanner is verwijderd (user-
+  // feedback 2026-05-27: onnodige extra interactie — variant-keuze + Bevestig-
+  // knop onderaan zijn voldoende signalen). 'Andere variant kiezen' blijft
+  // beschikbaar als rechtsboven-link in de eerste section-card zodat user
+  // niet vast komt te zitten in de gekozen variant.
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900">
-        <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-        <div className="flex-1">
-          <p className="font-medium">Variant gekozen</p>
-          <p className="text-xs text-emerald-800">
-            Review hieronder. Genereer optioneel een hero-visual. Bevestig daarna om door te gaan naar de visuele editor.
-          </p>
-        </div>
-        {variantOptions && variantOptions.length > 1 ? (
+      {variantOptions && variantOptions.length > 1 ? (
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={() => {
               setStructuredVariant(null);
             }}
-            className="text-xs font-medium text-emerald-900 underline hover:text-emerald-700 flex-shrink-0"
+            className="text-xs font-medium text-gray-500 underline hover:text-gray-700"
           >
             Andere variant kiezen
           </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       <SectionCard title="1. Hero">
         <FieldRow label="Headline" value={chosenVariant.hero.headline} accent />
