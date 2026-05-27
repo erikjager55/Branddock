@@ -437,8 +437,18 @@ function brandHeroComponent(tokens: BrandTokens) {
         backgroundImage = `linear-gradient(135deg, rgba(${brandRGB},1) 0%, ${tokens.brandSubtle} 100%)`;
         sectionBg = tokens.brand;
         sectionColor = tokens.onBrand;
+      } else if (isVibrantSaturatedColor(tokens.brand)) {
+        // Vibrant-saturated brand-colors (bv. Better Brands #20C509 felgroen,
+        // L=40 S=95) zijn op de echte website typisch ACCENT-kleur (tekst,
+        // CTAs, links) — niet hero-background. Solid-brand hero forceert
+        // dan een agressief vol-veld dat NERGENS op de site terugkomt.
+        // Auto-correct: surface-bg met brand-color voor h1-display behoudt
+        // de brand-aanwezigheid zonder de mismatch.
+        sectionBg = tokens.surface;
+        sectionColor = tokens.brand;
       } else {
-        // solid-brand (default)
+        // solid-brand (default — voor gedempte/lichte brand-colors zoals
+        // Soft Cream of pastel-tints werkt vol-veld wel natuurlijk).
         sectionBg = tokens.brand;
         sectionColor = tokens.onBrand;
       }
@@ -587,6 +597,38 @@ function brandHeroComponent(tokens: BrandTokens) {
       );
     },
   };
+}
+
+/**
+ * True wanneer de hex-kleur 'vibrant-saturated' is — een kleur die op
+ * websites typisch als ACCENT (tekst, CTAs, links) wordt gebruikt en NIET
+ * als full-bleed achtergrond. Verzadigd (S > 65) + niet té licht en niet
+ * té donker (L tussen 25-65) = klassiek accent-bereik. Voorbeelden:
+ *   - #20C509 Vibrant Green (L=40, S=95) → vibrant ✓
+ *   - #FF3366 Hot Pink (L=60, S=100) → vibrant ✓
+ *   - #B59032 Luxe Gold (L=45, S=56) → gedempt-warm, niet vibrant ✗
+ *   - #FBF4BC Soft Cream (L=86, S=88) → pastel, niet vibrant ✗
+ *   - #002838 Deep Teal (L=11, S=100) → te donker, niet vibrant ✗
+ * Gedempte/pastel/donkere brand-colors blijven full-bleed-eligible omdat
+ * die WEL natuurlijk als hero-bg werken.
+ */
+function isVibrantSaturatedColor(hex: string): boolean {
+  const cleaned = hex.replace(/^#/, '');
+  if (cleaned.length !== 6) return false;
+  const num = parseInt(cleaned, 16);
+  if (Number.isNaN(num)) return false;
+  const r = ((num >> 16) & 0xff) / 255;
+  const g = ((num >> 8) & 0xff) / 255;
+  const b = (num & 0xff) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return false; // grey
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  const lPct = l * 100;
+  const sPct = s * 100;
+  return sPct > 65 && lPct >= 25 && lPct <= 65;
 }
 
 function hexToRgbString(hex: string): string {
