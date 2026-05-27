@@ -582,9 +582,13 @@ function brandHeroComponent(tokens: BrandTokens) {
                 // Voorkomt dat lange enkele woorden (compound-NL nouns als
                 // 'concurrentievoordeel' / 'merkpositionering') over de
                 // section-rand rollen op smalle viewports.
+                // hyphens:auto verwijderd — algoritme breekt te agressief
+                // NL compound-nouns ('duurzaam' → 'duurza-am') midden in
+                // het woord. overflowWrap:break-word alleen volstaat:
+                // breekt alleen op spaties tenzij een enkel woord echt
+                // wijder is dan de container. wordBreak:break-word legacy
+                // dropped (alias for overflow-wrap).
                 overflowWrap: 'break-word',
-                wordBreak: 'break-word',
-                hyphens: 'auto',
               }}
             >
               {headline}
