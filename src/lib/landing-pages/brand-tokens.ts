@@ -84,6 +84,77 @@ export interface BrandTokens {
   /** Jung archetype voor brand-emergent rendering decisions. Null = nog
    *  niet geclassificeerd — renderer valt terug op layoutStyle-only. */
   archetype: BrandArchetype | null;
+
+  // ─── v4 — Component-specific styling profiles (verbeterplan) ───
+  /** Button-styling uit scraper. 3-tier fallback chain:
+   *   1. scraped buttonProfile (primary-role wint)
+   *   2. archetype-default uit computeBrandRenderHints
+   *   3. hard default
+   */
+  button: ButtonTokens;
+  /** Card-elevation styling uit scraper (radiusProfile + elevationProfile). */
+  elevation: ElevationTokens;
+  /** Iconography stroke + size — uit designLanguage of archetype-default. */
+  iconography: IconographyTokens;
+  /** Section/card spacing rhythm — uit spacingProfile of layoutStyle-preset. */
+  sectionRhythm: SectionRhythmTokens;
+  /** Motion (transition duration + easing). */
+  motion: MotionTokens;
+  /** Photography-DNA voor hero-visual prompts. */
+  photography: PhotographyTokens;
+}
+
+export interface ButtonTokens {
+  paddingY: number;
+  paddingX: number;
+  radiusPx: number;
+  fontWeight: number;
+  fontSize: number;
+  textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
+  letterSpacing: string;
+  /** Hover-strategie: darken (premium) / lighten / underline / scale / none. */
+  hoverStyle: "darken" | "lighten" | "underline" | "scale" | "none";
+}
+
+export interface ElevationTokens {
+  /** CSS box-shadow value of "none". */
+  cardShadow: string;
+  cardBorderRadius: number;
+  cardBorderWidth: number;
+  /** Category — voor renderer-keuzes (flat = no border + no shadow). */
+  cardElevationCategory: "flat" | "subtle-shadow" | "strong-shadow" | "border-only";
+}
+
+export interface IconographyTokens {
+  strokeWeight: number;  // 1 (premium luxury) / 1.5-2 (default) / 2.5 (bold playful)
+  sizeDefault: number;   // 20-32 typical range
+  style: "outline" | "filled" | "duotone";
+}
+
+export interface SectionRhythmTokens {
+  /** Sectie verticale padding in px. */
+  sectionPaddingY: number;
+  /** Sectie horizontale padding. */
+  sectionPaddingX: number;
+  cardPaddingY: number;
+  cardPaddingX: number;
+  /** Alternate background per sectie? */
+  alternateBg: boolean;
+}
+
+export interface MotionTokens {
+  /** CSS-ready duration string ("200ms"). */
+  transitionDuration: string;
+  /** CSS-ready easing function. */
+  easing: string;
+}
+
+export interface PhotographyTokens {
+  mood: string | null;
+  compositionStyle: string | null;
+  subjectMatter: string | null;
+  /** Hero-visual-prompt extension; klaar voor opname in image-gen prompt. */
+  promptFragment: string;
 }
 
 export const DEFAULT_BRAND_TOKENS: BrandTokens = {
@@ -114,6 +185,46 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
   designSystem: getDesignSystemForLayoutStyle(DEFAULT_LAYOUT_STYLE),
   // v3 — Brand-archetype (null = unclassified)
   archetype: null,
+  // v4 — Component-specific styling profiles (defaults voor onbekende
+  // workspaces; extractor + renderer override met scraper/archetype-data).
+  button: {
+    paddingY: 14,
+    paddingX: 28,
+    radiusPx: 6,
+    fontWeight: 600,
+    fontSize: 16,
+    textTransform: "none",
+    letterSpacing: "0.01em",
+    hoverStyle: "darken",
+  },
+  elevation: {
+    cardShadow: "0 2px 8px rgba(0,0,0,0.06)",
+    cardBorderRadius: 12,
+    cardBorderWidth: 0,
+    cardElevationCategory: "subtle-shadow",
+  },
+  iconography: {
+    strokeWeight: 1.75,
+    sizeDefault: 24,
+    style: "outline",
+  },
+  sectionRhythm: {
+    sectionPaddingY: 64,
+    sectionPaddingX: 32,
+    cardPaddingY: 24,
+    cardPaddingX: 20,
+    alternateBg: false,
+  },
+  motion: {
+    transitionDuration: "200ms",
+    easing: "ease",
+  },
+  photography: {
+    mood: null,
+    compositionStyle: null,
+    subjectMatter: null,
+    promptFragment: "",
+  },
 };
 
 // ─── Input shapes ─────────────────────────────────────────────
@@ -147,6 +258,16 @@ interface StyleguideShape {
   /** Pad C Sub-Sprint B Phase 1 — Jung archetype uit Prisma. Null = nog
    *  niet geclassificeerd. */
   archetype?: BrandArchetype | null;
+  // Verbeterplan Fase B — rendering-profiles (Json velden uit Prisma).
+  // Type `unknown` voor flexibele JSON-shape; v4-mappers parsen veilig.
+  buttonProfile?: unknown;
+  typographyProfile?: unknown;
+  spacingProfile?: unknown;
+  elevationProfile?: unknown;
+  radiusProfile?: unknown;
+  motionProfile?: unknown;
+  /** photographyStyle JSON met {mood, subjects, composition}. */
+  photographyStyle?: unknown;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -426,6 +547,39 @@ export function extractBrandTokensFromStyleguide(
   const designSystem = getDesignSystemForLayoutStyle(layoutStyle);
   const archetype = styleguide.archetype ?? null;
 
+  // ── v4 — Component tokens (verbeterplan Fase C) ──
+  // Lazy import om circular dep + extra surface te minimaliseren in deze file.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const v4 = require("./brand-tokens-v4-mappers") as typeof import("./brand-tokens-v4-mappers");
+  const button = v4.mapButtonTokens(
+    styleguide.buttonProfile,
+    archetype,
+    DEFAULT_BRAND_TOKENS.button,
+  );
+  const elevation = v4.mapElevationTokens(
+    styleguide.elevationProfile,
+    styleguide.radiusProfile,
+    DEFAULT_BRAND_TOKENS.elevation,
+  );
+  const iconography = v4.mapIconographyTokens(
+    archetype,
+    layoutStyle,
+    DEFAULT_BRAND_TOKENS.iconography,
+  );
+  const sectionRhythm = v4.mapSectionRhythmTokens(
+    styleguide.spacingProfile,
+    designSystem,
+    DEFAULT_BRAND_TOKENS.sectionRhythm,
+  );
+  const motion = v4.mapMotionTokens(
+    styleguide.motionProfile,
+    DEFAULT_BRAND_TOKENS.motion,
+  );
+  const photography = v4.mapPhotographyTokens(
+    styleguide.photographyStyle,
+    DEFAULT_BRAND_TOKENS.photography,
+  );
+
   return {
     // Legacy aliases (semantisch correct na v2-mapping + WCAG-gate)
     primaryHex: brand,
@@ -453,6 +607,13 @@ export function extractBrandTokensFromStyleguide(
     layoutStyle,
     designSystem,
     archetype,
+    // v4 Component-tokens
+    button,
+    elevation,
+    iconography,
+    sectionRhythm,
+    motion,
+    photography,
   };
 }
 
@@ -583,6 +744,13 @@ export function extractBrandTokensFromContext(
     // Typography
     headingFont,
     bodyFont,
+    // v4 Component-tokens (fallback-pad: geen scraper-data, gebruik defaults)
+    button: DEFAULT_BRAND_TOKENS.button,
+    elevation: DEFAULT_BRAND_TOKENS.elevation,
+    iconography: DEFAULT_BRAND_TOKENS.iconography,
+    sectionRhythm: DEFAULT_BRAND_TOKENS.sectionRhythm,
+    motion: DEFAULT_BRAND_TOKENS.motion,
+    photography: DEFAULT_BRAND_TOKENS.photography,
   };
 }
 

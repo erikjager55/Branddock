@@ -508,6 +508,14 @@ export async function assembleCanvasContext(
       layoutStyle: true,
       layoutStyleInferred: true,
       archetype: true,
+      // Verbeterplan Fase B — rendering-profiles (Json velden voor v4 tokens)
+      buttonProfile: true,
+      typographyProfile: true,
+      spacingProfile: true,
+      elevationProfile: true,
+      radiusProfile: true,
+      motionProfile: true,
+      photographyStyle: true,
       colors: { select: {
         hex: true, category: true, sortOrder: true,
         tags: true, contrastWhite: true, contrastBlack: true, confidence: true,
