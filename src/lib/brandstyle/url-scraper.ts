@@ -90,6 +90,9 @@ export interface ScrapedData {
   elevationProfile?: import('./spacing-elevation-extractor').ElevationProfile;
   /** Border-radius samples per context — Fase A3. */
   radiusProfile?: import('./spacing-elevation-extractor').RadiusProfile;
+  /** Motion-signature (transition + animation duration + easing) — Fase A4
+   *  verbeterplan. Renderer gebruikt voor hover-transitions + section-fades. */
+  motionProfile?: import('./motion-extractor').MotionProfile;
 }
 
 // Chrome-like User-Agent to avoid bot blocking
@@ -342,6 +345,10 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
   const { spacingProfile, elevationProfile, radiusProfile } =
     extractSpacingElevationProfile(allCss);
 
+  // Fase A4 — motion-signature (transition + animation duration + easing)
+  const { extractMotionProfile } = await import('./motion-extractor');
+  const motionProfile = extractMotionProfile(allCss);
+
   // Extract component samples (buttons, inputs, chips, cards, nav, etc.) from the DOM + CSS
   const { extractComponents } = await import('./component-extractor');
   const components = extractComponents($, allCss);
@@ -398,6 +405,7 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
     spacingProfile,
     elevationProfile,
     radiusProfile,
+    motionProfile,
   };
 }
 
