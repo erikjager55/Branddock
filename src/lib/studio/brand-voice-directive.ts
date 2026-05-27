@@ -166,6 +166,30 @@ export function buildBrandVoiceDirectiveFromContext(
     parts.push('');
   }
 
+  // DTS-plan C1 — vocabulary-rails: alle content-generators krijgen nu
+  // expliciete do/don't woordenlijst (was eerder alleen variant-generator).
+  // Threshold 3+ items aan beide kanten — voorkomt incomplete guidance.
+  const hasVocab =
+    Array.isArray(ctx.vocabularyDo) && ctx.vocabularyDo.length >= 3 &&
+    Array.isArray(ctx.vocabularyDont) && ctx.vocabularyDont.length >= 3;
+  if (hasVocab) {
+    parts.push('**VOCABULARY DISCIPLINE — STRICT**:');
+    parts.push(`- USE these brand-specific words/phrases where natural: ${ctx.vocabularyDo!.map((w) => `"${w}"`).join(', ')}`);
+    parts.push(`- NEVER use: ${ctx.vocabularyDont!.map((w) => `"${w}"`).join(', ')}`);
+    parts.push('Replace generic equivalents with brand-specific vocabulary from the USE list.');
+    parts.push('');
+  }
+
+  // DTS-plan C2 — voice few-shot sample: complete paragraph in brand's own
+  // voice voor rhythm/syntax-matching. Minimum 30 chars om triviale
+  // fragmenten te skippen.
+  const voiceSample = ctx.voiceSample?.trim();
+  if (voiceSample && voiceSample.length >= 30) {
+    parts.push('**VOICE EXAMPLE — match this rhythm, sentence-length, and vocabulary**:');
+    parts.push(`> ${voiceSample.replace(/\n/g, '\n> ')}`);
+    parts.push('');
+  }
+
   // Tone of voice (Brandstyle Analyzer) is fallback-only — injected when
   // no voiceguide present. Voiceguide is the canonical source per BV-WIRE
   // recommendation; gating here prevents duplicate voice context in prompts.
