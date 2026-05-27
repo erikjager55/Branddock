@@ -35,6 +35,10 @@ export interface TypographyRoleStyle {
   lineHeight: string | null;
   letterSpacing: string | null;
   textTransform: string | null;
+  /** Fase B — color uit `color:` declaratie. Pakt de eerste hex/rgb()
+   *  waarde; nodig voor heading-text-color in LP-renderer zodat hero-h1
+   *  in dezelfde kleur staat als op de bron. */
+  color: string | null;
   /** Voor debug: source-selector(s) waar deze rol uit kwam. */
   sourceSelectors: string[];
 }
@@ -169,6 +173,7 @@ export function extractTypographyByRole(css: string): ScrapedTypographyByRole {
         lineHeight: null,
         letterSpacing: null,
         textTransform: null,
+        color: null,
         sourceSelectors: [],
       };
     }
@@ -200,6 +205,13 @@ export function extractTypographyByRole(css: string): ScrapedTypographyByRole {
       if (!target.lineHeight) target.lineHeight = getProp(c.block, "line-height");
       if (!target.letterSpacing) target.letterSpacing = getProp(c.block, "letter-spacing");
       if (!target.textTransform) target.textTransform = getProp(c.block, "text-transform");
+      // Fase B — color uit `color:` declaratie. Sla CSS-var-references over
+      // (var(--xxx) wordt later via brand-tokens-pipeline resolved). Accept
+      // hex / rgb() / hsl() / named-color strings — alles wat CSS toestaat.
+      if (!target.color) {
+        const rawColor = getProp(c.block, "color");
+        if (rawColor && !rawColor.startsWith('var(')) target.color = rawColor;
+      }
       if (
         target.fontFamily &&
         target.fontSize &&

@@ -350,6 +350,7 @@ interface TypographyRoleStyleSrc {
   lineHeight?: string | null;
   letterSpacing?: string | null;
   textTransform?: string | null;
+  color?: string | null;
 }
 
 interface TypographyProfileSrc {
@@ -363,7 +364,7 @@ interface TypographyProfileSrc {
 
 function toRoleEntry(src: TypographyRoleStyleSrc | undefined): TypographyByRoleEntry {
   if (!src) {
-    return { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null };
+    return { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null };
   }
   const fontSize = src.fontSize ? pxFromCssValue(src.fontSize, 0) : 0;
   const fontWeight = src.fontWeight ? numberFromCssValue(src.fontWeight, 0) : 0;
@@ -372,12 +373,24 @@ function toRoleEntry(src: TypographyRoleStyleSrc | undefined): TypographyByRoleE
     tt === "uppercase" || tt === "lowercase" || tt === "capitalize" || tt === "none"
       ? tt
       : null;
+  // Color sanitize: skip CSS-vars (niet resolved in scrape-context) en
+  // 'inherit' / 'currentColor' (waardeloos voor LP-render).
+  const rawColor = src.color?.trim().toLowerCase();
+  const validColor =
+    rawColor &&
+    !rawColor.startsWith('var(') &&
+    rawColor !== 'inherit' &&
+    rawColor !== 'currentcolor' &&
+    rawColor !== 'transparent'
+      ? src.color ?? null
+      : null;
   return {
     fontSize: fontSize > 0 ? fontSize : null,
     fontWeight: fontWeight > 0 ? fontWeight : null,
     lineHeight: src.lineHeight ?? null,
     letterSpacing: src.letterSpacing ?? null,
     textTransform: validTt,
+    color: validColor,
   };
 }
 

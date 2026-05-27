@@ -570,12 +570,14 @@ function brandHeroComponent(tokens: BrandTokens) {
                 lineHeight: tbr.display.lineHeight ?? displayTypography.lineHeight,
                 fontWeight: tbr.display.fontWeight ?? displayTypography.weight,
                 letterSpacing: tbr.display.letterSpacing ?? displayTypography.letterSpacing,
+                // Fase B — bron-h1-color expliciet: erft NIET van section
+                // wanneer scraper een color op h1 vond. Wel valt het terug
+                // op section-color (sectionColor) als display.color null is.
+                color: tbr.display.color ?? undefined,
                 margin: `0 0 ${ds.spacing[Math.min(ds.spacing.length - 1, 3)] ?? 16}px`,
                 // Voorkomt dat lange enkele woorden (compound-NL nouns als
                 // 'concurrentievoordeel' / 'merkpositionering') over de
-                // section-rand rollen op smalle viewports. break-word breekt
-                // alleen wanneer NOODZAKELIJK; normale woordgroep-wrapping
-                // blijft prefereren spaties.
+                // section-rand rollen op smalle viewports.
                 overflowWrap: 'break-word',
                 wordBreak: 'break-word',
                 hyphens: 'auto',

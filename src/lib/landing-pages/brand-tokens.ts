@@ -137,6 +137,10 @@ export interface TypographyByRoleEntry {
   /** Letter-spacing CSS-value. Null = fallback. */
   letterSpacing: string | null;
   textTransform: "uppercase" | "lowercase" | "capitalize" | "none" | null;
+  /** Fase B — color uit bron-CSS (hex/rgb/hsl). Null = fallback op
+   *  tokens.onSurface (body) of tokens.brand (display). Wanneer beschikbaar
+   *  rendert de LP h1/h2/p in exact dezelfde kleur als de bron. */
+  color: string | null;
 }
 
 export interface TypographyByRoleTokens {
@@ -305,12 +309,12 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
   },
   // v5 — Typography per rol (alle null = fallback op designSystem-preset)
   typographyByRole: {
-    display: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null },
-    heading: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null },
-    subheading: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null },
-    body: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null },
-    label: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null },
-    button: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null },
+    display: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
+    heading: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
+    subheading: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
+    body: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
+    label: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
+    button: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
   },
 };
 
