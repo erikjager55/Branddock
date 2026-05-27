@@ -83,6 +83,15 @@ export interface FvalEvaluatorInputs {
   deliverableId: string;
   contentTypeId: string | null;
   runFVal: FvalRunner;
+  /** F-VAL dimensie 8 vision-judge (optional). Wanneer aanwezig + scored:
+   *  composite wordt geblend met 10% gewicht. Caller injecteert
+   *  designPhilosophy + brand-context uit BrandStyleguide. */
+  visionJudge?: {
+    designPhilosophy?: string | null;
+    brandName?: string;
+    brandColors?: string[];
+    brandImageryStyle?: string | null;
+  };
 }
 
 /** Minimal contract over `runFidelityScoring` — keeps page-quality.ts free
@@ -128,11 +137,41 @@ export async function evaluatePageQualityViaFVAL(
     return evaluatePageQuality(input.data);
   }
 
+  // Dimensie 8 — vision-judge blend (DTS-plan F-VAL integratie). Optional;
+  // non-blocking. Bij failure logt warning + valt terug op pure F-VAL.
+  let blendedComposite = fvalOutcome.composite;
+  if (input.visionJudge?.designPhilosophy && input.visionJudge.designPhilosophy.trim().length > 0) {
+    try {
+      const { judgeVisualBrandFit } = await import("./visual-brand-fit-judge");
+      const vbf = await judgeVisualBrandFit({
+        puckData: input.data as unknown as import("@puckeditor/core").Data,
+        ctx: input.ctx,
+        designPhilosophy: input.visionJudge.designPhilosophy,
+        brandName: input.visionJudge.brandName,
+        brandColors: input.visionJudge.brandColors,
+        brandImageryStyle: input.visionJudge.brandImageryStyle,
+      });
+      if (vbf.status === "scored" && vbf.score !== null) {
+        // Blend: F-VAL composite weegt 90%, vision-fit 10%
+        blendedComposite = fvalOutcome.composite * 0.9 + vbf.score * 0.1;
+        console.log(
+          `[page-quality] Vision blend: F-VAL ${fvalOutcome.composite} + vision ${vbf.score} → ${Math.round(blendedComposite)}`,
+        );
+      } else if (vbf.status !== "scored") {
+        console.warn(`[page-quality] Vision judge ${vbf.status}: ${vbf.reasoning ?? "n/a"}`);
+      }
+    } catch (err) {
+      console.warn(
+        `[page-quality] Vision judge unexpected error (non-critical): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
   const counts = componentTypeCounts(input.data);
   return {
-    score: Math.round(fvalOutcome.composite),
+    score: Math.round(blendedComposite),
     threshold: fvalOutcome.compositeThreshold,
-    thresholdMet: fvalOutcome.composite >= fvalOutcome.compositeThreshold,
+    thresholdMet: blendedComposite >= fvalOutcome.compositeThreshold,
     signals: {
       wordCount: wordCount(input.data),
       hasHero: (counts.BrandHero ?? 0) > 0,

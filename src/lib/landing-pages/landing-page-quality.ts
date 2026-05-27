@@ -43,6 +43,10 @@ export interface LandingPageDimensionScores {
   /** 0-100. WCAG-compliance check op brand-tokens. Optional — alleen
    *  meegerekend als brandTokens aanwezig is. */
   wcagCompliance?: number;
+  /** 0-100. Dimensie 8 — visuele brand-fit (Claude vision-judge).
+   *  Optional — alleen meegerekend als evaluateLandingPageQualityWithVision
+   *  is aangeroepen + screenshot + designPhilosophy beschikbaar zijn. */
+  visualBrandFit?: number;
 }
 
 export interface LandingPageQualityResult {
@@ -88,6 +92,10 @@ const WEIGHTS = {
   objectionCoverage: 0.15,
   wcagCompliance: 0.10,
 } as const;
+
+/** Dimensie 8 gewicht — verlaagt elk ander dimensie-gewicht licht wanneer
+ *  meegenomen. Wanneer absent: WCAG + content dimensies krijgen 100%. */
+const VISUAL_BRAND_FIT_WEIGHT = 0.10;
 
 const QUALITY_THRESHOLD = 70;
 
@@ -179,6 +187,15 @@ function computeCompositeWithoutWcag(d: LandingPageDimensionScores): number {
     d.anatomyCompleteness * WEIGHTS.anatomyCompleteness * SCALE +
     d.objectionCoverage * WEIGHTS.objectionCoverage * SCALE
   );
+}
+
+/**
+ * Composite met dim 8 (visual brand-fit) erbij. Verlaagt content-dimensie-
+ * gewichten proportioneel om 100% te behouden.
+ */
+function applyVisualBrandFit(baseComposite: number, vbf: number): number {
+  // Base-composite (zonder dim 8) weegt nu 90% van het totaal; dim 8 weegt 10%.
+  return baseComposite * (1 - VISUAL_BRAND_FIT_WEIGHT) + vbf * VISUAL_BRAND_FIT_WEIGHT;
 }
 
 // ─── Per-dimensie scorers ────────────────────────────────
@@ -372,4 +389,81 @@ function countFaqItems(data: PuckLikeData): number {
 function clamp01(n: number): number {
   if (n <= 1) return Math.max(0, n);
   return Math.min(100, n) / 100;
+}
+
+// ─── Dimensie 8 — Visual Brand-Fit async wrapper ────────────
+
+export interface LandingPageQualityVisionInputs extends LandingPageQualityInputs {
+  /** designPhilosophy uit BrandStyleguide. Required voor visual-judge. */
+  designPhilosophy?: string | null;
+  /** Brand-context voor scherpere vision-judging. */
+  brandName?: string;
+  brandColors?: string[];
+  brandImageryStyle?: string | null;
+  /** CanvasContextStack voor screenshot-render. */
+  canvasContext?: import("@/lib/ai/canvas-context").CanvasContextStack | null;
+  /** Bypass-flag voor tests of cost-control. Default: laat vision-call lopen. */
+  skipVision?: boolean;
+}
+
+/**
+ * Async wrapper rond evaluateLandingPageQuality met dimensie 8 (visual
+ * brand-fit). Roept Playwright + Claude vision aan voor de visuele score.
+ *
+ * Bij visuele-judge-failure (no philosophy / screenshot-fail / vision-error):
+ * composite valt graceful terug op de 7-dim score zonder visualBrandFit.
+ *
+ * Cost: ~$0.01 per LP (Playwright lokaal gratis + Anthropic vision input).
+ */
+export async function evaluateLandingPageQualityWithVision(
+  input: LandingPageQualityVisionInputs,
+): Promise<LandingPageQualityResult> {
+  // Step 1 — compute base composite (deterministisch + WCAG)
+  const baseResult = evaluateLandingPageQuality(input);
+
+  // Step 2 — skip vision-pad als geen designPhilosophy of expliciet uitgeschakeld
+  if (input.skipVision || !input.designPhilosophy || input.designPhilosophy.trim().length === 0) {
+    return baseResult;
+  }
+
+  // Step 3 — roep vision-judge aan (Playwright + Claude vision)
+  try {
+    const { judgeVisualBrandFit } = await import("./visual-brand-fit-judge");
+    const vbfResult = await judgeVisualBrandFit({
+      puckData: input.data as unknown as import("@puckeditor/core").Data,
+      ctx: input.canvasContext ?? null,
+      designPhilosophy: input.designPhilosophy,
+      brandName: input.brandName,
+      brandColors: input.brandColors,
+      brandImageryStyle: input.brandImageryStyle,
+    });
+
+    // Wanneer vision-judge een score retourneerde: integreer in composite
+    if (vbfResult.status === "scored" && vbfResult.score !== null) {
+      const newComposite = applyVisualBrandFit(baseResult.composite, vbfResult.score);
+      return {
+        ...baseResult,
+        composite: Math.round(newComposite),
+        thresholdMet: newComposite >= QUALITY_THRESHOLD,
+        shouldAutoIterate: newComposite < QUALITY_THRESHOLD,
+        dimensions: {
+          ...baseResult.dimensions,
+          visualBrandFit: vbfResult.score,
+        },
+      };
+    }
+
+    // Skipped of error: log + return base (graceful)
+    if (vbfResult.status !== "scored") {
+      console.warn(
+        `[landing-page-quality] Visual brand-fit skipped/failed: ${vbfResult.status} — ${vbfResult.reasoning ?? "n/a"}`,
+      );
+    }
+    return baseResult;
+  } catch (err) {
+    console.warn(
+      `[landing-page-quality] Visual brand-fit unexpected error (non-critical): ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return baseResult;
+  }
 }

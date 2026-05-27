@@ -188,12 +188,35 @@ async function scoreWithFvalOrFallback(body: RequestBody): Promise<PageQualityRe
     const workspaceId = deliverable.campaign.workspaceId;
     const ctx = await assembleCanvasContext(deliverable.id, workspaceId);
 
+    // F-VAL dimensie 8 — laad designPhilosophy + brand-colors voor vision-judge.
+    // Non-critical: bij absence wordt vision-judge geskipt (composite blijft 7-dim).
+    const styleguide = await prisma.brandStyleguide.findUnique({
+      where: { workspaceId },
+      select: {
+        designPhilosophy: true,
+        colors: {
+          where: { category: 'PRIMARY' },
+          orderBy: { sortOrder: 'asc' },
+          select: { hex: true },
+          take: 3,
+        },
+      },
+    });
+
     return await evaluatePageQualityViaFVAL({
       data: body.puckData,
       ctx,
       workspaceId,
       deliverableId: deliverable.id,
       contentTypeId: deliverable.contentType ?? null,
+      visionJudge: styleguide?.designPhilosophy
+        ? {
+            designPhilosophy: styleguide.designPhilosophy,
+            brandName: ctx.brand.brandName,
+            brandColors: styleguide.colors.map((c) => c.hex),
+            brandImageryStyle: ctx.brand.brandImageryStyle ?? null,
+          }
+        : undefined,
       runFVal: async (input) => {
         const outcome = await runFidelityScoring({
           workspaceId: input.workspaceId,
