@@ -150,7 +150,29 @@ export async function setHeroImage(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error('Failed to save hero image');
+  if (!res.ok) {
+    // Surface de echte API-response (status + body details) i.p.v. een
+    // generieke 'Failed to save hero image' — anders kan de user nooit
+    // achterhalen of het auth, validation, of een server-fout was.
+    let detail = '';
+    try {
+      const payload = await res.json();
+      if (payload?.error) detail = String(payload.error);
+      if (payload?.details) {
+        detail += ` — ${JSON.stringify(payload.details).slice(0, 300)}`;
+      }
+    } catch {
+      // body niet leesbaar als json — gebruik raw text als fallback
+      try {
+        detail = (await res.text()).slice(0, 300);
+      } catch {
+        // ignore
+      }
+    }
+    throw new Error(
+      `Failed to save hero image (HTTP ${res.status}${detail ? ': ' + detail : ''})`,
+    );
+  }
 }
 
 /** Remove the hero image of a deliverable. */

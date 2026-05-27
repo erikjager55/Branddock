@@ -190,9 +190,11 @@ function buildSystemPrompt(opts: {
   // Variant-axis block — forceert structureel andere invalshoek voor
   // batch-variants. Zonder dit produceert temperature-variatie alleen
   // bijna-identieke output omdat de rest van de prompt deterministische
-  // 'beste-antwoord' framing eist.
+  // 'beste-antwoord' framing eist. We zetten dit BOVENAAN de prompt en
+  // herhalen het EISEND in de output-regels zodat Claude geneigd is om
+  // het te respecteren ook al klinken beide aanpakken op zich logisch.
   const axisBlock = opts.variantAxis
-    ? `\n# VARIANT-INVALSHOEK: ${opts.variantAxis.toUpperCase()}\n${VARIANT_AXIS_HINTS[opts.variantAxis]}\nDit is de leidende invalshoek voor DEZE variant. Andere variants in dezelfde batch volgen een andere as — wijk dus expliciet af zodat de twee variants als duidelijke alternatieven naast elkaar staan.\n`
+    ? `\n# !! VARIANT-INVALSHOEK (HARD CONSTRAINT) !!: ${opts.variantAxis.toUpperCase()}\n${VARIANT_AXIS_HINTS[opts.variantAxis]}\n\nDIT IS GEEN OPTIE — het is de KERN van deze variant. Andere variants in dezelfde batch volgen een EXPLICIET ANDERE as (bv: problem-led ↔ benefit-led). Onze users zien de twee variants NAAST ELKAAR en moeten ze direct kunnen onderscheiden:\n  - Hero-headline moet de gekozen invalshoek meteen tonen\n  - Volgorde van secties moet de invalshoek versterken\n  - Tone en woordkeus moet substantieel afwijken\nWanneer beide variants 'rond hetzelfde middenpad' uitkomen, hebben we GEFAALD — neem het risico van een uitgesproken kant.\n`
     : '';
   // DTS C6 — sectie-blueprint hint uit render-constraints (alleen wanneer archetype gezet)
   // Maakt sectie-density consistent per merk (RULER 5 secties tight, SAGE 8 editorial)
@@ -551,6 +553,19 @@ export async function generateLandingPageVariantBatch(
     throw new Error(
       `All ${count} variant-generations failed (incl. recovery retries). See server logs.`,
     );
+  }
+
+  // Diagnostic-log: print hero-headlines naast elkaar zodat we in server-logs
+  // direct kunnen zien of de axis-divergentie effectief is. User-bevinding
+  // 2026-05-27 dat variants nog 'identiek' lijken kunnen we hier herleiden.
+  if (successes.length >= 2) {
+    const headlines = successes.map((r, i) => `  [${i}] axis=${AXIS_PAIR[i] ?? 'none'} headline="${r.variant.hero.headline}"`).join('\n');
+    console.log(`[variant-batch] Generated ${successes.length} variants:\n${headlines}`);
+    // Crude similarity check: dezelfde eerste 3 woorden = waarschuwing
+    const firstWords = (s: string) => s.split(/\s+/).slice(0, 3).join(' ').toLowerCase();
+    if (successes.length >= 2 && firstWords(successes[0].variant.hero.headline) === firstWords(successes[1].variant.hero.headline)) {
+      console.warn('[variant-batch] WARNING: Variants share first 3 words of headline — axis-divergentie mogelijk niet effectief. Check prompt rendering + Anthropic response.');
+    }
   }
   return successes;
 }
