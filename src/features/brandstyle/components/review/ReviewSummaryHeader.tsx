@@ -30,9 +30,14 @@ const GROUPS: Array<{
   tab: StyleguideTab;
   sections: ReviewSectionKey[];
 }> = [
-  { label: "Brand Assets", tab: "brand_assets", sections: ["brand-assets-logos", "brand-assets-fonts"] },
+  // Logos-groep dekt alleen de brand-assets-logos review-section sinds
+  // brand-assets-fonts is verhuisd naar Typography-groep (consolidatie
+  // 2026-05-27). Tab-id 'brand_assets' blijft voor DB/route-compat.
+  { label: "Logos", tab: "brand_assets", sections: ["brand-assets-logos"] },
   { label: "Colors", tab: "colors", sections: ["colors-brand", "colors-neutrals", "colors-semantic"] },
-  { label: "Typography", tab: "typography", sections: ["typography-display", "typography-ui", "typography-eyebrow"] },
+  // Typography-groep bevat nu OOK brand-assets-fonts (FontsGrid is verhuisd
+  // naar TypographySection). typography-display/-ui/-eyebrow zijn deprecated.
+  { label: "Typography", tab: "typography", sections: ["brand-assets-fonts"] },
   { label: "Spacing", tab: "spacing", sections: ["spacing-scale", "spacing-radii", "spacing-shadow"] },
   {
     label: "Components",

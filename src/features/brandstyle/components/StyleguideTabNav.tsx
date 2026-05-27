@@ -1,6 +1,6 @@
 "use client";
 
-import { Package, Palette, Type, Ruler, Blocks, Camera, Layers, Code2, Clock } from "lucide-react";
+import { Image as ImageIcon, Palette, Type, Ruler, Blocks, Camera, Layers, Code2, Clock } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { StyleguideTab } from "../types/brandstyle.types";
 
@@ -11,7 +11,9 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: "brand_assets", label: "Brand Assets", icon: Package },
+  // Tab-id 'brand_assets' blijft voor DB/route-compat; label hernoemd naar
+  // 'Logos' sinds fonts verhuisd zijn naar Typography (consolidatie 2026-05-27).
+  { id: "brand_assets", label: "Logos", icon: ImageIcon },
   { id: "colors", label: "Colors", icon: Palette },
   { id: "typography", label: "Typography", icon: Type },
   { id: "spacing", label: "Spacing", icon: Ruler },

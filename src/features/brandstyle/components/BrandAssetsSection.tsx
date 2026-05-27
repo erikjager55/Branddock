@@ -3,10 +3,8 @@
 import { CheckCircle, X } from "lucide-react";
 import { Card } from "@/components/shared";
 import type { BrandStyleguide } from "../types/brandstyle.types";
-import { useCustomFonts } from "../hooks/useCustomFonts";
 import { useUpdateSection } from "../hooks/useBrandstyleHooks";
 import { LogosGrid } from "./brand-assets/LogosGrid";
-import { FontsGrid } from "./brand-assets/FontsGrid";
 import { EditableStringList } from "./EditableStringList";
 import { AiContentBanner } from "./AiContentBanner";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
@@ -17,9 +15,9 @@ interface BrandAssetsSectionProps {
 }
 
 export function BrandAssetsSection({ styleguide, canEdit }: BrandAssetsSectionProps) {
-  // Inject @font-face for uploaded fonts so previews use real brand type.
-  useCustomFonts(styleguide.fonts);
-
+  // useCustomFonts is verhuisd naar TypographySection — daar wonen nu alle
+  // font-UI elementen, dus de font-face injection moet ook daar plaatsvinden.
+  // Deze section bevat alleen nog logo-content + logo guidelines/don'ts.
   const updateLogo = useUpdateSection("logo");
   const reviews = styleguide.reviews ?? [];
 
@@ -34,19 +32,6 @@ export function BrandAssetsSection({ styleguide, canEdit }: BrandAssetsSectionPr
             reviews={reviews}
             canEdit={canEdit}
             label="Review logos"
-          />
-        }
-      />
-      <FontsGrid
-        fonts={styleguide.fonts ?? []}
-        canEdit={canEdit}
-        workspaceKitId={styleguide.workspaceAdobeFontsKitId ?? null}
-        reviewSlot={
-          <ReviewDraftPanel
-            section="brand-assets-fonts"
-            reviews={reviews}
-            canEdit={canEdit}
-            label="Review fonts"
           />
         }
       />
