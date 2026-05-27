@@ -5,6 +5,7 @@ import { Card } from "@/components/shared";
 import type { BrandStyleguide, ComponentTypeKey, StyleguideComponentData } from "../types/brandstyle.types";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
 import { ComponentCard } from "./components-section/ComponentCard";
+import { ScrapedButtonProfilePreview } from "./components-section/ScrapedButtonProfilePreview";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { parseSemanticTokens } from "../utils/semantic-tokens";
 
@@ -116,6 +117,15 @@ export function ComponentsSection({ styleguide, canEdit }: ComponentsSectionProp
             })}
           </nav>
         </div>
+
+        {/* Voor BUTTON-tab: v4 scraped buttonProfile-preview boven de
+            per-StyleguideComponent variant-groups. Toont wat de LP-renderer
+            consumeert (pill-shape / radius / hover-state). */}
+        {activeType === 'BUTTON' ? (
+          <ScrapedButtonProfilePreview
+            buttonProfile={(styleguide as unknown as { buttonProfile?: unknown }).buttonProfile}
+          />
+        ) : null}
 
         {visible.length === 0 ? (
           <div className="py-8 text-center text-sm text-gray-400">

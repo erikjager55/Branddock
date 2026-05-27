@@ -10,6 +10,7 @@ import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
 import { variantToPuckData } from './variant-to-puck-data';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
+import { useBrandFontLoader } from './useBrandFontLoader';
 // Page-level lock is stored op `puckData.root.props.locked` (boolean).
 // Per-component lock-utils (component-lock.ts) blijven beschikbaar voor
 // de fullscreen Puck-editor (sidebar metadata) — niet meer in default-view.
@@ -46,6 +47,11 @@ export function PuckPageBuilder({
   const hydratedPuckData = (contextStack?.puckData ?? null) as SpikeData | null;
 
   const config = useMemo(() => buildSpikePuckConfig(contextStack), [contextStack]);
+
+  // Laadt brand-fonts (Oranienbaum / Cormorant Garamond / Poppins / etc.)
+  // dynamisch via Google Fonts zodat Puck-render de juiste typography toont
+  // i.p.v. system-default sans-serif fallback.
+  useBrandFontLoader(contextStack?.brandTokens ?? null);
 
   const initialData = useMemo<SpikeData>(() => {
     if (
