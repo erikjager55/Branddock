@@ -976,6 +976,10 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         examplePhrases: true,
         guidelinesSavedForAi: true,
         examplePhrasesSavedForAi: true,
+        // DTS-plan C1+C2
+        vocabularyDo: true,
+        vocabularyDont: true,
+        voiceSample: true,
       },
     }),
   ]);
@@ -1478,6 +1482,20 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     ctx.consistentModels = consistentModels
       .map((m) => `- ${m.name} (${m.type})${m.description ? `: ${m.description}` : ''}`)
       .join('\n');
+  }
+
+  // DTS-plan C1+C2: vocabulary + voice-sample uit BrandVoiceguide direct
+  // doorgeven aan content-generators (variant-generator gebruikt deze).
+  if (voiceguide) {
+    if (Array.isArray(voiceguide.vocabularyDo) && voiceguide.vocabularyDo.length > 0) {
+      ctx.vocabularyDo = voiceguide.vocabularyDo;
+    }
+    if (Array.isArray(voiceguide.vocabularyDont) && voiceguide.vocabularyDont.length > 0) {
+      ctx.vocabularyDont = voiceguide.vocabularyDont;
+    }
+    if (typeof voiceguide.voiceSample === 'string' && voiceguide.voiceSample.trim().length > 0) {
+      ctx.voiceSample = voiceguide.voiceSample.trim();
+    }
   }
 
   // Cache and return

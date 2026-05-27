@@ -63,6 +63,11 @@ export interface LandingPageGenerationParams {
   archetype?: BrandArchetype | null;
   /** Sub-Sprint E — LayoutStyle bepaalt content-depth (MINIMAL=sparse, EDITORIAL=lush). */
   layoutStyle?: LayoutStyle | null;
+  /** DTS C1 — vocabulary-rails uit BrandVoiceguide. Min 1 item nodig om effect te hebben. */
+  vocabularyDo?: string[] | null;
+  vocabularyDont?: string[] | null;
+  /** DTS C2 — voice few-shot sample uit BrandVoiceguide.voiceSample. */
+  voiceSample?: string | null;
 }
 
 export interface BuiltPrompt {
@@ -89,6 +94,9 @@ export function buildLandingPageVariantPrompt(
     includePricing,
     archetype: params.archetype ?? null,
     layoutStyle: params.layoutStyle ?? null,
+    vocabularyDo: params.vocabularyDo ?? null,
+    vocabularyDont: params.vocabularyDont ?? null,
+    voiceSample: params.voiceSample ?? null,
   });
   const user = buildUserPrompt(params, { locale });
   return { system, user };
@@ -125,6 +133,9 @@ function buildSystemPrompt(opts: {
   includePricing: boolean;
   archetype: BrandArchetype | null;
   layoutStyle: LayoutStyle | null;
+  vocabularyDo?: string[] | null;
+  vocabularyDont?: string[] | null;
+  voiceSample?: string | null;
 }): string {
   const toneBlock = opts.archetype
     ? `\n# BRAND-ARCHETYPE: ${opts.archetype}\nTone: ${ARCHETYPE_TONE_HINTS[opts.archetype]}\n`
@@ -132,9 +143,30 @@ function buildSystemPrompt(opts: {
   const depthBlock = opts.layoutStyle
     ? `\n# CONTENT-DEPTH (LayoutStyle: ${opts.layoutStyle})\n${LAYOUT_DEPTH_HINTS[opts.layoutStyle]}\n`
     : '';
+  // DTS C1 — vocabulary-rails (alleen wanneer beide arrays minstens 3 items hebben)
+  const hasVocab =
+    Array.isArray(opts.vocabularyDo) && opts.vocabularyDo.length >= 3 &&
+    Array.isArray(opts.vocabularyDont) && opts.vocabularyDont.length >= 3;
+  const vocabBlock = hasVocab
+    ? `\n# VOCABULAIRE-DISCIPLINE\nGebruik deze woorden/zinnen waar natuurlijk: ${opts.vocabularyDo!.map((w) => `"${w}"`).join(', ')}.\nVermijd deze: ${opts.vocabularyDont!.map((w) => `"${w}"`).join(', ')}.\n`
+    : '';
+  // DTS C2 — voice few-shot sample
+  const sample = opts.voiceSample?.trim();
+  const voiceBlock = sample && sample.length >= 30
+    ? `\n# VOICE-VOORBEELD (match dit rhythm + sentence-length + vocabulaire)\n> ${sample.replace(/\n/g, '\n> ')}\n`
+    : '';
+  // DTS C6 — sectie-blueprint hint uit render-constraints (alleen wanneer archetype gezet)
+  // Maakt sectie-density consistent per merk (RULER 5 secties tight, SAGE 8 editorial)
+  let blueprintBlock = '';
+  if (opts.archetype) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { RENDER_CONSTRAINTS_BY_ARCHETYPE } = require('./render-constraints') as typeof import('./render-constraints');
+    const c = RENDER_CONSTRAINTS_BY_ARCHETYPE[opts.archetype];
+    blueprintBlock = `\n# SECTIE-BLUEPRINT\nDoel: ${c.targetSectionCount} secties. Aanbevolen volgorde: ${c.sectionBlueprint.join(' → ')}.\nLeg de focus daar; AI mag een sectie skippen wanneer het niet relevant is, maar wijk niet drastisch af.\n`;
+  }
   return `# ROL
 Je bent een conversion rate optimization (CRO) specialist met 12+ jaar ervaring met B2B SaaS en breed bedrijfsleven landing-pages. Je weet dat elk woord op een landing-page de bezoeker richting conversie beweegt of er vanaf — neutrale copy bestaat niet.
-${toneBlock}${depthBlock}
+${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${blueprintBlock}
 # OPDRACHT
 Genereer een complete landing-page variant als **gestructureerd JSON** volgens het schema hieronder. Geen prose, geen toelichting, geen code-fences — alleen het JSON-object als response.
 

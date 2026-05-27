@@ -80,6 +80,14 @@ export type RichTextProps = {
   content: string;
 };
 
+/** C9 — StickyCtaBar: fixed bottom-bar met label + CTA, sticky on scroll.
+ *  Optioneel toe te voegen in Puck-editor; geen onderdeel van default LP. */
+export type StickyCtaBarProps = {
+  label: string;
+  ctaLabel: string;
+  href: string;
+};
+
 export type SpikePuckProps = {
   BrandHero: SpikeBrandHeroProps;
   BrandCTA: SpikeBrandCtaProps;
@@ -89,6 +97,7 @@ export type SpikePuckProps = {
   FAQ: FAQProps;
   Footer: FooterProps;
   RichText: RichTextProps;
+  StickyCtaBar: StickyCtaBarProps;
 };
 
 // ─── Config builder ──────────────────────────────────────────
@@ -126,6 +135,76 @@ export function buildSpikePuckConfig(
       FAQ: faqComponent(tokens),
       Footer: footerComponent(tokens),
       RichText: richTextComponent(tokens),
+      StickyCtaBar: stickyCtaBarComponent(tokens),
+    },
+  };
+}
+
+/**
+ * C9 — StickyCtaBar: optionele Puck-component voor fixed bottom-bar.
+ * Brand-colored CTA met motion + subtle elevation shadow.
+ */
+function stickyCtaBarComponent(tokens: BrandTokens) {
+  const { button: btn, motion } = tokens;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : tokens.designSystem.typography.body.fontFamily;
+  return {
+    fields: {
+      label: { type: 'text' as const },
+      ctaLabel: { type: 'text' as const },
+      href: { type: 'text' as const },
+    },
+    defaultProps: {
+      label: 'Klaar om te starten?',
+      ctaLabel: 'Plan een afspraak',
+      href: '#',
+    },
+    render: ({ label, ctaLabel, href }: StickyCtaBarProps) => {
+      return (
+        <div
+          style={{
+            position: 'sticky',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: tokens.surface,
+            borderTop: `1px solid ${tokens.surfaceBorder}`,
+            boxShadow: '0 -2px 8px rgba(0,0,0,0.06)',
+            padding: `${Math.min(16, btn.paddingY)}px 24px`,
+            fontFamily: bodyFont,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            maxWidth: constraints.maxContentWidth,
+            margin: '0 auto',
+            zIndex: 50,
+          }}
+        >
+          <span style={{ color: tokens.onSurface, fontWeight: 500 }}>
+            {label}
+          </span>
+          <a
+            href={href}
+            style={{
+              display: 'inline-block',
+              background: tokens.brand,
+              color: tokens.onBrand,
+              fontWeight: btn.fontWeight,
+              fontSize: btn.fontSize,
+              textDecoration: 'none',
+              padding: `${btn.paddingY}px ${btn.paddingX}px`,
+              borderRadius: Math.min(btn.radiusPx, constraints.maxRadiusPx),
+              textTransform: btn.textTransform,
+              letterSpacing: btn.letterSpacing,
+              transition: `all ${motion.transitionDuration} ${motion.easing}`,
+            }}
+          >
+            {ctaLabel}
+          </a>
+        </div>
+      );
     },
   };
 }

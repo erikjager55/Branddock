@@ -95,6 +95,19 @@ interface VoiceImageryResult {
   contentGuidelines: string[];
   writingGuidelines: string[];
   examplePhrases: Array<{ text: string; type: 'do' | 'dont' }>;
+  /** DTS-plan C1 — brand-eigen vocabulaire (woorden + zinnetjes). */
+  vocabularyDo?: string[];
+  /** DTS-plan C1 — woorden/frasen die het merk vermijdt. */
+  vocabularyDont?: string[];
+  /** DTS-plan C2 — 1 representatieve paragraaf in brand-eigen voice. */
+  voiceSample?: string;
+  /** DTS-plan C7 — fixture-samples voor Puck defaultProps. */
+  fixtureSamples?: {
+    headlines?: string[];
+    ctaLabels?: string[];
+    featureTitles?: string[];
+    testimonialQuotes?: string[];
+  };
   photographyStyle: {
     mood?: string;
     subjects?: string;
@@ -807,6 +820,28 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       } catch (err) {
         console.warn(
           `[brandstyle-analysis] designPhilosophy persist failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    // DTS-plan C7 — persist fixtureSamples wanneer Voice-prompt die opleverde
+    if (voiceResult?.fixtureSamples) {
+      try {
+        const samples = voiceResult.fixtureSamples;
+        const hasContent =
+          (Array.isArray(samples.headlines) && samples.headlines.length > 0) ||
+          (Array.isArray(samples.ctaLabels) && samples.ctaLabels.length > 0) ||
+          (Array.isArray(samples.featureTitles) && samples.featureTitles.length > 0) ||
+          (Array.isArray(samples.testimonialQuotes) && samples.testimonialQuotes.length > 0);
+        if (hasContent) {
+          await prisma.brandStyleguide.update({
+            where: { id: styleguideId },
+            data: { fixtureSamples: JSON.parse(JSON.stringify(samples)) as Prisma.InputJsonValue },
+          });
+        }
+      } catch (err) {
+        console.warn(
+          `[brandstyle-analysis] fixtureSamples persist failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     }
@@ -1808,6 +1843,9 @@ async function writeResultToDb(
       contentGuidelines?: string[];
       writingGuidelines?: string[];
       examplePhrases?: Prisma.InputJsonValue;
+      vocabularyDo?: string[];
+      vocabularyDont?: string[];
+      voiceSample?: string;
     } = {};
     if (result.contentGuidelines && result.contentGuidelines.length > 0) {
       tovUpdate.contentGuidelines = result.contentGuidelines;
@@ -1819,6 +1857,16 @@ async function writeResultToDb(
     // van bestaande user-curated examples wanneer analyzer leeg [] retourneert.
     if (Array.isArray(result.examplePhrases) && result.examplePhrases.length > 0) {
       tovUpdate.examplePhrases = result.examplePhrases as Prisma.InputJsonValue;
+    }
+    // DTS-plan C1+C2 — vocabulary + voice-sample
+    if (Array.isArray(result.vocabularyDo) && result.vocabularyDo.length > 0) {
+      tovUpdate.vocabularyDo = result.vocabularyDo;
+    }
+    if (Array.isArray(result.vocabularyDont) && result.vocabularyDont.length > 0) {
+      tovUpdate.vocabularyDont = result.vocabularyDont;
+    }
+    if (typeof result.voiceSample === 'string' && result.voiceSample.trim().length > 0) {
+      tovUpdate.voiceSample = result.voiceSample.trim();
     }
 
     if (Object.keys(tovUpdate).length > 0) {

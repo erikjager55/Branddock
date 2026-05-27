@@ -159,9 +159,11 @@ function testPuckConfig(): void {
   const expected: Array<keyof SpikePuckProps> = [
     'BrandHero', 'BrandCTA', 'FeatureGrid', 'Testimonial',
     'PricingTable', 'FAQ', 'Footer', 'RichText',
+    // C9 — StickyCtaBar (DTS-plan)
+    'StickyCtaBar',
   ];
 
-  assert(`exactly 8 components registered (got ${componentNames.length})`, componentNames.length === 8);
+  assert(`exactly 9 components registered (got ${componentNames.length})`, componentNames.length === 9);
   for (const name of expected) {
     assert(`component ${name} present`, componentNames.includes(name));
   }

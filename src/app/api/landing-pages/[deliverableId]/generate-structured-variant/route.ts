@@ -163,6 +163,10 @@ export async function POST(
         // Sub-Sprint E — brand-archetype + layoutStyle hints voor tone + depth
         archetype: archetypeResult.archetype,
         layoutStyle: layoutResult.layoutStyle,
+        // DTS C1+C2 — vocabulary + voice-sample uit BrandVoiceguide
+        vocabularyDo: ctx.brand.vocabularyDo ?? null,
+        vocabularyDont: ctx.brand.vocabularyDont ?? null,
+        voiceSample: ctx.brand.voiceSample ?? null,
       },
       count,
     );

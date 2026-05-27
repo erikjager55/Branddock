@@ -1715,6 +1715,12 @@ model BrandStyleguide {
    *  rendering". Wordt als brand-context aan content-generation gegeven. */
   designPhilosophy    String? @db.Text
 
+  /** DTS-plan C7 — fixture-samples per content-type (real headlines / CTAs
+   *  uit gescrapede bodyText). Puck defaultProps gebruikt deze voor Step 2
+   *  preview i.p.v. lorem-ipsum. Shape: { headlines?: string[],
+   *  ctaLabels?: string[], featureTitles?: string[], testimonialQuotes?: string[] } */
+  fixtureSamples      Json?
+
   // Pad C Sub-Sprint B — Jung's brand-archetype. AI-classified uit
   // BrandAssetVersion content. Null = nog niet geclassificeerd; renderer
   // valt terug op layoutStyle-only beslissingen.
@@ -5766,6 +5772,16 @@ model BrandVoiceguide {
    * (ADR 2026-05-15). OBSERVED/RECOMMENDED prefix-conventie identiek aan contentGuidelines.
    */
   writingGuidelines String[]
+
+  /** DTS-plan C1 — vocabulary-rails: woorden/zinnen die het merk wel/niet gebruikt.
+   *  Variant-generator system-prompt injecteert deze als brand-voice discipline. */
+  vocabularyDo   String[] @default([])
+  vocabularyDont String[] @default([])
+
+  /** DTS-plan C2 — voice-sample: 40-80 word paragraph in eigen brand-voice
+   *  (uit gescrapede bodyText door AI Phase 3). Variant-generator gebruikt
+   *  als few-shot example "match this rhythm". */
+  voiceSample String? @db.Text
 
   // ─── References ─────────────────────────────
   /**
