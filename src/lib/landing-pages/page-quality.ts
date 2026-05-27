@@ -137,35 +137,12 @@ export async function evaluatePageQualityViaFVAL(
     return evaluatePageQuality(input.data);
   }
 
-  // Dimensie 8 — vision-judge blend (DTS-plan F-VAL integratie). Optional;
-  // non-blocking. Bij failure logt warning + valt terug op pure F-VAL.
-  let blendedComposite = fvalOutcome.composite;
-  if (input.visionJudge?.designPhilosophy && input.visionJudge.designPhilosophy.trim().length > 0) {
-    try {
-      const { judgeVisualBrandFit } = await import("./visual-brand-fit-judge");
-      const vbf = await judgeVisualBrandFit({
-        puckData: input.data as unknown as import("@puckeditor/core").Data,
-        ctx: input.ctx,
-        designPhilosophy: input.visionJudge.designPhilosophy,
-        brandName: input.visionJudge.brandName,
-        brandColors: input.visionJudge.brandColors,
-        brandImageryStyle: input.visionJudge.brandImageryStyle,
-      });
-      if (vbf.status === "scored" && vbf.score !== null) {
-        // Blend: F-VAL composite weegt 90%, vision-fit 10%
-        blendedComposite = fvalOutcome.composite * 0.9 + vbf.score * 0.1;
-        console.log(
-          `[page-quality] Vision blend: F-VAL ${fvalOutcome.composite} + vision ${vbf.score} → ${Math.round(blendedComposite)}`,
-        );
-      } else if (vbf.status !== "scored") {
-        console.warn(`[page-quality] Vision judge ${vbf.status}: ${vbf.reasoning ?? "n/a"}`);
-      }
-    } catch (err) {
-      console.warn(
-        `[page-quality] Vision judge unexpected error (non-critical): ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-  }
+  // Dimensie 8 — vision-judge: in deze server-context skippen omdat
+  // buildSpikePuckConfig 'use client' is en niet server-side kan renderen.
+  // Vision-judge blijft beschikbaar via /api/landing-pages/[id]/visual-brand-
+  // fit-check route die een pre-captured screenshot van de client krijgt.
+  // TODO v2: server-side Puck-render fix of HTML-only renderer voor judge.
+  const blendedComposite = fvalOutcome.composite;
 
   const counts = componentTypeCounts(input.data);
   return {

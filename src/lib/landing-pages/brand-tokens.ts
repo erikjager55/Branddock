@@ -107,6 +107,33 @@ export interface BrandTokens {
   /** 4-level foreground hiërarchie. Defaults zijn aliassen van bestaande
    *  onSurface/surfaceMuted tokens — visueel identiek bij absence. */
   text: TextTokens;
+
+  // ─── v5 — Scraped typography per rol (DTS audit-fix) ──────
+  /** Per-rol font-styling uit scraped typographyProfile. Renderer gebruikt
+   *  display.fontSize voor h1, heading.fontSize voor h2/h3, body.fontSize
+   *  voor p. Fallback op designSystem-preset wanneer rol absent. */
+  typographyByRole: TypographyByRoleTokens;
+}
+
+export interface TypographyByRoleEntry {
+  /** Numeric font-size in px. Null = fallback op designSystem-preset. */
+  fontSize: number | null;
+  /** Font-weight 100-900. Null = fallback. */
+  fontWeight: number | null;
+  /** Line-height (multiplier of px). Null = fallback. */
+  lineHeight: string | null;
+  /** Letter-spacing CSS-value. Null = fallback. */
+  letterSpacing: string | null;
+  textTransform: "uppercase" | "lowercase" | "capitalize" | "none" | null;
+}
+
+export interface TypographyByRoleTokens {
+  display: TypographyByRoleEntry;
+  heading: TypographyByRoleEntry;
+  subheading: TypographyByRoleEntry;
+  body: TypographyByRoleEntry;
+  label: TypographyByRoleEntry;
+  button: TypographyByRoleEntry;
 }
 
 export interface TextTokens {
@@ -260,6 +287,15 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
       letterSpacing: '0.1em',
       textTransform: 'uppercase',
     },
+  },
+  // v5 — Typography per rol (alle null = fallback op designSystem-preset)
+  typographyByRole: {
+    display: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null },
+    heading: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null },
+    subheading: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null },
+    body: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null },
+    label: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null },
+    button: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null },
   },
 };
 
@@ -621,6 +657,10 @@ export function extractBrandTokensFromStyleguide(
     safeSurfaceMuted,
     DEFAULT_BRAND_TOKENS.text,
   );
+  const typographyByRole = v4.mapTypographyByRoleTokens(
+    styleguide.typographyProfile,
+    DEFAULT_BRAND_TOKENS.typographyByRole,
+  );
 
   return {
     // Legacy aliases (semantisch correct na v2-mapping + WCAG-gate)
@@ -656,8 +696,9 @@ export function extractBrandTokensFromStyleguide(
     sectionRhythm,
     motion,
     photography,
-    // v5 Text-hiërarchie
+    // v5 Text-hiërarchie + typography-per-rol
     text,
+    typographyByRole,
   };
 }
 
@@ -796,6 +837,7 @@ export function extractBrandTokensFromContext(
     motion: DEFAULT_BRAND_TOKENS.motion,
     photography: DEFAULT_BRAND_TOKENS.photography,
     text: DEFAULT_BRAND_TOKENS.text,
+    typographyByRole: DEFAULT_BRAND_TOKENS.typographyByRole,
   };
 }
 

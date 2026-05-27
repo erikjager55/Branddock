@@ -323,7 +323,7 @@ function brandHeroComponent(tokens: BrandTokens) {
         : heroLayout.textAlignment === 'right' ? 'flex-end'
         : 'center';
 
-      // ── Typography uit hints ───────────────────────────────
+      // ── Typography uit hints + scraped per-rol (DTS audit-fix) ───
       // Brand-specifieke fonts (tokens.headingFont/bodyFont uit styleguide
       // primaryFontName) overrulen layoutStyle-default display-font wanneer
       // expliciet ingesteld. system-ui = default = niet expliciet.
@@ -331,8 +331,12 @@ function brandHeroComponent(tokens: BrandTokens) {
       const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
       const displayFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.display.fontFamily;
       const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
-      const subSize = ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 2)] ?? 18;
-      const subWeight = ds.typography.body.weights[0] ?? 400;
+      // tokens.typographyByRole wint van archetype-preset wanneer scraped
+      // data aanwezig is. Voorkomt mismatch tussen brandstyle (Cormorant
+      // 64px) en LP-render (preset 96px).
+      const tbr = tokens.typographyByRole;
+      const subSize = tbr.body.fontSize ?? ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 2)] ?? 18;
+      const subWeight = tbr.body.fontWeight ?? ds.typography.body.weights[0] ?? 400;
 
       // ── Section style ──────────────────────────────────────
       const sectionStyle: React.CSSProperties = {
@@ -364,8 +368,9 @@ function brandHeroComponent(tokens: BrandTokens) {
         cursor: 'pointer',
         textTransform: buttonStyle.textTransform,
         letterSpacing: buttonStyle.letterSpacing,
-        textDecoration: buttonStyle.underlineHover ? 'underline' : 'none',
-        textUnderlineOffset: buttonStyle.underlineHover ? '4px' : undefined,
+        // underlineHover was foutief default-state geworden; underline-on-hover
+        // vereist :hover CSS wat inline-styles niet kunnen. Defaulten naar 'none'.
+        textDecoration: 'none',
       };
 
       return (
@@ -407,10 +412,10 @@ function brandHeroComponent(tokens: BrandTokens) {
             ) : null}
             <h1
               style={{
-                fontSize: displayTypography.size,
-                lineHeight: displayTypography.lineHeight,
-                fontWeight: displayTypography.weight,
-                letterSpacing: displayTypography.letterSpacing,
+                fontSize: tbr.display.fontSize ?? displayTypography.size,
+                lineHeight: tbr.display.lineHeight ?? displayTypography.lineHeight,
+                fontWeight: tbr.display.fontWeight ?? displayTypography.weight,
+                letterSpacing: tbr.display.letterSpacing ?? displayTypography.letterSpacing,
                 margin: `0 0 ${ds.spacing[Math.min(ds.spacing.length - 1, 3)] ?? 16}px`,
               }}
             >
@@ -563,9 +568,11 @@ function featureGridComponent(tokens: BrandTokens) {
   const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
-  const headingSize = ds.typography.heading.sizes[Math.min(ds.typography.heading.sizes.length - 1, 1)] ?? 22;
-  const headingWeight = ds.typography.heading.weights[0] ?? 600;
-  const bodySize = ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 1)] ?? 15;
+  // Scraped per-rol typography wint van archetype-preset
+  const tbr = tokens.typographyByRole;
+  const headingSize = tbr.heading.fontSize ?? ds.typography.heading.sizes[Math.min(ds.typography.heading.sizes.length - 1, 1)] ?? 22;
+  const headingWeight = tbr.heading.fontWeight ?? ds.typography.heading.weights[0] ?? 600;
+  const bodySize = tbr.body.fontSize ?? ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 1)] ?? 15;
 
   return {
     fields: {

@@ -78,10 +78,13 @@ export const RENDER_CONSTRAINTS_BY_ARCHETYPE: Record<BrandArchetype, RenderConst
     allowEmoji: false,
     allowExclamationMarks: false,
     maxAccentColors: 0,
-    maxRadiusPx: 4,
+    // Pill-buttons ok wanneer scraped data dat zegt (LINFI = 9999) — geen cap
+    maxRadiusPx: 9999,
     capitalisation: "sentence",
-    scrimStyle: "solid-brand",
-    scrimOpacity: 0.55,
+    // Subtiele dark-gradient bottom-up voor text-readability i.p.v. zware
+    // brand-color overlay die de architecturale foto verzwaart.
+    scrimStyle: "dark-cinematic",
+    scrimOpacity: 0.35,
     forceFlatCards: true,
     sectionBlueprint: [SECTIONS.hero, SECTIONS.features3, SECTIONS.testimonials, SECTIONS.cta, SECTIONS.footer],
     targetSectionCount: 5,

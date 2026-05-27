@@ -24,9 +24,9 @@ group("C3 — RULER strict premium");
   assert("RULER no emoji", c.allowEmoji === false);
   assert("RULER no exclamation", c.allowExclamationMarks === false);
   assert("RULER 0 accent colors", c.maxAccentColors === 0);
-  assert("RULER max radius 4px", c.maxRadiusPx === 4);
+  assert("RULER respects scraped radius (no cap)", c.maxRadiusPx === 9999);
   assert("RULER sentence case", c.capitalisation === "sentence");
-  assert("RULER solid-brand scrim", c.scrimStyle === "solid-brand");
+  assert("RULER dark-cinematic scrim (was solid-brand)", c.scrimStyle === "dark-cinematic");
   assert("RULER force flat cards", c.forceFlatCards === true);
 }
 

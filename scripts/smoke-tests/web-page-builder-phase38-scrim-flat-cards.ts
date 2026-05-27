@@ -64,11 +64,13 @@ function renderFeatures(c: CanvasContextStack): string {
 
 // ─── C10 photo-scrim per archetype ────────────────────────
 
-group("C10 — RULER solid-brand scrim (full-bleed)");
+group("C10 — RULER dark-cinematic scrim (full-bleed)");
 {
   const html = renderHero(ctx("RULER", "MINIMAL"), "https://x.test/a.jpg");
-  // RULER scrim = solid brand (twee identieke rgba's)
-  assert("scrim heeft brand-color twee keer (solid)", (html.match(/rgba\(181,144,50/g) ?? []).length >= 2);
+  // RULER scrim nu dark-cinematic (was solid-brand — premium luxury wil
+  // foto goed zichtbaar i.p.v. zware kleur-overlay)
+  assert("scrim bevat rgba(0,0,0", html.includes("rgba(0,0,0"));
+  assert("scrim 'to top' gradient", html.includes("to top"));
   assert("background-image bevat hero URL", html.includes("a.jpg"));
 }
 
@@ -131,11 +133,12 @@ group("C11 — PLAYFUL HERO → behoudt strong-shadow (geen force)");
 
 // ─── C3 max-radius constraint ─────────────────────────────
 
-group("C3 — RULER MINIMAL → maxRadius=4 ook al token=12");
+group("C3 — RULER MINIMAL respect scraped radius (geen cap)");
 {
   const html = renderFeatures(ctx("RULER", "MINIMAL"));
-  // RULER maxRadiusPx=4, tokens elevation.cardBorderRadius=12 → safeRadius=4
-  assert("border-radius=4 (constraint-capped)", html.includes("border-radius:4"));
+  // RULER maxRadiusPx=9999 nu (scraped data wint, bv LINFI 9999 pill)
+  // tokens.elevation.cardBorderRadius=12 → safeRadius=12 (geen cap)
+  assert("border-radius=12 (scraped value preserved)", html.includes("border-radius:12"));
 }
 
 console.log(`\n${pass} PASS, ${fail} FAIL`);

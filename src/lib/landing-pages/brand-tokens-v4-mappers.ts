@@ -19,6 +19,8 @@ import type {
   MotionTokens,
   PhotographyTokens,
   TextTokens,
+  TypographyByRoleTokens,
+  TypographyByRoleEntry,
 } from "./brand-tokens";
 import type { LayoutStyle, DesignSystem } from "./design-system";
 import type { BrandArchetype } from "./brand-archetype-classifier";
@@ -337,6 +339,62 @@ export function mapPhotographyTokens(
 function stripObservedPrefix(text: string): string {
   // Brandstyle-analyzer prefixt vaak "OBSERVED: ..." / "RECOMMENDED: ..."
   return text.replace(/^(observed|recommended|note):\s*/i, "").trim();
+}
+
+// ─── Typography per rol (DTS audit-fix) ──────────────────
+
+interface TypographyRoleStyleSrc {
+  fontFamily?: string | null;
+  fontSize?: string | null;
+  fontWeight?: string | null;
+  lineHeight?: string | null;
+  letterSpacing?: string | null;
+  textTransform?: string | null;
+}
+
+interface TypographyProfileSrc {
+  display?: TypographyRoleStyleSrc;
+  heading?: TypographyRoleStyleSrc;
+  subheading?: TypographyRoleStyleSrc;
+  body?: TypographyRoleStyleSrc;
+  label?: TypographyRoleStyleSrc;
+  button?: TypographyRoleStyleSrc;
+}
+
+function toRoleEntry(src: TypographyRoleStyleSrc | undefined): TypographyByRoleEntry {
+  if (!src) {
+    return { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null };
+  }
+  const fontSize = src.fontSize ? pxFromCssValue(src.fontSize, 0) : 0;
+  const fontWeight = src.fontWeight ? numberFromCssValue(src.fontWeight, 0) : 0;
+  const tt = src.textTransform?.toLowerCase().trim();
+  const validTt: TypographyByRoleEntry["textTransform"] =
+    tt === "uppercase" || tt === "lowercase" || tt === "capitalize" || tt === "none"
+      ? tt
+      : null;
+  return {
+    fontSize: fontSize > 0 ? fontSize : null,
+    fontWeight: fontWeight > 0 ? fontWeight : null,
+    lineHeight: src.lineHeight ?? null,
+    letterSpacing: src.letterSpacing ?? null,
+    textTransform: validTt,
+  };
+}
+
+export function mapTypographyByRoleTokens(
+  typographyProfile: unknown,
+  fallback: TypographyByRoleTokens,
+): TypographyByRoleTokens {
+  const src = (typographyProfile as TypographyProfileSrc | null) ?? null;
+  if (!src) return fallback;
+  return {
+    display: toRoleEntry(src.display),
+    heading: toRoleEntry(src.heading),
+    subheading: toRoleEntry(src.subheading),
+    body: toRoleEntry(src.body),
+    label: toRoleEntry(src.label),
+    button: toRoleEntry(src.button),
+  };
 }
 
 // ─── Text tokens (DTS C4) ─────────────────────────────────
