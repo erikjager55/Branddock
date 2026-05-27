@@ -1956,10 +1956,28 @@ async function writeResultToDb(
     }
   }
 
+  // Fase A — Color usage capture: scan de bron-CSS en log per hex welke
+  // contexten de site gebruikt (hero-bg / button-bg / heading-text / etc.).
+  // Tags worden mee opgeslagen op StyleguideColor.tags zodat de LP-renderer
+  // én UI ze later kunnen consumeren om brand-consistente keuzes te maken
+  // (bv. hero-bg alleen kleuren die ook op de bron als hero-bg fungeren).
+  let colorUsage: Map<string, Set<import('./color-usage-extractor').ColorUsageTag>> = new Map();
+  if (combinedCss) {
+    const { extractColorUsage } = await import('./color-usage-extractor');
+    colorUsage = extractColorUsage(combinedCss);
+  }
+
   // Create color records with computed values (RGB, HSL, CMYK, contrast)
   // Uses the RESOLVED palette — exact hexes from scraping with AI names merged in.
   for (let i = 0; i < resolvedColors.length; i++) {
     const color = resolvedColors[i];
+    // Merge AI/heuristic-tags met scraped usage-tags. Usage-tags krijgen
+    // 'usage:' prefix om collision met andere tag-conventies te vermijden
+    // en zodat consumers ze gericht kunnen filteren.
+    const hexKey = color.hex.replace(/^#/, '').toLowerCase();
+    const usageTags = Array.from(colorUsage.get(hexKey) ?? []).map((t) => `usage:${t}`);
+    const allTags = [...(color.tags ?? []), ...usageTags];
+
     await prisma.styleguideColor.create({
       data: {
         name: color.name,
@@ -1968,7 +1986,7 @@ async function writeResultToDb(
         hsl: hexToHslString(color.hex) || null,
         cmyk: hexToCmykString(color.hex) || null,
         category: color.category,
-        tags: color.tags,
+        tags: allTags,
         notes: color.notes,
         contrastWhite: contrastWithWhite(color.hex),
         contrastBlack: contrastWithBlack(color.hex),

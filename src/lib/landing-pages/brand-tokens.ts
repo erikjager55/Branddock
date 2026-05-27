@@ -59,6 +59,18 @@ export interface BrandTokens {
   /** Brand-tint voor backgrounds — auto-derived (lighten brand 85%). */
   brandSubtle: string;
 
+  // ─── Fase A — Usage-aware hero background selector ───────
+  /** Kleur die de bron-website daadwerkelijk als hero-background gebruikt
+   *  (afgeleid uit StyleguideColor.tags 'usage:hero-bg'). Wanneer geen
+   *  expliciete hero-bg signal: null → renderer valt terug op heuristic
+   *  (surface voor vibrant brand, brand voor pastel/gedempt). Voorkomt dat
+   *  een accent-kleur als hero-bg verschijnt terwijl de site dat nooit doet. */
+  heroBgColor: string | null;
+  /** Kleur die de bron-website als heading-text gebruikt (usage:heading-text).
+   *  Gebruikt door h1-renderer wanneer hero-bg surface is — geeft brand-
+   *  consistente typografie ook zonder vol-veld hero. */
+  headingTextColor: string | null;
+
   // ─── Action-roles (CTA-specifiek) ────────────────────────
   /** CTA-fill — default = brand. */
   action: string;
@@ -222,6 +234,9 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
   brand: '#1FD1B2',
   onBrand: '#FFFFFF',
   brandSubtle: '#E6F9F5',
+  // Fase A — Usage-aware (null = geen signal in bron-CSS, val terug op heuristic)
+  heroBgColor: null,
+  headingTextColor: null,
   // Action
   action: '#1FD1B2',
   onAction: '#FFFFFF',
@@ -707,6 +722,27 @@ export function extractBrandTokensFromStyleguide(
     DEFAULT_BRAND_TOKENS.typographyByRole,
   );
 
+  // Fase A — Usage-aware kleurselectors. Pak de kleur die de bron-website
+  // expliciet als hero-bg gebruikt (usage:hero-bg tag) — als die NIET
+  // bestaat, blijft heroBgColor null en valt de renderer terug op de
+  // heuristic-keuze (vibrant-saturated → surface, anders brand).
+  const pickByUsageTag = (tagName: string): string | null => {
+    const matches = colors.filter((c) => (c.tags ?? []).includes(`usage:${tagName}`));
+    if (matches.length === 0) return null;
+    // Prioriteer de meest gebruikte / hoogst-vertrouwen: PRIMARY > SECONDARY >
+    // ACCENT > NEUTRAL > SEMANTIC. Binnen categorie: sortOrder (frequentie-volgorde).
+    const categoryRank: Record<string, number> = { PRIMARY: 0, SECONDARY: 1, ACCENT: 2, NEUTRAL: 3, SEMANTIC: 4 };
+    matches.sort((a, b) => {
+      const rA = categoryRank[a.category] ?? 5;
+      const rB = categoryRank[b.category] ?? 5;
+      if (rA !== rB) return rA - rB;
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    });
+    return matches[0].hex;
+  };
+  const heroBgColor = pickByUsageTag('hero-bg');
+  const headingTextColor = pickByUsageTag('heading-text');
+
   return {
     // Legacy aliases (semantisch correct na v2-mapping + WCAG-gate)
     primaryHex: brand,
@@ -722,6 +758,9 @@ export function extractBrandTokensFromStyleguide(
     brand,
     onBrand: safeOnBrand,
     brandSubtle,
+    // Fase A — usage-aware
+    heroBgColor,
+    headingTextColor,
     // Action roles (default = brand)
     action: brand,
     onAction: safeOnBrand,
@@ -862,6 +901,9 @@ export function extractBrandTokensFromContext(
     brand: brandColor,
     onBrand,
     brandSubtle,
+    // Fase A — geen usage-tags beschikbaar in context-only pad → null
+    heroBgColor: null,
+    headingTextColor: null,
     // Action
     action: brandColor,
     onAction: onBrand,

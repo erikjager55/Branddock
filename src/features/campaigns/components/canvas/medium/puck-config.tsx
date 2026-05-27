@@ -437,15 +437,24 @@ function brandHeroComponent(tokens: BrandTokens) {
         backgroundImage = `linear-gradient(135deg, rgba(${brandRGB},1) 0%, ${tokens.brandSubtle} 100%)`;
         sectionBg = tokens.brand;
         sectionColor = tokens.onBrand;
+      } else if (tokens.heroBgColor) {
+        // Fase A — Usage-aware: bron-website heeft EXPLICIET een hero-bg
+        // kleur (uit usage:hero-bg tag van de scraper). Sterkste signaal —
+        // de site gebruikt deze kleur écht als hero-achtergrond. Geen
+        // heuristic-gokken meer nodig.
+        sectionBg = tokens.heroBgColor;
+        // sectionColor: prefer headingTextColor uit usage-tags, anders
+        // contrast-pick (onBrand voor donkere bgs, onSurface voor lichte).
+        const heroIsLight = /^#?[a-f0-9]{6}$/i.test(tokens.heroBgColor)
+          && parseInt(tokens.heroBgColor.replace(/^#/, ''), 16) > 0x808080;
+        sectionColor = tokens.headingTextColor
+          ?? (heroIsLight ? tokens.onSurface : '#FFFFFF');
       } else if (isVibrantSaturatedColor(tokens.brand)) {
-        // Vibrant-saturated brand-colors (bv. Better Brands #20C509 felgroen,
-        // L=40 S=95) zijn op de echte website typisch ACCENT-kleur (tekst,
-        // CTAs, links) — niet hero-background. Solid-brand hero forceert
-        // dan een agressief vol-veld dat NERGENS op de site terugkomt.
-        // Auto-correct: surface-bg met brand-color voor h1-display behoudt
-        // de brand-aanwezigheid zonder de mismatch.
+        // Geen usage-signal MAAR brand-color is vibrant accent-territory.
+        // Auto-correct: surface-bg + brand als heading-color zodat de brand
+        // herkenbaar blijft zonder vol-veld dat NERGENS op de site staat.
         sectionBg = tokens.surface;
-        sectionColor = tokens.brand;
+        sectionColor = tokens.headingTextColor ?? tokens.brand;
       } else {
         // solid-brand (default — voor gedempte/lichte brand-colors zoals
         // Soft Cream of pastel-tints werkt vol-veld wel natuurlijk).
