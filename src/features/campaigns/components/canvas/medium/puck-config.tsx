@@ -88,6 +88,17 @@ export type StickyCtaBarProps = {
   href: string;
 };
 
+/** StatsBlock: dark-bg highlights met brand-color display-typography.
+ *  Vervangt FeatureGrid-workaround voor impactStats — geeft brand-eigen
+ *  uniformiteit (LINFI: 410+ / 90+ / 10+ in gold Cormorant op dark-bg). */
+export type StatsItem = {
+  value: string;
+  label: string;
+};
+export type StatsBlockProps = {
+  items: StatsItem[];
+};
+
 export type SpikePuckProps = {
   BrandHero: SpikeBrandHeroProps;
   BrandCTA: SpikeBrandCtaProps;
@@ -98,6 +109,7 @@ export type SpikePuckProps = {
   Footer: FooterProps;
   RichText: RichTextProps;
   StickyCtaBar: StickyCtaBarProps;
+  StatsBlock: StatsBlockProps;
 };
 
 // ─── Config builder ──────────────────────────────────────────
@@ -136,7 +148,118 @@ export function buildSpikePuckConfig(
       Footer: footerComponent(tokens),
       RichText: richTextComponent(tokens),
       StickyCtaBar: stickyCtaBarComponent(tokens),
+      StatsBlock: statsBlockComponent(tokens),
     },
+  };
+}
+
+/**
+ * StatsBlock — dark-bg highlights met brand-color display-typography.
+ * Consumeert tokens.brand (number-color) + tokens.typographyByRole.display
+ * (uit scraped data) + tokens.headingFont (Cormorant in LINFI case).
+ *
+ * LINFI-pattern: 410+ / 90+ / 10+ in gold serif op donkere bg.
+ * Branddock-pattern: 50K+ / 12% / 3x in teal sans-serif op light bg.
+ */
+function statsBlockComponent(tokens: BrandTokens) {
+  const ds = tokens.designSystem;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.display.fontFamily;
+  const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const tbr = tokens.typographyByRole;
+
+  // Dark-bg pattern voor RULER/SAGE/MAGICIAN (premium/considered),
+  // light-bg voor PLAYFUL/JESTER (warm + open).
+  const useDarkBg = tokens.archetype === 'RULER' || tokens.archetype === 'SAGE' ||
+                    tokens.archetype === 'MAGICIAN' || tokens.archetype === 'OUTLAW' ||
+                    tokens.archetype === 'HERO';
+  const sectionBg = useDarkBg ? tokens.onSurface : tokens.surface;
+  const numberColor = useDarkBg ? tokens.brand : tokens.brand;
+  const labelColor = useDarkBg ? '#FFFFFF' : tokens.surfaceMuted;
+  // Number sizes — gebruik scraped display.fontSize wanneer aanwezig, anders
+  // archetype-default 64-88px range
+  const numberFontSize = tbr.display.fontSize ?? (useDarkBg ? 72 : 48);
+  const numberFontWeight = tbr.display.fontWeight ?? 400;
+  const numberLineHeight = tbr.display.lineHeight ?? '1.0';
+
+  return {
+    fields: {
+      items: {
+        type: 'array' as const,
+        arrayFields: {
+          value: { type: 'text' as const },
+          label: { type: 'text' as const },
+        },
+        defaultItemProps: { value: '0+', label: 'Metric' },
+        getItemSummary: (item: StatsItem) => `${item.value} ${item.label}`,
+      },
+    },
+    defaultProps: {
+      items: [
+        { value: '500+', label: 'Klanten' },
+        { value: '99%', label: 'Tevredenheid' },
+        { value: '24/7', label: 'Support' },
+      ],
+    },
+    render: ({ items }: StatsBlockProps) => (
+      <section
+        style={{
+          background: sectionBg,
+          padding: `${tokens.sectionRhythm.sectionPaddingY}px ${tokens.sectionRhythm.sectionPaddingX}px`,
+          fontFamily: bodyFont,
+        }}
+      >
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${Math.min(Math.max(items.length, 1), 4)}, minmax(0, 1fr))`,
+            gap: 0,
+            maxWidth: constraints.maxContentWidth,
+            margin: '0 auto',
+            position: 'relative',
+          }}
+        >
+          {items.map((item, i) => (
+            <div
+              key={i}
+              style={{
+                textAlign: 'center',
+                padding: '24px 16px',
+                borderLeft: i > 0 ? `1px solid ${useDarkBg ? 'rgba(255,255,255,0.15)' : tokens.surfaceBorder}` : undefined,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: headingFont,
+                  fontSize: numberFontSize,
+                  fontWeight: numberFontWeight,
+                  lineHeight: numberLineHeight,
+                  color: numberColor,
+                  marginBottom: 12,
+                }}
+              >
+                {item.value}
+              </div>
+              <div
+                style={{
+                  fontFamily: ds.typography.label.fontFamily,
+                  fontSize: tokens.text.banner.fontSize,
+                  fontWeight: tokens.text.banner.weight,
+                  letterSpacing: tokens.text.banner.letterSpacing,
+                  textTransform: tokens.text.banner.textTransform,
+                  color: labelColor,
+                  opacity: 0.85,
+                }}
+              >
+                {item.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    ),
   };
 }
 

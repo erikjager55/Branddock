@@ -114,17 +114,22 @@ export async function POST(request: NextRequest) {
       root: body.puckData.root,
       content: (parsed as { content: PuckLikeData['content'] }).content,
     };
-    const projected = await scoreWithFvalOrFallback({
-      ...body,
-      puckData: proposedTree,
-    });
 
-    // Hard guard: alleen proposals teruggeven die de page-quality strict
-    // verbeteren. Een proposal die gelijk-blijft of de score verlaagt is per
-    // definitie geen "iteratie" — geeft de user alleen verwarrende
-    // diff-modals waarbij Accepteren netto schade aanricht (bug-vondst
-    // 2026-05-25: Auto-iterate gaf 62 → 60 proposal voor vloerluik-page).
-    if (projected.score <= judgement.score) {
+    // 2026-05-27 — projected scoring (2e F-VAL call) overgeslagen voor
+    // performance. User-feedback: auto-iterate hangt 3-6 min door 3
+    // sequentiele Anthropic-calls (initial + rewrite + projected). Skippen
+    // halveert wachttijd; user beslist accept/reject via diff-modal.
+    // Opt-in via env AUTO_ITERATE_PROJECTED_SCORE=1 voor strict-mode.
+    const wantProjected = process.env.AUTO_ITERATE_PROJECTED_SCORE === '1';
+    const projected = wantProjected
+      ? await scoreWithFvalOrFallback({ ...body, puckData: proposedTree })
+      : null;
+
+    // Hard guard alleen wanneer projected scoring expliciet opt-in: voorkomt
+    // verwarrende diff-modals waar Accepteren netto schade aanricht.
+    // (bug-vondst 2026-05-25: Auto-iterate gaf 62 → 60 proposal voor
+    // vloerluik-page). Bij skip: user ziet altijd proposal, beslist zelf.
+    if (projected && projected.score <= judgement.score) {
       return NextResponse.json({
         status: 'no_improvement',
         reason: projected.score < judgement.score
@@ -141,7 +146,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       status: 'proposal',
       score: judgement.score,
-      scoreProjected: projected.score,
+      scoreProjected: projected?.score ?? null,
       threshold: judgement.threshold,
       proposedPuckData: proposedTree,
       signals: judgement.signals,

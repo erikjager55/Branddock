@@ -98,15 +98,14 @@ function impactStatsSection(
   if (!v.socialProof.impactStats || v.socialProof.impactStats.length === 0) {
     return null;
   }
-  // MVP-workaround: FeatureGrid met value als title.
-  // v2: dedicated ImpactStats-component met grote typografie.
-  const features = v.socialProof.impactStats.map((s) => ({
-    title: s.value,
-    description: s.label,
+  // Dedicated StatsBlock-component met brand-emergent dark-bg + display-
+  // typography. Renderer kiest archetype-aware dark/light + gebruikt
+  // tokens.typographyByRole.display voor de numbers.
+  const items = v.socialProof.impactStats.map((s) => ({
+    value: s.value,
+    label: s.label,
   }));
-  const columns: "2" | "3" | "4" =
-    features.length >= 4 ? "4" : features.length === 2 ? "2" : "3";
-  return instance("FeatureGrid", { columns, features });
+  return instance("StatsBlock", { items });
 }
 
 function pricingSection(v: LandingPageVariantContent): PuckInstance | null {

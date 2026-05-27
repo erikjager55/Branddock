@@ -161,9 +161,11 @@ function testPuckConfig(): void {
     'PricingTable', 'FAQ', 'Footer', 'RichText',
     // C9 — StickyCtaBar (DTS-plan)
     'StickyCtaBar',
+    // DTS audit-fix #4 — StatsBlock (dark-bg highlights)
+    'StatsBlock',
   ];
 
-  assert(`exactly 9 components registered (got ${componentNames.length})`, componentNames.length === 9);
+  assert(`exactly 10 components registered (got ${componentNames.length})`, componentNames.length === 10);
   for (const name of expected) {
     assert(`component ${name} present`, componentNames.includes(name));
   }

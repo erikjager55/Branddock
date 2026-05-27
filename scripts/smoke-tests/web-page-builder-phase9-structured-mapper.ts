@@ -144,9 +144,11 @@ group("Complete variant — 9 anatomie-secties");
 
   assert("output heeft content-array", Array.isArray(tree.content));
   assert("BrandHero aanwezig (sectie 1)", types.includes("BrandHero"));
-  // 2 FeatureGrids: trust-strip + features + impactStats (3 totaal complete)
+  // 2 FeatureGrids (trust-strip + features) + 1 StatsBlock (impactStats kreeg
+  // 2026-05-27 dedicated component i.p.v. FeatureGrid-workaround)
   const featureGridCount = types.filter((t) => t === "FeatureGrid").length;
-  assert("3 FeatureGrid-instances (trust + features + impactStats)", featureGridCount === 3);
+  assert("2 FeatureGrid-instances (trust + features)", featureGridCount === 2);
+  assert("StatsBlock aanwezig voor impactStats", types.includes("StatsBlock"));
   // RichText: 1 voor problem + 1 voor risk-reducer
   const richTextCount = types.filter((t) => t === "RichText").length;
   assert("2 RichText-instances (problem + risk-reducer)", richTextCount === 2);
