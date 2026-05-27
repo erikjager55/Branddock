@@ -87,6 +87,10 @@ interface ElementLike {
 interface Matcher {
   type: ComponentType;
   selectors: string[];
+  /** Optional shape-guard: returns false om een element te droppen ook al
+   *  matched de selector. Voor types met false-positive-gevoelige
+   *  patterns (`.tag` als figure-class, `[class*=-card]` op inline-spans). */
+  predicate?: (el: ElementLike) => boolean;
   labelFn: (el: ElementLike, classes: string[]) => string;
 }
 
@@ -158,14 +162,27 @@ const MATCHERS: Matcher[] = [
     selectors: [
       ".badge",
       ".chip",
-      ".tag",
       ".pill",
       "[class*=status-]",
       "[class*=badge-]",
       "[class*=Badge]",
       "[data-slot=badge]",
       "[data-radix-toast]",
+      // `.tag` is bewust NIET in deze top-level lijst: te veel
+      // false-positives op WP/Bricks sites (figure-image classes,
+      // taxonomy-links, social-share). Wordt geguard via predicate.
     ],
+    predicate: (el) => {
+      // Status-chip moet:
+      //  - INLINE element zijn (geen <figure>, <img>, <article>, <section>)
+      //  - tekst-content hebben (chips zonder tekst zijn iconen / images)
+      //  - geen <img>/<svg> als direct child hebben (image-tagged figures)
+      const tag = (el as { tagName?: string }).tagName?.toLowerCase();
+      if (!tag) return true;
+      const blockTags = new Set(["figure", "img", "article", "section", "main", "aside"]);
+      if (blockTags.has(tag)) return false;
+      return true;
+    },
     labelFn: (el, classes) => {
       const cls = classes.join(" ").toLowerCase();
       if (/success|green/.test(cls)) return "Status Chip — Success";
@@ -183,6 +200,14 @@ const MATCHERS: Matcher[] = [
       "[class*=product-card]",
       "[class*=item-card]",
       "[data-slot=card]",
+      // Generieke __card / -card / card- patterns vangen custom card-
+      // implementaties als `.fb-sticky-content__card`, `.feature-card`,
+      // `.card-item` op die elke BEM-conventie volgt. Eerder ontbrak dit
+      // waardoor de scanner op niet-framework-sites 0 cards rapporteerde
+      // terwijl ze er wel stonden.
+      "[class*=__card]",
+      "[class*=-card]",
+      "[class*=card-]",
       // Framework-specifieke card-containers
       ".wp-block-group.has-background",
       ".elementor-widget-wrap.elementor-element-populated",
@@ -190,6 +215,16 @@ const MATCHERS: Matcher[] = [
       ".brxe-block[class*=card]",
       ".et_pb_blurb",
     ],
+    predicate: (el) => {
+      // Card-elementen zijn block-level. Filter inline-elementen + image-
+      // only wrappers die toevallig "card" in class hebben (bv.
+      // `.card-image`, `.user-card-avatar`).
+      const tag = (el as { tagName?: string }).tagName?.toLowerCase();
+      if (!tag) return true;
+      const inlineTags = new Set(["span", "a", "img", "svg", "i", "b", "em", "strong"]);
+      if (inlineTags.has(tag)) return false;
+      return true;
+    },
     labelFn: (el, classes) => `Card${classes[0] ? " — " + classes[0] : ""}`,
   },
   {
@@ -268,6 +303,13 @@ export function extractComponents(
     for (const selector of matcher.selectors) {
       $(selector).each((_i, element) => {
         if (collected.length >= MAX_PER_TYPE * 4) return false; // stop iteration
+        // Shape-guard vóór style-resolution voor performance + correctness.
+        // Voor STATUS_CHIP/PRODUCT_CARD voorkomt dit dat <figure class="tag">
+        // (Bricks image-class) of inline `<span class="card-icon">` als
+        // valid status-chip/card wordt geteld.
+        if (matcher.predicate && !matcher.predicate(element as unknown as ElementLike)) {
+          return;
+        }
         const el = $(element);
         const classes = (el.attr("class") ?? "")
           .split(/\s+/)

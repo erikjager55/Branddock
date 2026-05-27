@@ -139,15 +139,17 @@ const TYPE_MATCHERS: TypeMatcher[] = [
   {
     type: "STATUS_CHIP",
     selectors: [
-      ".badge",
-      ".chip",
-      ".tag",
-      ".pill",
-      "[class*=status-]",
-      "[class*=badge-]",
-      "[class*=Badge]",
+      ".badge:not(figure):not(article):not(section):not(img)",
+      ".chip:not(figure):not(article):not(section):not(img)",
+      ".pill:not(figure):not(article):not(section):not(img)",
+      "[class*=status-]:not(figure):not(article):not(section):not(img)",
+      "[class*=badge-]:not(figure):not(article):not(section):not(img)",
+      "[class*=Badge]:not(figure):not(article):not(section):not(img)",
       "[data-slot=badge]",
       "[data-radix-toast]",
+      // `.tag` weggelaten — te veel false-positives (image-figures,
+      // taxonomy-links). Op sites met echte status-chips winnen .badge /
+      // .chip / .pill alsnog.
     ],
     labelFn: (_classes, text) => {
       if (text && text.length > 0 && text.length <= 25) {
@@ -164,6 +166,16 @@ const TYPE_MATCHERS: TypeMatcher[] = [
       "[class*=product-card]",
       "[class*=item-card]",
       "[data-slot=card]",
+      // Generieke BEM/utility patterns voor custom card-implementaties
+      // (LINFI's .fb-sticky-content__card, .feature-card, .card-item ...).
+      // Beperken tot block-level tags voorkomt dat span.card-icon /
+      // a.card-link als valid product-card wordt geteld.
+      "div[class*=__card]",
+      "section[class*=__card]",
+      "article[class*=__card]",
+      "div[class*=-card]:not([class*=card-link]):not([class*=card-icon])",
+      "section[class*=-card]",
+      "article[class*=-card]",
       // Framework-specifieke card-containers
       ".wp-block-group.has-background",
       ".elementor-widget-wrap.elementor-element-populated",

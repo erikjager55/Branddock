@@ -128,9 +128,16 @@ export function ComponentsSection({ styleguide, canEdit }: ComponentsSectionProp
         ) : null}
 
         {visible.length === 0 ? (
-          <div className="py-8 text-center text-sm text-gray-400">
-            No {currentTab.label.toLowerCase()} detected yet. Run a fresh analysis on a
-            website that uses this component type to populate.
+          <div className="py-8 text-center text-sm text-gray-400 space-y-1">
+            <div className="font-medium text-gray-500">
+              No {currentTab.label.toLowerCase()} detected on the analyzed pages.
+            </div>
+            <div className="text-xs">
+              The scanner checks ~5 pages including subpages. If your site has
+              these elements on other pages (e.g. /testimonials, /products), add
+              that URL and re-run the analysis. Otherwise the brand simply
+              doesn&apos;t use this component type — that&apos;s a valid result.
+            </div>
           </div>
         ) : buttonGroups ? (
           <div className="space-y-8">
