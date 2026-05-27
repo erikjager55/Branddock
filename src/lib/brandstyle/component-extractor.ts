@@ -109,6 +109,14 @@ const MATCHERS: Matcher[] = [
       "[class*=btn-]",
       "input[type=submit]",
       "input[type=button]",
+      // Framework-specifieke selectors (sync met component-screenshotter)
+      ".wp-block-button__link",
+      ".elementor-button",
+      ".bricks-button",
+      ".brxe-button",
+      ".et_pb_button",
+      ".vc_btn",
+      ".acss-btn",
       // Heuristic: pure-Tailwind anchors without "button"/"btn" in class.
       // Still filtered by computeConfidence (requires bg + padding + radius).
       "a[href]",
@@ -175,22 +183,59 @@ const MATCHERS: Matcher[] = [
       "[class*=product-card]",
       "[class*=item-card]",
       "[data-slot=card]",
+      // Framework-specifieke card-containers
+      ".wp-block-group.has-background",
+      ".elementor-widget-wrap.elementor-element-populated",
+      ".brxe-container[class*=card]",
+      ".brxe-block[class*=card]",
+      ".et_pb_blurb",
     ],
     labelFn: (el, classes) => `Card${classes[0] ? " — " + classes[0] : ""}`,
   },
   {
     type: "FEATURE_ICON",
-    selectors: ["svg[class*=icon]", ".icon", "[class*=feature-icon]", "i.fa", "i.material-icons"],
+    selectors: [
+      "svg[class*=icon]",
+      ".icon",
+      "[class*=feature-icon]",
+      "i.fa",
+      "i.material-icons",
+      // Framework iconen
+      ".brxe-icon",
+      ".brxe-icon-box svg",
+      ".elementor-icon svg",
+      ".elementor-icon-box-icon svg",
+      ".et_pb_icon",
+    ],
     labelFn: (el, classes) => `Feature Icon${classes[0] ? " — " + classes[0] : ""}`,
   },
   {
     type: "TOP_NAVIGATION",
-    selectors: ["nav", "[role=navigation]", "header nav", ".navbar", ".navigation"],
+    selectors: [
+      "nav",
+      "[role=navigation]",
+      "header nav",
+      ".navbar",
+      ".navigation",
+      // Framework nav
+      ".brxe-nav-menu",
+      ".brxe-nav",
+      ".elementor-nav-menu",
+      ".et_pb_menu",
+      ".wp-block-navigation",
+    ],
     labelFn: () => "Top Navigation",
   },
   {
     type: "QUOTE_BLOCK",
-    selectors: ["blockquote", "[class*=quote]", "[class*=testimonial]"],
+    selectors: [
+      "blockquote",
+      "[class*=quote]",
+      "[class*=testimonial]",
+      ".brxe-testimonial",
+      ".elementor-widget-testimonial",
+      ".et_pb_testimonial",
+    ],
     labelFn: (el, classes) => {
       const cls = classes.join(" ").toLowerCase();
       if (/testimonial/.test(cls)) return "Testimonial";
