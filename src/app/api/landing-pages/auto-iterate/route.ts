@@ -110,9 +110,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Server-side merge: pak alleen TEXT-fields uit AI-output, behoud non-text
+    // (heroVisualUrl, mediaUrl, icon-naam, etc.) van originele puck-tree.
+    // Voorkomt regressie waarbij AI prompts ignoreert en non-text velden weglaat.
+    const aiContent = (parsed as { content: PuckLikeData['content'] }).content;
+    const TEXT_FIELDS = new Set([
+      'headline', 'sub', 'subhead', 'subheading', 'title', 'description',
+      'body', 'heading', 'label', 'ctaLabel', 'primaryCta', 'secondaryCta',
+      'eyebrow', 'quote', 'author', 'authorName', 'authorRole', 'authorCompany',
+      'question', 'answer', 'name', 'price', 'features', 'content',
+      'companyName', 'tagline', 'value', 'riskReducer',
+    ]);
+    const mergedContent = body.puckData.content.map((origItem) => {
+      const origProps = (origItem as { props?: Record<string, unknown> }).props ?? {};
+      const origId = origProps.id as string | undefined;
+      const aiItem = aiContent.find((c) => {
+        const cProps = (c as { props?: Record<string, unknown> }).props ?? {};
+        return cProps.id === origId;
+      });
+      if (!aiItem) return origItem; // AI dropped component → behoud origineel
+      const aiProps = (aiItem as { props?: Record<string, unknown> }).props ?? {};
+      const mergedProps: Record<string, unknown> = { ...origProps };
+      for (const [key, value] of Object.entries(aiProps)) {
+        if (TEXT_FIELDS.has(key) && (typeof value === 'string' || Array.isArray(value))) {
+          mergedProps[key] = value;
+        }
+      }
+      return { ...origItem, props: mergedProps };
+    });
     const proposedTree: PuckLikeData = {
       root: body.puckData.root,
-      content: (parsed as { content: PuckLikeData['content'] }).content,
+      content: mergedContent,
     };
 
     // 2026-05-27 — projected scoring (2e F-VAL call) overgeslagen voor
