@@ -647,6 +647,7 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       scraped.headingFont,
       visionLogo,
       scraped.adobeFonts ?? null,
+      `${scraped.inlineCss ?? ''}\n${scraped.linkedCssContent ?? ''}`,
     );
 
     // Route scraped brand images into the Media Library instead of persisting
@@ -1611,6 +1612,10 @@ async function writeResultToDb(
    *  scraped kitId (if any) is stored on each new row so the UI can
    *  render a live preview using the publisher's Typekit kit. */
   adobeFonts?: { detected: boolean; kitId: string | null } | null,
+  /** Combined CSS (inlineCss + linkedCssContent) — passed door zodat we
+   *  computed-style font-role classification kunnen draaien (selector-
+   *  context wins van naam-heuristic voor custom/codename fonts). */
+  combinedCss?: string,
 ): Promise<void> {
   // Delete existing colors before creating new ones
   await prisma.styleguideColor.deleteMany({ where: { styleguideId } });
@@ -1724,21 +1729,37 @@ async function writeResultToDb(
       const headingFontLower = headingFont?.toLowerCase() ?? null;
       const bodyFontLower = bodyFont?.toLowerCase() ?? null;
       const hasSemanticSignal = !!(headingFontLower || bodyFontLower);
-      // Tertiair signaal: font-name keyword-heuristic. Veel serif display-
-      // fonts hebben hun karakter expliciet in de naam ('mrs-eaves-xl-serif',
-      // 'playfair-display', 'oranienbaum', 'cormorant-garamond'). Wanneer
-      // CSS-selector analyse geen heading-signaal opleverde maar de font-naam
-      // duidelijk serif-display is, classify dan als DISPLAY i.p.v. de UI-
-      // fallback. Voorkomt dat brands met Adobe Fonts serifs (waar selector-
-      // matching via @import niet werkt) hun display-font verliezen aan UI.
+
+      // Computed-style classifier — sterker signaal dan naam-heuristic.
+      // Scant ALLE CSS-rules met font-family en aggregeert hits per font
+      // op selector-context (heading vs body vs other). Werkt voor custom/
+      // codename-fonts waar naam-keyword detection faalt.
+      const { classifyFontsByCssContext } = await import('./font-role-classifier');
+      const cssContextVerdicts = combinedCss
+        ? classifyFontsByCssContext(combinedCss, fontNames)
+        : new Map<string, 'DISPLAY' | 'UI' | 'UNKNOWN'>();
+
+      // Tertiair signaal: naam-heuristic — alleen wanneer computed-style
+      // UNKNOWN teruggeeft (geen CSS context-signaal voor deze font, typisch
+      // bij @import-only Adobe Fonts waar de site geen direct h1{font-family}
+      // rule plaatst maar via een class doet die we wel zien maar niet matchen).
       const SERIF_DISPLAY_NAME_HINT = /\bserif\b|mrs[- ]?eaves|playfair|oranienbaum|cormorant|garamond|sentinel|freight|tiempos|caslon|baskerville|bodoni|didot|minion|chronicle|recoleta|fraunces|abril|prata|crimson|merriweather|lora|dm[- ]?serif|libre[- ]?baskerville|noto[- ]?serif/i;
+
       const assignRole = (name: string, fallbackIndex: number): 'DISPLAY' | 'UI' => {
         const lower = name.toLowerCase();
+        // 1. Direct semantic CSS-var / direct selector match uit scraper
         if (headingFontLower && lower === headingFontLower) return 'DISPLAY';
         if (bodyFontLower && lower === bodyFontLower) return 'UI';
-        // Geen exacte selector-match: probeer naam-heuristic vóór de UI-fallback
+        // 2. Computed-style aggregate verdict (sterker dan naam — werkt
+        //    voor custom/codename fonts)
+        const cssVerdict = cssContextVerdicts.get(lower);
+        if (cssVerdict === 'DISPLAY' || cssVerdict === 'UI') return cssVerdict;
+        // 3. Naam-keyword heuristic — laatste contextueel signaal
         if (SERIF_DISPLAY_NAME_HINT.test(name)) return 'DISPLAY';
+        // 4. UI als er WEL semantic-signal was voor andere fonts (=
+        //    deze font deed niet mee aan heading/body, dus is supplementaire UI)
         if (hasSemanticSignal) return 'UI';
+        // 5. Bare fallback op detectievolgorde (eerste = display heuristic)
         return fallbackIndex === 0 ? 'DISPLAY' : 'UI';
       };
       const filteredNames = fontNames.filter((n) => !uploadedSet.has(n.toLowerCase()));

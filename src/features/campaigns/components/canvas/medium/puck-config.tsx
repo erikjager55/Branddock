@@ -218,7 +218,10 @@ function statsBlockComponent(tokens: BrandTokens) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: `repeat(${Math.min(Math.max(items.length, 1), 4)}, minmax(0, 1fr))`,
+            // Responsive: auto-fit met min-width = 180px (stats zijn compact,
+            // 1 cijfer + 1 label). Op brede schermen tot 4 kolommen, op
+            // smalle automatisch wraps.
+            gridTemplateColumns: `repeat(auto-fit, minmax(min(180px, 100%), 1fr))`,
             gap: 0,
             maxWidth: constraints.maxContentWidth,
             margin: '0 auto',
@@ -525,7 +528,7 @@ function brandHeroComponent(tokens: BrandTokens) {
               {ds.imageStrategy.placeholderLabel}
             </div>
           ) : null}
-          <div style={{ position: 'relative', maxWidth: 800, width: '100%' }}>
+          <div style={{ position: 'relative', maxWidth: 1100, width: '100%' }}>
             {eyebrow && eyebrow.trim().length > 0 ? (
               <div
                 style={{
@@ -549,6 +552,14 @@ function brandHeroComponent(tokens: BrandTokens) {
                 fontWeight: tbr.display.fontWeight ?? displayTypography.weight,
                 letterSpacing: tbr.display.letterSpacing ?? displayTypography.letterSpacing,
                 margin: `0 0 ${ds.spacing[Math.min(ds.spacing.length - 1, 3)] ?? 16}px`,
+                // Voorkomt dat lange enkele woorden (compound-NL nouns als
+                // 'concurrentievoordeel' / 'merkpositionering') over de
+                // section-rand rollen op smalle viewports. break-word breekt
+                // alleen wanneer NOODZAKELIJK; normale woordgroep-wrapping
+                // blijft prefereren spaties.
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+                hyphens: 'auto',
               }}
             >
               {headline}
@@ -747,10 +758,16 @@ function featureGridComponent(tokens: BrandTokens) {
           background: tokens.surface,
         }}
       >
+        {/* Responsive grid: `auto-fit` met minmax(240px, 1fr) zorgt dat het
+            aantal kolommen automatisch reduceert op smalle viewports. Op
+            een 1200px scherm krijg je tot `columns` kolommen; op 768px
+            wraps het naar 2-3; op mobile 1 kolom — zonder media-queries
+            (inline-style limiet). 240px is de min-leesbare breedte voor
+            een feature-card (icon + 3-woord heading + 1 zin body). */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+            gridTemplateColumns: `repeat(auto-fit, minmax(min(240px, 100%), 1fr))`,
             gap,
             maxWidth: constraints.maxContentWidth,
             margin: '0 auto',
@@ -998,7 +1015,10 @@ function pricingTableComponent(tokens: BrandTokens) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: `repeat(${Math.min(Math.max(tiers.length, 1), 4)}, minmax(0, 1fr))`,
+            // Pricing-tier-cards zijn breder dan features (prijs + features-
+            // lijst + CTA), dus min 260px voor leesbaarheid. Auto-fit wraps
+            // op smalle viewports.
+            gridTemplateColumns: `repeat(auto-fit, minmax(min(260px, 100%), 1fr))`,
             gap: ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24,
             maxWidth: constraints.maxContentWidth,
             margin: '0 auto',
