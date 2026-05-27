@@ -695,14 +695,36 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       }
     }
 
+    // Fase D — persist bron-hero-screenshot URL voor lp-fidelity-judge.
+    // Anders moet de judge bij elke check de bron live re-fetchen +
+    // re-screenshotten (~20s extra). Met persisted URL doet hij gewoon
+    // een GET op de storage en is judge-call <10s totaal.
+    let heroScreenshotUrl: string | null = null;
+    if (heroBuffer && styleguideMeta.workspaceId) {
+      try {
+        const { getStorageProvider } = await import('@/lib/storage');
+        const storage = getStorageProvider();
+        const result = await storage.upload(heroBuffer, {
+          workspaceId: styleguideMeta.workspaceId,
+          fileName: `brandstyle-hero-${styleguideId}.png`,
+          contentType: 'image/png',
+          generateThumbnail: false,
+        });
+        heroScreenshotUrl = result.url;
+        console.log(`[brandstyle-analysis] Hero screenshot persisted: ${heroScreenshotUrl}`);
+      } catch (uploadErr) {
+        console.warn(`[brandstyle-analysis] Hero-screenshot upload failed (non-critical): ${uploadErr instanceof Error ? uploadErr.message : String(uploadErr)}`);
+      }
+    }
+
     // Write visual language separately (Json field, not part of CombinedResult)
-    // Fase C — heroPattern wordt in dezelfde JSON gepiggybackt zodat we
-    // geen schema-migratie nodig hebben. Renderer leest via
-    // styleguide.visualLanguage.heroPattern.
-    if (visualLanguageResult || heroPattern) {
+    // Fase C — heroPattern + Fase D — heroScreenshotUrl gepiggybackt zonder
+    // schema-migratie. Renderer leest via styleguide.visualLanguage.*.
+    if (visualLanguageResult || heroPattern || heroScreenshotUrl) {
       const visualLanguagePayload = {
         ...((visualLanguageResult as Record<string, unknown> | null) ?? {}),
         ...(heroPattern ? { heroPattern } : {}),
+        ...(heroScreenshotUrl ? { heroScreenshotUrl } : {}),
       };
       await prisma.brandStyleguide.update({
         where: { id: styleguideId },

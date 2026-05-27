@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Puck, Render, type Data } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
-import { Loader2, Shield, Wand2, Layout, X } from 'lucide-react';
+import { Loader2, Shield, Wand2, Layout, X, ScanEye } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
@@ -77,8 +77,16 @@ export function PuckPageBuilder({
     source: 'auto-iterate';
   };
   const [pagePending, setPagePending] = useState<PagePending | null>(null);
-  const [pageBusy, setPageBusy] = useState<null | 'auto-iterate'>(null);
+  const [pageBusy, setPageBusy] = useState<null | 'auto-iterate' | 'fidelity-check'>(null);
   const [pageError, setPageError] = useState<string | null>(null);
+  // Fase D — fidelity-result tonen na judge-call. Reset bij data-change zodat
+  // stale-result niet blijft hangen wanneer user de page edit.
+  const [fidelityResult, setFidelityResult] = useState<{
+    score: number;
+    verdict: 'excellent' | 'good' | 'fair' | 'poor';
+    reasoning: string;
+    mismatches: string[];
+  } | null>(null);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -195,6 +203,37 @@ export function PuckPageBuilder({
     }
   }, [puckData, contextStack, deliverableId, pageLocked]);
 
+  /** Fase D — fidelity-check: vergelijk LP-hero side-by-side met bron-
+   *  website hero-screenshot. Geeft een verdict (excellent/good/fair/poor)
+   *  + mismatches zodat user direct ziet of de gegenereerde LP visueel
+   *  consistent is met de geanalyseerde bron. */
+  const handleFidelityCheck = useCallback(async () => {
+    setPageBusy('fidelity-check');
+    setPageError(null);
+    setFidelityResult(null);
+    try {
+      const res = await fetch(
+        `/api/landing-pages/${deliverableId}/lp-fidelity-check`,
+        { method: 'POST' },
+      );
+      const json = await res.json();
+      if (!res.ok) {
+        setPageError(json.error ?? `Fidelity-check faalde (HTTP ${res.status})`);
+        return;
+      }
+      setFidelityResult({
+        score: json.score,
+        verdict: json.verdict,
+        reasoning: json.reasoning,
+        mismatches: json.mismatches ?? [],
+      });
+    } catch (err) {
+      setPageError(err instanceof Error ? err.message : 'fidelity-check failed');
+    } finally {
+      setPageBusy(null);
+    }
+  }, [deliverableId]);
+
   const handlePageAccept = useCallback(
     (merged: SpikeData) => {
       setPuckData(merged);
@@ -230,6 +269,13 @@ export function PuckPageBuilder({
             : 'Verbeter automatisch wanneer de paginakwaliteit onder de drempel zit'}
         />
         <ActionButton
+          icon={pageBusy === 'fidelity-check' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanEye className="h-4 w-4" />}
+          label="Brand-fit check"
+          onClick={handleFidelityCheck}
+          disabled={pageBusy !== null}
+          title="Vergelijk deze LP-hero side-by-side met de geanalyseerde bron-website"
+        />
+        <ActionButton
           icon={<Layout className="h-4 w-4" />}
           label="Bewerk layout"
           onClick={() => setEditorOpen(true)}
@@ -243,6 +289,43 @@ export function PuckPageBuilder({
           onToggle={handleToggleLock}
         />
       </div>
+
+      {/* Fase D — fidelity-result banner. Verdict-bucket bepaalt kleur:
+          excellent=emerald, good=teal, fair=amber, poor=red. */}
+      {fidelityResult ? (
+        <div
+          className={`rounded-md border px-4 py-3 text-sm space-y-2 ${
+            fidelityResult.verdict === 'excellent' ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+              : fidelityResult.verdict === 'good' ? 'border-teal-200 bg-teal-50 text-teal-900'
+              : fidelityResult.verdict === 'fair' ? 'border-amber-200 bg-amber-50 text-amber-900'
+              : 'border-red-200 bg-red-50 text-red-900'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">
+                Brand-fit met bron: {fidelityResult.score}/100 — {fidelityResult.verdict}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFidelityResult(null)}
+              className="opacity-60 hover:opacity-100"
+              aria-label="Sluit"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="text-xs">{fidelityResult.reasoning}</p>
+          {fidelityResult.mismatches.length > 0 ? (
+            <ul className="text-xs space-y-0.5 list-disc pl-5">
+              {fidelityResult.mismatches.map((m, i) => (
+                <li key={i}>{m}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Page-render — flat op de pagina-achtergrond, geen kader/wrapper-bg
           zodat de preview naadloos in het Step 3 layout zit. */}
