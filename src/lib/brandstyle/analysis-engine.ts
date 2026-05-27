@@ -720,6 +720,41 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       );
     }
 
+    // Fase B verbeterplan — persist scraper-rendering-profiles (button,
+    // typography per rol, spacing+elevation+radius, motion). Renderers
+    // lezen deze velden voor brand-specifieke styling i.p.v. archetype-
+    // defaults. Non-critical: bij persist-error fall back op archetype-
+    // defaults via BrandTokens Tier-2 fallback chain.
+    try {
+      await prisma.brandStyleguide.update({
+        where: { id: styleguideId },
+        data: {
+          buttonProfile: scraped.buttonStyles
+            ? (JSON.parse(JSON.stringify(scraped.buttonStyles)) as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          typographyProfile: scraped.typographyByRole
+            ? (JSON.parse(JSON.stringify(scraped.typographyByRole)) as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          spacingProfile: scraped.spacingProfile
+            ? (JSON.parse(JSON.stringify(scraped.spacingProfile)) as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          elevationProfile: scraped.elevationProfile
+            ? (JSON.parse(JSON.stringify(scraped.elevationProfile)) as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          radiusProfile: scraped.radiusProfile
+            ? (JSON.parse(JSON.stringify(scraped.radiusProfile)) as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          motionProfile: scraped.motionProfile
+            ? (JSON.parse(JSON.stringify(scraped.motionProfile)) as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+        },
+      });
+    } catch (err) {
+      console.warn(
+        `[brandstyle-analysis] Rendering-profiles persist failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
     // V2-2b — infereer layoutStyle uit site-DNA signals voor de styleguide
     // COMPLETE wordt gemarkeerd. Pure heuristic op photographyMood-keywords
     // + brand-color signals. Persist met layoutStyleInferred=true zodat

@@ -1685,6 +1685,22 @@ model BrandStyleguide {
   // COMMERCIAL gekozen" en "schema-default COMMERCIAL nooit veranderd".
   layoutStyleInferred Boolean         @default(false)
 
+  // Verbeterplan Fase B — rendering-profiles uit scraper (alle Json?,
+  // nullable additive). Renderer leest deze velden voor brand-specifieke
+  // button/spacing/elevation/motion-styling i.p.v. archetype-defaults.
+  /** ScrapedButtonStyle[] — primary/secondary/ghost button-samples. */
+  buttonProfile       Json?
+  /** SpacingProfile — section/card/button/input padding-samples + typical. */
+  spacingProfile      Json?
+  /** ElevationProfile — box-shadow categorisatie + dominant. */
+  elevationProfile    Json?
+  /** RadiusProfile — border-radius typical per context. */
+  radiusProfile       Json?
+  /** MotionProfile — transition+animation duration + dominant easing. */
+  motionProfile       Json?
+  /** ScrapedTypographyByRole — display/heading/body/label/button styles. */
+  typographyProfile   Json?
+
   // Pad C Sub-Sprint B — Jung's brand-archetype. AI-classified uit
   // BrandAssetVersion content. Null = nog niet geclassificeerd; renderer
   // valt terug op layoutStyle-only beslissingen.

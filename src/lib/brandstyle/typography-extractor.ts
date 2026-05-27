@@ -211,6 +211,18 @@ export function extractTypographyByRole(css: string): ScrapedTypographyByRole {
     }
   }
 
+  // Strip rollen die geen single font-property gekregen hebben (selector
+  // matchte wel maar declaratie bevatte geen typografie-props). Zo blijft
+  // empty input → empty output.
+  for (const role of Object.keys(result) as TypographyRole[]) {
+    const r = result[role];
+    if (!r) continue;
+    const hasAnyProp =
+      r.fontFamily || r.fontSize || r.fontWeight ||
+      r.lineHeight || r.letterSpacing || r.textTransform;
+    if (!hasAnyProp) delete result[role];
+  }
+
   return result;
 }
 
