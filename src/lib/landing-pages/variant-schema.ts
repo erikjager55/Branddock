@@ -30,26 +30,28 @@ import { z } from "zod";
 // ─── Sectie-schema's ─────────────────────────────────────────
 
 const heroSchema = z.object({
-  /** 5-10 woorden, max 44 chars, benefit-led (geen feature-led). */
+  /** Max 60 chars (was 44 — relaxed 2026-05-27 omdat C2 voice-sample longer
+   *  rhythm injecteert; 44 was te strict bij brand-voice imitation). */
   headline: z
     .string()
     .min(1, "hero.headline mag niet leeg zijn")
-    .max(44, "hero.headline max 44 tekens per §1 #7 CXL framework"),
+    .max(60, "hero.headline max 60 tekens"),
   /** 1-2 zinnen context + pijnpunt-erkenning. */
   subhead: z.string().min(1, "hero.subhead mag niet leeg zijn"),
   /** Action-led werkwoord; identiek aan finalCta.primaryCta. */
   primaryCta: z.string().min(1, "hero.primaryCta mag niet leeg zijn"),
   /** Hobson's Choice +1 alternatief (bv. "Bekijk demo"). */
-  secondaryCta: z.string().optional(),
-  /** v2 placeholder; in MVP via BrandHero workaround. */
-  heroVisualUrl: z.string().optional(),
+  secondaryCta: z.string().nullable().optional(),
+  /** v2 placeholder; in MVP via BrandHero workaround. AI mag null retourneren. */
+  heroVisualUrl: z.string().nullable().optional(),
   /** C5 — optionele uppercase eyebrow boven headline (civic / categorie-marker). */
-  eyebrow: z.string().max(40, "hero.eyebrow max 40 tekens").optional(),
+  eyebrow: z.string().max(40, "hero.eyebrow max 40 tekens").nullable().optional(),
 });
 
 const trustItemSchema = z.object({
   label: z.string().min(1, "trust.items[].label mag niet leeg zijn"),
-  mediaUrl: z.string().optional(),
+  /** Optional logo/image URL — AI mag null retourneren wanneer geen URL bekend. */
+  mediaUrl: z.string().nullable().optional(),
 });
 
 const trustSchema = z.object({
