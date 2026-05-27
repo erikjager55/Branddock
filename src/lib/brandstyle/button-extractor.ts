@@ -9,8 +9,44 @@
  * Classificeert elk match heuristisch naar primary/secondary/ghost/unknown
  * op basis van background-fill + border-presence.
  *
- * Pure functie — geen DOM, geen DB. Caller integreert in scrapeUrl output.
+ * Universal-fix layers (sites zoals LINFI met WP + Bricks Builder):
+ *  1. CSS-var resolution — `var(--btn-radius)` → 8px door :root-map +
+ *     recursieve substitutie. Zonder dit blijft de echte radius leeg en
+ *     valt de merger terug op WP-core defaults.
+ *  2. DOM-presence filter — selectors waarvan GEEN element in de gerenderde
+ *     HTML matcht worden gedropt. Dit elimineert WP-core stylesheets
+ *     (`.wp-block-button__link`) die altijd aanwezig zijn maar nooit
+ *     gebruikt worden.
+ *  3. Backward-compat — beide nieuwe parameters zijn optioneel; oude
+ *     call-sites blijven werken (zonder filtering).
+ *
+ * Pure functie — DOM-input is een cheerio root, geen browser. Caller
+ * integreert in scrapeUrl output.
  */
+
+/**
+ * Subset van CssVariable dat we nodig hebben — frozen om circular import te
+ * vermijden (CssVariable woont in url-scraper.ts en url-scraper importeert
+ * deze module).
+ */
+export interface ButtonExtractorCssVar {
+  name: string;
+  value: string;
+}
+
+/** Cheerio root — typed as `unknown` om geen hard cheerio-dep in dit
+ *  bestand te krijgen. Caller weet wat hij doorgeeft. */
+export type CheerioRootLike = {
+  (selector: string): { length: number };
+} | null;
+
+export interface ButtonExtractorOptions {
+  /** CSS-vars uit :root (en theme-blocks) voor var(...) substitutie. */
+  cssVariables?: ButtonExtractorCssVar[];
+  /** Cheerio `$` voor DOM-presence filtering. Wanneer aanwezig: selectors
+   *  zonder DOM-match worden gedropt. */
+  $?: CheerioRootLike;
+}
 
 export interface ScrapedButtonStyle {
   /** Originele CSS-selector (debug). */
@@ -151,8 +187,162 @@ function stripPseudo(selector: string): string {
   return selector.replace(/:(?:hover|focus|focus-visible|active|visited)\b/g, "").trim();
 }
 
-export function extractButtonStyles(css: string): ScrapedButtonStyle[] {
+// ─── CSS-var resolution ───────────────────────────────────
+//
+// Bouwt een var-map uit :root + theme-blocks en resolved `var(--x, fallback)`
+// recursief. Cycle-guard via visited-set, max 10 stappen diep om pathologische
+// chains te vermijden. Wanneer een var leeg blijft → originele expression
+// behouden (geen falsy "" terugschrijven, dan zou de merger verkeerd vallen).
+
+const MAX_VAR_DEPTH = 10;
+
+/**
+ * Vind de eerste `var(...)` expression met balanced parens (nested support).
+ * Returnt start-index + end-index (exclusive) en parsed { name, fallback }.
+ * Returnt null wanneer geen match.
+ */
+function findVarCall(expr: string, from = 0): {
+  start: number;
+  end: number;
+  name: string;
+  fallback: string | null;
+} | null {
+  const start = expr.indexOf("var(", from);
+  if (start < 0) return null;
+  let depth = 1;
+  let i = start + 4;
+  while (i < expr.length && depth > 0) {
+    if (expr[i] === "(") depth++;
+    else if (expr[i] === ")") depth--;
+    if (depth === 0) break;
+    i++;
+  }
+  if (depth !== 0) return null; // unbalanced
+  const inner = expr.slice(start + 4, i);
+  const commaIdx = findTopLevelComma(inner);
+  const name = (commaIdx >= 0 ? inner.slice(0, commaIdx) : inner).trim();
+  const fallback = commaIdx >= 0 ? inner.slice(commaIdx + 1).trim() : null;
+  return { start, end: i + 1, name, fallback };
+}
+
+function findTopLevelComma(s: string): number {
+  let depth = 0;
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === "(") depth++;
+    else if (s[i] === ")") depth--;
+    else if (s[i] === "," && depth === 0) return i;
+  }
+  return -1;
+}
+
+function buildVarMap(vars: ButtonExtractorCssVar[] | undefined): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!vars?.length) return map;
+  // Eerste pass: raw values, last-wins (theme-overrides winnen van :root).
+  for (const v of vars) {
+    if (v.name && v.value) map.set(v.name, v.value.trim());
+  }
+  return map;
+}
+
+function resolveVar(expr: string, varMap: Map<string, string>, depth = 0): string {
+  if (depth > MAX_VAR_DEPTH) return expr;
+  let result = expr;
+  let cursor = 0;
+  // Loop: vind elke var(...) call met balanced parens, vervang met
+  // resolved waarde of recursief gefallbackte expression.
+  while (cursor < result.length) {
+    const match = findVarCall(result, cursor);
+    if (!match) break;
+    const resolved = varMap.get(match.name);
+    let replacement: string;
+    if (resolved) {
+      replacement = resolveVar(resolved, varMap, depth + 1);
+    } else if (match.fallback) {
+      replacement = resolveVar(match.fallback, varMap, depth + 1);
+    } else {
+      // Onbekend + geen fallback → originele expression behouden, skip
+      // verder vanaf einde van deze call zodat we niet eindeloos loopen.
+      cursor = match.end;
+      continue;
+    }
+    result = result.slice(0, match.start) + replacement + result.slice(match.end);
+    cursor = match.start + replacement.length;
+  }
+  return result;
+}
+
+function resolveButtonVars(btn: ScrapedButtonStyle, varMap: Map<string, string>): void {
+  const fields: (keyof ScrapedButtonStyle)[] = [
+    "paddingY", "paddingX", "fontWeight", "fontSize", "textTransform",
+    "letterSpacing", "borderRadius", "background", "color", "border",
+    "transition", "hoverBackground", "hoverColor", "hoverTransform", "hoverBorder",
+  ];
+  for (const f of fields) {
+    const val = btn[f];
+    if (typeof val !== "string" || !val.includes("var(")) continue;
+    const resolved = varMap.size > 0 ? resolveVar(val, varMap) : val;
+    // Wanneer er na resolution NOG steeds een unresolved var() in zit
+    // (typisch op sites zoals linfi.nl waar Bricks `--btn-radius` declareert
+    // maar nooit initialiseert), zet het veld op null. De v4-merger pakt
+    // dan automatisch de volgende non-null sample i.p.v. een unusable
+    // string als "valid value" door te geven aan de renderer.
+    if (resolved.includes("var(")) {
+      (btn as unknown as Record<string, unknown>)[f] = null;
+    } else if (resolved && resolved !== val) {
+      (btn as unknown as Record<string, unknown>)[f] = resolved;
+    }
+  }
+}
+
+// ─── DOM-presence filter ──────────────────────────────────
+//
+// Voor elke base-selector: split op spaces/combinators, neem de meest
+// specifieke laatste component (class/id/tag), check of die in de DOM
+// voorkomt. Skip stylesheets-only auto-generated rules (WP-core block
+// stylesheets, theme-resets) die nooit gerenderd worden.
+//
+// Voorzichtige strategie: alleen filteren wanneer cheerio-$ is meegegeven
+// EN de selector een class/id/tag bevat die we veilig kunnen testen. Bij
+// twijfel: behouden (false-negatives kosten meer dan false-positives).
+
+const SELECTOR_TOKEN_RE = /[#.][\w-]+|\[[^\]]+\]|\b[a-z][\w-]*\b/gi;
+
+function selectorMatchesDom($: NonNullable<CheerioRootLike>, selector: string): boolean {
+  // Strip pseudo-elementen en pseudo-classes vóór DOM-test
+  const cleaned = selector
+    .replace(/::?[a-z-]+(\([^)]*\))?/gi, "")
+    .replace(/!important/gi, "")
+    .trim();
+  if (!cleaned) return false;
+
+  // Probeer eerst de hele cleaned selector
+  try {
+    if ($(cleaned).length > 0) return true;
+  } catch {
+    // cheerio kan struikelen over complexe attribute-selectors — fall through
+  }
+
+  // Fallback: probeer per token (class/id/tag)
+  const tokens = cleaned.match(SELECTOR_TOKEN_RE) ?? [];
+  for (const tok of tokens) {
+    // Skip generic tags die overal voorkomen (zou alles laten passeren)
+    if (/^(div|span|a|p|html|body)$/i.test(tok)) continue;
+    try {
+      if ($(tok).length > 0) return true;
+    } catch {
+      // ignore
+    }
+  }
+  return false;
+}
+
+export function extractButtonStyles(
+  css: string,
+  options: ButtonExtractorOptions = {},
+): ScrapedButtonStyle[] {
   const rules = parseCssRules(css);
+  const varMap = buildVarMap(options.cssVariables);
 
   // Eerst: bouw base-style map per base-selector
   const baseMap = new Map<string, ScrapedButtonStyle>();
@@ -174,9 +364,26 @@ export function extractButtonStyles(css: string): ScrapedButtonStyle[] {
     fillHoverProps(baseMap.get(baseSel)!, rule.block);
   }
 
-  // Classify role per match (eindstap)
-  const results: ScrapedButtonStyle[] = [];
+  // CSS-var resolution pass (voor classificatie + DOM-filter, zodat de
+  // role-heuristic accurate background-info heeft).
   for (const btn of baseMap.values()) {
+    resolveButtonVars(btn, varMap);
+  }
+
+  // DOM-presence filter — alleen wanneer cheerio root meegegeven
+  const $ = options.$;
+  const filtered = $ ? Array.from(baseMap.values()).filter((btn) => {
+    return selectorMatchesDom($, btn.selector);
+  }) : Array.from(baseMap.values());
+
+  // Edge-case safety: als filter alles wegvaagt (bv. bij CSS-only fixture
+  // zonder HTML), fall back op ongefilterde set. Better-to-have-noise dan
+  // empty buttonProfile.
+  const candidates = filtered.length > 0 ? filtered : Array.from(baseMap.values());
+
+  // Classify role per match (eindstap, nu met geresolvede background)
+  const results: ScrapedButtonStyle[] = [];
+  for (const btn of candidates) {
     btn.role = classifyButtonRole(btn.selector, btn.background, btn.border);
     results.push(btn);
   }

@@ -332,9 +332,14 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
   const { extractVisualLanguageHeuristics } = await import('./css-visual-heuristics');
   const visualHeuristics = extractVisualLanguageHeuristics(allCss);
 
-  // Fase A1 — button-styling samples uit CSS
+  // Fase A1 — button-styling samples uit CSS.
+  // Universal-fix laag: CSS-vars meegeven voor var(--btn-radius) resolution
+  // + cheerio `$` voor DOM-presence filter (drop unused WP-core stylesheets).
   const { extractButtonStyles } = await import('./button-extractor');
-  const buttonStyles = extractButtonStyles(allCss);
+  const buttonStyles = extractButtonStyles(allCss, {
+    cssVariables: cssVariables.map((v) => ({ name: v.name, value: v.value })),
+    $,
+  });
 
   // Fase A2 — typography per rol (display/heading/subheading/body/label/button)
   const { extractTypographyByRole } = await import('./typography-extractor');
