@@ -102,6 +102,29 @@ export interface BrandTokens {
   motion: MotionTokens;
   /** Photography-DNA voor hero-visual prompts. */
   photography: PhotographyTokens;
+
+  // ─── v5 — Text-hiërarchie + banner styling (DTS C4) ───────
+  /** 4-level foreground hiërarchie. Defaults zijn aliassen van bestaande
+   *  onSurface/surfaceMuted tokens — visueel identiek bij absence. */
+  text: TextTokens;
+}
+
+export interface TextTokens {
+  /** Headlines / h1-h3 — donker, hoogste contrast. Default = onSurface. */
+  heading: { color: string; weight: number };
+  /** Body-tekst / paragraphs — mid donker. Default = onSurface. */
+  body: { color: string; weight: number };
+  /** Secondary tekst / meta / sub-content — mid. Default = surfaceMuted. */
+  secondary: { color: string; weight: number };
+  /** Captions / overlines / muted-info — lichtst. Default = surfaceMuted. */
+  caption: { color: string; weight: number };
+  /** Banner-style: uppercase + tracking voor civic/eyebrow elementen. */
+  banner: {
+    fontSize: number;
+    weight: number;
+    letterSpacing: string;
+    textTransform: "uppercase" | "none";
+  };
 }
 
 export interface ButtonTokens {
@@ -224,6 +247,19 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
     compositionStyle: null,
     subjectMatter: null,
     promptFragment: "",
+  },
+  // v5 — Text-hiërarchie (defaults = backward-compat met v3 onSurface/muted)
+  text: {
+    heading: { color: '#0F172A', weight: 700 },
+    body: { color: '#0F172A', weight: 400 },
+    secondary: { color: '#64748B', weight: 400 },
+    caption: { color: '#64748B', weight: 400 },
+    banner: {
+      fontSize: 12,
+      weight: 600,
+      letterSpacing: '0.1em',
+      textTransform: 'uppercase',
+    },
   },
 };
 
@@ -579,6 +615,12 @@ export function extractBrandTokensFromStyleguide(
     styleguide.photographyStyle,
     DEFAULT_BRAND_TOKENS.photography,
   );
+  const text = v4.mapTextTokens(
+    styleguide.typographyProfile,
+    safeOnSurface,
+    safeSurfaceMuted,
+    DEFAULT_BRAND_TOKENS.text,
+  );
 
   return {
     // Legacy aliases (semantisch correct na v2-mapping + WCAG-gate)
@@ -614,6 +656,8 @@ export function extractBrandTokensFromStyleguide(
     sectionRhythm,
     motion,
     photography,
+    // v5 Text-hiërarchie
+    text,
   };
 }
 
@@ -751,6 +795,7 @@ export function extractBrandTokensFromContext(
     sectionRhythm: DEFAULT_BRAND_TOKENS.sectionRhythm,
     motion: DEFAULT_BRAND_TOKENS.motion,
     photography: DEFAULT_BRAND_TOKENS.photography,
+    text: DEFAULT_BRAND_TOKENS.text,
   };
 }
 

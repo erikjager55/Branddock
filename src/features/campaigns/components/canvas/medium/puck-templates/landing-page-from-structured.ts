@@ -42,6 +42,7 @@ function heroSection(v: LandingPageVariantContent): PuckInstance {
     sub: v.hero.subhead,
     ctaLabel: v.hero.primaryCta,
     heroVisualUrl: v.hero.heroVisualUrl ?? "",
+    eyebrow: v.hero.eyebrow ?? "",
   });
 }
 

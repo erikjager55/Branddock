@@ -8,6 +8,7 @@ import {
   type BrandTokens,
 } from '@/lib/landing-pages/brand-tokens';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
+import { getRenderConstraints } from '@/lib/landing-pages/render-constraints';
 import { IconBlock } from './lucide-icon-map';
 
 // ─── Component prop types ────────────────────────────────────
@@ -19,6 +20,9 @@ export type SpikeBrandHeroProps = {
   /** Optional hero-visual URL (afbeelding of GIF). Fase 5 spec §4a v2-stap;
    *  v2 wordt dit een dedicated animatie-slot. */
   heroVisualUrl?: string;
+  /** C5 — optionele uppercase eyebrow boven headline (civic / categorie-marker).
+   *  Wanneer leeg of absent: renderer skipt het element. */
+  eyebrow?: string;
 };
 
 export type SpikeBrandCtaProps = {
@@ -150,6 +154,8 @@ function brandHeroComponent(tokens: BrandTokens) {
   const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
   const { heroLayout, displayTypography, buttonStyle, sectionPadding } = hints;
   const ds = tokens.designSystem;
+  // C10 — photo-scrim stijl per archetype
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
 
   // Section padding op basis van layoutStyle (sparse = grote, tight = klein)
   const sectionPaddingY = sectionPadding;
@@ -157,21 +163,26 @@ function brandHeroComponent(tokens: BrandTokens) {
 
   return {
     fields: {
+      eyebrow: { type: 'text' as const },
       headline: { type: 'text' as const },
       sub: { type: 'textarea' as const },
       ctaLabel: { type: 'text' as const },
       heroVisualUrl: { type: 'text' as const },
     },
     defaultProps: {
+      eyebrow: '',
       headline: 'Headline placeholder',
       sub: 'Subtitle placeholder',
       ctaLabel: 'Get started',
       heroVisualUrl: '',
     },
-    render: ({ headline, sub, ctaLabel, heroVisualUrl }: SpikeBrandHeroProps) => {
+    render: ({ headline, sub, ctaLabel, heroVisualUrl, eyebrow }: SpikeBrandHeroProps) => {
       // ── Resolve background-style ──────────────────────────
       const hasHeroVisual = !!heroVisualUrl && heroVisualUrl.trim().length > 0;
-      const useFullBleed = heroLayout.background === 'full-bleed-image' && hasHeroVisual;
+      // C10: gebruiker heeft expliciet hero-image gezet → altijd full-bleed
+      // (anders blokkeert pickHeroLayout=surface/gradient de visual).
+      // Scrim-stijl komt uit archetype-constraints (constraints.scrimStyle).
+      const useFullBleed = hasHeroVisual;
       const usePlaceholderFrame =
         heroLayout.background === 'full-bleed-image' && !hasHeroVisual
         && ds.imageStrategy.placeholderStyle === 'dark-framed';
@@ -180,12 +191,31 @@ function brandHeroComponent(tokens: BrandTokens) {
       let sectionColor: string;
       let backgroundImage: string | undefined;
       if (useFullBleed) {
-        // Foto met overlay-gradient (Zwarthout-pattern)
+        // C10 — scrim-stijl per archetype (DTS-plan)
         const onSurfaceRGB = hexToRgbString(tokens.onSurface);
-        const overlay = heroLayout.overlayOpacity;
-        backgroundImage = `linear-gradient(to top, rgba(${onSurfaceRGB},${overlay}) 0%, rgba(${onSurfaceRGB},0.2) 100%), url(${heroVisualUrl})`;
-        sectionBg = tokens.onSurface;  // donker fallback bg
-        sectionColor = '#FFFFFF';      // wit op donkere overlay altijd safe
+        const brandRGB = hexToRgbString(tokens.brand);
+        const op = constraints.scrimOpacity;
+        if (constraints.scrimStyle === 'solid-brand') {
+          // DTS-pattern: translucent brand-color over heel het beeld
+          backgroundImage = `linear-gradient(rgba(${brandRGB},${op}), rgba(${brandRGB},${op})), url(${heroVisualUrl})`;
+          sectionBg = tokens.brand;
+          sectionColor = tokens.onBrand;
+        } else if (constraints.scrimStyle === 'gradient-brand') {
+          // JESTER/LOVER: subtiele brand-tint van transparant naar brand
+          backgroundImage = `linear-gradient(to bottom, transparent 0%, rgba(${brandRGB},${op}) 100%), url(${heroVisualUrl})`;
+          sectionBg = tokens.brand;
+          sectionColor = '#FFFFFF';
+        } else if (constraints.scrimStyle === 'dark-cinematic') {
+          // EXPLORER/MAGICIAN: donker-gradient bottom-up (cinematic feel)
+          backgroundImage = `linear-gradient(to top, rgba(0,0,0,${op}) 0%, rgba(0,0,0,0.15) 60%, transparent 100%), url(${heroVisualUrl})`;
+          sectionBg = '#000000';
+          sectionColor = '#FFFFFF';
+        } else {
+          // 'scrim-soft' (SAGE/CARETAKER/INNOCENT/REGULAR_GUY): zachte scrim met onSurface
+          backgroundImage = `linear-gradient(to top, rgba(${onSurfaceRGB},${op}) 0%, rgba(${onSurfaceRGB},0.2) 100%), url(${heroVisualUrl})`;
+          sectionBg = tokens.onSurface;
+          sectionColor = '#FFFFFF';
+        }
       } else if (usePlaceholderFrame) {
         // Donker architectuur-frame placeholder (RULER/MAGICIAN style)
         sectionBg = tokens.onSurface;
@@ -281,6 +311,21 @@ function brandHeroComponent(tokens: BrandTokens) {
             </div>
           ) : null}
           <div style={{ position: 'relative', maxWidth: 800, width: '100%' }}>
+            {eyebrow && eyebrow.trim().length > 0 ? (
+              <div
+                style={{
+                  fontFamily: ds.typography.label.fontFamily,
+                  fontSize: tokens.text.banner.fontSize,
+                  fontWeight: tokens.text.banner.weight,
+                  letterSpacing: tokens.text.banner.letterSpacing,
+                  textTransform: tokens.text.banner.textTransform,
+                  marginBottom: ds.spacing[Math.min(ds.spacing.length - 1, 2)] ?? 12,
+                  opacity: 0.85,
+                }}
+              >
+                {eyebrow}
+              </div>
+            ) : null}
             <h1
               style={{
                 fontSize: displayTypography.size,
@@ -429,6 +474,11 @@ function featureGridComponent(tokens: BrandTokens) {
   // (Tier-1 scraped > Tier-2 archetype). Card-elevation gebruikt hints
   // cardStyle alleen wanneer tokens geen scraped-data heeft.
   const { sectionRhythm, elevation, iconography } = tokens;
+  // C11 — Flat-card enforcement: MINIMAL/EDITORIAL forceren border-only.
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  const effectiveElevationCategory = constraints.forceFlatCards
+    ? 'border-only'
+    : elevation.cardElevationCategory;
   const gap = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
   const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
   const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
@@ -480,20 +530,22 @@ function featureGridComponent(tokens: BrandTokens) {
             display: 'grid',
             gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
             gap,
-            maxWidth: 1100,
+            maxWidth: constraints.maxContentWidth,
             margin: '0 auto',
           }}
         >
           {features.map((f, i) => {
-            // Verbeterplan Fase D: card-styling uit tokens.elevation
-            // (Tier-1 scraped > Tier-2 archetype defaults via cardStyle)
-            const useCard = elevation.cardElevationCategory !== 'flat';
-            const isBorderOnly = elevation.cardElevationCategory === 'border-only';
+            // Verbeterplan Fase D + C11: card-styling uit tokens.elevation
+            // met archetype-constraints override (forceFlatCards = border-only)
+            const useCard = effectiveElevationCategory !== 'flat';
+            const isBorderOnly = effectiveElevationCategory === 'border-only';
+            // C3 max-radius constraint (RULER=4, JESTER=24)
+            const safeRadius = Math.min(elevation.cardBorderRadius, constraints.maxRadiusPx);
             const cardWrapper: React.CSSProperties = useCard ? {
               padding: `${sectionRhythm.cardPaddingY}px ${sectionRhythm.cardPaddingX}px`,
-              borderRadius: elevation.cardBorderRadius,
+              borderRadius: safeRadius,
               border: isBorderOnly
-                ? `${elevation.cardBorderWidth}px solid ${tokens.surfaceBorder}`
+                ? `1px solid ${tokens.surfaceBorder}`
                 : (cardStyle.elevation === 'border-only'
                     ? `${cardStyle.borderWidth}px solid ${tokens.surfaceBorder}`
                     : undefined),
@@ -670,8 +722,9 @@ function testimonialComponent(
 function pricingTableComponent(tokens: BrandTokens) {
   const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
   const { cardStyle } = hints;
-  // Verbeterplan #2: section-padding uit tokens.sectionRhythm
+  // Verbeterplan #2 + C8: section-padding + max-width uit tokens/constraints
   const { sectionRhythm } = tokens;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
   const ds = tokens.designSystem;
   const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
   const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
@@ -717,7 +770,7 @@ function pricingTableComponent(tokens: BrandTokens) {
             display: 'grid',
             gridTemplateColumns: `repeat(${Math.min(Math.max(tiers.length, 1), 4)}, minmax(0, 1fr))`,
             gap: ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24,
-            maxWidth: 1100,
+            maxWidth: constraints.maxContentWidth,
             margin: '0 auto',
           }}
         >
@@ -876,6 +929,8 @@ function faqComponent(tokens: BrandTokens) {
  */
 function footerComponent(tokens: BrandTokens) {
   const ds = tokens.designSystem;
+  // C8 — max-width uit constraints
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
   const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
   const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
@@ -917,7 +972,7 @@ function footerComponent(tokens: BrandTokens) {
       >
         <div
           style={{
-            maxWidth: 1100,
+            maxWidth: constraints.maxContentWidth,
             margin: '0 auto',
             display: 'flex',
             justifyContent: 'space-between',

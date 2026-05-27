@@ -43,6 +43,8 @@ const heroSchema = z.object({
   secondaryCta: z.string().optional(),
   /** v2 placeholder; in MVP via BrandHero workaround. */
   heroVisualUrl: z.string().optional(),
+  /** C5 — optionele uppercase eyebrow boven headline (civic / categorie-marker). */
+  eyebrow: z.string().max(40, "hero.eyebrow max 40 tekens").optional(),
 });
 
 const trustItemSchema = z.object({

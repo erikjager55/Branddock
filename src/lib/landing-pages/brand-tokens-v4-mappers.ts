@@ -18,6 +18,7 @@ import type {
   SectionRhythmTokens,
   MotionTokens,
   PhotographyTokens,
+  TextTokens,
 } from "./brand-tokens";
 import type { LayoutStyle, DesignSystem } from "./design-system";
 import type { BrandArchetype } from "./brand-archetype-classifier";
@@ -336,4 +337,68 @@ export function mapPhotographyTokens(
 function stripObservedPrefix(text: string): string {
   // Brandstyle-analyzer prefixt vaak "OBSERVED: ..." / "RECOMMENDED: ..."
   return text.replace(/^(observed|recommended|note):\s*/i, "").trim();
+}
+
+// ─── Text tokens (DTS C4) ─────────────────────────────────
+
+interface TypographyRoleStyleLike {
+  fontFamily?: string | null;
+  fontSize?: string | null;
+  fontWeight?: string | null;
+  lineHeight?: string | null;
+  letterSpacing?: string | null;
+  textTransform?: string | null;
+}
+
+interface TypographyProfileLike {
+  display?: TypographyRoleStyleLike;
+  heading?: TypographyRoleStyleLike;
+  subheading?: TypographyRoleStyleLike;
+  body?: TypographyRoleStyleLike;
+  label?: TypographyRoleStyleLike;
+  button?: TypographyRoleStyleLike;
+}
+
+export function mapTextTokens(
+  typographyProfile: unknown,
+  onSurface: string,
+  surfaceMuted: string,
+  fallback: TextTokens,
+): TextTokens {
+  const typo = (typographyProfile as TypographyProfileLike | null) ?? null;
+
+  // Heading: prefer scraped weight, default 700; color = onSurface (heading hierarchy)
+  const headingWeight = numberFromCssValue(
+    typo?.heading?.fontWeight ?? typo?.display?.fontWeight,
+    fallback.heading.weight,
+  );
+  const bodyWeight = numberFromCssValue(typo?.body?.fontWeight, fallback.body.weight);
+  const labelWeight = numberFromCssValue(typo?.label?.fontWeight, fallback.caption.weight);
+
+  // Banner styling: prefer scraped label rules (uppercase + tracking),
+  // anders archetype-default uit fallback.
+  const bannerLetterSpacing =
+    typo?.label?.letterSpacing ?? fallback.banner.letterSpacing;
+  const bannerTextTransform =
+    typo?.label?.textTransform === "uppercase"
+      ? "uppercase"
+      : (typo?.label?.textTransform === "none" ? "none" : fallback.banner.textTransform);
+  const bannerFontSize =
+    typo?.label?.fontSize
+      ? pxFromCssValue(typo.label.fontSize, fallback.banner.fontSize)
+      : fallback.banner.fontSize;
+
+  return {
+    heading: { color: onSurface, weight: headingWeight },
+    body: { color: onSurface, weight: bodyWeight },
+    // secondary + caption gebruiken surfaceMuted voor zwakker contrast
+    secondary: { color: surfaceMuted, weight: bodyWeight },
+    caption: { color: surfaceMuted, weight: labelWeight },
+    banner: {
+      fontSize: bannerFontSize,
+      weight: numberFromCssValue(typo?.label?.fontWeight, fallback.banner.weight),
+      letterSpacing: bannerLetterSpacing,
+      textTransform: bannerTextTransform as "uppercase" | "none",
+    },
+  };
 }
