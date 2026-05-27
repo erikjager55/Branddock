@@ -1700,6 +1700,10 @@ model BrandStyleguide {
   motionProfile       Json?
   /** ScrapedTypographyByRole — display/heading/body/label/button styles. */
   typographyProfile   Json?
+  /** Eén-zin design-philosophy uit AI-analyse (Fase E3 verbeterplan).
+   *  "Beschrijf wat dit merk visueel anders maakt — wat MOET behouden bij
+   *  rendering". Wordt als brand-context aan content-generation gegeven. */
+  designPhilosophy    String? @db.Text
 
   // Pad C Sub-Sprint B — Jung's brand-archetype. AI-classified uit
   // BrandAssetVersion content. Null = nog niet geclassificeerd; renderer

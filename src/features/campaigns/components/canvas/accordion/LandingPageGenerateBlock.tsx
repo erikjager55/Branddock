@@ -705,13 +705,25 @@ function buildHeroVisualInstruction(
 ): string {
   const brand = contextStack?.brand;
   const tokens = contextStack?.brandTokens;
+  // Verbeterplan Fase E: tokens.photography.promptFragment bevat reeds
+  // gestructureerde mood+composition+subjects uit scraped photographyStyle
+  // (BrandTokens v4 mapper). Dit is sterker dan brand.brandImageryStyle
+  // free-text. Bij beide: photography eerst, brandImageryStyle als
+  // aanvullende layer.
   const hints = tokens
     ? computeBrandRenderHints(tokens.archetype, tokens.designSystem)
     : null;
   const parts: string[] = [];
   parts.push(`Hero-visual for landing-page about: ${variant.hero.headline}`);
   parts.push(`Subject context: ${variant.hero.subhead}`);
-  if (hints) parts.push(`Photography style: ${hints.heroImagePromptFragment}`);
+  // Tier-1: scraped photographyStyle (rijkst, brand-specifiek)
+  const photographyFragment = tokens?.photography?.promptFragment?.trim();
+  if (photographyFragment) {
+    parts.push(photographyFragment);
+  } else if (hints) {
+    // Tier-2: archetype-default uit hints
+    parts.push(`Photography style: ${hints.heroImagePromptFragment}`);
+  }
   if (brand?.brandImageryStyle) parts.push(`Brand imagery: ${brand.brandImageryStyle}`);
   if (brand?.brandName) parts.push(`Brand: ${brand.brandName}`);
   const donts = brand?.brandImageryDonts;
