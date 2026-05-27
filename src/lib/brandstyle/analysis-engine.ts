@@ -142,6 +142,9 @@ interface DesignLanguageResult {
     compositionRules?: string[];
     usageNotes?: string;
   } | null;
+  /** Verbeterplan #4: one-sentence design-philosophy voor brand-emergent
+   *  content-generation. Beschrijft wat dit merk visueel anders maakt. */
+  designPhilosophy?: string | null;
 }
 
 interface CombinedResult extends VisualIdentityResult, VoiceImageryResult, Partial<DesignLanguageResult> {}
@@ -753,6 +756,22 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       console.warn(
         `[brandstyle-analysis] Rendering-profiles persist failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,
       );
+    }
+
+    // Verbeterplan #4 — persist designPhilosophy wanneer AI Phase 3 die
+    // heeft gegenereerd. Non-critical: bij missing designPhilosophy blijft
+    // het veld null.
+    if (designResult?.designPhilosophy) {
+      try {
+        await prisma.brandStyleguide.update({
+          where: { id: styleguideId },
+          data: { designPhilosophy: designResult.designPhilosophy.trim() },
+        });
+      } catch (err) {
+        console.warn(
+          `[brandstyle-analysis] designPhilosophy persist failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     }
 
     // V2-2b — infereer layoutStyle uit site-DNA signals voor de styleguide

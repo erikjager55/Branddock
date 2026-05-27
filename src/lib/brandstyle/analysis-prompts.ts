@@ -598,7 +598,8 @@ Return a JSON object with this exact structure:
       "Cards use 24px internal padding with 16px gap between items"
     ],
     "usageNotes": "Brief description of layout approach"
-  }
+  },
+  "designPhilosophy": "ONE sentence describing what makes THIS brand visually distinct — what MUST be preserved when generating new pages or content. Be specific to this brand's signature look (e.g., 'Quiet luxury via generous whitespace, sharp corners, and architectural photography of finished installations in luxury homes — no decoration, no playful flourishes')."
 }
 
 IMPORTANT:
@@ -611,7 +612,8 @@ IMPORTANT:
 - For gradientsEffects: extract ACTUAL gradients from CSS if found. If no gradients detected, provide 1-2 recommendations based on the brand colors. Maximum 4 gradients.
 - For layoutPrinciples: extract actual spacing/grid values from CSS variables if available. If not, analyze the visual rhythm.
 - Prefix recommendations with "RECOMMENDED:" to distinguish from observed patterns.
-- Be specific to THIS brand. Generic advice like "use consistent spacing" is not helpful.`;
+- Be specific to THIS brand. Generic advice like "use consistent spacing" is not helpful.
+- For designPhilosophy: MUST be ONE sentence (max 30 words). Capture the brand's signature look in a way that an AI generating new pages can use as a guide. Bad: "Modern and clean." Good: "Quiet luxury via generous whitespace, sharp corners, and architectural photography of finished installations in luxury homes."`;
 }
 
 // Re-export the system prompts for the analysis engine
