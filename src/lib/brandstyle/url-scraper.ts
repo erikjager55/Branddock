@@ -72,6 +72,11 @@ export interface ScrapedData {
    *  Populated by `logo-color-extractor` when at least one fetchable logo
    *  URL is available. Empty on failure or placeholder-only logos. */
   logoColors?: import('./logo-color-extractor').LogoColor[];
+  /** Button-styling samples uit CSS (Fase A1 verbeterplan). Per primary/
+   *  secondary/ghost match: padding/font/transform/letter-spacing/radius/
+   *  background/color/transition + hover-state. Leeg wanneer geen
+   *  button-CSS gevonden. */
+  buttonStyles?: import('./button-extractor').ScrapedButtonStyle[];
 }
 
 // Chrome-like User-Agent to avoid bot blocking
@@ -311,6 +316,10 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
   const { extractVisualLanguageHeuristics } = await import('./css-visual-heuristics');
   const visualHeuristics = extractVisualLanguageHeuristics(allCss);
 
+  // Fase A1 — button-styling samples uit CSS
+  const { extractButtonStyles } = await import('./button-extractor');
+  const buttonStyles = extractButtonStyles(allCss);
+
   // Extract component samples (buttons, inputs, chips, cards, nav, etc.) from the DOM + CSS
   const { extractComponents } = await import('./component-extractor');
   const components = extractComponents($, allCss);
@@ -362,6 +371,7 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
     headingFont,
     adobeFonts,
     logoColors,
+    buttonStyles,
   };
 }
 
