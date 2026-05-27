@@ -1724,10 +1724,20 @@ async function writeResultToDb(
       const headingFontLower = headingFont?.toLowerCase() ?? null;
       const bodyFontLower = bodyFont?.toLowerCase() ?? null;
       const hasSemanticSignal = !!(headingFontLower || bodyFontLower);
+      // Tertiair signaal: font-name keyword-heuristic. Veel serif display-
+      // fonts hebben hun karakter expliciet in de naam ('mrs-eaves-xl-serif',
+      // 'playfair-display', 'oranienbaum', 'cormorant-garamond'). Wanneer
+      // CSS-selector analyse geen heading-signaal opleverde maar de font-naam
+      // duidelijk serif-display is, classify dan als DISPLAY i.p.v. de UI-
+      // fallback. Voorkomt dat brands met Adobe Fonts serifs (waar selector-
+      // matching via @import niet werkt) hun display-font verliezen aan UI.
+      const SERIF_DISPLAY_NAME_HINT = /\bserif\b|mrs[- ]?eaves|playfair|oranienbaum|cormorant|garamond|sentinel|freight|tiempos|caslon|baskerville|bodoni|didot|minion|chronicle|recoleta|fraunces|abril|prata|crimson|merriweather|lora|dm[- ]?serif|libre[- ]?baskerville|noto[- ]?serif/i;
       const assignRole = (name: string, fallbackIndex: number): 'DISPLAY' | 'UI' => {
         const lower = name.toLowerCase();
         if (headingFontLower && lower === headingFontLower) return 'DISPLAY';
         if (bodyFontLower && lower === bodyFontLower) return 'UI';
+        // Geen exacte selector-match: probeer naam-heuristic vóór de UI-fallback
+        if (SERIF_DISPLAY_NAME_HINT.test(name)) return 'DISPLAY';
         if (hasSemanticSignal) return 'UI';
         return fallbackIndex === 0 ? 'DISPLAY' : 'UI';
       };

@@ -605,7 +605,11 @@ export function extractBrandTokensFromStyleguide(
   // browser-fallback visueel correct categorisch is. Zonder fallback valt
   // browser terug op systeem-default (sans-serif op Chrome/Safari macOS)
   // wat de display-typografie compleet anders maakt dan bedoeld.
-  const SERIF_KEYWORDS = /serif|garamond|playfair|oranienbaum|cormorant|merriweather|lora|prata|abril/i;
+  // SERIF detection — gebruikt voor zowel fallback-chain als rol-recovery.
+  // Uitgebreid met populaire Adobe Fonts serifs (mrs-eaves, sentinel, freight,
+  // tiempos) zodat brands die via Typekit een serif inladen ook gedetecteerd
+  // worden i.p.v. op 'sans-serif' fallback terechtkomen.
+  const SERIF_KEYWORDS = /\bserif\b|garamond|playfair|oranienbaum|cormorant|merriweather|lora|prata|abril|mrs[- ]?eaves|sentinel|freight|tiempos|caslon|baskerville|bodoni|didot|minion|chronicle|miller|hoefler|publico|larish|recoleta|fraunces|noto[- ]?serif|crimson|dm[- ]?serif|libre[- ]?baskerville|jensen/i;
   const wrapFontStack = (name: string, role: 'display' | 'body'): string => {
     // Input is al een stack (bv. "Poppins, sans-serif" uit DB.fontFamily)?
     // Geen double-wrap; respecteer de auteur-bedoelde fallback-chain.
@@ -629,8 +633,25 @@ export function extractBrandTokensFromStyleguide(
     const raw = match.fontFamily ?? match.name;
     return wrapFontStack(raw, scope);
   };
+
+  // Workspace-bevinding 2026-05-27 (Better Brands): de analyzer classifieert
+  // soms ALLE gedetecteerde fonts als UI, ook wanneer er een duidelijk serif
+  // display-font tussen zit (mrs-eaves-xl-serif). Resultaat: fontByRole(
+  // 'DISPLAY') faalt → headingFont valt terug op primaryFontName (Open Sans).
+  // Heading rendert dan in sans-serif terwijl het brand-display serif is.
+  //
+  // Workaround: wanneer geen DISPLAY-rol font, scan alle DETECTED fonts op
+  // serif-naam-heuristic. Eerste serif-match wordt de display-font. Dit is
+  // een display-only recovery — body blijft op primaryFontName.
+  const displayByName = (): string | null => {
+    const serifFont = fonts.find((f) => SERIF_KEYWORDS.test(f.name) || (f.fontFamily && SERIF_KEYWORDS.test(f.fontFamily)));
+    if (!serifFont) return null;
+    return wrapFontStack(serifFont.fontFamily ?? serifFont.name, 'display');
+  };
+
   const headingFont =
     fontByRole('DISPLAY', 'display')
+    ?? displayByName()
     ?? (styleguide.primaryFontName ? wrapFontStack(styleguide.primaryFontName, 'display') : null)
     ?? DEFAULT_BRAND_TOKENS.headingFont;
   const bodyFont =
