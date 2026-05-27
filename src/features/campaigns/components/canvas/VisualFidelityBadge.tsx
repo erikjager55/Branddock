@@ -133,13 +133,15 @@ export function VisualFidelityBadge({
       : '1px solid rgba(0,0,0,0.08)',
   };
 
-  // When clickable, render as button that surfaces the detail panel.
-  // Use stopPropagation so the surrounding image-variant card doesn't
-  // also fire its own click (which would re-select the variant).
+  // When clickable, render als <span role="button"> i.p.v. <button>: deze
+  // badge wordt vaak binnen een outer <button> gerenderd (image-variant
+  // card in Step 2), wat HTML-invalid is en hydration-errors geeft.
+  // span met role+tabIndex behoudt accessibility + keyboard support.
   if (onOpenDetail) {
     return (
-      <button
-        type="button"
+      <span
+        role="button"
+        tabIndex={0}
         title={title}
         className={`${className} cursor-pointer hover:shadow-md transition-shadow pointer-events-auto`}
         style={style}
@@ -147,9 +149,16 @@ export function VisualFidelityBadge({
           e.stopPropagation();
           onOpenDetail();
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            onOpenDetail();
+          }
+        }}
       >
         {body}
-      </button>
+      </span>
     );
   }
 

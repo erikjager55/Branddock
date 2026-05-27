@@ -326,7 +326,13 @@ function PreviewPane({
         {label}
       </div>
       <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-        <Render config={config} data={data} />
+        {data && (data as { root?: unknown }).root && Array.isArray((data as { content?: unknown }).content) ? (
+          <Render config={config} data={data} />
+        ) : (
+          <div style={{ padding: 24, color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>
+            (Geen preview-data beschikbaar — auto-iterate response had geen valid puckData-tree.)
+          </div>
+        )}
       </div>
     </div>
   );
