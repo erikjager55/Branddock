@@ -48,17 +48,37 @@ export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps)
     (stepId: string): AccordionStepStatus => {
       if (stepId === activeStep) return 'active';
       if (completedSteps.has(stepId)) return 'completed';
+      // Steps VÓÓR de huidige active step zijn altijd bereikbaar voor
+      // back-nav, zelfs als ze niet expliciet 'completed' zijn (advance-
+      // flow markeert step 1 niet altijd). Treat ze als 'completed' voor
+      // de visuele state + klik-affordance.
+      const stepIds = steps.map((s) => s.id);
+      const currentIdx = stepIds.indexOf(activeStep);
+      const targetIdx = stepIds.indexOf(stepId);
+      if (targetIdx >= 0 && currentIdx >= 0 && targetIdx < currentIdx) {
+        return 'completed';
+      }
       return 'locked';
     },
-    [activeStep, completedSteps],
+    [activeStep, completedSteps, steps],
   );
 
   const handleTabClick = useCallback((stepId: string) => {
     const store = useCanvasStore.getState();
-    if (store.completedSteps.has(stepId) || stepId === store.activeStep) {
+    // Back-nav altijd toegestaan: elke step die VÓÓR de huidige activeStep
+    // zit moet bereikbaar zijn ongeacht completedSteps-tracking. Anders kan
+    // user nooit terug naar step 1 (Review Context) wanneer hij via 'advance'
+    // op step 2 belandt zonder dat step 1 als completed gemarkeerd is.
+    // Forward-nav blijft gated op completedSteps om premature skipping te
+    // voorkomen.
+    const stepIds = steps.map((s) => s.id);
+    const currentIdx = stepIds.indexOf(store.activeStep);
+    const targetIdx = stepIds.indexOf(stepId);
+    const isBackNav = targetIdx >= 0 && currentIdx >= 0 && targetIdx < currentIdx;
+    if (isBackNav || store.completedSteps.has(stepId) || stepId === store.activeStep) {
       store.goToStep(stepId);
     }
-  }, []);
+  }, [steps]);
 
   const handleAdvance = useCallback((nextStepId: string) => {
     useCanvasStore.getState().advanceToStep(nextStepId);
@@ -90,10 +110,13 @@ export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps)
 
     if (targetIndex !== null && direction !== null) {
       const store = useCanvasStore.getState();
+      const currentIdx = stepIds.indexOf(store.activeStep);
       let attempts = 0;
       while (attempts < stepIds.length) {
         const candidateId = stepIds[targetIndex];
-        if (candidateId === store.activeStep || store.completedSteps.has(candidateId)) {
+        // Match handleTabClick: back-nav altijd ok, anders alleen completed/active.
+        const isBack = targetIndex >= 0 && currentIdx >= 0 && targetIndex < currentIdx;
+        if (isBack || candidateId === store.activeStep || store.completedSteps.has(candidateId)) {
           break;
         }
         targetIndex = (targetIndex + direction + stepIds.length) % stepIds.length;

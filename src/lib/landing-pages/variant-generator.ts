@@ -68,7 +68,37 @@ export interface LandingPageGenerationParams {
   vocabularyDont?: string[] | null;
   /** DTS C2 — voice few-shot sample uit BrandVoiceguide.voiceSample. */
   voiceSample?: string | null;
+  /** Variant-axis voor batch-generatie. Forceert structureel verschillende
+   *  invalshoeken: temperature-variatie alleen is niet genoeg om garant 2
+   *  echt-verschillende variants te krijgen omdat de prompt zelf één 'beste
+   *  antwoord' framing forceert. Met axis krijgt variant A bv 'problem-led'
+   *  (pijn vooraan + crisis-framing) en variant B 'benefit-led' (outcome
+   *  vooraan + transformation-framing). */
+  variantAxis?: VariantAxis | null;
 }
+
+export type VariantAxis =
+  | "problem-led"
+  | "benefit-led"
+  | "rational"
+  | "emotional"
+  | "story-led"
+  | "data-led";
+
+const VARIANT_AXIS_HINTS: Record<VariantAxis, string> = {
+  "problem-led":
+    "Open met de pijn van de doelgroep. Hero-headline benoemt het probleem direct (vraag-vorm of confronterende stelling). Problem-sectie is het emotionele hart van de pagina. Bridge van 'pijn' naar 'oplossing' is hard en duidelijk.",
+  "benefit-led":
+    "Open met de outcome. Hero-headline beschrijft het eindresultaat dat de doelgroep wil bereiken. Features-sectie is het hart van de pagina, ge-framed als concrete vooruitgangen. Geen lange pijn-uitwijding — direct naar transformation.",
+  rational:
+    "Argumenten op cijfers, mechaniek en evidence. Concrete getallen in headlines waar mogelijk. Testimonials nadruk op meetbare resultaten (uren bespaard, conversie-lift). Geen superlatieven, geen emotie-driven taal.",
+  emotional:
+    "Argumenten op identiteit, gevoel en aspiratie. Headlines spreken tot wie de lezer wil zijn. Testimonials nadruk op transformatie van persoon/team. Sensorische taal en aspirational verbs.",
+  "story-led":
+    "Hero-headline introduceert protagonist + spanning. Sections lopen narrative-arc: situatie → conflict → resolutie. Final-CTA als climax. Geen losse feature-lijstjes — alles ingebed in verhaal.",
+  "data-led":
+    "Hero-headline bevat een verrassend cijfer. Stats-sectie prominent, vóór social proof. Features ge-framed als percentage/factor-verbeteringen. FAQ-antwoorden onderbouwd met data-points.",
+};
 
 export interface BuiltPrompt {
   system: string;
@@ -97,6 +127,7 @@ export function buildLandingPageVariantPrompt(
     vocabularyDo: params.vocabularyDo ?? null,
     vocabularyDont: params.vocabularyDont ?? null,
     voiceSample: params.voiceSample ?? null,
+    variantAxis: params.variantAxis ?? null,
   });
   const user = buildUserPrompt(params, { locale });
   return { system, user };
@@ -136,6 +167,7 @@ function buildSystemPrompt(opts: {
   vocabularyDo?: string[] | null;
   vocabularyDont?: string[] | null;
   voiceSample?: string | null;
+  variantAxis?: VariantAxis | null;
 }): string {
   const toneBlock = opts.archetype
     ? `\n# BRAND-ARCHETYPE: ${opts.archetype}\nTone: ${ARCHETYPE_TONE_HINTS[opts.archetype]}\n`
@@ -155,6 +187,13 @@ function buildSystemPrompt(opts: {
   const voiceBlock = sample && sample.length >= 30
     ? `\n# VOICE-VOORBEELD (match dit rhythm + sentence-length + vocabulaire)\n> ${sample.replace(/\n/g, '\n> ')}\n`
     : '';
+  // Variant-axis block — forceert structureel andere invalshoek voor
+  // batch-variants. Zonder dit produceert temperature-variatie alleen
+  // bijna-identieke output omdat de rest van de prompt deterministische
+  // 'beste-antwoord' framing eist.
+  const axisBlock = opts.variantAxis
+    ? `\n# VARIANT-INVALSHOEK: ${opts.variantAxis.toUpperCase()}\n${VARIANT_AXIS_HINTS[opts.variantAxis]}\nDit is de leidende invalshoek voor DEZE variant. Andere variants in dezelfde batch volgen een andere as — wijk dus expliciet af zodat de twee variants als duidelijke alternatieven naast elkaar staan.\n`
+    : '';
   // DTS C6 — sectie-blueprint hint uit render-constraints (alleen wanneer archetype gezet)
   // Maakt sectie-density consistent per merk (RULER 5 secties tight, SAGE 8 editorial)
   let blueprintBlock = '';
@@ -166,7 +205,7 @@ function buildSystemPrompt(opts: {
   }
   return `# ROL
 Je bent een conversion rate optimization (CRO) specialist met 12+ jaar ervaring met B2B SaaS en breed bedrijfsleven landing-pages. Je weet dat elk woord op een landing-page de bezoeker richting conversie beweegt of er vanaf — neutrale copy bestaat niet.
-${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${blueprintBlock}
+${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${axisBlock}${blueprintBlock}
 # OPDRACHT
 Genereer een complete landing-page variant als **gestructureerd JSON** volgens het schema hieronder. Geen prose, geen toelichting, geen code-fences — alleen het JSON-object als response.
 
@@ -451,13 +490,25 @@ export async function generateLandingPageVariantBatch(
   params: LandingPageGenerationParams,
   count: 1 | 2 = 2,
 ): Promise<GenerationResult[]> {
-  const TEMPERATURES = count === 2 ? [0.3, 0.7] : [0.3];
-  const RECOVERY_TEMPERATURES: Record<number, number> = { 0.3: 0.4, 0.7: 0.5 };
+  const TEMPERATURES = count === 2 ? [0.4, 0.7] : [0.4];
+  const RECOVERY_TEMPERATURES: Record<number, number> = { 0.4: 0.5, 0.7: 0.55 };
 
-  // Fase 1: parallel attempt
+  // Variant-axis per slot: kiest structureel andere invalshoek per variant
+  // zodat de twee outputs nooit bijna-identiek zijn. Default-paring is
+  // problem-led vs benefit-led (klassieke CRO A/B split). Override via
+  // params.variantAxis? Nee — voor batch overschrijven we expliciet om
+  // het paar te garanderen. Single-shot callers respecteren params.variantAxis.
+  const AXIS_PAIR: (VariantAxis | null)[] = count === 2
+    ? ["problem-led", "benefit-led"]
+    : [params.variantAxis ?? null];
+
+  // Fase 1: parallel attempt — elk slot met eigen axis + temperature
   const initial = await Promise.allSettled(
-    TEMPERATURES.map((temperature) =>
-      generateLandingPageVariant(params, { temperature }),
+    TEMPERATURES.map((temperature, i) =>
+      generateLandingPageVariant(
+        { ...params, variantAxis: AXIS_PAIR[i] ?? params.variantAxis ?? null },
+        { temperature },
+      ),
     ),
   );
 
@@ -475,15 +526,19 @@ export async function generateLandingPageVariantBatch(
     }
   });
 
-  // Fase 2: sequential retry voor failed slots met recovery-temperature
+  // Fase 2: sequential retry voor failed slots met recovery-temperature.
+  // Axis blijft behouden zodat retry niet alsnog naar identical fallback verglijdt.
   for (let i = 0; i < results.length; i++) {
     if (results[i] === null) {
-      const retryTemp = RECOVERY_TEMPERATURES[TEMPERATURES[i]] ?? 0.4;
+      const retryTemp = RECOVERY_TEMPERATURES[TEMPERATURES[i]] ?? 0.5;
       try {
         console.warn(
           `[variant-batch] Retrying slot ${i} with recovery-temp ${retryTemp}...`,
         );
-        results[i] = await generateLandingPageVariant(params, { temperature: retryTemp });
+        results[i] = await generateLandingPageVariant(
+          { ...params, variantAxis: AXIS_PAIR[i] ?? params.variantAxis ?? null },
+          { temperature: retryTemp },
+        );
       } catch (retryErr) {
         const msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
         console.error(`[variant-batch] Slot ${i} retry also failed: ${msg}`);
