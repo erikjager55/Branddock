@@ -316,7 +316,23 @@ export function extractComponents(
           .filter(Boolean)
           .slice(0, 6);
 
-        const styles = resolveStyles(classes, el.attr("style") ?? "", cssRules);
+        // Ancestor-class chain (max 5 niveaus diep — Bricks/Elementor scope
+        // rules zelden dieper). Volgorde: [parent, grandparent, ...].
+        // Levert descendant-combinator rules (`.fb-sticky-content .card`)
+        // de info die ze nodig hebben om te matchen, anders blijft de card
+        // unstyled door de static extractor en sneuvelt op MIN_CONFIDENCE.
+        const ancestorClasses: Set<string>[] = [];
+        el.parents().slice(0, 5).each((_, anc) => {
+          const cls = ($(anc).attr("class") ?? "").split(/\s+/).filter(Boolean);
+          if (cls.length > 0) ancestorClasses.push(new Set(cls));
+        });
+
+        const styles = resolveStyles(
+          classes,
+          el.attr("style") ?? "",
+          cssRules,
+          ancestorClasses,
+        );
         // Dedup on a structural fingerprint instead of the full style object.
         // `background + borderRadius + padding` captures the variant identity
         // (CTA vs. secondary vs. ghost) while ignoring noise like inline
@@ -397,14 +413,33 @@ function resolveStyles(
   classes: string[],
   inlineStyle: string,
   rules: CssRule[],
+  ancestorClasses: Set<string>[] = [],
 ): ExtractedComponentStyles {
   const merged = new Map<string, string>();
 
-  // Apply matching CSS rules first (later rules / inline styles override)
+  // PASS 1 — STRICT ancestor-aware match. Levert hoge precisie: alleen
+  // CSS-rules die voor DIT element bedoeld zijn worden toegepast (geen
+  // cross-scope leakage tussen `.hero-section .card` en `.sidebar .card`).
+  let strictMatchCount = 0;
   for (const rule of rules) {
-    if (!ruleMatchesElement(rule.selector, classes)) continue;
+    if (!ruleMatchesElementStrict(rule.selector, classes, ancestorClasses)) continue;
+    strictMatchCount++;
     for (const [prop, value] of rule.props) {
       merged.set(prop, value);
+    }
+  }
+
+  // PASS 2 — LENIENT rightmost-only fallback. ALLEEN wanneer pass 1 niks
+  // opleverde (element is helemaal niet gematched door ancestor-aware
+  // routes). Behoudt oude gedrag voor sites zonder descendant-styling +
+  // voorkomt MIN_CONFIDENCE drops voor elementen waarvan we eenvoudige
+  // class-only rules wel kennen.
+  if (strictMatchCount === 0) {
+    for (const rule of rules) {
+      if (!ruleMatchesElementLenient(rule.selector, classes)) continue;
+      for (const [prop, value] of rule.props) {
+        merged.set(prop, value);
+      }
     }
   }
 
@@ -439,60 +474,164 @@ function resolveStyles(
 }
 
 /**
- * Parse a CSS selector into "required class sets". Each alternative (comma-
- * separated) becomes one set: the element must carry ALL of those classes
- * for the rule to match. Cached so we don't re-parse the same selector for
- * each of the ~500 elements on a page.
+ * Parse a CSS selector into ancestor-aware "selector paths". Each
+ * alternative (comma-separated) becomes a path: a right-to-left chain of
+ * segments where each segment has required classes + a combinator that
+ * describes the relationship with the segment to its right (= the
+ * descendant direction during matching).
  *
  * Examples:
- *   ".btn"              → [["btn"]]
- *   ".btn.primary"      → [["btn", "primary"]]       ← compound
- *   "a.btn, .button"    → [["btn"], ["button"]]      ← OR
- *   "nav .btn:hover"    → [["btn"]]                  ← descendant + pseudo
- *   "button"            → [[]]                       ← tag-only, skipped
+ *   ".btn"              → [{ segments: [{classes:['btn'], combinator:'desc'}] }]
+ *   ".parent .card"     → [{ segments: [
+ *                              {classes:['card'], combinator:'desc'},   // rightmost = element
+ *                              {classes:['parent'], combinator:'desc'}, // must be ancestor
+ *                          ]}]
+ *   ".parent > .card"   → [{ segments: [
+ *                              {classes:['card'], combinator:'desc'},
+ *                              {classes:['parent'], combinator:'child'}, // must be DIRECT parent
+ *                          ]}]
  *
- * We only use the RIGHTMOST compound (after descendant/child/sibling
- * combinators) because that's what's applied to the element itself.
- * Ancestors are ignored for simplicity — a small number of false positives
- * are OK given the post-match confidence threshold.
+ * Sibling-combinators (~, +) worden gemarkeerd als 'sibling' en bij match
+ * geskipt (we hebben geen sibling-info in resolveStyles call-site). Acceptabel
+ * als false-negative voor het zeldzame `.a + .b { padding: ... }` patroon.
  */
-const SELECTOR_CACHE = new Map<string, string[][]>();
-function parseSelectorClasses(selector: string): string[][] {
-  const cached = SELECTOR_CACHE.get(selector);
+type SelectorCombinator = 'desc' | 'child' | 'sibling';
+interface SelectorSegment {
+  classes: string[];
+  /** Relationship met de NIET-rechter buur (de buur die dichter bij root staat). */
+  combinator: SelectorCombinator;
+}
+interface SelectorPath {
+  /** Right-to-left: [0]=element, [1]=parent, [2]=grandparent, ... */
+  segments: SelectorSegment[];
+}
+
+const SELECTOR_PATH_CACHE = new Map<string, SelectorPath[]>();
+function parseSelectorPaths(selector: string): SelectorPath[] {
+  const cached = SELECTOR_PATH_CACHE.get(selector);
   if (cached) return cached;
 
   // Split on commas at the top level (skip commas inside :not(), etc.)
   const alternatives = selector.split(/,(?![^()]*\))/);
-  const result: string[][] = [];
+  const result: SelectorPath[] = [];
 
   for (const alt of alternatives) {
-    const parts = alt.trim().split(/[\s>+~]+/);
-    const last = parts[parts.length - 1]?.trim() ?? "";
-    if (!last) continue;
-    // Strip pseudo-classes / pseudo-elements: .btn:hover → .btn
-    const stripped = last.replace(/::?[\w-]+(\([^)]*\))?/g, "");
-    // Extract all class names
-    const classMatches = [...stripped.matchAll(/\.([\w-]+)/g)];
-    result.push(classMatches.map((m) => m[1]));
+    const trimmed = alt.trim();
+    if (!trimmed) continue;
+    // Tokenize: split op whitespace en combinators, BEHOUD de combinator-tokens.
+    // bv. ".a > .b .c" → [".a", ">", ".b", ".c"] (whitespace = descendant)
+    const tokens = trimmed.split(/\s*(>|~|\+)\s*|\s+/).filter((t) => t && t.length > 0);
+    if (tokens.length === 0) continue;
+
+    const segments: SelectorSegment[] = [];
+    let pendingCombinator: SelectorCombinator = 'desc';
+    // Process right-to-left
+    for (let i = tokens.length - 1; i >= 0; i--) {
+      const tok = tokens[i];
+      if (tok === '>') { pendingCombinator = 'child'; continue; }
+      if (tok === '+' || tok === '~') { pendingCombinator = 'sibling'; continue; }
+      // Strip pseudo-classes/elements: .btn:hover → .btn
+      const stripped = tok.replace(/::?[\w-]+(\([^)]*\))?/g, '');
+      const classMatches = [...stripped.matchAll(/\.([\w-]+)/g)];
+      const classes = classMatches.map((m) => m[1]);
+      segments.push({ classes, combinator: pendingCombinator });
+      pendingCombinator = 'desc';
+    }
+    if (segments.length > 0) result.push({ segments });
   }
 
-  SELECTOR_CACHE.set(selector, result);
+  SELECTOR_PATH_CACHE.set(selector, result);
   return result;
 }
 
-function ruleMatchesElement(selector: string, classes: string[]): boolean {
-  if (classes.length === 0) return false;
-  const classSet = new Set(classes);
-  const alternatives = parseSelectorClasses(selector);
-  for (const required of alternatives) {
-    // Only match when the alternative has ≥1 class requirement (tag-only
-    // rules are intentionally skipped — there's no cheap way to verify tag
-    // against element here, and tag-only rules usually apply globally rather
-    // than carrying branded component styles).
-    if (required.length === 0) continue;
-    if (required.every((c) => classSet.has(c))) return true;
+/**
+ * Ancestor-aware match in twee modes:
+ *   - STRICT: rightmost-segment matcht element + ancestor-segments
+ *     verifiëren tegen de DOM ancestor-chain. Hoge precisie.
+ *   - LENIENT: alleen rightmost segment match (cross-scope leakage
+ *     mogelijk). Wordt door resolveStyles ALLEEN gebruikt als pure-
+ *     fallback wanneer ZERO strict-matches op het element zijn — anders
+ *     contamineren bv. `.hero-section .card` en `.sidebar .card` regels
+ *     elkaar omdat beide `.card`-rightmost hebben.
+ */
+function ruleMatchesElementStrict(
+  selector: string,
+  elClasses: string[],
+  ancestorClasses: Set<string>[],
+): boolean {
+  if (elClasses.length === 0) return false;
+  const elSet = new Set(elClasses);
+  const paths = parseSelectorPaths(selector);
+  for (const path of paths) {
+    if (matchPath(path, elSet, ancestorClasses)) return true;
   }
   return false;
+}
+
+function ruleMatchesElementLenient(
+  selector: string,
+  elClasses: string[],
+): boolean {
+  if (elClasses.length === 0) return false;
+  const elSet = new Set(elClasses);
+  const paths = parseSelectorPaths(selector);
+  for (const path of paths) {
+    const rightmost = path.segments[0];
+    if (
+      rightmost &&
+      rightmost.classes.length > 0 &&
+      rightmost.classes.every((c) => elSet.has(c))
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function matchPath(
+  path: SelectorPath,
+  elSet: Set<string>,
+  ancestors: Set<string>[],
+): boolean {
+  if (path.segments.length === 0) return false;
+  // Rightmost segment moet altijd op het element zelf matchen
+  const elSeg = path.segments[0];
+  if (elSeg.classes.length === 0) return false; // tag-only, skip
+  if (!elSeg.classes.every((c) => elSet.has(c))) return false;
+  if (path.segments.length === 1) return true;
+
+  // Walk de rest van de segments (parent, grandparent, ...) door de ancestor-chain
+  let ancIdx = 0;
+  for (let i = 1; i < path.segments.length; i++) {
+    const seg = path.segments[i];
+    if (seg.combinator === 'sibling') return false; // geen sibling-info beschikbaar
+    if (seg.classes.length === 0) {
+      // Tag-only ancestor (bv. "nav .btn") — kunnen we niet verifiëren,
+      // wees lenient: accepteer alsof matched + advanceer 1 ancestor
+      if (seg.combinator === 'child') {
+        if (ancIdx >= ancestors.length) return false;
+        ancIdx++;
+      }
+      // desc: gewoon doorzetten zonder consumptie
+      continue;
+    }
+    if (seg.combinator === 'child') {
+      // Direct parent
+      const anc = ancestors[ancIdx];
+      if (!anc || !seg.classes.every((c) => anc.has(c))) return false;
+      ancIdx++;
+    } else {
+      // 'desc' — vind ergens vooruit in ancestor-chain
+      let found = false;
+      while (ancIdx < ancestors.length) {
+        const anc = ancestors[ancIdx];
+        ancIdx++;
+        if (seg.classes.every((c) => anc.has(c))) { found = true; break; }
+      }
+      if (!found) return false;
+    }
+  }
+  return true;
 }
 
 function computeConfidence(
