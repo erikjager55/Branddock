@@ -81,6 +81,15 @@ export interface ScrapedData {
    *  Fase A2 verbeterplan. Brand-specifieke font-styling per element-rol
    *  i.p.v. de generic display/body uit een layoutStyle-preset. */
   typographyByRole?: import('./typography-extractor').ScrapedTypographyByRole;
+  /** Spacing-profile per element-context (section/card/button/input) —
+   *  Fase A3 verbeterplan. Renderer gebruikt typical padding voor section-
+   *  padding / card-padding zonder layoutStyle-preset fallback. */
+  spacingProfile?: import('./spacing-elevation-extractor').SpacingProfile;
+  /** Elevation-profile met box-shadow categorisatie (none/subtle/medium/
+   *  strong) — Fase A3. Renderer gebruikt dominant category voor cards. */
+  elevationProfile?: import('./spacing-elevation-extractor').ElevationProfile;
+  /** Border-radius samples per context — Fase A3. */
+  radiusProfile?: import('./spacing-elevation-extractor').RadiusProfile;
 }
 
 // Chrome-like User-Agent to avoid bot blocking
@@ -328,6 +337,11 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
   const { extractTypographyByRole } = await import('./typography-extractor');
   const typographyByRole = extractTypographyByRole(allCss);
 
+  // Fase A3 — spacing + elevation + radius profiles per context
+  const { extractSpacingElevationProfile } = await import('./spacing-elevation-extractor');
+  const { spacingProfile, elevationProfile, radiusProfile } =
+    extractSpacingElevationProfile(allCss);
+
   // Extract component samples (buttons, inputs, chips, cards, nav, etc.) from the DOM + CSS
   const { extractComponents } = await import('./component-extractor');
   const components = extractComponents($, allCss);
@@ -381,6 +395,9 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
     logoColors,
     buttonStyles,
     typographyByRole,
+    spacingProfile,
+    elevationProfile,
+    radiusProfile,
   };
 }
 
