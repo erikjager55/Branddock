@@ -70,6 +70,11 @@ export interface BrandTokens {
    *  Gebruikt door h1-renderer wanneer hero-bg surface is — geeft brand-
    *  consistente typografie ook zonder vol-veld hero. */
   headingTextColor: string | null;
+  /** Fase C — hero-layout-pattern uit vision-AI op bron-screenshot. Null =
+   *  niet gedetecteerd → val terug op archetype-default. Mogelijke waardes:
+   *  CENTERED_EDITORIAL / IMAGE_RIGHT_SPLIT / IMAGE_LEFT_SPLIT /
+   *  FULL_BLEED_IMAGE / VIDEO_BG / TEXT_LEFT_FORM_RIGHT. */
+  heroPattern: string | null;
 
   // ─── Action-roles (CTA-specifiek) ────────────────────────
   /** CTA-fill — default = brand. */
@@ -241,6 +246,7 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
   // Fase A — Usage-aware (null = geen signal in bron-CSS, val terug op heuristic)
   heroBgColor: null,
   headingTextColor: null,
+  heroPattern: null,
   // Action
   action: '#1FD1B2',
   onAction: '#FFFFFF',
@@ -359,6 +365,8 @@ interface StyleguideShape {
   motionProfile?: unknown;
   /** photographyStyle JSON met {mood, subjects, composition}. */
   photographyStyle?: unknown;
+  /** Fase C — visualLanguage JSON met optioneel heroPattern uit vision-AI. */
+  visualLanguage?: unknown;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -747,6 +755,12 @@ export function extractBrandTokensFromStyleguide(
   const heroBgColor = pickByUsageTag('hero-bg');
   const headingTextColor = pickByUsageTag('heading-text');
 
+  // Fase C — hero-pattern uit visualLanguage (gepiggybackt door analyzer)
+  const heroPattern = (() => {
+    const vl = styleguide.visualLanguage as { heroPattern?: { pattern?: string } } | null;
+    return vl?.heroPattern?.pattern ?? null;
+  })();
+
   return {
     // Legacy aliases (semantisch correct na v2-mapping + WCAG-gate)
     primaryHex: brand,
@@ -765,6 +779,8 @@ export function extractBrandTokensFromStyleguide(
     // Fase A — usage-aware
     heroBgColor,
     headingTextColor,
+    // Fase C — hero-pattern uit vision-AI
+    heroPattern,
     // Action roles (default = brand)
     action: brand,
     onAction: safeOnBrand,
@@ -908,6 +924,8 @@ export function extractBrandTokensFromContext(
     // Fase A — geen usage-tags beschikbaar in context-only pad → null
     heroBgColor: null,
     headingTextColor: null,
+    // Fase C — geen vision-data in context-only pad
+    heroPattern: null,
     // Action
     action: brandColor,
     onAction: onBrand,

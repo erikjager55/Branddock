@@ -88,10 +88,42 @@ export interface CardStyle {
  *  - OUTLAW: full-bleed met sterke overlay (rebellie)
  * Plus LayoutStyle-overlay: COMMERCIAL → meer solid; MINIMAL/EDITORIAL → meer full-bleed.
  */
+/** Fase C — hero-pattern uit vision-AI heeft hoogste prioriteit; archetype +
+ *  layoutStyle blijven als fallback. */
+export type HeroPatternKey =
+  | "CENTERED_EDITORIAL"
+  | "IMAGE_RIGHT_SPLIT"
+  | "IMAGE_LEFT_SPLIT"
+  | "FULL_BLEED_IMAGE"
+  | "VIDEO_BG"
+  | "TEXT_LEFT_FORM_RIGHT";
+
 export function pickHeroLayout(
   archetype: BrandArchetype | null,
   layoutStyle: LayoutStyle,
+  heroPattern?: HeroPatternKey | null,
 ): HeroLayout {
+  // Fase C — bron-pattern wint over archetype-default. Mapt direct naar
+  // HeroLayout-config zonder door archetype-fallbacks heen te lopen.
+  if (heroPattern) {
+    switch (heroPattern) {
+      case "CENTERED_EDITORIAL":
+        return { background: "solid-surface", textAlignment: "center", textVerticalPosition: "center", fullViewportHeight: false, overlayOpacity: 0 };
+      case "IMAGE_RIGHT_SPLIT":
+      case "IMAGE_LEFT_SPLIT":
+        // Renderer ondersteunt 2-column hero nog niet structureel; voor nu
+        // val terug op solid-surface met left-aligned tekst (closest match).
+        // Fase E voegt 2-column template toe.
+        return { background: "solid-surface", textAlignment: "left", textVerticalPosition: "center", fullViewportHeight: false, overlayOpacity: 0 };
+      case "FULL_BLEED_IMAGE":
+        return { background: "full-bleed-image", textAlignment: "left", textVerticalPosition: "bottom", fullViewportHeight: true, overlayOpacity: 0.65 };
+      case "VIDEO_BG":
+        return { background: "full-bleed-image", textAlignment: "center", textVerticalPosition: "center", fullViewportHeight: true, overlayOpacity: 0.55 };
+      case "TEXT_LEFT_FORM_RIGHT":
+        return { background: "solid-surface", textAlignment: "left", textVerticalPosition: "center", fullViewportHeight: false, overlayOpacity: 0 };
+    }
+  }
+
   const fullBleedArchetypes: BrandArchetype[] = [
     "RULER", "MAGICIAN", "EXPLORER", "HERO", "LOVER", "OUTLAW",
   ];
@@ -347,9 +379,10 @@ export interface BrandRenderHints {
 export function computeBrandRenderHints(
   archetype: BrandArchetype | null,
   designSystem: DesignSystem,
+  heroPattern?: HeroPatternKey | null,
 ): BrandRenderHints {
   return {
-    heroLayout: pickHeroLayout(archetype, designSystem.layoutStyle),
+    heroLayout: pickHeroLayout(archetype, designSystem.layoutStyle, heroPattern),
     buttonStyle: pickButtonStyle(archetype, designSystem),
     displayTypography: pickDisplayTypography(archetype, designSystem),
     cardStyle: pickCardStyle(archetype, designSystem),

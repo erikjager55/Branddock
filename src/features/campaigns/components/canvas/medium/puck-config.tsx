@@ -360,7 +360,11 @@ function stickyCtaBarComponent(tokens: BrandTokens) {
  * pattern uit v2-render (zelfde gedrag als pre-Pad-C).
  */
 function brandHeroComponent(tokens: BrandTokens) {
-  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
+  const hints = computeBrandRenderHints(
+    tokens.archetype,
+    tokens.designSystem,
+    (tokens.heroPattern as import('@/lib/landing-pages/brand-render-rules').HeroPatternKey | null) ?? null,
+  );
   const { heroLayout, displayTypography, buttonStyle, sectionPadding } = hints;
   const ds = tokens.designSystem;
   // C10 — photo-scrim stijl per archetype
@@ -746,7 +750,11 @@ function brandCtaComponent(
  * consumeren designSystem + archetype.
  */
 function featureGridComponent(tokens: BrandTokens) {
-  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
+  const hints = computeBrandRenderHints(
+    tokens.archetype,
+    tokens.designSystem,
+    (tokens.heroPattern as import('@/lib/landing-pages/brand-render-rules').HeroPatternKey | null) ?? null,
+  );
   const { cardStyle } = hints;
   const ds = tokens.designSystem;
   // Verbeterplan Fase D: section/card padding + elevation + iconography
@@ -1016,7 +1024,11 @@ function testimonialComponent(
 }
 
 function pricingTableComponent(tokens: BrandTokens) {
-  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
+  const hints = computeBrandRenderHints(
+    tokens.archetype,
+    tokens.designSystem,
+    (tokens.heroPattern as import('@/lib/landing-pages/brand-render-rules').HeroPatternKey | null) ?? null,
+  );
   const { cardStyle } = hints;
   // Verbeterplan #2 + C8: section-padding + max-width uit tokens/constraints
   const { sectionRhythm } = tokens;

@@ -323,6 +323,7 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     let pageScreenshots: { buffer: Buffer; mediaType: 'image/png' }[] = [];
     let heroBuffer: Buffer | null = null;
     let usedVisualAi = false;
+    let heroPattern: import('./hero-pattern-detector').HeroPatternResult | null = null;
     try {
       const { isVisualAiEnabled, capturePageScreenshots } = await import('./page-screenshotter');
       if (isVisualAiEnabled()) {
@@ -335,6 +336,23 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         if (pageScreenshots.length > 0) {
           usedVisualAi = true;
           console.log(`[brandstyle-analysis] Captured ${pageScreenshots.length} page screenshots for AI vision`);
+        }
+
+        // Fase C — hero-pattern detection. Vision-call die classifeert in 6
+        // layout-archetypes. Renderer gebruikt dit later om de LP-hero
+        // layout van de bron te kopiëren i.p.v. archetype-default.
+        if (heroBuffer) {
+          try {
+            const { isHeroPatternEnabled, detectHeroPattern } = await import('./hero-pattern-detector');
+            if (isHeroPatternEnabled()) {
+              heroPattern = await detectHeroPattern(heroBuffer);
+              if (heroPattern) {
+                console.log(`[brandstyle-analysis] Hero pattern: ${heroPattern.pattern} (confidence: ${heroPattern.confidence})`);
+              }
+            }
+          } catch (hpErr) {
+            console.warn(`[brandstyle-analysis] Hero pattern detect failed (non-critical): ${hpErr instanceof Error ? hpErr.message : String(hpErr)}`);
+          }
         }
       }
     } catch (shotErr) {
@@ -678,11 +696,18 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     }
 
     // Write visual language separately (Json field, not part of CombinedResult)
-    if (visualLanguageResult) {
+    // Fase C — heroPattern wordt in dezelfde JSON gepiggybackt zodat we
+    // geen schema-migratie nodig hebben. Renderer leest via
+    // styleguide.visualLanguage.heroPattern.
+    if (visualLanguageResult || heroPattern) {
+      const visualLanguagePayload = {
+        ...((visualLanguageResult as Record<string, unknown> | null) ?? {}),
+        ...(heroPattern ? { heroPattern } : {}),
+      };
       await prisma.brandStyleguide.update({
         where: { id: styleguideId },
         data: {
-          visualLanguage: JSON.parse(JSON.stringify(visualLanguageResult)),
+          visualLanguage: JSON.parse(JSON.stringify(visualLanguagePayload)),
         },
       });
     }
