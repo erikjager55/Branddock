@@ -234,7 +234,7 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
     "items": [{ "icon": string (lucide-icon naam, geen emoji), "heading": string (2-4 woorden), "body": string (1-2 zinnen benefit-frame) }] (3-5 items)
   },
   "socialProof": {
-    "testimonials": [{ "quote": string, "authorName": string, "authorRole": string, "authorCompany": string, "outcome": string | optional }] (1-3 items),
+    "testimonials": [{ "quote": string, "authorName": string, "authorRole": string, "authorCompany": string, "outcome": string | optional }] (EXACT 1 item — sterkste single quote met outcome-cijfer wint van meerdere generieke quotes),
     "impactStats": [{ "value": string, "label": string }] | optional (max 4 items)
   },${opts.includePricing ? `
   "pricing": {

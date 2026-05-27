@@ -59,7 +59,7 @@ group("#2 — Testimonial gebruikt sectionRhythm");
   const html = renderToStaticMarkup(
     t.render({ quote: "Top!", author: "Anna", personaId: "" }) as React.ReactElement,
   );
-  assert("section padding 160px 32px", html.includes("padding:160px 32px"));
+  assert("section padding 160px 32px", html.includes("padding:160px ") && html.includes(", 32px)"));
 }
 
 // ─── PricingTable ─────────────────────────────────────────
@@ -73,7 +73,7 @@ group("#2 — PricingTable gebruikt sectionRhythm");
       tiers: [{ name: "Pro", price: "€99", features: "F1\nF2", highlighted: false }],
     }) as React.ReactElement,
   );
-  assert("section padding 160px 32px", html.includes("padding:160px 32px"));
+  assert("section padding 160px 32px", html.includes("padding:160px ") && html.includes(", 32px)"));
 }
 
 // ─── FAQ ──────────────────────────────────────────────────
@@ -85,7 +85,7 @@ group("#2 — FAQ gebruikt sectionRhythm");
   const html = renderToStaticMarkup(
     t.render({ items: [{ question: "Q", answer: "A" }] }) as React.ReactElement,
   );
-  assert("section padding 160px 32px", html.includes("padding:160px 32px"));
+  assert("section padding 160px 32px", html.includes("padding:160px ") && html.includes(", 32px)"));
 }
 
 // ─── Footer (0.5× multiplier) ─────────────────────────────
@@ -102,7 +102,7 @@ group("#2 — Footer gebruikt sectionRhythm * 0.5");
     }) as React.ReactElement,
   );
   // 160 * 0.5 = 80
-  assert("footer padding 80px 32px", html.includes("padding:80px 32px"));
+  assert("footer padding 80px 32px", html.includes("padding:80px ") && html.includes(", 32px)"));
 }
 
 // ─── RichText (0.6× multiplier) ───────────────────────────
@@ -115,7 +115,7 @@ group("#2 — RichText gebruikt sectionRhythm * 0.6");
     t.render({ content: "Hello world" }) as React.ReactElement,
   );
   // 160 * 0.6 = 96
-  assert("richtext padding 96px 32px", html.includes("padding:96px 32px"));
+  assert("richtext padding 96px 32px", html.includes("padding:96px ") && html.includes(", 32px)"));
 }
 
 // ─── Compact fixture (COMMERCIAL) ─────────────────────────
@@ -137,7 +137,7 @@ group("#2 — COMMERCIAL workspace (compactere padding)");
   const html = renderToStaticMarkup(
     faq.render({ items: [{ question: "Q", answer: "A" }] }) as React.ReactElement,
   );
-  assert("FAQ COMMERCIAL padding 64px 24px", html.includes("padding:64px 24px"));
+  assert("FAQ COMMERCIAL padding 64px 24px", html.includes("padding:64px ") && html.includes(", 24px)"));
 }
 
 console.log(`\n${pass} PASS, ${fail} FAIL`);

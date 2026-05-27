@@ -154,8 +154,9 @@ group('LINFI (RULER + MINIMAL) — full-bleed placeholder, dark frame');
   assert('text-align:left', html.includes('text-align:left'));
   // Cormorant display font
   assert('Cormorant Garamond display-font', html.includes('Cormorant Garamond'));
-  // Display size 72 (sparse uit MINIMAL scale)
-  assert('display font-size:72px', html.includes('font-size:72px'));
+  // Display size 72 (sparse uit MINIMAL scale) — nu in clamp() wrapper
+  // voor responsive scaling. Max-waarde 72px verschijnt als ", 72px)".
+  assert('display font-size max 72px', html.includes(', 72px)'));
   // Display weight 300 (sparse, lichtste)
   assert('display weight 300', html.includes('font-weight:300'));
   // Button sharp (radius 0) + uppercase + 0.1em
@@ -187,8 +188,8 @@ group('Branddock (SAGE + COMMERCIAL) — solid-brand centered');
   assert('text-align:center', html.includes('text-align:center'));
   // System-ui (geen Cormorant)
   assert('system-ui font (geen Cormorant)', html.includes('system-ui') && !html.includes('Cormorant'));
-  // Display size 42 (dense uit COMMERCIAL scale)
-  assert('display font-size:42px (dense)', html.includes('font-size:42px'));
+  // Display size 42 (dense uit COMMERCIAL scale) — clamp-wrapper
+  assert('display font-size max 42px (dense)', html.includes(', 42px)'));
   // Button rounded (radius 8)
   assert('button radius 8', html.includes('border-radius:8'));
 }
@@ -209,8 +210,8 @@ group('JESTER + PLAYFUL — gradient-brand pill-button');
 group('HERO + EXPERIENTIAL — dramatic typography');
 {
   const html = renderBrandHero(makeHeroExperientialTokens(), { ...PROPS, heroVisualUrl: 'https://example.com/hero.jpg' });
-  // Display size 144 (dramatic uit EXPERIENTIAL scale)
-  assert('display font-size:144px (dramatic)', html.includes('font-size:144px'));
+  // Display size 144 (dramatic uit EXPERIENTIAL scale) — clamp-wrapper
+  assert('display font-size max 144px (dramatic)', html.includes(', 144px)'));
   // Display weight 900 (zwaarste)
   assert('display weight 900', html.includes('font-weight:900'));
   // Inter font
@@ -230,10 +231,10 @@ group('Cross-brand differentiation — meaningful verschillen');
     'LINFI gebruikt Cormorant, Branddock niet',
     linfi.includes('Cormorant') && !branddock.includes('Cormorant'),
   );
-  // Linfi vs Branddock: andere font-size (72 vs 42)
+  // Linfi vs Branddock: andere font-size max (72 vs 42, in clamp-wrapper)
   assert(
-    'LINFI display 72px, Branddock 42px',
-    linfi.includes('font-size:72px') && branddock.includes('font-size:42px'),
+    'LINFI display max 72px, Branddock max 42px',
+    linfi.includes(', 72px)') && branddock.includes(', 42px)'),
   );
   // Linfi vs Jester: andere button-shape (radius 0 vs 999)
   assert(

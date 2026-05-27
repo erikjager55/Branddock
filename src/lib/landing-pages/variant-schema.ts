@@ -112,11 +112,14 @@ const impactStatSchema = z.object({
 });
 
 const socialProofSchema = z.object({
-  /** 1-3 testimonials per §1 #8 — meer dan 3 verzwakt. */
+  /** EXACT 1 testimonial — user-bevinding 2026-05-27: meerdere quotes
+   *  verzwakken impact (Cialdini's authority-principle wint van quantity
+   *  bij conversion-focused LPs). Eén goed-gekozen hoogwaardig quote met
+   *  outcome-cijfer wint van 3 generieke quotes. */
   testimonials: z
     .array(testimonialSchema)
-    .min(1, "socialProof.testimonials min 1 per §1 #8")
-    .max(3, "socialProof.testimonials max 3 per §1 #8"),
+    .min(1, "socialProof.testimonials min 1")
+    .max(1, "socialProof.testimonials max 1 — kies sterke single quote met outcome"),
   /** Optionele stats-card; max 4 per §1 #16 paradox of choice. */
   impactStats: z
     .array(impactStatSchema)

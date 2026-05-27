@@ -211,7 +211,7 @@ function statsBlockComponent(tokens: BrandTokens) {
       <section
         style={{
           background: sectionBg,
-          padding: `${tokens.sectionRhythm.sectionPaddingY}px ${tokens.sectionRhythm.sectionPaddingX}px`,
+          padding: `${tokens.sectionRhythm.sectionPaddingY}px ${responsivePaddingX(tokens.sectionRhythm.sectionPaddingX)}`,
           fontFamily: bodyFont,
         }}
       >
@@ -240,7 +240,13 @@ function statsBlockComponent(tokens: BrandTokens) {
               <div
                 style={{
                   fontFamily: headingFont,
-                  fontSize: numberFontSize,
+                  // Responsive: big stat-numbers schalen tussen 40px mobile
+                  // en de scraped/preset desktop-grootte. Voorkomt dat
+                  // '410+' overrun krijgt op smalle viewports.
+                  fontSize: (() => {
+                    const max = typeof numberFontSize === 'number' ? numberFontSize : parseFloat(String(numberFontSize)) || 64;
+                    return responsiveSize(40, max);
+                  })(),
                   fontWeight: numberFontWeight,
                   lineHeight: numberLineHeight,
                   color: numberColor,
@@ -502,7 +508,11 @@ function brandHeroComponent(tokens: BrandTokens) {
         backgroundPosition: backgroundImage ? 'center' : undefined,
         color: sectionColor,
         fontFamily: displayFont,
-        padding: `${sectionPaddingY}px ${sectionPaddingX}px`,
+        // Responsive paddingX zodat mobile niet wordt geknepen door
+        // desktop-grootte bron-padding (LINFI bv. 100px paddingX, op 375px
+        // viewport = 200px padding + 175px content). clamp() schaalt
+        // tussen 20px (mobile) en bron-waarde (desktop).
+        padding: `${sectionPaddingY}px ${responsivePaddingX(sectionPaddingX)}`,
         minHeight: heroLayout.fullViewportHeight ? '100vh' : undefined,
         display: 'flex',
         flexDirection: 'column',
@@ -570,7 +580,13 @@ function brandHeroComponent(tokens: BrandTokens) {
             <h1
               style={{
                 fontFamily: displayFont,
-                fontSize: tbr.display.fontSize ?? displayTypography.size,
+                // Responsive font-size: scraped-size = desktop-max, MIN cap
+                // = 32px voor mobile-leesbaarheid. clamp() schaalt vloeiend.
+                fontSize: (() => {
+                  const max = tbr.display.fontSize ?? displayTypography.size;
+                  const maxNum = typeof max === 'number' ? max : parseFloat(String(max)) || 64;
+                  return responsiveSize(32, maxNum);
+                })(),
                 lineHeight: tbr.display.lineHeight ?? displayTypography.lineHeight,
                 fontWeight: tbr.display.fontWeight ?? displayTypography.weight,
                 letterSpacing: tbr.display.letterSpacing ?? displayTypography.letterSpacing,
@@ -579,15 +595,8 @@ function brandHeroComponent(tokens: BrandTokens) {
                 // op section-color (sectionColor) als display.color null is.
                 color: tbr.display.color ?? undefined,
                 margin: `0 0 ${ds.spacing[Math.min(ds.spacing.length - 1, 3)] ?? 16}px`,
-                // Voorkomt dat lange enkele woorden (compound-NL nouns als
-                // 'concurrentievoordeel' / 'merkpositionering') over de
-                // section-rand rollen op smalle viewports.
-                // hyphens:auto verwijderd — algoritme breekt te agressief
-                // NL compound-nouns ('duurzaam' → 'duurza-am') midden in
-                // het woord. overflowWrap:break-word alleen volstaat:
-                // breekt alleen op spaties tenzij een enkel woord echt
-                // wijder is dan de container. wordBreak:break-word legacy
-                // dropped (alias for overflow-wrap).
+                // overflowWrap:break-word alleen volstaat (geen hyphens:auto
+                // — brak NL compound-nouns midden in woord).
                 overflowWrap: 'break-word',
               }}
             >
@@ -650,6 +659,35 @@ function isVibrantSaturatedColor(hex: string): boolean {
   return sPct > 65 && lPct >= 25 && lPct <= 65;
 }
 
+/**
+ * Responsive-size helper. Genereert een CSS clamp() expression zodat
+ * font-sizes en paddings vloeiend schalen tussen mobile (375px viewport)
+ * en desktop. Inline-styles ondersteunen geen media-queries dus clamp()
+ * is hier de enige optie.
+ *
+ *   responsiveSize(32, 64)       → clamp(32px, 32px + 2vw, 64px)
+ *
+ * IDEAL = scraped-size (vaak desktop-mid-large); MIN garandeert mobile-
+ * leesbaarheid; MAX cap voorkomt absurd-grote text op ultrawide.
+ */
+function responsiveSize(min: number, max: number): string {
+  if (max <= min) return `${max}px`;
+  // Lineaire interpolation in viewport-width: groei tussen MIN en MAX
+  // tussen 375px en 1440px breed scherm.
+  // formule: min + (max - min) * (vw - 375) / (1440 - 375)
+  const slope = ((max - min) * 100) / (1440 - 375);
+  const base = min - (slope * 375) / 100;
+  return `clamp(${min}px, ${base.toFixed(2)}px + ${slope.toFixed(3)}vw, ${max}px)`;
+}
+
+/** Reduce een 'desktop-sized' padding-X waarde voor mobile-correctness.
+ *  100px desktop padding wordt op 375px viewport ondraaglijk; clamp het
+ *  vanaf 20px minimum tot de bron-waarde maximum. */
+function responsivePaddingX(scrapedPx: number): string {
+  const min = Math.min(20, scrapedPx);
+  return responsiveSize(min, scrapedPx);
+}
+
 function hexToRgbString(hex: string): string {
   const cleaned = hex.replace(/^#/, '');
   if (cleaned.length !== 6) return '0,0,0';
@@ -694,7 +732,7 @@ function brandCtaComponent(
       return (
         <section
           style={{
-            padding: `${sectionRhythm.sectionPaddingY}px ${sectionRhythm.sectionPaddingX}px`,
+            padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
             textAlign: 'center',
             fontFamily: bodyFont,
             background: tokens.surface,
@@ -712,25 +750,38 @@ function brandCtaComponent(
               Voor: {persona.name}
             </p>
           ) : null}
-          <a
-            href={href}
-            style={{
-              display: 'inline-block',
-              background: tokens.brand,
-              color: tokens.onBrand,
-              fontFamily: ds.typography.label.fontFamily,
-              fontWeight: btn.fontWeight,
-              fontSize: btn.fontSize,
-              textDecoration: 'none',
-              padding: `${btn.paddingY}px ${btn.paddingX}px`,
-              borderRadius: btn.radiusPx,
-              textTransform: btn.textTransform,
-              letterSpacing: btn.letterSpacing,
-              transition: `all ${motion.transitionDuration} ${motion.easing}`,
-            }}
-          >
-            {label}
-          </a>
+          {/* Final-CTA button: voor VIBRANT brand-colors (Better Brands
+              fel groen, hot pink, helder blauw) is een vol-veld brand-
+              button visueel té agressief op de witte CTA-section. Match
+              de hero-logica: vibrant-saturated → donkere knop met witte
+              tekst (= elegant, herkenbaar accent). Gedempte/pastel
+              brands behouden de vol-veld brand-treatment. */}
+          {(() => {
+            const useDarkButton = isVibrantSaturatedColor(tokens.brand);
+            const ctaBg = useDarkButton ? tokens.onSurface : tokens.brand;
+            const ctaColor = useDarkButton ? '#FFFFFF' : tokens.onBrand;
+            return (
+              <a
+                href={href}
+                style={{
+                  display: 'inline-block',
+                  background: ctaBg,
+                  color: ctaColor,
+                  fontFamily: ds.typography.label.fontFamily,
+                  fontWeight: btn.fontWeight,
+                  fontSize: btn.fontSize,
+                  textDecoration: 'none',
+                  padding: `${btn.paddingY}px ${btn.paddingX}px`,
+                  borderRadius: btn.radiusPx,
+                  textTransform: btn.textTransform,
+                  letterSpacing: btn.letterSpacing,
+                  transition: `all ${motion.transitionDuration} ${motion.easing}`,
+                }}
+              >
+                {label}
+              </a>
+            );
+          })()}
           {riskReducer && riskReducer.trim().length > 0 ? (
             <p
               style={{
@@ -818,7 +869,7 @@ function featureGridComponent(tokens: BrandTokens) {
     render: ({ columns, features }: FeatureGridProps) => (
       <section
         style={{
-          padding: `${sectionRhythm.sectionPaddingY}px ${sectionRhythm.sectionPaddingX}px`,
+          padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
           fontFamily: bodyFont,
           background: tokens.surface,
         }}
@@ -942,7 +993,7 @@ function testimonialComponent(
         <section
           style={{
             background: tokens.brandSubtle,
-            padding: `${sectionRhythm.sectionPaddingY}px ${sectionRhythm.sectionPaddingX}px`,
+            padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
             textAlign: 'center',
             fontFamily: bodyFont,
           }}
@@ -1076,7 +1127,7 @@ function pricingTableComponent(tokens: BrandTokens) {
     render: ({ tiers }: PricingTableProps) => (
       <section
         style={{
-          padding: `${sectionRhythm.sectionPaddingY}px ${sectionRhythm.sectionPaddingX}px`,
+          padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
           fontFamily: bodyFont,
           background: tokens.surface,
         }}
@@ -1148,7 +1199,8 @@ function pricingTableComponent(tokens: BrandTokens) {
                 <p
                   style={{
                     fontFamily: headingFont,
-                    fontSize: 32,
+                    // Responsive: clamp tussen mobile 24px en desktop 32px
+                    fontSize: responsiveSize(24, 32),
                     fontWeight: 700,
                     color: tokens.brand,
                     margin: '0 0 16px',
@@ -1212,7 +1264,7 @@ function faqComponent(tokens: BrandTokens) {
     render: ({ items }: FAQProps) => (
       <section
         style={{
-          padding: `${sectionRhythm.sectionPaddingY}px ${sectionRhythm.sectionPaddingX}px`,
+          padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
           fontFamily: bodyFont,
           background: tokens.surface,
         }}
@@ -1293,7 +1345,7 @@ function footerComponent(tokens: BrandTokens) {
         style={{
           background: tokens.onSurface,
           color: tokens.surface,
-          padding: `${footerPaddingY}px ${sectionPaddingX}px`,
+          padding: `${footerPaddingY}px ${responsivePaddingX(sectionPaddingX)}`,
           fontFamily: bodyFont,
         }}
       >
@@ -1368,7 +1420,7 @@ function richTextComponent(tokens: BrandTokens) {
     render: ({ content }: RichTextProps) => (
       <section
         style={{
-          padding: `${sectionPaddingY}px ${sectionPaddingX}px`,
+          padding: `${sectionPaddingY}px ${responsivePaddingX(sectionPaddingX)}`,
           fontFamily: bodyFont,
           background: tokens.surface,
         }}

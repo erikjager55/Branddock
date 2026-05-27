@@ -82,8 +82,8 @@ group("D — BrandCTA gebruikt tokens.button scraped paddings");
   assert("button letter-spacing=0.05em", html.includes("letter-spacing:0.05em"));
   assert("font-size=16", html.includes("font-size:16px"));
   assert(
-    "section padding from sectionRhythm",
-    html.includes("padding:160px 32px"),
+    "section padding Y from sectionRhythm",
+    html.includes("padding:160px ") && html.includes(", 32px)"),
   );
   assert(
     "transition uit motion-tokens",
@@ -147,7 +147,7 @@ group("D — FeatureGrid gebruikt tokens.elevation border-only");
   );
   assert(
     "section padding 160px 32px",
-    html.includes("padding:160px 32px"),
+    html.includes("padding:160px ") && html.includes(", 32px)"),
   );
   // IconBlock strokeWidth=1.25 (RULER premium-thin)
   assert("svg met stroke-width 1.25", html.includes('stroke-width="1.25"'));

@@ -210,7 +210,12 @@ function testRenderInjections(): void {
     {
       name: 'BrandCTA',
       props: { label: 'Trial', href: '/start', personaId: MOCK_PERSONA.id },
-      expectedSubstrings: [tokens.primaryHex, 'Trial', MOCK_PERSONA.name],
+      // primaryHex check verwijderd — voor vibrant-saturated brand-colors
+      // (S>65, L 25-65 zoals #0D9488 teal) wordt nu onSurface gebruikt
+      // voor de button-bg i.p.v. brand om over-aggressieve vol-veld CTAs
+      // op witte sections te vermijden. Label + persona-naam blijven core
+      // markers voor render-correctness.
+      expectedSubstrings: ['Trial', MOCK_PERSONA.name],
     },
     {
       name: 'FeatureGrid',
