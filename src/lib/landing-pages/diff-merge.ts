@@ -66,17 +66,24 @@ export function mergeAcceptedComponents(
  * header and for selecting "all changed" with one click.
  */
 export function diffComponentIds(
-  current: DiffMergeData,
-  proposed: DiffMergeData,
+  current: DiffMergeData | null | undefined,
+  proposed: DiffMergeData | null | undefined,
 ): string[] {
+  // Defensive: API-responses kunnen content=undefined hebben wanneer de
+  // server een tree returnt zonder content-array (bv. parse-edge case in
+  // auto-iterate). Voorheen crashte de modal hierop met
+  // "Cannot read properties of undefined (reading 'content')".
+  const currentContent = Array.isArray(current?.content) ? current!.content : [];
+  const proposedContent = Array.isArray(proposed?.content) ? proposed!.content : [];
+
   const proposedById = new Map<string, DiffMergeItem>();
-  for (const item of proposed.content) {
-    const id = item.props.id;
+  for (const item of proposedContent) {
+    const id = item?.props?.id;
     if (typeof id === 'string') proposedById.set(id, item);
   }
   const differing: string[] = [];
-  for (const item of current.content) {
-    const id = item.props.id;
+  for (const item of currentContent) {
+    const id = item?.props?.id;
     if (typeof id !== 'string') continue;
     const proposedItem = proposedById.get(id);
     if (!proposedItem) continue;

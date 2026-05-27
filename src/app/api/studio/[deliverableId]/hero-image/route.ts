@@ -21,7 +21,17 @@ const HERO_VARIANT_GROUP = 'hero-image';
 
 const setHeroImageSchema = z
   .object({
-    imageUrl: z.string().url().max(2048),
+    // Accepteer zowel absolute URL (https://...) als relative path
+    // (/uploads/...). AI-generated visuals worden lokaal gehost en hebben
+    // alleen een relative path; strict .url() rejecteerde die met 400.
+    imageUrl: z
+      .string()
+      .min(1)
+      .max(2048)
+      .refine(
+        (val) => /^(https?:\/\/|\/)/i.test(val),
+        { message: 'imageUrl must be absolute URL or absolute path (start met / of http(s)://)' },
+      ),
     imageSource: z
       .enum(['library', 'url-import', 'stock', 'ai-generated', 'upload'])
       .optional(),
