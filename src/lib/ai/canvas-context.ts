@@ -196,6 +196,16 @@ export interface CanvasContextStack {
    * downstream consumers never branch on null.
    */
   brandTokens: BrandTokens;
+  /**
+   * Brand-meta voor V2 lazy-inference gates (geen render-impact). Bevat
+   * flags die onderscheid maken tussen schema-default sentinels en
+   * expliciet inferred / user-set waardes.
+   */
+  brandStyleguideMeta?: {
+    /** True wanneer layoutStyle is geïnferred of door user overruled.
+     *  False = nog schema-default → ensureLayoutStyle mag draaien. */
+    layoutStyleInferred: boolean;
+  };
 }
 
 // ─── Content Type → Platform/Format Mapping ──────────────────
@@ -496,6 +506,7 @@ export async function assembleCanvasContext(
     select: {
       primaryFontName: true,
       layoutStyle: true,
+      layoutStyleInferred: true,
       archetype: true,
       colors: { select: {
         hex: true, category: true, sortOrder: true,
@@ -510,6 +521,9 @@ export async function assembleCanvasContext(
     brand, concept, journeyPhase, medium,
     deliverableTypeId: deliverable.contentType ?? null,
     personas, brief, products, contentTypeInputs, visualBrief, puckData, brandTokens,
+    brandStyleguideMeta: {
+      layoutStyleInferred: styleguide?.layoutStyleInferred ?? false,
+    },
   };
 }
 

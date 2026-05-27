@@ -205,17 +205,24 @@ export function inferLayoutStyleFromBrand(
 }
 
 /**
- * Ensure BrandStyleguide.layoutStyle is gevuld. Als gezet: no-op. Als null +
- * archetype aanwezig: infereer + persist. Als null + geen archetype: skip
- * (geen reliable default zonder archetype).
+ * Ensure BrandStyleguide.layoutStyle is gevuld. Gate-logica:
+ *  - layoutStyleInferred=true → no-op (user-override of eerder geïnferred)
+ *  - layoutStyleInferred=false → infereer + persist (zelfs als layoutStyle
+ *    al een waarde heeft; die is dan de schema-default COMMERCIAL)
+ *  - geen archetype → skip (geen reliable inference mogelijk)
+ *
+ * Schema-default `LayoutStyle @default(COMMERCIAL)` is een sentinel die we
+ * niet kunnen onderscheiden van een user-keuze zonder de aparte
+ * `layoutStyleInferred` flag.
  */
 export async function ensureLayoutStyle(
   workspaceId: string,
   currentLayoutStyle: LayoutStyle | null,
+  isInferred: boolean,
   archetype: BrandArchetype | null,
   brand: BrandContextBlock,
 ): Promise<EnsureLayoutStyleResult> {
-  if (currentLayoutStyle) {
+  if (isInferred && currentLayoutStyle) {
     return { layoutStyle: currentLayoutStyle, inferred: false };
   }
 
@@ -228,7 +235,10 @@ export async function ensureLayoutStyle(
     const { prisma } = await import("@/lib/prisma");
     await prisma.brandStyleguide.update({
       where: { workspaceId },
-      data: { layoutStyle: inferred.layoutStyle },
+      data: {
+        layoutStyle: inferred.layoutStyle,
+        layoutStyleInferred: true,
+      },
     });
     return {
       layoutStyle: inferred.layoutStyle,

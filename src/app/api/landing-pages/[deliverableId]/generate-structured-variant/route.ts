@@ -145,6 +145,7 @@ export async function POST(
   const layoutResult = await ensureLayoutStyle(
     workspaceId,
     ctx.brandTokens.layoutStyle ?? null,
+    ctx.brandStyleguideMeta?.layoutStyleInferred ?? false,
     archetypeResult.archetype,
     ctx.brand,
   );

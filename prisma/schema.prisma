@@ -1678,6 +1678,13 @@ model BrandStyleguide {
   // Auto-detected door brandstyle-scraper, user kan overriden in onboarding.
   layoutStyle        LayoutStyle      @default(COMMERCIAL)
 
+  // V2-2 lazy-inference gate: false betekent dat de waarde nog de schema-
+  // default is en herinferreerd mag worden door ensureLayoutStyle. True =
+  // expliciet inferred-en-gepersist of door user gezet → niet overschrijven.
+  // Zonder deze flag kan ensure niet onderscheiden tussen "user heeft
+  // COMMERCIAL gekozen" en "schema-default COMMERCIAL nooit veranderd".
+  layoutStyleInferred Boolean         @default(false)
+
   // Pad C Sub-Sprint B — Jung's brand-archetype. AI-classified uit
   // BrandAssetVersion content. Null = nog niet geclassificeerd; renderer
   // valt terug op layoutStyle-only beslissingen.
