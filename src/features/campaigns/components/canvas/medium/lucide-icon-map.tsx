@@ -126,6 +126,8 @@ interface IconBlockProps {
   name: string;
   color: string;
   size?: number;
+  /** Stroke-weight uit brand-iconography tokens (Fase C v4). Default 1.75. */
+  strokeWeight?: number;
   /** Style voor de wrapper-div (alignment, margin, etc.). */
   wrapperStyle?: React.CSSProperties;
   /** Text-label rendering wanneer geen SVG-match — caller bepaalt styling. */
@@ -142,6 +144,7 @@ export function IconBlock({
   name,
   color,
   size = 24,
+  strokeWeight = 1.75,
   wrapperStyle,
   fallbackTextStyle,
 }: IconBlockProps): React.ReactElement | null {
@@ -152,7 +155,7 @@ export function IconBlock({
     // warning te omzeilen — Icon is bewust runtime-resolved per icon-name.
     return (
       <div style={wrapperStyle} aria-hidden="true">
-        {React.createElement(Icon, { size, color, strokeWidth: 1.75 })}
+        {React.createElement(Icon, { size, color, strokeWidth: strokeWeight })}
       </div>
     );
   }

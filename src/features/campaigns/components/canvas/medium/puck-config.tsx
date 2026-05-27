@@ -335,10 +335,11 @@ function brandCtaComponent(
   personas: { id: string; name: string; avatarUrl: string | null }[],
   personaOptions: { label: string; value: string }[],
 ) {
-  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
-  const { buttonStyle, sectionPadding } = hints;
   const ds = tokens.designSystem;
-  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+  // Verbeterplan Fase D: gebruik tokens.button (Tier-1 scraped > Tier-2
+  // archetype-default) i.p.v. hints.buttonStyle. tokens.sectionRhythm
+  // levert section-padding direct.
+  const { button: btn, sectionRhythm, motion } = tokens;
   const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
 
@@ -360,7 +361,7 @@ function brandCtaComponent(
       return (
         <section
           style={{
-            padding: `${sectionPadding}px ${sectionPaddingX}px`,
+            padding: `${sectionRhythm.sectionPaddingY}px ${sectionRhythm.sectionPaddingX}px`,
             textAlign: 'center',
             fontFamily: bodyFont,
             background: tokens.surface,
@@ -385,13 +386,14 @@ function brandCtaComponent(
               background: tokens.brand,
               color: tokens.onBrand,
               fontFamily: ds.typography.label.fontFamily,
-              fontWeight: buttonStyle.fontWeight,
-              fontSize: 16,
+              fontWeight: btn.fontWeight,
+              fontSize: btn.fontSize,
               textDecoration: 'none',
-              padding: `${buttonStyle.paddingY}px ${buttonStyle.paddingX}px`,
-              borderRadius: buttonStyle.radiusPx,
-              textTransform: buttonStyle.textTransform,
-              letterSpacing: buttonStyle.letterSpacing,
+              padding: `${btn.paddingY}px ${btn.paddingX}px`,
+              borderRadius: btn.radiusPx,
+              textTransform: btn.textTransform,
+              letterSpacing: btn.letterSpacing,
+              transition: `all ${motion.transitionDuration} ${motion.easing}`,
             }}
           >
             {label}
@@ -420,9 +422,13 @@ function brandCtaComponent(
  */
 function featureGridComponent(tokens: BrandTokens) {
   const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
-  const { cardStyle, sectionPadding } = hints;
+  const { cardStyle } = hints;
   const ds = tokens.designSystem;
-  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+  // Verbeterplan Fase D: section/card padding + elevation + iconography
+  // uit tokens.sectionRhythm / tokens.elevation / tokens.iconography
+  // (Tier-1 scraped > Tier-2 archetype). Card-elevation gebruikt hints
+  // cardStyle alleen wanneer tokens geen scraped-data heeft.
+  const { sectionRhythm, elevation, iconography } = tokens;
   const gap = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
   const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
   const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
@@ -464,7 +470,7 @@ function featureGridComponent(tokens: BrandTokens) {
     render: ({ columns, features }: FeatureGridProps) => (
       <section
         style={{
-          padding: `${sectionPadding}px ${sectionPaddingX}px`,
+          padding: `${sectionRhythm.sectionPaddingY}px ${sectionRhythm.sectionPaddingX}px`,
           fontFamily: bodyFont,
           background: tokens.surface,
         }}
@@ -479,17 +485,19 @@ function featureGridComponent(tokens: BrandTokens) {
           }}
         >
           {features.map((f, i) => {
-            // cardStyle bepaalt of features in cards staan of flat
-            const useCard = cardStyle.elevation !== 'flat';
-            const cardBoxShadow =
-              cardStyle.elevation === 'subtle-shadow' ? '0 2px 8px rgba(0,0,0,0.06)' :
-              cardStyle.elevation === 'strong-shadow' ? '0 8px 24px rgba(0,0,0,0.12)' :
-              undefined;
+            // Verbeterplan Fase D: card-styling uit tokens.elevation
+            // (Tier-1 scraped > Tier-2 archetype defaults via cardStyle)
+            const useCard = elevation.cardElevationCategory !== 'flat';
+            const isBorderOnly = elevation.cardElevationCategory === 'border-only';
             const cardWrapper: React.CSSProperties = useCard ? {
-              padding: `${cardStyle.paddingY}px ${cardStyle.paddingX}px`,
-              borderRadius: cardStyle.radiusPx,
-              border: cardStyle.elevation === 'border-only' ? `${cardStyle.borderWidth}px solid ${tokens.surfaceBorder}` : undefined,
-              boxShadow: cardBoxShadow,
+              padding: `${sectionRhythm.cardPaddingY}px ${sectionRhythm.cardPaddingX}px`,
+              borderRadius: elevation.cardBorderRadius,
+              border: isBorderOnly
+                ? `${elevation.cardBorderWidth}px solid ${tokens.surfaceBorder}`
+                : (cardStyle.elevation === 'border-only'
+                    ? `${cardStyle.borderWidth}px solid ${tokens.surfaceBorder}`
+                    : undefined),
+              boxShadow: isBorderOnly ? undefined : (elevation.cardShadow === 'none' ? undefined : elevation.cardShadow),
               background: tokens.surface,
             } : {};
             return (
@@ -497,7 +505,8 @@ function featureGridComponent(tokens: BrandTokens) {
                 <IconBlock
                   name={f.icon ?? ''}
                   color={tokens.brand}
-                  size={28}
+                  size={iconography.sizeDefault}
+                  strokeWeight={iconography.strokeWeight}
                   wrapperStyle={{ marginBottom: 12 }}
                   fallbackTextStyle={{
                     fontSize: 12,
