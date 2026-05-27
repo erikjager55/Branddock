@@ -728,30 +728,67 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     // lezen deze velden voor brand-specifieke styling i.p.v. archetype-
     // defaults. Non-critical: bij persist-error fall back op archetype-
     // defaults via BrandTokens Tier-2 fallback chain.
+    //
+    // Verbeterplan #5 — per-veld override-respect: alleen overschrijven
+    // wanneer *Override flag false is. User-set values (via toekomstige
+    // brand-onboarding UI) blijven behouden bij re-scrape.
     try {
-      await prisma.brandStyleguide.update({
+      const existing = await prisma.brandStyleguide.findUnique({
         where: { id: styleguideId },
-        data: {
-          buttonProfile: scraped.buttonStyles
-            ? (JSON.parse(JSON.stringify(scraped.buttonStyles)) as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-          typographyProfile: scraped.typographyByRole
-            ? (JSON.parse(JSON.stringify(scraped.typographyByRole)) as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-          spacingProfile: scraped.spacingProfile
-            ? (JSON.parse(JSON.stringify(scraped.spacingProfile)) as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-          elevationProfile: scraped.elevationProfile
-            ? (JSON.parse(JSON.stringify(scraped.elevationProfile)) as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-          radiusProfile: scraped.radiusProfile
-            ? (JSON.parse(JSON.stringify(scraped.radiusProfile)) as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-          motionProfile: scraped.motionProfile
-            ? (JSON.parse(JSON.stringify(scraped.motionProfile)) as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
+        select: {
+          buttonProfileOverride: true,
+          spacingProfileOverride: true,
+          elevationProfileOverride: true,
+          radiusProfileOverride: true,
+          motionProfileOverride: true,
+          typographyProfileOverride: true,
         },
       });
+      const overrides = existing ?? {
+        buttonProfileOverride: false,
+        spacingProfileOverride: false,
+        elevationProfileOverride: false,
+        radiusProfileOverride: false,
+        motionProfileOverride: false,
+        typographyProfileOverride: false,
+      };
+      const updateData: Prisma.BrandStyleguideUpdateInput = {};
+      if (!overrides.buttonProfileOverride) {
+        updateData.buttonProfile = scraped.buttonStyles
+          ? (JSON.parse(JSON.stringify(scraped.buttonStyles)) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+      }
+      if (!overrides.typographyProfileOverride) {
+        updateData.typographyProfile = scraped.typographyByRole
+          ? (JSON.parse(JSON.stringify(scraped.typographyByRole)) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+      }
+      if (!overrides.spacingProfileOverride) {
+        updateData.spacingProfile = scraped.spacingProfile
+          ? (JSON.parse(JSON.stringify(scraped.spacingProfile)) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+      }
+      if (!overrides.elevationProfileOverride) {
+        updateData.elevationProfile = scraped.elevationProfile
+          ? (JSON.parse(JSON.stringify(scraped.elevationProfile)) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+      }
+      if (!overrides.radiusProfileOverride) {
+        updateData.radiusProfile = scraped.radiusProfile
+          ? (JSON.parse(JSON.stringify(scraped.radiusProfile)) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+      }
+      if (!overrides.motionProfileOverride) {
+        updateData.motionProfile = scraped.motionProfile
+          ? (JSON.parse(JSON.stringify(scraped.motionProfile)) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+      }
+      if (Object.keys(updateData).length > 0) {
+        await prisma.brandStyleguide.update({
+          where: { id: styleguideId },
+          data: updateData,
+        });
+      }
     } catch (err) {
       console.warn(
         `[brandstyle-analysis] Rendering-profiles persist failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,

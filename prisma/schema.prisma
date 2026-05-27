@@ -1700,6 +1700,16 @@ model BrandStyleguide {
   motionProfile       Json?
   /** ScrapedTypographyByRole — display/heading/body/label/button styles. */
   typographyProfile   Json?
+
+  // Verbeterplan #5 — per-veld override-flags. False = scraper mag
+  // overschrijven bij re-scrape; True = user-set OR expliciet
+  // re-scrape-protected. Voor toekomstige brand-onboarding UI.
+  buttonProfileOverride       Boolean @default(false)
+  spacingProfileOverride      Boolean @default(false)
+  elevationProfileOverride    Boolean @default(false)
+  radiusProfileOverride       Boolean @default(false)
+  motionProfileOverride       Boolean @default(false)
+  typographyProfileOverride   Boolean @default(false)
   /** Eén-zin design-philosophy uit AI-analyse (Fase E3 verbeterplan).
    *  "Beschrijf wat dit merk visueel anders maakt — wat MOET behouden bij
    *  rendering". Wordt als brand-context aan content-generation gegeven. */
