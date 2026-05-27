@@ -77,6 +77,10 @@ export interface ScrapedData {
    *  background/color/transition + hover-state. Leeg wanneer geen
    *  button-CSS gevonden. */
   buttonStyles?: import('./button-extractor').ScrapedButtonStyle[];
+  /** Typography per rol (display/heading/subheading/body/label/button) —
+   *  Fase A2 verbeterplan. Brand-specifieke font-styling per element-rol
+   *  i.p.v. de generic display/body uit een layoutStyle-preset. */
+  typographyByRole?: import('./typography-extractor').ScrapedTypographyByRole;
 }
 
 // Chrome-like User-Agent to avoid bot blocking
@@ -320,6 +324,10 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
   const { extractButtonStyles } = await import('./button-extractor');
   const buttonStyles = extractButtonStyles(allCss);
 
+  // Fase A2 — typography per rol (display/heading/subheading/body/label/button)
+  const { extractTypographyByRole } = await import('./typography-extractor');
+  const typographyByRole = extractTypographyByRole(allCss);
+
   // Extract component samples (buttons, inputs, chips, cards, nav, etc.) from the DOM + CSS
   const { extractComponents } = await import('./component-extractor');
   const components = extractComponents($, allCss);
@@ -372,6 +380,7 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
     adobeFonts,
     logoColors,
     buttonStyles,
+    typographyByRole,
   };
 }
 
