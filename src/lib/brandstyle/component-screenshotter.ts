@@ -384,7 +384,12 @@ export async function extractComponentsFromPages(
 
           // Score each candidate on how likely it is to be a real branded
           // component (not a utility toggle or hidden element).
-          function scoreCandidate(r: Raw, type: string): number {
+          //
+          // Arrow-function i.p.v. `function` declaration omdat esbuild
+          // anders `__name(scoreCandidate, "scoreCandidate")` injecteert
+          // wat in Playwright page.evaluate browser-context faalt met
+          // "__name is not defined" (fix 2026-05-27).
+          const scoreCandidate = (r: Raw, type: string): number => {
             let s = 0;
             const w = r.rect.width;
             const h = r.rect.height;
