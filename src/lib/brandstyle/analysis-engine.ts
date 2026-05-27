@@ -41,6 +41,7 @@ import { runFrameworkDetectors, type DetectedToken } from './framework-detectors
 import {
   hexToRgb,
   hexToRgbString,
+  hexToHsl,
   hexToHslString,
   hexToCmykString,
   contrastWithWhite,
@@ -1484,10 +1485,18 @@ function resolveColors(
     if (!hex) return;
 
     const ai = aiByHex.get(hex);
+    const baseCategory = ai ? validateCategory(ai.category) : defaultCategory(entry, index);
+    // Pastel-tint upgrade: wanneer hex een hoge-lichtheid + middelmatige-
+    // saturation tint is (klassieke success/error/warning/info pastel),
+    // upgrade NEUTRAL → SEMANTIC. Voorkomt dat soft pinks/blues/greens
+    // in de "Neutral" bucket belanden terwijl ze duidelijk status-tints
+    // zijn. PRIMARY/SECONDARY/ACCENT worden NIET aangeraakt — die zijn
+    // expliciet brand-rollen.
+    const category = upgradePastelToSemantic(baseCategory, hex);
     resolved.push({
       hex,
       name: ai?.name?.trim() || defaultColorName(entry, index),
-      category: ai ? validateCategory(ai.category) : defaultCategory(entry, index),
+      category,
       tags: ai?.tags ?? [],
       notes: ai?.notes?.trim() || defaultColorNotes(entry),
       confidence: entry.confidence,
@@ -1496,6 +1505,40 @@ function resolveColors(
   });
 
   return resolved;
+}
+
+/**
+ * Detecteert pastel-tints die qua HSL-eigenschappen status-kleuren zijn
+ * (soft error-pink, soft info-blue, soft success-green, soft warning-yellow)
+ * en geforceerd in de NEUTRAL-bucket beland zijn door zwakke heuristieken.
+ *
+ * Heuristic:
+ *   - L >= 85 (pastel-bereik, geen verzadigde brand-tint)
+ *   - S >= 20 (echt getint, geen pure grijs)
+ *   - Hue valt in één van de 4 semantic-buckets
+ *
+ * Brand-colors (PRIMARY/SECONDARY/ACCENT) worden NIET geüpgraded —
+ * sommige merken hebben legitiem een pastel-secondary (denk: LINFI's
+ * Soft Cream). Alleen wanneer iets als NEUTRAL geclaimd werd én de
+ * pastel-test slaagt, classificeren we het als SEMANTIC.
+ */
+export function upgradePastelToSemantic(
+  category: ResolvedColor['category'],
+  hex: string,
+): ResolvedColor['category'] {
+  if (category !== 'NEUTRAL') return category;
+  const hsl = hexToHsl(hex);
+  if (!hsl) return category;
+  if (hsl.l < 85) return category;
+  if (hsl.s < 20) return category;
+  // Hue moet in semantic-range zitten (red/pink, yellow/orange, green, blue/cyan)
+  const h = hsl.h;
+  const inSemanticRange =
+    h <= 30 || h >= 330 ||       // red/pink → error
+    (h >= 35 && h <= 65) ||       // yellow/orange → warning
+    (h >= 80 && h <= 160) ||      // green → success
+    (h >= 170 && h <= 260);       // blue/cyan → info
+  return inSemanticRange ? 'SEMANTIC' : category;
 }
 
 function defaultColorName(entry: AuthoritativeColor, index: number): string {

@@ -253,16 +253,47 @@ function pickPrimary(
   buttonBgFreq: Map<string, number>,
   primaryCategory: StyleguideColor[],
 ): { hex: string; source: string } | null {
-  // Meest-voorkomende button-bg met lage-lichtheid (CTA's zijn zelden wit)
+  // STAP 1: PRIMARY-categorie met detector-source LOGO heeft hoogste
+  // prioriteit. De logo-extractor produceert dominant-colors uit de
+  // bitmap/SVG van het merk — dit is de meest betrouwbare brand-primary
+  // signal (echte merken kleuren hun logo bewust).
+  const logoSourced = primaryCategory.find((c) =>
+    typeof c.detectorSource === 'string' && /logo/i.test(c.detectorSource),
+  );
+  if (logoSourced && !isEffectivelyNeutral(logoSourced.hex)) {
+    return { hex: logoSourced.hex, source: `logo-extraction (${logoSourced.detectorSource})` };
+  }
+
+  // STAP 2: meest-voorkomende button-bg, maar nu MET dubbele guard:
+  //   - L < 88 (CTA's zijn zelden bijna-wit) — was er al
+  //   - S > 12 (echte brand-tint, geen pure-neutral) — NIEUW
+  // Voorkomt dat pure-zwart (L=0, S=0) als dominant button-bg de echte
+  // brand-color overtroeft. Veel nav/footer/utility-buttons zijn zwart
+  // ook al is de merk-CTA goudkleurig.
   const sorted = [...buttonBgFreq.entries()].sort((a, b) => b[1] - a[1]);
   for (const [hex, count] of sorted) {
     const L = getLightness(hex);
-    if (L < 88) {
-      return { hex, source: `button-bg ${count}x` };
-    }
+    if (L >= 88) continue;
+    if (isEffectivelyNeutral(hex)) continue;
+    return { hex, source: `button-bg ${count}x` };
+  }
+
+  // STAP 3: eerste PRIMARY-categorie ook met saturation-guard. Wanneer de
+  // hele PRIMARY-pool puur-neutral is (donker thema-site zonder echte
+  // brand-color), pak alsnog de eerste — beter een neutral primary dan
+  // helemaal geen primary.
+  const nonNeutralPrimary = primaryCategory.find((c) => !isEffectivelyNeutral(c.hex));
+  if (nonNeutralPrimary) {
+    return { hex: nonNeutralPrimary.hex, source: `category PRIMARY (saturated)` };
   }
   const first = primaryCategory[0];
-  if (first) return { hex: first.hex, source: 'category PRIMARY' };
+  if (first) return { hex: first.hex, source: 'category PRIMARY (neutral fallback)' };
+
+  // STAP 4: laatste redmiddel — meest-voorkomende button-bg ZONDER
+  // saturation-guard. Voorkomt empty primary bij minimalistische sites.
+  for (const [hex, count] of sorted) {
+    return { hex, source: `button-bg ${count}x (neutral fallback)` };
+  }
   return null;
 }
 
@@ -693,6 +724,34 @@ function getLightness(hex: string): number {
   const max = Math.max(rgb.r, rgb.g, rgb.b);
   const min = Math.min(rgb.r, rgb.g, rgb.b);
   return Math.round(((max + min) / 2 / 255) * 100);
+}
+
+/**
+ * HSL-saturation 0-100. Brand-primaries op design-sites zijn vrijwel altijd
+ * S >= 15 (echte tinten). Pure-neutrals (zwart/wit/grijs) hebben S ~ 0 en
+ * mogen NIET als brand-primary geclaimd worden ook al zijn ze de meest-
+ * voorkomende button-bg op de pagina (UI-chrome zoals nav of footer-CTA).
+ */
+function getSaturation(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0;
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  if (max === min) return 0;
+  const l = (max + min) / 2;
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  return Math.round(s * 100);
+}
+
+/** True wanneer hex effectief een neutral is (S <= 12). Wordt gebruikt door
+ *  primary-pickers om pure-zwart/wit/grijs uit te sluiten van brand-rol
+ *  promotie ondanks hoge frequentie. */
+function isEffectivelyNeutral(hex: string): boolean {
+  return getSaturation(hex) <= 12;
 }
 
 function hexRoughlyEqual(a: string, b: string): boolean {
