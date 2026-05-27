@@ -552,10 +552,9 @@ function testimonialComponent(
   personas: { id: string; name: string; avatarUrl: string | null }[],
   personaOptions: { label: string; value: string }[],
 ) {
-  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
-  const { sectionPadding } = hints;
+  // Verbeterplan #2: tokens.sectionRhythm vervangt hints.sectionPadding
+  const { sectionRhythm } = tokens;
   const ds = tokens.designSystem;
-  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
   const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
   const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
@@ -583,7 +582,7 @@ function testimonialComponent(
         <section
           style={{
             background: tokens.brandSubtle,
-            padding: `${sectionPadding}px ${sectionPaddingX}px`,
+            padding: `${sectionRhythm.sectionPaddingY}px ${sectionRhythm.sectionPaddingX}px`,
             textAlign: 'center',
             fontFamily: bodyFont,
           }}
@@ -670,9 +669,10 @@ function testimonialComponent(
 
 function pricingTableComponent(tokens: BrandTokens) {
   const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
-  const { cardStyle, sectionPadding } = hints;
+  const { cardStyle } = hints;
+  // Verbeterplan #2: section-padding uit tokens.sectionRhythm
+  const { sectionRhythm } = tokens;
   const ds = tokens.designSystem;
-  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
   const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
   const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
@@ -707,7 +707,7 @@ function pricingTableComponent(tokens: BrandTokens) {
     render: ({ tiers }: PricingTableProps) => (
       <section
         style={{
-          padding: `${sectionPadding}px ${sectionPaddingX}px`,
+          padding: `${sectionRhythm.sectionPaddingY}px ${sectionRhythm.sectionPaddingX}px`,
           fontFamily: bodyFont,
           background: tokens.surface,
         }}
@@ -808,10 +808,9 @@ function pricingTableComponent(tokens: BrandTokens) {
  * FAQ — brand-emergent (Phase 6). Heading-typography + designSystem.spacing.
  */
 function faqComponent(tokens: BrandTokens) {
-  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
-  const { sectionPadding } = hints;
+  // Verbeterplan #2: section-padding uit tokens.sectionRhythm
+  const { sectionRhythm } = tokens;
   const ds = tokens.designSystem;
-  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
   const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
   const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
@@ -837,7 +836,7 @@ function faqComponent(tokens: BrandTokens) {
     render: ({ items }: FAQProps) => (
       <section
         style={{
-          padding: `${sectionPadding}px ${sectionPaddingX}px`,
+          padding: `${sectionRhythm.sectionPaddingY}px ${sectionRhythm.sectionPaddingX}px`,
           fontFamily: bodyFont,
           background: tokens.surface,
         }}
@@ -876,14 +875,14 @@ function faqComponent(tokens: BrandTokens) {
  * uit designSystem.label voor nav-links.
  */
 function footerComponent(tokens: BrandTokens) {
-  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
   const ds = tokens.designSystem;
   const isCustomHeadingFont = !tokens.headingFont.includes('system-ui');
   const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
-  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
-  const footerPaddingY = Math.round(hints.sectionPadding * 0.5);
+  // Verbeterplan #2: section-padding uit tokens.sectionRhythm; footer compacter
+  const sectionPaddingX = tokens.sectionRhythm.sectionPaddingX;
+  const footerPaddingY = Math.round(tokens.sectionRhythm.sectionPaddingY * 0.5);
   return {
     fields: {
       companyName: { type: 'text' as const },
@@ -970,10 +969,10 @@ function footerComponent(tokens: BrandTokens) {
  */
 function richTextComponent(tokens: BrandTokens) {
   const markdownComponents = buildRichTextMarkdownComponents(tokens);
-  const hints = computeBrandRenderHints(tokens.archetype, tokens.designSystem);
   const ds = tokens.designSystem;
-  const sectionPaddingY = Math.round(hints.sectionPadding * 0.6);
-  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+  // Verbeterplan #2: section-padding uit tokens.sectionRhythm; richtext compacter
+  const sectionPaddingY = Math.round(tokens.sectionRhythm.sectionPaddingY * 0.6);
+  const sectionPaddingX = tokens.sectionRhythm.sectionPaddingX;
   const isCustomBodyFont = !tokens.bodyFont.includes('system-ui');
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   const bodySize = ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 2)] ?? 16;
