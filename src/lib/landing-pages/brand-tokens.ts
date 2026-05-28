@@ -653,7 +653,12 @@ export function extractBrandTokensFromStyleguide(
   // system-ui blijven (workhorse-fonts). Voor heading geldt: wanneer scraper
   // een banned font detecteert, log warning + downgrade naar UI-rol zodat
   // de echte display-font (mogelijk serif uit fonts-tabel) doorkomt.
-  const BANNED_AI_DISPLAY_FONTS = /^(inter|roboto|arial|space[- ]?grotesk|helvetica[- ]?neue?|system[- ]?ui)$/i;
+  // Poppins toegevoegd 2026-05-28: het is een generieke 'workhorse sans'
+  // dat ScraperUI vaak als DISPLAY pakt terwijl het op de site enkel UI/
+  // body is. LINFI scrape: Poppins+Oranienbaum beiden DISPLAY → fontByRole
+  // pakte Poppins (eerste hit). Met Poppins in banned: SERIF_KEYWORDS
+  // fallback vindt Oranienbaum.
+  const BANNED_AI_DISPLAY_FONTS = /^(inter|roboto|arial|space[- ]?grotesk|helvetica[- ]?neue?|system[- ]?ui|poppins|montserrat|raleway|open[- ]?sans|lato)$/i;
   function isBannedDisplayFont(name: string | null | undefined): boolean {
     if (!name) return false;
     const first = name.split(',')[0]?.trim().replace(/^["']|["']$/g, '') ?? '';

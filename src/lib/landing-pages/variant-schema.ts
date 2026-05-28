@@ -92,8 +92,12 @@ const featuresSchema = z.object({
   /** 3-5 items per §1 #7 + #16 paradox of choice. */
   items: z
     .array(featureItemSchema)
+    // User-bevinding 2026-05-28: 5 features → 3+2 grid asymmetrie (3-col
+    // layout met 2 cards op tweede rij). Cap op 4 zodat het altijd
+    // visueel-balanced is (2×2 of 4×1) en match-het Anthropic 'paradox-of-
+    // choice ≤4'. Min blijft 3.
     .min(3, "features.items min 3 per §1 #7")
-    .max(5, "features.items max 5 per §1 #16 paradox of choice"),
+    .max(4, "features.items max 4 — voorkomt 3-col grid asymmetrie en respecteert paradox of choice"),
 });
 
 const testimonialSchema = z.object({

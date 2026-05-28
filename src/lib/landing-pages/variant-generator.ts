@@ -275,7 +275,7 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
   },` : ""}
   "features": {
     "sectionHeading": string,
-    "items": [{ "icon": string (lucide-icon naam, geen emoji), "heading": string (2-4 woorden), "body": string (1-2 zinnen benefit-frame) }] (3-5 items)
+    "items": [{ "icon": string (lucide-icon naam, geen emoji), "heading": string (2-4 woorden), "body": string (1-2 zinnen benefit-frame) }] (3 of 4 items — 5 verstoort grid-balans)
   },
   "socialProof": {
     "testimonials": [{ "quote": string, "authorName": string, "authorRole": string, "authorCompany": string, "outcome": string | optional }] (EXACT 1 item — sterkste single quote met outcome-cijfer wint van meerdere generieke quotes),
@@ -305,6 +305,8 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
 8. **Locale ${opts.locale}**: alle content in deze taal.
 9. **Transformatie-arc consistent**: pijn-bullets aan de 'van'-kant, features/testimonial/CTA aan de 'naar'-kant van de gekozen transformatie. Geen mismatch tussen problem-articulation en outcome-claims.
 10. **Specifiek > generiek**: vervang elk woord dat op meerdere merken zou passen ("krachtig platform", "innovatieve oplossing") door iets dat ALLEEN bij DIT merk past (concrete output, sector-term, uitspraak die de bron-website zou kunnen onderschrijven).
+11. **Geen herhaal-vocabulaire**: gebruik elk content-woord MAX 2× in de hele page (uitgezonderd: brand-naam, lidwoorden, kleine functiewoorden). Specifiek: "vakkundig"/"vakmanschap"/"professioneel"/"kwaliteit"/"deskundig" mogen samen niet vaker dan 3× verschijnen — herhaal-effect verzwakt de boodschap.
+12. **Houd de bron-website-stijl aan, improviseer NIET**: tone-of-voice, sector-termen, klant-aanspreking en typische zinsstructuren komen uit de geanalyseerde bron-website. Gebruik voorbeelden die op de échte bron passen (LINFI = vloerluiken/precisie/architectonisch; Better Brands = purpose/strategie/transformatie). Geen generic SaaS-frasen voor traditionele branches en omgekeerd.
 
 # COGNITIEVE FUNDAMENTEN (waarom dit werkt)
 - Fogg's Behavior Model: elke sectie moet motivatie + ability + trigger versterken

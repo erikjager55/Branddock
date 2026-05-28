@@ -69,6 +69,29 @@ export function PuckPageBuilder({
   const [puckData, setPuckData] = useState<SpikeData>(initialData);
   const [editorOpen, setEditorOpen] = useState(false);
 
+  // Re-hydrate puckData wanneer canvas-store.contextStack.puckData verandert
+  // (typisch: async hero-visual generation in LandingPageGenerateBlock
+  // updatet puckData.content[0].props.heroVisualUrl en PATCHED deliverable;
+  // CanvasPage refetcht /context en setContextStack triggert deze effect).
+  // Zonder deze sync bleef PuckPageBuilder de oude puckData zien (useMemo
+  // op mount-only) en toonde hero als dark-placeholder ondanks dat de URL
+  // wel gepersist was.
+  // Guard: we updaten alleen als het inkomende puckData substantieel anders
+  // is dan onze huidige state, anders treedt een infinite-loop op (set →
+  // store → effect → set → ...).
+  useEffect(() => {
+    if (!hydratedPuckData) return;
+    if (!Array.isArray(hydratedPuckData.content) || hydratedPuckData.content.length === 0) return;
+    // Cheap diff: serialize-compare op content + root. Alleen sync bij
+    // change. JSON.stringify is hier OK want puckData < 50KB typically.
+    const incoming = JSON.stringify(hydratedPuckData);
+    const current = JSON.stringify(puckData);
+    if (incoming !== current) {
+      setPuckData(hydratedPuckData);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydratedPuckData]);
+
   type PagePending = {
     current: SpikeData;
     proposed: SpikeData;
