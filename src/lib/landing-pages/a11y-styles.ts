@@ -70,5 +70,21 @@ export function buildA11yStyleBlock(brandColor: string = '#1FD1B2'): string {
   text-decoration: none;
 }
 .lp-skip-link:focus { top: 0; }
+
+/* Orchestrated page-load entrance (#7 design-quality). Staggered reveals
+   geven het Anthropic-aanbevolen 'one high-impact moment' i.p.v. scattered
+   micro-animations. Respect prefers-reduced-motion (override above). */
+@keyframes lp-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.lp-reveal {
+  animation: lp-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.lp-reveal-1 { animation-delay: 0.05s; }
+.lp-reveal-2 { animation-delay: 0.15s; }
+.lp-reveal-3 { animation-delay: 0.25s; }
+.lp-reveal-4 { animation-delay: 0.35s; }
+.lp-reveal-5 { animation-delay: 0.45s; }
 `.trim();
 }

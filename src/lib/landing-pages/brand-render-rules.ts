@@ -89,14 +89,20 @@ export interface CardStyle {
  * Plus LayoutStyle-overlay: COMMERCIAL → meer solid; MINIMAL/EDITORIAL → meer full-bleed.
  */
 /** Fase C — hero-pattern uit vision-AI heeft hoogste prioriteit; archetype +
- *  layoutStyle blijven als fallback. */
+ *  layoutStyle blijven als fallback.
+ *  Uitbreiding #6 design-quality: 3 asymmetric/editorial varianten die
+ *  het "alle gegenereerde LPs zien er hetzelfde uit" probleem doorbreken. */
 export type HeroPatternKey =
   | "CENTERED_EDITORIAL"
   | "IMAGE_RIGHT_SPLIT"
   | "IMAGE_LEFT_SPLIT"
   | "FULL_BLEED_IMAGE"
   | "VIDEO_BG"
-  | "TEXT_LEFT_FORM_RIGHT";
+  | "TEXT_LEFT_FORM_RIGHT"
+  // Asymmetric templates (Anthropic anti-default — grid-breaking)
+  | "ASYMMETRIC_LEFT_HEAVY"  // tekst-block links groot, witruimte rechts
+  | "DIAGONAL_SPLIT"          // tekst linksboven, accent diagonaal rechtsonder
+  | "EYEBROW_STACKED";        // lange eyebrow + grote h1 + minimal sub, links-uitgelijnd
 
 export function pickHeroLayout(
   archetype: BrandArchetype | null,
@@ -130,6 +136,18 @@ export function pickHeroLayout(
       case "VIDEO_BG":
         return { background: "full-bleed-image", textAlignment: "center", textVerticalPosition: "center", fullViewportHeight: true, overlayOpacity: 0.55 };
       case "TEXT_LEFT_FORM_RIGHT":
+        return { background: "solid-surface", textAlignment: "left", textVerticalPosition: "center", fullViewportHeight: false, overlayOpacity: 0 };
+      case "ASYMMETRIC_LEFT_HEAVY":
+        // 70/30 layout: tekst-block links breed, witruimte rechts ademt.
+        // Voor MAGICIAN/SAGE/CREATOR sites die editorial-density willen.
+        return { background: "solid-surface", textAlignment: "left", textVerticalPosition: "center", fullViewportHeight: false, overlayOpacity: 0 };
+      case "DIAGONAL_SPLIT":
+        // Tekst linksboven, brand-color accent-block diagonaal rechtsonder.
+        // Voor OUTLAW/JESTER/HERO — durf-aesthetiek.
+        return { background: "solid-surface", textAlignment: "left", textVerticalPosition: "top", fullViewportHeight: false, overlayOpacity: 0 };
+      case "EYEBROW_STACKED":
+        // Lange uppercase-eyebrow + grote h1 + minimal sub, alle 3 links.
+        // Editorial-magazine look — voor SAGE/RULER/CARETAKER.
         return { background: "solid-surface", textAlignment: "left", textVerticalPosition: "center", fullViewportHeight: false, overlayOpacity: 0 };
     }
   }

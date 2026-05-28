@@ -588,6 +588,7 @@ function brandHeroComponent(tokens: BrandTokens) {
               </div>
             ) : null}
             <h1
+              className="lp-reveal lp-reveal-1"
               style={{
                 fontFamily: displayFont,
                 // Responsive font-size: scraped-size = desktop-max, MIN cap
@@ -613,6 +614,7 @@ function brandHeroComponent(tokens: BrandTokens) {
               {headline}
             </h1>
             <p
+              className="lp-reveal lp-reveal-2"
               style={{
                 fontFamily: bodyFont,
                 fontSize: subSize,
@@ -629,7 +631,7 @@ function brandHeroComponent(tokens: BrandTokens) {
             </p>
             <button
               type="button"
-              className="lp-interactive"
+              className="lp-interactive lp-reveal lp-reveal-3"
               aria-label={ctaLabel}
               style={buttonRender}
             >
