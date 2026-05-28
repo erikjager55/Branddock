@@ -330,6 +330,20 @@ function AssetTile({
         src={thumbUrl}
         alt={asset.name}
         className="w-full h-full object-cover"
+        onError={(e) => {
+          // Asset file ontbreekt op disk (orphan DB-record). Toon placeholder
+          // i.p.v. broken-image icon. Voorkomt dat user op een niet-werkende
+          // asset klikt + bouwt graceful degradation in voor élk merk.
+          const img = e.currentTarget;
+          img.style.display = 'none';
+          const parent = img.parentElement;
+          if (parent && !parent.querySelector('.lp-img-fallback')) {
+            const fb = document.createElement('div');
+            fb.className = 'lp-img-fallback flex items-center justify-center w-full h-full bg-gray-100 text-gray-400 text-xs px-2 text-center';
+            fb.textContent = 'Bestand ontbreekt';
+            parent.appendChild(fb);
+          }
+        }}
       />
       {isPicked && (
         <div className="absolute top-1 right-1 rounded-full bg-teal-600 w-5 h-5 flex items-center justify-center text-white text-[10px] font-bold shadow">

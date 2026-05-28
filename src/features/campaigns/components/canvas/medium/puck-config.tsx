@@ -549,9 +549,17 @@ function brandHeroComponent(tokens: BrandTokens) {
       };
 
       // ── Button-style uit hints ─────────────────────────────
+      // Logica per hero-background:
+      //   - Donkere hero (full-bleed scrim / sectionBg=onSurface):
+      //       button = wit met onSurface tekst (contrast tegen donker)
+      //   - Lichte hero (solid-surface): button = brand-color met onBrand
+      //     tekst (zoals scraped: brand=button-bg, onBrand=button-text)
+      // Vibrant brands worden in BrandCTA section behandeld; voor hero
+      // gebruiken we altijd de brand-color als button-bg op licht.
+      const heroIsDark = useFullBleed || sectionBg === tokens.onSurface;
       const buttonRender: React.CSSProperties = {
-        background: useFullBleed || sectionBg === tokens.onSurface ? '#FFFFFF' : tokens.onBrand,
-        color: useFullBleed || sectionBg === tokens.onSurface ? tokens.onSurface : tokens.brand,
+        background: heroIsDark ? '#FFFFFF' : tokens.brand,
+        color: heroIsDark ? tokens.onSurface : tokens.onBrand,
         fontFamily: ds.typography.label.fontFamily,
         fontWeight: buttonStyle.fontWeight,
         fontSize: 16,
@@ -561,6 +569,10 @@ function brandHeroComponent(tokens: BrandTokens) {
         cursor: 'pointer',
         textTransform: buttonStyle.textTransform,
         letterSpacing: buttonStyle.letterSpacing,
+        // Universal cap: voorkomt full-width balk-buttons op alle merken.
+        width: 'fit-content',
+        maxWidth: '380px',
+        whiteSpace: 'nowrap',
         // underlineHover was foutief default-state geworden; underline-on-hover
         // vereist :hover CSS wat inline-styles niet kunnen. Defaulten naar 'none'.
         textDecoration: 'none',
@@ -649,7 +661,14 @@ function brandHeroComponent(tokens: BrandTokens) {
               type="button"
               className="lp-interactive lp-reveal lp-reveal-3"
               aria-label={ctaLabel}
-              style={buttonRender}
+              style={{
+                ...buttonRender,
+                // Conditional whitespace + letterSpacing cap voor lange labels.
+                whiteSpace: (ctaLabel ?? '').length <= 24 ? 'nowrap' : 'normal',
+                letterSpacing: (ctaLabel ?? '').length > 20 ? '0.1em' : buttonStyle.letterSpacing,
+                // Center button binnen centered hero
+                marginInline: heroLayout.textAlignment === 'center' ? 'auto' : undefined,
+              }}
             >
               {ctaLabel}
             </button>
