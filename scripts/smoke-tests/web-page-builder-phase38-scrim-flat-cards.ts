@@ -105,18 +105,22 @@ group("C10 — null archetype → defaults (gradient-brand)");
 
 // ─── C11 flat-card enforcement ────────────────────────────
 
-group("C11 — MINIMAL JESTER tokens (strong-shadow) → force border-only");
+// 2026-05-28: forceFlatCards → 'flat' i.p.v. 'border-only' (geen wrapper).
+// User-feedback LINFI: cards-with-border voldoen niet de premium-flat
+// aesthetic van de bron-website. Smoke aangepast naar GEEN border voor
+// forceFlatCards archetypes (JESTER+MINIMAL, HERO+EDITORIAL, RULER, SAGE).
+group("C11 — MINIMAL JESTER (forceFlatCards) → echt FLAT (geen card)");
 {
   const html = renderFeatures(ctx("JESTER", "MINIMAL"));
-  assert("border 1px solid aanwezig (border-only)", html.includes("border:1px solid"));
-  assert("geen box-shadow (geforceerd flat)", !html.includes("box-shadow"));
+  assert("flat: geen border", !html.includes("border:1px solid"));
+  assert("flat: geen box-shadow", !html.includes("box-shadow"));
 }
 
-group("C11 — EDITORIAL HERO → force border-only");
+group("C11 — EDITORIAL HERO (forceFlatCards) → echt FLAT");
 {
   const html = renderFeatures(ctx("HERO", "EDITORIAL"));
-  assert("EDITORIAL border-only border", html.includes("border:1px solid"));
-  assert("EDITORIAL geen box-shadow", !html.includes("box-shadow"));
+  assert("EDITORIAL flat: geen border", !html.includes("border:1px solid"));
+  assert("EDITORIAL flat: geen box-shadow", !html.includes("box-shadow"));
 }
 
 group("C11 — COMMERCIAL JESTER → behoudt strong-shadow");
@@ -133,12 +137,13 @@ group("C11 — PLAYFUL HERO → behoudt strong-shadow (geen force)");
 
 // ─── C3 max-radius constraint ─────────────────────────────
 
-group("C3 — RULER MINIMAL respect scraped radius (geen cap)");
+group("C3 — RULER MINIMAL flat-cards (geen border-radius op cards)");
 {
   const html = renderFeatures(ctx("RULER", "MINIMAL"));
-  // RULER maxRadiusPx=9999 nu (scraped data wint, bv LINFI 9999 pill)
-  // tokens.elevation.cardBorderRadius=12 → safeRadius=12 (geen cap)
-  assert("border-radius=12 (scraped value preserved)", html.includes("border-radius:12"));
+  // RULER+MINIMAL forceert nu 'flat' (geen card-wrapper) — geen border,
+  // geen radius, geen shadow. Whitespace + typography vormen hierarchie.
+  assert("RULER+MINIMAL geen card-border", !html.includes("border:1px solid"));
+  assert("RULER+MINIMAL geen box-shadow", !html.includes("box-shadow"));
 }
 
 console.log(`\n${pass} PASS, ${fail} FAIL`);

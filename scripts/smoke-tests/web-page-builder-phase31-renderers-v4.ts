@@ -129,20 +129,15 @@ group("D — FeatureGrid gebruikt tokens.elevation border-only");
     }) as React.ReactElement,
   );
 
+  // 2026-05-28: RULER+MINIMAL met forceFlatCards=true gaat nu naar 'flat'
+  // i.p.v. 'border-only' — geen card-wrapper, geen border, geen radius.
+  // Whitespace + typography vormen de hierarchie (Apple-style premium).
   assert(
-    "card padding 48px 32px",
-    html.includes("padding:48px 32px"),
+    "flat: geen border (premium architectural)",
+    !html.includes("border:1px solid"),
   );
   assert(
-    "border-only: 1px solid border",
-    html.includes("border:1px solid"),
-  );
-  assert(
-    "border-radius=0",
-    html.includes("border-radius:0"),
-  );
-  assert(
-    "geen box-shadow bij border-only",
+    "flat: geen box-shadow",
     !html.includes("box-shadow"),
   );
   assert(

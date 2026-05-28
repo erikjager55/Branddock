@@ -793,6 +793,11 @@ function brandCtaComponent(
             const useDarkButton = isVibrantSaturatedColor(tokens.brand);
             const ctaBg = useDarkButton ? tokens.onSurface : tokens.brand;
             const ctaColor = useDarkButton ? '#FFFFFF' : tokens.onBrand;
+            // Cap letterSpacing voor lange CTA-labels: 3px × 30 char = 90px
+            // extra width. Voor RULER/SAGE/MAGICIAN (premium) is dat te
+            // breed. Bij text-length > 20 chars: cap letterSpacing op 0.1em.
+            const labelLength = (label ?? '').length;
+            const capLetterSpacing = labelLength > 20 ? '0.1em' : btn.letterSpacing;
             return (
               <a
                 href={href}
@@ -809,8 +814,23 @@ function brandCtaComponent(
                   padding: `${btn.paddingY}px ${btn.paddingX}px`,
                   borderRadius: btn.radiusPx,
                   textTransform: btn.textTransform,
-                  letterSpacing: btn.letterSpacing,
+                  letterSpacing: capLetterSpacing,
                   transition: `all ${motion.transitionDuration} ${motion.easing}`,
+                  // Cap CTA-button breedte zodat hij niet als balk verschijnt.
+                  // 380px is breed genoeg voor lange labels (5-7 woorden),
+                  // smal genoeg om visueel als 'compact CTA' te lezen i.p.v.
+                  // een full-width balk. width:fit-content garandeert dat
+                  // padding/letterSpacing de natural-width kunnen vormen
+                  // BINNEN de max-cap.
+                  width: 'fit-content',
+                  maxWidth: '380px',
+                  // Center-align tekst voor wanneer label wraps
+                  textAlign: 'center',
+                  // Whitespace-nowrap voor labels die NET binnen 380px passen
+                  whiteSpace: labelLength <= 24 ? 'nowrap' : 'normal',
+                  // marginInline auto zodat button blijft centreren in
+                  // de centered section ondanks max-width
+                  marginInline: 'auto',
                 }}
               >
                 {label}
@@ -856,8 +876,12 @@ function featureGridComponent(tokens: BrandTokens) {
   const { sectionRhythm, elevation, iconography } = tokens;
   // C11 — Flat-card enforcement: MINIMAL/EDITORIAL forceren border-only.
   const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  // forceFlatCards (RULER/SAGE/MINIMAL-archetypes) → ECHT FLAT i.p.v.
+  // border-only. Voorheen kreeg LINFI cards-with-1px-border rondom elke
+  // feature; matched niet met premium-architectural feel van bron-website.
+  // Flat = geen wrapper-card, alleen whitespace + typography (Apple-style).
   const effectiveElevationCategory = constraints.forceFlatCards
-    ? 'border-only'
+    ? 'flat'
     : elevation.cardElevationCategory;
   const gap = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
   // 'system-ui' staat nu ALTIJD in de stack (fallback-chain in brand-tokens),
@@ -919,16 +943,29 @@ function featureGridComponent(tokens: BrandTokens) {
           backgroundSize: depthBgSize,
         }}
       >
-        {/* Responsive grid: `auto-fit` met minmax(240px, 1fr) zorgt dat het
-            aantal kolommen automatisch reduceert op smalle viewports. Op
-            een 1200px scherm krijg je tot `columns` kolommen; op 768px
-            wraps het naar 2-3; op mobile 1 kolom — zonder media-queries
-            (inline-style limiet). 240px is de min-leesbare breedte voor
-            een feature-card (icon + 3-woord heading + 1 zin body). */}
+        {/* Grid layout per item-count zodat we NIET in 3+1 / 5+1
+            asymmetrie eindigen op brede viewports:
+              1 item  → 1 col
+              2 items → 2 col
+              3 items → 3 col
+              4 items → 2×2
+              5+ items → auto-fit (zelden gebruikt)
+            Op smalle viewports (<480px) altijd 1-col via min().
+            Werkt voor ELK merk — feature-count grid-symmetrie is
+            puur visuele rule, niet brand-specifiek. */}
+        {(() => {
+          const n = features.length;
+          let gridCols: string;
+          if (n <= 1) gridCols = '1fr';
+          else if (n === 2) gridCols = 'repeat(2, minmax(min(280px, 100%), 1fr))';
+          else if (n === 3) gridCols = 'repeat(3, minmax(min(240px, 100%), 1fr))';
+          else if (n === 4) gridCols = 'repeat(2, minmax(min(280px, 100%), 1fr))';
+          else gridCols = 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))';
+          return (
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: `repeat(auto-fit, minmax(min(240px, 100%), 1fr))`,
+            gridTemplateColumns: gridCols,
             gap,
             maxWidth: constraints.maxContentWidth,
             margin: '0 auto',
@@ -990,6 +1027,8 @@ function featureGridComponent(tokens: BrandTokens) {
             );
           })}
         </div>
+          );
+        })()}
       </section>
       );
     },
