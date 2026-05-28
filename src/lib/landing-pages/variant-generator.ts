@@ -613,6 +613,35 @@ export async function generateLandingPageVariantBatch(
       console.warn('[variant-batch] WARNING: Variants share first 3 words of headline — axis-divergentie mogelijk niet effectief. Check prompt rendering + Anthropic response.');
     }
   }
+
+  // #5 60/30/10 color-distribution check per variant (#5 design-quality).
+  // Schat anti-pattern: te veel brand-accent op de page. Niet-blokkerend —
+  // alleen logging zodat we toekomstige UI-warning kunnen voeden.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const dist = require('./color-distribution') as typeof import('./color-distribution');
+    type Category = import('./color-distribution').ColorBudgetCategory;
+    successes.forEach((r, i) => {
+      // Schat section-bgs op basis van archetype + variant-content
+      // Hero: useFullBleed wanneer heroVisualUrl gezet → secondary, anders dominant
+      const heroBgCategory: Category = r.variant.hero.heroVisualUrl ? 'secondary' : 'dominant';
+      const sections: { componentType: string; areaPct: number; bgCategory: Category }[] = [
+        { componentType: 'BrandHero', areaPct: dist.getComponentAreaPct('BrandHero'), bgCategory: heroBgCategory },
+        { componentType: 'FeatureGrid', areaPct: dist.getComponentAreaPct('FeatureGrid'), bgCategory: 'dominant' },
+        { componentType: 'Testimonial', areaPct: dist.getComponentAreaPct('Testimonial'), bgCategory: 'accent' },
+        { componentType: 'FAQ', areaPct: dist.getComponentAreaPct('FAQ'), bgCategory: 'dominant' },
+        { componentType: 'BrandCTA', areaPct: dist.getComponentAreaPct('BrandCTA'), bgCategory: 'dominant' },
+        { componentType: 'Footer', areaPct: dist.getComponentAreaPct('Footer'), bgCategory: 'secondary' },
+      ];
+      const result = dist.estimateColorDistribution(sections);
+      if (result.warning) {
+        console.warn(`[variant-batch] color-distribution variant[${i}]: ${result.warning} (accent=${result.accentPct}%, dominant=${result.dominantPct}%, secondary=${result.secondaryPct}%)`);
+      }
+    });
+  } catch (err) {
+    // Non-critical — color-distribution check faalt = log + verder
+    console.warn(`[variant-batch] color-distribution check failed (non-critical): ${err instanceof Error ? err.message : String(err)}`);
+  }
   return successes;
 }
 

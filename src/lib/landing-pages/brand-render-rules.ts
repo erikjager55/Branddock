@@ -187,11 +187,15 @@ export function pickHeroLayout(
   if (archetype && fullBleedArchetypes.includes(archetype)) {
     const isLightOnlyVibrantBrand = brandIsVibrant === true && hasDarkSections === false;
     if (isLightOnlyVibrantBrand) {
-      // Vibrant + light-only design → centered editorial style
+      // #6 — Vibrant + light-only → archetype-passende asymmetric style:
+      //   RULER/SAGE             → EYEBROW_STACKED (editorial-premium)
+      //   OUTLAW/MAGICIAN/HERO    → DIAGONAL_SPLIT (durf, top-left)
+      //   EXPLORER/LOVER          → ASYMMETRIC_LEFT_HEAVY (ademend)
+      const isDiagonal = archetype === "OUTLAW" || archetype === "MAGICIAN" || archetype === "HERO";
       return {
         background: "solid-surface",
-        textAlignment: layoutStyle === "EXPERIENTIAL" ? "center" : "left",
-        textVerticalPosition: "center",
+        textAlignment: "left",
+        textVerticalPosition: isDiagonal ? "top" : "center",
         fullViewportHeight: false,
         overlayOpacity: 0,
       };

@@ -158,6 +158,13 @@ export function PuckPageBuilder({
     }
     setPageError(null);
     setPageBusy('auto-iterate');
+    // Auto-iterate doet 2 sequential Anthropic-calls (initial F-VAL +
+    // rewrite). Typisch 60-150s, worst-case 240s. Zonder client-side
+    // timeout blijft de spinner forever staan bij server-hang en kan
+    // user niet ontsnappen. AbortController forceert exit + duidelijke
+    // error wanneer 4 minuten verstreken zijn.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4 * 60 * 1000);
     try {
       const res = await fetch('/api/landing-pages/auto-iterate', {
         method: 'POST',
@@ -168,6 +175,7 @@ export function PuckPageBuilder({
           brandVoiceTone: contextStack?.brand?.brandToneOfVoice ?? null,
           brandName: contextStack?.brand?.brandName ?? null,
         }),
+        signal: controller.signal,
       });
       const json = (await res.json()) as
         | { status: 'skipped'; reason: string; score: number; threshold: number }
@@ -198,8 +206,17 @@ export function PuckPageBuilder({
         source: 'auto-iterate',
       });
     } catch (err) {
-      setPageError(err instanceof Error ? err.message : 'auto-iterate failed');
+      // AbortError = timeout (4 min cap). Geef expliciete feedback i.p.v.
+      // 'auto-iterate failed' wat als generic ai-error overkomt.
+      if (err instanceof Error && err.name === 'AbortError') {
+        setPageError(
+          'Auto-iterate timeout (4 min). De server-call duurde te lang. Mogelijk is Anthropic overbelast — probeer over 1-2 minuten opnieuw.',
+        );
+      } else {
+        setPageError(err instanceof Error ? err.message : 'auto-iterate failed');
+      }
     } finally {
+      clearTimeout(timeoutId);
       setPageBusy(null);
     }
   }, [puckData, contextStack, deliverableId, pageLocked]);
@@ -257,6 +274,12 @@ export function PuckPageBuilder({
       {/* Top action-bar — Branddock-stijl outline buttons + lock-toggle (zoals
           Brand Styleguide header). Rechts-uitgelijnd boven de page-render. */}
       <div className="flex items-center justify-end gap-2 flex-wrap">
+        {pageBusy === 'auto-iterate' ? (
+          <span className="text-xs text-gray-500 mr-2 flex items-center gap-1.5">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Auto-iterate loopt (~2 min) — Anthropic genereert verbetering…
+          </span>
+        ) : null}
         {pageError ? (
           <span className="text-xs text-red-600 mr-2">{pageError}</span>
         ) : null}

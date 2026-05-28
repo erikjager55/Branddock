@@ -9,6 +9,11 @@ import {
 } from '@/lib/landing-pages/brand-tokens';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import { getRenderConstraints } from '@/lib/landing-pages/render-constraints';
+import {
+  buildBackgroundDepth,
+  getBackgroundDepthSize,
+  pickBackgroundDepth,
+} from '@/lib/landing-pages/background-textures';
 import { IconBlock } from './lucide-icon-map';
 
 // ─── Component prop types ────────────────────────────────────
@@ -511,10 +516,21 @@ function brandHeroComponent(tokens: BrandTokens) {
       const subSize = tbr.body.fontSize ?? ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 2)] ?? 18;
       const subWeight = tbr.body.fontWeight ?? ds.typography.body.weights[0] ?? 400;
 
+      // #8 bg-depth — alleen voor solid-surface heroes (geen full-bleed
+      // image waar de photo de depth al levert). Voegt subtle/medium/rich
+      // grain + mesh aan witte hero zodat het niet vlak voelt.
+      const heroDepthLevel = !useFullBleed && heroLayout.background === 'solid-surface'
+        ? pickBackgroundDepth(tokens.archetype, tokens.layoutStyle)
+        : 'none';
+      const heroDepthBg = heroDepthLevel !== 'none'
+        ? buildBackgroundDepth(heroDepthLevel, tokens.brand)
+        : undefined;
+
       // ── Section style ──────────────────────────────────────
       const sectionStyle: React.CSSProperties = {
         background: backgroundImage ?? sectionBg,
-        backgroundSize: backgroundImage ? 'cover' : undefined,
+        backgroundImage: heroDepthBg ?? (backgroundImage ? undefined : undefined),
+        backgroundSize: backgroundImage ? 'cover' : getBackgroundDepthSize(heroDepthLevel),
         backgroundPosition: backgroundImage ? 'center' : undefined,
         color: sectionColor,
         fontFamily: displayFont,
@@ -887,12 +903,20 @@ function featureGridComponent(tokens: BrandTokens) {
         { title: 'Schaalbaar', description: 'Groeit mee met je business.', icon: 'trending-up' },
       ],
     },
-    render: ({ columns, features }: FeatureGridProps) => (
+    render: ({ columns, features }: FeatureGridProps) => {
+      // #8 bg-depth — voor FeatureGrid section. Texture matched
+      // archetype: JESTER/CREATOR krijgen rich, MINIMAL subtle, etc.
+      const depthLevel = pickBackgroundDepth(tokens.archetype, tokens.layoutStyle);
+      const depthBg = buildBackgroundDepth(depthLevel, tokens.brand);
+      const depthBgSize = getBackgroundDepthSize(depthLevel);
+      return (
       <section
         style={{
           padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
           fontFamily: bodyFont,
           background: tokens.surface,
+          backgroundImage: depthBg,
+          backgroundSize: depthBgSize,
         }}
       >
         {/* Responsive grid: `auto-fit` met minmax(240px, 1fr) zorgt dat het
@@ -967,7 +991,8 @@ function featureGridComponent(tokens: BrandTokens) {
           })}
         </div>
       </section>
-    ),
+      );
+    },
   };
 }
 
