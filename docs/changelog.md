@@ -93,7 +93,7 @@ Volledige doorhevel van BrandStyleguide-data naar LP-renderer (`puck-config.tsx`
 - Task: -
 - ADR: -
 - Spec: -
-- Commit: (filled after commit)
+- Commit: `c0d6ac13`
 
 ### 266. Fase B — ad-publishing pipeline (Meta foundation + cron infra)
 
