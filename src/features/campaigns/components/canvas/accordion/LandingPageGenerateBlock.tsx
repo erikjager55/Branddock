@@ -11,6 +11,10 @@ import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-sche
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import type { BrandTokens } from '@/lib/landing-pages/brand-tokens';
 import { STUDIO } from '@/lib/constants/design-tokens';
+import { ImageSourcePanel } from '../ImageSourcePanel';
+import type { VisualBriefSource } from '@/lib/ai/canvas-context';
+import type { InsertImageSelection } from '../insert-image/types';
+import { setHeroImage as persistHeroImage } from '../../../api/canvas.api';
 
 interface LandingPageGenerateBlockProps {
   deliverableId: string;
@@ -57,6 +61,38 @@ export function LandingPageGenerateBlock({
   const [error, setError] = useState<string | null>(null);
   const [visualError, setVisualError] = useState<string | null>(null);
   const [partialDelivery, setPartialDelivery] = useState<{ delivered: number; requested: number } | null>(null);
+  // ImageSourcePanel state (Step 2 parity): user kiest image-source vóór
+  // hero-visual aan deliverable hangt. Default 'generate' want dat is de
+  // meest-gebruikte flow. Bij asset-selectie roept persistHeroImage aan.
+  const [visualSource, setVisualSource] = useState<VisualBriefSource>('generate');
+  const handleImageSelected = useCallback(async (selection: InsertImageSelection) => {
+    try {
+      // imageSource afleiden uit visualSource state (= active tab in panel).
+      const sourceMap: Record<string, 'library' | 'url-import' | 'stock' | 'ai-generated' | 'upload'> = {
+        'library': 'library',
+        'url': 'url-import',
+        'stock': 'stock',
+        'generate': 'ai-generated',
+        'upload': 'upload',
+        'smart-search': 'library',
+        'compose': 'ai-generated',
+        'trained-style': 'ai-generated',
+        'photography-request': 'library',
+      };
+      const imageSource = sourceMap[visualSource] ?? 'library';
+      await persistHeroImage(deliverableId, {
+        imageUrl: selection.url,
+        imageSource,
+        mediaAssetId: selection.mediaAssetId ?? null,
+        alt: selection.alt ?? null,
+      });
+      window.dispatchEvent(
+        new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
+      );
+    } catch (err) {
+      setVisualError(err instanceof Error ? err.message : 'Hero-image opslaan mislukt');
+    }
+  }, [deliverableId, visualSource]);
 
   const builtPrompt = useMemo(() => {
     const parts: string[] = [];
@@ -348,7 +384,21 @@ export function LandingPageGenerateBlock({
           ))}
         </div>
         {error ? <ErrorBanner message={error} /> : null}
-        <div className="flex justify-center">
+
+        {/* User-feedback 2026-05-28: hetzelfde Step 2 patroon als 'Content
+            Variants' — Visual-source tab-strip + Regenerate-feedback +
+            Confirm & Continue onderaan. ImageSourcePanel embedded handelt
+            alle 10 image-sources (smart-search/generate/library/upload/url/
+            stock/compose/trained-style/photography-request/none). */}
+        <ImageSourcePanel
+          deliverableId={deliverableId}
+          source={visualSource}
+          onSourceChange={setVisualSource}
+          variant="embedded"
+          onSelected={handleImageSelected}
+        />
+
+        <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
           <button
             type="button"
             onClick={handleGenerate}
@@ -360,6 +410,18 @@ export function LandingPageGenerateBlock({
             ) : (
               <><RefreshCw className="h-4 w-4" />Genereer 2 nieuwe varianten</>
             )}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const first = variantOptions[0];
+              if (first) void handleChooseVariant(first);
+            }}
+            disabled={isChoosing || !variantOptions?.[0]}
+            className={`ml-auto inline-flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-medium ${STUDIO.generateButton} disabled:opacity-50`}
+          >
+            {isChoosing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            Bevestig & ga door
           </button>
         </div>
       </div>
