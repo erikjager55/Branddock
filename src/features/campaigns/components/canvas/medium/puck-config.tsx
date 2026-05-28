@@ -174,11 +174,17 @@ function statsBlockComponent(tokens: BrandTokens) {
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   const tbr = tokens.typographyByRole;
 
-  // Dark-bg pattern voor RULER/SAGE/MAGICIAN (premium/considered),
-  // light-bg voor PLAYFUL/JESTER (warm + open).
-  const useDarkBg = tokens.archetype === 'RULER' || tokens.archetype === 'SAGE' ||
-                    tokens.archetype === 'MAGICIAN' || tokens.archetype === 'OUTLAW' ||
-                    tokens.archetype === 'HERO';
+  // Dark-bg ALLEEN wanneer bron-website ook donkere sections heeft
+  // (hasDarkSections evidence). Voorheen archetype-driven (RULER/SAGE/
+  // MAGICIAN/OUTLAW/HERO → automatisch dark) wat mismatch gaf op
+  // light-only brands die toevallig in een van die archetypes vallen.
+  // Voor RULER/MAGICIAN-light-design brands geeft dit nu light-bg stats
+  // die matchen met hun bron — geen dark-bg meer zonder evidence.
+  const useDarkBg = tokens.hasDarkSections && (
+    tokens.archetype === 'RULER' || tokens.archetype === 'SAGE' ||
+    tokens.archetype === 'MAGICIAN' || tokens.archetype === 'OUTLAW' ||
+    tokens.archetype === 'HERO'
+  );
   const sectionBg = useDarkBg ? tokens.onSurface : tokens.surface;
   const numberColor = useDarkBg ? tokens.brand : tokens.brand;
   const labelColor = useDarkBg ? '#FFFFFF' : tokens.surfaceMuted;
@@ -370,6 +376,8 @@ function brandHeroComponent(tokens: BrandTokens) {
     tokens.archetype,
     tokens.designSystem,
     (tokens.heroPattern as import('@/lib/landing-pages/brand-render-rules').HeroPatternKey | null) ?? null,
+    tokens.hasDarkSections,
+    isVibrantSaturatedColor(tokens.brand),
   );
   const { heroLayout, displayTypography, buttonStyle, sectionPadding } = hints;
   const ds = tokens.designSystem;
@@ -809,6 +817,8 @@ function featureGridComponent(tokens: BrandTokens) {
     tokens.archetype,
     tokens.designSystem,
     (tokens.heroPattern as import('@/lib/landing-pages/brand-render-rules').HeroPatternKey | null) ?? null,
+    tokens.hasDarkSections,
+    isVibrantSaturatedColor(tokens.brand),
   );
   const { cardStyle } = hints;
   const ds = tokens.designSystem;
@@ -989,10 +999,25 @@ function testimonialComponent(
       const avatarUrl = persona?.avatarUrl ?? null;
       const initial = (displayName || '?').trim().charAt(0).toUpperCase() || '?';
       const avatarSize = 56;
+      // Testimonial-bg: voor vibrant-brand sites (Better Brands green)
+      // wordt brandSubtle een felgroene wash die niet matched met de
+      // ingetogen bron-stijl. Voor vibrant-brand zonder dark-section-
+      // evidence: gebruik surface met subtle border ipv brandSubtle.
+      // Pastel/gedempt-brand: brandSubtle blijft (Soft Cream wash werkt
+      // natuurlijk in LINFI's editorial palette).
+      const isVibrantBrand = isVibrantSaturatedColor(tokens.brand);
+      const testimonialBg = isVibrantBrand && !tokens.hasDarkSections
+        ? tokens.surface
+        : tokens.brandSubtle;
+      const testimonialBorder = testimonialBg === tokens.surface
+        ? `1px solid ${tokens.surfaceBorder}`
+        : 'none';
       return (
         <section
           style={{
-            background: tokens.brandSubtle,
+            background: testimonialBg,
+            borderTop: testimonialBorder,
+            borderBottom: testimonialBorder,
             padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
             textAlign: 'center',
             fontFamily: bodyFont,
@@ -1083,6 +1108,8 @@ function pricingTableComponent(tokens: BrandTokens) {
     tokens.archetype,
     tokens.designSystem,
     (tokens.heroPattern as import('@/lib/landing-pages/brand-render-rules').HeroPatternKey | null) ?? null,
+    tokens.hasDarkSections,
+    isVibrantSaturatedColor(tokens.brand),
   );
   const { cardStyle } = hints;
   // Verbeterplan #2 + C8: section-padding + max-width uit tokens/constraints
@@ -1343,10 +1370,15 @@ function footerComponent(tokens: BrandTokens) {
     render: ({ companyName, tagline, links }: FooterProps) => (
       <footer
         style={{
-          background: tokens.onSurface,
-          color: tokens.surface,
+          // Footer-bg duurzaam: dark-bg ALLEEN wanneer bron-website ook
+          // donkere sections heeft (hasDarkSections evidence). Anders licht
+          // op surface met onSurface tekst. Voorkomt dark-footer mismatch
+          // op light-only brands (Better Brands homepage = wit door en door).
+          background: tokens.hasDarkSections ? tokens.onSurface : tokens.surface,
+          color: tokens.hasDarkSections ? tokens.surface : tokens.onSurface,
           padding: `${footerPaddingY}px ${responsivePaddingX(sectionPaddingX)}`,
           fontFamily: bodyFont,
+          borderTop: tokens.hasDarkSections ? 'none' : `1px solid ${tokens.surfaceBorder}`,
         }}
       >
         <div

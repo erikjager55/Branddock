@@ -75,6 +75,13 @@ export interface BrandTokens {
    *  CENTERED_EDITORIAL / IMAGE_RIGHT_SPLIT / IMAGE_LEFT_SPLIT /
    *  FULL_BLEED_IMAGE / VIDEO_BG / TEXT_LEFT_FORM_RIGHT. */
   heroPattern: string | null;
+  /** Bevat de bron-website donkere achtergrond-secties (footer / stats /
+   *  feature-blocks)? Bepaald uit color-usage tags: een NEUTRAL kleur met
+   *  L < 30 die als section-bg / body-bg / card-bg tagged is. Wanneer
+   *  FALSE: renderer gebruikt overal light-bg ipv archetype-driven dark.
+   *  Voorkomt mismatches als bij Better Brands waar alle sections wit zijn
+   *  op de bron, maar onze MAGICIAN-archetype renderer dark-bg stats forceert. */
+  hasDarkSections: boolean;
 
   // ─── Action-roles (CTA-specifiek) ────────────────────────
   /** CTA-fill — default = brand. */
@@ -247,6 +254,7 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
   heroBgColor: null,
   headingTextColor: null,
   heroPattern: null,
+  hasDarkSections: false,
   // Action
   action: '#1FD1B2',
   onAction: '#FFFFFF',
@@ -755,6 +763,31 @@ export function extractBrandTokensFromStyleguide(
   const heroBgColor = pickByUsageTag('hero-bg');
   const headingTextColor = pickByUsageTag('heading-text');
 
+  // hasDarkSections — bevat de bron-website donkere bg-sections (footer,
+  // stats, etc.)? Bewijs: een NEUTRAL kleur met L < 25 die als section-bg /
+  // body-bg / card-bg / hero-bg getagged is. Voorkomt dat MAGICIAN-archetype
+  // brands met een light-only website (Better Brands) automatisch donkere
+  // stats + footer krijgen op de gegenereerde LP. Duurzaam — werkt voor élk
+  // merk, leunt niet op archetype.
+  const DARK_SECTION_TAGS = new Set(['hero-bg', 'section-bg', 'body-bg', 'card-bg']);
+  const hasDarkSections = colors.some((c) => {
+    const usageTags = (c.tags ?? [])
+      .filter((t) => t.startsWith('usage:'))
+      .map((t) => t.slice(6));
+    if (!usageTags.some((t) => DARK_SECTION_TAGS.has(t))) return false;
+    // Luminance check — alleen TRULY dark backgrounds tellen
+    const hex = c.hex.replace(/^#/, '');
+    if (hex.length !== 6) return false;
+    const num = parseInt(hex, 16);
+    const r = (num >> 16) & 0xff;
+    const g = (num >> 8) & 0xff;
+    const b = num & 0xff;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const lPct = ((max + min) / 2 / 255) * 100;
+    return lPct < 25;
+  });
+
   // Fase C — hero-pattern uit visualLanguage (gepiggybackt door analyzer)
   const heroPattern = (() => {
     const vl = styleguide.visualLanguage as { heroPattern?: { pattern?: string } } | null;
@@ -781,6 +814,8 @@ export function extractBrandTokensFromStyleguide(
     headingTextColor,
     // Fase C — hero-pattern uit vision-AI
     heroPattern,
+    // dark-section evidence (light brands → light defaults overal)
+    hasDarkSections,
     // Action roles (default = brand)
     action: brand,
     onAction: safeOnBrand,
@@ -926,6 +961,8 @@ export function extractBrandTokensFromContext(
     headingTextColor: null,
     // Fase C — geen vision-data in context-only pad
     heroPattern: null,
+    // context-only pad: geen scrape-evidence beschikbaar → false default
+    hasDarkSections: false,
     // Action
     action: brandColor,
     onAction: onBrand,

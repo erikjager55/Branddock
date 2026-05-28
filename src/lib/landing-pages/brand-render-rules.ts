@@ -102,6 +102,16 @@ export function pickHeroLayout(
   archetype: BrandArchetype | null,
   layoutStyle: LayoutStyle,
   heroPattern?: HeroPatternKey | null,
+  /** Optional flag: heeft de bron donkere bg-sections? Wanneer FALSE en
+   *  archetype zou normaal full-bleed-image kiezen: val terug op
+   *  solid-surface — een light-only website moet niet ineens een dark
+   *  scrim hero krijgen alleen omdat zijn archetype MAGICIAN is. */
+  hasDarkSections?: boolean,
+  /** Optional flag: is de brand-color vibrant-saturated (accent-territory)?
+   *  Wanneer TRUE EN hasDarkSections=false: brand is light-design oriented
+   *  (Better Brands), full-bleed scrim klopt niet. Wanneer FALSE: brand
+   *  is gedempt (LINFI Luxe Gold), full-bleed werkt natuurlijk. */
+  brandIsVibrant?: boolean,
 ): HeroLayout {
   // Fase C — bron-pattern wint over archetype-default. Mapt direct naar
   // HeroLayout-config zonder door archetype-fallbacks heen te lopen.
@@ -150,8 +160,24 @@ export function pickHeroLayout(
     };
   }
 
-  // Archetype-driven voor MINIMAL/EDITORIAL/EXPERIENTIAL
+  // Archetype-driven voor MINIMAL/EDITORIAL/EXPERIENTIAL. MAAR: full-bleed
+  // wordt automatisch een dark-scrim hero. Voor VIBRANT-brand sites ZONDER
+  // dark-section evidence (= light-only design met accent-kleur, zoals
+  // Better Brands) is dat een directe mismatch — val terug op solid-surface.
+  // GEDEMPTE-brand sites (LINFI Luxe Gold) blijven full-bleed-eligible
+  // omdat hun design natuurlijk dark-photography met overlay kan dragen.
   if (archetype && fullBleedArchetypes.includes(archetype)) {
+    const isLightOnlyVibrantBrand = brandIsVibrant === true && hasDarkSections === false;
+    if (isLightOnlyVibrantBrand) {
+      // Vibrant + light-only design → centered editorial style
+      return {
+        background: "solid-surface",
+        textAlignment: layoutStyle === "EXPERIENTIAL" ? "center" : "left",
+        textVerticalPosition: "center",
+        fullViewportHeight: false,
+        overlayOpacity: 0,
+      };
+    }
     return {
       background: "full-bleed-image",
       textAlignment: layoutStyle === "EXPERIENTIAL" ? "center" : "left",
@@ -380,9 +406,11 @@ export function computeBrandRenderHints(
   archetype: BrandArchetype | null,
   designSystem: DesignSystem,
   heroPattern?: HeroPatternKey | null,
+  hasDarkSections?: boolean,
+  brandIsVibrant?: boolean,
 ): BrandRenderHints {
   return {
-    heroLayout: pickHeroLayout(archetype, designSystem.layoutStyle, heroPattern),
+    heroLayout: pickHeroLayout(archetype, designSystem.layoutStyle, heroPattern, hasDarkSections, brandIsVibrant),
     buttonStyle: pickButtonStyle(archetype, designSystem),
     displayTypography: pickDisplayTypography(archetype, designSystem),
     cardStyle: pickCardStyle(archetype, designSystem),

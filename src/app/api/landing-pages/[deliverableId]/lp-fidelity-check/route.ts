@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
-import { judgeLpFidelity, isLpFidelityEnabled } from "@/lib/landing-pages/lp-fidelity-judge";
+import { judgeLpFidelity } from "@/lib/landing-pages/lp-fidelity-judge";
 import { capturePuckTreeScreenshot } from "@/lib/landing-pages/lp-screenshotter";
 import type { Data } from "@puckeditor/core";
 
@@ -25,13 +25,9 @@ export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ deliverableId: string }> },
 ) {
-  if (!isLpFidelityEnabled()) {
-    return NextResponse.json(
-      { error: "LP-fidelity judge is uitgeschakeld (BRANDSTYLE_LP_FIDELITY=1 niet gezet)" },
-      { status: 503 },
-    );
-  }
-
+  // Env-gate verwijderd — fidelity-check is een conscious user-action via
+  // de 'Brand-fit check'-knop in canvas-UI, niet een automatic cron-call.
+  // Kosten (~$0.02 per click) zijn acceptable voor manuele check.
   const { deliverableId } = await params;
 
   const session = await auth.api.getSession({ headers: await headers() });
