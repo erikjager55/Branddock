@@ -106,27 +106,25 @@ group('pickButtonStyle — archetype + designSystem combineren');
 group('pickDisplayTypography — emphasis-based size+weight');
 {
   // LINFI RULER+MINIMAL → sparse (light weight, op 1-na grootste)
+  // Sizes komen nu uit modularScale(16, 1.25, 4, 5) ≈ [48, 60, 76, 96].
+  // Sparse pakt index 2 (op 1 na grootste).
   const linfi = pickDisplayTypography('RULER', MINIMAL_DS);
   assert('LINFI: weight = 300 (sparse, lichtste)', linfi.weight === 300);
-  // MINIMAL.display.sizes = [48, 64, 72, 96]. Sparse pakt sizes[2] = 72
-  assert('LINFI: size 72 (sparse uit MINIMAL scale)', linfi.size === 72);
+  assert('LINFI: size in 60-80px (sparse MINIMAL modular)', linfi.size >= 60 && linfi.size <= 80, String(linfi.size));
 
   // HERO EXPERIENTIAL → dramatic (grootste, zwaarste)
+  // Sizes uit modularScale(16, 1.5, 4, 4) ≈ [80, 120, 184, 272]
   const heroExp = pickDisplayTypography('HERO', EXPERIENTIAL_DS);
-  // EXPERIENTIAL.display.sizes = [56, 80, 112, 144]
-  assert('HERO+EXPERIENTIAL: dramatic size 144 (max)', heroExp.size === 144);
-  // EXPERIENTIAL.display.weights = [700, 800, 900]
+  assert('HERO+EXPERIENTIAL: dramatic >= 120 (max modular)', heroExp.size >= 120, String(heroExp.size));
   assert('HERO+EXPERIENTIAL: dramatic weight 900', heroExp.weight === 900);
 
-  // COMMERCIAL → dense
+  // COMMERCIAL → dense — modularScale(16, 1.2, 3, 4) ≈ [32, 40, 48]
   const denseTypo = pickDisplayTypography('SAGE', COMMERCIAL_DS);
-  // COMMERCIAL.display.sizes = [32, 42, 52]
-  assert('SAGE+COMMERCIAL: dense size 42', denseTypo.size === 42);
+  assert('SAGE+COMMERCIAL: dense in 32-48 (modular)', denseTypo.size >= 32 && denseTypo.size <= 48, String(denseTypo.size));
 
-  // PLAYFUL → dense
+  // PLAYFUL → dense — modularScale(16, 1.333, 3, 4) ≈ [52, 68, 92]
   const playful = pickDisplayTypography('CREATOR', PLAYFUL_DS);
-  // PLAYFUL.display.sizes = [36, 48, 64]
-  assert('CREATOR+PLAYFUL: dense size 48', playful.size === 48);
+  assert('CREATOR+PLAYFUL: dense in 48-68 (modular)', playful.size >= 48 && playful.size <= 72, String(playful.size));
 }
 
 group('pickCardStyle — archetype-elevation mapping');

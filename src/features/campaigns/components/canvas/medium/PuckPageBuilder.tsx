@@ -11,6 +11,7 @@ import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
 import { variantToPuckData } from './variant-to-puck-data';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
 import { useBrandFontLoader } from './useBrandFontLoader';
+import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
 // Page-level lock is stored op `puckData.root.props.locked` (boolean).
 // Per-component lock-utils (component-lock.ts) blijven beschikbaar voor
 // de fullscreen Puck-editor (sidebar metadata) — niet meer in default-view.
@@ -326,6 +327,15 @@ export function PuckPageBuilder({
           ) : null}
         </div>
       ) : null}
+
+      {/* a11y-styles injectie (#4 design-quality) — :focus-visible /
+          :hover / reduced-motion / aria-disabled vereisen pseudo-class CSS
+          die inline-styles niet kunnen leveren. Eenmalig per page-render. */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: buildA11yStyleBlock(contextStack?.brandTokens?.brand ?? '#1FD1B2'),
+        }}
+      />
 
       {/* Page-render — flat op de pagina-achtergrond, geen kader/wrapper-bg
           zodat de preview naadloos in het Step 3 layout zit. */}

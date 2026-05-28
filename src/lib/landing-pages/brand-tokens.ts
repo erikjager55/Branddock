@@ -645,6 +645,20 @@ export function extractBrandTokensFromStyleguide(
   // tiempos) zodat brands die via Typekit een serif inladen ook gedetecteerd
   // worden i.p.v. op 'sans-serif' fallback terechtkomen.
   const SERIF_KEYWORDS = /\bserif\b|garamond|playfair|oranienbaum|cormorant|merriweather|lora|prata|abril|mrs[- ]?eaves|sentinel|freight|tiempos|caslon|baskerville|bodoni|didot|minion|chronicle|miller|hoefler|publico|larish|recoleta|fraunces|noto[- ]?serif|crimson|dm[- ]?serif|libre[- ]?baskerville|jensen/i;
+
+  // Banned AI-default fonts (#3 design-quality verbeterplan). Anthropic's
+  // frontend-design Skill banned-list — deze fonts zijn het cliché van LLM-
+  // generated UI's en zwakken de distinctiviteit van een merk af wanneer
+  // ze in display-positie verschijnen. Voor body-text mag Inter/Roboto/
+  // system-ui blijven (workhorse-fonts). Voor heading geldt: wanneer scraper
+  // een banned font detecteert, log warning + downgrade naar UI-rol zodat
+  // de echte display-font (mogelijk serif uit fonts-tabel) doorkomt.
+  const BANNED_AI_DISPLAY_FONTS = /^(inter|roboto|arial|space[- ]?grotesk|helvetica[- ]?neue?|system[- ]?ui)$/i;
+  function isBannedDisplayFont(name: string | null | undefined): boolean {
+    if (!name) return false;
+    const first = name.split(',')[0]?.trim().replace(/^["']|["']$/g, '') ?? '';
+    return BANNED_AI_DISPLAY_FONTS.test(first);
+  }
   const wrapFontStack = (name: string, role: 'display' | 'body'): string => {
     // Input is al een stack (bv. "Poppins, sans-serif" uit DB.fontFamily)?
     // Geen double-wrap; respecteer de auteur-bedoelde fallback-chain.
@@ -684,8 +698,19 @@ export function extractBrandTokensFromStyleguide(
     return wrapFontStack(serifFont.fontFamily ?? serifFont.name, 'display');
   };
 
+  // Banned-AI-display-font check: wanneer de gekozen display-font een
+  // generic AI-default is (Inter/Roboto/Arial/Space Grotesk/Helvetica),
+  // probeer eerst displayByName() (kans op een serif in de fonts-table
+  // die als UI was gemarkeerd maar wel display-character heeft). Voorkomt
+  // dat brands met DEFAULT_AI Inter-display krijgen wat alle gegenereerde
+  // LPs op elkaar laat lijken.
+  let primaryHeading = fontByRole('DISPLAY', 'display');
+  if (primaryHeading && isBannedDisplayFont(primaryHeading)) {
+    const recovery = displayByName();
+    if (recovery) primaryHeading = recovery;
+  }
   const headingFont =
-    fontByRole('DISPLAY', 'display')
+    primaryHeading
     ?? displayByName()
     ?? (styleguide.primaryFontName ? wrapFontStack(styleguide.primaryFontName, 'display') : null)
     ?? DEFAULT_BRAND_TOKENS.headingFont;

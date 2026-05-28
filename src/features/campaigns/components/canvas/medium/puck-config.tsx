@@ -329,6 +329,8 @@ function stickyCtaBarComponent(tokens: BrandTokens) {
           </span>
           <a
             href={href}
+            className="lp-interactive"
+            aria-label={ctaLabel}
             style={{
               display: 'inline-block',
               background: tokens.brand,
@@ -625,7 +627,12 @@ function brandHeroComponent(tokens: BrandTokens) {
             >
               {sub}
             </p>
-            <button type="button" style={buttonRender}>
+            <button
+              type="button"
+              className="lp-interactive"
+              aria-label={ctaLabel}
+              style={buttonRender}
+            >
               {ctaLabel}
             </button>
           </div>
@@ -771,6 +778,8 @@ function brandCtaComponent(
             return (
               <a
                 href={href}
+                className="lp-interactive"
+                aria-label={label}
                 style={{
                   display: 'inline-block',
                   background: ctaBg,
@@ -1404,11 +1413,12 @@ function footerComponent(tokens: BrandTokens) {
             </div>
             <div style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>{tagline}</div>
           </div>
-          <nav style={{ display: 'flex', gap: 24 }}>
+          <nav style={{ display: 'flex', gap: 24 }} aria-label="Footer">
             {links.map((l, i) => (
               <a
                 key={i}
                 href={l.href}
+                className="lp-interactive"
                 style={{
                   color: tokens.surface,
                   textDecoration: 'none',

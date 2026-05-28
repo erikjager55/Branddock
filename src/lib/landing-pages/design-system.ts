@@ -60,33 +60,79 @@ export interface TypographyScale {
   label: TypographyClass;
 }
 
+/**
+ * Modulaire type-scale generator (#1 design-quality verbeterplan).
+ *
+ * Genereert een ratio-gebaseerde scale die visueel-consistent ritme
+ * garandeert (i.p.v. ad-hoc grootte-arrays). Standaard ratios:
+ *   - 1.200 — Minor third (rustig, redactioneel)
+ *   - 1.250 — Major third (klassiek, breed inzetbaar)
+ *   - 1.333 — Perfect fourth (zelfverzekerd, modern)
+ *   - 1.414 — Augmented fourth (energiek)
+ *   - 1.500 — Perfect fifth (dramatisch)
+ *   - 1.618 — Golden ratio (luxe, harmonisch)
+ *
+ * Genereerde sizes worden naar 8pt grid afgerond bij >= 16px,
+ * naar 4pt grid bij < 16px, voor consistentie met spacing-grid.
+ *
+ *   modularScale(base=16, ratio=1.25, count=6)
+ *     → [16, 20, 25, 31, 39, 49] → snap → [16, 20, 24, 32, 40, 48]
+ */
+export function modularScale(
+  base: number,
+  ratio: number,
+  count: number,
+  startStep = 0,
+): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const raw = base * Math.pow(ratio, startStep + i);
+    const snapped = raw >= 16 ? Math.round(raw / 4) * 4 : Math.round(raw / 2) * 2;
+    out.push(snapped);
+  }
+  return out;
+}
+
+/**
+ * Type-scale specs per layoutStyle — vervangt ad-hoc size-arrays.
+ * Elke layoutStyle heeft een base + ratio die het visuele karakter bepaalt:
+ *   - MINIMAL:      1.250 major-third (rustig, redactioneel)
+ *   - EDITORIAL:    1.333 perfect-fourth (klassiek-elegant)
+ *   - COMMERCIAL:   1.200 minor-third (compact, conversion-tight)
+ *   - EXPERIENTIAL: 1.500 perfect-fifth (dramatisch, attention-grabbing)
+ *   - PLAYFUL:      1.333 perfect-fourth (modern, energiek)
+ * Sizes worden gegenereerd vanaf body-base (14-18px) en geschaald door
+ * display (5 stappen up), heading (3 stappen up), body (3 stappen), label
+ * (2 stappen down). Snap-to-grid garandeert dat alle waarden multiples
+ * van 4 zijn (zie spacing-grid Fase #2).
+ */
 const TYPOGRAPHY_PRESETS: Record<LayoutStyle, TypographyScale> = {
   MINIMAL: {
     display: {
       fontFamily: '"Cormorant Garamond", "Times New Roman", serif',
       weights: [300, 400],
-      sizes: [48, 64, 72, 96],
+      sizes: modularScale(16, 1.25, 4, 5), // ~48, 60, 76, 96
       lineHeight: 1.05,
       letterSpacing: '-0.01em',
     },
     heading: {
       fontFamily: '"Cormorant Garamond", "Times New Roman", serif',
       weights: [300, 400],
-      sizes: [24, 32, 48],
+      sizes: modularScale(16, 1.25, 3, 3), // ~32, 40, 48
       lineHeight: 1.15,
       letterSpacing: 'normal',
     },
     body: {
       fontFamily: '"DM Sans", "Helvetica Neue", sans-serif',
       weights: [300, 400],
-      sizes: [13, 14, 16],
+      sizes: modularScale(14, 1.143, 3, 0), // ~14, 16, 18
       lineHeight: 1.8,
       letterSpacing: 'normal',
     },
     label: {
       fontFamily: '"DM Sans", "Helvetica Neue", sans-serif',
       weights: [400, 500],
-      sizes: [11, 12],
+      sizes: modularScale(11, 1.1, 2, 0), // ~10, 12
       lineHeight: 1.2,
       letterSpacing: '0.12em',
       textTransform: 'uppercase',
@@ -96,28 +142,28 @@ const TYPOGRAPHY_PRESETS: Record<LayoutStyle, TypographyScale> = {
     display: {
       fontFamily: '"Playfair Display", Georgia, serif',
       weights: [400, 500, 700],
-      sizes: [40, 56, 72, 96],
+      sizes: modularScale(16, 1.333, 4, 4), // ~52, 68, 92, 124 (snap → 52, 68, 92, 124)
       lineHeight: 1.1,
       letterSpacing: '-0.02em',
     },
     heading: {
       fontFamily: '"Playfair Display", Georgia, serif',
       weights: [500, 700],
-      sizes: [24, 32, 40],
+      sizes: modularScale(16, 1.333, 3, 3), // ~36, 48, 64
       lineHeight: 1.2,
       letterSpacing: 'normal',
     },
     body: {
       fontFamily: '"Inter", "Helvetica Neue", sans-serif',
       weights: [400, 500],
-      sizes: [14, 16, 18],
+      sizes: modularScale(14, 1.143, 3, 0), // ~14, 16, 20
       lineHeight: 1.7,
       letterSpacing: 'normal',
     },
     label: {
       fontFamily: '"Inter", "Helvetica Neue", sans-serif',
       weights: [500, 600],
-      sizes: [11, 12],
+      sizes: modularScale(11, 1.1, 2, 0), // ~10, 12
       lineHeight: 1.2,
       letterSpacing: '0.08em',
       textTransform: 'uppercase',
@@ -127,28 +173,28 @@ const TYPOGRAPHY_PRESETS: Record<LayoutStyle, TypographyScale> = {
     display: {
       fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
       weights: [600, 700],
-      sizes: [32, 42, 52],
+      sizes: modularScale(16, 1.2, 3, 4), // ~32, 40, 48
       lineHeight: 1.1,
       letterSpacing: 'normal',
     },
     heading: {
       fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
       weights: [600, 700],
-      sizes: [20, 24, 28],
+      sizes: modularScale(16, 1.2, 3, 2), // ~24, 28, 32
       lineHeight: 1.2,
       letterSpacing: 'normal',
     },
     body: {
       fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
       weights: [400, 500],
-      sizes: [14, 15, 16],
+      sizes: modularScale(14, 1.0714, 3, 0), // ~14, 16, 16
       lineHeight: 1.5,
       letterSpacing: 'normal',
     },
     label: {
       fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
       weights: [500, 600],
-      sizes: [11, 12],
+      sizes: modularScale(11, 1.1, 2, 0),
       lineHeight: 1.2,
       letterSpacing: '0.05em',
       textTransform: 'uppercase',
@@ -158,28 +204,28 @@ const TYPOGRAPHY_PRESETS: Record<LayoutStyle, TypographyScale> = {
     display: {
       fontFamily: '"Inter", "Helvetica Neue", sans-serif',
       weights: [700, 800, 900],
-      sizes: [56, 80, 112, 144],
+      sizes: modularScale(16, 1.5, 4, 4), // ~80, 120, 180, 272 → cap met clamp() bij render
       lineHeight: 0.95,
       letterSpacing: '-0.03em',
     },
     heading: {
       fontFamily: '"Inter", "Helvetica Neue", sans-serif',
       weights: [600, 700],
-      sizes: [28, 36, 48],
+      sizes: modularScale(16, 1.5, 3, 2), // ~36, 56, 80
       lineHeight: 1.1,
       letterSpacing: '-0.01em',
     },
     body: {
       fontFamily: '"Inter", "Helvetica Neue", sans-serif',
       weights: [400, 500],
-      sizes: [16, 18, 20],
+      sizes: modularScale(16, 1.125, 3, 0), // ~16, 20, 20
       lineHeight: 1.6,
       letterSpacing: 'normal',
     },
     label: {
       fontFamily: '"Inter", "Helvetica Neue", sans-serif',
       weights: [600, 700],
-      sizes: [12, 14],
+      sizes: modularScale(12, 1.167, 2, 0),
       lineHeight: 1.2,
       letterSpacing: '0.16em',
       textTransform: 'uppercase',
@@ -189,28 +235,28 @@ const TYPOGRAPHY_PRESETS: Record<LayoutStyle, TypographyScale> = {
     display: {
       fontFamily: '"Nunito", "Helvetica Neue", sans-serif',
       weights: [700, 800],
-      sizes: [36, 48, 64],
+      sizes: modularScale(16, 1.333, 3, 4), // ~36, 48, 64
       lineHeight: 1.15,
       letterSpacing: 'normal',
     },
     heading: {
       fontFamily: '"Nunito", "Helvetica Neue", sans-serif',
       weights: [700],
-      sizes: [22, 28, 36],
+      sizes: modularScale(16, 1.333, 3, 2), // ~24, 32, 40
       lineHeight: 1.25,
       letterSpacing: 'normal',
     },
     body: {
       fontFamily: '"Nunito", "Helvetica Neue", sans-serif',
       weights: [400, 500, 600],
-      sizes: [14, 16, 18],
+      sizes: modularScale(14, 1.143, 3, 0),
       lineHeight: 1.65,
       letterSpacing: 'normal',
     },
     label: {
       fontFamily: '"Nunito", "Helvetica Neue", sans-serif',
       weights: [600, 700],
-      sizes: [12, 13],
+      sizes: modularScale(12, 1.1, 2, 0),
       lineHeight: 1.2,
       letterSpacing: '0.06em',
       textTransform: 'uppercase',
