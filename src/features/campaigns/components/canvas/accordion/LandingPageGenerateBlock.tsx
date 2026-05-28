@@ -186,47 +186,21 @@ export function LandingPageGenerateBlock({
       window.dispatchEvent(
         new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
       );
-      // Sub-Sprint C: auto-trigger hero-visual generatie (non-blocking).
-      // User kan ondertussen naar Step 3 → ziet placeholder-frame tot visual klaar.
-      // Image-prompt brand-aware via computeBrandRenderHints +
-      // contextStack.brand.brandImageryStyle.
-      setIsGeneratingVisual(true);
-      void (async () => {
-        try {
-          const instruction = buildHeroVisualInstruction(variant, contextStack);
-          const result = await generateCanvasVisual(deliverableId, {
-            instruction, aspectRatio: '16:9', count: 1,
-          });
-          const firstUrl = result.variants?.[0]?.url;
-          if (firstUrl) {
-            const updated: LandingPageVariantContent = {
-              ...variant,
-              hero: { ...variant.hero, heroVisualUrl: firstUrl },
-            };
-            setStructuredVariant(updated);
-            const updatedPuck = variantToPuckDataFromStructured(updated, contextStack);
-            await fetch(`/api/studio/${deliverableId}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ settings: { structuredVariant: updated, puckData: updatedPuck } }),
-            });
-            window.dispatchEvent(
-              new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
-            );
-          }
-        } catch (visErr) {
-          // Niet-blocking — user kan handmatig knop gebruiken voor retry
-          console.warn('[LandingPage] auto-hero-visual failed:', visErr);
-        } finally {
-          setIsGeneratingVisual(false);
-        }
-      })();
+      // User-feedback 2026-05-28: auto-trigger hero-visual generation is
+      // verwijderd — user gaf nooit expliciet opdracht voor een afbeelding.
+      // Hero-visual blijft beschikbaar via de handmatige knop in Step 3
+      // (PuckPageBuilder) wanneer user 'm wil.
+      // User-feedback 2026-05-28: na variant-keuze direct door naar Step 3.
+      // Verwijdert de tussenstap met section-by-section preview. Step 3
+      // (Medium/Puck) krijgt de gepersisteerde puckData zodra contextStack
+      // ververst is.
+      onAdvance();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Variant-keuze opslaan mislukt');
     } finally {
       setIsChoosing(false);
     }
-  }, [contextStack, deliverableId, setContextStack, setStructuredVariant]);
+  }, [contextStack, deliverableId, setContextStack, setStructuredVariant, onAdvance]);
 
   const handleGenerateVisual = useCallback(async () => {
     if (!chosenVariant) return;
@@ -397,191 +371,47 @@ export function LandingPageGenerateBlock({
     return null;
   }
 
-  // ─── Variant gekozen — full preview + hero-visual + advance ─
-  // De groene 'Variant gekozen' bevestigingsbanner is verwijderd (user-
-  // feedback 2026-05-27: onnodige extra interactie — variant-keuze + Bevestig-
-  // knop onderaan zijn voldoende signalen). 'Andere variant kiezen' blijft
-  // beschikbaar als rechtsboven-link in de eerste section-card zodat user
-  // niet vast komt te zitten in de gekozen variant.
+  // ─── Variant gekozen — korte status, geen detailed preview ─
+  // User-feedback 2026-05-28: de section-by-section preview is verwijderd.
+  // handleChooseVariant doet nu meteen onAdvance() → wizard wisselt direct
+  // naar Step 3 (Medium). Wanneer user via back-nav terug komt naar Step 2:
+  // toont alleen een korte status met optie 'Andere variant kiezen'.
   return (
-    <div className="space-y-6">
-      {variantOptions && variantOptions.length > 1 ? (
-        <div className="flex justify-end">
+    <div className="space-y-4">
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 flex items-start gap-2">
+        <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="font-medium">Variant gekozen</p>
+          <p className="text-xs text-emerald-800 mt-0.5">
+            De pagina is opgebouwd in Step 3 (Medium). Klik hieronder om een andere variant te kiezen of door te gaan.
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        {variantOptions && variantOptions.length > 1 ? (
           <button
             type="button"
-            onClick={() => {
-              setStructuredVariant(null);
-            }}
-            className="text-xs font-medium text-gray-500 underline hover:text-gray-700"
+            onClick={() => setStructuredVariant(null)}
+            className="text-xs font-medium text-gray-600 underline hover:text-gray-900"
           >
             Andere variant kiezen
           </button>
-        </div>
-      ) : null}
-
-      <SectionCard title="1. Hero">
-        <FieldRow label="Headline" value={chosenVariant.hero.headline} accent />
-        <FieldRow label="Subhead" value={chosenVariant.hero.subhead} />
-        <FieldRow label="Primary CTA" value={chosenVariant.hero.primaryCta} />
-        {chosenVariant.hero.secondaryCta ? (
-          <FieldRow label="Secondary CTA" value={chosenVariant.hero.secondaryCta} />
         ) : null}
-        {chosenVariant.hero.heroVisualUrl ? (
-          <div className="mt-3">
-            <p className="text-xs font-medium text-gray-700 mb-1.5">Hero-visual</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={chosenVariant.hero.heroVisualUrl}
-              alt="Hero visual"
-              className="w-full max-w-md rounded-lg border border-gray-200"
-            />
-          </div>
-        ) : (
-          <div className="mt-3 rounded-lg border border-dashed border-gray-300 p-3">
-            <button
-              type="button"
-              onClick={handleGenerateVisual}
-              disabled={isGeneratingVisual}
-              className="inline-flex items-center gap-2 text-sm text-teal-700 font-medium hover:text-teal-900 disabled:opacity-50"
-            >
-              {isGeneratingVisual ? (
-                <><Loader2 className="h-4 w-4 animate-spin" />Hero-visual genereren...</>
-              ) : (
-                <><ImageIcon className="h-4 w-4" />Genereer hero-visual (AI, ~20s)</>
-              )}
-            </button>
-            {visualError ? <p className="text-xs text-red-700 mt-2">{visualError}</p> : null}
-          </div>
-        )}
-      </SectionCard>
-
-      <SectionCard title={`2. Trust-strip (${chosenVariant.trust.type})`}>
-        <ul className="list-disc list-inside text-sm text-gray-700 space-y-0.5">
-          {chosenVariant.trust.items.map((item, i) => <li key={i}>{item.label}</li>)}
-        </ul>
-      </SectionCard>
-
-      {chosenVariant.problem ? (
-        <SectionCard title="3. Probleem-articulatie">
-          <FieldRow label="Heading" value={chosenVariant.problem.heading} accent />
-          <p className="text-xs font-medium text-gray-700 mt-2 mb-1">Pijn-bullets</p>
-          <ul className="list-disc list-inside text-sm text-gray-700 space-y-0.5">
-            {chosenVariant.problem.painBullets.map((b, i) => <li key={i}>{b}</li>)}
-          </ul>
-          <FieldRow label="Brug naar oplossing" value={chosenVariant.problem.bridgingSentence} />
-        </SectionCard>
-      ) : null}
-
-      <SectionCard title="4. Features">
-        <FieldRow label="Section-heading" value={chosenVariant.features.sectionHeading} accent />
-        <div className="space-y-2 mt-2">
-          {chosenVariant.features.items.map((f, i) => (
-            <div key={i} className="rounded border border-gray-200 p-2 text-sm">
-              <p className="font-medium text-gray-900">
-                {f.icon ? <span className="text-xs text-teal-600 mr-2">[{f.icon}]</span> : null}
-                {f.heading}
-              </p>
-              <p className="text-gray-600 text-xs mt-0.5">{f.body}</p>
-            </div>
-          ))}
+        <div className="ml-auto">
+          <button
+            type="button"
+            onClick={onAdvance}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium ${STUDIO.generateButton}`}
+          >
+            <CheckCircle2 className="h-4 w-4" />Open editor (Step 3)
+          </button>
         </div>
-      </SectionCard>
-
-      <SectionCard title="5. Social proof">
-        {chosenVariant.socialProof.testimonials.map((t, i) => (
-          <div key={i} className="rounded border border-gray-200 p-2 text-sm mb-2 last:mb-0">
-            <p className="italic text-gray-700">&ldquo;{t.quote}&rdquo;</p>
-            <p className="text-xs text-gray-500 mt-1">
-              — {t.authorName}, {t.authorRole} · {t.authorCompany}
-              {t.outcome ? ` — ${t.outcome}` : ''}
-            </p>
-          </div>
-        ))}
-        {chosenVariant.socialProof.impactStats && chosenVariant.socialProof.impactStats.length > 0 ? (
-          <div className="mt-2">
-            <p className="text-xs font-medium text-gray-700 mb-1">Impact stats</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {chosenVariant.socialProof.impactStats.map((s, i) => (
-                <div key={i} className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-lg font-bold text-teal-700">{s.value}</p>
-                  <p className="text-xs text-gray-600">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-      </SectionCard>
-
-      {chosenVariant.pricing ? (
-        <SectionCard title="6. Pricing (3 tiers, decoy)">
-          <div className="grid grid-cols-3 gap-2">
-            {chosenVariant.pricing.tiers.map((t, i) => (
-              <div
-                key={i}
-                className={`rounded border p-2 text-sm ${
-                  t.highlighted ? 'border-teal-400 bg-teal-50' : 'border-gray-200'
-                }`}
-              >
-                {t.highlighted ? (
-                  <p className="text-xs text-teal-700 font-medium uppercase">Aanbevolen</p>
-                ) : null}
-                <p className="font-semibold text-gray-900">{t.name}</p>
-                <p className="text-lg font-bold text-gray-900">{t.price}</p>
-                <ul className="text-xs text-gray-600 mt-1 space-y-0.5">
-                  {t.features.map((f, j) => <li key={j}>• {f}</li>)}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      ) : null}
-
-      <SectionCard title={`7. FAQ (${chosenVariant.faq.items.length} items)`}>
-        <div className="space-y-2">
-          {chosenVariant.faq.items.map((q, i) => (
-            <div key={i} className="text-sm">
-              <p className="font-medium text-gray-900">{q.question}</p>
-              <p className="text-gray-600 text-xs mt-0.5">{q.answer}</p>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-
-      <SectionCard title="8. Final CTA">
-        <FieldRow label="Heading" value={chosenVariant.finalCta.heading} accent />
-        <FieldRow label="Risk-reducer" value={chosenVariant.finalCta.riskReducer} />
-        <FieldRow label="Primary CTA" value={chosenVariant.finalCta.primaryCta} />
-        {chosenVariant.hero.primaryCta === chosenVariant.finalCta.primaryCta ? (
-          <p className="text-xs text-emerald-700 mt-2 flex items-center gap-1">
-            <CheckCircle2 className="h-3 w-3" />Single-CTA discipline: identiek aan hero
-          </p>
-        ) : null}
-      </SectionCard>
-
-      <div className="flex flex-col sm:flex-row gap-2 sticky bottom-0 bg-gradient-to-t from-white via-white to-white/0 pt-3">
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={isGenerating}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
-        >
-          {isGenerating ? (
-            <><Loader2 className="h-4 w-4 animate-spin" />Regenereren...</>
-          ) : (
-            <><RefreshCw className="h-4 w-4" />Genereer 2 nieuwe varianten</>
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={onAdvance}
-          className={`flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
-        >
-          <CheckCircle2 className="h-4 w-4" />Bevestig & ga naar editor
-        </button>
       </div>
     </div>
   );
 }
+
+// Onbereikbaar — vroegere detailed preview wordt niet meer gerendered.
 
 // ─── Sub-componenten ──────────────────────────────────────
 

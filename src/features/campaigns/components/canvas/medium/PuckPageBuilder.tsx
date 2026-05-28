@@ -283,10 +283,18 @@ export function PuckPageBuilder({
     [persistPuckData],
   );
 
-  if (isGenerating) {
+  // Show full loading-state when:
+  //   - parent reports generating, OR
+  //   - we don't yet have non-empty puckData (= variant-choice not persisted
+  //     OR puckData has been written but not yet hydrated back to store)
+  // User-feedback 2026-05-28: pagina pas tonen wanneer alles klaar is —
+  // geen half-gevulde state.
+  const hasContent = Array.isArray(puckData.content) && puckData.content.length > 0;
+  if (isGenerating || !hasContent) {
     return (
-      <div className="flex items-center justify-center h-[480px] rounded-lg border border-dashed border-gray-200 bg-gray-50 text-sm text-gray-500">
-        Wachten op variant-generatie…
+      <div className="flex flex-col items-center justify-center h-[480px] rounded-lg border border-dashed border-gray-200 bg-gray-50 text-sm text-gray-500 gap-2">
+        <Loader2 className="h-5 w-5 animate-spin" />
+        <span>{isGenerating ? 'Variant wordt gegenereerd…' : 'Pagina wordt opgebouwd…'}</span>
       </div>
     );
   }
