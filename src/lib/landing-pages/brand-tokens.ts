@@ -82,6 +82,18 @@ export interface BrandTokens {
    *  Voorkomt mismatches als bij Better Brands waar alle sections wit zijn
    *  op de bron, maar onze MAGICIAN-archetype renderer dark-bg stats forceert. */
   hasDarkSections: boolean;
+  /** Per-type styleguide-component-stijl uit StyleguideComponent records.
+   *  Renderer gebruikt deze direct voor 1-op-1 fidelity met de Components-
+   *  tab. Null = geen scraped sample voor dat type. */
+  styleguideComponents: StyleguideComponentTokens;
+  /** Scraped donkere section-bg (LINFI #263238, Better Brands null) wanneer
+   *  bron-website een echte donkere section heeft. Null = geen scraped
+   *  bewijs; renderer gebruikt onSurface als fallback. */
+  darkSectionBg: string | null;
+  /** Scraped secondaire light-surface voor 60/30/10 alternation. Tweede
+   *  lichtste NEUTRAL met background-tag die NIET surface is. Null wanneer
+   *  bron alleen één bg-color heeft. */
+  secondarySurface: string | null;
 
   // ─── Action-roles (CTA-specifiek) ────────────────────────
   /** CTA-fill — default = brand. */
@@ -182,6 +194,33 @@ export interface TextTokens {
   };
 }
 
+/** Per-type styleguide-component raw scraped sample. Renderer kan deze
+ *  inline-style toepassen voor pixel-perfect match met Components-tab. */
+export interface ScrapedComponentStyle {
+  color: string | null;
+  background: string | null;
+  border: string | null;
+  padding: string | null;
+  borderRadius: string | null;
+  fontSize: string | null;
+  fontWeight: string | null;
+  boxShadow: string | null;
+  textTransform: string | null;
+  letterSpacing: string | null;
+  display: string | null;
+  fontFamily: string | null;
+}
+
+export interface StyleguideComponentTokens {
+  BUTTON: ScrapedComponentStyle | null;
+  FORM_INPUT: ScrapedComponentStyle | null;
+  STATUS_CHIP: ScrapedComponentStyle | null;
+  PRODUCT_CARD: ScrapedComponentStyle | null;
+  FEATURE_ICON: ScrapedComponentStyle | null;
+  TOP_NAVIGATION: ScrapedComponentStyle | null;
+  QUOTE_BLOCK: ScrapedComponentStyle | null;
+}
+
 export interface ButtonTokens {
   paddingY: number;
   paddingX: number;
@@ -202,6 +241,14 @@ export interface ButtonTokens {
    *  layoutStyles waar de preset DM Sans / Inter is i.p.v. de echte
    *  brand-font). */
   fontFamily: string | null;
+  /** Scraped border-shorthand (bv. "2px solid #000"). Null = no border. */
+  border: string | null;
+  /** Scraped CSS transition (bv. "all 0.3s ease"). Null = none. */
+  transition: string | null;
+  /** Scraped :hover background. Null = none. */
+  hoverBackground: string | null;
+  /** Scraped :hover color. Null = none. */
+  hoverColor: string | null;
 }
 
 export interface ElevationTokens {
@@ -265,6 +312,17 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
   headingTextColor: null,
   heroPattern: null,
   hasDarkSections: false,
+  darkSectionBg: null,
+  secondarySurface: null,
+  styleguideComponents: {
+    BUTTON: null,
+    FORM_INPUT: null,
+    STATUS_CHIP: null,
+    PRODUCT_CARD: null,
+    FEATURE_ICON: null,
+    TOP_NAVIGATION: null,
+    QUOTE_BLOCK: null,
+  },
   // Action
   action: '#1FD1B2',
   onAction: '#FFFFFF',
@@ -292,6 +350,10 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
     background: null,
     color: null,
     fontFamily: null,
+    border: null,
+    transition: null,
+    hoverBackground: null,
+    hoverColor: null,
   },
   elevation: {
     cardShadow: "0 2px 8px rgba(0,0,0,0.06)",
@@ -388,6 +450,21 @@ interface StyleguideShape {
   photographyStyle?: unknown;
   /** Fase C — visualLanguage JSON met optioneel heroPattern uit vision-AI. */
   visualLanguage?: unknown;
+  /** Scraped spacing-scale uit BrandStyleguide.spacingScale (Json). Shape:
+   *  { tokens: [{name, value}], gridBase: number | null } — value in rem. */
+  spacingScale?: unknown;
+  /** Scraped styleguide-components: rauwe samples uit StyleguideComponent
+   *  records (BUTTON / FORM_INPUT / PRODUCT_CARD / FEATURE_ICON /
+   *  TOP_NAVIGATION / QUOTE_BLOCK). Renderer raadpleegt deze direct voor
+   *  1-op-1 fidelity met de Components-tab van de brand-styleguide. */
+  components?: StyleguideComponentLike[] | null;
+}
+
+interface StyleguideComponentLike {
+  type: string;
+  label?: string | null;
+  extractedStyles: unknown;
+  confidence?: number | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -607,6 +684,64 @@ function pickAccent(
  * Legacy fields (primaryHex/etc.) populated als alias van role-tokens voor
  * backward-compat met bestaande puck-config consumers.
  */
+/**
+ * Mapt StyleguideComponent records naar per-type ScrapedComponentStyle.
+ * Per type: kies hoogste-confidence sample (of eerste wanneer geen confidence),
+ * parse extractedStyles JSON naar de canonical shape.
+ *
+ * Pure functie — geen DB, geen sanitization (renderer mag rauwe CSS-waardes
+ * direct gebruiken voor pixel-perfect match met Components-tab).
+ */
+function mapStyleguideComponents(
+  components: StyleguideComponentLike[] | null | undefined,
+): StyleguideComponentTokens {
+  const empty: StyleguideComponentTokens = {
+    BUTTON: null,
+    FORM_INPUT: null,
+    STATUS_CHIP: null,
+    PRODUCT_CARD: null,
+    FEATURE_ICON: null,
+    TOP_NAVIGATION: null,
+    QUOTE_BLOCK: null,
+  };
+  if (!components || components.length === 0) return empty;
+
+  const types: (keyof StyleguideComponentTokens)[] = [
+    'BUTTON', 'FORM_INPUT', 'STATUS_CHIP', 'PRODUCT_CARD',
+    'FEATURE_ICON', 'TOP_NAVIGATION', 'QUOTE_BLOCK',
+  ];
+  const result = { ...empty };
+  for (const type of types) {
+    const samples = components.filter((c) => c.type === type);
+    if (samples.length === 0) continue;
+    const best = [...samples].sort(
+      (a, b) => (b.confidence ?? 0) - (a.confidence ?? 0),
+    )[0];
+    const raw = best.extractedStyles as Record<string, unknown> | null;
+    if (!raw || typeof raw !== 'object') continue;
+    // Guard tegen scraper-output die niet-string waardes schrijft (number,
+    // nested object, boolean). Renderer past inline-styles toe; alleen
+    // strings zijn veilig. Anders null en val terug op archetype-default.
+    const asStr = (v: unknown): string | null =>
+      typeof v === 'string' && v.trim().length > 0 ? v : null;
+    result[type] = {
+      color: asStr(raw.color),
+      background: asStr(raw.background),
+      border: asStr(raw.border),
+      padding: asStr(raw.padding),
+      borderRadius: asStr(raw.borderRadius),
+      fontSize: asStr(raw.fontSize),
+      fontWeight: asStr(raw.fontWeight),
+      boxShadow: asStr(raw.boxShadow),
+      textTransform: asStr(raw.textTransform),
+      letterSpacing: asStr(raw.letterSpacing),
+      display: asStr(raw.display),
+      fontFamily: asStr(raw.fontFamily),
+    };
+  }
+  return result;
+}
+
 export function extractBrandTokensFromStyleguide(
   styleguide: StyleguideShape | null | undefined,
 ): BrandTokens {
@@ -739,7 +874,35 @@ export function extractBrandTokensFromStyleguide(
 
   // ── v3 — Design-system resolutie (Pad C Sub-Sprint A) ──
   const layoutStyle = styleguide.layoutStyle ?? DEFAULT_LAYOUT_STYLE;
-  const designSystem = getDesignSystemForLayoutStyle(layoutStyle);
+  // 1-op-1 spacing: wanneer brand-styleguide een spacingScale heeft
+  // (rem-tokens xs/sm/md/lg/xl/2xl) overschrijven we het preset met
+  // px-converteerde waardes. Dat zorgt dat de LP exact dezelfde rhythm
+  // gebruikt als wat de Components-tab toont.
+  const scrapedScale = (() => {
+    const raw = (styleguide.spacingScale ?? null) as { tokens?: Array<{ value: number }> } | null;
+    if (!raw?.tokens || raw.tokens.length === 0) return undefined;
+    const values = raw.tokens
+      .map((t) => t.value)
+      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0);
+    if (values.length === 0) return undefined;
+    // Robuste heuristic voor unit-loze tokens:
+    //  - Fractional value < 1 (bv. 0.25, 0.5) → zeker rem.
+    //  - Alle waardes integers EN minstens één >= 8 → zeker px (Napking 16/20/24,
+    //    Better Brands 4/10/12/16/20/24, Tailwind interpreted in px-mode).
+    //  - Anders rem-conventie (LINFI 1/2/4/4.25/5/7 → ×16).
+    // Voorkomt zowel "Tailwind 16rem = 16px" als "Napking 16px = 1px" misfires.
+    const hasFractional = values.some((v) => v < 1);
+    const allInteger = values.every((v) => Number.isInteger(v));
+    const hasLargeInteger = values.some((v) => v >= 8);
+    const isPx = !hasFractional && allInteger && hasLargeInteger;
+    const px = values
+      .map((v) => isPx ? Math.round(v) : Math.round(v * 16))
+      .sort((a, b) => a - b);
+    return px;
+  })();
+  const designSystem = scrapedScale
+    ? { ...getDesignSystemForLayoutStyle(layoutStyle), spacing: scrapedScale }
+    : getDesignSystemForLayoutStyle(layoutStyle);
   const archetype = styleguide.archetype ?? null;
 
   // ── v4 — Component tokens (verbeterplan Fase C) ──
@@ -813,12 +976,19 @@ export function extractBrandTokensFromStyleguide(
   // stats + footer krijgen op de gegenereerde LP. Duurzaam — werkt voor élk
   // merk, leunt niet op archetype.
   const DARK_SECTION_TAGS = new Set(['hero-bg', 'section-bg', 'body-bg', 'card-bg']);
-  const hasDarkSections = colors.some((c) => {
-    const usageTags = (c.tags ?? [])
+  const isDarkBgColor = (c: StyleguideColorLike): boolean => {
+    const tags = (c.tags ?? []).map((t) => t.toLowerCase());
+    const usageTags = tags
       .filter((t) => t.startsWith('usage:'))
       .map((t) => t.slice(6));
-    if (!usageTags.some((t) => DARK_SECTION_TAGS.has(t))) return false;
-    // Luminance check — alleen TRULY dark backgrounds tellen
+    const hasUsageDark = usageTags.some((t) => DARK_SECTION_TAGS.has(t));
+    // Brede match: ook standaard tags 'background'+'dark' tellen (zonder
+    // usage: prefix). Vereist BEIDE tags zodat een gewone witte surface
+    // (background+surface) niet als dark wordt geclassificeerd — de
+    // luminance-gate hieronder vangt het anders al af, maar expliciete
+    // tag-eisen voorkomen ambiguiteit voor toekomstige aanpassingen.
+    const hasPlainDarkBg = tags.includes('background') && tags.includes('dark');
+    if (!hasUsageDark && !hasPlainDarkBg) return false;
     const hex = c.hex.replace(/^#/, '');
     if (hex.length !== 6) return false;
     const num = parseInt(hex, 16);
@@ -829,13 +999,54 @@ export function extractBrandTokensFromStyleguide(
     const min = Math.min(r, g, b);
     const lPct = ((max + min) / 2 / 255) * 100;
     return lPct < 25;
-  });
+  };
+  const hasDarkSections = colors.some(isDarkBgColor);
+  // Donkerste section-bg op luminance (voor Footer / Stats). Sorteer op
+  // luminance ascending zodat consistent dezelfde kleur wint ongeacht
+  // DB-insertion-order van sortOrder. Null wanneer brand geen donkere
+  // secties heeft.
+  const darkSectionBg = (() => {
+    const candidates = colors.filter(isDarkBgColor);
+    if (candidates.length === 0) return null;
+    return [...candidates].sort(
+      (a, b) => relativeLuminance(a.hex) - relativeLuminance(b.hex),
+    )[0].hex;
+  })();
+  // Secondaire light surface (60/30/10 alternation): tweede lichtste NEUTRAL
+  // met background-tag die NIET de primaire surface is. Voor LINFI is dit
+  // bv. #FBF4BC (cream) of #F5F6F7 (light gray).
+  const secondarySurface = (() => {
+    const surfaceLower = surface?.toLowerCase() ?? '';
+    const brandSubtleLower = brandSubtle?.toLowerCase() ?? '';
+    // Tweede lichtste NEUTRAL of SECONDARY background-tagged kleur die NIET
+    // surface of brandSubtle is. PRIMARY/BRAND/ACCENT uitgesloten zodat een
+    // brand-color wash niet als section-bg leakt (LINFI cream is SECONDARY,
+    // niet PRIMARY). Sorteer op luminance descending; pak [0] (= lichtste).
+    const lightBgs = colors
+      .filter((c) =>
+        // Alleen NEUTRAL of SECONDARY voor background-rol. SEMANTIC = error/
+        // success/info/warning, PRIMARY/ACCENT = brand-color, BRAND = brand-
+        // wash. Geen daarvan past als alternation-surface.
+        (c.category === 'NEUTRAL' || c.category === 'SECONDARY')
+        && (c.tags ?? []).map((t) => t.toLowerCase()).some((t) => ['background', 'light', 'subtle'].includes(t))
+        && relativeLuminance(c.hex) > 0.85
+        && c.hex.toLowerCase() !== surfaceLower
+        && c.hex.toLowerCase() !== brandSubtleLower,
+      )
+      .sort((a, b) => relativeLuminance(b.hex) - relativeLuminance(a.hex));
+    return lightBgs[0]?.hex ?? null;
+  })();
 
   // Fase C — hero-pattern uit visualLanguage (gepiggybackt door analyzer)
   const heroPattern = (() => {
     const vl = styleguide.visualLanguage as { heroPattern?: { pattern?: string } } | null;
     return vl?.heroPattern?.pattern ?? null;
   })();
+
+  // 1-op-1 styleguide-components: per type kies hoogste-confidence sample
+  // en map de raw extractedStyles naar ScrapedComponentStyle. Renderer
+  // raadpleegt deze direct voor pixel-perfect match met Components-tab.
+  const styleguideComponents = mapStyleguideComponents(styleguide.components ?? null);
 
   return {
     // Legacy aliases (semantisch correct na v2-mapping + WCAG-gate)
@@ -859,6 +1070,11 @@ export function extractBrandTokensFromStyleguide(
     heroPattern,
     // dark-section evidence (light brands → light defaults overal)
     hasDarkSections,
+    // Scraped section colors voor 1-op-1 brand-styleguide-fidelity
+    darkSectionBg,
+    secondarySurface,
+    // Per-type scraped component-samples (1-op-1 met Components-tab)
+    styleguideComponents,
     // Action roles (default = brand)
     action: brand,
     onAction: safeOnBrand,
@@ -1006,6 +1222,17 @@ export function extractBrandTokensFromContext(
     heroPattern: null,
     // context-only pad: geen scrape-evidence beschikbaar → false default
     hasDarkSections: false,
+    darkSectionBg: null,
+    secondarySurface: null,
+    styleguideComponents: {
+      BUTTON: null,
+      FORM_INPUT: null,
+      STATUS_CHIP: null,
+      PRODUCT_CARD: null,
+      FEATURE_ICON: null,
+      TOP_NAVIGATION: null,
+      QUOTE_BLOCK: null,
+    },
     // Action
     action: brandColor,
     onAction: onBrand,

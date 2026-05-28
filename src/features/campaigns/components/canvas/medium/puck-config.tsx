@@ -15,6 +15,8 @@ import {
   pickBackgroundDepth,
 } from '@/lib/landing-pages/background-textures';
 import { IconBlock } from './lucide-icon-map';
+import { isNoOpBorder, isTransparentBackground } from '@/lib/landing-pages/scraped-css-helpers';
+import { pxFromCssValue } from '@/lib/landing-pages/brand-tokens-v4-mappers';
 
 // ─── Component prop types ────────────────────────────────────
 
@@ -104,6 +106,14 @@ export type StatsBlockProps = {
   items: StatsItem[];
 };
 
+export type BrandNavLink = { label: string; href: string };
+export type BrandNavProps = {
+  brandName: string;
+  links: BrandNavLink[];
+  ctaLabel: string;
+  ctaHref: string;
+};
+
 export type SpikePuckProps = {
   BrandHero: SpikeBrandHeroProps;
   BrandCTA: SpikeBrandCtaProps;
@@ -115,6 +125,7 @@ export type SpikePuckProps = {
   RichText: RichTextProps;
   StickyCtaBar: StickyCtaBarProps;
   StatsBlock: StatsBlockProps;
+  BrandNav: BrandNavProps;
 };
 
 // ─── Config builder ──────────────────────────────────────────
@@ -154,6 +165,7 @@ export function buildSpikePuckConfig(
       RichText: richTextComponent(tokens),
       StickyCtaBar: stickyCtaBarComponent(tokens),
       StatsBlock: statsBlockComponent(tokens),
+      BrandNav: brandNavComponent(tokens),
     },
   };
 }
@@ -561,25 +573,31 @@ function brandHeroComponent(tokens: BrandTokens) {
       const heroIsDark = useFullBleed || sectionBg === tokens.onSurface;
       const fallbackBg = heroIsDark ? '#FFFFFF' : tokens.brand;
       const fallbackColor = heroIsDark ? tokens.onSurface : tokens.onBrand;
-      const buttonRender: React.CSSProperties = {
+      const buttonRender: React.CSSProperties & Record<`--${string}`, string> = {
         background: tokens.button.background ?? fallbackBg,
         color: tokens.button.color ?? fallbackColor,
         fontFamily: tokens.button.fontFamily ?? bodyFont,
         fontWeight: buttonStyle.fontWeight,
         fontSize: 16,
-        border: 'none',
+        border: tokens.button.border ?? 'none',
         padding: `${buttonStyle.paddingY}px ${buttonStyle.paddingX}px`,
         borderRadius: buttonStyle.radiusPx,
         cursor: 'pointer',
         textTransform: buttonStyle.textTransform,
         letterSpacing: buttonStyle.letterSpacing,
-        // Universal cap: voorkomt full-width balk-buttons op alle merken.
+        transition: tokens.button.transition ?? undefined,
         width: 'fit-content',
         maxWidth: '380px',
         whiteSpace: 'nowrap',
-        // underlineHover was foutief default-state geworden; underline-on-hover
-        // vereist :hover CSS wat inline-styles niet kunnen. Defaulten naar 'none'.
         textDecoration: 'none',
+        // Hover CSS-vars worden door .lp-btn:hover in a11y-styles geconsumeerd.
+        // Alleen gezet wanneer scraped — empty-string-var triggert geen change.
+        ...(tokens.button.hoverBackground
+          ? { '--lp-btn-hover-bg': tokens.button.hoverBackground }
+          : {}),
+        ...(tokens.button.hoverColor
+          ? { '--lp-btn-hover-color': tokens.button.hoverColor }
+          : {}),
       };
 
       return (
@@ -633,6 +651,7 @@ function brandHeroComponent(tokens: BrandTokens) {
                 lineHeight: tbr.display.lineHeight ?? displayTypography.lineHeight,
                 fontWeight: tbr.display.fontWeight ?? displayTypography.weight,
                 letterSpacing: tbr.display.letterSpacing ?? displayTypography.letterSpacing,
+                textTransform: tbr.display.textTransform ?? undefined,
                 // Fase B — bron-h1-color expliciet: erft NIET van section
                 // wanneer scraper een color op h1 vond. Wel valt het terug
                 // op section-color (sectionColor) als display.color null is.
@@ -650,8 +669,11 @@ function brandHeroComponent(tokens: BrandTokens) {
               style={{
                 fontFamily: bodyFont,
                 fontSize: subSize,
-                lineHeight: ds.typography.body.lineHeight,
+                lineHeight: tbr.body.lineHeight ?? ds.typography.body.lineHeight,
                 fontWeight: subWeight,
+                letterSpacing: tbr.body.letterSpacing ?? undefined,
+                textTransform: tbr.body.textTransform ?? undefined,
+                color: tbr.body.color ?? undefined,
                 maxWidth: 560,
                 margin: heroLayout.textAlignment === 'center'
                   ? `0 auto ${ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24}px`
@@ -663,7 +685,7 @@ function brandHeroComponent(tokens: BrandTokens) {
             </p>
             <button
               type="button"
-              className="lp-interactive lp-reveal lp-reveal-3"
+              className="lp-interactive lp-reveal lp-reveal-3 lp-btn"
               aria-label={ctaLabel}
               style={{
                 ...buttonRender,
@@ -824,27 +846,38 @@ function brandCtaComponent(
             // breed. Bij text-length > 20 chars: cap letterSpacing op 0.1em.
             const labelLength = (label ?? '').length;
             const capLetterSpacing = labelLength > 20 ? '0.1em' : btn.letterSpacing;
+            const ctaStyle: React.CSSProperties & Record<`--${string}`, string> = {
+              display: 'inline-block',
+              background: ctaBg,
+              color: ctaColor,
+              // Pri 1 scraped, Pri 2 bodyFont (geen label-preset omdat
+              // dat MINIMAL-DM-Sans / EDITORIAL-Inter is — niet de
+              // werkelijke brand-font).
+              fontFamily: tokens.button.fontFamily ?? bodyFont,
+              fontWeight: btn.fontWeight,
+              fontSize: btn.fontSize,
+              textDecoration: 'none',
+              padding: `${btn.paddingY}px ${btn.paddingX}px`,
+              borderRadius: btn.radiusPx,
+              border: tokens.button.border ?? 'none',
+              textTransform: btn.textTransform,
+              letterSpacing: capLetterSpacing,
+              transition: tokens.button.transition
+                ?? `all ${motion.transitionDuration} ${motion.easing}`,
+              ...(tokens.button.hoverBackground
+                ? { '--lp-btn-hover-bg': tokens.button.hoverBackground }
+                : {}),
+              ...(tokens.button.hoverColor
+                ? { '--lp-btn-hover-color': tokens.button.hoverColor }
+                : {}),
+            };
             return (
               <a
                 href={href}
-                className="lp-interactive"
+                className="lp-interactive lp-btn"
                 aria-label={label}
                 style={{
-                  display: 'inline-block',
-                  background: ctaBg,
-                  color: ctaColor,
-                  // Pri 1 scraped, Pri 2 bodyFont (geen label-preset omdat
-                  // dat MINIMAL-DM-Sans / EDITORIAL-Inter is — niet de
-                  // werkelijke brand-font).
-                  fontFamily: tokens.button.fontFamily ?? bodyFont,
-                  fontWeight: btn.fontWeight,
-                  fontSize: btn.fontSize,
-                  textDecoration: 'none',
-                  padding: `${btn.paddingY}px ${btn.paddingX}px`,
-                  borderRadius: btn.radiusPx,
-                  textTransform: btn.textTransform,
-                  letterSpacing: capLetterSpacing,
-                  transition: `all ${motion.transitionDuration} ${motion.easing}`,
+                  ...ctaStyle,
                   // Cap CTA-button breedte zodat hij niet als balk verschijnt.
                   // 380px is breed genoeg voor lange labels (5-7 woorden),
                   // smal genoeg om visueel als 'compact CTA' te lezen i.p.v.
@@ -962,12 +995,16 @@ function featureGridComponent(tokens: BrandTokens) {
       const depthLevel = pickBackgroundDepth(tokens.archetype, tokens.layoutStyle);
       const depthBg = buildBackgroundDepth(depthLevel, tokens.brand);
       const depthBgSize = getBackgroundDepthSize(depthLevel);
+      // 1-op-1 met brand-styleguide: gebruik secondarySurface wanneer
+      // gescraped (LINFI's tweede lichte bg) zodat FeatureGrid visueel
+      // alternates t.o.v. de witte Hero/Testimonial/FAQ sections.
+      const featureGridBg = tokens.secondarySurface ?? tokens.surface;
       return (
       <section
         style={{
           padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
           fontFamily: bodyFont,
-          background: tokens.surface,
+          background: featureGridBg,
           backgroundImage: depthBg,
           backgroundSize: depthBgSize,
         }}
@@ -1001,55 +1038,127 @@ function featureGridComponent(tokens: BrandTokens) {
           }}
         >
           {features.map((f, i) => {
-            // Verbeterplan Fase D + C11: card-styling uit tokens.elevation
-            // met archetype-constraints override (forceFlatCards = border-only)
-            const useCard = effectiveElevationCategory !== 'flat';
+            // 1-op-1 fidelity: wanneer brand-styleguide een PRODUCT_CARD-sample
+            // heeft, neem die direct over voor pixel-perfect match met
+            // Components-tab. Anders fallback op tokens.elevation + archetype-
+            // constraints (huidige logic).
+            const productCard = tokens.styleguideComponents.PRODUCT_CARD;
+            const useCard = effectiveElevationCategory !== 'flat' || productCard !== null;
             const isBorderOnly = effectiveElevationCategory === 'border-only';
             // C3 max-radius constraint (RULER=4, JESTER=24)
             const safeRadius = Math.min(elevation.cardBorderRadius, constraints.maxRadiusPx);
-            const cardWrapper: React.CSSProperties = useCard ? {
-              padding: `${sectionRhythm.cardPaddingY}px ${sectionRhythm.cardPaddingX}px`,
-              borderRadius: safeRadius,
-              border: isBorderOnly
-                ? `1px solid ${tokens.surfaceBorder}`
-                : (cardStyle.elevation === 'border-only'
-                    ? `${cardStyle.borderWidth}px solid ${tokens.surfaceBorder}`
-                    : undefined),
-              boxShadow: isBorderOnly ? undefined : (elevation.cardShadow === 'none' ? undefined : elevation.cardShadow),
-              background: tokens.surface,
-            } : {};
+            // 1-op-1 maar respecteer C3 max-radius constraint: scraped
+            // PRODUCT_CARD-radius mag de archetype-cap niet overschrijden
+            // (RULER=4, JESTER=24) — anders breekt premium-architectural feel.
+            // pxFromCssValue handelt rem/em correct (1.5rem → 24px) i.p.v.
+            // parseInt-truncatie (1.5rem → 1).
+            const productCardRadius = productCard?.borderRadius
+              ? Math.min(pxFromCssValue(productCard.borderRadius, safeRadius), constraints.maxRadiusPx)
+              : safeRadius;
+            // PRODUCT_CARD fallback-chain: wanneer scraped border + boxShadow
+            // beide leeg zijn, valt het terug op archetype-elevation zodat de
+            // card niet visueel verdwijnt in de section-bg. Anders raken brands
+            // met alleen scraped bg+padding hun visuele afbakening kwijt.
+            const scrapedBorder = productCard?.border && !isNoOpBorder(productCard.border)
+              ? productCard.border
+              : null;
+            const scrapedShadow = productCard?.boxShadow ?? null;
+            const cardWrapper: React.CSSProperties = productCard
+              ? {
+                  padding: productCard.padding ?? `${sectionRhythm.cardPaddingY}px ${sectionRhythm.cardPaddingX}px`,
+                  borderRadius: productCardRadius,
+                  // Fallback border: archetype border-only category geeft
+                  // surfaceBorder als geen scraped sample beschikbaar.
+                  border: scrapedBorder
+                    ?? (scrapedShadow ? undefined : (isBorderOnly ? `1px solid ${tokens.surfaceBorder}` : undefined)),
+                  boxShadow: scrapedShadow
+                    ?? (scrapedBorder || isBorderOnly ? undefined : (elevation.cardShadow === 'none' ? undefined : elevation.cardShadow)),
+                  background: productCard.background && !isTransparentBackground(productCard.background)
+                    ? productCard.background
+                    : tokens.surface,
+                  color: productCard.color ?? undefined,
+                }
+              : useCard ? {
+                padding: `${sectionRhythm.cardPaddingY}px ${sectionRhythm.cardPaddingX}px`,
+                borderRadius: safeRadius,
+                border: isBorderOnly
+                  ? `1px solid ${tokens.surfaceBorder}`
+                  : (cardStyle.elevation === 'border-only'
+                      ? `${cardStyle.borderWidth}px solid ${tokens.surfaceBorder}`
+                      : undefined),
+                boxShadow: isBorderOnly ? undefined : (elevation.cardShadow === 'none' ? undefined : elevation.cardShadow),
+                background: tokens.surface,
+              } : {};
             return (
               <div key={i} className={useCard ? 'lp-card' : undefined} style={cardWrapper}>
-                <IconBlock
-                  name={f.icon ?? ''}
-                  color={tokens.brand}
-                  size={iconography.sizeDefault}
-                  strokeWeight={iconography.strokeWeight}
-                  wrapperStyle={{ marginBottom: 12 }}
-                  fallbackTextStyle={{
-                    fontSize: 12,
-                    color: tokens.brand,
-                    fontFamily: ds.typography.label.fontFamily,
-                    textTransform: ds.typography.label.textTransform ?? 'uppercase',
-                    letterSpacing: ds.typography.label.letterSpacing,
-                    marginBottom: 8,
-                    fontWeight: 600,
-                  }}
-                />
+                {(() => {
+                  // 1-op-1 fidelity: FEATURE_ICON scraped sample geeft de
+                  // exacte badge-styling (bv. LINFI gold-badge met witte icon).
+                  const fIcon = tokens.styleguideComponents.FEATURE_ICON;
+                  const iconColor = fIcon?.color ?? tokens.brand;
+                  // pxFromCssValue voor rem/em-aware parsing (1.5rem → 24px).
+                  // Math.max(16,...) zorgt voor min mobile-tap-target.
+                  const iconSize = fIcon?.fontSize
+                    ? Math.max(16, pxFromCssValue(fIcon.fontSize, iconography.sizeDefault))
+                    : iconography.sizeDefault;
+                  // Badge-wrapper alleen wanneer scraped sample een non-transparante
+                  // background heeft (rgba alpha=0, transparent, var(...) etc. = geen badge).
+                  const hasBadge = !!fIcon?.background && !isTransparentBackground(fIcon.background);
+                  const wrapperStyle: React.CSSProperties = hasBadge
+                    ? {
+                        marginBottom: 12,
+                        background: fIcon!.background ?? undefined,
+                        padding: fIcon!.padding ?? undefined,
+                        borderRadius: fIcon!.borderRadius ?? undefined,
+                        boxShadow: fIcon!.boxShadow ?? undefined,
+                        display: 'inline-block',
+                      }
+                    : { marginBottom: 12 };
+                  return (
+                    <IconBlock
+                      name={f.icon ?? ''}
+                      color={iconColor}
+                      size={iconSize}
+                      strokeWeight={iconography.strokeWeight}
+                      wrapperStyle={wrapperStyle}
+                      fallbackTextStyle={{
+                        fontSize: 12,
+                        color: iconColor,
+                        fontFamily: ds.typography.label.fontFamily,
+                        textTransform: ds.typography.label.textTransform ?? 'uppercase',
+                        letterSpacing: ds.typography.label.letterSpacing,
+                        marginBottom: 8,
+                        fontWeight: 600,
+                      }}
+                    />
+                  );
+                })()}
 
                 <h3
                   style={{
                     fontFamily: headingFont,
                     fontSize: headingSize,
                     fontWeight: headingWeight,
-                    lineHeight: ds.typography.heading.lineHeight,
+                    lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
+                    letterSpacing: tbr.heading.letterSpacing ?? undefined,
+                    textTransform: tbr.heading.textTransform ?? undefined,
                     margin: '0 0 8px',
-                    color: tokens.onSurface,
+                    color: tbr.heading.color ?? tokens.onSurface,
                   }}
                 >
                   {f.title}
                 </h3>
-                <p style={{ color: tokens.surfaceMuted, fontSize: bodySize, margin: 0 }}>
+                <p
+                  style={{
+                    color: tbr.body.color ?? tokens.surfaceMuted,
+                    fontSize: bodySize,
+                    fontWeight: tbr.body.fontWeight ?? undefined,
+                    lineHeight: tbr.body.lineHeight ?? undefined,
+                    letterSpacing: tbr.body.letterSpacing ?? undefined,
+                    textTransform: tbr.body.textTransform ?? undefined,
+                    margin: 0,
+                  }}
+                >
                   {f.description}
                 </p>
               </div>
@@ -1084,7 +1193,9 @@ function testimonialComponent(
   const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
-  const quoteSize = ds.typography.heading.sizes[Math.min(ds.typography.heading.sizes.length - 1, 1)] ?? 24;
+  const tbr = tokens.typographyByRole;
+  const quoteSize = tbr.heading.fontSize
+    ?? ds.typography.heading.sizes[Math.min(ds.typography.heading.sizes.length - 1, 1)] ?? 24;
 
   return {
     fields: {
@@ -1110,29 +1221,48 @@ function testimonialComponent(
       // Pastel/gedempt-brand: brandSubtle blijft (Soft Cream wash werkt
       // natuurlijk in LINFI's editorial palette).
       const isVibrantBrand = isVibrantSaturatedColor(tokens.brand);
-      const testimonialBg = isVibrantBrand && !tokens.hasDarkSections
-        ? tokens.surface
-        : tokens.brandSubtle;
-      const testimonialBorder = testimonialBg === tokens.surface
-        ? `1px solid ${tokens.surfaceBorder}`
-        : 'none';
+      // 1-op-1 fidelity: scraped QUOTE_BLOCK-sample wint van archetype-defaults.
+      const quoteBlock = tokens.styleguideComponents.QUOTE_BLOCK;
+      const testimonialBg = quoteBlock?.background && !isTransparentBackground(quoteBlock.background)
+        ? quoteBlock.background
+        : (isVibrantBrand && !tokens.hasDarkSections ? tokens.surface : tokens.brandSubtle);
+      const testimonialBorder = quoteBlock?.border && !isNoOpBorder(quoteBlock.border)
+        ? quoteBlock.border
+        : (testimonialBg === tokens.surface ? `1px solid ${tokens.surfaceBorder}` : 'none');
+      const quoteCustomPadding = quoteBlock?.padding ?? null;
+      const quoteCustomRadius = quoteBlock?.borderRadius ?? null;
+      // Scraped QUOTE_BLOCK padding is COMPONENT-level (bv. 24px 32px op de
+      // blockquote-wrapper). Section padding is veel groter (80-128px). Pas
+      // scraped padding toe op de inner wrapper, niet op de section zelf,
+      // anders collapsed de section-hoogte dramatisch.
       return (
         <section
           style={{
             background: testimonialBg,
             borderTop: testimonialBorder,
             borderBottom: testimonialBorder,
+            borderRadius: quoteCustomRadius ?? undefined,
             padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
             textAlign: 'center',
             fontFamily: bodyFont,
           }}
         >
+          <div
+            style={{
+              padding: quoteCustomPadding ?? undefined,
+              maxWidth: 720,
+              margin: '0 auto',
+            }}
+          >
           <blockquote
             style={{
               fontFamily: headingFont,
               fontSize: quoteSize,
-              lineHeight: ds.typography.heading.lineHeight,
-              color: tokens.onSurface,
+              fontWeight: tbr.heading.fontWeight ?? undefined,
+              lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
+              letterSpacing: tbr.heading.letterSpacing ?? undefined,
+              textTransform: tbr.heading.textTransform ?? undefined,
+              color: tbr.heading.color ?? tokens.onSurface,
               maxWidth: 640,
               margin: '0 auto 16px',
               fontStyle: 'italic',
@@ -1201,6 +1331,7 @@ function testimonialComponent(
               {persona && persona.name !== author ? ` · ${persona.name}` : ''}
             </cite>
           </div>
+          </div>
         </section>
       );
     },
@@ -1228,6 +1359,7 @@ function pricingTableComponent(tokens: BrandTokens) {
   const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const tbr = tokens.typographyByRole;
   return {
     fields: {
       tiers: {
@@ -1321,9 +1453,13 @@ function pricingTableComponent(tokens: BrandTokens) {
                 <h3
                   style={{
                     fontFamily: headingFont,
-                    fontSize: 20,
+                    fontSize: tbr.heading.fontSize ?? 20,
+                    fontWeight: tbr.heading.fontWeight ?? undefined,
+                    lineHeight: tbr.heading.lineHeight ?? undefined,
+                    letterSpacing: tbr.heading.letterSpacing ?? undefined,
+                    textTransform: tbr.heading.textTransform ?? undefined,
                     margin: '0 0 8px',
-                    color: tokens.onSurface,
+                    color: tbr.heading.color ?? tokens.onSurface,
                   }}
                 >
                   {t.name}
@@ -1375,6 +1511,7 @@ function faqComponent(tokens: BrandTokens) {
   const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const tbr = tokens.typographyByRole;
   return {
     fields: {
       items: {
@@ -1413,15 +1550,29 @@ function faqComponent(tokens: BrandTokens) {
               <summary
                 style={{
                   fontFamily: headingFont,
-                  fontSize: 18,
-                  fontWeight: ds.typography.heading.weights[0] ?? 600,
-                  color: tokens.onSurface,
+                  fontSize: tbr.subheading.fontSize ?? 18,
+                  fontWeight: tbr.subheading.fontWeight ?? tbr.heading.fontWeight
+                    ?? (ds.typography.heading.weights[0] ?? 600),
+                  lineHeight: tbr.subheading.lineHeight ?? undefined,
+                  letterSpacing: tbr.subheading.letterSpacing ?? undefined,
+                  textTransform: tbr.subheading.textTransform ?? undefined,
+                  color: tbr.subheading.color ?? tbr.heading.color ?? tokens.onSurface,
                   cursor: 'pointer',
                 }}
               >
                 {item.question}
               </summary>
-              <p style={{ marginTop: 8, color: tokens.surfaceMuted, fontSize: 15 }}>{item.answer}</p>
+              <p
+                style={{
+                  marginTop: 8,
+                  color: tbr.body.color ?? tokens.surfaceMuted,
+                  fontSize: tbr.body.fontSize ?? 15,
+                  lineHeight: tbr.body.lineHeight ?? undefined,
+                  letterSpacing: tbr.body.letterSpacing ?? undefined,
+                }}
+              >
+                {item.answer}
+              </p>
             </details>
           ))}
         </div>
@@ -1475,11 +1626,13 @@ function footerComponent(tokens: BrandTokens) {
     render: ({ companyName, tagline, links }: FooterProps) => (
       <footer
         style={{
-          // Footer-bg duurzaam: dark-bg ALLEEN wanneer bron-website ook
-          // donkere sections heeft (hasDarkSections evidence). Anders licht
-          // op surface met onSurface tekst. Voorkomt dark-footer mismatch
+          // Footer-bg 1-op-1 met brand-styleguide: prefer scraped
+          // darkSectionBg (LINFI #263238) wanneer hasDarkSections. Anders
+          // licht-surface met onSurface tekst. Voorkomt dark-footer mismatch
           // op light-only brands (Better Brands homepage = wit door en door).
-          background: tokens.hasDarkSections ? tokens.onSurface : tokens.surface,
+          background: tokens.hasDarkSections
+            ? (tokens.darkSectionBg ?? tokens.onSurface)
+            : tokens.surface,
           color: tokens.hasDarkSections ? tokens.surface : tokens.onSurface,
           padding: `${footerPaddingY}px ${responsivePaddingX(sectionPaddingX)}`,
           fontFamily: bodyFont,
@@ -1532,6 +1685,95 @@ function footerComponent(tokens: BrandTokens) {
         </div>
       </footer>
     ),
+  };
+}
+
+/**
+ * BrandNav — top-navigation 1-op-1 met StyleguideComponent[type=TOP_NAVIGATION].
+ * Renderer kiest scraped sample wanneer aanwezig en past extractedStyles
+ * direct toe; anders een minimale brand-tokens-driven fallback.
+ */
+function brandNavComponent(tokens: BrandTokens) {
+  const ds = tokens.designSystem;
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  return {
+    fields: {
+      brandName: { type: 'text' as const },
+      links: {
+        type: 'array' as const,
+        arrayFields: {
+          label: { type: 'text' as const },
+          href: { type: 'text' as const },
+        },
+        defaultItemProps: { label: 'Link', href: '#' },
+        getItemSummary: (item: BrandNavLink) => item.label || 'Untitled link',
+      },
+      ctaLabel: { type: 'text' as const },
+      ctaHref: { type: 'text' as const },
+    },
+    defaultProps: {
+      brandName: 'Brand Name',
+      links: [
+        { label: 'Home', href: '/' },
+        { label: 'Producten', href: '/producten' },
+        { label: 'Over', href: '/over' },
+        { label: 'Contact', href: '/contact' },
+      ],
+      ctaLabel: 'Start',
+      ctaHref: '#cta',
+    },
+    render: ({ brandName, links, ctaLabel, ctaHref }: BrandNavProps) => {
+      const nav = tokens.styleguideComponents.TOP_NAVIGATION;
+      const navStyle: React.CSSProperties = {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 24,
+        padding: nav?.padding ?? '16px 32px',
+        background: nav?.background && !isTransparentBackground(nav.background)
+          ? nav.background
+          : tokens.surface,
+        borderBottom: nav?.border && !isNoOpBorder(nav.border)
+          ? nav.border
+          : `1px solid ${tokens.surfaceBorder}`,
+        fontFamily: nav?.fontFamily ?? bodyFont,
+        fontSize: nav?.fontSize ?? '15px',
+        color: nav?.color ?? tokens.onSurface,
+      };
+      const ctaInline: React.CSSProperties = {
+        background: tokens.button.background ?? tokens.brand,
+        color: tokens.button.color ?? tokens.onBrand,
+        fontFamily: tokens.button.fontFamily ?? bodyFont,
+        padding: '8px 18px',
+        borderRadius: tokens.button.radiusPx,
+        border: tokens.button.border ?? 'none',
+        textDecoration: 'none',
+        fontSize: 14,
+        fontWeight: tokens.button.fontWeight,
+      };
+      return (
+        <nav style={navStyle}>
+          <span style={{ fontFamily: headingFont, fontWeight: 700, fontSize: 18 }}>
+            {brandName}
+          </span>
+          <ul style={{ display: 'flex', gap: 24, listStyle: 'none', margin: 0, padding: 0 }}>
+            {links.map((l, i) => (
+              <li key={i}>
+                <a href={l.href} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {l.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <a href={ctaHref} className="lp-interactive lp-btn" style={ctaInline}>
+            {ctaLabel}
+          </a>
+        </nav>
+      );
+    },
   };
 }
 
@@ -1590,15 +1832,46 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens) {
   const bodyFont = tokens.bodyFont;
   const primary = tokens.primaryHex;
   const text = tokens.secondaryHex;
+  const tbr = tokens.typographyByRole;
+  const h1Color = tbr.display.color ?? text;
+  const h2Color = tbr.heading.color ?? text;
+  const h3Color = tbr.subheading.color ?? tbr.heading.color ?? text;
   return {
     h1: ({ children }: { children?: React.ReactNode }) => (
-      <h1 style={{ fontFamily: headingFont, color: text, fontSize: 32, fontWeight: 700, marginTop: 24, marginBottom: 12 }}>{children}</h1>
+      <h1 style={{
+        fontFamily: headingFont,
+        color: h1Color,
+        fontSize: tbr.display.fontSize ?? 32,
+        fontWeight: tbr.display.fontWeight ?? 700,
+        lineHeight: tbr.display.lineHeight ?? undefined,
+        letterSpacing: tbr.display.letterSpacing ?? undefined,
+        textTransform: tbr.display.textTransform ?? undefined,
+        marginTop: 24, marginBottom: 12,
+      }}>{children}</h1>
     ),
     h2: ({ children }: { children?: React.ReactNode }) => (
-      <h2 style={{ fontFamily: headingFont, color: text, fontSize: 26, fontWeight: 700, marginTop: 20, marginBottom: 10 }}>{children}</h2>
+      <h2 style={{
+        fontFamily: headingFont,
+        color: h2Color,
+        fontSize: tbr.heading.fontSize ?? 26,
+        fontWeight: tbr.heading.fontWeight ?? 700,
+        lineHeight: tbr.heading.lineHeight ?? undefined,
+        letterSpacing: tbr.heading.letterSpacing ?? undefined,
+        textTransform: tbr.heading.textTransform ?? undefined,
+        marginTop: 20, marginBottom: 10,
+      }}>{children}</h2>
     ),
     h3: ({ children }: { children?: React.ReactNode }) => (
-      <h3 style={{ fontFamily: headingFont, color: text, fontSize: 21, fontWeight: 600, marginTop: 16, marginBottom: 8 }}>{children}</h3>
+      <h3 style={{
+        fontFamily: headingFont,
+        color: h3Color,
+        fontSize: tbr.subheading.fontSize ?? 21,
+        fontWeight: tbr.subheading.fontWeight ?? 600,
+        lineHeight: tbr.subheading.lineHeight ?? undefined,
+        letterSpacing: tbr.subheading.letterSpacing ?? undefined,
+        textTransform: tbr.subheading.textTransform ?? undefined,
+        marginTop: 16, marginBottom: 8,
+      }}>{children}</h3>
     ),
     h4: ({ children }: { children?: React.ReactNode }) => (
       <h4 style={{ fontFamily: headingFont, color: text, fontSize: 18, fontWeight: 600, marginTop: 14, marginBottom: 6 }}>{children}</h4>

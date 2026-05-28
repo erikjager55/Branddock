@@ -512,15 +512,25 @@ export async function assembleCanvasContext(
       buttonProfile: true,
       typographyProfile: true,
       spacingProfile: true,
+      spacingScale: true,
       elevationProfile: true,
       radiusProfile: true,
       motionProfile: true,
       photographyStyle: true,
+      visualLanguage: true,
       colors: { select: {
         hex: true, category: true, sortOrder: true,
         tags: true, contrastWhite: true, contrastBlack: true, confidence: true,
       } },
       fonts: { select: { name: true, role: true, fontFamily: true, sortOrder: true } },
+      components: {
+        select: {
+          type: true, label: true, extractedStyles: true, confidence: true,
+        },
+        // Deterministische volgorde voor mapStyleguideComponents highest-conf
+        // pick: confidence DESC, dan sortOrder ASC als tiebreaker.
+        orderBy: [{ confidence: 'desc' }, { sortOrder: 'asc' }],
+      },
     },
   });
   const brandTokens = extractBrandTokensFromStyleguide(styleguide);

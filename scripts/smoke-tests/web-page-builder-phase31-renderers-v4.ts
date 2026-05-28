@@ -62,6 +62,10 @@ group("D — BrandCTA gebruikt tokens.button scraped paddings");
       background: null,
       color: null,
       fontFamily: null,
+      border: null,
+      transition: null,
+      hoverBackground: null,
+      hoverColor: null,
     },
     motion: { transitionDuration: "200ms", easing: "ease" },
     sectionRhythm: {

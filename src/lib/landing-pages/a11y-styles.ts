@@ -52,6 +52,17 @@ export function buildA11yStyleBlock(brandColor: string = '#1FD1B2'): string {
   pointer-events: none;
 }
 
+/* Button-hover 1-op-1 met scraped brand-styleguide :hover-state.
+   --lp-btn-hover-bg / --lp-btn-hover-color worden alleen gezet wanneer
+   de brand-styleguide ze gescrape heeft. Fallback 'inherit' zorgt dat
+   wanneer var ongezet is, het hover-effect terugvalt op de base inline-
+   style (geen kleurverandering) i.p.v. invalid-value → 'initial' wat
+   transparent zou maken. */
+.lp-btn:hover {
+  background: var(--lp-btn-hover-bg, inherit);
+  color: var(--lp-btn-hover-color, inherit);
+}
+
 /* Reduced-motion: respect user preference */
 @media (prefers-reduced-motion: reduce) {
   .lp-interactive { transition: none; }

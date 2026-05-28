@@ -24,11 +24,12 @@ import type {
 } from "./brand-tokens";
 import type { LayoutStyle, DesignSystem } from "./design-system";
 import type { BrandArchetype } from "./brand-archetype-classifier";
+import { isNoOpBorder } from "./scraped-css-helpers";
 
 // ─── Unit parsing ─────────────────────────────────────────
 
 /** Convert "16px" / "1rem" / "0.5em" → numeriek px (rem/em assume 16px base). */
-function pxFromCssValue(raw: string | null | undefined, fallback: number): number {
+export function pxFromCssValue(raw: string | null | undefined, fallback: number): number {
   if (!raw) return fallback;
   const trimmed = raw.trim();
   const match = trimmed.match(/^(-?\d+(?:\.\d+)?)(px|rem|em)?$/i);
@@ -61,8 +62,11 @@ interface ScrapedButtonStyleLike {
   color?: string | null;
   fontFamily?: string | null;
   hoverBackground?: string | null;
+  hoverColor?: string | null;
   hoverTransform?: string | null;
   background?: string | null;
+  border?: string | null;
+  transition?: string | null;
 }
 
 function pickPrimaryButton(buttonProfile: unknown): ScrapedButtonStyleLike | null {
@@ -94,7 +98,10 @@ function mergeButtonSamples(samples: ScrapedButtonStyleLike[]): ScrapedButtonSty
     if (!merged.color && sample.color) merged.color = sample.color;
     if (!merged.fontFamily && sample.fontFamily) merged.fontFamily = sample.fontFamily;
     if (!merged.hoverBackground && sample.hoverBackground) merged.hoverBackground = sample.hoverBackground;
+    if (!merged.hoverColor && sample.hoverColor) merged.hoverColor = sample.hoverColor;
     if (!merged.hoverTransform && sample.hoverTransform) merged.hoverTransform = sample.hoverTransform;
+    if (!merged.border && sample.border) merged.border = sample.border;
+    if (!merged.transition && sample.transition) merged.transition = sample.transition;
   }
   return merged;
 }
@@ -156,6 +163,14 @@ export function mapButtonTokens(
     if (!t || t.startsWith('var(') || /^(inherit|initial|unset)$/i.test(t)) return null;
     return raw;
   };
+  const sanitizeBorder = (raw: string | null | undefined): string | null =>
+    isNoOpBorder(raw) ? null : raw ?? null;
+  const sanitizeTransition = (raw: string | null | undefined): string | null => {
+    if (!raw) return null;
+    const t = raw.trim().toLowerCase();
+    if (!t || t === 'none' || t.startsWith('var(')) return null;
+    return raw;
+  };
 
   return {
     paddingY: pxFromCssValue(btn.paddingY, fallback.paddingY),
@@ -169,6 +184,10 @@ export function mapButtonTokens(
     background: sanitizeColor(btn.background),
     color: sanitizeColor(btn.color),
     fontFamily: sanitizeFontFamily(btn.fontFamily),
+    border: sanitizeBorder(btn.border),
+    transition: sanitizeTransition(btn.transition),
+    hoverBackground: sanitizeColor(btn.hoverBackground),
+    hoverColor: sanitizeColor(btn.hoverColor),
   };
 }
 
