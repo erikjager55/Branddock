@@ -205,9 +205,53 @@ function buildSystemPrompt(opts: {
     const c = RENDER_CONSTRAINTS_BY_ARCHETYPE[opts.archetype];
     blueprintBlock = `\n# SECTIE-BLUEPRINT\nDoel: ${c.targetSectionCount} secties. Aanbevolen volgorde: ${c.sectionBlueprint.join(' → ')}.\nLeg de focus daar; AI mag een sectie skippen wanneer het niet relevant is, maar wijk niet drastisch af.\n`;
   }
+
+  // #10 design-quality — design-direction commitment block. Geïnspireerd
+  // door (a) Anthropic frontend-design Skill 4-vragen framework en (b)
+  // user's HNG 6-onderdelen prompt-guideline. Forceert dat de generator
+  // VÓÓR copy-keuzes commit aan een visuele richting i.p.v. veilig-midden.
+  const designDirectionBlock = `
+# DESIGN-DIRECTION COMMITMENT
+Voordat je copy schrijft, commit eerst aan deze 4 visuele beslissingen
+(maar SCHRIJF deze niet in output — alleen interne richtlijn):
+
+1. AESTHETIC EXTREME — kies één en stuur ALLE keuzes ernaar:
+   - 'refined minimalism' (witruimte, beperkt palet, premium typografie)
+   - 'bold maximalism' (grote contrasten, asymmetrie, durf-kleur)
+   - 'editorial magazine' (long-form, serif display, rythme uit spacing)
+   - 'industrial/technical' (mono-typografie, grid, data-driven feel)
+   - 'warm humanist' (zachte palet, ronde vormen, persoonlijke taal)
+   - 'rebellious/anti-corporate' (sharp edges, contrast, unexpected layout)
+   Wees uitgesproken — een variant die 'op alle merken zou kunnen passen'
+   is mislukt.
+
+2. TRANSFORMATIE-ARC — articuleer in 1 zin de reis die de lezer maakt:
+   'van ... naar ...' (bv: 'van frustratie naar controle', 'van handmatig
+   naar geautomatiseerd', 'van isolatie naar community'). Alle copy moet
+   die arc reflecteren — pijn-bullets aan de 'van'-kant, features +
+   testimonial + CTA aan de 'naar'-kant.
+
+3. REFERENCE-AESTHETIC — denk aan welk merk visueel/tonaal de norm zet
+   voor deze pagina. Bv: 'Linear voor B2B-clarity', 'Patagonia voor
+   purpose-driven', 'Apple voor premium-restraint', 'Notion voor
+   playful-pragmatic'. Niet copiëren — gebruik als compass voor
+   tone-of-voice en woordkeus.
+
+4. ANTI-DEFAULTS — vermijd actief:
+   - 'Welkom bij ...', 'Ontdek de ...', 'De #1 platform voor ...'
+   - Synoniemen-spreuken zonder concreet voordeel
+   - 'Wij geloven dat ...' filler-zinnen
+   - Vage outcome-claims zonder cijfer of context
+   - Generic feature-namen ('Krachtig', 'Eenvoudig', 'Flexibel')
+   Vervang elk klisjee met iets specifieks of laat het weg.
+`;
+
   return `# ROL
-Je bent een conversion rate optimization (CRO) specialist met 12+ jaar ervaring met B2B SaaS en breed bedrijfsleven landing-pages. Je weet dat elk woord op een landing-page de bezoeker richting conversie beweegt of er vanaf — neutrale copy bestaat niet.
-${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${axisBlock}${blueprintBlock}
+Je bent een Senior UX-conversion strategist + brand-copywriter met 12+
+jaar ervaring. Voor deze opdracht ben je in de huid van een art-director
+die een one-shot variant aflevert die concurreert met de bron-website
+op visuele kwaliteit en commerciële scherpte.
+${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${axisBlock}${blueprintBlock}${designDirectionBlock}
 # OPDRACHT
 Genereer een complete landing-page variant als **gestructureerd JSON** volgens het schema hieronder. Geen prose, geen toelichting, geen code-fences — alleen het JSON-object als response.
 
@@ -259,6 +303,8 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
 6. **Concrete cijfers** in testimonials: "30 uur per maand bespaard" wint van "geweldig product".
 7. **Geen stockfoto-uitstraling**: alle copy authentiek en specifiek voor de brand.
 8. **Locale ${opts.locale}**: alle content in deze taal.
+9. **Transformatie-arc consistent**: pijn-bullets aan de 'van'-kant, features/testimonial/CTA aan de 'naar'-kant van de gekozen transformatie. Geen mismatch tussen problem-articulation en outcome-claims.
+10. **Specifiek > generiek**: vervang elk woord dat op meerdere merken zou passen ("krachtig platform", "innovatieve oplossing") door iets dat ALLEEN bij DIT merk past (concrete output, sector-term, uitspraak die de bron-website zou kunnen onderschrijven).
 
 # COGNITIEVE FUNDAMENTEN (waarom dit werkt)
 - Fogg's Behavior Model: elke sectie moet motivatie + ability + trigger versterken

@@ -71,6 +71,20 @@ export function buildA11yStyleBlock(brandColor: string = '#1FD1B2'): string {
 }
 .lp-skip-link:focus { top: 0; }
 
+/* Component-states matrix (#9 design-quality). Card-elements krijgen
+   subtiele hover (lift + shadow-intensify) zodat de page leeft maar
+   niet stoort. Loading-state via [data-loading="true"] dimming. */
+.lp-card {
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms ease;
+}
+.lp-card:hover {
+  transform: translateY(-2px);
+}
+.lp-card[data-loading="true"] {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 /* Orchestrated page-load entrance (#7 design-quality). Staggered reveals
    geven het Anthropic-aanbevolen 'one high-impact moment' i.p.v. scattered
    micro-animations. Respect prefers-reduced-motion (override above). */

@@ -929,7 +929,7 @@ function featureGridComponent(tokens: BrandTokens) {
               background: tokens.surface,
             } : {};
             return (
-              <div key={i} style={cardWrapper}>
+              <div key={i} className={useCard ? 'lp-card' : undefined} style={cardWrapper}>
                 <IconBlock
                   name={f.icon ?? ''}
                   color={tokens.brand}
@@ -1190,6 +1190,7 @@ function pricingTableComponent(tokens: BrandTokens) {
             return (
               <div
                 key={i}
+                className="lp-card"
                 style={{
                   border: t.highlighted
                     ? `2px solid ${tokens.brand}`
