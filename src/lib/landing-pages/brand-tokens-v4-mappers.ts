@@ -58,6 +58,8 @@ interface ScrapedButtonStyleLike {
   textTransform?: string | null;
   letterSpacing?: string | null;
   borderRadius?: string | null;
+  color?: string | null;
+  fontFamily?: string | null;
   hoverBackground?: string | null;
   hoverTransform?: string | null;
   background?: string | null;
@@ -89,6 +91,8 @@ function mergeButtonSamples(samples: ScrapedButtonStyleLike[]): ScrapedButtonSty
     if (!merged.letterSpacing && sample.letterSpacing) merged.letterSpacing = sample.letterSpacing;
     if (!merged.borderRadius && sample.borderRadius) merged.borderRadius = sample.borderRadius;
     if (!merged.background && sample.background) merged.background = sample.background;
+    if (!merged.color && sample.color) merged.color = sample.color;
+    if (!merged.fontFamily && sample.fontFamily) merged.fontFamily = sample.fontFamily;
     if (!merged.hoverBackground && sample.hoverBackground) merged.hoverBackground = sample.hoverBackground;
     if (!merged.hoverTransform && sample.hoverTransform) merged.hoverTransform = sample.hoverTransform;
   }
@@ -138,6 +142,21 @@ export function mapButtonTokens(
   const btn = pickPrimaryButton(buttonProfile);
   if (!btn) return fallback;
 
+  // Scraped color/bg/fontFamily — null als geen signal, anders rauwe waarde.
+  // Skip 'transparent' / 'inherit' / CSS-vars (resolven we niet hier).
+  const sanitizeColor = (raw: string | null | undefined): string | null => {
+    if (!raw) return null;
+    const t = raw.trim().toLowerCase();
+    if (!t || t === 'transparent' || t === 'inherit' || t === 'currentcolor' || t.startsWith('var(')) return null;
+    return raw;
+  };
+  const sanitizeFontFamily = (raw: string | null | undefined): string | null => {
+    if (!raw) return null;
+    const t = raw.trim();
+    if (!t || t.startsWith('var(') || /^(inherit|initial|unset)$/i.test(t)) return null;
+    return raw;
+  };
+
   return {
     paddingY: pxFromCssValue(btn.paddingY, fallback.paddingY),
     paddingX: pxFromCssValue(btn.paddingX, fallback.paddingX),
@@ -147,6 +166,9 @@ export function mapButtonTokens(
     textTransform: normalizeTextTransform(btn.textTransform, fallback.textTransform),
     letterSpacing: btn.letterSpacing ?? fallback.letterSpacing,
     hoverStyle: inferHoverStyle(btn, archetype),
+    background: sanitizeColor(btn.background),
+    color: sanitizeColor(btn.color),
+    fontFamily: sanitizeFontFamily(btn.fontFamily),
   };
 }
 

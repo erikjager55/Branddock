@@ -59,6 +59,9 @@ group("D — BrandCTA gebruikt tokens.button scraped paddings");
       textTransform: "uppercase",
       letterSpacing: "0.05em",
       hoverStyle: "lighten",
+      background: null,
+      color: null,
+      fontFamily: null,
     },
     motion: { transitionDuration: "200ms", easing: "ease" },
     sectionRhythm: {

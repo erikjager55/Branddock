@@ -549,18 +549,22 @@ function brandHeroComponent(tokens: BrandTokens) {
       };
 
       // ── Button-style uit hints ─────────────────────────────
-      // Logica per hero-background:
-      //   - Donkere hero (full-bleed scrim / sectionBg=onSurface):
-      //       button = wit met onSurface tekst (contrast tegen donker)
-      //   - Lichte hero (solid-surface): button = brand-color met onBrand
-      //     tekst (zoals scraped: brand=button-bg, onBrand=button-text)
-      // Vibrant brands worden in BrandCTA section behandeld; voor hero
-      // gebruiken we altijd de brand-color als button-bg op licht.
+      // PRIORITEIT (van hoog naar laag) per visual-property:
+      //   1. SCRAPED tokens.button.background/color/fontFamily — exacte
+      //      bron-stijl uit website CSS (bv. LINFI's .btn--linfi = wit-bg
+      //      met #15191e text + Poppins font). Wint van alles.
+      //   2. Hero-bg-adaptive fallback wanneer scrape leeg:
+      //      - Donkere hero (full-bleed scrim) → wit + onSurface tekst
+      //      - Lichte hero (solid-surface) → brand-color + onBrand tekst
+      // Garandeert dat brandstyle-guide-button en LP-hero-button identiek
+      // zijn voor élk merk wanneer scraped data aanwezig is.
       const heroIsDark = useFullBleed || sectionBg === tokens.onSurface;
+      const fallbackBg = heroIsDark ? '#FFFFFF' : tokens.brand;
+      const fallbackColor = heroIsDark ? tokens.onSurface : tokens.onBrand;
       const buttonRender: React.CSSProperties = {
-        background: heroIsDark ? '#FFFFFF' : tokens.brand,
-        color: heroIsDark ? tokens.onSurface : tokens.onBrand,
-        fontFamily: ds.typography.label.fontFamily,
+        background: tokens.button.background ?? fallbackBg,
+        color: tokens.button.color ?? fallbackColor,
+        fontFamily: tokens.button.fontFamily ?? bodyFont,
         fontWeight: buttonStyle.fontWeight,
         fontSize: 16,
         border: 'none',
@@ -809,9 +813,12 @@ function brandCtaComponent(
               tekst (= elegant, herkenbaar accent). Gedempte/pastel
               brands behouden de vol-veld brand-treatment. */}
           {(() => {
+            // Pri 1 scraped, Pri 2 vibrant-fix, Pri 3 brand-fill
             const useDarkButton = isVibrantSaturatedColor(tokens.brand);
-            const ctaBg = useDarkButton ? tokens.onSurface : tokens.brand;
-            const ctaColor = useDarkButton ? '#FFFFFF' : tokens.onBrand;
+            const ctaBg = tokens.button.background
+              ?? (useDarkButton ? tokens.onSurface : tokens.brand);
+            const ctaColor = tokens.button.color
+              ?? (useDarkButton ? '#FFFFFF' : tokens.onBrand);
             // Cap letterSpacing voor lange CTA-labels: 3px × 30 char = 90px
             // extra width. Voor RULER/SAGE/MAGICIAN (premium) is dat te
             // breed. Bij text-length > 20 chars: cap letterSpacing op 0.1em.
@@ -826,7 +833,10 @@ function brandCtaComponent(
                   display: 'inline-block',
                   background: ctaBg,
                   color: ctaColor,
-                  fontFamily: ds.typography.label.fontFamily,
+                  // Pri 1 scraped, Pri 2 bodyFont (geen label-preset omdat
+                  // dat MINIMAL-DM-Sans / EDITORIAL-Inter is — niet de
+                  // werkelijke brand-font).
+                  fontFamily: tokens.button.fontFamily ?? bodyFont,
                   fontWeight: btn.fontWeight,
                   fontSize: btn.fontSize,
                   textDecoration: 'none',

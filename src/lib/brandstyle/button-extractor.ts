@@ -63,6 +63,7 @@ export interface ScrapedButtonStyle {
   borderRadius: string | null;
   background: string | null;
   color: string | null;
+  fontFamily: string | null;
   border: string | null;
   transition: string | null;
   // Hover-state from `selector:hover`
@@ -403,6 +404,7 @@ function makeEmptyButtonStyle(selector: string): ScrapedButtonStyle {
     borderRadius: null,
     background: null,
     color: null,
+    fontFamily: null,
     border: null,
     transition: null,
     hoverBackground: null,
@@ -435,6 +437,7 @@ function fillBaseProps(target: ScrapedButtonStyle, block: string): void {
   target.borderRadius = target.borderRadius ?? getProp(block, "border-radius");
   target.background = target.background ?? (getProp(block, "background") ?? getProp(block, "background-color"));
   target.color = target.color ?? getProp(block, "color");
+  target.fontFamily = target.fontFamily ?? getProp(block, "font-family");
   target.border = target.border ?? getProp(block, "border");
   target.transition = target.transition ?? getProp(block, "transition");
 }

@@ -192,6 +192,16 @@ export interface ButtonTokens {
   letterSpacing: string;
   /** Hover-strategie: darken (premium) / lighten / underline / scale / none. */
   hoverStyle: "darken" | "lighten" | "underline" | "scale" | "none";
+  /** Scraped button-bg color (bv. LINFI link-button=#fff, niet brand-gold).
+   *  Null = geen scraped signal → renderer fallback op tokens.brand. */
+  background: string | null;
+  /** Scraped button-text color. Null = fallback tokens.onBrand. */
+  color: string | null;
+  /** Scraped button font-family. Null = fallback tokens.bodyFont (geen
+   *  designSystem.label-preset, dat is misleidend bij MINIMAL/EDITORIAL
+   *  layoutStyles waar de preset DM Sans / Inter is i.p.v. de echte
+   *  brand-font). */
+  fontFamily: string | null;
 }
 
 export interface ElevationTokens {
@@ -279,6 +289,9 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
     textTransform: "none",
     letterSpacing: "0.01em",
     hoverStyle: "darken",
+    background: null,
+    color: null,
+    fontFamily: null,
   },
   elevation: {
     cardShadow: "0 2px 8px rgba(0,0,0,0.06)",
