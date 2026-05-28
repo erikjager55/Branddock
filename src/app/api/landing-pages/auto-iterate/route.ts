@@ -139,14 +139,32 @@ export async function POST(request: NextRequest) {
       'question', 'answer', 'name', 'price', 'features', 'content',
       'companyName', 'tagline', 'value', 'riskReducer',
     ]);
-    const mergedContent = body.puckData.content.map((origItem) => {
+    // ID-matching werkt vaak niet omdat Claude rewrite component-IDs
+    // niet altijd 1-op-1 echoot (regenerate, hash-mismatch). Fallback:
+    // wanneer geen ID-match én aiContent[i].type matched origItem.type,
+    // gebruik index-match. Voorkomt '0 van N gewijzigd' situatie.
+    let idMatchCount = 0;
+    let indexMatchCount = 0;
+    const mergedContent = body.puckData.content.map((origItem, origIdx) => {
       const origProps = (origItem as { props?: Record<string, unknown> }).props ?? {};
       const origId = origProps.id as string | undefined;
-      const aiItem = aiContent.find((c) => {
+      const origType = (origItem as { type?: string }).type;
+      let aiItem = aiContent.find((c) => {
         const cProps = (c as { props?: Record<string, unknown> }).props ?? {};
         return cProps.id === origId;
       });
-      if (!aiItem) return origItem; // AI dropped component → behoud origineel
+      if (aiItem) {
+        idMatchCount++;
+      } else {
+        // Index-fallback: same position + same type
+        const candidate = aiContent[origIdx];
+        const candidateType = (candidate as { type?: string } | undefined)?.type;
+        if (candidate && candidateType === origType) {
+          aiItem = candidate;
+          indexMatchCount++;
+        }
+      }
+      if (!aiItem) return origItem; // Geen match → behoud origineel
       const aiProps = (aiItem as { props?: Record<string, unknown> }).props ?? {};
       const mergedProps: Record<string, unknown> = { ...origProps };
       for (const [key, value] of Object.entries(aiProps)) {
@@ -156,6 +174,7 @@ export async function POST(request: NextRequest) {
       }
       return { ...origItem, props: mergedProps };
     });
+    console.log(`[auto-iterate] component-match: id=${idMatchCount} index=${indexMatchCount} total=${body.puckData.content.length}`);
     const proposedTree: PuckLikeData = {
       root: body.puckData.root,
       content: mergedContent,

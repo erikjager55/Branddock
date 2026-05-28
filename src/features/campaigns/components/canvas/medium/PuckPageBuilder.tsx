@@ -222,9 +222,16 @@ export function PuckPageBuilder({
       setPagePending({
         current: puckData,
         proposed: json.proposedPuckData,
-        scoreBefore: json.score,
-        scoreProjected: json.scoreProjected,
-        threshold: json.threshold,
+        scoreBefore: typeof json.score === 'number' ? json.score : 0,
+        // Server kan scoreProjected=null returnen wanneer F-VAL deep-score
+        // uit staat (heuristic-mode default). Fallback op scoreBefore zodat
+        // de modal niet 'NaN/70' toont — geen delta wordt visible maar
+        // user kan alsnog accept/reject.
+        scoreProjected:
+          typeof json.scoreProjected === 'number'
+            ? json.scoreProjected
+            : (typeof json.score === 'number' ? json.score : 0),
+        threshold: typeof json.threshold === 'number' ? json.threshold : 70,
         source: 'auto-iterate',
       });
     } catch (err) {

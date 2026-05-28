@@ -326,13 +326,23 @@ function PreviewPane({
         {label}
       </div>
       <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-        {data && (data as { root?: unknown }).root && Array.isArray((data as { content?: unknown }).content) ? (
-          <Render config={config} data={data} />
-        ) : (
-          <div style={{ padding: 24, color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>
-            (Geen preview-data beschikbaar — auto-iterate response had geen valid puckData-tree.)
-          </div>
-        )}
+        {(() => {
+          const hasContent = data && Array.isArray((data as { content?: unknown }).content) && ((data as { content: unknown[] }).content.length > 0);
+          if (!hasContent) {
+            return (
+              <div style={{ padding: 24, color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>
+                (Geen preview-data beschikbaar)
+              </div>
+            );
+          }
+          // Vul ontbrekend root in zodat Puck niet crash't bij missing root.
+          // Server-side merge garandeert content; root-fallback voorkomt dat
+          // een legacy/incomplete puckData de hele modal blokkeert.
+          const safeData = (data as { root?: unknown }).root
+            ? data
+            : ({ ...data, root: { props: {} } } as SpikeData);
+          return <Render config={config} data={safeData} />;
+        })()}
       </div>
     </div>
   );
