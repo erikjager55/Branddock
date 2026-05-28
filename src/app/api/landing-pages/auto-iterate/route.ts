@@ -67,7 +67,14 @@ export async function POST(request: NextRequest) {
   }
 
   const judgement = await scoreWithFvalOrFallback(body);
-  if (judgement.thresholdMet) {
+  // 2026-05-28 UX-fix: skip de 'already_passing' gate WANNEER we de
+  // heuristic-only mode draaien. De heuristic scoort bijna altijd 70/70
+  // (gate-grade), wat betekende dat user de knop op een 'goede' page
+  // niets zag doen. Skip-check alleen vertrouwen wanneer F-VAL deep-
+  // score actief is (AUTO_ITERATE_DEEP_SCORE=1). Anders: user heeft
+  // expliciet geklikt = altijd rewrite-poging doen.
+  const useDeepScore = process.env.AUTO_ITERATE_DEEP_SCORE === '1';
+  if (useDeepScore && judgement.thresholdMet) {
     return NextResponse.json({
       status: 'skipped',
       reason: 'already_passing',
