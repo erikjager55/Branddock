@@ -158,13 +158,12 @@ export function PuckPageBuilder({
     }
     setPageError(null);
     setPageBusy('auto-iterate');
-    // Auto-iterate doet 2 sequential Anthropic-calls (initial F-VAL +
-    // rewrite). Typisch 60-150s, worst-case 240s. Zonder client-side
-    // timeout blijft de spinner forever staan bij server-hang en kan
-    // user niet ontsnappen. AbortController forceert exit + duidelijke
-    // error wanneer 4 minuten verstreken zijn.
+    // Auto-iterate doet nu 1 Anthropic rewrite-call (~60-90s) i.p.v. de
+    // oude initial F-VAL + rewrite combo. Server-cap is 90s op de
+    // Anthropic-call zelf + ~5s overhead. Client-cap 3 min geeft marge
+    // voor 1 transient-retry zonder eindeloos hangen.
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4 * 60 * 1000);
+    const timeoutId = setTimeout(() => controller.abort(), 3 * 60 * 1000);
     try {
       const res = await fetch('/api/landing-pages/auto-iterate', {
         method: 'POST',
@@ -210,7 +209,7 @@ export function PuckPageBuilder({
       // 'auto-iterate failed' wat als generic ai-error overkomt.
       if (err instanceof Error && err.name === 'AbortError') {
         setPageError(
-          'Auto-iterate timeout (4 min). De server-call duurde te lang. Mogelijk is Anthropic overbelast — probeer over 1-2 minuten opnieuw.',
+          'Auto-iterate timeout (3 min). Mogelijk is Anthropic overbelast — probeer over 1-2 minuten opnieuw.',
         );
       } else {
         setPageError(err instanceof Error ? err.message : 'auto-iterate failed');
@@ -277,7 +276,7 @@ export function PuckPageBuilder({
         {pageBusy === 'auto-iterate' ? (
           <span className="text-xs text-gray-500 mr-2 flex items-center gap-1.5">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Auto-iterate loopt (~2 min) — Anthropic genereert verbetering…
+            Auto-iterate loopt (~60-90s) — Anthropic genereert verbetering…
           </span>
         ) : null}
         {pageError ? (

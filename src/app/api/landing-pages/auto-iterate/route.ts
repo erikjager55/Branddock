@@ -99,7 +99,18 @@ export async function POST(request: NextRequest) {
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
       ],
-      { useCase: 'CHAT', temperature: 0.4, maxTokens: 2400 },
+      {
+        useCase: 'CHAT',
+        temperature: 0.4,
+        // 2026-05-28 PERF — maxTokens 2400 → 1500 (rewrite van puck-tree
+        // texts; meeste velden < 50 woorden, hele rewrite past in ~1200
+        // tokens). Verkort generation-tijd ~20% zonder content-impact.
+        maxTokens: 1500,
+        // Expliciete timeout 90s zodat we niet de default 120s + retries
+        // afwachten wanneer Anthropic overbelast is — client-side cap is
+        // 4 min (PuckPageBuilder), server moet ruim daaronder blijven.
+        timeoutMs: 90_000,
+      },
     );
 
     const parsed = parseJsonContent(result.content);
@@ -202,9 +213,18 @@ function parseJsonContent(content: string): unknown {
  * Adapter that bridges runFidelityScoring → the FvalRunner contract
  * expected by evaluatePageQualityViaFVAL. Maps FidelityRunOutcome.result
  * to the minimal { composite, compositeThreshold, pillars } shape.
+ *
+ * 2026-05-28 PERF — F-VAL (multi-call vision-judge composite) is default
+ * UIT geschakeld voor auto-iterate. User-feedback: 4 min timeout door
+ * sequential calls (initial F-VAL ~90s + rewrite ~90s + retries). De
+ * heuristic-only path is instant en levert een redelijke score-proxy
+ * voor de threshold-gate. F-VAL deep-score is opt-in via
+ * AUTO_ITERATE_DEEP_SCORE=1 wanneer kwaliteits-fidelity boven snelheid
+ * gaat (admin/QA-context).
  */
 async function scoreWithFvalOrFallback(body: RequestBody): Promise<PageQualityResult> {
-  if (!body.deliverableId) {
+  const useDeepScore = process.env.AUTO_ITERATE_DEEP_SCORE === '1';
+  if (!body.deliverableId || !useDeepScore) {
     return evaluatePageQuality(body.puckData);
   }
   try {
