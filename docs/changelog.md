@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 267. `/feature` slash command — feature requests via Brand Assistant
+
+Test-gebruikers kunnen nu een feature request indienen via `/feature` in de Brand Assistant, exact gespiegeld op de bestaande `/bug`-flow (geen AI-analyse). Nieuw workspace-scoped Prisma-model `FeatureReport` (parallel aan `BugReport`, los van het bestaande globale `FeatureRequest`/voting-board) met velden `title`/`description`/`impact` (nice-to-have|useful|important|critical) / optionele http(s)-`screenshot`-link / `status` (open→planned→in_progress→shipped|declined; terminale statussen stempelen `resolvedAt`/`resolvedById`). Twee API-routes: `POST/GET /api/feature-reports` (workspace-scoped, `?all=true` developer-only) + `PATCH /api/feature-reports/[id]` (developer-only status/notes). UI: `FeatureRequestForm` in de chat (page voor-ingevuld) + developer-`FeatureTriageTab` onder Settings → Developer met status-filters + status-transities + triage-notities. Alle vier de assistant-forms (bug/feature/feedback/quick) sluiten elkaar nu wederzijds uit (one-at-a-time). Reference-link wordt server-side gevalideerd op http(s) zodat de `<a href>`-render in triage `javascript:`/`data:` weert. Geverifieerd via Playwright end-to-end (login → /feature → submit → triage → status-transitie). **Merge-let op**: tabel lokaal additief via SQL aangemaakt (niet via Prisma-migratie) wegens pre-existing DB-drift uit de web-page-builder-worktree — los die drift op vóór een schone `db push`/deploy naar Neon.
+
+- Task: [tasks/done/feature-request-slash-command.md](tasks/done/feature-request-slash-command.md)
+- ADR: -
+- Spec: -
+- Commit: _(deze commit)_
+
 ### 271. Competitor-activities-ui finalisatie + hardening — audit van al-gemergde feature + 7 minor fixes
 
 Formele finalisatie van `competitor-activities-ui`, dat al gebouwd + gemerged was (PR #6 classifier, #8 timeline/digest/dashboard, #13 notifications, plus BA-tool en reconcile-cron branches) maar de `task-finalize`-ceremonie had overgeslagen: geen changelog, task bleef `in-progress`, geen 2-subagent review. Een 4-dimensionale audit-workflow (API/UI/notifications/conventies) met adversariële bug-verificatie bevestigde alle 11 acceptatiecriteria correct geïmplementeerd met **0 critical/major defects**; 9 minor bugs bevestigd (2 false-positives gekild). Alle 9 zijn gefixt op worktree `branddock-finalize-activities`:

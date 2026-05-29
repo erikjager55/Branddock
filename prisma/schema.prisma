@@ -240,6 +240,7 @@ model Workspace {
   // Claw AI Assistant
   clawConversations ClawConversation[]
   bugReports        BugReport[]
+  featureReports    FeatureReport[]
   chatFeedback      ChatFeedback[]
 
   // Brandstyle v2 (Fase 0)
@@ -384,6 +385,8 @@ model User {
   clawConversations    ClawConversation[]
   bugReports           BugReport[]
   resolvedBugReports   BugReport[]        @relation("BugResolver")
+  featureReports         FeatureReport[]
+  resolvedFeatureReports FeatureReport[]  @relation("FeatureResolver")
   chatFeedback         ChatFeedback[]
   reviewedChatFeedback ChatFeedback[]     @relation("ChatFeedbackReviewer")
 
@@ -4720,6 +4723,43 @@ model BugReport {
   resolvedAt   DateTime?
   resolvedById String?
   resolvedBy   User?     @relation("BugResolver", fields: [resolvedById], references: [id])
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([status])
+}
+
+// =============================================================
+// FeatureReport — /feature slash command in Brand Assistant
+//
+// A feature request submitted by a (test) user from within the app.
+// Workspace-scoped so we know which client asked for it. Mirrors
+// BugReport, minus AI analysis. Developer-only triage under
+// Settings > Developer > Feature Triage. Intentionally separate from
+// the global FeatureRequest/FeatureVote voting board on the Help page.
+// =============================================================
+
+model FeatureReport {
+  id          String  @id @default(cuid())
+  page        String // activeSection value where the request was made
+  title       String // short summary of the requested feature
+  description String  @db.Text
+  impact      String  @default("useful") // nice-to-have | useful | important | critical (user-perceived)
+  screenshot  String? // optional URL / mockup reference
+  status      String  @default("open") // open | planned | in_progress | shipped | declined
+  notes       String? @db.Text // developer triage notes
+
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolvedBy   User?     @relation("FeatureResolver", fields: [resolvedById], references: [id])
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

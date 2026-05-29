@@ -16,10 +16,11 @@ import { AiModelsTab } from './ai-models/AiModelsTab';
 import { PromptRegistryTab } from './prompt-registry/PromptRegistryTab';
 import { VisualFidelityDashboardTab } from './visual-fidelity/VisualFidelityDashboardTab';
 import { BugTriageTab } from './developer/BugTriageTab';
+import { FeatureTriageTab } from './developer/FeatureTriageTab';
 import { FeedbackTriageTab } from './developer/FeedbackTriageTab';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
 
-const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models', 'ai-prompts', 'visual-fidelity', 'bug-triage', 'feedback-triage'];
+const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models', 'ai-prompts', 'visual-fidelity', 'bug-triage', 'feature-triage', 'feedback-triage'];
 
 interface SettingsPageProps {
   initialTab?: SettingsTab;
@@ -86,6 +87,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
         return <VisualFidelityDashboardTab />;
       case 'bug-triage':
         return <BugTriageTab />;
+      case 'feature-triage':
+        return <FeatureTriageTab />;
       case 'feedback-triage':
         return <FeedbackTriageTab />;
       default:

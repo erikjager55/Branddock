@@ -88,7 +88,7 @@ export function InputBar() {
     el.style.height = `${next}px`;
   }, [inputText]);
 
-  const { openBugReportForm, openFeedbackForm, openQuickContentForm } = useClawStore();
+  const { openBugReportForm, openFeatureRequestForm, openFeedbackForm, openQuickContentForm } = useClawStore();
 
   /**
    * Send the current input. Accepts an optional override so slash-menu
@@ -103,6 +103,11 @@ export function InputBar() {
     if (message.toLowerCase() === '/bug') {
       setInputText('');
       openBugReportForm();
+      return;
+    }
+    if (message.toLowerCase() === '/feature') {
+      setInputText('');
+      openFeatureRequestForm();
       return;
     }
     if (message.toLowerCase() === '/feedback') {
@@ -369,7 +374,7 @@ export function InputBar() {
     currentPage, activeEntity, wizardSnapshot, messages,
     addMessage, setInputText, setIsStreaming, appendStreamingText, finalizeStreaming,
     setPendingMutation, resetStreamingText, openBugReportForm,
-    openFeedbackForm, setActivityStatus,
+    openFeatureRequestForm, openFeedbackForm, setActivityStatus,
   ]);
 
   const applySlashCommand = useCallback(
