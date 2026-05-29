@@ -1,9 +1,22 @@
 # Web-page builder — component author guide
 
 Hoe je een nieuw brand-aware Puck-component toevoegt aan de Branddock
-landing-page builder. Volgt het patroon van de 8 bestaande components
-in `puck-config.tsx` (BrandHero / BrandCTA / FeatureGrid / Testimonial /
-PricingTable / FAQ / Footer / RichText).
+landing-page builder. Volgt het patroon van de 11 bestaande components
+in `puck-config.tsx`:
+
+| # | Component | Bron |
+|---|---|---|
+| 1 | `BrandHero` | MVP Phase 2 |
+| 2 | `BrandCTA` | MVP Phase 2 |
+| 3 | `FeatureGrid` | MVP Phase 2 |
+| 4 | `Testimonial` | MVP Phase 2 |
+| 5 | `PricingTable` | MVP Phase 2 |
+| 6 | `FAQ` | MVP Phase 2 |
+| 7 | `Footer` | MVP Phase 2 |
+| 8 | `RichText` | MVP Phase 2 |
+| 9 | `StickyCtaBar` | DTS C9 (commit `39171432`) |
+| 10 | `StatsBlock` | DTS C8/9 (auto-iterate skip-projected) |
+| 11 | `BrandNav` | LP design batches |
 
 Doelgroep: Branddock-developer die de builder wil uitbreiden met een
 nieuw component-type. Werk in `branddock-feat-web-page-builder-canvas`
@@ -180,8 +193,17 @@ Run de suite:
 npm run smoke:web-page-builder
 ```
 
-Alle 7 phase-smokes moeten groen blijven (totaal nu 279 + jouw nieuwe
-assertions).
+Alle 40+ phase-smokes moeten groen blijven (totaal vandaag ~1500
+assertions over phase1-phase39+). De Puck-component-test-suite is
+zelfstandig runnable per phase:
+
+```bash
+# Specifieke phase
+npx tsx scripts/smoke-tests/web-page-builder-phase2.ts
+
+# Alle phases in batch
+ls scripts/smoke-tests/web-page-builder-phase*.ts | xargs -I {} npx tsx {}
+```
 
 ---
 
@@ -222,3 +244,6 @@ Cross-refs:
 - MVP task: [`tasks/web-page-builder-canvas-step-mvp.md`](../../../../../../tasks/web-page-builder-canvas-step-mvp.md)
 - Brand-tokens util: [`src/lib/landing-pages/brand-tokens.ts`](../../../../../lib/landing-pages/brand-tokens.ts)
 - AI-instruction registry: [`src/lib/landing-pages/ai-edit-instructions.ts`](../../../../../lib/landing-pages/ai-edit-instructions.ts)
+- DTS content-quality (C1-C11 alle items done): [`docs/specs/dts-content-quality-improvements.md`](../../../../../../docs/specs/dts-content-quality-improvements.md)
+- Brandstyle-analyzer pipeline-plan (referentie, niet 1-op-1 uitgevoerd): [`docs/specs/brandstyle-analyzer-improvement-plan.md`](../../../../../../docs/specs/brandstyle-analyzer-improvement-plan.md)
+- Plan zippy-twirling-feigenbaum (2026-05-29): `~/.claude/plans/zippy-twirling-feigenbaum.md`
