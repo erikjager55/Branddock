@@ -7,6 +7,7 @@ import {
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { generateCanvasVisual } from '../../../api/canvas.api';
 import { variantToPuckDataFromStructured } from '../medium/variant-to-puck-data';
+import { FidelityScoreBar } from '../FidelityScoreBar';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import type { BrandTokens } from '@/lib/landing-pages/brand-tokens';
@@ -43,6 +44,10 @@ export function LandingPageGenerateBlock({
   const setStructuredVariant = useCanvasStore((s) => s.setStructuredVariant);
   const setStructuredVariantOptions = useCanvasStore((s) => s.setStructuredVariantOptions);
   const setContextStack = useCanvasStore((s) => s.setContextStack);
+  const resetFidelityScore = useCanvasStore((s) => s.resetFidelityScore);
+  const setFidelityRunningForVariant = useCanvasStore((s) => s.setFidelityRunningForVariant);
+  const setFidelityCompleteForVariant = useCanvasStore((s) => s.setFidelityCompleteForVariant);
+  const setFidelityScoreSkippedForVariant = useCanvasStore((s) => s.setFidelityScoreSkippedForVariant);
   const variantOptions = useCanvasStore((s) => s.structuredVariantOptions) as
     | LandingPageVariantContent[]
     | null;
@@ -124,6 +129,71 @@ export function LandingPageGenerateBlock({
 
   const briefIncomplete = !brief.objective?.trim() && !contentTypeInputs.valueProposition;
 
+  /**
+   * Track 5 (plan zippy-twirling-feigenbaum 2026-05-29) — fire-and-forget
+   * F-VAL scoring voor 1 variant. Schrijft running → complete/skipped naar
+   * store; `FidelityScoreBar` rendert vanuit dezelfde state als
+   * content-deliverables in `Step2ContentVariants`. Scoort enkel variant 0
+   * (scope A); per-variant scoring is scope B (out-of-scope).
+   */
+  const scoreVariantFidelity = useCallback(
+    async (variant: LandingPageVariantContent, variantIndex: number) => {
+      setFidelityRunningForVariant(variantIndex);
+      try {
+        const res = await fetch(
+          `/api/landing-pages/${deliverableId}/score-variant-fidelity`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ variantIndex, variant }),
+          },
+        );
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          setFidelityScoreSkippedForVariant(
+            variantIndex,
+            data.error ?? `HTTP ${res.status}`,
+          );
+          return;
+        }
+        const data = (await res.json()) as
+          | {
+              skipped: false;
+              payload: {
+                compositeScore: number;
+                thresholdMet: boolean;
+                compositeThreshold: number;
+                detectorVerdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI';
+                humanBaselinePosition: number;
+                pillars: {
+                  style: number | null;
+                  judge: number | null;
+                  rules: number | null;
+                };
+                elapsedMs: number;
+              };
+            }
+          | { skipped: true; reason: string };
+        if (data.skipped) {
+          setFidelityScoreSkippedForVariant(variantIndex, data.reason);
+          return;
+        }
+        setFidelityCompleteForVariant(variantIndex, data.payload);
+      } catch (err) {
+        setFidelityScoreSkippedForVariant(
+          variantIndex,
+          err instanceof Error ? err.message : 'fetch-error',
+        );
+      }
+    },
+    [
+      deliverableId,
+      setFidelityCompleteForVariant,
+      setFidelityRunningForVariant,
+      setFidelityScoreSkippedForVariant,
+    ],
+  );
+
   const handleGenerate = useCallback(async () => {
     if (briefIncomplete) {
       setError('Vul eerst Doel of Value Proposition in Step 1.');
@@ -131,6 +201,7 @@ export function LandingPageGenerateBlock({
     }
     setIsGenerating(true);
     setError(null);
+    resetFidelityScore();
     try {
       const res = await fetch(
         `/api/landing-pages/${deliverableId}/generate-structured-variant`,
@@ -167,12 +238,28 @@ export function LandingPageGenerateBlock({
       } else {
         setPartialDelivery(null);
       }
+      // Track 5 — fire-and-forget scoring voor variant 0. User ziet variants
+      // direct; fidelity-score volgt ~20s later via store-update. Geen await
+      // — variant-keuze mag niet blokkeren op scoring-latency.
+      if (data.variants.length > 0) {
+        void scoreVariantFidelity(data.variants[0], 0);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Generatie mislukt');
     } finally {
       setIsGenerating(false);
     }
-  }, [briefIncomplete, builtPrompt, deliverableId, includePricing, includeProblem, setStructuredVariant, setStructuredVariantOptions]);
+  }, [
+    briefIncomplete,
+    builtPrompt,
+    deliverableId,
+    includePricing,
+    includeProblem,
+    resetFidelityScore,
+    scoreVariantFidelity,
+    setStructuredVariant,
+    setStructuredVariantOptions,
+  ]);
 
   // Auto-trigger op mount
   const autoTriggeredRef = useRef(false);
@@ -356,6 +443,11 @@ export function LandingPageGenerateBlock({
             {variantOptions.length} variant{variantOptions.length === 1 ? '' : 'en'} klaar — kies welke past
           </p>
         </div>
+        {/* Track 5 — F-VAL fidelity-score voor LP-variant. Verschijnt zodra
+            scoring-call gestart is (running state) en update naar complete
+            (~20s later) via setFidelityCompleteForVariant. Identiek pattern
+            aan Step2ContentVariants.tsx voor content-deliverables. */}
+        <FidelityScoreBar deliverableId={deliverableId} />
         {partialDelivery ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
