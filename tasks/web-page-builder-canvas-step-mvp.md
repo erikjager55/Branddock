@@ -1,21 +1,40 @@
 ---
 id: web-page-builder-canvas-step-mvp
 title: Web-page builder MVP — Puck als Canvas Step 3 Medium-renderer voor 5 web-page types
-fase: post-launch
-priority: next
-effort: 6-8 weken (1 dev), gefaseerd 6 phases
+fase: pre-launch
+priority: now
+effort: 6-8 weken (1 dev), gefaseerd 6 phases + 4 follow-up werkstromen (totaal 13 dagen sinds 2026-05-24)
 owner: claude-code
 status: in-progress
 created: 2026-05-23
 started: 2026-05-24
-phases-complete: 6 of 6 (backend + UI) + 6.1 + 6.2 follow-ups
-remaining: browser-smoke door user; bug-report submission; PR review/merge
-related-adr: docs/adr/2026-05-22-landing-page-builder-architectuur.md
-related-spec: tasks/_drafts/idea-landing-page-builder.md
+phases-complete: 6 of 6 (backend + UI) + 6.1 + 6.2 follow-ups + design-batches 1-8 + brandstyle Fase A-E (LP-fidelity werkstroom) + F-VAL vision-judge dim 8 + auto-iterate hardening + DTS content-quality C1-C11
+remaining: brand-fidelity Step 2 LP wiring (Track 5) + Track 4 acceptance (README, BrandOnboardingWizard, F-VAL HTML calibration, dual-render perf, marketing-site-pricing dogfood) + Track 2 4-squash-merges + browser-smoke door user + bug-report submission
+related-adr: docs/adr/2026-05-22-landing-page-builder-architectuur.md + 3 ADR-aanvullingen volgen (2026-05-29)
+related-spec: tasks/_drafts/idea-landing-page-builder.md + docs/specs/{dts-content-quality-improvements,dts-comparison-improvements,brandstyle-analyzer-improvement-plan}.md
+related-plan: ~/.claude/plans/zippy-twirling-feigenbaum.md (approved 2026-05-29)
 worktree: branddock-feat-web-page-builder-canvas
 ---
 
-# Status 2026-05-24 — alle 6 phases + 6.1 + 6.2 follow-ups geland
+# Status 2026-05-29 — promoted naar pre-launch sprint #6
+
+Feature-branch `branddock-feat-web-page-builder-canvas` heeft **130 commits ahead van main** (origin heeft 129, lokaal 1 extra na docs/specs + roadmap commits 2026-05-29). 4 vermengde werkstromen gelandet sinds 2026-05-24. Roadmap-update: task gepromoot van post-launch (priority: next) naar pre-launch sprint #6 Track A — 5 dagen capaciteit gegaan op een formeel post-launch task verdiende erkenning.
+
+**Brand-fidelity-gap gevonden 2026-05-29** in Step 2 LP-deliverables: `Step2ContentVariants.tsx:318-325` routeert LP naar `LandingPageGenerateBlock` (aparte Step 2 host) zonder `FidelityScoreBar` + zonder SSE-events. Wordt opgelost als Track 5 in plan `zippy-twirling-feigenbaum`.
+
+## Follow-up werkstromen sinds 2026-05-24
+
+| Werkstroom | Commit-aantal | Range | Squash-target Track 2 |
+|---|---|---|---|
+| **MVP Phase 1-6.2** (oorspronkelijk) | 8 | `2c28dd68` → `873d69b2` | PR 1: `feat(landing-pages): MVP Puck builder + Phase 1-6 + 6.1 + 6.2` |
+| **Brandstyle Fase A-E (LP-fidelity werkstroom)** | ~10 | `24105e16`, `b36ca91c`, `08bc6966`, `744ae61f`, `057e4bf7`, `3ff4122f`, `df831143`, `53409620`, `085e8290`, `efb14497`, `98fbefb2`, `2706a9c4` | PR 2: `feat(brandstyle): Fase A-E scraper-extractor cycle voor LP-fidelity` |
+| **LP design-quality batches 1-8** | ~15 | `6c9cbe6b`, `caba84a4`, `4855a780`, `0e1b5281` + design-fixes (`719141aa`, `ee876198`, `a168940a`, `4ce8bd13`, `a215964c`, `3e29953a`, `deeda289`, `c7286caf`) + scraped-data exposure (`c351011b`, `c0d6ac13`, `b00a374a`) | PR 3: `feat(lp): design-quality batches 1-8 + scraped-data exposure` |
+| **Auto-iterate hardening + F-VAL vision-judge dim 8 + DTS C1-C11** | ~21 | `944a8d34`, `410dcee6`, `0f9ebacf`, `1064cf81`, `6e2d249a`, `aea0d28d`, `809bb9e4`, `0cbccff1`, `2e8eb0ad`, `b09887e8`, `38dcfe10`, `3e621612`, `1439fc20`, `af7a688f`, `ec527061`, `a785273b`, `23dd181b`, `60d1a8cb`, `11283481`, `39171432`, `d06b428e` | PR 4: `feat(canvas+f-val): vision-judge dim 8 + auto-iterate hardening + DTS content-quality C1-C11` |
+| **Specs + roadmap (2026-05-29)** | 2 | `08a0ff12` docs(specs), `dad0d003` docs(roadmap) | bundelen met PR 1 of losse `chore: ` PR |
+
+**Cumulatief**: 36 files (oorspronkelijke MVP) + ~60 files (follow-ups) = ~95 files / +12000 lines geschat.
+
+## Originele MVP status (2026-05-24)
 
 Feature-branch `branddock-feat-web-page-builder-canvas` heeft 8 commits, niet-gemerged in `main`. Totaal: 36 files / +6175 lines / 279 smoke-assertions PASS over 7 zelfstandige `npx tsx`-scripts.
 
@@ -30,10 +49,37 @@ Feature-branch `branddock-feat-web-page-builder-canvas` heeft 8 commits, niet-ge
 | 6.1 UI follow-up | `23715313` | 18 ✅ | PageDiffPreviewModal + 3 page-level toolbar-knoppen |
 | 6.2 F-VAL + migration + bug-report | `873d69b2` | 14 ✅ | evaluatePageQualityViaFVAL + Prisma migration + Puck bug-report draft |
 
-**Open voor productie-rollout** (alleen user-actie):
-- Browser-smoke in `branddock-feat-web-page-builder-canvas` worktree (5 stappen uit spike-memo + 3 nieuwe page-level knoppen verifiëren)
-- Puck `external` field bug-report indienen via [puckeditor/puck/issues/new](https://github.com/puckeditor/puck/issues/new) — draft in `docs/audits/puck-external-field-typing-issue.md`
-- PR aanmaken voor review + merge naar main
+**Open voor productie-rollout** (per plan `zippy-twirling-feigenbaum`, ~8-9 dagen totaal):
+
+**Track 1 — Finalisatie** (~2d):
+- ✅ Untracked specs gecommit met status-flags (`08a0ff12`, 2026-05-29)
+- ⏳ Bug-report Puck `external` field-typing indienen — draft in `docs/audits/puck-external-field-typing-issue.md`
+- ⏳ Browser-smoke 10-stappen (5 LP types × 2 workspaces + 3 non-web regressie + 4 edit-flows) — user-manual
+- ⏳ Bundle-size verifiëren (editor ≤350KB, render ≤100KB gzipped)
+- ✅ TSC + lint groen (2026-05-29) — 7 smoke-scripts nog te runnen
+- ✅ Task-file refresh naar werkelijke staat (deze edit, 2026-05-29)
+
+**Track 5 — Brand-fidelity Step 2 LP** (~1d):
+- SSE-conversie `/api/landing-pages/[deliverableId]/generate-structured-variant/route.ts` + `runFidelityScoring` call
+- `useCanvasOrchestration`-hook switch in `LandingPageGenerateBlock.tsx`
+- `FidelityScoreBar` render conditional toevoegen
+
+**Track 4 — Openstaande MVP-acceptance** (~3d):
+- README in `src/features/campaigns/components/canvas/medium/` ("hoe voeg ik een Puck-component toe")
+- `BrandOnboardingWizard.tsx` bouwen (backend klaar)
+- F-VAL HTML-vs-Markdown calibration-doc in `docs/specs/`
+- Dual-render perf meting ≥50 components in `docs/audits/`
+- Dogfood `marketing-site-pricing` via builder (screenshots als vercel niet live)
+
+**Track 2 — Merge-strategie** (~2-3d):
+- 3 ADR-aanvullingen (`2026-05-29-brandstyle-analyzer-lp-fidelity`, `2026-05-29-fval-vision-judge-dim8`, `2026-05-29-dts-content-quality`)
+- Rebase + conflict-check tegen main (preview-map.ts overlap met ad-quality/ad-publishing)
+- 4 squashes sequentieel mergen + wacht-op-CI tussen elke
+- Track 5 als losse 5e PR
+- 4 changelog entries `#270`-`#273`
+- Branch + worktree cleanup post-merge
+
+**Track 3 — Roadmap-update**: ✅ done 2026-05-29 (`dad0d003`)
 
 ---
 
