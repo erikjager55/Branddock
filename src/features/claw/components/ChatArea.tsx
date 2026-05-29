@@ -5,6 +5,7 @@ import { Bot, User, Wrench, AlertCircle, Sparkles, Loader2 } from 'lucide-react'
 import { useClawStore } from '@/stores/useClawStore';
 import { MutationConfirmCard } from './MutationConfirmCard';
 import { BugReportForm } from './BugReportForm';
+import { FeatureRequestForm } from './FeatureRequestForm';
 import { FeedbackForm } from './FeedbackForm';
 import { QuickContentForm } from './QuickContentForm';
 import { MarkdownContent } from './MarkdownContent';
@@ -15,7 +16,7 @@ import type { ClawMessage, ClawQuickAction } from '@/lib/claw/claw.types';
 export function ChatArea() {
   const {
     messages, streamingText, isStreaming, setInputText, pendingMutation,
-    bugReportForm, feedbackForm, quickContentForm, activityStatus,
+    bugReportForm, featureRequestForm, feedbackForm, quickContentForm, activityStatus,
     currentPage, activeEntity, wizardSnapshot,
   } = useClawStore();
 
@@ -85,6 +86,9 @@ export function ChatArea() {
 
         {/* Bug report form */}
         {bugReportForm && <BugReportForm />}
+
+        {/* Feature request form */}
+        {featureRequestForm && <FeatureRequestForm />}
 
         {/* Feedback form */}
         {feedbackForm && <FeedbackForm />}

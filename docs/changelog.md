@@ -36,6 +36,24 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 ---
 
 ## 2026-05
+### 268. Content-flow analyse #7.A — 8 categorie-rapporten + synthesis
+
+Per-categorie content-flow analyse (long-form / social / advertising / email / website / video / sales / pr-hr) + `content-flow-synthesis.md` in `docs/specs/`, code-gegrond met file:line-refs. Legt twee structurele gaten bloot: (1) 5 kerntypes (`whitepaper`/`ebook`/`article`/`newsletter`/`microsite`) draaien op de generieke prompt door ontbrekende templates; (2) `TYPE_TO_CATEGORY` is gedivergeerd van de echte TEMPLATE_REGISTRY (~9 phantom-IDs, ~17 missende echte types) zodat `getCategoryForType()` mislabelt. Friction-tickets in `tasks/content-flow-improvements-7a.md` (CF-1 t/m CF-10). Documentatie-only (geen tsc/lint); sectie 6 deels pending Ronde 1.
+
+- Task: [tasks/done/content-test-flow-analyse-7A.md](tasks/done/content-test-flow-analyse-7A.md)
+- ADR: -
+- Spec: docs/specs/content-flow-synthesis.md
+- Commit: _(deze commit)_
+
+
+### 267. `/feature` slash command — feature requests via Brand Assistant
+
+Test-gebruikers kunnen nu een feature request indienen via `/feature` in de Brand Assistant, exact gespiegeld op de bestaande `/bug`-flow (geen AI-analyse). Nieuw workspace-scoped Prisma-model `FeatureReport` (parallel aan `BugReport`, los van het bestaande globale `FeatureRequest`/voting-board) met velden `title`/`description`/`impact` (nice-to-have|useful|important|critical) / optionele http(s)-`screenshot`-link / `status` (open→planned→in_progress→shipped|declined; terminale statussen stempelen `resolvedAt`/`resolvedById`). Twee API-routes: `POST/GET /api/feature-reports` (workspace-scoped, `?all=true` developer-only) + `PATCH /api/feature-reports/[id]` (developer-only status/notes). UI: `FeatureRequestForm` in de chat (page voor-ingevuld) + developer-`FeatureTriageTab` onder Settings → Developer met status-filters + status-transities + triage-notities. Alle vier de assistant-forms (bug/feature/feedback/quick) sluiten elkaar nu wederzijds uit (one-at-a-time). Reference-link wordt server-side gevalideerd op http(s) zodat de `<a href>`-render in triage `javascript:`/`data:` weert. Geverifieerd via Playwright end-to-end (login → /feature → submit → triage → status-transitie). **Merge-let op**: tabel lokaal additief via SQL aangemaakt (niet via Prisma-migratie) wegens pre-existing DB-drift uit de web-page-builder-worktree — los die drift op vóór een schone `db push`/deploy naar Neon.
+
+- Task: [tasks/done/feature-request-slash-command.md](tasks/done/feature-request-slash-command.md)
+- ADR: -
+- Spec: -
+- Commit: _(deze commit)_
 
 ### 272. Competitor scraping Apify-fallback — finalisatie van al-gemergde 3-step chain + Track B doc-reconciliatie
 

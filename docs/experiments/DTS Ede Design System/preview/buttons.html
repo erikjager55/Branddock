@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  html, body { background: #fff; margin: 0; padding: 0; }
+  body { padding: 24px; box-sizing: border-box; min-height: 100vh; }
+</style>
+</head>
+<body>
+<style>
+  body { padding: 24px; background: #fff; }
+  .row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .btn { font-family: inherit; font-size: 15px; font-weight: 500; padding: 12px 22px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; transition: background 150ms ease; line-height: 1; letter-spacing: 0.01em; }
+  .btn-primary { background: #0060A0; color: #fff; }
+  .btn-primary:hover { background: #0040A0; }
+  .btn-secondary { background: #fff; color: #0060A0; border-color: #DFDFDF; }
+  .btn-secondary:hover { background: rgba(0,96,160,0.05); border-color: #0060A0; }
+  .btn-tertiary { background: transparent; color: #0060A0; padding-left: 0; padding-right: 0; }
+  .btn-tertiary:hover { text-decoration: underline; }
+  .btn-disabled { background: #DFDFDF; color: #999; cursor: not-allowed; }
+  .label { font-size: 11px; color: #888; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+</style>
+<div class="label">Buttons</div>
+<div class="row">
+  <button class="btn btn-primary">Word lid</button>
+  <button class="btn btn-secondary">Bekijk programma</button>
+  <button class="btn btn-tertiary">Meer over de club →</button>
+  <button class="btn btn-disabled" disabled>Inschrijving gesloten</button>
+</div>
+</body></html>

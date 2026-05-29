@@ -24,6 +24,9 @@ const eslintConfig = defineConfig([
     "scripts/**/.venv/**",
     "scripts/**/venv/**",
     "scripts/**/__pycache__/**",
+    // Research / experiment exports (DTS Ede design-system UI-kit, etc.).
+    // Third-party-style code that is NOT part of the productie-bundle.
+    "docs/experiments/**",
   ]),
   // Downgrade noisy rules to warnings (fix incrementally).
   {

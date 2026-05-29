@@ -1,0 +1,271 @@
+/* =========================================================================
+   DTS Ede Design System — Foundations
+   Colors and Type
+   =========================================================================
+   Brand: DTS Ede (Door Training Sterker, V.V.) — Dutch amateur football club
+   Founded 1935 · Ede, Netherlands · blauw-witte
+   ========================================================================= */
+
+/* --- Webfont: Helvetica Neue (licensed brand files) -----------------
+   Brand-supplied OTF files live in /fonts/. Full weight ladder:
+   Light 300 / Roman 400 (= Regular) / Medium 500 / Bold 700 / Black 900
+   plus Bold & Black italics. The brand book's "HelveticaNeue-Light"
+   body specification is now matched exactly.
+   ---------------------------------------------------------------- */
+@font-face {
+  font-family: "HelveticaNeue";
+  src: url("fonts/HelveticaNeueLight.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HelveticaNeue";
+  src: url("fonts/HelveticaNeueRoman.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HelveticaNeue";
+  src: url("fonts/HelveticaNeueMedium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HelveticaNeue";
+  src: url("fonts/HelveticaNeueBold.otf") format("opentype");
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HelveticaNeue";
+  src: url("fonts/HelveticaNeueBoldItalic.otf") format("opentype");
+  font-weight: 600 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HelveticaNeue";
+  src: url("fonts/HelveticaNeueBlack.otf") format("opentype");
+  font-weight: 800 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "HelveticaNeue";
+  src: url("fonts/HelveticaNeueBlackItalic.otf") format("opentype");
+  font-weight: 800 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  /* ============== COLORS — RAW PALETTE ============== */
+
+  /* Primary blues — the only chromatic colors in the system */
+  --dts-royal-blue:   #0060A0;  /* PRIMARY · crest, CTAs, links, focus */
+  --dts-deep-blue:    #0040A0;  /* SECONDARY · hover / dark surfaces / footer */
+
+  /* Neutrals — light to dark */
+  --dts-off-white:    #F1F1F1;
+  --dts-light-gray:   #DFDFDF;
+  --dts-silver-gray:  #CCCCCC;
+  --dts-medium-gray:  #999999;
+  --dts-warm-gray:    #888888;
+  --dts-slate-gray:   #666666;
+  --dts-graphite:     #555555;
+  --dts-charcoal:     #464646;
+  --dts-dark-charcoal:#333333;
+  --dts-near-black:   #222222;
+  --dts-white:        #FFFFFF;
+
+  /* ============== COLORS — SEMANTIC ============== */
+
+  /* Surfaces */
+  --bg-page:          var(--dts-off-white);
+  --bg-surface:       var(--dts-white);
+  --bg-surface-alt:   var(--dts-off-white);
+  --bg-dark:          var(--dts-deep-blue);
+  --bg-scrim:         rgba(0, 96, 160, 0.55);   /* photo scrim only */
+  --bg-scrim-bottom:  linear-gradient(to top, rgba(0,0,0,0.55), transparent 60%);
+
+  /* Foreground (text) */
+  --fg1:              var(--dts-near-black);    /* headlines */
+  --fg2:              var(--dts-charcoal);      /* body */
+  --fg3:              var(--dts-slate-gray);    /* secondary body */
+  --fg4:              var(--dts-medium-gray);   /* captions / metadata */
+  --fg-on-dark:       var(--dts-white);
+  --fg-on-blue:       var(--dts-white);
+
+  /* Lines */
+  --border-default:   var(--dts-light-gray);
+  --border-strong:    var(--dts-silver-gray);
+  --border-faint:     #EAEAEA;
+
+  /* Brand */
+  --brand-primary:    var(--dts-royal-blue);
+  --brand-primary-hover: var(--dts-deep-blue);
+  --brand-link:       var(--dts-royal-blue);
+  --brand-focus-ring: var(--dts-royal-blue);
+
+  /* ============== TYPOGRAPHY ============== */
+
+  /* Stack: brand-supplied HelveticaNeue OTFs cover Light/Roman/Medium/
+     Bold/Black via @font-face above. Helvetica/Arial as platform fallbacks. */
+  --font-sans:
+    "HelveticaNeue", "Helvetica Neue", "Helvetica", "Arial",
+    "Geneva", "Roboto", system-ui, sans-serif;
+
+  /* Full weight ladder available */
+  --font-weight-light:   300;
+  --font-weight-regular: 400;   /* HelveticaNeue Roman */
+  --font-weight-medium:  500;
+  --font-weight-bold:    700;
+  --font-weight-black:   900;
+
+  /* Scale — extends brand-book scale (12/18/20/30/40) up to display sizes */
+  --fs-small:   12px;   /* labels, micro */
+  --fs-caption: 18px;
+  --fs-body:    20px;
+  --fs-h3:      30px;
+  --fs-h2:      40px;
+  --fs-h1:      64px;
+  --fs-display: 88px;
+
+  --lh-tight:   1.05;
+  --lh-snug:    1.2;
+  --lh-normal:  1.45;
+  --lh-loose:   1.6;
+
+  --tracking-display: -0.02em;
+  --tracking-tight:   -0.01em;
+  --tracking-normal:  0;
+  --tracking-banner:  0.04em;
+
+  /* ============== SPACING (4px base) ============== */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-24: 96px;
+
+  /* ============== RADII ============== */
+  --radius-chip:   2px;
+  --radius-card:   4px;
+  --radius-input:  4px;
+  --radius-pill:   999px;
+
+  /* ============== SHADOWS (minimal) ============== */
+  --shadow-elev-1: 0 1px 2px rgba(0, 0, 0, 0.06);    /* sticky header only */
+  --shadow-elev-2: 0 2px 6px rgba(0, 0, 0, 0.08);    /* dropdowns */
+
+  /* ============== MOTION ============== */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --dur-fast: 150ms;
+  --dur-base: 200ms;
+  --dur-slow: 250ms;
+}
+
+/* =========================================================================
+   Base element styles — semantic typography
+   ========================================================================= */
+
+html {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-light);
+  color: var(--fg2);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+}
+
+h1, h2, h3, h4 {
+  color: var(--fg1);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--lh-tight);
+  margin: 0;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: var(--fs-h1);
+  letter-spacing: var(--tracking-display);
+}
+
+h2 {
+  font-size: var(--fs-h2);
+  letter-spacing: var(--tracking-tight);
+}
+
+h3 {
+  font-size: var(--fs-h3);
+  font-weight: var(--font-weight-medium);
+}
+
+h4 {
+  font-size: var(--fs-caption);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-banner);
+  text-transform: uppercase;
+  color: var(--fg3);
+}
+
+p {
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--fg2);
+  margin: 0;
+  text-wrap: pretty;
+}
+
+small, .text-small {
+  font-size: var(--fs-small);
+  color: var(--fg4);
+}
+
+.text-caption {
+  font-size: var(--fs-caption);
+  color: var(--fg3);
+}
+
+/* Banner: civic / sign-plaque feel — uppercase wordmark style */
+.text-banner {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-banner);
+  font-weight: var(--font-weight-bold);
+}
+
+a {
+  color: var(--brand-link);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--brand-focus-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Display class — for hero typography only */
+.display {
+  font-size: var(--fs-display);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-display);
+  color: var(--fg1);
+}

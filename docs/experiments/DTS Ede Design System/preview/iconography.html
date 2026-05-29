@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  html, body { background: #fff; margin: 0; padding: 0; }
+  body { padding: 24px; box-sizing: border-box; min-height: 100vh; }
+</style>
+</head>
+<body>
+<style>
+  body { padding: 24px; background: #fff; }
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px; }
+  .ico { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #464646; }
+  .ico svg { width: 28px; height: 28px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .ico .name { font-size: 10px; color: #888; }
+  .note { margin-top: 18px; font-size: 11px; color: #888; max-width: 560px; line-height: 1.5; }
+</style>
+<div class="grid">
+  <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a14.5 14.5 0 0 1 0 20"/><path d="M12 2a14.5 14.5 0 0 0 0 20"/></svg><span class="name">globe</span></div>
+  <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span class="name">calendar</span></div>
+  <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="name">clock</span></div>
+  <div class="ico"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg><span class="name">pin</span></div>
+  <div class="ico"><svg viewBox="0 0 24 24"><path d="M6 9h12l-1 9a3 3 0 0 1-3 3h-4a3 3 0 0 1-3-3z"/><path d="M6 9V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4"/><path d="M6 9H4M18 9h2"/></svg><span class="name">trophy</span></div>
+  <div class="ico"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="name">team</span></div>
+  <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg><span class="name">ball</span></div>
+</div>
+<div class="note">Lucide stroke set · 24px grid · 1.5px stroke · inherits currentColor · hover = Royal Blue · no emoji.</div>
+</body></html>

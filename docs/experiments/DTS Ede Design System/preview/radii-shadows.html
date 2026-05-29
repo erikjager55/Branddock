@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  html, body { background: #fff; margin: 0; padding: 0; }
+  body { padding: 24px; box-sizing: border-box; min-height: 100vh; }
+</style>
+</head>
+<body>
+<style>
+  body { padding: 24px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .box { width: 100%; height: 64px; background: #fff; border: 1px solid #DFDFDF; display: flex; align-items: center; justify-content: center; color: #888; font-size: 12px; }
+  .label { font-size: 11px; color: #333; font-weight: 500; }
+  .meta { font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: #888; }
+</style>
+<div class="grid">
+  <div class="item"><div class="box" style="border-radius:2px">chip</div><div class="label">2 px</div><div class="meta">--radius-chip</div></div>
+  <div class="item"><div class="box" style="border-radius:4px">card</div><div class="label">4 px</div><div class="meta">--radius-card</div></div>
+  <div class="item"><div class="box" style="border-radius:999px;">pill</div><div class="label">999 px</div><div class="meta">--radius-pill</div></div>
+  <div class="item"><div class="box" style="border-radius:4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); border-color:#EAEAEA;">elev-1</div><div class="label">faint</div><div class="meta">sticky header only</div></div>
+</div>
+</body></html>

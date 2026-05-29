@@ -38,6 +38,18 @@ export interface BugReportFormState {
   screenshot: string;
 }
 
+export type FeatureImpact = 'nice-to-have' | 'useful' | 'important' | 'critical';
+
+export interface FeatureRequestFormState {
+  /** Where in the app the user was when requesting — captured from currentPage. */
+  page: string;
+  title: string;
+  description: string;
+  impact: FeatureImpact;
+  /** Optional URL / mockup reference. */
+  screenshot: string;
+}
+
 export type FeedbackSentiment = 'positive' | 'neutral' | 'negative';
 export type FeedbackTag =
   | 'inaccurate'
@@ -177,6 +189,12 @@ interface ClawStore {
   updateBugReportForm: (fields: Partial<BugReportFormState>) => void;
   closeBugReportForm: () => void;
 
+  // ── Feature Request ─────────────────────────────────────
+  featureRequestForm: FeatureRequestFormState | null;
+  openFeatureRequestForm: () => void;
+  updateFeatureRequestForm: (fields: Partial<FeatureRequestFormState>) => void;
+  closeFeatureRequestForm: () => void;
+
   // ── Feedback ────────────────────────────────────────────
   feedbackForm: FeedbackFormState | null;
   openFeedbackForm: (anchor?: {
@@ -202,7 +220,7 @@ export const useClawStore = create<ClawStore>((set, get) => ({
   isOpen: false,
   viewMode: 'panel',
   openClaw: () => set({ isOpen: true, viewMode: 'panel' }),
-  closeClaw: () => set({ isOpen: false, viewMode: 'panel', bugReportForm: null, feedbackForm: null, quickContentForm: null }),
+  closeClaw: () => set({ isOpen: false, viewMode: 'panel', bugReportForm: null, featureRequestForm: null, feedbackForm: null, quickContentForm: null }),
   toggleClaw: () => set((s) => ({ isOpen: !s.isOpen, viewMode: s.isOpen ? 'panel' : s.viewMode })),
   toggleViewMode: () => set((s) => ({ viewMode: s.viewMode === 'panel' ? 'overlay' : 'panel' })),
 
@@ -329,11 +347,35 @@ export const useClawStore = create<ClawStore>((set, get) => ({
       severity: 'medium',
       screenshot: '',
     },
+    // Only one assistant form is ever visible at a time.
+    featureRequestForm: null,
+    feedbackForm: null,
+    quickContentForm: null,
   }),
   updateBugReportForm: (fields) => set((s) => ({
     bugReportForm: s.bugReportForm ? { ...s.bugReportForm, ...fields } : null,
   })),
   closeBugReportForm: () => set({ bugReportForm: null }),
+
+  // Feature request
+  featureRequestForm: null,
+  openFeatureRequestForm: () => set({
+    featureRequestForm: {
+      page: get().currentPage,
+      title: '',
+      description: '',
+      impact: 'useful',
+      screenshot: '',
+    },
+    // Only one assistant form is ever visible at a time.
+    bugReportForm: null,
+    feedbackForm: null,
+    quickContentForm: null,
+  }),
+  updateFeatureRequestForm: (fields) => set((s) => ({
+    featureRequestForm: s.featureRequestForm ? { ...s.featureRequestForm, ...fields } : null,
+  })),
+  closeFeatureRequestForm: () => set({ featureRequestForm: null }),
 
   // Feedback
   feedbackForm: null,
@@ -348,7 +390,10 @@ export const useClawStore = create<ClawStore>((set, get) => ({
         tags: [],
         comment: '',
       },
+      // Only one assistant form is ever visible at a time.
       bugReportForm: null,
+      featureRequestForm: null,
+      quickContentForm: null,
     }),
   updateFeedbackForm: (fields) =>
     set((s) => ({
@@ -372,6 +417,7 @@ export const useClawStore = create<ClawStore>((set, get) => ({
       // Mirror the bug-/feedback-form pattern: opening Quick Content
       // dismisses the other forms so only one is ever visible at a time.
       bugReportForm: null,
+      featureRequestForm: null,
       feedbackForm: null,
     }),
   updateQuickContentForm: (fields) =>
@@ -390,6 +436,7 @@ export const useClawStore = create<ClawStore>((set, get) => ({
       inputText: '',
       attachments: [],
       bugReportForm: null,
+      featureRequestForm: null,
       feedbackForm: null,
       quickContentForm: null,
       activityStatus: null,

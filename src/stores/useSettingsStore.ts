@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { AppearanceData } from "@/types/settings";
 
-export type SettingsTab = "account" | "team" | "workspaces" | "billing" | "notifications" | "appearance" | "integrations" | "brand-rules" | "validation" | "administrator" | "ai-models" | "ai-prompts" | "visual-fidelity" | "bug-triage" | "feedback-triage";
+export type SettingsTab = "account" | "team" | "workspaces" | "billing" | "notifications" | "appearance" | "integrations" | "brand-rules" | "validation" | "administrator" | "ai-models" | "ai-prompts" | "visual-fidelity" | "bug-triage" | "feature-triage" | "feedback-triage";
 
 interface SettingsStore {
   // Navigation
