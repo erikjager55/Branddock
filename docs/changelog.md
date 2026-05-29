@@ -37,6 +37,19 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-05
 
+### 272. Competitor scraping Apify-fallback — finalisatie van al-gemergde 3-step chain + Track B doc-reconciliatie
+
+Formele finalisatie van `competitor-scraping-apify-fallback`, gebouwd + gemerged via PR #12 (`5173fac5`) maar met stale task-status "open" en zonder changelog-entry. Vierde geval van Track B doc-drift in deze sprint (na classifier #263 en activities-ui #271), daarom in dezelfde pass de hele competitor/Brandclaw backlog tegen `main` gereconcilieerd.
+
+**Apify-fallback** (op main aanwezig, bevestigd): 3-step scraper-chain in `refresh/route.ts` (current `scrapeProductUrl` → `scrapeViaApify` op `<500` chars/throw → `scrapeUrlViaGemini`), `src/lib/scraping/apify-client.ts` singleton (`crawlerType: playwright:firefox` + residential proxy), smoke `apify-fallback-chain.ts` (4 scenarios), dependency `apify-client ^2.23.3`. Lost JS-heavy SPA scrape-failures op (Snowflake-case 0 → 2868 chars) die anders silently geen input aan de AI-classifier zouden leveren; Apify alleen op ~10% fail-pad (~$0.80/mnd @ pilot-volume).
+
+**Doc-reconciliatie**: `APIFY_TOKEN` toegevoegd aan CLAUDE.md optionele env-vars (vereist op fail-pad); `strategy-analyst-stub` status gecorrigeerd naar in-progress (Phase A+B gemerged #260-262, Phase C open); roadmap Track B + Competitive Intelligence Loop bijgewerkt. Spike-branch `spike/apify-url-crawler` (superseded door #12) opgeruimd.
+
+- Task: [tasks/done/competitor-scraping-apify-fallback.md](../tasks/done/competitor-scraping-apify-fallback.md)
+- ADR: -
+- Spec: [docs/specs/apify-integration-options.md](specs/apify-integration-options.md)
+- Commit: `<hash>`
+
 ### 271. Competitor-activities-ui finalisatie + hardening — audit van al-gemergde feature + 7 minor fixes
 
 Formele finalisatie van `competitor-activities-ui`, dat al gebouwd + gemerged was (PR #6 classifier, #8 timeline/digest/dashboard, #13 notifications, plus BA-tool en reconcile-cron branches) maar de `task-finalize`-ceremonie had overgeslagen: geen changelog, task bleef `in-progress`, geen 2-subagent review. Een 4-dimensionale audit-workflow (API/UI/notifications/conventies) met adversariële bug-verificatie bevestigde alle 11 acceptatiecriteria correct geïmplementeerd met **0 critical/major defects**; 9 minor bugs bevestigd (2 false-positives gekild). Alle 9 zijn gefixt op worktree `branddock-finalize-activities`:

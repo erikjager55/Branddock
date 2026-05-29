@@ -5,7 +5,8 @@ fase: pre-launch
 priority: now
 effort: 15-20 dagen
 owner: claude-code
-status: open
+status: in-progress
+phase-status: Phase A+B gemerged (#260-262); Phase C open (Vercel Cron + concurrency-cap + cost-budget alerts + BB pilot smoke) — sequential dep op vercel-deployment
 created: 2026-05-08
 completed: -
 related-adr: 2026-05-08-brandclaw-agent-architectuur, 2026-05-08-fval-output-schema-bevindingen, 2026-05-08-locale-routing-brand-voice

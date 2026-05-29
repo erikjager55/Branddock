@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 1-1.5 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-05-19
-completed: -
+completed: 2026-05-29
 related-adr: -
 related-spec: docs/specs/apify-integration-options.md
 worktree: branddock-brandclaw (spike/apify-url-crawler)
@@ -116,3 +116,15 @@ Spike-branch `spike/apify-url-crawler` heeft alle context: probe-script v1/v2/v3
 Volgorde binnen Track B: implementatie kan parallel met strategy-analyst-stub Phase C (Vercel Cron) want raakt verschillende bestanden.
 
 PR-volgorde: dependt op `feat/competitor-ai-classifier` (entry #263) merge naar main — deze branch is afgesplitst van die feature-branch.
+
+---
+
+## Implementatie-summary (gemerged via PR #12 `5173fac5`; ge-finalized 2026-05-29)
+
+Was gebouwd + gemerged maar de task-status bleef stale "open" (geen changelog-entry, geen task→done) — opgepakt in de Track B doc-reconciliatie van 2026-05-29 (zelfde drift-patroon als `competitor-ai-event-classifier` #263 en `competitor-activities-ui` #271).
+
+**Op main aanwezig**: `src/lib/scraping/apify-client.ts` (singleton + `scrapeViaApify`), 3-step fallback-chain in `src/app/api/competitors/[id]/refresh/route.ts` (current → Apify → Gemini), smoke `scripts/smoke-tests/apify-fallback-chain.ts`, probes (`apify-vs-current-scraper` / `apify-stripe-debug` / `apify-hybrid-render`), spec `docs/specs/apify-integration-options.md`. Dependency `apify-client ^2.23.3` in `package.json` (regel 79) + lockfile. Changelog #272.
+
+**Doc-gap meegefixt**: `APIFY_TOKEN` toegevoegd aan CLAUDE.md optionele env-vars (de chain vereist het op fail-pad).
+
+**Spike-branch** `spike/apify-url-crawler` (9 commits = pre-squash origineel + dep-regens + probes) volledig superseded door #12 → opgeruimd.
