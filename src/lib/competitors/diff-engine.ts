@@ -25,13 +25,21 @@
 // Niet hier (vervolg-tasks):
 //   - VISUAL_REBRAND (vereist visual-signaal capture)
 //   - FUNDING_EVENT / LEADERSHIP_CHANGE (vereisen externe data-sources)
-//   - NEW_FORMAT_EMERGING (depend op competitor-content-item-discovery)
-//   - Content-item discovery events (NEW_BLOG_POST, NEW_PRESS_RELEASE)
+//   - NEW_FORMAT_EMERGING (depend op AI-classifier over content-historie)
+//
+// Content-item discovery (NEW_BLOG_POST / NEW_PRESS_RELEASE / NEW_CASE_STUDY):
+// de URL-discovery + classificatie zelf zit in `content-discovery/` (raakt
+// netwerk + DB, kan niet in de pure computeDiff). De pure URL→activity
+// mapping leeft hier als `buildContentItemActivities` zodat alle
+// event-constructie bij elkaar staat + unit-testbaar is.
 // =============================================================
+import { ContentFormat, type CompetitorActivityType } from '@prisma/client';
 import type {
   CanonicalExtracted,
   ClassifierFn,
+  ContentDiscoveryPayload,
   DetectedActivity,
+  DiscoveredContentItem,
   ManualEventContext,
 } from './types';
 
@@ -345,4 +353,52 @@ export async function computeDiffWithClassifier(
   }
 
   return [...deterministic, ...classified];
+}
+
+// ─── Content-item discovery → activities ─────────────────
+
+/** Format → NEW_*-activity. Alleen de drie content-cadence events; andere
+ *  formats (EBOOK/VIDEO/…) worden wél opgeslagen maar emitten geen event. */
+const CONTENT_FORMAT_TO_ACTIVITY: Partial<Record<ContentFormat, CompetitorActivityType>> = {
+  [ContentFormat.BLOG_POST]: 'NEW_BLOG_POST',
+  [ContentFormat.PRESS_RELEASE]: 'NEW_PRESS_RELEASE',
+  [ContentFormat.CASE_STUDY]: 'NEW_CASE_STUDY',
+};
+
+const CONTENT_FORMAT_LABEL: Partial<Record<ContentFormat, string>> = {
+  [ContentFormat.BLOG_POST]: 'blogpost',
+  [ContentFormat.PRESS_RELEASE]: 'persbericht',
+  [ContentFormat.CASE_STUDY]: 'case study',
+};
+
+/**
+ * Pure mapping van nieuw-ontdekte content-items naar NEW_*-activities.
+ * Alleen BLOG_POST / PRESS_RELEASE / CASE_STUDY emitten een event
+ * (severity NOTABLE); overige formats worden geskipt. Geen DB/IO.
+ */
+export function buildContentItemActivities(
+  newItems: DiscoveredContentItem[],
+): DetectedActivity[] {
+  const out: DetectedActivity[] = [];
+  for (const item of newItems) {
+    const type = CONTENT_FORMAT_TO_ACTIVITY[item.format];
+    if (!type) continue;
+    const payload: ContentDiscoveryPayload = {
+      version: 1,
+      kind: 'content-discovery',
+      url: item.url,
+      format: item.format,
+      title: item.title,
+      publishedAt: item.publishedAt ? item.publishedAt.toISOString() : null,
+    };
+    out.push({
+      type,
+      severity: 'NOTABLE',
+      diffPayload: payload,
+      summary: `Nieuwe ${CONTENT_FORMAT_LABEL[item.format] ?? 'content'}: ${item.title}`,
+      detectionMethod: 'content-discovery',
+      confidence: null,
+    });
+  }
+  return out;
 }

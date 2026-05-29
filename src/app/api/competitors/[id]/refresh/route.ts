@@ -25,8 +25,9 @@ import {
 } from "@/lib/competitors/refresh-write";
 import { computeDiffWithClassifier } from "@/lib/competitors/diff-engine";
 import { classifyPatternEvents } from "@/lib/competitors/ai-classifier";
+import { discoverCompetitorContent } from "@/lib/competitors/content-discovery/discoverer";
 import { notifyMajorEvents } from "@/lib/competitors/notify-major-events";
-import type { CanonicalExtracted, ClassifierFn } from "@/lib/competitors/types";
+import type { CanonicalExtracted, ClassifierFn, DiscoveryResult } from "@/lib/competitors/types";
 import type { Prisma } from "@prisma/client";
 
 /**
@@ -216,12 +217,36 @@ export async function POST(
     //    deterministic events worden geretourneerd.
     const classifier: ClassifierFn = (prev, next) =>
       classifyPatternEvents(prev, next, { workspaceId, competitorId: id });
-    const precomputedDetected = await computeDiffWithClassifier(
+    const baseDetected = await computeDiffWithClassifier(
       prevCanonical,
       nextCanonical,
       { workflowBefore, workflowAfter },
       { classifier, competitorId: id },
     );
+
+    // 8b. Content-discovery (RSS/sitemap) — óók BUITEN de TX (netwerk + AI).
+    //     Bepaalt "nieuw" via reeds-bekende urlHashes; emit NEW_*-activities
+    //     + levert de te persisteren content-items. Never-throw (graceful
+    //     leeg bij site-fout) zodat een trage competitor-site de refresh
+    //     niet breekt. Content-discovery staat los van de content-hash, dus
+    //     items worden óók op het no-op-hash-match pad geschreven.
+    const discovery: DiscoveryResult = existing.websiteUrl
+      ? await discoverCompetitorContent({
+          websiteUrl: existing.websiteUrl,
+          competitorId: id,
+          workspaceId,
+          existingUrlHashes: new Set(
+            (
+              await prisma.competitorContentItem.findMany({
+                where: { competitorId: id },
+                select: { urlHash: true },
+              })
+            ).map((r) => r.urlHash),
+          ),
+        })
+      : { items: [], activities: [] };
+
+    const precomputedDetected = [...baseDetected, ...discovery.activities];
 
     // 9. Dual-write transaction — helper handles snapshot, activities,
     //    pointer update + collision-detection. Cast naar TransactionClient:
@@ -248,6 +273,7 @@ export async function POST(
           bodyTextLength: scraped.bodyText.length,
         },
         precomputedDetected,
+        contentItems: discovery.items,
       }),
     );
 
@@ -269,6 +295,7 @@ export async function POST(
       ...writeResult.competitor,
       _refreshOutcome: writeResult.outcome,
       _activitiesCreated: writeResult.activitiesCreated,
+      _contentItemsCreated: writeResult.contentItemsCreated,
     });
   } catch (error) {
     console.error("[POST /api/competitors/:id/refresh]", error);

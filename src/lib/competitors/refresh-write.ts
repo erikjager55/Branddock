@@ -30,6 +30,7 @@ import { computeDiff } from './diff-engine';
 import type {
   CanonicalExtracted,
   DetectedActivity,
+  DiscoveredContentItem,
 } from './types';
 
 // Het project gebruikt een geëxtende PrismaClient via
@@ -89,11 +90,25 @@ export interface DualWriteParams {
    * en triggert geen fallback naar `computeDiff`.
    */
   precomputedDetected?: DetectedActivity[];
+
+  /**
+   * Optional: door de content-discovery producer ontdekte content-items
+   * (RSS/sitemap). Worden binnen DEZE transactie geschreven met
+   * `firstSeenSnapshotId` = de zojuist aangemaakte snapshot (of null op
+   * no-op-hash-match pad — content-discovery staat los van de content-hash).
+   * Dedup via `@@unique([competitorId, urlHash])` + `skipDuplicates`, dus
+   * een race met een concurrent refresh dropt stil de dubbele rij i.p.v.
+   * de TX te poisonen (anders dan het snapshot-pad, dat P2002 niet vangt).
+   */
+  contentItems?: DiscoveredContentItem[];
 }
 
 export interface DualWriteOutcome {
   outcome: 'snapshot-written' | 'no-op-hash-match';
   activitiesCreated: number;
+  /** Aantal CompetitorContentItem-rijen daadwerkelijk geïnsert
+   *  (na `skipDuplicates` — kan lager zijn dan `contentItems.length`). */
+  contentItemsCreated: number;
   /** Volledige set gedetecteerde activities — caller gebruikt dit
    *  na de transactie voor side-effects (notificaties bij MAJOR). */
   detected: DetectedActivity[];
@@ -145,6 +160,7 @@ export async function applyCompetitorRefreshDualWrite(
     triggeredById,
     scrapedJsonInfo,
     precomputedDetected,
+    contentItems,
   } = params;
 
   const detected =
@@ -208,6 +224,33 @@ export async function applyCompetitorRefreshDualWrite(
     });
   }
 
+  // Content-items — geschreven met firstSeenSnapshotId = deze snapshot (of
+  // null op no-op pad). skipDuplicates leunt op @@unique([competitorId, urlHash])
+  // zodat een concurrent-refresh-race de dubbele rij stil dropt (ON CONFLICT
+  // DO NOTHING) i.p.v. de transactie te aborten.
+  let contentItemsCreated = 0;
+  if (contentItems && contentItems.length > 0) {
+    const result = await tx.competitorContentItem.createMany({
+      data: contentItems.map((it) => ({
+        url: it.url,
+        urlHash: it.urlHash,
+        title: it.title,
+        excerpt: it.excerpt,
+        format: it.format,
+        publishedAt: it.publishedAt,
+        themes: it.themes,
+        language: it.language,
+        signalSource: it.signalSource,
+        discovererVersion: it.discovererVersion,
+        firstSeenSnapshotId: snapshotId,
+        competitorId,
+        workspaceId,
+      })),
+      skipDuplicates: true,
+    });
+    contentItemsCreated = result.count;
+  }
+
   // Pointer update: metadata altijd vers; canonical pointers alleen
   // bij snapshot-written (anders blijft de "current" extractedJson
   // identiek aan de nieuwe canonical = zelfde state). Counters
@@ -252,6 +295,7 @@ export async function applyCompetitorRefreshDualWrite(
   return {
     outcome,
     activitiesCreated: detected.length,
+    contentItemsCreated,
     detected,
     competitor: updatedCompetitor,
   };

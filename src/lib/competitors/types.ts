@@ -15,6 +15,7 @@
 import type {
   CompetitorActivityType,
   ActivitySeverity,
+  ContentFormat,
 } from '@prisma/client';
 
 /**
@@ -113,12 +114,28 @@ export interface PatternChangePayload extends BaseDiffPayload {
   rationale: string;
 }
 
+/**
+ * Content-discovery output payload — één nieuw ontdekt content-item
+ * (blog/news/case-study) tijdens een refresh. Eén payload per NEW_*-event.
+ * Geproduceerd door de content-discovery producer (RSS/sitemap), niet
+ * door computeDiff (die werkt op CanonicalExtracted, niet op URLs).
+ */
+export interface ContentDiscoveryPayload extends BaseDiffPayload {
+  kind: 'content-discovery';
+  url: string;
+  format: ContentFormat;
+  title: string;
+  /** ISO-8601 publicatiedatum indien bekend (RSS pubDate / sitemap lastmod). */
+  publishedAt: string | null;
+}
+
 export type DiffPayload =
   | FieldChangePayload
   | ListChangePayload
   | PricingChangePayload
   | WorkflowChangePayload
-  | PatternChangePayload;
+  | PatternChangePayload
+  | ContentDiscoveryPayload;
 
 // ─── Detected activity (wat de diff-engine produceert) ───
 
@@ -132,10 +149,41 @@ export interface DetectedActivity {
   severity: ActivitySeverity;
   diffPayload: DiffPayload;
   summary: string; // 1-zin human-readable
-  detectionMethod: 'hash-diff' | 'manual' | 'ai-classified';
+  detectionMethod: 'hash-diff' | 'manual' | 'ai-classified' | 'content-discovery';
   /** Null voor deterministische diff-rules; gevuld door AI-classifier
    *  (zie `src/lib/competitors/ai-classifier.ts`). */
   confidence: number | null;
+}
+
+/**
+ * Een ontdekt content-item klaar voor persistence in CompetitorContentItem.
+ * `firstSeenSnapshotId`, `competitorId` en `workspaceId` worden door de
+ * dual-write toegevoegd (snapshot-id is pas binnen de TX bekend).
+ */
+export interface DiscoveredContentItem {
+  url: string;
+  urlHash: string;
+  title: string;
+  excerpt: string | null;
+  format: ContentFormat;
+  publishedAt: Date | null;
+  themes: string[];
+  language: string | null;
+  /** RSS voor feed-bron, WEBSCRAPE voor sitemap-bron (geen SITEMAP-enumwaarde). */
+  signalSource: 'RSS' | 'WEBSCRAPE';
+  /** Versie van de producer-pipeline die dit item maakte — gezet door de
+   *  discoverer (niet hardcoded in de write), zodat re-discovery na een
+   *  classifier-upgrade de versie kan ophogen + oude rijen kan herkennen. */
+  discovererVersion: number;
+}
+
+/**
+ * Output van de content-discovery producer: de te persisteren items +
+ * de NEW_*-activities voor nieuw-geziene URLs.
+ */
+export interface DiscoveryResult {
+  items: DiscoveredContentItem[];
+  activities: DetectedActivity[];
 }
 
 /**

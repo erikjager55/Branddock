@@ -30,7 +30,10 @@ import { PrismaPg } from '@prisma/adapter-pg';
 
 import { applyCompetitorRefreshDualWrite } from '../../src/lib/competitors/refresh-write';
 import { computeContentHash } from '../../src/lib/competitors/snapshot-hash';
-import type { CanonicalExtracted } from '../../src/lib/competitors/types';
+import type {
+  CanonicalExtracted,
+  DiscoveredContentItem,
+} from '../../src/lib/competitors/types';
 
 let pass = 0;
 let fail = 0;
@@ -282,6 +285,89 @@ async function main(): Promise<void> {
         'snapshotCount unchanged on no-op',
         second.competitor.snapshotCount === snapshotCountAfterFirst,
       );
+    }
+
+    // ─── Scenario 4: content-items persistence (Phase 1 seam) ─
+    // Test firstSeenSnapshotId-linkage, skipDuplicates-dedup, en dat content
+    // óók op het no-op-hash-match pad wordt geschreven (met firstSeenSnapshotId
+    // null, want content-discovery staat los van de content-hash).
+    console.log('\n=== Scenario 4: content-items persistence ===\n');
+    {
+      const item1: DiscoveredContentItem = {
+        url: 'https://example.com/blog/a', urlHash: 'smoke-ci-hash-1', title: 'Blog A',
+        excerpt: null, format: 'BLOG_POST', publishedAt: new Date('2026-05-01T00:00:00Z'),
+        themes: ['branding'], language: 'en', signalSource: 'RSS', discovererVersion: 1,
+      };
+      const item2: DiscoveredContentItem = {
+        url: 'https://example.com/news/b', urlHash: 'smoke-ci-hash-2', title: 'News B',
+        excerpt: null, format: 'PRESS_RELEASE', publishedAt: null,
+        themes: ['announcement'], language: 'en', signalSource: 'WEBSCRAPE', discovererVersion: 1,
+      };
+
+      // 4a: content-changing refresh → snapshot written → items met firstSeenSnapshotId
+      const ciA: CanonicalExtracted = { ...baseExtracted, tagline: 'CI tagline A' };
+      const w1 = await prisma.$transaction((tx) =>
+        applyCompetitorRefreshDualWrite(tx as unknown as Prisma.TransactionClient, {
+          competitorId: fixture.id, workspaceId,
+          workflowBefore: { status: 'ANALYZED', tier: 'DIRECT' },
+          workflowAfter: { status: 'ANALYZED', tier: 'DIRECT' },
+          prevCanonical: { ...baseExtracted }, nextCanonical: ciA,
+          newContentHash: computeContentHash(ciA), newScrapeHash: null,
+          metadataUpdate: {}, triggerSource: 'MANUAL', signalSource: 'WEBSCRAPE',
+          triggeredById: null, scrapedJsonInfo: undefined,
+          contentItems: [item1, item2],
+        }),
+      );
+      assert('4a content-items: 2 created', w1.contentItemsCreated === 2);
+      const rows = await prisma.competitorContentItem.findMany({
+        where: { competitorId: fixture.id }, orderBy: { urlHash: 'asc' },
+      });
+      assert('4a 2 rows persisted', rows.length === 2);
+      assert('4a firstSeenSnapshotId set (snapshot-written)', rows.every((r) => r.firstSeenSnapshotId !== null));
+      assert('4a formats mapped', rows.some((r) => r.format === 'BLOG_POST') && rows.some((r) => r.format === 'PRESS_RELEASE'));
+      assert('4a discovererVersion = 1', rows.every((r) => r.discovererVersion === 1));
+
+      // 4b: re-run zelfde urlHashes (nieuwe content-hash) → skipDuplicates dropt beide
+      const ciB: CanonicalExtracted = { ...baseExtracted, tagline: 'CI tagline B' };
+      const w2 = await prisma.$transaction((tx) =>
+        applyCompetitorRefreshDualWrite(tx as unknown as Prisma.TransactionClient, {
+          competitorId: fixture.id, workspaceId,
+          workflowBefore: { status: 'ANALYZED', tier: 'DIRECT' },
+          workflowAfter: { status: 'ANALYZED', tier: 'DIRECT' },
+          prevCanonical: ciA, nextCanonical: ciB,
+          newContentHash: computeContentHash(ciB), newScrapeHash: null,
+          metadataUpdate: {}, triggerSource: 'MANUAL', signalSource: 'WEBSCRAPE',
+          triggeredById: null, scrapedJsonInfo: undefined,
+          contentItems: [item1, item2],
+        }),
+      );
+      assert('4b skipDuplicates: 0 created on re-run', w2.contentItemsCreated === 0);
+      assert('4b still 2 rows (no dupes)', (await prisma.competitorContentItem.count({ where: { competitorId: fixture.id } })) === 2);
+
+      // 4c: no-op-hash-match + nieuw item → geschreven met firstSeenSnapshotId null
+      const item3: DiscoveredContentItem = {
+        url: 'https://example.com/blog/c', urlHash: 'smoke-ci-hash-3', title: 'Blog C',
+        excerpt: null, format: 'BLOG_POST', publishedAt: null,
+        themes: [], language: null, signalSource: 'RSS', discovererVersion: 1,
+      };
+      const w3 = await prisma.$transaction((tx) =>
+        applyCompetitorRefreshDualWrite(tx as unknown as Prisma.TransactionClient, {
+          competitorId: fixture.id, workspaceId,
+          workflowBefore: { status: 'ANALYZED', tier: 'DIRECT' },
+          workflowAfter: { status: 'ANALYZED', tier: 'DIRECT' },
+          prevCanonical: ciB, nextCanonical: ciB,
+          newContentHash: computeContentHash(ciB), newScrapeHash: null, // zelfde hash als 4b → no-op
+          metadataUpdate: {}, triggerSource: 'MANUAL', signalSource: 'WEBSCRAPE',
+          triggeredById: null, scrapedJsonInfo: undefined,
+          contentItems: [item3],
+        }),
+      );
+      assert('4c no-op outcome', w3.outcome === 'no-op-hash-match');
+      assert('4c content-item toch geschreven op no-op', w3.contentItemsCreated === 1);
+      const item3row = await prisma.competitorContentItem.findFirst({
+        where: { competitorId: fixture.id, urlHash: 'smoke-ci-hash-3' },
+      });
+      assert('4c firstSeenSnapshotId null op no-op', item3row?.firstSeenSnapshotId === null);
     }
   } finally {
     console.log('\n=== Cleanup ===\n');

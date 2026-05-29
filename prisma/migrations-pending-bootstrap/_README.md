@@ -20,6 +20,7 @@ Tot dan parkeren we hier de SQL die `prisma migrate diff --from-config-datasourc
 | Datum | File | Beschrijving |
 |---|---|---|
 | 2026-05-08 | `2026-05-08_competitor_snapshot_models.sql` | Competitor historie — Snapshot/Activity/ContentItem modellen + 5 nieuwe Competitor-velden + 6 enums. ADR `2026-05-08-competitor-snapshot-historie`. |
+| 2026-05-29 | `2026-05-29_content_item_discoverer_version.sql` | `CompetitorContentItem.discovererVersion Int @default(1)` — additief, voor content-item-discovery re-discovery. |
 
 ## Hoe gebruik je deze bestanden?
 

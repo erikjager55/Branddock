@@ -4143,6 +4143,10 @@ model CompetitorContentItem {
   themes   String[] @default([])
   language String?
 
+  // Versie van de discovery/classifier-pipeline die dit item produceerde.
+  // Maakt toekomstige re-discovery na format-classifier upgrades mogelijk.
+  discovererVersion Int @default(1)
+
   // 1536-dim embedding voor semantic content-gap analysis — managed via raw SQL only
   // (zelfde patroon als AgentMemory.embedding). Producer komt in vervolg-task
   // competitor-content-item-discovery; blijft null in Fase 1.
