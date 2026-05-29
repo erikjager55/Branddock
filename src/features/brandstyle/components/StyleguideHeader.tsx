@@ -34,6 +34,8 @@ interface StyleguideHeaderProps {
   onEditToggle: (editing: boolean) => void;
   onLockToggle: () => void;
   onNewAnalysis: () => void;
+  /** Opens the BrandOnboardingWizard modal for guided first-time review. */
+  onOpenOnboardingWizard: () => void;
 }
 
 export function StyleguideHeader({
@@ -46,6 +48,7 @@ export function StyleguideHeader({
   onEditToggle,
   onLockToggle,
   onNewAnalysis,
+  onOpenOnboardingWizard,
 }: StyleguideHeaderProps) {
   // Brand-kit export progress
   const [kitProgress, setKitProgress] = useState<BrandKitPdfProgress | null>(null);
@@ -179,6 +182,16 @@ export function StyleguideHeader({
                 Edit
               </Button>
             )}
+
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Sparkles}
+              onClick={onOpenOnboardingWizard}
+              disabled={isLocked}
+            >
+              Onboarding
+            </Button>
 
             <Button
               variant="secondary"
