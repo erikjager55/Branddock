@@ -55,7 +55,9 @@ Feature-branch `branddock-feat-web-page-builder-canvas` heeft 8 commits, niet-ge
 - ✅ Untracked specs gecommit met status-flags (`08a0ff12`, 2026-05-29)
 - ⏳ Bug-report Puck `external` field-typing indienen — draft in `docs/audits/puck-external-field-typing-issue.md`
 - ⏳ Browser-smoke 10-stappen (5 LP types × 2 workspaces + 3 non-web regressie + 4 edit-flows) — user-manual
-- ⏳ Bundle-size verifiëren (editor ≤350KB, render ≤100KB gzipped)
+- 🔄 Bundle-size verifiëren — editor ✅ 208 KB gz (target 350 KB, gemeten 2026-05-29); render-route `/p/[slug]` ⏳ (target 100 KB, deelt puck-chunk → momenteel ~208 KB)
+- ⏳ Bundle-analyzer Turbopack alternatives — `@next/bundle-analyzer` is incompatibel met Turbopack (Next 16.1.6). Try `npx next experimental-analyze` (Turbopack-native) of `npx next build --webpack` voor klassieke route-tabel met First Load JS per route. `next.config.ts` wrap + `npm run analyze` script staan klaar maar genereren geen rapport.
+- ⏳ puck-config render-only split voor `/p/[slug]` ≤100 KB — extract 11 render functions naar `puck-config-render.tsx` (alleen render-fns, geen fields/defaultProps). Update `/p/[slug]/page.tsx` om `buildSpikePuckRenderConfig` te importeren ipv `buildSpikePuckConfig`. Editor (`PuckPageBuilder.tsx`) blijft `puck-config.tsx` gebruiken met de fields. Estimate ~90 min refactor + verify via analyzer.
 - ✅ TSC + lint groen (2026-05-29) — 7 smoke-scripts nog te runnen
 - ✅ Task-file refresh naar werkelijke staat (deze edit, 2026-05-29)
 
