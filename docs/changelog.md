@@ -48,7 +48,7 @@ Formele finalisatie van `competitor-scraping-apify-fallback`, gebouwd + gemerged
 - Task: [tasks/done/competitor-scraping-apify-fallback.md](../tasks/done/competitor-scraping-apify-fallback.md)
 - ADR: -
 - Spec: [docs/specs/apify-integration-options.md](specs/apify-integration-options.md)
-- Commit: `<hash>`
+- Commit: `55d35c8a`
 
 ### 271. Competitor-activities-ui finalisatie + hardening — audit van al-gemergde feature + 7 minor fixes
 
