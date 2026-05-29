@@ -54,7 +54,7 @@ Verificatie: `tsc` 0 errors, `eslint` 0 errors, nieuwe smoke `npm run smoke:comp
 - Task: [tasks/done/competitor-activities-ui.md](../tasks/done/competitor-activities-ui.md)
 - ADR: -
 - Spec: -
-- Commit: `<hash>`
+- Commit: `5aaf1922`
 
 ### 267. Web-page builder MVP — Puck als Canvas Step 3 Medium-renderer + publish-flow
 
