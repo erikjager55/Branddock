@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 5-7 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-05-12
-completed: -
+completed: 2026-05-29
 related-adr: 2026-05-08-competitor-snapshot-historie
 related-spec: tasks/_drafts/idea-competitor-content-item-discovery.md
 worktree: branddock-brandclaw
@@ -144,3 +144,24 @@ Validaties uitgevoerd:
 Idea-draft (170+ regels) blijft als detailed reference in `tasks/_drafts/idea-competitor-content-item-discovery.md`.
 
 Volgorde binnen Track B: parallel mogelijk met competitor-ai-event-classifier (verschillende files). Beide na `brandclaw-tool-orchestrator` foundation.
+
+---
+
+## Implementatie-summary (2026-05-29, changelog #275)
+
+4-fasen build op worktree `branddock-feat-content-discovery` → gemerged naar main.
+
+**Nieuwe module** `src/lib/competitors/content-discovery/`:
+- `fetch-policy.ts` — `politeFetch` (SSRF-guard via `assertSafeUrl`, robots.txt-respect + in-memory cache 1-dag, per-host 1req/s throttle met slot-reservatie, Branddock-UA, timeout) + `normalizeUrl`/`hashUrl` (sha256 dedup-key, strip tracking-params/fragment/trailing-slash) + `CONTENT_PATH_RE`.
+- `rss-discoverer.ts` — 5 feed-paden + homepage `<link rel=alternate>`, cheerio xmlMode parse (RSS `<item>` + Atom `<entry>`).
+- `sitemap-discoverer.ts` — robots `Sitemap:` + 4 fallback-paden, `<sitemapindex>`-recursie (1 niveau, max 5 children), content-path-filter.
+- `content-classifier.ts` — regex-first format-classificatie + gebatchte Haiku 4.5-fallback (verbatim A3-prompt, enum-gevalideerd) + gebatchte theme-tagger.
+- `discoverer.ts` — orchestrator: RSS+sitemap merge → dedup vs `existingUrlHashes` → truncate 25 by recency → classify → drop OTHER → theme-tag → bouw items + activities. budgetMs fetch-budget, never-throw.
+
+**Integratie**: `refresh/route.ts` roept de discoverer async **vóór** de TX (spiegelt de AI-classifier); items gaan via nieuwe `contentItems`-param de dual-write-TX in (`createMany({skipDuplicates})` op `@@unique([competitorId, urlHash])`, `firstSeenSnapshotId`=snapshot of null op no-op). `diff-engine.buildContentItemActivities` (pure) mapt BLOG_POST/PRESS_RELEASE/CASE_STUDY → NEW_*-events; overige formats opgeslagen zonder event. Schema: `CompetitorContentItem.discovererVersion` (additief, bootstrap-SQL geparkeerd).
+
+**Afwijkingen vs task-file** (gemotiveerd): `db push`+bootstrap-SQL i.p.v. migration (poisoned baseline); `refresh-write.ts` i.p.v. `refresh-helper.ts`; activities in discoverer (computeDiff is puur); `NEW_FORMAT_EMERGING` out-of-scope (AI-classified bucket); `signalSource` RSS/WEBSCRAPE (geen SITEMAP-enum).
+
+**Verificatie**: tsc 0 · eslint 0 · dual-write smoke 31/31 (Scenario 4 = content-items persistence) · `smoke:competitor-content-discovery` 18/18 (RSS / sitemap-index-recursie / leeg) · live charthop.com = 24 items + 8 activities + Haiku-themes · 2-subagent review (0 critical, WARNINGs gefixt: throttle-race, budget-comment, unbounded-maps, producer-versie).
+
+**Open follow-ups** (uit review, niet-blokkerend): normalizeUrl dedupt alleen vaste tracking-params (niet `?page=`/`?lang=`); `language` blijft null (geen detectie in MVP); parseRobots merge't UA-groepen (geen RFC 9309 precedence). Embedding-pipeline + async/cron-discovery (Fase 4) blijven aparte tasks.

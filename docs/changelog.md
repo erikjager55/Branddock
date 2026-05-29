@@ -36,6 +36,20 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 ---
 
 ## 2026-05
+
+### 275. Competitor content-item discovery — RSS + sitemap producer voor CompetitorContentItem
+
+Producer voor de sinds Fase 1 lege `CompetitorContentItem`-tabel — laatste nog-te-bouwen stuk van de competitive-intel arc (data → detectie → zichtbaarheid → **ingestie**). Tijdens een competitor-refresh ontdekt het blog/news/press/case-content via **RSS → sitemap-fallback**, classificeert het format (regex-first + gebatchte Claude Haiku 4.5-fallback, verbatim A3-prompt 100% accuracy) + tagt 2-3 thema's per item (gebatchte Haiku), schrijft `CompetitorContentItem`-rijen en emit `NEW_BLOG_POST` / `NEW_PRESS_RELEASE` / `NEW_CASE_STUDY` activities voor nieuw-geziene URLs. Pre-build probes: sitemap 71% / RSS 43% / classifier 100%.
+
+**Architectuur**: nieuwe module `src/lib/competitors/content-discovery/` (fetch-policy met SSRF-guard + robots.txt-respect + 1req/s throttle + Branddock-UA, rss/sitemap-discoverers via cheerio xmlMode incl. sitemap-index-recursie, content-classifier, orchestrator met fetch-budget + 25-truncatie + never-throw). Draait **async vóór de transactie** (spiegelt de AI-pattern-classifier zodat netwerk+AI nooit TX-locks vasthouden); items gaan via nieuwe `contentItems`-param de dual-write-TX in en worden geschreven met `firstSeenSnapshotId` (null op no-op-hash-match — content-discovery staat los van de content-hash) via `createMany({skipDuplicates})` op `@@unique([competitorId, urlHash])` (race-safe). Pure `buildContentItemActivities` in diff-engine mapt de 3 content-cadence formats; overige formats (EBOOK/VIDEO/…) opgeslagen zonder event. Schema additief: `CompetitorContentItem.discovererVersion` (bootstrap-SQL geparkeerd).
+
+Verificatie: tsc 0 · eslint 0 · dual-write smoke 31/31 (incl. content-items Scenario 4) · `smoke:competitor-content-discovery` 18/18 (RSS / sitemap-index / leeg, stub-fetch + stub-classifier) · live charthop.com = 24 items + 8 activities + Haiku-themes · 2-subagent review 0 critical (WARNINGs gefixt). Async/cron-discovery (haalt de ~10-20s latency van het refresh-pad) = Fase 4 brandclaw-monitoring.
+
+- Task: [tasks/done/competitor-content-item-discovery.md](../tasks/done/competitor-content-item-discovery.md)
+- ADR: 2026-05-08-competitor-snapshot-historie
+- Spec: [tasks/_drafts/idea-competitor-content-item-discovery.md](../tasks/_drafts/idea-competitor-content-item-discovery.md)
+- Commit: `b785299e`
+
 ### 274. Content-flow analyse #7.A — 8 categorie-rapporten + synthesis
 
 Per-categorie content-flow analyse (long-form / social / advertising / email / website / video / sales / pr-hr) + `content-flow-synthesis.md` in `docs/specs/`, code-gegrond met file:line-refs. Legt twee structurele gaten bloot: (1) 5 kerntypes (`whitepaper`/`ebook`/`article`/`newsletter`/`microsite`) draaien op de generieke prompt door ontbrekende templates; (2) `TYPE_TO_CATEGORY` is gedivergeerd van de echte TEMPLATE_REGISTRY (~9 phantom-IDs, ~17 missende echte types) zodat `getCategoryForType()` mislabelt. Friction-tickets in `tasks/content-flow-improvements-7a.md` (CF-1 t/m CF-10). Documentatie-only (geen tsc/lint); sectie 6 deels pending Ronde 1.
