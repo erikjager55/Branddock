@@ -382,6 +382,29 @@ function extractText(result: unknown): string {
   return String(result);
 }
 
+// 2026-05-24: Per-step budget (maxTokens + timeout) voor late pipeline
+// aggregate-steps die ALLE voorgaande step-outputs samenbrengen in één
+// JSON output. Earlier steps blijven op caller defaults (16K / 120s).
+//
+// Token-keuze: Step 8 hit 8K met 16749 chars (~5500 tokens); 32K geeft
+// ~4× headroom. Step 5/7 zitten typisch tussen 8K-16K op aggregate
+// outputs; 24K geeft 1.5-3× headroom.
+//
+// Timeout-keuze: Opus 4.7 met thinking + 32K output kan 3-5 min duren.
+// Vorige 120s default abortte mid-stream; 300s = 5 min is veilige
+// productie-marge. Beneden Anthropic's 10-min hard-limit op non-
+// streaming requests.
+interface StepBudget {
+  maxTokens: number;
+  timeoutMs: number;
+}
+
+const STEP_BUDGETS: Record<number, StepBudget> = {
+  5: { maxTokens: 24000, timeoutMs: 240_000 },  // Outline & Internal Links
+  7: { maxTokens: 24000, timeoutMs: 240_000 },  // Editorial Review
+  8: { maxTokens: 32000, timeoutMs: 300_000 },  // Publication Prep (aggregator)
+};
+
 async function runStructuredStep(
   step: number,
   seoInput: SeoInput,
@@ -407,13 +430,16 @@ async function runStructuredStep(
   };
 
   const { systemPrompt, userPrompt } = buildSeoStepPrompt(step, ctx);
+  const budget = STEP_BUDGETS[step];
+  const maxTokens = budget?.maxTokens; // undefined → caller default (16K)
+  const timeoutMs = budget?.timeoutMs ?? 120_000;
 
   const result = await createStructuredCompletion(
     textModel.provider,
     textModel.model,
     systemPrompt,
     userPrompt,
-    { timeoutMs: 120_000 },
+    { timeoutMs, maxTokens },
     stepTracking
       ? {
           workspaceId: stepTracking.workspaceId,

@@ -1,0 +1,1270 @@
+/**
+ * Structural brand-token extraction for the web-page builder.
+ *
+ * **v2 (2026-05-26, Sprint 1 van brand-styling-consistency-plan):**
+ * Role-based tokens (surface/onSurface/brand/onBrand/accent/etc.) bovenop
+ * de legacy kleur-naam-tokens (primaryHex/secondaryHex/accentHex/neutralHex).
+ * Smartere extractie gebruikt tags + WCAG contrast-fields + luminance om de
+ * juiste kleur per rol te kiezen — voorkomt body-text in brand-color
+ * (LINFI-incident 2026-05-26: Golden Bronze als secondaryHex → unleesbare
+ * feature-headings + FAQ-vragen).
+ *
+ * Twee extractie-routes:
+ *  - `extractBrandTokensFromStyleguide(...)` — structurele BrandStyleguide-
+ *    records (colors per ColorCategory + tags + contrast, fonts per FontRole).
+ *    Server-side, requires Prisma includes met tags + contrastWhite/Black.
+ *  - `extractBrandTokensFromContext(brand)` — regex-fallback voor flat-string
+ *    `BrandContextBlock` fields. Minder data, ruwere heuristiek.
+ *
+ * Beide retourneren dezelfde BrandTokens shape (legacy + role-tokens).
+ */
+
+import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
+import {
+  type LayoutStyle,
+  type DesignSystem,
+  DEFAULT_LAYOUT_STYLE,
+  getDesignSystemForLayoutStyle,
+} from './design-system';
+import type { BrandArchetype } from './brand-archetype-classifier';
+
+// ─── Public interface ─────────────────────────────────────────
+
+export interface BrandTokens {
+  // ─── Legacy kleur-naam-tokens (backward-compat) ──────────
+  /** Geadviseerd: gebruik `brand` voor CTA-fill of `onSurface` voor body-text. */
+  primaryHex: string;
+  /** Geadviseerd: gebruik `onSurface` voor body-text. */
+  secondaryHex: string;
+  /** Geadviseerd: gebruik `accent` (hover-only) of `brand`. */
+  accentHex: string;
+  /** Geadviseerd: gebruik `surfaceMuted` voor sub-text. */
+  neutralHex: string;
+
+  // ─── Surface-roles (page-bg + tekst-op-page) ─────────────
+  /** Page background — meestal wit/off-white. */
+  surface: string;
+  /** Body-text op surface (≥7:1 AAA waar mogelijk). */
+  onSurface: string;
+  /** Sub-text / meta-data op surface (≥4.5:1 AA). */
+  surfaceMuted: string;
+  /** Dividers, card-borders (≥3:1 non-text). */
+  surfaceBorder: string;
+
+  // ─── Brand-roles ─────────────────────────────────────────
+  /** Klant-eigen primary color voor CTA-fill, accent-borders. */
+  brand: string;
+  /** Text-kleur op brand-fill (≥4.5:1 op brand). */
+  onBrand: string;
+  /** Brand-tint voor backgrounds — auto-derived (lighten brand 85%). */
+  brandSubtle: string;
+
+  // ─── Fase A — Usage-aware hero background selector ───────
+  /** Kleur die de bron-website daadwerkelijk als hero-background gebruikt
+   *  (afgeleid uit StyleguideColor.tags 'usage:hero-bg'). Wanneer geen
+   *  expliciete hero-bg signal: null → renderer valt terug op heuristic
+   *  (surface voor vibrant brand, brand voor pastel/gedempt). Voorkomt dat
+   *  een accent-kleur als hero-bg verschijnt terwijl de site dat nooit doet. */
+  heroBgColor: string | null;
+  /** Kleur die de bron-website als heading-text gebruikt (usage:heading-text).
+   *  Gebruikt door h1-renderer wanneer hero-bg surface is — geeft brand-
+   *  consistente typografie ook zonder vol-veld hero. */
+  headingTextColor: string | null;
+  /** Fase C — hero-layout-pattern uit vision-AI op bron-screenshot. Null =
+   *  niet gedetecteerd → val terug op archetype-default. Mogelijke waardes:
+   *  CENTERED_EDITORIAL / IMAGE_RIGHT_SPLIT / IMAGE_LEFT_SPLIT /
+   *  FULL_BLEED_IMAGE / VIDEO_BG / TEXT_LEFT_FORM_RIGHT. */
+  heroPattern: string | null;
+  /** Bevat de bron-website donkere achtergrond-secties (footer / stats /
+   *  feature-blocks)? Bepaald uit color-usage tags: een NEUTRAL kleur met
+   *  L < 30 die als section-bg / body-bg / card-bg tagged is. Wanneer
+   *  FALSE: renderer gebruikt overal light-bg ipv archetype-driven dark.
+   *  Voorkomt mismatches als bij Better Brands waar alle sections wit zijn
+   *  op de bron, maar onze MAGICIAN-archetype renderer dark-bg stats forceert. */
+  hasDarkSections: boolean;
+  /** Per-type styleguide-component-stijl uit StyleguideComponent records.
+   *  Renderer gebruikt deze direct voor 1-op-1 fidelity met de Components-
+   *  tab. Null = geen scraped sample voor dat type. */
+  styleguideComponents: StyleguideComponentTokens;
+  /** Scraped donkere section-bg (LINFI #263238, Better Brands null) wanneer
+   *  bron-website een echte donkere section heeft. Null = geen scraped
+   *  bewijs; renderer gebruikt onSurface als fallback. */
+  darkSectionBg: string | null;
+  /** Scraped secondaire light-surface voor 60/30/10 alternation. Tweede
+   *  lichtste NEUTRAL met background-tag die NIET surface is. Null wanneer
+   *  bron alleen één bg-color heeft. */
+  secondarySurface: string | null;
+
+  // ─── Action-roles (CTA-specifiek) ────────────────────────
+  /** CTA-fill — default = brand. */
+  action: string;
+  /** CTA-tekst — default = onBrand. */
+  onAction: string;
+
+  // ─── Accent (sparingly used) ─────────────────────────────
+  /** Hover/highlight only — nooit body-text. */
+  accent: string;
+
+  // ─── Typografie ──────────────────────────────────────────
+  headingFont: string;
+  bodyFont: string;
+
+  // ─── v3 — Design-system (Pad C Sub-Sprint A) ─────────────
+  /** LayoutStyle uit BrandStyleguide — bepaalt design-system primitives. */
+  layoutStyle: LayoutStyle;
+  /** Volledige design-system bundle: spacing-scale, typography-scale, radius,
+   *  image-strategy, section-alternation. Consumer-friendly voor renderers. */
+  designSystem: DesignSystem;
+
+  // ─── v3 — Brand-archetype (Pad C Sub-Sprint B Phase 1) ───
+  /** Jung archetype voor brand-emergent rendering decisions. Null = nog
+   *  niet geclassificeerd — renderer valt terug op layoutStyle-only. */
+  archetype: BrandArchetype | null;
+
+  // ─── v4 — Component-specific styling profiles (verbeterplan) ───
+  /** Button-styling uit scraper. 3-tier fallback chain:
+   *   1. scraped buttonProfile (primary-role wint)
+   *   2. archetype-default uit computeBrandRenderHints
+   *   3. hard default
+   */
+  button: ButtonTokens;
+  /** Card-elevation styling uit scraper (radiusProfile + elevationProfile). */
+  elevation: ElevationTokens;
+  /** Iconography stroke + size — uit designLanguage of archetype-default. */
+  iconography: IconographyTokens;
+  /** Section/card spacing rhythm — uit spacingProfile of layoutStyle-preset. */
+  sectionRhythm: SectionRhythmTokens;
+  /** Motion (transition duration + easing). */
+  motion: MotionTokens;
+  /** Photography-DNA voor hero-visual prompts. */
+  photography: PhotographyTokens;
+
+  // ─── v5 — Text-hiërarchie + banner styling (DTS C4) ───────
+  /** 4-level foreground hiërarchie. Defaults zijn aliassen van bestaande
+   *  onSurface/surfaceMuted tokens — visueel identiek bij absence. */
+  text: TextTokens;
+
+  // ─── v5 — Scraped typography per rol (DTS audit-fix) ──────
+  /** Per-rol font-styling uit scraped typographyProfile. Renderer gebruikt
+   *  display.fontSize voor h1, heading.fontSize voor h2/h3, body.fontSize
+   *  voor p. Fallback op designSystem-preset wanneer rol absent. */
+  typographyByRole: TypographyByRoleTokens;
+}
+
+export interface TypographyByRoleEntry {
+  /** Numeric font-size in px. Null = fallback op designSystem-preset. */
+  fontSize: number | null;
+  /** Font-weight 100-900. Null = fallback. */
+  fontWeight: number | null;
+  /** Line-height (multiplier of px). Null = fallback. */
+  lineHeight: string | null;
+  /** Letter-spacing CSS-value. Null = fallback. */
+  letterSpacing: string | null;
+  textTransform: "uppercase" | "lowercase" | "capitalize" | "none" | null;
+  /** Fase B — color uit bron-CSS (hex/rgb/hsl). Null = fallback op
+   *  tokens.onSurface (body) of tokens.brand (display). Wanneer beschikbaar
+   *  rendert de LP h1/h2/p in exact dezelfde kleur als de bron. */
+  color: string | null;
+}
+
+export interface TypographyByRoleTokens {
+  display: TypographyByRoleEntry;
+  heading: TypographyByRoleEntry;
+  subheading: TypographyByRoleEntry;
+  body: TypographyByRoleEntry;
+  label: TypographyByRoleEntry;
+  button: TypographyByRoleEntry;
+}
+
+export interface TextTokens {
+  /** Headlines / h1-h3 — donker, hoogste contrast. Default = onSurface. */
+  heading: { color: string; weight: number };
+  /** Body-tekst / paragraphs — mid donker. Default = onSurface. */
+  body: { color: string; weight: number };
+  /** Secondary tekst / meta / sub-content — mid. Default = surfaceMuted. */
+  secondary: { color: string; weight: number };
+  /** Captions / overlines / muted-info — lichtst. Default = surfaceMuted. */
+  caption: { color: string; weight: number };
+  /** Banner-style: uppercase + tracking voor civic/eyebrow elementen. */
+  banner: {
+    fontSize: number;
+    weight: number;
+    letterSpacing: string;
+    textTransform: "uppercase" | "none";
+  };
+}
+
+/** Per-type styleguide-component raw scraped sample. Renderer kan deze
+ *  inline-style toepassen voor pixel-perfect match met Components-tab. */
+export interface ScrapedComponentStyle {
+  color: string | null;
+  background: string | null;
+  border: string | null;
+  padding: string | null;
+  borderRadius: string | null;
+  fontSize: string | null;
+  fontWeight: string | null;
+  boxShadow: string | null;
+  textTransform: string | null;
+  letterSpacing: string | null;
+  display: string | null;
+  fontFamily: string | null;
+}
+
+export interface StyleguideComponentTokens {
+  BUTTON: ScrapedComponentStyle | null;
+  FORM_INPUT: ScrapedComponentStyle | null;
+  STATUS_CHIP: ScrapedComponentStyle | null;
+  PRODUCT_CARD: ScrapedComponentStyle | null;
+  FEATURE_ICON: ScrapedComponentStyle | null;
+  TOP_NAVIGATION: ScrapedComponentStyle | null;
+  QUOTE_BLOCK: ScrapedComponentStyle | null;
+}
+
+export interface ButtonTokens {
+  paddingY: number;
+  paddingX: number;
+  radiusPx: number;
+  fontWeight: number;
+  fontSize: number;
+  textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
+  letterSpacing: string;
+  /** Hover-strategie: darken (premium) / lighten / underline / scale / none. */
+  hoverStyle: "darken" | "lighten" | "underline" | "scale" | "none";
+  /** Scraped button-bg color (bv. LINFI link-button=#fff, niet brand-gold).
+   *  Null = geen scraped signal → renderer fallback op tokens.brand. */
+  background: string | null;
+  /** Scraped button-text color. Null = fallback tokens.onBrand. */
+  color: string | null;
+  /** Scraped button font-family. Null = fallback tokens.bodyFont (geen
+   *  designSystem.label-preset, dat is misleidend bij MINIMAL/EDITORIAL
+   *  layoutStyles waar de preset DM Sans / Inter is i.p.v. de echte
+   *  brand-font). */
+  fontFamily: string | null;
+  /** Scraped border-shorthand (bv. "2px solid #000"). Null = no border. */
+  border: string | null;
+  /** Scraped CSS transition (bv. "all 0.3s ease"). Null = none. */
+  transition: string | null;
+  /** Scraped :hover background. Null = none. */
+  hoverBackground: string | null;
+  /** Scraped :hover color. Null = none. */
+  hoverColor: string | null;
+}
+
+export interface ElevationTokens {
+  /** CSS box-shadow value of "none". */
+  cardShadow: string;
+  cardBorderRadius: number;
+  cardBorderWidth: number;
+  /** Category — voor renderer-keuzes (flat = no border + no shadow). */
+  cardElevationCategory: "flat" | "subtle-shadow" | "strong-shadow" | "border-only";
+}
+
+export interface IconographyTokens {
+  strokeWeight: number;  // 1 (premium luxury) / 1.5-2 (default) / 2.5 (bold playful)
+  sizeDefault: number;   // 20-32 typical range
+  style: "outline" | "filled" | "duotone";
+}
+
+export interface SectionRhythmTokens {
+  /** Sectie verticale padding in px. */
+  sectionPaddingY: number;
+  /** Sectie horizontale padding. */
+  sectionPaddingX: number;
+  cardPaddingY: number;
+  cardPaddingX: number;
+  /** Alternate background per sectie? */
+  alternateBg: boolean;
+}
+
+export interface MotionTokens {
+  /** CSS-ready duration string ("200ms"). */
+  transitionDuration: string;
+  /** CSS-ready easing function. */
+  easing: string;
+}
+
+export interface PhotographyTokens {
+  mood: string | null;
+  compositionStyle: string | null;
+  subjectMatter: string | null;
+  /** Hero-visual-prompt extension; klaar voor opname in image-gen prompt. */
+  promptFragment: string;
+}
+
+export const DEFAULT_BRAND_TOKENS: BrandTokens = {
+  // Legacy
+  primaryHex: '#1FD1B2',
+  secondaryHex: '#0F172A',
+  accentHex: '#F59E0B',
+  neutralHex: '#64748B',
+  // Surface
+  surface: '#FFFFFF',
+  onSurface: '#0F172A',
+  surfaceMuted: '#64748B',
+  surfaceBorder: '#E2E8F0',
+  // Brand
+  brand: '#1FD1B2',
+  onBrand: '#FFFFFF',
+  brandSubtle: '#E6F9F5',
+  // Fase A — Usage-aware (null = geen signal in bron-CSS, val terug op heuristic)
+  heroBgColor: null,
+  headingTextColor: null,
+  heroPattern: null,
+  hasDarkSections: false,
+  darkSectionBg: null,
+  secondarySurface: null,
+  styleguideComponents: {
+    BUTTON: null,
+    FORM_INPUT: null,
+    STATUS_CHIP: null,
+    PRODUCT_CARD: null,
+    FEATURE_ICON: null,
+    TOP_NAVIGATION: null,
+    QUOTE_BLOCK: null,
+  },
+  // Action
+  action: '#1FD1B2',
+  onAction: '#FFFFFF',
+  // Accent
+  accent: '#F59E0B',
+  // Typography
+  headingFont: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  bodyFont: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  // v3 — Design-system
+  layoutStyle: DEFAULT_LAYOUT_STYLE,
+  designSystem: getDesignSystemForLayoutStyle(DEFAULT_LAYOUT_STYLE),
+  // v3 — Brand-archetype (null = unclassified)
+  archetype: null,
+  // v4 — Component-specific styling profiles (defaults voor onbekende
+  // workspaces; extractor + renderer override met scraper/archetype-data).
+  button: {
+    paddingY: 14,
+    paddingX: 28,
+    radiusPx: 6,
+    fontWeight: 600,
+    fontSize: 16,
+    textTransform: "none",
+    letterSpacing: "0.01em",
+    hoverStyle: "darken",
+    background: null,
+    color: null,
+    fontFamily: null,
+    border: null,
+    transition: null,
+    hoverBackground: null,
+    hoverColor: null,
+  },
+  elevation: {
+    cardShadow: "0 2px 8px rgba(0,0,0,0.06)",
+    cardBorderRadius: 12,
+    cardBorderWidth: 0,
+    cardElevationCategory: "subtle-shadow",
+  },
+  iconography: {
+    strokeWeight: 1.75,
+    sizeDefault: 24,
+    style: "outline",
+  },
+  sectionRhythm: {
+    sectionPaddingY: 64,
+    sectionPaddingX: 32,
+    cardPaddingY: 24,
+    cardPaddingX: 20,
+    alternateBg: false,
+  },
+  motion: {
+    transitionDuration: "200ms",
+    easing: "ease",
+  },
+  photography: {
+    mood: null,
+    compositionStyle: null,
+    subjectMatter: null,
+    promptFragment: "",
+  },
+  // v5 — Text-hiërarchie (defaults = backward-compat met v3 onSurface/muted)
+  text: {
+    heading: { color: '#0F172A', weight: 700 },
+    body: { color: '#0F172A', weight: 400 },
+    secondary: { color: '#64748B', weight: 400 },
+    caption: { color: '#64748B', weight: 400 },
+    banner: {
+      fontSize: 12,
+      weight: 600,
+      letterSpacing: '0.1em',
+      textTransform: 'uppercase',
+    },
+  },
+  // v5 — Typography per rol (alle null = fallback op designSystem-preset)
+  typographyByRole: {
+    display: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
+    heading: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
+    subheading: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
+    body: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
+    label: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
+    button: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
+  },
+};
+
+// ─── Input shapes ─────────────────────────────────────────────
+
+interface StyleguideColorLike {
+  hex: string;
+  category: string;
+  /** Tags geven semantische rol-hints — bv. ["background","brand","header"]. */
+  tags?: string[] | null;
+  /** WCAG-tag voor white-text-op-deze-kleur — "AAA" | "AA" | "Fail". */
+  contrastWhite?: string | null;
+  /** WCAG-tag voor black-text-op-deze-kleur — "AAA" | "AA" | "Fail". */
+  contrastBlack?: string | null;
+  confidence?: string | null;
+  sortOrder?: number;
+}
+
+interface StyleguideFontLike {
+  name: string;
+  role: string;
+  fontFamily?: string | null;
+  sortOrder?: number;
+}
+
+interface StyleguideShape {
+  colors?: StyleguideColorLike[] | null;
+  fonts?: StyleguideFontLike[] | null;
+  primaryFontName?: string | null;
+  /** Pad C Sub-Sprint A — LayoutStyle uit Prisma. Default COMMERCIAL. */
+  layoutStyle?: LayoutStyle | null;
+  /** Pad C Sub-Sprint B Phase 1 — Jung archetype uit Prisma. Null = nog
+   *  niet geclassificeerd. */
+  archetype?: BrandArchetype | null;
+  // Verbeterplan Fase B — rendering-profiles (Json velden uit Prisma).
+  // Type `unknown` voor flexibele JSON-shape; v4-mappers parsen veilig.
+  buttonProfile?: unknown;
+  typographyProfile?: unknown;
+  spacingProfile?: unknown;
+  elevationProfile?: unknown;
+  radiusProfile?: unknown;
+  motionProfile?: unknown;
+  /** photographyStyle JSON met {mood, subjects, composition}. */
+  photographyStyle?: unknown;
+  /** Fase C — visualLanguage JSON met optioneel heroPattern uit vision-AI. */
+  visualLanguage?: unknown;
+  /** Scraped spacing-scale uit BrandStyleguide.spacingScale (Json). Shape:
+   *  { tokens: [{name, value}], gridBase: number | null } — value in rem. */
+  spacingScale?: unknown;
+  /** Scraped styleguide-components: rauwe samples uit StyleguideComponent
+   *  records (BUTTON / FORM_INPUT / PRODUCT_CARD / FEATURE_ICON /
+   *  TOP_NAVIGATION / QUOTE_BLOCK). Renderer raadpleegt deze direct voor
+   *  1-op-1 fidelity met de Components-tab van de brand-styleguide. */
+  components?: StyleguideComponentLike[] | null;
+}
+
+interface StyleguideComponentLike {
+  type: string;
+  label?: string | null;
+  extractedStyles: unknown;
+  confidence?: number | null;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const cleaned = hex.replace(/^#/, '');
+  if (cleaned.length !== 6) return null;
+  const num = parseInt(cleaned, 16);
+  if (Number.isNaN(num)) return null;
+  return { r: (num >> 16) & 0xff, g: (num >> 8) & 0xff, b: num & 0xff };
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
+  return (
+    '#'
+    + [clamp(r), clamp(g), clamp(b)]
+      .map((n) => n.toString(16).padStart(2, '0').toUpperCase())
+      .join('')
+  );
+}
+
+/** WCAG relative luminance — 0 = black, 1 = white. */
+export function relativeLuminance(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0;
+  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((c) => {
+    const sv = c / 255;
+    return sv <= 0.03928 ? sv / 12.92 : Math.pow((sv + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** Mix kleur met wit — amount 0..1 (0 = ongewijzigd, 1 = wit). */
+function lighten(hex: string, amount: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  const blend = (c: number) => c + (255 - c) * amount;
+  return rgbToHex(blend(rgb.r), blend(rgb.g), blend(rgb.b));
+}
+
+function tagsLower(c: StyleguideColorLike): string[] {
+  return (c.tags ?? []).map((t) => t.toLowerCase());
+}
+
+function hasAnyTag(c: StyleguideColorLike, needles: string[]): boolean {
+  const tags = tagsLower(c);
+  return needles.some((n) => tags.includes(n));
+}
+
+/** Score AAA=3, AA=2, anders 0. */
+function contrastScore(s: string | null | undefined): number {
+  if (s === 'AAA') return 3;
+  if (s === 'AA') return 2;
+  return 0;
+}
+
+/** Kies #FFFFFF of #000000 als onBrand op basis van WCAG-tags. */
+function pickOnColor(c: StyleguideColorLike | null): string {
+  if (!c) return '#FFFFFF';
+  const whiteScore = contrastScore(c.contrastWhite);
+  const blackScore = contrastScore(c.contrastBlack);
+  // Bij gelijke score → wit (vaker gebruikt voor brand-fill UX)
+  return whiteScore >= blackScore ? '#FFFFFF' : '#000000';
+}
+
+/** Confidence-rank — high=3, medium=2, low=1, null=0. */
+function confidenceRank(c: StyleguideColorLike): number {
+  const v = c.confidence?.toLowerCase();
+  if (v === 'high') return 3;
+  if (v === 'medium') return 2;
+  if (v === 'low') return 1;
+  return 0;
+}
+
+// ─── Role-selection heuristieken ──────────────────────────────
+
+/**
+ * Selectie-volgorde per rol:
+ *  1. Tag-prioritaire match (semantische intentie)
+ *  2. Category + luminance fallback
+ *  3. Default
+ */
+
+function pickSurface(colors: StyleguideColorLike[]): StyleguideColorLike | null {
+  // Tier 1: expliciet "surface" tag + L>0.85
+  const surfaceTagged = colors.find(
+    (c) => hasAnyTag(c, ['surface']) && relativeLuminance(c.hex) > 0.85,
+  );
+  if (surfaceTagged) return surfaceTagged;
+  // Tier 2: tagged "background" of "light" + L>0.85, prefereer NEUTRAL
+  // boven SECONDARY (SECONDARY-background is vaak een accent-light zoals
+  // soft-cream, NEUTRAL-background is vaak echte page-surface zoals white)
+  const taggedNeutral = colors.find(
+    (c) =>
+      c.category === 'NEUTRAL'
+      && hasAnyTag(c, ['background', 'light'])
+      && relativeLuminance(c.hex) > 0.85,
+  );
+  if (taggedNeutral) return taggedNeutral;
+  // Tier 3: any color tagged background/light + L>0.85
+  const taggedAny = colors.find(
+    (c) => hasAnyTag(c, ['background', 'light']) && relativeLuminance(c.hex) > 0.85,
+  );
+  if (taggedAny) return taggedAny;
+  // Tier 4: lightest color overall met L>0.85
+  const sorted = [...colors].sort((a, b) => relativeLuminance(b.hex) - relativeLuminance(a.hex));
+  const lightest = sorted[0];
+  if (lightest && relativeLuminance(lightest.hex) > 0.85) return lightest;
+  return null;
+}
+
+function pickOnSurface(colors: StyleguideColorLike[]): StyleguideColorLike | null {
+  // Tagged "text" + darkest
+  const tagged = colors.filter((c) => hasAnyTag(c, ['text', 'body', 'header']));
+  const darkTagged = tagged
+    .filter((c) => relativeLuminance(c.hex) < 0.2)
+    .sort((a, b) => relativeLuminance(a.hex) - relativeLuminance(b.hex))[0];
+  if (darkTagged) return darkTagged;
+  // Darkest color overall (excluding semantic colors like error/success)
+  const candidates = colors.filter((c) => c.category !== 'SEMANTIC');
+  const sorted = [...candidates].sort(
+    (a, b) => relativeLuminance(a.hex) - relativeLuminance(b.hex),
+  );
+  return sorted[0] ?? null;
+}
+
+function pickSurfaceMuted(
+  colors: StyleguideColorLike[],
+  surface: string,
+): StyleguideColorLike | null {
+  const surfaceL = relativeLuminance(surface);
+  // NEUTRAL tagged "muted" / "secondary-text" / "subtle"
+  const tagged = colors.filter(
+    (c) =>
+      c.category === 'NEUTRAL'
+      && hasAnyTag(c, ['muted', 'secondary-text', 'subtle']),
+  );
+  if (tagged[0]) return tagged[0];
+  // Mid-range NEUTRAL (L between 0.2-0.6) for contrast-on-surface
+  const midRange = colors.filter((c) => {
+    const l = relativeLuminance(c.hex);
+    return c.category === 'NEUTRAL' && l > 0.2 && l < 0.6 && Math.abs(l - surfaceL) > 0.3;
+  });
+  return midRange[0] ?? null;
+}
+
+function pickSurfaceBorder(colors: StyleguideColorLike[]): StyleguideColorLike | null {
+  const tagged = colors.filter(
+    (c) =>
+      c.category === 'NEUTRAL'
+      && hasAnyTag(c, ['border', 'divider']),
+  );
+  if (tagged[0]) return tagged[0];
+  // Light gray NEUTRAL (L > 0.7) that's not the surface itself
+  const lightNeutral = colors.find(
+    (c) => c.category === 'NEUTRAL' && relativeLuminance(c.hex) > 0.7,
+  );
+  return lightNeutral ?? null;
+}
+
+function pickBrand(colors: StyleguideColorLike[]): StyleguideColorLike | null {
+  // PRIMARY tagged "brand" but NOT "background"/"header"/"text"
+  // (filtert out classifier-fouten zoals "Charcoal Navy → PRIMARY"
+  //  bij minimalistische sites)
+  const excluded = ['background', 'header', 'text', 'body'];
+  const candidates = colors.filter(
+    (c) =>
+      c.category === 'PRIMARY'
+      && hasAnyTag(c, ['brand'])
+      && !excluded.some((e) => tagsLower(c).includes(e)),
+  );
+  if (candidates.length > 0) {
+    // Highest-confidence match
+    return [...candidates].sort((a, b) => confidenceRank(b) - confidenceRank(a))[0];
+  }
+  // Fallback 1: PRIMARY zonder background-tag
+  const primaries = colors.filter(
+    (c) =>
+      c.category === 'PRIMARY'
+      && !excluded.some((e) => tagsLower(c).includes(e)),
+  );
+  if (primaries[0]) return primaries[0];
+  // Fallback 2: ACCENT
+  const accents = colors.filter((c) => c.category === 'ACCENT');
+  if (accents[0]) return accents[0];
+  // Fallback 3: eerste PRIMARY ongeacht tags
+  return colors.find((c) => c.category === 'PRIMARY') ?? null;
+}
+
+function pickAccent(
+  colors: StyleguideColorLike[],
+  brandHex: string,
+): StyleguideColorLike | null {
+  // ACCENT category, niet identiek aan brand
+  const accents = colors.filter(
+    (c) => c.category === 'ACCENT' && c.hex.toLowerCase() !== brandHex.toLowerCase(),
+  );
+  if (accents[0]) return accents[0];
+  // PRIMARY tagged "accent" (LINFI-pattern: Golden Bronze als accent in tags)
+  const primaryAccents = colors.filter(
+    (c) =>
+      c.category === 'PRIMARY'
+      && hasAnyTag(c, ['accent'])
+      && c.hex.toLowerCase() !== brandHex.toLowerCase(),
+  );
+  return primaryAccents[0] ?? null;
+}
+
+// ─── Main extractor ───────────────────────────────────────────
+
+/**
+ * Extract brand tokens uit een structureel-geladen BrandStyleguide.
+ * Pure functie — testable without DB.
+ *
+ * v2 (2026-05-26): role-based mapping met tag/luminance/contrast-heuristiek.
+ * Legacy fields (primaryHex/etc.) populated als alias van role-tokens voor
+ * backward-compat met bestaande puck-config consumers.
+ */
+/**
+ * Mapt StyleguideComponent records naar per-type ScrapedComponentStyle.
+ * Per type: kies hoogste-confidence sample (of eerste wanneer geen confidence),
+ * parse extractedStyles JSON naar de canonical shape.
+ *
+ * Pure functie — geen DB, geen sanitization (renderer mag rauwe CSS-waardes
+ * direct gebruiken voor pixel-perfect match met Components-tab).
+ */
+function mapStyleguideComponents(
+  components: StyleguideComponentLike[] | null | undefined,
+): StyleguideComponentTokens {
+  const empty: StyleguideComponentTokens = {
+    BUTTON: null,
+    FORM_INPUT: null,
+    STATUS_CHIP: null,
+    PRODUCT_CARD: null,
+    FEATURE_ICON: null,
+    TOP_NAVIGATION: null,
+    QUOTE_BLOCK: null,
+  };
+  if (!components || components.length === 0) return empty;
+
+  const types: (keyof StyleguideComponentTokens)[] = [
+    'BUTTON', 'FORM_INPUT', 'STATUS_CHIP', 'PRODUCT_CARD',
+    'FEATURE_ICON', 'TOP_NAVIGATION', 'QUOTE_BLOCK',
+  ];
+  const result = { ...empty };
+  for (const type of types) {
+    const samples = components.filter((c) => c.type === type);
+    if (samples.length === 0) continue;
+    const best = [...samples].sort(
+      (a, b) => (b.confidence ?? 0) - (a.confidence ?? 0),
+    )[0];
+    const raw = best.extractedStyles as Record<string, unknown> | null;
+    if (!raw || typeof raw !== 'object') continue;
+    // Guard tegen scraper-output die niet-string waardes schrijft (number,
+    // nested object, boolean). Renderer past inline-styles toe; alleen
+    // strings zijn veilig. Anders null en val terug op archetype-default.
+    const asStr = (v: unknown): string | null =>
+      typeof v === 'string' && v.trim().length > 0 ? v : null;
+    result[type] = {
+      color: asStr(raw.color),
+      background: asStr(raw.background),
+      border: asStr(raw.border),
+      padding: asStr(raw.padding),
+      borderRadius: asStr(raw.borderRadius),
+      fontSize: asStr(raw.fontSize),
+      fontWeight: asStr(raw.fontWeight),
+      boxShadow: asStr(raw.boxShadow),
+      textTransform: asStr(raw.textTransform),
+      letterSpacing: asStr(raw.letterSpacing),
+      display: asStr(raw.display),
+      fontFamily: asStr(raw.fontFamily),
+    };
+  }
+  return result;
+}
+
+export function extractBrandTokensFromStyleguide(
+  styleguide: StyleguideShape | null | undefined,
+): BrandTokens {
+  if (!styleguide) return { ...DEFAULT_BRAND_TOKENS };
+
+  const colors = (styleguide.colors ?? []).slice().sort(
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+  );
+  const fonts = (styleguide.fonts ?? []).slice().sort(
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+  );
+
+  // ── Roles ──
+  const surfaceColor = pickSurface(colors);
+  const surface = surfaceColor?.hex ?? DEFAULT_BRAND_TOKENS.surface;
+
+  const onSurfaceColor = pickOnSurface(colors);
+  const onSurface = onSurfaceColor?.hex ?? DEFAULT_BRAND_TOKENS.onSurface;
+
+  const surfaceMutedColor = pickSurfaceMuted(colors, surface);
+  const surfaceMuted = surfaceMutedColor?.hex ?? DEFAULT_BRAND_TOKENS.surfaceMuted;
+
+  const surfaceBorderColor = pickSurfaceBorder(colors);
+  const surfaceBorder = surfaceBorderColor?.hex ?? DEFAULT_BRAND_TOKENS.surfaceBorder;
+
+  const brandColor = pickBrand(colors);
+  const brand = brandColor?.hex ?? DEFAULT_BRAND_TOKENS.brand;
+  const onBrand = pickOnColor(brandColor);
+  const brandSubtle = brand ? lighten(brand, 0.85) : DEFAULT_BRAND_TOKENS.brandSubtle;
+
+  const accentColor = pickAccent(colors, brand);
+  const accent = accentColor?.hex ?? DEFAULT_BRAND_TOKENS.accent;
+
+  // ── WCAG pre-render gate (Sprint 2 §3b) ──
+  // Forceer veilige fallbacks bij contrast-fail: voorkomt unreadable
+  // body-text / button-text bij classifier-fouten of marginal kleuren.
+  const safeOnSurface = enforceContrastFallback(onSurface, surface, 'normal');
+  const safeOnBrand = enforceContrastFallback(onBrand, brand, 'normal');
+  const safeSurfaceMuted = enforceContrastFallback(surfaceMuted, surface, 'normal');
+
+  // ── Fonts ──
+  // Bouw font-stacks MET semantische fallback (serif voor display, sans-serif
+  // voor body) zodat als de custom Google Font traag laadt of faalt, de
+  // browser-fallback visueel correct categorisch is. Zonder fallback valt
+  // browser terug op systeem-default (sans-serif op Chrome/Safari macOS)
+  // wat de display-typografie compleet anders maakt dan bedoeld.
+  // SERIF detection — gebruikt voor zowel fallback-chain als rol-recovery.
+  // Uitgebreid met populaire Adobe Fonts serifs (mrs-eaves, sentinel, freight,
+  // tiempos) zodat brands die via Typekit een serif inladen ook gedetecteerd
+  // worden i.p.v. op 'sans-serif' fallback terechtkomen.
+  const SERIF_KEYWORDS = /\bserif\b|garamond|playfair|oranienbaum|cormorant|merriweather|lora|prata|abril|mrs[- ]?eaves|sentinel|freight|tiempos|caslon|baskerville|bodoni|didot|minion|chronicle|miller|hoefler|publico|larish|recoleta|fraunces|noto[- ]?serif|crimson|dm[- ]?serif|libre[- ]?baskerville|jensen/i;
+
+  // Banned AI-default fonts (#3 design-quality verbeterplan). Anthropic's
+  // frontend-design Skill banned-list — deze fonts zijn het cliché van LLM-
+  // generated UI's en zwakken de distinctiviteit van een merk af wanneer
+  // ze in display-positie verschijnen. Voor body-text mag Inter/Roboto/
+  // system-ui blijven (workhorse-fonts). Voor heading geldt: wanneer scraper
+  // een banned font detecteert, log warning + downgrade naar UI-rol zodat
+  // de echte display-font (mogelijk serif uit fonts-tabel) doorkomt.
+  // Poppins toegevoegd 2026-05-28: het is een generieke 'workhorse sans'
+  // dat ScraperUI vaak als DISPLAY pakt terwijl het op de site enkel UI/
+  // body is. LINFI scrape: Poppins+Oranienbaum beiden DISPLAY → fontByRole
+  // pakte Poppins (eerste hit). Met Poppins in banned: SERIF_KEYWORDS
+  // fallback vindt Oranienbaum.
+  const BANNED_AI_DISPLAY_FONTS = /^(inter|roboto|arial|space[- ]?grotesk|helvetica[- ]?neue?|system[- ]?ui|poppins|montserrat|raleway|open[- ]?sans|lato)$/i;
+  function isBannedDisplayFont(name: string | null | undefined): boolean {
+    if (!name) return false;
+    const first = name.split(',')[0]?.trim().replace(/^["']|["']$/g, '') ?? '';
+    return BANNED_AI_DISPLAY_FONTS.test(first);
+  }
+  const wrapFontStack = (name: string, role: 'display' | 'body'): string => {
+    // Input is al een stack (bv. "Poppins, sans-serif" uit DB.fontFamily)?
+    // Geen double-wrap; respecteer de auteur-bedoelde fallback-chain.
+    if (name.includes(',')) return name;
+    const quoted = name.includes(' ') ? `"${name}"` : name;
+    const looksLikeSerif = SERIF_KEYWORDS.test(name);
+    // Display: prefer serif fallback wanneer naam serif-achtig is (Oranienbaum
+    // → Georgia → serif); anders ui-sans-serif fallback voor moderne sans
+    // displays. Body: altijd sans-serif chain — bodies zijn vrijwel altijd
+    // sans op moderne LPs.
+    if (role === 'display') {
+      return looksLikeSerif
+        ? `${quoted}, Georgia, "Times New Roman", serif`
+        : `${quoted}, ui-sans-serif, system-ui, -apple-system, sans-serif`;
+    }
+    return `${quoted}, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+  };
+  const fontByRole = (role: string, scope: 'display' | 'body'): string | null => {
+    const match = fonts.find((f) => f.role === role);
+    if (!match) return null;
+    const raw = match.fontFamily ?? match.name;
+    return wrapFontStack(raw, scope);
+  };
+
+  // Workspace-bevinding 2026-05-27 (Better Brands): de analyzer classifieert
+  // soms ALLE gedetecteerde fonts als UI, ook wanneer er een duidelijk serif
+  // display-font tussen zit (mrs-eaves-xl-serif). Resultaat: fontByRole(
+  // 'DISPLAY') faalt → headingFont valt terug op primaryFontName (Open Sans).
+  // Heading rendert dan in sans-serif terwijl het brand-display serif is.
+  //
+  // Workaround: wanneer geen DISPLAY-rol font, scan alle DETECTED fonts op
+  // serif-naam-heuristic. Eerste serif-match wordt de display-font. Dit is
+  // een display-only recovery — body blijft op primaryFontName.
+  const displayByName = (): string | null => {
+    const serifFont = fonts.find((f) => SERIF_KEYWORDS.test(f.name) || (f.fontFamily && SERIF_KEYWORDS.test(f.fontFamily)));
+    if (!serifFont) return null;
+    return wrapFontStack(serifFont.fontFamily ?? serifFont.name, 'display');
+  };
+
+  // Banned-AI-display-font check: wanneer de gekozen display-font een
+  // generic AI-default is (Inter/Roboto/Arial/Space Grotesk/Helvetica),
+  // probeer eerst displayByName() (kans op een serif in de fonts-table
+  // die als UI was gemarkeerd maar wel display-character heeft). Voorkomt
+  // dat brands met DEFAULT_AI Inter-display krijgen wat alle gegenereerde
+  // LPs op elkaar laat lijken.
+  let primaryHeading = fontByRole('DISPLAY', 'display');
+  if (primaryHeading && isBannedDisplayFont(primaryHeading)) {
+    const recovery = displayByName();
+    if (recovery) primaryHeading = recovery;
+  }
+  const headingFont =
+    primaryHeading
+    ?? displayByName()
+    ?? (styleguide.primaryFontName ? wrapFontStack(styleguide.primaryFontName, 'display') : null)
+    ?? DEFAULT_BRAND_TOKENS.headingFont;
+  const bodyFont =
+    fontByRole('BODY', 'body')
+    ?? (styleguide.primaryFontName ? wrapFontStack(styleguide.primaryFontName, 'body') : null)
+    ?? DEFAULT_BRAND_TOKENS.bodyFont;
+
+  // ── v3 — Design-system resolutie (Pad C Sub-Sprint A) ──
+  const layoutStyle = styleguide.layoutStyle ?? DEFAULT_LAYOUT_STYLE;
+  // 1-op-1 spacing: wanneer brand-styleguide een spacingScale heeft
+  // (rem-tokens xs/sm/md/lg/xl/2xl) overschrijven we het preset met
+  // px-converteerde waardes. Dat zorgt dat de LP exact dezelfde rhythm
+  // gebruikt als wat de Components-tab toont.
+  const scrapedScale = (() => {
+    const raw = (styleguide.spacingScale ?? null) as { tokens?: Array<{ value: number }> } | null;
+    if (!raw?.tokens || raw.tokens.length === 0) return undefined;
+    const values = raw.tokens
+      .map((t) => t.value)
+      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0);
+    if (values.length === 0) return undefined;
+    // Robuste heuristic voor unit-loze tokens:
+    //  - Fractional value < 1 (bv. 0.25, 0.5) → zeker rem.
+    //  - Alle waardes integers EN minstens één >= 8 → zeker px (Napking 16/20/24,
+    //    Better Brands 4/10/12/16/20/24, Tailwind interpreted in px-mode).
+    //  - Anders rem-conventie (LINFI 1/2/4/4.25/5/7 → ×16).
+    // Voorkomt zowel "Tailwind 16rem = 16px" als "Napking 16px = 1px" misfires.
+    const hasFractional = values.some((v) => v < 1);
+    const allInteger = values.every((v) => Number.isInteger(v));
+    const hasLargeInteger = values.some((v) => v >= 8);
+    const isPx = !hasFractional && allInteger && hasLargeInteger;
+    const px = values
+      .map((v) => isPx ? Math.round(v) : Math.round(v * 16))
+      .sort((a, b) => a - b);
+    return px;
+  })();
+  const designSystem = scrapedScale
+    ? { ...getDesignSystemForLayoutStyle(layoutStyle), spacing: scrapedScale }
+    : getDesignSystemForLayoutStyle(layoutStyle);
+  const archetype = styleguide.archetype ?? null;
+
+  // ── v4 — Component tokens (verbeterplan Fase C) ──
+  // Lazy import om circular dep + extra surface te minimaliseren in deze file.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const v4 = require("./brand-tokens-v4-mappers") as typeof import("./brand-tokens-v4-mappers");
+  const button = v4.mapButtonTokens(
+    styleguide.buttonProfile,
+    archetype,
+    DEFAULT_BRAND_TOKENS.button,
+  );
+  const elevation = v4.mapElevationTokens(
+    styleguide.elevationProfile,
+    styleguide.radiusProfile,
+    DEFAULT_BRAND_TOKENS.elevation,
+  );
+  const iconography = v4.mapIconographyTokens(
+    archetype,
+    layoutStyle,
+    DEFAULT_BRAND_TOKENS.iconography,
+  );
+  const sectionRhythm = v4.mapSectionRhythmTokens(
+    styleguide.spacingProfile,
+    designSystem,
+    DEFAULT_BRAND_TOKENS.sectionRhythm,
+  );
+  const motion = v4.mapMotionTokens(
+    styleguide.motionProfile,
+    DEFAULT_BRAND_TOKENS.motion,
+  );
+  const photography = v4.mapPhotographyTokens(
+    styleguide.photographyStyle,
+    DEFAULT_BRAND_TOKENS.photography,
+  );
+  const text = v4.mapTextTokens(
+    styleguide.typographyProfile,
+    safeOnSurface,
+    safeSurfaceMuted,
+    DEFAULT_BRAND_TOKENS.text,
+  );
+  const typographyByRole = v4.mapTypographyByRoleTokens(
+    styleguide.typographyProfile,
+    DEFAULT_BRAND_TOKENS.typographyByRole,
+  );
+
+  // Fase A — Usage-aware kleurselectors. Pak de kleur die de bron-website
+  // expliciet als hero-bg gebruikt (usage:hero-bg tag) — als die NIET
+  // bestaat, blijft heroBgColor null en valt de renderer terug op de
+  // heuristic-keuze (vibrant-saturated → surface, anders brand).
+  const pickByUsageTag = (tagName: string): string | null => {
+    const matches = colors.filter((c) => (c.tags ?? []).includes(`usage:${tagName}`));
+    if (matches.length === 0) return null;
+    // Prioriteer de meest gebruikte / hoogst-vertrouwen: PRIMARY > SECONDARY >
+    // ACCENT > NEUTRAL > SEMANTIC. Binnen categorie: sortOrder (frequentie-volgorde).
+    const categoryRank: Record<string, number> = { PRIMARY: 0, SECONDARY: 1, ACCENT: 2, NEUTRAL: 3, SEMANTIC: 4 };
+    matches.sort((a, b) => {
+      const rA = categoryRank[a.category] ?? 5;
+      const rB = categoryRank[b.category] ?? 5;
+      if (rA !== rB) return rA - rB;
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    });
+    return matches[0].hex;
+  };
+  const heroBgColor = pickByUsageTag('hero-bg');
+  const headingTextColor = pickByUsageTag('heading-text');
+
+  // hasDarkSections — bevat de bron-website donkere bg-sections (footer,
+  // stats, etc.)? Bewijs: een NEUTRAL kleur met L < 25 die als section-bg /
+  // body-bg / card-bg / hero-bg getagged is. Voorkomt dat MAGICIAN-archetype
+  // brands met een light-only website (Better Brands) automatisch donkere
+  // stats + footer krijgen op de gegenereerde LP. Duurzaam — werkt voor élk
+  // merk, leunt niet op archetype.
+  const DARK_SECTION_TAGS = new Set(['hero-bg', 'section-bg', 'body-bg', 'card-bg']);
+  const isDarkBgColor = (c: StyleguideColorLike): boolean => {
+    const tags = (c.tags ?? []).map((t) => t.toLowerCase());
+    const usageTags = tags
+      .filter((t) => t.startsWith('usage:'))
+      .map((t) => t.slice(6));
+    const hasUsageDark = usageTags.some((t) => DARK_SECTION_TAGS.has(t));
+    // Brede match: ook standaard tags 'background'+'dark' tellen (zonder
+    // usage: prefix). Vereist BEIDE tags zodat een gewone witte surface
+    // (background+surface) niet als dark wordt geclassificeerd — de
+    // luminance-gate hieronder vangt het anders al af, maar expliciete
+    // tag-eisen voorkomen ambiguiteit voor toekomstige aanpassingen.
+    const hasPlainDarkBg = tags.includes('background') && tags.includes('dark');
+    if (!hasUsageDark && !hasPlainDarkBg) return false;
+    const hex = c.hex.replace(/^#/, '');
+    if (hex.length !== 6) return false;
+    const num = parseInt(hex, 16);
+    const r = (num >> 16) & 0xff;
+    const g = (num >> 8) & 0xff;
+    const b = num & 0xff;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const lPct = ((max + min) / 2 / 255) * 100;
+    return lPct < 25;
+  };
+  const hasDarkSections = colors.some(isDarkBgColor);
+  // Donkerste section-bg op luminance (voor Footer / Stats). Sorteer op
+  // luminance ascending zodat consistent dezelfde kleur wint ongeacht
+  // DB-insertion-order van sortOrder. Null wanneer brand geen donkere
+  // secties heeft.
+  const darkSectionBg = (() => {
+    const candidates = colors.filter(isDarkBgColor);
+    if (candidates.length === 0) return null;
+    return [...candidates].sort(
+      (a, b) => relativeLuminance(a.hex) - relativeLuminance(b.hex),
+    )[0].hex;
+  })();
+  // Secondaire light surface (60/30/10 alternation): tweede lichtste NEUTRAL
+  // met background-tag die NIET de primaire surface is. Voor LINFI is dit
+  // bv. #FBF4BC (cream) of #F5F6F7 (light gray).
+  const secondarySurface = (() => {
+    const surfaceLower = surface?.toLowerCase() ?? '';
+    const brandSubtleLower = brandSubtle?.toLowerCase() ?? '';
+    // Tweede lichtste NEUTRAL of SECONDARY background-tagged kleur die NIET
+    // surface of brandSubtle is. PRIMARY/BRAND/ACCENT uitgesloten zodat een
+    // brand-color wash niet als section-bg leakt (LINFI cream is SECONDARY,
+    // niet PRIMARY). Sorteer op luminance descending; pak [0] (= lichtste).
+    const lightBgs = colors
+      .filter((c) =>
+        // Alleen NEUTRAL of SECONDARY voor background-rol. SEMANTIC = error/
+        // success/info/warning, PRIMARY/ACCENT = brand-color, BRAND = brand-
+        // wash. Geen daarvan past als alternation-surface.
+        (c.category === 'NEUTRAL' || c.category === 'SECONDARY')
+        && (c.tags ?? []).map((t) => t.toLowerCase()).some((t) => ['background', 'light', 'subtle'].includes(t))
+        && relativeLuminance(c.hex) > 0.85
+        && c.hex.toLowerCase() !== surfaceLower
+        && c.hex.toLowerCase() !== brandSubtleLower,
+      )
+      .sort((a, b) => relativeLuminance(b.hex) - relativeLuminance(a.hex));
+    return lightBgs[0]?.hex ?? null;
+  })();
+
+  // Fase C — hero-pattern uit visualLanguage (gepiggybackt door analyzer)
+  const heroPattern = (() => {
+    const vl = styleguide.visualLanguage as { heroPattern?: { pattern?: string } } | null;
+    return vl?.heroPattern?.pattern ?? null;
+  })();
+
+  // 1-op-1 styleguide-components: per type kies hoogste-confidence sample
+  // en map de raw extractedStyles naar ScrapedComponentStyle. Renderer
+  // raadpleegt deze direct voor pixel-perfect match met Components-tab.
+  const styleguideComponents = mapStyleguideComponents(styleguide.components ?? null);
+
+  return {
+    // Legacy aliases (semantisch correct na v2-mapping + WCAG-gate)
+    primaryHex: brand,
+    secondaryHex: safeOnSurface,
+    accentHex: accent,
+    neutralHex: safeSurfaceMuted,
+    // Surface roles (WCAG-validated)
+    surface,
+    onSurface: safeOnSurface,
+    surfaceMuted: safeSurfaceMuted,
+    surfaceBorder,
+    // Brand roles (WCAG-validated)
+    brand,
+    onBrand: safeOnBrand,
+    brandSubtle,
+    // Fase A — usage-aware
+    heroBgColor,
+    headingTextColor,
+    // Fase C — hero-pattern uit vision-AI
+    heroPattern,
+    // dark-section evidence (light brands → light defaults overal)
+    hasDarkSections,
+    // Scraped section colors voor 1-op-1 brand-styleguide-fidelity
+    darkSectionBg,
+    secondarySurface,
+    // Per-type scraped component-samples (1-op-1 met Components-tab)
+    styleguideComponents,
+    // Action roles (default = brand)
+    action: brand,
+    onAction: safeOnBrand,
+    // Accent
+    accent,
+    // Typography
+    headingFont,
+    bodyFont,
+    // v3 Design-system
+    layoutStyle,
+    designSystem,
+    archetype,
+    // v4 Component-tokens
+    button,
+    elevation,
+    iconography,
+    sectionRhythm,
+    motion,
+    photography,
+    // v5 Text-hiërarchie + typography-per-rol
+    text,
+    typographyByRole,
+  };
+}
+
+/**
+ * WCAG-fallback: als fg/bg contrast onder AA-threshold valt, vervang fg
+ * door safe black-or-white. Log warning voor diagnostics.
+ */
+function enforceContrastFallback(
+  fg: string,
+  bg: string,
+  size: 'normal' | 'large',
+): string {
+  // Lazy import om circular dep te vermijden — wcag.ts importeert
+  // relativeLuminance uit deze file
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { contrastRatio, getMinRatio, blackOrWhiteFor } = require('./wcag') as {
+    contrastRatio: (a: string, b: string) => number;
+    getMinRatio: (level: 'AA', size: 'normal' | 'large') => number;
+    blackOrWhiteFor: (bg: string) => '#000000' | '#FFFFFF';
+  };
+  const ratio = contrastRatio(fg, bg);
+  const minRatio = getMinRatio('AA', size);
+  if (ratio >= minRatio) return fg;
+  // Fallback naar black-or-white
+  const safe = blackOrWhiteFor(bg);
+  console.warn(
+    `[brand-tokens] WCAG-gate fallback: ${fg} op ${bg} ratio ${ratio.toFixed(2)}:1 < ${minRatio}:1 → ${safe}`,
+  );
+  return safe;
+}
+
+/**
+ * Regex-fallback voor flat-string BrandContextBlock.brandColors —
+ * gebruikt wanneer styleguide niet geladen is. Eenvoudiger heuristiek
+ * (geen tags, geen contrast-info) — sorteer alleen op luminance.
+ */
+export function extractBrandTokensFromContext(
+  brand: BrandContextBlock | undefined | null,
+): BrandTokens {
+  if (!brand) return { ...DEFAULT_BRAND_TOKENS };
+
+  const hexes = typeof brand.brandColors === 'string'
+    ? (brand.brandColors.match(/#[0-9A-Fa-f]{6}/g) ?? [])
+    : [];
+
+  // Strategie verschilt per aantal hexes:
+  //  - 1 hex: die hex IS de brand-color (gebruikersintentie); surface = wit default
+  //  - 2 hexes: donkerste = brand, lichtste = surface
+  //  - 3+ hexes: full role-mapping op luminance (lichtste=surface, donkerste=onSurface,
+  //    middle=brand)
+  // De single-hex case staat los van luminance om "Geef me deze brand-kleur"
+  // gebruikersintentie te respecteren.
+  let surface: string;
+  let onSurface: string;
+  let brandColor: string;
+
+  if (hexes.length === 0) {
+    surface = DEFAULT_BRAND_TOKENS.surface;
+    onSurface = DEFAULT_BRAND_TOKENS.onSurface;
+    brandColor = DEFAULT_BRAND_TOKENS.brand;
+  } else if (hexes.length === 1) {
+    // Single hex = brand. Surface en onSurface uit defaults.
+    surface = DEFAULT_BRAND_TOKENS.surface;
+    onSurface = DEFAULT_BRAND_TOKENS.onSurface;
+    brandColor = hexes[0];
+  } else {
+    // 2+ hexes: sorteer op luminance (lichtste eerst)
+    const sorted = [...hexes].sort((a, b) => relativeLuminance(b) - relativeLuminance(a));
+    surface = relativeLuminance(sorted[0]) > 0.85 ? sorted[0] : DEFAULT_BRAND_TOKENS.surface;
+    const darkest = sorted[sorted.length - 1];
+    onSurface = relativeLuminance(darkest) < 0.3 ? darkest : DEFAULT_BRAND_TOKENS.onSurface;
+    brandColor =
+      hexes.find((h) => h !== surface && h !== onSurface)
+      ?? hexes[0]
+      ?? DEFAULT_BRAND_TOKENS.brand;
+  }
+  const brandLuminance = relativeLuminance(brandColor);
+  const onBrand = brandLuminance < 0.5 ? '#FFFFFF' : '#000000';
+  const brandSubtle = lighten(brandColor, 0.85);
+
+  const accent = hexes.find((h) => h !== surface && h !== onSurface && h !== brandColor)
+    ?? DEFAULT_BRAND_TOKENS.accent;
+
+  // surfaceMuted: midrange-luminance hex zoeken in alle hexes (niet alleen sorted)
+  const surfaceMuted = hexes.find(
+    (h) => {
+      const l = relativeLuminance(h);
+      return l > 0.3 && l < 0.7;
+    },
+  ) ?? DEFAULT_BRAND_TOKENS.surfaceMuted;
+
+  const surfaceBorder = lighten(surfaceMuted, 0.6);
+
+  const headingFont = extractFontFromFonts(brand.brandFonts, /heading|display|h1/i)
+    ?? DEFAULT_BRAND_TOKENS.headingFont;
+  const bodyFont = extractFontFromFonts(brand.brandFonts, /body|paragraph|text/i)
+    ?? DEFAULT_BRAND_TOKENS.bodyFont;
+
+  // v3 design-system: fallback-pad gebruikt altijd DEFAULT_LAYOUT_STYLE
+  // (geen styleguide = geen layoutStyle-info beschikbaar).
+  const layoutStyle = DEFAULT_LAYOUT_STYLE;
+  const designSystem = getDesignSystemForLayoutStyle(layoutStyle);
+
+  return {
+    // Legacy aliases
+    primaryHex: brandColor,
+    secondaryHex: onSurface,
+    accentHex: accent,
+    neutralHex: surfaceMuted,
+    // Surface
+    surface,
+    onSurface,
+    surfaceMuted,
+    surfaceBorder,
+    // Brand
+    brand: brandColor,
+    onBrand,
+    brandSubtle,
+    // Fase A — geen usage-tags beschikbaar in context-only pad → null
+    heroBgColor: null,
+    headingTextColor: null,
+    // Fase C — geen vision-data in context-only pad
+    heroPattern: null,
+    // context-only pad: geen scrape-evidence beschikbaar → false default
+    hasDarkSections: false,
+    darkSectionBg: null,
+    secondarySurface: null,
+    styleguideComponents: {
+      BUTTON: null,
+      FORM_INPUT: null,
+      STATUS_CHIP: null,
+      PRODUCT_CARD: null,
+      FEATURE_ICON: null,
+      TOP_NAVIGATION: null,
+      QUOTE_BLOCK: null,
+    },
+    // Action
+    action: brandColor,
+    onAction: onBrand,
+    // Accent
+    accent,
+    // v3 Design-system
+    layoutStyle,
+    designSystem,
+    archetype: null,  // fallback-pad: geen archetype-info beschikbaar
+    // Typography
+    headingFont,
+    bodyFont,
+    // v4 Component-tokens (fallback-pad: geen scraper-data, gebruik defaults)
+    button: DEFAULT_BRAND_TOKENS.button,
+    elevation: DEFAULT_BRAND_TOKENS.elevation,
+    iconography: DEFAULT_BRAND_TOKENS.iconography,
+    sectionRhythm: DEFAULT_BRAND_TOKENS.sectionRhythm,
+    motion: DEFAULT_BRAND_TOKENS.motion,
+    photography: DEFAULT_BRAND_TOKENS.photography,
+    text: DEFAULT_BRAND_TOKENS.text,
+    typographyByRole: DEFAULT_BRAND_TOKENS.typographyByRole,
+  };
+}
+
+function extractFontFromFonts(
+  fonts: string | undefined,
+  roleMatcher: RegExp,
+): string | null {
+  if (typeof fonts !== 'string') return null;
+  // Wrap roleMatcher.source in een group zodat alternation niet per ongeluk
+  // de `[^:]*:` suffix aan alleen de laatste alternative bindt.
+  const match = fonts.match(new RegExp(`(?:${roleMatcher.source})[^:]*:\\s*([^,\\n]+)`, 'i'));
+  if (!match || !match[1]) return null;
+  return match[1].trim();
+}

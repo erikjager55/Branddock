@@ -268,6 +268,16 @@ function mergeScrapedData(
     visualHeuristics: homepage.visualHeuristics,
     components: mergedComponents,
     adobeFonts: mergedAdobeFonts,
+    // Verbeterplan Fase A — preserve scraper-rendering-profiles uit
+    // homepage. (Homepage CSS bevat doorgaans alle brand-styling; sub-
+    // pages voegen zelden nieuwe button/typography rules toe.) Zonder
+    // deze velden mist analysis-engine de Fase B persist data.
+    buttonStyles: homepage.buttonStyles,
+    typographyByRole: homepage.typographyByRole,
+    spacingProfile: homepage.spacingProfile,
+    elevationProfile: homepage.elevationProfile,
+    radiusProfile: homepage.radiusProfile,
+    motionProfile: homepage.motionProfile,
   };
 }
 

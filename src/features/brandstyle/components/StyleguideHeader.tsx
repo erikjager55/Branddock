@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/shared";
 import { LockShield, LockStatusPill } from "@/components/lock";
 import type { BrandStyleguide } from "../types/brandstyle.types";
-import { ACTIVE_REVIEW_SECTIONS } from "@/lib/brandstyle/review-sections";
+import { getApplicableReviewSections } from "@/lib/brandstyle/review-sections";
 import { exportBrandstylePdf } from "../utils/exportBrandstylePdf";
 import { exportBrandKitPdf, type BrandKitPdfProgress } from "../utils/brand-kit/exportBrandKitPdf";
 import { EXPORT_FORMATS, type ExportFormat } from "../utils/export-formats";
@@ -68,16 +68,22 @@ export function StyleguideHeader({
     }
   }, []);
 
-  // Review progress summary for the metadata bar
+  // Review progress summary for the metadata bar.
+  // Gebruik getApplicableReviewSections (zelfde bron als ReviewSummaryHeader)
+  // zodat header-counter "X/Y sections" en review-bar "X of Y sections
+  // approved" dezelfde Y rapporteren. ACTIVE_REVIEW_SECTIONS is de raw
+  // master-lijst (19) maar voor counter-display willen we de styleguide-
+  // specifieke applicable-subset (15 bij LINFI — niet-relevante secties
+  // zoals 'imagery-when-no-images' filteren we eruit).
   const progressSummary = useMemo(() => {
     const reviews = styleguide.reviews ?? [];
     const approved = new Set(
       reviews.filter((r) => r.status === "APPROVED").map((r) => r.section),
     );
-    const total = ACTIVE_REVIEW_SECTIONS.length;
-    const approvedCount = ACTIVE_REVIEW_SECTIONS.filter((s) => approved.has(s)).length;
-    return { approved: approvedCount, total };
-  }, [styleguide.reviews]);
+    const applicable = getApplicableReviewSections(styleguide);
+    const approvedCount = applicable.filter((s) => approved.has(s)).length;
+    return { approved: approvedCount, total: applicable.length };
+  }, [styleguide]);
 
   const updatedAt = new Date(styleguide.updatedAt);
   const lastAnalyzedLabel = isNaN(updatedAt.getTime())

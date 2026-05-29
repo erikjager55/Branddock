@@ -86,11 +86,18 @@ export function ContentCardGrid({
               aria-label={lightLabel}
             />
 
-            <div className="flex-1 flex flex-col">
-              <div className="pl-4 pr-6 py-4 flex flex-col gap-3 flex-1">
+            {/* min-w-0 hier kritiek: zonder dit verhindert de default
+                min-width:auto van flex-items dat truncate/line-clamp werkt —
+                lange campaign-namen of titles duwen dan de column voorbij
+                de kaart-grens (waardoor de Trash-knop off-screen valt EN
+                tekst over de rechterrand loopt). */}
+            <div className="flex-1 flex flex-col min-w-0">
+              <div className="pl-4 pr-6 py-4 flex flex-col gap-3 flex-1 min-w-0">
                 {/* Row 1: campaign name + favorite + delete */}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500 truncate min-w-0">{item.campaignName}</span>
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  {/* flex-1 + min-w-0 zorgt dat het span de beschikbare
+                      ruimte krijgt zonder de actions-row weg te duwen. */}
+                  <span className="flex-1 min-w-0 text-xs text-gray-500 truncate">{item.campaignName}</span>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       type="button"
@@ -133,16 +140,18 @@ export function ContentCardGrid({
                   </div>
                 </div>
 
-                {/* Row 2: Title — inline editable */}
+                {/* Row 2: Title — inline editable. break-words als safety-
+                    net voor extreem lange tokens (URLs/hashes/joined-words)
+                    die anders min-w-0 + line-clamp ontwijken. */}
                 {onRename ? (
                   <InlineRenameField
                     placeholder={`Untitled ${formatContentType(item.type)}`}
                     currentValue={item.title.toLowerCase() === item.type.toLowerCase() ? undefined : item.title}
-                    className="text-sm font-semibold text-gray-900 line-clamp-2"
+                    className="text-sm font-semibold text-gray-900 line-clamp-2 break-words"
                     onRename={(t) => onRename(item.id, item.campaignId, t)}
                   />
                 ) : (
-                  <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">
+                  <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 break-words">
                     {item.title}
                   </h3>
                 )}

@@ -304,6 +304,19 @@ Return a JSON object with this exact structure:
     { "text": "actual phrase from the content or a phrase in the brand's voice", "type": "do" },
     { "text": "example of what this brand should avoid", "type": "dont" }
   ],
+  "vocabularyDo": [
+    "8-12 specifieke woorden of korte zinnetjes die het merk daadwerkelijk gebruikt in eigen content (uit de tekst). Bv. voor LINFI: 'op maat', 'millimeter nauwkeurig', 'vakmanschap'"
+  ],
+  "vocabularyDont": [
+    "6-10 woorden/frases die dit merk NIET zou gebruiken — vooral hype-vocabulaire dat off-brand zou voelen. Bv. voor RULER: 'revolutionary', 'game-changing'; voor SAGE: '!', emoji's"
+  ],
+  "voiceSample": "ÉÉN representatieve paragraaf 40-80 woorden in de brand-eigen voice. Pak een echte zin/paragraaf uit de gescrapede tekst (niet zelf-verzonnen) die zo brand-typerend mogelijk is. Variant-generator gebruikt dit als few-shot 'match this rhythm' example.",
+  "fixtureSamples": {
+    "headlines": ["3-5 echte page-headlines uit de gescrapede tekst — voor Puck-preview defaults zodat lege LP's brand-specifieke placeholders krijgen i.p.v. lorem-ipsum"],
+    "ctaLabels": ["3-5 echte CTA-knoppen uit de site (bv. 'Plan een afspraak', 'Vraag offerte aan', 'Word lid')"],
+    "featureTitles": ["3-5 korte feature-namen uit de site (productkenmerken, dienstcategorieën)"],
+    "testimonialQuotes": ["1-2 quotes als die in de gescrapede tekst staan — anders empty array"]
+  },
   "photographyStyle": {
     "mood": "OBSERVED or RECOMMENDED mood description",
     "subjects": "Typical subjects for this brand",
@@ -327,7 +340,10 @@ IMPORTANT:
 - For photographyStyle: If no photography is visible, describe likely direction based on the brand's tone and industry. Mark as RECOMMENDED.
 - For photographyGuidelines: Provide 3-5 specific guidelines. Label each as OBSERVED or RECOMMENDED.
 - Analyze the text for: sentence length patterns, active vs passive voice, technical vs accessible language, personalization level (we/you vs third person), energy level, formality.
-- Be specific — "Use short, punchy sentences under 15 words for CTAs" is better than "Write clearly".`;
+- Be specific — "Use short, punchy sentences under 15 words for CTAs" is better than "Write clearly".
+- For vocabularyDo: pak woorden/zinnetjes UIT de scraped text (niet zelfverzonnen). 8-12 paren. Voor B2C-merken vaak emotioneel ("liefde", "thuis"); voor B2B vaak vakjargon ("compliance", "ROI"); voor luxury vaak material-specifiek ("matgepolijst", "handgesneden").
+- For vocabularyDont: archetype-aware exclusies. RULER vermijdt "innovative/revolutionary"; SAGE vermijdt emoji + "!"; INNOCENT vermijdt "exclusive/elite"; HERO vermijdt "humble/quiet". Maak het brand-specifiek.
+- For voiceSample: pak EEN representatieve paragraaf, NIET een sales-pitch. Liever een gewone product-beschrijving, een nieuws-item, een over-ons-fragment. 40-80 woorden. Geef terug zoals het in de tekst staat, geen aanpassingen.`;
 }
 
 // ─── PDF Analysis Prompt (combined, since PDF has less data) ──
@@ -598,7 +614,8 @@ Return a JSON object with this exact structure:
       "Cards use 24px internal padding with 16px gap between items"
     ],
     "usageNotes": "Brief description of layout approach"
-  }
+  },
+  "designPhilosophy": "ONE sentence describing what makes THIS brand visually distinct — what MUST be preserved when generating new pages or content. Be specific to this brand's signature look (e.g., 'Quiet luxury via generous whitespace, sharp corners, and architectural photography of finished installations in luxury homes — no decoration, no playful flourishes')."
 }
 
 IMPORTANT:
@@ -611,7 +628,8 @@ IMPORTANT:
 - For gradientsEffects: extract ACTUAL gradients from CSS if found. If no gradients detected, provide 1-2 recommendations based on the brand colors. Maximum 4 gradients.
 - For layoutPrinciples: extract actual spacing/grid values from CSS variables if available. If not, analyze the visual rhythm.
 - Prefix recommendations with "RECOMMENDED:" to distinguish from observed patterns.
-- Be specific to THIS brand. Generic advice like "use consistent spacing" is not helpful.`;
+- Be specific to THIS brand. Generic advice like "use consistent spacing" is not helpful.
+- For designPhilosophy: MUST be ONE sentence (max 30 words). Capture the brand's signature look in a way that an AI generating new pages can use as a guide. Bad: "Modern and clean." Good: "Quiet luxury via generous whitespace, sharp corners, and architectural photography of finished installations in luxury homes."`;
 }
 
 // Re-export the system prompts for the analysis engine

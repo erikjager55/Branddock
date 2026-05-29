@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { decideHostRoute } from '@/lib/landing-pages/host-router';
 
 // ─── Security headers applied to ALL responses ───────────
 const isProduction = process.env.NODE_ENV === 'production';
@@ -96,6 +97,23 @@ const cacheRules: CacheRule[] = [
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const host = request.headers.get('host') ?? '';
+
+  // Web-page builder host-routing (ADR 2026-05-22-landing-page-builder-architectuur).
+  // Runs first so <workspace>.branddock.app/<slug> rewrites to /p/<slug> before
+  // any other logic. Security headers still applied to the rewritten response.
+  const routeDecision = decideHostRoute(host, pathname);
+  if (routeDecision.rewriteTo) {
+    const rewriteUrl = request.nextUrl.clone();
+    const [rewritePath, rewriteSearch] = routeDecision.rewriteTo.split('?');
+    rewriteUrl.pathname = rewritePath;
+    rewriteUrl.search = rewriteSearch ? `?${rewriteSearch}` : '';
+    const rewriteResponse = NextResponse.rewrite(rewriteUrl);
+    for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+      rewriteResponse.headers.set(key, value);
+    }
+    return rewriteResponse;
+  }
 
   // Start with a next() response so we can add headers
   const response = NextResponse.next();

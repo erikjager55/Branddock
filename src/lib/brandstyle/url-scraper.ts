@@ -72,6 +72,27 @@ export interface ScrapedData {
    *  Populated by `logo-color-extractor` when at least one fetchable logo
    *  URL is available. Empty on failure or placeholder-only logos. */
   logoColors?: import('./logo-color-extractor').LogoColor[];
+  /** Button-styling samples uit CSS (Fase A1 verbeterplan). Per primary/
+   *  secondary/ghost match: padding/font/transform/letter-spacing/radius/
+   *  background/color/transition + hover-state. Leeg wanneer geen
+   *  button-CSS gevonden. */
+  buttonStyles?: import('./button-extractor').ScrapedButtonStyle[];
+  /** Typography per rol (display/heading/subheading/body/label/button) —
+   *  Fase A2 verbeterplan. Brand-specifieke font-styling per element-rol
+   *  i.p.v. de generic display/body uit een layoutStyle-preset. */
+  typographyByRole?: import('./typography-extractor').ScrapedTypographyByRole;
+  /** Spacing-profile per element-context (section/card/button/input) —
+   *  Fase A3 verbeterplan. Renderer gebruikt typical padding voor section-
+   *  padding / card-padding zonder layoutStyle-preset fallback. */
+  spacingProfile?: import('./spacing-elevation-extractor').SpacingProfile;
+  /** Elevation-profile met box-shadow categorisatie (none/subtle/medium/
+   *  strong) — Fase A3. Renderer gebruikt dominant category voor cards. */
+  elevationProfile?: import('./spacing-elevation-extractor').ElevationProfile;
+  /** Border-radius samples per context — Fase A3. */
+  radiusProfile?: import('./spacing-elevation-extractor').RadiusProfile;
+  /** Motion-signature (transition + animation duration + easing) — Fase A4
+   *  verbeterplan. Renderer gebruikt voor hover-transitions + section-fades. */
+  motionProfile?: import('./motion-extractor').MotionProfile;
 }
 
 // Chrome-like User-Agent to avoid bot blocking
@@ -311,6 +332,28 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
   const { extractVisualLanguageHeuristics } = await import('./css-visual-heuristics');
   const visualHeuristics = extractVisualLanguageHeuristics(allCss);
 
+  // Fase A1 — button-styling samples uit CSS.
+  // Universal-fix laag: CSS-vars meegeven voor var(--btn-radius) resolution
+  // + cheerio `$` voor DOM-presence filter (drop unused WP-core stylesheets).
+  const { extractButtonStyles } = await import('./button-extractor');
+  const buttonStyles = extractButtonStyles(allCss, {
+    cssVariables: cssVariables.map((v) => ({ name: v.name, value: v.value })),
+    $,
+  });
+
+  // Fase A2 — typography per rol (display/heading/subheading/body/label/button)
+  const { extractTypographyByRole } = await import('./typography-extractor');
+  const typographyByRole = extractTypographyByRole(allCss);
+
+  // Fase A3 — spacing + elevation + radius profiles per context
+  const { extractSpacingElevationProfile } = await import('./spacing-elevation-extractor');
+  const { spacingProfile, elevationProfile, radiusProfile } =
+    extractSpacingElevationProfile(allCss);
+
+  // Fase A4 — motion-signature (transition + animation duration + easing)
+  const { extractMotionProfile } = await import('./motion-extractor');
+  const motionProfile = extractMotionProfile(allCss);
+
   // Extract component samples (buttons, inputs, chips, cards, nav, etc.) from the DOM + CSS
   const { extractComponents } = await import('./component-extractor');
   const components = extractComponents($, allCss);
@@ -362,6 +405,12 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
     headingFont,
     adobeFonts,
     logoColors,
+    buttonStyles,
+    typographyByRole,
+    spacingProfile,
+    elevationProfile,
+    radiusProfile,
+    motionProfile,
   };
 }
 

@@ -22,6 +22,7 @@ import {
   type ColorFrequency,
 } from './url-scraper';
 import { parsePdf, type ParsedPdfData } from './pdf-parser';
+import { inferLayoutStyleFromSiteData } from './infer-layout-style';
 import {
   buildVisualIdentityPrompt,
   buildVoiceImageryPrompt,
@@ -40,6 +41,7 @@ import { runFrameworkDetectors, type DetectedToken } from './framework-detectors
 import {
   hexToRgb,
   hexToRgbString,
+  hexToHsl,
   hexToHslString,
   hexToCmykString,
   contrastWithWhite,
@@ -94,6 +96,19 @@ interface VoiceImageryResult {
   contentGuidelines: string[];
   writingGuidelines: string[];
   examplePhrases: Array<{ text: string; type: 'do' | 'dont' }>;
+  /** DTS-plan C1 — brand-eigen vocabulaire (woorden + zinnetjes). */
+  vocabularyDo?: string[];
+  /** DTS-plan C1 — woorden/frasen die het merk vermijdt. */
+  vocabularyDont?: string[];
+  /** DTS-plan C2 — 1 representatieve paragraaf in brand-eigen voice. */
+  voiceSample?: string;
+  /** DTS-plan C7 — fixture-samples voor Puck defaultProps. */
+  fixtureSamples?: {
+    headlines?: string[];
+    ctaLabels?: string[];
+    featureTitles?: string[];
+    testimonialQuotes?: string[];
+  };
   photographyStyle: {
     mood?: string;
     subjects?: string;
@@ -141,6 +156,9 @@ interface DesignLanguageResult {
     compositionRules?: string[];
     usageNotes?: string;
   } | null;
+  /** Verbeterplan #4: one-sentence design-philosophy voor brand-emergent
+   *  content-generation. Beschrijft wat dit merk visueel anders maakt. */
+  designPhilosophy?: string | null;
 }
 
 interface CombinedResult extends VisualIdentityResult, VoiceImageryResult, Partial<DesignLanguageResult> {}
@@ -233,7 +251,7 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         scraped = await scrapeUrlViaGeminiFallback(url);
         usedGeminiFallback = true;
         console.log(`[brandstyle-analysis] Gemini fallback succeeded for ${url}`);
-      } catch (fallbackErr) {
+      } catch {
         // Both methods failed — report the original scrape error (more useful to the user)
         await markError(styleguideId, `Failed to fetch URL: ${scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr)}`);
         return;
@@ -305,6 +323,7 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     let pageScreenshots: { buffer: Buffer; mediaType: 'image/png' }[] = [];
     let heroBuffer: Buffer | null = null;
     let usedVisualAi = false;
+    let heroPattern: import('./hero-pattern-detector').HeroPatternResult | null = null;
     try {
       const { isVisualAiEnabled, capturePageScreenshots } = await import('./page-screenshotter');
       if (isVisualAiEnabled()) {
@@ -317,6 +336,23 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         if (pageScreenshots.length > 0) {
           usedVisualAi = true;
           console.log(`[brandstyle-analysis] Captured ${pageScreenshots.length} page screenshots for AI vision`);
+        }
+
+        // Fase C — hero-pattern detection. Vision-call die classifeert in 6
+        // layout-archetypes. Renderer gebruikt dit later om de LP-hero
+        // layout van de bron te kopiëren i.p.v. archetype-default.
+        if (heroBuffer) {
+          try {
+            const { isHeroPatternEnabled, detectHeroPattern } = await import('./hero-pattern-detector');
+            if (isHeroPatternEnabled()) {
+              heroPattern = await detectHeroPattern(heroBuffer);
+              if (heroPattern) {
+                console.log(`[brandstyle-analysis] Hero pattern: ${heroPattern.pattern} (confidence: ${heroPattern.confidence})`);
+              }
+            }
+          } catch (hpErr) {
+            console.warn(`[brandstyle-analysis] Hero pattern detect failed (non-critical): ${hpErr instanceof Error ? hpErr.message : String(hpErr)}`);
+          }
         }
       }
     } catch (shotErr) {
@@ -629,6 +665,7 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       scraped.headingFont,
       visionLogo,
       scraped.adobeFonts ?? null,
+      `${scraped.inlineCss ?? ''}\n${scraped.linkedCssContent ?? ''}`,
     );
 
     // Route scraped brand images into the Media Library instead of persisting
@@ -658,12 +695,41 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       }
     }
 
+    // Fase D — persist bron-hero-screenshot URL voor lp-fidelity-judge.
+    // Anders moet de judge bij elke check de bron live re-fetchen +
+    // re-screenshotten (~20s extra). Met persisted URL doet hij gewoon
+    // een GET op de storage en is judge-call <10s totaal.
+    let heroScreenshotUrl: string | null = null;
+    if (heroBuffer && styleguideMeta.workspaceId) {
+      try {
+        const { getStorageProvider } = await import('@/lib/storage');
+        const storage = getStorageProvider();
+        const result = await storage.upload(heroBuffer, {
+          workspaceId: styleguideMeta.workspaceId,
+          fileName: `brandstyle-hero-${styleguideId}.png`,
+          contentType: 'image/png',
+          generateThumbnail: false,
+        });
+        heroScreenshotUrl = result.url;
+        console.log(`[brandstyle-analysis] Hero screenshot persisted: ${heroScreenshotUrl}`);
+      } catch (uploadErr) {
+        console.warn(`[brandstyle-analysis] Hero-screenshot upload failed (non-critical): ${uploadErr instanceof Error ? uploadErr.message : String(uploadErr)}`);
+      }
+    }
+
     // Write visual language separately (Json field, not part of CombinedResult)
-    if (visualLanguageResult) {
+    // Fase C — heroPattern + Fase D — heroScreenshotUrl gepiggybackt zonder
+    // schema-migratie. Renderer leest via styleguide.visualLanguage.*.
+    if (visualLanguageResult || heroPattern || heroScreenshotUrl) {
+      const visualLanguagePayload = {
+        ...((visualLanguageResult as Record<string, unknown> | null) ?? {}),
+        ...(heroPattern ? { heroPattern } : {}),
+        ...(heroScreenshotUrl ? { heroScreenshotUrl } : {}),
+      };
       await prisma.brandStyleguide.update({
         where: { id: styleguideId },
         data: {
-          visualLanguage: JSON.parse(JSON.stringify(visualLanguageResult)),
+          visualLanguage: JSON.parse(JSON.stringify(visualLanguagePayload)),
         },
       });
     }
@@ -716,6 +782,165 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     } catch (err) {
       console.warn(
         `[brandstyle-analysis] Snapshot write failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
+    // Fase B verbeterplan — persist scraper-rendering-profiles (button,
+    // typography per rol, spacing+elevation+radius, motion). Renderers
+    // lezen deze velden voor brand-specifieke styling i.p.v. archetype-
+    // defaults. Non-critical: bij persist-error fall back op archetype-
+    // defaults via BrandTokens Tier-2 fallback chain.
+    //
+    // Verbeterplan #5 — per-veld override-respect: alleen overschrijven
+    // wanneer *Override flag false is. User-set values (via toekomstige
+    // brand-onboarding UI) blijven behouden bij re-scrape.
+    try {
+      const existing = await prisma.brandStyleguide.findUnique({
+        where: { id: styleguideId },
+        select: {
+          buttonProfileOverride: true,
+          spacingProfileOverride: true,
+          elevationProfileOverride: true,
+          radiusProfileOverride: true,
+          motionProfileOverride: true,
+          typographyProfileOverride: true,
+        },
+      });
+      const overrides = existing ?? {
+        buttonProfileOverride: false,
+        spacingProfileOverride: false,
+        elevationProfileOverride: false,
+        radiusProfileOverride: false,
+        motionProfileOverride: false,
+        typographyProfileOverride: false,
+      };
+      const updateData: Prisma.BrandStyleguideUpdateInput = {};
+      if (!overrides.buttonProfileOverride) {
+        updateData.buttonProfile = scraped.buttonStyles
+          ? (JSON.parse(JSON.stringify(scraped.buttonStyles)) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+      }
+      if (!overrides.typographyProfileOverride) {
+        updateData.typographyProfile = scraped.typographyByRole
+          ? (JSON.parse(JSON.stringify(scraped.typographyByRole)) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+      }
+      if (!overrides.spacingProfileOverride) {
+        updateData.spacingProfile = scraped.spacingProfile
+          ? (JSON.parse(JSON.stringify(scraped.spacingProfile)) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+      }
+      if (!overrides.elevationProfileOverride) {
+        updateData.elevationProfile = scraped.elevationProfile
+          ? (JSON.parse(JSON.stringify(scraped.elevationProfile)) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+      }
+      if (!overrides.radiusProfileOverride) {
+        updateData.radiusProfile = scraped.radiusProfile
+          ? (JSON.parse(JSON.stringify(scraped.radiusProfile)) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+      }
+      if (!overrides.motionProfileOverride) {
+        updateData.motionProfile = scraped.motionProfile
+          ? (JSON.parse(JSON.stringify(scraped.motionProfile)) as Prisma.InputJsonValue)
+          : Prisma.JsonNull;
+      }
+      if (Object.keys(updateData).length > 0) {
+        await prisma.brandStyleguide.update({
+          where: { id: styleguideId },
+          data: updateData,
+        });
+      }
+    } catch (err) {
+      console.warn(
+        `[brandstyle-analysis] Rendering-profiles persist failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
+    // Verbeterplan #4 — persist designPhilosophy wanneer AI Phase 3 die
+    // heeft gegenereerd. Non-critical: bij missing designPhilosophy blijft
+    // het veld null.
+    if (designResult?.designPhilosophy) {
+      try {
+        await prisma.brandStyleguide.update({
+          where: { id: styleguideId },
+          data: { designPhilosophy: designResult.designPhilosophy.trim() },
+        });
+      } catch (err) {
+        console.warn(
+          `[brandstyle-analysis] designPhilosophy persist failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    // DTS-plan C7 — persist fixtureSamples wanneer Voice-prompt die opleverde
+    if (voiceResult?.fixtureSamples) {
+      try {
+        const samples = voiceResult.fixtureSamples;
+        const hasContent =
+          (Array.isArray(samples.headlines) && samples.headlines.length > 0) ||
+          (Array.isArray(samples.ctaLabels) && samples.ctaLabels.length > 0) ||
+          (Array.isArray(samples.featureTitles) && samples.featureTitles.length > 0) ||
+          (Array.isArray(samples.testimonialQuotes) && samples.testimonialQuotes.length > 0);
+        if (hasContent) {
+          await prisma.brandStyleguide.update({
+            where: { id: styleguideId },
+            data: { fixtureSamples: JSON.parse(JSON.stringify(samples)) as Prisma.InputJsonValue },
+          });
+        }
+      } catch (err) {
+        console.warn(
+          `[brandstyle-analysis] fixtureSamples persist failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    // V2-2b — infereer layoutStyle uit site-DNA signals voor de styleguide
+    // COMPLETE wordt gemarkeerd. Pure heuristic op photographyMood-keywords
+    // + brand-color signals. Persist met layoutStyleInferred=true zodat
+    // ensureLayoutStyle (V2-2) deze niet later overschrijft.
+    try {
+      const styleguideForInfer = await prisma.brandStyleguide.findUnique({
+        where: { id: styleguideId },
+        select: {
+          photographyStyle: true,
+          layoutStyleInferred: true,
+          colors: {
+            where: { category: 'PRIMARY' },
+            orderBy: { sortOrder: 'asc' },
+            select: { hex: true },
+            take: 1,
+          },
+        },
+      });
+      if (styleguideForInfer && !styleguideForInfer.layoutStyleInferred) {
+        const photographyMood =
+          styleguideForInfer.photographyStyle &&
+          typeof styleguideForInfer.photographyStyle === 'object' &&
+          !Array.isArray(styleguideForInfer.photographyStyle) &&
+          'mood' in styleguideForInfer.photographyStyle
+            ? String((styleguideForInfer.photographyStyle as { mood?: unknown }).mood ?? '')
+            : null;
+        const brandHex = styleguideForInfer.colors[0]?.hex ?? null;
+        const inferred = inferLayoutStyleFromSiteData({
+          photographyMood,
+          brandHex,
+        });
+        if (inferred && inferred.confidence !== 'low') {
+          await prisma.brandStyleguide.update({
+            where: { id: styleguideId },
+            data: {
+              layoutStyle: inferred.layoutStyle,
+              layoutStyleInferred: true,
+            },
+          });
+        }
+      }
+    } catch (inferErr) {
+      // Niet-blocking — layoutStyle blijft op schema-default, lazy flow
+      // pakt het later in landing-page generation.
+      console.warn(
+        `[analysis-engine] layoutStyle-inference failed (non-critical): ${inferErr instanceof Error ? inferErr.message : String(inferErr)}`,
       );
     }
 
@@ -831,6 +1056,55 @@ export async function analyzePdf(
       })
       .filter((c): c is ResolvedColor => c !== null);
     await writeResultToDb(styleguideId, result, pdfResolvedColors, [], []);
+
+    // V2-2b — infereer layoutStyle uit site-DNA signals voor de styleguide
+    // COMPLETE wordt gemarkeerd. Pure heuristic op photographyMood-keywords
+    // + brand-color signals. Persist met layoutStyleInferred=true zodat
+    // ensureLayoutStyle (V2-2) deze niet later overschrijft.
+    try {
+      const styleguideForInfer = await prisma.brandStyleguide.findUnique({
+        where: { id: styleguideId },
+        select: {
+          photographyStyle: true,
+          layoutStyleInferred: true,
+          colors: {
+            where: { category: 'PRIMARY' },
+            orderBy: { sortOrder: 'asc' },
+            select: { hex: true },
+            take: 1,
+          },
+        },
+      });
+      if (styleguideForInfer && !styleguideForInfer.layoutStyleInferred) {
+        const photographyMood =
+          styleguideForInfer.photographyStyle &&
+          typeof styleguideForInfer.photographyStyle === 'object' &&
+          !Array.isArray(styleguideForInfer.photographyStyle) &&
+          'mood' in styleguideForInfer.photographyStyle
+            ? String((styleguideForInfer.photographyStyle as { mood?: unknown }).mood ?? '')
+            : null;
+        const brandHex = styleguideForInfer.colors[0]?.hex ?? null;
+        const inferred = inferLayoutStyleFromSiteData({
+          photographyMood,
+          brandHex,
+        });
+        if (inferred && inferred.confidence !== 'low') {
+          await prisma.brandStyleguide.update({
+            where: { id: styleguideId },
+            data: {
+              layoutStyle: inferred.layoutStyle,
+              layoutStyleInferred: true,
+            },
+          });
+        }
+      }
+    } catch (inferErr) {
+      // Niet-blocking — layoutStyle blijft op schema-default, lazy flow
+      // pakt het later in landing-page generation.
+      console.warn(
+        `[analysis-engine] layoutStyle-inference failed (non-critical): ${inferErr instanceof Error ? inferErr.message : String(inferErr)}`,
+      );
+    }
 
     // Done — clear any stale errorMessage from previous failed runs
     await prisma.brandStyleguide.update({
@@ -1259,10 +1533,18 @@ function resolveColors(
     if (!hex) return;
 
     const ai = aiByHex.get(hex);
+    const baseCategory = ai ? validateCategory(ai.category) : defaultCategory(entry, index);
+    // Pastel-tint upgrade: wanneer hex een hoge-lichtheid + middelmatige-
+    // saturation tint is (klassieke success/error/warning/info pastel),
+    // upgrade NEUTRAL → SEMANTIC. Voorkomt dat soft pinks/blues/greens
+    // in de "Neutral" bucket belanden terwijl ze duidelijk status-tints
+    // zijn. PRIMARY/SECONDARY/ACCENT worden NIET aangeraakt — die zijn
+    // expliciet brand-rollen.
+    const category = upgradePastelToSemantic(baseCategory, hex);
     resolved.push({
       hex,
       name: ai?.name?.trim() || defaultColorName(entry, index),
-      category: ai ? validateCategory(ai.category) : defaultCategory(entry, index),
+      category,
       tags: ai?.tags ?? [],
       notes: ai?.notes?.trim() || defaultColorNotes(entry),
       confidence: entry.confidence,
@@ -1271,6 +1553,40 @@ function resolveColors(
   });
 
   return resolved;
+}
+
+/**
+ * Detecteert pastel-tints die qua HSL-eigenschappen status-kleuren zijn
+ * (soft error-pink, soft info-blue, soft success-green, soft warning-yellow)
+ * en geforceerd in de NEUTRAL-bucket beland zijn door zwakke heuristieken.
+ *
+ * Heuristic:
+ *   - L >= 85 (pastel-bereik, geen verzadigde brand-tint)
+ *   - S >= 20 (echt getint, geen pure grijs)
+ *   - Hue valt in één van de 4 semantic-buckets
+ *
+ * Brand-colors (PRIMARY/SECONDARY/ACCENT) worden NIET geüpgraded —
+ * sommige merken hebben legitiem een pastel-secondary (denk: LINFI's
+ * Soft Cream). Alleen wanneer iets als NEUTRAL geclaimd werd én de
+ * pastel-test slaagt, classificeren we het als SEMANTIC.
+ */
+export function upgradePastelToSemantic(
+  category: ResolvedColor['category'],
+  hex: string,
+): ResolvedColor['category'] {
+  if (category !== 'NEUTRAL') return category;
+  const hsl = hexToHsl(hex);
+  if (!hsl) return category;
+  if (hsl.l < 85) return category;
+  if (hsl.s < 20) return category;
+  // Hue moet in semantic-range zitten (red/pink, yellow/orange, green, blue/cyan)
+  const h = hsl.h;
+  const inSemanticRange =
+    h <= 30 || h >= 330 ||       // red/pink → error
+    (h >= 35 && h <= 65) ||       // yellow/orange → warning
+    (h >= 80 && h <= 160) ||      // green → success
+    (h >= 170 && h <= 260);       // blue/cyan → info
+  return inSemanticRange ? 'SEMANTIC' : category;
 }
 
 function defaultColorName(entry: AuthoritativeColor, index: number): string {
@@ -1343,6 +1659,10 @@ async function writeResultToDb(
    *  scraped kitId (if any) is stored on each new row so the UI can
    *  render a live preview using the publisher's Typekit kit. */
   adobeFonts?: { detected: boolean; kitId: string | null } | null,
+  /** Combined CSS (inlineCss + linkedCssContent) — passed door zodat we
+   *  computed-style font-role classification kunnen draaien (selector-
+   *  context wins van naam-heuristic voor custom/codename fonts). */
+  combinedCss?: string,
 ): Promise<void> {
   // Delete existing colors before creating new ones
   await prisma.styleguideColor.deleteMany({ where: { styleguideId } });
@@ -1456,11 +1776,37 @@ async function writeResultToDb(
       const headingFontLower = headingFont?.toLowerCase() ?? null;
       const bodyFontLower = bodyFont?.toLowerCase() ?? null;
       const hasSemanticSignal = !!(headingFontLower || bodyFontLower);
+
+      // Computed-style classifier — sterker signaal dan naam-heuristic.
+      // Scant ALLE CSS-rules met font-family en aggregeert hits per font
+      // op selector-context (heading vs body vs other). Werkt voor custom/
+      // codename-fonts waar naam-keyword detection faalt.
+      const { classifyFontsByCssContext } = await import('./font-role-classifier');
+      const cssContextVerdicts = combinedCss
+        ? classifyFontsByCssContext(combinedCss, fontNames)
+        : new Map<string, 'DISPLAY' | 'UI' | 'UNKNOWN'>();
+
+      // Tertiair signaal: naam-heuristic — alleen wanneer computed-style
+      // UNKNOWN teruggeeft (geen CSS context-signaal voor deze font, typisch
+      // bij @import-only Adobe Fonts waar de site geen direct h1{font-family}
+      // rule plaatst maar via een class doet die we wel zien maar niet matchen).
+      const SERIF_DISPLAY_NAME_HINT = /\bserif\b|mrs[- ]?eaves|playfair|oranienbaum|cormorant|garamond|sentinel|freight|tiempos|caslon|baskerville|bodoni|didot|minion|chronicle|recoleta|fraunces|abril|prata|crimson|merriweather|lora|dm[- ]?serif|libre[- ]?baskerville|noto[- ]?serif/i;
+
       const assignRole = (name: string, fallbackIndex: number): 'DISPLAY' | 'UI' => {
         const lower = name.toLowerCase();
+        // 1. Direct semantic CSS-var / direct selector match uit scraper
         if (headingFontLower && lower === headingFontLower) return 'DISPLAY';
         if (bodyFontLower && lower === bodyFontLower) return 'UI';
+        // 2. Computed-style aggregate verdict (sterker dan naam — werkt
+        //    voor custom/codename fonts)
+        const cssVerdict = cssContextVerdicts.get(lower);
+        if (cssVerdict === 'DISPLAY' || cssVerdict === 'UI') return cssVerdict;
+        // 3. Naam-keyword heuristic — laatste contextueel signaal
+        if (SERIF_DISPLAY_NAME_HINT.test(name)) return 'DISPLAY';
+        // 4. UI als er WEL semantic-signal was voor andere fonts (=
+        //    deze font deed niet mee aan heading/body, dus is supplementaire UI)
         if (hasSemanticSignal) return 'UI';
+        // 5. Bare fallback op detectievolgorde (eerste = display heuristic)
         return fallbackIndex === 0 ? 'DISPLAY' : 'UI';
       };
       const filteredNames = fontNames.filter((n) => !uploadedSet.has(n.toLowerCase()));
@@ -1618,6 +1964,9 @@ async function writeResultToDb(
       contentGuidelines?: string[];
       writingGuidelines?: string[];
       examplePhrases?: Prisma.InputJsonValue;
+      vocabularyDo?: string[];
+      vocabularyDont?: string[];
+      voiceSample?: string;
     } = {};
     if (result.contentGuidelines && result.contentGuidelines.length > 0) {
       tovUpdate.contentGuidelines = result.contentGuidelines;
@@ -1629,6 +1978,16 @@ async function writeResultToDb(
     // van bestaande user-curated examples wanneer analyzer leeg [] retourneert.
     if (Array.isArray(result.examplePhrases) && result.examplePhrases.length > 0) {
       tovUpdate.examplePhrases = result.examplePhrases as Prisma.InputJsonValue;
+    }
+    // DTS-plan C1+C2 — vocabulary + voice-sample
+    if (Array.isArray(result.vocabularyDo) && result.vocabularyDo.length > 0) {
+      tovUpdate.vocabularyDo = result.vocabularyDo;
+    }
+    if (Array.isArray(result.vocabularyDont) && result.vocabularyDont.length > 0) {
+      tovUpdate.vocabularyDont = result.vocabularyDont;
+    }
+    if (typeof result.voiceSample === 'string' && result.voiceSample.trim().length > 0) {
+      tovUpdate.voiceSample = result.voiceSample.trim();
     }
 
     if (Object.keys(tovUpdate).length > 0) {
@@ -1644,10 +2003,28 @@ async function writeResultToDb(
     }
   }
 
+  // Fase A — Color usage capture: scan de bron-CSS en log per hex welke
+  // contexten de site gebruikt (hero-bg / button-bg / heading-text / etc.).
+  // Tags worden mee opgeslagen op StyleguideColor.tags zodat de LP-renderer
+  // én UI ze later kunnen consumeren om brand-consistente keuzes te maken
+  // (bv. hero-bg alleen kleuren die ook op de bron als hero-bg fungeren).
+  let colorUsage: Map<string, Set<import('./color-usage-extractor').ColorUsageTag>> = new Map();
+  if (combinedCss) {
+    const { extractColorUsage } = await import('./color-usage-extractor');
+    colorUsage = extractColorUsage(combinedCss);
+  }
+
   // Create color records with computed values (RGB, HSL, CMYK, contrast)
   // Uses the RESOLVED palette — exact hexes from scraping with AI names merged in.
   for (let i = 0; i < resolvedColors.length; i++) {
     const color = resolvedColors[i];
+    // Merge AI/heuristic-tags met scraped usage-tags. Usage-tags krijgen
+    // 'usage:' prefix om collision met andere tag-conventies te vermijden
+    // en zodat consumers ze gericht kunnen filteren.
+    const hexKey = color.hex.replace(/^#/, '').toLowerCase();
+    const usageTags = Array.from(colorUsage.get(hexKey) ?? []).map((t) => `usage:${t}`);
+    const allTags = [...(color.tags ?? []), ...usageTags];
+
     await prisma.styleguideColor.create({
       data: {
         name: color.name,
@@ -1656,7 +2033,7 @@ async function writeResultToDb(
         hsl: hexToHslString(color.hex) || null,
         cmyk: hexToCmykString(color.hex) || null,
         category: color.category,
-        tags: color.tags,
+        tags: allTags,
         notes: color.notes,
         contrastWhite: contrastWithWhite(color.hex),
         contrastBlack: contrastWithBlack(color.hex),

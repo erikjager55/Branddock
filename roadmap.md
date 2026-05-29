@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Laatst bijgewerkt**: 2026-05-19 (context-picker audit Brand Assistant + Persona chat → 1 Tier-1 gap: `context-picker-strategy-observations` toegevoegd aan Track A NOW. 2026-05-18 Track B Phase A + B gemerged naar main via `a0e59a5b` — `brandclaw-data-collection` ✅, `brandclaw-tool-orchestrator` ✅, `strategy-analyst-stub` Phase A + A vervolg + B ✅; Phase C 5-7d open in `branddock-brandclaw` worktree, sequential dep op vercel-deployment).
+> **Laatst bijgewerkt**: 2026-05-29 (`web-page-builder-canvas-step-mvp` promoted post-launch → pre-launch Track A sprint #6 — 130 commits in feature-branch, 5 dagen extra scope, finalisatie + 4 squash-merges in plan `zippy-twirling-feigenbaum`. Brand-fidelity gap in Step 2 LP-deliverables toegevoegd als Track 5. `web-page-builder-v2-custom-domains` toegevoegd als post-launch follow-up. 2026-05-19 context-picker audit Brand Assistant + Persona chat → 1 Tier-1 gap: `context-picker-strategy-observations` toegevoegd aan Track A NOW. 2026-05-18 Track B Phase A + B gemerged naar main via `a0e59a5b` — `brandclaw-data-collection` ✅, `brandclaw-tool-orchestrator` ✅, `strategy-analyst-stub` Phase A + A vervolg + B ✅; Phase C 5-7d open in `branddock-brandclaw` worktree, sequential dep op vercel-deployment).
 > **Update-cadans**: Now continu (na elke afgeronde task), Next wekelijks (vrijdagretro), Later maandelijks.
 > **Bron**: gedistilleerd uit oude TODO.md, BRANDCLAW-ROADMAP.md, STRATEGISCHE-VERVOLGSTAPPEN.md (allen in `docs/archive/old-lists/`).
 
@@ -82,6 +82,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | **`video-chain-explainer-showcase`** | Multi-modal: full 5-staps chain (Plan/Script-per-scene/Storyboard/Coherence/Assembly) voor explainer-video als showcase. Lightweight chains voor video-ad + tiktok-script. Plan §3.0.5. | ~4d | #5-6 fill-in | open task-file |
 | **`image-quality-chain`** | Multi-modal: negative prompts + multi-candidate (3-4) selection UI + visual-fidelity dimension-breakdown + image-to-image refine-loop + OCR text-check + brand-color validation. Plan §3.0.5. | ~6d | #6 fill-in | open task-file |
 | [`context-picker-strategy-observations`](tasks/done/context-picker-strategy-observations.md) | Brand Assistant context-picker: `StrategyObservation` toevoegen (Tier-1 gap uit audit 2026-05-19). Hardcoded Claw-pattern, geen registry-entry. Tier-2 cleanups (Campaign → registry, Deliverable workaround) als follow-up. | ~4u | #6 fill-in | ✅ done 2026-05-19 (smoke partial — 0 observations in DB) |
+| [`web-page-builder-canvas-step-mvp`](tasks/web-page-builder-canvas-step-mvp.md) | Puck als Canvas Step 3 Medium-renderer voor 5 web-page types + brandstyle-analyzer Fase A-E + LP design batches 1-8 + F-VAL vision-judge dim 8 + DTS content-quality C1-C11 + brand-fidelity Step 2 LP. **Promoted post-launch → pre-launch 2026-05-29** (130 commits in feature-branch, 5 dagen extra scope landed). | 6-8w landed | #6 | partial — finalisatie + 4 squash-merges in plan `zippy-twirling-feigenbaum` |
 
 **Track B — Brandclaw + Competitive AI** (worktree `branddock-brandclaw`, Phase A+B gemerged 2026-05-18)
 | ID | Titel | Effort | Sprint | Status |
@@ -200,6 +201,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | `learning-loop-dashboard-usage` | Per-sourceIdentifier dashboard | post-launch | halve dag | Task-file volgt |
 | `weekly-report-email-via-resend` | Weekly report email via Emailit | post-launch | 1 dag | Task-file volgt na weekly-report generator |
 | `studio-siblings-context-variation` | Variatie-borging tussen naburige posts (lexicale diversiteit Jaccard) | post-launch | ½-1 dag | Quality-enhancement na studio-P0. Geen Brandclaw-impact. |
+| `web-page-builder-v2-custom-domains` | Vercel Domains API + CNAME provisioning + SSL monitoring + DomainMapping write-path | post-launch | 1-2w | Decision-trigger: ≥3 pilot-klanten vragen custom-domain óf `marketing-site-pricing` onder `branddock.com` gewenst. Schema staat al klaar (Phase 1 `DomainMapping` model). Idea-doc: zie ADR `2026-05-22-landing-page-builder-architectuur.md` §Notes. |
 
 ---
 

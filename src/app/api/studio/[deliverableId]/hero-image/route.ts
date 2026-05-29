@@ -21,7 +21,19 @@ const HERO_VARIANT_GROUP = 'hero-image';
 
 const setHeroImageSchema = z
   .object({
-    imageUrl: z.string().url().max(2048),
+    // Accepteer alle gangbare URL-vormen:
+    //   - https://... + http://... (extern)
+    //   - /uploads/... (lokaal AI-generated visuals)
+    //   - data:image/...;base64,... (inline-paste of canvas-export)
+    //   - blob:... (browser-temporary URL bij upload in modal)
+    imageUrl: z
+      .string()
+      .min(1)
+      .max(2_000_000)  // data:URLs kunnen lang zijn (base64-encoded image)
+      .refine(
+        (val) => /^(https?:\/\/|\/|data:|blob:)/i.test(val),
+        { message: 'imageUrl must be absolute URL, absolute path, data: URL, or blob: URL' },
+      ),
     imageSource: z
       .enum(['library', 'url-import', 'stock', 'ai-generated', 'upload'])
       .optional(),

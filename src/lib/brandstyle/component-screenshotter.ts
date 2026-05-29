@@ -81,6 +81,15 @@ const TYPE_MATCHERS: TypeMatcher[] = [
       "[class*=btn-]",
       "input[type=submit]",
       "input[type=button]",
+      // Framework-specifieke selectors
+      ".wp-block-button__link",     // WordPress core
+      ".elementor-button",          // Elementor
+      ".bricks-button",             // Bricks Builder
+      ".brxe-button",               // Bricks Builder element-class
+      "[class*=brxe-] a[class*=button]",  // Bricks Builder wrapper
+      ".et_pb_button",              // Divi
+      ".vc_btn",                    // WPBakery / Visual Composer
+      ".acss-btn",                  // Automatic CSS
       // Heuristic catch-all: pure-Tailwind / utility-styled anchors don't
       // carry any "button"/"btn" keyword in their class names (Napking's
       // "Neem contact op" is just `<a class="px-4 py-3 rounded-xl bg-primary
@@ -130,15 +139,17 @@ const TYPE_MATCHERS: TypeMatcher[] = [
   {
     type: "STATUS_CHIP",
     selectors: [
-      ".badge",
-      ".chip",
-      ".tag",
-      ".pill",
-      "[class*=status-]",
-      "[class*=badge-]",
-      "[class*=Badge]",
+      ".badge:not(figure):not(article):not(section):not(img)",
+      ".chip:not(figure):not(article):not(section):not(img)",
+      ".pill:not(figure):not(article):not(section):not(img)",
+      "[class*=status-]:not(figure):not(article):not(section):not(img)",
+      "[class*=badge-]:not(figure):not(article):not(section):not(img)",
+      "[class*=Badge]:not(figure):not(article):not(section):not(img)",
       "[data-slot=badge]",
       "[data-radix-toast]",
+      // `.tag` weggelaten — te veel false-positives (image-figures,
+      // taxonomy-links). Op sites met echte status-chips winnen .badge /
+      // .chip / .pill alsnog.
     ],
     labelFn: (_classes, text) => {
       if (text && text.length > 0 && text.length <= 25) {
@@ -155,22 +166,75 @@ const TYPE_MATCHERS: TypeMatcher[] = [
       "[class*=product-card]",
       "[class*=item-card]",
       "[data-slot=card]",
+      // Generieke BEM/utility patterns voor custom card-implementaties
+      // (LINFI's .fb-sticky-content__card, .feature-card, .card-item ...).
+      // Beperken tot block-level tags voorkomt dat span.card-icon /
+      // a.card-link als valid product-card wordt geteld.
+      "div[class*=__card]",
+      "section[class*=__card]",
+      "article[class*=__card]",
+      "div[class*=-card]:not([class*=card-link]):not([class*=card-icon])",
+      "section[class*=-card]",
+      "article[class*=-card]",
+      // Framework-specifieke card-containers
+      ".wp-block-group.has-background",
+      ".elementor-widget-wrap.elementor-element-populated",
+      ".brxe-container[class*=card]",
+      ".brxe-block[class*=card]",
+      "[class*=brxe-] article",
+      ".et_pb_blurb",
+      ".et_pb_column[class*=card]",
     ],
     labelFn: () => "Card",
   },
   {
     type: "FEATURE_ICON",
-    selectors: ["svg[class*=icon]", ".icon", "[class*=feature-icon]"],
+    selectors: [
+      "svg[class*=icon]",
+      ".icon",
+      "[class*=feature-icon]",
+      // Bricks Builder iconen
+      ".brxe-icon",
+      ".brxe-icon-box svg",
+      // Elementor
+      ".elementor-icon svg",
+      ".elementor-icon-box-icon svg",
+      // Divi
+      ".et_pb_icon",
+      // Generic SVG-icon patterns
+      "i[class*=fa-]",
+      "i[class*=icon-]",
+    ],
     labelFn: () => "Feature Icon",
   },
   {
     type: "TOP_NAVIGATION",
-    selectors: ["header nav", "nav", "[role=navigation]"],
+    selectors: [
+      "header nav",
+      "nav",
+      "[role=navigation]",
+      // Framework-specifieke nav-containers
+      ".brxe-nav-menu",
+      ".brxe-nav",
+      ".elementor-nav-menu",
+      ".et_pb_menu",
+      ".wp-block-navigation",
+    ],
     labelFn: () => "Top Navigation",
   },
   {
     type: "QUOTE_BLOCK",
-    selectors: ["blockquote", "[class*=quote]", "[class*=testimonial]"],
+    selectors: [
+      "blockquote",
+      "[class*=quote]",
+      "[class*=testimonial]",
+      // Bricks Builder
+      ".brxe-testimonial",
+      // Elementor
+      ".elementor-widget-testimonial",
+      // Divi
+      ".et_pb_testimonial",
+    ],
     labelFn: () => "Quote Block",
   },
 ];
@@ -384,7 +448,12 @@ export async function extractComponentsFromPages(
 
           // Score each candidate on how likely it is to be a real branded
           // component (not a utility toggle or hidden element).
-          function scoreCandidate(r: Raw, type: string): number {
+          //
+          // Arrow-function i.p.v. `function` declaration omdat esbuild
+          // anders `__name(scoreCandidate, "scoreCandidate")` injecteert
+          // wat in Playwright page.evaluate browser-context faalt met
+          // "__name is not defined" (fix 2026-05-27).
+          const scoreCandidate = (r: Raw, type: string): number => {
             let s = 0;
             const w = r.rect.width;
             const h = r.rect.height;
@@ -418,7 +487,7 @@ export async function extractComponentsFromPages(
               if (hasPadding) s += 1;
               // Classes that strongly suggest CTA — Elementor, shadcn, etc.
               const cls = r.classes.join(" ").toLowerCase();
-              if (/\bcta\b|\bprimary\b|\belementor-button\b|\bwp-block-button\b/.test(cls)) s += 2;
+              if (/\bcta\b|\bprimary\b|\belementor-button\b|\bwp-block-button\b|\bbricks-button\b|\bbrxe-button\b|\bet_pb_button\b|\bacss-btn\b|\bvc_btn\b/.test(cls)) s += 2;
               // Penalty: excessively wide elements (full-width nav/hero wrap)
               if (w > 600) s -= 1;
             } else if (type === "STATUS_CHIP") {

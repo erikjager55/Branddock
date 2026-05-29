@@ -5,6 +5,7 @@ import { Card } from "@/components/shared";
 import type { BrandStyleguide, ComponentTypeKey, StyleguideComponentData } from "../types/brandstyle.types";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
 import { ComponentCard } from "./components-section/ComponentCard";
+import { ScrapedButtonProfilePreview } from "./components-section/ScrapedButtonProfilePreview";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { parseSemanticTokens } from "../utils/semantic-tokens";
 
@@ -117,10 +118,26 @@ export function ComponentsSection({ styleguide, canEdit }: ComponentsSectionProp
           </nav>
         </div>
 
+        {/* Voor BUTTON-tab: v4 scraped buttonProfile-preview boven de
+            per-StyleguideComponent variant-groups. Toont wat de LP-renderer
+            consumeert (pill-shape / radius / hover-state). */}
+        {activeType === 'BUTTON' ? (
+          <ScrapedButtonProfilePreview
+            buttonProfile={(styleguide as unknown as { buttonProfile?: unknown }).buttonProfile}
+          />
+        ) : null}
+
         {visible.length === 0 ? (
-          <div className="py-8 text-center text-sm text-gray-400">
-            No {currentTab.label.toLowerCase()} detected yet. Run a fresh analysis on a
-            website that uses this component type to populate.
+          <div className="py-8 text-center text-sm text-gray-400 space-y-1">
+            <div className="font-medium text-gray-500">
+              No {currentTab.label.toLowerCase()} detected on the analyzed pages.
+            </div>
+            <div className="text-xs">
+              The scanner checks ~5 pages including subpages. If your site has
+              these elements on other pages (e.g. /testimonials, /products), add
+              that URL and re-run the analysis. Otherwise the brand simply
+              doesn&apos;t use this component type — that&apos;s a valid result.
+            </div>
           </div>
         ) : buttonGroups ? (
           <div className="space-y-8">

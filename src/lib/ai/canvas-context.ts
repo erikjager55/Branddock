@@ -16,6 +16,10 @@ import { getBrandContext } from './brand-context';
 import type { BrandContextBlock } from './prompt-templates';
 import { detectJourneyPhase, type JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
 import { serializePersona } from './context/persona-serializer';
+import {
+  extractBrandTokensFromStyleguide,
+  type BrandTokens,
+} from '@/lib/landing-pages/brand-tokens';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -43,6 +47,9 @@ export interface PersonaContext {
   id: string;
   name: string;
   serialized: string;
+  /** Avatar URL voor visual use (TestimonialBlock). Null wanneer geen avatar
+   *  geüpload (renderer toont initial-fallback). */
+  avatarUrl: string | null;
 }
 
 export interface BriefContext {
@@ -173,6 +180,32 @@ export interface CanvasContextStack {
   contentTypeInputs?: Record<string, string | string[] | number | boolean>;
   /** Strategic visual direction for this content item — see VisualBrief. */
   visualBrief?: VisualBrief | null;
+  /**
+   * Puck data-tree for web-page content-types (landing-page / product-page /
+   * faq-page / comparison-page / microsite). Stored on `deliverable.settings.puckData`
+   * and hydrated into the Canvas store via `setContextStack`. Null when the
+   * deliverable hasn't been edited in the Puck builder yet — caller seeds
+   * from variantToPuckData() at that point.
+   */
+  puckData?: unknown;
+  /**
+   * Structurally-extracted brand tokens (primary/secondary/accent/neutral
+   * hex + heading/body font-family). Loaded server-side from BrandStyleguide
+   * + StyleguideFont per ADR 2026-05-22-landing-page-builder-architectuur.
+   * Always present (uses Branddock defaults when no styleguide exists), so
+   * downstream consumers never branch on null.
+   */
+  brandTokens: BrandTokens;
+  /**
+   * Brand-meta voor V2 lazy-inference gates (geen render-impact). Bevat
+   * flags die onderscheid maken tussen schema-default sentinels en
+   * expliciet inferred / user-set waardes.
+   */
+  brandStyleguideMeta?: {
+    /** True wanneer layoutStyle is geïnferred of door user overruled.
+     *  False = nog schema-default → ensureLayoutStyle mag draaien. */
+    layoutStyleInferred: boolean;
+  };
 }
 
 // ─── Content Type → Platform/Format Mapping ──────────────────
@@ -397,6 +430,7 @@ export async function assembleCanvasContext(
         id: p.id,
         name: p.name,
         serialized: serializePersona(record),
+        avatarUrl: p.avatarUrl ?? null,
       });
     }
   }
@@ -459,10 +493,55 @@ export async function assembleCanvasContext(
   // don't lose their visual hint after the schema migration.
   const visualBrief = parseVisualBrief(settings.visualBrief, contentTypeInputs);
 
+  // Puck data-tree for web-page builder (per ADR 2026-05-22-landing-page-builder-architectuur).
+  // Null when never edited — Canvas store seeds via variantToPuckData() on first mount.
+  const puckData = settings.puckData ?? null;
+
+  // Structural brand-tokens for the Puck builder — read once, pure-function.
+  // BrandStyleguide is workspace-unique (@@unique([workspaceId])); we eagerly
+  // load colors + fonts so extractBrandTokensFromStyleguide can pick the right
+  // record per category/role without N+1 fetches.
+  const styleguide = await prisma.brandStyleguide.findUnique({
+    where: { workspaceId },
+    select: {
+      primaryFontName: true,
+      layoutStyle: true,
+      layoutStyleInferred: true,
+      archetype: true,
+      // Verbeterplan Fase B — rendering-profiles (Json velden voor v4 tokens)
+      buttonProfile: true,
+      typographyProfile: true,
+      spacingProfile: true,
+      spacingScale: true,
+      elevationProfile: true,
+      radiusProfile: true,
+      motionProfile: true,
+      photographyStyle: true,
+      visualLanguage: true,
+      colors: { select: {
+        hex: true, category: true, sortOrder: true,
+        tags: true, contrastWhite: true, contrastBlack: true, confidence: true,
+      } },
+      fonts: { select: { name: true, role: true, fontFamily: true, sortOrder: true } },
+      components: {
+        select: {
+          type: true, label: true, extractedStyles: true, confidence: true,
+        },
+        // Deterministische volgorde voor mapStyleguideComponents highest-conf
+        // pick: confidence DESC, dan sortOrder ASC als tiebreaker.
+        orderBy: [{ confidence: 'desc' }, { sortOrder: 'asc' }],
+      },
+    },
+  });
+  const brandTokens = extractBrandTokensFromStyleguide(styleguide);
+
   return {
     brand, concept, journeyPhase, medium,
     deliverableTypeId: deliverable.contentType ?? null,
-    personas, brief, products, contentTypeInputs, visualBrief,
+    personas, brief, products, contentTypeInputs, visualBrief, puckData, brandTokens,
+    brandStyleguideMeta: {
+      layoutStyleInferred: styleguide?.layoutStyleInferred ?? false,
+    },
   };
 }
 

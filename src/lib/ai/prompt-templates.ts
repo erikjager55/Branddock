@@ -36,6 +36,11 @@ export interface BrandContextBlock {
    * legacy free-form-list format) until consumers migrate.
    */
   voiceBaseline1Pager?: string;
+  /** DTS-plan C1 — vocabulary do/dont uit BrandVoiceguide. */
+  vocabularyDo?: string[];
+  vocabularyDont?: string[];
+  /** DTS-plan C2 — voice few-shot sample uit BrandVoiceguide.voiceSample. */
+  voiceSample?: string;
   brandStory?: string;
   brandValues?: string[];
   transformativeGoals?: string;

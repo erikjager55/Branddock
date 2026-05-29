@@ -116,6 +116,21 @@ const CONTENT_TYPE_PREVIEW_MAP: Record<string, PreviewRegistryEntry> = {
   'brand-video-script': { component: VideoPreview, label: 'Brand Video' },
 };
 
+// Web-page builder MVP (per ADR 2026-05-22-landing-page-builder-architectuur).
+//
+// Phase 6.4 (2026-05-24): Step 2 ContentVariants behoudt de legacy
+// LandingPagePreview (plain-text + image-suggestion) voor de 5 web-page
+// types — user-feedback wees uit dat die opzet beter werkt voor variant-
+// compare dan een mini Puck thumbnail. De LandingPageVariantPreview mini-
+// thumbnail bestaat nog in src/.../previews/ maar wordt niet meer
+// gedispatcht; bewaard voor toekomstig hergebruik in een Step 3-tab of
+// publisher-flow.
+//
+// PuckPageBuilder zelf (Step 3, preview-first met fullscreen layout-editor
+// modal) routet via `GenericConfigPanel` → `PuckLayoutWrapper`, niet via
+// deze map.
+const CONTENT_TYPE_PREVIEW_OVERRIDE: Record<string, PreviewRegistryEntry> = {};
+
 /** Resolve the preview component for a platform + format pair, with
  *  contentType-based fallback when platform/format aren't seeded. */
 export function resolvePreviewComponent(
@@ -123,6 +138,9 @@ export function resolvePreviewComponent(
   format: string | null,
   contentType?: string | null,
 ): PreviewRegistryEntry {
+  if (contentType && CONTENT_TYPE_PREVIEW_OVERRIDE[contentType]) {
+    return CONTENT_TYPE_PREVIEW_OVERRIDE[contentType];
+  }
   if (platform && format) {
     const match = PLATFORM_PREVIEW_MAP[platform]?.[format];
     if (match) return match;

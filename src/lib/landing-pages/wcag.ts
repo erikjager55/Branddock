@@ -1,0 +1,207 @@
+/**
+ * WCAG 2.1 contrast helper utility (Sprint 2 van
+ * docs/specs/brand-styling-consistency-plan.md §3b).
+ *
+ * Pure functies, geen externe deps (eigen 2KB-implementatie ipv Color.js).
+ * Gebruikt door:
+ *   - brand-tokens.ts: pre-render validation in extractor
+ *   - landing-page-quality.ts: F-VAL dimensie 7 (WCAG-compliance)
+ *   - puck-config.tsx: runtime safety-net bij dynamic colors
+ *
+ * WCAG 2.1 thresholds:
+ *   - AA normal text (< 18px regular OR < 14px bold): 4.5:1
+ *   - AA large text  (≥ 18px regular OR ≥ 14px bold): 3:1
+ *   - AAA normal text: 7:1
+ *   - AAA large text:  4.5:1
+ *   - Non-text contrast (UI components, borders, focus): 3:1
+ */
+
+import { relativeLuminance } from './brand-tokens';
+
+// ─── Public types ─────────────────────────────────────────
+
+export type WCAGLevel = 'AA' | 'AAA';
+export type TextSize = 'normal' | 'large' | 'non-text';
+
+export interface WCAGCheck {
+  /** Foreground color hex */
+  fg: string;
+  /** Background color hex */
+  bg: string;
+  /** Berekende contrast-ratio (1:1 tot 21:1) */
+  ratio: number;
+  /** Minimum vereiste ratio voor opgegeven level + size */
+  minRatio: number;
+  /** Voldoet aan WCAG-criterium */
+  passes: boolean;
+  /** Welk level + size getest is */
+  level: WCAGLevel;
+  size: TextSize;
+}
+
+export interface WCAGValidationResult {
+  /** Alle individuele checks die uitgevoerd zijn */
+  checks: WCAGCheck[];
+  /** Aantal failed checks */
+  failureCount: number;
+  /** Hoogste level dat alle checks haalt — null als zelfs AA niet gehaald */
+  achievedLevel: WCAGLevel | null;
+}
+
+// ─── Constants ────────────────────────────────────────────
+
+const MIN_RATIOS: Record<WCAGLevel, Record<TextSize, number>> = {
+  AA: {
+    normal: 4.5,
+    large: 3,
+    'non-text': 3,
+  },
+  AAA: {
+    normal: 7,
+    large: 4.5,
+    'non-text': 3, // AAA heeft geen apart non-text-niveau; behoudt 3:1
+  },
+};
+
+// ─── Core utilities ───────────────────────────────────────
+
+/**
+ * Bereken contrast-ratio tussen twee kleuren volgens WCAG 2.1 formule:
+ *   (L1 + 0.05) / (L2 + 0.05)
+ * waarbij L1 = lichtste en L2 = donkerste relative luminance.
+ *
+ * Returns 1.0 (no contrast) tot 21.0 (zwart op wit). Hogere is beter.
+ */
+export function contrastRatio(fg: string, bg: string): number {
+  const lFg = relativeLuminance(fg);
+  const lBg = relativeLuminance(bg);
+  const lighter = Math.max(lFg, lBg);
+  const darker = Math.min(lFg, lBg);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+/**
+ * Get minimum required ratio voor een level + size combinatie.
+ */
+export function getMinRatio(level: WCAGLevel, size: TextSize): number {
+  return MIN_RATIOS[level][size];
+}
+
+/**
+ * Test of een fg/bg pair WCAG-criteria haalt.
+ */
+export function meetsWCAG(
+  fg: string,
+  bg: string,
+  opts: { level: WCAGLevel; size: TextSize },
+): boolean {
+  const ratio = contrastRatio(fg, bg);
+  const minRatio = getMinRatio(opts.level, opts.size);
+  return ratio >= minRatio;
+}
+
+/**
+ * Volledige check met details (ratio + verdict).
+ */
+export function checkContrast(
+  fg: string,
+  bg: string,
+  opts: { level: WCAGLevel; size: TextSize },
+): WCAGCheck {
+  const ratio = contrastRatio(fg, bg);
+  const minRatio = getMinRatio(opts.level, opts.size);
+  return {
+    fg,
+    bg,
+    ratio,
+    minRatio,
+    passes: ratio >= minRatio,
+    level: opts.level,
+    size: opts.size,
+  };
+}
+
+// ─── Token-pair validation ────────────────────────────────
+
+export interface TokenPairValidationInput {
+  /** Body-text op surface (≥ AA normal = 4.5:1). */
+  onSurface?: { fg: string; bg: string };
+  /** Sub-text op surface (≥ AA normal = 4.5:1, of large = 3:1 voor labels). */
+  surfaceMuted?: { fg: string; bg: string };
+  /** Text op brand-fill (≥ AA normal = 4.5:1). */
+  onBrand?: { fg: string; bg: string };
+  /** Text op action-fill (≥ AA normal = 4.5:1). */
+  onAction?: { fg: string; bg: string };
+  /** Border/divider (≥ 3:1 non-text). */
+  surfaceBorder?: { fg: string; bg: string };
+  /** Focus-ring (≥ 3:1 non-text). */
+  accentFocusRing?: { fg: string; bg: string };
+}
+
+/**
+ * Valideer alle relevante token-pairs voor een landing-page tegen WCAG AA.
+ * Returns details over welke pairs falen + welk niveau bereikt is.
+ */
+export function validateTokenPairs(
+  input: TokenPairValidationInput,
+): WCAGValidationResult {
+  const checks: WCAGCheck[] = [];
+
+  if (input.onSurface) {
+    checks.push(checkContrast(input.onSurface.fg, input.onSurface.bg, { level: 'AA', size: 'normal' }));
+  }
+  if (input.surfaceMuted) {
+    // surfaceMuted wordt vaak voor labels/meta gebruikt — minder strict (large)
+    checks.push(checkContrast(input.surfaceMuted.fg, input.surfaceMuted.bg, { level: 'AA', size: 'normal' }));
+  }
+  if (input.onBrand) {
+    checks.push(checkContrast(input.onBrand.fg, input.onBrand.bg, { level: 'AA', size: 'normal' }));
+  }
+  if (input.onAction) {
+    checks.push(checkContrast(input.onAction.fg, input.onAction.bg, { level: 'AA', size: 'normal' }));
+  }
+  if (input.surfaceBorder) {
+    checks.push(checkContrast(input.surfaceBorder.fg, input.surfaceBorder.bg, { level: 'AA', size: 'non-text' }));
+  }
+  if (input.accentFocusRing) {
+    checks.push(checkContrast(input.accentFocusRing.fg, input.accentFocusRing.bg, { level: 'AA', size: 'non-text' }));
+  }
+
+  const failureCount = checks.filter((c) => !c.passes).length;
+  let achievedLevel: WCAGLevel | null = null;
+  if (failureCount === 0) {
+    // Check of ook AAA gehaald wordt (re-run met AAA-thresholds)
+    const aaaChecks = checks.map((c) =>
+      checkContrast(c.fg, c.bg, { level: 'AAA', size: c.size }),
+    );
+    achievedLevel = aaaChecks.every((c) => c.passes) ? 'AAA' : 'AA';
+  }
+
+  return { checks, failureCount, achievedLevel };
+}
+
+// ─── Color picking helpers ────────────────────────────────
+
+/**
+ * Kies de safer optie tussen 2 candidates (hoogste contrast op bg).
+ * Gebruikt door extractor als fallback wanneer primaire keuze faalt.
+ */
+export function pickHigherContrast(
+  candidate1: string,
+  candidate2: string,
+  bg: string,
+): string {
+  return contrastRatio(candidate1, bg) >= contrastRatio(candidate2, bg)
+    ? candidate1
+    : candidate2;
+}
+
+/**
+ * Force black-or-white als safe text-color op een gegeven bg.
+ * Returns #000000 of #FFFFFF — welke de hoogste contrast geeft.
+ */
+export function blackOrWhiteFor(bg: string): '#000000' | '#FFFFFF' {
+  return contrastRatio('#000000', bg) >= contrastRatio('#FFFFFF', bg)
+    ? '#000000'
+    : '#FFFFFF';
+}

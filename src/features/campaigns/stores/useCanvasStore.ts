@@ -82,6 +82,23 @@ interface CanvasStoreState {
   campaignId: string | null;
   contentType: string | null;
 
+  /**
+   * Structured landing-page variant — gekozen door user uit
+   * structuredVariantOptions. Bron-van-waarheid voor PUCK_WEBPAGE_TYPES
+   * Step 3 rendering (via puckData mapping). Gehydrateerd uit
+   * deliverable.settings.structuredVariant.
+   */
+  structuredVariant: unknown | null;
+
+  /**
+   * 2 generated variant-opties voor user-keuze (web-page-builder spec §4b).
+   * Server-side gegenereerd via /api/landing-pages/[id]/generate-structured-variant
+   * en gehydrateerd uit deliverable.settings.structuredVariantOptions.
+   * Na user-keuze wordt 1 entry gepromoot naar structuredVariant + puckData
+   * via PATCH /api/studio/[id]. Behouden zodat user later kan switchen.
+   */
+  structuredVariantOptions: unknown[] | null;
+
   // ─── Variants — Map<group, VariantData[]> ─────────────────
   variantGroups: Map<string, CanvasVariant[]>;
 
@@ -365,6 +382,8 @@ interface CanvasStoreState {
 
   // ─── Actions ──────────────────────────────────────────────
   setContextStack: (stack: CanvasContextStack) => void;
+  setStructuredVariant: (variant: unknown | null) => void;
+  setStructuredVariantOptions: (options: unknown[] | null) => void;
   setDeliverable: (id: string, type: string, campaignId?: string) => void;
   addVariantGroup: (group: string, variants: CanvasVariant[]) => void;
   setSelection: (group: string, index: number) => void;
@@ -581,6 +600,8 @@ const INITIAL_STATE = {
   deliverableId: null,
   campaignId: null,
   contentType: null,
+  structuredVariant: null,
+  structuredVariantOptions: null,
   variantGroups: new Map<string, CanvasVariant[]>(),
   selections: new Map<string, number>(),
   generationStatus: new Map<string, GenerationStatus>(),
@@ -714,6 +735,8 @@ const INITIAL_STATE = {
 export const useCanvasStore = create<CanvasStoreState>((set) => ({
   ...INITIAL_STATE,
 
+  setStructuredVariant: (variant) => set({ structuredVariant: variant }),
+  setStructuredVariantOptions: (options) => set({ structuredVariantOptions: options }),
   setContextStack: (stack) =>
     set((state) => {
       // Hydrate contentTypeInputs from the context stack on first load.

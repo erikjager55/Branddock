@@ -6,7 +6,9 @@ import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
 import { useUpdateSection } from "../hooks/useBrandstyleHooks";
+import { useCustomFonts } from "../hooks/useCustomFonts";
 import { parseSemanticTokens, buildTypeRoleMap } from "../utils/semantic-tokens";
+import { FontsGrid } from "./brand-assets/FontsGrid";
 import type { BrandStyleguide, TypeScaleLevel } from "../types/brandstyle.types";
 
 const LEVEL_PRESETS = ["H1", "H2", "H3", "H4", "H5", "H6", "Body", "Small", "Caption", "Overline"];
@@ -556,6 +558,13 @@ function buildGoogleFontsUrls(fonts: string[]): string[] {
 export function TypographySection({ styleguide, canEdit }: TypographySectionProps) {
   const typeScale = (styleguide.typeScale ?? []) as TypeScaleLevel[];
   const updateTypography = useUpdateSection("typography");
+  const reviews = styleguide.reviews ?? [];
+
+  // @font-face injectie voor uploaded fonts. Verhuisd uit BrandAssetsSection
+  // omdat alle font-UI (FontsGrid + Brand Fonts cards + Type Scale + In
+  // Context preview) hier woont — previews moeten in de echte brand-type
+  // renderen, dus de font-face moet beschikbaar zijn waar de previews staan.
+  useCustomFonts(styleguide.fonts);
 
   // DESIGN.md role-mapping uit semanticTokens (of deterministische fallback)
   const typeRoleMap = useMemo(
@@ -756,6 +765,25 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
         )}
       </Card>
 
+      {/* Font library — verhuisd uit Brand Assets tab. Bevat file-management
+          (upload-flow, missing-file warning, Adobe Fonts kit banner) +
+          per-rol groepering (DISPLAY / UI / EYEBROW_META / BODY). Vervangt
+          de oude TypographyRolesPanel die dezelfde rol-buckets dupliceerde
+          met andere preview-cards. */}
+      <FontsGrid
+        fonts={styleguide.fonts ?? []}
+        canEdit={canEdit}
+        workspaceKitId={styleguide.workspaceAdobeFontsKitId ?? null}
+        reviewSlot={
+          <ReviewDraftPanel
+            section="brand-assets-fonts"
+            reviews={reviews}
+            canEdit={canEdit}
+            label="Review fonts"
+          />
+        }
+      />
+
       {/* Type Scale */}
       <Card>
         <div className="flex items-center justify-between gap-3 mb-5">
@@ -932,88 +960,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
         </Card>
       )}
 
-      <TypographyRolesPanel styleguide={styleguide} canEdit={canEdit} />
-
       <AiContentBanner section="typography" savedForAi={styleguide.typographySavedForAi} />
-    </div>
-  );
-}
-
-// ── Typography roles (Display / UI / Eyebrow & meta) — Fase 3 ──
-function TypographyRolesPanel({
-  styleguide,
-  canEdit,
-}: {
-  styleguide: BrandStyleguide;
-  canEdit: boolean;
-}) {
-  const reviews = styleguide.reviews ?? [];
-  const fonts = styleguide.fonts ?? [];
-  const display = fonts.filter((f) => f.role === "DISPLAY");
-  const ui = fonts.filter((f) => f.role === "UI" || f.role === "BODY");
-  const eyebrow = fonts.filter((f) => f.role === "EYEBROW_META");
-
-  const renderRole = (
-    label: string,
-    roleFonts: typeof fonts,
-    section: "typography-display" | "typography-ui" | "typography-eyebrow",
-    previewSize: string,
-  ) => {
-    // Hide the card entirely when no font is assigned to this role —
-    // asking the user to review an empty slot is pure noise. The
-    // getApplicableReviewSections filter below keeps the progress bar
-    // and "Continue review" button in sync.
-    if (roleFonts.length === 0) return null;
-    return (
-    <Card>
-      <div className="mb-4">
-        <h3 className="text-sm font-semibold text-gray-900">{label}</h3>
-        <p className="text-xs text-gray-500 mt-1">
-          {roleFonts.map((f) => f.name).join(", ")}
-        </p>
-      </div>
-
-      {roleFonts.length > 0 && (
-        <div className="space-y-3">
-          {roleFonts.map((font) => {
-            const family = font.fontFamily ?? font.name;
-            const isUsable = font.source === "UPLOADED" && !!font.fileUrl;
-            return (
-              <div
-                key={font.id}
-                className="border border-gray-100 rounded-md p-4 bg-gray-50"
-              >
-                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">
-                  {font.name}
-                  {!isUsable && " — substitute font (upload to use real type)"}
-                </p>
-                <p
-                  className={previewSize + " text-gray-900"}
-                  style={isUsable ? { fontFamily: `"${family}", system-ui, sans-serif` } : undefined}
-                >
-                  The quick brown fox jumps over the lazy dog
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <ReviewDraftPanel
-        section={section}
-        reviews={reviews}
-        canEdit={canEdit}
-        label={`Review ${label.toLowerCase()}`}
-      />
-    </Card>
-    );
-  };
-
-  return (
-    <div className="space-y-6">
-      {renderRole("Display type", display, "typography-display", "text-3xl")}
-      {renderRole("UI type", ui, "typography-ui", "text-base")}
-      {renderRole("Eyebrow & meta", eyebrow, "typography-eyebrow", "text-xs uppercase tracking-widest")}
     </div>
   );
 }

@@ -23,6 +23,13 @@ export type ReviewSectionKey =
   | "colors-brand"
   | "colors-neutrals"
   | "colors-semantic"
+  // typography-display/-ui/-eyebrow zijn deprecated (2026-05-27):
+  // TypographyRolesPanel verwijderd na consolidatie van font-UI in
+  // Typography-tab. Per-rol review is vervangen door één overall
+  // 'brand-assets-fonts' review-key die nu in TypographySection rendert.
+  // Keys blijven in de union zodat oude DB-review-records valide blijven
+  // type-checken; ze staan NIET in ACTIVE_REVIEW_SECTIONS dus tellen niet
+  // meer mee voor de publish-gate.
   | "typography-display"
   | "typography-ui"
   | "typography-eyebrow"
@@ -52,9 +59,9 @@ export const ACTIVE_REVIEW_SECTIONS: readonly ReviewSectionKey[] = [
   "colors-brand",
   "colors-neutrals",
   "colors-semantic",
-  "typography-display",
-  "typography-ui",
-  "typography-eyebrow",
+  // typography-display/-ui/-eyebrow weg per 2026-05-27 (zie type-union
+  // comment hierboven) — TypographyRolesPanel verwijderd, één
+  // 'brand-assets-fonts' review dekt nu alle fonts.
   "spacing-scale",
   "spacing-radii",
   "spacing-shadow",
@@ -70,7 +77,10 @@ export const ACTIVE_REVIEW_SECTIONS: readonly ReviewSectionKey[] = [
 
 export const REVIEW_SECTION_LABELS: Record<ReviewSectionKey, string> = {
   "brand-assets-logos": "Logos",
-  "brand-assets-fonts": "Fonts",
+  // brand-assets-fonts key blijft voor backward-compat van bestaande
+  // review-records; label is geüpdatet sinds het panel onder Typography
+  // valt i.p.v. Brand Assets (consolidatie 2026-05-27).
+  "brand-assets-fonts": "Typography → Fonts",
   colors: "Colors",
   typography: "Typography",
   // "tone-of-voice" verwijderd — verhuisd naar BrandVoiceguide (ADR 2026-05-15)
@@ -154,13 +164,6 @@ export function getApplicableReviewSections(
     return legacy;
   })();
 
-  // Typography roles: skip review sections for roles with zero fonts
-  // assigned. An empty "Review display type" card is noise.
-  const fonts = styleguide.fonts ?? [];
-  const hasDisplayFont = fonts.some((f) => f.role === "DISPLAY");
-  const hasUiFont = fonts.some((f) => f.role === "UI" || f.role === "BODY");
-  const hasEyebrowFont = fonts.some((f) => f.role === "EYEBROW_META");
-
   // Component types: skip review sections for types with zero samples.
   const components = styleguide.components ?? [];
   const hasComponentOfType = (t: string) => components.some((c) => c.type === t);
@@ -177,9 +180,6 @@ export function getApplicableReviewSections(
 
   return ACTIVE_REVIEW_SECTIONS.filter((s) => {
     if (s === "colors-semantic" && !hasSemanticData) return false;
-    if (s === "typography-display" && !hasDisplayFont) return false;
-    if (s === "typography-ui" && !hasUiFont) return false;
-    if (s === "typography-eyebrow" && !hasEyebrowFont) return false;
     if (s === "components-buttons" && !hasComponentOfType("BUTTON")) return false;
     if (s === "components-form-inputs" && !hasComponentOfType("FORM_INPUT")) return false;
     if (s === "components-status-chips" && !hasComponentOfType("STATUS_CHIP")) return false;

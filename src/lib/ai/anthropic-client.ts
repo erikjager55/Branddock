@@ -94,7 +94,13 @@ export const anthropicClient = {
   ): Promise<AnthropicCompletionResult> {
     const useCase = options?.useCase ?? 'CHAT';
     const model = options?.model ?? 'claude-sonnet-4-5-20250929';
-    const temperature = options?.temperature ?? aiConfig.temperature(useCase);
+    // 2026-05-24: Opus 4.7+ + Sonnet 4.6+ hebben `temperature` deprecated
+    // (Anthropic 400 `temperature is deprecated for this model`). Skip de
+    // param voor die models; oudere models behouden temperature-control.
+    const isTempDeprecated = /opus-4-[789]|opus-5|sonnet-4-[6789]|sonnet-5/.test(model);
+    const temperature = isTempDeprecated
+      ? undefined
+      : (options?.temperature ?? aiConfig.temperature(useCase));
     const max_tokens = options?.maxTokens ?? aiConfig.maxTokens(useCase);
 
     const { system, messages: anthropicMessages } = splitSystemFromMessages(messages);
@@ -108,7 +114,7 @@ export const anthropicClient = {
         {
           model,
           max_tokens,
-          temperature,
+          ...(temperature !== undefined ? { temperature } : {}),
           system: system || undefined,
           messages: anthropicMessages,
         },

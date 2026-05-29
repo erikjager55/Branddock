@@ -252,6 +252,10 @@ model Workspace {
   // Emailit campaign sends (4.2 step 4)
   campaignSends CampaignSend[]
 
+  // Web-page builder MVP (per ADR 2026-05-22-landing-page-builder-architectuur)
+  landingPages   LandingPage[]
+  domainMappings DomainMapping[]
+
   // Agent memory (4.3 — pgvector)
   agentMemories AgentMemory[]
 
@@ -1110,6 +1114,11 @@ model Deliverable {
   // Fase B — Ad Publishing (per spec ad-publishing.md)
   adCampaigns AdCampaign[]
 
+  // Web-page builder MVP (per ADR 2026-05-22-landing-page-builder-architectuur)
+  // Een deliverable van een web-page contentType krijgt 0..n LandingPage snapshots
+  // (één per publish — immutable per slug-versie).
+  landingPages LandingPage[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1664,6 +1673,61 @@ model BrandStyleguide {
   // and confidence in the extracted brand tokens.
   detectedFrameworks String[]         @default([])
 
+  // Layout-style (Sprint 3 brand-styling-consistency-plan §3c) — bepaalt
+  // visuele dichtheid / witruimte / component-variant in PUCK-render.
+  // Auto-detected door brandstyle-scraper, user kan overriden in onboarding.
+  layoutStyle        LayoutStyle      @default(COMMERCIAL)
+
+  // V2-2 lazy-inference gate: false betekent dat de waarde nog de schema-
+  // default is en herinferreerd mag worden door ensureLayoutStyle. True =
+  // expliciet inferred-en-gepersist of door user gezet → niet overschrijven.
+  // Zonder deze flag kan ensure niet onderscheiden tussen "user heeft
+  // COMMERCIAL gekozen" en "schema-default COMMERCIAL nooit veranderd".
+  layoutStyleInferred Boolean         @default(false)
+
+  // Verbeterplan Fase B — rendering-profiles uit scraper (alle Json?,
+  // nullable additive). Renderer leest deze velden voor brand-specifieke
+  // button/spacing/elevation/motion-styling i.p.v. archetype-defaults.
+  /** ScrapedButtonStyle[] — primary/secondary/ghost button-samples. */
+  buttonProfile       Json?
+  /** SpacingProfile — section/card/button/input padding-samples + typical. */
+  spacingProfile      Json?
+  /** ElevationProfile — box-shadow categorisatie + dominant. */
+  elevationProfile    Json?
+  /** RadiusProfile — border-radius typical per context. */
+  radiusProfile       Json?
+  /** MotionProfile — transition+animation duration + dominant easing. */
+  motionProfile       Json?
+  /** ScrapedTypographyByRole — display/heading/body/label/button styles. */
+  typographyProfile   Json?
+
+  // Verbeterplan #5 — per-veld override-flags. False = scraper mag
+  // overschrijven bij re-scrape; True = user-set OR expliciet
+  // re-scrape-protected. Voor toekomstige brand-onboarding UI.
+  buttonProfileOverride       Boolean @default(false)
+  spacingProfileOverride      Boolean @default(false)
+  elevationProfileOverride    Boolean @default(false)
+  radiusProfileOverride       Boolean @default(false)
+  motionProfileOverride       Boolean @default(false)
+  typographyProfileOverride   Boolean @default(false)
+  /** Eén-zin design-philosophy uit AI-analyse (Fase E3 verbeterplan).
+   *  "Beschrijf wat dit merk visueel anders maakt — wat MOET behouden bij
+   *  rendering". Wordt als brand-context aan content-generation gegeven. */
+  designPhilosophy    String? @db.Text
+
+  /** DTS-plan C7 — fixture-samples per content-type (real headlines / CTAs
+   *  uit gescrapede bodyText). Puck defaultProps gebruikt deze voor Step 2
+   *  preview i.p.v. lorem-ipsum. Shape: { headlines?: string[],
+   *  ctaLabels?: string[], featureTitles?: string[], testimonialQuotes?: string[] } */
+  fixtureSamples      Json?
+
+  // Pad C Sub-Sprint B — Jung's brand-archetype. AI-classified uit
+  // BrandAssetVersion content. Null = nog niet geclassificeerd; renderer
+  // valt terug op layoutStyle-only beslissingen.
+  archetype           BrandArchetype?
+  archetypeConfidence String?  // "high" | "medium" | "low"
+  archetypeReasoning  String?  @db.Text  // 1-2 zinnen waarom de classifier dit koos
+
   // Logo (logoVariations JSON vervangen door StyleguideLogo relatie — Fase 0)
   logos          StyleguideLogo[]
   logoGuidelines String[]
@@ -2006,6 +2070,37 @@ enum StyleguideStatus {
   // R0.1: nieuwe waarden uit extension
   NOT_STARTED
   PARTIAL
+}
+
+// Pad C Sub-Sprint A — Brand design-system layout-archetype.
+// Maps naar concrete design-system primitives (spacing/typography/radius/
+// imageStrategy/sectionAlternation) in src/lib/landing-pages/design-system.ts.
+enum LayoutStyle {
+  MINIMAL       // Stripe, Linear, Dinesen, LINFI, Zwarthout — sparse, premium, serif-display
+  EDITORIAL     // Apple product, Tesla — magazine-style, sophisticated, mixed-media
+  COMMERCIAL    // Coolblue, Bol.com, HubSpot — conversion-focused, dense info-grid
+  EXPERIENTIAL  // Patagonia, Tony's Chocolonely — story-driven, immersive
+  PLAYFUL       // Notion marketing, MailerLite — colorful, illustration-heavy
+}
+
+// Pad C Sub-Sprint B — Jung's 12 Brand Archetypes (industriestandaard
+// voor brand-personality classification). Drijft visuele design-keuzes
+// in brand-render-rules.ts: bg-style, typography-emphasis, button-shape,
+// micro-copy-tone, etc. AI-classified uit BrandAssetVersion content;
+// cached op styleguide; user kan overrulen via onboarding-UI.
+enum BrandArchetype {
+  INNOCENT       // Coca-Cola, Dove — purity, optimism, simplicity
+  EXPLORER       // Patagonia, Jeep — freedom, adventure, individuality
+  SAGE           // Google, BBC, McKinsey — wisdom, knowledge, expertise
+  HERO           // Nike, BMW — courage, mastery, achievement
+  OUTLAW         // Harley-Davidson, Virgin — rebellion, revolution, disruption
+  MAGICIAN       // Disney, Apple — transformation, vision, mystery
+  REGULAR_GUY    // IKEA, eBay — belonging, down-to-earth, accessibility
+  LOVER          // Chanel, Häagen-Dazs — passion, intimacy, sensuality
+  JESTER         // Old Spice, M&Ms — joy, humor, lightheartedness
+  CARETAKER      // Johnson & Johnson, Volvo — service, protection, nurture
+  CREATOR        // Lego, Adobe — innovation, imagination, self-expression
+  RULER          // Mercedes, Rolex, LINFI — control, leadership, premium quality
 }
 
 enum StyleguideSource {
@@ -5678,6 +5773,16 @@ model BrandVoiceguide {
    */
   writingGuidelines String[]
 
+  /** DTS-plan C1 — vocabulary-rails: woorden/zinnen die het merk wel/niet gebruikt.
+   *  Variant-generator system-prompt injecteert deze als brand-voice discipline. */
+  vocabularyDo   String[] @default([])
+  vocabularyDont String[] @default([])
+
+  /** DTS-plan C2 — voice-sample: 40-80 word paragraph in eigen brand-voice
+   *  (uit gescrapede bodyText door AI Phase 3). Variant-generator gebruikt
+   *  als few-shot example "match this rhythm". */
+  voiceSample String? @db.Text
+
   // ─── References ─────────────────────────────
   /**
    * Gecureerde writing-samples (5-10 typisch). Bron voor centroid-embedding.
@@ -5925,4 +6030,71 @@ model StrategyObservationRun {
 
   @@index([workspaceId, createdAt])
   @@index([triggerType])
+}
+
+// ─── Web-page builder MVP (per ADR 2026-05-22-landing-page-builder-architectuur) ───
+
+/**
+ * Snapshot van een gepubliceerde web-page (landing-page / product-page /
+ * faq-page / comparison-page / microsite). Immutable per slug-versie zodat
+ * de live URL stabiel rendert ook al wordt de bron-deliverable in Canvas
+ * verder bewerkt. Pattern volgt CompetitorSnapshot-ADR (immutable snapshots
+ * voor publieke artefacten).
+ */
+model LandingPage {
+  id            String      @id @default(cuid())
+  workspaceId   String
+  deliverableId String
+  /// URL-slug binnen workspace-subdomain — `<slug>` in `<workspace>.branddock.app/<slug>`.
+  slug          String
+  /// Frozen Puck data-tree snapshot bij publish-tijd. Shape: `Data<SpikePuckProps>`
+  /// (Puck core types). Niet gemuteerd na publish — verdere edits leven op
+  /// de bron-deliverable.settings.puckData totdat user opnieuw publisht.
+  puckData      Json
+  status        PageStatus  @default(DRAFT)
+  publishedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deliverable Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId, status])
+  @@index([deliverableId])
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/**
+ * Custom-domain registratie voor een workspace. Phase 1 schema-only (v2-feature
+ * activeert provisioning via Vercel Domains API). `domain` is globally unique
+ * zodat we tijdens host-resolution in middleware één DB-lookup doen.
+ */
+model DomainMapping {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  /// Volledige hostname zoals `pages.klant.nl` — globally unique.
+  domain         String    @unique
+  verifiedAt     DateTime?
+  sslStatus      SslStatus @default(PENDING)
+  /// Vercel Domains API record-id voor revoke/refresh. Null tot v2-flow.
+  vercelDomainId String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+enum SslStatus {
+  PENDING
+  PROVISIONING
+  ACTIVE
+  FAILED
 }

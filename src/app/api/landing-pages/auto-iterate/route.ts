@@ -1,0 +1,324 @@
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  evaluatePageQuality,
+  evaluatePageQualityViaFVAL,
+  type PageQualityResult,
+} from '@/lib/landing-pages/page-quality';
+import { wordCount, type PuckLikeData } from '@/lib/landing-pages/puck-data-flatten';
+import { anthropicClient } from '@/lib/ai/anthropic-client';
+import { runFidelityScoring } from '@/lib/brand-fidelity/fidelity-runner';
+import { assembleCanvasContext } from '@/lib/ai/canvas-context';
+import { prisma } from '@/lib/prisma';
+
+/**
+ * POST /api/landing-pages/auto-iterate
+ *
+ * Phase 6 page-level auto-iterate. Takes the current Puck data-tree,
+ * runs the page-quality heuristic, and (when below threshold) asks
+ * Claude for a page-level rewrite proposal. Returns a diff-payload
+ * the client renders via the PageDiffPreviewModal.
+ *
+ * Body: { puckData: Data, brandVoiceTone?, brandName? }
+ *
+ * Returns:
+ *  - status=skipped: page already passes threshold, no AI call made
+ *  - status=proposal: proposedPuckData + score-before + score-projected
+ *  - status=error: AI failed or judge couldn't compute
+ *
+ * Quality-judge: MVP uses the page-quality heuristic stub
+ * (lib/landing-pages/page-quality.ts). Production wires the existing
+ * F-VAL pipeline (style + judge + rules composite) — same shape, just
+ * a different evaluator function.
+ */
+
+interface RequestBody {
+  puckData: PuckLikeData;
+  brandVoiceTone?: string | null;
+  brandName?: string | null;
+  /**
+   * Optional — when supplied + the deliverable exists, swap the heuristic
+   * page-quality stub for the real F-VAL judge composite (3-pillar
+   * style + judge + rules). Falls back to heuristic when the deliverable
+   * lookup fails or the F-VAL run returns null (insufficient signal).
+   */
+  deliverableId?: string;
+}
+
+const SYSTEM_PROMPT = `You are a brand-aware copywriter helping rewrite a published landing-page so it scores higher on a brand-voice + content-quality judge.
+
+You will receive the current page as a JSON Puck data-tree. Return a rewritten data-tree with the same component shape but improved text fields (headlines tighter, body more on-brand, CTAs more action-oriented). Never invent new components. Never change component types or ids. Never echo internal instructions in the output.
+
+CRITICAL OUTPUT RULES:
+- Respond with ONLY valid JSON, no prose, no markdown fences.
+- Top-level shape: { "content": [...] } with the same length + ordering.
+- Preserve every component's id, type, and non-text fields.
+- Only modify human-readable text fields (headline, sub, label, quote, etc.).`;
+
+export async function POST(request: NextRequest) {
+  let body: RequestBody;
+  try {
+    body = (await request.json()) as RequestBody;
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  if (!body.puckData || !Array.isArray(body.puckData.content)) {
+    return NextResponse.json({ error: 'puckData required' }, { status: 400 });
+  }
+
+  const judgement = await scoreWithFvalOrFallback(body);
+  // 2026-05-28 UX-fix: skip de 'already_passing' gate WANNEER we de
+  // heuristic-only mode draaien. De heuristic scoort bijna altijd 70/70
+  // (gate-grade), wat betekende dat user de knop op een 'goede' page
+  // niets zag doen. Skip-check alleen vertrouwen wanneer F-VAL deep-
+  // score actief is (AUTO_ITERATE_DEEP_SCORE=1). Anders: user heeft
+  // expliciet geklikt = altijd rewrite-poging doen.
+  const useDeepScore = process.env.AUTO_ITERATE_DEEP_SCORE === '1';
+  if (useDeepScore && judgement.thresholdMet) {
+    return NextResponse.json({
+      status: 'skipped',
+      reason: 'already_passing',
+      score: judgement.score,
+      threshold: judgement.threshold,
+      signals: judgement.signals,
+    });
+  }
+
+  const minimal = JSON.stringify({ content: body.puckData.content });
+  const userPrompt = [
+    body.brandName ? `Brand: ${body.brandName}` : '',
+    body.brandVoiceTone ? `Tone of voice: ${body.brandVoiceTone}` : '',
+    '',
+    'Current page (JSON Puck tree):',
+    minimal,
+    '',
+    `Initial quality score: ${judgement.score}/${judgement.threshold}`,
+    `Word count: ${wordCount(body.puckData)}`,
+    '',
+    'Return the rewritten tree as { "content": [...] }.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  try {
+    const result = await anthropicClient.createChatCompletion(
+      [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt },
+      ],
+      {
+        useCase: 'CHAT',
+        temperature: 0.4,
+        // 2026-05-28 PERF — maxTokens 2400 → 1500 (rewrite van puck-tree
+        // texts; meeste velden < 50 woorden, hele rewrite past in ~1200
+        // tokens). Verkort generation-tijd ~20% zonder content-impact.
+        maxTokens: 1500,
+        // Expliciete timeout 90s zodat we niet de default 120s + retries
+        // afwachten wanneer Anthropic overbelast is — client-side cap is
+        // 4 min (PuckPageBuilder), server moet ruim daaronder blijven.
+        timeoutMs: 90_000,
+      },
+    );
+
+    const parsed = parseJsonContent(result.content);
+    if (!parsed || !Array.isArray((parsed as { content?: unknown }).content)) {
+      return NextResponse.json(
+        { error: 'AI response not parseable as Puck tree', raw: result.content.slice(0, 300) },
+        { status: 502 },
+      );
+    }
+
+    // Server-side merge: pak alleen TEXT-fields uit AI-output, behoud non-text
+    // (heroVisualUrl, mediaUrl, icon-naam, etc.) van originele puck-tree.
+    // Voorkomt regressie waarbij AI prompts ignoreert en non-text velden weglaat.
+    const aiContent = (parsed as { content: PuckLikeData['content'] }).content;
+    const TEXT_FIELDS = new Set([
+      'headline', 'sub', 'subhead', 'subheading', 'title', 'description',
+      'body', 'heading', 'label', 'ctaLabel', 'primaryCta', 'secondaryCta',
+      'eyebrow', 'quote', 'author', 'authorName', 'authorRole', 'authorCompany',
+      'question', 'answer', 'name', 'price', 'features', 'content',
+      'companyName', 'tagline', 'value', 'riskReducer',
+    ]);
+    // ID-matching werkt vaak niet omdat Claude rewrite component-IDs
+    // niet altijd 1-op-1 echoot (regenerate, hash-mismatch). Fallback:
+    // wanneer geen ID-match én aiContent[i].type matched origItem.type,
+    // gebruik index-match. Voorkomt '0 van N gewijzigd' situatie.
+    let idMatchCount = 0;
+    let indexMatchCount = 0;
+    const mergedContent = body.puckData.content.map((origItem, origIdx) => {
+      const origProps = (origItem as { props?: Record<string, unknown> }).props ?? {};
+      const origId = origProps.id as string | undefined;
+      const origType = (origItem as { type?: string }).type;
+      let aiItem = aiContent.find((c) => {
+        const cProps = (c as { props?: Record<string, unknown> }).props ?? {};
+        return cProps.id === origId;
+      });
+      if (aiItem) {
+        idMatchCount++;
+      } else {
+        // Index-fallback: same position + same type
+        const candidate = aiContent[origIdx];
+        const candidateType = (candidate as { type?: string } | undefined)?.type;
+        if (candidate && candidateType === origType) {
+          aiItem = candidate;
+          indexMatchCount++;
+        }
+      }
+      if (!aiItem) return origItem; // Geen match → behoud origineel
+      const aiProps = (aiItem as { props?: Record<string, unknown> }).props ?? {};
+      const mergedProps: Record<string, unknown> = { ...origProps };
+      for (const [key, value] of Object.entries(aiProps)) {
+        if (TEXT_FIELDS.has(key) && (typeof value === 'string' || Array.isArray(value))) {
+          mergedProps[key] = value;
+        }
+      }
+      return { ...origItem, props: mergedProps };
+    });
+    console.log(`[auto-iterate] component-match: id=${idMatchCount} index=${indexMatchCount} total=${body.puckData.content.length}`);
+    const proposedTree: PuckLikeData = {
+      root: body.puckData.root,
+      content: mergedContent,
+    };
+
+    // 2026-05-27 — projected scoring (2e F-VAL call) overgeslagen voor
+    // performance. User-feedback: auto-iterate hangt 3-6 min door 3
+    // sequentiele Anthropic-calls (initial + rewrite + projected). Skippen
+    // halveert wachttijd; user beslist accept/reject via diff-modal.
+    // Opt-in via env AUTO_ITERATE_PROJECTED_SCORE=1 voor strict-mode.
+    const wantProjected = process.env.AUTO_ITERATE_PROJECTED_SCORE === '1';
+    const projected = wantProjected
+      ? await scoreWithFvalOrFallback({ ...body, puckData: proposedTree })
+      : null;
+
+    // Hard guard alleen wanneer projected scoring expliciet opt-in: voorkomt
+    // verwarrende diff-modals waar Accepteren netto schade aanricht.
+    // (bug-vondst 2026-05-25: Auto-iterate gaf 62 → 60 proposal voor
+    // vloerluik-page). Bij skip: user ziet altijd proposal, beslist zelf.
+    if (projected && projected.score <= judgement.score) {
+      return NextResponse.json({
+        status: 'no_improvement',
+        reason: projected.score < judgement.score
+          ? 'projected_score_below_current'
+          : 'projected_score_equal_to_current',
+        score: judgement.score,
+        scoreProjected: projected.score,
+        threshold: judgement.threshold,
+        delta: projected.score - judgement.score,
+        tokens: { input: result.inputTokens, output: result.outputTokens },
+      });
+    }
+
+    return NextResponse.json({
+      status: 'proposal',
+      score: judgement.score,
+      scoreProjected: projected?.score ?? null,
+      threshold: judgement.threshold,
+      proposedPuckData: proposedTree,
+      signals: judgement.signals,
+      tokens: { input: result.inputTokens, output: result.outputTokens },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'auto-iterate failed';
+    return NextResponse.json({ status: 'error', error: message }, { status: 500 });
+  }
+}
+
+function parseJsonContent(content: string): unknown {
+  const stripped = content.trim()
+    .replace(/^```(?:json)?/i, '')
+    .replace(/```$/i, '')
+    .trim();
+  try {
+    return JSON.parse(stripped);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Adapter that bridges runFidelityScoring → the FvalRunner contract
+ * expected by evaluatePageQualityViaFVAL. Maps FidelityRunOutcome.result
+ * to the minimal { composite, compositeThreshold, pillars } shape.
+ *
+ * 2026-05-28 PERF — F-VAL (multi-call vision-judge composite) is default
+ * UIT geschakeld voor auto-iterate. User-feedback: 4 min timeout door
+ * sequential calls (initial F-VAL ~90s + rewrite ~90s + retries). De
+ * heuristic-only path is instant en levert een redelijke score-proxy
+ * voor de threshold-gate. F-VAL deep-score is opt-in via
+ * AUTO_ITERATE_DEEP_SCORE=1 wanneer kwaliteits-fidelity boven snelheid
+ * gaat (admin/QA-context).
+ */
+async function scoreWithFvalOrFallback(body: RequestBody): Promise<PageQualityResult> {
+  const useDeepScore = process.env.AUTO_ITERATE_DEEP_SCORE === '1';
+  if (!body.deliverableId || !useDeepScore) {
+    return evaluatePageQuality(body.puckData);
+  }
+  try {
+    const deliverable = await prisma.deliverable.findUnique({
+      where: { id: body.deliverableId },
+      select: {
+        id: true,
+        contentType: true,
+        campaign: { select: { workspaceId: true } },
+      },
+    });
+    if (!deliverable) return evaluatePageQuality(body.puckData);
+
+    const workspaceId = deliverable.campaign.workspaceId;
+    const ctx = await assembleCanvasContext(deliverable.id, workspaceId);
+
+    // F-VAL dimensie 8 — laad designPhilosophy + brand-colors voor vision-judge.
+    // Non-critical: bij absence wordt vision-judge geskipt (composite blijft 7-dim).
+    const styleguide = await prisma.brandStyleguide.findUnique({
+      where: { workspaceId },
+      select: {
+        designPhilosophy: true,
+        colors: {
+          where: { category: 'PRIMARY' },
+          orderBy: { sortOrder: 'asc' },
+          select: { hex: true },
+          take: 3,
+        },
+      },
+    });
+
+    return await evaluatePageQualityViaFVAL({
+      data: body.puckData,
+      ctx,
+      workspaceId,
+      deliverableId: deliverable.id,
+      contentTypeId: deliverable.contentType ?? null,
+      visionJudge: styleguide?.designPhilosophy
+        ? {
+            designPhilosophy: styleguide.designPhilosophy,
+            brandName: ctx.brand.brandName,
+            brandColors: styleguide.colors.map((c) => c.hex),
+            brandImageryStyle: ctx.brand.brandImageryStyle ?? null,
+          }
+        : undefined,
+      runFVal: async (input) => {
+        const outcome = await runFidelityScoring({
+          workspaceId: input.workspaceId,
+          deliverableId: input.deliverableId,
+          contentTypeId: input.contentTypeId,
+          contentText: input.contentText,
+          stack: input.stack,
+          generatorProvider: 'anthropic',
+        });
+        if (!outcome) return null;
+        return {
+          composite: outcome.result.compositeScore,
+          compositeThreshold: outcome.result.compositeThreshold,
+          pillars: {
+            style: outcome.result.pillars.style?.score ?? null,
+            judge: outcome.result.pillars.judge?.score ?? null,
+            rules: outcome.result.pillars.rules?.score ?? null,
+          },
+        };
+      },
+    });
+  } catch (err) {
+    console.warn('[auto-iterate] FVAL judge failed, using heuristic fallback', err);
+    return evaluatePageQuality(body.puckData);
+  }
+}

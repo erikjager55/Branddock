@@ -194,6 +194,20 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           publishedVia: d.publishedVia ?? null,
         });
 
+        // Fase 6b — hydrate structured variant slices voor PUCK_WEBPAGE_TYPES.
+        // Twee shapes mogelijk:
+        //  - structuredVariantOptions (array, na initial generation, vóór user-keuze)
+        //  - structuredVariant (single object, na user-keuze in Step 2)
+        // Rendered vorm puckData wordt apart gehydrateerd via contextStack.puckData.
+        if (Array.isArray(d.settings?.structuredVariantOptions)) {
+          useCanvasStore.getState().setStructuredVariantOptions(
+            d.settings.structuredVariantOptions,
+          );
+        }
+        if (d.settings?.structuredVariant) {
+          useCanvasStore.getState().setStructuredVariant(d.settings.structuredVariant);
+        }
+
         // Surface the inheritance banner on any deliverable whose settings
         // already carry an inheritedFrom marker — set by the duplicate
         // endpoint (Sprint B · Step 1) or by a previous auto-inherit pass
