@@ -1,6 +1,14 @@
 /**
- * Export Het Nieuwe Golfen brand foundation to a styled PDF.
- * Run: DATABASE_URL="postgresql://erikjager:@localhost:5432/branddock" npx tsx scripts/export-nieuwe-golfen-brand-pdf.ts
+ * Export a workspace brand foundation to a styled PDF.
+ *
+ * Run:
+ *   DATABASE_URL="postgresql://user:@localhost:5432/branddock" \
+ *   WORKSPACE_ID="<workspace-cuid>" \
+ *   npx tsx scripts/export-nieuwe-golfen-brand-pdf.ts [workspaceId] [outputDir]
+ *
+ * - DATABASE_URL  (required) — Postgres connection string.
+ * - WORKSPACE_ID  (required) — workspace to export; may also be passed as 1st CLI arg.
+ * - outputDir     (optional) — where to write the PDF/HTML; 2nd CLI arg, defaults to cwd.
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -10,11 +18,21 @@ import fs from 'fs';
 import path from 'path';
 import { chromium } from 'playwright';
 
-const pool = new pg.Pool({ connectionString: 'postgresql://erikjager:@localhost:5432/branddock' });
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  console.error('Missing DATABASE_URL env var. See usage at top of this file.');
+  process.exit(1);
+}
+
+const WORKSPACE_ID = process.env.WORKSPACE_ID ?? process.argv[2];
+if (!WORKSPACE_ID) {
+  console.error('Missing WORKSPACE_ID (env var or first CLI arg). See usage at top of this file.');
+  process.exit(1);
+}
+
+const pool = new pg.Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
-
-const WORKSPACE_ID = 'cmpp4dxgc001w4ums9sttpg62';
 
 // ── Helpers ─────────────────────────────────────────────────
 
@@ -819,7 +837,7 @@ async function main() {
   });
 
   const bySlug = new Map(assets.map((a) => [a.slug, a]));
-  const brandName = workspace?.name ?? 'Het Nieuwe Golfen';
+  const brandName = workspace?.name ?? 'Brand';
   const now = new Date().toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' });
 
   // Build TOC + sections
@@ -884,10 +902,10 @@ async function main() {
 </html>`;
 
   // Write debug HTML alongside PDF (handy for review)
-  const desktop = '/Users/erikjager/Desktop';
+  const outputDir = process.argv[3] ?? process.cwd();
   const safeName = brandName.replace(/\s+/g, '-');
-  const htmlPath = path.join(desktop, `${safeName}-Brand-Foundation.html`);
-  const pdfPath = path.join(desktop, `${safeName}-Brand-Foundation.pdf`);
+  const htmlPath = path.join(outputDir, `${safeName}-Brand-Foundation.html`);
+  const pdfPath = path.join(outputDir, `${safeName}-Brand-Foundation.pdf`);
   fs.writeFileSync(htmlPath, html, 'utf-8');
 
   // Render to PDF via Playwright
