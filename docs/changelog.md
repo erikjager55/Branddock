@@ -36,6 +36,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 ---
 
 ## 2026-05
+### 268. Content-flow analyse #7.A — 8 categorie-rapporten + synthesis
+
+Per-categorie content-flow analyse (long-form / social / advertising / email / website / video / sales / pr-hr) + `content-flow-synthesis.md` in `docs/specs/`, code-gegrond met file:line-refs. Legt twee structurele gaten bloot: (1) 5 kerntypes (`whitepaper`/`ebook`/`article`/`newsletter`/`microsite`) draaien op de generieke prompt door ontbrekende templates; (2) `TYPE_TO_CATEGORY` is gedivergeerd van de echte TEMPLATE_REGISTRY (~9 phantom-IDs, ~17 missende echte types) zodat `getCategoryForType()` mislabelt. Friction-tickets in `tasks/content-flow-improvements-7a.md` (CF-1 t/m CF-10). Documentatie-only (geen tsc/lint); sectie 6 deels pending Ronde 1.
+
+- Task: [tasks/done/content-test-flow-analyse-7A.md](tasks/done/content-test-flow-analyse-7A.md)
+- ADR: -
+- Spec: docs/specs/content-flow-synthesis.md
+- Commit: _(deze commit)_
+
 
 ### 267. `/feature` slash command — feature requests via Brand Assistant
 

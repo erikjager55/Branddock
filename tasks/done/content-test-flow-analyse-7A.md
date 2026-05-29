@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: ~3 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-05-12
-completed: -
+completed: 2026-05-29
 related-adr: -
 related-spec: docs/specs/content-test-improvement-plan.md §3.4 + §4 #7.A
 worktree: -
@@ -32,10 +32,10 @@ Per rapport:
 
 # Acceptatiecriteria
 
-- [ ] 8 categorie-rapporten in `docs/specs/content-flow-<categorie>.md`
-- [ ] Per rapport: friction-points + prompt-tuning recs + asset-status + cross-type patterns
-- [ ] Cross-category synthesis-doc: welke types delen prompt-templates en kunnen DRY'd worden
-- [ ] Bekende friction → ticket gemaakt in code-debt-pre-launch-cleanup OF nieuwe task
+- [x] 8 categorie-rapporten in `docs/specs/content-flow-<categorie>.md`
+- [x] Per rapport: friction-points + prompt-tuning recs + asset-status + cross-type patterns
+- [x] Cross-category synthesis-doc: welke types delen prompt-templates en kunnen DRY'd worden
+- [x] Bekende friction → ticket gemaakt in code-debt-pre-launch-cleanup OF nieuwe task
 
 # Bestanden die ik aanraak
 
