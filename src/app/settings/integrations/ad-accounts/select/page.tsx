@@ -11,7 +11,7 @@
 // binnen wanneer de callback faalt.
 // =============================================================
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, AlertTriangle, Loader2, Building2 } from 'lucide-react';
@@ -42,7 +42,29 @@ const ERROR_LABELS: Record<string, string> = {
   internal_error: 'Interne fout tijdens OAuth-flow.',
 };
 
+/**
+ * useSearchParams() vereist een Suspense-boundary tijdens prerender (Next.js
+ * static-export gate). Default-export wrapt de inner component zodat de
+ * build niet crasht op deze client-only page; de Suspense-fallback wordt
+ * praktisch nooit getoond (route is volledig client-side).
+ */
 export default function AdAccountSelectPage() {
+  return (
+    <Suspense
+      fallback={
+        <PageShell maxWidth="3xl">
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+          </div>
+        </PageShell>
+      }
+    >
+      <AdAccountSelectInner />
+    </Suspense>
+  );
+}
+
+function AdAccountSelectInner() {
   const router = useRouter();
   const search = useSearchParams();
   const sessionId = search.get('session');
