@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { Skeleton } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { LockBanner, LockConfirmDialog, LockOverlay } from "@/components/lock";
@@ -10,6 +10,7 @@ import { useStyleguide, brandstyleKeys } from "../hooks/useBrandstyleHooks";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { StyleguideTabNav } from "./StyleguideTabNav";
 import { StyleguideHeader } from "./StyleguideHeader";
+import { BrandOnboardingWizard } from "./BrandOnboardingWizard";
 import { ReviewSummaryHeader } from "./review/ReviewSummaryHeader";
 import { ReviewClosedProvider } from "./review/ReviewDraftPanel";
 import { BrandAssetsSection } from "./BrandAssetsSection";
@@ -66,6 +67,10 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
     onNavigateToAnalyzer();
   }, [setIsEditing, onNavigateToAnalyzer]);
 
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const openWizard = useCallback(() => setIsWizardOpen(true), []);
+  const closeWizard = useCallback(() => setIsWizardOpen(false), []);
+
   useEffect(() => {
     if (!isLoading && !isError && !styleguide) {
       onNavigateToAnalyzer();
@@ -117,6 +122,14 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
           onEditToggle={setIsEditing}
           onLockToggle={lockState.requestToggle}
           onNewAnalysis={handleNewAnalysis}
+          onOpenOnboardingWizard={openWizard}
+        />
+
+        <BrandOnboardingWizard
+          styleguide={styleguide}
+          isOpen={isWizardOpen}
+          onClose={closeWizard}
+          onJumpToTab={setActiveTab}
         />
 
         <LockBanner
