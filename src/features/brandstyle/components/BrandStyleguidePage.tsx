@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { Skeleton } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { LockBanner, LockConfirmDialog, LockOverlay } from "@/components/lock";
@@ -8,7 +8,6 @@ import { useLockState } from "@/hooks/useLockState";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStyleguide, brandstyleKeys } from "../hooks/useBrandstyleHooks";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
-import { useState } from "react";
 import { StyleguideTabNav } from "./StyleguideTabNav";
 import { StyleguideHeader } from "./StyleguideHeader";
 import { BrandOnboardingWizard } from "./BrandOnboardingWizard";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   Sparkles,
   X,
@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   ExternalLink,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/shared";
 import type { BrandStyleguide, StyleguideTab } from "../types/brandstyle.types";
 
@@ -26,6 +27,9 @@ interface BrandOnboardingWizardProps {
    */
   onJumpToTab: (tab: StyleguideTab) => void;
 }
+
+const STEP_LABELS = ["Welkom", "Kleuren", "Typografie", "Klaar"] as const;
+const TOTAL_STEPS = STEP_LABELS.length;
 
 /**
  * Brand Onboarding Wizard — 4-stappen flow die user door scrape-resultaten
@@ -47,6 +51,10 @@ export function BrandOnboardingWizard({
   onJumpToTab,
 }: BrandOnboardingWizardProps) {
   const [stepIndex, setStepIndex] = useState(0);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const mouseDownTargetRef = useRef<EventTarget | null>(null);
 
   const counts = useMemo(
     () => ({
@@ -56,6 +64,8 @@ export function BrandOnboardingWizard({
     }),
     [styleguide.colors, styleguide.fonts, styleguide.components],
   );
+
+  const isEmpty = counts.colors === 0 && counts.fonts === 0 && counts.components === 0;
 
   const topColors = useMemo(
     () =>
@@ -75,72 +85,190 @@ export function BrandOnboardingWizard({
     [styleguide.fonts],
   );
 
-  const handleJump = useCallback(
-    (tab: StyleguideTab) => {
-      onJumpToTab(tab);
-      onClose();
-    },
-    [onJumpToTab, onClose],
-  );
-
-  const next = useCallback(() => setStepIndex((s) => Math.min(s + 1, 3)), []);
-  const prev = useCallback(() => setStepIndex((s) => Math.max(s - 1, 0)), []);
   const handleClose = useCallback(() => {
     setStepIndex(0);
     onClose();
   }, [onClose]);
 
+  const handleJump = useCallback(
+    (tab: StyleguideTab) => {
+      onJumpToTab(tab);
+      handleClose();
+    },
+    [onJumpToTab, handleClose],
+  );
+
+  const next = useCallback(
+    () => setStepIndex((s) => Math.min(s + 1, TOTAL_STEPS - 1)),
+    [],
+  );
+  const prev = useCallback(() => setStepIndex((s) => Math.max(s - 1, 0)), []);
+
+  // ── Escape closes wizard ──
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, handleClose]);
+
+  // ── Body scroll-lock terwijl open ──
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen]);
+
+  // ── Initial focus + restore-on-close (basic focus management) ──
+  useEffect(() => {
+    if (!isOpen) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    // Skip disabled buttons + tabindex=-1 — anders pakt initial focus de
+    // disabled "Vorige" knop op stap 0.
+    const firstFocusable = contentRef.current?.querySelector<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    firstFocusable?.focus();
+    return () => {
+      previousFocusRef.current?.focus?.();
+    };
+  }, [isOpen]);
+
+  // ── Reset stepIndex bij nieuwe open-event (defends against parent
+  // die isOpen toggelt zonder via onClose te gaan). ──
+  useEffect(() => {
+    if (isOpen) setStepIndex(0);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="onboarding-wizard-title"
+      ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-      onClick={handleClose}
+      onMouseDown={(e) => {
+        mouseDownTargetRef.current = e.target;
+      }}
+      onMouseUp={(e) => {
+        if (
+          mouseDownTargetRef.current === overlayRef.current &&
+          e.target === overlayRef.current
+        ) {
+          handleClose();
+        }
+        mouseDownTargetRef.current = null;
+      }}
     >
       <div
+        ref={contentRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-wizard-title"
         className="w-full max-w-2xl rounded-2xl bg-white shadow-xl"
-        onClick={(e) => e.stopPropagation()}
       >
-        <WizardHeader onClose={handleClose} stepIndex={stepIndex} />
+        <WizardHeader onClose={handleClose} stepIndex={stepIndex} isEmpty={isEmpty} />
 
         <div className="px-6 py-6 min-h-[320px]">
-          {stepIndex === 0 && (
-            <WelcomeStep styleguide={styleguide} counts={counts} />
-          )}
-          {stepIndex === 1 && (
-            <ColorsStep
-              topColors={topColors}
-              total={counts.colors}
-              onJumpToColors={() => handleJump("colors")}
-            />
-          )}
-          {stepIndex === 2 && (
-            <TypographyStep
-              displayFont={displayFont}
-              bodyFont={bodyFont}
-              total={counts.fonts}
-              onJumpToTypography={() => handleJump("typography")}
-            />
-          )}
-          {stepIndex === 3 && (
-            <DoneStep
-              counts={counts}
-              onClose={handleClose}
-              onJumpToComponents={() => handleJump("components")}
-            />
+          {isEmpty ? (
+            <EmptyStyleguideState onClose={handleClose} />
+          ) : (
+            <>
+              {stepIndex === 0 && (
+                <WelcomeStep styleguide={styleguide} counts={counts} />
+              )}
+              {stepIndex === 1 && (
+                <ColorsStep
+                  topColors={topColors}
+                  total={counts.colors}
+                  onJumpToColors={() => handleJump("colors")}
+                />
+              )}
+              {stepIndex === 2 && (
+                <TypographyStep
+                  displayFont={displayFont}
+                  bodyFont={bodyFont}
+                  total={counts.fonts}
+                  onJumpToTypography={() => handleJump("typography")}
+                />
+              )}
+              {stepIndex === 3 && (
+                <DoneStep
+                  counts={counts}
+                  onClose={handleClose}
+                  onJumpToComponents={() => handleJump("components")}
+                />
+              )}
+            </>
           )}
         </div>
 
-        <WizardFooter
-          stepIndex={stepIndex}
-          onPrev={prev}
-          onNext={next}
-          onClose={handleClose}
-        />
+        {!isEmpty && (
+          <WizardFooter
+            stepIndex={stepIndex}
+            onPrev={prev}
+            onNext={next}
+            onClose={handleClose}
+          />
+        )}
       </div>
+    </div>
+  );
+}
+
+// ─── Jump-to-tab CTA banner — hergebruikt in Step 2 + Step 3 ─
+
+function JumpToTabBanner({
+  message,
+  ctaLabel,
+  onJump,
+}: {
+  message: string;
+  ctaLabel: string;
+  onJump: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-purple-100 bg-purple-50 px-4 py-3">
+      <p className="text-xs text-purple-900">{message}</p>
+      <button
+        type="button"
+        onClick={onJump}
+        className="text-xs font-medium text-purple-700 hover:text-purple-900 inline-flex items-center gap-1 ml-3 flex-shrink-0"
+      >
+        {ctaLabel}
+        <ChevronRight className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
+
+// ─── Empty styleguide (geen scrape uitgevoerd) ──────────────
+
+function EmptyStyleguideState({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="space-y-5 text-center py-6">
+      <div className="flex justify-center">
+        <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center">
+          <Sparkles className="h-7 w-7 text-amber-600" />
+        </div>
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900">
+          Nog geen merk-DNA gevonden
+        </h3>
+        <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
+          Deze styleguide bevat geen kleuren, fonts of componenten. Run eerst
+          een nieuwe analyse op je merk-URL — dan loopt deze wizard je door
+          de resultaten.
+        </p>
+      </div>
+      <Button variant="primary" size="sm" onClick={onClose}>
+        Sluit wizard
+      </Button>
     </div>
   );
 }
@@ -150,10 +278,10 @@ export function BrandOnboardingWizard({
 interface WizardHeaderProps {
   onClose: () => void;
   stepIndex: number;
+  isEmpty: boolean;
 }
 
-function WizardHeader({ onClose, stepIndex }: WizardHeaderProps) {
-  const steps = ["Welkom", "Kleuren", "Typografie", "Klaar"];
+function WizardHeader({ onClose, stepIndex, isEmpty }: WizardHeaderProps) {
   return (
     <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100">
       <div className="flex items-center gap-2">
@@ -167,27 +295,31 @@ function WizardHeader({ onClose, stepIndex }: WizardHeaderProps) {
           <h2 id="onboarding-wizard-title" className="text-base font-semibold text-gray-900">
             Brand Onboarding
           </h2>
-          <p className="text-xs text-gray-500">
-            Stap {stepIndex + 1} van {steps.length}: {steps[stepIndex]}
-          </p>
+          {!isEmpty && (
+            <p className="text-xs text-gray-500">
+              Stap {stepIndex + 1} van {TOTAL_STEPS}: {STEP_LABELS[stepIndex]}
+            </p>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <ol className="hidden sm:flex items-center gap-1.5" aria-label="Voortgang">
-          {steps.map((_, i) => (
-            <li
-              key={i}
-              aria-current={i === stepIndex ? "step" : undefined}
-              className={`h-1.5 rounded-full transition-all ${
-                i === stepIndex
-                  ? "w-8 bg-purple-600"
-                  : i < stepIndex
-                    ? "w-4 bg-purple-300"
-                    : "w-4 bg-gray-200"
-              }`}
-            />
-          ))}
-        </ol>
+        {!isEmpty && (
+          // Decoratief — header-tekst draagt de toegankelijke voortgangsstatus.
+          <ol className="hidden sm:flex items-center gap-1.5" aria-hidden="true">
+            {STEP_LABELS.map((label, i) => (
+              <li
+                key={label}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === stepIndex
+                    ? "w-8 bg-purple-600"
+                    : i < stepIndex
+                      ? "w-4 bg-purple-300"
+                      : "w-4 bg-gray-200"
+                }`}
+              />
+            ))}
+          </ol>
+        )}
         <button
           type="button"
           onClick={onClose}
@@ -212,18 +344,18 @@ interface WizardFooterProps {
 
 function WizardFooter({ stepIndex, onPrev, onNext, onClose }: WizardFooterProps) {
   const isFirst = stepIndex === 0;
-  const isLast = stepIndex === 3;
+  const isLast = stepIndex === TOTAL_STEPS - 1;
   return (
     <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
+        icon={ChevronLeft}
         onClick={onPrev}
         disabled={isFirst}
-        className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        <ChevronLeft className="h-4 w-4" />
         Vorige
-      </button>
+      </Button>
       {isLast ? (
         <Button variant="primary" size="sm" onClick={onClose}>
           Sluit wizard
@@ -290,7 +422,7 @@ function SummaryTile({
   label,
   count,
 }: {
-  icon: typeof Palette;
+  icon: LucideIcon;
   label: string;
   count: number;
 }) {
@@ -348,20 +480,11 @@ function ColorsStep({ topColors, total, onJumpToColors }: ColorsStepProps) {
         </ul>
       )}
 
-      <div className="flex items-center justify-between rounded-lg border border-purple-100 bg-purple-50 px-4 py-3">
-        <p className="text-xs text-purple-900">
-          Klopt de classificatie? Overrules kun je per kleur via de tag-toggles
-          in de Kleuren-tab (Fase E user-override surface).
-        </p>
-        <button
-          type="button"
-          onClick={onJumpToColors}
-          className="text-xs font-medium text-purple-700 hover:text-purple-900 inline-flex items-center gap-1"
-        >
-          Bewerk in Kleuren-tab
-          <ChevronRight className="h-3 w-3" />
-        </button>
-      </div>
+      <JumpToTabBanner
+        message="Klopt de classificatie? Overrules kun je per kleur via de tag-toggles in de Kleuren-tab (Fase E user-override surface)."
+        ctaLabel="Bewerk in Kleuren-tab"
+        onJump={onJumpToColors}
+      />
     </div>
   );
 }
@@ -400,19 +523,11 @@ function TypographyStep({
         <FontPreview label="BODY (Body text)" font={bodyFont} sample="Dit is hoe lopende tekst eruitziet in jouw brand-style." />
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border border-purple-100 bg-purple-50 px-4 py-3">
-        <p className="text-xs text-purple-900">
-          Andere font in gedachten? Wissel in de Typografie-tab.
-        </p>
-        <button
-          type="button"
-          onClick={onJumpToTypography}
-          className="text-xs font-medium text-purple-700 hover:text-purple-900 inline-flex items-center gap-1"
-        >
-          Bewerk in Typografie-tab
-          <ChevronRight className="h-3 w-3" />
-        </button>
-      </div>
+      <JumpToTabBanner
+        message="Andere font in gedachten? Wissel in de Typografie-tab."
+        ctaLabel="Bewerk in Typografie-tab"
+        onJump={onJumpToTypography}
+      />
     </div>
   );
 }
@@ -449,7 +564,7 @@ function FontPreview({
       </div>
       <p
         className="text-base text-gray-900 mt-2 leading-snug"
-        style={{ fontFamily: font.name }}
+        style={{ fontFamily: `"${font.name}", system-ui, -apple-system, sans-serif` }}
       >
         {sample}
       </p>

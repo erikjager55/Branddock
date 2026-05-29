@@ -183,12 +183,13 @@ export function StyleguideHeader({
               </Button>
             )}
 
+            {/* Wizard is read-only review + jump-to-tab — blijft beschikbaar
+                wanneer styleguide locked is (geen mutations onder de motorkap). */}
             <Button
               variant="secondary"
               size="sm"
               icon={Sparkles}
               onClick={onOpenOnboardingWizard}
-              disabled={isLocked}
             >
               Onboarding
             </Button>
