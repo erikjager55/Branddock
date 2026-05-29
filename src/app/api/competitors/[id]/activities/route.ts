@@ -52,7 +52,11 @@ export async function GET(
       ...(detectionMethod ? { detectionMethod } : {}),
     };
 
-    const [items, total, unreadCount] = await Promise.all([
+    // unreadCount is filter-scoped (matches the visible list); totalUnread is the
+    // unfiltered unread total for this competitor — the "Mark all as read" action
+    // acknowledges every unread activity regardless of the active filter, so the
+    // badge + enable-gate must reflect this global count, not the filtered slice.
+    const [items, total, unreadCount, totalUnread] = await Promise.all([
       prisma.competitorActivity.findMany({
         where,
         orderBy: { detectedAt: "desc" },
@@ -64,6 +68,7 @@ export async function GET(
       }),
       prisma.competitorActivity.count({ where }),
       prisma.competitorActivity.count({ where: { ...where, acknowledgedAt: null } }),
+      prisma.competitorActivity.count({ where: { competitorId: id, acknowledgedAt: null } }),
     ]);
 
     return NextResponse.json({
@@ -84,6 +89,7 @@ export async function GET(
       })),
       total,
       unreadCount,
+      totalUnread,
     });
   } catch (error) {
     console.error("[GET /api/competitors/:id/activities]", error);

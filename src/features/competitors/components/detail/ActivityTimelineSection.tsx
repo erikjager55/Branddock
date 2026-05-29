@@ -100,7 +100,10 @@ export function ActivityTimelineSection({ competitorId }: ActivityTimelineSectio
 
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
-  const unreadCount = data?.unreadCount ?? 0;
+  // "Mark all as read" acknowledges every unread activity regardless of the active
+  // filter, so badge + enable-gate use the unfiltered totalUnread — not the
+  // filter-scoped unreadCount — to keep the label, action and display in sync.
+  const totalUnread = data?.totalUnread ?? 0;
   const canLoadMore = items.length < total;
 
   return (
@@ -109,9 +112,9 @@ export function ActivityTimelineSection({ competitorId }: ActivityTimelineSectio
         <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <Activity className="h-4 w-4 text-gray-500" />
           Activity
-          {unreadCount > 0 && (
+          {totalUnread > 0 && (
             <Badge variant="danger" className="ml-1">
-              {unreadCount}
+              {totalUnread}
             </Badge>
           )}
         </h3>
@@ -119,7 +122,7 @@ export function ActivityTimelineSection({ competitorId }: ActivityTimelineSectio
           variant="ghost"
           size="sm"
           onClick={() => acknowledge.mutate({ all: true })}
-          disabled={!unreadCount || acknowledge.isPending}
+          disabled={!totalUnread || acknowledge.isPending}
           isLoading={acknowledge.isPending}
         >
           <Check className="h-3.5 w-3.5 mr-1" />

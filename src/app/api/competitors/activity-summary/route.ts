@@ -12,7 +12,9 @@ const querySchema = z.object({
 // GET /api/competitors/activity-summary
 //
 // Workspace-wide aggregaten van competitor-activities binnen `window`:
-//   - totals: counts per severity (alle events, ook ack'd)
+//   - totals: counts per severity (alleen unack'd — consistent met topEvents/
+//     hotCompetitors zodat de digest-skip-gate en de renderbare secties dezelfde
+//     populatie tellen; anders rendert een all-ack'd window een half-lege kaart)
 //   - topEvents: top 20 unack'd events, severity-desc dan detectedAt-desc
 //   - hotCompetitors: top 5 competitors gerangschikt op unack'd-count
 export async function GET(request: NextRequest) {
@@ -51,7 +53,7 @@ export async function GET(request: NextRequest) {
       prisma.competitorActivity.groupBy({
         by: ["severity"],
         _count: { _all: true },
-        where: { workspaceId, detectedAt: { gte: since } },
+        where: { workspaceId, detectedAt: { gte: since }, acknowledgedAt: null },
       }),
       prisma.competitorActivity.groupBy({
         by: ["competitorId"],

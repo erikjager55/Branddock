@@ -8,18 +8,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
-function isAuthorized(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    return process.env.NODE_ENV !== 'production';
-  }
-  const auth = request.headers.get('authorization');
-  return auth === `Bearer ${secret}`;
-}
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
+import { isCronAuthorized } from '@/lib/auth/cron-auth';
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -43,6 +37,7 @@ export async function GET(request: NextRequest) {
         grouped.map((g) => [g.competitorId, g._count._all]),
       );
 
+      let wsCorrections = 0;
       for (const comp of competitors) {
         const actual = actualMap.get(comp.id) ?? 0;
         if (actual !== comp.unacknowledgedActivityCount) {
@@ -50,8 +45,16 @@ export async function GET(request: NextRequest) {
             where: { id: comp.id },
             data: { unacknowledgedActivityCount: actual },
           });
-          correctionsApplied += 1;
+          wsCorrections += 1;
         }
+      }
+
+      // Bust the workspace's competitor + dashboard caches once per workspace so a
+      // corrected count is not served stale until TTL (verboden-patroon #10).
+      if (wsCorrections > 0) {
+        invalidateCache(cacheKeys.prefixes.competitors(ws.id));
+        invalidateCache(cacheKeys.prefixes.dashboard(ws.id));
+        correctionsApplied += wsCorrections;
       }
     }
 

@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: "2-3 dagen"
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-05-19
-completed: -
+completed: 2026-05-29
 related-adr: -
 related-spec: -
 worktree: claude/refine-local-plan-sTdHI
@@ -105,3 +105,24 @@ End-to-end surfaces voor competitor-activities: (1) detail-pagina timeline-secti
 
 Plan-bestand: `/root/.claude/plans/here-is-a-draft-mutable-meteor.md`.
 Templates: notifications `route.ts:17-44` (pagination), `alignment/issues/[id]/dismiss/route.ts:18-87` (acknowledge), `trend-radar/research/[jobId]/approve/route.ts:103-122` (notification.createMany), `claw/tools/read-tools.ts:467-494` (tool entry), `cron/run-jobs/route.ts:16-24` (cron auth), `PositioningSection.tsx:46` (section wrapper).
+
+---
+
+## Implementatie-summary (2026-05-29 — finalisatie + hardening)
+
+**Bijzonderheid**: de feature werd gebouwd + gemerged naar `main` verspreid over PR #8 (timeline + digest + dashboard attention), de BA-tool branch, PR #13 (notifications) en de reconcile-cron branch — maar **nooit formeel ge-finalized** (geen changelog, task bleef `in-progress`, omzeilde de 2-subagent review-ceremonie). Deze finalisatie verifieerde de gemergde code en hardende restpunten.
+
+**Audit** (4-dimensionale workflow + adversariële bug-verificatie): alle 11 ACs substantieel + correct geïmplementeerd. **0 critical/major defects.** 9 bevestigde minor bugs (2 false-positives gekild). Eén MAJOR-melding (reconcile mist `invalidateCache`) teruggeschaald naar minor — geen gecachede read leest het veld, dus 0 user-facing impact.
+
+**Hardening-fixes doorgevoerd** (op worktree `branddock-finalize-activities`, branch `chore/finalize-competitor-activities-ui` off main):
+- **A** mark-all-read scope-divergence — API returnt `totalUnread` (ongefilterd); badge + disable-gate binden daaraan i.p.v. de filter-scoped `unreadCount`. Voorkomt stil wegklikken van ongezien MAJOR-events + onterecht disabled knop.
+- **B** digest half-lege card — `acknowledgedAt:null` toegevoegd aan `severityGroups` groupBy in activity-summary; totals ⇄ topEvents/hotCompetitors ⇄ skip-gate nu consistent.
+- **C** reconcile-cron `invalidateCache` (competitors + dashboard prefixes per gecorrigeerde workspace) — conventie #10.
+- **D** dev email-observability — `isEmailitConfigured()`-guard verwijderd; `trySendTransactional` no-opt + logt payload in dev (AC8 dev-clausule).
+- **E** silent-return logging — gestructureerde `console.warn` op 0-user workspace in `notifyMajorEvents`.
+- **F** OrganizationMember user-resolutie — nieuwe helper `src/lib/workspace/workspace-users.ts` (`getWorkspaceUsers` spiegelt `hasWorkspaceAccess`-ACL + `isActive`-filter) vervangt de legacy `User.workspaceId` lookup in `notify-major-events.ts` + (consistentie) trend-radar approve-route.
+- **G** constant-time cron-auth — nieuwe helper `src/lib/auth/cron-auth.ts` (`crypto.timingSafeEqual` + length-guard) toegepast op alle 4 cron-routes (run-jobs, reconcile-competitor-counts, refresh-ad-tokens, sync-ad-campaigns).
+
+**Verificatie**: `npx tsc --noEmit` 0 errors; `eslint` 0 errors; nieuwe smoke `npm run smoke:competitor-activities` 26/26 PASS (getWorkspaceUsers scoping incl. member-zonder-ACL, notify in-app rows + 0-user warn, isCronAuthorized, reconcile drift-correctie + auth-gate, summary totals-invariant, acknowledge atomic-decrement race-safety). Live browser-pass van detail/dashboard/digest aanbevolen als laatste handmatige gate.
+
+**Nieuwe files**: `src/lib/workspace/workspace-users.ts`, `src/lib/auth/cron-auth.ts`, `scripts/smoke-tests/competitor-activities.ts`.

@@ -7,15 +7,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { syncAdCampaignStatus } from '@/lib/jobs/sync-ad-campaign-status';
-
-function isAuthorized(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return process.env.NODE_ENV !== 'production';
-  return request.headers.get('authorization') === `Bearer ${secret}`;
-}
+import { isCronAuthorized } from '@/lib/auth/cron-auth';
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

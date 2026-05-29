@@ -7,13 +7,14 @@
 
 ## Huidige fase
 
-**Pre-launch — peildatum 2026-05-18: Sprint #4 dicht + Track A 5/6 + Track B Phase A+B gemerged**
+**Pre-launch — peildatum 2026-05-29: Sprint #4 dicht + Track A 5/6 + Track B Phase A+B gemerged + Competitive-AI surfaces ge-finalized**
 
 Actuele sprint-status:
 
 - ✅ Sprint #4 quick-wins (5/5): cron-infra ADR, Surface C smoke, claw-page-awareness smoke, locale-picker smoke, code-debt 2/12 + close-out cluster A/B/C (#257). VB Compose/Trained smoke deferred post-vercel. STOP-GATE genomen 2026-05-17 (P2 shared-pipeline `effie-waardig` leak fixt via prompt-guards + sanitizer, commit `e849a1ed` = entry #258). Auto-iterate variant-clobber fix gemerged 2026-05-17 (`cdd0e074` = #259).
 - ✅ Sprint #5 Track A vooruitgelopen: `content-test-foundation-5A`, `content-test-goldens-5B`, `content-test-auto-iterate-6B` (5/7 backend, wiring + dashboard deferred), `content-test-wiring-gates-6A` ✅, `compose-pipeline-gemini-migration`, `claw-page-awareness-vervolg`. **Open**: 6B wiring/dashboard panels + bugfix-cluster uit Ronde 1.
 - ✅ **Track B Phase A + B gemerged 2026-05-18** (merge-commit `a0e59a5b`): `brandclaw-data-collection`, `brandclaw-tool-orchestrator`, `strategy-analyst-stub` Phase A (node entry + manual trigger + UI Tab 5) + Phase A vervolg + Phase B (4 dimensions + UI sort/group) + model-ID hotfix (#260-262). Worktree `branddock-brandclaw` blijft actief voor Phase C.
+- ✅ **Competitive-AI surfaces ge-finalized 2026-05-29**: `competitor-ai-event-classifier` (#263) + `competitor-activities-ui` (#271 — detail-timeline + dashboard attention + multi-competitor digest + Brand Assistant tool + in-app/email notificaties + reconcile-cron). Was gemerged via PR #6/#8/#13 maar nooit formeel ge-finalized; audit gaf 0 critical/major defects, 7 minor hardening-fixes doorgevoerd (mark-all-read scope, digest-gate, reconcile invalidateCache, OrganizationMember user-resolutie, constant-time cron-auth, dev email-log, silent-return warn).
 - ⏸️ **Track B Phase C open** (5-7d, in `branddock-brandclaw` worktree): Vercel Cron weekly `0 9 * * 1` + per-workspace concurrency-cap + cost-budget alerts (>$10/ws/maand → PostHog) + BB pilot smoke met productie-data. **Sequential dep**: Vercel Cron heeft `vercel-deployment` nodig — Track C moet eerst.
 - ⏸️ Track C (worktree `branddock-launch`): 0 eigen commits, **~58 commits achter op main** (49 + 9 brandclaw). Rebase nodig voor start. Hard launch-blocker.
 

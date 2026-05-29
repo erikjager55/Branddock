@@ -8,23 +8,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { runPendingJobs } from '@/lib/agents/jobs/runner';
+import { isCronAuthorized } from '@/lib/auth/cron-auth';
 
 /** Max jobs per invocation. Keeps each cron run well under the
  *  Vercel serverless timeout even when handlers are slow. */
 const DEFAULT_BATCH_SIZE = 20;
 
-function isAuthorized(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    // No secret configured → allow in dev, block in prod
-    return process.env.NODE_ENV !== 'production';
-  }
-  const auth = request.headers.get('authorization');
-  return auth === `Bearer ${secret}`;
-}
-
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

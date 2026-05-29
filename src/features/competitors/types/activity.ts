@@ -23,7 +23,11 @@ export interface ActivityListItem {
 export interface ActivityListResponse {
   items: ActivityListItem[];
   total: number;
+  /** Unread count within the active filter — matches the visible list. */
   unreadCount: number;
+  /** Unread count across ALL activities for this competitor, ignoring filters —
+   *  drives the badge + "Mark all as read" enable-gate (the action is unfiltered). */
+  totalUnread: number;
 }
 
 export interface ActivitySummaryCompetitor {

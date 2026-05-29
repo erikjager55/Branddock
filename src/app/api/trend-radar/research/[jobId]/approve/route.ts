@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { getWorkspaceUsers } from '@/lib/workspace/workspace-users';
 import type { PendingTrend } from '@/lib/trend-radar/researcher';
 
 type RouteParams = { params: Promise<{ jobId: string }> };
@@ -102,10 +103,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   // Create notifications for high-relevance trends
   const highRelevance = selected.filter((t) => t.relevanceScore > 80);
   if (highRelevance.length > 0) {
-    const workspaceUser = await prisma.user.findFirst({
-      where: { workspaceId },
-      select: { id: true },
-    });
+    // Resolve via OrganizationMember (niet de legacy User.workspaceId FK).
+    // Eén ontvanger (cardinaliteit ongewijzigd); welke user kan verschillen van de
+    // oude legacy-FK pick — nu de vroegst-toegetreden ACL-scoped org-member.
+    const [workspaceUser] = await getWorkspaceUsers(workspaceId);
 
     if (workspaceUser) {
       await prisma.notification.createMany({
