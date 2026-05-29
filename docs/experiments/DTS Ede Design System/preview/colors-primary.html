@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../colors_and_type.css" />
+<style>
+  html, body { background: #fff; margin: 0; padding: 0; }
+  body { padding: 24px; box-sizing: border-box; min-height: 100vh; }
+</style>
+</head>
+<body>
+<style>
+  body { padding: 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .swatch { aspect-ratio: 2 / 1.1; border-radius: 4px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; color: #fff; border: 1px solid #DFDFDF; }
+  .swatch .top { display: flex; justify-content: space-between; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; font-weight: 500; }
+  .swatch .name { font-size: 22px; font-weight: 500; letter-spacing: -0.01em; color: #fff; }
+  .swatch .hex { font-family: ui-monospace, Menlo, monospace; font-size: 12px; opacity: 0.9; }
+</style>
+<div class="grid">
+  <div class="swatch" style="background:#0060A0">
+    <div class="top"><span>Primary</span><span>Royal</span></div>
+    <div><div class="name">Royal Blue</div><div class="hex">#0060A0</div></div>
+  </div>
+  <div class="swatch" style="background:#0040A0">
+    <div class="top"><span>Secondary</span><span>Deep</span></div>
+    <div><div class="name">Deep Blue</div><div class="hex">#0040A0</div></div>
+  </div>
+</div>
+</body></html>
