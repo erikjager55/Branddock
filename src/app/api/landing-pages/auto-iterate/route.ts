@@ -85,6 +85,12 @@ export async function POST(request: NextRequest) {
   }
 
   const minimal = JSON.stringify({ content: body.puckData.content });
+  // De rewrite echoot de hele puck-tree terug als JSON, dus de output is
+  // grofweg even groot als de input. Een vaste maxTokens kapt grotere pagina's
+  // (≥8 componenten) af → onparseerbare JSON → 502. Schaal daarom mee met de
+  // tree-grootte (~3 chars/token) met ruime headroom, begrensd voor cost/latency.
+  const estimatedTreeTokens = Math.ceil(minimal.length / 3);
+  const rewriteMaxTokens = Math.min(8000, Math.max(1500, Math.round(estimatedTreeTokens * 1.4)));
   const userPrompt = [
     body.brandName ? `Brand: ${body.brandName}` : '',
     body.brandVoiceTone ? `Tone of voice: ${body.brandVoiceTone}` : '',
@@ -109,10 +115,9 @@ export async function POST(request: NextRequest) {
       {
         useCase: 'CHAT',
         temperature: 0.4,
-        // 2026-05-28 PERF — maxTokens 2400 → 1500 (rewrite van puck-tree
-        // texts; meeste velden < 50 woorden, hele rewrite past in ~1200
-        // tokens). Verkort generation-tijd ~20% zonder content-impact.
-        maxTokens: 1500,
+        // Schaalt mee met de tree-grootte (zie rewriteMaxTokens hierboven) —
+        // vaste 1500 kapte ≥8-componenten pagina's af → onparseerbare JSON → 502.
+        maxTokens: rewriteMaxTokens,
         // Expliciete timeout 90s zodat we niet de default 120s + retries
         // afwachten wanneer Anthropic overbelast is — client-side cap is
         // 4 min (PuckPageBuilder), server moet ruim daaronder blijven.

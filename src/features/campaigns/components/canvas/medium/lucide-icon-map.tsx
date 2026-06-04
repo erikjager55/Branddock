@@ -20,6 +20,9 @@ import {
   PenTool, Phone, PieChart, Play, Plus, Rocket, Search, Server,
   Settings, Star, Sun, Target, ThumbsUp, Truck, User, Users,
   Wrench, Wand, Crown, Gem, Palette, Brush, Building, Briefcase,
+  BarChart3, BarChart, Calendar, CalendarClock, CalendarCheck,
+  RefreshCw, RefreshCcw, PackageCheck, Boxes, Gauge, ShoppingCart,
+  Tag, Bell, Coins, Wallet, Recycle, Lightbulb, Headphones, Smile,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -88,7 +91,36 @@ const ICON_MAP: Record<string, LucideIcon> = {
   brush: Brush,
   building: Building,
   briefcase: Briefcase,
+  'bar-chart-3': BarChart3,
+  'bar-chart': BarChart,
+  calendar: Calendar,
+  'calendar-clock': CalendarClock,
+  'calendar-check': CalendarCheck,
+  'refresh-cw': RefreshCw,
+  'refresh-ccw': RefreshCcw,
+  'package-check': PackageCheck,
+  boxes: Boxes,
+  gauge: Gauge,
+  'shopping-cart': ShoppingCart,
+  tag: Tag,
+  bell: Bell,
+  coins: Coins,
+  wallet: Wallet,
+  recycle: Recycle,
+  lightbulb: Lightbulb,
+  headphones: Headphones,
+  smile: Smile,
 };
+
+/**
+ * Secundaire lookup met separator-loze keys ("bar-chart-3" → "barchart3").
+ * Vangt AI-varianten af die scheidingstekens weglaten ("barchart3",
+ * "refreshcw", "calendarclock") zonder per variant een alias te hoeven
+ * onderhouden.
+ */
+const COMPACT_MAP: Record<string, LucideIcon> = Object.fromEntries(
+  Object.entries(ICON_MAP).map(([k, v]) => [k.replace(/-/g, ''), v]),
+);
 
 /**
  * Normaliseert icon-name input naar canonical Lucide kebab-case key.
@@ -119,7 +151,7 @@ export function normalizeIconName(raw: string): string {
 export function resolveLucideIcon(rawName: string): LucideIcon | null {
   const key = normalizeIconName(rawName);
   if (!key) return null;
-  return ICON_MAP[key] ?? null;
+  return ICON_MAP[key] ?? COMPACT_MAP[key.replace(/-/g, '')] ?? null;
 }
 
 interface IconBlockProps {
@@ -146,23 +178,17 @@ export function IconBlock({
   size = 24,
   strokeWeight = 1.75,
   wrapperStyle,
-  fallbackTextStyle,
 }: IconBlockProps): React.ReactElement | null {
   if (!name || !name.trim()) return null;
-  const Icon = resolveLucideIcon(name);
-  if (Icon) {
-    // React.createElement i.p.v. JSX om react-hooks/static-components
-    // warning te omzeilen — Icon is bewust runtime-resolved per icon-name.
-    return (
-      <div style={wrapperStyle} aria-hidden="true">
-        {React.createElement(Icon, { size, color, strokeWidth: strokeWeight })}
-      </div>
-    );
-  }
-  // Fallback: text-label (current legacy behavior)
+  // Onbekende naam → neutraal default-icoon (Sparkles) i.p.v. de rauwe
+  // icon-naam als tekst tonen ("barchart3"/"calendar"). fallbackTextStyle
+  // blijft in de interface voor backward-compat maar wordt niet meer gebruikt.
+  const Icon = resolveLucideIcon(name) ?? Sparkles;
+  // React.createElement i.p.v. JSX om react-hooks/static-components
+  // warning te omzeilen — Icon is bewust runtime-resolved per icon-name.
   return (
-    <div style={fallbackTextStyle} aria-hidden="true">
-      {name}
+    <div style={wrapperStyle} aria-hidden="true">
+      {React.createElement(Icon, { size, color, strokeWidth: strokeWeight })}
     </div>
   );
 }

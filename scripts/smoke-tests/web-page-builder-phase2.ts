@@ -119,9 +119,12 @@ function testBrandTokens(): void {
     colors: [],
     fonts: [],
   });
+  // Fase 1 (brand-fidelity): zonder PRIMARY-kleur grondt brand/primaryHex op
+  // onSurface (neutraal, klant-gegrond) i.p.v. de losse DEFAULT — nooit een
+  // Branddock-identity-lek (#1FD1B2).
   assert(
-    'falls back to DEFAULT when no PRIMARY color',
-    minimal.primaryHex === DEFAULT_BRAND_TOKENS.primaryHex,
+    'falls back to neutral onSurface when no PRIMARY color (geen teal-lek)',
+    minimal.primaryHex === minimal.onSurface && minimal.primaryHex.toLowerCase() !== '#1fd1b2',
   );
   assert(
     'uses primaryFontName when no DISPLAY font',

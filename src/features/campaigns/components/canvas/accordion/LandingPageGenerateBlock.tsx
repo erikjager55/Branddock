@@ -60,6 +60,16 @@ export function LandingPageGenerateBlock({
   const contextStack = useCanvasStore((s) => s.contextStack);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
 
+  // Welke variant getoond wordt in de FidelityScoreBar (klik op A/B-toggle).
+  // Los van de gekozen variant — laat de user per-variant scores vergelijken.
+  const [activeVariantIndex, setActiveVariantIndex] = useState(0);
+  // Handmatig geselecteerde hero-image. Wordt geïnjecteerd in de hero van de
+  // gekozen variant zodat Step 3 (die puckData rendert) de foto toont — anders
+  // verdween de selectie omdat persistHeroImage de puckData niet bijwerkt.
+  const [selectedHeroImageUrl, setSelectedHeroImageUrl] = useState<string | null>(null);
+  // LP-specifieke auto-iterate (Step 2): verbetert de actieve variant in-place.
+  const [isAutoIterating, setIsAutoIterating] = useState(false);
+  const [autoIterateMsg, setAutoIterateMsg] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingVisual, setIsGeneratingVisual] = useState(false);
   const [isChoosing, setIsChoosing] = useState(false);
@@ -91,13 +101,30 @@ export function LandingPageGenerateBlock({
         mediaAssetId: selection.mediaAssetId ?? null,
         alt: selection.alt ?? null,
       });
+      // Onthoud de selectie zodat handleChooseVariant 'm in de hero injecteert.
+      setSelectedHeroImageUrl(selection.url);
+      // Wanneer al een variant gekozen is (user kwam via back-nav terug), werk
+      // de puckData meteen bij — anders rendert Step 3 de oude (lege) hero.
+      if (chosenVariant) {
+        const updated: LandingPageVariantContent = {
+          ...chosenVariant,
+          hero: { ...chosenVariant.hero, heroVisualUrl: selection.url },
+        };
+        setStructuredVariant(updated);
+        const puckData = variantToPuckDataFromStructured(updated, contextStack);
+        await fetch(`/api/studio/${deliverableId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ settings: { structuredVariant: updated, puckData } }),
+        });
+      }
       window.dispatchEvent(
         new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
       );
     } catch (err) {
       setVisualError(err instanceof Error ? err.message : 'Hero-image opslaan mislukt');
     }
-  }, [deliverableId, visualSource]);
+  }, [deliverableId, visualSource, chosenVariant, contextStack, setStructuredVariant]);
 
   const builtPrompt = useMemo(() => {
     const parts: string[] = [];
@@ -238,12 +265,11 @@ export function LandingPageGenerateBlock({
       } else {
         setPartialDelivery(null);
       }
-      // Track 5 — fire-and-forget scoring voor variant 0. User ziet variants
-      // direct; fidelity-score volgt ~20s later via store-update. Geen await
-      // — variant-keuze mag niet blokkeren op scoring-latency.
-      if (data.variants.length > 0) {
-        void scoreVariantFidelity(data.variants[0], 0);
-      }
+      // Track 5 — fire-and-forget scoring voor ALLE varianten (A + B). User
+      // ziet variants direct; per-variant fidelity-score volgt ~20s later via
+      // store-update zodat klikken op variant B ook diens score toont. Geen
+      // await — variant-keuze mag niet blokkeren op scoring-latency.
+      data.variants.forEach((v, i) => void scoreVariantFidelity(v, i));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Generatie mislukt');
     } finally {
@@ -277,22 +303,66 @@ export function LandingPageGenerateBlock({
     }
   }, [variantOptions, chosenVariant, isGenerating, briefIncomplete, error, handleGenerate]);
 
+  /**
+   * Genereert een hero-visual voor een variant, injecteert de URL in de hero
+   * en persisteert de bijgewerkte puckData. Gedeeld door de handmatige
+   * "genereer visual"-knop én de verplichte-header auto-generatie bij keuze.
+   */
+  const generateHeroVisualFor = useCallback(
+    async (variant: LandingPageVariantContent): Promise<void> => {
+      const heroVisualInstruction = buildHeroVisualInstruction(variant, contextStack);
+      const result = await generateCanvasVisual(deliverableId, {
+        instruction: heroVisualInstruction,
+        aspectRatio: '16:9',
+        count: 1,
+      });
+      const variants = result.variants ?? [];
+      if (variants.length === 0) return;
+      setImageVariants(
+        variants.map((v, i) => ({ index: i, url: v.url, prompt: v.prompt ?? '', isSelected: i === 0 })),
+      );
+      const firstUrl = variants[0]?.url;
+      if (!firstUrl) return;
+      const updated: LandingPageVariantContent = {
+        ...variant,
+        hero: { ...variant.hero, heroVisualUrl: firstUrl },
+      };
+      setStructuredVariant(updated);
+      const puckData = variantToPuckDataFromStructured(updated, contextStack);
+      await fetch(`/api/studio/${deliverableId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: { structuredVariant: updated, puckData } }),
+      });
+      window.dispatchEvent(
+        new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
+      );
+    },
+    [contextStack, deliverableId, setImageVariants, setStructuredVariant],
+  );
+
   const handleChooseVariant = useCallback(async (variant: LandingPageVariantContent) => {
     setIsChoosing(true);
     setError(null);
     try {
-      const puckData = variantToPuckDataFromStructured(variant, contextStack);
+      // Injecteer een eerder handmatig geselecteerde hero-image zodat Step 3
+      // (die puckData rendert) de foto toont. Behoud een reeds aanwezige
+      // heroVisualUrl op de variant wanneer er geen losse selectie is.
+      const chosen: LandingPageVariantContent = selectedHeroImageUrl
+        ? { ...variant, hero: { ...variant.hero, heroVisualUrl: selectedHeroImageUrl } }
+        : variant;
+      const puckData = variantToPuckDataFromStructured(chosen, contextStack);
       const patchRes = await fetch(`/api/studio/${deliverableId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          settings: { structuredVariant: variant, puckData },
+          settings: { structuredVariant: chosen, puckData },
         }),
       });
       if (!patchRes.ok) {
         throw new Error(`Persist mislukt: HTTP ${patchRes.status}`);
       }
-      setStructuredVariant(variant);
+      setStructuredVariant(chosen);
       // Fetch /context expliciet zodat contextStack.puckData synchroon
       // ververst is vóór user naar Step 3 doorklikt.
       try {
@@ -309,63 +379,99 @@ export function LandingPageGenerateBlock({
       window.dispatchEvent(
         new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
       );
-      // User-feedback 2026-05-28: auto-trigger hero-visual generation is
-      // verwijderd — user gaf nooit expliciet opdracht voor een afbeelding.
-      // Hero-visual blijft beschikbaar via de handmatige knop in Step 3
-      // (PuckPageBuilder) wanneer user 'm wil.
-      // User-feedback 2026-05-28: na variant-keuze direct door naar Step 3.
-      // Verwijdert de tussenstap met section-by-section preview. Step 3
-      // (Medium/Puck) krijgt de gepersisteerde puckData zodra contextStack
-      // ververst is.
+      // Verplichte header-image (user-feedback 2026-06-03): een LP zonder
+      // hero-image is niet toegestaan. Is er geen handmatig geselecteerde of
+      // reeds aanwezige visual → genereer er automatisch één. Fire-and-forget
+      // zodat we direct naar Step 3 kunnen; de hero verschijnt zodra de
+      // generatie klaar is (puckData-PATCH + refresh-event). Faalt 'm, dan
+      // blijft de handmatige knop in Step 3 beschikbaar.
+      if (!chosen.hero.heroVisualUrl) {
+        setIsGeneratingVisual(true);
+        void generateHeroVisualFor(chosen)
+          .catch(() => {
+            setVisualError('Automatische header-image mislukt — genereer handmatig in Step 3.');
+          })
+          .finally(() => setIsGeneratingVisual(false));
+      }
+      // Na variant-keuze direct door naar Step 3 (Medium/Puck), dat de
+      // gepersisteerde puckData rendert zodra contextStack ververst is.
       onAdvance();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Variant-keuze opslaan mislukt');
     } finally {
       setIsChoosing(false);
     }
-  }, [contextStack, deliverableId, setContextStack, setStructuredVariant, onAdvance]);
+  }, [contextStack, deliverableId, selectedHeroImageUrl, setContextStack, setStructuredVariant, onAdvance, generateHeroVisualFor]);
 
   const handleGenerateVisual = useCallback(async () => {
     if (!chosenVariant) return;
     setIsGeneratingVisual(true);
     setVisualError(null);
     try {
-      const heroVisualInstruction = buildHeroVisualInstruction(chosenVariant, contextStack);
-      const result = await generateCanvasVisual(deliverableId, {
-        instruction: heroVisualInstruction,
-        aspectRatio: '16:9',
-        count: 1,
-      });
-      const variants = result.variants ?? [];
-      if (variants.length > 0) {
-        const mapped = variants.map((v, i) => ({
-          index: i, url: v.url, prompt: v.prompt ?? '', isSelected: i === 0,
-        }));
-        setImageVariants(mapped);
-        const firstUrl = variants[0]?.url;
-        if (firstUrl) {
-          const updated: LandingPageVariantContent = {
-            ...chosenVariant,
-            hero: { ...chosenVariant.hero, heroVisualUrl: firstUrl },
-          };
-          setStructuredVariant(updated);
-          const puckData = variantToPuckDataFromStructured(updated, contextStack);
-          await fetch(`/api/studio/${deliverableId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ settings: { structuredVariant: updated, puckData } }),
-          });
-          window.dispatchEvent(
-            new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
-          );
-        }
-      }
+      await generateHeroVisualFor(chosenVariant);
     } catch (err) {
       setVisualError(err instanceof Error ? err.message : 'Visual-generatie mislukt');
     } finally {
       setIsGeneratingVisual(false);
     }
-  }, [contextStack, deliverableId, chosenVariant, setImageVariants, setStructuredVariant]);
+  }, [chosenVariant, generateHeroVisualFor]);
+
+  /**
+   * LP auto-iterate (Step 2): laat het backend de actieve variant herschrijven
+   * voor een hogere fidelity-score, vervangt 'm in-place in de options en
+   * herscoort. Vervangt de generieke studio-trigger die LP-structured niet kan
+   * lezen (gaf "0 woorden").
+   */
+  const handleAutoIterateVariant = useCallback(async () => {
+    if (!variantOptions) return;
+    const variant = variantOptions[activeVariantIndex];
+    if (!variant) return;
+    setIsAutoIterating(true);
+    setAutoIterateMsg(null);
+    try {
+      const res = await fetch(`/api/landing-pages/${deliverableId}/auto-iterate-variant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ variantIndex: activeVariantIndex, variant }),
+      });
+      const json = (await res.json()) as
+        | { status: 'skipped'; reason: string }
+        | { status: 'no_improvement'; score: number; scoreProjected: number }
+        | { status: 'proposal'; score: number; scoreProjected: number | null; variant: LandingPageVariantContent }
+        | { status: 'error'; error: string }
+        | { status?: undefined; error?: string };
+      if (!res.ok || !('status' in json) || json.status === undefined) {
+        setAutoIterateMsg(('error' in json && json.error) ? json.error : 'Verbeteren mislukt — probeer opnieuw.');
+        return;
+      }
+      if (json.status === 'skipped') {
+        setAutoIterateMsg(
+          json.reason === 'above-threshold'
+            ? 'Deze variant zit al boven de drempel.'
+            : 'Te weinig content om te verbeteren.',
+        );
+        return;
+      }
+      if (json.status === 'no_improvement') {
+        setAutoIterateMsg(`Geen verbetering gevonden (${json.score} → ${json.scoreProjected}). Huidige variant blijft.`);
+        return;
+      }
+      if (json.status === 'error') {
+        setAutoIterateMsg(json.error);
+        return;
+      }
+      // proposal — vervang variant in-place + herscoor zodat de bar update.
+      setStructuredVariantOptions(
+        variantOptions.map((v, i) => (i === activeVariantIndex ? json.variant : v)),
+      );
+      void scoreVariantFidelity(json.variant, activeVariantIndex);
+      setAutoIterateMsg(`Verbeterd: ${json.score} → ${json.scoreProjected ?? '?'}.`);
+    } catch (err) {
+      setAutoIterateMsg(err instanceof Error ? err.message : 'Verbeteren mislukt');
+    } finally {
+      setIsAutoIterating(false);
+    }
+  }, [variantOptions, activeVariantIndex, deliverableId, setStructuredVariantOptions, scoreVariantFidelity]);
 
   // ─── Briefing incompleet ─────────────────────────────────
   if (briefIncomplete) {
@@ -446,8 +552,49 @@ export function LandingPageGenerateBlock({
         {/* Track 5 — F-VAL fidelity-score voor LP-variant. Verschijnt zodra
             scoring-call gestart is (running state) en update naar complete
             (~20s later) via setFidelityCompleteForVariant. Identiek pattern
-            aan Step2ContentVariants.tsx voor content-deliverables. */}
-        <FidelityScoreBar deliverableId={deliverableId} />
+            aan Step2ContentVariants.tsx voor content-deliverables.
+            variantIndex koppelt de bar aan de A/B-toggle hieronder zodat
+            klikken op B diens score toont. */}
+        {variantOptions.length > 1 ? (
+          <div className="flex items-center gap-2" role="tablist" aria-label="Variant voor fidelity-score">
+            {variantOptions.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={activeVariantIndex === i}
+                onClick={() => setActiveVariantIndex(i)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  activeVariantIndex === i
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Variant {String.fromCharCode(65 + i)}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        <FidelityScoreBar deliverableId={deliverableId} variantIndex={activeVariantIndex} suppressAutoIterateCta />
+        {/* LP-specifieke auto-iterate: verbetert de actieve variant in-place.
+            Vervangt de generieke studio-trigger (gaf "0 woorden" op LP). */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleAutoIterateVariant}
+            disabled={isAutoIterating || isChoosing}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 text-sm font-medium hover:bg-emerald-100 disabled:opacity-50"
+          >
+            {isAutoIterating ? (
+              <><Loader2 className="h-4 w-4 animate-spin" />Verbeteren…</>
+            ) : (
+              <><Sparkles className="h-4 w-4" />Verbeter variant {String.fromCharCode(65 + activeVariantIndex)} automatisch</>
+            )}
+          </button>
+          {autoIterateMsg ? (
+            <p className="text-xs text-gray-600">{autoIterateMsg}</p>
+          ) : null}
+        </div>
         {partialDelivery ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />

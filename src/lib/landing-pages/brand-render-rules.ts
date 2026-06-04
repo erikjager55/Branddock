@@ -267,8 +267,10 @@ export function pickButtonStyle(
   return {
     shape,
     radiusPx: radius.button,
-    paddingX: spacing[Math.min(spacing.length - 1, 6)] ?? 24,
-    paddingY: spacing[Math.min(spacing.length - 1, 3)] ?? 12,
+    // Cap op normale CTA-maten: spacing[6] kan voor ruime scales (MINIMAL=96,
+    // EXPERIENTIAL=96) een absurd grote button geven zodra die een fill heeft.
+    paddingX: Math.min(spacing[Math.min(spacing.length - 1, 6)] ?? 24, 40),
+    paddingY: Math.min(spacing[Math.min(spacing.length - 1, 3)] ?? 12, 16),
     fontWeight,
     textTransform,
     letterSpacing,

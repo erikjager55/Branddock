@@ -294,19 +294,23 @@ export interface PhotographyTokens {
 
 export const DEFAULT_BRAND_TOKENS: BrandTokens = {
   // Legacy
-  primaryHex: '#1FD1B2',
+  // NB: brand/accent/action zijn bewust NEUTRAAL (slate), niet Branddock's
+  // eigen huisstijl (#1FD1B2 teal / #F59E0B amber). Deze waarden zijn de
+  // ultieme fallback wanneer een klant-scrape geen bruikbare kleur oplevert;
+  // ze mogen NOOIT de app-huisstijl in een klant-LP lekken.
+  primaryHex: '#1F2937',
   secondaryHex: '#0F172A',
-  accentHex: '#F59E0B',
+  accentHex: '#475569',
   neutralHex: '#64748B',
   // Surface
   surface: '#FFFFFF',
   onSurface: '#0F172A',
   surfaceMuted: '#64748B',
   surfaceBorder: '#E2E8F0',
-  // Brand
-  brand: '#1FD1B2',
+  // Brand (neutraal — zie noot hierboven)
+  brand: '#1F2937',
   onBrand: '#FFFFFF',
-  brandSubtle: '#E6F9F5',
+  brandSubtle: '#F1F5F9',
   // Fase A — Usage-aware (null = geen signal in bron-CSS, val terug op heuristic)
   heroBgColor: null,
   headingTextColor: null,
@@ -323,11 +327,11 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
     TOP_NAVIGATION: null,
     QUOTE_BLOCK: null,
   },
-  // Action
-  action: '#1FD1B2',
+  // Action (neutraal — zie noot bij brand)
+  action: '#1F2937',
   onAction: '#FFFFFF',
-  // Accent
-  accent: '#F59E0B',
+  // Accent (neutraal — zie noot bij brand)
+  accent: '#475569',
   // Typography
   headingFont: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
   bodyFont: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
@@ -626,7 +630,21 @@ function pickSurfaceBorder(colors: StyleguideColorLike[]): StyleguideColorLike |
   return lightNeutral ?? null;
 }
 
-function pickBrand(colors: StyleguideColorLike[]): StyleguideColorLike | null {
+/**
+ * True wanneer een kleur een ONGEWIJZIGDE framework-default is (Bootstrap
+ * `--bs-primary`, WordPress synced-block). Die zijn geen merk-kleur, ook al
+ * classificeert de scraper ze soms als high-confidence PRIMARY. We sluiten ze
+ * uit van brand/accent-picking. NB: een kleur die alleen 'bootstrap' draagt
+ * maar niet 'default'/'synced-block' (bv. Zwarthout's charcoal text-kleur)
+ * blijft bruikbaar.
+ */
+function isFrameworkDefaultColor(c: StyleguideColorLike): boolean {
+  return hasAnyTag(c, ['bootstrap', 'wordpress', 'framework'])
+    && hasAnyTag(c, ['default', 'synced-block']);
+}
+
+function pickBrand(colorsRaw: StyleguideColorLike[]): StyleguideColorLike | null {
+  const colors = colorsRaw.filter((c) => !isFrameworkDefaultColor(c));
   // PRIMARY tagged "brand" but NOT "background"/"header"/"text"
   // (filtert out classifier-fouten zoals "Charcoal Navy → PRIMARY"
   //  bij minimalistische sites)
@@ -656,9 +674,10 @@ function pickBrand(colors: StyleguideColorLike[]): StyleguideColorLike | null {
 }
 
 function pickAccent(
-  colors: StyleguideColorLike[],
+  colorsRaw: StyleguideColorLike[],
   brandHex: string,
 ): StyleguideColorLike | null {
+  const colors = colorsRaw.filter((c) => !isFrameworkDefaultColor(c));
   // ACCENT category, niet identiek aan brand
   const accents = colors.filter(
     (c) => c.category === 'ACCENT' && c.hex.toLowerCase() !== brandHex.toLowerCase(),
@@ -767,13 +786,18 @@ export function extractBrandTokensFromStyleguide(
   const surfaceBorderColor = pickSurfaceBorder(colors);
   const surfaceBorder = surfaceBorderColor?.hex ?? DEFAULT_BRAND_TOKENS.surfaceBorder;
 
+  // Brand-kleur: prefereer een echte merk-kleur; val anders terug op de
+  // donkerste betekenisvolle klant-kleur (= onSurface, bv. Zwarthout's
+  // verkoold-zwart) — NOOIT op Branddock's eigen huisstijl (#1FD1B2 teal).
   const brandColor = pickBrand(colors);
-  const brand = brandColor?.hex ?? DEFAULT_BRAND_TOKENS.brand;
+  const brand = brandColor?.hex ?? onSurface;
   const onBrand = pickOnColor(brandColor);
-  const brandSubtle = brand ? lighten(brand, 0.85) : DEFAULT_BRAND_TOKENS.brandSubtle;
+  const brandSubtle = lighten(brand, 0.85);
 
+  // Accent: echte accent-kleur, anders de brand-kleur (monochroom) — nooit de
+  // Branddock-amber default.
   const accentColor = pickAccent(colors, brand);
-  const accent = accentColor?.hex ?? DEFAULT_BRAND_TOKENS.accent;
+  const accent = accentColor?.hex ?? brand;
 
   // ── WCAG pre-render gate (Sprint 2 §3b) ──
   // Forceer veilige fallbacks bij contrast-fail: voorkomt unreadable
@@ -885,16 +909,14 @@ export function extractBrandTokensFromStyleguide(
       .map((t) => t.value)
       .filter((v): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0);
     if (values.length === 0) return undefined;
-    // Robuste heuristic voor unit-loze tokens:
-    //  - Fractional value < 1 (bv. 0.25, 0.5) → zeker rem.
-    //  - Alle waardes integers EN minstens één >= 8 → zeker px (Napking 16/20/24,
-    //    Better Brands 4/10/12/16/20/24, Tailwind interpreted in px-mode).
-    //  - Anders rem-conventie (LINFI 1/2/4/4.25/5/7 → ×16).
-    // Voorkomt zowel "Tailwind 16rem = 16px" als "Napking 16px = 1px" misfires.
-    const hasFractional = values.some((v) => v < 1);
-    const allInteger = values.every((v) => Number.isInteger(v));
-    const hasLargeInteger = values.some((v) => v >= 8);
-    const isPx = !hasFractional && allInteger && hasLargeInteger;
+    // Robuuste heuristic voor unit-loze tokens, op MAGNITUDE i.p.v. integer-zijn:
+    //  - Een rem-spacing-scale is altijd klein (grootste token typisch 4-8rem);
+    //    een px-scale loopt tot 16-160px. Dus: bevat de scale een waarde >= 12,
+    //    dan is het px. Anders rem-conventie (×16).
+    //  Voorbeelden: Napking [1.6,4,6.6,8,12,16] max 16 → px (eerder fout ×16 door
+    //  de non-integer 1.6/6.6); LINFI [1,2,4,4.25,5,7] max 7 → rem ×16; Tailwind
+    //  [4,8,12,16,20,24] → px; rem [0.25,0.5,1,2,4] → rem.
+    const isPx = values.some((v) => v >= 12);
     const px = values
       .map((v) => isPx ? Math.round(v) : Math.round(v * 16))
       .sort((a, b) => a - b);

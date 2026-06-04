@@ -35,6 +35,23 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ---
 
+## 2026-06
+
+### 276. LP brand-fidelity overhaul — scrape → tokens → render (geen app-identity-lek meer)
+
+Systematische fix van off-brand/slecht-ogende landing-pages, na een 4-lagen deep-research (audit: `docs/audits/2026-06-04-lp-render-pipeline-napking.md`, plan: `~/.claude/plans/functional-conjuring-harbor.md`). Meta-oorzaak: de pipeline behandelde CSS-tekst-aanwezigheid als merk-design, viel bij zwakke extractie terug op **Branddock's eigen huisstijl** (teal #1FD1B2 / amber #F59E0B) en de renderer **verzon** visuals (textuur, 272px-koppen). Aanleiding: Zwarthout-LP renderde teal (nergens op de site) met verzonnen achtergrond-structuur.
+
+**Fase 1 — identity-leak**: `DEFAULT_BRAND_TOKENS.brand/accent/brandSubtle/action` geneutraliseerd (slate i.p.v. teal/amber); `brand = pickBrand(colors) ?? onSurface` (donkerste klant-kleur), `accent = pickAccent ?? brand` — een klant-LP krijgt nooit meer de app-kleur. **Fase 2 — preset-over-scrape/sizing**: px/rem-misclassificatie op magnitude (Napking `[1.6..16]` werd ×16), hero-CTA radius uit scraped `tokens.button` (gecapt, niet MINIMAL→scherp/pill), `pickButtonStyle` padding gecapt (spacing[6]=96 giant button), display-koppen gecapt (88/120px i.p.v. 272), hero section-padding via `sectionRhythm`. **Fase 3 — render-eerlijkheid**: `readableTextColor` dwingt AA-contrast af op feature/trust/FAQ-body (onzichtbare tekst), `pickBackgroundDepth`→`none` (geen verzonnen textuur), feature/trust-koppen gecapt op 32px. **Fase 4 — confidence-gating**: garbage-button-detectie (transparant+padding 0, of `.wp-block-button` framework-selector → sane defaults), framework-default-kleuren (`bootstrap/wordpress` + `default/synced-block` tag) uitgesloten van brand/accent-picking.
+
+**Bewijs**: nieuwe smoke `phase40-brand-fallback-no-leak` 20/20; cross-brand-verificatie (`scripts/verify-cross-brand-tokens.ts`) over alle 15 merken → **0 teal-leaks, 0 amber-leaks, 0 spacing-blowups**, elk merk krijgt zijn echte kleur (Zwarthout #212529 charcoal, Napking #008ACF blauw) of veilig-neutraal (Wassink #0F172A). tsc + lint 0 errors; token/render-smokes groen.
+
+**Out-of-scope (Track A / live-verificatie)**: bron-website moet bereikbaar zijn voor een goede scrape (napking.nl/zwarthout.com zijn WordPress-placeholders); diepe scrape-pipeline-filtering (usageEvidence consumeren, in-scrape framework-filter, scrape-kwaliteitsguard met UI) + gegarandeerd hero-beeld vragen een live re-scrape om te verifiëren.
+
+- Task: `tasks/lp-fidelity-bugfixes-step2.md` + `tasks/lp-step3-rendering-bugs.md` (smoke-bugs) + audit/plan hierboven
+- ADR: -
+- Spec: `docs/audits/2026-06-04-lp-render-pipeline-napking.md`
+- Commit: (branch `fix/lp-smoke-bugs`, nog te committen)
+
 ## 2026-05
 
 ### 275. Competitor content-item discovery — RSS + sitemap producer voor CompetitorContentItem

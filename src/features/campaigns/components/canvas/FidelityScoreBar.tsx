@@ -44,6 +44,20 @@ interface FidelityScoreBarProps {
   compact?: boolean;
   /** Deliverable ID — required om "Vergelijk met vanille AI" knop te tonen */
   deliverableId?: string | null;
+  /**
+   * Expliciete variant-index override. Wanneer gezet (≠ null) toont de bar de
+   * score van die variant i.p.v. de uit `selections`/`variantGroups` afgeleide
+   * index. Gebruikt door LP-flow (LandingPageGenerateBlock) die geen generieke
+   * variantGroups zet maar wel per-variant scoort.
+   */
+  variantIndex?: number | null;
+  /**
+   * Onderdrukt de generieke "Verbeter automatisch"-CTA. Gebruikt door de
+   * LP-flow, die een eigen structured-variant auto-iterate aanbiedt i.p.v. de
+   * generieke studio-trigger (die platte deliverableComponent-tekst leest en
+   * op LP-varianten faalt).
+   */
+  suppressAutoIterateCta?: boolean;
 }
 
 /**
@@ -58,7 +72,7 @@ interface FidelityScoreBarProps {
  *   - computing:      same as detector-only, with "computing composite…" spinner
  *   - complete:       full position-bar + composite badge + pillar breakdown
  */
-export function FidelityScoreBar({ compact = false, deliverableId = null }: FidelityScoreBarProps) {
+export function FidelityScoreBar({ compact = false, deliverableId = null, variantIndex = null, suppressAutoIterateCta = false }: FidelityScoreBarProps) {
   // F9 (audit 2026-05-13): per-variant scoring. Lees score voor currently-
   // selected variant uit fidelityScoresByVariantIndex map. Fall back op
   // legacy fidelityScore wanneer geen variant-specific entry (b.v. wanneer
@@ -69,10 +83,11 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   // Selected variant-index = selection van eerste group (alle groups syncen)
   const selectedVariantIndex = React.useMemo(() => {
+    if (variantIndex != null) return variantIndex;
     const firstGroup = variantGroups.keys().next().value;
     if (!firstGroup) return 0;
     return selections.get(firstGroup) ?? 0;
-  }, [variantGroups, selections]);
+  }, [variantIndex, variantGroups, selections]);
   const fidelity =
     variantScores.get(selectedVariantIndex) ??
     variantScores.get(0) ??
@@ -272,7 +287,8 @@ export function FidelityScoreBar({ compact = false, deliverableId = null }: Fide
           UX-fix 2026-05-13: CTA blijft beschikbaar voor re-try ook na een
           eerdere voltooide auto-iterate (was: alleen bij stage === 'idle').
           Verborgen alleen tijdens actieve iteratie + na threshold-success. */}
-      {isComplete &&
+      {!suppressAutoIterateCta &&
+        isComplete &&
         fidelity.compositeScore !== null &&
         fidelity.thresholdMet === false &&
         autoIterate.stage !== 'iterating' &&
