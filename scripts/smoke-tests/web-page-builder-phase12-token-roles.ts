@@ -219,7 +219,10 @@ group('Edge case: null/lege styleguide → defaults');
   const emptyTokens = extractBrandTokensFromStyleguide({ colors: [], fonts: [] });
   assert('null → DEFAULT brand', nullTokens.brand === DEFAULT_BRAND_TOKENS.brand);
   assert('undefined → DEFAULT brand', undefTokens.brand === DEFAULT_BRAND_TOKENS.brand);
-  assert('lege arrays → DEFAULT brand', emptyTokens.brand === DEFAULT_BRAND_TOKENS.brand);
+  // Fase 1 (brand-fidelity): bij lege colors valt brand terug op onSurface
+  // (neutraal, gegrond) i.p.v. de losse DEFAULT.brand — beide neutraal, geen
+  // Branddock-identity-lek. Assertie weerspiegelt het nieuwe correcte gedrag.
+  assert('lege arrays → brand grondt op onSurface (neutraal)', emptyTokens.brand === emptyTokens.onSurface);
   assert('null → DEFAULT onSurface', nullTokens.onSurface === DEFAULT_BRAND_TOKENS.onSurface);
 }
 

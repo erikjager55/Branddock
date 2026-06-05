@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
 import { judgeLpFidelity } from "@/lib/landing-pages/lp-fidelity-judge";
 import { capturePuckTreeScreenshot } from "@/lib/landing-pages/lp-screenshotter";
+import { fetchMediaAsBuffer } from "@/lib/storage/fetch-media-buffer";
 import type { Data } from "@puckeditor/core";
 
 /**
@@ -91,13 +92,12 @@ export async function POST(
     );
   }
 
-  // Fetch bron-screenshot als buffer
+  // Fetch bron-screenshot als buffer. heroScreenshotUrl is doorgaans een
+  // lokaal storage-pad ("/uploads/media/…") — server-side fetch() kan dat
+  // niet resolven, dus fetchMediaAsBuffer leest relatieve paden van disk.
   let sourceHeroBuffer: Buffer;
   try {
-    const res = await fetch(heroScreenshotUrl);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const arrayBuf = await res.arrayBuffer();
-    sourceHeroBuffer = Buffer.from(arrayBuf);
+    sourceHeroBuffer = await fetchMediaAsBuffer(heroScreenshotUrl, "bron-screenshot");
   } catch (err) {
     return NextResponse.json(
       {

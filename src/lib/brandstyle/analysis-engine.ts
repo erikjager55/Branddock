@@ -23,6 +23,18 @@ import {
 } from './url-scraper';
 import { parsePdf, type ParsedPdfData } from './pdf-parser';
 import { inferLayoutStyleFromSiteData } from './infer-layout-style';
+import { isFrameworkDefaultPrimary } from './framework-defaults';
+import { isNonBrandColor } from './non-brand-colors';
+import { buildColorPairings } from './color-pairings';
+import {
+  hasNoBrandFonts,
+  planHeadlessMerge,
+  shouldTryHeadless,
+  selectDetectedFontNames,
+  dedupeBrandFonts,
+  canonicalizeFontFamily,
+} from './font-fallback';
+import { normalizeTypeScale } from './type-scale-normalizer';
 import {
   buildVisualIdentityPrompt,
   buildVoiceImageryPrompt,
@@ -82,7 +94,7 @@ interface VisualIdentityResult {
  * Confidence + detectorSource come straight from the scraper pipeline so
  * the UI can show how trustworthy the color is.
  */
-interface ResolvedColor {
+export interface ResolvedColor {
   hex: string;
   name: string;
   category: 'PRIMARY' | 'SECONDARY' | 'ACCENT' | 'NEUTRAL' | 'SEMANTIC';
@@ -264,39 +276,79 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     // Before falling all the way through to refuse-mode, try the headless
     // browser fallback (if enabled) — many CSS-in-JS / SPA sites only reveal
     // their brand tokens via getComputedStyle after the JS has run.
+    // Tel detector-tokens mee als "sterk genoeg": de Fase-2-downgrade van een
+    // framework-default-primary naar 'low' mag op zichzelf geen refuse-mode
+    // triggeren op een dunne Bootstrap-pagina (regressie-guard).
     const isWeakPalette = (data: ProcessedData): boolean =>
-      !data.authoritativeColors.some((c) => c.confidence === 'high') &&
+      !data.authoritativeColors.some((c) => c.confidence === 'high' || c.source === 'detector') &&
       data.authoritativeColors.length < 3;
 
+    // Fase 4: de headless computed-style-render is óók de bron voor merk-fonts
+    // (body/h1/p `getComputedStyle().fontFamily`). Een site met een prima
+    // palet maar nul gedetecteerde fonts moet 'm dus ook kunnen triggeren —
+    // niet alleen een zwak palet. De merge is per-bron deficiëntie-gestuurd
+    // (`planHeadlessMerge`) zodat een goed statisch palet/fontset nooit door
+    // de grovere headless-render wordt overschreven.
     let usedHeadlessRender = false;
-    if (isWeakPalette(processed)) {
+    // Gerenderde CSS bewaard puur voor de font-role-classifier (zie de
+    // writeResultToDb-aanroep). Alleen gevuld wanneer we headless-fonts
+    // adopteren zónder de kleur-CSS — dan ziet `combinedCss` de selector-
+    // context van die fonts zonder de kleur-pipeline te verstoren.
+    let headlessFontCss = '';
+    const weakPalette = isWeakPalette(processed);
+    const fontsEmpty = hasNoBrandFonts(processed.fonts ?? []);
+    if (shouldTryHeadless({ weakPalette, fontsEmpty })) {
       const { isHeadlessFallbackEnabled, scrapeUrlViaHeadless } = await import('./playwright-fallback');
       if (isHeadlessFallbackEnabled()) {
         try {
-          console.log(`[brandstyle-analysis] Static palette weak, trying headless fallback for ${url}`);
-          const headlessScraped = await scrapeUrlViaHeadless(url);
-          // Replace CSS sources with the post-render serialized output so
-          // the full downstream pipeline (variables, visual heuristics,
-          // components, frequency analysis) sees the actual rendered
-          // stylesheets — including CSS-in-JS that the static scrape missed.
-          scraped = {
-            ...scraped,
-            cssColors: headlessScraped.cssColors,
-            cssFonts: headlessScraped.cssFonts,
-            bodyFont: headlessScraped.bodyFont ?? scraped.bodyFont,
-            headingFont: headlessScraped.headingFont ?? scraped.headingFont,
-            colorFrequency: headlessScraped.colorFrequency,
-            title: scraped.title ?? headlessScraped.title,
-            inlineCss: headlessScraped.inlineCss || scraped.inlineCss,
-            cssVariables: headlessScraped.cssVariables.length > 0
-              ? headlessScraped.cssVariables
-              : scraped.cssVariables,
-          };
-          processed = preprocessScrapeData(scraped);
-          usedHeadlessRender = true;
           console.log(
-            `[brandstyle-analysis] Headless extracted ${processed.authoritativeColors.length} colors, ${scraped.inlineCss.length} bytes CSS`,
+            `[brandstyle-analysis] Static ${weakPalette ? 'palette weak' : 'palette ok'}/${fontsEmpty ? 'fonts empty' : 'fonts ok'}, trying headless fallback for ${url}`,
           );
+          const headlessScraped = await scrapeUrlViaHeadless(url);
+          const { adoptColors, adoptFonts } = planHeadlessMerge({
+            weakPalette,
+            fontsEmpty,
+            headlessFontCount: headlessScraped.cssFonts.length,
+          });
+          if (adoptColors || adoptFonts) {
+            // Adopt headless color/CSS sources only when the static palette was
+            // weak (then the full downstream pipeline — variables, heuristics,
+            // components, frequency — sees the rendered CSS incl. CSS-in-JS).
+            // Adopt headless fonts only when static found none.
+            scraped = {
+              ...scraped,
+              ...(adoptColors
+                ? {
+                    cssColors: headlessScraped.cssColors,
+                    colorFrequency: headlessScraped.colorFrequency,
+                    inlineCss: headlessScraped.inlineCss || scraped.inlineCss,
+                    cssVariables: headlessScraped.cssVariables.length > 0
+                      ? headlessScraped.cssVariables
+                      : scraped.cssVariables,
+                  }
+                : {}),
+              ...(adoptFonts
+                ? {
+                    cssFonts: headlessScraped.cssFonts,
+                    bodyFont: headlessScraped.bodyFont ?? scraped.bodyFont,
+                    headingFont: headlessScraped.headingFont ?? scraped.headingFont,
+                  }
+                : {}),
+              title: scraped.title ?? headlessScraped.title,
+            };
+            // Fonts-only adoptie laat `inlineCss` statisch (bevat de headless-
+            // fonts dus niet). Bewaar de gerenderde CSS apart zodat de font-
+            // role-classifier de selector-context van die fonts wél ziet,
+            // zonder de uit inlineCss afgeleide kleur-derivatie te verstoren.
+            if (adoptFonts && !adoptColors) headlessFontCss = headlessScraped.inlineCss;
+            processed = preprocessScrapeData(scraped);
+            usedHeadlessRender = true;
+            console.log(
+              `[brandstyle-analysis] Headless adopted colors=${adoptColors} fonts=${adoptFonts}: ${processed.authoritativeColors.length} colors, ${(processed.fonts ?? []).length} fonts`,
+            );
+          } else {
+            console.log('[brandstyle-analysis] Headless render produced nothing worth adopting');
+          }
         } catch (headlessErr) {
           console.warn(
             `[brandstyle-analysis] Headless fallback failed: ${headlessErr instanceof Error ? headlessErr.message : String(headlessErr)}`,
@@ -419,6 +471,20 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         console.log(
           `[brandstyle-analysis] Usage evidence: ${strong} strong / ${processed.authoritativeColors.length - strong - none} weak / ${none} none`,
         );
+        // Fase 3 (brand-fidelity): kleuren die NIET op de pagina renderen
+        // (usageEvidence 'none') en niet uit logo/detector komen, zijn
+        // waarschijnlijk framework/CSS-ruis → downgrade naar 'low' vóór
+        // resolveColors (de AI classificeert 'low' als NEUTRAL).
+        for (const color of processed.authoritativeColors) {
+          if (
+            color.usageEvidence === 'none' &&
+            color.confidence !== 'low' &&
+            !color.source.startsWith('logo-extraction') &&
+            color.source !== 'detector'
+          ) {
+            color.confidence = 'low';
+          }
+        }
       } catch (verifyErr) {
         console.warn(
           `[brandstyle-analysis] Usage verification failed (non-critical): ${verifyErr instanceof Error ? verifyErr.message : String(verifyErr)}`,
@@ -476,8 +542,24 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         },
       );
     } catch (err) {
-      await markError(styleguideId, `Voice & imagery analysis failed: ${err instanceof Error ? err.message : String(err)}`);
-      return;
+      // Voice & imagery is ÉÉN sectie van de brandstyle. Claude levert hier af
+      // en toe malformed JSON (bv. een onontsnapte quote in een geciteerde
+      // merk-frase) die zelfs na retries + escape-repair niet parset. Dat mag
+      // de HELE analyse (kleuren, componenten, visual system) niet blokkeren —
+      // degradeer gracieus: log, ga door met lege voice-data. De gebruiker kan
+      // de voice/imagery-sectie later los her-analyseren.
+      console.warn(
+        `[brandstyle-analysis] Voice & imagery analysis failed (non-fatal, continuing with empty voice data): ${err instanceof Error ? err.message : String(err)}`,
+      );
+      voiceResult = {
+        contentGuidelines: [],
+        writingGuidelines: [],
+        examplePhrases: [],
+        photographyStyle: null,
+        photographyGuidelines: [],
+        illustrationGuidelines: [],
+        imageryDonts: [],
+      };
     }
 
     // Step 5: AI Call 3 — Design Language
@@ -563,6 +645,14 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     let finalComponents = scraped.components;
     let usedComponentScreenshots = false;
     let usedComponentVision = false;
+    // Multi-page computed `color`/`background-color`-frequenties uit de
+    // component-screenshotter (~5 pagina's) — voedt de usage-gedreven palet-
+    // filter ná dit blok. Null wanneer de screenshotter uit staat; de filter
+    // valt dan terug op de homepage pixel-pass usageEvidence.
+    let multiPageColorStyles: import('./palette-usage-filter').BulkColorStyles | null = null;
+    // Multi-page geobserveerde (tekstkleur | achtergrond)-paren → voor de
+    // observed-kleurcombinaties.
+    let multiPageColorPairs: Record<string, number> | null = null;
     try {
       const { isComponentScreenshotsEnabled, extractComponentsFromPages } =
         await import('./component-screenshotter');
@@ -572,12 +662,19 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         // the top 4 already contributed via static CSS/component merge;
         // running Playwright on them doubles wall-clock for little extra
         // visual variety.
+        // Fase 1b: prioritiseer component-rijke subpagina's (contact/product/
+        // shop) zodat ze in de top-4 screenshot-slice vallen i.p.v. erbuiten.
+        const { prioritiseScreenshotUrls } = await import('./component-extractor');
         const componentUrls = usedMultiPage
-          ? [url, ...subpageUrls.slice(0, 4)]
+          ? prioritiseScreenshotUrls(url, subpageUrls).slice(0, 5)
           : [url];
         console.log(`[brandstyle-analysis] Taking component screenshots for ${componentUrls.length} page(s)`);
         const shotResult = await extractComponentsFromPages(componentUrls, styleguideMeta.workspaceId);
         const shot = shotResult.components;
+        // Bewaar de multi-page computed-kleur-frequenties voor de palet-filter
+        // en de geobserveerde fg/bg-paren voor de kleurcombinaties.
+        multiPageColorStyles = shotResult.bulkStyles?.styles ?? null;
+        multiPageColorPairs = shotResult.bulkStyles?.colorPairs ?? null;
 
         // Augment static CSS heuristics met runtime computed-style frequencies.
         // Catches Tailwind/CSS-in-JS resolved values die de cheerio-pass mist.
@@ -617,7 +714,7 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
           }
           // Strip the in-memory Buffer before handing off to the persistence
           // layer — DetectedComponent is the public shape.
-          finalComponents = enriched.map((c) => ({
+          const shotComponents = enriched.map((c) => ({
             type: c.type,
             label: c.label,
             selector: c.selector,
@@ -627,8 +724,17 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
             confidence: c.confidence,
             screenshotUrl: c.screenshotUrl ?? null,
           }));
+          // Fase 1a: NIET wholesale vervangen. De screenshotter dekt maar 5
+          // pagina's (homepage + 4) en mist daardoor types die alleen op
+          // niet-gescreenshotte subpagina's staan — bv. form-inputs op
+          // /contact die wél in de multi-page static-merge zitten. Houd de
+          // screenshot-set leidend en backfill uitsluitend ontbrekende types.
+          const { backfillComponentsByType } = await import('./component-extractor');
+          finalComponents = backfillComponentsByType(shotComponents, scraped.components ?? []);
           usedComponentScreenshots = true;
-          console.log(`[brandstyle-analysis] Captured ${finalComponents.length} component screenshots`);
+          console.log(
+            `[brandstyle-analysis] Captured ${shotComponents.length} screenshot components + backfilled to ${finalComponents.length} total`,
+          );
         }
       }
     } catch (shotErr) {
@@ -636,6 +742,62 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         `[brandstyle-analysis] Component screenshots failed (non-critical): ${shotErr instanceof Error ? shotErr.message : String(shotErr)}`,
       );
     }
+
+    // Usage-gedreven palet-filter: drop kleuren die op GÉÉN geanalyseerde
+    // pagina renderen (multi-page computed-style + homepage pixel-pass);
+    // framework-defaults blijven alléén bij sterk gebruik; logo + structurele
+    // kleuren altijd. Vervangt de oude hex/tag-blocklist door een werkelijk-
+    // gebruik-test, zodat een kleur nooit valt enkel omdat hij een framework-
+    // hex deelt — alleen als hij aantoonbaar niet gebruikt wordt.
+    {
+      const { applyUsageDrivenPaletteFilter } = await import('./palette-usage-filter');
+      const usageEvidenceByHex = new Map<string, 'strong' | 'weak' | 'none' | undefined>();
+      for (const c of processed.authoritativeColors) {
+        const hx = normalizeHex(c.hex);
+        if (hx) usageEvidenceByHex.set(hx.toUpperCase(), c.usageEvidence);
+      }
+      // Een GEFAALDE/lege pixel-pass (sharp-decode-fail, nul opaque pixels)
+      // markeert ÁLLE kleuren als 'none' — dat is "kon-niet-meten", niet
+      // "bewezen ongebruikt". Gebruik de pixel-verdicten daarom alleen als de
+      // pass minstens één POSITIEF signaal opleverde; anders telt 'none' niet
+      // als drop-bewijs en beslist de multi-page-data (of geen-bewijs → keep).
+      const pixelHadSignal = [...usageEvidenceByHex.values()].some(
+        (e) => e === 'strong' || e === 'weak',
+      );
+      if (!pixelHadSignal) usageEvidenceByHex.clear();
+      const beforeCount = resolvedColors.length;
+      resolvedColors = applyUsageDrivenPaletteFilter(resolvedColors, {
+        bulkColorStyles: multiPageColorStyles,
+        usageEvidenceByHex,
+      });
+      console.log(
+        `[brandstyle-analysis] Usage-driven palette filter: ${beforeCount} → ${resolvedColors.length} colors (multi-page=${multiPageColorStyles ? 'yes' : 'no'})`,
+      );
+    }
+
+    // Brand-primary-from-merk-signaal: corrigeer een achromatische (tekst/
+    // surface) kleur die op frequentie de PRIMARY-slot won terwijl de échte
+    // merk-kleur chromatisch is (Napking: zwart wordmark #1A171B als PRIMARY,
+    // blauwe logo-accent #008ACF als ACCENT → omgedraaid). Draait NÁ de usage-
+    // filter zodat de gepromote kleur al door werkelijk-gebruik is gefilterd.
+    {
+      const before = resolvedColors.find((c) => c.category === 'PRIMARY')?.hex;
+      resolvedColors = demoteAchromaticPrimary(
+        resolvedColors,
+        processed.authoritativeColors,
+        visualResult.logoGuidelines ?? [],
+      );
+      const after = resolvedColors.find((c) => c.category === 'PRIMARY')?.hex;
+      if (before !== after) {
+        console.log(`[brandstyle-analysis] PRIMARY swapped from achromatic ${before} → brand color ${after}`);
+        // De swap demote de ex-PRIMARY naar NEUTRAL — ná de neutral-cap in de
+        // usage-filter. Her-cap zodat de cap (4) consistent blijft en een
+        // redundante near-black niet als 5e neutral binnenkomt.
+        const { capNeutrals } = await import('./palette-usage-filter');
+        resolvedColors = capNeutrals(resolvedColors, multiPageColorStyles);
+      }
+    }
+
     // Tag provenance so the UI can surface what path was used:
     //   - gemini-fallback  → LLM-reconstructed data (reduced accuracy)
     //   - headless-render  → browser-rendered CSS (higher fidelity than static)
@@ -665,7 +827,11 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       scraped.headingFont,
       visionLogo,
       scraped.adobeFonts ?? null,
-      `${scraped.inlineCss ?? ''}\n${scraped.linkedCssContent ?? ''}`,
+      // `headlessFontCss` is leeg behalve bij fonts-only headless-adoptie —
+      // dan levert het de gerenderde selector-context voor de font-role-
+      // classifier (de kleur-pipeline bleef op de statische inlineCss).
+      `${scraped.inlineCss ?? ''}\n${scraped.linkedCssContent ?? ''}\n${headlessFontCss}`,
+      multiPageColorPairs,
     );
 
     // Route scraped brand images into the Media Library instead of persisting
@@ -768,6 +934,11 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         // request session.
         triggeredById: styleguideMeta.createdById ?? null,
         scrapedJson: {
+          // Bewust het RUWE pre-drop palet (incl. framework-default-ruis die
+          // Fase A uit de styleguide filtert) — dit is de scrape-snapshot voor
+          // drift-detectie in de learning-loop. Consumenten die het schone
+          // palet willen, gebruiken `semanticTokens`/de StyleguideColor-rijen,
+          // niet `scrapedJson.colors`. (Snapshot-diff draait al op tokensJson.)
           colors: processed.authoritativeColors,
           fonts: processed.fonts,
           fontSizes: processed.fontSizes,
@@ -1140,7 +1311,13 @@ export function preprocessScrapeData(scraped: ScrapedData): ProcessedData {
   // and the logo extractor would just add noise (multiple "primary"s
   // confuse Claude's classifier). When promoted, the most dominant logo
   // colour becomes `primary` and the next one (if any) becomes `secondary`.
-  const frameworkHasPrimary = detectedTokens.some((t) => t.role === 'primary');
+  // Fase 2 (brand-fidelity): een ONGEWIJZIGDE framework-default primary
+  // (Bootstrap --bs-primary, WP-admin-blauw) telt NIET als "heeft al een
+  // canonieke merk-kleur" — anders firet de logo-rescue niet op een pure-
+  // Bootstrap-site en blijft de site zonder echte primary.
+  const frameworkHasPrimary = detectedTokens.some(
+    (t) => t.role === 'primary' && !isFrameworkDefaultPrimary(t.hex),
+  );
   if (!frameworkHasPrimary && scraped.logoColors && scraped.logoColors.length > 0) {
     const knownHexes = new Set(detectedTokens.map((t) => t.hex));
     const roleOrder: Array<'primary' | 'secondary'> = ['primary', 'secondary'];
@@ -1216,14 +1393,19 @@ function buildAuthoritativePalette(
   };
 
   // 1. Framework-detector tokens first — these are by-convention brand tokens.
+  // Fase 2 (brand-fidelity): een ONGEWIJZIGDE framework-default PRIMARY
+  // (Bootstrap `--bs-primary` #0D6EFD, WP-admin-blauw) is GÉÉN merk-kleur —
+  // downgrade naar 'low' (→ AI classificeert als NEUTRAL) i.p.v. 'high', anders
+  // wint Bootstrap-blauw de PRIMARY-slot van de echte merk-kleur.
   for (const token of detectedTokens) {
     const [detectorName] = token.source.split(':');
+    const isDefaultPrimary = isFrameworkDefaultPrimary(token.hex);
     push({
       hex: token.hex,
       source: 'detector',
-      confidence: 'high',
+      confidence: isDefaultPrimary ? 'low' : 'high',
       detectorName,
-      detectorRole: token.role,
+      detectorRole: isDefaultPrimary ? undefined : token.role,
     });
   }
 
@@ -1527,7 +1709,7 @@ function resolveColors(
     if (hex) aiByHex.set(hex, ai);
   }
 
-  const resolved: ResolvedColor[] = [];
+  const items: Array<{ color: ResolvedColor; usageEvidence?: 'strong' | 'weak' | 'none' }> = [];
   authoritative.forEach((entry, index) => {
     const hex = normalizeHex(entry.hex);
     if (!hex) return;
@@ -1540,19 +1722,32 @@ function resolveColors(
     // in de "Neutral" bucket belanden terwijl ze duidelijk status-tints
     // zijn. PRIMARY/SECONDARY/ACCENT worden NIET aangeraakt — die zijn
     // expliciet brand-rollen.
-    const category = upgradePastelToSemantic(baseCategory, hex);
-    resolved.push({
+    const category = reclassifySaturatedNeutral(
+      upgradePastelToSemantic(baseCategory, hex),
       hex,
-      name: ai?.name?.trim() || defaultColorName(entry, index),
-      category,
-      tags: ai?.tags ?? [],
-      notes: ai?.notes?.trim() || defaultColorNotes(entry),
-      confidence: entry.confidence,
-      detectorSource: entry.detectorName ?? entry.source,
+      entry,
+    );
+    items.push({
+      color: {
+        hex,
+        name: ai?.name?.trim() || defaultColorName(entry, index),
+        category,
+        tags: ai?.tags ?? [],
+        notes: ai?.notes?.trim() || defaultColorNotes(entry),
+        confidence: entry.confidence,
+        detectorSource: entry.detectorName ?? entry.source,
+      },
+      usageEvidence: entry.usageEvidence,
     });
   });
 
-  return resolved;
+  // resolveColors geeft het VOLLEDIGE geclassificeerde palet terug. De
+  // usage-gedreven drop (framework-ruis / niet-renderende kleuren) gebeurt
+  // LATER in een aparte stap (`applyUsageDrivenPaletteFilter`), wanneer de
+  // multi-page computed-style aanwezigheid uit de component-screenshotter
+  // beschikbaar is — zodat een kleur alleen valt als hij op géén enkele
+  // geanalyseerde pagina rendert (niet op basis van een hex-blocklist).
+  return items.map((it) => it.color);
 }
 
 /**
@@ -1589,6 +1784,207 @@ export function upgradePastelToSemantic(
   return inSemanticRange ? 'SEMANTIC' : category;
 }
 
+/**
+ * Chroma-gate (verbeterplan Fase 4a, audit 2026-06-05-brandstyle-result).
+ * Een ECHTE neutral heeft lage saturatie; een als NEUTRAL geclassificeerde
+ * kleur met hoge saturatie (symptoom Zwarthout: "Bootstrap Blue"/"Vivid
+ * Purple"/"Royal Blue" in de Neutral-bucket) is een misclassificatie. We
+ * relabelen die naar ACCENT — behalve framework-default-ruis zónder
+ * usage-bewijs, die laten we een gemute NEUTRAL-swatch i.p.v. 'm te promoten.
+ * `upgradePastelToSemantic` dekt de lichte pastels; deze dekt de verzadigde
+ * mid-tones die daar doorheen glippen.
+ */
+export function reclassifySaturatedNeutral(
+  category: ResolvedColor['category'],
+  hex: string,
+  entry: Pick<AuthoritativeColor, 'usageEvidence'>,
+): ResolvedColor['category'] {
+  if (category !== 'NEUTRAL') return category;
+  const hsl = hexToHsl(hex);
+  if (!hsl) return category;
+  // Lage chroma = echte neutral; near-white/near-black hue is onbetrouwbaar.
+  if (hsl.s < 35) return category;
+  if (hsl.l >= 92 || hsl.l <= 8) return category;
+  // Framework-default-ruis zonder POSITIEF usage-bewijs niet promoten naar
+  // ACCENT. `usageEvidence` is undefined wanneer de vision-verifier niet liep
+  // (geen screenshots) — behandel dat als 'none', anders glipt een framework-
+  // default in het no-screenshot-pad alsnog naar ACCENT (review-fix).
+  if (
+    isFrameworkDefaultPrimary(hex) &&
+    entry.usageEvidence !== 'strong' &&
+    entry.usageEvidence !== 'weak'
+  ) {
+    return category;
+  }
+  return 'ACCENT';
+}
+
+/**
+ * Brand-primary-from-merk-signaal (audit 2026-06-05-cross-brand, Napking-fix).
+ *
+ * Array-niveau spiegel van `reclassifySaturatedNeutral`. De AI-classifier kent
+ * PRIMARY toe aan de meest-prominente kleur; op een merk met een achromatisch
+ * wordmark + chromatische accent (Napking: zwart wordmark, blauwe 'a' #008ACF)
+ * is dat de near-black TEKSTkleur, terwijl de échte merk-kleur naar ACCENT zakt.
+ * Deze pass demote een achromatische PRIMARY (tekst/surface) → NEUTRAL en
+ * promote de sterkste chromatische merk-kleur → PRIMARY — alléén met POSITIEF
+ * bewijs dat die challenger de merk-kleur is (logo-guideline-vermelding, een
+ * detector/vision-primary-rol, of sterk gebruik + merk-tag). No-op bij een
+ * chromatische primary (Zwarthout-oranje), monochrome merken (geen chromatisch
+ * alternatief), en framework/social/low-confidence/status challengers.
+ *
+ * Draait NÁ `applyUsageDrivenPaletteFilter` zodat een gepromote kleur al door
+ * de werkelijk-gebruik-test is gegaan (de filter keyt op hex, niet op category)
+ * — anders kan een gepromote maar nergens-renderende accent alsnog vallen en
+ * blijft het merk zonder PRIMARY.
+ */
+const PRIMARY_SWAP_MIN_SCORE = 3;
+const ALERT_TAG_RE = /^(success|error|warning|warn|danger|info|alert|notice)$/;
+const CORE_BRAND_TAG_RE = /^(cta|button|buttons|interactive|brand|brand-accent|primary)$/;
+
+interface PrimarySignal {
+  usageEvidence?: 'strong' | 'weak' | 'none';
+  visionRole?: 'primary' | 'cta' | 'accent' | 'surface' | 'decorative' | 'none';
+  detectorRole?: string;
+  source?: string;
+  frequency?: number;
+}
+
+/**
+ * Achromatisch = tekst/surface-grijs, geen merk-kleur. S≤12 matcht
+ * `isEffectivelyNeutral`. De near-black/near-white-extremen tellen óók als
+ * achromatisch — maar ALLEEN bij lage saturatie, anders vlaggen we een
+ * verzadigde donker-navy/teal merk-primary (#0A1A2F s65 l11) onterecht.
+ */
+function isAchromaticColor(hex: string): boolean {
+  const hsl = hexToHsl(hex);
+  if (!hsl) return false;
+  return hsl.s <= 12 || (hsl.s <= 20 && (hsl.l <= 12 || hsl.l >= 92));
+}
+
+/** Chromatisch genoeg om merk-PRIMARY te kunnen zijn (boven de neutral-vloer,
+ *  niet zelf near-black/near-white). */
+function isChromaticColor(hex: string): boolean {
+  const hsl = hexToHsl(hex);
+  if (!hsl) return false;
+  return hsl.s >= 25 && hsl.l >= 15 && hsl.l <= 88;
+}
+
+function buildPrimarySignalMap(authoritative: AuthoritativeColor[]): Map<string, PrimarySignal> {
+  const m = new Map<string, PrimarySignal>();
+  for (const c of authoritative) {
+    const hx = normalizeHex(c.hex);
+    if (!hx) continue;
+    m.set(hx.toUpperCase(), {
+      usageEvidence: c.usageEvidence,
+      visionRole: c.visionRole,
+      detectorRole: c.detectorRole,
+      source: c.source,
+      frequency: c.frequency,
+    });
+  }
+  return m;
+}
+
+/** Chromatische palet-hexes die EXPLICIET in de logo-guidelines genoemd worden
+ *  (Napking: "the brand's Ocean Blue (#008ACF)") — het sterkste merk-signaal. */
+function logoSemanticHexes(
+  logoGuidelines: readonly string[],
+  palette: ResolvedColor[],
+): Set<string> {
+  const named = new Set<string>();
+  for (const line of logoGuidelines) {
+    for (const m of line.matchAll(/#[0-9A-Fa-f]{3,8}\b/g)) {
+      const norm = normalizeHex(m[0]);
+      if (norm) named.add(norm.toUpperCase());
+    }
+  }
+  if (named.size === 0) return new Set();
+  return new Set(
+    palette
+      .filter(
+        (c) =>
+          named.has(c.hex.toUpperCase()) &&
+          isChromaticColor(c.hex) &&
+          !isNonBrandColor({ hex: c.hex, tags: c.tags }),
+      )
+      .map((c) => c.hex.toUpperCase()),
+  );
+}
+
+/**
+ * Hoeveel POSITIEF bewijs dat deze kleur de merk-PRIMARY is. `-1` = absoluut
+ * gediskwalificeerd (niet-chromatisch / low-conf / framework / social / status).
+ * Een losse merk-tag is bewust ONVOLDOENDE (score 1 < drempel 3) — er is een
+ * hard signaal nodig (logo-vermelding, detector/vision-primary, of sterk
+ * gebruik), zodat een default blauwe link-kleur PRIMARY niet kan kapen.
+ */
+function challengerBrandScore(
+  c: ResolvedColor,
+  sig: PrimarySignal,
+  isLogoSemantic: boolean,
+): number {
+  if (!isChromaticColor(c.hex)) return -1;
+  if (c.confidence === 'low') return -1;
+  if (isFrameworkDefaultPrimary(c.hex)) return -1;
+  if (isNonBrandColor({ hex: c.hex, tags: c.tags })) return -1;
+  if (c.category === 'SEMANTIC') return -1;
+  const tags = c.tags.map((t) => t.toLowerCase());
+  if (tags.some((t) => ALERT_TAG_RE.test(t))) return -1;
+
+  let score = 0;
+  if (isLogoSemantic) score += 5;
+  if (sig.detectorRole === 'primary') score += 4;
+  if (sig.visionRole === 'primary') score += 4;
+  else if (sig.visionRole === 'cta' || sig.visionRole === 'accent') score += 2;
+  if (sig.usageEvidence === 'strong') score += 2;
+  if (tags.some((t) => CORE_BRAND_TAG_RE.test(t))) score += 1;
+  return score;
+}
+
+export function demoteAchromaticPrimary(
+  colors: ResolvedColor[],
+  authoritative: AuthoritativeColor[],
+  logoGuidelines: readonly string[],
+): ResolvedColor[] {
+  const incumbent = colors.find((c) => c.category === 'PRIMARY');
+  if (!incumbent || !isAchromaticColor(incumbent.hex)) return colors; // guard #1: chromatische primary blijft
+
+  const sigByHex = buildPrimarySignalMap(authoritative);
+  const incSig = sigByHex.get(incumbent.hex.toUpperCase()) ?? {};
+  const logoHexes = logoSemanticHexes(logoGuidelines, colors);
+
+  // Een door logo-extractie/canonieke --primary geasserteerde zwart blijft —
+  // dat is een bewuste monochrome merk-keuze — TENZIJ de logo-guidelines een
+  // chromatische merk-hex noemen (dan is het zwart toch de wordmark-tekst).
+  const detectorAsserted =
+    /logo-extraction/.test(incumbent.detectorSource ?? '') || incSig.detectorRole === 'primary';
+  if (detectorAsserted && logoHexes.size === 0) return colors; // archetype 4b
+
+  let winner: ResolvedColor | null = null;
+  let winnerScore = PRIMARY_SWAP_MIN_SCORE - 1;
+  let winnerRank = -Infinity;
+  for (const c of colors) {
+    if (c === incumbent) continue;
+    const sig = sigByHex.get(c.hex.toUpperCase()) ?? {};
+    const score = challengerBrandScore(c, sig, logoHexes.has(c.hex.toUpperCase()));
+    if (score < PRIMARY_SWAP_MIN_SCORE) continue;
+    const rank = (hexToHsl(c.hex)?.s ?? 0) + (sig.frequency ?? 0) * 0.001;
+    if (score > winnerScore || (score === winnerScore && rank > winnerRank)) {
+      winner = c;
+      winnerScore = score;
+      winnerRank = rank;
+    }
+  }
+  if (!winner) return colors; // guard #2: geen kwalificerend chromatisch alternatief → monochroom blijft
+
+  return colors.map((c) => {
+    if (c === winner) return { ...c, category: 'PRIMARY' as const };
+    if (c === incumbent) return { ...c, category: 'NEUTRAL' as const };
+    return c;
+  });
+}
+
 function defaultColorName(entry: AuthoritativeColor, index: number): string {
   if (entry.variableName) {
     // Turn --primary-500 into "Primary 500"
@@ -1608,6 +2004,9 @@ function defaultCategory(entry: AuthoritativeColor, index: number): ResolvedColo
   if (/accent|highlight|cta/.test(name)) return 'ACCENT';
   if (/success|warning|error|danger|info/.test(name)) return 'SEMANTIC';
   if (/neutral|gray|grey|text|bg|background|surface|muted/.test(name)) return 'NEUTRAL';
+  // Fase 2 (brand-fidelity): een gedowngradede (low-confidence) framework-
+  // default mag de index-0-PRIMARY-aanname niet omzeilen bij AI-skip.
+  if (entry.confidence === 'low') return 'NEUTRAL';
   // Fallback: first entry is primary, next two secondary/accent, rest neutral
   if (index === 0) return 'PRIMARY';
   if (index === 1) return 'SECONDARY';
@@ -1663,13 +2062,22 @@ async function writeResultToDb(
    *  computed-style font-role classification kunnen draaien (selector-
    *  context wins van naam-heuristic voor custom/codename fonts). */
   combinedCss?: string,
+  /** Multi-page geobserveerde (tekstkleur | achtergrond)-paren → count, voor
+   *  de OBSERVED-kleurcombinaties (i.p.v. gegenereerd uit palet-categorieën). */
+  observedColorPairs?: Record<string, number> | null,
 ): Promise<void> {
   // Delete existing colors before creating new ones
   await prisma.styleguideColor.deleteMany({ where: { styleguideId } });
 
-  // ── Typography: force the primary font to the first scraped font verbatim.
-  // If the scraper did not find any fonts, fall back to the AI's suggestion.
-  const [firstFont, ...restFonts] = detectedFonts;
+  // ── Typography: canonicaliseer + dedupliceer de gescrapte fonts vóór de
+  // split. Adobe-CLS-fallback-families ('effra-fallback') en case/quote-
+  // varianten worden gecollapsed naar de echte merk-font, generieke families
+  // gedropt — anders lekt de fallback als 'secondary'/heading-font. De primary
+  // wordt de eerste gecanonicaliseerde font; bij nul scraped fonts valt 'ie
+  // terug op de AI-suggestie (die bewust NIET door de canonicalizer gaat —
+  // aparte fallback-bron).
+  const canonicalFonts = dedupeBrandFonts(detectedFonts);
+  const [firstFont, ...restFonts] = canonicalFonts;
   const primaryFontName = firstFont ?? result.primaryFontName ?? null;
   const additionalFonts = restFonts.slice(0, 5);
 
@@ -1757,9 +2165,13 @@ async function writeResultToDb(
     await prisma.styleguideFont.deleteMany({
       where: { styleguideId, source: 'DETECTED' },
     });
-    const fontNames = [primaryFontName, ...additionalFonts].filter(
-      (n): n is string => typeof n === 'string' && n.trim().length > 0,
-    );
+    // StyleguideFont-rijen = uitsluitend de écht gedetecteerde fonts, NOOIT de
+    // AI-fallback in `primaryFontName` (Fase 4). Bij nul scraped fonts → geen
+    // rijen → eerlijke "geen merk-font gedetecteerd"-empty-state i.p.v. een
+    // AI-gok die als detectie wordt gepresenteerd. `primaryFontName`/
+    // `additionalFonts` (typografieprofiel, gebruikt door de LP-renderer)
+    // behouden de AI-fallback zodat de renderer altijd een font heeft.
+    const fontNames = selectDetectedFontNames(detectedFonts);
     if (fontNames.length > 0) {
       const existingUploaded = await prisma.styleguideFont.findMany({
         where: { styleguideId, source: 'UPLOADED' },
@@ -1773,8 +2185,12 @@ async function writeResultToDb(
       // When we have no semantic signal, fall back to the old heuristic
       // (first font DISPLAY, rest UI) so sites without clear selector-based
       // body/heading rules still get a reasonable split.
-      const headingFontLower = headingFont?.toLowerCase() ?? null;
-      const bodyFontLower = bodyFont?.toLowerCase() ?? null;
+      // Canonicaliseer beide zijden: de gedetecteerde rij-namen (fontNames) zijn
+      // nu ge-canonicaliseerd ('effra'), terwijl bodyFont/headingFont ruw uit de
+      // scraper komen ('effra-fallback'). Zonder dubbel-canon faalt de exact-
+      // match en valt de font ten onrechte door naar DISPLAY i.p.v. UI.
+      const headingFontLower = canonicalizeFontFamily(headingFont)?.toLowerCase() ?? null;
+      const bodyFontLower = canonicalizeFontFamily(bodyFont)?.toLowerCase() ?? null;
       const hasSemanticSignal = !!(headingFontLower || bodyFontLower);
 
       // Computed-style classifier — sterker signaal dan naam-heuristic.
@@ -1794,9 +2210,13 @@ async function writeResultToDb(
 
       const assignRole = (name: string, fallbackIndex: number): 'DISPLAY' | 'UI' => {
         const lower = name.toLowerCase();
+        // Gecanonicaliseerde vergelijkingsvorm voor de exact-match tegen de
+        // (ook gecanonicaliseerde) heading/body-font; `lower` blijft de raw
+        // sleutel voor de cssContextVerdicts-lookup (zelfde bron als de map).
+        const canonLower = canonicalizeFontFamily(name)?.toLowerCase() ?? lower;
         // 1. Direct semantic CSS-var / direct selector match uit scraper
-        if (headingFontLower && lower === headingFontLower) return 'DISPLAY';
-        if (bodyFontLower && lower === bodyFontLower) return 'UI';
+        if (headingFontLower && canonLower === headingFontLower) return 'DISPLAY';
+        if (bodyFontLower && canonLower === bodyFontLower) return 'UI';
         // 2. Computed-style aggregate verdict (sterker dan naam — werkt
         //    voor custom/codename fonts)
         const cssVerdict = cssContextVerdicts.get(lower);
@@ -1899,10 +2319,29 @@ async function writeResultToDb(
     };
   }
 
+  // Kleurcombinaties: bij voorkeur de OBSERVED-combinaties (welke fg/bg-paren
+  // écht op de pagina's voorkomen, multi-page) — die weerspiegelen het thema
+  // (bv. donker merk met zwart bg + witte/oranje tekst). Val terug op de
+  // gegenereerde combinaties wanneer er geen observed-paren zijn (geen
+  // screenshotter / PDF-pad).
+  const paletteForPairs = resolvedColors.map((c) => ({ hex: c.hex, category: c.category }));
+  const { buildObservedColorPairings } = await import('./observed-color-pairings');
+  const observedPairings = buildObservedColorPairings(observedColorPairs, paletteForPairs);
+  const colorPairings = observedPairings.length > 0 ? observedPairings : buildColorPairings(paletteForPairs);
+
+  // Normaliseer type-scale-eenheden naar rem vóór de write (alleen unit-
+  // normalisatie, geen dedup/collision — die braken de size-gedreven rol-
+  // mapping en de live preview). Behoudt volgorde + aantal entries. Een lege
+  // input blijft een lege array (zelfde gedrag als de oude `|| null`-write).
+  const normalizedTypeScale = normalizeTypeScale(result.typeScale ?? []);
+
   // Update styleguide fields
   await prisma.brandStyleguide.update({
     where: { id: styleguideId },
     data: {
+      colorPairings: colorPairings.length > 0
+        ? (colorPairings as unknown as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
       // Logo
       logoGuidelines: result.logoGuidelines || [],
       logoDonts: result.logoDonts || [],
@@ -1914,7 +2353,7 @@ async function writeResultToDb(
       primaryFontName,
       primaryFontUrl: result.primaryFontUrl || null,
       additionalFonts,
-      typeScale: result.typeScale || null,
+      typeScale: normalizedTypeScale,
 
       // Tone of Voice velden verhuisd naar BrandVoiceguide (ADR 2026-05-15) —
       // upsert hieronder na de styleguide update.

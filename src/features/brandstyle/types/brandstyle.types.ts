@@ -2,6 +2,8 @@
 // Brandstyle Types
 // =============================================================
 
+import type { ColorPairing } from "@/lib/brandstyle/color-pairings";
+
 export interface StyleguideColor {
   id: string;
   name: string;
@@ -266,6 +268,10 @@ export interface BrandStyleguide {
   // Shape: { resolved, overrides?, diagnostics, resolvedAt, resolverVersion }
   // `unknown` laat de UI-componenten zelf casten via een type guard.
   semanticTokens: unknown | null;
+
+  // Fase 5 brand-fidelity — WCAG-geverifieerde kleurcombinaties (buildColorPairings).
+  // Shape: Array<{ label, background, foreground, contrastRatio, wcag, usage }>.
+  colorPairings?: ColorPairing[] | null;
 
   // Lock
   isLocked: boolean;

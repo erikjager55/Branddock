@@ -175,12 +175,20 @@ function buildSystemPrompt(opts: {
   const depthBlock = opts.layoutStyle
     ? `\n# CONTENT-DEPTH (LayoutStyle: ${opts.layoutStyle})\n${LAYOUT_DEPTH_HINTS[opts.layoutStyle]}\n`
     : '';
-  // DTS C1 — vocabulary-rails (alleen wanneer beide arrays minstens 3 items hebben)
-  const hasVocab =
-    Array.isArray(opts.vocabularyDo) && opts.vocabularyDo.length >= 3 &&
-    Array.isArray(opts.vocabularyDont) && opts.vocabularyDont.length >= 3;
-  const vocabBlock = hasVocab
-    ? `\n# VOCABULAIRE-DISCIPLINE\nGebruik deze woorden/zinnen waar natuurlijk: ${opts.vocabularyDo!.map((w) => `"${w}"`).join(', ')}.\nVermijd deze: ${opts.vocabularyDont!.map((w) => `"${w}"`).join(', ')}.\n`
+  // DTS C1 — vocabulary-rails. Activeert bij ≥1 item (conform interface-doc
+  // "Min 1 item nodig"); rendert per zijde alleen wat gevuld is. Voedt de
+  // Merkstijl-pijler (voice-centroid-similarity) — eerder eiste dit ≥3 in
+  // BEIDE arrays, waardoor sparse-vocab merken de rails misten en lager
+  // scoorden op stijl.
+  const doList = (Array.isArray(opts.vocabularyDo) ? opts.vocabularyDo : [])
+    .filter((w) => typeof w === 'string' && w.trim().length > 0);
+  const dontList = (Array.isArray(opts.vocabularyDont) ? opts.vocabularyDont : [])
+    .filter((w) => typeof w === 'string' && w.trim().length > 0);
+  const vocabLines: string[] = [];
+  if (doList.length > 0) vocabLines.push(`Gebruik deze woorden/zinnen waar natuurlijk: ${doList.map((w) => `"${w}"`).join(', ')}.`);
+  if (dontList.length > 0) vocabLines.push(`Vermijd deze: ${dontList.map((w) => `"${w}"`).join(', ')}.`);
+  const vocabBlock = vocabLines.length > 0
+    ? `\n# VOCABULAIRE-DISCIPLINE\n${vocabLines.join('\n')}\n`
     : '';
   // DTS C2 — voice few-shot sample
   const sample = opts.voiceSample?.trim();

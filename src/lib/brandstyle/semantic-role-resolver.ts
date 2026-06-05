@@ -564,16 +564,28 @@ function splitPaddingShorthand(raw: string | undefined): number[] {
 
 // ─── Elevation ────────────────────────────────────────
 
-function clusterElevation(
+// Geëxporteerd zodat de brandstyle-smoke de `{tokens:[...]}`-unwrap kan
+// asserteren (verbeterplan Fase 2, audit 2026-06-05-brandstyle-result-audit).
+export function clusterElevation(
   shadowSystemJson: unknown,
   components: StyleguideComponent[],
 ): Partial<Record<ElevationLevel, string>> {
   const observed: string[] = [];
-  if (Array.isArray(shadowSystemJson)) {
-    for (const entry of shadowSystemJson) {
+  // `shadowSystem` wordt gepersisteerd als `{tokens:[{value}]}` (zie
+  // css-visual-heuristics.ts:201/deriveShadowSystem), NIET als kale array.
+  // De oude `Array.isArray`-check sloeg de hele set dus over → elevation leeg
+  // op Design-System/Visual-System terwijl de Spacing-tab de shadows wél toont.
+  // Unwrap beide shapes; strip `!important`; sla `none` over.
+  const shadowTokens: unknown = Array.isArray(shadowSystemJson)
+    ? shadowSystemJson
+    : (shadowSystemJson as { tokens?: unknown } | null)?.tokens;
+  if (Array.isArray(shadowTokens)) {
+    for (const entry of shadowTokens) {
       if (!entry || typeof entry !== 'object') continue;
       const v = (entry as Record<string, unknown>).value;
-      if (typeof v === 'string' && v.trim().length > 0) observed.push(v.trim());
+      if (typeof v !== 'string') continue;
+      const cleaned = v.replace(/\s*!important\s*$/i, '').trim();
+      if (cleaned.length > 0 && cleaned.toLowerCase() !== 'none') observed.push(cleaned);
     }
   }
   for (const c of components) {

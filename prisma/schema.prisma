@@ -1788,6 +1788,11 @@ model BrandStyleguide {
   // Zie src/lib/brandstyle/semantic-role-resolver.ts voor volledige type.
   semanticTokens Json?
 
+  // Kleurcombinaties (Fase 5 brand-fidelity) — WCAG-geverifieerde fg/bg-paren
+  // afgeleid uit het palet door buildColorPairings (color-pairings.ts).
+  // Shape: Array<{ label, background, foreground, contrastRatio, wcag, usage }>
+  colorPairings Json?
+
   // Components (Fase 5 — automatisch gedetecteerd tijdens analyzer run)
   components StyleguideComponent[]
 

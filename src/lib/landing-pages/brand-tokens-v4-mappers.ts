@@ -22,7 +22,24 @@ import type {
   TypographyByRoleTokens,
   TypographyByRoleEntry,
 } from "./brand-tokens";
+import { relativeLuminance } from "./brand-tokens";
 import type { LayoutStyle, DesignSystem } from "./design-system";
+
+/**
+ * Nullt een near-white button-background. Een wit/near-wit button-bg (bv. een
+ * gescrapete link-style button) is onzichtbaar op de witte LP-pagina en geeft
+ * een platte-tekst-CTA. Door null te returnen valt de renderer terug op
+ * tokens.brand (blauw bij lichte hero) of wit (bij donkere hero) — beide geven
+ * een zichtbare button-affordance (CTA-verbeterplan #6 affordance-floor).
+ */
+function nullIfNearWhite(color: string | null): string | null {
+  if (!color) return null;
+  const t = color.trim().toLowerCase();
+  if (/^#?f{3}$/.test(t) || /^#?f{6}$/.test(t)) return null;
+  if (/^rgba?\(\s*25[0-5]\s*,\s*25[0-5]\s*,\s*25[0-5]/.test(t)) return null;
+  const lum = relativeLuminance(color);
+  return Number.isFinite(lum) && lum > 0.9 ? null : color;
+}
 import type { BrandArchetype } from "./brand-archetype-classifier";
 import { isNoOpBorder } from "./scraped-css-helpers";
 
@@ -155,6 +172,11 @@ export function mapButtonTokens(
     if (!raw) return null;
     const t = raw.trim().toLowerCase();
     if (!t || t === 'transparent' || t === 'inherit' || t === 'currentcolor' || t.startsWith('var(')) return null;
+    // Alpha-0 hex (#rgba "#fff0" of #rrggbbaa "#ffffff00") en rgba(...,0) zijn
+    // transparant — scrapers leveren dit voor kale <button>-resets. Behandel
+    // als geen-signal zodat de renderer terugvalt op een zichtbare brand-fill.
+    if (/^#[0-9a-f]{3}0$/.test(t) || /^#[0-9a-f]{6}00$/.test(t)) return null;
+    if (/^rgba\([^)]*,\s*0(\.0+)?\s*\)$/.test(t)) return null;
     return raw;
   };
   const sanitizeFontFamily = (raw: string | null | undefined): string | null => {
@@ -172,6 +194,23 @@ export function mapButtonTokens(
     return raw;
   };
 
+  // B1 (confidence-gating): negeer een gescrapete "button" die geen echte CTA
+  // is en val terug op sane archetype-defaults i.p.v. tokens af te leiden van
+  // rommel. Twee gevallen:
+  //  1. Non-affordance reset: geen fill + geen border + geen padding (Napking
+  //     #fff0 / padding 0 — een kale <button>-reset).
+  //  2. Framework-default selector (.wp-block-button / .elementor-button /
+  //     .wp-element-button) — een CMS-default-knop, geen merk-CTA.
+  const hasFill = sanitizeColor(btn.background) !== null;
+  const hasBorder = sanitizeBorder(btn.border) !== null;
+  const padX = pxFromCssValue(btn.paddingX, 0);
+  const padY = pxFromCssValue(btn.paddingY, 0);
+  const isNonAffordance = !hasFill && !hasBorder && padX <= 0 && padY <= 0;
+  const selector = typeof (btn as { selector?: unknown }).selector === 'string'
+    ? ((btn as { selector: string }).selector).toLowerCase() : '';
+  const isFrameworkDefault = /wp-block-button|elementor-button|wp-element-button/.test(selector);
+  if (isNonAffordance || isFrameworkDefault) return fallback;
+
   return {
     paddingY: pxFromCssValue(btn.paddingY, fallback.paddingY),
     paddingX: pxFromCssValue(btn.paddingX, fallback.paddingX),
@@ -181,7 +220,10 @@ export function mapButtonTokens(
     textTransform: normalizeTextTransform(btn.textTransform, fallback.textTransform),
     letterSpacing: btn.letterSpacing ?? fallback.letterSpacing,
     hoverStyle: inferHoverStyle(btn, archetype),
-    background: sanitizeColor(btn.background),
+    // Conservatieve affordance-fix (behouden uit Fase 0): een near-white
+    // scraped button-bg is onzichtbaar op de witte LP-pagina → null zodat de
+    // renderer terugvalt op tokens.brand (light hero) of wit (dark hero).
+    background: nullIfNearWhite(sanitizeColor(btn.background)),
     color: sanitizeColor(btn.color),
     fontFamily: sanitizeFontFamily(btn.fontFamily),
     border: sanitizeBorder(btn.border),
@@ -425,11 +467,20 @@ function toRoleEntry(src: TypographyRoleStyleSrc | undefined): TypographyByRoleE
     rawColor !== 'transparent'
       ? src.color ?? null
       : null;
+  // Var-guard op lineHeight/letterSpacing, symmetrisch met color/fontSize:
+  // een (stale-DB) "var(--bs-body-line-height)" / inherit / unset is waardeloos
+  // voor de LP-render en mag niet verbatim doorlekken (Fase 1 brand-fidelity).
+  const guardTypoValue = (v: string | null | undefined): string | null => {
+    if (!v) return null;
+    const t = v.trim().toLowerCase();
+    if (!t || t.includes('var(') || t === 'inherit' || t === 'unset' || t === 'initial') return null;
+    return v;
+  };
   return {
     fontSize: fontSize > 0 ? fontSize : null,
     fontWeight: fontWeight > 0 ? fontWeight : null,
-    lineHeight: src.lineHeight ?? null,
-    letterSpacing: src.letterSpacing ?? null,
+    lineHeight: guardTypoValue(src.lineHeight),
+    letterSpacing: guardTypoValue(src.letterSpacing),
     textTransform: validTt,
     color: validColor,
   };

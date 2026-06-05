@@ -203,7 +203,19 @@ export function PuckPageBuilder({
         | { status: 'skipped'; reason: string; score: number; threshold: number }
         | { status: 'no_improvement'; reason: string; score: number; scoreProjected: number; threshold: number; delta: number }
         | { status: 'proposal'; score: number; scoreProjected: number; threshold: number; proposedPuckData: SpikeData }
-        | { status: 'error'; error: string };
+        | { status: 'error'; error: string }
+        // Non-2xx responses (bv. 502 'AI response not parseable') hebben geen
+        // `status`-veld maar wel `error`. Zonder deze guard viel de flow door
+        // naar setPagePending met proposedPuckData=undefined → lege modal.
+        | { status?: undefined; error?: string; raw?: string };
+      if (!res.ok || !('status' in json) || json.status === undefined) {
+        setPageError(
+          ('error' in json && json.error)
+            ? json.error
+            : 'Auto-iterate kon geen geldig voorstel genereren — de AI-respons was niet verwerkbaar. Probeer opnieuw.',
+        );
+        return;
+      }
       if (json.status === 'skipped') {
         setPageError(`Page passeert al de kwaliteitsdrempel (${json.score}/${json.threshold})`);
         return;
@@ -217,6 +229,12 @@ export function PuckPageBuilder({
       }
       if (json.status === 'error') {
         setPageError(json.error);
+        return;
+      }
+      if (json.status !== 'proposal' || !json.proposedPuckData?.content?.length) {
+        setPageError(
+          'Auto-iterate leverde geen bruikbaar voorstel op. Probeer opnieuw.',
+        );
         return;
       }
       setPagePending({

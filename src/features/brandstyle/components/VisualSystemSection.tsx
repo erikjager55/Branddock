@@ -603,6 +603,18 @@ function gradientCss(g: GradientDefinition): string {
   return `linear-gradient(${g.angle ?? "90deg"}, ${colorStr})`;
 }
 
+// Verbeterplan Fase F (palette-framework-cleanup): de analyzer genereert bij
+// géén observed gradients "RECOMMENDED:"-gradients uit het palet. Die ogen
+// zonder markering als echte merk-gradients (user-feedback: effects gebruiken
+// kleuren die niet op de site voorkomen). Detecteer de provenance uit de
+// usage-prefix en toon een expliciete "Aanbevolen"-badge.
+function isRecommendedGradient(g: GradientDefinition): boolean {
+  return /^\s*recommended\b/i.test(g.usage ?? "");
+}
+function stripRecommendedPrefix(usage: string): string {
+  return usage.replace(/^\s*recommended:?\s*/i, "").trim();
+}
+
 function GradientsCard({ gradients, canEdit, updateSection }: { gradients: GradientDefinition[]; canEdit: boolean; updateSection: ReturnType<typeof useUpdateSection> }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editGradients, setEditGradients] = useState<GradientDefinition[]>([]);
@@ -626,9 +638,17 @@ function GradientsCard({ gradients, canEdit, updateSection }: { gradients: Gradi
             <div key={`${g.name}-${i}`} className="relative group rounded-lg border border-gray-200 overflow-hidden">
               <div className="h-16 w-full" style={{ background: gradientCss(g) }} />
               <div className="p-3">
-                <div className="flex items-center justify-between gap-2"><p className="text-sm font-medium text-gray-900 truncate min-w-0">{g.name}</p><Badge variant="default">{g.type}</Badge></div>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-gray-900 truncate min-w-0">{g.name}</p>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {isRecommendedGradient(g) && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700" title="Recommended from the palette — not observed as a gradient on the site">Recommended</span>
+                    )}
+                    <Badge variant="default">{g.type}</Badge>
+                  </div>
+                </div>
                 <p className="text-xs text-gray-500 mt-0.5">{g.colors.join(" → ")}</p>
-                {g.usage && <p className="text-xs text-gray-500 mt-1">{g.usage}</p>}
+                {g.usage && <p className="text-xs text-gray-500 mt-1">{isRecommendedGradient(g) ? stripRecommendedPrefix(g.usage) : g.usage}</p>}
               </div>
               {isEditing && <button type="button" onClick={() => setEditGradients((p) => p.filter((_, idx) => idx !== i))} className="absolute top-1.5 right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600" title="Remove"><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>

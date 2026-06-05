@@ -82,20 +82,16 @@ export function getBackgroundDepthSize(level: BackgroundDepthLevel): string | un
  *   - EXPERIENTIAL layoutStyle → minimaal medium
  */
 export function pickBackgroundDepth(
-  archetype: BrandArchetype | null,
-  layoutStyle: LayoutStyle,
+  _archetype: BrandArchetype | null,
+  _layoutStyle: LayoutStyle,
 ): BackgroundDepthLevel {
-  if (layoutStyle === "MINIMAL") return "subtle";
-  if (layoutStyle === "EXPERIENTIAL") {
-    if (!archetype) return "medium";
-    if (["JESTER", "CREATOR", "LOVER", "OUTLAW"].includes(archetype)) return "rich";
-    return "medium";
-  }
-  if (!archetype) return "subtle";
-  if (["INNOCENT", "REGULAR_GUY"].includes(archetype)) return "none";
-  if (["RULER", "SAGE", "CARETAKER"].includes(archetype)) return "subtle";
-  if (["JESTER", "CREATOR", "LOVER", "OUTLAW"].includes(archetype)) return "rich";
-  return "medium";
+  // Verbeterplan #3 (brand-fidelity): geen verzonnen achtergrond-textuur. De
+  // archetype-gedreven grain/mesh (rich/medium) staat zelden op de echte
+  // bron-site en oogt als een patroon dat het merk niet voert (user-feedback
+  // Zwarthout: "een structuur die ik nergens terugvind"). Default = 'none'
+  // (clean solid surface, zoals de meeste echte sites). Textuur opnieuw
+  // inschakelen achter scraped-evidence is Fase 4 (zie audit B9).
+  return "none";
 }
 
 function hexToRgbString(hex: string): string {

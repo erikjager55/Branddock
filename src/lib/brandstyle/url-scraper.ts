@@ -13,6 +13,7 @@ import {
   bestFromSrcset,
   addImageSafe,
 } from '@/lib/utils/image-scraper';
+import { GENERIC_FONT_FAMILY_NAMES } from './font-generic-families';
 
 // ─── Types ────────────────────────────────────────────
 
@@ -929,8 +930,10 @@ function extractColorsFromCss(css: string): string[] {
 
 // ─── Font Extraction ──────────────────────────────────
 
-/** Extract unique font families from CSS, excluding generic + web-safe fallbacks. */
-function extractFontsFromCss(css: string): string[] {
+/** Extract unique font families from CSS, excluding generic + web-safe fallbacks.
+ *  Exported zodat de brandstyle-smoke de fallback-chain-filter (Fase 3c) kan
+ *  asserteren. */
+export function extractFontsFromCss(css: string): string[] {
   const fontSet = new Set<string>();
 
   // Match font-family declarations
@@ -947,6 +950,10 @@ function extractFontsFromCss(css: string): string[] {
         !isIconFont(resolved)
       ) {
         fontSet.add(resolved);
+        // Fase 3c: alleen de EERSTE echte familie per declaratie is de
+        // bedoelde font; de rest van de komma-keten is fallback-ruis
+        // (Roboto/Oxygen/Ubuntu) — geen extra merk-fonts.
+        break;
       }
     }
   }
@@ -993,14 +1000,33 @@ function resolveFontFamilyValue(
   if (varMatch) {
     const varName = varMatch[1];
     const fallback = varMatch[2]?.trim();
+    // Fase 3a: een var() resolvet vaak naar een hele font-STACK
+    // (`system-ui,-apple-system,'Brand',…`). De recursie gaf voorheen de
+    // complete komma-stack als één bogus font terug (symptoom: primaryFontName
+    // = "system-ui,-apple-system,…"). Resolve i.p.v. naar de EERSTE echte
+    // familie — sla generic/web-safe/icon-fallbacks over.
+    const resolveStack = (stack: string): string | null => {
+      for (const part of stack.split(',')) {
+        const r = resolveFontFamilyValue(part.trim(), fullCss, depth + 1);
+        if (
+          r
+          && !GENERIC_FONT_FAMILIES.has(r.toLowerCase())
+          && !isWebSafeFallbackFont(r)
+          && !isIconFont(r)
+        ) {
+          return r;
+        }
+      }
+      return null;
+    };
     const defPattern = new RegExp(`${escapeRegex(varName)}\\s*:\\s*([^;}]+)`, 'g');
     const defMatch = defPattern.exec(fullCss);
     if (defMatch) {
-      const resolved = resolveFontFamilyValue(defMatch[1].trim(), fullCss, depth + 1);
+      const resolved = resolveStack(defMatch[1].trim());
       if (resolved) return resolved;
     }
     if (fallback) {
-      const resolved = resolveFontFamilyValue(fallback, fullCss, depth + 1);
+      const resolved = resolveStack(fallback);
       if (resolved) return resolved;
     }
     // Couldn't resolve var() — drop it rather than persisting "var(--xxx)" literal
@@ -1013,16 +1039,7 @@ function resolveFontFamilyValue(
   return value;
 }
 
-const GENERIC_FONT_FAMILIES = new Set([
-  'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy',
-  'system-ui', 'ui-sans-serif', 'ui-serif', 'ui-monospace', 'ui-rounded',
-  'inherit', 'initial', 'unset', 'revert', 'normal', 'auto', 'none',
-  // CSS placeholder / shorthand that some themes emit unquoted (seen on
-  // linfi.nl: `font-family: Font;` resolved to literal "Font"). Always noise.
-  'font', 'webfont', 'webfonts', 'text', 'body',
-  '-apple-system', 'blinkmacsystemfont', 'segoe ui', 'apple color emoji',
-  'segoe ui emoji', 'segoe ui symbol', 'noto color emoji',
-]);
+const GENERIC_FONT_FAMILIES = new Set<string>(GENERIC_FONT_FAMILY_NAMES);
 
 /**
  * Web-safe / system fallback fonts that appear in CSS as `font-family` fallbacks
@@ -1055,6 +1072,10 @@ const ICON_FONT_FRAGMENTS = [
   'icomoon', 'fontawesome', 'ionicon', 'materialicons', 'materialsymbols',
   'feather', 'lucide', 'dashicons', 'themify', 'eicons', 'glyphicon',
   'webflowicons', 'bricksicons',
+  // Fase 3b: WooCommerce + Elementor shippen een eigen icon-font (cart/ster/
+  // social-glyphs) die als font-family lekt op WP/Woo-sites (symptoom op
+  // zwarthout.com: "WooCommerce" in de font-lijst).
+  'woocommerce', 'elementoricons',
 ];
 
 /**
@@ -1129,8 +1150,11 @@ function extractPreloadedFonts($: cheerio.CheerioAPI): string[] {
  * the intentional brand font, just CSS fallback chain noise.
  *
  * Returns `null` for either if no targeted signal was found.
+ *
+ * Exported so the brandstyle smoke-tests can assert var-pattern coverage
+ * (incl. the Bootstrap `--bs-*` font vars, Fase 4).
  */
-function extractSemanticFonts(css: string): {
+export function extractSemanticFonts(css: string): {
   bodyFont: string | null;
   headingFont: string | null;
 } {
@@ -1138,8 +1162,11 @@ function extractSemanticFonts(css: string): {
   let headingFont: string | null = null;
 
   // ── Path 1: framework-style font-family variables ─────
-  // ACSS heading vars: --h1-font-family, --h2-font-family, --h3-font-family, …
-  const headingVarMatch = css.match(/--h[1-6]-font-family\s*:\s*([^;}!]+)/i);
+  // ACSS heading vars: --h1-font-family … --h6-font-family; Bootstrap 5 sets
+  // --bs-headings-font-family. A vanilla Bootstrap value resolves to a
+  // system stack and is correctly dropped by the generic/web-safe filters
+  // below; only a brand-customised value (e.g. a real display font) survives.
+  const headingVarMatch = css.match(/--(?:h[1-6]|bs-headings?)-font-family\s*:\s*([^;}!]+)/i);
   if (headingVarMatch) {
     const resolved = resolveFontFamilyValue(
       headingVarMatch[1].split(',')[0]?.trim() || '',
@@ -1150,9 +1177,11 @@ function extractSemanticFonts(css: string): {
     }
   }
 
-  // Body / paragraph / text vars (ACSS, Tailwind, common conventions)
+  // Body / paragraph / text vars (ACSS, Tailwind, Bootstrap --bs-body-*,
+  // common conventions). Same filtering caveat as the heading path: a
+  // vanilla Bootstrap system stack is dropped, a brand value survives.
   const bodyVarMatch = css.match(
-    /--(?:body|paragraph|text|p|font-(?:body|primary))-font-family\s*:\s*([^;}!]+)/i,
+    /--(?:bs-body|body|paragraph|text|p|font-(?:body|primary))-font-family\s*:\s*([^;}!]+)/i,
   );
   if (bodyVarMatch) {
     const resolved = resolveFontFamilyValue(

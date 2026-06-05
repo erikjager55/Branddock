@@ -106,18 +106,49 @@ async function loadCatalog(): Promise<Set<string>> {
 }
 
 /**
+ * Strip a trailing weight/style token from a font name so a styled face name
+ * ("Sen Bold", "Poppins SemiBold Italic") resolves to its catalog family
+ * ("Sen", "Poppins") — verbeterplan Fase 3d. Conservatief: strip alleen
+ * BEKENDE trailing weight/style-woorden (+ numerieke 100-900), iteratief, en
+ * nooit het laatste resterende woord (zodat een merk-font die letterlijk
+ * "Bold" heet niet leeg wordt). Wijzigt de display-naam NIET — alleen de
+ * lookup-key. Geëxporteerd voor de smoke.
+ */
+const WEIGHT_STYLE_TOKENS = new Set([
+  'thin', 'hairline', 'extralight', 'ultralight', 'light', 'regular', 'normal',
+  'book', 'medium', 'semibold', 'demibold', 'demi', 'bold', 'extrabold',
+  'ultrabold', 'black', 'heavy', 'italic', 'oblique', 'roman',
+]);
+export function stripFontWeightSuffix(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  while (parts.length > 1) {
+    const last = parts[parts.length - 1].toLowerCase();
+    if (WEIGHT_STYLE_TOKENS.has(last) || /^[1-9]00$/.test(last)) {
+      parts.pop();
+    } else {
+      break;
+    }
+  }
+  return parts.join(' ');
+}
+
+/**
  * Check a font name against the Google Fonts catalog. Returns true when the
  * font is available via the free CDN (user doesn't need to upload), false
  * when it's not found (likely commercial / needs upload).
  *
  * Case-insensitive match on exact family name. Loose matches like "Inter UI"
  * against "Inter" are NOT considered — avoids false positives for fonts that
- * happen to share a prefix.
+ * happen to share a prefix. A weight/style-stripped fallback ("Sen Bold" →
+ * "Sen") IS tried so styled face-names still resolve (Fase 3d).
  */
 export async function isOnGoogleFonts(fontName: string): Promise<boolean> {
   if (!fontName) return false;
   const families = await loadCatalog();
-  return families.has(fontName.trim().toLowerCase());
+  const lower = fontName.trim().toLowerCase();
+  if (families.has(lower)) return true;
+  const stripped = stripFontWeightSuffix(lower);
+  return stripped !== lower && families.has(stripped);
 }
 
 /**
@@ -133,7 +164,9 @@ export async function classifyFontsAgainstGoogleFonts(
   for (const name of fontNames) {
     if (!name) continue;
     const lower = name.trim().toLowerCase();
-    out.set(lower, families.has(lower));
+    // Exact match, of de weight-gestripte familie ("Sen Bold" → "Sen") — Fase 3d.
+    const stripped = stripFontWeightSuffix(lower);
+    out.set(lower, families.has(lower) || (stripped !== lower && families.has(stripped)));
   }
   return out;
 }

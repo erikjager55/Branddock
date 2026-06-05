@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
+import { recomputeColorPairings } from "@/lib/brandstyle/recompute-color-pairings";
 
 // =============================================================
 // GET /api/brandstyle/colors — colors section
@@ -18,6 +21,7 @@ export async function GET() {
       select: {
         colorDonts: true,
         colorsSavedForAi: true,
+        colorPairings: true,
         colors: { orderBy: { sortOrder: "asc" } },
       },
     });
@@ -59,10 +63,13 @@ export async function PATCH(request: NextRequest) {
       select: {
         colorDonts: true,
         colorsSavedForAi: true,
+        colorPairings: true,
         colors: { orderBy: { sortOrder: "asc" } },
       },
     });
 
+    invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
     return NextResponse.json({ colors: styleguide });
   } catch (error) {
     console.error("[PATCH /api/brandstyle/colors]", error);
@@ -118,6 +125,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Herbereken kleurcombinaties + invalideer cache (Fase 5).
+    await recomputeColorPairings(styleguide.id);
+    invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
     return NextResponse.json({ color }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/brandstyle/colors]", error);

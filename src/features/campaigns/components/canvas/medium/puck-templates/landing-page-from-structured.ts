@@ -150,6 +150,23 @@ function finalCtaHeadingSection(
   });
 }
 
+/**
+ * Korte, nette footer-tagline. Prefereert de hero-eyebrow (al tagline-achtig);
+ * valt anders terug op de eerste zin van de subhead, op woordgrens afgekapt —
+ * voorkomt de mid-woord afkapping ("...Jij f") van een naïeve slice(0, 80).
+ */
+function footerTagline(v: LandingPageVariantContent): string {
+  const MAX = 90;
+  const eyebrow = v.hero.eyebrow?.trim();
+  if (eyebrow && eyebrow.length <= MAX) return eyebrow;
+  const firstSentence =
+    v.hero.subhead.split(/(?<=[.!?])\s+/)[0]?.trim() ?? v.hero.subhead.trim();
+  if (firstSentence.length <= MAX) return firstSentence;
+  const cut = firstSentence.slice(0, MAX);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 40 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
+}
+
 function footerSection(
   v: LandingPageVariantContent,
   ctx: CanvasContextStack | null,
@@ -157,8 +174,7 @@ function footerSection(
   const brandName = ctx?.brand?.brandName ?? "Brand Name";
   return instance("Footer", {
     companyName: brandName,
-    // Tagline: gebruik hero.subhead-snippet als footer-tagline
-    tagline: v.hero.subhead.slice(0, 80),
+    tagline: footerTagline(v),
     links: [
       { label: "Privacy", href: "/privacy" },
       { label: "Voorwaarden", href: "/terms" },

@@ -6,11 +6,11 @@ import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
 import { EditableStringList } from "./EditableStringList";
-import { SystemRolesSection } from "./SystemRolesSection";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { useUpdateSection, useAddColor, useDeleteColor } from "../hooks/useBrandstyleHooks";
 import { contrastRatio } from "../utils/color-utils";
 import type { BrandStyleguide, StyleguideColor } from "../types/brandstyle.types";
+import type { ColorPairing } from "@/lib/brandstyle/color-pairings";
 
 const CATEGORY_OPTIONS: StyleguideColor["category"][] = ["PRIMARY", "SECONDARY", "ACCENT", "NEUTRAL", "SEMANTIC"];
 
@@ -452,6 +452,58 @@ function AddColorForm({
   );
 }
 
+// ─── Kleurcombinaties (Fase 5 brand-fidelity) ─────────
+
+const WCAG_BADGE: Record<string, string> = {
+  AAA: "bg-emerald-50 text-emerald-700",
+  AA: "bg-emerald-50 text-emerald-700",
+  "AA-large": "bg-amber-50 text-amber-700",
+  fail: "bg-red-50 text-red-700",
+};
+
+function ColorPairingsPanel({ pairings }: { pairings: ColorPairing[] }) {
+  // Element-level guard: colorPairings is een rauwe Json-kolom; legacy/handmatig
+  // gemuteerde of drift-records mogen niet blind renderen ("undefined:1").
+  const valid = (pairings ?? []).filter(
+    (p): p is ColorPairing =>
+      !!p &&
+      typeof p.label === "string" &&
+      typeof p.background === "string" &&
+      typeof p.foreground === "string" &&
+      typeof p.contrastRatio === "number" &&
+      typeof p.wcag === "string",
+  );
+  if (valid.length === 0) return null;
+  return (
+    <Card>
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Kleurcombinaties</h3>
+        <p className="text-xs text-gray-400">WCAG-geverifieerde combinaties uit het palet</p>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {valid.map((p, i) => (
+          <div key={i} className="rounded-md border border-gray-200 overflow-hidden">
+            <div
+              className="px-4 flex items-center justify-center"
+              style={{ backgroundColor: p.background, color: p.foreground, minHeight: 64 }}
+            >
+              <span className="text-sm font-medium text-center">{p.label}</span>
+            </div>
+            <div className="px-3 py-2 flex items-center justify-between gap-2">
+              <span className="font-mono text-[10px] text-gray-500 truncate" title={`${p.background} / ${p.foreground}`}>
+                {p.background} / {p.foreground}
+              </span>
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${WCAG_BADGE[p.wcag] ?? "bg-gray-100 text-gray-600"}`}>
+                {p.contrastRatio}:1 {p.wcag}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 // ─── Main component ───────────────────────────────────
 
 export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
@@ -495,8 +547,16 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
 
   return (
     <div data-testid="colors-section" className="space-y-8">
-      {/* ── Block 0: System Roles (DESIGN.md export) ────── */}
-      <SystemRolesSection styleguide={styleguide} canEdit={canEdit} />
+      {/* Verbeterplan Fase E (palette-framework-cleanup): de aparte "System
+          Roles"-sectie is verwijderd — die toonde hetzelfde palet als
+          "Color System" (user-feedback: één overzicht). Color System
+          (Block 2) is nu het enige kleur-overzicht; de semantische-rol-DATA
+          blijft beschikbaar via de DESIGN.md/Design-System-export.
+          NB: hiermee verdween ook de semantische-rol-OVERRIDE-editor
+          (SystemRoleOverrideModal). Dat is nu acceptabel — geen enkele
+          styleguide heeft overrides gezet (0/15) — maar als override-bewerken
+          terugmoet, hoort het in de Color-System-bucket-rijen i.p.v. een
+          aparte sectie. De export-resolver past bestaande overrides nog toe. */}
 
       {/* ── Block 1: Hero Palette ───────────────────────── */}
       {primaries.length > 0 && (
@@ -512,6 +572,9 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
           </div>
         </Card>
       )}
+
+      {/* ── Block 1b: Kleurcombinaties (Fase 5) ──────────── */}
+      <ColorPairingsPanel pairings={styleguide.colorPairings ?? []} />
 
       {/* ── Block 2: Color System ───────────────────────── */}
       <Card>

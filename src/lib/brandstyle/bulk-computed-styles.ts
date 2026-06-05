@@ -40,6 +40,9 @@ const TRACK_PROPS = [
   'box-shadow',
   'background-color',
   'color',
+  // border-color meegenomen zodat de usage-gedreven palet-filter ook accenten
+  // ziet die alléén als rand renderen (review-fix MAJOR-2).
+  'border-color',
 ] as const;
 
 type TrackedProp = typeof TRACK_PROPS[number];
@@ -54,6 +57,9 @@ export interface BulkComputedStylesResult {
   totalCount: number;
   /** Frequency-maps per property: value → occurrence count. */
   styles: BulkComputedStyles;
+  /** Werkelijk voorkomende (tekstkleur " | " effectieve-achtergrond)-paren →
+   *  count. Voor de observed-kleurcombinaties. */
+  colorPairs: Record<string, number>;
 }
 
 /**
@@ -73,6 +79,10 @@ export async function extractBulkComputedStyles(
 
       const freq: Record<string, Record<string, number>> = {};
       for (const p of trackProps) freq[p] = {};
+      // WERKELIJK voorkomende (tekstkleur | effectieve achtergrond)-paren over
+      // de pagina — voor de observed-kleurcombinaties. Géén losse frequenties:
+      // we leggen vast welke fg/bg-combinaties écht samen renderen.
+      const colorPairs: Record<string, number> = {};
 
       let scanned = 0;
       for (let i = 0; i < all.length && scanned < maxElements; i++) {
@@ -83,6 +93,40 @@ export async function extractBulkComputedStyles(
         const cs = window.getComputedStyle(el);
         if (cs.display === 'none' || cs.visibility === 'hidden') continue;
         if (parseFloat(cs.opacity || '1') < 0.05) continue;
+
+        // Kleurcombinatie: alleen voor elementen met DIRECTE zichtbare tekst.
+        let hasDirectText = false;
+        for (let n = 0; n < el.childNodes.length; n++) {
+          const node = el.childNodes[n];
+          if (node.nodeType === 3 && (node.textContent || '').trim().length > 0) {
+            hasDirectText = true;
+            break;
+          }
+        }
+        if (hasDirectText) {
+          const fg = cs.color;
+          // Effectieve achtergrond: loop omhoog tot een niet-transparante bg
+          // (gecapt op 10 niveaus). Default = wit (de pagina-achtergrond).
+          let bg = '';
+          let anc: HTMLElement | null = el;
+          let depth = 0;
+          while (anc && depth < 10) {
+            const bbg = window.getComputedStyle(anc).backgroundColor;
+            if (bbg && bbg !== 'transparent' && bbg !== 'rgba(0, 0, 0, 0)') { bg = bbg; break; }
+            anc = anc.parentElement;
+            depth++;
+          }
+          // Géén solide achtergrond-kleur gevonden (transparant of een
+          // background-IMAGE, zoals zwarthout's charred-wood-secties): markeer
+          // als 'auto' i.p.v. wit te raden — de surface wordt later afgeleid
+          // uit het best-leesbare contrast. Anders zou "witte tekst op donkere
+          // image" als "wit op wit" verdwijnen.
+          if (!bg) bg = 'auto';
+          if (fg && fg !== 'transparent' && fg !== 'rgba(0, 0, 0, 0)') {
+            const key = fg.replace(/\s+/g, ' ') + ' | ' + bg.replace(/\s+/g, ' ');
+            colorPairs[key] = (colorPairs[key] ?? 0) + 1;
+          }
+        }
 
         for (const prop of trackProps) {
           const val = cs.getPropertyValue(prop).trim();
@@ -105,7 +149,7 @@ export async function extractBulkComputedStyles(
         scanned++;
       }
 
-      return { scanned, totalCount, freq };
+      return { scanned, totalCount, freq, colorPairs };
     },
     { trackProps: TRACK_PROPS as unknown as string[], maxElements: MAX_ELEMENTS },
   );
@@ -114,6 +158,7 @@ export async function extractBulkComputedStyles(
     scannedCount: result.scanned,
     totalCount: result.totalCount,
     styles: result.freq as BulkComputedStyles,
+    colorPairs: result.colorPairs,
   };
 }
 
@@ -143,6 +188,7 @@ export function mergeBulkComputedStyles(
       acc[prop] = {};
       return acc;
     }, {} as BulkComputedStyles),
+    colorPairs: {},
   };
   for (const r of results) {
     merged.scannedCount += r.scannedCount;
@@ -152,6 +198,9 @@ export function mergeBulkComputedStyles(
       for (const [value, count] of Object.entries(sourceMap)) {
         merged.styles[prop][value] = (merged.styles[prop][value] ?? 0) + count;
       }
+    }
+    for (const [pair, count] of Object.entries(r.colorPairs ?? {})) {
+      merged.colorPairs[pair] = (merged.colorPairs[pair] ?? 0) + count;
     }
   }
   return merged;
@@ -182,20 +231,24 @@ export function deriveNumericScale(
   return out.slice(0, topN).sort((a, b) => a.valuePx - b.valuePx);
 }
 
-function parsePxFirst(raw: string): number {
+// Geëxporteerd zodat de brandstyle-smoke de afronding (Fase 5a) kan asserteren.
+export function parsePxFirst(raw: string): number {
   // Pak eerste NIET-NUL px-waarde uit shorthand zoals "0px 16px 32px 0px"
   // (24px voor padding-right is meer signaal dan 0px voor padding-top).
   // Valt terug op eerste waarde als alle waarden 0 zijn.
+  // Fase 5a: computed-style px-waarden zijn vaak sub-pixel floats (5.42px,
+  // 3.75px) door rem-conversie/zoom. Design-tokens horen integer te zijn —
+  // rond af op het choke-point zodat zowel spacing als radii heel blijven.
+  const round = (n: number): number => (Number.isFinite(n) ? Math.round(n) : NaN);
   const matches = Array.from(raw.matchAll(/(-?\d+(?:\.\d+)?)px/g));
   if (matches.length === 0) {
-    const n = Number(raw);
-    return Number.isFinite(n) ? n : NaN;
+    return round(Number(raw));
   }
   for (const m of matches) {
     const v = Number(m[1]);
-    if (Number.isFinite(v) && v > 0) return v;
+    if (Number.isFinite(v) && v > 0) return round(v);
   }
-  return Number(matches[0][1]);
+  return round(Number(matches[0][1]));
 }
 
 /**
@@ -228,10 +281,12 @@ export function augmentHeuristicsWithRuntime(
   appendShadowSamples(next.boxShadow.samples, bulk.styles['box-shadow']);
 
   // Re-bereken median + mostCommon na augmentation zodat downstream
-  // helpers consistente data zien.
-  next.borderRadius.median = computeMedian(next.borderRadius.values);
-  next.borderRadius.mostCommon = computeMode(next.borderRadius.values);
-  next.borderRadius.hasVariation = new Set(next.borderRadius.values).size > 1;
+  // helpers consistente data zien. De pill-sentinel (9999, Fase 5c) blijft in
+  // `values` voor deriveCornerRadii maar mag de stats/AI-prompt niet vervuilen.
+  const nonPillRadii = next.borderRadius.values.filter((v) => v < 9999);
+  next.borderRadius.median = computeMedian(nonPillRadii);
+  next.borderRadius.mostCommon = computeMode(nonPillRadii);
+  next.borderRadius.hasVariation = new Set(nonPillRadii).size > 1;
   next.spacing.median = computeMedian(next.spacing.values);
   next.spacing.gridBase = detectGridBase(next.spacing.values) ?? next.spacing.gridBase;
 

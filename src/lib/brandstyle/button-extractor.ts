@@ -24,6 +24,10 @@
  * integreert in scrapeUrl output.
  */
 
+// Standalone resolver (geen circular dep met url-scraper) — full-CSS-fallback
+// wanneer de (kleur-gefilterde) var-map een var() niet kan resolven.
+import { resolveCssVar } from './css-var-resolver';
+
 /**
  * Subset van CssVariable dat we nodig hebben — frozen om circular import te
  * vermijden (CssVariable woont in url-scraper.ts en url-scraper importeert
@@ -273,7 +277,7 @@ function resolveVar(expr: string, varMap: Map<string, string>, depth = 0): strin
   return result;
 }
 
-function resolveButtonVars(btn: ScrapedButtonStyle, varMap: Map<string, string>): void {
+function resolveButtonVars(btn: ScrapedButtonStyle, varMap: Map<string, string>, fullCss: string): void {
   const fields: (keyof ScrapedButtonStyle)[] = [
     "paddingY", "paddingX", "fontWeight", "fontSize", "textTransform",
     "letterSpacing", "borderRadius", "background", "color", "border",
@@ -282,7 +286,15 @@ function resolveButtonVars(btn: ScrapedButtonStyle, varMap: Map<string, string>)
   for (const f of fields) {
     const val = btn[f];
     if (typeof val !== "string" || !val.includes("var(")) continue;
-    const resolved = varMap.size > 0 ? resolveVar(val, varMap) : val;
+    let resolved = varMap.size > 0 ? resolveVar(val, varMap) : val;
+    // Fase 1 (brand-fidelity): de var-map is kleur-gefilterd, dus typografie/
+    // radius-vars (var(--bs-btn-padding-y), var(--btn-radius)) zitten er niet
+    // in. Val terug op resolutie tegen de VOLLEDIGE CSS zodat die niet onnodig
+    // naar null degraderen.
+    if (resolved.includes("var(")) {
+      const full = resolveCssVar(val, fullCss);
+      if (full != null) resolved = full;
+    }
     // Wanneer er na resolution NOG steeds een unresolved var() in zit
     // (typisch op sites zoals linfi.nl waar Bricks `--btn-radius` declareert
     // maar nooit initialiseert), zet het veld op null. De v4-merger pakt
@@ -368,7 +380,7 @@ export function extractButtonStyles(
   // CSS-var resolution pass (voor classificatie + DOM-filter, zodat de
   // role-heuristic accurate background-info heeft).
   for (const btn of baseMap.values()) {
-    resolveButtonVars(btn, varMap);
+    resolveButtonVars(btn, varMap, css);
   }
 
   // DOM-presence filter — alleen wanneer cheerio root meegegeven

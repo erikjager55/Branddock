@@ -11,6 +11,9 @@
  * Pure functie — geen DOM, geen DB.
  */
 
+import { resolveOrKeep } from './css-var-resolver';
+import { canonicalizeFontFamily } from './font-fallback';
+
 export type TypographyRole =
   | "display"
   | "heading"
@@ -199,18 +202,47 @@ export function extractTypographyByRole(css: string): ScrapedTypographyByRole {
     list.sort((a, b) => b.weight - a.weight);
     const target = result[role]!;
     for (const c of list) {
-      if (!target.fontFamily) target.fontFamily = extractFontFamily(c.block);
-      if (!target.fontSize) target.fontSize = getProp(c.block, "font-size");
-      if (!target.fontWeight) target.fontWeight = getProp(c.block, "font-weight");
-      if (!target.lineHeight) target.lineHeight = getProp(c.block, "line-height");
-      if (!target.letterSpacing) target.letterSpacing = getProp(c.block, "letter-spacing");
+      // Fase 1 (brand-fidelity): resolve var(--...) tegen de volledige CSS en
+      // accepteer alleen geresolveerde (niet-null) waarden — zo blijft een
+      // onresolveerbare var() het veld null houden en probeert de loop de
+      // volgende rule i.p.v. "var(--bs-body-line-height)" te persisteren.
+      if (!target.fontFamily) {
+        // Resolve de var() EERST (de waarde kan zelf een stack zijn, bv.
+        // var(--ff) → "Helvetica Neue", Arial), splits/strip DAARNA — anders
+        // lekken quotes+komma's als "schone fontnaam". Canonicaliseer per
+        // familie en pak de eerste echte merk-font: zo wint 'effra' over een
+        // 'effra-fallback' (Adobe-CLS-fallback) die vooraan in de stack staat,
+        // en worden generieke families (system-ui) overgeslagen i.p.v. gekozen.
+        const rawFf = resolveOrKeep(getProp(c.block, "font-family"), css);
+        const families = (rawFf ?? "").split(",");
+        let chosen: string | null = null;
+        for (const f of families) {
+          const canon = canonicalizeFontFamily(f);
+          if (canon) { chosen = canon; break; }
+        }
+        if (chosen) target.fontFamily = chosen;
+      }
+      if (!target.fontSize) {
+        const v = resolveOrKeep(getProp(c.block, "font-size"), css);
+        if (v) target.fontSize = v;
+      }
+      if (!target.fontWeight) {
+        const v = resolveOrKeep(getProp(c.block, "font-weight"), css);
+        if (v) target.fontWeight = v;
+      }
+      if (!target.lineHeight) {
+        const v = resolveOrKeep(getProp(c.block, "line-height"), css);
+        if (v) target.lineHeight = v;
+      }
+      if (!target.letterSpacing) {
+        const v = resolveOrKeep(getProp(c.block, "letter-spacing"), css);
+        if (v) target.letterSpacing = v;
+      }
       if (!target.textTransform) target.textTransform = getProp(c.block, "text-transform");
-      // Fase B — color uit `color:` declaratie. Sla CSS-var-references over
-      // (var(--xxx) wordt later via brand-tokens-pipeline resolved). Accept
-      // hex / rgb() / hsl() / named-color strings — alles wat CSS toestaat.
+      // Fase B — color uit `color:` declaratie, var() geresolved (geen literal).
       if (!target.color) {
-        const rawColor = getProp(c.block, "color");
-        if (rawColor && !rawColor.startsWith('var(')) target.color = rawColor;
+        const rawColor = resolveOrKeep(getProp(c.block, "color"), css);
+        if (rawColor) target.color = rawColor;
       }
       if (
         target.fontFamily &&
@@ -236,13 +268,4 @@ export function extractTypographyByRole(css: string): ScrapedTypographyByRole {
   }
 
   return result;
-}
-
-function extractFontFamily(block: string): string | null {
-  const raw = getProp(block, "font-family");
-  if (!raw) return null;
-  // Pak eerste font uit chain, strip quotes
-  const first = raw.split(",")[0]?.trim();
-  if (!first) return null;
-  return first.replace(/^["']|["']$/g, "");
 }

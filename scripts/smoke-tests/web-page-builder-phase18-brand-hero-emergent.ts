@@ -62,6 +62,9 @@ function makeLinfiTokens(): BrandTokens {
     layoutStyle: 'MINIMAL',
     designSystem: getDesignSystemForLayoutStyle('MINIMAL'),
     archetype: 'RULER',
+    // Scraped button-radius (renderer gebruikt tokens.button.radiusPx, niet de
+    // layoutStyle-preset — zie puck-config r.604-608). LINFI scrapete radius 0.
+    button: { ...DEFAULT_BRAND_TOKENS.button, radiusPx: 0 },
   };
 }
 
@@ -87,6 +90,7 @@ function makeBranddockTokens(): BrandTokens {
     layoutStyle: 'COMMERCIAL',
     designSystem: getDesignSystemForLayoutStyle('COMMERCIAL'),
     archetype: 'SAGE',
+    button: { ...DEFAULT_BRAND_TOKENS.button, radiusPx: 8 },
   };
 }
 
@@ -98,6 +102,8 @@ function makeJesterTokens(): BrandTokens {
     layoutStyle: 'PLAYFUL',
     designSystem: getDesignSystemForLayoutStyle('PLAYFUL'),
     archetype: 'JESTER',
+    // Scrapete een pill-radius (999); de archetype-cap (JESTER max) clampt 'm.
+    button: { ...DEFAULT_BRAND_TOKENS.button, radiusPx: 999 },
   };
 }
 
@@ -110,6 +116,7 @@ function makeHeroExperientialTokens(): BrandTokens {
     layoutStyle: 'EXPERIENTIAL',
     designSystem: getDesignSystemForLayoutStyle('EXPERIENTIAL'),
     archetype: 'HERO',
+    button: { ...DEFAULT_BRAND_TOKENS.button, radiusPx: 999 },
   };
 }
 
@@ -159,8 +166,9 @@ group('LINFI (RULER + MINIMAL) — full-bleed placeholder, dark frame');
   assert('display font-size max sparse-2 (modular)', html.includes(', 76px)') || html.includes(', 72px)'));
   // Display weight 300 (sparse, lichtste)
   assert('display weight 300', html.includes('font-weight:300'));
-  // Button sharp (radius 0) + uppercase + 0.1em
-  assert('button radius 0', html.includes('border-radius:0'));
+  // Button: scraped radius 0 (sharp) — renderer leest tokens.button.radiusPx,
+  // niet de layoutStyle-preset. + uppercase + 0.1em (archetype-default).
+  assert('button radius 0 (scraped)', html.includes('border-radius:0'));
   assert('button uppercase', html.includes('text-transform:uppercase'));
   assert('button letter-spacing 0.1em', html.includes('letter-spacing:0.1em'));
 }
@@ -191,8 +199,8 @@ group('Branddock (SAGE + COMMERCIAL) — solid-brand centered');
   // Display size dense uit COMMERCIAL modular ≈ [32, 40, 48], dense pakt
   // index 1 (40px). Clamp-wrapper.
   assert('display font-size max dense (modular)', html.includes(', 40px)') || html.includes(', 42px)'));
-  // Button rounded (radius 8)
-  assert('button radius 8', html.includes('border-radius:8'));
+  // Button rounded — scraped radius 8 (binnen de SAGE archetype-cap)
+  assert('button radius 8 (scraped)', html.includes('border-radius:8'));
 }
 
 group('JESTER + PLAYFUL — gradient-brand pill-button');
@@ -200,8 +208,9 @@ group('JESTER + PLAYFUL — gradient-brand pill-button');
   const html = renderBrandHero(makeJesterTokens(), PROPS);
   // Gradient
   assert('linear-gradient brand', html.includes('linear-gradient(135deg'));
-  // Button pill (radius 999)
-  assert('button radius 999 (pill)', html.includes('border-radius:999'));
+  // Button: scrapete pill-radius 999 → gecapt op de JESTER archetype-max (24px).
+  assert('button radius scraped 999 → gecapt op 24 (JESTER-max)',
+    html.includes('border-radius:24px') && !html.includes('border-radius:999'));
   // Lowercase (friendly)
   assert('button NIET uppercase', !html.includes('text-transform:uppercase'));
   // Nunito font
@@ -211,11 +220,12 @@ group('JESTER + PLAYFUL — gradient-brand pill-button');
 group('HERO + EXPERIENTIAL — dramatic typography');
 {
   const html = renderBrandHero(makeHeroExperientialTokens(), { ...PROPS, heroVisualUrl: 'https://example.com/hero.jpg' });
-  // Display dramatic uit EXPERIENTIAL modular ≈ [80, 120, 184, 272],
-  // dramatic pakt max-index. Clamp-wrapper.
+  // Display dramatic — EXPERIENTIAL houdt de grootste tier, maar de modular
+  // scale is getemd t.o.v. de oude oversized preset (272px → ~88px clamp-max,
+  // consistent met de render-polish die absurd-grote presets terugbracht).
   assert(
-    'display font-size dramatic (modular)',
-    html.includes(', 272px)') || html.includes(', 184px)') || html.includes(', 144px)'),
+    'display font-size dramatic (modular, getemd)',
+    html.includes(', 88px)') || html.includes(', 80px)') || html.includes(', 96px)'),
   );
   // Display weight 900 (zwaarste)
   assert('display weight 900', html.includes('font-weight:900'));
@@ -243,10 +253,11 @@ group('Cross-brand differentiation — meaningful verschillen');
     (linfi.includes(', 76px)') || linfi.includes(', 72px)')) &&
     (branddock.includes(', 40px)') || branddock.includes(', 42px)')),
   );
-  // Linfi vs Jester: andere button-shape (radius 0 vs 999)
+  // Linfi vs Jester: andere button-shape via scraped radius (0 sharp vs pill
+  // 999 die op de JESTER-cap 24 landt) — beide uit tokens.button.radiusPx.
   assert(
-    'LINFI button radius 0, Jester radius 999',
-    linfi.includes('border-radius:0') && jester.includes('border-radius:999'),
+    'LINFI button radius 0 (sharp), Jester gecapt 24 (scraped-contract)',
+    linfi.includes('border-radius:0') && jester.includes('border-radius:24px'),
   );
   // Linfi heeft placeholder-frame (geen image), Branddock niet (solid-brand)
   assert(

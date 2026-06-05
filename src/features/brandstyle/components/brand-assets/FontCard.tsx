@@ -5,7 +5,8 @@ import { AlertTriangle, Trash2, Upload, Type as TypeIcon, Sparkles, Check } from
 import { Button } from "@/components/shared";
 import type { StyleguideFontData, FontRole } from "../../types/brandstyle.types";
 import { useDeleteFont } from "../../hooks/useBrandstyleHooks";
-import { findFontSubstitute, buildSubstituteCssUrl } from "@/lib/brandstyle/font-substitutes";
+import { findFontSubstitute } from "@/lib/brandstyle/font-substitutes";
+import { injectTypekitCss, injectSubstituteCss } from "../../utils/font-loading";
 
 interface FontCardProps {
   font: StyleguideFontData;
@@ -23,34 +24,6 @@ const ROLE_LABEL: Record<FontRole, string> = {
   EYEBROW_META: "Eyebrow & meta",
   BODY: "Body",
 };
-
-/** Track which Typekit kit CSS we've injected in <head> so we don't
- *  duplicate <link> tags when multiple FontCards render the same kit. */
-const injectedKits = new Set<string>();
-const injectedSubstitutes = new Set<string>();
-
-function injectTypekitCss(kitId: string | null | undefined): void {
-  if (typeof document === "undefined") return;
-  if (!kitId) return;
-  if (injectedKits.has(kitId)) return;
-  injectedKits.add(kitId);
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = `https://use.typekit.net/${kitId}.css`;
-  link.dataset.brandstyleTypekit = kitId;
-  document.head.appendChild(link);
-}
-
-function injectSubstituteCss(family: string): void {
-  if (typeof document === "undefined") return;
-  if (injectedSubstitutes.has(family)) return;
-  injectedSubstitutes.add(family);
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = buildSubstituteCssUrl(family);
-  link.dataset.brandstyleSubstitute = family;
-  document.head.appendChild(link);
-}
 
 export function FontCard({ font, canEdit, onUploadClick, workspaceKitId }: FontCardProps) {
   const [imgError, setImgError] = useState(false);

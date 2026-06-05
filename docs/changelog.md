@@ -35,6 +35,184 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ---
 
+## 2026-06
+
+### 286. Brandstyle palet: neutral-overpopulatie aangescherpt (cap 6 → 4)
+
+Cross-brand controle (betterbrands.nl, een Tailwind-site) toonde 6 distincte grijzen die allemaal écht renderen maar de styleguide overpopuleren. `MAX_NEUTRALS` van 6 → 4: donkerste (tekst) + lichtste (surface) + de **2 meest-gebruikte** mid-grijzen (op `renderedWeight`). De mids worden op werkelijk gebruik gerangschikt — een functionele border-grijs (napking #6B7280) overleeft dus op merite, géén straf voor framework-herkomst, zodat de eerder gemaakte #6B7280-keuze bewaakt blijft. Merk-kleuren onaangeroerd; Zwarthout (2 neutrals) onveranderd.
+
+**Bewijs**: smoke `phase49` 38/38 (betterbrands-achtig 6 → 4, usage-ranked mids, Slate Gray behouden, minst-gebruikte gevallen, greens intact, + her-cap-na-swap); phase47/48/50/51 groen; tsc+lint 0.
+
+**Finalize-review-fix**: `demoteAchromaticPrimary` demote de ex-PRIMARY naar NEUTRAL ná de cap-in-de-filter → `capNeutrals` her-cap't ná de swap (geëxporteerd uit de filter), zodat een redundante near-black niet als 5e neutral binnenkomt en de cap (4) consistent blijft.
+
+- Commit: branch `fix/brandstyle-extraction`
+
+### 285. Brandstyle palet: strenge framework-match tegen "geleende" usage
+
+Napking re-scrape (na #283, vers-herstarte dev-server, mét multi-page usage-data) hield Gutenberg-default **#ABB8C3** vast terwijl WP-admin #007CBA correct viel. Root-cause: #ABB8C3 rendert zélf nergens, maar ligt ~33 RGB van de echt-gerenderde Tailwind-grijs **#9CA3AF** (en ~31 van sage #A2B8A5) — binnen de losse `MATCH_TOLERANCE` (40). Zo absorbeerde de geleakte default het gebruik van z'n buurman → false-`strong` → overleefde de framework-gate. (Diagnose: live curl van napking.nl + afstandsberekening; de re-scrape zélf draaide op verse code na een stale-dev-server-restart.)
+
+- **`renderStrength`** kreeg een optionele `tolerance`-param; **`STRICT_FRAMEWORK_TOLERANCE = 6`**.
+- **`keep()`**: een framework-default behoudt mét multi-page-data alléén via een **near-exact** render (strict 6) — geen absorptie meer van een naburige kleur. Een ECHT toegepaste framework-kleur rendert op z'n exacte computed-waarde (dist 0), dus blijft. Zónder multi-page valt het terug op het #283-pixel-pass-gedrag.
+
+**Review** (2 adversariële rondes op de geïmplementeerde code): ronde-1 ving een **severe over-drop** (de strict-only-versie negeerde de pixel-pass in de default-config zónder screenshotter → echte framework-merk-kleuren vielen) + een onder-drop (#ABB8C3 ↔ Bootstrap gray-500 #ADB5BD dist 7) → beide gefixt (pixel-pad hersteld voor no-multi-page; tolerantie 12→6); ronde-2 = SHIP (één narrow framework-only threshold-bias bewust geaccepteerd — een pixel-pad-fallback zou de #ABB8C3-absorptie heropenen).
+
+**Bewijs**: smoke `phase51` 21/21 (incl. strict-match, Regression A pixel-strong-keep, Regression B #ADB5BD); napking-exact verificatie dropt #ABB8C3 in zowel multi-page als pixel-only config; phase47/48/49/50 groen; tsc+lint 0. **Vereist re-scrape Napking** → palet = Ocean Blue + charcoal/soft-white/slate/brown, géén #ABB8C3.
+
+- Task: audit `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`
+- Commit: branch `fix/brandstyle-extraction`
+
+### 284. Brandstyle Typography-fonts-fix: Adobe-CLS-fallback canonicalisatie + geconsolideerd load-pad + weight-consistentie
+
+De Typography-tab presenteerde gescrapte merk-fonts onjuist: Adobe's auto-gegenereerde CLS-fallback-family (`effra-fallback`) lekte als zelfstandige "Secondary/heading"-merkfont (D1), werd als heading-familie gekozen (D2), verscheen als dubbele kaart (D3), laadde inconsistent (D4), toonde de rauwe CSS-stack als label (D5) en de type-scale had gemengde eenheden (D6). Root-cause: de scrape-bron werd niet gecanonicaliseerd vóór de DB-split + twee divergerende font-load-paden.
+
+- **Bron-canonicalisatie (F1)**: `canonicalizeFontFamily` + `dedupeBrandFonts` (pure helpers in `font-fallback.ts`, gedeelde `font-generic-families.ts`) strippen de `[\s-]fallback$`-suffix + generieke families + dedup `X`/`X-fallback`, toegepast vóór de split in `writeResultToDb` én in `selectDetectedFontNames`; `assignRole` + de computed-style-classifier (`normalizeName`) canonicaliseren beide vergelijkingszijden.
+- **Extractor + type-scale (F2)**: extractor kiest de eerste *canoniceerbare* family (niet `split(',')[0]`); `normalizeTypeScale` (`type-scale-normalizer.ts`) normaliseert eenheden → rem met veldbehoud (object-spread), BEWUST geen dedup/level-collision (dat brak de size-gedreven `mapTypographyRoles`).
+- **Load-pad + display (F3)**: `font-loading.ts` (`resolveFontRender`) + `typography-display.ts` consolideren FontCard + TypographySection op één availability-gedreven pad (substitute in de stack i.p.v. 404'ende Google-link); group-label toont alleen de family-naam; substitute-badge.
+- **Weight-consistentie**: gedeelde `weightForLevel(level, scrapedWeight)` zodat Type-Scale- en In-Context-secties dezelfde heading-weights renderen (was 400 vs 700 bij lege scrape).
+- **Smoke-suite hersteld**: de `smoke:web-page-builder`-keten was rood door pre-existing failures (gemaskeerd door early-exit op phase2); phase2/18/23/39 gediagnosticeerd (stale-assertie vs intentionele renderer-evolutie) en gefixt → 43/43 groen.
+
+**Review**: 2 adversariële review-rondes (4 agents) → 0 CRITICAL; 2 WARNINGs gefixt (classifier `-fallback`-alignment + `useEffect` `workspaceKitId`-dep); ronde-2 = No issues found.
+
+**Bewijs**: re-scrape Napking geverifieerd via psql (`effra-fallback` weg uit additionalFonts + StyleguideFont; typeScale → rem); nieuwe `smoke:brandstyle-typography` (phase44/45) + volledige web-page-builder-keten exit 0; tsc + lint 0.
+
+- Task: [tasks/done/brandstyle-typography-fonts.md](tasks/done/brandstyle-typography-fonts.md)
+- ADR: [docs/adr/2026-06-05-typography-font-canonicalization.md](docs/adr/2026-06-05-typography-font-canonicalization.md)
+- Commit: branch fix/brandstyle-extraction
+
+### 283. Brandstyle palet: framework-defaults moeten gebruik bewijzen (geen benefit-of-the-doubt)
+
+Napking re-scrape (na #282) bevestigde PRIMARY = Ocean Blue #008ACF ✓, maar bij een controle tegen de **echte** napking.nl bleken twee framework-leaks: ACCENT "Deep Blue #007CBA" = de **WordPress-admin-kleur** (`--wp-admin-theme-color`, 0× in de gebruikte CSS) en Cool Gray #ABB8C3 = **Gutenberg core-default** ("Cyan bluish gray"). Beide overleefden omdat deze re-scrape géén multi-page usage-data had en `keep()` onbemeten kleuren benefit-of-the-doubt gaf (`!known → keep`) vóór de framework-gate.
+
+- **`isFrameworkOrigin`** uitgebreid met de WP-admin-theme-color-familie (#007CBA/#006BA1/#005A87) — usage-gegate, géén hard-blocklist (blauw kan met corporate-merk-blauw overlappen).
+- **`keep()` herordend**: framework-default-kleuren moeten POSITIEF sterk gebruik tonen. Zonder usage-data vallen alléén de **hex-bevestigde geleakte klassen** (`isFrameworkLeakHex` = CMS-neutral-grijzen + WP-admin-blauw); een **saturated framework-default-primary** (Bootstrap #0D6EFD/#20C997) houdt z'n benefit-of-the-doubt (kan een bewuste merk-kleur zijn → geen grayscale). Met usage-data is het gedrag byte-identiek aan vóór deze wijziging.
+
+**Review** (2 adversariële agents): ronde-1 ving een over-drop (de oude reorder grayscale'de Bootstrap-merk-paletten zonder data) → gefixt met de leak-hex-split; ronde-2 op de verfijnde logica = **SHIP** (Leak ⊆ Origin bewezen, with-data-pad onveranderd, structurele bescherming intact).
+
+**Bewijs**: nieuwe smoke `phase51` 14/14 (incl. over-drop-guard #0D6EFD/#20C997 behouden, #ABB8C3/#007CBA gedropt); `phase47` 24/24 (stale "keep-all"-assertie geüpdatet); 48/49/50 groen; tsc+lint 0. Grondwaarheid: napking.nl is WordPress+WooCommerce+Gutenberg+Tailwind (curl bevestigde #007CBA = WP-admin-var, font = Adobe "effra"). **Vereist re-scrape Napking** → verwacht: #007CBA + #ABB8C3 weg.
+
+- Task: audit `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`
+- Commit: branch `fix/brandstyle-extraction`
+
+### 282. Brandstyle palet: brand-PRIMARY uit merk-signaal i.p.v. frequentie
+
+Napking re-scrape onthulde dat de PRIMARY de near-black TEKSTkleur (#1A171B "Deep Charcoal") was, terwijl de échte merk-kleur (Ocean Blue #008ACF — letterlijk genoemd in de logo-guidelines: *"the brand's Ocean Blue (#008ACF)"*) naar ACCENT zakte. Root-cause: de AI-classifier kent PRIMARY toe aan de meest-prominente kleur, en op een merk met een achromatisch wordmark + chromatische accent is dat de ubiquitaire tekstkleur; de logo-pixel-rescue ving het niet (`brandImages` null + een overwegend-zwart wordmark levert via histogram tóch charcoal). Dit was de gedeferde "Fase 4" uit `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`.
+
+- **`demoteAchromaticPrimary`** (`analysis-engine.ts`, array-niveau spiegel van `reclassifySaturatedNeutral`): demote een achromatische PRIMARY → NEUTRAL en promote de sterkste chromatische merk-kleur → PRIMARY, alléén met POSITIEF merk-bewijs (logo-guideline-vermelding +5, detector/vision-primary +4, vision-cta/accent +2, sterk gebruik +2, core-brand-tag +1; drempel 3 — een losse tag is onvoldoende). Draait NÁ de usage-filter zodat een gepromote kleur al door werkelijk-gebruik is gegaan.
+- **Guards** (no-op): chromatische primary (Zwarthout-oranje), monochrome merken (geen chromatisch alternatief), detector/logo-asserted zwart zonder logo-genoemde chromatische hex; **nooit** framework/social/low-confidence/status-kleur gepromote; verzadigde donker-navy/teal primary (#0A1A2F s65) niet gedemote.
+
+**Review**: 2 adversariële workflows (ontwerp + geïmplementeerde code), 6 lenzen, 13 agents → unaniem SHIP; 5 design-flaws vooraf ingebouwd (na-filter-plaatsing, saturatie-gegate achromatic-test, out-evidence-drempel tegen link-blauw-kaping, exact-token alert-tags, hoofdletter-ongevoelige hex-match).
+
+**Bewijs**: smoke `web-page-builder-phase50-primary-from-brand-signal` 20/20 (alle 8 archetypes incl. red-team-regressies); tsc+lint 0; phase47/48/49 groen. **Vereist re-scrape Napking** → verwacht PRIMARY = Ocean Blue, Deep Charcoal → NEUTRAL.
+
+- Task: audit `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`
+- Commit: branch `fix/brandstyle-extraction`
+
+### 281. Brandstyle palet: cross-brand — non-brand-uitsluiting + neutral-consolidatie
+
+Cross-brand audit (Zwarthout schoon vs Napking vervuild; DB over ~10 merken): de usage+framework-filter ving Bootstrap-ruis maar niet (a) third-party widget/social-share-kleuren (napking WhatsApp #25D366; peoplemasterminds **8** social-netwerk-kleuren als brand-SECONDARY/ACCENT) en (b) CMS-admin-kleuren (WordPress #007CBA), én er was (c) universele neutral-overpopulatie (5-10 grijzen/merk). Audit: `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`. Inzicht: de AI tagt de ruis al zelf (`social`/`whatsapp`/`admin`/`system`).
+
+- **Fase 1 — non-brand-uitsluiting** (`non-brand-colors.ts`): `isNonBrandColor` weert widget/social/admin-kleuren **altijd** (ongeacht usage, anders dan framework-defaults) — primair via de AI-tags, met een ZEER beperkte hex-backstop (alleen distinctieve niet-blauwe hexes: WhatsApp-groen, Instagram-pink). Bedraad in de usage-filter (`keep()`), maar **logo-kleuren winnen** (een wordmark-kleur is per definitie merk-eigen).
+- **Fase 2 — neutral-consolidatie**: bijna-identieke NEUTRALs (kleur-afstand) worden samengevoegd tot één representant (meest-gebruikt), met behoud van donkerste+lichtste, cap 6, alléén bij render-bewijs. Napking 7 grijzen → 5; WhatsApp/WordPress weg; Ocean Blue (echte accent) blijft.
+
+**Review** (adversariële 3-lens): 2 CRITICAL + 4 MAJOR gevonden+gefixt: `#FF0000` weerde elk merk-rood (verwijderd), WP-admin/Telegram/Twitter-blauwen weerden een corporate-blauw-band (alle blauwe platform-hexes uit de backstop → alléén via tag), safety-fallback heropende non-brand (→ brandPool-fallback), hard-exclude vóór logo (→ logo wint), consolidatie zonder render-bewijs (→ render-gated), MAX_NEUTRALS-amputatie (→ dedup-eerst + cap 6). De smoke ving daarna nog 2 over-reach-hexes (Telegram~Ocean Blue, Twitter~Material).
+
+**Bewijs**: smoke `web-page-builder-phase49-cross-brand-palette` 27/27; phase43/45/47/48 groen; tsc+lint 0. **Vereist re-scrape (Napking + peoplemasterminds + Zwarthout-regressie) voor volledige validatie.**
+
+- Task: audit `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`
+- Commit: branch `fix/brandstyle-extraction`
+
+### 280. Brandstyle palet: usage-gedreven filter (multi-page) i.p.v. hex-blocklist
+
+User-eis na re-scrape: een kleur mag ALLEEN uit het palet vallen als hij aantoonbaar niet gebruikt wordt — niet op een hardgecodeerde hex-lijst (die brittle is + een echt-gebruikte kleur kan overslaan). Nieuwe `palette-usage-filter.ts` beslist op **werkelijk renderen**:
+
+- **Signalen**: multi-page computed `color`/`background-color`/`border-color`-frequenties (uit de component-screenshotter, ~5 pagina's; `bulk-computed-styles`) + de homepage pixel-pass usageEvidence (`color-usage-verifier`). Bestond al, maar de multi-page-data werd niet in het keep/drop-besluit gebruikt en de pixel-pass keek alleen naar de homepage.
+- **Regel**: logo + structurele kleuren (donkerste tekst / lichtste surface, over de gerenderde subset) altijd; geen usage-data → behouden (afwezigheid van bewijs ≠ bewijs van afwezigheid); rendert nergens → drop; framework-default → alleen bij STERK gebruik; elke andere gebruikte kleur → behouden. De oude hex/tag-drop (`isFrameworkNoiseColor`) is verwijderd; `resolveColors` geeft nu het volledige palet, de filter draait ná de component-screenshotter vóór persist.
+
+Hiermee blijft bv. Slate Gray staan *omdat* hij aantoonbaar als muted tekst rendert (multi-page geverifieerd), terwijl een framework-kleur die nergens rendert (Bootstrap Blue) valt — en een wél-gebruikte kleur wordt nooit overgeslagen.
+
+**Review**: adversariële 3-lens workflow → geen CRITICAL. Gefixt: MAJOR-1 (gefaalde/lege pixel-pass schreef `'none'` = "kon-niet-meten" → engine-guard negeert de pixel-pass zonder positief signaal, anders over-drop), MAJOR-2 (`border-color` toegevoegd zodat border-only accenten meetellen), MAJOR-3 (`renderStrength` sample-floor: 'strong' vereist ≥60 samples zodat een dunne pagina geen framework-kleur "strong" maakt), MINOR-1 (structureel over gerenderde subset), MINOR-2 (RGB-tolerantie 24→40, gelijk met de verifier), MINOR-3 (dode `isFrameworkNoiseColor` + phase46-smoke verwijderd). De smoke ving daarvóór al 2 bugs (transparant-regex matchte `rgb(r,g,0)`; drop-alleen-bij-bewijs).
+
+**Bewijs**: smoke `web-page-builder-phase47-usage-filter` 21/21; regressie 44/45 groen; tsc+lint 0. **Vereist re-scrape voor volledige validatie** (Track A): `border-color`-collector + multi-page usage zijn pas op een live render te bevestigen.
+
+- Task: vervolg op `docs/audits/2026-06-05-brandstyle-palette-framework-cleanup.md`
+- Commit: branch `fix/brandstyle-extraction`
+
+### 279. Brandstyle palet-framework-cleanup + Voice-analyse resilient (Fase A/C/E/F)
+
+Verse re-scrape Zwarthout ná #278 toonde de kern-oorzaak achter alle kleur-klachten (kleurcombinaties/buttons/effects "niet op de site", overbodige kleuren, dubbel overzicht): het palet was **100% Bootstrap/WordPress framework-defaults** (12 kleuren, 6 getagd `unused`; echt logo-oranje ontbreekt). Plan + diagnose: `docs/audits/2026-06-05-brandstyle-palette-framework-cleanup.md`.
+
+- **Fase A — palet de-frameworken**: nieuwe `isFrameworkNoiseColor` dropt in `resolveColors` framework-herkomst (Bootstrap/WordPress-tag exact-token of bekende hex) ÉN ongebruikt (`usageEvidence==='none'`/`unused`-tag), behoudt logo/gebruikte kleuren + de donkerste tekstkleur (tie-break op tekst-tag), met safety tegen leeg palet. `isFrameworkDefaultPrimary`-hexlijst verbreed. Zwarthout: dropt exact de 6 ongebruikte Bootstrap-kleuren (de bron van de slechte accent-pairings + teal/paars-gradients). **Fase C** (kleurcombinaties alleen echte kleuren) volgt automatisch uit A. **Fase E** — `SystemRolesSection` verwijderd; Color System is het enige kleur-overzicht (user-keuze). **Fase F** — "Recommended"-badge op verzonnen gradients (provenance uit de `RECOMMENDED:`-prefix).
+- **Voice & imagery resilient (bonus)**: een Claude-JSON-hiccup in de voice-stap (malformed JSON, bv. onontsnapte quote in een geciteerde merk-frase) blokkeerde de HELE analyse. Nu niet-fataal: log + ga door met lege voice-data zodat kleuren/componenten/visual system wél persisten; + prompt-hardening (geen onontsnapte `"` in string-values).
+
+**Iteratie 2 (na re-scrape-feedback)**: het palet bleef framework-vol omdat (a) de AI dit keer `framework`-tags zette (mijn FRAMEWORK_TAGS miste `framework`) en (b) Bootstrap's default link-blauw `usage:link` (zwakke usage) droeg, wat mijn `hasUsage`-guard spaarde. **Fase A verscherpt**: drop een framework-origin-kleur (tag `framework`/bootstrap/… of bekende hex, incl. Bootstrap semantic-hexes #198754/#FFC107/#DC3545) TENZIJ `usageEvidence==='strong'` — zwakke link/border-usage is geen brand-usage. Zwarthout dropt nu alle 6 framework-defaults, behoudt alleen de echte tekst/surface (Deep Charcoal + Soft White). **Fase B gebouwd**: de multi-page-merge gaf `logoColors` niet door → de logo-kleur-rescue draaide nooit → Zwarthout's oranje ontbrak volledig. 1-regel-fix (`logoColors: homepage.logoColors`); de rescue voegt nu het logo-oranje als PRIMARY toe. Smoke `phase46` 21/21 (14:20-palet → exact 6 framework-defaults gedropt). `[RE-SCRAPE]` validatie vereist.
+
+**Gedeferd `[RE-SCRAPE]`**: Fase D (form-inputs computed-style-fallback). **Review (iter 1)**: adversariële 3-lens workflow → geen CRITICAL/MAJOR bevestigd; gefixt: exact-token-match (anti over-drop), donkerste-tie-break, NL→EN-badge, scrapedJson-comment, orphaned override-editor gedocumenteerd (0/15 styleguides hebben overrides).
+
+**Bewijs**: smoke `web-page-builder-phase46-palette-framework` 20/20 (Zwarthout-palet → exact 6 unused gedropt) + phase45 58/58; tsc+lint 0. **Vereist re-scrape zwarthout.com voor volledige validatie** (Track A).
+
+- Task: audit `docs/audits/2026-06-05-brandstyle-palette-framework-cleanup.md`
+- Commit: branch `fix/brandstyle-extraction`
+
+### 278. Brandstyle resultaat-audit fixes — components-depth + elevation + typografie + kleur + spacing + confidence
+
+Vervolg op #277, gedreven door 15 screenshots van de live Brandstyle-UI (Zwarthout). User-observatie: components-tab toont vrijwel niets (form inputs/cards/chips = 0). Diepgaande audit (6-stream workflow + live-site HTML-probe + adversariële cross-check, alle root-causes in live code geverifieerd): `docs/audits/2026-06-05-brandstyle-result-audit.md`. **Kernbevinding**: form-inputs en product-cards zijn NIET afwezig op zwarthout.com (`/contact` + `/quote` hebben 21-24 echte `<input>`; shop heeft 9 `li.product-item`/pagina) — ze worden **gemist** door een merge-defect, dekking-gap en selector-gap.
+
+- **Fase 1a (component merge)**: de Playwright-screenshotter verving `scraped.components` wholesale → static-gemergde form-inputs van `/contact` (die buiten de 5-pagina screenshot-slice vielen) gingen verloren. Nieuwe `backfillComponentsByType` houdt de screenshot-set leidend en backfilt alleen ontbrekende types. **Fase 1b/1d (coverage)**: `prioritiseScreenshotUrls` zet form-rijke pagina's (contact/offerte) vooraan en capt producten op 2 i.p.v. 4 bijna-identieke detailpagina's. **Fase 1c (selector)**: PRODUCT_CARD vangt nu WooCommerce/custom-theme kaarten (`li.product`/`.product-item`/`.wc-block-grid__product`).
+- **Fase 2 (elevation)**: 1-regel shape-bug — `clusterElevation` deed `Array.isArray` op een `{tokens:[...]}`-object → Design-System/Visual-System toonden "0 shadows" terwijl de Spacing-tab er 4 had. Unwrap + strip `!important` + skip `none`.
+- **Fase 3 (typografie)**: var()-resolutie splitst nu de komma-stack naar de eerste echte familie (geen "system-ui,…"-string meer als primary-font); fallback-chain-ruis (Roboto/Oxygen/Ubuntu) gefilterd (eerste familie per declaratie); WooCommerce/Elementor icon-fonts gefilterd; weight-suffix-strip ("Sen Bold" → "Sen") voor Google-Fonts-classificatie.
+- **Fase 4a (kleur)**: chroma-gate — verzadigde kleuren (Bootstrap Blue/Vivid Purple) niet langer in de NEUTRAL-bucket maar ACCENT, behalve framework-default-ruis zonder usage-bewijs (blijft gemute neutral).
+- **Fase 5a/5c (spacing/radii)**: computed-style px afgerond (5.42px → 5); pill/cirkel-radius (`50%`/`≥100px`) bewaard als sentinel zodat de "full"-radius een echte pill is i.p.v. 4px. 5b (non-monotone volgorde) bevestigd **stale data** — huidige builder sorteert al.
+- **Fase 6a (confidence)**: `computeConfidence` telde `Object.keys().length` → degenereerde naar 100% voor élk element. Telt nu onderscheidende niet-default props (echte button 0.78, generieke balk 0.42).
+
+**Bewust gedeferd** (per audit-risicovlaggen, baat bij re-scrape-validatie): 4b/4c (framework-kleuren bulk-droppen), 6b/6c (nav-handling, vision-confidence), 6d (gradient-provenance — feature met prompt+schema+UI), 6e (Components-telling label). **Review**: adversariële 4-lens workflow → geen CRITICAL; 1 MAJOR (pill-sentinel `9999` lekte in median/mostCommon/AI-prompt) + 1 MINOR (chroma-gate `undefined` usage) gefixt + smoke-coverage.
+
+**Bewijs**: smoke `web-page-builder-phase45-result-audit` 58/58; regressie 41-44 groen; tsc+lint 0 errors. **Vereist re-scrape van zwarthout.com voor volledige validatie** (≥3 form-inputs, ≥5 product-cards, leesbare primary-font, consistente elevation) — Track A.
+
+- Task: audit `docs/audits/2026-06-05-brandstyle-result-audit.md`
+- ADR: -
+- Spec: `docs/audits/2026-06-05-brandstyle-result-audit.md`
+- Commit: branch `fix/brandstyle-extraction`
+
+### 277. Brandstyle extractie-fidelity — Fase 1/2/3/4/5/6 (var-resolutie + framework-gate + kleurcombinaties + font-fallback)
+
+Upstream-vervolg op #276: de scrape→brandstyle-extractie plaatste gescrapte info slecht (onopgeloste `var(--bs-*)`, framework-defaults als merk-design, gefabriceerde preview-tekst). Na 4-lagen deep-research + adversariële code-cross-check (audit `docs/audits/2026-06-05-brandstyle-extraction-pipeline.md`). Meta-oorzaak: drie niet-uniforme CSS-leespaden met verschillende var()-resolutie en geen gedeelde framework-default-gate.
+
+**Fase 1 — gedeelde var-resolutie**: nieuwe property-agnostische `resolveCssVar`/`resolveOrKeep` (`css-var-resolver.ts`) bedraad in de typografie-extractor (fontSize/lineHeight/letterSpacing/fontWeight/fontFamily/color, alleen niet-null geresolveerd) + button-extractor (full-CSS-fallback voor de kleur-gefilterde var-map) + var-guard op lineHeight/letterSpacing in `toRoleEntry`. **Fase 2 — framework-default-gate**: `framework-defaults.ts` (selector- + primary-hex-detectie, focusset zodat een toevallig-Bootstrap-grijs als echte merk-kleur ongemoeid blijft) → component-confidence-penalty (×0.4) + `--bs-primary` detector-downgrade naar 'low' (geen Bootstrap-blauw meer als merk-primary) + logo-rescue-gate die framework-defaults negeert. **Fase 6 — display**: gefabriceerde button-CTA-tekst → neutrale rol-placeholder; dode `StyleGuideViewer`/`BrandstyleView` gemarkeerd.
+
+**Review**: adversariële review-workflow vond 8 bugs (4 HIGH/2 MED/2 LOW) — allemaal gefixt (regex-paren-balancing in var-fallbacks, font-stack-resolutie-volgorde, namespaced-btn-class lookbehind, logo-rescue op ongemuteerde role, refuse-mode-regressie-guard, custom-Gutenberg over-match, declaratie-grens, low-confidence→NEUTRAL bij AI-skip).
+
+**Bewijs**: smokes `phase41-brandstyle-var-resolution` 17/17 + `phase42-framework-default-gate` 19/19 (incl. alle bugfix-scenario's); regressie phase12/24/25/26 groen; tsc+lint 0 errors. Branch `fix/brandstyle-extraction` (`1576f4d8`→`bc139e5e`).
+
+**Fase 3 — usage-enforce**: logo-kleur-redding-deblokkering zat al in de Fase-1/2-review-fixes (`frameworkHasPrimary` negeert framework-default-primaries); resterend deel: kleuren met `usageEvidence 'none'` (niet-gerenderd) die niet uit logo/detector komen → confidence 'low' vóór resolveColors. **Fase 5 — kleurcombinaties**: nieuwe `buildColorPairings` (`color-pairings.ts`) → WCAG-geverifieerde rol-gelabelde fg/bg-paren (knoppen met best-leesbare foreground, merk-op-surface, basis-leespaar); schema `colorPairings Json?` + persist (analyse + `recomputeColorPairings` na user color-add/-delete) + `ColorPairingsPanel` UI. Twee review-workflows vonden 8 (Fase 1/2) + 6 (Fase 3/5) bugs — allemaal gefixt (o.a. var-fallback-paren-balancing, font-stack-volgorde, namespaced-btn lookbehind, stale-pairings recompute, invalidateCache, grammatica, echte donkerste-neutral).
+
+**Bewijs (Fase 3/5)**: smoke `phase43-color-pairings` 12/12; tsc+lint 0. Commits `df6c6c3d`+`b6b6f630`+`e83f8a24`.
+
+**Fase 4 — font-fallback (lege fonts-tabel)**: drie deterministisch-testbare ingrepen + één `[RE-SCRAPE]`-wiring. (a) `extractSemanticFonts` vangt nu Bootstrap's `--bs-headings-font-family`/`--bs-body-font-family` — een brand-gecustomiseerde waarde overleeft, een vanilla system-stack wordt terecht gefilterd. (b) Nieuwe pure helpers (`font-fallback.ts`): de headless computed-style-render (die al `body/h1`-fonts captureert) triggert nu óók bij lege fonts i.p.v. alleen een zwak palet, en merget per-bron deficiëntie-gestuurd (`planHeadlessMerge`) zodat een goed statisch palet/fontset nooit door de grovere render wordt overschreven. (c) **Eerlijke persist**: StyleguideFont-rijen komen uit de écht gedetecteerde fonts (`selectDetectedFontNames`), nooit de AI-fallback; `primaryFontName` behoudt de AI-fallback alleen voor het typografieprofiel (LP-renderer heeft een font nodig). UI (`FontDisplayCard`) toont "Not detected on the site — AI suggestion: X" wanneer de naam niet in de gedetecteerde rijen zit, i.p.v. een confidente font-card. De computed-style-render zelf blijft `[RE-SCRAPE]` (vereist `BRANDSTYLE_HEADLESS_FALLBACK=1` + een echte gerenderde, niet-placeholder bron — Track A).
+
+**Review (Fase 4)**: adversariële 4-lens review-workflow → geen CRITICAL; 1 MAJOR + 3 MINOR/NIT gefixt: font-role-classificatie van supplementaire headless-fonts (gerenderde CSS apart naar de classifier zónder de kleur-pipeline te raken), overbodige reprocess-skip bij niets-geadopteerd, NL→EN UI-copy, UPLOADED-rij comment-accuratesse. Verworpen (onbereikbaar/by-design): secondary-card false-negative, whitespace-spook-font, regex-over-match, kleur-pipeline-verstoring.
+
+**Bewijs (Fase 4)**: smoke `phase44-font-fallback` 20/20 (`--bs-*`-resolutie + vanilla-filter + regressie ACSS-vars + `selectDetectedFontNames` geen-AI-leak + `planHeadlessMerge`-matrix); regressie 41/42/43 groen; tsc+lint 0 errors.
+
+- Task: audit + plan `~/.claude/plans/functional-conjuring-harbor.md`
+- ADR: -
+- Spec: `docs/audits/2026-06-05-brandstyle-extraction-pipeline.md`
+- Commit: `1576f4d8` + `32258522` + `9e03c71b` + `bc139e5e` + Fase 4 (branch `fix/brandstyle-extraction`)
+
+### 276. LP brand-fidelity overhaul — scrape → tokens → render (geen app-identity-lek meer)
+
+Systematische fix van off-brand/slecht-ogende landing-pages, na een 4-lagen deep-research (audit: `docs/audits/2026-06-04-lp-render-pipeline-napking.md`, plan: `~/.claude/plans/functional-conjuring-harbor.md`). Meta-oorzaak: de pipeline behandelde CSS-tekst-aanwezigheid als merk-design, viel bij zwakke extractie terug op **Branddock's eigen huisstijl** (teal #1FD1B2 / amber #F59E0B) en de renderer **verzon** visuals (textuur, 272px-koppen). Aanleiding: Zwarthout-LP renderde teal (nergens op de site) met verzonnen achtergrond-structuur.
+
+**Fase 1 — identity-leak**: `DEFAULT_BRAND_TOKENS.brand/accent/brandSubtle/action` geneutraliseerd (slate i.p.v. teal/amber); `brand = pickBrand(colors) ?? onSurface` (donkerste klant-kleur), `accent = pickAccent ?? brand` — een klant-LP krijgt nooit meer de app-kleur. **Fase 2 — preset-over-scrape/sizing**: px/rem-misclassificatie op magnitude (Napking `[1.6..16]` werd ×16), hero-CTA radius uit scraped `tokens.button` (gecapt, niet MINIMAL→scherp/pill), `pickButtonStyle` padding gecapt (spacing[6]=96 giant button), display-koppen gecapt (88/120px i.p.v. 272), hero section-padding via `sectionRhythm`. **Fase 3 — render-eerlijkheid**: `readableTextColor` dwingt AA-contrast af op feature/trust/FAQ-body (onzichtbare tekst), `pickBackgroundDepth`→`none` (geen verzonnen textuur), feature/trust-koppen gecapt op 32px. **Fase 4 — confidence-gating**: garbage-button-detectie (transparant+padding 0, of `.wp-block-button` framework-selector → sane defaults), framework-default-kleuren (`bootstrap/wordpress` + `default/synced-block` tag) uitgesloten van brand/accent-picking.
+
+**Bewijs**: nieuwe smoke `phase40-brand-fallback-no-leak` 20/20; cross-brand-verificatie (`scripts/verify-cross-brand-tokens.ts`) over alle 15 merken → **0 teal-leaks, 0 amber-leaks, 0 spacing-blowups**, elk merk krijgt zijn echte kleur (Zwarthout #212529 charcoal, Napking #008ACF blauw) of veilig-neutraal (Wassink #0F172A). tsc + lint 0 errors; token/render-smokes groen.
+
+**Out-of-scope (Track A / live-verificatie)**: bron-website moet bereikbaar zijn voor een goede scrape (napking.nl/zwarthout.com zijn WordPress-placeholders); diepe scrape-pipeline-filtering (usageEvidence consumeren, in-scrape framework-filter, scrape-kwaliteitsguard met UI) + gegarandeerd hero-beeld vragen een live re-scrape om te verifiëren.
+
+- Task: `tasks/lp-fidelity-bugfixes-step2.md` + `tasks/lp-step3-rendering-bugs.md` (smoke-bugs) + audit/plan hierboven
+- ADR: -
+- Spec: `docs/audits/2026-06-04-lp-render-pipeline-napking.md`
+- Commit: (branch `fix/lp-smoke-bugs`, nog te committen)
+
 ## 2026-05
 
 ### 275. Competitor content-item discovery — RSS + sitemap producer voor CompetitorContentItem

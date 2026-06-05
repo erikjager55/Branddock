@@ -256,6 +256,13 @@ function mergeScrapedData(
     bodyFont: homepage.bodyFont,
     headingFont: homepage.headingFont,
     logoUrls: mergedLogoUrls,
+    // Verbeterplan Fase B (palette-framework-cleanup): logoColors MOET mee uit
+    // de homepage — zonder dit veld is `scraped.logoColors` leeg na de merge en
+    // draait de logo-kleur-rescue (analysis-engine) nooit, waardoor de échte
+    // merk-kleur (Zwarthout's oranje) nooit in het palet komt op een puur-
+    // framework-site. Het logo staat in de header op elke pagina, dus de
+    // homepage-extractie is representatief.
+    logoColors: homepage.logoColors,
     ogImage: homepage.ogImage,
     favicon: homepage.favicon,
     inlineCss: mergedInlineCss,

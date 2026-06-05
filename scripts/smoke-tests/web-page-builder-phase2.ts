@@ -119,9 +119,12 @@ function testBrandTokens(): void {
     colors: [],
     fonts: [],
   });
+  // Fase 1 (brand-fidelity): zonder PRIMARY-kleur grondt brand/primaryHex op
+  // onSurface (neutraal, klant-gegrond) i.p.v. de losse DEFAULT — nooit een
+  // Branddock-identity-lek (#1FD1B2).
   assert(
-    'falls back to DEFAULT when no PRIMARY color',
-    minimal.primaryHex === DEFAULT_BRAND_TOKENS.primaryHex,
+    'falls back to neutral onSurface when no PRIMARY color (geen teal-lek)',
+    minimal.primaryHex === minimal.onSurface && minimal.primaryHex.toLowerCase() !== '#1fd1b2',
   );
   assert(
     'uses primaryFontName when no DISPLAY font',
@@ -149,7 +152,7 @@ function testBrandTokens(): void {
   assert('undefined ctx returns DEFAULTS', empty.primaryHex === DEFAULT_BRAND_TOKENS.primaryHex);
 }
 
-// ─── 2. Puck config + 8 components ───────────────────────────
+// ─── 2. Puck config + components ─────────────────────────────
 
 function testPuckConfig(): void {
   group('4. buildSpikePuckConfig — structure');
@@ -164,9 +167,13 @@ function testPuckConfig(): void {
     'StickyCtaBar',
     // DTS audit-fix #4 — StatsBlock (dark-bg highlights)
     'StatsBlock',
+    // BrandNav — navigatie-component
+    'BrandNav',
   ];
 
-  assert(`exactly 10 components registered (got ${componentNames.length})`, componentNames.length === 10);
+  // Afgeleid van `expected` zodat de assert zowel ontbrekende als EXTRA
+  // (onverwachte) componenten vangt — geen magisch getal dat stale raakt.
+  assert(`exactly ${expected.length} components registered (got ${componentNames.length})`, componentNames.length === expected.length);
   for (const name of expected) {
     assert(`component ${name} present`, componentNames.includes(name));
   }

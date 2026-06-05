@@ -9,6 +9,21 @@ import {
 } from '@/lib/landing-pages/brand-tokens';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import { getRenderConstraints } from '@/lib/landing-pages/render-constraints';
+import { contrastRatio, blackOrWhiteFor } from '@/lib/landing-pages/wcag';
+
+/**
+ * Render-veilige leesbare-tekstkleur: geeft `fg` terug als die voldoende
+ * (AA, 4.5:1) contrasteert met `bg`, anders de `fallback`, anders zwart/wit.
+ * Voorkomt onleesbare body-tekst wanneer een gescrapete body-kleur te licht is
+ * voor de (tinted) card-achtergrond — `tbr.body.color` werd niet contrast-gecheckt.
+ */
+function readableTextColor(fg: string, bg: string, fallback: string): string {
+  // Drempel 5.0 (iets boven AA 4.5): een grijs dat net 4.5:1 haalt oogt nog
+  // faint voor kleine body-tekst → val dan terug op de donkere fallback.
+  if (contrastRatio(fg, bg) >= 5.0) return fg;
+  if (contrastRatio(fallback, bg) >= 5.0) return fallback;
+  return blackOrWhiteFor(bg);
+}
 import {
   buildBackgroundDepth,
   getBackgroundDepthSize,
@@ -398,14 +413,16 @@ function brandHeroComponent(tokens: BrandTokens) {
     tokens.hasDarkSections,
     isVibrantSaturatedColor(tokens.brand),
   );
-  const { heroLayout, displayTypography, buttonStyle, sectionPadding } = hints;
+  const { heroLayout, displayTypography, buttonStyle } = hints;
   const ds = tokens.designSystem;
   // C10 — photo-scrim stijl per archetype
   const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
 
-  // Section padding op basis van layoutStyle (sparse = grote, tight = klein)
-  const sectionPaddingY = sectionPadding;
-  const sectionPaddingX = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
+  // Section padding via tokens.sectionRhythm (scraped-aware), consistent met
+  // alle andere secties — niet de pure hints.sectionPadding-preset die voor
+  // MINIMAL/EXPERIENTIAL 128px gaf (verbeterplan #2, hero miste deze migratie).
+  const sectionPaddingY = tokens.sectionRhythm.sectionPaddingY;
+  const sectionPaddingX = tokens.sectionRhythm.sectionPaddingX;
 
   return {
     fields: {
@@ -580,10 +597,22 @@ function brandHeroComponent(tokens: BrandTokens) {
         fontWeight: buttonStyle.fontWeight,
         fontSize: 16,
         border: tokens.button.border ?? 'none',
-        padding: `${buttonStyle.paddingY}px ${buttonStyle.paddingX}px`,
-        borderRadius: buttonStyle.radiusPx,
+        // Cap button-padding op normale CTA-maten. De hints leiden paddingX af
+        // van spacing[6] — voor brands met een ruime spacing-scale (MINIMAL)
+        // geeft dat een absurd groot blok zodra de button een fill heeft.
+        padding: `${Math.min(buttonStyle.paddingY, 16)}px ${Math.min(buttonStyle.paddingX, 36)}px`,
+        // Radius uit de scraped tokens.button (gecapt op de archetype-max),
+        // consistent met StickyCtaBar/CtaBlock — niet de preset buttonStyle.radiusPx
+        // die MINIMAL→0 (scherp) forceert. tokens.button.radiusPx valt zelf terug
+        // op een lichte default (6px) wanneer de scrape geen radius gaf.
+        borderRadius: Math.min(tokens.button.radiusPx, constraints.maxRadiusPx),
         cursor: 'pointer',
-        textTransform: buttonStyle.textTransform,
+        textAlign: 'center',
+        // textTransform uit de scraped tokens.button (respecteert de bron-stijl,
+        // bv. Napking = "none") i.p.v. de archetype-hint die MINIMAL→uppercase
+        // forceert. tokens.button valt zelf terug op de archetype-default als de
+        // scrape niets gaf, dus uppercase-merken blijven uppercase.
+        textTransform: tokens.button.textTransform,
         letterSpacing: buttonStyle.letterSpacing,
         transition: tokens.button.transition ?? undefined,
         width: 'fit-content',
@@ -644,9 +673,15 @@ function brandHeroComponent(tokens: BrandTokens) {
                 // Responsive font-size: scraped-size = desktop-max, MIN cap
                 // = 32px voor mobile-leesbaarheid. clamp() schaalt vloeiend.
                 fontSize: (() => {
-                  const max = tbr.display.fontSize ?? displayTypography.size;
-                  const maxNum = typeof max === 'number' ? max : parseFloat(String(max)) || 64;
-                  return responsiveSize(32, maxNum);
+                  const scraped = tbr.display.fontSize;
+                  const rawMax = scraped ?? displayTypography.size;
+                  const maxNum = typeof rawMax === 'number' ? rawMax : parseFloat(String(rawMax)) || 64;
+                  // Cap de display-max: de preset-fallback loopt tot 272px
+                  // (EXPERIENTIAL dramatic) en vult dan het hele viewport. Geen
+                  // scrape → hard op 88px; een echt gescrapete size mag groter,
+                  // begrensd op 120px tegen absurde waarden.
+                  const capped = scraped != null ? Math.min(maxNum, 120) : Math.min(maxNum, 88);
+                  return responsiveSize(32, capped);
                 })(),
                 lineHeight: tbr.display.lineHeight ?? displayTypography.lineHeight,
                 fontWeight: tbr.display.fontWeight ?? displayTypography.weight,
@@ -956,7 +991,12 @@ function featureGridComponent(tokens: BrandTokens) {
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   // Scraped per-rol typography wint van archetype-preset
   const tbr = tokens.typographyByRole;
-  const headingSize = tbr.heading.fontSize ?? ds.typography.heading.sizes[Math.min(ds.typography.heading.sizes.length - 1, 1)] ?? 22;
+  // Cap feature/trust card-koppen: heading.sizes[1] is voor EXPERIENTIAL ~56px
+  // → overmaatse koppen in een feature-card. 32px is ruim voor een card-titel.
+  const headingSize = Math.min(
+    tbr.heading.fontSize ?? ds.typography.heading.sizes[Math.min(ds.typography.heading.sizes.length - 1, 1)] ?? 22,
+    32,
+  );
   const headingWeight = tbr.heading.fontWeight ?? ds.typography.heading.weights[0] ?? 600;
   const bodySize = tbr.body.fontSize ?? ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 1)] ?? 15;
 
@@ -1088,7 +1128,18 @@ function featureGridComponent(tokens: BrandTokens) {
                       : undefined),
                 boxShadow: isBorderOnly ? undefined : (elevation.cardShadow === 'none' ? undefined : elevation.cardShadow),
                 background: tokens.surface,
-              } : {};
+              } : constraints.forceFlatCards ? {} : {
+                // Incidenteel-flat (geen scraped card, geen forced-flat editorial):
+                // geef tóch een subtiele block-afbakening (surface-bg + 1px border
+                // + radius) zodat feature/trust-items als BLOKKEN lezen i.p.v.
+                // losse tekst. Eerder maskeerde de achtergrond-textuur dit (die is
+                // verwijderd). forceFlatCards-brands (editorial) blijven bewust
+                // borderless.
+                padding: `${sectionRhythm.cardPaddingY}px ${sectionRhythm.cardPaddingX}px`,
+                borderRadius: Math.min(8, constraints.maxRadiusPx),
+                border: `1px solid ${tokens.surfaceBorder}`,
+                background: tokens.surface,
+              };
             return (
               <div key={i} className={useCard ? 'lp-card' : undefined} style={cardWrapper}>
                 {(() => {
@@ -1150,7 +1201,7 @@ function featureGridComponent(tokens: BrandTokens) {
                 </h3>
                 <p
                   style={{
-                    color: tbr.body.color ?? tokens.surfaceMuted,
+                    color: readableTextColor(tbr.body.color ?? tokens.surfaceMuted, tokens.surface, tokens.onSurface),
                     fontSize: bodySize,
                     fontWeight: tbr.body.fontWeight ?? undefined,
                     lineHeight: tbr.body.lineHeight ?? undefined,
@@ -1194,8 +1245,12 @@ function testimonialComponent(
   const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   const tbr = tokens.typographyByRole;
-  const quoteSize = tbr.heading.fontSize
+  // Cap quote-fontSize: testimonial-quotes pakken de scraped heading-size,
+  // die display-groot kan zijn (36-48px) en de quote onleesbaar groot maakt.
+  // 28px is ruim leesbaar voor een blockquote zonder te domineren.
+  const rawQuoteSize = tbr.heading.fontSize
     ?? ds.typography.heading.sizes[Math.min(ds.typography.heading.sizes.length - 1, 1)] ?? 24;
+  const quoteSize = Math.min(rawQuoteSize, 28);
 
   return {
     fields: {
@@ -1565,7 +1620,7 @@ function faqComponent(tokens: BrandTokens) {
               <p
                 style={{
                   marginTop: 8,
-                  color: tbr.body.color ?? tokens.surfaceMuted,
+                  color: readableTextColor(tbr.body.color ?? tokens.surfaceMuted, tokens.surface, tokens.onSurface),
                   fontSize: tbr.body.fontSize ?? 15,
                   lineHeight: tbr.body.lineHeight ?? undefined,
                   letterSpacing: tbr.body.letterSpacing ?? undefined,

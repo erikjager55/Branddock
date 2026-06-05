@@ -18,7 +18,7 @@ const baseParams = {
   layoutStyle: "MINIMAL" as const,
 };
 
-group("C1 — vocabulary in system-prompt wanneer beide arrays ≥ 3 items");
+group("C1 — vocabulary in system-prompt wanneer beide arrays gevuld");
 {
   const result = buildLandingPageVariantPrompt({
     ...baseParams,
@@ -36,24 +36,31 @@ group("C1 — geen vocab-block wanneer arrays leeg");
   assert("geen VOCABULAIRE-block", !result.system.includes("VOCABULAIRE-DISCIPLINE"));
 }
 
-group("C1 — geen vocab-block wanneer maar 1 array gevuld");
+// DTS C1 verfijnd (variant-generator r.178-182): vocab-rails activeren nu bij
+// ≥1 item en renderen per zijde alleen wat gevuld is — de oude ≥3-in-BEIDE-
+// drempel liet sparse-vocab merken de rails missen + lager scoren op Merkstijl.
+group("C1 — vocab-block ook bij alleen Do-lijst (render per zijde)");
 {
   const result = buildLandingPageVariantPrompt({
     ...baseParams,
     vocabularyDo: ["op maat", "vakmanschap", "millimeter"],
     vocabularyDont: [],
   });
-  assert("missing dont → geen vocab-block", !result.system.includes("VOCABULAIRE-DISCIPLINE"));
+  assert("alleen Do → vocab-block aanwezig", result.system.includes("VOCABULAIRE-DISCIPLINE"));
+  assert("alleen Do → Do-regel aanwezig", result.system.includes('"op maat"'));
+  assert("alleen Do → geen Vermijd-regel", !result.system.includes("Vermijd deze"));
 }
 
-group("C1 — geen vocab-block wanneer arrays < 3 items");
+group("C1 — vocab-block ook bij korte lijsten (≥1 item per zijde)");
 {
   const result = buildLandingPageVariantPrompt({
     ...baseParams,
     vocabularyDo: ["op maat"],
     vocabularyDont: ["premium"],
   });
-  assert("te kort → geen vocab-block", !result.system.includes("VOCABULAIRE-DISCIPLINE"));
+  assert("1+1 items → vocab-block aanwezig", result.system.includes("VOCABULAIRE-DISCIPLINE"));
+  assert("1+1 items → Do + Vermijd beide aanwezig",
+    result.system.includes('"op maat"') && result.system.includes('"premium"'));
 }
 
 group("C2 — voice-sample in system-prompt");

@@ -27,7 +27,9 @@ export function extractVisualLanguageHeuristics(
 
 // ─── Border Radius ─────────────────────────────────────────
 
-function extractBorderRadius(css: string) {
+// Geëxporteerd zodat de smoke kan asserteren dat de pill-sentinel (9999) in
+// `values` zit maar NIET in median/mostCommon lekt (review-fix Fase 5c).
+export function extractBorderRadius(css: string) {
   const values: number[] = [];
   const regex = /border-radius\s*:\s*([^;]+)/gi;
   let match;
@@ -35,22 +37,38 @@ function extractBorderRadius(css: string) {
   while ((match = regex.exec(css)) !== null) {
     const raw = match[1].trim();
     // Parse first value (handles "8px", "0.5rem", "50%", "8px 4px 8px 4px")
-    const numMatch = raw.match(/(\d+(?:\.\d+)?)\s*(px|rem|em)?/);
+    const numMatch = raw.match(/(\d+(?:\.\d+)?)\s*(px|rem|em|%)?/);
     if (numMatch) {
       let val = parseFloat(numMatch[1]);
       const unit = numMatch[2];
       if (unit === "rem" || unit === "em") val *= 16;
-      if (!isNaN(val) && val < 100) values.push(Math.round(val));
+      if (isNaN(val)) continue;
+      // Fase 5c: bewaar pill/cirkel-radius als één sentinel (9999) i.p.v. 'm
+      // te droppen — `border-radius:50%` (cirkel) of `9999px`/`100px+` (pill).
+      // Zonder dit kreeg de "full"-bucket per ongeluk een kleine radius (4px).
+      if (unit === "%") {
+        if (val >= 50) values.push(9999);
+      } else if (val >= 100) {
+        values.push(9999);
+      } else {
+        values.push(Math.round(val));
+      }
     }
   }
 
   values.sort((a, b) => a - b);
 
+  // Review-fix: de pill-sentinel (9999, Fase 5c) hoort in `values` zodat
+  // `deriveCornerRadii` de pill kan herkennen — maar mag NIET de stats
+  // vervuilen. De Design-Language-prompt gebruikt `median`/`mostCommon` als
+  // "observed corner-radius"; een enkele pill (avatar/badge) zou de AI dan
+  // 9999px voorschotelen. Bereken de stats daarom over de niet-pill radii.
+  const nonPill = values.filter((v) => v < 9999);
   return {
     values,
-    median: values.length > 0 ? values[Math.floor(values.length / 2)] : 0,
-    mostCommon: findMostCommon(values) ?? 0,
-    hasVariation: new Set(values).size > 3,
+    median: nonPill.length > 0 ? nonPill[Math.floor(nonPill.length / 2)] : 0,
+    mostCommon: findMostCommon(nonPill) ?? 0,
+    hasVariation: new Set(nonPill).size > 3,
   };
 }
 
@@ -236,7 +254,7 @@ function deriveSpacingScale(spacing: CssVisualHeuristics["spacing"]): SpacingSca
   return { gridBase, tokens };
 }
 
-function deriveCornerRadii(
+export function deriveCornerRadii(
   radius: CssVisualHeuristics["borderRadius"],
 ): CornerRadiiTokens {
   const { values } = radius;
@@ -244,15 +262,20 @@ function deriveCornerRadii(
   const freq = new Map<number, number>();
   for (const v of values) freq.set(v, (freq.get(v) ?? 0) + 1);
   const unique = Array.from(freq.keys()).sort((a, b) => a - b);
-  // Pick up to 4 distinct radii.
-  const picks = unique.slice(0, 4);
-  const labels = ["sm", "md", "lg", "full"];
-  return {
-    tokens: picks.map((value, i) => ({
-      name: picks.length === 1 ? "default" : labels[i] ?? `r${i + 1}`,
-      value,
-    })),
-  };
+  // Fase 5c: scheid de pill-sentinel (9999) van de echte radii zodat "full"
+  // de WERKELIJKE pill is en niet per ongeluk de 4e-kleinste radius. Kleine
+  // radii → sm/md/lg (max 3); een aanwezige pill → full.
+  const hasPill = unique.some((v) => v >= 9999);
+  const smalls = unique.filter((v) => v < 9999);
+  if (smalls.length === 1 && !hasPill) {
+    return { tokens: [{ name: "default", value: smalls[0] }] };
+  }
+  const smallLabels = ["sm", "md", "lg"];
+  const tokens = smalls
+    .slice(0, 3)
+    .map((value, i) => ({ name: smallLabels[i] ?? `r${i + 1}`, value }));
+  if (hasPill) tokens.push({ name: "full", value: 9999 });
+  return { tokens };
 }
 
 function deriveShadowSystem(

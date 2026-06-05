@@ -22,7 +22,6 @@ export interface FontSubstitute {
 const SUBSTITUTES: Record<string, FontSubstitute> = {
   // Dalton Maag / commercial sans workhorses → Inter (closest geometry)
   effra: { googleFont: "Inter", note: "Inter is a close metric match for Effra." },
-  "effra-fallback": { googleFont: "Inter", note: "Inter stands in for the Effra CSS fallback." },
   sohne: { googleFont: "Inter", note: "Inter is close to Söhne's grotesk geometry." },
   söhne: { googleFont: "Inter", note: "Inter is close to Söhne's grotesk geometry." },
   // Circular / geometric sans → Nunito Sans (similar roundness)
