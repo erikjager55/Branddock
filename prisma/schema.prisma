@@ -1793,6 +1793,12 @@ model BrandStyleguide {
   // Shape: Array<{ label, background, foreground, contrastRatio, wcag, usage }>
   colorPairings Json?
 
+  // Raw geobserveerde (tekstkleur " | " effectieve-achtergrond)-paren → count
+  // (multi-page bulk-computed-styles). Source-of-truth voor recompute na een
+  // manuele kleur-edit, zodat observed dark-mode-combinaties niet degraderen
+  // naar gegenereerd. Shape: Record<string, number>.
+  observedColorPairs Json?
+
   // Components (Fase 5 — automatisch gedetecteerd tijdens analyzer run)
   components StyleguideComponent[]
 

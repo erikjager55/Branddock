@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Pencil, Plus, ChevronDown, ChevronRight } from "lucide-react";
+import { X, Pencil, Plus, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
@@ -193,11 +193,13 @@ function HeroColorBlock({ color, onOpen }: { color: StyleguideColor; onOpen: () 
 function SystemColorRow({
   color,
   isEditing,
+  isDeleting = false,
   onOpen,
   onDelete,
 }: {
   color: StyleguideColor;
   isEditing: boolean;
+  isDeleting?: boolean;
   onOpen: () => void;
   onDelete: () => void;
 }) {
@@ -227,10 +229,11 @@ function SystemColorRow({
         <button
           type="button"
           onClick={onDelete}
-          className="flex-shrink-0 p-1.5 rounded text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 transition-all"
+          disabled={isDeleting}
+          className="flex-shrink-0 p-1.5 rounded text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
           title="Remove color"
         >
-          <X className="w-4 h-4" />
+          {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
         </button>
       )}
     </div>
@@ -514,6 +517,8 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
 
   const [isEditingColors, setIsEditingColors] = useState(false);
   const [showAddColorForm, setShowAddColorForm] = useState(false);
+  const [colorError, setColorError] = useState<string | null>(null);
+  const [deletingColorId, setDeletingColorId] = useState<string | null>(null);
 
   const colorsByCategory = styleguide.colors.reduce(
     (acc, c) => {
@@ -531,11 +536,20 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
   const brandName = deriveBrandName(styleguide.sourceUrl);
 
   const handleAddColor = (data: { name: string; hex: string; category: StyleguideColor["category"] }) => {
-    addColorMutation.mutate(data, { onSuccess: () => setShowAddColorForm(false) });
+    setColorError(null);
+    addColorMutation.mutate(data, {
+      onSuccess: () => setShowAddColorForm(false),
+      onError: (err) => setColorError(err instanceof Error ? err.message : "Kon kleur niet toevoegen"),
+    });
   };
 
   const handleDeleteColor = (colorId: string) => {
-    deleteColorMutation.mutate(colorId);
+    setColorError(null);
+    setDeletingColorId(colorId);
+    deleteColorMutation.mutate(colorId, {
+      onError: (err) => setColorError(err instanceof Error ? err.message : "Kon kleur niet verwijderen"),
+      onSettled: () => setDeletingColorId(null),
+    });
   };
 
   const heroGridCols =
@@ -591,6 +605,12 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
           )}
         </div>
 
+        {colorError && (
+          <div role="alert" className="mb-4 flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-xs text-red-700">{colorError}</p>
+          </div>
+        )}
+
         <div className="space-y-8">
           {CATEGORY_ORDER.map((cat) => {
             const colors = colorsByCategory[cat];
@@ -617,6 +637,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
                       key={color.id}
                       color={color}
                       isEditing={isEditingColors}
+                      isDeleting={deletingColorId === color.id}
                       onOpen={() => openColorModal(color.id)}
                       onDelete={() => handleDeleteColor(color.id)}
                     />

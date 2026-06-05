@@ -712,6 +712,13 @@ export async function extractComponentsFromPages(
       console.log(
         `[component-screenshotter] Bulk computed-styles: scanned ${mergedBulk.scannedCount} elements across ${perPageBulk.length} page(s) (border-radius observations: ${Object.keys(mergedBulk.styles['border-radius']).length}, padding: ${Object.keys(mergedBulk.styles['padding']).length}, box-shadow: ${Object.keys(mergedBulk.styles['box-shadow']).length})`,
       );
+    } else {
+      // De screenshotter liep, maar GEEN pagina leverde bulk computed-styles
+      // (alle goto/bulk-passes faalden — bv. networkidle-timeout). Eerder stil →
+      // nu expliciet, zodat "ran maar null bulk" niet lijkt op "niet gedraaid".
+      console.warn(
+        `[component-screenshotter] No bulk computed-styles gathered — perPageBulk empty (${urls.length} page(s) attempted, all goto/bulk passes failed)`,
+      );
     }
 
     return { components: capped, bulkStyles: mergedBulk };
