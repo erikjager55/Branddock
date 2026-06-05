@@ -24,6 +24,7 @@ import {
 import { parsePdf, type ParsedPdfData } from './pdf-parser';
 import { inferLayoutStyleFromSiteData } from './infer-layout-style';
 import { isFrameworkDefaultPrimary } from './framework-defaults';
+import { buildColorPairings } from './color-pairings';
 import {
   buildVisualIdentityPrompt,
   buildVoiceImageryPrompt,
@@ -1917,10 +1918,19 @@ async function writeResultToDb(
     };
   }
 
+  // Kleurcombinaties (Fase 5 brand-fidelity) — WCAG-geverifieerde fg/bg-paren
+  // afgeleid uit het geclassificeerde palet.
+  const colorPairings = buildColorPairings(
+    resolvedColors.map((c) => ({ hex: c.hex, category: c.category })),
+  );
+
   // Update styleguide fields
   await prisma.brandStyleguide.update({
     where: { id: styleguideId },
     data: {
+      colorPairings: colorPairings.length > 0
+        ? (colorPairings as unknown as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
       // Logo
       logoGuidelines: result.logoGuidelines || [],
       logoDonts: result.logoDonts || [],

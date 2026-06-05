@@ -1,0 +1,96 @@
+/**
+ * Kleurcombinatie-generator voor de brandstyle (verbeterplan Fase 5,
+ * audit 2026-06-05). De pijplijn leverde losse swatches maar GEEN
+ * fg/bg-combinaties — user-symptoom "geen kleurcombinaties".
+ *
+ * `buildColorPairings` leidt uit het geclassificeerde palet WCAG-geverifieerde,
+ * rol-gelabelde combinaties af (knop-fills, merk-op-surface, basis-leespaar).
+ * Pure functie — testbaar zonder DB/scrape.
+ */
+import { contrastRatio } from '@/features/brandstyle/utils/color-utils';
+
+export interface PaletteColorLike {
+  hex: string;
+  category: 'PRIMARY' | 'SECONDARY' | 'ACCENT' | 'NEUTRAL' | 'SEMANTIC';
+}
+
+export interface ColorPairing {
+  /** Mensvriendelijk rol-label, bv. "Primaire knop", "Accent op licht". */
+  label: string;
+  background: string;
+  foreground: string;
+  contrastRatio: number;
+  wcag: 'AAA' | 'AA' | 'AA-large' | 'fail';
+  usage: 'button' | 'text-on-surface' | 'surface-pair';
+}
+
+const WHITE = '#FFFFFF';
+const BLACK = '#000000';
+
+function wcagLevel(ratio: number): ColorPairing['wcag'] {
+  if (ratio >= 7) return 'AAA';
+  if (ratio >= 4.5) return 'AA';
+  if (ratio >= 3) return 'AA-large';
+  return 'fail';
+}
+
+/** Beste (hoogste-contrast) foreground uit kandidaten voor een achtergrond. */
+function bestForeground(bg: string, candidates: string[]): { hex: string; ratio: number } | null {
+  let best: { hex: string; ratio: number } | null = null;
+  for (const c of candidates) {
+    if (c.toLowerCase() === bg.toLowerCase()) continue;
+    const ratio = contrastRatio(bg, c);
+    if (!best || ratio > best.ratio) best = { hex: c, ratio };
+  }
+  return best;
+}
+
+const CATEGORY_LABEL: Record<string, string> = {
+  PRIMARY: 'Primair',
+  SECONDARY: 'Secundair',
+  ACCENT: 'Accent',
+};
+
+/**
+ * Genereert kleurcombinaties uit een geclassificeerd palet. Combineert
+ * PRIMARY/SECONDARY/ACCENT-fills met leesbare foregrounds (uit de eigen
+ * neutrals + wit/zwart) en het basis-leespaar (donkerste tekst op lichtste
+ * surface). Alleen combinaties met minimaal AA-large (≥3:1) worden bewaard.
+ */
+export function buildColorPairings(colors: PaletteColorLike[]): ColorPairing[] {
+  if (colors.length === 0) return [];
+  const byCat = (cat: PaletteColorLike['category']) =>
+    colors.filter((c) => c.category === cat).map((c) => c.hex);
+  const neutrals = byCat('NEUTRAL');
+  // Lichte surfaces (hoog contrast t.o.v. zwart) en donkere tekst-kleuren.
+  const lights = [WHITE, ...neutrals.filter((h) => contrastRatio(h, BLACK) >= 9)];
+  const darks = [BLACK, ...neutrals.filter((h) => contrastRatio(h, WHITE) >= 9)];
+  const fgPool = Array.from(new Set([...darks, ...lights]));
+  const lightestSurface = lights[0] ?? WHITE;
+
+  const out: ColorPairing[] = [];
+  const seen = new Set<string>();
+  const push = (label: string, bg: string, fg: string, usage: ColorPairing['usage'], minRatio: number) => {
+    const key = `${bg.toLowerCase()}|${fg.toLowerCase()}`;
+    if (seen.has(key)) return;
+    const ratio = contrastRatio(bg, fg);
+    if (ratio < minRatio) return;
+    seen.add(key);
+    out.push({ label, background: bg, foreground: fg, contrastRatio: Math.round(ratio * 100) / 100, wcag: wcagLevel(ratio), usage });
+  };
+
+  for (const cat of ['PRIMARY', 'SECONDARY', 'ACCENT'] as const) {
+    for (const fill of byCat(cat)) {
+      // Fill als knop-achtergrond met de best leesbare foreground.
+      const fg = bestForeground(fill, fgPool);
+      if (fg) push(`${CATEGORY_LABEL[cat]}e knop`, fill, fg.hex, 'button', 3);
+      // Fill als tekst/accent op de lichtste surface.
+      push(`${CATEGORY_LABEL[cat]} op licht`, lightestSurface, fill, 'text-on-surface', 3);
+    }
+  }
+
+  // Basis-leespaar: donkerste tekst op lichtste surface.
+  if (darks[0] && lightestSurface) push('Tekst op surface', lightestSurface, darks[0], 'surface-pair', 4.5);
+
+  return out;
+}
