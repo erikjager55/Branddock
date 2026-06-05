@@ -424,6 +424,20 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         console.log(
           `[brandstyle-analysis] Usage evidence: ${strong} strong / ${processed.authoritativeColors.length - strong - none} weak / ${none} none`,
         );
+        // Fase 3 (brand-fidelity): kleuren die NIET op de pagina renderen
+        // (usageEvidence 'none') en niet uit logo/detector komen, zijn
+        // waarschijnlijk framework/CSS-ruis → downgrade naar 'low' vóór
+        // resolveColors (de AI classificeert 'low' als NEUTRAL).
+        for (const color of processed.authoritativeColors) {
+          if (
+            color.usageEvidence === 'none' &&
+            color.confidence !== 'low' &&
+            !color.source.startsWith('logo-extraction') &&
+            color.source !== 'detector'
+          ) {
+            color.confidence = 'low';
+          }
+        }
       } catch (verifyErr) {
         console.warn(
           `[brandstyle-analysis] Usage verification failed (non-critical): ${verifyErr instanceof Error ? verifyErr.message : String(verifyErr)}`,
