@@ -137,9 +137,27 @@ function strongest(a: RenderStrength, b: RenderStrength): RenderStrength {
   return STRENGTH_RANK[a] >= STRENGTH_RANK[b] ? a : b;
 }
 
+// Bootstrap's complete neutrale grijs-schaal ($gray-100..$gray-900). Deze
+// renderen op een puur-Bootstrap-site als default tekst/muted/border-grijs
+// zónder dat het bewuste merk-kleuren zijn (Zwarthout: #6C757D = gray-600 =
+// text-muted). Door ze als framework-default te herkennen moeten ze de STERKE-
+// gebruik-lat halen; de echte tekst/surface (#212529/#F8F9FA) overleven sowieso
+// via de structurele bescherming + sterk gebruik, maar een incidentele
+// muted-grijs valt. Deterministisch, geen brittle blocklist: het auto-dropt
+// niet — het verhoogt alleen de bewijslast naar "sterk gebruikt".
+const FRAMEWORK_NEUTRAL_HEXES = new Set(
+  ['#F8F9FA', '#E9ECEF', '#DEE2E6', '#CED4DA', '#ADB5BD', '#6C757D', '#495057', '#343A40', '#212529'].map((h) =>
+    h.toLowerCase(),
+  ),
+);
+
 function isFrameworkOrigin(c: UsageFilterColor): boolean {
   const tags = (c.tags ?? []).map((t) => t.toLowerCase());
-  return isFrameworkDefaultPrimary(c.hex) || tags.some((t) => FRAMEWORK_TAGS.includes(t));
+  return (
+    isFrameworkDefaultPrimary(c.hex) ||
+    FRAMEWORK_NEUTRAL_HEXES.has(c.hex.toLowerCase()) ||
+    tags.some((t) => FRAMEWORK_TAGS.includes(t))
+  );
 }
 
 function isLogoColor(c: UsageFilterColor): boolean {

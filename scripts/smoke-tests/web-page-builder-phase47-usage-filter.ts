@@ -26,8 +26,8 @@ function assert(name: string, cond: boolean, detail?: string): void {
 // oranje CTA. Bootstrap-blauw/rood renderen NERGENS.
 const bulk: BulkColorStyles = {
   color: {
-    'rgb(33, 37, 41)': 500,   // Deep Charcoal — body text
-    'rgb(108, 117, 125)': 80, // Slate Gray — muted text (écht gebruikt)
+    'rgb(33, 37, 41)': 500,   // Deep Charcoal — body text (dominant)
+    'rgb(108, 117, 125)': 8,  // Slate Gray — incidentele muted tekst (~1% → weak)
     'rgb(224, 96, 0)': 12,    // Burnt Orange — link/cta tekst
   },
   'background-color': {
@@ -57,9 +57,9 @@ const usage = new Map<string, RenderStrength | undefined>([
 
 console.log('── buildRenderedColorIndex / renderStrength ──');
 const index = buildRenderedColorIndex(bulk);
-assert('index parst rgb-waarden', index.entries.length === 5 && index.total === 822, `entries=${index.entries.length} total=${index.total}`);
+assert('index parst rgb-waarden', index.entries.length === 5 && index.total === 750, `entries=${index.entries.length} total=${index.total}`);
 assert('Deep Charcoal sterk gerenderd', renderStrength('#212529', index) === 'strong');
-assert('Slate Gray gerenderd (≥weak)', renderStrength('#6C757D', index) !== 'none');
+assert('Slate Gray incidenteel → weak (≈1%)', renderStrength('#6C757D', index) === 'weak');
 assert('Bootstrap Blue rendert niet → none', renderStrength('#0D6EFD', index) === 'none');
 assert('near-match binnen tolerantie (rgb(34,38,42) ~ #212529)', renderStrength('#22262A', index) !== 'none');
 
@@ -68,11 +68,19 @@ const kept = applyUsageDrivenPaletteFilter(palette, { bulkColorStyles: bulk, usa
 const keptNames = kept.map((c) => c.name);
 console.log(`  behouden: ${keptNames.join(', ')}`);
 assert('Burnt Orange behouden (logo)', keptNames.includes('Burnt Orange'));
-assert('Slate Gray behouden — WÉL gebruikt (kern-eis user)', keptNames.includes('Slate Gray'));
-assert('Soft White behouden (surface/lightest)', keptNames.includes('Soft White'));
-assert('Deep Charcoal behouden (text/darkest)', keptNames.includes('Deep Charcoal'));
+assert('Slate Gray GEDROPT — Bootstrap gray-600, slechts incidenteel (weak) gebruikt', !keptNames.includes('Slate Gray'));
+assert('Soft White behouden (surface/lightest, structureel)', keptNames.includes('Soft White'));
+assert('Deep Charcoal behouden (text/darkest, structureel)', keptNames.includes('Deep Charcoal'));
 assert('Bootstrap Blue GEDROPT (rendert nergens)', !keptNames.includes('Bootstrap Blue'));
 assert('Crimson Red GEDROPT (framework-hex, rendert nergens)', !keptNames.includes('Crimson Red'));
+
+// Usage-gedreven, geen blinde drop: dezelfde Bootstrap-grijs MÉT sterk gebruik blijft.
+const slateStrongBulk: BulkColorStyles = { color: { 'rgb(108, 117, 125)': 200, 'rgb(0,0,0)': 400, 'rgb(255,255,255)': 200 } };
+const slateStrong = applyUsageDrivenPaletteFilter(
+  [{ hex: '#6C757D', name: 'Slate', tags: ['secondary'] }, { hex: '#000000', name: 'Ink' }, { hex: '#FFFFFF', name: 'Paper' }],
+  { bulkColorStyles: slateStrongBulk, usageEvidenceByHex: new Map() },
+).map((c) => c.name);
+assert('Bootstrap-grijs MÉT sterk gebruik → behouden (geen blinde drop)', slateStrong.includes('Slate'), slateStrong.join(','));
 
 console.log('\n── framework vs niet-framework drempel ──');
 // Een framework-kleur die zwak rendert → drop (zwakke link-rendering geen merk-keuze).
@@ -116,7 +124,7 @@ console.log('\n── fallback + safety ──');
 // Geen bulkStyles → val terug op homepage usageEvidence.
 const fallback = applyUsageDrivenPaletteFilter(palette, { bulkColorStyles: null, usageEvidenceByHex: usage }).map((c) => c.name);
 assert('fallback (geen bulk): framework-none nog steeds gedropt', !fallback.includes('Bootstrap Blue'));
-assert('fallback: Slate Gray (weak homepage-usage) behouden', fallback.includes('Slate Gray'));
+assert('fallback: Slate Gray (Bootstrap-grijs, slechts weak) → gedropt', !fallback.includes('Slate Gray'));
 // Geen enkel signaal → niets droppen (safety).
 const noSignal = applyUsageDrivenPaletteFilter(palette, { bulkColorStyles: null, usageEvidenceByHex: new Map() });
 assert('geen signalen → safety: alles behouden', noSignal.length === palette.length, `kept=${noSignal.length}`);
