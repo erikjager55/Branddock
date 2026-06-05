@@ -37,7 +37,7 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
-### 277. Brandstyle extractie-fidelity — Fase 1/2/6 (var-resolutie + framework-default-gate + display)
+### 277. Brandstyle extractie-fidelity — Fase 1/2/3/5/6 (var-resolutie + framework-gate + kleurcombinaties)
 
 Upstream-vervolg op #276: de scrape→brandstyle-extractie plaatste gescrapte info slecht (onopgeloste `var(--bs-*)`, framework-defaults als merk-design, gefabriceerde preview-tekst). Na 4-lagen deep-research + adversariële code-cross-check (audit `docs/audits/2026-06-05-brandstyle-extraction-pipeline.md`). Meta-oorzaak: drie niet-uniforme CSS-leespaden met verschillende var()-resolutie en geen gedeelde framework-default-gate.
 
@@ -47,7 +47,11 @@ Upstream-vervolg op #276: de scrape→brandstyle-extractie plaatste gescrapte in
 
 **Bewijs**: smokes `phase41-brandstyle-var-resolution` 17/17 + `phase42-framework-default-gate` 19/19 (incl. alle bugfix-scenario's); regressie phase12/24/25/26 groen; tsc+lint 0 errors. Branch `fix/brandstyle-extraction` (`1576f4d8`→`bc139e5e`).
 
-**Nog open (Fase 3/4/5, `[RE-SCRAPE]`/feature)**: logo-kleur-redding enforce + usage-verifier (3), font-fallback via computed-style → lege fonts-tabel (4), kleurcombinaties-model+UI (5) — vergen live re-scrape of nieuw DB-model.
+**Fase 3 — usage-enforce**: logo-kleur-redding-deblokkering zat al in de Fase-1/2-review-fixes (`frameworkHasPrimary` negeert framework-default-primaries); resterend deel: kleuren met `usageEvidence 'none'` (niet-gerenderd) die niet uit logo/detector komen → confidence 'low' vóór resolveColors. **Fase 5 — kleurcombinaties**: nieuwe `buildColorPairings` (`color-pairings.ts`) → WCAG-geverifieerde rol-gelabelde fg/bg-paren (knoppen met best-leesbare foreground, merk-op-surface, basis-leespaar); schema `colorPairings Json?` + persist (analyse + `recomputeColorPairings` na user color-add/-delete) + `ColorPairingsPanel` UI. Twee review-workflows vonden 8 (Fase 1/2) + 6 (Fase 3/5) bugs — allemaal gefixt (o.a. var-fallback-paren-balancing, font-stack-volgorde, namespaced-btn lookbehind, stale-pairings recompute, invalidateCache, grammatica, echte donkerste-neutral).
+
+**Bewijs (Fase 3/5)**: smoke `phase43-color-pairings` 12/12; tsc+lint 0. Commits `df6c6c3d`+`b6b6f630`+`e83f8a24`.
+
+**Nog open (Fase 4, `[RE-SCRAPE]`)**: font-fallback via computed-style → lege fonts-tabel — vergt Playwright/scrape-infra + een echte (niet-placeholder) bron-site (Track A). Bootstrap's font ÍS een system-stack → terecht gefilterd; alleen een gerenderde computed-style geeft de echte merk-font.
 
 - Task: audit + plan `~/.claude/plans/functional-conjuring-harbor.md`
 - ADR: -
