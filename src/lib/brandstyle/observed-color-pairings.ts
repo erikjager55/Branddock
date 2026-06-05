@@ -96,6 +96,23 @@ export function buildObservedColorPairings(
     .filter((p): p is { hex: string; category: string; rgb: Rgb } => p.rgb !== null);
   if (pal.length === 0) return [];
 
+  // Neutrale surfaces (echte tekst/achtergrond-kleuren) voor de 'auto'-
+  // inferentie: wanneer een tekst-element géén solide achtergrond-kleur had
+  // (transparant / background-IMAGE), leiden we de surface af uit het best-
+  // leesbare contrast — lichte tekst → donkere surface, donkere tekst → lichte,
+  // accent → de meest-contrastrijke. Zo verschijnen ook combinaties op
+  // image-achtergronden (zwarthout: witte/oranje tekst op charcoal).
+  const surfacePool = pal.filter((p) => p.category === 'NEUTRAL' || p.category === 'SEMANTIC');
+  const inferSurface = (fgHex: string): { hex: string; category: string } | null => {
+    let best: { hex: string; category: string; r: number } | null = null;
+    for (const s of surfacePool) {
+      if (s.hex.toLowerCase() === fgHex.toLowerCase()) continue;
+      const r = contrastRatio(s.hex, fgHex);
+      if (!best || r > best.r) best = { hex: s.hex, category: s.category, r };
+    }
+    return best ? { hex: best.hex, category: best.category } : null;
+  };
+
   // Aggregeer per (palet-hex-fg | palet-hex-bg), opgeteld over alle gerenderde
   // varianten die op hetzelfde palet-paar mappen.
   const agg = new Map<string, { fg: string; bg: string; fgCat: string; bgCat: string; bgRgb: Rgb; count: number }>();
@@ -103,8 +120,11 @@ export function buildObservedColorPairings(
     const sep = pair.split('|');
     if (sep.length !== 2) continue;
     const fgMatch = matchPalette(sep[0], pal);
-    const bgMatch = matchPalette(sep[1], pal);
-    if (!fgMatch || !bgMatch) continue;
+    if (!fgMatch) continue;
+    const bgMatch = sep[1].trim().toLowerCase() === 'auto'
+      ? inferSurface(fgMatch.hex)
+      : matchPalette(sep[1], pal);
+    if (!bgMatch) continue;
     if (fgMatch.hex.toLowerCase() === bgMatch.hex.toLowerCase()) continue;
     const ratio = contrastRatio(bgMatch.hex, fgMatch.hex);
     if (ratio < MIN_CONTRAST) continue;

@@ -116,7 +116,12 @@ export async function extractBulkComputedStyles(
             anc = anc.parentElement;
             depth++;
           }
-          if (!bg) bg = 'rgb(255, 255, 255)';
+          // Géén solide achtergrond-kleur gevonden (transparant of een
+          // background-IMAGE, zoals zwarthout's charred-wood-secties): markeer
+          // als 'auto' i.p.v. wit te raden — de surface wordt later afgeleid
+          // uit het best-leesbare contrast. Anders zou "witte tekst op donkere
+          // image" als "wit op wit" verdwijnen.
+          if (!bg) bg = 'auto';
           if (fg && fg !== 'transparent' && fg !== 'rgba(0, 0, 0, 0)') {
             const key = fg.replace(/\s+/g, ' ') + ' | ' + bg.replace(/\s+/g, ' ');
             colorPairs[key] = (colorPairs[key] ?? 0) + 1;

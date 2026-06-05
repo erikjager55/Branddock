@@ -51,6 +51,25 @@ assert('meest-frequente combinatie staat eerst (dark-mode body, 400×)', out[0].
 assert('geen fail-contrast combinaties', out.every((p) => p.wcag !== 'fail'));
 assert('contrastRatio is een getal', out.every((p) => typeof p.contrastRatio === 'number' && p.contrastRatio > 0));
 
+console.log('\n── auto-surface inferentie (image-achtergrond) ──');
+// Zwarthout-realiteit: donkere secties = background-IMAGE → geen bg-kleur →
+// 'auto'. Surface wordt afgeleid uit best-leesbaar contrast.
+const autoPairs: Record<string, number> = {
+  'rgb(255, 255, 255) | auto': 400, // witte tekst op donkere image-sectie
+  'rgb(224, 96, 0) | auto': 50,      // oranje tekst op donkere image-sectie
+  'rgb(33, 37, 41) | rgb(248, 249, 250)': 200, // charcoal op witte card (echte bg)
+  'rgb(255, 255, 255) | rgb(224, 96, 0)': 30,   // witte tekst op oranje knop (echte bg)
+};
+const autoOut = buildObservedColorPairings(autoPairs, palette);
+for (const p of autoOut) console.log(`  ${p.label.padEnd(20)} bg=${p.background} fg=${p.foreground} ${p.contrastRatio}:1 ${p.wcag}`);
+assert('witte tekst zonder bg → "Tekst op donker" (charcoal afgeleid)',
+  autoOut.some((p) => p.label === 'Tekst op donker' && p.background.toLowerCase() === '#212529' && p.foreground.toLowerCase() === '#f8f9fa'));
+assert('oranje tekst zonder bg → "Primair op donker" (best-contrast = charcoal)',
+  autoOut.some((p) => p.label === 'Primair op donker' && p.background.toLowerCase() === '#212529' && p.foreground.toLowerCase() === '#e06000'));
+assert('charcoal op witte card → "Tekst op surface"', autoOut.some((p) => p.label === 'Tekst op surface'));
+assert('witte tekst op oranje knop → "Primaire knop"', autoOut.some((p) => p.label === 'Primaire knop'));
+assert('dominante combinatie (wit op donker, 400×) eerst', autoOut[0].label === 'Tekst op donker');
+
 console.log('\n── fallback ──');
 assert('lege paren → [] (caller valt terug op gegenereerd)', buildObservedColorPairings({}, palette).length === 0);
 assert('null paren → []', buildObservedColorPairings(null, palette).length === 0);
