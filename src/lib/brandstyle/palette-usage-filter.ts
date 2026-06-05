@@ -49,6 +49,15 @@ export interface BulkColorStyles {
  *  Gelijkgetrokken met color-usage-verifier (40) i.p.v. strenger 24, tegen
  *  logo-/quantisatie-drift (review-fix MINOR-2). */
 const MATCH_TOLERANCE = 40;
+/** STRENGE tolerantie voor framework-default-kleuren: een framework-default mag
+ *  z'n "sterk gebruikt"-status NIET ontlenen aan een naburige (echt-gerenderde)
+ *  kleur via de losse MATCH_TOLERANCE. Napking: Gutenberg-default #ABB8C3 ligt
+ *  ~33 van de gerenderde Tailwind-grijs #9CA3AF (en slechts 7 van Bootstrap
+ *  gray-500 #ADB5BD) en absorbeerde zo diens gebruik → false-strong. Een ECHT
+ *  toegepaste framework-kleur rendert op z'n EXACTE computed-waarde (dist 0,
+ *  computed color/bg/border zijn exacte RGB zonder anti-aliasing), dus 6 vangt
+ *  rounding-drift maar sluit de 7-weg #ADB5BD-buur uit. */
+const STRICT_FRAMEWORK_TOLERANCE = 6;
 /** Aandeel-drempel waarboven computed-aanwezigheid als STERK telt. */
 const STRONG_SHARE = 0.02;
 /** Minimum aantal computed-kleur-samples vóór 'strong' überhaupt mogelijk is.
@@ -122,12 +131,13 @@ export function buildRenderedColorIndex(bulk: BulkColorStyles | null | undefined
 export function renderStrength(
   hex: string,
   index: { entries: Array<{ rgb: Rgb; count: number }>; total: number },
+  tolerance: number = MATCH_TOLERANCE,
 ): RenderStrength {
   const target = parseRgb(hex);
   if (!target || index.total === 0) return 'none';
   let matched = 0;
   for (const e of index.entries) {
-    if (dist(e.rgb, target) <= MATCH_TOLERANCE) matched += e.count;
+    if (dist(e.rgb, target) <= tolerance) matched += e.count;
   }
   if (matched === 0) return 'none';
   // 'strong' vereist een aandeel ÉN voldoende samples — anders is een hoog
@@ -262,11 +272,19 @@ export function applyUsageDrivenPaletteFilter<T extends UsageFilterColor>(
     if (hexU === darkest.hex || hexU === lightest.hex) return true;
     const { strength, known } = usageCache.get(hexU) ?? { strength: 'none' as RenderStrength, known: false };
     if (isFrameworkOrigin(c)) {
-      // Mét usage-data: framework-default behoudt alléén bij POSITIEF sterk
-      // gebruik (een merk dat 'm bewust inzet). Zonder data: de hex-bevestigde
-      // geleakte CMS-neutral/admin-klassen vallen (ruis — Napking lekte zo WP-
-      // admin #007CBA + Gutenberg #ABB8C3 omdat de oude volgorde ze via `!known`
-      // redde); een saturated default-primary houdt benefit-of-the-doubt.
+      if (index.total > 0) {
+        // Multi-page aanwezig: meet met een STRENGE tolerantie — anders
+        // absorbeert een geleakte default (Gutenberg #ABB8C3) via de losse
+        // MATCH_TOLERANCE het gebruik van een naburige echt-gerenderde grijs
+        // (#9CA3AF, ~33 weg) en lijkt 'ie sterk. Strict = betrouwbaar, dus de
+        // pixel-pass (zelfde absorptie-zwakte) negeren we hier.
+        return renderStrength(hexU, index, STRICT_FRAMEWORK_TOLERANCE) === 'strong';
+      }
+      // Geen multi-page-data: de pixel-pass is het enige (grovere) signaal —
+      // honoreer een 'strong' zodat een ECHT-gebruikte framework-default niet
+      // over-dropt (review-fix: default-config zónder screenshotter). Bij
+      // 'none'/'weak' → drop; zónder enig signaal → leak-hex-regel (geleakte
+      // CMS-neutral/admin vallen, saturated default houdt benefit-of-the-doubt).
       if (known) return strength === 'strong';
       return !isFrameworkLeakHex(c.hex);
     }

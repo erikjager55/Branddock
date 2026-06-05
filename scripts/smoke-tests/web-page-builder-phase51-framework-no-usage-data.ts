@@ -111,5 +111,77 @@ console.log('\n── 5. Over-drop-guard: saturated framework-default-PRIMARY al
   assert('hex-leak Gutenberg #ABB8C3 toch GEDROPT', !kept.includes('Gutenberg Gray'), kept.join(','));
 }
 
+console.log('\n── 6. Strict framework-match: geleakte default absorbeert geen naburig gebruik ──');
+{
+  // Napking-bug: Gutenberg #ABB8C3 rendert zélf nergens, maar ligt ~33 (binnen de
+  // losse MATCH_TOLERANCE 40) van de ECHT-gerenderde Tailwind-grijs #9CA3AF en
+  // absorbeerde zo diens gebruik → false-strong → bleef. Strict (tol 6) lost dit op.
+  const palette: C[] = [
+    { hex: '#1A171B', name: 'Ink', category: 'NEUTRAL', tags: ['text'] },
+    { hex: '#9CA3AF', name: 'Real Gray', category: 'NEUTRAL', tags: ['muted', 'text'] },     // niet-framework, echt gerenderd
+    { hex: '#ABB8C3', name: 'Gutenberg Gray', category: 'NEUTRAL', tags: ['ui-elements'] },  // framework-default, NIET zelf gerenderd
+    { hex: '#FFFFFF', name: 'Paper', category: 'NEUTRAL', tags: ['surface'] },
+  ];
+  const bulk: BulkColorStyles = {
+    color: { 'rgb(26, 23, 27)': 400, 'rgb(156, 163, 175)': 200 }, // #9CA3AF sterk; #ABB8C3's eigen waarde nergens
+    'background-color': { 'rgb(255, 255, 255)': 400 },
+  };
+  const kept = applyUsageDrivenPaletteFilter(palette, { bulkColorStyles: bulk, usageEvidenceByHex: new Map() }).map((c) => c.name);
+  console.log(`  behouden (${kept.length}): ${kept.join(', ')}`);
+  assert('echt-gerenderde Tailwind-grijs #9CA3AF BEHOUDEN', kept.includes('Real Gray'), kept.join(','));
+  assert('Gutenberg #ABB8C3 GEDROPT (geen false-strong via naburig #9CA3AF)', !kept.includes('Gutenberg Gray'), kept.join(','));
+}
+
+console.log('\n── 7. Strict framework-match: ECHT toegepaste framework-grijs blijft (exact render) ──');
+{
+  // Een merk dat een Bootstrap-grijs BEWUST gebruikt rendert 'm op z'n EXACTE
+  // computed-waarde (dist 0) → strict-match vindt 'm → blijft.
+  const palette: C[] = [
+    { hex: '#1A171B', name: 'Ink', category: 'NEUTRAL', tags: ['text'] },
+    { hex: '#6C757D', name: 'Used BS Gray', category: 'NEUTRAL', tags: ['muted'] },
+    { hex: '#FFFFFF', name: 'Paper', category: 'NEUTRAL', tags: ['surface'] },
+  ];
+  const bulk: BulkColorStyles = {
+    color: { 'rgb(26, 23, 27)': 300, 'rgb(108, 117, 125)': 200 }, // #6C757D exact, sterk
+    'background-color': { 'rgb(255, 255, 255)': 300 },
+  };
+  const kept = applyUsageDrivenPaletteFilter(palette, { bulkColorStyles: bulk, usageEvidenceByHex: new Map() }).map((c) => c.name);
+  assert('exact-gerenderde framework-grijs #6C757D BEHOUDEN (usage wint)', kept.includes('Used BS Gray'), kept.join(','));
+}
+
+console.log('\n── 8. Regression A: geen multi-page maar pixel-pass strong → framework-default blijft ──');
+{
+  // Default-config (screenshotter uit → geen multi-page). De pixel-pass is dan
+  // het enige signaal; een 'strong' merk-default mag NIET over-droppen.
+  const palette: C[] = [
+    { hex: '#1A1A1A', name: 'Ink', category: 'NEUTRAL', tags: ['text'] },
+    { hex: '#0D6EFD', name: 'Brand Blue', category: 'PRIMARY', tags: ['brand', 'cta'] }, // framework-hex, maar pixel-strong
+    { hex: '#FFFFFF', name: 'Paper', category: 'NEUTRAL', tags: ['surface'] },
+  ];
+  const strongPix = new Map<string, RenderStrength | undefined>([['#0D6EFD', 'strong'], ['#1A1A1A', 'strong'], ['#FFFFFF', 'strong']]);
+  const keptA = applyUsageDrivenPaletteFilter(palette, { bulkColorStyles: null, usageEvidenceByHex: strongPix }).map((c) => c.name);
+  assert('pixel-strong #0D6EFD BEHOUDEN (geen over-drop in default-config)', keptA.includes('Brand Blue'), keptA.join(','));
+  const nonePix = new Map<string, RenderStrength | undefined>([['#0D6EFD', 'none'], ['#1A1A1A', 'strong'], ['#FFFFFF', 'strong']]);
+  const keptB = applyUsageDrivenPaletteFilter(palette, { bulkColorStyles: null, usageEvidenceByHex: nonePix }).map((c) => c.name);
+  assert('pixel-none #0D6EFD GEDROPT (bewezen ongebruikt)', !keptB.includes('Brand Blue'), keptB.join(','));
+}
+
+console.log('\n── 9. Regression B: #ABB8C3 absorbeert Bootstrap gray-500 #ADB5BD (dist 7) niet meer ──');
+{
+  const palette: C[] = [
+    { hex: '#1A1A1A', name: 'Ink', category: 'NEUTRAL', tags: ['text'] },
+    { hex: '#ADB5BD', name: 'BS Gray 500', category: 'NEUTRAL', tags: ['muted'] }, // framework, echt gerenderd
+    { hex: '#ABB8C3', name: 'Gutenberg Gray', category: 'NEUTRAL', tags: ['ui'] },  // framework, rendert zelf niet (7 weg)
+    { hex: '#FFFFFF', name: 'Paper', category: 'NEUTRAL', tags: ['surface'] },
+  ];
+  const bulk: BulkColorStyles = {
+    color: { 'rgb(26, 26, 26)': 400, 'rgb(173, 181, 189)': 200 }, // #ADB5BD exact
+    'background-color': { 'rgb(255, 255, 255)': 400 },
+  };
+  const kept = applyUsageDrivenPaletteFilter(palette, { bulkColorStyles: bulk, usageEvidenceByHex: new Map() }).map((c) => c.name);
+  assert('exact-gerenderde #ADB5BD BEHOUDEN', kept.includes('BS Gray 500'), kept.join(','));
+  assert('#ABB8C3 GEDROPT (dist 7 > strict 6, geen absorptie van #ADB5BD)', !kept.includes('Gutenberg Gray'), kept.join(','));
+}
+
 console.log(`\n${fail === 0 ? 'OK' : 'FAILED'} — ${pass} pass / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

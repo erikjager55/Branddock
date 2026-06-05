@@ -37,6 +37,20 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 285. Brandstyle palet: strenge framework-match tegen "geleende" usage
+
+Napking re-scrape (na #283, vers-herstarte dev-server, mét multi-page usage-data) hield Gutenberg-default **#ABB8C3** vast terwijl WP-admin #007CBA correct viel. Root-cause: #ABB8C3 rendert zélf nergens, maar ligt ~33 RGB van de echt-gerenderde Tailwind-grijs **#9CA3AF** (en ~31 van sage #A2B8A5) — binnen de losse `MATCH_TOLERANCE` (40). Zo absorbeerde de geleakte default het gebruik van z'n buurman → false-`strong` → overleefde de framework-gate. (Diagnose: live curl van napking.nl + afstandsberekening; de re-scrape zélf draaide op verse code na een stale-dev-server-restart.)
+
+- **`renderStrength`** kreeg een optionele `tolerance`-param; **`STRICT_FRAMEWORK_TOLERANCE = 6`**.
+- **`keep()`**: een framework-default behoudt mét multi-page-data alléén via een **near-exact** render (strict 6) — geen absorptie meer van een naburige kleur. Een ECHT toegepaste framework-kleur rendert op z'n exacte computed-waarde (dist 0), dus blijft. Zónder multi-page valt het terug op het #283-pixel-pass-gedrag.
+
+**Review** (2 adversariële rondes op de geïmplementeerde code): ronde-1 ving een **severe over-drop** (de strict-only-versie negeerde de pixel-pass in de default-config zónder screenshotter → echte framework-merk-kleuren vielen) + een onder-drop (#ABB8C3 ↔ Bootstrap gray-500 #ADB5BD dist 7) → beide gefixt (pixel-pad hersteld voor no-multi-page; tolerantie 12→6); ronde-2 = SHIP (één narrow framework-only threshold-bias bewust geaccepteerd — een pixel-pad-fallback zou de #ABB8C3-absorptie heropenen).
+
+**Bewijs**: smoke `phase51` 21/21 (incl. strict-match, Regression A pixel-strong-keep, Regression B #ADB5BD); napking-exact verificatie dropt #ABB8C3 in zowel multi-page als pixel-only config; phase47/48/49/50 groen; tsc+lint 0. **Vereist re-scrape Napking** → palet = Ocean Blue + charcoal/soft-white/slate/brown, géén #ABB8C3.
+
+- Task: audit `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`
+- Commit: branch `fix/brandstyle-extraction`
+
 ### 284. Brandstyle Typography-fonts-fix: Adobe-CLS-fallback canonicalisatie + geconsolideerd load-pad + weight-consistentie
 
 De Typography-tab presenteerde gescrapte merk-fonts onjuist: Adobe's auto-gegenereerde CLS-fallback-family (`effra-fallback`) lekte als zelfstandige "Secondary/heading"-merkfont (D1), werd als heading-familie gekozen (D2), verscheen als dubbele kaart (D3), laadde inconsistent (D4), toonde de rauwe CSS-stack als label (D5) en de type-scale had gemengde eenheden (D6). Root-cause: de scrape-bron werd niet gecanonicaliseerd vóór de DB-split + twee divergerende font-load-paden.
