@@ -46,5 +46,20 @@ assert('basis-leespaar gebruikt echte donkerste NEUTRAL (#212529), niet #000000'
 // Leeg palet → geen crash, lege lijst
 assert('leeg palet → [] (geen crash)', buildColorPairings([]).length === 0);
 
+// Dark-mode-combinaties: een donker-thema-merk (Zwarthout — charcoal-surface +
+// witte/oranje tekst) moet zijn dominante donkere-surface-combinaties krijgen,
+// niet alleen de lichte (anders ontbreken zwart-achtergrond-combinaties).
+console.log('\n── Dark-mode-surface (Zwarthout) ──');
+const zw = buildColorPairings([
+  { hex: '#E06000', category: 'PRIMARY' },   // Burnt Orange (logo)
+  { hex: '#F8F9FA', category: 'NEUTRAL' },   // Soft White
+  { hex: '#212529', category: 'NEUTRAL' },   // Deep Charcoal (donkere surface)
+]);
+for (const p of zw) console.log(`  ${p.label.padEnd(20)} bg=${p.background} fg=${p.foreground} ${p.contrastRatio}:1 ${p.wcag}`);
+assert('"Tekst op donker" — licht op charcoal-surface', zw.some((p) => p.label === 'Tekst op donker' && p.background.toLowerCase() === '#212529'));
+assert('"Primair op donker" — oranje tekst op charcoal-surface', zw.some((p) => p.label === 'Primair op donker' && p.background.toLowerCase() === '#212529' && p.foreground.toLowerCase() === '#e06000'));
+assert('lichte "Tekst op surface" (charcoal op wit) blijft ook', zw.some((p) => p.label === 'Tekst op surface'));
+assert('beide surface-pairs halen contrast (geen fail)', zw.filter((p) => p.usage === 'surface-pair').every((p) => p.wcag !== 'fail'));
+
 console.log(`\n${fail === 0 ? 'OK' : 'FAILED'} — ${pass} pass / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

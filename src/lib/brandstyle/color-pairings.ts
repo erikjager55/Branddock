@@ -84,6 +84,12 @@ export function buildColorPairings(colors: PaletteColorLike[]): ColorPairing[] {
   const darks = [...darkNeutrals, BLACK];
   const fgPool = Array.from(new Set([...darks, ...lights]));
   const lightestSurface = lights[0] ?? WHITE;
+  // De WERKELIJKE donkerste merk-neutral als donkere surface (Zwarthout:
+  // #212529) en de werkelijke lichte merk-neutral (Soft White) als tekst
+  // daarop. Undefined wanneer het merk geen donkere neutral voert.
+  const darkSurface = darkNeutrals[0];
+  const lightOnDark = lights.find((h) => h !== WHITE) ?? WHITE;
+  const darkText = darks[0];
 
   const out: ColorPairing[] = [];
   const seen = new Set<string>();
@@ -96,18 +102,35 @@ export function buildColorPairings(colors: PaletteColorLike[]): ColorPairing[] {
     out.push({ label, background: bg, foreground: fg, contrastRatio: Math.round(ratio * 100) / 100, wcag: wcagLevel(ratio), usage });
   };
 
+  // Knoppen — fill als achtergrond met de best leesbare foreground.
   for (const cat of ['PRIMARY', 'SECONDARY', 'ACCENT'] as const) {
     for (const fill of byCat(cat)) {
-      // Fill als knop-achtergrond met de best leesbare foreground.
       const fg = bestForeground(fill, fgPool);
       if (fg) push(BUTTON_LABEL[cat], fill, fg.hex, 'button', 3);
-      // Fill als tekst/accent op de lichtste surface.
-      push(`${CATEGORY_LABEL[cat]} op licht`, lightestSurface, fill, 'text-on-surface', 3);
     }
   }
 
-  // Basis-leespaar: donkerste tekst op lichtste surface.
-  if (darks[0] && lightestSurface) push('Tekst op surface', lightestSurface, darks[0], 'surface-pair', 4.5);
+  // Surface-combinaties voor zowel een LICHTE als (indien aanwezig) een DONKERE
+  // merk-surface. Een donker-thema-merk (zwarthout: charcoal-achtergrond met
+  // witte/oranje tekst) krijgt zo zijn dominante dark-mode-combinaties, die in
+  // de oude licht-only-generatie volledig ontbraken.
+  const surfaces: Array<{ bg: string; suffix: string; text: string | undefined }> = [
+    { bg: lightestSurface, suffix: 'op licht', text: darkText },
+  ];
+  if (darkSurface) surfaces.push({ bg: darkSurface, suffix: 'op donker', text: lightOnDark });
+
+  for (const s of surfaces) {
+    // Basis-leespaar: merk-tekstkleur op deze surface.
+    if (s.text) {
+      push(s.suffix === 'op licht' ? 'Tekst op surface' : 'Tekst op donker', s.bg, s.text, 'surface-pair', 4.5);
+    }
+    // Merk-fills (primary/secondary/accent) als tekst/accent op deze surface.
+    for (const cat of ['PRIMARY', 'SECONDARY', 'ACCENT'] as const) {
+      for (const fill of byCat(cat)) {
+        push(`${CATEGORY_LABEL[cat]} ${s.suffix}`, s.bg, fill, 'text-on-surface', 3);
+      }
+    }
+  }
 
   return out;
 }
