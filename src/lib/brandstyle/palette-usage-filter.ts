@@ -141,18 +141,24 @@ function strongest(a: RenderStrength, b: RenderStrength): RenderStrength {
   return STRENGTH_RANK[a] >= STRENGTH_RANK[b] ? a : b;
 }
 
-// Bootstrap's complete neutrale grijs-schaal ($gray-100..$gray-900). Deze
-// renderen op een puur-Bootstrap-site als default tekst/muted/border-grijs
-// zónder dat het bewuste merk-kleuren zijn (Zwarthout: #6C757D = gray-600 =
-// text-muted). Door ze als framework-default te herkennen moeten ze de STERKE-
-// gebruik-lat halen; de echte tekst/surface (#212529/#F8F9FA) overleven sowieso
-// via de structurele bescherming + sterk gebruik, maar een incidentele
-// muted-grijs valt. Deterministisch, geen brittle blocklist: het auto-dropt
-// niet — het verhoogt alleen de bewijslast naar "sterk gebruikt".
+// Framework-default neutrale grijzen die op een puur-framework-site als default
+// tekst/muted/border-grijs renderen zónder bewuste merk-kleur te zijn. Door ze
+// als framework-default te herkennen moeten ze de STERKE-gebruik-lat halen; de
+// echte tekst/surface overleven sowieso via structurele bescherming + sterk
+// gebruik, maar een incidentele muted-grijs valt. Deterministisch, geen brittle
+// blocklist: het auto-dropt niet — het verhoogt alleen de bewijslast naar
+// "sterk gebruikt". Alléén NEUTRALE grijzen — framework-accent-defaults (WP
+// #FF6900 oranje / #CF2E2E rood) overlappen merk-banden en horen hier NIET
+// (zie cross-brand-audit: blokkeer nooit een merk-band-kleur).
 const FRAMEWORK_NEUTRAL_HEXES = new Set(
-  ['#F8F9FA', '#E9ECEF', '#DEE2E6', '#CED4DA', '#ADB5BD', '#6C757D', '#495057', '#343A40', '#212529'].map((h) =>
-    h.toLowerCase(),
-  ),
+  [
+    // Bootstrap $gray-100..$gray-900 (Zwarthout: #6C757D = gray-600 = text-muted).
+    '#F8F9FA', '#E9ECEF', '#DEE2E6', '#CED4DA', '#ADB5BD', '#6C757D', '#495057', '#343A40', '#212529',
+    // WordPress/Gutenberg core default-palet neutraal ("Cyan bluish gray") —
+    // Napking: #ABB8C3 lekte als LOW/other merk-neutral; AI tagt 'm niet
+    // framework. Het enige neutrale grijs in het WP-core-palet.
+    '#ABB8C3',
+  ].map((h) => h.toLowerCase()),
 );
 
 function isFrameworkOrigin(c: UsageFilterColor): boolean {

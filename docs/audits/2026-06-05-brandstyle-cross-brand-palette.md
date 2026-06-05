@@ -69,3 +69,12 @@ Een kleur is een **merk-kleur** als: (1) hij rendert (usage — ✅ al), ÉN (2)
 ## 6. Validatie
 - Per fase: tsc+lint 0 + `[DET]`-smoke (fixture-palet met social/admin-tags → uitgesloten; neutral-cluster → geconsolideerd).
 - **Re-scrape Napking + peoplemasterminds + Zwarthout** (regressie): Napking zonder WhatsApp/WordPress-kleuren + ≤4 neutrals; peoplemasterminds zonder de 8 social-kleuren; Zwarthout blijft schoon (geen over-drop).
+
+## 7. Validatie-ronde Napking (2026-06-05, re-scrape #281)
+Re-scrape ná `ce774935` bevestigde de cross-brand-cleanup: **WhatsApp-groen + WordPress-admin-blauw weg, Ocean Blue (#008ACF) behouden als ACCENT, dark-mode-combinatie aanwezig** (`#008ACF` op `#200707`, "Accent op donker"). Palet 11 → 7.
+
+**Eén residu-leak**: `#ABB8C3` ("Silver Gray", NEUTRAL / LOW / detectorSource `other`) = het **WordPress/Gutenberg core-default-palet neutraal** ("Cyan bluish gray"). De AI tagt 'm niet `framework`, en de `FRAMEWORK_NEUTRAL_HEXES`-gate dekte alléén de Bootstrap-grijs-schaal → #ABB8C3 omzeilde de sterke-gebruik-lat en overleefde als merk-neutral.
+
+**Fix** (extends #281, `palette-usage-filter.ts`): `#ABB8C3` toegevoegd aan `FRAMEWORK_NEUTRAL_HEXES` (het enige neutrale grijs in het WP-core-palet). Géén blinde blocklist — identiek mechanisme als de Bootstrap-grijzen: de kleur moet de **sterke-gebruik-lat** halen. Bij LOW/`other` valt-ie; een merk dat #ABB8C3 bewust sterk gebruikt behoudt 'm (usage wint van de framework-prior). **Bewust NIET toegevoegd**: WP-accent-defaults (#FF6900 oranje / #CF2E2E rood) — die overlappen merk-banden (cross-brand-les: blokkeer nooit een merk-band-kleur). Smoke `phase49` 27→29 (weak→drop, strong→keep). Slate Gray `#6B7280` (Tailwind gray-500, tag `usage:border`) blijft — per user-regel "behoud als werkelijk gebruikt".
+
+**Resteert**: re-scrape Napking → Silver Gray valt; peoplemasterminds (8 social-kleuren weg); Zwarthout (regressie schoon).

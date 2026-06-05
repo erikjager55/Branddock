@@ -74,6 +74,29 @@ assert('near-duplicate cool-grijs gemerged (#ABB8C3 of #C0C6C1 weg)', keptNeutra
 assert('donkerste neutral behouden (#200707 Deep Brown)', keptNeutrals.some((c) => c.hex === '#200707'));
 assert('lichtste neutral behouden (#EEEEEE Soft White)', keptNeutrals.some((c) => c.hex === '#EEEEEE'));
 
+console.log('\n── Fase 2b: WP/Gutenberg framework-neutral #ABB8C3 usage-gated ──');
+// Napking-leak: #ABB8C3 ("Cyan bluish gray") = WP-core-default-palet neutraal,
+// AI tagt 'm niet framework → moet via de framework-neutral-gate de STERKE-
+// gebruik-lat halen, net als de Bootstrap-grijzen. Geen blinde blocklist.
+const wpBase: C[] = [
+  { hex: '#1A171B', name: 'Brand Ink', category: 'PRIMARY', tags: ['brand', 'text'] },
+  { hex: '#FFFFFF', name: 'Paper', category: 'NEUTRAL', tags: ['surface'] },
+  { hex: '#ABB8C3', name: 'Cyan Bluish Gray', category: 'NEUTRAL', tags: ['ui'] },
+];
+const wpWeakBulk: BulkColorStyles = {
+  color: { 'rgb(26, 23, 27)': 800 },
+  'background-color': { 'rgb(255, 255, 255)': 700, 'rgb(171, 184, 195)': 5 },
+};
+const wpWeakKept = applyUsageDrivenPaletteFilter(wpBase, { bulkColorStyles: wpWeakBulk, usageEvidenceByHex: new Map() }).map((c) => c.name);
+assert('WP-default #ABB8C3 zwak gebruikt → GEDROPT (framework-neutral gate)', !wpWeakKept.includes('Cyan Bluish Gray'), wpWeakKept.join(','));
+
+const wpStrongBulk: BulkColorStyles = {
+  color: { 'rgb(26, 23, 27)': 400 },
+  'background-color': { 'rgb(255, 255, 255)': 400, 'rgb(171, 184, 195)': 300 },
+};
+const wpStrongKept = applyUsageDrivenPaletteFilter(wpBase, { bulkColorStyles: wpStrongBulk, usageEvidenceByHex: new Map() }).map((c) => c.name);
+assert('WP-default #ABB8C3 STERK gebruikt → BEHOUDEN (usage wint van framework-prior)', wpStrongKept.includes('Cyan Bluish Gray'), wpStrongKept.join(','));
+
 // Review MAJOR-4: een logo-kleur die toevallig op een social-hex lijkt → behouden.
 const logoNear: C[] = [
   { hex: '#1DA1F2', name: 'Logo Blue', category: 'PRIMARY', tags: ['brand'], detectorSource: 'logo-extraction:histogram' },
