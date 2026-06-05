@@ -37,6 +37,20 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 279. Brandstyle palet-framework-cleanup + Voice-analyse resilient (Fase A/C/E/F)
+
+Verse re-scrape Zwarthout ná #278 toonde de kern-oorzaak achter alle kleur-klachten (kleurcombinaties/buttons/effects "niet op de site", overbodige kleuren, dubbel overzicht): het palet was **100% Bootstrap/WordPress framework-defaults** (12 kleuren, 6 getagd `unused`; echt logo-oranje ontbreekt). Plan + diagnose: `docs/audits/2026-06-05-brandstyle-palette-framework-cleanup.md`.
+
+- **Fase A — palet de-frameworken**: nieuwe `isFrameworkNoiseColor` dropt in `resolveColors` framework-herkomst (Bootstrap/WordPress-tag exact-token of bekende hex) ÉN ongebruikt (`usageEvidence==='none'`/`unused`-tag), behoudt logo/gebruikte kleuren + de donkerste tekstkleur (tie-break op tekst-tag), met safety tegen leeg palet. `isFrameworkDefaultPrimary`-hexlijst verbreed. Zwarthout: dropt exact de 6 ongebruikte Bootstrap-kleuren (de bron van de slechte accent-pairings + teal/paars-gradients). **Fase C** (kleurcombinaties alleen echte kleuren) volgt automatisch uit A. **Fase E** — `SystemRolesSection` verwijderd; Color System is het enige kleur-overzicht (user-keuze). **Fase F** — "Recommended"-badge op verzonnen gradients (provenance uit de `RECOMMENDED:`-prefix).
+- **Voice & imagery resilient (bonus)**: een Claude-JSON-hiccup in de voice-stap (malformed JSON, bv. onontsnapte quote in een geciteerde merk-frase) blokkeerde de HELE analyse. Nu niet-fataal: log + ga door met lege voice-data zodat kleuren/componenten/visual system wél persisten; + prompt-hardening (geen onontsnapte `"` in string-values).
+
+**Gedeferd `[RE-SCRAPE]`**: Fase B (logo-oranje-rescue — gate is correct, logo-kleur-extractie moet het oranje in het palet brengen) + Fase D (form-inputs computed-style-fallback). **Review**: adversariële 3-lens workflow → geen CRITICAL/MAJOR bevestigd; gefixt: exact-token-match (anti over-drop), donkerste-tie-break, NL→EN-badge, scrapedJson-comment, orphaned override-editor gedocumenteerd (0/15 styleguides hebben overrides).
+
+**Bewijs**: smoke `web-page-builder-phase46-palette-framework` 20/20 (Zwarthout-palet → exact 6 unused gedropt) + phase45 58/58; tsc+lint 0. **Vereist re-scrape zwarthout.com voor volledige validatie** (Track A).
+
+- Task: audit `docs/audits/2026-06-05-brandstyle-palette-framework-cleanup.md`
+- Commit: branch `fix/brandstyle-extraction`
+
 ### 278. Brandstyle resultaat-audit fixes — components-depth + elevation + typografie + kleur + spacing + confidence
 
 Vervolg op #277, gedreven door 15 screenshots van de live Brandstyle-UI (Zwarthout). User-observatie: components-tab toont vrijwel niets (form inputs/cards/chips = 0). Diepgaande audit (6-stream workflow + live-site HTML-probe + adversariële cross-check, alle root-causes in live code geverifieerd): `docs/audits/2026-06-05-brandstyle-result-audit.md`. **Kernbevinding**: form-inputs en product-cards zijn NIET afwezig op zwarthout.com (`/contact` + `/quote` hebben 21-24 echte `<input>`; shop heeft 9 `li.product-item`/pagina) — ze worden **gemist** door een merge-defect, dekking-gap en selector-gap.

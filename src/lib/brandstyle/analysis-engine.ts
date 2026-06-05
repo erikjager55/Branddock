@@ -538,8 +538,24 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         },
       );
     } catch (err) {
-      await markError(styleguideId, `Voice & imagery analysis failed: ${err instanceof Error ? err.message : String(err)}`);
-      return;
+      // Voice & imagery is ÉÉN sectie van de brandstyle. Claude levert hier af
+      // en toe malformed JSON (bv. een onontsnapte quote in een geciteerde
+      // merk-frase) die zelfs na retries + escape-repair niet parset. Dat mag
+      // de HELE analyse (kleuren, componenten, visual system) niet blokkeren —
+      // degradeer gracieus: log, ga door met lege voice-data. De gebruiker kan
+      // de voice/imagery-sectie later los her-analyseren.
+      console.warn(
+        `[brandstyle-analysis] Voice & imagery analysis failed (non-fatal, continuing with empty voice data): ${err instanceof Error ? err.message : String(err)}`,
+      );
+      voiceResult = {
+        contentGuidelines: [],
+        writingGuidelines: [],
+        examplePhrases: [],
+        photographyStyle: null,
+        photographyGuidelines: [],
+        illustrationGuidelines: [],
+        imageryDonts: [],
+      };
     }
 
     // Step 5: AI Call 3 — Design Language
@@ -845,6 +861,11 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         // request session.
         triggeredById: styleguideMeta.createdById ?? null,
         scrapedJson: {
+          // Bewust het RUWE pre-drop palet (incl. framework-default-ruis die
+          // Fase A uit de styleguide filtert) — dit is de scrape-snapshot voor
+          // drift-detectie in de learning-loop. Consumenten die het schone
+          // palet willen, gebruiken `semanticTokens`/de StyleguideColor-rijen,
+          // niet `scrapedJson.colors`. (Snapshot-diff draait al op tokensJson.)
           colors: processed.authoritativeColors,
           fonts: processed.fonts,
           fontSizes: processed.fontSizes,
@@ -1615,7 +1636,7 @@ function resolveColors(
     if (hex) aiByHex.set(hex, ai);
   }
 
-  const resolved: ResolvedColor[] = [];
+  const items: Array<{ color: ResolvedColor; usageEvidence?: 'strong' | 'weak' | 'none' }> = [];
   authoritative.forEach((entry, index) => {
     const hex = normalizeHex(entry.hex);
     if (!hex) return;
@@ -1633,18 +1654,83 @@ function resolveColors(
       hex,
       entry,
     );
-    resolved.push({
-      hex,
-      name: ai?.name?.trim() || defaultColorName(entry, index),
-      category,
-      tags: ai?.tags ?? [],
-      notes: ai?.notes?.trim() || defaultColorNotes(entry),
-      confidence: entry.confidence,
-      detectorSource: entry.detectorName ?? entry.source,
+    items.push({
+      color: {
+        hex,
+        name: ai?.name?.trim() || defaultColorName(entry, index),
+        category,
+        tags: ai?.tags ?? [],
+        notes: ai?.notes?.trim() || defaultColorNotes(entry),
+        confidence: entry.confidence,
+        detectorSource: entry.detectorName ?? entry.source,
+      },
+      usageEvidence: entry.usageEvidence,
     });
   });
 
-  return resolved;
+  // Verbeterplan Fase A: drop framework-default-ruis (Bootstrap/WordPress)
+  // die ongebruikt is. Op een framework-site (zoals zwarthout.com, een
+  // Bootstrap-shop) is het hele palet anders 100% framework-defaults — die
+  // lekken naar kleurcombinaties, accent-buttons én verzonnen gradients.
+  // Logo-kleuren en kleuren met positief usage-bewijs blijven altijd behouden.
+  // Bescherm de donkerste kleur (de feitelijke tekstkleur) tegen drop, ook als
+  // het een framework-default-grijs/zwart is (Zwarthout's #212529 is Bootstrap
+  // maar wél de echte tekstkleur).
+  // hexToHsl rondt lightness af op gehele procenten → ties tussen bijna-zwarte
+  // grijzen zijn realistisch. Bij gelijke lichtheid prefereren we de kleur met
+  // een tekst-signaal (de echte `--bs-body-color`) boven palet-volgorde.
+  const isTextColor = (tags?: string[]) =>
+    (tags ?? []).some((t) => /(?:^|[-_])text$|primary-text|body-text/i.test(t));
+  const darkestHex = items.reduce<{ hex: string; l: number; text: boolean }>(
+    (best, it) => {
+      const l = hexToHsl(it.color.hex)?.l ?? 100;
+      const text = isTextColor(it.color.tags);
+      if (l < best.l) return { hex: it.color.hex, l, text };
+      if (l === best.l && text && !best.text) return { hex: it.color.hex, l, text };
+      return best;
+    },
+    { hex: '', l: Infinity, text: false },
+  ).hex;
+  const kept = items.filter(
+    (it) =>
+      it.color.hex === darkestHex ||
+      !isFrameworkNoiseColor({ ...it.color, usageEvidence: it.usageEvidence }),
+  );
+  // Safety: filter nooit het hele palet weg (anders refuse-mode/leeg). Bij
+  // een volledig-framework-palet houden we de gekozen kleuren; de echte
+  // merk-kleur komt via de logo-rescue (Fase B).
+  return (kept.length > 0 ? kept : items).map((it) => it.color);
+}
+
+/**
+ * True wanneer een kleur framework-default-RUIS is: framework-herkomst
+ * (Bootstrap/WordPress/Gutenberg — via tag, hex-match of detector) ÉN
+ * ongebruikt (`usageEvidence==='none'` of `unused`-tag), en geen logo-kleur
+ * of kleur met positief usage-bewijs. Pure functie — smoke-testbaar.
+ * Verbeterplan Fase A (audit 2026-06-05-brandstyle-palette-framework-cleanup).
+ */
+export function isFrameworkNoiseColor(c: {
+  hex: string;
+  tags?: string[];
+  detectorSource?: string | null;
+  usageEvidence?: 'strong' | 'weak' | 'none';
+}): boolean {
+  const tags = (c.tags ?? []).map((t) => t.toLowerCase());
+  const src = (c.detectorSource ?? '').toLowerCase();
+  // Exact-token-match (review-fix): een substring-regex zou een echte merk-kleur
+  // met een tag als "wordpress-migrated" of "synced-from-figma" onterecht als
+  // framework-ruis bestempelen. De detector-bron-check is geschrapt — `source`
+  // is een controlled enum (detector/css-variable/frequency/other) die nooit een
+  // framework-token bevat, dus tag + hex dekken de herkomst volledig.
+  const FRAMEWORK_TAGS = ['bootstrap', 'wordpress', 'gutenberg', 'synced'];
+  const frameworkOrigin =
+    isFrameworkDefaultPrimary(c.hex) || tags.some((t) => FRAMEWORK_TAGS.includes(t));
+  if (!frameworkOrigin) return false;
+  const isLogo = /logo/.test(src) || tags.some((t) => t.includes('logo'));
+  if (isLogo) return false;
+  if (c.usageEvidence === 'strong' || c.usageEvidence === 'weak') return false;
+  const unused = c.usageEvidence === 'none' || tags.includes('unused');
+  return unused;
 }
 
 /**

@@ -6,7 +6,6 @@ import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
 import { EditableStringList } from "./EditableStringList";
-import { SystemRolesSection } from "./SystemRolesSection";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { useUpdateSection, useAddColor, useDeleteColor } from "../hooks/useBrandstyleHooks";
 import { contrastRatio } from "../utils/color-utils";
@@ -548,8 +547,16 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
 
   return (
     <div data-testid="colors-section" className="space-y-8">
-      {/* ── Block 0: System Roles (DESIGN.md export) ────── */}
-      <SystemRolesSection styleguide={styleguide} canEdit={canEdit} />
+      {/* Verbeterplan Fase E (palette-framework-cleanup): de aparte "System
+          Roles"-sectie is verwijderd — die toonde hetzelfde palet als
+          "Color System" (user-feedback: één overzicht). Color System
+          (Block 2) is nu het enige kleur-overzicht; de semantische-rol-DATA
+          blijft beschikbaar via de DESIGN.md/Design-System-export.
+          NB: hiermee verdween ook de semantische-rol-OVERRIDE-editor
+          (SystemRoleOverrideModal). Dat is nu acceptabel — geen enkele
+          styleguide heeft overrides gezet (0/15) — maar als override-bewerken
+          terugmoet, hoort het in de Color-System-bucket-rijen i.p.v. een
+          aparte sectie. De export-resolver past bestaande overrides nog toe. */}
 
       {/* ── Block 1: Hero Palette ───────────────────────── */}
       {primaries.length > 0 && (

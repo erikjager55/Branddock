@@ -43,6 +43,11 @@ const FRAMEWORK_DEFAULT_PRIMARY_HEXES = new Set(
     '#2271B1', '#0073AA', '#006799', '#00669B', '#135E96', '#0085BA', // WP-admin blues
     '#7A00DF', // Gutenberg synced-block default
     '#0693E3', '#8ED1FC', // Gutenberg default blues
+    '#087990', // Bootstrap teal / info text-emphasis
+    '#146C43', // Bootstrap success text-emphasis (green-dark)
+    '#6F42C1', '#6610F2', // Bootstrap purple / indigo
+    '#D63384', // Bootstrap pink
+    '#20C997', // Bootstrap teal
   ].map((h) => h.toLowerCase()),
 );
 

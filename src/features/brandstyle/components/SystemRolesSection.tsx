@@ -1,5 +1,10 @@
 "use client";
 
+// DEPRECATED (verbeterplan Fase E, 2026-06-05): niet langer gerenderd in
+// ColorsSection — toonde hetzelfde palet als "Color System" (user-feedback:
+// één overzicht). Bewaard voor de onderliggende semantische-token-data;
+// verwijder bij de volgende opruimronde als niets het meer importeert.
+
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Info, Pencil, Sparkles } from "lucide-react";
 import { Card, Button } from "@/components/shared";

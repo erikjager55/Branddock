@@ -269,7 +269,11 @@ CRITICAL RULES:
    - Matter-of-fact ↔ Enthusiastic
 3. For photography/imagery: Clearly distinguish between OBSERVED (found on site) and RECOMMENDED (your suggestion based on the brand's tone and industry).
 4. All guidelines must be specific to THIS brand — not generic advice.
-5. Return ONLY valid JSON. No markdown, no explanation.`;
+5. Return ONLY valid JSON. No markdown, no explanation.
+6. JSON STRING SAFETY (critical — the response is machine-parsed): never place a
+   literal double-quote (") inside any string value. When quoting a word or
+   phrase from the brand's content, use single quotes (') instead. Do not use
+   raw line breaks inside strings. Every string must be strictly valid JSON.`;
 
 /**
  * Build the Voice & Imagery prompt (tone of voice + photography + illustration).
