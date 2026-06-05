@@ -790,6 +790,11 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       const after = resolvedColors.find((c) => c.category === 'PRIMARY')?.hex;
       if (before !== after) {
         console.log(`[brandstyle-analysis] PRIMARY swapped from achromatic ${before} → brand color ${after}`);
+        // De swap demote de ex-PRIMARY naar NEUTRAL — ná de neutral-cap in de
+        // usage-filter. Her-cap zodat de cap (4) consistent blijft en een
+        // redundante near-black niet als 5e neutral binnenkomt.
+        const { capNeutrals } = await import('./palette-usage-filter');
+        resolvedColors = capNeutrals(resolvedColors, multiPageColorStyles);
       }
     }
 

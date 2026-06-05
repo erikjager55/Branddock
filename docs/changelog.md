@@ -41,7 +41,9 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 Cross-brand controle (betterbrands.nl, een Tailwind-site) toonde 6 distincte grijzen die allemaal écht renderen maar de styleguide overpopuleren. `MAX_NEUTRALS` van 6 → 4: donkerste (tekst) + lichtste (surface) + de **2 meest-gebruikte** mid-grijzen (op `renderedWeight`). De mids worden op werkelijk gebruik gerangschikt — een functionele border-grijs (napking #6B7280) overleeft dus op merite, géén straf voor framework-herkomst, zodat de eerder gemaakte #6B7280-keuze bewaakt blijft. Merk-kleuren onaangeroerd; Zwarthout (2 neutrals) onveranderd.
 
-**Bewijs**: smoke `phase49` 35/35 (betterbrands-achtig 6 → 4, usage-ranked mids, Slate Gray behouden, minst-gebruikte gevallen, greens intact); phase47/48/50/51 groen; tsc+lint 0.
+**Bewijs**: smoke `phase49` 38/38 (betterbrands-achtig 6 → 4, usage-ranked mids, Slate Gray behouden, minst-gebruikte gevallen, greens intact, + her-cap-na-swap); phase47/48/50/51 groen; tsc+lint 0.
+
+**Finalize-review-fix**: `demoteAchromaticPrimary` demote de ex-PRIMARY naar NEUTRAL ná de cap-in-de-filter → `capNeutrals` her-cap't ná de swap (geëxporteerd uit de filter), zodat een redundante near-black niet als 5e neutral binnenkomt en de cap (4) consistent blijft.
 
 - Commit: branch `fix/brandstyle-extraction`
 

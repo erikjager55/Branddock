@@ -331,6 +331,17 @@ function renderedWeight(hex: string, index: { entries: Array<{ rgb: Rgb; count: 
   return w;
 }
 
+/** Her-cap de NEUTRALs op een (post-swap) palet. Gebruikt door analysis-engine
+ *  ná `demoteAchromaticPrimary`: die demote de ex-PRIMARY naar NEUTRAL ná de
+ *  cap-in-de-filter, dus zonder her-cap kan er een 5e (vaak redundante near-
+ *  black) neutral binnenkomen. Zonder render-data is dit een no-op. */
+export function capNeutrals<T extends UsageFilterColor>(
+  colors: T[],
+  bulkColorStyles: BulkColorStyles | null,
+): T[] {
+  return consolidateNeutrals(colors, buildRenderedColorIndex(bulkColorStyles));
+}
+
 function consolidateNeutrals<T extends UsageFilterColor>(
   colors: T[],
   index: { entries: Array<{ rgb: Rgb; count: number }>; total: number },

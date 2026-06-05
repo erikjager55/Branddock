@@ -6,7 +6,7 @@
  * Run: DATABASE_URL=... npx tsx scripts/smoke-tests/web-page-builder-phase49-cross-brand-palette.ts
  */
 import { isNonBrandColor } from '../../src/lib/brandstyle/non-brand-colors';
-import { applyUsageDrivenPaletteFilter, type BulkColorStyles, type RenderStrength } from '../../src/lib/brandstyle/palette-usage-filter';
+import { applyUsageDrivenPaletteFilter, capNeutrals, type BulkColorStyles, type RenderStrength } from '../../src/lib/brandstyle/palette-usage-filter';
 
 let pass = 0, fail = 0;
 function assert(name: string, cond: boolean, detail?: string): void {
@@ -151,6 +151,29 @@ assert('zwaar-gebruikte Slate Gray #6B7280 BEHOUDEN (trade-off bewaakt — usage
 assert('zwaar-gebruikte Silver Gray behouden', bbNeutrals.includes('Silver Gray'));
 assert('minst-gebruikte mids (Gunmetal + Medium Gray) gevallen', !bbNeutrals.includes('Gunmetal Gray') && !bbNeutrals.includes('Medium Gray'));
 assert('merk-green (PRIMARY) onaangeroerd door neutral-cap', bbNames.includes('Vibrant Green'));
+
+console.log('\n── capNeutrals: her-cap ná demote-swap (geen redundante 5e near-black) ──');
+{
+  // Simuleer post-swap: gedemote ex-PRIMARY #1A171B (near-black) toegevoegd aan
+  // een al-gecapt palet met darkest #200707 (near-dup van #1A171B, dist ~26).
+  const post: C[] = [
+    { hex: '#008ACF', name: 'Ocean Blue', category: 'PRIMARY', tags: ['cta'] },
+    { hex: '#200707', name: 'Deep Brown', category: 'NEUTRAL', tags: ['text'] },      // darkest
+    { hex: '#EEEEEE', name: 'Soft White', category: 'NEUTRAL', tags: ['surface'] },   // lightest
+    { hex: '#313131', name: 'Charcoal Gray', category: 'NEUTRAL', tags: ['muted'] },
+    { hex: '#6B7280', name: 'Slate Gray', category: 'NEUTRAL', tags: ['border'] },
+    { hex: '#1A171B', name: 'Deep Charcoal', category: 'NEUTRAL', tags: ['text'] },   // gedemote, near-dup #200707
+  ];
+  const bulk: BulkColorStyles = {
+    color: { 'rgb(0, 138, 207)': 200, 'rgb(32, 7, 7)': 150, 'rgb(49, 49, 49)': 100, 'rgb(107, 114, 128)': 80, 'rgb(26, 23, 27)': 140 },
+    'background-color': { 'rgb(238, 238, 238)': 300 },
+  };
+  const capped = capNeutrals(post, bulk);
+  const cn = capped.filter((c) => c.category === 'NEUTRAL').map((c) => c.name);
+  assert('neutrals ná her-cap ≤ 4 (geen 5e neutral van de swap)', cn.length <= 4, cn.join(','));
+  assert('redundante near-black (Deep Charcoal) gededuped tegen darkest #200707', !cn.includes('Deep Charcoal'), cn.join(','));
+  assert('Ocean Blue (PRIMARY) onaangeroerd door her-cap', capped.some((c) => c.name === 'Ocean Blue' && c.category === 'PRIMARY'));
+}
 
 console.log(`\n${fail === 0 ? 'OK' : 'FAILED'} — ${pass} pass / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);
