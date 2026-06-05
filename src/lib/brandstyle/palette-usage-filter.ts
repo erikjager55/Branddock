@@ -161,13 +161,35 @@ const FRAMEWORK_NEUTRAL_HEXES = new Set(
   ].map((h) => h.toLowerCase()),
 );
 
+// WordPress core admin-theme-kleur (`--wp-admin-theme-color`) + de officiële
+// `-darker-10`/`-darker-20` varianten. Napking: #007CBA lekte als ACCENT
+// "Deep Blue" terwijl het 0× in de gebruikte CSS staat (alléén de WP-block-var-
+// declaratie). Usage-gegate net als de neutral-grijzen — een merk dat #007CBA
+// bewust sterk gebruikt behoudt 'm. BEWUST framework-origin (usage-gated) en
+// NIET de non-brand-hard-exclude: blauw kan met corporate-merk-blauw overlappen
+// (cross-brand-les), dus we weren het alleen bij gebrek aan sterk gebruik.
+const FRAMEWORK_ADMIN_HEXES = new Set(['#007CBA', '#006BA1', '#005A87'].map((h) => h.toLowerCase()));
+
 function isFrameworkOrigin(c: UsageFilterColor): boolean {
   const tags = (c.tags ?? []).map((t) => t.toLowerCase());
+  const hexL = c.hex.toLowerCase();
   return (
     isFrameworkDefaultPrimary(c.hex) ||
-    FRAMEWORK_NEUTRAL_HEXES.has(c.hex.toLowerCase()) ||
+    FRAMEWORK_NEUTRAL_HEXES.has(hexL) ||
+    FRAMEWORK_ADMIN_HEXES.has(hexL) ||
     tags.some((t) => FRAMEWORK_TAGS.includes(t))
   );
+}
+
+// Hex-bevestigde GELEAKTE framework-klassen: CMS-neutral-grijzen (Bootstrap/
+// Gutenberg) + WordPress-admin-chrome-blauw. Dit zijn nooit een merk-hero-kleur
+// (UI-chrome/grijs), dus mogen óók ZONDER usage-data vallen. Bewust NIET de
+// saturated framework-default-PRIMARY-hexes (Bootstrap #0D6EFD / semantic): die
+// kunnen een bewuste merk-kleur zijn → benefit-of-the-doubt tot data het
+// tegendeel toont (review-fix: anders grayscalen we een Bootstrap-merk-palet).
+function isFrameworkLeakHex(hex: string): boolean {
+  const h = hex.toLowerCase();
+  return FRAMEWORK_NEUTRAL_HEXES.has(h) || FRAMEWORK_ADMIN_HEXES.has(h);
 }
 
 function isLogoColor(c: UsageFilterColor): boolean {
@@ -239,9 +261,17 @@ export function applyUsageDrivenPaletteFilter<T extends UsageFilterColor>(
     const hexU = c.hex.toUpperCase();
     if (hexU === darkest.hex || hexU === lightest.hex) return true;
     const { strength, known } = usageCache.get(hexU) ?? { strength: 'none' as RenderStrength, known: false };
-    if (!known) return true;                              // geen bewijs → behouden
+    if (isFrameworkOrigin(c)) {
+      // Mét usage-data: framework-default behoudt alléén bij POSITIEF sterk
+      // gebruik (een merk dat 'm bewust inzet). Zonder data: de hex-bevestigde
+      // geleakte CMS-neutral/admin-klassen vallen (ruis — Napking lekte zo WP-
+      // admin #007CBA + Gutenberg #ABB8C3 omdat de oude volgorde ze via `!known`
+      // redde); een saturated default-primary houdt benefit-of-the-doubt.
+      if (known) return strength === 'strong';
+      return !isFrameworkLeakHex(c.hex);
+    }
+    if (!known) return true;                              // geen bewijs → behouden (niet-framework)
     if (strength === 'none') return false;                // rendert aantoonbaar nergens → drop
-    if (isFrameworkOrigin(c)) return strength === 'strong'; // default-kleur: alleen bij sterk gebruik
     return true;                                          // niet-framework + rendert (weak+) → behouden
   };
 

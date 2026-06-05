@@ -37,6 +37,20 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 283. Brandstyle palet: framework-defaults moeten gebruik bewijzen (geen benefit-of-the-doubt)
+
+Napking re-scrape (na #282) bevestigde PRIMARY = Ocean Blue #008ACF ✓, maar bij een controle tegen de **echte** napking.nl bleken twee framework-leaks: ACCENT "Deep Blue #007CBA" = de **WordPress-admin-kleur** (`--wp-admin-theme-color`, 0× in de gebruikte CSS) en Cool Gray #ABB8C3 = **Gutenberg core-default** ("Cyan bluish gray"). Beide overleefden omdat deze re-scrape géén multi-page usage-data had en `keep()` onbemeten kleuren benefit-of-the-doubt gaf (`!known → keep`) vóór de framework-gate.
+
+- **`isFrameworkOrigin`** uitgebreid met de WP-admin-theme-color-familie (#007CBA/#006BA1/#005A87) — usage-gegate, géén hard-blocklist (blauw kan met corporate-merk-blauw overlappen).
+- **`keep()` herordend**: framework-default-kleuren moeten POSITIEF sterk gebruik tonen. Zonder usage-data vallen alléén de **hex-bevestigde geleakte klassen** (`isFrameworkLeakHex` = CMS-neutral-grijzen + WP-admin-blauw); een **saturated framework-default-primary** (Bootstrap #0D6EFD/#20C997) houdt z'n benefit-of-the-doubt (kan een bewuste merk-kleur zijn → geen grayscale). Met usage-data is het gedrag byte-identiek aan vóór deze wijziging.
+
+**Review** (2 adversariële agents): ronde-1 ving een over-drop (de oude reorder grayscale'de Bootstrap-merk-paletten zonder data) → gefixt met de leak-hex-split; ronde-2 op de verfijnde logica = **SHIP** (Leak ⊆ Origin bewezen, with-data-pad onveranderd, structurele bescherming intact).
+
+**Bewijs**: nieuwe smoke `phase51` 14/14 (incl. over-drop-guard #0D6EFD/#20C997 behouden, #ABB8C3/#007CBA gedropt); `phase47` 24/24 (stale "keep-all"-assertie geüpdatet); 48/49/50 groen; tsc+lint 0. Grondwaarheid: napking.nl is WordPress+WooCommerce+Gutenberg+Tailwind (curl bevestigde #007CBA = WP-admin-var, font = Adobe "effra"). **Vereist re-scrape Napking** → verwacht: #007CBA + #ABB8C3 weg.
+
+- Task: audit `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`
+- Commit: branch `fix/brandstyle-extraction`
+
 ### 282. Brandstyle palet: brand-PRIMARY uit merk-signaal i.p.v. frequentie
 
 Napking re-scrape onthulde dat de PRIMARY de near-black TEKSTkleur (#1A171B "Deep Charcoal") was, terwijl de échte merk-kleur (Ocean Blue #008ACF — letterlijk genoemd in de logo-guidelines: *"the brand's Ocean Blue (#008ACF)"*) naar ACCENT zakte. Root-cause: de AI-classifier kent PRIMARY toe aan de meest-prominente kleur, en op een merk met een achromatisch wordmark + chromatische accent is dat de ubiquitaire tekstkleur; de logo-pixel-rescue ving het niet (`brandImages` null + een overwegend-zwart wordmark levert via histogram tóch charcoal). Dit was de gedeferde "Fase 4" uit `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`.

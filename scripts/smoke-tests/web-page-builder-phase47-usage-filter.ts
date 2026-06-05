@@ -125,9 +125,15 @@ console.log('\n── fallback + safety ──');
 const fallback = applyUsageDrivenPaletteFilter(palette, { bulkColorStyles: null, usageEvidenceByHex: usage }).map((c) => c.name);
 assert('fallback (geen bulk): framework-none nog steeds gedropt', !fallback.includes('Bootstrap Blue'));
 assert('fallback: Slate Gray (Bootstrap-grijs, slechts weak) → gedropt', !fallback.includes('Slate Gray'));
-// Geen enkel signaal → niets droppen (safety).
-const noSignal = applyUsageDrivenPaletteFilter(palette, { bulkColorStyles: null, usageEvidenceByHex: new Map() });
-assert('geen signalen → safety: alles behouden', noSignal.length === palette.length, `kept=${noSignal.length}`);
+// Geen enkel signaal: hex-bevestigde geleakte framework-neutral/admin-klassen
+// (Napking-fix #2 — CMS-grijs/admin-chrome is ruis) vallen óók zonder data; een
+// saturated framework-default-PRIMARY (Bootstrap #0D6EFD) houdt z'n benefit-of-
+// the-doubt (kan een bewuste merk-blauw zijn → niet grayscalen). Logo +
+// structurele (donkerste/lichtste) + niet-framework blijven sowieso.
+const noSignal = applyUsageDrivenPaletteFilter(palette, { bulkColorStyles: null, usageEvidenceByHex: new Map() }).map((c) => c.name);
+assert('geen signalen: logo + structurele kleuren behouden', noSignal.includes('Burnt Orange') && noSignal.includes('Deep Charcoal') && noSignal.includes('Soft White'), noSignal.join(','));
+assert('geen signalen: geleakte framework-neutral (Slate Gray #6C757D) gedropt', !noSignal.includes('Slate Gray'), noSignal.join(','));
+assert('geen signalen: saturated framework-default (Bootstrap Blue #0D6EFD) BEHOUDEN (kan merk-kleur zijn, geen grayscale)', noSignal.includes('Bootstrap Blue'), noSignal.join(','));
 // Lege input → leeg.
 assert('lege input → leeg', applyUsageDrivenPaletteFilter([], { bulkColorStyles: bulk, usageEvidenceByHex: usage }).length === 0);
 
