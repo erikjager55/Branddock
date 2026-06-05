@@ -467,11 +467,20 @@ function toRoleEntry(src: TypographyRoleStyleSrc | undefined): TypographyByRoleE
     rawColor !== 'transparent'
       ? src.color ?? null
       : null;
+  // Var-guard op lineHeight/letterSpacing, symmetrisch met color/fontSize:
+  // een (stale-DB) "var(--bs-body-line-height)" / inherit / unset is waardeloos
+  // voor de LP-render en mag niet verbatim doorlekken (Fase 1 brand-fidelity).
+  const guardTypoValue = (v: string | null | undefined): string | null => {
+    if (!v) return null;
+    const t = v.trim().toLowerCase();
+    if (!t || t.includes('var(') || t === 'inherit' || t === 'unset' || t === 'initial') return null;
+    return v;
+  };
   return {
     fontSize: fontSize > 0 ? fontSize : null,
     fontWeight: fontWeight > 0 ? fontWeight : null,
-    lineHeight: src.lineHeight ?? null,
-    letterSpacing: src.letterSpacing ?? null,
+    lineHeight: guardTypoValue(src.lineHeight),
+    letterSpacing: guardTypoValue(src.letterSpacing),
     textTransform: validTt,
     color: validColor,
   };
