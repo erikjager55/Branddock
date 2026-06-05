@@ -24,6 +24,7 @@ import {
 import { parsePdf, type ParsedPdfData } from './pdf-parser';
 import { inferLayoutStyleFromSiteData } from './infer-layout-style';
 import { isFrameworkDefaultPrimary } from './framework-defaults';
+import { isNonBrandColor } from './non-brand-colors';
 import { buildColorPairings } from './color-pairings';
 import {
   hasNoBrandFonts,
@@ -90,7 +91,7 @@ interface VisualIdentityResult {
  * Confidence + detectorSource come straight from the scraper pipeline so
  * the UI can show how trustworthy the color is.
  */
-interface ResolvedColor {
+export interface ResolvedColor {
   hex: string;
   name: string;
   category: 'PRIMARY' | 'SECONDARY' | 'ACCENT' | 'NEUTRAL' | 'SEMANTIC';
@@ -769,6 +770,24 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       console.log(
         `[brandstyle-analysis] Usage-driven palette filter: ${beforeCount} → ${resolvedColors.length} colors (multi-page=${multiPageColorStyles ? 'yes' : 'no'})`,
       );
+    }
+
+    // Brand-primary-from-merk-signaal: corrigeer een achromatische (tekst/
+    // surface) kleur die op frequentie de PRIMARY-slot won terwijl de échte
+    // merk-kleur chromatisch is (Napking: zwart wordmark #1A171B als PRIMARY,
+    // blauwe logo-accent #008ACF als ACCENT → omgedraaid). Draait NÁ de usage-
+    // filter zodat de gepromote kleur al door werkelijk-gebruik is gefilterd.
+    {
+      const before = resolvedColors.find((c) => c.category === 'PRIMARY')?.hex;
+      resolvedColors = demoteAchromaticPrimary(
+        resolvedColors,
+        processed.authoritativeColors,
+        visualResult.logoGuidelines ?? [],
+      );
+      const after = resolvedColors.find((c) => c.category === 'PRIMARY')?.hex;
+      if (before !== after) {
+        console.log(`[brandstyle-analysis] PRIMARY swapped from achromatic ${before} → brand color ${after}`);
+      }
     }
 
     // Tag provenance so the UI can surface what path was used:
@@ -1790,6 +1809,172 @@ export function reclassifySaturatedNeutral(
     return category;
   }
   return 'ACCENT';
+}
+
+/**
+ * Brand-primary-from-merk-signaal (audit 2026-06-05-cross-brand, Napking-fix).
+ *
+ * Array-niveau spiegel van `reclassifySaturatedNeutral`. De AI-classifier kent
+ * PRIMARY toe aan de meest-prominente kleur; op een merk met een achromatisch
+ * wordmark + chromatische accent (Napking: zwart wordmark, blauwe 'a' #008ACF)
+ * is dat de near-black TEKSTkleur, terwijl de échte merk-kleur naar ACCENT zakt.
+ * Deze pass demote een achromatische PRIMARY (tekst/surface) → NEUTRAL en
+ * promote de sterkste chromatische merk-kleur → PRIMARY — alléén met POSITIEF
+ * bewijs dat die challenger de merk-kleur is (logo-guideline-vermelding, een
+ * detector/vision-primary-rol, of sterk gebruik + merk-tag). No-op bij een
+ * chromatische primary (Zwarthout-oranje), monochrome merken (geen chromatisch
+ * alternatief), en framework/social/low-confidence/status challengers.
+ *
+ * Draait NÁ `applyUsageDrivenPaletteFilter` zodat een gepromote kleur al door
+ * de werkelijk-gebruik-test is gegaan (de filter keyt op hex, niet op category)
+ * — anders kan een gepromote maar nergens-renderende accent alsnog vallen en
+ * blijft het merk zonder PRIMARY.
+ */
+const PRIMARY_SWAP_MIN_SCORE = 3;
+const ALERT_TAG_RE = /^(success|error|warning|warn|danger|info|alert|notice)$/;
+const CORE_BRAND_TAG_RE = /^(cta|button|buttons|interactive|brand|brand-accent|primary)$/;
+
+interface PrimarySignal {
+  usageEvidence?: 'strong' | 'weak' | 'none';
+  visionRole?: 'primary' | 'cta' | 'accent' | 'surface' | 'decorative' | 'none';
+  detectorRole?: string;
+  source?: string;
+  frequency?: number;
+}
+
+/**
+ * Achromatisch = tekst/surface-grijs, geen merk-kleur. S≤12 matcht
+ * `isEffectivelyNeutral`. De near-black/near-white-extremen tellen óók als
+ * achromatisch — maar ALLEEN bij lage saturatie, anders vlaggen we een
+ * verzadigde donker-navy/teal merk-primary (#0A1A2F s65 l11) onterecht.
+ */
+function isAchromaticColor(hex: string): boolean {
+  const hsl = hexToHsl(hex);
+  if (!hsl) return false;
+  return hsl.s <= 12 || (hsl.s <= 20 && (hsl.l <= 12 || hsl.l >= 92));
+}
+
+/** Chromatisch genoeg om merk-PRIMARY te kunnen zijn (boven de neutral-vloer,
+ *  niet zelf near-black/near-white). */
+function isChromaticColor(hex: string): boolean {
+  const hsl = hexToHsl(hex);
+  if (!hsl) return false;
+  return hsl.s >= 25 && hsl.l >= 15 && hsl.l <= 88;
+}
+
+function buildPrimarySignalMap(authoritative: AuthoritativeColor[]): Map<string, PrimarySignal> {
+  const m = new Map<string, PrimarySignal>();
+  for (const c of authoritative) {
+    const hx = normalizeHex(c.hex);
+    if (!hx) continue;
+    m.set(hx.toUpperCase(), {
+      usageEvidence: c.usageEvidence,
+      visionRole: c.visionRole,
+      detectorRole: c.detectorRole,
+      source: c.source,
+      frequency: c.frequency,
+    });
+  }
+  return m;
+}
+
+/** Chromatische palet-hexes die EXPLICIET in de logo-guidelines genoemd worden
+ *  (Napking: "the brand's Ocean Blue (#008ACF)") — het sterkste merk-signaal. */
+function logoSemanticHexes(
+  logoGuidelines: readonly string[],
+  palette: ResolvedColor[],
+): Set<string> {
+  const named = new Set<string>();
+  for (const line of logoGuidelines) {
+    for (const m of line.matchAll(/#[0-9A-Fa-f]{3,8}\b/g)) {
+      const norm = normalizeHex(m[0]);
+      if (norm) named.add(norm.toUpperCase());
+    }
+  }
+  if (named.size === 0) return new Set();
+  return new Set(
+    palette
+      .filter(
+        (c) =>
+          named.has(c.hex.toUpperCase()) &&
+          isChromaticColor(c.hex) &&
+          !isNonBrandColor({ hex: c.hex, tags: c.tags }),
+      )
+      .map((c) => c.hex.toUpperCase()),
+  );
+}
+
+/**
+ * Hoeveel POSITIEF bewijs dat deze kleur de merk-PRIMARY is. `-1` = absoluut
+ * gediskwalificeerd (niet-chromatisch / low-conf / framework / social / status).
+ * Een losse merk-tag is bewust ONVOLDOENDE (score 1 < drempel 3) — er is een
+ * hard signaal nodig (logo-vermelding, detector/vision-primary, of sterk
+ * gebruik), zodat een default blauwe link-kleur PRIMARY niet kan kapen.
+ */
+function challengerBrandScore(
+  c: ResolvedColor,
+  sig: PrimarySignal,
+  isLogoSemantic: boolean,
+): number {
+  if (!isChromaticColor(c.hex)) return -1;
+  if (c.confidence === 'low') return -1;
+  if (isFrameworkDefaultPrimary(c.hex)) return -1;
+  if (isNonBrandColor({ hex: c.hex, tags: c.tags })) return -1;
+  if (c.category === 'SEMANTIC') return -1;
+  const tags = c.tags.map((t) => t.toLowerCase());
+  if (tags.some((t) => ALERT_TAG_RE.test(t))) return -1;
+
+  let score = 0;
+  if (isLogoSemantic) score += 5;
+  if (sig.detectorRole === 'primary') score += 4;
+  if (sig.visionRole === 'primary') score += 4;
+  else if (sig.visionRole === 'cta' || sig.visionRole === 'accent') score += 2;
+  if (sig.usageEvidence === 'strong') score += 2;
+  if (tags.some((t) => CORE_BRAND_TAG_RE.test(t))) score += 1;
+  return score;
+}
+
+export function demoteAchromaticPrimary(
+  colors: ResolvedColor[],
+  authoritative: AuthoritativeColor[],
+  logoGuidelines: readonly string[],
+): ResolvedColor[] {
+  const incumbent = colors.find((c) => c.category === 'PRIMARY');
+  if (!incumbent || !isAchromaticColor(incumbent.hex)) return colors; // guard #1: chromatische primary blijft
+
+  const sigByHex = buildPrimarySignalMap(authoritative);
+  const incSig = sigByHex.get(incumbent.hex.toUpperCase()) ?? {};
+  const logoHexes = logoSemanticHexes(logoGuidelines, colors);
+
+  // Een door logo-extractie/canonieke --primary geasserteerde zwart blijft —
+  // dat is een bewuste monochrome merk-keuze — TENZIJ de logo-guidelines een
+  // chromatische merk-hex noemen (dan is het zwart toch de wordmark-tekst).
+  const detectorAsserted =
+    /logo-extraction/.test(incumbent.detectorSource ?? '') || incSig.detectorRole === 'primary';
+  if (detectorAsserted && logoHexes.size === 0) return colors; // archetype 4b
+
+  let winner: ResolvedColor | null = null;
+  let winnerScore = PRIMARY_SWAP_MIN_SCORE - 1;
+  let winnerRank = -Infinity;
+  for (const c of colors) {
+    if (c === incumbent) continue;
+    const sig = sigByHex.get(c.hex.toUpperCase()) ?? {};
+    const score = challengerBrandScore(c, sig, logoHexes.has(c.hex.toUpperCase()));
+    if (score < PRIMARY_SWAP_MIN_SCORE) continue;
+    const rank = (hexToHsl(c.hex)?.s ?? 0) + (sig.frequency ?? 0) * 0.001;
+    if (score > winnerScore || (score === winnerScore && rank > winnerRank)) {
+      winner = c;
+      winnerScore = score;
+      winnerRank = rank;
+    }
+  }
+  if (!winner) return colors; // guard #2: geen kwalificerend chromatisch alternatief → monochroom blijft
+
+  return colors.map((c) => {
+    if (c === winner) return { ...c, category: 'PRIMARY' as const };
+    if (c === incumbent) return { ...c, category: 'NEUTRAL' as const };
+    return c;
+  });
 }
 
 function defaultColorName(entry: AuthoritativeColor, index: number): string {

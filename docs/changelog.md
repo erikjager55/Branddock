@@ -37,6 +37,20 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 282. Brandstyle palet: brand-PRIMARY uit merk-signaal i.p.v. frequentie
+
+Napking re-scrape onthulde dat de PRIMARY de near-black TEKSTkleur (#1A171B "Deep Charcoal") was, terwijl de échte merk-kleur (Ocean Blue #008ACF — letterlijk genoemd in de logo-guidelines: *"the brand's Ocean Blue (#008ACF)"*) naar ACCENT zakte. Root-cause: de AI-classifier kent PRIMARY toe aan de meest-prominente kleur, en op een merk met een achromatisch wordmark + chromatische accent is dat de ubiquitaire tekstkleur; de logo-pixel-rescue ving het niet (`brandImages` null + een overwegend-zwart wordmark levert via histogram tóch charcoal). Dit was de gedeferde "Fase 4" uit `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`.
+
+- **`demoteAchromaticPrimary`** (`analysis-engine.ts`, array-niveau spiegel van `reclassifySaturatedNeutral`): demote een achromatische PRIMARY → NEUTRAL en promote de sterkste chromatische merk-kleur → PRIMARY, alléén met POSITIEF merk-bewijs (logo-guideline-vermelding +5, detector/vision-primary +4, vision-cta/accent +2, sterk gebruik +2, core-brand-tag +1; drempel 3 — een losse tag is onvoldoende). Draait NÁ de usage-filter zodat een gepromote kleur al door werkelijk-gebruik is gegaan.
+- **Guards** (no-op): chromatische primary (Zwarthout-oranje), monochrome merken (geen chromatisch alternatief), detector/logo-asserted zwart zonder logo-genoemde chromatische hex; **nooit** framework/social/low-confidence/status-kleur gepromote; verzadigde donker-navy/teal primary (#0A1A2F s65) niet gedemote.
+
+**Review**: 2 adversariële workflows (ontwerp + geïmplementeerde code), 6 lenzen, 13 agents → unaniem SHIP; 5 design-flaws vooraf ingebouwd (na-filter-plaatsing, saturatie-gegate achromatic-test, out-evidence-drempel tegen link-blauw-kaping, exact-token alert-tags, hoofdletter-ongevoelige hex-match).
+
+**Bewijs**: smoke `web-page-builder-phase50-primary-from-brand-signal` 20/20 (alle 8 archetypes incl. red-team-regressies); tsc+lint 0; phase47/48/49 groen. **Vereist re-scrape Napking** → verwacht PRIMARY = Ocean Blue, Deep Charcoal → NEUTRAL.
+
+- Task: audit `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`
+- Commit: branch `fix/brandstyle-extraction`
+
 ### 281. Brandstyle palet: cross-brand — non-brand-uitsluiting + neutral-consolidatie
 
 Cross-brand audit (Zwarthout schoon vs Napking vervuild; DB over ~10 merken): de usage+framework-filter ving Bootstrap-ruis maar niet (a) third-party widget/social-share-kleuren (napking WhatsApp #25D366; peoplemasterminds **8** social-netwerk-kleuren als brand-SECONDARY/ACCENT) en (b) CMS-admin-kleuren (WordPress #007CBA), én er was (c) universele neutral-overpopulatie (5-10 grijzen/merk). Audit: `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`. Inzicht: de AI tagt de ruis al zelf (`social`/`whatsapp`/`admin`/`system`).
