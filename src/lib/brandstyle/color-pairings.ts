@@ -11,7 +11,11 @@ import { contrastRatio } from '@/features/brandstyle/utils/color-utils';
 
 export interface PaletteColorLike {
   hex: string;
-  category: 'PRIMARY' | 'SECONDARY' | 'ACCENT' | 'NEUTRAL' | 'SEMANTIC';
+  // `string` zodat zowel de 5-value ResolvedColor-categorie als de bredere
+  // Prisma ColorCategory-enum (incl. legacy BACKGROUND e.d.) passen; byCat
+  // matcht alleen PRIMARY/SECONDARY/ACCENT/NEUTRAL exact — de rest wordt
+  // genegeerd.
+  category: string;
 }
 
 export interface ColorPairing {
@@ -51,6 +55,13 @@ const CATEGORY_LABEL: Record<string, string> = {
   ACCENT: 'Accent',
 };
 
+// Expliciete knop-labels (geen "+e"-afleiding — "Accente" is fout NL).
+const BUTTON_LABEL: Record<string, string> = {
+  PRIMARY: 'Primaire knop',
+  SECONDARY: 'Secundaire knop',
+  ACCENT: 'Accentknop',
+};
+
 /**
  * Genereert kleurcombinaties uit een geclassificeerd palet. Combineert
  * PRIMARY/SECONDARY/ACCENT-fills met leesbare foregrounds (uit de eigen
@@ -63,8 +74,14 @@ export function buildColorPairings(colors: PaletteColorLike[]): ColorPairing[] {
     colors.filter((c) => c.category === cat).map((c) => c.hex);
   const neutrals = byCat('NEUTRAL');
   // Lichte surfaces (hoog contrast t.o.v. zwart) en donkere tekst-kleuren.
+  // Donkere NEUTRALs gesorteerd op donkerheid (donkerste eerst) zodat het
+  // basis-leespaar de WERKELIJKE merk-tekstkleur gebruikt (#1A1A1A), met zwart
+  // alleen als fallback — niet altijd hardcoded #000000.
+  const darkNeutrals = neutrals
+    .filter((h) => contrastRatio(h, WHITE) >= 9)
+    .sort((a, b) => contrastRatio(b, WHITE) - contrastRatio(a, WHITE));
   const lights = [WHITE, ...neutrals.filter((h) => contrastRatio(h, BLACK) >= 9)];
-  const darks = [BLACK, ...neutrals.filter((h) => contrastRatio(h, WHITE) >= 9)];
+  const darks = [...darkNeutrals, BLACK];
   const fgPool = Array.from(new Set([...darks, ...lights]));
   const lightestSurface = lights[0] ?? WHITE;
 
@@ -83,7 +100,7 @@ export function buildColorPairings(colors: PaletteColorLike[]): ColorPairing[] {
     for (const fill of byCat(cat)) {
       // Fill als knop-achtergrond met de best leesbare foreground.
       const fg = bestForeground(fill, fgPool);
-      if (fg) push(`${CATEGORY_LABEL[cat]}e knop`, fill, fg.hex, 'button', 3);
+      if (fg) push(BUTTON_LABEL[cat], fill, fg.hex, 'button', 3);
       // Fill als tekst/accent op de lichtste surface.
       push(`${CATEGORY_LABEL[cat]} op licht`, lightestSurface, fill, 'text-on-surface', 3);
     }

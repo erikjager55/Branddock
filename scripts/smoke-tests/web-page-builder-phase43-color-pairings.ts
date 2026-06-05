@@ -36,6 +36,13 @@ assert('contrastRatio is een getal', pairs.every((p) => typeof p.contrastRatio =
 const primaryBtn = pairs.find((p) => p.usage === 'button' && p.background.toLowerCase() === '#008acf');
 assert('PRIMARY-knop foreground haalt minimaal AA-large', !!primaryBtn && primaryBtn.contrastRatio >= 3, `ratio=${primaryBtn?.contrastRatio}`);
 
+// Review-bugfixes #4 + #6
+assert('geen grammaticaal foute "Accente knop"', !pairs.some((p) => p.label.includes('Accente')));
+assert('Accent-knop label = "Accentknop"', pairs.some((p) => p.label === 'Accentknop'));
+const surfacePair = pairs.find((p) => p.usage === 'surface-pair');
+assert('basis-leespaar gebruikt echte donkerste NEUTRAL (#212529), niet #000000',
+  !!surfacePair && surfacePair.foreground.toLowerCase() === '#212529', `fg=${surfacePair?.foreground}`);
+
 // Leeg palet → geen crash, lege lijst
 assert('leeg palet → [] (geen crash)', buildColorPairings([]).length === 0);
 

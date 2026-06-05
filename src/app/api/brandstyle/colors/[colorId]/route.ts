@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
+import { recomputeColorPairings } from "@/lib/brandstyle/recompute-color-pairings";
 
 // =============================================================
 // PATCH /api/brandstyle/colors/[colorId] — update tags (Fase E)
@@ -47,6 +50,9 @@ export async function PATCH(
         ...(parsed.data.tags !== undefined ? { tags: parsed.data.tags } : {}),
       },
     });
+    // Tags-only update raakt hex/category niet → pairings ongewijzigd; wel cache.
+    invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
     return NextResponse.json({ color: updated });
   } catch (error) {
     console.error("[PATCH /api/brandstyle/colors/:colorId]", error);
@@ -83,6 +89,10 @@ export async function DELETE(
 
     await prisma.styleguideColor.delete({ where: { id: colorId } });
 
+    // Herbereken kleurcombinaties (verwijderde kleur eruit) + invalideer cache.
+    await recomputeColorPairings(color.styleguideId);
+    invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[DELETE /api/brandstyle/colors/:colorId]", error);

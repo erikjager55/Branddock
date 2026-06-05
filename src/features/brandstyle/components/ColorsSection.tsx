@@ -463,7 +463,18 @@ const WCAG_BADGE: Record<string, string> = {
 };
 
 function ColorPairingsPanel({ pairings }: { pairings: ColorPairing[] }) {
-  if (!pairings || pairings.length === 0) return null;
+  // Element-level guard: colorPairings is een rauwe Json-kolom; legacy/handmatig
+  // gemuteerde of drift-records mogen niet blind renderen ("undefined:1").
+  const valid = (pairings ?? []).filter(
+    (p): p is ColorPairing =>
+      !!p &&
+      typeof p.label === "string" &&
+      typeof p.background === "string" &&
+      typeof p.foreground === "string" &&
+      typeof p.contrastRatio === "number" &&
+      typeof p.wcag === "string",
+  );
+  if (valid.length === 0) return null;
   return (
     <Card>
       <div className="flex items-center justify-between gap-3 mb-5">
@@ -471,7 +482,7 @@ function ColorPairingsPanel({ pairings }: { pairings: ColorPairing[] }) {
         <p className="text-xs text-gray-400">WCAG-geverifieerde combinaties uit het palet</p>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {pairings.map((p, i) => (
+        {valid.map((p, i) => (
           <div key={i} className="rounded-md border border-gray-200 overflow-hidden">
             <div
               className="px-4 flex items-center justify-center"
