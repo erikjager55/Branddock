@@ -634,8 +634,11 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         // the top 4 already contributed via static CSS/component merge;
         // running Playwright on them doubles wall-clock for little extra
         // visual variety.
+        // Fase 1b: prioritiseer component-rijke subpagina's (contact/product/
+        // shop) zodat ze in de top-4 screenshot-slice vallen i.p.v. erbuiten.
+        const { prioritiseScreenshotUrls } = await import('./component-extractor');
         const componentUrls = usedMultiPage
-          ? [url, ...subpageUrls.slice(0, 4)]
+          ? prioritiseScreenshotUrls(url, subpageUrls).slice(0, 5)
           : [url];
         console.log(`[brandstyle-analysis] Taking component screenshots for ${componentUrls.length} page(s)`);
         const shotResult = await extractComponentsFromPages(componentUrls, styleguideMeta.workspaceId);
@@ -679,7 +682,7 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
           }
           // Strip the in-memory Buffer before handing off to the persistence
           // layer — DetectedComponent is the public shape.
-          finalComponents = enriched.map((c) => ({
+          const shotComponents = enriched.map((c) => ({
             type: c.type,
             label: c.label,
             selector: c.selector,
@@ -689,8 +692,17 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
             confidence: c.confidence,
             screenshotUrl: c.screenshotUrl ?? null,
           }));
+          // Fase 1a: NIET wholesale vervangen. De screenshotter dekt maar 5
+          // pagina's (homepage + 4) en mist daardoor types die alleen op
+          // niet-gescreenshotte subpagina's staan — bv. form-inputs op
+          // /contact die wél in de multi-page static-merge zitten. Houd de
+          // screenshot-set leidend en backfill uitsluitend ontbrekende types.
+          const { backfillComponentsByType } = await import('./component-extractor');
+          finalComponents = backfillComponentsByType(shotComponents, scraped.components ?? []);
           usedComponentScreenshots = true;
-          console.log(`[brandstyle-analysis] Captured ${finalComponents.length} component screenshots`);
+          console.log(
+            `[brandstyle-analysis] Captured ${shotComponents.length} screenshot components + backfilled to ${finalComponents.length} total`,
+          );
         }
       }
     } catch (shotErr) {
@@ -1616,7 +1628,11 @@ function resolveColors(
     // in de "Neutral" bucket belanden terwijl ze duidelijk status-tints
     // zijn. PRIMARY/SECONDARY/ACCENT worden NIET aangeraakt — die zijn
     // expliciet brand-rollen.
-    const category = upgradePastelToSemantic(baseCategory, hex);
+    const category = reclassifySaturatedNeutral(
+      upgradePastelToSemantic(baseCategory, hex),
+      hex,
+      entry,
+    );
     resolved.push({
       hex,
       name: ai?.name?.trim() || defaultColorName(entry, index),
@@ -1663,6 +1679,41 @@ export function upgradePastelToSemantic(
     (h >= 80 && h <= 160) ||      // green → success
     (h >= 170 && h <= 260);       // blue/cyan → info
   return inSemanticRange ? 'SEMANTIC' : category;
+}
+
+/**
+ * Chroma-gate (verbeterplan Fase 4a, audit 2026-06-05-brandstyle-result).
+ * Een ECHTE neutral heeft lage saturatie; een als NEUTRAL geclassificeerde
+ * kleur met hoge saturatie (symptoom Zwarthout: "Bootstrap Blue"/"Vivid
+ * Purple"/"Royal Blue" in de Neutral-bucket) is een misclassificatie. We
+ * relabelen die naar ACCENT — behalve framework-default-ruis zónder
+ * usage-bewijs, die laten we een gemute NEUTRAL-swatch i.p.v. 'm te promoten.
+ * `upgradePastelToSemantic` dekt de lichte pastels; deze dekt de verzadigde
+ * mid-tones die daar doorheen glippen.
+ */
+export function reclassifySaturatedNeutral(
+  category: ResolvedColor['category'],
+  hex: string,
+  entry: Pick<AuthoritativeColor, 'usageEvidence'>,
+): ResolvedColor['category'] {
+  if (category !== 'NEUTRAL') return category;
+  const hsl = hexToHsl(hex);
+  if (!hsl) return category;
+  // Lage chroma = echte neutral; near-white/near-black hue is onbetrouwbaar.
+  if (hsl.s < 35) return category;
+  if (hsl.l >= 92 || hsl.l <= 8) return category;
+  // Framework-default-ruis zonder POSITIEF usage-bewijs niet promoten naar
+  // ACCENT. `usageEvidence` is undefined wanneer de vision-verifier niet liep
+  // (geen screenshots) — behandel dat als 'none', anders glipt een framework-
+  // default in het no-screenshot-pad alsnog naar ACCENT (review-fix).
+  if (
+    isFrameworkDefaultPrimary(hex) &&
+    entry.usageEvidence !== 'strong' &&
+    entry.usageEvidence !== 'weak'
+  ) {
+    return category;
+  }
+  return 'ACCENT';
 }
 
 function defaultColorName(entry: AuthoritativeColor, index: number): string {

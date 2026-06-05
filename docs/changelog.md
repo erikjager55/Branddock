@@ -37,6 +37,26 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 278. Brandstyle resultaat-audit fixes — components-depth + elevation + typografie + kleur + spacing + confidence
+
+Vervolg op #277, gedreven door 15 screenshots van de live Brandstyle-UI (Zwarthout). User-observatie: components-tab toont vrijwel niets (form inputs/cards/chips = 0). Diepgaande audit (6-stream workflow + live-site HTML-probe + adversariële cross-check, alle root-causes in live code geverifieerd): `docs/audits/2026-06-05-brandstyle-result-audit.md`. **Kernbevinding**: form-inputs en product-cards zijn NIET afwezig op zwarthout.com (`/contact` + `/quote` hebben 21-24 echte `<input>`; shop heeft 9 `li.product-item`/pagina) — ze worden **gemist** door een merge-defect, dekking-gap en selector-gap.
+
+- **Fase 1a (component merge)**: de Playwright-screenshotter verving `scraped.components` wholesale → static-gemergde form-inputs van `/contact` (die buiten de 5-pagina screenshot-slice vielen) gingen verloren. Nieuwe `backfillComponentsByType` houdt de screenshot-set leidend en backfilt alleen ontbrekende types. **Fase 1b/1d (coverage)**: `prioritiseScreenshotUrls` zet form-rijke pagina's (contact/offerte) vooraan en capt producten op 2 i.p.v. 4 bijna-identieke detailpagina's. **Fase 1c (selector)**: PRODUCT_CARD vangt nu WooCommerce/custom-theme kaarten (`li.product`/`.product-item`/`.wc-block-grid__product`).
+- **Fase 2 (elevation)**: 1-regel shape-bug — `clusterElevation` deed `Array.isArray` op een `{tokens:[...]}`-object → Design-System/Visual-System toonden "0 shadows" terwijl de Spacing-tab er 4 had. Unwrap + strip `!important` + skip `none`.
+- **Fase 3 (typografie)**: var()-resolutie splitst nu de komma-stack naar de eerste echte familie (geen "system-ui,…"-string meer als primary-font); fallback-chain-ruis (Roboto/Oxygen/Ubuntu) gefilterd (eerste familie per declaratie); WooCommerce/Elementor icon-fonts gefilterd; weight-suffix-strip ("Sen Bold" → "Sen") voor Google-Fonts-classificatie.
+- **Fase 4a (kleur)**: chroma-gate — verzadigde kleuren (Bootstrap Blue/Vivid Purple) niet langer in de NEUTRAL-bucket maar ACCENT, behalve framework-default-ruis zonder usage-bewijs (blijft gemute neutral).
+- **Fase 5a/5c (spacing/radii)**: computed-style px afgerond (5.42px → 5); pill/cirkel-radius (`50%`/`≥100px`) bewaard als sentinel zodat de "full"-radius een echte pill is i.p.v. 4px. 5b (non-monotone volgorde) bevestigd **stale data** — huidige builder sorteert al.
+- **Fase 6a (confidence)**: `computeConfidence` telde `Object.keys().length` → degenereerde naar 100% voor élk element. Telt nu onderscheidende niet-default props (echte button 0.78, generieke balk 0.42).
+
+**Bewust gedeferd** (per audit-risicovlaggen, baat bij re-scrape-validatie): 4b/4c (framework-kleuren bulk-droppen), 6b/6c (nav-handling, vision-confidence), 6d (gradient-provenance — feature met prompt+schema+UI), 6e (Components-telling label). **Review**: adversariële 4-lens workflow → geen CRITICAL; 1 MAJOR (pill-sentinel `9999` lekte in median/mostCommon/AI-prompt) + 1 MINOR (chroma-gate `undefined` usage) gefixt + smoke-coverage.
+
+**Bewijs**: smoke `web-page-builder-phase45-result-audit` 58/58; regressie 41-44 groen; tsc+lint 0 errors. **Vereist re-scrape van zwarthout.com voor volledige validatie** (≥3 form-inputs, ≥5 product-cards, leesbare primary-font, consistente elevation) — Track A.
+
+- Task: audit `docs/audits/2026-06-05-brandstyle-result-audit.md`
+- ADR: -
+- Spec: `docs/audits/2026-06-05-brandstyle-result-audit.md`
+- Commit: branch `fix/brandstyle-extraction`
+
 ### 277. Brandstyle extractie-fidelity — Fase 1/2/3/4/5/6 (var-resolutie + framework-gate + kleurcombinaties + font-fallback)
 
 Upstream-vervolg op #276: de scrape→brandstyle-extractie plaatste gescrapte info slecht (onopgeloste `var(--bs-*)`, framework-defaults als merk-design, gefabriceerde preview-tekst). Na 4-lagen deep-research + adversariële code-cross-check (audit `docs/audits/2026-06-05-brandstyle-extraction-pipeline.md`). Meta-oorzaak: drie niet-uniforme CSS-leespaden met verschillende var()-resolutie en geen gedeelde framework-default-gate.

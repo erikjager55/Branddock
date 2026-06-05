@@ -929,8 +929,10 @@ function extractColorsFromCss(css: string): string[] {
 
 // ─── Font Extraction ──────────────────────────────────
 
-/** Extract unique font families from CSS, excluding generic + web-safe fallbacks. */
-function extractFontsFromCss(css: string): string[] {
+/** Extract unique font families from CSS, excluding generic + web-safe fallbacks.
+ *  Exported zodat de brandstyle-smoke de fallback-chain-filter (Fase 3c) kan
+ *  asserteren. */
+export function extractFontsFromCss(css: string): string[] {
   const fontSet = new Set<string>();
 
   // Match font-family declarations
@@ -947,6 +949,10 @@ function extractFontsFromCss(css: string): string[] {
         !isIconFont(resolved)
       ) {
         fontSet.add(resolved);
+        // Fase 3c: alleen de EERSTE echte familie per declaratie is de
+        // bedoelde font; de rest van de komma-keten is fallback-ruis
+        // (Roboto/Oxygen/Ubuntu) — geen extra merk-fonts.
+        break;
       }
     }
   }
@@ -993,14 +999,33 @@ function resolveFontFamilyValue(
   if (varMatch) {
     const varName = varMatch[1];
     const fallback = varMatch[2]?.trim();
+    // Fase 3a: een var() resolvet vaak naar een hele font-STACK
+    // (`system-ui,-apple-system,'Brand',…`). De recursie gaf voorheen de
+    // complete komma-stack als één bogus font terug (symptoom: primaryFontName
+    // = "system-ui,-apple-system,…"). Resolve i.p.v. naar de EERSTE echte
+    // familie — sla generic/web-safe/icon-fallbacks over.
+    const resolveStack = (stack: string): string | null => {
+      for (const part of stack.split(',')) {
+        const r = resolveFontFamilyValue(part.trim(), fullCss, depth + 1);
+        if (
+          r
+          && !GENERIC_FONT_FAMILIES.has(r.toLowerCase())
+          && !isWebSafeFallbackFont(r)
+          && !isIconFont(r)
+        ) {
+          return r;
+        }
+      }
+      return null;
+    };
     const defPattern = new RegExp(`${escapeRegex(varName)}\\s*:\\s*([^;}]+)`, 'g');
     const defMatch = defPattern.exec(fullCss);
     if (defMatch) {
-      const resolved = resolveFontFamilyValue(defMatch[1].trim(), fullCss, depth + 1);
+      const resolved = resolveStack(defMatch[1].trim());
       if (resolved) return resolved;
     }
     if (fallback) {
-      const resolved = resolveFontFamilyValue(fallback, fullCss, depth + 1);
+      const resolved = resolveStack(fallback);
       if (resolved) return resolved;
     }
     // Couldn't resolve var() — drop it rather than persisting "var(--xxx)" literal
@@ -1055,6 +1080,10 @@ const ICON_FONT_FRAGMENTS = [
   'icomoon', 'fontawesome', 'ionicon', 'materialicons', 'materialsymbols',
   'feather', 'lucide', 'dashicons', 'themify', 'eicons', 'glyphicon',
   'webflowicons', 'bricksicons',
+  // Fase 3b: WooCommerce + Elementor shippen een eigen icon-font (cart/ster/
+  // social-glyphs) die als font-family lekt op WP/Woo-sites (symptoom op
+  // zwarthout.com: "WooCommerce" in de font-lijst).
+  'woocommerce', 'elementoricons',
 ];
 
 /**

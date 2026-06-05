@@ -49,6 +49,79 @@ export interface DetectedComponent {
   screenshotUrl?: string | null;
 }
 
+/**
+ * Per-type backfill (verbeterplan Fase 1a, audit 2026-06-05-brandstyle-result).
+ *
+ * De Playwright-screenshotter vervangt de static-gemergde component-set wholesale
+ * (`analysis-engine.ts`), waardoor types die de screenshotter NIET dekt — typisch
+ * form-inputs op /contact die buiten de 5-pagina screenshot-slice vallen, maar wél
+ * in de multi-page static-merge zitten — verloren gingen. Deze helper houdt de
+ * (screenshot-verrijkte) `primary`-set leidend en vult uitsluitend de TYPES aan
+ * die daarin volledig ontbreken, met de static `fallback`-entries. Pure functie.
+ */
+export function backfillComponentsByType(
+  primary: DetectedComponent[],
+  fallback: DetectedComponent[],
+): DetectedComponent[] {
+  const typesPresent = new Set(primary.map((c) => c.type));
+  const backfilled = fallback.filter(
+    (c) => !typesPresent.has(c.type) && c.confidence >= MIN_CONFIDENCE,
+  );
+  // Behoud de per-type cap zodat een input-rijke contactpagina de lijst niet
+  // overspoelt; de static-set is al op MAX_PER_TYPE gecapt maar borg het hier
+  // defensief voor het geval de fallback uit een andere bron komt.
+  const perTypeCount = new Map<ComponentType, number>();
+  const capped = backfilled.filter((c) => {
+    const n = perTypeCount.get(c.type) ?? 0;
+    if (n >= MAX_PER_TYPE) return false;
+    perTypeCount.set(c.type, n + 1);
+    return true;
+  });
+  return [...primary, ...capped];
+}
+
+/**
+ * Form-rijke pagina's (contact/offerte/pricing) — de hoogste component-
+ * diversiteit (form-inputs, selects, pricing-tables). Fase 1b.
+ */
+const FORM_RICH_URL =
+  /\/(contact|quote|offerte|aanvraag|afspraak|demo|pricing|prijzen|tarieven|abonnement)s?(\/|$|\?)/i;
+/** Product/shop-pagina's — herhaal-content; gecapt zodat ze de slice niet
+ *  vullen met bijna-identieke detailpagina's (Fase 1d). */
+const PRODUCT_URL =
+  /\/(product|products|shop|store|winkel|webshop|collectie|catalog)s?(\/|$|\?)/i;
+/** Max aantal product-pagina's in de screenshot-set (Fase 1d). */
+const MAX_PRODUCT_SCREENSHOTS = 2;
+
+/**
+ * Ordent subpagina-URL's voor de screenshot-set zodat de schaarse slots maximaal
+ * component-divers zijn (Fase 1b/1d): homepage eerst, dan form-rijke pagina's
+ * (/contact — die op rank 8 in de page-classifier buiten de oude slice viel),
+ * dan max 2 product-pagina's, dan de rest; overige producten achteraan.
+ * Stabiel binnen elke groep. Pure functie — smoke-testbaar.
+ */
+export function prioritiseScreenshotUrls(
+  homepageUrl: string,
+  subpageUrls: readonly string[],
+): string[] {
+  const formRich: string[] = [];
+  const products: string[] = [];
+  const rest: string[] = [];
+  for (const u of subpageUrls) {
+    if (u === homepageUrl) continue;
+    if (FORM_RICH_URL.test(u)) formRich.push(u);
+    else if (PRODUCT_URL.test(u)) products.push(u);
+    else rest.push(u);
+  }
+  return [
+    homepageUrl,
+    ...formRich,
+    ...products.slice(0, MAX_PRODUCT_SCREENSHOTS),
+    ...rest,
+    ...products.slice(MAX_PRODUCT_SCREENSHOTS),
+  ];
+}
+
 const MAX_PER_TYPE = 5;
 /**
  * Confidence floor for a detected component. Below this, the match is likely
@@ -201,6 +274,12 @@ const MATCHERS: Matcher[] = [
       "[class*=product-card]",
       "[class*=item-card]",
       "[data-slot=card]",
+      // WooCommerce / custom shop-themes (Fase 1c) — kaarten als `li.product`
+      // / `.product-item` / `.mm-product` die geen `.card` hebben. Exacte
+      // class-token-match voorkomt false-positives op `.product-item-title`.
+      "li.product",
+      ".product-item",
+      ".wc-block-grid__product",
       // Generieke __card / -card / card- patterns vangen custom card-
       // implementaties als `.fb-sticky-content__card`, `.feature-card`,
       // `.card-item` op die elke BEM-conventie volgt. Eerder ontbrak dit

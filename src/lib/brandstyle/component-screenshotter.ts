@@ -166,6 +166,13 @@ const TYPE_MATCHERS: TypeMatcher[] = [
       "[class*=product-card]",
       "[class*=item-card]",
       "[data-slot=card]",
+      // WooCommerce / custom shop-themes (Fase 1c). zwarthout.com toonde 0
+      // product-cards omdat de kaarten `li.product` / `.product-item` /
+      // `.mm-product` heten — geen `.card`. Exacte class-token-match (.product-item)
+      // i.p.v. substring voorkomt false-positives op `.product-item-title` e.d.
+      "li.product",
+      ".product-item",
+      ".wc-block-grid__product",
       // Generieke BEM/utility patterns voor custom card-implementaties
       // (LINFI's .fb-sticky-content__card, .feature-card, .card-item ...).
       // Beperken tot block-level tags voorkomt dat span.card-icon /
@@ -729,10 +736,27 @@ function normaliseStyles(styles: Record<string, string>): ExtractedComponentStyl
   };
 }
 
-function computeConfidence(styles: Record<string, string>): number {
-  const relevant = Object.keys(styles).length;
-  // Computed styles always yield many props, so we cap higher here than the
-  // DOM extractor would. 3-property minimum ensures the element was genuinely
-  // styled (not a plain div).
-  return Math.min(0.5 + relevant * 0.05, 1);
+// Geëxporteerd zodat de brandstyle-smoke de discriminerende score (Fase 6a)
+// kan asserteren.
+export function computeConfidence(styles: Record<string, string>): number {
+  // Fase 6a: `getComputedStyle` levert ALTIJD ~alle props (color/display/
+  // font-size bestaan op elk element), dus `Object.keys().length` degenereerde
+  // naar ~1.0 voor élk element — een generieke zwarte balk scoorde 100%. Tel
+  // i.p.v. ONDERSCHEIDENDE, niet-default styling-signalen die een echte merk-
+  // component kenmerken. (box-shadow/font-weight zijn bij intake al op
+  // "none"/"normal" gefilterd, dus aanwezigheid = betekenisvol.)
+  const val = (k: string) => (styles[k] ?? '').trim().toLowerCase();
+  let score = 0;
+  const bg = val('background-color') || val('background');
+  if (bg && bg !== 'transparent' && !bg.includes('rgba(0, 0, 0, 0)') && !/,\s*0\)$/.test(bg)) score++;
+  const border = val('border');
+  if (border && !border.startsWith('0px') && !border.startsWith('0 ')) score++;
+  if ((parseFloat(val('border-radius')) || 0) > 0) score++;
+  if (val('box-shadow')) score++;
+  const padding = val('padding');
+  if (padding && !/^0(px)?(\s+0(px)?)*$/.test(padding)) score++;
+  if (val('font-weight')) score++;
+  if (val('text-transform')) score++;
+  // 0 onderscheidende props → 0.3 (generiek/structureel), elk +0.12, cap 1.0.
+  return Math.min(0.3 + score * 0.12, 1);
 }

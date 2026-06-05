@@ -182,20 +182,24 @@ export function deriveNumericScale(
   return out.slice(0, topN).sort((a, b) => a.valuePx - b.valuePx);
 }
 
-function parsePxFirst(raw: string): number {
+// Geëxporteerd zodat de brandstyle-smoke de afronding (Fase 5a) kan asserteren.
+export function parsePxFirst(raw: string): number {
   // Pak eerste NIET-NUL px-waarde uit shorthand zoals "0px 16px 32px 0px"
   // (24px voor padding-right is meer signaal dan 0px voor padding-top).
   // Valt terug op eerste waarde als alle waarden 0 zijn.
+  // Fase 5a: computed-style px-waarden zijn vaak sub-pixel floats (5.42px,
+  // 3.75px) door rem-conversie/zoom. Design-tokens horen integer te zijn —
+  // rond af op het choke-point zodat zowel spacing als radii heel blijven.
+  const round = (n: number): number => (Number.isFinite(n) ? Math.round(n) : NaN);
   const matches = Array.from(raw.matchAll(/(-?\d+(?:\.\d+)?)px/g));
   if (matches.length === 0) {
-    const n = Number(raw);
-    return Number.isFinite(n) ? n : NaN;
+    return round(Number(raw));
   }
   for (const m of matches) {
     const v = Number(m[1]);
-    if (Number.isFinite(v) && v > 0) return v;
+    if (Number.isFinite(v) && v > 0) return round(v);
   }
-  return Number(matches[0][1]);
+  return round(Number(matches[0][1]));
 }
 
 /**
@@ -228,10 +232,12 @@ export function augmentHeuristicsWithRuntime(
   appendShadowSamples(next.boxShadow.samples, bulk.styles['box-shadow']);
 
   // Re-bereken median + mostCommon na augmentation zodat downstream
-  // helpers consistente data zien.
-  next.borderRadius.median = computeMedian(next.borderRadius.values);
-  next.borderRadius.mostCommon = computeMode(next.borderRadius.values);
-  next.borderRadius.hasVariation = new Set(next.borderRadius.values).size > 1;
+  // helpers consistente data zien. De pill-sentinel (9999, Fase 5c) blijft in
+  // `values` voor deriveCornerRadii maar mag de stats/AI-prompt niet vervuilen.
+  const nonPillRadii = next.borderRadius.values.filter((v) => v < 9999);
+  next.borderRadius.median = computeMedian(nonPillRadii);
+  next.borderRadius.mostCommon = computeMode(nonPillRadii);
+  next.borderRadius.hasVariation = new Set(nonPillRadii).size > 1;
   next.spacing.median = computeMedian(next.spacing.values);
   next.spacing.gridBase = detectGridBase(next.spacing.values) ?? next.spacing.gridBase;
 
