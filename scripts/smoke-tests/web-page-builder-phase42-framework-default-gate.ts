@@ -26,6 +26,11 @@ assert('.elementor-button = framework-default', isFrameworkDefaultSelector('.ele
 assert('.btn-primary (kale Bootstrap) = framework-default', isFrameworkDefaultSelector('.btn-primary'));
 assert('.zwarthout-cta = ECHT (geen framework)', !isFrameworkDefaultSelector('.zwarthout-cta'));
 assert('.hero__button = ECHT (geen framework)', !isFrameworkDefaultSelector('.hero__button'));
+// Review-bugfixes #3/#6: namespaced merk-classes + custom Gutenberg-blocks NIET gegate
+assert('.brand-btn-primary = ECHT (namespaced, geen penalty)', !isFrameworkDefaultSelector('.brand-btn-primary'));
+assert('.my-btn-primary = ECHT (namespaced)', !isFrameworkDefaultSelector('.my-btn-primary'));
+assert('.wp-block-mybrand = ECHT (custom Gutenberg-block)', !isFrameworkDefaultSelector('.wp-block-mybrand'));
+assert('.wp-block-button__link blijft framework-default', isFrameworkDefaultSelector('.wp-block-button__link'));
 
 console.log('\n── hasFrameworkDefaultClass ──');
 assert('classes met wp-block-button → true', hasFrameworkDefaultClass(['wp-block-button', 'foo']));

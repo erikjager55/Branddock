@@ -265,8 +265,11 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     // Before falling all the way through to refuse-mode, try the headless
     // browser fallback (if enabled) — many CSS-in-JS / SPA sites only reveal
     // their brand tokens via getComputedStyle after the JS has run.
+    // Tel detector-tokens mee als "sterk genoeg": de Fase-2-downgrade van een
+    // framework-default-primary naar 'low' mag op zichzelf geen refuse-mode
+    // triggeren op een dunne Bootstrap-pagina (regressie-guard).
     const isWeakPalette = (data: ProcessedData): boolean =>
-      !data.authoritativeColors.some((c) => c.confidence === 'high') &&
+      !data.authoritativeColors.some((c) => c.confidence === 'high' || c.source === 'detector') &&
       data.authoritativeColors.length < 3;
 
     let usedHeadlessRender = false;
@@ -1141,7 +1144,13 @@ export function preprocessScrapeData(scraped: ScrapedData): ProcessedData {
   // and the logo extractor would just add noise (multiple "primary"s
   // confuse Claude's classifier). When promoted, the most dominant logo
   // colour becomes `primary` and the next one (if any) becomes `secondary`.
-  const frameworkHasPrimary = detectedTokens.some((t) => t.role === 'primary');
+  // Fase 2 (brand-fidelity): een ONGEWIJZIGDE framework-default primary
+  // (Bootstrap --bs-primary, WP-admin-blauw) telt NIET als "heeft al een
+  // canonieke merk-kleur" — anders firet de logo-rescue niet op een pure-
+  // Bootstrap-site en blijft de site zonder echte primary.
+  const frameworkHasPrimary = detectedTokens.some(
+    (t) => t.role === 'primary' && !isFrameworkDefaultPrimary(t.hex),
+  );
   if (!frameworkHasPrimary && scraped.logoColors && scraped.logoColors.length > 0) {
     const knownHexes = new Set(detectedTokens.map((t) => t.hex));
     const roleOrder: Array<'primary' | 'secondary'> = ['primary', 'secondary'];
@@ -1614,6 +1623,9 @@ function defaultCategory(entry: AuthoritativeColor, index: number): ResolvedColo
   if (/accent|highlight|cta/.test(name)) return 'ACCENT';
   if (/success|warning|error|danger|info/.test(name)) return 'SEMANTIC';
   if (/neutral|gray|grey|text|bg|background|surface|muted/.test(name)) return 'NEUTRAL';
+  // Fase 2 (brand-fidelity): een gedowngradede (low-confidence) framework-
+  // default mag de index-0-PRIMARY-aanname niet omzeilen bij AI-skip.
+  if (entry.confidence === 'low') return 'NEUTRAL';
   // Fallback: first entry is primary, next two secondary/accent, rest neutral
   if (index === 0) return 'PRIMARY';
   if (index === 1) return 'SECONDARY';

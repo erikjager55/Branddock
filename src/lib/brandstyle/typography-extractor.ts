@@ -206,8 +206,12 @@ export function extractTypographyByRole(css: string): ScrapedTypographyByRole {
       // onresolveerbare var() het veld null houden en probeert de loop de
       // volgende rule i.p.v. "var(--bs-body-line-height)" te persisteren.
       if (!target.fontFamily) {
-        const ff = resolveOrKeep(extractFontFamily(c.block), css);
-        if (ff) target.fontFamily = ff;
+        // Resolve de var() EERST (de waarde kan zelf een stack zijn, bv.
+        // var(--ff) → "Helvetica Neue", Arial), splits/strip DAARNA — anders
+        // lekken quotes+komma's als "schone fontnaam".
+        const rawFf = resolveOrKeep(getProp(c.block, "font-family"), css);
+        const first = rawFf?.split(",")[0]?.trim().replace(/^["']|["']$/g, "");
+        if (first) target.fontFamily = first;
       }
       if (!target.fontSize) {
         const v = resolveOrKeep(getProp(c.block, "font-size"), css);
@@ -255,13 +259,4 @@ export function extractTypographyByRole(css: string): ScrapedTypographyByRole {
   }
 
   return result;
-}
-
-function extractFontFamily(block: string): string | null {
-  const raw = getProp(block, "font-family");
-  if (!raw) return null;
-  // Pak eerste font uit chain, strip quotes
-  const first = raw.split(",")[0]?.trim();
-  if (!first) return null;
-  return first.replace(/^["']|["']$/g, "");
 }

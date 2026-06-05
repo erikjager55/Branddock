@@ -16,10 +16,15 @@ function escapeRegex(s: string): string {
 
 /** Zoek de (eerste) definitie van `--name` in de volledige CSS. */
 function findVarDefinition(name: string, fullCss: string): string | null {
-  const re = new RegExp(`${escapeRegex(name)}\\s*:\\s*([^;}]+)`);
+  // Linker declaratie-grens zodat `--c` niet matcht in `--foo--c`.
+  const re = new RegExp(`(?:^|[\\s;{(])${escapeRegex(name)}\\s*:\\s*([^;}]+)`);
   const m = fullCss.match(re);
   return m ? m[1].trim() : null;
 }
+
+// 1-niveau-balancerende fallback-capture: vangt fallbacks met eigen haakjes
+// (rgb()/hsl()/calc()/geneste var()) i.p.v. te stoppen bij de eerste ')'.
+const VAR_BAL = '(?:[^()]|\\([^()]*\\))*';
 
 /**
  * Resolvet `var(--name[, fallback])`-referenties in `value` naar concrete
@@ -35,7 +40,7 @@ export function resolveCssVar(value: string, fullCss: string, depth = 0): string
   if (!v) return null;
 
   // Hele waarde = één var(--name, fallback?)
-  const whole = v.match(/^var\(\s*(--[\w-]+)\s*(?:,\s*([^)]*))?\)$/);
+  const whole = v.match(new RegExp(`^var\\(\\s*(--[\\w-]+)\\s*(?:,\\s*(${VAR_BAL}))?\\)$`));
   if (whole) {
     const def = findVarDefinition(whole[1], fullCss);
     if (def != null) {
@@ -53,7 +58,7 @@ export function resolveCssVar(value: string, fullCss: string, depth = 0): string
   // var() ingebed in een grotere expressie → resolve elke referentie
   if (v.includes('var(')) {
     const replaced = v.replace(
-      /var\(\s*(--[\w-]+)\s*(?:,\s*([^)]*))?\)/g,
+      new RegExp(`var\\(\\s*(--[\\w-]+)\\s*(?:,\\s*(${VAR_BAL}))?\\)`, 'g'),
       (full, name: string, fb: string | undefined) => {
         const def = findVarDefinition(name, fullCss);
         const r = def != null

@@ -25,6 +25,10 @@ assert('var met fallback (geen def → fallback)', resolveCssVar('var(--missing,
 assert('onresolveerbare var → null', resolveCssVar('var(--missing)', ROOT) === null);
 assert('concrete waarde ongemoeid', resolveOrKeep('1.6', ROOT) === '1.6');
 assert('concrete px ongemoeid', resolveOrKeep('18px', ROOT) === '18px');
+// Review-bugfixes: fallback met eigen haakjes + geneste var + declaratie-grens
+assert('fallback met rgb() haakjes', resolveCssVar('var(--missing, rgb(0,0,0))', ROOT) === 'rgb(0,0,0)');
+assert('geneste var-fallback', resolveCssVar('var(--missing, var(--bs-body-line-height))', ROOT) === '1.5');
+assert('declaratie-grens: --c niet uit --foo--c', resolveCssVar('var(--c)', '--foo--c: red; --c: blue') === 'blue');
 
 console.log('\n── extractTypographyByRole (end-to-end) ──');
 const css = `${ROOT}
@@ -43,6 +47,14 @@ if (body) {
 }
 if (display) {
   assert('h1.fontSize concreet (48px)', display.fontSize === '48px', `got=${display.fontSize}`);
+}
+
+console.log('\n── font-stack via var (review-bugfix #2) ──');
+const cssStack = `:root{--ff:"Helvetica Neue", Arial, sans-serif}
+body{font-family:var(--ff);font-size:15px}`;
+const tStack = extractTypographyByRole(cssStack);
+if (tStack.body) {
+  assert('var-fontstack → eerste familie, geen quotes/komma', tStack.body.fontFamily === 'Helvetica Neue', `got=${tStack.body.fontFamily}`);
 }
 
 console.log(`\n${fail === 0 ? 'OK' : 'FAILED'} — ${pass} pass / ${fail} fail`);

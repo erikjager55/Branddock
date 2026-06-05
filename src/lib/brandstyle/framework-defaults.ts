@@ -18,10 +18,13 @@ const FRAMEWORK_DEFAULT_SELECTOR_PATTERNS: RegExp[] = [
   /\.elementor-button/i,
   /\.gform[_-]/i,        // Gravity Forms (.gform_button, .gform_wrapper, ...)
   /\.gfield/i,
-  /\.wp-block-/i,        // generieke Gutenberg-blok-defaults
-  /\bbtn-primary\b/i,    // kale Bootstrap-utility (zonder merk-prefix)
-  /\bbtn-secondary\b/i,
-  /\bbtn-outline-/i,
+  // Kale Bootstrap-utility (zonder merk-prefix). Linker-grens via lookbehind
+  // zodat namespaced merk-classes (.brand-btn-primary, .my-btn-primary) NIET
+  // matchen. (Generieke /\.wp-block-/ bewust weggelaten — over-matcht custom
+  // Gutenberg-blocks zoals .wp-block-mybrand; .wp-block-button dekt de default.)
+  /(?<![\w-])btn-primary\b/i,
+  /(?<![\w-])btn-secondary\b/i,
+  /(?<![\w-])btn-outline-/i,
 ];
 
 /**
