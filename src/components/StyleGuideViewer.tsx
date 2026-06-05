@@ -1,5 +1,11 @@
+/**
+ * @deprecated DODE CODE (2026-06-05, audit brandstyle-extraction). Alleen
+ * geïmporteerd door het óók-dode `BrandstyleView.tsx` dat nergens gerenderd
+ * wordt. De LIVE styleguide-surface is `BrandStyleguidePage`
+ * (src/features/brandstyle/, via App.tsx). Maak fixes daar, NIET hier.
+ */
 import React, { useState, useRef, useEffect } from 'react';
-import { 
+import {
   ArrowLeft, 
   Download, 
   Copy, 

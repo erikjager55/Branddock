@@ -166,11 +166,14 @@ export function ScrapedButtonProfilePreview({ buttonProfile }: { buttonProfile: 
               </div>
               <div className="flex items-center justify-center bg-gray-50 rounded p-4 min-h-[60px]">
                 <button type="button" style={buildButtonStyle(b)} className="cursor-default">
+                  {/* Neutrale rol-placeholder: de scrape vangt géén button-tekst,
+                      dus tonen we de STYLING zonder een verzonnen CTA te suggereren
+                      (Fase 6 brand-fidelity — gefabriceerde tekst was misleidend). */}
                   {b.role === "primary"
-                    ? "Plan een afspraak"
+                    ? "Primaire knop"
                     : b.role === "secondary"
-                      ? "Bekijk programma"
-                      : "Meer informatie"}
+                      ? "Secundaire knop"
+                      : "Knop"}
                 </button>
               </div>
               <StyleProperties b={b} />
