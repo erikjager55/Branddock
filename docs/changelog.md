@@ -37,6 +37,20 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 281. Brandstyle palet: cross-brand — non-brand-uitsluiting + neutral-consolidatie
+
+Cross-brand audit (Zwarthout schoon vs Napking vervuild; DB over ~10 merken): de usage+framework-filter ving Bootstrap-ruis maar niet (a) third-party widget/social-share-kleuren (napking WhatsApp #25D366; peoplemasterminds **8** social-netwerk-kleuren als brand-SECONDARY/ACCENT) en (b) CMS-admin-kleuren (WordPress #007CBA), én er was (c) universele neutral-overpopulatie (5-10 grijzen/merk). Audit: `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`. Inzicht: de AI tagt de ruis al zelf (`social`/`whatsapp`/`admin`/`system`).
+
+- **Fase 1 — non-brand-uitsluiting** (`non-brand-colors.ts`): `isNonBrandColor` weert widget/social/admin-kleuren **altijd** (ongeacht usage, anders dan framework-defaults) — primair via de AI-tags, met een ZEER beperkte hex-backstop (alleen distinctieve niet-blauwe hexes: WhatsApp-groen, Instagram-pink). Bedraad in de usage-filter (`keep()`), maar **logo-kleuren winnen** (een wordmark-kleur is per definitie merk-eigen).
+- **Fase 2 — neutral-consolidatie**: bijna-identieke NEUTRALs (kleur-afstand) worden samengevoegd tot één representant (meest-gebruikt), met behoud van donkerste+lichtste, cap 6, alléén bij render-bewijs. Napking 7 grijzen → 5; WhatsApp/WordPress weg; Ocean Blue (echte accent) blijft.
+
+**Review** (adversariële 3-lens): 2 CRITICAL + 4 MAJOR gevonden+gefixt: `#FF0000` weerde elk merk-rood (verwijderd), WP-admin/Telegram/Twitter-blauwen weerden een corporate-blauw-band (alle blauwe platform-hexes uit de backstop → alléén via tag), safety-fallback heropende non-brand (→ brandPool-fallback), hard-exclude vóór logo (→ logo wint), consolidatie zonder render-bewijs (→ render-gated), MAX_NEUTRALS-amputatie (→ dedup-eerst + cap 6). De smoke ving daarna nog 2 over-reach-hexes (Telegram~Ocean Blue, Twitter~Material).
+
+**Bewijs**: smoke `web-page-builder-phase49-cross-brand-palette` 27/27; phase43/45/47/48 groen; tsc+lint 0. **Vereist re-scrape (Napking + peoplemasterminds + Zwarthout-regressie) voor volledige validatie.**
+
+- Task: audit `docs/audits/2026-06-05-brandstyle-cross-brand-palette.md`
+- Commit: branch `fix/brandstyle-extraction`
+
 ### 280. Brandstyle palet: usage-gedreven filter (multi-page) i.p.v. hex-blocklist
 
 User-eis na re-scrape: een kleur mag ALLEEN uit het palet vallen als hij aantoonbaar niet gebruikt wordt — niet op een hardgecodeerde hex-lijst (die brittle is + een echt-gebruikte kleur kan overslaan). Nieuwe `palette-usage-filter.ts` beslist op **werkelijk renderen**:

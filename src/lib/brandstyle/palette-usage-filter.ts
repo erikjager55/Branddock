@@ -25,6 +25,7 @@
  * Pure module — deterministisch testbaar met fixtures.
  */
 import { isFrameworkDefaultPrimary } from './framework-defaults';
+import { isNonBrandColor } from './non-brand-colors';
 
 export type RenderStrength = 'strong' | 'weak' | 'none';
 
@@ -32,6 +33,9 @@ export interface UsageFilterColor {
   hex: string;
   tags?: string[];
   detectorSource?: string | null;
+  /** Palet-categorie (PRIMARY/SECONDARY/ACCENT/NEUTRAL/SEMANTIC) — voor de
+   *  neutral-consolidatie. Optioneel; afwezig → niet als neutral behandeld. */
+  category?: string;
 }
 
 /** Frequency-maps zoals `bulk-computed-styles` ze levert (waarde → count). */
@@ -203,8 +207,12 @@ export function applyUsageDrivenPaletteFilter<T extends UsageFilterColor>(
   // subset (review-fix MINOR-1) zodat een ongebruikte framework-extreme
   // (#000/#FFF) niet als "donkerste/lichtste" gered wordt; fallback op het
   // hele palet als niets rendert.
-  const rendered = colors.filter((c) => usageCache.get(c.hex.toUpperCase())?.strength !== 'none');
-  const structuralPool = rendered.length > 0 ? rendered : colors;
+  // Structurele bescherming over de GERENDERDE BRAND-subset: niet-merk-kleuren
+  // (widget/social/admin) tellen niet mee als "donkerste/lichtste" (MINOR-2),
+  // anders zou een non-brand-extreme de structurele pointer kapen.
+  const brandColors = colors.filter((c) => !isNonBrandColor(c));
+  const rendered = brandColors.filter((c) => usageCache.get(c.hex.toUpperCase())?.strength !== 'none');
+  const structuralPool = rendered.length > 0 ? rendered : (brandColors.length > 0 ? brandColors : colors);
   let darkest = { hex: '', l: Infinity };
   let lightest = { hex: '', l: -Infinity };
   for (const c of structuralPool) {
@@ -216,8 +224,13 @@ export function applyUsageDrivenPaletteFilter<T extends UsageFilterColor>(
   }
 
   const keep = (c: T): boolean => {
-    const hexU = c.hex.toUpperCase();
+    // Cross-brand Fase 1: third-party widget / social-share / CMS-admin-kleuren
+    // zijn nooit van het merk → weg, ongeacht usage of structurele rol — MAAR
+    // een logo-kleur is per definitie merk-eigen, ook al lijkt hij op een
+    // social-hex (MAJOR-4). Logo wint dus van de non-brand-exclude.
     if (isLogoColor(c)) return true;
+    if (isNonBrandColor(c)) return false;
+    const hexU = c.hex.toUpperCase();
     if (hexU === darkest.hex || hexU === lightest.hex) return true;
     const { strength, known } = usageCache.get(hexU) ?? { strength: 'none' as RenderStrength, known: false };
     if (!known) return true;                              // geen bewijs → behouden
@@ -227,5 +240,71 @@ export function applyUsageDrivenPaletteFilter<T extends UsageFilterColor>(
   };
 
   const kept = colors.filter(keep);
-  return kept.length > 0 ? kept : colors;
+  // Cross-brand Fase 2: consolideer bijna-identieke NEUTRALs (universele grijs-
+  // clutter — 5-10 grijzen per merk). Behoud altijd de donkerste + lichtste
+  // (tekst/surface), dedup de rest op kleur-afstand en cap op MAX_NEUTRALS, op
+  // volgorde van werkelijk gebruik.
+  const consolidated = consolidateNeutrals(kept, index);
+  if (consolidated.length > 0) return consolidated;
+  // Safety: nooit leeg. Val terug op de BRAND-kleuren (zónder non-brand), en
+  // pas als óók die leeg zijn op het ongefilterde palet — zodat de "non-brand
+  // altijd weren"-garantie niet alsnog lekt (MAJOR-1).
+  return brandColors.length > 0 ? brandColors : colors;
+}
+
+/** Max aantal NEUTRALs ná consolidatie. Ruim genoeg (6) zodat een legitieme
+ *  distincte grijs-schaal niet geamputeerd wordt (review MAJOR-3) — de echte
+ *  reductie komt van de near-duplicate-dedup hieronder. */
+const MAX_NEUTRALS = 6;
+/** Kleur-afstand waaronder twee NEUTRALs als "bijna-identiek" gelden en er één
+ *  representant overblijft. Eigen constante (niet de computed-match-tolerantie). */
+const NEUTRAL_DEDUP_TOLERANCE = 40;
+
+/** Rendered "gewicht" (gesommeerde computed-count binnen tolerantie) van een
+ *  hex — gebruikt om per neutral-cluster de meest-gebruikte representant te
+ *  kiezen. */
+function renderedWeight(hex: string, index: { entries: Array<{ rgb: Rgb; count: number }>; total: number }): number {
+  const target = parseRgb(hex);
+  if (!target) return 0;
+  let w = 0;
+  for (const e of index.entries) if (dist(e.rgb, target) <= MATCH_TOLERANCE) w += e.count;
+  return w;
+}
+
+function consolidateNeutrals<T extends UsageFilterColor>(
+  colors: T[],
+  index: { entries: Array<{ rgb: Rgb; count: number }>; total: number },
+): T[] {
+  // Zonder render-bewijs niet consolideren — anders zou de "meest-gebruikt"-
+  // selectie degraderen naar blinde array-volgorde (review MAJOR-2).
+  if (index.total === 0) return colors;
+  const isNeutral = (c: T) => c.category === 'NEUTRAL';
+  const neutrals = colors
+    .filter(isNeutral)
+    .map((c) => ({ c, rgb: parseRgb(c.hex), w: renderedWeight(c.hex, index) }))
+    .filter((x): x is { c: T; rgb: Rgb; w: number } => x.rgb !== null);
+  if (neutrals.length <= 1) return colors;
+
+  // Altijd de donkerste + lichtste neutral behouden (tekst/surface).
+  const byLight = [...neutrals].sort((a, b) => lightness(a.rgb) - lightness(b.rgb));
+  const darkest = byLight[0];
+  const lightest = byLight[byLight.length - 1];
+  const picked: Array<{ rgb: Rgb }> = [];
+  const pickedHex = new Set<string>();
+  const tryPick = (x: { c: T; rgb: Rgb } | undefined) => {
+    if (!x || picked.length >= MAX_NEUTRALS) return;
+    const hx = x.c.hex.toUpperCase();
+    if (pickedHex.has(hx)) return;
+    // Near-duplicate? → één representant per cluster (de reden van consolidatie).
+    if (picked.some((p) => dist(p.rgb, x.rgb) <= NEUTRAL_DEDUP_TOLERANCE)) return;
+    picked.push({ rgb: x.rgb });
+    pickedHex.add(hx);
+  };
+  tryPick(darkest);
+  tryPick(lightest);
+  // Rest op rendered-weight (meest-gebruikt eerst): dedup near-identieke, cap.
+  for (const x of [...neutrals].sort((a, b) => b.w - a.w)) tryPick(x);
+
+  // Behoud de oorspronkelijke volgorde: niet-neutrals + alleen de gekozen neutrals.
+  return colors.filter((c) => !isNeutral(c) || pickedHex.has(c.hex.toUpperCase()));
 }
