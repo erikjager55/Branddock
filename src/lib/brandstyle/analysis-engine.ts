@@ -646,6 +646,9 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     // filter ná dit blok. Null wanneer de screenshotter uit staat; de filter
     // valt dan terug op de homepage pixel-pass usageEvidence.
     let multiPageColorStyles: import('./palette-usage-filter').BulkColorStyles | null = null;
+    // Multi-page geobserveerde (tekstkleur | achtergrond)-paren → voor de
+    // observed-kleurcombinaties.
+    let multiPageColorPairs: Record<string, number> | null = null;
     try {
       const { isComponentScreenshotsEnabled, extractComponentsFromPages } =
         await import('./component-screenshotter');
@@ -664,8 +667,10 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         console.log(`[brandstyle-analysis] Taking component screenshots for ${componentUrls.length} page(s)`);
         const shotResult = await extractComponentsFromPages(componentUrls, styleguideMeta.workspaceId);
         const shot = shotResult.components;
-        // Bewaar de multi-page computed-kleur-frequenties voor de palet-filter.
+        // Bewaar de multi-page computed-kleur-frequenties voor de palet-filter
+        // en de geobserveerde fg/bg-paren voor de kleurcombinaties.
         multiPageColorStyles = shotResult.bulkStyles?.styles ?? null;
+        multiPageColorPairs = shotResult.bulkStyles?.colorPairs ?? null;
 
         // Augment static CSS heuristics met runtime computed-style frequencies.
         // Catches Tailwind/CSS-in-JS resolved values die de cheerio-pass mist.
@@ -799,6 +804,7 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       // dan levert het de gerenderde selector-context voor de font-role-
       // classifier (de kleur-pipeline bleef op de statische inlineCss).
       `${scraped.inlineCss ?? ''}\n${scraped.linkedCssContent ?? ''}\n${headlessFontCss}`,
+      multiPageColorPairs,
     );
 
     // Route scraped brand images into the Media Library instead of persisting
@@ -1863,6 +1869,9 @@ async function writeResultToDb(
    *  computed-style font-role classification kunnen draaien (selector-
    *  context wins van naam-heuristic voor custom/codename fonts). */
   combinedCss?: string,
+  /** Multi-page geobserveerde (tekstkleur | achtergrond)-paren → count, voor
+   *  de OBSERVED-kleurcombinaties (i.p.v. gegenereerd uit palet-categorieën). */
+  observedColorPairs?: Record<string, number> | null,
 ): Promise<void> {
   // Delete existing colors before creating new ones
   await prisma.styleguideColor.deleteMany({ where: { styleguideId } });
@@ -2103,11 +2112,15 @@ async function writeResultToDb(
     };
   }
 
-  // Kleurcombinaties (Fase 5 brand-fidelity) — WCAG-geverifieerde fg/bg-paren
-  // afgeleid uit het geclassificeerde palet.
-  const colorPairings = buildColorPairings(
-    resolvedColors.map((c) => ({ hex: c.hex, category: c.category })),
-  );
+  // Kleurcombinaties: bij voorkeur de OBSERVED-combinaties (welke fg/bg-paren
+  // écht op de pagina's voorkomen, multi-page) — die weerspiegelen het thema
+  // (bv. donker merk met zwart bg + witte/oranje tekst). Val terug op de
+  // gegenereerde combinaties wanneer er geen observed-paren zijn (geen
+  // screenshotter / PDF-pad).
+  const paletteForPairs = resolvedColors.map((c) => ({ hex: c.hex, category: c.category }));
+  const { buildObservedColorPairings } = await import('./observed-color-pairings');
+  const observedPairings = buildObservedColorPairings(observedColorPairs, paletteForPairs);
+  const colorPairings = observedPairings.length > 0 ? observedPairings : buildColorPairings(paletteForPairs);
 
   // Update styleguide fields
   await prisma.brandStyleguide.update({

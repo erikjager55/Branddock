@@ -57,6 +57,9 @@ export interface BulkComputedStylesResult {
   totalCount: number;
   /** Frequency-maps per property: value → occurrence count. */
   styles: BulkComputedStyles;
+  /** Werkelijk voorkomende (tekstkleur " | " effectieve-achtergrond)-paren →
+   *  count. Voor de observed-kleurcombinaties. */
+  colorPairs: Record<string, number>;
 }
 
 /**
@@ -76,6 +79,10 @@ export async function extractBulkComputedStyles(
 
       const freq: Record<string, Record<string, number>> = {};
       for (const p of trackProps) freq[p] = {};
+      // WERKELIJK voorkomende (tekstkleur | effectieve achtergrond)-paren over
+      // de pagina — voor de observed-kleurcombinaties. Géén losse frequenties:
+      // we leggen vast welke fg/bg-combinaties écht samen renderen.
+      const colorPairs: Record<string, number> = {};
 
       let scanned = 0;
       for (let i = 0; i < all.length && scanned < maxElements; i++) {
@@ -86,6 +93,35 @@ export async function extractBulkComputedStyles(
         const cs = window.getComputedStyle(el);
         if (cs.display === 'none' || cs.visibility === 'hidden') continue;
         if (parseFloat(cs.opacity || '1') < 0.05) continue;
+
+        // Kleurcombinatie: alleen voor elementen met DIRECTE zichtbare tekst.
+        let hasDirectText = false;
+        for (let n = 0; n < el.childNodes.length; n++) {
+          const node = el.childNodes[n];
+          if (node.nodeType === 3 && (node.textContent || '').trim().length > 0) {
+            hasDirectText = true;
+            break;
+          }
+        }
+        if (hasDirectText) {
+          const fg = cs.color;
+          // Effectieve achtergrond: loop omhoog tot een niet-transparante bg
+          // (gecapt op 10 niveaus). Default = wit (de pagina-achtergrond).
+          let bg = '';
+          let anc: HTMLElement | null = el;
+          let depth = 0;
+          while (anc && depth < 10) {
+            const bbg = window.getComputedStyle(anc).backgroundColor;
+            if (bbg && bbg !== 'transparent' && bbg !== 'rgba(0, 0, 0, 0)') { bg = bbg; break; }
+            anc = anc.parentElement;
+            depth++;
+          }
+          if (!bg) bg = 'rgb(255, 255, 255)';
+          if (fg && fg !== 'transparent' && fg !== 'rgba(0, 0, 0, 0)') {
+            const key = fg.replace(/\s+/g, ' ') + ' | ' + bg.replace(/\s+/g, ' ');
+            colorPairs[key] = (colorPairs[key] ?? 0) + 1;
+          }
+        }
 
         for (const prop of trackProps) {
           const val = cs.getPropertyValue(prop).trim();
@@ -108,7 +144,7 @@ export async function extractBulkComputedStyles(
         scanned++;
       }
 
-      return { scanned, totalCount, freq };
+      return { scanned, totalCount, freq, colorPairs };
     },
     { trackProps: TRACK_PROPS as unknown as string[], maxElements: MAX_ELEMENTS },
   );
@@ -117,6 +153,7 @@ export async function extractBulkComputedStyles(
     scannedCount: result.scanned,
     totalCount: result.totalCount,
     styles: result.freq as BulkComputedStyles,
+    colorPairs: result.colorPairs,
   };
 }
 
@@ -146,6 +183,7 @@ export function mergeBulkComputedStyles(
       acc[prop] = {};
       return acc;
     }, {} as BulkComputedStyles),
+    colorPairs: {},
   };
   for (const r of results) {
     merged.scannedCount += r.scannedCount;
@@ -155,6 +193,9 @@ export function mergeBulkComputedStyles(
       for (const [value, count] of Object.entries(sourceMap)) {
         merged.styles[prop][value] = (merged.styles[prop][value] ?? 0) + count;
       }
+    }
+    for (const [pair, count] of Object.entries(r.colorPairs ?? {})) {
+      merged.colorPairs[pair] = (merged.colorPairs[pair] ?? 0) + count;
     }
   }
   return merged;
