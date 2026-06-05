@@ -18,8 +18,10 @@ import { contrastRatio, blackOrWhiteFor } from '@/lib/landing-pages/wcag';
  * voor de (tinted) card-achtergrond — `tbr.body.color` werd niet contrast-gecheckt.
  */
 function readableTextColor(fg: string, bg: string, fallback: string): string {
-  if (contrastRatio(fg, bg) >= 4.5) return fg;
-  if (contrastRatio(fallback, bg) >= 4.5) return fallback;
+  // Drempel 5.0 (iets boven AA 4.5): een grijs dat net 4.5:1 haalt oogt nog
+  // faint voor kleine body-tekst → val dan terug op de donkere fallback.
+  if (contrastRatio(fg, bg) >= 5.0) return fg;
+  if (contrastRatio(fallback, bg) >= 5.0) return fallback;
   return blackOrWhiteFor(bg);
 }
 import {
@@ -1126,7 +1128,18 @@ function featureGridComponent(tokens: BrandTokens) {
                       : undefined),
                 boxShadow: isBorderOnly ? undefined : (elevation.cardShadow === 'none' ? undefined : elevation.cardShadow),
                 background: tokens.surface,
-              } : {};
+              } : constraints.forceFlatCards ? {} : {
+                // Incidenteel-flat (geen scraped card, geen forced-flat editorial):
+                // geef tóch een subtiele block-afbakening (surface-bg + 1px border
+                // + radius) zodat feature/trust-items als BLOKKEN lezen i.p.v.
+                // losse tekst. Eerder maskeerde de achtergrond-textuur dit (die is
+                // verwijderd). forceFlatCards-brands (editorial) blijven bewust
+                // borderless.
+                padding: `${sectionRhythm.cardPaddingY}px ${sectionRhythm.cardPaddingX}px`,
+                borderRadius: Math.min(8, constraints.maxRadiusPx),
+                border: `1px solid ${tokens.surfaceBorder}`,
+                background: tokens.surface,
+              };
             return (
               <div key={i} className={useCard ? 'lp-card' : undefined} style={cardWrapper}>
                 {(() => {
@@ -1188,7 +1201,7 @@ function featureGridComponent(tokens: BrandTokens) {
                 </h3>
                 <p
                   style={{
-                    color: readableTextColor(tbr.body.color ?? tokens.surfaceMuted, featureGridBg, tokens.onSurface),
+                    color: readableTextColor(tbr.body.color ?? tokens.surfaceMuted, tokens.surface, tokens.onSurface),
                     fontSize: bodySize,
                     fontWeight: tbr.body.fontWeight ?? undefined,
                     lineHeight: tbr.body.lineHeight ?? undefined,
