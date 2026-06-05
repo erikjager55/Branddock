@@ -675,6 +675,12 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         // en de geobserveerde fg/bg-paren voor de kleurcombinaties.
         multiPageColorStyles = shotResult.bulkStyles?.styles ?? null;
         multiPageColorPairs = shotResult.bulkStyles?.colorPairs ?? null;
+        // Maak de bulk-uitkomst observeerbaar los van het component-aantal: de
+        // usage-filter leunt op multiPageColorStyles, dat null kan zijn terwijl
+        // de screenshotter wél liep (alle pagina's goto/bulk gefaald → leeg).
+        console.log(
+          `[brandstyle-analysis] multi-page bulk-styles ${multiPageColorStyles ? 'PRESENT' : 'ABSENT'} (bulkStyles ${shotResult.bulkStyles ? 'returned' : 'null'}) — usage-filter ${multiPageColorStyles ? 'gebruikt multi-page' : 'valt terug op homepage pixel-pass'}`,
+        );
 
         // Augment static CSS heuristics met runtime computed-style frequencies.
         // Catches Tailwind/CSS-in-JS resolved values die de cheerio-pass mist.
@@ -736,6 +742,12 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
             `[brandstyle-analysis] Captured ${shotComponents.length} screenshot components + backfilled to ${finalComponents.length} total`,
           );
         }
+      } else {
+        // Env-uit-pad was eerder volledig stil → maak observeerbaar waarom er
+        // geen multi-page usage-data is (i.p.v. een gefaalde run).
+        console.log(
+          `[brandstyle-analysis] Component screenshots DISABLED (BRANDSTYLE_COMPONENT_SCREENSHOTS != '1') — usage-filter valt terug op homepage pixel-pass`,
+        );
       }
     } catch (shotErr) {
       console.warn(
@@ -809,6 +821,11 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     if (usedVisualAi) provenanceMarkers.push("visual-ai-analysis");
     if (usedLogoVision) provenanceMarkers.push("logo-vision");
     if (usedMultiPage) provenanceMarkers.push("multi-page");
+    // Durable forensisch signaal: had de usage-filter daadwerkelijk multi-page
+    // computed-style-bewijs? Onderscheidt "screenshotter liep + bulk-data" van
+    // "geen bulk-data" per styleguide (queryable via `frameworks`), los van het
+    // component-aantal (`component-screenshots` zegt niets over de bulk-styles).
+    if (multiPageColorStyles) provenanceMarkers.push("multi-page-usage");
     const frameworksWithProvenance =
       provenanceMarkers.length > 0
         ? [...processed.frameworks, ...provenanceMarkers]
@@ -2342,6 +2359,13 @@ async function writeResultToDb(
       colorPairings: colorPairings.length > 0
         ? (colorPairings as unknown as Prisma.InputJsonValue)
         : Prisma.JsonNull,
+      // Raw observed fg/bg-paren bewaren als source-of-truth voor recompute na
+      // een manuele kleur-edit (anders degraderen observed combinaties naar
+      // gegenereerd). Lege map → JsonNull zodat de fallback-pad schoon blijft.
+      observedColorPairs:
+        observedColorPairs && Object.keys(observedColorPairs).length > 0
+          ? (observedColorPairs as unknown as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
       // Logo
       logoGuidelines: result.logoGuidelines || [],
       logoDonts: result.logoDonts || [],

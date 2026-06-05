@@ -37,6 +37,18 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 287. Brandstyle: 3 gedeferde follow-ups (observed-pairs persist + kleur-mutatie onError + screenshotter-observability)
+
+Drie open punten uit de #17-merge opgepakt:
+
+- **Observed kleurcombinaties blijven behouden bij handmatige edit.** Nieuw `BrandStyleguide.observedColorPairs Json?` (raw fg|bg-paren) wordt bij de scrape gepersisteerd; `recomputeColorPairings` heromapt die observed paren op het BEWERKTE palet via `buildObservedColorPairings` (verwijderde kleur valt vanzelf weg, re-add herstelt), met fallback naar gegenereerd als er geen observed data is (oude styleguides). Voorheen degradeerden de combinaties bij de eerste add/delete naar gegenereerd. Additieve nullable kolom (`db push`), geen backfill.
+- **Kleur-mutaties surfacen fouten.** `ColorsSection` toont nu een inline `role="alert"` bij een gefaalde add/delete (volgt het bestaande `ReviewDraftPanel`-idioom: lokale `useState` + `onError`, geen toast) + per-rij delete-spinner/disabled. Voorheen werd een 500 (bv. recompute-throw) stil geslikt.
+- **Multi-page no-usage-data observeerbaar.** De usage-filter valt soms terug op de homepage pixel-pass omdat de component-screenshotter geen multi-page bulk-data leverde — eerder stil in 2 van 4 gevallen. 4 log/marker-toevoegingen (env-uit-log, bulk-PRESENT/ABSENT-log, "no bulk gathered"-warn, durable `multi-page-usage` provenance-marker in `frameworks`) maken elk geval traceerbaar. Geen control-flow-wijziging. (.env.local heeft de env aan → de napking-variantie is een runtime networkidle-hang, niet de env.)
+
+**Review** (2 reviewers): 0 CRITICAL / 0 WARNING. **Bewijs**: nieuwe smoke `phase52` 10/10 (delete/re-add re-mapping + fallback); phase43/47/48/49/50/51 groen; tsc 0 / lint 0.
+
+- Commit: branch `fix/brandstyle-deferred-followups`
+
 ### 286. Brandstyle palet: neutral-overpopulatie aangescherpt (cap 6 → 4)
 
 Cross-brand controle (betterbrands.nl, een Tailwind-site) toonde 6 distincte grijzen die allemaal écht renderen maar de styleguide overpopuleren. `MAX_NEUTRALS` van 6 → 4: donkerste (tekst) + lichtste (surface) + de **2 meest-gebruikte** mid-grijzen (op `renderedWeight`). De mids worden op werkelijk gebruik gerangschikt — een functionele border-grijs (napking #6B7280) overleeft dus op merite, géén straf voor framework-herkomst, zodat de eerder gemaakte #6B7280-keuze bewaakt blijft. Merk-kleuren onaangeroerd; Zwarthout (2 neutrals) onveranderd.
