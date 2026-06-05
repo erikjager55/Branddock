@@ -95,10 +95,11 @@ Volgorde = breedste symptoom-dekking per fix-eenheid, oplopend in risico. Per fa
 **Dekt symptomen**: geen/verkeerde merk-kleur (Bootstrap-blauw i.p.v. logo-kleur).
 **Risico**: medium — raakt welke kleur PRIMARY wordt. **[RE-SCRAPE]** (logo-extractie + screenshot-usage vereisen de live site).
 
-### Fase 4 — Font-fallback via computed-style (vereist scrape-infra) — **[RE-SCRAPE]**
+### Fase 4 — Font-fallback via computed-style (vereist scrape-infra) — **[RE-SCRAPE]** — ✅ GEBOUWD (changelog #277)
 **Wat**: bij leeg `cssFonts` een computed-style-fallback (`getComputedStyle(body/h1/p).fontFamily`) via de bestaande Playwright/`bulk-computed-styles.ts`-laag; + `--bs-*` toevoegen aan `extractSemanticFonts`-patronen (`url-scraper.ts:1142`). Bij blijvend leeg: expliciete "geen merk-font gedetecteerd"-status i.p.v. AI-fallback-card met valse zekerheid.
 **Dekt symptomen**: lege fonts-tabel, "fonts lopen niet lekker".
 **Risico**: medium — nieuwe scrape-stap. **[RE-SCRAPE]** (computed-style vereist gerenderde pagina).
+**Geïmplementeerd**: `extractSemanticFonts` matcht nu `--bs-headings-font-family`/`--bs-body-font-family` (vanilla system-stack blijft gefilterd); nieuwe `font-fallback.ts` (`hasNoBrandFonts`/`shouldTryHeadless`/`planHeadlessMerge`/`selectDetectedFontNames`) → headless-trigger vuurt óók op lege fonts en merget deficiëntie-gestuurd; StyleguideFont-rijen uit échte `detectedFonts` (geen AI-fallback); `FontDisplayCard` toont eerlijke "Not detected — AI suggestion"-state. De computed-style-render zelf is en blijft **[RE-SCRAPE]** (env `BRANDSTYLE_HEADLESS_FALLBACK=1` + echte gerenderde bron — Track A). Bewijs: smoke `phase44-font-fallback` 20/20. Adversariële review: geen CRITICAL, 1 MAJOR + 3 MINOR/NIT gefixt.
 
 ### Fase 5 — Kleurcombinaties: model + generatie + UI (FEATURE, grootste scope) — **[DET]** generatie / **[RE-SCRAPE]** end-to-end
 **Wat**: `buildColorPairings(resolvedColors)` ná `resolveColors`: PRIMARY/SECONDARY/ACCENT × {NEUTRAL-surfaces, wit/zwart, onderling}, WCAG via bestaande `contrastWithWhite/Black`/`contrastRatio`, AA-filter, rol-label. Persisteer als `colorPairings Json?` op `BrandStyleguide`. UI: `InContextPreview` (`ColorsSection.tsx:241-376`) voeden uit persistente pairings, default open. Generaliseer `enforceOnColorPairs` foreground-kandidaten van {wit,zwart} naar de hele palette.

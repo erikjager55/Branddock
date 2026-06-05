@@ -26,6 +26,12 @@ import { inferLayoutStyleFromSiteData } from './infer-layout-style';
 import { isFrameworkDefaultPrimary } from './framework-defaults';
 import { buildColorPairings } from './color-pairings';
 import {
+  hasNoBrandFonts,
+  planHeadlessMerge,
+  shouldTryHeadless,
+  selectDetectedFontNames,
+} from './font-fallback';
+import {
   buildVisualIdentityPrompt,
   buildVoiceImageryPrompt,
   buildDesignLanguagePrompt,
@@ -273,35 +279,72 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       !data.authoritativeColors.some((c) => c.confidence === 'high' || c.source === 'detector') &&
       data.authoritativeColors.length < 3;
 
+    // Fase 4: de headless computed-style-render is óók de bron voor merk-fonts
+    // (body/h1/p `getComputedStyle().fontFamily`). Een site met een prima
+    // palet maar nul gedetecteerde fonts moet 'm dus ook kunnen triggeren —
+    // niet alleen een zwak palet. De merge is per-bron deficiëntie-gestuurd
+    // (`planHeadlessMerge`) zodat een goed statisch palet/fontset nooit door
+    // de grovere headless-render wordt overschreven.
     let usedHeadlessRender = false;
-    if (isWeakPalette(processed)) {
+    // Gerenderde CSS bewaard puur voor de font-role-classifier (zie de
+    // writeResultToDb-aanroep). Alleen gevuld wanneer we headless-fonts
+    // adopteren zónder de kleur-CSS — dan ziet `combinedCss` de selector-
+    // context van die fonts zonder de kleur-pipeline te verstoren.
+    let headlessFontCss = '';
+    const weakPalette = isWeakPalette(processed);
+    const fontsEmpty = hasNoBrandFonts(processed.fonts ?? []);
+    if (shouldTryHeadless({ weakPalette, fontsEmpty })) {
       const { isHeadlessFallbackEnabled, scrapeUrlViaHeadless } = await import('./playwright-fallback');
       if (isHeadlessFallbackEnabled()) {
         try {
-          console.log(`[brandstyle-analysis] Static palette weak, trying headless fallback for ${url}`);
-          const headlessScraped = await scrapeUrlViaHeadless(url);
-          // Replace CSS sources with the post-render serialized output so
-          // the full downstream pipeline (variables, visual heuristics,
-          // components, frequency analysis) sees the actual rendered
-          // stylesheets — including CSS-in-JS that the static scrape missed.
-          scraped = {
-            ...scraped,
-            cssColors: headlessScraped.cssColors,
-            cssFonts: headlessScraped.cssFonts,
-            bodyFont: headlessScraped.bodyFont ?? scraped.bodyFont,
-            headingFont: headlessScraped.headingFont ?? scraped.headingFont,
-            colorFrequency: headlessScraped.colorFrequency,
-            title: scraped.title ?? headlessScraped.title,
-            inlineCss: headlessScraped.inlineCss || scraped.inlineCss,
-            cssVariables: headlessScraped.cssVariables.length > 0
-              ? headlessScraped.cssVariables
-              : scraped.cssVariables,
-          };
-          processed = preprocessScrapeData(scraped);
-          usedHeadlessRender = true;
           console.log(
-            `[brandstyle-analysis] Headless extracted ${processed.authoritativeColors.length} colors, ${scraped.inlineCss.length} bytes CSS`,
+            `[brandstyle-analysis] Static ${weakPalette ? 'palette weak' : 'palette ok'}/${fontsEmpty ? 'fonts empty' : 'fonts ok'}, trying headless fallback for ${url}`,
           );
+          const headlessScraped = await scrapeUrlViaHeadless(url);
+          const { adoptColors, adoptFonts } = planHeadlessMerge({
+            weakPalette,
+            fontsEmpty,
+            headlessFontCount: headlessScraped.cssFonts.length,
+          });
+          if (adoptColors || adoptFonts) {
+            // Adopt headless color/CSS sources only when the static palette was
+            // weak (then the full downstream pipeline — variables, heuristics,
+            // components, frequency — sees the rendered CSS incl. CSS-in-JS).
+            // Adopt headless fonts only when static found none.
+            scraped = {
+              ...scraped,
+              ...(adoptColors
+                ? {
+                    cssColors: headlessScraped.cssColors,
+                    colorFrequency: headlessScraped.colorFrequency,
+                    inlineCss: headlessScraped.inlineCss || scraped.inlineCss,
+                    cssVariables: headlessScraped.cssVariables.length > 0
+                      ? headlessScraped.cssVariables
+                      : scraped.cssVariables,
+                  }
+                : {}),
+              ...(adoptFonts
+                ? {
+                    cssFonts: headlessScraped.cssFonts,
+                    bodyFont: headlessScraped.bodyFont ?? scraped.bodyFont,
+                    headingFont: headlessScraped.headingFont ?? scraped.headingFont,
+                  }
+                : {}),
+              title: scraped.title ?? headlessScraped.title,
+            };
+            // Fonts-only adoptie laat `inlineCss` statisch (bevat de headless-
+            // fonts dus niet). Bewaar de gerenderde CSS apart zodat de font-
+            // role-classifier de selector-context van die fonts wél ziet,
+            // zonder de uit inlineCss afgeleide kleur-derivatie te verstoren.
+            if (adoptFonts && !adoptColors) headlessFontCss = headlessScraped.inlineCss;
+            processed = preprocessScrapeData(scraped);
+            usedHeadlessRender = true;
+            console.log(
+              `[brandstyle-analysis] Headless adopted colors=${adoptColors} fonts=${adoptFonts}: ${processed.authoritativeColors.length} colors, ${(processed.fonts ?? []).length} fonts`,
+            );
+          } else {
+            console.log('[brandstyle-analysis] Headless render produced nothing worth adopting');
+          }
         } catch (headlessErr) {
           console.warn(
             `[brandstyle-analysis] Headless fallback failed: ${headlessErr instanceof Error ? headlessErr.message : String(headlessErr)}`,
@@ -684,7 +727,10 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       scraped.headingFont,
       visionLogo,
       scraped.adobeFonts ?? null,
-      `${scraped.inlineCss ?? ''}\n${scraped.linkedCssContent ?? ''}`,
+      // `headlessFontCss` is leeg behalve bij fonts-only headless-adoptie —
+      // dan levert het de gerenderde selector-context voor de font-role-
+      // classifier (de kleur-pipeline bleef op de statische inlineCss).
+      `${scraped.inlineCss ?? ''}\n${scraped.linkedCssContent ?? ''}\n${headlessFontCss}`,
     );
 
     // Route scraped brand images into the Media Library instead of persisting
@@ -1790,9 +1836,13 @@ async function writeResultToDb(
     await prisma.styleguideFont.deleteMany({
       where: { styleguideId, source: 'DETECTED' },
     });
-    const fontNames = [primaryFontName, ...additionalFonts].filter(
-      (n): n is string => typeof n === 'string' && n.trim().length > 0,
-    );
+    // StyleguideFont-rijen = uitsluitend de écht gedetecteerde fonts, NOOIT de
+    // AI-fallback in `primaryFontName` (Fase 4). Bij nul scraped fonts → geen
+    // rijen → eerlijke "geen merk-font gedetecteerd"-empty-state i.p.v. een
+    // AI-gok die als detectie wordt gepresenteerd. `primaryFontName`/
+    // `additionalFonts` (typografieprofiel, gebruikt door de LP-renderer)
+    // behouden de AI-fallback zodat de renderer altijd een font heeft.
+    const fontNames = selectDetectedFontNames(detectedFonts);
     if (fontNames.length > 0) {
       const existingUploaded = await prisma.styleguideFont.findMany({
         where: { styleguideId, source: 'UPLOADED' },

@@ -37,7 +37,7 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
-### 277. Brandstyle extractie-fidelity — Fase 1/2/3/5/6 (var-resolutie + framework-gate + kleurcombinaties)
+### 277. Brandstyle extractie-fidelity — Fase 1/2/3/4/5/6 (var-resolutie + framework-gate + kleurcombinaties + font-fallback)
 
 Upstream-vervolg op #276: de scrape→brandstyle-extractie plaatste gescrapte info slecht (onopgeloste `var(--bs-*)`, framework-defaults als merk-design, gefabriceerde preview-tekst). Na 4-lagen deep-research + adversariële code-cross-check (audit `docs/audits/2026-06-05-brandstyle-extraction-pipeline.md`). Meta-oorzaak: drie niet-uniforme CSS-leespaden met verschillende var()-resolutie en geen gedeelde framework-default-gate.
 
@@ -51,12 +51,16 @@ Upstream-vervolg op #276: de scrape→brandstyle-extractie plaatste gescrapte in
 
 **Bewijs (Fase 3/5)**: smoke `phase43-color-pairings` 12/12; tsc+lint 0. Commits `df6c6c3d`+`b6b6f630`+`e83f8a24`.
 
-**Nog open (Fase 4, `[RE-SCRAPE]`)**: font-fallback via computed-style → lege fonts-tabel — vergt Playwright/scrape-infra + een echte (niet-placeholder) bron-site (Track A). Bootstrap's font ÍS een system-stack → terecht gefilterd; alleen een gerenderde computed-style geeft de echte merk-font.
+**Fase 4 — font-fallback (lege fonts-tabel)**: drie deterministisch-testbare ingrepen + één `[RE-SCRAPE]`-wiring. (a) `extractSemanticFonts` vangt nu Bootstrap's `--bs-headings-font-family`/`--bs-body-font-family` — een brand-gecustomiseerde waarde overleeft, een vanilla system-stack wordt terecht gefilterd. (b) Nieuwe pure helpers (`font-fallback.ts`): de headless computed-style-render (die al `body/h1`-fonts captureert) triggert nu óók bij lege fonts i.p.v. alleen een zwak palet, en merget per-bron deficiëntie-gestuurd (`planHeadlessMerge`) zodat een goed statisch palet/fontset nooit door de grovere render wordt overschreven. (c) **Eerlijke persist**: StyleguideFont-rijen komen uit de écht gedetecteerde fonts (`selectDetectedFontNames`), nooit de AI-fallback; `primaryFontName` behoudt de AI-fallback alleen voor het typografieprofiel (LP-renderer heeft een font nodig). UI (`FontDisplayCard`) toont "Not detected on the site — AI suggestion: X" wanneer de naam niet in de gedetecteerde rijen zit, i.p.v. een confidente font-card. De computed-style-render zelf blijft `[RE-SCRAPE]` (vereist `BRANDSTYLE_HEADLESS_FALLBACK=1` + een echte gerenderde, niet-placeholder bron — Track A).
+
+**Review (Fase 4)**: adversariële 4-lens review-workflow → geen CRITICAL; 1 MAJOR + 3 MINOR/NIT gefixt: font-role-classificatie van supplementaire headless-fonts (gerenderde CSS apart naar de classifier zónder de kleur-pipeline te raken), overbodige reprocess-skip bij niets-geadopteerd, NL→EN UI-copy, UPLOADED-rij comment-accuratesse. Verworpen (onbereikbaar/by-design): secondary-card false-negative, whitespace-spook-font, regex-over-match, kleur-pipeline-verstoring.
+
+**Bewijs (Fase 4)**: smoke `phase44-font-fallback` 20/20 (`--bs-*`-resolutie + vanilla-filter + regressie ACSS-vars + `selectDetectedFontNames` geen-AI-leak + `planHeadlessMerge`-matrix); regressie 41/42/43 groen; tsc+lint 0 errors.
 
 - Task: audit + plan `~/.claude/plans/functional-conjuring-harbor.md`
 - ADR: -
 - Spec: `docs/audits/2026-06-05-brandstyle-extraction-pipeline.md`
-- Commit: `1576f4d8` + `32258522` + `9e03c71b` + `bc139e5e` (branch `fix/brandstyle-extraction`)
+- Commit: `1576f4d8` + `32258522` + `9e03c71b` + `bc139e5e` + Fase 4 (branch `fix/brandstyle-extraction`)
 
 ### 276. LP brand-fidelity overhaul — scrape → tokens → render (geen app-identity-lek meer)
 

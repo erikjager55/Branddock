@@ -434,6 +434,7 @@ function FontDisplayCard({
   name,
   url,
   availability,
+  inferred = false,
 }: {
   role: string;
   usage: string;
@@ -443,17 +444,27 @@ function FontDisplayCard({
    *  label (Google Fonts / Adobe Fonts / Uploaded / Commercial) and
    *  whether the "View on Google Fonts" link renders. */
   availability?: "UPLOADED" | "GOOGLE_FONTS" | "ADOBE_FONTS" | "COMMERCIAL" | "UNKNOWN" | null;
+  /** True when `name` is an AI suggestion that was NOT found among the
+   *  fonts actually detected on the site (Fase 4). We then show an honest
+   *  "not detected" state with the suggestion as a muted hint, instead of a
+   *  confident specimen that overstates our certainty. */
+  inferred?: boolean;
 }) {
   const normalised = name ? normaliseFontName(name) : null;
   const hasFont = Boolean(name);
 
-  if (!hasFont) {
+  if (!hasFont || inferred) {
     return (
       <div className="rounded-lg border border-gray-200 p-5">
         <p className="text-[10px] font-semibold tracking-wider text-gray-500 uppercase mb-3">
           {role} · {usage}
         </p>
-        <div className="text-sm text-gray-400 italic">Not detected</div>
+        <div className="text-sm text-gray-400 italic">Not detected on the site</div>
+        {hasFont && (
+          <p className="mt-1.5 text-xs text-gray-400">
+            AI suggestion: <span className="text-gray-500">{name}</span>
+          </p>
+        )}
       </div>
     );
   }
@@ -584,6 +595,13 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
   }, [styleguide.fonts]);
   const availabilityFor = (name: string | null | undefined) =>
     name ? fontAvailabilityMap.get(name.toLowerCase()) ?? null : null;
+  // A font name counts as "confirmed" when it has a StyleguideFont row —
+  // either genuinely scraped from the site or user-uploaded (both are real
+  // brand fonts; the rows no longer carry the AI fallback — Fase 4). A
+  // primary-font name that's absent is a pure AI inference; the card then
+  // shows that honestly instead of a confident specimen.
+  const isDetectedFont = (name: string | null | undefined) =>
+    !!name && fontAvailabilityMap.has(name.toLowerCase());
 
   // Stabilize the additional fonts array reference to avoid unnecessary useEffect re-runs
   const additionalFontsKey = useMemo(
@@ -734,6 +752,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                 name={styleguide.primaryFontName}
                 url={styleguide.primaryFontUrl}
                 availability={availabilityFor(styleguide.primaryFontName)}
+                inferred={!isDetectedFont(styleguide.primaryFontName)}
               />
               <FontDisplayCard
                 role="Secondary"
@@ -741,6 +760,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                 name={styleguide.additionalFonts?.[0] ?? null}
                 url={googleFontsViewUrl(styleguide.additionalFonts?.[0])}
                 availability={availabilityFor(styleguide.additionalFonts?.[0])}
+                inferred={!isDetectedFont(styleguide.additionalFonts?.[0])}
               />
             </div>
 

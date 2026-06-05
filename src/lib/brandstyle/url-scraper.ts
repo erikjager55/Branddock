@@ -1129,8 +1129,11 @@ function extractPreloadedFonts($: cheerio.CheerioAPI): string[] {
  * the intentional brand font, just CSS fallback chain noise.
  *
  * Returns `null` for either if no targeted signal was found.
+ *
+ * Exported so the brandstyle smoke-tests can assert var-pattern coverage
+ * (incl. the Bootstrap `--bs-*` font vars, Fase 4).
  */
-function extractSemanticFonts(css: string): {
+export function extractSemanticFonts(css: string): {
   bodyFont: string | null;
   headingFont: string | null;
 } {
@@ -1138,8 +1141,11 @@ function extractSemanticFonts(css: string): {
   let headingFont: string | null = null;
 
   // ── Path 1: framework-style font-family variables ─────
-  // ACSS heading vars: --h1-font-family, --h2-font-family, --h3-font-family, …
-  const headingVarMatch = css.match(/--h[1-6]-font-family\s*:\s*([^;}!]+)/i);
+  // ACSS heading vars: --h1-font-family … --h6-font-family; Bootstrap 5 sets
+  // --bs-headings-font-family. A vanilla Bootstrap value resolves to a
+  // system stack and is correctly dropped by the generic/web-safe filters
+  // below; only a brand-customised value (e.g. a real display font) survives.
+  const headingVarMatch = css.match(/--(?:h[1-6]|bs-headings?)-font-family\s*:\s*([^;}!]+)/i);
   if (headingVarMatch) {
     const resolved = resolveFontFamilyValue(
       headingVarMatch[1].split(',')[0]?.trim() || '',
@@ -1150,9 +1156,11 @@ function extractSemanticFonts(css: string): {
     }
   }
 
-  // Body / paragraph / text vars (ACSS, Tailwind, common conventions)
+  // Body / paragraph / text vars (ACSS, Tailwind, Bootstrap --bs-body-*,
+  // common conventions). Same filtering caveat as the heading path: a
+  // vanilla Bootstrap system stack is dropped, a brand value survives.
   const bodyVarMatch = css.match(
-    /--(?:body|paragraph|text|p|font-(?:body|primary))-font-family\s*:\s*([^;}!]+)/i,
+    /--(?:bs-body|body|paragraph|text|p|font-(?:body|primary))-font-family\s*:\s*([^;}!]+)/i,
   );
   if (bodyVarMatch) {
     const resolved = resolveFontFamilyValue(
