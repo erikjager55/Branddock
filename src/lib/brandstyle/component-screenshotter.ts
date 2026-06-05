@@ -49,6 +49,11 @@ const MAX_PER_TYPE = 6;
  *  Raised to 180s for multi-page flow — each page takes ~10-20s of
  *  Playwright time (nav + eval + screenshots + upload). */
 const TIMEOUT_MS = 180_000;
+/** Minimum aantal DOM-elementen vóór we de pagina als "gerenderd" beschouwen.
+ *  Eronder = waarschijnlijk een client-rendered SPA-skeleton mid-hydratie; dan
+ *  geven we één begrensde extra settle (zie de goto-pass). Een echte pagina
+ *  (zelfs minimaal) heeft ruim meer dan dit; een SPA-root vóór hydratie << dit. */
+const SPA_SKELETON_FLOOR = 30;
 
 interface TypeMatcher {
   type: ComponentType;
@@ -350,7 +355,38 @@ export async function extractComponentsFromPages(
         break;
       }
       try {
-        await page.goto(pageUrl, { waitUntil: "networkidle", timeout: 30_000 });
+        // `domcontentloaded` i.p.v. `networkidle` voor de goto: render-blocking
+        // CSS (in <head>) is dan al toegepast, en het hangt NIET op doorlopende
+        // netwerk-activiteit (WP-plugins/ads/analytics/polling) — precies de
+        // sites waar networkidle nooit settelde → 30s-timeout → pagina overgeslagen
+        // → geen multi-page usage-data (napking-variantie). Daarna een BEST-EFFORT
+        // settle: probeer netwerk-rust voor de meest-complete render-staat, maar
+        // cap kort en niet-blokkerend (.catch) zodat een doorlopend-netwerk-site
+        // de pass niet alsnog 30s laat hangen — we vallen terug op de DOM die er is.
+        await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+        await page.waitForLoadState("networkidle", { timeout: 6_000 }).catch(() => {});
+        // Web-fonts laten settelen voor scherpere screenshots (computed font-family
+        // is sowieso al gezet), geracet met een eigen cap zodat een hangende font
+        // niet blokkeert.
+        await page
+          .evaluate(() =>
+            Promise.race([
+              (document.fonts && document.fonts.ready) || Promise.resolve(),
+              new Promise((res) => setTimeout(res, 2_000)),
+            ]),
+          )
+          .catch(() => {});
+        await page.waitForTimeout(400).catch(() => {});
+        // SPA-skeleton-guard: is de DOM ná de settle nog (vrijwel) leeg, dan is dit
+        // waarschijnlijk een client-rendered SPA mid-hydratie. Geef één BEGRENSDE
+        // extra settle zodat de bulk computed-style-pass geen skeleton scant —
+        // anders worden echte merk-kleuren als "nergens gebruikt" gedropt. Gecapt,
+        // niet-blokkerend (de domcontentloaded-winst tegen networkidle-hangs blijft).
+        const domCount = await page.evaluate(() => document.querySelectorAll("*").length).catch(() => 0);
+        if (domCount < SPA_SKELETON_FLOOR) {
+          await page.waitForLoadState("networkidle", { timeout: 4_000 }).catch(() => {});
+          await page.waitForTimeout(600).catch(() => {});
+        }
       } catch (gotoErr) {
         console.warn(
           `[component-screenshotter] Failed to load ${pageUrl}: ${gotoErr instanceof Error ? gotoErr.message : String(gotoErr)}`,

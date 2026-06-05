@@ -37,6 +37,17 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 288. Brandstyle: screenshotter page-load robuust (networkidle-hang → domcontentloaded + capped settle)
+
+De component-screenshotter gebruikte `page.goto(..., waitUntil: 'networkidle')`. Op sites met doorlopende netwerk-activiteit (WordPress-plugins/ads/analytics/polling) settelde networkidle nooit → 30s-timeout → pagina overgeslagen → géén multi-page bulk computed-styles → usage-filter zonder primair signaal (de napking-variantie uit #287's observability).
+
+- **Goto via `domcontentloaded`** (render-blocking CSS is dan al toegepast, hangt niet op continu netwerk) + een **best-effort gecapte settle**: `waitForLoadState('networkidle', 6s)` + `document.fonts.ready` (geracet met 2s-cap) + 400ms — elk niet-blokkerend (`.catch`), dus nooit meer een 30s-hang.
+- **SPA-skeleton-guard** (review-fix): is de DOM ná de settle nog < `SPA_SKELETON_FLOOR` (30) elementen, dan één begrensde extra settle (networkidle 4s + 600ms) zodat een client-rendered SPA mid-hydratie geen skeleton laat scannen (en echte merk-kleuren niet als "ongebruikt" gedropt worden).
+
+**Validatie**: live-test napking.nl — nieuwe strategie 1.3s, 553 elementen mét computed color + resolved body-bg (volledige extractie), skeleton-guard vuurt correct NIET op de echte DOM. Adversariële review: SHIP-WITH-FIX (beide fixes — `.catch` op `waitForTimeout` + skeleton-guard — toegepast). tsc 0 / lint 0.
+
+- Commit: branch `fix/screenshotter-load-strategy`
+
 ### 287. Brandstyle: 3 gedeferde follow-ups (observed-pairs persist + kleur-mutatie onError + screenshotter-observability)
 
 Drie open punten uit de #17-merge opgepakt:
