@@ -23,6 +23,7 @@ import {
 } from './url-scraper';
 import { parsePdf, type ParsedPdfData } from './pdf-parser';
 import { inferLayoutStyleFromSiteData } from './infer-layout-style';
+import { isFrameworkDefaultPrimary } from './framework-defaults';
 import {
   buildVisualIdentityPrompt,
   buildVoiceImageryPrompt,
@@ -1216,14 +1217,19 @@ function buildAuthoritativePalette(
   };
 
   // 1. Framework-detector tokens first — these are by-convention brand tokens.
+  // Fase 2 (brand-fidelity): een ONGEWIJZIGDE framework-default PRIMARY
+  // (Bootstrap `--bs-primary` #0D6EFD, WP-admin-blauw) is GÉÉN merk-kleur —
+  // downgrade naar 'low' (→ AI classificeert als NEUTRAL) i.p.v. 'high', anders
+  // wint Bootstrap-blauw de PRIMARY-slot van de echte merk-kleur.
   for (const token of detectedTokens) {
     const [detectorName] = token.source.split(':');
+    const isDefaultPrimary = isFrameworkDefaultPrimary(token.hex);
     push({
       hex: token.hex,
       source: 'detector',
-      confidence: 'high',
+      confidence: isDefaultPrimary ? 'low' : 'high',
       detectorName,
-      detectorRole: token.role,
+      detectorRole: isDefaultPrimary ? undefined : token.role,
     });
   }
 

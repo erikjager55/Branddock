@@ -12,6 +12,7 @@
 // =============================================================
 
 import type * as cheerio from "cheerio";
+import { hasFrameworkDefaultClass } from "./framework-defaults";
 
 export type ComponentType =
   | "BUTTON"
@@ -647,5 +648,10 @@ function computeConfidence(
   if (styles.border) score += 0.1;
   if (styles.boxShadow) score += 0.1;
   if (classes.length > 0) score += 0.1;
+  // Fase 2 (brand-fidelity): een volledig-gespecificeerde framework-default
+  // (Gutenberg/Gravity/Bootstrap) scoort anders juist máximaal en wint van de
+  // échte merk-component. Penaliseer zodat merk-componenten bovenaan komen,
+  // maar behoud 'm (op een puur-framework-site blijft er nog iets over).
+  if (hasFrameworkDefaultClass(classes)) score *= 0.4;
   return Math.min(score, 1);
 }
