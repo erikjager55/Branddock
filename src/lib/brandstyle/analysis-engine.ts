@@ -1717,20 +1717,22 @@ export function isFrameworkNoiseColor(c: {
 }): boolean {
   const tags = (c.tags ?? []).map((t) => t.toLowerCase());
   const src = (c.detectorSource ?? '').toLowerCase();
-  // Exact-token-match (review-fix): een substring-regex zou een echte merk-kleur
-  // met een tag als "wordpress-migrated" of "synced-from-figma" onterecht als
-  // framework-ruis bestempelen. De detector-bron-check is geschrapt — `source`
-  // is een controlled enum (detector/css-variable/frequency/other) die nooit een
-  // framework-token bevat, dus tag + hex dekken de herkomst volledig.
-  const FRAMEWORK_TAGS = ['bootstrap', 'wordpress', 'gutenberg', 'synced'];
+  // Exact-token-match: een substring-regex zou een echte merk-kleur met een tag
+  // als "wordpress-migrated"/"synced-from-figma" onterecht als framework-ruis
+  // bestempelen. `framework` is de generieke tag die AI/detector zet; bootstrap/
+  // wordpress/gutenberg/synced zijn de specifieke.
+  const FRAMEWORK_TAGS = ['framework', 'bootstrap', 'wordpress', 'gutenberg', 'synced'];
   const frameworkOrigin =
     isFrameworkDefaultPrimary(c.hex) || tags.some((t) => FRAMEWORK_TAGS.includes(t));
   if (!frameworkOrigin) return false;
   const isLogo = /logo/.test(src) || tags.some((t) => t.includes('logo'));
   if (isLogo) return false;
-  if (c.usageEvidence === 'strong' || c.usageEvidence === 'weak') return false;
-  const unused = c.usageEvidence === 'none' || tags.includes('unused');
-  return unused;
+  // Een framework-default-kleur is alleen een ECHTE merk-kleur bij STERK gebruik.
+  // Zwakke link/border-usage (Bootstrap's default link-blauw draagt `usage:link`
+  // + `unused`) telt NIET als brand-usage — anders blijft het hele Bootstrap-
+  // palet staan op een puur-framework-site (Zwarthout). Alleen `usageEvidence
+  // === 'strong'` redt een framework-default-kleur; al het overige is ruis.
+  return c.usageEvidence !== 'strong';
 }
 
 /**

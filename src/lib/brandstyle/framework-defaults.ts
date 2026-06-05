@@ -48,6 +48,12 @@ const FRAMEWORK_DEFAULT_PRIMARY_HEXES = new Set(
     '#6F42C1', '#6610F2', // Bootstrap purple / indigo
     '#D63384', // Bootstrap pink
     '#20C997', // Bootstrap teal
+    // Bootstrap theme/semantic-defaults (success/warning/danger). Bewust de
+    // SATURATED status-kleuren — NIET de neutrale grijzen (#6C757D/#212529/
+    // #F8F9FA), die structureel een echte merk-tekst/-surface kunnen zijn.
+    '#198754', // Bootstrap success green
+    '#FFC107', // Bootstrap warning amber
+    '#DC3545', // Bootstrap danger red
   ].map((h) => h.toLowerCase()),
 );
 
