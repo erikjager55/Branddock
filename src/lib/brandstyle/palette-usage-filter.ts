@@ -306,10 +306,16 @@ export function applyUsageDrivenPaletteFilter<T extends UsageFilterColor>(
   return brandColors.length > 0 ? brandColors : colors;
 }
 
-/** Max aantal NEUTRALs ná consolidatie. Ruim genoeg (6) zodat een legitieme
- *  distincte grijs-schaal niet geamputeerd wordt (review MAJOR-3) — de echte
- *  reductie komt van de near-duplicate-dedup hieronder. */
-const MAX_NEUTRALS = 6;
+/** Max aantal NEUTRALs ná consolidatie: donkerste (tekst) + lichtste (surface)
+ *  + 2 functionele mid-grijzen. Een styleguide heeft geen volledige grijs-
+ *  schaal nodig; betterbrands (Tailwind-site) leverde 6 distincte grijzen die
+ *  allemaal renderen maar de UI overpopuleren. De mids worden op WERKELIJK
+ *  GEBRUIK (rendered-weight) gerangschikt, dus de functionele grijzen (bv. een
+ *  border-grijs) overleven en alléén de minst-gebruikte vallen — geen straf
+ *  voor framework-herkomst (de #6B7280-trade-off blijft zo bewaakt). Tegen
+ *  amputatie van een écht distincte schaal: de dedup hieronder + usage-ranking
+ *  zorgen dat de overgebleven 4 de meest-gebruikte, perceptueel-gespreide zijn. */
+const MAX_NEUTRALS = 4;
 /** Kleur-afstand waaronder twee NEUTRALs als "bijna-identiek" gelden en er één
  *  representant overblijft. Eigen constante (niet de computed-match-tolerantie). */
 const NEUTRAL_DEDUP_TOLERANCE = 40;

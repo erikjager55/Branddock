@@ -68,9 +68,9 @@ assert('WordPress Blue GEDROPT (admin)', !names.includes('WordPress Blue'));
 assert('Deep Charcoal behouden (primary, gebruikt)', names.includes('Deep Charcoal'));
 assert('Ocean Blue behouden (brand-accent, gebruikt)', names.includes('Ocean Blue'));
 const keptNeutrals = kept.filter((c) => c.category === 'NEUTRAL');
-assert('neutrals geconsolideerd (7 → minder, ≤6)', keptNeutrals.length < 7 && keptNeutrals.length <= 6, `n=${keptNeutrals.length}: ${keptNeutrals.map((c) => c.name).join(',')}`);
+assert('neutrals geconsolideerd (7 → cap 4)', keptNeutrals.length <= 4, `n=${keptNeutrals.length}: ${keptNeutrals.map((c) => c.name).join(',')}`);
 assert('near-duplicate Light Gray #DDDDDD gemerged (near Soft White #EEEEEE)', !keptNeutrals.some((c) => c.hex === '#DDDDDD'));
-assert('near-duplicate cool-grijs gemerged (#ABB8C3 of #C0C6C1 weg)', keptNeutrals.filter((c) => ['#C0C6C1', '#ABB8C3'].includes(c.hex)).length === 1);
+assert('cool-grijs niet dubbel (≤1 van #ABB8C3/#C0C6C1; cap+framework-gate kunnen beide droppen)', keptNeutrals.filter((c) => ['#C0C6C1', '#ABB8C3'].includes(c.hex)).length <= 1);
 assert('donkerste neutral behouden (#200707 Deep Brown)', keptNeutrals.some((c) => c.hex === '#200707'));
 assert('lichtste neutral behouden (#EEEEEE Soft White)', keptNeutrals.some((c) => c.hex === '#EEEEEE'));
 
@@ -125,6 +125,32 @@ const zw: C[] = [
 const zwBulk: BulkColorStyles = { color: { 'rgb(33, 37, 41)': 500, 'rgb(224, 96, 0)': 20 }, 'background-color': { 'rgb(248, 249, 250)': 200 } };
 const zwKept = applyUsageDrivenPaletteFilter(zw, { bulkColorStyles: zwBulk, usageEvidenceByHex: new Map() }).map((c) => c.name);
 assert('Zwarthout blijft 3 kleuren (geen over-drop/consolidatie)', zwKept.length === 3, zwKept.join(','));
+
+console.log('\n── Betterbrands: neutral-overpopulatie (6 distincte grijzen → cap 4, usage-ranked) ──');
+const bb: C[] = [
+  { hex: '#20A020', name: 'Vibrant Green', category: 'PRIMARY', tags: ['brand', 'logo'], detectorSource: 'logo-extraction:histogram' },
+  { hex: '#111111', name: 'Deep Charcoal', category: 'NEUTRAL', tags: ['text'] },        // donkerste
+  { hex: '#F4F4F4', name: 'Soft Gray', category: 'NEUTRAL', tags: ['surface'] },          // lichtste
+  { hex: '#6B7280', name: 'Slate Gray', category: 'NEUTRAL', tags: ['secondary-text'] },  // mid, ZWAAR gebruikt (de #6B7280-trade-off)
+  { hex: '#A9A9A9', name: 'Silver Gray', category: 'NEUTRAL', tags: ['muted'] },          // mid, zwaar gebruikt
+  { hex: '#374151', name: 'Gunmetal Gray', category: 'NEUTRAL', tags: ['ui'] },           // mid, weinig gebruikt → valt
+  { hex: '#CECECE', name: 'Medium Gray', category: 'NEUTRAL', tags: ['border'] },         // mid, weinig gebruikt → valt
+];
+// Greens + extremen sterk; #6B7280/#A9A9A9 zwaar; #374151/#CECECE licht.
+const bbBulk: BulkColorStyles = {
+  color: { 'rgb(32, 160, 32)': 200, 'rgb(17, 17, 17)': 300, 'rgb(107, 114, 128)': 150, 'rgb(169, 169, 169)': 120, 'rgb(55, 65, 81)': 20 },
+  'background-color': { 'rgb(244, 244, 244)': 300, 'rgb(206, 206, 206)': 15 },
+};
+const bbKept = applyUsageDrivenPaletteFilter(bb, { bulkColorStyles: bbBulk, usageEvidenceByHex: new Map() });
+const bbNames = bbKept.map((c) => c.name);
+const bbNeutrals = bbKept.filter((c) => c.category === 'NEUTRAL').map((c) => c.name);
+console.log(`  behouden (${bbNames.length}): ${bbNames.join(', ')}; neutrals=${bbNeutrals.length}`);
+assert('neutrals gecapt op 4 (6 → 4)', bbNeutrals.length === 4, bbNeutrals.join(','));
+assert('donkerste (Deep Charcoal) + lichtste (Soft Gray) behouden', bbNeutrals.includes('Deep Charcoal') && bbNeutrals.includes('Soft Gray'));
+assert('zwaar-gebruikte Slate Gray #6B7280 BEHOUDEN (trade-off bewaakt — usage wint, geen framework-straf)', bbNeutrals.includes('Slate Gray'));
+assert('zwaar-gebruikte Silver Gray behouden', bbNeutrals.includes('Silver Gray'));
+assert('minst-gebruikte mids (Gunmetal + Medium Gray) gevallen', !bbNeutrals.includes('Gunmetal Gray') && !bbNeutrals.includes('Medium Gray'));
+assert('merk-green (PRIMARY) onaangeroerd door neutral-cap', bbNames.includes('Vibrant Green'));
 
 console.log(`\n${fail === 0 ? 'OK' : 'FAILED'} — ${pass} pass / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

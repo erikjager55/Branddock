@@ -37,6 +37,14 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 286. Brandstyle palet: neutral-overpopulatie aangescherpt (cap 6 → 4)
+
+Cross-brand controle (betterbrands.nl, een Tailwind-site) toonde 6 distincte grijzen die allemaal écht renderen maar de styleguide overpopuleren. `MAX_NEUTRALS` van 6 → 4: donkerste (tekst) + lichtste (surface) + de **2 meest-gebruikte** mid-grijzen (op `renderedWeight`). De mids worden op werkelijk gebruik gerangschikt — een functionele border-grijs (napking #6B7280) overleeft dus op merite, géén straf voor framework-herkomst, zodat de eerder gemaakte #6B7280-keuze bewaakt blijft. Merk-kleuren onaangeroerd; Zwarthout (2 neutrals) onveranderd.
+
+**Bewijs**: smoke `phase49` 35/35 (betterbrands-achtig 6 → 4, usage-ranked mids, Slate Gray behouden, minst-gebruikte gevallen, greens intact); phase47/48/50/51 groen; tsc+lint 0.
+
+- Commit: branch `fix/brandstyle-extraction`
+
 ### 285. Brandstyle palet: strenge framework-match tegen "geleende" usage
 
 Napking re-scrape (na #283, vers-herstarte dev-server, mét multi-page usage-data) hield Gutenberg-default **#ABB8C3** vast terwijl WP-admin #007CBA correct viel. Root-cause: #ABB8C3 rendert zélf nergens, maar ligt ~33 RGB van de echt-gerenderde Tailwind-grijs **#9CA3AF** (en ~31 van sage #A2B8A5) — binnen de losse `MATCH_TOLERANCE` (40). Zo absorbeerde de geleakte default het gebruik van z'n buurman → false-`strong` → overleefde de framework-gate. (Diagnose: live curl van napking.nl + afstandsberekening; de re-scrape zélf draaide op verse code na een stale-dev-server-restart.)
