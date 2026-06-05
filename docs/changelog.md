@@ -37,6 +37,23 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 277. Brandstyle extractie-fidelity — Fase 1/2/6 (var-resolutie + framework-default-gate + display)
+
+Upstream-vervolg op #276: de scrape→brandstyle-extractie plaatste gescrapte info slecht (onopgeloste `var(--bs-*)`, framework-defaults als merk-design, gefabriceerde preview-tekst). Na 4-lagen deep-research + adversariële code-cross-check (audit `docs/audits/2026-06-05-brandstyle-extraction-pipeline.md`). Meta-oorzaak: drie niet-uniforme CSS-leespaden met verschillende var()-resolutie en geen gedeelde framework-default-gate.
+
+**Fase 1 — gedeelde var-resolutie**: nieuwe property-agnostische `resolveCssVar`/`resolveOrKeep` (`css-var-resolver.ts`) bedraad in de typografie-extractor (fontSize/lineHeight/letterSpacing/fontWeight/fontFamily/color, alleen niet-null geresolveerd) + button-extractor (full-CSS-fallback voor de kleur-gefilterde var-map) + var-guard op lineHeight/letterSpacing in `toRoleEntry`. **Fase 2 — framework-default-gate**: `framework-defaults.ts` (selector- + primary-hex-detectie, focusset zodat een toevallig-Bootstrap-grijs als echte merk-kleur ongemoeid blijft) → component-confidence-penalty (×0.4) + `--bs-primary` detector-downgrade naar 'low' (geen Bootstrap-blauw meer als merk-primary) + logo-rescue-gate die framework-defaults negeert. **Fase 6 — display**: gefabriceerde button-CTA-tekst → neutrale rol-placeholder; dode `StyleGuideViewer`/`BrandstyleView` gemarkeerd.
+
+**Review**: adversariële review-workflow vond 8 bugs (4 HIGH/2 MED/2 LOW) — allemaal gefixt (regex-paren-balancing in var-fallbacks, font-stack-resolutie-volgorde, namespaced-btn-class lookbehind, logo-rescue op ongemuteerde role, refuse-mode-regressie-guard, custom-Gutenberg over-match, declaratie-grens, low-confidence→NEUTRAL bij AI-skip).
+
+**Bewijs**: smokes `phase41-brandstyle-var-resolution` 17/17 + `phase42-framework-default-gate` 19/19 (incl. alle bugfix-scenario's); regressie phase12/24/25/26 groen; tsc+lint 0 errors. Branch `fix/brandstyle-extraction` (`1576f4d8`→`bc139e5e`).
+
+**Nog open (Fase 3/4/5, `[RE-SCRAPE]`/feature)**: logo-kleur-redding enforce + usage-verifier (3), font-fallback via computed-style → lege fonts-tabel (4), kleurcombinaties-model+UI (5) — vergen live re-scrape of nieuw DB-model.
+
+- Task: audit + plan `~/.claude/plans/functional-conjuring-harbor.md`
+- ADR: -
+- Spec: `docs/audits/2026-06-05-brandstyle-extraction-pipeline.md`
+- Commit: `1576f4d8` + `32258522` + `9e03c71b` + `bc139e5e` (branch `fix/brandstyle-extraction`)
+
 ### 276. LP brand-fidelity overhaul — scrape → tokens → render (geen app-identity-lek meer)
 
 Systematische fix van off-brand/slecht-ogende landing-pages, na een 4-lagen deep-research (audit: `docs/audits/2026-06-04-lp-render-pipeline-napking.md`, plan: `~/.claude/plans/functional-conjuring-harbor.md`). Meta-oorzaak: de pipeline behandelde CSS-tekst-aanwezigheid als merk-design, viel bij zwakke extractie terug op **Branddock's eigen huisstijl** (teal #1FD1B2 / amber #F59E0B) en de renderer **verzon** visuals (textuur, 272px-koppen). Aanleiding: Zwarthout-LP renderde teal (nergens op de site) met verzonnen achtergrond-structuur.
