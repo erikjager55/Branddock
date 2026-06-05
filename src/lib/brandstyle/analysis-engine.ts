@@ -31,7 +31,10 @@ import {
   planHeadlessMerge,
   shouldTryHeadless,
   selectDetectedFontNames,
+  dedupeBrandFonts,
+  canonicalizeFontFamily,
 } from './font-fallback';
+import { normalizeTypeScale } from './type-scale-normalizer';
 import {
   buildVisualIdentityPrompt,
   buildVoiceImageryPrompt,
@@ -2061,9 +2064,15 @@ async function writeResultToDb(
   // Delete existing colors before creating new ones
   await prisma.styleguideColor.deleteMany({ where: { styleguideId } });
 
-  // ── Typography: force the primary font to the first scraped font verbatim.
-  // If the scraper did not find any fonts, fall back to the AI's suggestion.
-  const [firstFont, ...restFonts] = detectedFonts;
+  // ── Typography: canonicaliseer + dedupliceer de gescrapte fonts vóór de
+  // split. Adobe-CLS-fallback-families ('effra-fallback') en case/quote-
+  // varianten worden gecollapsed naar de echte merk-font, generieke families
+  // gedropt — anders lekt de fallback als 'secondary'/heading-font. De primary
+  // wordt de eerste gecanonicaliseerde font; bij nul scraped fonts valt 'ie
+  // terug op de AI-suggestie (die bewust NIET door de canonicalizer gaat —
+  // aparte fallback-bron).
+  const canonicalFonts = dedupeBrandFonts(detectedFonts);
+  const [firstFont, ...restFonts] = canonicalFonts;
   const primaryFontName = firstFont ?? result.primaryFontName ?? null;
   const additionalFonts = restFonts.slice(0, 5);
 
@@ -2171,8 +2180,12 @@ async function writeResultToDb(
       // When we have no semantic signal, fall back to the old heuristic
       // (first font DISPLAY, rest UI) so sites without clear selector-based
       // body/heading rules still get a reasonable split.
-      const headingFontLower = headingFont?.toLowerCase() ?? null;
-      const bodyFontLower = bodyFont?.toLowerCase() ?? null;
+      // Canonicaliseer beide zijden: de gedetecteerde rij-namen (fontNames) zijn
+      // nu ge-canonicaliseerd ('effra'), terwijl bodyFont/headingFont ruw uit de
+      // scraper komen ('effra-fallback'). Zonder dubbel-canon faalt de exact-
+      // match en valt de font ten onrechte door naar DISPLAY i.p.v. UI.
+      const headingFontLower = canonicalizeFontFamily(headingFont)?.toLowerCase() ?? null;
+      const bodyFontLower = canonicalizeFontFamily(bodyFont)?.toLowerCase() ?? null;
       const hasSemanticSignal = !!(headingFontLower || bodyFontLower);
 
       // Computed-style classifier — sterker signaal dan naam-heuristic.
@@ -2192,9 +2205,13 @@ async function writeResultToDb(
 
       const assignRole = (name: string, fallbackIndex: number): 'DISPLAY' | 'UI' => {
         const lower = name.toLowerCase();
+        // Gecanonicaliseerde vergelijkingsvorm voor de exact-match tegen de
+        // (ook gecanonicaliseerde) heading/body-font; `lower` blijft de raw
+        // sleutel voor de cssContextVerdicts-lookup (zelfde bron als de map).
+        const canonLower = canonicalizeFontFamily(name)?.toLowerCase() ?? lower;
         // 1. Direct semantic CSS-var / direct selector match uit scraper
-        if (headingFontLower && lower === headingFontLower) return 'DISPLAY';
-        if (bodyFontLower && lower === bodyFontLower) return 'UI';
+        if (headingFontLower && canonLower === headingFontLower) return 'DISPLAY';
+        if (bodyFontLower && canonLower === bodyFontLower) return 'UI';
         // 2. Computed-style aggregate verdict (sterker dan naam — werkt
         //    voor custom/codename fonts)
         const cssVerdict = cssContextVerdicts.get(lower);
@@ -2307,6 +2324,12 @@ async function writeResultToDb(
   const observedPairings = buildObservedColorPairings(observedColorPairs, paletteForPairs);
   const colorPairings = observedPairings.length > 0 ? observedPairings : buildColorPairings(paletteForPairs);
 
+  // Normaliseer type-scale-eenheden naar rem vóór de write (alleen unit-
+  // normalisatie, geen dedup/collision — die braken de size-gedreven rol-
+  // mapping en de live preview). Behoudt volgorde + aantal entries. Een lege
+  // input blijft een lege array (zelfde gedrag als de oude `|| null`-write).
+  const normalizedTypeScale = normalizeTypeScale(result.typeScale ?? []);
+
   // Update styleguide fields
   await prisma.brandStyleguide.update({
     where: { id: styleguideId },
@@ -2325,7 +2348,7 @@ async function writeResultToDb(
       primaryFontName,
       primaryFontUrl: result.primaryFontUrl || null,
       additionalFonts,
-      typeScale: result.typeScale || null,
+      typeScale: normalizedTypeScale,
 
       // Tone of Voice velden verhuisd naar BrandVoiceguide (ADR 2026-05-15) —
       // upsert hieronder na de styleguide update.

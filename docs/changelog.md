@@ -37,6 +37,24 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 284. Brandstyle Typography-fonts-fix: Adobe-CLS-fallback canonicalisatie + geconsolideerd load-pad + weight-consistentie
+
+De Typography-tab presenteerde gescrapte merk-fonts onjuist: Adobe's auto-gegenereerde CLS-fallback-family (`effra-fallback`) lekte als zelfstandige "Secondary/heading"-merkfont (D1), werd als heading-familie gekozen (D2), verscheen als dubbele kaart (D3), laadde inconsistent (D4), toonde de rauwe CSS-stack als label (D5) en de type-scale had gemengde eenheden (D6). Root-cause: de scrape-bron werd niet gecanonicaliseerd vóór de DB-split + twee divergerende font-load-paden.
+
+- **Bron-canonicalisatie (F1)**: `canonicalizeFontFamily` + `dedupeBrandFonts` (pure helpers in `font-fallback.ts`, gedeelde `font-generic-families.ts`) strippen de `[\s-]fallback$`-suffix + generieke families + dedup `X`/`X-fallback`, toegepast vóór de split in `writeResultToDb` én in `selectDetectedFontNames`; `assignRole` + de computed-style-classifier (`normalizeName`) canonicaliseren beide vergelijkingszijden.
+- **Extractor + type-scale (F2)**: extractor kiest de eerste *canoniceerbare* family (niet `split(',')[0]`); `normalizeTypeScale` (`type-scale-normalizer.ts`) normaliseert eenheden → rem met veldbehoud (object-spread), BEWUST geen dedup/level-collision (dat brak de size-gedreven `mapTypographyRoles`).
+- **Load-pad + display (F3)**: `font-loading.ts` (`resolveFontRender`) + `typography-display.ts` consolideren FontCard + TypographySection op één availability-gedreven pad (substitute in de stack i.p.v. 404'ende Google-link); group-label toont alleen de family-naam; substitute-badge.
+- **Weight-consistentie**: gedeelde `weightForLevel(level, scrapedWeight)` zodat Type-Scale- en In-Context-secties dezelfde heading-weights renderen (was 400 vs 700 bij lege scrape).
+- **Smoke-suite hersteld**: de `smoke:web-page-builder`-keten was rood door pre-existing failures (gemaskeerd door early-exit op phase2); phase2/18/23/39 gediagnosticeerd (stale-assertie vs intentionele renderer-evolutie) en gefixt → 43/43 groen.
+
+**Review**: 2 adversariële review-rondes (4 agents) → 0 CRITICAL; 2 WARNINGs gefixt (classifier `-fallback`-alignment + `useEffect` `workspaceKitId`-dep); ronde-2 = No issues found.
+
+**Bewijs**: re-scrape Napking geverifieerd via psql (`effra-fallback` weg uit additionalFonts + StyleguideFont; typeScale → rem); nieuwe `smoke:brandstyle-typography` (phase44/45) + volledige web-page-builder-keten exit 0; tsc + lint 0.
+
+- Task: [tasks/done/brandstyle-typography-fonts.md](tasks/done/brandstyle-typography-fonts.md)
+- ADR: [docs/adr/2026-06-05-typography-font-canonicalization.md](docs/adr/2026-06-05-typography-font-canonicalization.md)
+- Commit: branch fix/brandstyle-extraction
+
 ### 283. Brandstyle palet: framework-defaults moeten gebruik bewijzen (geen benefit-of-the-doubt)
 
 Napking re-scrape (na #282) bevestigde PRIMARY = Ocean Blue #008ACF ✓, maar bij een controle tegen de **echte** napking.nl bleken twee framework-leaks: ACCENT "Deep Blue #007CBA" = de **WordPress-admin-kleur** (`--wp-admin-theme-color`, 0× in de gebruikte CSS) en Cool Gray #ABB8C3 = **Gutenberg core-default** ("Cyan bluish gray"). Beide overleefden omdat deze re-scrape géén multi-page usage-data had en `keep()` onbemeten kleuren benefit-of-the-doubt gaf (`!known → keep`) vóór de framework-gate.

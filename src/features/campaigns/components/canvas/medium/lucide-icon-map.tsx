@@ -162,14 +162,17 @@ interface IconBlockProps {
   strokeWeight?: number;
   /** Style voor de wrapper-div (alignment, margin, etc.). */
   wrapperStyle?: React.CSSProperties;
-  /** Text-label rendering wanneer geen SVG-match — caller bepaalt styling. */
+  /** @deprecated Niet meer gebruikt sinds brand-fidelity overhaul (5216c7db):
+   *  onbekende namen vallen terug op een Sparkles-default-icoon i.p.v. tekst.
+   *  Blijft in de interface voor backward-compat. */
   fallbackTextStyle?: React.CSSProperties;
 }
 
 /**
  * Render-helper voor icon-prefix in feature-cards:
  *  - Match Lucide-naam → SVG (24px brand-color)
- *  - Geen match → tekst-label (caller's fallbackTextStyle)
+ *  - Geen match → neutraal Sparkles-default-icoon (geen rauwe tekst, zag er
+ *    broken uit op gerenderde LP's)
  *  - Lege naam → null (geen render)
  */
 export function IconBlock({

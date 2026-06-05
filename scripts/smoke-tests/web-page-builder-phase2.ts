@@ -152,7 +152,7 @@ function testBrandTokens(): void {
   assert('undefined ctx returns DEFAULTS', empty.primaryHex === DEFAULT_BRAND_TOKENS.primaryHex);
 }
 
-// ─── 2. Puck config + 8 components ───────────────────────────
+// ─── 2. Puck config + components ─────────────────────────────
 
 function testPuckConfig(): void {
   group('4. buildSpikePuckConfig — structure');
@@ -167,9 +167,13 @@ function testPuckConfig(): void {
     'StickyCtaBar',
     // DTS audit-fix #4 — StatsBlock (dark-bg highlights)
     'StatsBlock',
+    // BrandNav — navigatie-component
+    'BrandNav',
   ];
 
-  assert(`exactly 10 components registered (got ${componentNames.length})`, componentNames.length === 10);
+  // Afgeleid van `expected` zodat de assert zowel ontbrekende als EXTRA
+  // (onverwachte) componenten vangt — geen magisch getal dat stale raakt.
+  assert(`exactly ${expected.length} components registered (got ${componentNames.length})`, componentNames.length === expected.length);
   for (const name of expected) {
     assert(`component ${name} present`, componentNames.includes(name));
   }

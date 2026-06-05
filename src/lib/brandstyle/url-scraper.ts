@@ -13,6 +13,7 @@ import {
   bestFromSrcset,
   addImageSafe,
 } from '@/lib/utils/image-scraper';
+import { GENERIC_FONT_FAMILY_NAMES } from './font-generic-families';
 
 // ─── Types ────────────────────────────────────────────
 
@@ -1038,16 +1039,7 @@ function resolveFontFamilyValue(
   return value;
 }
 
-const GENERIC_FONT_FAMILIES = new Set([
-  'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy',
-  'system-ui', 'ui-sans-serif', 'ui-serif', 'ui-monospace', 'ui-rounded',
-  'inherit', 'initial', 'unset', 'revert', 'normal', 'auto', 'none',
-  // CSS placeholder / shorthand that some themes emit unquoted (seen on
-  // linfi.nl: `font-family: Font;` resolved to literal "Font"). Always noise.
-  'font', 'webfont', 'webfonts', 'text', 'body',
-  '-apple-system', 'blinkmacsystemfont', 'segoe ui', 'apple color emoji',
-  'segoe ui emoji', 'segoe ui symbol', 'noto color emoji',
-]);
+const GENERIC_FONT_FAMILIES = new Set<string>(GENERIC_FONT_FAMILY_NAMES);
 
 /**
  * Web-safe / system fallback fonts that appear in CSS as `font-family` fallbacks

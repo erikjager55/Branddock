@@ -12,6 +12,7 @@
  */
 
 import { resolveOrKeep } from './css-var-resolver';
+import { canonicalizeFontFamily } from './font-fallback';
 
 export type TypographyRole =
   | "display"
@@ -208,10 +209,18 @@ export function extractTypographyByRole(css: string): ScrapedTypographyByRole {
       if (!target.fontFamily) {
         // Resolve de var() EERST (de waarde kan zelf een stack zijn, bv.
         // var(--ff) → "Helvetica Neue", Arial), splits/strip DAARNA — anders
-        // lekken quotes+komma's als "schone fontnaam".
+        // lekken quotes+komma's als "schone fontnaam". Canonicaliseer per
+        // familie en pak de eerste echte merk-font: zo wint 'effra' over een
+        // 'effra-fallback' (Adobe-CLS-fallback) die vooraan in de stack staat,
+        // en worden generieke families (system-ui) overgeslagen i.p.v. gekozen.
         const rawFf = resolveOrKeep(getProp(c.block, "font-family"), css);
-        const first = rawFf?.split(",")[0]?.trim().replace(/^["']|["']$/g, "");
-        if (first) target.fontFamily = first;
+        const families = (rawFf ?? "").split(",");
+        let chosen: string | null = null;
+        for (const f of families) {
+          const canon = canonicalizeFontFamily(f);
+          if (canon) { chosen = canon; break; }
+        }
+        if (chosen) target.fontFamily = chosen;
       }
       if (!target.fontSize) {
         const v = resolveOrKeep(getProp(c.block, "font-size"), css);

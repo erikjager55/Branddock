@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2, Sparkles } from "lucide-react";
 import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
@@ -10,6 +10,23 @@ import { useCustomFonts } from "../hooks/useCustomFonts";
 import { parseSemanticTokens, buildTypeRoleMap } from "../utils/semantic-tokens";
 import { FontsGrid } from "./brand-assets/FontsGrid";
 import type { BrandStyleguide, TypeScaleLevel } from "../types/brandstyle.types";
+import {
+  normaliseFontName,
+  getFontForLevel,
+  capPreviewSize,
+  buildFontFamilyStack,
+  weightForLevel,
+} from "@/lib/brandstyle/typography-display";
+import {
+  resolveFontRender,
+  injectTypekitCss,
+  injectSubstituteCss,
+  injectGoogleFontCss,
+} from "../utils/font-loading";
+
+/** Resolver-type: levert per font-naam een metric-substitute Google Font (of
+ *  null wanneer de echte font direct rendert). */
+type SubstituteResolver = (name: string) => string | null;
 
 const LEVEL_PRESETS = ["H1", "H2", "H3", "H4", "H5", "H6", "Body", "Small", "Caption", "Overline"];
 
@@ -21,108 +38,6 @@ interface TypographySectionProps {
 /** Creates a blank type scale entry */
 function createBlankLevel(): TypeScaleLevel {
   return { level: "", name: "", size: "", lineHeight: "", weight: "", color: "", usage: "" };
-}
-
-/**
- * Normalise a font name to PascalCase as expected by Google Fonts.
- * Google Fonts URLs are case-sensitive: `roboto` → 400, `Roboto` → 200.
- *   - "roboto"        → "Roboto"
- *   - "open sans"     → "Open Sans"
- *   - "PT Sans"       → "PT Sans"
- */
-function normaliseFontName(font: string): string {
-  return font
-    .trim()
-    .split(/\s+/)
-    .map((word) => {
-      if (!word) return word;
-      // Already all-uppercase short codes (PT, JF) — keep as-is
-      if (word.length <= 3 && word === word.toUpperCase()) return word;
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    })
-    .join(' ');
-}
-
-/**
- * Pick the right font family for a type-scale level.
- * Headings (H1-H6) are typically set in the brand's display/heading font,
- * which lives in `additionalFonts` (the secondary font in priority order).
- * Body/Small/Caption use the primary (body) font.
- *
- * Falls back to primary when no additional/heading font is detected.
- */
-function getFontForLevel(
-  level: string,
-  primaryFont: string | null,
-  additionalFonts: string[],
-): string | undefined {
-  const isHeading = /^h[1-6]$/i.test(level.trim());
-  const headingFont = additionalFonts[0];
-  const chosen = isHeading && headingFont ? headingFont : primaryFont;
-  if (!chosen) return undefined;
-  // Always append a sans-serif fallback chain so unknown families (e.g.
-  // "effra-fallback" — a CSS name that isn't a real typeface) don't drop
-  // through to the browser's default serif. The brand's real font comes
-  // first, then system-ui, then the generic sans-serif bucket.
-  return `"${normaliseFontName(chosen)}", system-ui, -apple-system, sans-serif`;
-}
-
-/**
- * Cap a CSS font-size value for type-scale previews so large/responsive
- * declarations (e.g. `clamp(2.5rem, 3.824vw + 1.276rem, 6.5rem)`) don't blow
- * up the row height. Resolves the incoming value to a concrete px number and
- * caps at PREVIEW_MAX_PX, instead of deferring to the browser's CSS engine
- * (wrapping in `min(clamp(...), 48px)` proved unreliable in practice).
- *
- * Handles simple values (`36px`, `2rem`), `clamp(min, preferred, max)` by
- * taking the min value, and `calc()` by grabbing the first numeric token.
- * Falls back to a safe default when the value is unresolvable.
- *
- * The Size column of the table still shows the original unmodified value —
- * this cap only affects the rendered preview span.
- */
-const PREVIEW_MAX_PX = 48;
-const PREVIEW_FALLBACK_PX = 24;
-
-function capPreviewSize(rawSize: string): string {
-  if (!rawSize) return `${PREVIEW_FALLBACK_PX}px`;
-
-  // clamp(min, preferred, max) → use the min (first) arg for stable previews
-  const clampMatch = rawSize.match(/clamp\(\s*([^,]+),/i);
-  if (clampMatch) {
-    const px = resolveToPx(clampMatch[1].trim());
-    return `${Math.min(px ?? PREVIEW_FALLBACK_PX, PREVIEW_MAX_PX)}px`;
-  }
-
-  // calc() → first numeric+unit token
-  const calcMatch = rawSize.match(/calc\(([^)]+)\)/i);
-  if (calcMatch) {
-    const firstToken = calcMatch[1].match(/[\d.]+(?:px|rem|em|pt|%)/i)?.[0];
-    const px = firstToken ? resolveToPx(firstToken) : null;
-    return `${Math.min(px ?? PREVIEW_FALLBACK_PX, PREVIEW_MAX_PX)}px`;
-  }
-
-  // Simple / var() / anything else → try to resolve, fallback if unparseable
-  const px = resolveToPx(rawSize);
-  if (px === null) return `${PREVIEW_FALLBACK_PX}px`;
-  return `${Math.min(px, PREVIEW_MAX_PX)}px`;
-}
-
-/** Convert a simple CSS length (`36px`, `2rem`, `1.5em`, `16pt`) to px. */
-function resolveToPx(value: string): number | null {
-  const m = value.trim().match(/^([\d.]+)(px|rem|em|pt|%)?$/i);
-  if (!m) return null;
-  const n = parseFloat(m[1]);
-  if (!Number.isFinite(n)) return null;
-  const unit = (m[2] || 'px').toLowerCase();
-  switch (unit) {
-    case 'px': return n;
-    case 'rem':
-    case 'em': return n * 16;
-    case 'pt': return n * (96 / 72);
-    case '%': return (n / 100) * 16;
-    default: return null;
-  }
 }
 
 /**
@@ -153,19 +68,29 @@ function TypeScaleList({
   primaryFont,
   additionalFonts,
   roleMap,
+  substituteFor,
 }: {
   typeScale: TypeScaleLevel[];
   primaryFont: string | null;
   additionalFonts: string[];
   roleMap: Map<string, string>;
+  substituteFor: SubstituteResolver;
 }) {
   // Group rows by the font they render in (heading-font vs body-font).
-  // Preserves original ordering inside each group.
-  const groups = new Map<string, { font: string | null; rows: TypeScaleLevel[] }>();
+  // Preserves original ordering inside each group. `displayName` = de schone
+  // family-naam (NIET de volledige css-stack) zodat het groepslabel
+  // "— Effra" toont i.p.v. de rauwe stack met (sans-serif)-ruis.
+  const groups = new Map<string, { font: string | null; displayName: string | null; rows: TypeScaleLevel[] }>();
   for (const row of typeScale) {
-    const font = getFontForLevel(row.level, primaryFont, additionalFonts) ?? 'Default';
+    const isHeading = /^h[1-6]$/i.test(row.level.trim());
+    const chosenRaw = isHeading && additionalFonts[0] ? additionalFonts[0] : primaryFont;
+    const font = getFontForLevel(row.level, primaryFont, additionalFonts, substituteFor) ?? 'Default';
     if (!groups.has(font)) {
-      groups.set(font, { font: font === 'Default' ? null : font, rows: [] });
+      groups.set(font, {
+        font: font === 'Default' ? null : font,
+        displayName: chosenRaw ? normaliseFontName(chosenRaw) : null,
+        rows: [],
+      });
     }
     groups.get(font)!.rows.push(row);
   }
@@ -176,15 +101,13 @@ function TypeScaleList({
         // Determine if this group is heading or body styles for the label
         const allHeadings = group.rows.every((r) => /^h[1-6]$/i.test(r.level.trim()));
         const groupLabel = allHeadings ? 'Heading styles' : 'Body styles';
-        const classification = group.font ? classifyFont(group.font) : '';
         return (
           <div key={fontKey + gi}>
             <p className="text-[11px] font-semibold tracking-wider text-gray-500 uppercase mb-5">
               {groupLabel}
-              {group.font && (
+              {group.displayName && (
                 <span className="ml-2 normal-case tracking-normal text-gray-400 font-normal">
-                  — {group.font}
-                  {classification && <span className="text-gray-300"> ({classification.toLowerCase()})</span>}
+                  — {group.displayName}
                 </span>
               )}
             </p>
@@ -238,7 +161,9 @@ function TypeScaleRow({
         className="flex-1 min-w-0 text-gray-900 leading-tight truncate"
         style={{
           fontSize: capPreviewSize(row.size),
-          fontWeight: row.weight || 'inherit',
+          // Gedeelde default-weight: headings krijgen bold ook zonder gescrapt
+          // weight, consistent met de In-Context-preview (geen 400-vs-700 split).
+          fontWeight: weightForLevel(row.level, row.weight) ?? 'inherit',
           lineHeight: row.lineHeight || 'inherit',
           fontFamily: font ?? undefined,
         }}
@@ -287,10 +212,12 @@ function InContextPreview({
   typeScale,
   primaryFont,
   additionalFonts,
+  substituteFor,
 }: {
   typeScale: TypeScaleLevel[];
   primaryFont: string | null;
   additionalFonts: string[];
+  substituteFor: SubstituteResolver;
 }) {
   const findByLevel = (predicate: (lvl: string) => boolean): TypeScaleLevel | undefined =>
     typeScale.find((l) => predicate(l.level.trim().toLowerCase()));
@@ -303,19 +230,19 @@ function InContextPreview({
 
   // Build a style for one role: take font-family + weight + color from the
   // matching scale level (if any), but always use the supplied mock size.
-  // Wrap a raw font name into a stack with sans-serif fallback so unknown
-  // families don't drop to the browser's default serif.
+  // The stack includes the metric-substitute so commercial fonts render in the
+  // substitute instead of dropping to the browser's default serif.
   const withFallback = (raw: string | null | undefined): string | undefined => {
     if (!raw) return undefined;
-    return `"${normaliseFontName(raw)}", system-ui, -apple-system, sans-serif`;
+    return buildFontFamilyStack(raw, substituteFor(raw));
   };
 
   const mockStyle = (level: TypeScaleLevel | undefined, sizePx: number): React.CSSProperties => ({
     fontSize: `${sizePx}px`,
-    fontWeight: level?.weight || undefined,
+    fontWeight: weightForLevel(level?.level ?? '', level?.weight),
     color: level?.color || undefined,
     fontFamily: level
-      ? getFontForLevel(level.level, primaryFont, additionalFonts)
+      ? getFontForLevel(level.level, primaryFont, additionalFonts, substituteFor)
       : withFallback(primaryFont),
   });
 
@@ -331,9 +258,9 @@ function InContextPreview({
         className="leading-tight"
         style={{
           fontSize: '36px',
-          fontWeight: h1?.weight || 700,
+          fontWeight: weightForLevel('h1', h1?.weight),
           color: h1?.color || undefined,
-          fontFamily: h1 ? getFontForLevel(h1.level, primaryFont, additionalFonts) : headingFontFamily,
+          fontFamily: h1 ? getFontForLevel(h1.level, primaryFont, additionalFonts, substituteFor) : headingFontFamily,
         }}
       >
         {h1?.name || 'Hero Heading Example'}
@@ -350,9 +277,9 @@ function InContextPreview({
         className="mt-8 leading-snug"
         style={{
           fontSize: '24px',
-          fontWeight: h2?.weight || 600,
+          fontWeight: weightForLevel('h2', h2?.weight),
           color: h2?.color || undefined,
-          fontFamily: h2 ? getFontForLevel(h2.level, primaryFont, additionalFonts) : headingFontFamily,
+          fontFamily: h2 ? getFontForLevel(h2.level, primaryFont, additionalFonts, substituteFor) : headingFontFamily,
         }}
       >
         {h2?.name || 'A Section Heading Below'}
@@ -379,9 +306,9 @@ function InContextPreview({
         className="mt-8 leading-snug"
         style={{
           fontSize: '18px',
-          fontWeight: h3?.weight || 600,
+          fontWeight: weightForLevel('h3', h3?.weight),
           color: h3?.color || undefined,
-          fontFamily: h3 ? getFontForLevel(h3.level, primaryFont, additionalFonts) : headingFontFamily,
+          fontFamily: h3 ? getFontForLevel(h3.level, primaryFont, additionalFonts, substituteFor) : headingFontFamily,
         }}
       >
         {h3?.name || 'A Subsection Below'}
@@ -435,6 +362,8 @@ function FontDisplayCard({
   url,
   availability,
   inferred = false,
+  substituteFont = null,
+  hasWorkspaceKit = false,
 }: {
   role: string;
   usage: string;
@@ -449,9 +378,17 @@ function FontDisplayCard({
    *  "not detected" state with the suggestion as a muted hint, instead of a
    *  confident specimen that overstates our certainty. */
   inferred?: boolean;
+  /** Metric-substitute Google Font wanneer de echte (commerciële) font niet
+   *  direct rendert — staat in de stack zodat de preview niet naar system-ui
+   *  valt, en drijft de substitute-badge. */
+  substituteFont?: string | null;
+  /** True wanneer een workspace Adobe-kit de echte font wél serveert. */
+  hasWorkspaceKit?: boolean;
 }) {
-  const normalised = name ? normaliseFontName(name) : null;
   const hasFont = Boolean(name);
+  // De stack bevat de substitute zodat een commerciële font in de substitute
+  // rendert i.p.v. de browser-default serif.
+  const fontStack = buildFontFamilyStack(name, substituteFont);
 
   if (!hasFont || inferred) {
     return (
@@ -495,7 +432,7 @@ function FontDisplayCard({
       <div className="flex items-center gap-6 min-w-0">
         <div
           className="leading-none text-gray-900 select-none flex-shrink-0"
-          style={{ fontFamily: normalised ? `"${normalised}", system-ui, -apple-system, sans-serif` : undefined, fontSize: '5.25rem', fontWeight: 600 }}
+          style={{ fontFamily: fontStack, fontSize: '5.25rem', fontWeight: 600 }}
         >
           Aa
         </div>
@@ -506,7 +443,7 @@ function FontDisplayCard({
           <div
             className="text-2xl font-semibold text-gray-900 break-all leading-tight line-clamp-2"
             title={name ?? undefined}
-            style={{ fontFamily: normalised ? `"${normalised}", system-ui, -apple-system, sans-serif` : undefined }}
+            style={{ fontFamily: fontStack }}
           >
             {name}
           </div>
@@ -520,10 +457,23 @@ function FontDisplayCard({
       {/* Pangram in the actual font */}
       <p
         className="text-base text-gray-700 leading-relaxed"
-        style={{ fontFamily: normalised ? `"${normalised}", system-ui, -apple-system, sans-serif` : undefined }}
+        style={{ fontFamily: fontStack }}
       >
         The quick brown fox jumps over the lazy dog.
       </p>
+
+      {/* Substitute-badge — wanneer de echte (commerciële) font niet direct
+          rendert en we een metric-substitute tonen. Eén consistente melding,
+          gelijk aan FontCard. */}
+      {substituteFont && !hasWorkspaceKit && (
+        <p className="inline-flex items-start gap-1.5 text-[11px] text-gray-500 leading-snug">
+          <Sparkles className="h-3 w-3 mt-0.5 flex-shrink-0 text-indigo-400" />
+          <span>
+            Preview met <span className="font-medium text-gray-700">{substituteFont}</span> —{" "}
+            {availability === "COMMERCIAL" ? "upload de .woff2 voor de echte font" : "echte font via je eigen Adobe Fonts-kit"}.
+          </span>
+        </p>
+      )}
 
       {/* Link out — only for real Google Fonts (the URL is built with the
           Google Fonts viewer assumption). Adobe Fonts users browse via their
@@ -542,32 +492,11 @@ function FontDisplayCard({
   );
 }
 
-/**
- * Build per-font Google Fonts CSS URLs.
- *
- * Per-font (rather than multi-family) requests because:
- *   - One unknown font name in a multi-family request can return 400,
- *     blocking the entire stylesheet (and all valid fonts inside it).
- *   - Per-font URLs let the browser load what it can and gracefully drop
- *     what it can't.
- *
- * Conservative weight set (`wght@400;700`) instead of all 9 weights:
- *   - Many fonts only ship a subset of weights (Oranienbaum has only 400).
- *     Requesting unsupported weights inflates the URL without changing the
- *     rendered output, and risks Google rejecting some combinations.
- */
-function buildGoogleFontsUrls(fonts: string[]): string[] {
-  return fonts
-    .filter((f) => f && f.trim().length > 0)
-    .map(normaliseFontName)
-    .map((f) => {
-      const family = f.replace(/\s+/g, '+');
-      return `https://fonts.googleapis.com/css2?family=${family}:wght@400;700&display=swap`;
-    });
-}
-
 export function TypographySection({ styleguide, canEdit }: TypographySectionProps) {
-  const typeScale = (styleguide.typeScale ?? []) as TypeScaleLevel[];
+  const typeScale = useMemo(
+    () => (styleguide.typeScale ?? []) as TypeScaleLevel[],
+    [styleguide.typeScale],
+  );
   const updateTypography = useUpdateSection("typography");
   const reviews = styleguide.reviews ?? [];
 
@@ -603,41 +532,52 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
   const isDetectedFont = (name: string | null | undefined) =>
     !!name && fontAvailabilityMap.has(name.toLowerCase());
 
-  // Stabilize the additional fonts array reference to avoid unnecessary useEffect re-runs
-  const additionalFontsKey = useMemo(
-    () => (styleguide.additionalFonts ?? []).join(','),
-    [styleguide.additionalFonts],
+  // Workspace Adobe Fonts-kit serveert de echte font (de per-font source-kit is
+  // domain-locked). `substituteFor` levert per font-naam de metric-substitute
+  // (of null als de font direct rendert) zodat de preview-stacks die opnemen.
+  const workspaceKitId = styleguide.workspaceAdobeFontsKitId ?? null;
+  const substituteFor = useCallback<SubstituteResolver>(
+    (name) => {
+      const availability = name ? fontAvailabilityMap.get(name.toLowerCase()) ?? null : null;
+      return resolveFontRender(name, availability, { workspaceKitId }).substitute?.googleFont ?? null;
+    },
+    [fontAvailabilityMap, workspaceKitId],
   );
 
-  // Load fonts into the browser so previews render correctly.
-  // Injects one <link> per font to Google Fonts. Per-font links survive when
-  // an individual family is unknown (one missing font can't block the others).
+  // Availability-gedreven font-load (vervangt de blinde Google-Fonts-injectie):
+  // injecteer per font de juiste bron — workspace Adobe-kit / echte Google Font
+  // / metric-substitute — zodat previews consistent renderen i.p.v. een 404'ende
+  // <link> voor commerciële fonts. Rows-less namen (pure AI-inferentie) proberen
+  // alsnog de echte Google Font (kan een legitieme Google Font zijn). Injectie
+  // is idempotent via module-Sets in font-loading.
+  const fontsKey = useMemo(
+    () =>
+      (styleguide.fonts ?? []).map((f) => `${f.name}:${f.availability}`).join(',') +
+      '|' +
+      [styleguide.primaryFontName, ...(styleguide.additionalFonts ?? [])].join(',') +
+      // workspaceKitId mee zodat de injectie-effect óók re-runt wanneer de
+      // workspace-kit wijzigt zonder dat een font-naam verandert.
+      '|kit:' + (workspaceKitId ?? ''),
+    [styleguide.fonts, styleguide.primaryFontName, styleguide.additionalFonts, workspaceKitId],
+  );
   useEffect(() => {
-    const allFonts = [
-      styleguide.primaryFontName,
-      ...(styleguide.additionalFonts ?? []),
-    ].filter((f): f is string => !!f);
-
-    const urls = buildGoogleFontsUrls(allFonts);
-    if (urls.length === 0) return;
-
-    // Remove any previously-injected font links before adding new ones
-    document.querySelectorAll('link[data-brandstyle-fonts]').forEach((el) => el.remove());
-
-    const links = urls.map((url) => {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = url;
-      link.setAttribute('data-brandstyle-fonts', 'true');
-      document.head.appendChild(link);
-      return link;
-    });
-
-    return () => {
-      links.forEach((l) => l.remove());
+    const injectFor = (
+      name: string | null | undefined,
+      availability: "UPLOADED" | "GOOGLE_FONTS" | "ADOBE_FONTS" | "COMMERCIAL" | "UNKNOWN" | null,
+    ) => {
+      if (!name) return;
+      const plan = resolveFontRender(name, availability, { workspaceKitId });
+      if (plan.source === 'ADOBE_FONTS') injectTypekitCss(workspaceKitId);
+      else if (plan.source === 'GOOGLE_FONTS') injectGoogleFontCss(normaliseFontName(name));
+      else if (plan.substitute) injectSubstituteCss(plan.substitute.googleFont);
+      else if (availability == null) injectGoogleFontCss(normaliseFontName(name));
     };
+    for (const f of styleguide.fonts ?? []) injectFor(f.name, f.availability);
+    for (const n of [styleguide.primaryFontName, ...(styleguide.additionalFonts ?? [])]) {
+      if (n && !fontAvailabilityMap.has(n.toLowerCase())) injectFor(n, null);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [styleguide.primaryFontName, additionalFontsKey]);
+  }, [fontsKey]);
 
   // Font editing state
   const [isEditingFont, setIsEditingFont] = useState(false);
@@ -753,6 +693,8 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                 url={styleguide.primaryFontUrl}
                 availability={availabilityFor(styleguide.primaryFontName)}
                 inferred={!isDetectedFont(styleguide.primaryFontName)}
+                substituteFont={styleguide.primaryFontName ? substituteFor(styleguide.primaryFontName) : null}
+                hasWorkspaceKit={availabilityFor(styleguide.primaryFontName) === "ADOBE_FONTS" && !!workspaceKitId}
               />
               <FontDisplayCard
                 role="Secondary"
@@ -761,6 +703,8 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                 url={googleFontsViewUrl(styleguide.additionalFonts?.[0])}
                 availability={availabilityFor(styleguide.additionalFonts?.[0])}
                 inferred={!isDetectedFont(styleguide.additionalFonts?.[0])}
+                substituteFont={styleguide.additionalFonts?.[0] ? substituteFor(styleguide.additionalFonts[0]) : null}
+                hasWorkspaceKit={availabilityFor(styleguide.additionalFonts?.[0]) === "ADOBE_FONTS" && !!workspaceKitId}
               />
             </div>
 
@@ -773,7 +717,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                     <span
                       key={f}
                       className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600"
-                      style={{ fontFamily: `"${normaliseFontName(f)}", system-ui, -apple-system, sans-serif` }}
+                      style={{ fontFamily: buildFontFamilyStack(f, substituteFor(f)) }}
                     >
                       {f}
                     </span>
@@ -944,6 +888,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
             primaryFont={styleguide.primaryFontName}
             additionalFonts={styleguide.additionalFonts ?? []}
             roleMap={typeRoleMap}
+            substituteFor={substituteFor}
           />
         ) : (
           <div className="py-6 text-center text-sm text-gray-400">
@@ -976,6 +921,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
             typeScale={typeScale}
             primaryFont={styleguide.primaryFontName}
             additionalFonts={styleguide.additionalFonts ?? []}
+            substituteFor={substituteFor}
           />
         </Card>
       )}

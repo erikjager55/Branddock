@@ -48,9 +48,18 @@ function classifySelector(selector: string): 'heading' | 'body' | 'other' {
 }
 
 /** Strip quotes + lowercase voor case-insensitive matching. Geen splits hier:
- *  caller is verantwoordelijk om alleen de eerste naam door te geven. */
+ *  caller is verantwoordelijk om alleen de eerste naam door te geven.
+ *  Strip óók de Adobe-CLS-fallback-suffix (`effra-fallback` → `effra`) zodat de
+ *  CSS-zijde aligned blijft met de gecanonicaliseerde targetFonts — anders mist
+ *  een heading-selector met `font-family:'effra-fallback'` zijn computed-style
+ *  hit. Strak anchor `[\s-]fallback$` raakt legitieme `...Fallback`-namen niet. */
 function normalizeName(name: string): string {
-  return name.replace(/^["']|["']$/g, '').trim().toLowerCase();
+  return name
+    .replace(/^["']|["']$/g, '')
+    .trim()
+    .replace(/[\s-]fallback$/i, '')
+    .trim()
+    .toLowerCase();
 }
 
 /**

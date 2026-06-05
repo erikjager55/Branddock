@@ -110,15 +110,17 @@ group('FIX — IconBlock rendering');
       htmlKnown.toLowerCase().includes('stroke') && htmlKnown.toLowerCase().includes('rgb'));
   assert('match → aria-hidden wrapper', htmlKnown.includes('aria-hidden="true"'));
 
-  // Miss: render text fallback
+  // Miss: onbekende naam → neutraal Sparkles-default-icoon (brand-fidelity
+  // overhaul 5216c7db) i.p.v. de rauwe icon-naam als tekst (zag er broken uit
+  // op gerenderde LP's). fallbackTextStyle is nu ongebruikt (backward-compat).
   const elMiss = IconBlock({
     name: 'not-a-real-icon-name',
     color: '#FF0000',
     fallbackTextStyle: { textTransform: 'uppercase' },
   });
   const htmlMiss = renderToStaticMarkup(elMiss as React.ReactElement);
-  assert('miss → geen <svg>', !htmlMiss.includes('<svg'));
-  assert('miss → text-label rendert', htmlMiss.includes('not-a-real-icon-name'));
+  assert('miss → Sparkles-svg fallback (geen tekst meer)', htmlMiss.includes('<svg'));
+  assert('miss → rauwe icon-naam NIET als tekst getoond', !htmlMiss.includes('not-a-real-icon-name'));
 
   // Empty: null (no render)
   const elEmpty = IconBlock({ name: '', color: '#FF0000' });
@@ -222,10 +224,11 @@ group('FIX — Camel-case icon-namen werken ook (AI varieert)');
   );
 
   const svgCount = (html.match(/<svg/g) ?? []).length;
-  assert('twee CamelCase namen herkend → 2 <svg>', svgCount === 2);
+  // 2 herkende CamelCase-namen + 1 onbekende die op Sparkles terugvalt = 3 svg.
+  assert('CamelCase herkend + onbekend → 3 <svg> (Sparkles-fallback)', svgCount === 3);
   assert(
-    'onbekend "unknown_icon_name" → text-fallback',
-    html.includes('unknown_icon_name'),
+    'onbekend "unknown_icon_name" → Sparkles-svg, geen rauwe tekst',
+    !html.includes('unknown_icon_name'),
   );
 }
 

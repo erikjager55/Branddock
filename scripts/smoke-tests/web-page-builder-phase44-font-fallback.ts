@@ -20,6 +20,8 @@ import {
   planHeadlessMerge,
   shouldTryHeadless,
   selectDetectedFontNames,
+  canonicalizeFontFamily,
+  dedupeBrandFonts,
 } from '../../src/lib/brandstyle/font-fallback';
 
 let pass = 0, fail = 0;
@@ -48,10 +50,35 @@ const acssRes = extractSemanticFonts(acss);
 assert('regressie: --h1-font-family → "Poppins"', acssRes.headingFont === 'Poppins', `got=${acssRes.headingFont}`);
 assert('regressie: --body-font-family → "Inter"', acssRes.bodyFont === 'Inter', `got=${acssRes.bodyFont}`);
 
-console.log('\n── selectDetectedFontNames: geen AI-leak ──');
+console.log('\n── canonicalizeFontFamily: Adobe-CLS-fallback + generics ──');
+assert('effra-fallback → effra', canonicalizeFontFamily('effra-fallback') === 'effra', `got=${canonicalizeFontFamily('effra-fallback')}`);
+assert('Inter Fallback → Inter', canonicalizeFontFamily('Inter Fallback') === 'Inter', `got=${canonicalizeFontFamily('Inter Fallback')}`);
+assert('"Effra" (quotes) → Effra', canonicalizeFontFamily('"Effra"') === 'Effra', `got=${canonicalizeFontFamily('"Effra"')}`);
+assert('system-ui → null', canonicalizeFontFamily('system-ui') === null);
+assert('Segoe UI → null', canonicalizeFontFamily('Segoe UI') === null);
+assert('whitespace → null', canonicalizeFontFamily('   ') === null);
+assert('null/undefined → null', canonicalizeFontFamily(null) === null && canonicalizeFontFamily(undefined) === null);
+assert('Fallback Display → ongewijzigd (geen false-positive)', canonicalizeFontFamily('Fallback Display') === 'Fallback Display', `got=${canonicalizeFontFamily('Fallback Display')}`);
+assert('Falling Sky → ongewijzigd', canonicalizeFontFamily('Falling Sky') === 'Falling Sky', `got=${canonicalizeFontFamily('Falling Sky')}`);
+assert('PT Sans → casing niet gemuteerd', canonicalizeFontFamily('PT Sans') === 'PT Sans', `got=${canonicalizeFontFamily('PT Sans')}`);
+
+console.log('\n── dedupeBrandFonts: X vs X-fallback collapse ──');
+assert('[effra, effra-fallback] → [effra]', JSON.stringify(dedupeBrandFonts(['effra', 'effra-fallback'])) === JSON.stringify(['effra']));
+assert('[Inter] → [Inter]', JSON.stringify(dedupeBrandFonts(['Inter'])) === JSON.stringify(['Inter']));
+assert('[] → []', dedupeBrandFonts([]).length === 0);
+assert('drop generics in lijst', JSON.stringify(dedupeBrandFonts(['Effra', 'system-ui', 'Inter', 'sans-serif'])) === JSON.stringify(['Effra', 'Inter']));
+assert('case/quote-varianten → eerste-voorkomen', JSON.stringify(dedupeBrandFonts(['"Effra"', 'effra', 'EFFRA'])) === JSON.stringify(['Effra']));
+// assignRole-invariant (assignRole zelf is een closure in writeResultToDb): de
+// fix leunt erop dat een ruwe bodyFont 'effra-fallback' en een gecanonicaliseerde
+// rij-naam 'Effra' tot dezelfde vergelijkingssleutel canonicaliseren.
+assert('assignRole-invariant: effra-fallback ≡ Effra na canon',
+  canonicalizeFontFamily('effra-fallback')?.toLowerCase() === canonicalizeFontFamily('Effra')?.toLowerCase());
+
+console.log('\n── selectDetectedFontNames: geen AI-leak + canon/dedup ──');
 assert('leeg → [] (geen AI-fallback gepresenteerd als detectie)', selectDetectedFontNames([]).length === 0);
 assert('echte fonts → behouden', JSON.stringify(selectDetectedFontNames(['Inter', 'Roboto'])) === JSON.stringify(['Inter', 'Roboto']));
 assert('filtert lege/whitespace strings', JSON.stringify(selectDetectedFontNames(['', '  ', 'Inter', null, undefined])) === JSON.stringify(['Inter']));
+assert('effra + effra-fallback → 1 rij (geen dubbele kaart)', JSON.stringify(selectDetectedFontNames(['effra', 'effra-fallback'])) === JSON.stringify(['effra']));
 assert('cap op 6', selectDetectedFontNames(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']).length === 6);
 
 console.log('\n── hasNoBrandFonts ──');
