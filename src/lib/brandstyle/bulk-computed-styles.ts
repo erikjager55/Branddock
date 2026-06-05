@@ -40,6 +40,9 @@ const TRACK_PROPS = [
   'box-shadow',
   'background-color',
   'color',
+  // border-color meegenomen zodat de usage-gedreven palet-filter ook accenten
+  // ziet die alléén als rand renderen (review-fix MAJOR-2).
+  'border-color',
 ] as const;
 
 type TrackedProp = typeof TRACK_PROPS[number];

@@ -37,6 +37,22 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 280. Brandstyle palet: usage-gedreven filter (multi-page) i.p.v. hex-blocklist
+
+User-eis na re-scrape: een kleur mag ALLEEN uit het palet vallen als hij aantoonbaar niet gebruikt wordt — niet op een hardgecodeerde hex-lijst (die brittle is + een echt-gebruikte kleur kan overslaan). Nieuwe `palette-usage-filter.ts` beslist op **werkelijk renderen**:
+
+- **Signalen**: multi-page computed `color`/`background-color`/`border-color`-frequenties (uit de component-screenshotter, ~5 pagina's; `bulk-computed-styles`) + de homepage pixel-pass usageEvidence (`color-usage-verifier`). Bestond al, maar de multi-page-data werd niet in het keep/drop-besluit gebruikt en de pixel-pass keek alleen naar de homepage.
+- **Regel**: logo + structurele kleuren (donkerste tekst / lichtste surface, over de gerenderde subset) altijd; geen usage-data → behouden (afwezigheid van bewijs ≠ bewijs van afwezigheid); rendert nergens → drop; framework-default → alleen bij STERK gebruik; elke andere gebruikte kleur → behouden. De oude hex/tag-drop (`isFrameworkNoiseColor`) is verwijderd; `resolveColors` geeft nu het volledige palet, de filter draait ná de component-screenshotter vóór persist.
+
+Hiermee blijft bv. Slate Gray staan *omdat* hij aantoonbaar als muted tekst rendert (multi-page geverifieerd), terwijl een framework-kleur die nergens rendert (Bootstrap Blue) valt — en een wél-gebruikte kleur wordt nooit overgeslagen.
+
+**Review**: adversariële 3-lens workflow → geen CRITICAL. Gefixt: MAJOR-1 (gefaalde/lege pixel-pass schreef `'none'` = "kon-niet-meten" → engine-guard negeert de pixel-pass zonder positief signaal, anders over-drop), MAJOR-2 (`border-color` toegevoegd zodat border-only accenten meetellen), MAJOR-3 (`renderStrength` sample-floor: 'strong' vereist ≥60 samples zodat een dunne pagina geen framework-kleur "strong" maakt), MINOR-1 (structureel over gerenderde subset), MINOR-2 (RGB-tolerantie 24→40, gelijk met de verifier), MINOR-3 (dode `isFrameworkNoiseColor` + phase46-smoke verwijderd). De smoke ving daarvóór al 2 bugs (transparant-regex matchte `rgb(r,g,0)`; drop-alleen-bij-bewijs).
+
+**Bewijs**: smoke `web-page-builder-phase47-usage-filter` 21/21; regressie 44/45 groen; tsc+lint 0. **Vereist re-scrape voor volledige validatie** (Track A): `border-color`-collector + multi-page usage zijn pas op een live render te bevestigen.
+
+- Task: vervolg op `docs/audits/2026-06-05-brandstyle-palette-framework-cleanup.md`
+- Commit: branch `fix/brandstyle-extraction`
+
 ### 279. Brandstyle palet-framework-cleanup + Voice-analyse resilient (Fase A/C/E/F)
 
 Verse re-scrape Zwarthout ná #278 toonde de kern-oorzaak achter alle kleur-klachten (kleurcombinaties/buttons/effects "niet op de site", overbodige kleuren, dubbel overzicht): het palet was **100% Bootstrap/WordPress framework-defaults** (12 kleuren, 6 getagd `unused`; echt logo-oranje ontbreekt). Plan + diagnose: `docs/audits/2026-06-05-brandstyle-palette-framework-cleanup.md`.

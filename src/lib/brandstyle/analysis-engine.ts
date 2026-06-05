@@ -641,6 +641,11 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     let finalComponents = scraped.components;
     let usedComponentScreenshots = false;
     let usedComponentVision = false;
+    // Multi-page computed `color`/`background-color`-frequenties uit de
+    // component-screenshotter (~5 pagina's) — voedt de usage-gedreven palet-
+    // filter ná dit blok. Null wanneer de screenshotter uit staat; de filter
+    // valt dan terug op de homepage pixel-pass usageEvidence.
+    let multiPageColorStyles: import('./palette-usage-filter').BulkColorStyles | null = null;
     try {
       const { isComponentScreenshotsEnabled, extractComponentsFromPages } =
         await import('./component-screenshotter');
@@ -659,6 +664,8 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         console.log(`[brandstyle-analysis] Taking component screenshots for ${componentUrls.length} page(s)`);
         const shotResult = await extractComponentsFromPages(componentUrls, styleguideMeta.workspaceId);
         const shot = shotResult.components;
+        // Bewaar de multi-page computed-kleur-frequenties voor de palet-filter.
+        multiPageColorStyles = shotResult.bulkStyles?.styles ?? null;
 
         // Augment static CSS heuristics met runtime computed-style frequencies.
         // Catches Tailwind/CSS-in-JS resolved values die de cheerio-pass mist.
@@ -726,6 +733,39 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         `[brandstyle-analysis] Component screenshots failed (non-critical): ${shotErr instanceof Error ? shotErr.message : String(shotErr)}`,
       );
     }
+
+    // Usage-gedreven palet-filter: drop kleuren die op GÉÉN geanalyseerde
+    // pagina renderen (multi-page computed-style + homepage pixel-pass);
+    // framework-defaults blijven alléén bij sterk gebruik; logo + structurele
+    // kleuren altijd. Vervangt de oude hex/tag-blocklist door een werkelijk-
+    // gebruik-test, zodat een kleur nooit valt enkel omdat hij een framework-
+    // hex deelt — alleen als hij aantoonbaar niet gebruikt wordt.
+    {
+      const { applyUsageDrivenPaletteFilter } = await import('./palette-usage-filter');
+      const usageEvidenceByHex = new Map<string, 'strong' | 'weak' | 'none' | undefined>();
+      for (const c of processed.authoritativeColors) {
+        const hx = normalizeHex(c.hex);
+        if (hx) usageEvidenceByHex.set(hx.toUpperCase(), c.usageEvidence);
+      }
+      // Een GEFAALDE/lege pixel-pass (sharp-decode-fail, nul opaque pixels)
+      // markeert ÁLLE kleuren als 'none' — dat is "kon-niet-meten", niet
+      // "bewezen ongebruikt". Gebruik de pixel-verdicten daarom alleen als de
+      // pass minstens één POSITIEF signaal opleverde; anders telt 'none' niet
+      // als drop-bewijs en beslist de multi-page-data (of geen-bewijs → keep).
+      const pixelHadSignal = [...usageEvidenceByHex.values()].some(
+        (e) => e === 'strong' || e === 'weak',
+      );
+      if (!pixelHadSignal) usageEvidenceByHex.clear();
+      const beforeCount = resolvedColors.length;
+      resolvedColors = applyUsageDrivenPaletteFilter(resolvedColors, {
+        bulkColorStyles: multiPageColorStyles,
+        usageEvidenceByHex,
+      });
+      console.log(
+        `[brandstyle-analysis] Usage-driven palette filter: ${beforeCount} → ${resolvedColors.length} colors (multi-page=${multiPageColorStyles ? 'yes' : 'no'})`,
+      );
+    }
+
     // Tag provenance so the UI can surface what path was used:
     //   - gemini-fallback  → LLM-reconstructed data (reduced accuracy)
     //   - headless-render  → browser-rendered CSS (higher fidelity than static)
@@ -1668,71 +1708,13 @@ function resolveColors(
     });
   });
 
-  // Verbeterplan Fase A: drop framework-default-ruis (Bootstrap/WordPress)
-  // die ongebruikt is. Op een framework-site (zoals zwarthout.com, een
-  // Bootstrap-shop) is het hele palet anders 100% framework-defaults — die
-  // lekken naar kleurcombinaties, accent-buttons én verzonnen gradients.
-  // Logo-kleuren en kleuren met positief usage-bewijs blijven altijd behouden.
-  // Bescherm de donkerste kleur (de feitelijke tekstkleur) tegen drop, ook als
-  // het een framework-default-grijs/zwart is (Zwarthout's #212529 is Bootstrap
-  // maar wél de echte tekstkleur).
-  // hexToHsl rondt lightness af op gehele procenten → ties tussen bijna-zwarte
-  // grijzen zijn realistisch. Bij gelijke lichtheid prefereren we de kleur met
-  // een tekst-signaal (de echte `--bs-body-color`) boven palet-volgorde.
-  const isTextColor = (tags?: string[]) =>
-    (tags ?? []).some((t) => /(?:^|[-_])text$|primary-text|body-text/i.test(t));
-  const darkestHex = items.reduce<{ hex: string; l: number; text: boolean }>(
-    (best, it) => {
-      const l = hexToHsl(it.color.hex)?.l ?? 100;
-      const text = isTextColor(it.color.tags);
-      if (l < best.l) return { hex: it.color.hex, l, text };
-      if (l === best.l && text && !best.text) return { hex: it.color.hex, l, text };
-      return best;
-    },
-    { hex: '', l: Infinity, text: false },
-  ).hex;
-  const kept = items.filter(
-    (it) =>
-      it.color.hex === darkestHex ||
-      !isFrameworkNoiseColor({ ...it.color, usageEvidence: it.usageEvidence }),
-  );
-  // Safety: filter nooit het hele palet weg (anders refuse-mode/leeg). Bij
-  // een volledig-framework-palet houden we de gekozen kleuren; de echte
-  // merk-kleur komt via de logo-rescue (Fase B).
-  return (kept.length > 0 ? kept : items).map((it) => it.color);
-}
-
-/**
- * True wanneer een kleur framework-default-RUIS is: framework-herkomst
- * (Bootstrap/WordPress/Gutenberg — via tag, hex-match of detector) ÉN
- * ongebruikt (`usageEvidence==='none'` of `unused`-tag), en geen logo-kleur
- * of kleur met positief usage-bewijs. Pure functie — smoke-testbaar.
- * Verbeterplan Fase A (audit 2026-06-05-brandstyle-palette-framework-cleanup).
- */
-export function isFrameworkNoiseColor(c: {
-  hex: string;
-  tags?: string[];
-  detectorSource?: string | null;
-  usageEvidence?: 'strong' | 'weak' | 'none';
-}): boolean {
-  const tags = (c.tags ?? []).map((t) => t.toLowerCase());
-  const src = (c.detectorSource ?? '').toLowerCase();
-  // Exact-token-match: een substring-regex zou een echte merk-kleur met een tag
-  // als "wordpress-migrated"/"synced-from-figma" onterecht als framework-ruis
-  // bestempelen. `framework` is de generieke tag die AI/detector zet; bootstrap/
-  // wordpress/gutenberg/synced zijn de specifieke.
-  const FRAMEWORK_TAGS = ['framework', 'bootstrap', 'wordpress', 'gutenberg', 'synced'];
-  const frameworkOrigin =
-    isFrameworkDefaultPrimary(c.hex) || tags.some((t) => FRAMEWORK_TAGS.includes(t));
-  if (!frameworkOrigin) return false;
-  const isLogo = /logo/.test(src) || tags.some((t) => t.includes('logo'));
-  if (isLogo) return false;
-  // Een framework-default-kleur is alleen een ECHTE merk-kleur bij STERK gebruik.
-  // Zwakke link/border-usage (Bootstrap's default link-blauw draagt `usage:link`
-  // + `unused`) telt NIET als brand-usage — anders blijft het hele Bootstrap-
-  // palet staan op een puur-framework-site (Zwarthout). Alleen `usageEvidence
-  // === 'strong'` redt een framework-default-kleur; al het overige is ruis.
-  return c.usageEvidence !== 'strong';
+  // resolveColors geeft het VOLLEDIGE geclassificeerde palet terug. De
+  // usage-gedreven drop (framework-ruis / niet-renderende kleuren) gebeurt
+  // LATER in een aparte stap (`applyUsageDrivenPaletteFilter`), wanneer de
+  // multi-page computed-style aanwezigheid uit de component-screenshotter
+  // beschikbaar is — zodat een kleur alleen valt als hij op géén enkele
+  // geanalyseerde pagina rendert (niet op basis van een hex-blocklist).
+  return items.map((it) => it.color);
 }
 
 /**
