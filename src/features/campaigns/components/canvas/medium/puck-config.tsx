@@ -199,18 +199,16 @@ function statsBlockComponent(tokens: BrandTokens) {
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   const tbr = tokens.typographyByRole;
 
-  // Dark-bg ALLEEN wanneer bron-website ook donkere sections heeft
-  // (hasDarkSections evidence). Voorheen archetype-driven (RULER/SAGE/
-  // MAGICIAN/OUTLAW/HERO → automatisch dark) wat mismatch gaf op
-  // light-only brands die toevallig in een van die archetypes vallen.
-  // Voor RULER/MAGICIAN-light-design brands geeft dit nu light-bg stats
-  // die matchen met hun bron — geen dark-bg meer zonder evidence.
-  const useDarkBg = tokens.hasDarkSections && (
-    tokens.archetype === 'RULER' || tokens.archetype === 'SAGE' ||
-    tokens.archetype === 'MAGICIAN' || tokens.archetype === 'OUTLAW' ||
-    tokens.archetype === 'HERO'
-  );
-  const sectionBg = useDarkBg ? tokens.onSurface : tokens.surface;
+  // Dark-bg ALLEEN wanneer de bron-website donkere sections heeft
+  // (hasDarkSections + een echte donkere section-bg) — die evidence-gate
+  // filtert light-only brands al weg. P3/P7/P9: de stats-band is dan een
+  // cinematische accent-beat (oversized merk-cijfers op charcoal). Eerder
+  // beperkte een archetype-filter (RULER/SAGE/MAGICIAN/OUTLAW/HERO) dit
+  // onnodig — een donker-merk als zwarthout (CREATOR) kreeg lichte stats
+  // ondanks zijn donkere identiteit.
+  const darkBg = tokens.darkSectionBg ?? tokens.onSurface;
+  const useDarkBg = tokens.hasDarkSections && tokens.darkSectionBg != null;
+  const sectionBg = useDarkBg ? darkBg : tokens.surface;
   const numberColor = useDarkBg ? tokens.brand : tokens.brand;
   const labelColor = useDarkBg ? '#FFFFFF' : tokens.surfaceMuted;
   // Number sizes — gebruik scraped display.fontSize wanneer aanwezig, anders
@@ -2002,7 +2000,8 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens) {
       <h4 style={{ fontFamily: headingFont, color: text, fontSize: 18, fontWeight: 600, marginTop: 14, marginBottom: 6 }}>{children}</h4>
     ),
     p: ({ children }: { children?: React.ReactNode }) => (
-      <p style={{ fontFamily: bodyFont, color: text, marginBottom: 12 }}>{children}</p>
+      // P12 measure-cap: ~40em ≈ 75-80 tekens + ruime leading voor leesritme.
+      <p style={{ fontFamily: bodyFont, color: text, marginBottom: 12, maxWidth: '40em', lineHeight: 1.6 }}>{children}</p>
     ),
     ul: ({ children }: { children?: React.ReactNode }) => (
       <ul style={{ fontFamily: bodyFont, color: text, paddingLeft: 24, marginBottom: 12, listStyleType: 'disc' }}>{children}</ul>
