@@ -304,12 +304,13 @@ export function LandingPageGenerateBlock({
   }, [variantOptions, chosenVariant, isGenerating, briefIncomplete, error, handleGenerate]);
 
   /**
-   * Genereert een hero-visual voor een variant, injecteert de URL in de hero
-   * en persisteert de bijgewerkte puckData. Gedeeld door de handmatige
-   * "genereer visual"-knop én de verplichte-header auto-generatie bij keuze.
+   * Genereert een hero-visual en RETURNT de eerste URL (of null) — geen persist/
+   * navigatie-side-effects. Vult wel de image-varianten-picker. Zo kan de
+   * variant-keuze de URL deterministisch IN de variant vouwen vóór de éne
+   * persist+render (i.p.v. fire-and-forget dat soms een kleurblok liet zien).
    */
-  const generateHeroVisualFor = useCallback(
-    async (variant: LandingPageVariantContent): Promise<void> => {
+  const generateHeroVisualUrl = useCallback(
+    async (variant: LandingPageVariantContent): Promise<string | null> => {
       const heroVisualInstruction = buildHeroVisualInstruction(variant, contextStack);
       const result = await generateCanvasVisual(deliverableId, {
         instruction: heroVisualInstruction,
@@ -317,11 +318,23 @@ export function LandingPageGenerateBlock({
         count: 1,
       });
       const variants = result.variants ?? [];
-      if (variants.length === 0) return;
+      if (variants.length === 0) return null;
       setImageVariants(
         variants.map((v, i) => ({ index: i, url: v.url, prompt: v.prompt ?? '', isSelected: i === 0 })),
       );
-      const firstUrl = variants[0]?.url;
+      return variants[0]?.url ?? null;
+    },
+    [contextStack, deliverableId, setImageVariants],
+  );
+
+  /**
+   * Genereert een hero-visual, injecteert de URL in de hero en persisteert de
+   * bijgewerkte puckData. Gebruikt door de handmatige "genereer visual"-knop in
+   * Step 3 (eigen persist + refresh).
+   */
+  const generateHeroVisualFor = useCallback(
+    async (variant: LandingPageVariantContent): Promise<void> => {
+      const firstUrl = await generateHeroVisualUrl(variant);
       if (!firstUrl) return;
       const updated: LandingPageVariantContent = {
         ...variant,
@@ -338,7 +351,7 @@ export function LandingPageGenerateBlock({
         new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
       );
     },
-    [contextStack, deliverableId, setImageVariants, setStructuredVariant],
+    [generateHeroVisualUrl, contextStack, deliverableId, setStructuredVariant],
   );
 
   const handleChooseVariant = useCallback(async (variant: LandingPageVariantContent) => {
@@ -348,9 +361,38 @@ export function LandingPageGenerateBlock({
       // Injecteer een eerder handmatig geselecteerde hero-image zodat Step 3
       // (die puckData rendert) de foto toont. Behoud een reeds aanwezige
       // heroVisualUrl op de variant wanneer er geen losse selectie is.
-      const chosen: LandingPageVariantContent = selectedHeroImageUrl
+      let chosen: LandingPageVariantContent = selectedHeroImageUrl
         ? { ...variant, hero: { ...variant.hero, heroVisualUrl: selectedHeroImageUrl } }
         : variant;
+      // Verplichte header-image (user-feedback 2026-06-03): een LP zonder hero-
+      // image is niet toegestaan. DETERMINISTISCH: genereer 'm hier en vouw 'm
+      // IN de variant vóór de éne persist+render — zodat Step 3 de pagina MÉT de
+      // foto toont i.p.v. eerst een kleurblok (de oude fire-and-forget-na-
+      // onAdvance liet soms een beeldloze hero zien). Faalt de generatie, dan
+      // surfacen we dat + de pagina rendert zonder foto (handmatige knop in
+      // Step 3 blijft beschikbaar) — navigatie wordt niet geblokkeerd.
+      if (!chosen.hero.heroVisualUrl) {
+        setIsGeneratingVisual(true);
+        setVisualError(null);
+        try {
+          // Race tegen een ceiling zodat een hangende image-API de keuze-flow
+          // niet oneindig blokkeert: bij timeout renderen we zonder foto (de
+          // gen loopt door en vult de picker zodra klaar). 45s dekt FLUX/Imagen.
+          const heroUrl = await Promise.race([
+            generateHeroVisualUrl(chosen),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 45_000)),
+          ]);
+          if (heroUrl) {
+            chosen = { ...chosen, hero: { ...chosen.hero, heroVisualUrl: heroUrl } };
+          } else {
+            setVisualError('Automatische header-image kwam niet (op tijd) terug — genereer handmatig in Step 3.');
+          }
+        } catch (genErr) {
+          setVisualError(genErr instanceof Error ? genErr.message : 'Automatische header-image mislukt — genereer handmatig in Step 3.');
+        } finally {
+          setIsGeneratingVisual(false);
+        }
+      }
       const puckData = variantToPuckDataFromStructured(chosen, contextStack);
       const patchRes = await fetch(`/api/studio/${deliverableId}`, {
         method: 'PATCH',
@@ -379,29 +421,15 @@ export function LandingPageGenerateBlock({
       window.dispatchEvent(
         new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
       );
-      // Verplichte header-image (user-feedback 2026-06-03): een LP zonder
-      // hero-image is niet toegestaan. Is er geen handmatig geselecteerde of
-      // reeds aanwezige visual → genereer er automatisch één. Fire-and-forget
-      // zodat we direct naar Step 3 kunnen; de hero verschijnt zodra de
-      // generatie klaar is (puckData-PATCH + refresh-event). Faalt 'm, dan
-      // blijft de handmatige knop in Step 3 beschikbaar.
-      if (!chosen.hero.heroVisualUrl) {
-        setIsGeneratingVisual(true);
-        void generateHeroVisualFor(chosen)
-          .catch(() => {
-            setVisualError('Automatische header-image mislukt — genereer handmatig in Step 3.');
-          })
-          .finally(() => setIsGeneratingVisual(false));
-      }
-      // Na variant-keuze direct door naar Step 3 (Medium/Puck), dat de
-      // gepersisteerde puckData rendert zodra contextStack ververst is.
+      // De hero-image (indien gegenereerd) zit nu al in de gepersisteerde
+      // puckData → Step 3 rendert de pagina MÉT de foto.
       onAdvance();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Variant-keuze opslaan mislukt');
     } finally {
       setIsChoosing(false);
     }
-  }, [contextStack, deliverableId, selectedHeroImageUrl, setContextStack, setStructuredVariant, onAdvance, generateHeroVisualFor]);
+  }, [contextStack, deliverableId, selectedHeroImageUrl, setContextStack, setStructuredVariant, onAdvance, generateHeroVisualUrl]);
 
   const handleGenerateVisual = useCallback(async () => {
     if (!chosenVariant) return;
@@ -622,6 +650,21 @@ export function LandingPageGenerateBlock({
             />
           ))}
         </div>
+        {/* Deterministische hero-gen feedback: tijdens de keuze genereert de
+            verplichte hero-image (de pagina opent ermee). Surface dat + een
+            niet-blokkerende waarschuwing bij timeout/fout (pagina rendert dan
+            zonder foto). Voorheen werd deze state nergens getoond → stil. */}
+        {isChoosing && isGeneratingVisual ? (
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Hero-image genereren — de pagina opent met de foto…
+          </div>
+        ) : null}
+        {visualError ? (
+          <div role="alert" className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
+            <p className="text-xs text-amber-700">{visualError}</p>
+          </div>
+        ) : null}
         {error ? <ErrorBanner message={error} /> : null}
 
         {/* User-feedback 2026-05-28: hetzelfde Step 2 patroon als 'Content

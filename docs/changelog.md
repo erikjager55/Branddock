@@ -37,6 +37,18 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 290. LP-render: AI-hero-image deterministisch (geen kleurblok meer)
+
+De verplichte hero-image werd fire-and-forget gegenereerd ná `onAdvance` → de pagina opende soms zonder foto (kleurblok), en de foto patchte er pas later (of nooit) in. `handleChooseVariant` genereert de hero nu **vóór** de éne persist en vouwt de URL IN de variant → Step 3 rendert de pagina mét de foto (deterministisch). `generateHeroVisualUrl` (puur, returnt URL) gesplitst van `generateHeroVisualFor`; 45s-race-ceiling zodat een hangende image-API de keuze-flow niet blokkeert (bij timeout: pagina zonder foto + duidelijke melding). De eerder onzichtbare `visualError`/`isGeneratingVisual`-state wordt nu getoond in de keuze-view (review-fix). tsc+lint 0; LP-smokes groen.
+
+- Commit: branch `fix/lp-hero-gen-deterministic`
+
+### 289. LP-render (Medium): contrast + typografie-load + ritmiek (Zwarthout-analyse)
+
+Gegenereerde Zwarthout-landingspagina was deels onleesbaar/flets. Audit: `docs/audits/2026-06-06-lp-render-zwarthout.md` (2 workflows / 6 dimensies). Drie tracks: **Track 1 Contrast** (`resolveOnColor` clampt elke tekstkleur tegen de WERKELIJK gerenderde bg, + `normalizeColorToHex` voor gescrapte `rgb()`/3-digit; display/kop 3.0, body 5.0; full-bleed gebruikt scrim-kleur); **Track 3 Typografie laadt** (`stripFontWeightSuffix` "Sen Bold"→"Sen" + 'roboto' uit loader-`SYSTEM_FONTS` + weight-strip); **Track 4 Ritmiek** (preset-`sectionPaddingY` geclampt [40,56], 100vh-hero alleen bij image/placeholder-frame, final-CTA-kop als `BrandCTA.heading`). 2-reviewer: 1 CRITICAL (niet-hex bg→wit-op-wit) + 3 WARNING gefixt. Smokes `phase53/54/55`, stale `phase9/11/18` geüpdatet, sweep groen. (Changelog-entry miste in PR #20 door commit-na-push; code wél gemerged `0d289d2f`.) Gescoped/resteert: Track 2 beeld (zwarthout `brandImages`=null), Track 6 donker-sectie-extractie, E-1/E-3.
+
+- Commit: PR #20 (`0d289d2f`)
+
 ### 288. Brandstyle: screenshotter page-load robuust (networkidle-hang → domcontentloaded + capped settle)
 
 De component-screenshotter gebruikte `page.goto(..., waitUntil: 'networkidle')`. Op sites met doorlopende netwerk-activiteit (WordPress-plugins/ads/analytics/polling) settelde networkidle nooit → 30s-timeout → pagina overgeslagen → géén multi-page bulk computed-styles → usage-filter zonder primair signaal (de napking-variantie uit #287's observability).
