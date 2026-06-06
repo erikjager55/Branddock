@@ -12,6 +12,8 @@ import { variantToPuckData } from './variant-to-puck-data';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
 import { useBrandFontLoader } from './useBrandFontLoader';
 import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
+import { TokenProvenancePanel } from './TokenProvenancePanel';
+import { useDeveloperAccess } from '@/hooks/use-developer-access';
 // Page-level lock is stored op `puckData.root.props.locked` (boolean).
 // Per-component lock-utils (component-lock.ts) blijven beschikbaar voor
 // de fullscreen Puck-editor (sidebar metadata) — niet meer in default-view.
@@ -45,6 +47,7 @@ export function PuckPageBuilder({
 }: PlatformPreviewProps) {
   const contextStack = useCanvasStore((s) => s.contextStack);
   const deliverableId = useCanvasStore((s) => s.deliverableId);
+  const { data: isDeveloper } = useDeveloperAccess();
   const hydratedPuckData = (contextStack?.puckData ?? null) as SpikeData | null;
 
   const config = useMemo(() => buildSpikePuckConfig(contextStack), [contextStack]);
@@ -414,6 +417,12 @@ export function PuckPageBuilder({
           __html: buildA11yStyleBlock(contextStack?.brandTokens?.brand ?? '#1FD1B2'),
         }}
       />
+
+      {/* V3 — token-provenance footer (developer-only): waar komt elke
+          gerenderde token-waarde vandaan? Maakt GIGO debugbaar vóór accept. */}
+      {isDeveloper === true ? (
+        <TokenProvenancePanel provenance={contextStack?.brandProvenance} />
+      ) : null}
 
       {/* Page-render — flat op de pagina-achtergrond, geen kader/wrapper-bg
           zodat de preview naadloos in het Step 3 layout zit. */}

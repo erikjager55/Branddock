@@ -12,6 +12,7 @@
     "test:e2e:headed": "playwright test --config e2e/playwright.config.ts --headed",
     "test:e2e:debug": "playwright test --config e2e/playwright.config.ts --debug",
     "test:e2e:report": "playwright show-report",
+    "test:brandstyle-eval": "tsx scripts/smoke-tests/brandstyle-provenance.ts",
     "smoke:studio": "tsx scripts/smoke-tests/studio-generation.ts",
     "smoke:locale": "tsx scripts/smoke-tests/locale-enforcement.ts",
     "smoke:conversion-tweaks": "tsx scripts/smoke-tests/conversion-tweaks.ts",

@@ -1,0 +1,48 @@
+name: Brandstyle Token Eval
+
+# V5 van het governed-token-layer verbeterplan: ablation-per-PR. Draait de
+# deterministische [DET] provenance/extractie-suite op elke PR die de
+# brandstyle-extractie of de LP-token-laag raakt. Geen API-keys / netwerk nodig
+# (puur fixture → assert), dus goedkoop genoeg om als blokkerende check te
+# draaien. Een wijziging die token-resolutie of provenance laat regresseren,
+# faalt hier vóór merge — analoog aan Anthropic's CI-flag op modeling-changes
+# die downstream dashboards breken.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/lib/brandstyle/**'
+      - 'src/lib/landing-pages/**'
+      - 'scripts/smoke-tests/brandstyle-provenance.ts'
+      - '.github/workflows/brandstyle-eval.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: brandstyle-eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  det-suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Prisma Client wordt transitief geïmporteerd door enkele src-modules;
+      # schema-only generate (geen DB-connectie) houdt tsx-imports veilig.
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run [DET] brandstyle provenance/extractie-suite
+        env:
+          # Fake URL — de suite raakt geen DB, maar src/lib/prisma.ts wil een
+          # geldige connection-string bij module-load.
+          DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
+        run: npx tsx scripts/smoke-tests/brandstyle-provenance.ts

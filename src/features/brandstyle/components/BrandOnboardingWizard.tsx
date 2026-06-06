@@ -11,10 +11,13 @@ import {
   Boxes,
   CheckCircle2,
   ExternalLink,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/shared";
 import type { BrandStyleguide, StyleguideTab } from "../types/brandstyle.types";
+import { computeDataQuality, type DataQualityItem } from "../utils/data-quality";
 
 interface BrandOnboardingWizardProps {
   styleguide: BrandStyleguide;
@@ -66,6 +69,21 @@ export function BrandOnboardingWizard({
   );
 
   const isEmpty = counts.colors === 0 && counts.fonts === 0 && counts.components === 0;
+
+  // V4 (governed-token-layer) — onzekerheid-first: welke curatabele kleuren/
+  // fonts kon de analyzer NIET zeker bepalen (fallback/preset/low-confidence)?
+  // De wizard zet die bovenaan zodat de gebruiker zijn aandacht richt op wat
+  // bevestiging nodig heeft i.p.v. op de hele lijst (de 21→95% curatie-sprong
+  // uit de Anthropic self-service-analytics les).
+  const dataQuality = useMemo(() => computeDataQuality(styleguide), [styleguide]);
+  const uncertainColors = useMemo(
+    () => dataQuality.needsAttention.filter((i) => i.tab === "colors"),
+    [dataQuality],
+  );
+  const uncertainFonts = useMemo(
+    () => dataQuality.needsAttention.filter((i) => i.tab === "typography"),
+    [dataQuality],
+  );
 
   const topColors = useMemo(
     () =>
@@ -179,12 +197,18 @@ export function BrandOnboardingWizard({
           ) : (
             <>
               {stepIndex === 0 && (
-                <WelcomeStep styleguide={styleguide} counts={counts} />
+                <WelcomeStep
+                  styleguide={styleguide}
+                  counts={counts}
+                  attentionCount={dataQuality.needsAttention.length}
+                  okCount={dataQuality.items.length - dataQuality.needsAttention.length}
+                />
               )}
               {stepIndex === 1 && (
                 <ColorsStep
                   topColors={topColors}
                   total={counts.colors}
+                  uncertain={uncertainColors}
                   onJumpToColors={() => handleJump("colors")}
                 />
               )}
@@ -193,6 +217,7 @@ export function BrandOnboardingWizard({
                   displayFont={displayFont}
                   bodyFont={bodyFont}
                   total={counts.fonts}
+                  uncertain={uncertainFonts}
                   onJumpToTypography={() => handleJump("typography")}
                 />
               )}
@@ -240,6 +265,59 @@ function JumpToTabBanner({
         className="text-xs font-medium text-purple-700 hover:text-purple-900 inline-flex items-center gap-1 ml-3 flex-shrink-0"
       >
         {ctaLabel}
+        <ChevronRight className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
+
+// ─── Onzekerheid-panel (V4 governed-token-layer) ────────────
+
+/**
+ * Toont de curatabele tokens die de analyzer niet zeker kon bepalen, bovenaan
+ * de relevante stap. Lege staat (alles zeker) toont een groene bevestiging.
+ */
+function UncertaintyPanel({
+  items,
+  onJump,
+  jumpLabel,
+}: {
+  items: DataQualityItem[];
+  onJump: () => void;
+  jumpLabel: string;
+}) {
+  if (items.length === 0) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
+        <ShieldCheck className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+        <p className="text-xs text-emerald-900">
+          Alles met vertrouwen uit de bron-site afgeleid — niets om te bevestigen.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0" />
+        <p className="text-xs font-semibold text-amber-900">
+          {items.length} waarde{items.length === 1 ? "" : "n"} om te bevestigen
+        </p>
+      </div>
+      <ul className="space-y-1">
+        {items.map((it) => (
+          <li key={it.path} className="text-xs text-amber-900 flex items-baseline gap-1.5">
+            <span className="font-medium">{it.label}</span>
+            <span className="text-amber-700">— {it.origin.evidence ?? "onzeker"}</span>
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        onClick={onJump}
+        className="text-xs font-medium text-amber-800 hover:text-amber-950 inline-flex items-center gap-1"
+      >
+        {jumpLabel}
         <ChevronRight className="h-3 w-3" />
       </button>
     </div>
@@ -374,9 +452,11 @@ function WizardFooter({ stepIndex, onPrev, onNext, onClose }: WizardFooterProps)
 interface WelcomeStepProps {
   styleguide: BrandStyleguide;
   counts: { colors: number; fonts: number; components: number };
+  attentionCount: number;
+  okCount: number;
 }
 
-function WelcomeStep({ styleguide, counts }: WelcomeStepProps) {
+function WelcomeStep({ styleguide, counts, attentionCount, okCount }: WelcomeStepProps) {
   return (
     <div className="space-y-5">
       <div>
@@ -390,6 +470,25 @@ function WelcomeStep({ styleguide, counts }: WelcomeStepProps) {
           gaat in landing-pages.
         </p>
       </div>
+
+      {attentionCount > 0 ? (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0" />
+          <p className="text-xs text-amber-900">
+            <span className="font-semibold">{attentionCount}</span> van{" "}
+            {attentionCount + okCount} kern-tokens konden we niet zeker bepalen —
+            de volgende stappen zetten die bovenaan zodat je ze snel bevestigt.
+          </p>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
+          <ShieldCheck className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+          <p className="text-xs text-emerald-900">
+            Alle {okCount} kern-tokens zijn met vertrouwen uit de bron-site
+            afgeleid — een snelle bevestiging volstaat.
+          </p>
+        </div>
+      )}
 
       {styleguide.sourceUrl && (
         <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
@@ -440,10 +539,11 @@ function SummaryTile({
 interface ColorsStepProps {
   topColors: BrandStyleguide["colors"];
   total: number;
+  uncertain: DataQualityItem[];
   onJumpToColors: () => void;
 }
 
-function ColorsStep({ topColors, total, onJumpToColors }: ColorsStepProps) {
+function ColorsStep({ topColors, total, uncertain, onJumpToColors }: ColorsStepProps) {
   return (
     <div className="space-y-5">
       <div>
@@ -454,10 +554,16 @@ function ColorsStep({ topColors, total, onJumpToColors }: ColorsStepProps) {
         <p className="text-sm text-gray-600 mt-1">
           De analyzer detecteerde {total} kleur{total === 1 ? "" : "en"} met
           per-kleur usage-tags (PRIMARY / SECONDARY / ACCENT / NEUTRAL /
-          SEMANTIC). Klik op &lsquo;Bewerk in Kleuren-tab&rsquo; om tags te
-          overrulen wanneer de auto-detectie iets fout heeft.
+          SEMANTIC). Bevestig eerst wat onzeker is, daarna kun je elke tag
+          overrulen in de Kleuren-tab.
         </p>
       </div>
+
+      <UncertaintyPanel
+        items={uncertain}
+        onJump={onJumpToColors}
+        jumpLabel="Corrigeer in Kleuren-tab"
+      />
 
       {topColors.length === 0 ? (
         <p className="text-sm text-gray-500 italic">Geen kleuren gevonden.</p>
@@ -495,6 +601,7 @@ interface TypographyStepProps {
   displayFont: BrandStyleguide["fonts"][number] | null;
   bodyFont: BrandStyleguide["fonts"][number] | null;
   total: number;
+  uncertain: DataQualityItem[];
   onJumpToTypography: () => void;
 }
 
@@ -502,6 +609,7 @@ function TypographyStep({
   displayFont,
   bodyFont,
   total,
+  uncertain,
   onJumpToTypography,
 }: TypographyStepProps) {
   return (
@@ -517,6 +625,12 @@ function TypographyStep({
           override in de Typografie-tab als je een andere keuze wilt.
         </p>
       </div>
+
+      <UncertaintyPanel
+        items={uncertain}
+        onJump={onJumpToTypography}
+        jumpLabel="Corrigeer in Typografie-tab"
+      />
 
       <div className="space-y-3">
         <FontPreview label="DISPLAY (Hero headlines)" font={displayFont} sample="Brand voice in beeld" />

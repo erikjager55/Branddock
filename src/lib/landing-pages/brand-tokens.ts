@@ -29,6 +29,14 @@ import {
 } from './design-system';
 import type { BrandArchetype } from './brand-archetype-classifier';
 import type { FontAvailability } from '@/features/brandstyle/utils/font-loading';
+import {
+  type TokenProvenance,
+  type TokenOrigin,
+  recordOrigin,
+  originFromColor,
+  originFromProfile,
+  derivedOrigin,
+} from './token-provenance';
 
 // ─── Public interface ─────────────────────────────────────────
 
@@ -803,7 +811,27 @@ export function extractBrandTokensFromStyleguide(
    *  BrandStyleguide. Null = geen kit → ADOBE_FONTS-fonts laden niet. */
   opts?: { adobeFontsKitId?: string | null },
 ): BrandTokens {
-  if (!styleguide) return { ...DEFAULT_BRAND_TOKENS };
+  return extractBrandTokensWithProvenance(styleguide, opts).tokens;
+}
+
+/**
+ * V1 (governed-token-layer) — identiek aan `extractBrandTokensFromStyleguide`
+ * maar geeft náást de tokens een `provenance`-sidecar terug: per kern-token de
+ * herkomst (scraped/logo/preset/fallback/derived) + confidence + bewijs. De
+ * resolve-stappen hieronder stempelen hun tier terwijl ze resolven — de
+ * informatie is er al, hij wordt nu bewaard i.p.v. weggegooid.
+ *
+ * Consumers die geen provenance nodig hebben gebruiken de wrapper hierboven.
+ */
+export function extractBrandTokensWithProvenance(
+  styleguide: StyleguideShape | null | undefined,
+  opts?: { adobeFontsKitId?: string | null },
+): { tokens: BrandTokens; provenance: TokenProvenance } {
+  if (!styleguide) {
+    return { tokens: { ...DEFAULT_BRAND_TOKENS }, provenance: {} };
+  }
+
+  const prov: TokenProvenance = {};
 
   const colors = (styleguide.colors ?? []).slice().sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
@@ -815,15 +843,19 @@ export function extractBrandTokensFromStyleguide(
   // ── Roles ──
   const surfaceColor = pickSurface(colors);
   const surface = surfaceColor?.hex ?? DEFAULT_BRAND_TOKENS.surface;
+  recordOrigin(prov, 'surface', originFromColor(surfaceColor));
 
   const onSurfaceColor = pickOnSurface(colors);
   const onSurface = onSurfaceColor?.hex ?? DEFAULT_BRAND_TOKENS.onSurface;
+  recordOrigin(prov, 'onSurface', originFromColor(onSurfaceColor));
 
   const surfaceMutedColor = pickSurfaceMuted(colors, surface);
   const surfaceMuted = surfaceMutedColor?.hex ?? DEFAULT_BRAND_TOKENS.surfaceMuted;
+  recordOrigin(prov, 'surfaceMuted', originFromColor(surfaceMutedColor));
 
   const surfaceBorderColor = pickSurfaceBorder(colors);
   const surfaceBorder = surfaceBorderColor?.hex ?? DEFAULT_BRAND_TOKENS.surfaceBorder;
+  recordOrigin(prov, 'surfaceBorder', originFromColor(surfaceBorderColor));
 
   // Brand-kleur: prefereer een echte merk-kleur; val anders terug op de
   // donkerste betekenisvolle klant-kleur (= onSurface, bv. Zwarthout's
@@ -832,11 +864,28 @@ export function extractBrandTokensFromStyleguide(
   const brand = brandColor?.hex ?? onSurface;
   const onBrand = pickOnColor(brandColor);
   const brandSubtle = lighten(brand, 0.85);
+  // Brand erft zijn origin van de gekozen kleur; bij fallback markeren we
+  // expliciet dat we de onSurface-kleur recyclen (geen losse DEFAULT-brand).
+  const brandOrigin: TokenOrigin = brandColor
+    ? originFromColor(brandColor, { detector: 'brand-pick' })
+    : { source: 'fallback', confidence: 'low', detector: 'brand-pick',
+        evidence: 'geen merk-kleur — onSurface gerecycled als brand' };
+  recordOrigin(prov, 'brand', brandOrigin);
+  recordOrigin(prov, 'action', brandOrigin);
+  recordOrigin(prov, 'onBrand', derivedOrigin('brand', brandOrigin, 'wcag-on-color'));
+  recordOrigin(prov, 'brandSubtle', derivedOrigin('brand', brandOrigin, 'lighten-85'));
 
   // Accent: echte accent-kleur, anders de brand-kleur (monochroom) — nooit de
   // Branddock-amber default.
   const accentColor = pickAccent(colors, brand);
   const accent = accentColor?.hex ?? brand;
+  recordOrigin(
+    prov,
+    'accent',
+    accentColor
+      ? originFromColor(accentColor, { detector: 'accent-pick' })
+      : derivedOrigin('brand', brandOrigin, 'accent-recycled-brand'),
+  );
 
   // ── WCAG pre-render gate (Sprint 2 §3b) ──
   // Forceer veilige fallbacks bij contrast-fail: voorkomt unreadable
@@ -940,6 +989,36 @@ export function extractBrandTokensFromStyleguide(
     ?? (styleguide.primaryFontName ? wrapFontStack(styleguide.primaryFontName, 'body') : null)
     ?? DEFAULT_BRAND_TOKENS.bodyFont;
 
+  // Font-provenance: scraped wanneer een StyleguideFont-rol/serif-recovery de
+  // font leverde; medium-scraped bij primaryFontName-fallback; fallback bij de
+  // system-ui DEFAULT-stack.
+  const fontOrigin = (
+    roleHit: boolean,
+    finalStack: string,
+    defaultStack: string,
+  ): TokenOrigin => {
+    if (roleHit) {
+      return { source: 'scraped', confidence: 'high', detector: 'styleguide-font',
+        evidence: 'StyleguideFont-rol' };
+    }
+    if (finalStack === defaultStack) {
+      return { source: 'fallback', confidence: 'low', detector: 'default',
+        evidence: 'geen font-signal — system-ui DEFAULT' };
+    }
+    return { source: 'scraped', confidence: 'medium', detector: 'primary-font-name',
+      evidence: 'primaryFontName-fallback' };
+  };
+  recordOrigin(prov, 'headingFont', fontOrigin(
+    primaryHeading != null || displayByName() != null,
+    headingFont,
+    DEFAULT_BRAND_TOKENS.headingFont,
+  ));
+  recordOrigin(prov, 'bodyFont', fontOrigin(
+    fontByRole('BODY', 'body') != null,
+    bodyFont,
+    DEFAULT_BRAND_TOKENS.bodyFont,
+  ));
+
   // ── E-3 — non-Google font-bronnen voor de canvas-loader ──
   // Alleen UPLOADED (@font-face uit fileUrl) en ADOBE_FONTS (Typekit via de
   // workspace-kit) hebben aparte laad-behandeling nodig; Google/substitute
@@ -1034,6 +1113,19 @@ export function extractBrandTokensFromStyleguide(
     DEFAULT_BRAND_TOKENS.typographyByRole,
   );
 
+  // v4-groep-provenance op groep-granulariteit: scraped wanneer het bron-
+  // profile aanwezig was, anders preset/archetype-default. Voldoende voor
+  // V2's puck-config-gating en V3's footer; per-veld kan later.
+  const present = (p: unknown): boolean => p != null && (typeof p !== 'object' || Object.keys(p as object).length > 0);
+  recordOrigin(prov, 'button', originFromProfile(present(styleguide.buttonProfile), { detector: 'buttonProfile' }));
+  recordOrigin(prov, 'elevation', originFromProfile(present(styleguide.elevationProfile) || present(styleguide.radiusProfile), { detector: 'elevation/radiusProfile' }));
+  recordOrigin(prov, 'sectionRhythm', originFromProfile(present(styleguide.spacingProfile), { detector: 'spacingProfile' }));
+  recordOrigin(prov, 'motion', originFromProfile(present(styleguide.motionProfile), { detector: 'motionProfile' }));
+  recordOrigin(prov, 'typographyByRole', originFromProfile(present(styleguide.typographyProfile), { detector: 'typographyProfile' }));
+  recordOrigin(prov, 'text', originFromProfile(present(styleguide.typographyProfile), { detector: 'typographyProfile' }));
+  // Iconography is altijd archetype/layoutStyle-afgeleid (geen scrape-bron).
+  recordOrigin(prov, 'iconography', originFromProfile(false, { detector: 'archetype/layoutStyle', presetSource: archetype ? 'archetype' : 'preset' }));
+
   // Fase A — Usage-aware kleurselectors. Pak de kleur die de bron-website
   // expliciet als hero-bg gebruikt (usage:hero-bg tag) — als die NIET
   // bestaat, blijft heroBgColor null en valt de renderer terug op de
@@ -1054,6 +1146,12 @@ export function extractBrandTokensFromStyleguide(
   };
   const heroBgColor = pickByUsageTag('hero-bg');
   const headingTextColor = pickByUsageTag('heading-text');
+  recordOrigin(prov, 'heroBgColor', heroBgColor
+    ? { source: 'scraped', confidence: 'high', detector: 'usage-tag', evidence: 'usage:hero-bg' }
+    : { source: 'fallback', confidence: 'low', detector: 'usage-tag', evidence: 'geen usage:hero-bg — heuristic' });
+  recordOrigin(prov, 'headingTextColor', headingTextColor
+    ? { source: 'scraped', confidence: 'high', detector: 'usage-tag', evidence: 'usage:heading-text' }
+    : { source: 'fallback', confidence: 'low', detector: 'usage-tag', evidence: 'geen usage:heading-text' });
 
   // hasDarkSections — bevat de bron-website donkere bg-sections (footer,
   // stats, etc.)? Bewijs: een NEUTRAL kleur met L < 25 die als section-bg /
@@ -1133,8 +1231,25 @@ export function extractBrandTokensFromStyleguide(
   // en map de raw extractedStyles naar ScrapedComponentStyle. Renderer
   // raadpleegt deze direct voor pixel-perfect match met Components-tab.
   const styleguideComponents = mapStyleguideComponents(styleguide.components ?? null);
+  recordOrigin(prov, 'darkSectionBg', darkSectionBg
+    ? { source: 'scraped', confidence: 'medium', detector: 'usage-tag', evidence: 'dark section-bg tag + L<25' }
+    : { source: 'fallback', confidence: 'low', detector: 'usage-tag', evidence: 'geen donkere section gevonden' });
+  recordOrigin(prov, 'secondarySurface', secondarySurface
+    ? { source: 'scraped', confidence: 'medium', detector: 'usage-tag', evidence: 'tweede lichtste bg-tagged NEUTRAL/SECONDARY' }
+    : { source: 'fallback', confidence: 'low', detector: 'usage-tag', evidence: 'geen secundaire surface' });
+  recordOrigin(prov, 'styleguideComponents', originFromProfile(
+    (styleguide.components ?? []).length > 0, { detector: 'StyleguideComponent' }));
+  recordOrigin(prov, 'designSystem.spacing', scrapedScale
+    ? { source: 'scraped', confidence: 'medium', detector: 'spacingScale', evidence: 'scraped spacing-tokens' }
+    : { source: 'preset', confidence: 'low', detector: 'layoutStyle', evidence: 'designSystem-preset' });
+  recordOrigin(prov, 'layoutStyle', styleguide.layoutStyle
+    ? { source: 'scraped', confidence: 'medium', detector: 'layoutStyle', evidence: 'BrandStyleguide.layoutStyle' }
+    : { source: 'fallback', confidence: 'low', detector: 'default', evidence: 'DEFAULT_LAYOUT_STYLE' });
+  recordOrigin(prov, 'archetype', archetype
+    ? { source: 'scraped', confidence: 'medium', detector: 'archetype-classifier', evidence: `archetype ${archetype}` }
+    : { source: 'fallback', confidence: 'low', detector: 'default', evidence: 'niet geclassificeerd' });
 
-  return {
+  const tokens: BrandTokens = {
     // Legacy aliases (semantisch correct na v2-mapping + WCAG-gate)
     primaryHex: brand,
     secondaryHex: safeOnSurface,
@@ -1186,6 +1301,8 @@ export function extractBrandTokensFromStyleguide(
     text,
     typographyByRole,
   };
+
+  return { tokens, provenance: prov };
 }
 
 /**

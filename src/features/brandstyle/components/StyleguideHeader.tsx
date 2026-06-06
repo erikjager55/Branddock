@@ -19,6 +19,8 @@ import { Button } from "@/components/shared";
 import { LockShield, LockStatusPill } from "@/components/lock";
 import type { BrandStyleguide } from "../types/brandstyle.types";
 import { getApplicableReviewSections } from "@/lib/brandstyle/review-sections";
+import { computeDataQuality } from "../utils/data-quality";
+import { ShieldCheck, ShieldAlert } from "lucide-react";
 import { exportBrandstylePdf } from "../utils/exportBrandstylePdf";
 import { exportBrandKitPdf, type BrandKitPdfProgress } from "../utils/brand-kit/exportBrandKitPdf";
 import { EXPORT_FORMATS, type ExportFormat } from "../utils/export-formats";
@@ -88,6 +90,11 @@ export function StyleguideHeader({
     return { approved: approvedCount, total: applicable.length };
   }, [styleguide]);
 
+  // V3 — data-quality: hoeveel curatabele kleuren/fonts onzeker (fallback/
+  // preset/low-confidence) zijn. Maakt GIGO zichtbaar vóór de gebruiker erop
+  // bouwt (napking-WordPress-placeholder → veel fallback).
+  const dataQuality = useMemo(() => computeDataQuality(styleguide), [styleguide]);
+
   const updatedAt = new Date(styleguide.updatedAt);
   const lastAnalyzedLabel = isNaN(updatedAt.getTime())
     ? null
@@ -134,6 +141,10 @@ export function StyleguideHeader({
                 </span>
                 <span className="text-gray-500">sections approved</span>
               </span>
+              <DataQualityBadge
+                uncertain={dataQuality.needsAttention.length}
+                total={dataQuality.items.length}
+              />
               {lastAnalyzedLabel && <span>{lastAnalyzedLabel}</span>}
               {styleguide.createdBy.name && (
                 <span>Created by {styleguide.createdBy.name}</span>
@@ -233,6 +244,37 @@ export function StyleguideHeader({
         </p>
       )}
     </div>
+  );
+}
+
+// ─── Data-quality badge (V3 governed-token-layer) ──────────
+
+/**
+ * Toont hoeveel curatabele kleuren/fonts onzeker zijn (scrape vond niets of
+ * lage confidence). Groen schild = alles met vertrouwen gescraped; amber =
+ * N waarden vragen om bevestiging in de wizard / tabs.
+ */
+function DataQualityBadge({ uncertain, total }: { uncertain: number; total: number }) {
+  if (uncertain === 0) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700"
+        title={`Alle ${total} kern-tokens zijn met vertrouwen uit de bron-site afgeleid.`}
+      >
+        <ShieldCheck className="h-3 w-3" />
+        <span className="font-medium">Data-kwaliteit OK</span>
+      </span>
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-amber-200 bg-amber-50 text-amber-700"
+      title={`${uncertain} van ${total} kern-tokens konden we niet zeker bepalen — bevestig ze in de Onboarding-wizard of de Kleuren/Typografie-tabs.`}
+    >
+      <ShieldAlert className="h-3 w-3" />
+      <span className="font-medium">{uncertain}</span>
+      <span>onzeker</span>
+    </span>
   );
 }
 
