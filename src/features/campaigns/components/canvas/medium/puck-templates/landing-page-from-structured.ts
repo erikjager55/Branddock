@@ -77,9 +77,12 @@ function featuresSection(v: LandingPageVariantContent): PuckInstance {
     // Track 2: per-feature beeld doorgeven wanneer de variant het levert.
     imageUrl: item.imageUrl ?? null,
   }));
-  // P7: features mét beeld → editorial A-B-A-B split-layout (beeld/tekst
-  // afwisselend) i.p.v. een 3-koloms grid; zonder beeld blijft de grid
-  // (icon+tekst leest beter in kolommen dan in lege split-rijen).
+  // P7: ALLE features beeld → editorial A-B-A-B split-layout (beeld/tekst
+  // afwisselend). Bij PARTIËLE vulling (bv. AI-gen 3/4 geslaagd) valt het terug
+  // op FeatureGrid — dat rendert per kaart het beeld wanneer aanwezig, anders de
+  // icon-badge (Track 2). Zo gaan geslaagde AI-beelden NIET verloren; ze tonen
+  // als beeld-kaarten in de grid i.p.v. (lege) split-rijen. all-or-nothing-gate
+  // alleen om de editorial split niet met lege beeld-slots te tonen.
   const hasImages = features.length > 0 && features.every((f) => !!f.imageUrl);
   if (hasImages) return instance("FeatureSplit", { features });
   const columns: "2" | "3" | "4" =

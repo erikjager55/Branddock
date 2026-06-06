@@ -92,6 +92,20 @@ console.log("\nP7 — mapper kiest FeatureSplit bij beeld, anders FeatureGrid");
   const withImg = buildLandingPageTemplateFromStructured(clone(baseVariant), ctxImgs);
   assert("alle features beeld → FeatureSplit aanwezig", types(withImg).includes("FeatureSplit"));
   assert("FeatureSplit vervangt de feature-FeatureGrid", types(withImg).filter((t) => t === "FeatureGrid").length < types(noImg).filter((t) => t === "FeatureGrid").length);
+
+  // Partiële vulling (AI-gen 2/3 geslaagd) → FeatureGrid (geen split), maar de
+  // geslaagde beelden blijven behouden op de items (NIET weggegooid).
+  const partial = clone(baseVariant);
+  partial.features.items[0].imageUrl = "https://x/ai0.jpg";
+  partial.features.items[2].imageUrl = "https://x/ai2.jpg";
+  const partialTree = buildLandingPageTemplateFromStructured(partial, minimalCtx);
+  assert("partieel beeld → géén FeatureSplit", !types(partialTree).includes("FeatureSplit"));
+  const featGrid = partialTree.content.find((c) => {
+    const items = (c as { type: string; props?: { features?: Array<{ title: string }> } });
+    return items.type === "FeatureGrid" && (items.props?.features ?? []).some((it) => it.title === "Een");
+  }) as { props?: { features?: Array<{ imageUrl?: string | null }> } } | undefined;
+  const gridImgs = (featGrid?.props?.features ?? []).filter((f) => !!f.imageUrl).length;
+  assert("partiële AI-beelden blijven behouden in FeatureGrid (2/3)", gridImgs === 2, `got ${gridImgs}`);
 }
 
 console.log(`\nTotal: ${pass + fail} | PASS: ${pass} | FAIL: ${fail}`);
