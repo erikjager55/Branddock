@@ -583,35 +583,13 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       console.warn(`[brandstyle-analysis] Design language phase failed (non-critical): ${err instanceof Error ? err.message : String(err)}`);
     }
 
-    // Step 5b: AI Call 4 — Visual Language (Vormentaal)
+    // Step 5b: Visual Language (Vormentaal) — declaratie hier; de AI-call is
+    // VERPLAATST naar ná de palette-resolutie (zie "Step 5b (vervolg)" hieronder)
+    // zodat de visualLanguage de ECHTE resolved merk-kleuren beschrijft i.p.v. de
+    // rauwe gescrapte set. Anders lekten framework-defaults (Bootstrap #7A00DF als
+    // 'primary' + semantische kleuren) in colorApplication/promptFragment → en via
+    // brand-context.brandVisualLanguage in alle AI-generatie.
     let visualLanguageResult: import('./visual-language.types').VisualLanguageProfile | null = null;
-    if (scraped.visualHeuristics) {
-      try {
-        await updateStatus(styleguideId, 'ANALYZING_VISUAL_LANGUAGE');
-        const { analyzeVisualLanguage } = await import('./visual-language-analyzer');
-        visualLanguageResult = await analyzeVisualLanguage(
-          scraped.visualHeuristics,
-          {
-            colors: processed.colorGroups.fromVariables?.map((c: { hex: string }) => c.hex)
-              ?? processed.colorGroups.byFrequency?.map((c: { hex: string }) => c.hex)
-              ?? [],
-            fonts: processed.fonts ?? [],
-            photographyStyle: voiceResult.photographyStyle?.mood ?? undefined,
-            designLanguageSummary: designResult?.layoutPrinciples?.usageNotes ?? undefined,
-          },
-          scraped.url,
-          {
-            workspaceId: styleguideMeta.workspaceId,
-            parentEntityType: 'BrandStyleguide',
-            parentEntityId: styleguideId,
-            sourceIdentifier: 'src/lib/brandstyle/analysis-engine.ts:analyzeVisualLanguage',
-          },
-        );
-      } catch (err) {
-        // Visual language is non-critical — log and continue
-        console.warn(`[brandstyle-analysis] Visual language phase failed (non-critical): ${err instanceof Error ? err.message : String(err)}`);
-      }
-    }
 
     // Step 6: Write to DB
     await updateStatus(styleguideId, 'GENERATING_STYLEGUIDE');
@@ -807,6 +785,37 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
         // redundante near-black niet als 5e neutral binnenkomt.
         const { capNeutrals } = await import('./palette-usage-filter');
         resolvedColors = capNeutrals(resolvedColors, multiPageColorStyles);
+      }
+    }
+
+    // Step 5b (vervolg): Visual Language — NU, met de definitieve resolved
+    // palette (rol-gelabeld). De AI beschrijft zo de échte merk-kleuren
+    // (PRIMARY #E06000 …) i.p.v. de rauwe framework-vervuilde set.
+    if (scraped.visualHeuristics) {
+      try {
+        await updateStatus(styleguideId, 'ANALYZING_VISUAL_LANGUAGE');
+        const { analyzeVisualLanguage } = await import('./visual-language-analyzer');
+        visualLanguageResult = await analyzeVisualLanguage(
+          scraped.visualHeuristics,
+          {
+            // Rol-gelabelde resolved palette ("PRIMARY #E06000", "NEUTRAL #212529")
+            // i.p.v. rauwe colorGroups → geen Bootstrap-default-lek meer.
+            colors: resolvedColors.map((c) => `${c.category} ${c.hex}`),
+            fonts: processed.fonts ?? [],
+            photographyStyle: voiceResult.photographyStyle?.mood ?? undefined,
+            designLanguageSummary: designResult?.layoutPrinciples?.usageNotes ?? undefined,
+          },
+          scraped.url,
+          {
+            workspaceId: styleguideMeta.workspaceId,
+            parentEntityType: 'BrandStyleguide',
+            parentEntityId: styleguideId,
+            sourceIdentifier: 'src/lib/brandstyle/analysis-engine.ts:analyzeVisualLanguage',
+          },
+        );
+      } catch (err) {
+        // Visual language is non-critical — log and continue
+        console.warn(`[brandstyle-analysis] Visual language phase failed (non-critical): ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 
