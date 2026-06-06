@@ -353,7 +353,12 @@ export function mapSectionRhythmTokens(
   const dsLargeIdx = Math.min(designSystem.spacing.length - 1, 5);
   const dsMidIdx = Math.min(designSystem.spacing.length - 1, 3);
   const dsHorizontalIdx = Math.min(designSystem.spacing.length - 1, 4);
-  const dsSection = designSystem.spacing[dsLargeIdx] ?? fallback.sectionPaddingY;
+  // Track 4 (rhythm): clamp ALLÉÉN de preset-fallback naar een strakke band
+  // [40,56]. MINIMAL/EXPERIENTIAL leveren spacing[5]=64 → 128px lege band per
+  // sectie (zwarthout's schaarse-ritmiek-symptoom); COMMERCIAL's 24 is te dun.
+  // Een ECHT gescrapte section.paddingY (Tier-1 hieronder) passeert ongeclampt
+  // → merk-fidelity behouden waar de scrape iets opleverde.
+  const dsSection = Math.min(56, Math.max(40, designSystem.spacing[dsLargeIdx] ?? fallback.sectionPaddingY));
   const dsSectionX = designSystem.spacing[dsHorizontalIdx] ?? fallback.sectionPaddingX;
   const dsCard = designSystem.spacing[dsMidIdx] ?? fallback.cardPaddingY;
 

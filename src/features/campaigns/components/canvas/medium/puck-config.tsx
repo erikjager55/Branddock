@@ -41,6 +41,9 @@ export type SpikeBrandCtaProps = {
   /** Optional risico-reductie subhead ("Geen creditcard nodig"). Fase 5
    *  spec §4a — voorheen werd dit als losse RichText onder de CTA gerenderd. */
   riskReducer?: string;
+  /** Optionele kop-zin (belofte-herhaling) IN dezelfde CTA-sectie. Track 4 —
+   *  voorheen een losse RichText-sectie erboven → dubbele gepadde band. */
+  heading?: string;
 };
 
 export type FeatureItem = {
@@ -555,7 +558,13 @@ function brandHeroComponent(tokens: BrandTokens) {
         // viewport = 200px padding + 175px content). clamp() schaalt
         // tussen 20px (mobile) en bron-waarde (desktop).
         padding: `${sectionPaddingY}px ${responsivePaddingX(sectionPaddingX)}`,
-        minHeight: heroLayout.fullViewportHeight ? '100vh' : undefined,
+        // Track 4 (rhythm): forceer 100vh alléén bij een ECHTE hero-image
+        // (cinematisch full-bleed). Een schaarse tekst-only hero op MINIMAL/
+        // EXPERIENTIAL kreeg een leeg vol-viewport-vlak — geef die een content-
+        // grootte i.p.v. een lege 100vh. (Track 2 vult een hero-image → 100vh.)
+        minHeight: heroLayout.fullViewportHeight
+          ? (useFullBleed ? '100vh' : 'clamp(440px, 64vh, 720px)')
+          : undefined,
         display: 'flex',
         flexDirection: 'column',
         justifyContent,
@@ -815,6 +824,9 @@ function brandCtaComponent(
   const { button: btn, sectionRhythm, motion } = tokens;
   const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const tbr = tokens.typographyByRole;
 
   return {
     fields: {
@@ -822,14 +834,16 @@ function brandCtaComponent(
       href: { type: 'text' as const },
       personaId: { type: 'select' as const, options: personaOptions },
       riskReducer: { type: 'text' as const },
+      heading: { type: 'text' as const },
     },
     defaultProps: {
       label: 'Start your trial',
       href: '#',
       personaId: '',
       riskReducer: '',
+      heading: '',
     },
-    render: ({ label, href, personaId, riskReducer }: SpikeBrandCtaProps) => {
+    render: ({ label, href, personaId, riskReducer, heading }: SpikeBrandCtaProps) => {
       const persona = personas.find((p) => p.id === personaId);
       return (
         <section
@@ -840,6 +854,22 @@ function brandCtaComponent(
             background: tokens.surface,
           }}
         >
+          {heading && heading.trim().length > 0 ? (
+            <h2
+              style={{
+                fontFamily: headingFont,
+                fontSize: tbr.heading.fontSize ?? ds.typography.heading.sizes[ds.typography.heading.sizes.length - 1] ?? 32,
+                fontWeight: tbr.heading.fontWeight ?? (ds.typography.heading.weights[0] ?? 600),
+                lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
+                letterSpacing: tbr.heading.letterSpacing ?? undefined,
+                color: resolveOnColor(tbr.heading.color, tokens.surface, { fallback: tokens.onSurface, minRatio: 3.0 }),
+                margin: `0 auto ${ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24}px`,
+                maxWidth: 720,
+              }}
+            >
+              {heading}
+            </h2>
+          ) : null}
           {persona ? (
             <p
               style={{
