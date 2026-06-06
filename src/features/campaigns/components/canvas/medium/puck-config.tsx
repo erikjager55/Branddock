@@ -9,7 +9,7 @@ import {
 } from '@/lib/landing-pages/brand-tokens';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import { getRenderConstraints } from '@/lib/landing-pages/render-constraints';
-import { readableTextColor, resolveOnColor } from '@/lib/landing-pages/wcag';
+import { readableTextColor, resolveOnColor, isCardContextMismatch } from '@/lib/landing-pages/wcag';
 
 import {
   buildBackgroundDepth,
@@ -1109,7 +1109,15 @@ function featureGridComponent(tokens: BrandTokens) {
             // heeft, neem die direct over voor pixel-perfect match met
             // Components-tab. Anders fallback op tokens.elevation + archetype-
             // constraints (huidige logic).
-            const productCard = tokens.styleguideComponents.PRODUCT_CARD;
+            // Card-fix: een gescrapte card uit een tégengestelde licht/donker-
+            // context (zwarthout: puur-zwarte card op de lichte feature-sectie)
+            // is bijna altijd een verkeerd representatief sample → negeer 'm en
+            // val terug op de sectie-passende archetype-card-styling. Tekst
+            // herstelt vanzelf via resolveOnColor tegen de nieuwe (lichte) bg.
+            const rawProductCard = tokens.styleguideComponents.PRODUCT_CARD;
+            const productCard = isCardContextMismatch(rawProductCard?.background, featureGridBg)
+              ? null
+              : rawProductCard;
             const useCard = effectiveElevationCategory !== 'flat' || productCard !== null;
             const isBorderOnly = effectiveElevationCategory === 'border-only';
             // C3 max-radius constraint (RULER=4, JESTER=24)

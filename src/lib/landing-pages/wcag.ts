@@ -261,3 +261,28 @@ export function resolveOnColor(
   if (opts?.fallback && contrastRatio(normalizeColorToHex(opts.fallback) ?? opts.fallback, hexBg) >= minRatio) return opts.fallback;
   return blackOrWhiteFor(hexBg);
 }
+
+/**
+ * Detecteert of een gescrapte card-achtergrond uit een tégengestelde licht/
+ * donker-context komt dan de sectie waar hij nu op staat. Een puur-zwarte
+ * gescrapte PRODUCT_CARD op een lichte feature-sectie (zwarthout: het sample
+ * kwam uit een donkere sectie van de bronsite) leest als een misplaatst blok.
+ * Alleen EXTREME inversies triggeren — subtiele grijstinten op wit (een legit
+ * licht-grijze card) blijven gerespecteerd, en onmeetbare waarden (gradient/
+ * named/url) → false zodat we de scraped-fidelity niet onterecht weggooien.
+ */
+export function isCardContextMismatch(
+  cardBg: string | null | undefined,
+  sectionBg: string | null | undefined,
+): boolean {
+  if (!cardBg || !sectionBg) return false;
+  const c = normalizeColorToHex(cardBg);
+  const s = normalizeColorToHex(sectionBg);
+  if (!c || !s) return false;
+  const cl = relativeLuminance(c);
+  const sl = relativeLuminance(s);
+  // Streng: alleen near-black (cl < 0.12) op licht, of near-white (cl > 0.85)
+  // op donker. Een mid-grijze card (#6C757D, L≈0.18) op wit is een legitiem
+  // design, geen mis-scrape — die mag blijven.
+  return (cl < 0.12 && sl > 0.55) || (cl > 0.85 && sl < 0.18);
+}
