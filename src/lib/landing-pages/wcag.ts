@@ -299,17 +299,41 @@ export function isCloseColor(a: string, b: string, tol = 44): boolean {
 }
 
 /**
+ * "Luide" kleur — verzadigd genoeg dat overmatig gebruik als heading de CTA
+ * verzwakt (HSL S > 0.65, L in [0.25,0.65]). Gedempte/luxe accenten (Luxe-Goud
+ * #B59032 S≈0.57) of near-neutrale charcoal-accenten zijn NIET luid: die gaven
+ * nooit het "accent-everywhere"-probleem en hoeven niet gereserveerd te worden.
+ */
+export function isLoudColor(hex: string): boolean {
+  const h = normalizeColorToHex(hex);
+  if (!h) return false;
+  const r = parseInt(h.slice(1, 3), 16) / 255;
+  const g = parseInt(h.slice(3, 5), 16) / 255;
+  const b = parseInt(h.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const s = max === min ? 0 : (max - min) / (l < 0.5 ? max + min : 2 - max - min);
+  return s > 0.65 && l >= 0.25 && l <= 0.65;
+}
+
+/**
  * Accent-reservering (60-30-10 / P8): wanneer een (gescrapte) kop-kleur ≈ de
  * merk-accent, reserveer de accent voor CTA's/active-states en geef de kop de
  * neutrale charcoal i.p.v. accent. Voorkomt "orange-everywhere" dat de CTA als
  * luidste element verzwakt. Een kop met een eigen (niet-accent) kleur blijft
  * ongemoeid. Eyebrows + CTA-knoppen + stat-cijfers houden bewust de accent.
+ *
+ * Review-fix: reserveer ALLEEN voor een LUIDE accent (isLoudColor). Een gedempt
+ * accent (luxe-goud, charcoal-monochroom) gaf nooit het probleem → zijn koppen
+ * blijven (merk-fideliteit; voorkomt over-reach + no-op-churn).
  */
 export function reserveAccentForHeading(
   headingColor: string | null | undefined,
   accent: string,
   onSurface: string,
 ): string {
-  if (headingColor && isCloseColor(headingColor, accent)) return onSurface;
-  return headingColor ?? onSurface;
+  if (!headingColor) return onSurface;
+  if (!isLoudColor(accent)) return headingColor;
+  return isCloseColor(headingColor, accent) ? onSurface : headingColor;
 }

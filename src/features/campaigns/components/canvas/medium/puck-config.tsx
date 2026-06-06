@@ -19,6 +19,7 @@ import {
 import { IconBlock } from './lucide-icon-map';
 import { isNoOpBorder, isTransparentBackground } from '@/lib/landing-pages/scraped-css-helpers';
 import { pxFromCssValue } from '@/lib/landing-pages/brand-tokens-v4-mappers';
+import { isScrapedOrigin, type TokenProvenance } from '@/lib/landing-pages/token-provenance';
 
 // ─── Component prop types ────────────────────────────────────
 
@@ -165,7 +166,7 @@ export function buildSpikePuckConfig(
     components: {
       BrandHero: brandHeroComponent(tokens),
       BrandCTA: brandCtaComponent(tokens, personas, personaOptions),
-      FeatureGrid: featureGridComponent(tokens),
+      FeatureGrid: featureGridComponent(tokens, ctx?.brandProvenance),
       Testimonial: testimonialComponent(tokens, personas, personaOptions),
       PricingTable: pricingTableComponent(tokens),
       FAQ: faqComponent(tokens),
@@ -209,7 +210,13 @@ function statsBlockComponent(tokens: BrandTokens) {
   const darkBg = tokens.darkSectionBg ?? tokens.onSurface;
   const useDarkBg = tokens.hasDarkSections && tokens.darkSectionBg != null;
   const sectionBg = useDarkBg ? darkBg : tokens.surface;
-  const numberColor = useDarkBg ? tokens.brand : tokens.brand;
+  // Review-fix: clamp het cijfer (de accent) tegen de échte band-bg. Een
+  // donker-merk waarvan de accent zelf donker is (brand recycelt onSurface)
+  // gaf anders near-black cijfers op een near-black band (onzichtbaar). Op
+  // licht blijft de accent ongemoeid. 3:1 = AA-large (cijfers zijn display).
+  const numberColor = useDarkBg
+    ? resolveOnColor(tokens.brand, sectionBg, { fallback: '#FFFFFF', minRatio: 3.0 })
+    : tokens.brand;
   const labelColor = useDarkBg ? '#FFFFFF' : tokens.surfaceMuted;
   // Number sizes — gebruik scraped display.fontSize wanneer aanwezig, anders
   // archetype-default 64-88px range
@@ -587,11 +594,11 @@ function brandHeroComponent(tokens: BrandTokens) {
       const heroIsDark = useFullBleed || sectionBg === tokens.onSurface;
       // P8 accent-reservering: de primaire CTA hoort de merk-accent te dragen
       // ("this is where I act"). Op een donkere hero gebruikten we altijd wit —
-      // dat verloor de accent volledig. Nu: brand-accent wanneer die genoeg
-      // contrast heeft tegen de hero-bg (AA-large 3:1), anders wit als veilige
-      // fallback (voor donkere/laag-contrast accenten).
-      const darkHeroAccentOk = heroIsDark
-        && contrastRatio(tokens.brand, typeof sectionBg === 'string' ? sectionBg : '#000000') >= 3;
+      // dat verloor de accent volledig. Nu: brand-accent wanneer een GEVULDE
+      // knop comfortabel los-popt (≥4.0 — boven de bare 3:1 non-text-floor zodat
+      // een echt-zwakke fill als wit valt, maar legitieme accenten als zwarthout-
+      // oranje 4.26 / indigo 4.32 behouden blijven), anders wit (review-fix).
+      const darkHeroAccentOk = heroIsDark && contrastRatio(tokens.brand, sectionBg) >= 4.0;
       const fallbackBg = heroIsDark ? (darkHeroAccentOk ? tokens.brand : '#FFFFFF') : tokens.brand;
       const fallbackColor = heroIsDark ? (darkHeroAccentOk ? tokens.onBrand : tokens.onSurface) : tokens.onBrand;
       const buttonRender: React.CSSProperties & Record<`--${string}`, string> = {
@@ -988,7 +995,7 @@ function brandCtaComponent(
  * FeatureGrid — brand-emergent (Phase 5). Heading-font + spacing + cardStyle
  * consumeren designSystem + archetype.
  */
-function featureGridComponent(tokens: BrandTokens) {
+function featureGridComponent(tokens: BrandTokens, provenance?: TokenProvenance) {
   const hints = computeBrandRenderHints(
     tokens.archetype,
     tokens.designSystem,
@@ -1009,7 +1016,14 @@ function featureGridComponent(tokens: BrandTokens) {
   // border-only. Voorheen kreeg LINFI cards-with-1px-border rondom elke
   // feature; matched niet met premium-architectural feel van bron-website.
   // Flat = geen wrapper-card, alleen whitespace + typography (Apple-style).
-  const effectiveElevationCategory = constraints.forceFlatCards
+  //
+  // V2 (governed-token-layer): de archetype-preset mag de scraped elevation
+  // alléén platslaan wanneer er NIETS gescraped is. Heeft de bron-site een
+  // echte card-shadow opgeleverd (provenance.elevation === scraped), dan
+  // respecteren we die i.p.v. hem weg te forceren — anders wint een
+  // archetype-aanname van merk-fidelity (Zwarthout/Napking preset-bugklasse).
+  const elevationIsScraped = isScrapedOrigin(provenance, 'elevation');
+  const effectiveElevationCategory = constraints.forceFlatCards && !elevationIsScraped
     ? 'flat'
     : elevation.cardElevationCategory;
   const gap = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
