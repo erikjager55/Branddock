@@ -149,9 +149,12 @@ group("Complete variant — 9 anatomie-secties");
   const featureGridCount = types.filter((t) => t === "FeatureGrid").length;
   assert("2 FeatureGrid-instances (trust + features)", featureGridCount === 2);
   assert("StatsBlock aanwezig voor impactStats", types.includes("StatsBlock"));
-  // RichText: 1 voor problem + 1 voor risk-reducer
+  // RichText: alléén problem (Track 4: final-CTA-heading is nu BrandCTA.heading,
+  // geen losse RichText-sectie meer).
   const richTextCount = types.filter((t) => t === "RichText").length;
-  assert("2 RichText-instances (problem + risk-reducer)", richTextCount === 2);
+  assert("1 RichText-instance (alleen problem)", richTextCount === 1, `n=${richTextCount}`);
+  const ctaHeading = (tree.content.find((c) => c.type === "BrandCTA") as { props?: { heading?: string } })?.props?.heading;
+  assert("BrandCTA.heading gevuld (final-CTA-heading verhuisd)", !!ctaHeading && ctaHeading.length > 0);
   assert("2 Testimonial-instances", types.filter((t) => t === "Testimonial").length === 2);
   assert("PricingTable aanwezig (sectie 6)", types.includes("PricingTable"));
   assert("FAQ aanwezig (sectie 7)", types.includes("FAQ"));
@@ -181,9 +184,9 @@ group("Conditional: problem weggelaten");
   delete v.problem;
   const tree = buildLandingPageTemplateFromStructured(v, minimalCtx);
   const types = getTypes(tree);
-  // 1 RichText minder (problem weg, risk-reducer blijft)
+  // problem weg → 0 RichText (final-CTA-heading is nu BrandCTA.heading).
   const richTextCount = types.filter((t) => t === "RichText").length;
-  assert("zonder problem: 1 RichText (alleen risk-reducer)", richTextCount === 1);
+  assert("zonder problem: 0 RichText", richTextCount === 0, `n=${richTextCount}`);
 }
 
 group("Conditional: pricing weggelaten");
@@ -203,10 +206,10 @@ group("Conditional: beide optionals weg");
   const tree = buildLandingPageTemplateFromStructured(v, minimalCtx);
   const types = getTypes(tree);
   assert("zonder beide: geen PricingTable", !types.includes("PricingTable"));
-  // 1 RichText (risk-reducer only)
+  // geen problem → 0 RichText (final-CTA-heading is nu BrandCTA.heading).
   assert(
-    "zonder beide: 1 RichText",
-    types.filter((t) => t === "RichText").length === 1,
+    "zonder beide: 0 RichText",
+    types.filter((t) => t === "RichText").length === 0,
   );
 }
 
