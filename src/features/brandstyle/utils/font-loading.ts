@@ -50,6 +50,44 @@ export function injectTypekitCss(kitId: string | null | undefined): void {
   document.head.appendChild(link);
 }
 
+// Dedup-Set + gedeelde <style>-tag voor uploaded @font-face-regels.
+const injectedUploads = new Set<string>();
+
+function cssEscape(value: string): string {
+  return value.replace(/["\\]/g, (c) => '\\' + c);
+}
+function urlEscape(url: string): string {
+  return url.replace(/["\s]/g, (c) => encodeURIComponent(c));
+}
+
+/**
+ * Injecteer een @font-face voor een geüploade brand-font (availability
+ * UPLOADED). Dedupt op fileUrl; meerdere fonts delen één <style>-tag.
+ * Spiegelt useCustomFonts (Typography-UI) zodat canvas + UI identiek laden.
+ */
+export function injectUploadedFontFace(
+  family: string | null | undefined,
+  fileUrl: string | null | undefined,
+  fileType: string | null | undefined,
+): void {
+  if (typeof document === 'undefined' || !family || !fileUrl) return;
+  if (injectedUploads.has(fileUrl)) return;
+  injectedUploads.add(fileUrl);
+  const format =
+    fileType === 'woff2' ? 'woff2'
+    : fileType === 'woff' ? 'woff'
+    : fileType === 'otf' ? 'opentype'
+    : 'truetype';
+  const styleId = 'brandstyle-uploaded-fonts';
+  let tag = document.getElementById(styleId) as HTMLStyleElement | null;
+  if (!tag) {
+    tag = document.createElement('style');
+    tag.id = styleId;
+    document.head.appendChild(tag);
+  }
+  tag.textContent += `\n@font-face {\n  font-family: "${cssEscape(family)}";\n  src: url("${urlEscape(fileUrl)}") format("${format}");\n  font-display: swap;\n}`;
+}
+
 /** Injecteer een metric-substitute Google Font (Inter e.d.). */
 export function injectSubstituteCss(family: string): void {
   if (typeof document === 'undefined' || !family) return;

@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 291. LP-render: resterende tracks (E-1/Track 2/E-3) + deep-design verbeterplan
+
+De resterende tracks uit de Zwarthout-audit afgehandeld + een diepgaand best-practice design-onderzoek (4 lenzen / NN/g·Shapiro·CXL·Refactoring UI·Baymard) vertaald naar een verbeterplan. **E-1**: hero-h1 gebruikt de per-rol gescrapte `tbr.display.fontFamily`; `useBrandFontLoader` laadt per-rol display/heading/body/label-families. **Track 2**: per-feature beeld-infra — `imageUrl`-slot op `featureItemSchema`+`FeatureItem`, FeatureGrid rendert een `<img>` (vervangt de icon-badge) wanneer aanwezig, mapper threadt het door (producer = verbeterplan). **E-3**: non-Google font-bronnen — `BrandTokens.fontAssets`+`adobeFontsKitId` (workspace-kit) gedragen door de extractor; de canvas-loader laadt UPLOADED via `@font-face` + ADOBE_FONTS via de gedeelde `injectTypekitCss`, en sluit hun families uit de Google-aanvraag. **Track 6 gereframed**: DB-inspectie toont dat `hasDarkSections` al `true` is (#212529 = `background`+`dark`, L=14,5%); de vlakke hero was de pre-#290 race, niet een extractie-gat → opgelost door #289+#290. Data-quality cross-ref: Zwarthout's `visualLanguage.promptFragment` noemt nog `#7A00DF` purple als primary (Bootstrap-vervuiling → upstream brandstyle-extractie). Verbeterplan: `docs/audits/2026-06-06-lp-design-verbeterplan.md` (12 principes + Top-5 architecturale tracks). Nieuwe smokes phase56 (8/8) + phase57 (13/13), stale phase30-assertie bijgewerkt; tsc+lint 0; sweep (58 smokes) groen.
+
+- Commit: branch `fix/lp-render-remaining-tracks`
+
 ### 290. LP-render: AI-hero-image deterministisch (geen kleurblok meer)
 
 De verplichte hero-image werd fire-and-forget gegenereerd ná `onAdvance` → de pagina opende soms zonder foto (kleurblok), en de foto patchte er pas later (of nooit) in. `handleChooseVariant` genereert de hero nu **vóór** de éne persist en vouwt de URL IN de variant → Step 3 rendert de pagina mét de foto (deterministisch). `generateHeroVisualUrl` (puur, returnt URL) gesplitst van `generateHeroVisualFor`; 45s-race-ceiling zodat een hangende image-API de keuze-flow niet blokkeert (bij timeout: pagina zonder foto + duidelijke melding). De eerder onzichtbare `visualError`/`isGeneratingVisual`-state wordt nu getoond in de keuze-view (review-fix). tsc+lint 0; LP-smokes groen.

@@ -70,6 +70,8 @@ function featuresSection(v: LandingPageVariantContent): PuckInstance {
     title: item.heading,
     description: item.body,
     icon: item.icon,
+    // Track 2: per-feature beeld doorgeven wanneer de variant het levert.
+    imageUrl: item.imageUrl ?? null,
   }));
   const columns: "2" | "3" | "4" =
     features.length >= 4 ? "4" : features.length === 2 ? "2" : "3";

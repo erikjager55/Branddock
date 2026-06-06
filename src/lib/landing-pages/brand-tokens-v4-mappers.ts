@@ -42,6 +42,7 @@ function nullIfNearWhite(color: string | null): string | null {
 }
 import type { BrandArchetype } from "./brand-archetype-classifier";
 import { isNoOpBorder } from "./scraped-css-helpers";
+import { stripFontWeightSuffix } from "@/lib/brandstyle/google-fonts-catalog";
 
 // ─── Unit parsing ─────────────────────────────────────────
 
@@ -450,9 +451,29 @@ interface TypographyProfileSrc {
   button?: TypographyRoleStyleSrc;
 }
 
+/** E-1: saniteer een per-rol scraped font-family naar een bruikbare merk-naam,
+ *  of null. Eerste naam uit de stack → quotes weg → weight-suffix strip ("Sen
+ *  Bold"→"Sen") → drop generics/system/var(). Casing blijft (UI normaliseert). */
+function sanitizeRoleFontFamily(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const first = raw.split(',')[0]?.trim().replace(/^["']|["']$/g, '').trim();
+  if (!first) return null;
+  const stripped = stripFontWeightSuffix(first).trim();
+  if (!stripped) return null;
+  const lower = stripped.toLowerCase();
+  if (lower.includes('var(')) return null;
+  const GENERIC = new Set([
+    'system-ui', '-apple-system', 'blinkmacsystemfont', 'segoe ui', 'roboto',
+    'helvetica neue', 'arial', 'sans-serif', 'serif', 'monospace',
+    'ui-sans-serif', 'ui-serif', 'ui-monospace', 'inherit', 'initial', 'unset',
+  ]);
+  if (GENERIC.has(lower)) return null;
+  return stripped;
+}
+
 function toRoleEntry(src: TypographyRoleStyleSrc | undefined): TypographyByRoleEntry {
   if (!src) {
-    return { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null };
+    return { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null, fontFamily: null };
   }
   const fontSize = src.fontSize ? pxFromCssValue(src.fontSize, 0) : 0;
   const fontWeight = src.fontWeight ? numberFromCssValue(src.fontWeight, 0) : 0;
@@ -488,6 +509,7 @@ function toRoleEntry(src: TypographyRoleStyleSrc | undefined): TypographyByRoleE
     letterSpacing: guardTypoValue(src.letterSpacing),
     textTransform: validTt,
     color: validColor,
+    fontFamily: sanitizeRoleFontFamily(src.fontFamily),
   };
 }
 

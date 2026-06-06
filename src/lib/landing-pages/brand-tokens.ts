@@ -28,8 +28,21 @@ import {
   getDesignSystemForLayoutStyle,
 } from './design-system';
 import type { BrandArchetype } from './brand-archetype-classifier';
+import type { FontAvailability } from '@/features/brandstyle/utils/font-loading';
 
 // ─── Public interface ─────────────────────────────────────────
+
+/** E-3 — één non-Google font-bron voor de canvas-loader. */
+export interface BrandFontAsset {
+  /** CSS family-naam (gesaneerd, zonder weight-suffix). */
+  family: string;
+  /** Bron-availability uit StyleguideFont — drijft het laad-pad. */
+  availability: FontAvailability;
+  /** Geüploade font-file (alleen UPLOADED) voor @font-face src. */
+  fileUrl: string | null;
+  /** woff2/woff/ttf/otf — bepaalt format() in de @font-face-regel. */
+  fileType: string | null;
+}
 
 export interface BrandTokens {
   // ─── Legacy kleur-naam-tokens (backward-compat) ──────────
@@ -109,6 +122,16 @@ export interface BrandTokens {
   // ─── Typografie ──────────────────────────────────────────
   headingFont: string;
   bodyFont: string;
+  /** E-3 — non-Google font-bronnen die de canvas-loader moet laden naast de
+   *  Google-stacks. UPLOADED → @font-face uit fileUrl; ADOBE_FONTS → Typekit
+   *  via de WORKSPACE-kit (`adobeFontsKitId`, niet de per-font domain-locked
+   *  source-kit). Google-only merken houden een lege lijst → geen gedrag-
+   *  verandering. */
+  fontAssets: BrandFontAsset[];
+  /** Workspace-eigen Adobe Typekit kit-id (domain-geconfigureerd). Nodig om
+   *  ADOBE_FONTS-fonts in de canvas te laden; de per-font source-kit is
+   *  domain-locked en werkt cross-domain niet. Null = geen kit geconfigureerd. */
+  adobeFontsKitId: string | null;
 
   // ─── v3 — Design-system (Pad C Sub-Sprint A) ─────────────
   /** LayoutStyle uit BrandStyleguide — bepaalt design-system primitives. */
@@ -166,6 +189,11 @@ export interface TypographyByRoleEntry {
    *  tokens.onSurface (body) of tokens.brand (display). Wanneer beschikbaar
    *  rendert de LP h1/h2/p in exact dezelfde kleur als de bron. */
   color: string | null;
+  /** E-1 — per-rol font-family-naam (gesaniteerd, weight-suffix gestript, geen
+   *  generics). Null = fallback op de globale heading/body-stack. Geeft per-rol
+   *  family-fidelity wanneer een merk meer dan 2 distincte families gebruikt
+   *  (bv. serif display + sans body + mono label) die de globale split mist. */
+  fontFamily: string | null;
 }
 
 export interface TypographyByRoleTokens {
@@ -336,6 +364,8 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
   // Typography
   headingFont: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
   bodyFont: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  fontAssets: [],
+  adobeFontsKitId: null,
   // v3 — Design-system
   layoutStyle: DEFAULT_LAYOUT_STYLE,
   designSystem: getDesignSystemForLayoutStyle(DEFAULT_LAYOUT_STYLE),
@@ -403,12 +433,12 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
   },
   // v5 — Typography per rol (alle null = fallback op designSystem-preset)
   typographyByRole: {
-    display: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
-    heading: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
-    subheading: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
-    body: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
-    label: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
-    button: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null },
+    display: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null, fontFamily: null },
+    heading: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null, fontFamily: null },
+    subheading: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null, fontFamily: null },
+    body: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null, fontFamily: null },
+    label: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null, fontFamily: null },
+    button: { fontSize: null, fontWeight: null, lineHeight: null, letterSpacing: null, textTransform: null, color: null, fontFamily: null },
   },
 };
 
@@ -432,6 +462,10 @@ interface StyleguideFontLike {
   role: string;
   fontFamily?: string | null;
   sortOrder?: number;
+  /** E-3 — bron-availability + upload-velden voor de canvas font-loader. */
+  availability?: FontAvailability;
+  fileUrl?: string | null;
+  fileType?: string | null;
 }
 
 interface StyleguideShape {
@@ -764,6 +798,10 @@ function mapStyleguideComponents(
 
 export function extractBrandTokensFromStyleguide(
   styleguide: StyleguideShape | null | undefined,
+  /** E-3 — workspace-eigen Adobe Typekit kit-id (domain-geconfigureerd).
+   *  Apart van de styleguide omdat het op Workspace leeft, niet op de
+   *  BrandStyleguide. Null = geen kit → ADOBE_FONTS-fonts laden niet. */
+  opts?: { adobeFontsKitId?: string | null },
 ): BrandTokens {
   if (!styleguide) return { ...DEFAULT_BRAND_TOKENS };
 
@@ -901,6 +939,26 @@ export function extractBrandTokensFromStyleguide(
     fontByRole('BODY', 'body')
     ?? (styleguide.primaryFontName ? wrapFontStack(styleguide.primaryFontName, 'body') : null)
     ?? DEFAULT_BRAND_TOKENS.bodyFont;
+
+  // ── E-3 — non-Google font-bronnen voor de canvas-loader ──
+  // Alleen UPLOADED (@font-face uit fileUrl) en ADOBE_FONTS (Typekit via de
+  // workspace-kit) hebben aparte laad-behandeling nodig; Google/substitute
+  // dekt de bestaande stack-loader al. family = eerste stack-naam, ontdaan
+  // van quotes + weight-suffix ("Effra Bold" → "Effra").
+  const sanitizeAssetFamily = (raw: string): string =>
+    stripFontWeightSuffix(
+      (raw.split(',')[0] ?? '').trim().replace(/^["']|["']$/g, '').trim(),
+    ).trim();
+  const fontAssets: BrandFontAsset[] = fonts
+    .filter((f) => f.availability === 'UPLOADED' || f.availability === 'ADOBE_FONTS')
+    .map((f) => ({
+      family: sanitizeAssetFamily(f.fontFamily ?? f.name),
+      availability: f.availability ?? null,
+      fileUrl: f.fileUrl ?? null,
+      fileType: f.fileType ?? null,
+    }))
+    .filter((a) => a.family.length > 0);
+  const adobeFontsKitId = opts?.adobeFontsKitId?.trim() || null;
 
   // ── v3 — Design-system resolutie (Pad C Sub-Sprint A) ──
   const layoutStyle = styleguide.layoutStyle ?? DEFAULT_LAYOUT_STYLE;
@@ -1111,6 +1169,8 @@ export function extractBrandTokensFromStyleguide(
     // Typography
     headingFont,
     bodyFont,
+    fontAssets,
+    adobeFontsKitId,
     // v3 Design-system
     layoutStyle,
     designSystem,
@@ -1273,6 +1333,9 @@ export function extractBrandTokensFromContext(
     // Typography
     headingFont,
     bodyFont,
+    // E-3 — context-only pad heeft geen StyleguideFont-bron-info → leeg/null
+    fontAssets: [],
+    adobeFontsKitId: null,
     // v4 Component-tokens (fallback-pad: geen scraper-data, gebruik defaults)
     button: DEFAULT_BRAND_TOKENS.button,
     elevation: DEFAULT_BRAND_TOKENS.elevation,

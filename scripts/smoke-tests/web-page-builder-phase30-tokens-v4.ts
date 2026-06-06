@@ -159,10 +159,16 @@ group("C — mapSectionRhythmTokens fallback uit designSystem");
 {
   const ds = getDesignSystemForLayoutStyle("COMMERCIAL");
   const result = mapSectionRhythmTokens(null, ds, DEFAULT_BRAND_TOKENS.sectionRhythm);
-  // COMMERCIAL ds.spacing[5] is veel kleiner dan MINIMAL
+  // Track 4 (#289): de preset-fallback `dsSection` wordt geclampt naar [40,56]
+  // zodat een ruime spacing-scale geen 128px lege band geeft. Gescrapte
+  // section.paddingY passeert ongeclampt; alleen deze null-fallback wordt
+  // begrensd.
+  const dsLargeIdx = Math.min(ds.spacing.length - 1, 5);
+  const expectedClamped = Math.min(56, Math.max(40, ds.spacing[dsLargeIdx] ?? DEFAULT_BRAND_TOKENS.sectionRhythm.sectionPaddingY));
   assert(
-    "sectionPaddingY uit ds.spacing[5]",
-    result.sectionPaddingY === ds.spacing[Math.min(ds.spacing.length - 1, 5)],
+    "sectionPaddingY = geclampte ds.spacing[5] fallback [40,56]",
+    result.sectionPaddingY === expectedClamped,
+    `got ${result.sectionPaddingY}, expected ${expectedClamped}`,
   );
 }
 
