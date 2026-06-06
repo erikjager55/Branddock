@@ -6,7 +6,7 @@
  * geresolveerde tokens ÉN hun provenance (source/confidence). Geen netwerk,
  * geen DB — puur de resolve-logica. Dit is de baseline waartegen ablation-
  * per-PR (CI-hook) de accuraatheid-delta meet: een wijziging die provenance of
- * token-resolutie laat regresseren, laat deze suite fa6len.
+ * token-resolutie laat regresseren, laat deze suite falen.
  *
  * Run: npx tsx scripts/smoke-tests/brandstyle-provenance.ts
  */
@@ -64,6 +64,19 @@ const LOGO: Styleguide = {
 
 /** GIGO / lege placeholder (napking-WordPress): niets bruikbaars. */
 const EMPTY: Styleguide = { colors: [], fonts: [] };
+
+/** Radius-only: wél radiusProfile maar GEEN elevationProfile. De V2-gate mag
+ *  dit NIET als scraped-elevation zien (cardElevationCategory blijft preset). */
+const RADIUS_ONLY: Styleguide = {
+  colors: [
+    { hex: '#222222', category: 'NEUTRAL', tags: ['text'], confidence: 'high', sortOrder: 0 },
+    { hex: '#FFFFFF', category: 'NEUTRAL', tags: ['surface', 'background', 'light'], confidence: 'high', sortOrder: 1 },
+  ],
+  fonts: [],
+  // Flat key cardTypical — zoals mapElevationTokens (`radius?.cardTypical`) leest.
+  radiusProfile: { cardTypical: '8px' },
+  // GEEN elevationProfile
+};
 
 /** Framework-default: Bootstrap-blauw mag NIET als brand winnen. */
 const FRAMEWORK: Styleguide = {
@@ -136,6 +149,65 @@ console.log('\n=== 4. Framework-default (Bootstrap) ===\n');
   // Brand valt terug op de donkerste betekenisvolle kleur (onSurface recycle)
   // → provenance markeert dat als fallback (geen merk-kleur gevonden).
   assert('brand provenance === fallback (geen echte merk-kleur)', provenance.brand?.source === 'fallback', provenance.brand?.source);
+}
+
+// ─── 5. V2 forceFlatCards-gate contract ───────────────────
+// De gate in puck-config.tsx is `forceFlatCards && !isScrapedOrigin(prov,
+// 'elevation')`. We testen de INPUT van die gate (isScrapedOrigin op
+// 'elevation') voor de drie scenario's — dit lockt de CRITICAL-fix dat een
+// radius-only merk de gate NIET als scraped passeert.
+
+console.log('\n=== 5. forceFlatCards-gate contract ===\n');
+{
+  const strong = extractBrandTokensWithProvenance(STRONG).provenance;
+  assert(
+    'elevationProfile aanwezig → gate ziet scraped → shadow blijft',
+    isScrapedOrigin(strong, 'elevation') === true,
+    strong.elevation?.source,
+  );
+}
+{
+  const radiusOnly = extractBrandTokensWithProvenance(RADIUS_ONLY).provenance;
+  assert(
+    'radius-only (geen elevationProfile) → gate ziet GEEN scraped → mag flatten',
+    isScrapedOrigin(radiusOnly, 'elevation') === false,
+    radiusOnly.elevation?.source,
+  );
+  assert(
+    'radius-only → elevation.radius wél scraped (aparte provenance-pad)',
+    isScrapedOrigin(radiusOnly, 'elevation.radius') === true,
+    radiusOnly['elevation.radius']?.source,
+  );
+}
+{
+  const empty = extractBrandTokensWithProvenance(EMPTY).provenance;
+  assert(
+    'geen profiles → gate ziet GEEN scraped',
+    isScrapedOrigin(empty, 'elevation') === false,
+    empty.elevation?.source,
+  );
+}
+
+// ─── 6. WCAG-gate provenance-correctie ────────────────────
+// STRONG's onBrand: wit op #E8521F faalt AA (3.71:1) → WCAG forceert #000000.
+// De provenance moet dan 'derived' (wcag-fallback) zijn, niet scraped/high.
+console.log('\n=== 6. WCAG-gate provenance ===\n');
+{
+  const { tokens, provenance } = extractBrandTokensWithProvenance(STRONG);
+  assert(
+    'onBrand provenance === derived na WCAG-fallback',
+    provenance.onBrand?.source === 'derived',
+    provenance.onBrand?.source,
+  );
+  // Strikt: 'wcag-fallback' (de correctie-stap), NIET de initiële 'wcag-on-color'
+  // — anders zou de assert ook slagen als de correctie-stap stopt te draaien.
+  assert(
+    "onBrand detector === 'wcag-fallback'",
+    provenance.onBrand?.detector === 'wcag-fallback',
+    provenance.onBrand?.detector,
+  );
+  // onBrand-waarde is daadwerkelijk de WCAG-veilige zwart (niet wit).
+  assert('onBrand === #000000 (WCAG-safe)', tokens.onBrand === '#000000', tokens.onBrand);
 }
 
 console.log(`\n=== RESULT: ${pass} pass, ${fail} fail ===\n`);

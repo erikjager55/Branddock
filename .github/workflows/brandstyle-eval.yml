@@ -14,6 +14,10 @@ on:
     paths:
       - 'src/lib/brandstyle/**'
       - 'src/lib/landing-pages/**'
+      # V2/V3/V4 consumers van de provenance-laag — een PR die de gate of de
+      # data-quality-cast breekt moet de DET-suite ook draaien.
+      - 'src/features/brandstyle/utils/data-quality.ts'
+      - 'src/features/campaigns/components/canvas/medium/puck-config.tsx'
       - 'scripts/smoke-tests/brandstyle-provenance.ts'
       - '.github/workflows/brandstyle-eval.yml'
   workflow_dispatch:

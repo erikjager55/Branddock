@@ -884,7 +884,13 @@ export function extractBrandTokensWithProvenance(
     'accent',
     accentColor
       ? originFromColor(accentColor, { detector: 'accent-pick' })
-      : derivedOrigin('brand', brandOrigin, 'accent-recycled-brand'),
+      // Geen accent + brand zelf is fallback (GIGO) → accent is óók fallback,
+      // niet 'derived'. Anders telt summarizeProvenance 'm als noch scraped noch
+      // fallback en onder-rapporteert de footer het aantal echte fallbacks.
+      : brandOrigin.source === 'fallback'
+        ? { source: 'fallback', confidence: 'low', detector: 'accent-pick',
+            evidence: 'geen accent + brand is fallback' }
+        : derivedOrigin('brand', brandOrigin, 'accent-recycled-brand'),
   );
 
   // ── WCAG pre-render gate (Sprint 2 §3b) ──
@@ -893,6 +899,29 @@ export function extractBrandTokensWithProvenance(
   const safeOnSurface = enforceContrastFallback(onSurface, surface, 'normal');
   const safeOnBrand = enforceContrastFallback(onBrand, brand, 'normal');
   const safeSurfaceMuted = enforceContrastFallback(surfaceMuted, surface, 'normal');
+
+  // Provenance-correctie: wanneer de WCAG-gate de gekozen kleur vervangt door
+  // een berekende zwart/wit-fallback, is de geëmitteerde token NIET meer de
+  // scraped waarde. Downgrade de provenance naar 'derived' zodat footer/badge
+  // niet "scraped/high" claimen voor een door-WCAG-overschreven waarde.
+  const wcagDerived = (path: string, raw: string, safe: string): void => {
+    if (safe !== raw) {
+      recordOrigin(prov, path, {
+        source: 'derived', confidence: 'medium', detector: 'wcag-fallback',
+        evidence: `WCAG-contrast-fallback (${raw} → ${safe})`,
+      });
+    }
+  };
+  wcagDerived('onSurface', onSurface, safeOnSurface);
+  wcagDerived('surfaceMuted', surfaceMuted, safeSurfaceMuted);
+  // onBrand was al 'derived' (WCAG-on-color); verfijn alleen het bewijs als de
+  // gate 'm verder verschoof.
+  if (safeOnBrand !== onBrand) {
+    recordOrigin(prov, 'onBrand', {
+      source: 'derived', confidence: 'medium', detector: 'wcag-fallback',
+      evidence: `WCAG-contrast-fallback op brand (${onBrand} → ${safeOnBrand})`,
+    });
+  }
 
   // ── Fonts ──
   // Bouw font-stacks MET semantische fallback (serif voor display, sans-serif
@@ -974,18 +1003,21 @@ export function extractBrandTokensWithProvenance(
   // die als UI was gemarkeerd maar wel display-character heeft). Voorkomt
   // dat brands met DEFAULT_AI Inter-display krijgen wat alle gegenereerde
   // LPs op elkaar laat lijken.
+  // Capture font-resolutie-signalen één keer (displayByName + body-rol scannen
+  // de fonts-array; hergebruik voorkomt dubbele scans in de provenance-records).
+  const displayByNameStack = displayByName();
+  const bodyFromRole = fontByRole('BODY', 'body');
   let primaryHeading = fontByRole('DISPLAY', 'display');
   if (primaryHeading && isBannedDisplayFont(primaryHeading)) {
-    const recovery = displayByName();
-    if (recovery) primaryHeading = recovery;
+    if (displayByNameStack) primaryHeading = displayByNameStack;
   }
   const headingFont =
     primaryHeading
-    ?? displayByName()
+    ?? displayByNameStack
     ?? (styleguide.primaryFontName ? wrapFontStack(styleguide.primaryFontName, 'display') : null)
     ?? DEFAULT_BRAND_TOKENS.headingFont;
   const bodyFont =
-    fontByRole('BODY', 'body')
+    bodyFromRole
     ?? (styleguide.primaryFontName ? wrapFontStack(styleguide.primaryFontName, 'body') : null)
     ?? DEFAULT_BRAND_TOKENS.bodyFont;
 
@@ -1009,12 +1041,12 @@ export function extractBrandTokensWithProvenance(
       evidence: 'primaryFontName-fallback' };
   };
   recordOrigin(prov, 'headingFont', fontOrigin(
-    primaryHeading != null || displayByName() != null,
+    primaryHeading != null || displayByNameStack != null,
     headingFont,
     DEFAULT_BRAND_TOKENS.headingFont,
   ));
   recordOrigin(prov, 'bodyFont', fontOrigin(
-    fontByRole('BODY', 'body') != null,
+    bodyFromRole != null,
     bodyFont,
     DEFAULT_BRAND_TOKENS.bodyFont,
   ));
@@ -1118,7 +1150,13 @@ export function extractBrandTokensWithProvenance(
   // V2's puck-config-gating en V3's footer; per-veld kan later.
   const present = (p: unknown): boolean => p != null && (typeof p !== 'object' || Object.keys(p as object).length > 0);
   recordOrigin(prov, 'button', originFromProfile(present(styleguide.buttonProfile), { detector: 'buttonProfile' }));
-  recordOrigin(prov, 'elevation', originFromProfile(present(styleguide.elevationProfile) || present(styleguide.radiusProfile), { detector: 'elevation/radiusProfile' }));
+  // elevation-provenance volgt ALLEEN elevationProfile: cardElevationCategory
+  // (de waarde die de V2 forceFlatCards-gate leest) komt uit
+  // elevationProfile.dominantCategory; radiusProfile zet enkel cardBorderRadius.
+  // Een radius-only merk mag de gate dus NIET als scraped-elevation passeren —
+  // anders beschermt de gate een preset-waarde alsof het merk-fidelity is.
+  recordOrigin(prov, 'elevation', originFromProfile(present(styleguide.elevationProfile), { detector: 'elevationProfile' }));
+  recordOrigin(prov, 'elevation.radius', originFromProfile(present(styleguide.radiusProfile), { detector: 'radiusProfile' }));
   recordOrigin(prov, 'sectionRhythm', originFromProfile(present(styleguide.spacingProfile), { detector: 'spacingProfile' }));
   recordOrigin(prov, 'motion', originFromProfile(present(styleguide.motionProfile), { detector: 'motionProfile' }));
   recordOrigin(prov, 'typographyByRole', originFromProfile(present(styleguide.typographyProfile), { detector: 'typographyProfile' }));
