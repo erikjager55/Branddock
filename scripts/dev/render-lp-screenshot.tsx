@@ -21,6 +21,7 @@ import { extractBrandTokensFromStyleguide } from "../../src/lib/landing-pages/br
 import { buildSpikePuckConfig } from "../../src/features/campaigns/components/canvas/medium/puck-config";
 import { buildLandingPageTemplateFromStructured } from "../../src/features/campaigns/components/canvas/medium/puck-templates/landing-page-from-structured";
 import { buildA11yStyleBlock } from "../../src/lib/landing-pages/a11y-styles";
+import { parseBrandImages } from "../../src/lib/landing-pages/brand-images";
 import type { LandingPageVariantContent } from "../../src/lib/landing-pages/variant-schema";
 import type { CanvasContextStack } from "../../src/lib/ai/canvas-context";
 
@@ -103,6 +104,7 @@ async function main() {
       fonts: { select: { name: true, role: true, fontFamily: true, sortOrder: true, availability: true, fileUrl: true, fileType: true } },
       components: { select: { type: true, label: true, extractedStyles: true, confidence: true }, orderBy: [{ confidence: "desc" }, { sortOrder: "asc" }] },
       workspace: { select: { adobeFontsKitId: true } },
+      brandImages: true,
     },
   });
   if (!styleguide) throw new Error(`Styleguide niet gevonden voor workspace ~ "${nameContains}"`);
@@ -115,9 +117,17 @@ async function main() {
     hasDarkSections: brandTokens.hasDarkSections, darkSectionBg: brandTokens.darkSectionBg, heroBgColor: brandTokens.heroBgColor,
   }, null, 2));
 
-  const ctx = { brandTokens, personas: [], brand: { brandName: "Zwarthout" }, deliverableTypeId: "landing-page" } as unknown as CanvasContextStack;
+  // P2 — heeft dit merk bronbeeld? Dan de placeholder-beelden uit de variant
+  // strippen zodat de producer de ECHTE brandImages plaatst (verificatie).
+  const brandImages = parseBrandImages(styleguide.brandImages);
+  let v = loadVariant(nameContains);
+  if (brandImages.length > 0) {
+    v = { ...v, hero: { ...v.hero, heroVisualUrl: null }, features: { ...v.features, items: v.features.items.map((it) => ({ ...it, imageUrl: null })) } };
+    console.log(`P2: ${brandImages.length} brandImages → producer vult hero+features`);
+  }
+  const ctx = { brandTokens, personas: [], brand: { brandName: nameContains }, deliverableTypeId: "landing-page", brandImages } as unknown as CanvasContextStack;
   const config = buildSpikePuckConfig(ctx);
-  const tree = buildLandingPageTemplateFromStructured(loadVariant(nameContains), ctx);
+  const tree = buildLandingPageTemplateFromStructured(v, ctx);
   const body = renderToStaticMarkup(React.createElement(Render, { config, data: tree } as never));
 
   const puckCss = fs.readFileSync("node_modules/@puckeditor/core/dist/Render-3OV4N4MT.css", "utf8");

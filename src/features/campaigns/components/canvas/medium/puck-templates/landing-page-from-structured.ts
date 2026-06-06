@@ -23,6 +23,7 @@ import type { Data } from "@puckeditor/core";
 import type { CanvasContextStack } from "@/lib/ai/canvas-context";
 import type { SpikePuckProps } from "../puck-config";
 import type { LandingPageVariantContent } from "@/lib/landing-pages/variant-schema";
+import { assignBrandImagesToVariant } from "@/lib/landing-pages/brand-images";
 
 type SpikeData = Data<SpikePuckProps>;
 type PuckInstance = { type: string; props: Record<string, unknown> };
@@ -76,6 +77,11 @@ function featuresSection(v: LandingPageVariantContent): PuckInstance {
     // Track 2: per-feature beeld doorgeven wanneer de variant het levert.
     imageUrl: item.imageUrl ?? null,
   }));
+  // P7: features mét beeld → editorial A-B-A-B split-layout (beeld/tekst
+  // afwisselend) i.p.v. een 3-koloms grid; zonder beeld blijft de grid
+  // (icon+tekst leest beter in kolommen dan in lege split-rijen).
+  const hasImages = features.length > 0 && features.every((f) => !!f.imageUrl);
+  if (hasImages) return instance("FeatureSplit", { features });
   const columns: "2" | "3" | "4" =
     features.length >= 4 ? "4" : features.length === 2 ? "2" : "3";
   return instance("FeatureGrid", { columns, features });
@@ -193,9 +199,13 @@ function footerSection(
  * Callers die dit niet doen kunnen een schema-violating tree krijgen.
  */
 export function buildLandingPageTemplateFromStructured(
-  variant: LandingPageVariantContent,
+  rawVariant: LandingPageVariantContent,
   ctx: CanvasContextStack | null,
 ): SpikeData {
+  // P2 — vul lege hero/feature-beeld-slots met de brand-eigen brandImages
+  // (merken mét bronbeeld krijgen echte foto's; zonder bronbeeld is dit een
+  // no-op en blijven de slots leeg / vallen op placeholder/AI-gen terug).
+  const variant = assignBrandImagesToVariant(rawVariant, ctx?.brandImages ?? null);
   const sections: Array<PuckInstance | null> = [
     heroSection(variant), // 1. Hero
     trustStripSection(variant), // 2. Trust-strip
