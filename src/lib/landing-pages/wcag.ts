@@ -227,13 +227,37 @@ export function readableTextColor(fg: string, bg: string, fallback: string, minR
  * `minRatio`: 3.0 voor grote kop/display-tekst (AA-large — houdt bv. een merk-
  * oranje kop leesbaar-genoeg), 5.0 (default) voor body/kleine tekst.
  */
+/**
+ * Normaliseer een CSS-kleur naar 6-digit hex voor contrast-meting. `contrastRatio`
+ * leunt op `hexToRgb` dat ALLEEN 6-digit hex parst — een gescrapte `rgb(...)` /
+ * 3-digit-hex card-bg werd anders als zwart (luminance 0) gemeten → witte tekst
+ * op een witte card. Returnt null voor niet-solide/onbekende waarden (named,
+ * gradient, url(...)) zodat de caller dan NIET blind flipt.
+ */
+export function normalizeColorToHex(c: string): string | null {
+  const s = c.trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(s)) return s;
+  const m3 = s.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/);
+  if (m3) return `#${m3[1]}${m3[1]}${m3[2]}${m3[2]}${m3[3]}${m3[3]}`;
+  const mrgb = s.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/);
+  if (mrgb) {
+    const h = (n: number) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, '0');
+    return `#${h(+mrgb[1])}${h(+mrgb[2])}${h(+mrgb[3])}`;
+  }
+  return null;
+}
+
 export function resolveOnColor(
   fg: string | null | undefined,
   bg: string,
   opts?: { fallback?: string | null; minRatio?: number },
 ): string {
   const minRatio = opts?.minRatio ?? 5.0;
-  if (fg && contrastRatio(fg, bg) >= minRatio) return fg;
-  if (opts?.fallback && contrastRatio(opts.fallback, bg) >= minRatio) return opts.fallback;
-  return blackOrWhiteFor(bg);
+  const hexBg = normalizeColorToHex(bg);
+  // Onmeetbare bg (gradient/named/url) → niet blind flippen: behoud de
+  // voorkeurskleur (fg, dan fallback) i.p.v. een verkeerde zwart-aanname.
+  if (!hexBg) return fg ?? opts?.fallback ?? blackOrWhiteFor(bg);
+  if (fg && contrastRatio(normalizeColorToHex(fg) ?? fg, hexBg) >= minRatio) return fg;
+  if (opts?.fallback && contrastRatio(normalizeColorToHex(opts.fallback) ?? opts.fallback, hexBg) >= minRatio) return opts.fallback;
+  return blackOrWhiteFor(hexBg);
 }

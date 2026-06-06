@@ -63,6 +63,21 @@ console.log('\n── Invariant: resolveOnColor levert NOOIT onleesbaar t.o.v. d
   }
 }
 
+console.log('\n── C1-fix: niet-hex bg (gescrapte rgb()/3-digit) correct gemeten ──');
+{
+  // Een witte card gescrapt als rgb(255,255,255) mag GEEN wit-op-wit geven
+  // (relativeLuminance parste alleen 6-digit hex → rgb() = zwart = wit-tekst-bug).
+  const bodyOnWhiteRgb = resolveOnColor('#374151', 'rgb(255, 255, 255)', { fallback: CHARCOAL });
+  assert('donkere body op rgb(255,255,255)-card BLIJFT donker (geen wit-op-wit)', contrastRatio(bodyOnWhiteRgb, WHITE) >= 4.5, `${bodyOnWhiteRgb}`);
+  // Zwarte card als rgb(0,0,0) → witte tekst.
+  const bodyOnBlackRgb = resolveOnColor('#6B7280', 'rgb(0,0,0)', { fallback: CHARCOAL });
+  assert('body op rgb(0,0,0)-card → leesbaar (wit)', contrastRatio(bodyOnBlackRgb, BLACK) >= 4.5, `${bodyOnBlackRgb}`);
+  // 3-digit hex bg.
+  assert('3-digit #fff bg correct (donkere tekst behouden)', contrastRatio(resolveOnColor('#212529', '#fff', { fallback: CHARCOAL }), WHITE) >= 4.5);
+  // Onmeetbare bg (gradient/named) → NIET blind flippen: behoud fg.
+  assert('onmeetbare bg (linear-gradient) → fg behouden, geen blinde flip', resolveOnColor(ORANGE, 'linear-gradient(#000,#fff)', { fallback: CHARCOAL }) === ORANGE);
+}
+
 console.log('\n── readableTextColor: minRatio-param backward-compat (default 5.0) ──');
 {
   assert('default 5.0: grijs net-4.5 valt terug', readableTextColor('#767676', WHITE, CHARCOAL) === CHARCOAL || contrastRatio('#767676', WHITE) >= 5.0);

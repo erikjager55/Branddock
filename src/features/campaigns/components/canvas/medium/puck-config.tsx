@@ -563,7 +563,7 @@ function brandHeroComponent(tokens: BrandTokens) {
         // EXPERIENTIAL kreeg een leeg vol-viewport-vlak — geef die een content-
         // grootte i.p.v. een lege 100vh. (Track 2 vult een hero-image → 100vh.)
         minHeight: heroLayout.fullViewportHeight
-          ? (useFullBleed ? '100vh' : 'clamp(440px, 64vh, 720px)')
+          ? (useFullBleed || usePlaceholderFrame ? '100vh' : 'clamp(440px, 64vh, 720px)')
           : undefined,
         display: 'flex',
         flexDirection: 'column',
@@ -688,7 +688,10 @@ function brandHeroComponent(tokens: BrandTokens) {
                 // op section-color (sectionColor) als display.color null is.
                 // Track 1 (contrast): clamp tegen de ECHTE sectie-bg zodat een
                 // gescrapte kleur uit een andere context (wit-op-licht) niet lekt.
-                color: resolveOnColor(tbr.display.color ?? sectionColor, sectionBg, { fallback: sectionColor, minRatio: 3.0 }),
+                // Bij full-bleed staat de tekst over een FOTO+scrim → gebruik de
+                // scrim-ontworpen sectionColor (wit), niet clampen tegen de
+                // approximatieve scrim-basis (review-fix W1).
+                color: useFullBleed ? sectionColor : resolveOnColor(tbr.display.color ?? sectionColor, sectionBg, { fallback: sectionColor, minRatio: 3.0 }),
                 margin: `0 0 ${ds.spacing[Math.min(ds.spacing.length - 1, 3)] ?? 16}px`,
                 // overflowWrap:break-word alleen volstaat (geen hyphens:auto
                 // — brak NL compound-nouns midden in woord).
@@ -706,7 +709,7 @@ function brandHeroComponent(tokens: BrandTokens) {
                 fontWeight: subWeight,
                 letterSpacing: tbr.body.letterSpacing ?? undefined,
                 textTransform: tbr.body.textTransform ?? undefined,
-                color: resolveOnColor(tbr.body.color ?? sectionColor, sectionBg, { fallback: sectionColor }),
+                color: useFullBleed ? sectionColor : resolveOnColor(tbr.body.color ?? sectionColor, sectionBg, { fallback: sectionColor }),
                 maxWidth: 560,
                 margin: heroLayout.textAlignment === 'center'
                   ? `0 auto ${ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24}px`
