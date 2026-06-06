@@ -19,6 +19,7 @@ on:
       - 'src/features/brandstyle/utils/data-quality.ts'
       - 'src/features/campaigns/components/canvas/medium/puck-config.tsx'
       - 'scripts/smoke-tests/brandstyle-provenance.ts'
+      - 'scripts/eval/brandstyle-golden-set/**'
       - '.github/workflows/brandstyle-eval.yml'
   workflow_dispatch:
 
@@ -50,3 +51,8 @@ jobs:
           # geldige connection-string bij module-load.
           DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
         run: npx tsx scripts/smoke-tests/brandstyle-provenance.ts
+
+      - name: Run brandstyle golden-set (accuraatheid-drempel 90%)
+        env:
+          DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
+        run: npx tsx scripts/eval/brandstyle-golden-set/run.ts

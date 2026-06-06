@@ -1,0 +1,29 @@
+{
+  "name": "strong-orange",
+  "note": "Vibrant merk met heldere brand-tag, surface, dark text + DISPLAY/BODY fonts — alles met vertrouwen scraped",
+  "input": {
+    "colors": [
+      { "hex": "#E8521F", "category": "PRIMARY", "tags": ["brand"], "confidence": "high", "sortOrder": 0 },
+      { "hex": "#FFFFFF", "category": "NEUTRAL", "tags": ["surface", "background", "light"], "confidence": "high", "sortOrder": 1 },
+      { "hex": "#1A1A1A", "category": "NEUTRAL", "tags": ["text", "body"], "confidence": "high", "sortOrder": 2 },
+      { "hex": "#6B7280", "category": "NEUTRAL", "tags": ["muted"], "confidence": "medium", "sortOrder": 3 }
+    ],
+    "fonts": [
+      { "name": "Sen", "role": "DISPLAY", "fontFamily": "Sen", "sortOrder": 0 },
+      { "name": "Inter", "role": "BODY", "fontFamily": "Inter", "sortOrder": 1 }
+    ],
+    "layoutStyle": "COMMERCIAL",
+    "elevationProfile": { "samples": [{ "raw": "0 2px 8px rgba(0,0,0,0.1)" }], "dominantCategory": "subtle-shadow" }
+  },
+  "expect": {
+    "tokens": { "brand": "#E8521F", "surface": "#FFFFFF" },
+    "provenanceSource": {
+      "brand": "scraped",
+      "surface": "scraped",
+      "onSurface": "scraped",
+      "headingFont": "scraped",
+      "bodyFont": "scraped",
+      "elevation": "scraped"
+    }
+  }
+}

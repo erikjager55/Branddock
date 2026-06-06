@@ -1,0 +1,26 @@
+{
+  "name": "charcoal-minimal",
+  "note": "Zwarthout-achtig: geen vibrant brand-kleur, donker charcoal als merk-anker, MINIMAL layout, Sen-display",
+  "input": {
+    "colors": [
+      { "hex": "#1C1C1A", "category": "NEUTRAL", "tags": ["text", "body", "header"], "confidence": "high", "sortOrder": 0 },
+      { "hex": "#FAF8F5", "category": "NEUTRAL", "tags": ["surface", "background", "light"], "confidence": "high", "sortOrder": 1 },
+      { "hex": "#8A8378", "category": "NEUTRAL", "tags": ["muted"], "confidence": "medium", "sortOrder": 2 }
+    ],
+    "fonts": [
+      { "name": "Sen", "role": "DISPLAY", "fontFamily": "Sen", "sortOrder": 0 },
+      { "name": "Roboto", "role": "BODY", "fontFamily": "Roboto", "sortOrder": 1 }
+    ],
+    "layoutStyle": "MINIMAL"
+  },
+  "expect": {
+    "tokens": { "surface": "#FAF8F5", "onSurface": "#1C1C1A" },
+    "provenanceSource": {
+      "surface": "scraped",
+      "onSurface": "scraped",
+      "brand": "fallback",
+      "headingFont": "scraped",
+      "elevation": "preset"
+    }
+  }
+}

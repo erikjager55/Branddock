@@ -1,0 +1,20 @@
+{
+  "_doc": "Golden-brand schema. Files NIET met _ ervoor worden door run.ts geladen. Een merk toevoegen = kopieer deze shape naar <naam>.json.",
+  "name": "voorbeeld-merk",
+  "note": "optionele 1-regel context (bv. echte bron-URL / waarom dit merk in de set zit)",
+  "input": {
+    "_doc": "StyleguideShape — de resolver-input. colors[] met hex/category/tags/confidence; fonts[] met name/role/fontFamily; optioneel layoutStyle/archetype + buttonProfile/elevationProfile/spacingProfile/etc.",
+    "colors": [
+      { "hex": "#000000", "category": "PRIMARY", "tags": ["brand"], "confidence": "high", "sortOrder": 0 }
+    ],
+    "fonts": [
+      { "name": "Inter", "role": "BODY", "fontFamily": "Inter", "sortOrder": 0 }
+    ],
+    "layoutStyle": "COMMERCIAL"
+  },
+  "expect": {
+    "_doc": "Subset — alleen de tokens/provenance die voor dit merk de kern zijn. tokens = verwachte hex/font-stack-prefix-vrije waarde (case-insensitive exact match); provenanceSource = verwachte source per token-pad.",
+    "tokens": { "brand": "#000000" },
+    "provenanceSource": { "brand": "scraped" }
+  }
+}

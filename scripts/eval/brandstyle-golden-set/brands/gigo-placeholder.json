@@ -1,0 +1,18 @@
+{
+  "name": "gigo-placeholder",
+  "note": "Napking-achtig: WordPress-placeholder, geen bruikbaar merk-DNA → alles fallback (de footer/badge moet dit als onzeker tonen)",
+  "input": {
+    "colors": [],
+    "fonts": []
+  },
+  "expect": {
+    "provenanceSource": {
+      "brand": "fallback",
+      "surface": "fallback",
+      "onSurface": "fallback",
+      "headingFont": "fallback",
+      "bodyFont": "fallback",
+      "elevation": "preset"
+    }
+  }
+}
