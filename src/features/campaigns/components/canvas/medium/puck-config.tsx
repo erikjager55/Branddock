@@ -9,21 +9,8 @@ import {
 } from '@/lib/landing-pages/brand-tokens';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import { getRenderConstraints } from '@/lib/landing-pages/render-constraints';
-import { contrastRatio, blackOrWhiteFor } from '@/lib/landing-pages/wcag';
+import { readableTextColor, resolveOnColor } from '@/lib/landing-pages/wcag';
 
-/**
- * Render-veilige leesbare-tekstkleur: geeft `fg` terug als die voldoende
- * (AA, 4.5:1) contrasteert met `bg`, anders de `fallback`, anders zwart/wit.
- * Voorkomt onleesbare body-tekst wanneer een gescrapete body-kleur te licht is
- * voor de (tinted) card-achtergrond — `tbr.body.color` werd niet contrast-gecheckt.
- */
-function readableTextColor(fg: string, bg: string, fallback: string): string {
-  // Drempel 5.0 (iets boven AA 4.5): een grijs dat net 4.5:1 haalt oogt nog
-  // faint voor kleine body-tekst → val dan terug op de donkere fallback.
-  if (contrastRatio(fg, bg) >= 5.0) return fg;
-  if (contrastRatio(fallback, bg) >= 5.0) return fallback;
-  return blackOrWhiteFor(bg);
-}
 import {
   buildBackgroundDepth,
   getBackgroundDepthSize,
@@ -690,7 +677,9 @@ function brandHeroComponent(tokens: BrandTokens) {
                 // Fase B — bron-h1-color expliciet: erft NIET van section
                 // wanneer scraper een color op h1 vond. Wel valt het terug
                 // op section-color (sectionColor) als display.color null is.
-                color: tbr.display.color ?? undefined,
+                // Track 1 (contrast): clamp tegen de ECHTE sectie-bg zodat een
+                // gescrapte kleur uit een andere context (wit-op-licht) niet lekt.
+                color: resolveOnColor(tbr.display.color ?? sectionColor, sectionBg, { fallback: sectionColor, minRatio: 3.0 }),
                 margin: `0 0 ${ds.spacing[Math.min(ds.spacing.length - 1, 3)] ?? 16}px`,
                 // overflowWrap:break-word alleen volstaat (geen hyphens:auto
                 // — brak NL compound-nouns midden in woord).
@@ -708,7 +697,7 @@ function brandHeroComponent(tokens: BrandTokens) {
                 fontWeight: subWeight,
                 letterSpacing: tbr.body.letterSpacing ?? undefined,
                 textTransform: tbr.body.textTransform ?? undefined,
-                color: tbr.body.color ?? undefined,
+                color: resolveOnColor(tbr.body.color ?? sectionColor, sectionBg, { fallback: sectionColor }),
                 maxWidth: 560,
                 margin: heroLayout.textAlignment === 'center'
                   ? `0 auto ${ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24}px`
@@ -1095,6 +1084,13 @@ function featureGridComponent(tokens: BrandTokens) {
             const productCardRadius = productCard?.borderRadius
               ? Math.min(pxFromCssValue(productCard.borderRadius, safeRadius), constraints.maxRadiusPx)
               : safeRadius;
+            // Track 1 (contrast): de ECHTE card-achtergrond — gespiegeld aan de
+            // cardWrapper-bg-logica hieronder. Tekst in de card wordt hiertegen
+            // gecontrasteerd, NIET tegen tokens.surface (zwarthout: zwarte
+            // PRODUCT_CARD met donkere body-tekst was de bug).
+            const cardBg = productCard?.background && !isTransparentBackground(productCard.background)
+              ? productCard.background
+              : tokens.surface;
             // PRODUCT_CARD fallback-chain: wanneer scraped border + boxShadow
             // beide leeg zijn, valt het terug op archetype-elevation zodat de
             // card niet visueel verdwijnt in de section-bg. Anders raken brands
@@ -1194,14 +1190,14 @@ function featureGridComponent(tokens: BrandTokens) {
                     letterSpacing: tbr.heading.letterSpacing ?? undefined,
                     textTransform: tbr.heading.textTransform ?? undefined,
                     margin: '0 0 8px',
-                    color: tbr.heading.color ?? tokens.onSurface,
+                    color: resolveOnColor(tbr.heading.color, cardBg, { fallback: tokens.onSurface, minRatio: 3.0 }),
                   }}
                 >
                   {f.title}
                 </h3>
                 <p
                   style={{
-                    color: readableTextColor(tbr.body.color ?? tokens.surfaceMuted, tokens.surface, tokens.onSurface),
+                    color: resolveOnColor(tbr.body.color ?? tokens.surfaceMuted, cardBg, { fallback: tokens.onSurface }),
                     fontSize: bodySize,
                     fontWeight: tbr.body.fontWeight ?? undefined,
                     lineHeight: tbr.body.lineHeight ?? undefined,
@@ -1317,7 +1313,9 @@ function testimonialComponent(
               lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
               letterSpacing: tbr.heading.letterSpacing ?? undefined,
               textTransform: tbr.heading.textTransform ?? undefined,
-              color: tbr.heading.color ?? tokens.onSurface,
+              // Track 1 (contrast): clamp tegen de echte testimonial-bg (oranje
+              // op perzik was borderline) — quote = grote tekst → minRatio 3.0.
+              color: resolveOnColor(tbr.heading.color, testimonialBg, { fallback: tokens.onSurface, minRatio: 3.0 }),
               maxWidth: 640,
               margin: '0 auto 16px',
               fontStyle: 'italic',

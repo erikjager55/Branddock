@@ -205,3 +205,35 @@ export function blackOrWhiteFor(bg: string): '#000000' | '#FFFFFF' {
     ? '#000000'
     : '#FFFFFF';
 }
+
+/**
+ * Behoud een voorkeurskleur als die voldoende contrasteert met `bg`; val anders
+ * terug op `fallback` (indien leesbaar) en dan op zwart/wit. `minRatio` default
+ * 5.0 (iets boven AA 4.5 — een grijs dat net 4.5 haalt oogt faint voor body).
+ */
+export function readableTextColor(fg: string, bg: string, fallback: string, minRatio = 5.0): string {
+  if (contrastRatio(fg, bg) >= minRatio) return fg;
+  if (contrastRatio(fallback, bg) >= minRatio) return fallback;
+  return blackOrWhiteFor(bg);
+}
+
+/**
+ * Forceer een leesbare tekstkleur tegen de WERKELIJK gerenderde achtergrond.
+ * Lost de LP-render-bug op waarbij een per-rol gescrapte kleur uit een ándere
+ * bron-context (zwarthout's donkere hero → witte h1) op de uiteindelijke lichte
+ * sectie-achtergrond belandde, of een tegen `tokens.surface` gevalideerde kleur
+ * op een zwarte card werd gerenderd. ALTIJD de echte blok-achtergrond meegeven.
+ *
+ * `minRatio`: 3.0 voor grote kop/display-tekst (AA-large — houdt bv. een merk-
+ * oranje kop leesbaar-genoeg), 5.0 (default) voor body/kleine tekst.
+ */
+export function resolveOnColor(
+  fg: string | null | undefined,
+  bg: string,
+  opts?: { fallback?: string | null; minRatio?: number },
+): string {
+  const minRatio = opts?.minRatio ?? 5.0;
+  if (fg && contrastRatio(fg, bg) >= minRatio) return fg;
+  if (opts?.fallback && contrastRatio(opts.fallback, bg) >= minRatio) return opts.fallback;
+  return blackOrWhiteFor(bg);
+}
