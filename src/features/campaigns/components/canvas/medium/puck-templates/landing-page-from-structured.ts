@@ -131,22 +131,14 @@ function finalCtaSection(
   // Per spec §1 #5: primaryCta MOET identiek zijn aan hero.primaryCta —
   // afgedwongen via Zod schema cross-field check. Hier vertrouwen we daarop.
   // Fase 5: riskReducer is nu native prop op BrandCTA (geen RichText-workaround).
+  // Track 4: heading-zin nu óók native prop (IN dezelfde sectie) i.p.v. een losse
+  // RichText-sectie erboven → geen dubbele gepadde band meer onderaan.
   return instance("BrandCTA", {
     label: v.finalCta.primaryCta,
     href: "#",
     personaId,
     riskReducer: v.finalCta.riskReducer,
-  });
-}
-
-function finalCtaHeadingSection(
-  v: LandingPageVariantContent,
-): PuckInstance {
-  // Heading-zin (belofte-herhaling) blijft RichText boven de BrandCTA.
-  // BrandCTA component heeft alleen label + riskReducer; heading-context
-  // hoort daar buiten.
-  return instance("RichText", {
-    content: `## ${v.finalCta.heading}`,
+    heading: v.finalCta.heading,
   });
 }
 
@@ -208,8 +200,7 @@ export function buildLandingPageTemplateFromStructured(
     impactStatsSection(variant), // 5b. Impact stats (optional)
     pricingSection(variant), // 6. Pricing (conditional)
     faqSection(variant), // 7. FAQ
-    finalCtaHeadingSection(variant), // 8a. Final CTA heading-zin
-    finalCtaSection(variant, ctx), // 8b. Final CTA (incl. riskReducer)
+    finalCtaSection(variant, ctx), // 8. Final CTA (heading + riskReducer, één sectie)
     footerSection(variant, ctx), // Footer
   ];
 

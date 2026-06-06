@@ -201,31 +201,31 @@ group("Structured-mapper: riskReducer als BrandCTA-prop");
   );
 }
 
-group("Structured-mapper: final-CTA-heading als RichText");
+group("Structured-mapper: final-CTA-heading als BrandCTA-prop (Track 4)");
 {
   const tree = buildLandingPageTemplateFromStructured(completeVariant, ctx);
-  // RichText met "## Klaar om te beginnen?" moet aanwezig zijn
-  const richTexts = tree.content.filter((c) => c.type === "RichText");
-  // problem niet aanwezig in fixture, dus alleen final-CTA-heading RichText
-  assert("1 RichText (alleen final-CTA-heading)", richTexts.length === 1);
-  const rt = richTexts[0] as { props: { content?: string } };
+  // Track 4: heading-zin is nu een native BrandCTA-prop IN dezelfde sectie —
+  // geen losse final-CTA-heading RichText meer (geen dubbele gepadde band).
+  const cta = tree.content.find((c) => c.type === "BrandCTA") as {
+    props: { heading?: string };
+  };
   assert(
-    "RichText bevat finalCta.heading",
-    rt.props.content?.includes("Klaar om te beginnen?") ?? false,
+    "BrandCTA.heading bevat finalCta.heading",
+    cta.props.heading?.includes("Klaar om te beginnen?") ?? false,
   );
+  // problem niet aanwezig in fixture → geen final-CTA RichText meer → 0 RichTexts.
+  const richTexts = tree.content.filter((c) => c.type === "RichText");
+  assert("geen losse final-CTA-heading RichText meer", richTexts.length === 0, `n=${richTexts.length}`);
 }
 
-group("Volgorde: final-CTA-heading → BrandCTA → Footer");
+group("Volgorde: BrandCTA → Footer");
 {
   const tree = buildLandingPageTemplateFromStructured(completeVariant, ctx);
   const types = tree.content.map((c) => c.type);
-  // Vind index van final RichText (CTA-heading) en daarna BrandCTA
-  const finalRichTextIdx = types.lastIndexOf("RichText");
   const ctaIdx = types.indexOf("BrandCTA");
   const footerIdx = types.indexOf("Footer");
 
-  assert("final-RichText (CTA-heading) komt vóór BrandCTA", finalRichTextIdx < ctaIdx);
-  assert("BrandCTA komt vóór Footer", ctaIdx < footerIdx);
+  assert("BrandCTA komt vóór Footer", ctaIdx >= 0 && ctaIdx < footerIdx);
   assert("Footer is laatste", footerIdx === types.length - 1);
 }
 
