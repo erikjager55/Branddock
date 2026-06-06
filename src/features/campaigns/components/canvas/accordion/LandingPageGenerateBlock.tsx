@@ -5,8 +5,9 @@ import {
   Loader2, Sparkles, AlertCircle, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon, Pencil,
 } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
-import { generateCanvasVisual } from '../../../api/canvas.api';
+import { generateCanvasVisual, generateFeatureVisuals } from '../../../api/canvas.api';
 import { variantToPuckDataFromStructured } from '../medium/variant-to-puck-data';
+import { assignBrandImagesToVariant } from '@/lib/landing-pages/brand-images';
 import { FidelityScoreBar } from '../FidelityScoreBar';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
@@ -364,6 +365,11 @@ export function LandingPageGenerateBlock({
       let chosen: LandingPageVariantContent = selectedHeroImageUrl
         ? { ...variant, hero: { ...variant.hero, heroVisualUrl: selectedHeroImageUrl } }
         : variant;
+      // P2 beeld-prioriteit (handmatig > merk-eigen brandImages > AI): vul lege
+      // hero/feature-slots eerst met de brand-eigen brandImages, zodat de hero-
+      // AI-gen + feature-AI-gen hieronder alleen de slots vullen die GEEN
+      // bronbeeld hebben. (De mapper past dezelfde producer nog idempotent toe.)
+      chosen = assignBrandImagesToVariant(chosen, contextStack?.brandImages ?? null);
       // Verplichte header-image (user-feedback 2026-06-03): een LP zonder hero-
       // image is niet toegestaan. DETERMINISTISCH: genereer 'm hier en vouw 'm
       // IN de variant vóór de éne persist+render — zodat Step 3 de pagina MÉT de
@@ -391,6 +397,34 @@ export function LandingPageGenerateBlock({
           setVisualError(genErr instanceof Error ? genErr.message : 'Automatische header-image mislukt — genereer handmatig in Step 3.');
         } finally {
           setIsGeneratingVisual(false);
+        }
+      }
+      // P2 AI-feature-beelden (budget 4/pagina): genereer een materiaal-/in-
+      // context-shot voor elke feature ZONDER beeld (brandImages vulden de rest
+      // al). Best-effort + 60s-race zodat een hangende image-API de keuze-flow
+      // niet blokkeert; mislukte/overgeslagen features vallen terug op de icon-
+      // grid (FeatureGrid). Geslaagde beelden → editorial FeatureSplit (P7).
+      const FEATURE_IMAGE_BUDGET = 4;
+      const needIdx = chosen.features.items
+        .map((f, i) => (f.imageUrl ? -1 : i))
+        .filter((i) => i >= 0)
+        .slice(0, FEATURE_IMAGE_BUDGET);
+      if (needIdx.length > 0) {
+        try {
+          const prompts = needIdx.map((i) => buildFeatureVisualInstruction(chosen.features.items[i], chosen, contextStack));
+          const urls = await Promise.race([
+            generateFeatureVisuals(deliverableId, prompts),
+            new Promise<Array<string | null>>((resolve) => setTimeout(() => resolve([]), 60_000)),
+          ]);
+          if (urls.length > 0) {
+            const items = chosen.features.items.map((it, i) => {
+              const k = needIdx.indexOf(i);
+              return k >= 0 && urls[k] ? { ...it, imageUrl: urls[k] as string } : it;
+            });
+            chosen = { ...chosen, features: { ...chosen.features, items } };
+          }
+        } catch {
+          // Niet-blokkerend: zonder feature-beelden rendert de icon-grid.
         }
       }
       const puckData = variantToPuckDataFromStructured(chosen, contextStack);
@@ -1118,6 +1152,36 @@ function buildHeroVisualInstruction(
   } else {
     parts.push('Avoid: stock photo people, generic SaaS illustrations, text overlays, lens flares');
   }
+  return parts.join('. ') + '.';
+}
+
+/**
+ * P2 — per-feature image-prompt: een editorial materiaal-/in-context-shot die
+ * de feature-pilaar illustreert, geënt op de merk-fotografie (zelfde tiers als
+ * de hero: scraped photographyStyle > archetype-hint). Geen tekst/UI/infographic.
+ */
+function buildFeatureVisualInstruction(
+  feature: { heading?: string; body?: string },
+  variant: LandingPageVariantContent,
+  contextStack: {
+    brand?: { brandImageryStyle?: string | null; brandImageryDonts?: string[] | null; brandName?: string | null } | null;
+    brandTokens?: BrandTokens;
+  } | null,
+): string {
+  const brand = contextStack?.brand;
+  const tokens = contextStack?.brandTokens;
+  const hints = tokens ? computeBrandRenderHints(tokens.archetype, tokens.designSystem) : null;
+  const parts: string[] = [];
+  parts.push(`Editorial feature image illustrating "${feature.heading ?? ''}" for a landing-page about: ${variant.hero.headline}`);
+  if (feature.body) parts.push(`Depicting: ${feature.body}`);
+  parts.push('Close-up material or in-context shot (real texture, real setting) — no text, no UI, no infographic, no logo');
+  const photographyFragment = tokens?.photography?.promptFragment?.trim();
+  if (photographyFragment) parts.push(photographyFragment);
+  else if (hints) parts.push(`Photography style: ${hints.heroImagePromptFragment}`);
+  if (brand?.brandImageryStyle) parts.push(`Brand imagery: ${brand.brandImageryStyle}`);
+  if (brand?.brandName) parts.push(`Brand: ${brand.brandName}`);
+  const donts = brand?.brandImageryDonts;
+  parts.push(donts && donts.length > 0 ? `Avoid: ${donts.join(', ')}` : 'Avoid: stock photo people, generic SaaS illustrations, text overlays, lens flares');
   return parts.join('. ') + '.';
 }
 

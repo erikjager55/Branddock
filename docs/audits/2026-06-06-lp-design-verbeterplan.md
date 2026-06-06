@@ -117,7 +117,7 @@ Renderer-side tracks gebouwd + visueel geverifieerd (SSR `<Render>` met echte DB
 | **P12** measure-cap | ✅ GEBOUWD | RichText body-paragraaf `max-width:40em` + leading 1.6. |
 | **P10** trust-cluster | ✅ GEBOUWD | Trust-items krijgen een `badge-check`-icon → credibility-signaal i.p.v. kale tekst. |
 | **P1/P4/P11** copy-laag | ✅ GEBOUWD (#293) | Descriptieve header (5-sec-test, 60ch) + believability-subhead, PAS-binding (feature-pilaren bewijzen de hero-belofte), laagdrempelige micro-commitment-CTA. Geverifieerd via live Anthropic-generatie. |
-| **P2** beeld-producer | ✅ GEBOUWD (#294) | `assignBrandImagesToVariant` vult lege hero/feature-slots uit `brandImages` (via ctx). Geverifieerd op Adullam (7 echte foto's). **Resterend**: AI-per-feature-gen voor merken zónder bronbeeld (kosten/latency-keuze). |
+| **P2** beeld-producer | ✅ VOLTOOID (#294 + #295) | `assignBrandImagesToVariant` vult lege slots uit `brandImages` (Adullam-geverifieerd); **AI-feature-gen** (#295) vult de rest via fal.ai (budget 4/pagina, prioriteit handmatig>brand>AI) — live geverifieerd op zwarthout (4/4 charred-timber beelden). |
 | **P7** layout-alternatie | ✅ GEBOUWD (#294) | `FeatureSplit`-component — editorial A-B-A-B beeld/tekst-rijen; mapper kiest 't wanneer features beeld dragen. Geverifieerd op Adullam + Zwarthout. |
 | **P9** geattribueerde proof | ✅ AANWEZIG | Testimonial-schema + render dragen al naam/rol/bureau/uitkomst. |
 | **P5/P6** type-spanning | ✅ grotendeels AANWEZIG | Hero = responsive clamp 32→capped (≈5× body); sub measure-capped 560px. Verdere de-emphasis = follow-up. |
