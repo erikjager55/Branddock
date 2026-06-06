@@ -73,7 +73,11 @@ function buildVisualLanguagePrompt(
   // Brand context
   parts.push("## Brand Context\n");
   if (context.colors.length > 0) {
-    parts.push(`Brand colors: ${context.colors.join(", ")}`);
+    // De gegeven kleuren zijn de RESOLVED, rol-gelabelde merk-palette. Beschrijf
+    // colorApplication / promptFragment / summary UITSLUITEND met deze kleuren —
+    // introduceer GEEN andere of framework-default kleuren (bv. Bootstrap-paars/
+    // -blauw/-groen) ook al staan die in de bron-CSS.
+    parts.push(`Brand colors (resolved palette, role-labeled — use ONLY these for color descriptions, do NOT introduce other or framework-default colors): ${context.colors.join(", ")}`);
   }
   if (context.fonts.length > 0) {
     parts.push(`Fonts: ${context.fonts.join(", ")}`);
