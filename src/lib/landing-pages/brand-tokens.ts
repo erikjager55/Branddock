@@ -20,6 +20,7 @@
  */
 
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
+import { stripFontWeightSuffix } from '@/lib/brandstyle/google-fonts-catalog';
 import {
   type LayoutStyle,
   type DesignSystem,
@@ -836,10 +837,15 @@ export function extractBrandTokensFromStyleguide(
     const first = name.split(',')[0]?.trim().replace(/^["']|["']$/g, '') ?? '';
     return BANNED_AI_DISPLAY_FONTS.test(first);
   }
-  const wrapFontStack = (name: string, role: 'display' | 'body'): string => {
+  const wrapFontStack = (rawName: string, role: 'display' | 'body'): string => {
     // Input is al een stack (bv. "Poppins, sans-serif" uit DB.fontFamily)?
     // Geen double-wrap; respecteer de auteur-bedoelde fallback-chain.
-    if (name.includes(',')) return name;
+    if (rawName.includes(',')) return rawName;
+    // Track 3a: strip een weight/style-suffix uit de fontnaam — zwarthout's
+    // DISPLAY-rij heet "Sen Bold", maar de Google/CSS-family is "Sen". Zonder
+    // strippen vraagt de loader een niet-bestaande family "Sen Bold" op → de
+    // kop valt terug op system-ui (de "generieke font"-look).
+    const name = stripFontWeightSuffix(rawName);
     const quoted = name.includes(' ') ? `"${name}"` : name;
     const looksLikeSerif = SERIF_KEYWORDS.test(name);
     // Display: prefer serif fallback wanneer naam serif-achtig is (Oranienbaum

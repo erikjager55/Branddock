@@ -21,16 +21,40 @@ import type { BrandTokens } from "@/lib/landing-pages/brand-tokens";
  * vereisen aparte @font-face uit fileUrl — niet gedekt door deze hook.
  */
 
+// Track 3b: 'roboto' is BEWUST NIET meer system: Roboto is een Google-font dat
+// alléén op Android geïnstalleerd is — op macOS/Windows valt het zonder load
+// terug op generic sans (zwarthout's body = Roboto → "generieke font"-look). We
+// laden 'm dus wél van Google. Echte OS-fonts (Segoe/Arial/Helvetica Neue) +
+// generics blijven uitgesloten.
 const SYSTEM_FONTS = new Set([
   "system-ui", "-apple-system", "blinkmacsystemfont", "segoe ui",
-  "roboto", "helvetica neue", "arial", "sans-serif", "serif", "monospace",
+  "helvetica neue", "arial", "sans-serif", "serif", "monospace",
   "ui-sans-serif", "ui-serif", "ui-monospace",
 ]);
 
-function extractFontName(fontStack: string): string | null {
+const WEIGHT_WORDS = new Set([
+  "thin", "extralight", "ultralight", "light", "regular", "normal", "medium",
+  "semibold", "demibold", "bold", "extrabold", "ultrabold", "black", "heavy",
+  "italic", "oblique",
+]);
+
+/** Strip een trailing weight/style-woord ("Sen Bold" → "Sen") zodat de Google-
+ *  request de echte family vraagt i.p.v. een niet-bestaande "Family Weight". */
+function stripWeight(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  while (parts.length > 1 && (WEIGHT_WORDS.has(parts[parts.length - 1].toLowerCase()) || /^[1-9]00$/.test(parts[parts.length - 1]))) {
+    parts.pop();
+  }
+  return parts.join(" ");
+}
+
+/** De daadwerkelijk te laden Google-family uit een font-stack: eerste naam,
+ *  quotes weg, weight-suffix gestript, en `null` voor echte OS/generic fonts.
+ *  Geëxporteerd voor de smoke-test. */
+export function extractFontName(fontStack: string): string | null {
   const first = fontStack.split(",")[0]?.trim();
   if (!first) return null;
-  const stripped = first.replace(/^["']|["']$/g, "").trim();
+  const stripped = stripWeight(first.replace(/^["']|["']$/g, "").trim());
   if (!stripped) return null;
   if (SYSTEM_FONTS.has(stripped.toLowerCase())) return null;
   return stripped;
