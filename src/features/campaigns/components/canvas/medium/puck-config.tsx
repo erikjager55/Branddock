@@ -9,7 +9,7 @@ import {
 } from '@/lib/landing-pages/brand-tokens';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import { getRenderConstraints } from '@/lib/landing-pages/render-constraints';
-import { readableTextColor, resolveOnColor, isCardContextMismatch } from '@/lib/landing-pages/wcag';
+import { readableTextColor, resolveOnColor, isCardContextMismatch, reserveAccentForHeading, contrastRatio } from '@/lib/landing-pages/wcag';
 
 import {
   buildBackgroundDepth,
@@ -587,8 +587,15 @@ function brandHeroComponent(tokens: BrandTokens) {
       // Garandeert dat brandstyle-guide-button en LP-hero-button identiek
       // zijn voor élk merk wanneer scraped data aanwezig is.
       const heroIsDark = useFullBleed || sectionBg === tokens.onSurface;
-      const fallbackBg = heroIsDark ? '#FFFFFF' : tokens.brand;
-      const fallbackColor = heroIsDark ? tokens.onSurface : tokens.onBrand;
+      // P8 accent-reservering: de primaire CTA hoort de merk-accent te dragen
+      // ("this is where I act"). Op een donkere hero gebruikten we altijd wit —
+      // dat verloor de accent volledig. Nu: brand-accent wanneer die genoeg
+      // contrast heeft tegen de hero-bg (AA-large 3:1), anders wit als veilige
+      // fallback (voor donkere/laag-contrast accenten).
+      const darkHeroAccentOk = heroIsDark
+        && contrastRatio(tokens.brand, typeof sectionBg === 'string' ? sectionBg : '#000000') >= 3;
+      const fallbackBg = heroIsDark ? (darkHeroAccentOk ? tokens.brand : '#FFFFFF') : tokens.brand;
+      const fallbackColor = heroIsDark ? (darkHeroAccentOk ? tokens.onBrand : tokens.onSurface) : tokens.onBrand;
       const buttonRender: React.CSSProperties & Record<`--${string}`, string> = {
         background: tokens.button.background ?? fallbackBg,
         color: tokens.button.color ?? fallbackColor,
@@ -870,7 +877,7 @@ function brandCtaComponent(
                 fontWeight: tbr.heading.fontWeight ?? (ds.typography.heading.weights[0] ?? 600),
                 lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
                 letterSpacing: tbr.heading.letterSpacing ?? undefined,
-                color: resolveOnColor(tbr.heading.color, tokens.surface, { fallback: tokens.onSurface, minRatio: 3.0 }),
+                color: resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), tokens.surface, { fallback: tokens.onSurface, minRatio: 3.0 }),
                 margin: `0 auto ${ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24}px`,
                 maxWidth: 720,
               }}
@@ -1254,7 +1261,7 @@ function featureGridComponent(tokens: BrandTokens) {
                     letterSpacing: tbr.heading.letterSpacing ?? undefined,
                     textTransform: tbr.heading.textTransform ?? undefined,
                     margin: '0 0 8px',
-                    color: resolveOnColor(tbr.heading.color, cardBg, { fallback: tokens.onSurface, minRatio: 3.0 }),
+                    color: resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), cardBg, { fallback: tokens.onSurface, minRatio: 3.0 }),
                   }}
                 >
                   {f.title}
@@ -1379,7 +1386,7 @@ function testimonialComponent(
               textTransform: tbr.heading.textTransform ?? undefined,
               // Track 1 (contrast): clamp tegen de echte testimonial-bg (oranje
               // op perzik was borderline) — quote = grote tekst → minRatio 3.0.
-              color: resolveOnColor(tbr.heading.color, testimonialBg, { fallback: tokens.onSurface, minRatio: 3.0 }),
+              color: resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), testimonialBg, { fallback: tokens.onSurface, minRatio: 3.0 }),
               maxWidth: 640,
               margin: '0 auto 16px',
               fontStyle: 'italic',
@@ -1576,7 +1583,7 @@ function pricingTableComponent(tokens: BrandTokens) {
                     letterSpacing: tbr.heading.letterSpacing ?? undefined,
                     textTransform: tbr.heading.textTransform ?? undefined,
                     margin: '0 0 8px',
-                    color: tbr.heading.color ?? tokens.onSurface,
+                    color: reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface),
                   }}
                 >
                   {t.name}
@@ -1673,7 +1680,7 @@ function faqComponent(tokens: BrandTokens) {
                   lineHeight: tbr.subheading.lineHeight ?? undefined,
                   letterSpacing: tbr.subheading.letterSpacing ?? undefined,
                   textTransform: tbr.subheading.textTransform ?? undefined,
-                  color: tbr.subheading.color ?? tbr.heading.color ?? tokens.onSurface,
+                  color: reserveAccentForHeading(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface),
                   cursor: 'pointer',
                 }}
               >
@@ -1951,8 +1958,9 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens) {
   const text = tokens.secondaryHex;
   const tbr = tokens.typographyByRole;
   const h1Color = tbr.display.color ?? text;
-  const h2Color = tbr.heading.color ?? text;
-  const h3Color = tbr.subheading.color ?? tbr.heading.color ?? text;
+  // P8 accent-reservering: een accent-gekleurde kop wordt charcoal (text).
+  const h2Color = reserveAccentForHeading(tbr.heading.color, tokens.accent, text);
+  const h3Color = tbr.subheading.color ?? reserveAccentForHeading(tbr.heading.color, tokens.accent, text);
   return {
     h1: ({ children }: { children?: React.ReactNode }) => (
       <h1 style={{

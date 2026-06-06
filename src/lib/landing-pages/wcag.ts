@@ -286,3 +286,30 @@ export function isCardContextMismatch(
   // design, geen mis-scrape — die mag blijven.
   return (cl < 0.12 && sl > 0.55) || (cl > 0.85 && sl < 0.18);
 }
+
+/** RGB-afstand-vergelijk (genormaliseerd naar hex). Tol 44 ≈ palette-MATCH. */
+export function isCloseColor(a: string, b: string, tol = 44): boolean {
+  const ha = normalizeColorToHex(a);
+  const hb = normalizeColorToHex(b);
+  if (!ha || !hb) return false;
+  const rgb = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const [r1, g1, b1] = rgb(ha);
+  const [r2, g2, b2] = rgb(hb);
+  return Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2) <= tol;
+}
+
+/**
+ * Accent-reservering (60-30-10 / P8): wanneer een (gescrapte) kop-kleur ≈ de
+ * merk-accent, reserveer de accent voor CTA's/active-states en geef de kop de
+ * neutrale charcoal i.p.v. accent. Voorkomt "orange-everywhere" dat de CTA als
+ * luidste element verzwakt. Een kop met een eigen (niet-accent) kleur blijft
+ * ongemoeid. Eyebrows + CTA-knoppen + stat-cijfers houden bewust de accent.
+ */
+export function reserveAccentForHeading(
+  headingColor: string | null | undefined,
+  accent: string,
+  onSurface: string,
+): string {
+  if (headingColor && isCloseColor(headingColor, accent)) return onSurface;
+  return headingColor ?? onSurface;
+}
