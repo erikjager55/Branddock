@@ -261,3 +261,79 @@ export function resolveOnColor(
   if (opts?.fallback && contrastRatio(normalizeColorToHex(opts.fallback) ?? opts.fallback, hexBg) >= minRatio) return opts.fallback;
   return blackOrWhiteFor(hexBg);
 }
+
+/**
+ * Detecteert of een gescrapte card-achtergrond uit een tégengestelde licht/
+ * donker-context komt dan de sectie waar hij nu op staat. Een puur-zwarte
+ * gescrapte PRODUCT_CARD op een lichte feature-sectie (zwarthout: het sample
+ * kwam uit een donkere sectie van de bronsite) leest als een misplaatst blok.
+ * Alleen EXTREME inversies triggeren — subtiele grijstinten op wit (een legit
+ * licht-grijze card) blijven gerespecteerd, en onmeetbare waarden (gradient/
+ * named/url) → false zodat we de scraped-fidelity niet onterecht weggooien.
+ */
+export function isCardContextMismatch(
+  cardBg: string | null | undefined,
+  sectionBg: string | null | undefined,
+): boolean {
+  if (!cardBg || !sectionBg) return false;
+  const c = normalizeColorToHex(cardBg);
+  const s = normalizeColorToHex(sectionBg);
+  if (!c || !s) return false;
+  const cl = relativeLuminance(c);
+  const sl = relativeLuminance(s);
+  // Streng: alleen near-black (cl < 0.12) op licht, of near-white (cl > 0.85)
+  // op donker. Een mid-grijze card (#6C757D, L≈0.18) op wit is een legitiem
+  // design, geen mis-scrape — die mag blijven.
+  return (cl < 0.12 && sl > 0.55) || (cl > 0.85 && sl < 0.18);
+}
+
+/** RGB-afstand-vergelijk (genormaliseerd naar hex). Tol 44 ≈ palette-MATCH. */
+export function isCloseColor(a: string, b: string, tol = 44): boolean {
+  const ha = normalizeColorToHex(a);
+  const hb = normalizeColorToHex(b);
+  if (!ha || !hb) return false;
+  const rgb = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const [r1, g1, b1] = rgb(ha);
+  const [r2, g2, b2] = rgb(hb);
+  return Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2) <= tol;
+}
+
+/**
+ * "Luide" kleur — verzadigd genoeg dat overmatig gebruik als heading de CTA
+ * verzwakt (HSL S > 0.65, L in [0.25,0.65]). Gedempte/luxe accenten (Luxe-Goud
+ * #B59032 S≈0.57) of near-neutrale charcoal-accenten zijn NIET luid: die gaven
+ * nooit het "accent-everywhere"-probleem en hoeven niet gereserveerd te worden.
+ */
+export function isLoudColor(hex: string): boolean {
+  const h = normalizeColorToHex(hex);
+  if (!h) return false;
+  const r = parseInt(h.slice(1, 3), 16) / 255;
+  const g = parseInt(h.slice(3, 5), 16) / 255;
+  const b = parseInt(h.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const s = max === min ? 0 : (max - min) / (l < 0.5 ? max + min : 2 - max - min);
+  return s > 0.65 && l >= 0.25 && l <= 0.65;
+}
+
+/**
+ * Accent-reservering (60-30-10 / P8): wanneer een (gescrapte) kop-kleur ≈ de
+ * merk-accent, reserveer de accent voor CTA's/active-states en geef de kop de
+ * neutrale charcoal i.p.v. accent. Voorkomt "orange-everywhere" dat de CTA als
+ * luidste element verzwakt. Een kop met een eigen (niet-accent) kleur blijft
+ * ongemoeid. Eyebrows + CTA-knoppen + stat-cijfers houden bewust de accent.
+ *
+ * Review-fix: reserveer ALLEEN voor een LUIDE accent (isLoudColor). Een gedempt
+ * accent (luxe-goud, charcoal-monochroom) gaf nooit het probleem → zijn koppen
+ * blijven (merk-fideliteit; voorkomt over-reach + no-op-churn).
+ */
+export function reserveAccentForHeading(
+  headingColor: string | null | undefined,
+  accent: string,
+  onSurface: string,
+): string {
+  if (!headingColor) return onSurface;
+  if (!isLoudColor(accent)) return headingColor;
+  return isCloseColor(headingColor, accent) ? onSurface : headingColor;
+}

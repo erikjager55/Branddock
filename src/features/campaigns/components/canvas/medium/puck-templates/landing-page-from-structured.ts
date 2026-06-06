@@ -49,9 +49,12 @@ function heroSection(v: LandingPageVariantContent): PuckInstance {
 function trustStripSection(v: LandingPageVariantContent): PuckInstance {
   // MVP-workaround: FeatureGrid met logo-labels.
   // v2: dedicated TrustStrip-component (spec §4a v2-task).
+  // P10: een badge-check-icon geeft de trust-items een herkenbaar credibility-
+  // signaal i.p.v. kale tekst (de FeatureGrid rendert anders een lege icon-slot).
   const features = v.trust.items.map((item) => ({
     title: item.label,
     description: item.mediaUrl ?? "",
+    icon: "badge-check",
   }));
   const columns: "2" | "3" | "4" =
     features.length >= 4 ? "4" : features.length === 2 ? "2" : "3";

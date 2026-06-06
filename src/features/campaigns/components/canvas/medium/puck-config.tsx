@@ -9,7 +9,7 @@ import {
 } from '@/lib/landing-pages/brand-tokens';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import { getRenderConstraints } from '@/lib/landing-pages/render-constraints';
-import { readableTextColor, resolveOnColor } from '@/lib/landing-pages/wcag';
+import { readableTextColor, resolveOnColor, isCardContextMismatch, reserveAccentForHeading, contrastRatio } from '@/lib/landing-pages/wcag';
 
 import {
   buildBackgroundDepth,
@@ -19,6 +19,7 @@ import {
 import { IconBlock } from './lucide-icon-map';
 import { isNoOpBorder, isTransparentBackground } from '@/lib/landing-pages/scraped-css-helpers';
 import { pxFromCssValue } from '@/lib/landing-pages/brand-tokens-v4-mappers';
+import { isScrapedOrigin, type TokenProvenance } from '@/lib/landing-pages/token-provenance';
 
 // ─── Component prop types ────────────────────────────────────
 
@@ -165,7 +166,7 @@ export function buildSpikePuckConfig(
     components: {
       BrandHero: brandHeroComponent(tokens),
       BrandCTA: brandCtaComponent(tokens, personas, personaOptions),
-      FeatureGrid: featureGridComponent(tokens),
+      FeatureGrid: featureGridComponent(tokens, ctx?.brandProvenance),
       Testimonial: testimonialComponent(tokens, personas, personaOptions),
       PricingTable: pricingTableComponent(tokens),
       FAQ: faqComponent(tokens),
@@ -199,19 +200,23 @@ function statsBlockComponent(tokens: BrandTokens) {
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
   const tbr = tokens.typographyByRole;
 
-  // Dark-bg ALLEEN wanneer bron-website ook donkere sections heeft
-  // (hasDarkSections evidence). Voorheen archetype-driven (RULER/SAGE/
-  // MAGICIAN/OUTLAW/HERO → automatisch dark) wat mismatch gaf op
-  // light-only brands die toevallig in een van die archetypes vallen.
-  // Voor RULER/MAGICIAN-light-design brands geeft dit nu light-bg stats
-  // die matchen met hun bron — geen dark-bg meer zonder evidence.
-  const useDarkBg = tokens.hasDarkSections && (
-    tokens.archetype === 'RULER' || tokens.archetype === 'SAGE' ||
-    tokens.archetype === 'MAGICIAN' || tokens.archetype === 'OUTLAW' ||
-    tokens.archetype === 'HERO'
-  );
-  const sectionBg = useDarkBg ? tokens.onSurface : tokens.surface;
-  const numberColor = useDarkBg ? tokens.brand : tokens.brand;
+  // Dark-bg ALLEEN wanneer de bron-website donkere sections heeft
+  // (hasDarkSections + een echte donkere section-bg) — die evidence-gate
+  // filtert light-only brands al weg. P3/P7/P9: de stats-band is dan een
+  // cinematische accent-beat (oversized merk-cijfers op charcoal). Eerder
+  // beperkte een archetype-filter (RULER/SAGE/MAGICIAN/OUTLAW/HERO) dit
+  // onnodig — een donker-merk als zwarthout (CREATOR) kreeg lichte stats
+  // ondanks zijn donkere identiteit.
+  const darkBg = tokens.darkSectionBg ?? tokens.onSurface;
+  const useDarkBg = tokens.hasDarkSections && tokens.darkSectionBg != null;
+  const sectionBg = useDarkBg ? darkBg : tokens.surface;
+  // Review-fix: clamp het cijfer (de accent) tegen de échte band-bg. Een
+  // donker-merk waarvan de accent zelf donker is (brand recycelt onSurface)
+  // gaf anders near-black cijfers op een near-black band (onzichtbaar). Op
+  // licht blijft de accent ongemoeid. 3:1 = AA-large (cijfers zijn display).
+  const numberColor = useDarkBg
+    ? resolveOnColor(tokens.brand, sectionBg, { fallback: '#FFFFFF', minRatio: 3.0 })
+    : tokens.brand;
   const labelColor = useDarkBg ? '#FFFFFF' : tokens.surfaceMuted;
   // Number sizes — gebruik scraped display.fontSize wanneer aanwezig, anders
   // archetype-default 64-88px range
@@ -587,8 +592,15 @@ function brandHeroComponent(tokens: BrandTokens) {
       // Garandeert dat brandstyle-guide-button en LP-hero-button identiek
       // zijn voor élk merk wanneer scraped data aanwezig is.
       const heroIsDark = useFullBleed || sectionBg === tokens.onSurface;
-      const fallbackBg = heroIsDark ? '#FFFFFF' : tokens.brand;
-      const fallbackColor = heroIsDark ? tokens.onSurface : tokens.onBrand;
+      // P8 accent-reservering: de primaire CTA hoort de merk-accent te dragen
+      // ("this is where I act"). Op een donkere hero gebruikten we altijd wit —
+      // dat verloor de accent volledig. Nu: brand-accent wanneer een GEVULDE
+      // knop comfortabel los-popt (≥4.0 — boven de bare 3:1 non-text-floor zodat
+      // een echt-zwakke fill als wit valt, maar legitieme accenten als zwarthout-
+      // oranje 4.26 / indigo 4.32 behouden blijven), anders wit (review-fix).
+      const darkHeroAccentOk = heroIsDark && contrastRatio(tokens.brand, sectionBg) >= 4.0;
+      const fallbackBg = heroIsDark ? (darkHeroAccentOk ? tokens.brand : '#FFFFFF') : tokens.brand;
+      const fallbackColor = heroIsDark ? (darkHeroAccentOk ? tokens.onBrand : tokens.onSurface) : tokens.onBrand;
       const buttonRender: React.CSSProperties & Record<`--${string}`, string> = {
         background: tokens.button.background ?? fallbackBg,
         color: tokens.button.color ?? fallbackColor,
@@ -870,7 +882,7 @@ function brandCtaComponent(
                 fontWeight: tbr.heading.fontWeight ?? (ds.typography.heading.weights[0] ?? 600),
                 lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
                 letterSpacing: tbr.heading.letterSpacing ?? undefined,
-                color: resolveOnColor(tbr.heading.color, tokens.surface, { fallback: tokens.onSurface, minRatio: 3.0 }),
+                color: resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), tokens.surface, { fallback: tokens.onSurface, minRatio: 3.0 }),
                 margin: `0 auto ${ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24}px`,
                 maxWidth: 720,
               }}
@@ -983,7 +995,7 @@ function brandCtaComponent(
  * FeatureGrid — brand-emergent (Phase 5). Heading-font + spacing + cardStyle
  * consumeren designSystem + archetype.
  */
-function featureGridComponent(tokens: BrandTokens) {
+function featureGridComponent(tokens: BrandTokens, provenance?: TokenProvenance) {
   const hints = computeBrandRenderHints(
     tokens.archetype,
     tokens.designSystem,
@@ -1004,7 +1016,14 @@ function featureGridComponent(tokens: BrandTokens) {
   // border-only. Voorheen kreeg LINFI cards-with-1px-border rondom elke
   // feature; matched niet met premium-architectural feel van bron-website.
   // Flat = geen wrapper-card, alleen whitespace + typography (Apple-style).
-  const effectiveElevationCategory = constraints.forceFlatCards
+  //
+  // V2 (governed-token-layer): de archetype-preset mag de scraped elevation
+  // alléén platslaan wanneer er NIETS gescraped is. Heeft de bron-site een
+  // echte card-shadow opgeleverd (provenance.elevation === scraped), dan
+  // respecteren we die i.p.v. hem weg te forceren — anders wint een
+  // archetype-aanname van merk-fidelity (Zwarthout/Napking preset-bugklasse).
+  const elevationIsScraped = isScrapedOrigin(provenance, 'elevation');
+  const effectiveElevationCategory = constraints.forceFlatCards && !elevationIsScraped
     ? 'flat'
     : elevation.cardElevationCategory;
   const gap = ds.spacing[Math.min(ds.spacing.length - 1, 5)] ?? 32;
@@ -1109,7 +1128,15 @@ function featureGridComponent(tokens: BrandTokens) {
             // heeft, neem die direct over voor pixel-perfect match met
             // Components-tab. Anders fallback op tokens.elevation + archetype-
             // constraints (huidige logic).
-            const productCard = tokens.styleguideComponents.PRODUCT_CARD;
+            // Card-fix: een gescrapte card uit een tégengestelde licht/donker-
+            // context (zwarthout: puur-zwarte card op de lichte feature-sectie)
+            // is bijna altijd een verkeerd representatief sample → negeer 'm en
+            // val terug op de sectie-passende archetype-card-styling. Tekst
+            // herstelt vanzelf via resolveOnColor tegen de nieuwe (lichte) bg.
+            const rawProductCard = tokens.styleguideComponents.PRODUCT_CARD;
+            const productCard = isCardContextMismatch(rawProductCard?.background, featureGridBg)
+              ? null
+              : rawProductCard;
             const useCard = effectiveElevationCategory !== 'flat' || productCard !== null;
             const isBorderOnly = effectiveElevationCategory === 'border-only';
             // C3 max-radius constraint (RULER=4, JESTER=24)
@@ -1246,7 +1273,7 @@ function featureGridComponent(tokens: BrandTokens) {
                     letterSpacing: tbr.heading.letterSpacing ?? undefined,
                     textTransform: tbr.heading.textTransform ?? undefined,
                     margin: '0 0 8px',
-                    color: resolveOnColor(tbr.heading.color, cardBg, { fallback: tokens.onSurface, minRatio: 3.0 }),
+                    color: resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), cardBg, { fallback: tokens.onSurface, minRatio: 3.0 }),
                   }}
                 >
                   {f.title}
@@ -1371,7 +1398,7 @@ function testimonialComponent(
               textTransform: tbr.heading.textTransform ?? undefined,
               // Track 1 (contrast): clamp tegen de echte testimonial-bg (oranje
               // op perzik was borderline) — quote = grote tekst → minRatio 3.0.
-              color: resolveOnColor(tbr.heading.color, testimonialBg, { fallback: tokens.onSurface, minRatio: 3.0 }),
+              color: resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), testimonialBg, { fallback: tokens.onSurface, minRatio: 3.0 }),
               maxWidth: 640,
               margin: '0 auto 16px',
               fontStyle: 'italic',
@@ -1568,7 +1595,7 @@ function pricingTableComponent(tokens: BrandTokens) {
                     letterSpacing: tbr.heading.letterSpacing ?? undefined,
                     textTransform: tbr.heading.textTransform ?? undefined,
                     margin: '0 0 8px',
-                    color: tbr.heading.color ?? tokens.onSurface,
+                    color: reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface),
                   }}
                 >
                   {t.name}
@@ -1665,7 +1692,7 @@ function faqComponent(tokens: BrandTokens) {
                   lineHeight: tbr.subheading.lineHeight ?? undefined,
                   letterSpacing: tbr.subheading.letterSpacing ?? undefined,
                   textTransform: tbr.subheading.textTransform ?? undefined,
-                  color: tbr.subheading.color ?? tbr.heading.color ?? tokens.onSurface,
+                  color: reserveAccentForHeading(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface),
                   cursor: 'pointer',
                 }}
               >
@@ -1943,8 +1970,9 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens) {
   const text = tokens.secondaryHex;
   const tbr = tokens.typographyByRole;
   const h1Color = tbr.display.color ?? text;
-  const h2Color = tbr.heading.color ?? text;
-  const h3Color = tbr.subheading.color ?? tbr.heading.color ?? text;
+  // P8 accent-reservering: een accent-gekleurde kop wordt charcoal (text).
+  const h2Color = reserveAccentForHeading(tbr.heading.color, tokens.accent, text);
+  const h3Color = tbr.subheading.color ?? reserveAccentForHeading(tbr.heading.color, tokens.accent, text);
   return {
     h1: ({ children }: { children?: React.ReactNode }) => (
       <h1 style={{
@@ -1986,7 +2014,8 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens) {
       <h4 style={{ fontFamily: headingFont, color: text, fontSize: 18, fontWeight: 600, marginTop: 14, marginBottom: 6 }}>{children}</h4>
     ),
     p: ({ children }: { children?: React.ReactNode }) => (
-      <p style={{ fontFamily: bodyFont, color: text, marginBottom: 12 }}>{children}</p>
+      // P12 measure-cap: ~40em ≈ 75-80 tekens + ruime leading voor leesritme.
+      <p style={{ fontFamily: bodyFont, color: text, marginBottom: 12, maxWidth: '40em', lineHeight: 1.6 }}>{children}</p>
     ),
     ul: ({ children }: { children?: React.ReactNode }) => (
       <ul style={{ fontFamily: bodyFont, color: text, paddingLeft: 24, marginBottom: 12, listStyleType: 'disc' }}>{children}</ul>
