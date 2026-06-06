@@ -286,6 +286,28 @@ export async function generateCanvasVisual(
   return res.json();
 }
 
+/**
+ * P2 — genereer AI-feature-beelden (max 4) voor de feature-cards van een
+ * landing-page. Eén beeld per prompt; returnt stabiele storage-URLs in dezelfde
+ * volgorde (null bij falen per index). Raakt de hero-picker NIET aan.
+ */
+export async function generateFeatureVisuals(
+  deliverableId: string,
+  prompts: string[],
+): Promise<Array<string | null>> {
+  const res = await fetch(`/api/studio/${deliverableId}/generate-feature-visuals`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompts }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to generate feature visuals' }));
+    throw new Error(err.error ?? 'Failed to generate feature visuals');
+  }
+  const data = (await res.json()) as { urls: Array<string | null> };
+  return data.urls ?? [];
+}
+
 export interface SelectLibraryVisualResponse {
   variants: Array<{ id: string; url: string; prompt: string }>;
   source: 'library';

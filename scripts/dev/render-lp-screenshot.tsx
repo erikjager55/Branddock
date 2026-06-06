@@ -86,9 +86,13 @@ function loadVariant(slug: string): LandingPageVariantContent {
   const p = `/tmp/variant-${slug}.json`;
   if (!fs.existsSync(p)) return variant;
   const ai = JSON.parse(fs.readFileSync(p, "utf8")) as LandingPageVariantContent;
-  ai.hero.heroVisualUrl = dataUri(heroSvg);
+  // Alleen LEGE slots met placeholders vullen — echte AI-/brand-beelden blijven.
+  if (!ai.hero.heroVisualUrl) ai.hero.heroVisualUrl = dataUri(heroSvg);
   const labels = ["char-textuur macro", "gevel in context", "detail nerf", "toepassing"];
-  ai.features.items.forEach((f, i) => { (f as { imageUrl?: string }).imageUrl = featSvg(labels[i % labels.length]); });
+  ai.features.items.forEach((f, i) => {
+    const fi = f as { imageUrl?: string | null };
+    if (!fi.imageUrl) fi.imageUrl = featSvg(labels[i % labels.length]);
+  });
   return ai;
 }
 
