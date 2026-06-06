@@ -49,6 +49,7 @@ assert("array van {url} → BrandImage[]", parseBrandImages([{ url: "https://x/1
 assert("scalar (null) → []", parseBrandImages(null).length === 0);
 assert("string-scalar → []", parseBrandImages("not-array").length === 0);
 assert("items zonder url worden geweerd", parseBrandImages([{ alt: "x" }, { url: "" }, { url: "https://x/ok.jpg" }]).length === 1);
+assert("malformed url geweerd, http + root-relative behouden", parseBrandImages([{ url: "not-a-url" }, { url: "https://x/ok.jpg" }, { url: "/uploads/a.jpg" }]).length === 2);
 
 console.log("\nP2 — assignBrandImagesToVariant");
 {

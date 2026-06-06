@@ -26,11 +26,14 @@ export function parseBrandImages(raw: unknown): BrandImage[] {
   return raw
     .filter((b): b is { url?: unknown; alt?: unknown; context?: unknown } => !!b && typeof b === "object")
     .map((b) => ({
-      url: typeof b.url === "string" ? b.url : "",
+      url: typeof b.url === "string" ? b.url.trim() : "",
       alt: typeof b.alt === "string" ? b.alt : null,
       context: typeof b.context === "string" ? b.context : null,
     }))
-    .filter((b) => b.url.length > 0);
+    // Alleen laad-bare URLs (http(s) of root-relative upload-pad) — anders zou
+    // een malformed brandImages.url ongevalideerd naar <img src> lekken (de
+    // AI-feature-imageUrl wordt wél door het schema .url()-gevalideerd).
+    .filter((b) => /^https?:\/\//i.test(b.url) || b.url.startsWith("/"));
 }
 
 /**
