@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 294. LP-render P2 beeld-producer + P7 editorial split-layout
+
+De laatste verbeterplan-tracks. **P2 (beeld-producer)**: `assignBrandImagesToVariant` vult lege hero/feature-beeld-slots met de brand-eigen `brandImages` (uit `BrandStyleguide.brandImages`, nu via canvas-context in de ctx) — merken MÉT bronbeeld krijgen echte foto's i.p.v. placeholders; alleen lege slots, in volgorde. `parseBrandImages` tolereert het scalar/null Json-veld + weert malformed URLs. **P7 (split-layout)**: nieuw `FeatureSplit`-component — features als editorial A-B-A-B volle-breedte rijen (beeld/tekst afwisselend per rij) i.p.v. een 3-koloms grid; de mapper kiest FeatureSplit wanneer ALLE features beeld dragen, anders FeatureGrid. **Cross-brand visueel geverifieerd**: Adullam (7 echte brandImages → hero + split-rijen met echte foto's), Zwarthout (placeholders → split); merk zonder bronbeeld = no-op. Adversariële review: SHIP (geen CRITICAL/WARNING; 1 NIT — URL-validatie — gefixt). Smoke phase60 (17/17); phase2 11→12 componenten; tsc+lint 0; sweep groen. Resterend P2: AI-per-feature-gen voor merken zonder bronbeeld (generateImage-infra bestaat; per-feature-gen = kosten/latency-keuze).
+
+- Commit: branch `feat/lp-p2-p7`
+
 ### 293. LP-render copy-laag (P1/P4/P11): descriptieve header + PAS-binding + laagdrempelige CTA
 
 De content-engine-laag van het verbeterplan in de variant-generator-prompt (`src/lib/landing-pages/variant-generator.ts`). **P1**: hero-headline van "benefit-led, max 44" → DESCRIPTIEF (noem WAT je verkoopt + differentiator, slaag voor de 5-seconden-test), aligned op de 60-char schema (prompt zat nog op de stale 44); subhead = believability-line ≤25 woorden. **P4**: feature-pilaren binden terug op de hero-belofte (PAS-narratief: problem → features-bewijs als één doorlopende boog) i.p.v. losse features. **P11**: primaire CTA = laagdrempelige micro-commitment (stalen/demo/adviesgesprek) i.p.v. een zware ask voor een koude lezer. **Geverifieerd via LIVE Anthropic-generatie** (nieuw dev-tool `scripts/dev/gen-lp-variant.tsx`) voor Zwarthout: headline "Verkoold gevelhout dat een leven lang zwart blijft" (50ch), 4 pilaar-bewijzende features, CTA "Vraag stalen aan", objectie-FAQ — gerenderd met de echte AI-copy via de render-harness. Prompt-structuur-smoke phase8 (39/39, +6 asserties); tsc+lint 0. Resterende follow-up: beeld-producer P2 (AI-feature-gen = infra/kosten-beslissing) + A-B-A-B split-layouts P7 (nieuwe componenten).
