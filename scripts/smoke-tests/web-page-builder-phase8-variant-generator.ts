@@ -123,6 +123,20 @@ group("Prompt-builder — basis structuur");
   assert("user bevat pijnpunten", prompt.user.includes("Inconsistente brand-voice"));
 }
 
+group("Prompt-builder — copy-laag P1/P4/P11 (verbeterplan)");
+{
+  const prompt = buildLandingPageVariantPrompt(BASE_PARAMS);
+  // P1 — descriptieve header (5-seconden-test), 60 niet 44.
+  assert("P1: headline descriptief + 5-seconden-test", /DESCRIPTIEF/i.test(prompt.system) && /5-seconden-test/i.test(prompt.system));
+  assert("P1: headline-limiet 60 (niet stale 44)", prompt.system.includes("max 60 tekens") && !prompt.system.includes("max 44 tekens"));
+  // P4 — feature-pilaren binden terug op de hero (PAS).
+  assert("P4: feature-pilaren binden op hero-belofte", /pilaar van de hero-belofte/i.test(prompt.system));
+  assert("P4: PAS-narratief doorlopende boog", /PAS-narratief/i.test(prompt.system));
+  // P11 — laagdrempelige eerste CTA (micro-commitment).
+  assert("P11: CTA = micro-commitment / laagdrempelige ask", /micro-commitment/i.test(prompt.system));
+  assert("P11: subhead believability ≤25 woorden", /max ~25 woorden/i.test(prompt.system) && /GELOOFWAARDIG/i.test(prompt.system));
+}
+
 group("Prompt-builder — conditional secties");
 {
   const withProblem = buildLandingPageVariantPrompt({ ...BASE_PARAMS, includeProblem: true });

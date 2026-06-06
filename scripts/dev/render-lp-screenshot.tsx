@@ -78,6 +78,19 @@ const variant: LandingPageVariantContent = {
   finalCta: { heading: "Klaar voor een gevel die een leven lang zwart blijft?", riskReducer: "Gratis houtstalen + advies binnen 2 werkdagen — vrijblijvend.", primaryCta: "Vraag houtstalen aan" },
 };
 
+// Wanneer /tmp/variant-<slug>.json bestaat (van gen-lp-variant.tsx), render die
+// ECHTE AI-copy i.p.v. de hand-geschreven demo — met geïnjecteerde placeholder-
+// beelden zodat de volledige render-behandeling zichtbaar blijft.
+function loadVariant(slug: string): LandingPageVariantContent {
+  const p = `/tmp/variant-${slug}.json`;
+  if (!fs.existsSync(p)) return variant;
+  const ai = JSON.parse(fs.readFileSync(p, "utf8")) as LandingPageVariantContent;
+  ai.hero.heroVisualUrl = dataUri(heroSvg);
+  const labels = ["char-textuur macro", "gevel in context", "detail nerf", "toepassing"];
+  ai.features.items.forEach((f, i) => { (f as { imageUrl?: string }).imageUrl = featSvg(labels[i % labels.length]); });
+  return ai;
+}
+
 async function main() {
   const nameContains = process.argv[2] ?? "zwart";
   const styleguide = await prisma.brandStyleguide.findFirst({
@@ -104,7 +117,7 @@ async function main() {
 
   const ctx = { brandTokens, personas: [], brand: { brandName: "Zwarthout" }, deliverableTypeId: "landing-page" } as unknown as CanvasContextStack;
   const config = buildSpikePuckConfig(ctx);
-  const tree = buildLandingPageTemplateFromStructured(variant, ctx);
+  const tree = buildLandingPageTemplateFromStructured(loadVariant(nameContains), ctx);
   const body = renderToStaticMarkup(React.createElement(Render, { config, data: tree } as never));
 
   const puckCss = fs.readFileSync("node_modules/@puckeditor/core/dist/Render-3OV4N4MT.css", "utf8");

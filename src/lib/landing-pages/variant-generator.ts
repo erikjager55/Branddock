@@ -266,9 +266,9 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
 # OUTPUT-SCHEMA
 {
   "hero": {
-    "headline": string (max 44 tekens, 5-10 woorden, benefit-led — geen feature-led),
-    "subhead": string (1-2 zinnen, context + pijnpunt-erkenning),
-    "primaryCta": string (action-led werkwoord, bv "Start mijn proefperiode"),
+    "headline": string (max 60 tekens, DESCRIPTIEF: noem concreet WAT je verkoopt + de differentiator. Slaagt voor de 5-seconden-test (als de lezer ALLEEN dit leest, weet hij exact wat het product is) ÉN draagt de emotionele register. Een descriptieve kern, GEEN vage benefit-slogan. Goed: "Verkoold gevelhout dat een leven lang zwart blijft". Fout: "Tijdloze schoonheid in hout"),
+    "subhead": string (1-2 zinnen, max ~25 woorden — maakt de headline GELOOFWAARDIG: hoe het werkt + waarom de claim klopt, niet een tweede slogan),
+    "primaryCta": string (laagdrempelige EERSTE actie passend bij een koude lezer — een micro-commitment, bv "Vraag stalen aan"/"Bekijk demo"/"Plan adviesgesprek", NIET een zware ask als "Koop nu"/"Vraag offerte" voor een eerste bezoek. Action-led werkwoord),
     "secondaryCta": string | optional (Hobson's Choice +1, bv "Bekijk demo"),
     "heroVisualUrl": string | optional (placeholder voor v2)
   },
@@ -283,7 +283,7 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
   },` : ""}
   "features": {
     "sectionHeading": string,
-    "items": [{ "icon": string (lucide-icon naam, geen emoji), "heading": string (2-4 woorden), "body": string (1-2 zinnen benefit-frame) }] (3 of 4 items — 5 verstoort grid-balans)
+    "items": [{ "icon": string (lucide-icon naam, geen emoji), "heading": string (2-4 woorden), "body": string (1-2 zinnen benefit-frame) }] (3 of 4 items — 5 verstoort grid-balans. Elke feature BEWIJST één pilaar van de hero-belofte — geen losse, willekeurige features. Samen dekken ze de kern-belofte uit de headline/subhead)
   },
   "socialProof": {
     "testimonials": [{ "quote": string, "authorName": string, "authorRole": string, "authorCompany": string, "outcome": string | optional }] (EXACT 1 item — sterkste single quote met outcome-cijfer wint van meerdere generieke quotes),
@@ -304,7 +304,7 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
 
 # KRITISCHE REGELS (overtreding = automatic rejection)
 1. **Single-CTA discipline**: finalCta.primaryCta MOET letterlijk identiek zijn aan hero.primaryCta. Geen synoniemen, geen variatie. Alle CTA's op de pagina drijven naar dezelfde actie.
-2. **Headline max 44 tekens**: korter, benefit-led. Geen "Welkom bij..." of "De #1 oplossing voor...".
+2. **Headline = descriptief, max 60 tekens**: na 5 seconden moet de lezer exact weten WAT je verkoopt. Noem het product + de differentiator (descriptieve kern + emotionele register), geen vage benefit-slogan. Geen "Welkom bij..." of "De #1 oplossing voor...".
 3. **Readability**: schrijf op 5e-7e graders niveau. Max 50 "moeilijke" woorden (3+ lettergrepen) per pagina. Geen jargon, geen acronymen zonder uitleg.
 4. **Features 3-5 items**: paradox of choice. Belangrijkste feature eerst (anchoring).
 5. **FAQ 5-8 items**: dek 3+ koop-barrières (prijs / implementatie / lock-in / security / vergelijking / geschiktheid).
@@ -315,6 +315,8 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
 10. **Specifiek > generiek**: vervang elk woord dat op meerdere merken zou passen ("krachtig platform", "innovatieve oplossing") door iets dat ALLEEN bij DIT merk past (concrete output, sector-term, uitspraak die de bron-website zou kunnen onderschrijven).
 11. **Geen herhaal-vocabulaire**: gebruik elk content-woord MAX 2× in de hele page (uitgezonderd: brand-naam, lidwoorden, kleine functiewoorden). Specifiek: "vakkundig"/"vakmanschap"/"professioneel"/"kwaliteit"/"deskundig" mogen samen niet vaker dan 3× verschijnen — herhaal-effect verzwakt de boodschap.
 12. **Houd de bron-website-stijl aan, improviseer NIET**: tone-of-voice, sector-termen, klant-aanspreking en typische zinsstructuren komen uit de geanalyseerde bron-website. Gebruik voorbeelden die op de échte bron passen (LINFI = vloerluiken/precisie/architectonisch; Better Brands = purpose/strategie/transformatie). Geen generic SaaS-frasen voor traditionele branches en omgekeerd.
+13. **Feature-pilaren binden terug op de hero (PAS-narratief)**: elke feature BEWIJST één pilaar van de hero-belofte; samen dekken ze de kern uit headline+subhead. De problem-sectie (van-kant) → features+testimonial (naar-kant) vormen één doorlopende boog. Geen losse, willekeurige features die "niet van elkaar weten".
+14. **CTA = laagdrempelige eerste ask (micro-commitment)**: de primaire CTA is een lichte eerste stap passend bij een koude lezer (stalen/demo/adviesgesprek), NIET een zware ask (offerte/koop) die te vroeg komt en afschrikt. De single-CTA-discipline (regel 1) blijft — kies één lichte ask en herhaal die.
 
 # COGNITIEVE FUNDAMENTEN (waarom dit werkt)
 - Fogg's Behavior Model: elke sectie moet motivatie + ability + trigger versterken
