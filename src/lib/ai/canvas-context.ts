@@ -522,7 +522,11 @@ export async function assembleCanvasContext(
         hex: true, category: true, sortOrder: true,
         tags: true, contrastWhite: true, contrastBlack: true, confidence: true,
       } },
-      fonts: { select: { name: true, role: true, fontFamily: true, sortOrder: true } },
+      // E-3 — availability + upload-velden zodat de canvas-loader Adobe/uploaded
+      // fonts kan laden (niet alleen Google).
+      fonts: { select: { name: true, role: true, fontFamily: true, sortOrder: true, availability: true, fileUrl: true, fileType: true } },
+      // E-3 — workspace-eigen Adobe Typekit kit-id (domain-geconfigureerd).
+      workspace: { select: { adobeFontsKitId: true } },
       components: {
         select: {
           type: true, label: true, extractedStyles: true, confidence: true,
@@ -533,7 +537,9 @@ export async function assembleCanvasContext(
       },
     },
   });
-  const brandTokens = extractBrandTokensFromStyleguide(styleguide);
+  const brandTokens = extractBrandTokensFromStyleguide(styleguide, {
+    adobeFontsKitId: styleguide?.workspace?.adobeFontsKitId ?? null,
+  });
 
   return {
     brand, concept, journeyPhase, medium,

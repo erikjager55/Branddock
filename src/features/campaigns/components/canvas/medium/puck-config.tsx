@@ -52,6 +52,9 @@ export type FeatureItem = {
   /** Optional lucide-icon naam (bv "zap", "shield", "users"). MVP rendert
    *  alleen het label; v2 voegt dynamic lucide-icon rendering toe. */
   icon?: string;
+  /** Track 2: optionele per-feature afbeelding. Wanneer aanwezig vervangt
+   *  de FeatureGrid de icon-badge door deze foto (materiaal-/product-shot). */
+  imageUrl?: string | null;
 };
 export type FeatureGridProps = {
   columns: '2' | '3' | '4';
@@ -665,7 +668,9 @@ function brandHeroComponent(tokens: BrandTokens) {
             <h1
               className="lp-reveal lp-reveal-1"
               style={{
-                fontFamily: displayFont,
+                // E-1: per-rol scraped display-family (de échte h1-font van de
+                // bron) vóór de globale display-stack; valt terug op displayFont.
+                fontFamily: tbr.display.fontFamily ? `"${tbr.display.fontFamily}", ${displayFont}` : displayFont,
                 // Responsive font-size: scraped-size = desktop-max, MIN cap
                 // = 32px voor mobile-leesbaarheid. clamp() schaalt vloeiend.
                 fontSize: (() => {
@@ -1051,7 +1056,7 @@ function featureGridComponent(tokens: BrandTokens) {
         { title: 'Schaalbaar', description: 'Groeit mee met je business.', icon: 'trending-up' },
       ],
     },
-    render: ({ columns, features }: FeatureGridProps) => {
+    render: ({ features }: FeatureGridProps) => {
       // #8 bg-depth — voor FeatureGrid section. Texture matched
       // archetype: JESTER/CREATOR krijgen rich, MINIMAL subtle, etc.
       const depthLevel = pickBackgroundDepth(tokens.archetype, tokens.layoutStyle);
@@ -1171,7 +1176,25 @@ function featureGridComponent(tokens: BrandTokens) {
               };
             return (
               <div key={i} className={useCard ? 'lp-card' : undefined} style={cardWrapper}>
-                {(() => {
+                {f.imageUrl ? (
+                  // Track 2: per-feature beeld vervangt de icon-badge. Cover-fit
+                  // op een vaste verhouding zodat de grid uitgelijnd blijft; radius
+                  // spiegelt de card zodat het beeld binnen de card-vorm valt.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={f.imageUrl}
+                    alt={f.title}
+                    loading="lazy"
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      aspectRatio: '4 / 3',
+                      objectFit: 'cover',
+                      borderRadius: Math.min(productCardRadius, constraints.maxRadiusPx),
+                      marginBottom: 16,
+                    }}
+                  />
+                ) : (() => {
                   // 1-op-1 fidelity: FEATURE_ICON scraped sample geeft de
                   // exacte badge-styling (bv. LINFI gold-badge met witte icon).
                   const fIcon = tokens.styleguideComponents.FEATURE_ICON;

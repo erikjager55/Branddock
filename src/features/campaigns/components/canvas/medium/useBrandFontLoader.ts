@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import type { BrandTokens } from "@/lib/landing-pages/brand-tokens";
+import { injectTypekitCss, injectUploadedFontFace } from "@/features/brandstyle/utils/font-loading";
 
 /**
  * Laadt brand-fonts (Google Fonts) in document.head zodat de Puck-render
@@ -17,8 +18,9 @@ import type { BrandTokens } from "@/lib/landing-pages/brand-tokens";
  * - Build één `<link>` met family-list voor alle non-system fonts
  * - De-dupe via gefixeerde element-id; re-write bij font-change
  *
- * Workspace-specifieke uploaded fonts (StyleguideFont.source=UPLOADED)
- * vereisen aparte @font-face uit fileUrl — niet gedekt door deze hook.
+ * E-3: non-Google bronnen worden óók geladen via tokens.fontAssets —
+ * UPLOADED via @font-face (fileUrl), ADOBE_FONTS via de workspace-Typekit-kit
+ * (tokens.adobeFontsKitId). Hun families worden uit de Google-aanvraag gesloten.
  */
 
 // Track 3b: 'roboto' is BEWUST NIET meer system: Roboto is een Google-font dat
@@ -81,6 +83,45 @@ export function useBrandFontLoader(tokens: BrandTokens | null | undefined) {
     if (display) families.add(display);
     const labelFont = extractFontName(tokens.designSystem?.typography?.label?.fontFamily ?? "");
     if (labelFont) families.add(labelFont);
+
+    // E-1: per-rol gescrapte families (de échte font van h1/h2/body/eyebrow),
+    // los van de globale heading/body-stacks — anders rendert puck-config ze niet.
+    const tbr = tokens.typographyByRole;
+    if (tbr) {
+      for (const role of [tbr.display, tbr.heading, tbr.body, tbr.label]) {
+        const roleFont = extractFontName(role?.fontFamily ?? "");
+        if (roleFont) families.add(roleFont);
+      }
+    }
+
+    // E-3: non-Google bronnen apart laden — UPLOADED via @font-face, ADOBE_FONTS
+    // via de workspace-Typekit-kit. Een family wordt ALLEEN uit de Google-
+    // aanvraag gesloten wanneer hij ook écht via die bron laadt — anders zou
+    // een niet-ladende font op system-fallback vallen i.p.v. een Google-poging.
+    // Normaliseer via extractFontName zodat de match 1-op-1 is met de Google-set
+    // (zelfde weight-strip + system-filter).
+    const assetFamilies = new Set<string>();
+    let needsTypekit = false;
+    const hasKit = !!tokens.adobeFontsKitId;
+    const excludeFromGoogle = (family: string): void => {
+      const norm = extractFontName(family);
+      if (norm) assetFamilies.add(norm.toLowerCase());
+    };
+    for (const asset of tokens.fontAssets ?? []) {
+      if (asset.availability === "UPLOADED" && asset.fileUrl) {
+        injectUploadedFontFace(asset.family, asset.fileUrl, asset.fileType);
+        excludeFromGoogle(asset.family);
+      } else if (asset.availability === "ADOBE_FONTS" && hasKit) {
+        needsTypekit = true;
+        excludeFromGoogle(asset.family);
+      }
+    }
+    if (needsTypekit && tokens.adobeFontsKitId) {
+      injectTypekitCss(tokens.adobeFontsKitId);
+    }
+    for (const g of [...families]) {
+      if (assetFamilies.has(g.toLowerCase())) families.delete(g);
+    }
 
     if (families.size === 0) return;
 

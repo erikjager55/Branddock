@@ -85,6 +85,12 @@ const featureItemSchema = z.object({
   heading: z.string().min(1, "features.items[].heading mag niet leeg zijn"),
   /** 1-2 zinnen benefit-frame ("wat je krijgt"). */
   body: z.string().min(1, "features.items[].body mag niet leeg zijn"),
+  /** Optionele per-feature afbeelding (materiaal-/product-/in-context-shot).
+   *  Track 2: bij een tactiel premium-product is beeld het bewijs (Lens D
+   *  research). Wanneer aanwezig vervangt de FeatureGrid de icon-badge door
+   *  deze foto. Producer (brandImages-mapping / AI-gen) is een verbeterplan-
+   *  track — de renderer is hiermee per-feature beeld-capabel. */
+  imageUrl: z.string().url("features.items[].imageUrl moet een geldige URL zijn").nullable().optional(),
 });
 
 const featuresSchema = z.object({
