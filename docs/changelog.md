@@ -43,7 +43,7 @@ Provenance als first-class concept op de brandstyle/LP-token-laag, afgeleid van 
 
 - Audit: [docs/audits/2026-06-06-governed-token-layer-verbeterplan.md](audits/2026-06-06-governed-token-layer-verbeterplan.md)
 - ADR: -
-- Commit: <hash>
+- Commit: 538ab8e5
 
 ### 296. Brandstyle: visualLanguage beschrijft resolved palette (Bootstrap-pollutie weg)
 
