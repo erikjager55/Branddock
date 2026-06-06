@@ -61,6 +61,10 @@ export type FeatureGridProps = {
   columns: '2' | '3' | '4';
   features: FeatureItem[];
 };
+/** P7 FeatureSplit — editorial A-B-A-B; zelfde items, geen columns. */
+export type FeatureSplitProps = {
+  features: FeatureItem[];
+};
 
 export type TestimonialProps = {
   quote: string;
@@ -127,6 +131,7 @@ export type SpikePuckProps = {
   BrandHero: SpikeBrandHeroProps;
   BrandCTA: SpikeBrandCtaProps;
   FeatureGrid: FeatureGridProps;
+  FeatureSplit: FeatureSplitProps;
   Testimonial: TestimonialProps;
   PricingTable: PricingTableProps;
   FAQ: FAQProps;
@@ -165,6 +170,7 @@ export function buildSpikePuckConfig(
   return {
     components: {
       BrandHero: brandHeroComponent(tokens),
+      FeatureSplit: featureSplitComponent(tokens),
       BrandCTA: brandCtaComponent(tokens, personas, personaOptions),
       FeatureGrid: featureGridComponent(tokens, ctx?.brandProvenance),
       Testimonial: testimonialComponent(tokens, personas, personaOptions),
@@ -1300,6 +1306,108 @@ function featureGridComponent(tokens: BrandTokens, provenance?: TokenProvenance)
       </section>
       );
     },
+  };
+}
+
+/**
+ * FeatureSplit — P7 editorial A-B-A-B: elke feature als volle-breedte rij met
+ * beeld aan de ene kant en tekst aan de andere, afwisselend per rij. Voor
+ * EDITORIAL/EXPERIENTIAL-layouts wanneer de features beeld dragen — geeft het
+ * asymmetrische editorial-ritme dat een 3-koloms grid mist. Zelfde props-shape
+ * als FeatureGrid (FeatureItem[]), dus de mapper kan dezelfde data sturen.
+ */
+function featureSplitComponent(tokens: BrandTokens) {
+  const ds = tokens.designSystem;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  const { sectionRhythm } = tokens;
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const tbr = tokens.typographyByRole;
+  const headingSize = Math.min(tbr.heading.fontSize ?? 28, 36);
+  const headingWeight = tbr.heading.fontWeight ?? ds.typography.heading.weights[0] ?? 600;
+  const bodySize = tbr.body.fontSize ?? ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 1)] ?? 16;
+  const radius = Math.min(tokens.elevation.cardBorderRadius, constraints.maxRadiusPx);
+  return {
+    fields: {
+      features: {
+        type: 'array' as const,
+        arrayFields: {
+          title: { type: 'text' as const },
+          description: { type: 'textarea' as const },
+          imageUrl: { type: 'text' as const },
+        },
+      },
+    },
+    defaultProps: {
+      features: [
+        { title: 'Eerste pilaar', description: 'Bewijs van de hero-belofte.', imageUrl: null },
+        { title: 'Tweede pilaar', description: 'Tweede bewijs, afwisselend uitgelijnd.', imageUrl: null },
+      ],
+    },
+    render: ({ features }: FeatureSplitProps) => (
+      <section
+        style={{
+          padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
+          background: tokens.surface,
+          fontFamily: bodyFont,
+        }}
+      >
+        <div style={{ maxWidth: constraints.maxContentWidth, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 64 }}>
+          {features.map((f, i) => {
+            const imageRight = i % 2 === 1;
+            return (
+              <div
+                key={i}
+                style={{ display: 'flex', flexDirection: imageRight ? 'row-reverse' : 'row', gap: 48, alignItems: 'center', flexWrap: 'wrap' }}
+              >
+                <div style={{ flex: '1 1 320px', minWidth: 280 }}>
+                  {f.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={f.imageUrl}
+                      alt={f.title}
+                      loading="lazy"
+                      style={{ display: 'block', width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: radius }}
+                    />
+                  ) : (
+                    <div style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: radius, background: tokens.surfaceMuted }} />
+                  )}
+                </div>
+                <div style={{ flex: '1 1 320px', minWidth: 280 }}>
+                  <h3
+                    style={{
+                      fontFamily: headingFont,
+                      fontSize: responsiveSize(22, headingSize),
+                      fontWeight: headingWeight,
+                      lineHeight: tbr.heading.lineHeight ?? 1.2,
+                      letterSpacing: tbr.heading.letterSpacing ?? undefined,
+                      textTransform: tbr.heading.textTransform ?? undefined,
+                      margin: '0 0 12px',
+                      color: resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), tokens.surface, { fallback: tokens.onSurface, minRatio: 3.0 }),
+                    }}
+                  >
+                    {f.title}
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: bodySize,
+                      lineHeight: tbr.body.lineHeight ?? 1.6,
+                      maxWidth: '40em',
+                      margin: 0,
+                      color: resolveOnColor(tbr.body.color ?? tokens.surfaceMuted, tokens.surface, { fallback: tokens.onSurface }),
+                    }}
+                  >
+                    {f.description}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    ),
   };
 }
 

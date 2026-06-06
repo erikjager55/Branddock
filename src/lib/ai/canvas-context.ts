@@ -17,9 +17,11 @@ import type { BrandContextBlock } from './prompt-templates';
 import { detectJourneyPhase, type JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
 import { serializePersona } from './context/persona-serializer';
 import {
-  extractBrandTokensFromStyleguide,
+  extractBrandTokensWithProvenance,
   type BrandTokens,
 } from '@/lib/landing-pages/brand-tokens';
+import type { TokenProvenance } from '@/lib/landing-pages/token-provenance';
+import { parseBrandImages, type BrandImage } from '@/lib/landing-pages/brand-images';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -196,6 +198,19 @@ export interface CanvasContextStack {
    * downstream consumers never branch on null.
    */
   brandTokens: BrandTokens;
+  /**
+   * V1 (governed-token-layer) — herkomst-sidecar bij `brandTokens`: per token
+   * de source (scraped/logo/preset/fallback/derived) + confidence + bewijs.
+   * Voedt de provenance-footer (V3) en de preset-degradatie (V2). Optioneel:
+   * niet alle context-stack-constructors (tests/mocks) leveren het.
+   */
+  brandProvenance?: TokenProvenance;
+  /**
+   * P2 — brand-eigen beelden (gescraped/geüpload) uit `BrandStyleguide.brandImages`.
+   * Voedt de beeld-producer (`assignBrandImagesToVariant`) zodat hero/feature-
+   * slots zonder beeld met echte merk-foto's gevuld worden. Leeg = geen bronbeeld.
+   */
+  brandImages?: BrandImage[];
   /**
    * Brand-meta voor V2 lazy-inference gates (geen render-impact). Bevat
    * flags die onderscheid maken tussen schema-default sentinels en
@@ -527,6 +542,8 @@ export async function assembleCanvasContext(
       fonts: { select: { name: true, role: true, fontFamily: true, sortOrder: true, availability: true, fileUrl: true, fileType: true } },
       // E-3 — workspace-eigen Adobe Typekit kit-id (domain-geconfigureerd).
       workspace: { select: { adobeFontsKitId: true } },
+      // P2 — brand-eigen beelden voor de beeld-producer.
+      brandImages: true,
       components: {
         select: {
           type: true, label: true, extractedStyles: true, confidence: true,
@@ -537,14 +554,16 @@ export async function assembleCanvasContext(
       },
     },
   });
-  const brandTokens = extractBrandTokensFromStyleguide(styleguide, {
-    adobeFontsKitId: styleguide?.workspace?.adobeFontsKitId ?? null,
-  });
+  const { tokens: brandTokens, provenance: brandProvenance } =
+    extractBrandTokensWithProvenance(styleguide, {
+      adobeFontsKitId: styleguide?.workspace?.adobeFontsKitId ?? null,
+    });
 
   return {
     brand, concept, journeyPhase, medium,
     deliverableTypeId: deliverable.contentType ?? null,
-    personas, brief, products, contentTypeInputs, visualBrief, puckData, brandTokens,
+    personas, brief, products, contentTypeInputs, visualBrief, puckData, brandTokens, brandProvenance,
+    brandImages: parseBrandImages(styleguide?.brandImages),
     brandStyleguideMeta: {
       layoutStyleInferred: styleguide?.layoutStyleInferred ?? false,
     },

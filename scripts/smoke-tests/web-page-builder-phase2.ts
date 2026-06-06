@@ -162,6 +162,8 @@ function testPuckConfig(): void {
 
   const expected: Array<keyof SpikePuckProps> = [
     'BrandHero', 'BrandCTA', 'FeatureGrid', 'Testimonial',
+    // P7 — FeatureSplit (editorial A-B-A-B image/text rows)
+    'FeatureSplit',
     'PricingTable', 'FAQ', 'Footer', 'RichText',
     // C9 — StickyCtaBar (DTS-plan)
     'StickyCtaBar',

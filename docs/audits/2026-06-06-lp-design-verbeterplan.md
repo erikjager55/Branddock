@@ -116,9 +116,10 @@ Renderer-side tracks gebouwd + visueel geverifieerd (SSR `<Render>` met echte DB
 | **P3/P7/P9** dark-ritme | ✅ GEBOUWD | Stats-band is een cinematische dark accent-beat voor élk merk met `hasDarkSections`+`darkSectionBg` (was archetype-beperkt → CREATOR/EXPLORER uitgesloten). Ritme wit→charcoal→wit. |
 | **P12** measure-cap | ✅ GEBOUWD | RichText body-paragraaf `max-width:40em` + leading 1.6. |
 | **P10** trust-cluster | ✅ GEBOUWD | Trust-items krijgen een `badge-check`-icon → credibility-signaal i.p.v. kale tekst. |
-| **P1/P4/P9/P11** copy-laag | ⏳ CONTENT-ENGINE | Descriptieve header, PAS-copy + hero-pilaren-terugkoppeling, geattribueerde testimonial-copy, CTA-ladder-copy. Render + schema staan (problem-sectie + attributievelden bestaan); de delta is de AI-copy-prompt, niet de renderer. |
-| **P2** beeld-producer | ⏳ INFRA | Track 2 `<img>`-render staat (#291); de *producer* (brandImages→feature/hero-mapping + per-feature AI-materiaal-gen) vereist context-plumbing + AI-gen-infra. |
-| **P7** layout-alternatie | ⏳ RENDERER-FOLLOWUP | A-B-A-B split-secties (beeld-links/tekst-rechts) = nieuwe split-layout-componenten; bg-alternatie + dark-stats leveren nu al ritme. |
+| **P1/P4/P11** copy-laag | ✅ GEBOUWD (#293) | Descriptieve header (5-sec-test, 60ch) + believability-subhead, PAS-binding (feature-pilaren bewijzen de hero-belofte), laagdrempelige micro-commitment-CTA. Geverifieerd via live Anthropic-generatie. |
+| **P2** beeld-producer | ✅ GEBOUWD (#294) | `assignBrandImagesToVariant` vult lege hero/feature-slots uit `brandImages` (via ctx). Geverifieerd op Adullam (7 echte foto's). **Resterend**: AI-per-feature-gen voor merken zónder bronbeeld (kosten/latency-keuze). |
+| **P7** layout-alternatie | ✅ GEBOUWD (#294) | `FeatureSplit`-component — editorial A-B-A-B beeld/tekst-rijen; mapper kiest 't wanneer features beeld dragen. Geverifieerd op Adullam + Zwarthout. |
+| **P9** geattribueerde proof | ✅ AANWEZIG | Testimonial-schema + render dragen al naam/rol/bureau/uitkomst. |
 | **P5/P6** type-spanning | ✅ grotendeels AANWEZIG | Hero = responsive clamp 32→capped (≈5× body); sub measure-capped 560px. Verdere de-emphasis = follow-up. |
 
 **Netto Zwarthout-transformatie**: van "flets/onleesbaar" → premium cinematisch — dark full-bleed hero met oranje CTA, charcoal koppen (accent gereserveerd), feature-cards met beeld, cream testimonial, **donkere stats-band met oranje cijfers**, leesbare ritmiek. Adversariële review (3-dimensie workflow) + cross-brand-check vóór merge.
