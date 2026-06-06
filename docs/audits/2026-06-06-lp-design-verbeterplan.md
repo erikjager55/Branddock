@@ -102,3 +102,23 @@ Legenda type: **[CONTENT]** = copy-engine/AI-prompt · **[RENDER]** = nieuwe ren
 - `npx eslint` (alle 9 aangeraakte files) → 0 errors, 0 warnings (pre-existing `columns`-dead-destructure opgeruimd).
 - Volledige web-page-builder smoke-sweep (58 smokes) → groen; nieuw: phase56 (8/8), phase57 (13/13); stale phase30-assertie (Track-4-clamp) bijgewerkt → 58/0.
 - Browser-verificatie van de gegenereerde Zwarthout-pagina post-#289/#290/E-1: **aanbevolen volgende stap** (de user heeft de pagina nog niet ná die merges gezien — de getoonde flets/vlakke screenshot was pre-fix).
+
+---
+
+## DEEL 5 — Verbeterplan-implementatie (branch `feat/lp-verbeterplan`, 2026-06-06)
+
+Renderer-side tracks gebouwd + visueel geverifieerd (SSR `<Render>` met echte DB-tokens → Playwright-screenshot; dev-tool `scripts/dev/render-lp-screenshot.tsx`). **Cross-brand geverifieerd op Zwarthout (CREATOR/dark) + LINFI (RULER/gold-dark) + Better Brands (vibrant-green/light-only) — geen regressies.**
+
+| Track | Status | Wat |
+|---|---|---|
+| **Card-fix** | ✅ GEBOUWD | `isCardContextMismatch` — een near-black gescrapte PRODUCT_CARD op een lichte sectie (Zwarthout `rgb(0,0,0)`) wordt genegeerd → sectie-passende card-styling. Zwarte blokken weg. Smoke phase58 (12/12). |
+| **P8** accent-reservering | ✅ GEBOUWD | `reserveAccentForHeading` — accent-gekleurde koppen → charcoal; accent gereserveerd voor CTA/stats/eyebrow. Primaire hero-CTA draagt nu de accent (oranje/goud) op donkere hero (contrast-geclampt). Smoke phase59 (12/12). |
+| **P3/P7/P9** dark-ritme | ✅ GEBOUWD | Stats-band is een cinematische dark accent-beat voor élk merk met `hasDarkSections`+`darkSectionBg` (was archetype-beperkt → CREATOR/EXPLORER uitgesloten). Ritme wit→charcoal→wit. |
+| **P12** measure-cap | ✅ GEBOUWD | RichText body-paragraaf `max-width:40em` + leading 1.6. |
+| **P10** trust-cluster | ✅ GEBOUWD | Trust-items krijgen een `badge-check`-icon → credibility-signaal i.p.v. kale tekst. |
+| **P1/P4/P9/P11** copy-laag | ⏳ CONTENT-ENGINE | Descriptieve header, PAS-copy + hero-pilaren-terugkoppeling, geattribueerde testimonial-copy, CTA-ladder-copy. Render + schema staan (problem-sectie + attributievelden bestaan); de delta is de AI-copy-prompt, niet de renderer. |
+| **P2** beeld-producer | ⏳ INFRA | Track 2 `<img>`-render staat (#291); de *producer* (brandImages→feature/hero-mapping + per-feature AI-materiaal-gen) vereist context-plumbing + AI-gen-infra. |
+| **P7** layout-alternatie | ⏳ RENDERER-FOLLOWUP | A-B-A-B split-secties (beeld-links/tekst-rechts) = nieuwe split-layout-componenten; bg-alternatie + dark-stats leveren nu al ritme. |
+| **P5/P6** type-spanning | ✅ grotendeels AANWEZIG | Hero = responsive clamp 32→capped (≈5× body); sub measure-capped 560px. Verdere de-emphasis = follow-up. |
+
+**Netto Zwarthout-transformatie**: van "flets/onleesbaar" → premium cinematisch — dark full-bleed hero met oranje CTA, charcoal koppen (accent gereserveerd), feature-cards met beeld, cream testimonial, **donkere stats-band met oranje cijfers**, leesbare ritmiek. Adversariële review (3-dimensie workflow) + cross-brand-check vóór merge.
