@@ -516,7 +516,7 @@ function brandHeroComponent(tokens: BrandTokens) {
     tokens.hasDarkSections,
     isVibrantSaturatedColor(tokens.brand),
   );
-  const { heroLayout, displayTypography, buttonStyle } = hints;
+  const { heroLayout, displayTypography } = hints;
   const ds = tokens.designSystem;
   // C10 — photo-scrim stijl per archetype
   const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
@@ -859,7 +859,9 @@ function brandHeroComponent(tokens: BrandTokens) {
                 ...buttonRender,
                 // Conditional whitespace + letterSpacing cap voor lange labels.
                 whiteSpace: (ctaLabel ?? '').length <= 24 ? 'nowrap' : 'normal',
-                letterSpacing: (ctaLabel ?? '').length > 20 ? '0.1em' : buttonStyle.letterSpacing,
+                // tokens.button (gereconcilieerd) i.p.v. archetype-preset zodat de
+                // hero-CTA consistent blijft met de slot-CTA.
+                letterSpacing: (ctaLabel ?? '').length > 20 ? '0.1em' : tokens.button.letterSpacing,
                 // Center button binnen centered hero
                 marginInline: heroLayout.textAlignment === 'center' ? 'auto' : undefined,
               };
