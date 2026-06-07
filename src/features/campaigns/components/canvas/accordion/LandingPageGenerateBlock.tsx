@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, useContext, createContext } from 'react';
 import {
   Loader2, Sparkles, AlertCircle, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon, Pencil,
 } from 'lucide-react';
@@ -13,6 +13,7 @@ import { useBrandFontLoader } from '../medium/useBrandFontLoader';
 import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
 import { assignBrandImagesToVariant } from '@/lib/landing-pages/brand-images';
 import { FidelityScoreBar } from '../FidelityScoreBar';
+import { useInlineTransform } from '../../../hooks/canvas.hooks';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import type { BrandTokens } from '@/lib/landing-pages/brand-tokens';
@@ -697,6 +698,8 @@ export function LandingPageGenerateBlock({
               disabled={isChoosing}
               onChoose={(edited) => void handleChooseVariant(edited)}
               contextStack={contextStack}
+              deliverableId={deliverableId}
+              variantIndex={i}
             />
           ))}
         </div>
@@ -884,6 +887,8 @@ function VariantPuckPreview({
   );
 }
 
+type RegenSection = 'hero' | 'problem' | 'features' | 'socialProof' | 'faq' | 'finalCta';
+
 function VariantCompareCard({
   variant: initialVariant,
   label,
@@ -891,6 +896,8 @@ function VariantCompareCard({
   disabled,
   onChoose,
   contextStack,
+  deliverableId,
+  variantIndex,
 }: {
   variant: LandingPageVariantContent;
   label: string;
@@ -898,14 +905,52 @@ function VariantCompareCard({
   disabled: boolean;
   onChoose: (variant: LandingPageVariantContent) => void;
   contextStack: CanvasContextStack | null;
+  deliverableId: string;
+  variantIndex: number;
 }) {
   // Local edit-state: user kan inline velden bewerken voordat hij "Kies"
   // klikt. Pennetje naast elk veld toggled edit-mode.
   const [v, setV] = useState<LandingPageVariantContent>(initialVariant);
+  const [regenSection, setRegenSection] = useState<RegenSection | null>(null);
+  const [regenError, setRegenError] = useState<string | null>(null);
+  // Ref op de actuele `v` zodat regenerate de huidige snapshot meestuurt zonder
+  // `v` in de deps (anders re-create elke edit + clobber-race).
+  const vRef = useRef(v);
+  useEffect(() => { vRef.current = v; }, [v]);
 
   // Re-sync wanneer parent een nieuwe variant levert (regenerate).
   // eslint-disable-next-line react-hooks/set-state-in-effect -- bewust: state-reset bij prop-change, niet derived state
   useEffect(() => { setV(initialVariant); }, [initialVariant]);
+
+  // P1b — regenereer ALLEEN één sectie via auto-iterate-variant (section-scope).
+  // Werkt de lokale `v` bij (zoals een edit); persist gebeurt bij "Kies".
+  const regenerate = useCallback((section: RegenSection) => {
+    setRegenSection(section);
+    setRegenError(null);
+    fetch(`/api/landing-pages/${deliverableId}/auto-iterate-variant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ variantIndex, variant: vRef.current, section }),
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data) throw new Error(data?.error ?? `HTTP ${res.status}`);
+        if (data.status === 'proposal' && data.variant) {
+          // Merge ALLEEN de geregenereerde sectie in de LAATSTE state — zo
+          // overleven gelijktijdige edits aan ándere secties (geen clobber).
+          const next = data.variant as LandingPageVariantContent;
+          setV((prev) => ({ ...prev, [section]: next[section] }));
+        } else if (data.status === 'error') {
+          throw new Error(data.error ?? 'Regenereren mislukt');
+        } else if (data.status === 'skipped') {
+          setRegenError(data.reason === 'insufficient-content' ? 'Te weinig inhoud om te regenereren.' : 'Regenereren overgeslagen.');
+        } else if (data.status === 'no_improvement') {
+          setRegenError('Geen verbetering gevonden — sectie ongewijzigd.');
+        }
+      })
+      .catch((err) => setRegenError(err instanceof Error ? err.message : 'Regenereren mislukt'))
+      .finally(() => setRegenSection(null));
+  }, [deliverableId, variantIndex]);
 
   const ringClass = accent === 'emerald' ? 'border-emerald-200' : 'border-violet-200';
   const tagClass =
@@ -914,6 +959,7 @@ function VariantCompareCard({
       : 'bg-violet-100 text-violet-800';
 
   return (
+    <EditDeliverableCtx.Provider value={deliverableId}>
     <div className={`rounded-lg border-2 ${ringClass} bg-white p-4 flex flex-col gap-4 max-h-[calc(100vh-200px)] overflow-y-auto`}>
       <div className="sticky top-0 bg-white pb-2 border-b border-gray-100 -mx-4 px-4 -mt-4 pt-4 z-10">
         <span className={`inline-block text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded ${tagClass}`}>
@@ -926,17 +972,22 @@ function VariantCompareCard({
       <p className="text-[11px] text-gray-500 -mt-2">
         Live preview — header-foto wordt bij je keuze gegenereerd. Bewerk de tekst hieronder; de preview werkt direct bij.
       </p>
+      {regenError ? (
+        <p className="text-[11px] text-red-600 -mt-1">Regenereren mislukt: {regenError}</p>
+      ) : null}
 
-      {/* Tekst-bewerking — ingeklapt zodat de preview centraal staat. */}
+      {/* Tekst-bewerking — ingeklapt zodat de preview centraal staat.
+          P1b: per-sectie regenereren via de ↻-knop in elke sectie-header.
+          P1c: tone/length-microtransforms in elk bewerkbaar veld. */}
       <details className="group">
         <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-1.5 select-none">
           <Pencil className="h-3.5 w-3.5" />
-          Bewerk inhoud
+          Bewerk inhoud · regenereer per sectie
         </summary>
         <div className="flex flex-col gap-4 pt-3">
 
       {/* HERO */}
-      <VariantSection title="Hero">
+      <VariantSection title="Hero" onRegenerate={() => regenerate('hero')} regenerating={regenSection === 'hero'}>
         <EditableField
           label="Headline"
           value={v.hero.headline}
@@ -975,7 +1026,7 @@ function VariantCompareCard({
 
       {/* PROBLEM */}
       {v.problem ? (
-        <VariantSection title="Probleem">
+        <VariantSection title="Probleem" onRegenerate={() => regenerate('problem')} regenerating={regenSection === 'problem'}>
           <EditableField
             label="Heading"
             value={v.problem.heading}
@@ -993,7 +1044,7 @@ function VariantCompareCard({
       ) : null}
 
       {/* FEATURES */}
-      <VariantSection title={`Features (${v.features.items.length})`}>
+      <VariantSection title={`Features (${v.features.items.length})`} onRegenerate={() => regenerate('features')} regenerating={regenSection === 'features'}>
         <EditableField
           label="Section Heading"
           value={v.features.sectionHeading}
@@ -1031,7 +1082,7 @@ function VariantCompareCard({
       </VariantSection>
 
       {/* SOCIAL PROOF */}
-      <VariantSection title={`Social proof (${v.socialProof.testimonials.length} testimonials)`}>
+      <VariantSection title={`Social proof (${v.socialProof.testimonials.length} testimonials)`} onRegenerate={() => regenerate('socialProof')} regenerating={regenSection === 'socialProof'}>
         {v.socialProof.testimonials.map((t, i) => (
           <div key={i} className="text-xs text-gray-700 italic border-l-2 border-gray-200 pl-3">
             <p>&ldquo;{t.quote}&rdquo;</p>
@@ -1068,7 +1119,7 @@ function VariantCompareCard({
       ) : null}
 
       {/* FAQ */}
-      <VariantSection title={`FAQ (${v.faq.items.length} items)`}>
+      <VariantSection title={`FAQ (${v.faq.items.length} items)`} onRegenerate={() => regenerate('faq')} regenerating={regenSection === 'faq'}>
         {v.faq.items.map((q, i) => (
           <details key={i} className="text-xs">
             <summary className="font-medium text-gray-800 cursor-pointer">{q.question}</summary>
@@ -1078,7 +1129,7 @@ function VariantCompareCard({
       </VariantSection>
 
       {/* FINAL CTA */}
-      <VariantSection title="Final CTA">
+      <VariantSection title="Final CTA" onRegenerate={() => regenerate('finalCta')} regenerating={regenSection === 'finalCta'}>
         <EditableField
           label="Heading"
           value={v.finalCta.heading}
@@ -1111,17 +1162,54 @@ function VariantCompareCard({
         )}
       </button>
     </div>
+    </EditDeliverableCtx.Provider>
   );
 }
 
-function VariantSection({ title, children }: { title: string; children: React.ReactNode }) {
+function VariantSection({
+  title,
+  children,
+  onRegenerate,
+  regenerating,
+}: {
+  title: string;
+  children: React.ReactNode;
+  /** P1b — wanneer aanwezig: toon een "↻ regenereer"-knop die alleen deze sectie
+   *  opnieuw laat schrijven. */
+  onRegenerate?: () => void;
+  regenerating?: boolean;
+}) {
   return (
     <div className="space-y-2 pb-3 border-b border-gray-100 last:border-b-0">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{title}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{title}</p>
+        {onRegenerate ? (
+          <button
+            type="button"
+            onClick={onRegenerate}
+            disabled={regenerating}
+            className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-teal-700 disabled:opacity-50 transition-colors"
+            title="Regenereer alleen deze sectie"
+          >
+            {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            {regenerating ? 'Bezig…' : 'Regenereer'}
+          </button>
+        ) : null}
+      </div>
       <div className="space-y-2">{children}</div>
     </div>
   );
 }
+
+/** Levert deliverableId aan alle geneste EditableFields zodat de P1c-micro-
+ *  transforms werken zonder elke call-site te wijzigen. */
+const EditDeliverableCtx = createContext<string | undefined>(undefined);
+
+const MICRO_TRANSFORMS: ReadonlyArray<{ action: 'shorter' | 'urgent' | 'brand_voice'; label: string }> = [
+  { action: 'shorter', label: 'Korter' },
+  { action: 'urgent', label: 'Urgenter' },
+  { action: 'brand_voice', label: 'Brand voice' },
+];
 
 function EditableField({
   label,
@@ -1130,6 +1218,7 @@ function EditableField({
   multiline,
   compact,
   fontClass,
+  deliverableId,
 }: {
   label: string;
   value: string;
@@ -1137,9 +1226,14 @@ function EditableField({
   multiline?: boolean;
   compact?: boolean;
   fontClass?: string;
+  /** P1c — enables tone/length micro-transforms (Korter/Urgenter/Brand voice). */
+  deliverableId?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
+  const ctxDeliverableId = useContext(EditDeliverableCtx);
+  const dId = deliverableId ?? ctxDeliverableId;
+  const { mutate: transform, isPending: isTransforming } = useInlineTransform(dId ?? '');
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- state-reset bij value-change uit parent
   useEffect(() => { setDraft(value); }, [value]);
@@ -1149,6 +1243,14 @@ function EditableField({
     setEditing(false);
   };
   const cancel = () => { setDraft(value); setEditing(false); };
+  const applyTransform = (action: 'shorter' | 'urgent' | 'brand_voice') => {
+    const text = draft.trim();
+    if (!text || !dId) return;
+    transform(
+      { selectedText: text, action },
+      { onSuccess: (data) => { if (data?.transformedText) setDraft(data.transformedText.trim()); } },
+    );
+  };
 
   return (
     <div className={compact ? '' : 'group relative'}>
@@ -1175,10 +1277,30 @@ function EditableField({
               className="w-full text-sm border border-teal-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500"
             />
           )}
-          <div className="flex gap-1 text-xs">
+          <div className="flex items-center gap-1 text-xs flex-wrap">
             <button onClick={save} className="text-teal-700 font-medium hover:underline">Opslaan</button>
             <span className="text-gray-400">·</span>
             <button onClick={cancel} className="text-gray-500 hover:underline">Annuleer</button>
+            {dId ? (
+              <>
+                <span className="text-gray-300 mx-1">|</span>
+                {isTransforming ? (
+                  <span className="inline-flex items-center gap-1 text-gray-400"><Loader2 className="h-3 w-3 animate-spin" />AI…</span>
+                ) : (
+                  MICRO_TRANSFORMS.map((t) => (
+                    <button
+                      key={t.action}
+                      type="button"
+                      onClick={() => applyTransform(t.action)}
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:border-teal-300 hover:text-teal-700 transition-colors"
+                      title={`AI: ${t.label}`}
+                    >
+                      <Sparkles className="h-2.5 w-2.5" />{t.label}
+                    </button>
+                  ))
+                )}
+              </>
+            ) : null}
           </div>
         </div>
       ) : (
