@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 304. Step 2 P1a — WYSIWYG-preview per landingspagina-variant
+
+Uit de Step-2-functionele audit (`docs/audits/2026-06-07-step2-functional-linkedin-vs-landingpage.md`): de landingspagina-Step-2 was functioneel armer dan de social-Step-2 — je bewerkte "blind" een tekstformulier en zag de echte pagina pas in Step 3 (W1). Nu rendert elke A/B-`VariantCompareCard` een **echte (geschaalde) Puck-preview** via dezelfde renderer als Step 3 (`buildSpikePuckConfig` + `variantToPuckDataFromStructured` + `<Render>`), passend op de kaart-breedte (`transform: scale`, gemeten via ResizeObserver), niet-interactief (`pointer-events:none`). De preview rendert uit de live `v`-state → veld-edits werken direct bij; het tekstformulier staat nu ingeklapt onder de preview (preview-first), de sticky "Kies deze variant"-knop blijft. Brand-fonts via `useBrandFontLoader`; a11y-style-block geïnjecteerd. Hero toont nog geen foto (die wordt bij de keuze gegenereerd) — wel echte layout/branding/typografie/kleur-banden/CTA-stijl. tsc+lint 0; visueel geverifieerd (2-up scaled cards, Napking).
+
+- Commit: branch `feat/step2-wysiwyg-variant-preview`
+
 ### 303. Hero-image server-side gewired (einde client-race) — Napking + alle merken
 
 De header-foto bleef leeg op opnieuw een merk (Napking): de hero-`canvas-visual` werd wél gegenereerd + geüpload (~21:30, nieuwste code) maar nooit in de puckData gebust (deliverable `updatedAt` onveranderd → de client-side persist landde niet). Root cause-klasse: de hero werd CLIENT-side gewired (confirm-flow + self-heal) wat structureel onbetrouwbaar is (re-hydrate-clobber + stale HMR over merges). **Fix: hero-wiring verplaatst naar de server.** De `generate-visual`-route accepteert nu `target: 'hero'` en bust ná een geslaagde upload de eerste URL ATOMISCH in `settings.puckData` (BrandHero) + `structuredVariant.hero` (read-modify-write op een verse settings-read). De server is de enige DB-autoriteit → dit landt gegarandeerd, onafhankelijk van client-races of HMR-staleness. Self-heal + confirm-flow geven nu `target:'hero'` mee; de self-heal dropt z'n client-PATCH en dispatcht alleen nog `canvas:refresh-deliverable` om de store te re-syncen. Immediate fix voor de bestaande Napking/BB-pagina's: bestaande canvas-visual via `scripts/dev/patch-hero-image.tsx` gewired. tsc+lint 0.

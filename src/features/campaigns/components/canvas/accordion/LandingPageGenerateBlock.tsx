@@ -4,9 +4,13 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import {
   Loader2, Sparkles, AlertCircle, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon, Pencil,
 } from 'lucide-react';
+import { Render } from '@puckeditor/core';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { generateCanvasVisual, generateFeatureVisuals } from '../../../api/canvas.api';
 import { variantToPuckDataFromStructured } from '../medium/variant-to-puck-data';
+import { buildSpikePuckConfig } from '../medium/puck-config';
+import { useBrandFontLoader } from '../medium/useBrandFontLoader';
+import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
 import { assignBrandImagesToVariant } from '@/lib/landing-pages/brand-images';
 import { FidelityScoreBar } from '../FidelityScoreBar';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
@@ -15,7 +19,7 @@ import type { BrandTokens } from '@/lib/landing-pages/brand-tokens';
 import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ImageSourcePanel } from '../ImageSourcePanel';
-import type { VisualBriefSource } from '@/lib/ai/canvas-context';
+import type { VisualBriefSource, CanvasContextStack } from '@/lib/ai/canvas-context';
 import type { InsertImageSelection } from '../insert-image/types';
 import { setHeroImage as persistHeroImage } from '../../../api/canvas.api';
 
@@ -60,6 +64,9 @@ export function LandingPageGenerateBlock({
   const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
   const setActiveStep = useCanvasStore((s) => s.setActiveStep);
   const contextStack = useCanvasStore((s) => s.contextStack);
+  // Laad brand-fonts zodat de WYSIWYG-variant-previews (P1a) met de juiste
+  // typografie renderen i.p.v. system-fallback.
+  useBrandFontLoader(contextStack?.brandTokens ?? null);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
 
   // Welke variant getoond wordt in de FidelityScoreBar (klik op A/B-toggle).
@@ -689,6 +696,7 @@ export function LandingPageGenerateBlock({
               accent={i === 0 ? 'emerald' : 'violet'}
               disabled={isChoosing}
               onChoose={(edited) => void handleChooseVariant(edited)}
+              contextStack={contextStack}
             />
           ))}
         </div>
@@ -801,18 +809,95 @@ export function LandingPageGenerateBlock({
 
 // ─── Sub-componenten ──────────────────────────────────────
 
+/** Breedte waarop de LP desktop rendert; de preview wordt naar de kaart-breedte
+ *  geschaald. */
+const PREVIEW_RENDER_WIDTH = 1180;
+
+/**
+ * P1a — WYSIWYG-preview van een landing-page-variant in Step 2. Rendert de ÉCHTE
+ * Puck-pagina (zelfde renderer als Step 3) uit de structured variant, geschaald
+ * naar de kaart-breedte. Niet-interactief (pointer-events none); reflecteert live
+ * de bewerkte velden omdat hij uit de actuele `variant`-state rendert. De hero
+ * toont nog geen foto (die wordt bij de keuze gegenereerd) — wel de echte layout,
+ * branding, typografie, kleur-banden en CTA-stijl.
+ */
+function VariantPuckPreview({
+  variant,
+  contextStack,
+}: {
+  variant: LandingPageVariantContent;
+  contextStack: CanvasContextStack | null;
+}) {
+  const config = useMemo(() => buildSpikePuckConfig(contextStack), [contextStack]);
+  const puckData = useMemo(
+    () => variantToPuckDataFromStructured(variant, contextStack),
+    [variant, contextStack],
+  );
+  const outerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.34);
+  const [contentH, setContentH] = useState(0);
+
+  useEffect(() => {
+    const outer = outerRef.current;
+    const content = contentRef.current;
+    if (!outer || !content) return;
+    const measure = () => {
+      const w = outer.clientWidth;
+      if (w > 0) setScale(w / PREVIEW_RENDER_WIDTH);
+      setContentH(content.scrollHeight);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(outer);
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, [puckData]);
+
+  const brand = contextStack?.brandTokens?.brand ?? '#1FD1B2';
+  const scaledHeight = contentH > 0 ? contentH * scale : 320;
+
+  return (
+    <div
+      ref={outerRef}
+      className="w-full overflow-hidden rounded-lg border border-gray-200 bg-white"
+      aria-label="Pagina-preview"
+    >
+      <div style={{ height: scaledHeight, position: 'relative' }}>
+        <div
+          ref={contentRef}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: PREVIEW_RENDER_WIDTH,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            pointerEvents: 'none',
+          }}
+        >
+          <style dangerouslySetInnerHTML={{ __html: buildA11yStyleBlock(brand) }} />
+          <Render config={config} data={puckData} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function VariantCompareCard({
   variant: initialVariant,
   label,
   accent,
   disabled,
   onChoose,
+  contextStack,
 }: {
   variant: LandingPageVariantContent;
   label: string;
   accent: 'emerald' | 'violet';
   disabled: boolean;
   onChoose: (variant: LandingPageVariantContent) => void;
+  contextStack: CanvasContextStack | null;
 }) {
   // Local edit-state: user kan inline velden bewerken voordat hij "Kies"
   // klikt. Pennetje naast elk veld toggled edit-mode.
@@ -835,6 +920,20 @@ function VariantCompareCard({
           {label}
         </span>
       </div>
+
+      {/* P1a — WYSIWYG-preview: de echte (geschaalde) pagina uit deze variant. */}
+      <VariantPuckPreview variant={v} contextStack={contextStack} />
+      <p className="text-[11px] text-gray-500 -mt-2">
+        Live preview — header-foto wordt bij je keuze gegenereerd. Bewerk de tekst hieronder; de preview werkt direct bij.
+      </p>
+
+      {/* Tekst-bewerking — ingeklapt zodat de preview centraal staat. */}
+      <details className="group">
+        <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-1.5 select-none">
+          <Pencil className="h-3.5 w-3.5" />
+          Bewerk inhoud
+        </summary>
+        <div className="flex flex-col gap-4 pt-3">
 
       {/* HERO */}
       <VariantSection title="Hero">
@@ -996,6 +1095,8 @@ function VariantCompareCard({
           <p className="text-xs text-gray-500 italic">{v.finalCta.riskReducer}</p>
         ) : null}
       </VariantSection>
+        </div>
+      </details>
 
       <button
         type="button"
