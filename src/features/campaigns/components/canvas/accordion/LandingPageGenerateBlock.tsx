@@ -318,6 +318,9 @@ export function LandingPageGenerateBlock({
         instruction: heroVisualInstruction,
         aspectRatio: '16:9',
         count: 1,
+        // Server-side hero-wiring (atomisch) — naast de confirm-flow-persist een
+        // betrouwbare garantie dat de header-image in de puckData landt.
+        target: 'hero',
       });
       const variants = result.variants ?? [];
       if (variants.length === 0) return null;
