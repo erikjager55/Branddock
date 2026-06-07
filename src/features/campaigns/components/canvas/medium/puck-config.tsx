@@ -58,6 +58,65 @@ function resolveCtaFill(
   return { background, color, usedFallback };
 }
 
+// Gedeelde CTA-geometrie-caps zodat hero- + slot-CTA pixel-consistent zijn en
+// een ruime brand-padding niet ontspoort naar een absurd blok.
+const CTA_PADDING_Y_CAP = 20;
+const CTA_PADDING_X_CAP = 48;
+const CTA_FONT_SIZE_CAP = 20;
+
+/** Parse een CSS border-shorthand ("2px solid rgb(0,0,0)") naar breedte + kleur. */
+function parseBorderShorthand(border: string | null | undefined): { width: number; color: string | null } {
+  if (!border) return { width: 2, color: null };
+  const widthMatch = border.match(/(\d*\.?\d+)px/);
+  const width = widthMatch ? Math.max(1, Math.round(parseFloat(widthMatch[1]))) : 2;
+  const colorMatch = border.match(/#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)/);
+  return { width, color: colorMatch ? colorMatch[0] : null };
+}
+
+/**
+ * Bepaalt de visuele CTA-stijl (background/color/border) en respecteert het
+ * button-TYPE uit de brandstyle:
+ *  - OUTLINE-button (scraped border aanwezig, bv. Better Brands 2px solid zwart):
+ *    behoud de outline — rand + tekst contrast-safe tegen de sectie-bg (flipt
+ *    naar wit op een donkere sectie); achtergrond transparant wanneer de scraped
+ *    fill blendt. NIET terugvallen op een accent-fill (dat brak de brand-button).
+ *  - FILLED-button: via resolveCtaFill (translucent/blendende fill → merk-accent).
+ * Borgt dat de LP-CTA 1-op-1 de Components-tab-button volgt + altijd zichtbaar is.
+ */
+function resolveCtaVisual(
+  button: BrandTokens['button'],
+  sectionBg: string,
+  fallbackBg: string,
+  fallbackColor: string,
+): { background: string; color: string; border: string; isOutline: boolean } {
+  const hasBorder = !isNoOpBorder(button.border);
+  const bgHex = button.background ? normalizeColorToHex(button.background) : null;
+  const bgWeak = isWeakButtonBackground(button.background);
+  const bgBlends = bgHex ? contrastRatio(bgHex, sectionBg) < 1.3 : false;
+  // OUTLINE alleen wanneer er GEEN bruikbare fill is (transparent/blendend) maar
+  // WEL een rand → rand + tekst dragen de affordance, contrast tegen de sectie.
+  // (Een filled knop mét rand — DTS blauw, Zwarthout oranje — is GEEN outline:
+  // de tekst hoort tegen de fill te contrasteren, niet tegen de sectie.)
+  if (hasBorder && (bgWeak || bgBlends || !button.background)) {
+    const { width, color: borderCol } = parseBorderShorthand(button.border);
+    const baseColor = borderCol ?? button.color ?? fallbackColor;
+    const textColor = resolveOnColor(button.color ?? baseColor, sectionBg, { fallback: fallbackColor, minRatio: 4.5 });
+    const borderColor = resolveOnColor(baseColor, sectionBg, { fallback: textColor, minRatio: 3.0 });
+    return { background: 'transparent', color: textColor, border: `${width}px solid ${borderColor}`, isOutline: true };
+  }
+  // FILLED (evt. met rand): tekst contrast tegen de FILL.
+  const fill = resolveCtaFill(button.background, button.color, fallbackBg, fallbackColor, sectionBg);
+  // Figure/ground-safety: een filled knop die ≈ de sectie-bg is (pastel-accent op
+  // brand-tint) krijgt een definiërende rand zodat de vorm leesbaar blijft.
+  const fillHex = normalizeColorToHex(fill.background);
+  const lowContrast = fillHex ? contrastRatio(fillHex, sectionBg) < 3 : false;
+  const scrapedBorderOk = !fill.usedFallback && hasBorder;
+  const border = scrapedBorderOk
+    ? (button.border as string)
+    : (lowContrast ? `2px solid ${resolveOnColor(fill.background, sectionBg, { fallback: '#000000', minRatio: 3 })}` : 'none');
+  return { background: fill.background, color: fill.color, border, isOutline: false };
+}
+
 // ─── Component prop types ────────────────────────────────────
 
 export type SpikeBrandHeroProps = {
@@ -653,42 +712,37 @@ function brandHeroComponent(tokens: BrandTokens) {
       const darkHeroAccentOk = heroIsDark && contrastRatio(tokens.brand, sectionBg) >= 4.0;
       const fallbackBg = heroIsDark ? (darkHeroAccentOk ? tokens.brand : '#FFFFFF') : tokens.brand;
       const fallbackColor = heroIsDark ? (darkHeroAccentOk ? tokens.onBrand : tokens.onSurface) : tokens.onBrand;
-      // CTA-zichtbaarheid: een translucent/blendende scraped fill (bv. Better
-      // Brands `rgb(255 255 255 / .1)`) valt terug op de merk-accent zodat de
-      // knop niet als platte tekst verschijnt. Over een full-bleed FOTO is de
-      // sectie-bg niet representatief → meet dan tegen de accent-fallback zelf
-      // (alleen de alpha-gate telt daar, niet de figure/ground-check).
-      const ctaFill = resolveCtaFill(
-        tokens.button.background,
-        tokens.button.color,
+      // CTA-stijl uit de gereconcilieerde tokens.button (= Components-tab-button):
+      // outline-buttons behouden hun rand (Better Brands), filled-buttons vallen
+      // bij een translucent/blendende fill terug op de merk-accent. We meten tegen
+      // de (donkere) sectie-bg — ook bij full-bleed, want over een donkere foto-
+      // scrim hoort een SOLIDE knop te poppen (een filled brand-fill blendt dan
+      // niet met de donkere basis → blijft gevuld i.p.v. een vage outline).
+      const ctaVisual = resolveCtaVisual(
+        tokens.button,
+        sectionBg,
         fallbackBg,
         fallbackColor,
-        useFullBleed ? fallbackBg : sectionBg,
       );
       const buttonRender: React.CSSProperties & Record<`--${string}`, string> = {
-        background: ctaFill.background,
-        color: ctaFill.color,
+        background: ctaVisual.background,
+        color: ctaVisual.color,
         fontFamily: tokens.button.fontFamily ?? bodyFont,
-        fontWeight: buttonStyle.fontWeight,
-        fontSize: 16,
-        border: ctaFill.usedFallback ? 'none' : (tokens.button.border ?? 'none'),
-        // Cap button-padding op normale CTA-maten. De hints leiden paddingX af
-        // van spacing[6] — voor brands met een ruime spacing-scale (MINIMAL)
-        // geeft dat een absurd groot blok zodra de button een fill heeft.
-        padding: `${Math.min(buttonStyle.paddingY, 16)}px ${Math.min(buttonStyle.paddingX, 36)}px`,
-        // Radius uit de scraped tokens.button (gecapt op de archetype-max),
-        // consistent met StickyCtaBar/CtaBlock — niet de preset buttonStyle.radiusPx
-        // die MINIMAL→0 (scherp) forceert. tokens.button.radiusPx valt zelf terug
-        // op een lichte default (6px) wanneer de scrape geen radius gaf.
+        // Geometrie uit ÉÉN bron (tokens.button) zodat hero- + slot-CTA identiek
+        // zijn — niet langer archetype-presets (hints.buttonStyle) in de hero.
+        fontWeight: tokens.button.fontWeight,
+        fontSize: Math.min(tokens.button.fontSize, CTA_FONT_SIZE_CAP),
+        border: ctaVisual.border,
+        // Cap button-padding op normale CTA-maten (brede spacing-scale gaf anders
+        // een absurd blok). Brand-genereuze padding (20×40) blijft behouden.
+        padding: `${Math.min(tokens.button.paddingY, CTA_PADDING_Y_CAP)}px ${Math.min(tokens.button.paddingX, CTA_PADDING_X_CAP)}px`,
+        // Radius uit de scraped/gereconcilieerde tokens.button (gecapt op de
+        // archetype-max) — Better Brands = 0 (scherp).
         borderRadius: Math.min(tokens.button.radiusPx, constraints.maxRadiusPx),
         cursor: 'pointer',
         textAlign: 'center',
-        // textTransform uit de scraped tokens.button (respecteert de bron-stijl,
-        // bv. Napking = "none") i.p.v. de archetype-hint die MINIMAL→uppercase
-        // forceert. tokens.button valt zelf terug op de archetype-default als de
-        // scrape niets gaf, dus uppercase-merken blijven uppercase.
         textTransform: tokens.button.textTransform,
-        letterSpacing: buttonStyle.letterSpacing,
+        letterSpacing: tokens.button.letterSpacing,
         transition: tokens.button.transition ?? undefined,
         width: 'fit-content',
         maxWidth: '380px',
@@ -1012,38 +1066,24 @@ function brandCtaComponent(
               op de gebrande panel popt de accent (geen vibrant→charcoal-
               downgrade meer; de panel-bg levert het contrast). */}
           {(() => {
-            // CTA-zichtbaarheid: translucent/blendende scraped fill → merk-accent
-            // (anders verschijnt de knop als platte tekst op de panel).
-            const ctaFill = resolveCtaFill(tokens.button.background, tokens.button.color, tokens.brand, tokens.onBrand, panelBg);
-            const ctaBg = ctaFill.background;
-            const ctaColor = ctaFill.color;
-            // Review-fix: op een lichte brand-tint-panel kan een pastel-accent-
-            // knop in dezelfde tint oplossen (lage figure/ground). Geef 'm dan
-            // een definiërende rand zodat de knop-vorm leesbaar blijft.
-            const ctaNeedsBorder = !isDarkPanel && contrastRatio(ctaBg, panelBg) < 3;
-            // Cap letterSpacing voor lange CTA-labels: 3px × 30 char = 90px
-            // extra width. Voor RULER/SAGE/MAGICIAN (premium) is dat te
-            // breed. Bij text-length > 20 chars: cap letterSpacing op 0.1em.
+            // CTA-stijl uit tokens.button (= Components-tab-button): outline behoudt
+            // z'n rand (Better Brands), filled valt bij blendende fill terug op de
+            // merk-accent. Eén bron + dezelfde caps als de hero-CTA → consistent.
+            const ctaVisual = resolveCtaVisual(tokens.button, panelBg, tokens.brand, tokens.onBrand);
+            // Cap letterSpacing voor lange CTA-labels (3px × 30 char = 90px extra).
             const labelLength = (label ?? '').length;
             const capLetterSpacing = labelLength > 20 ? '0.1em' : btn.letterSpacing;
             const ctaStyle: React.CSSProperties & Record<`--${string}`, string> = {
               display: 'inline-block',
-              background: ctaBg,
-              color: ctaColor,
-              // Pri 1 scraped, Pri 2 bodyFont (geen label-preset omdat
-              // dat MINIMAL-DM-Sans / EDITORIAL-Inter is — niet de
-              // werkelijke brand-font).
+              background: ctaVisual.background,
+              color: ctaVisual.color,
               fontFamily: tokens.button.fontFamily ?? bodyFont,
               fontWeight: btn.fontWeight,
-              fontSize: btn.fontSize,
+              fontSize: Math.min(btn.fontSize, CTA_FONT_SIZE_CAP),
               textDecoration: 'none',
-              padding: `${btn.paddingY}px ${btn.paddingX}px`,
-              borderRadius: btn.radiusPx,
-              // Bij accent-fallback de scraped border negeren (die hoorde bij de
-              // weggevallen translucent fill); alleen de figure/ground-rand zetten.
-              border: ctaFill.usedFallback
-                ? (ctaNeedsBorder ? `2px solid ${tokens.onSurface}` : 'none')
-                : (tokens.button.border ?? (ctaNeedsBorder ? `2px solid ${tokens.onSurface}` : 'none')),
+              padding: `${Math.min(btn.paddingY, CTA_PADDING_Y_CAP)}px ${Math.min(btn.paddingX, CTA_PADDING_X_CAP)}px`,
+              borderRadius: Math.min(btn.radiusPx, constraints.maxRadiusPx),
+              border: ctaVisual.border,
               textTransform: btn.textTransform,
               letterSpacing: capLetterSpacing,
               transition: tokens.button.transition
@@ -2076,6 +2116,7 @@ function brandNavComponent(tokens: BrandTokens) {
     },
     render: ({ brandName, links, ctaLabel, ctaHref }: BrandNavProps) => {
       const nav = tokens.styleguideComponents.TOP_NAVIGATION;
+      const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
       const navStyle: React.CSSProperties = {
         display: 'flex',
         alignItems: 'center',
@@ -2093,14 +2134,14 @@ function brandNavComponent(tokens: BrandTokens) {
         color: nav?.color ?? tokens.onSurface,
       };
       const navBg = nav?.background && !isTransparentBackground(nav.background) ? nav.background : tokens.surface;
-      const navCtaFill = resolveCtaFill(tokens.button.background, tokens.button.color, tokens.brand, tokens.onBrand, navBg);
+      const navCtaVisual = resolveCtaVisual(tokens.button, navBg, tokens.brand, tokens.onBrand);
       const ctaInline: React.CSSProperties = {
-        background: navCtaFill.background,
-        color: navCtaFill.color,
+        background: navCtaVisual.background,
+        color: navCtaVisual.color,
         fontFamily: tokens.button.fontFamily ?? bodyFont,
         padding: '8px 18px',
-        borderRadius: tokens.button.radiusPx,
-        border: navCtaFill.usedFallback ? 'none' : (tokens.button.border ?? 'none'),
+        borderRadius: Math.min(tokens.button.radiusPx, constraints.maxRadiusPx),
+        border: navCtaVisual.border,
         textDecoration: 'none',
         fontSize: 14,
         fontWeight: tokens.button.fontWeight,

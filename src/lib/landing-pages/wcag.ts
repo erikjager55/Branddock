@@ -73,8 +73,12 @@ const MIN_RATIOS: Record<WCAGLevel, Record<TextSize, number>> = {
  * Returns 1.0 (no contrast) tot 21.0 (zwart op wit). Hogere is beter.
  */
 export function contrastRatio(fg: string, bg: string): number {
-  const lFg = relativeLuminance(fg);
-  const lBg = relativeLuminance(bg);
+  // Normaliseer naar 6-hex: relativeLuminance leunt op hexToRgb (alleen 6-hex)
+  // en behandelde een `rgb(...)` / 3-/8-hex / space-syntax-kleur anders als zwart
+  // (luminance 0) → fout contrast → bv. witte tekst op een witte CTA-knop. Door
+  // hier te normaliseren worden ALLE contrast-checks robuust voor scraped kleuren.
+  const lFg = relativeLuminance(normalizeColorToHex(fg) ?? fg);
+  const lBg = relativeLuminance(normalizeColorToHex(bg) ?? bg);
   const lighter = Math.max(lFg, lBg);
   const darker = Math.min(lFg, lBg);
   return (lighter + 0.05) / (darker + 0.05);
