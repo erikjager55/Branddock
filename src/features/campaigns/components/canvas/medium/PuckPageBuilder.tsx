@@ -4,14 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Puck, Render, type Data } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
-import { Loader2, Shield, Wand2, Layout, X, ScanEye } from 'lucide-react';
+import { Loader2, Shield, Wand2, Layout, X, ScanEye, ImageIcon } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
 import { variantToPuckData } from './variant-to-puck-data';
 import { assignSectionBands } from './puck-templates/landing-page-from-structured';
-import { generateCanvasVisual } from '../../../api/canvas.api';
-import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
+import { generateCanvasVisual, generateFeatureVisuals } from '../../../api/canvas.api';
+import { buildHeroVisualInstruction, buildFeatureVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
 import { useBrandFontLoader } from './useBrandFontLoader';
 import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
@@ -211,6 +211,71 @@ export function PuckPageBuilder({
       .catch((err) => console.warn('[PuckPageBuilder] hero self-heal failed', err))
       .finally(() => setIsHealingHero(false));
   }, [deliverableId, puckData, contextStack]);
+
+  // ── P2b — feature-beeld-transparantie + retry ───────────────
+  // Sommige features renderen als icon (feature-gen over-budget/timeout, of
+  // bewust icon-design). Detecteer features ZONDER beeld + bied een opt-in knop
+  // om ze alsnog te genereren (geen waarschuwing — icons kunnen gewenst zijn).
+  const featureGaps = useMemo(() => {
+    const gaps: Array<{ ci: number; fi: number; title: string; description: string }> = [];
+    const content = Array.isArray(puckData?.content) ? puckData.content : [];
+    content.forEach((c, ci) => {
+      if (c?.type !== 'FeatureGrid' && c?.type !== 'FeatureSplit') return;
+      const feats = (c.props as { features?: Array<{ title?: string; description?: string; imageUrl?: string | null }> })?.features ?? [];
+      feats.forEach((f, fi) => {
+        const has = typeof f.imageUrl === 'string' && f.imageUrl.trim().length > 0;
+        if (!has) gaps.push({ ci, fi, title: f.title ?? '', description: f.description ?? '' });
+      });
+    });
+    return gaps;
+  }, [puckData]);
+  const [isFillingFeatures, setIsFillingFeatures] = useState(false);
+  const [featureFillMsg, setFeatureFillMsg] = useState<string | null>(null);
+
+  const fillFeatureImages = useCallback(() => {
+    if (!deliverableId || featureGaps.length === 0) return;
+    const heroItem = (puckData.content ?? []).find((c) => c?.type === 'BrandHero');
+    const headline = ((heroItem?.props as { headline?: string })?.headline) ?? '';
+    const prompts = featureGaps.map((g) =>
+      buildFeatureVisualInstruction({ heading: g.title, body: g.description }, headline, contextStack),
+    );
+    setIsFillingFeatures(true);
+    setFeatureFillMsg(null);
+    generateFeatureVisuals(deliverableId, prompts)
+      .then((urls) => {
+        const got = urls.filter((u) => !!u).length;
+        if (got === 0) { setFeatureFillMsg('Geen feature-beelden gegenereerd — probeer opnieuw.'); return; }
+        setPuckData((prev) => {
+          const items = (prev.content ?? []) as SpikeData['content'];
+          // Volledig immutable: clone alleen gewijzigde componenten + hun
+          // features-array (geen mutatie van de vorige-state arrays).
+          const nextContent = items.map((c, ci) => {
+            if (c?.type !== 'FeatureGrid' && c?.type !== 'FeatureSplit') return c;
+            const props = c.props as { features?: Array<Record<string, unknown>> };
+            if (!Array.isArray(props.features)) return c;
+            let changed = false;
+            const newFeats = props.features.map((f, fi) => {
+              const k = featureGaps.findIndex((g) => g.ci === ci && g.fi === fi);
+              if (k >= 0 && urls[k]) { changed = true; return { ...f, imageUrl: urls[k] }; }
+              return f;
+            });
+            return changed ? { ...c, props: { ...props, features: newFeats } } : c;
+          }) as SpikeData['content'];
+          const next = { ...prev, content: nextContent } as SpikeData;
+          fetch(`/api/studio/${deliverableId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings: { puckData: next } }),
+          })
+            .then((res) => { if (res.ok) window.dispatchEvent(new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } })); })
+            .catch((err) => console.warn('[PuckPageBuilder] feature-fill persist failed', err));
+          return next;
+        });
+        setFeatureFillMsg(got < featureGaps.length ? `${got}/${featureGaps.length} beelden gegenereerd.` : null);
+      })
+      .catch((err) => setFeatureFillMsg(err instanceof Error ? err.message : 'Genereren mislukt'))
+      .finally(() => setIsFillingFeatures(false));
+  }, [deliverableId, featureGaps, puckData, contextStack]);
 
   const handlePuckChange = useCallback(
     (data: SpikeData) => {
@@ -421,6 +486,22 @@ export function PuckPageBuilder({
         ) : null}
         {pageError ? (
           <span className="text-xs text-red-600 mr-2">{pageError}</span>
+        ) : null}
+        {featureFillMsg ? (
+          <span className="text-xs text-gray-500 mr-2">{featureFillMsg}</span>
+        ) : null}
+        {/* P2b — opt-in: genereer beelden voor features die nu als icon renderen. */}
+        {featureGaps.length > 0 ? (
+          <button
+            type="button"
+            onClick={fillFeatureImages}
+            disabled={isFillingFeatures}
+            title="Genereer beelden voor features die nu een icon tonen"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 text-xs font-medium hover:border-teal-300 hover:text-teal-700 disabled:opacity-50 transition-colors"
+          >
+            {isFillingFeatures ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
+            {isFillingFeatures ? 'Genereren…' : `${featureGaps.length} feature${featureGaps.length === 1 ? '' : 's'} zonder beeld`}
+          </button>
         ) : null}
         <ActionButton
           icon={pageBusy === 'auto-iterate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
