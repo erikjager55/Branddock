@@ -272,6 +272,9 @@ export async function generateCanvasVisual(
      *  `sceneOverrides[sceneId].visualText`, falls back to the parsed
      *  `[VISUAL: …]` segment from the scene's script content. */
     sceneVisualPrompt?: string;
+    /** 'hero': de route bust de eerste URL atomisch server-side in de LP-puckData
+     *  (BrandHero) + structuredVariant → betrouwbare header-image zonder client-race. */
+    target?: 'hero';
   },
 ): Promise<GenerateVisualResponse> {
   const res = await fetch(`/api/studio/${deliverableId}/generate-visual`, {

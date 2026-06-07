@@ -149,6 +149,13 @@ const requestSchema = z
      * brief is voor 1 visual, niet voor 3 verschillende scenes.
      */
     sceneVisualPrompt: z.string().max(1500).optional(),
+    /**
+     * Wanneer 'hero': de route bust de eerste geüploade URL ATOMISCH server-side
+     * in de landing-page-puckData (BrandHero.heroVisualUrl) + structuredVariant.
+     * Elimineert de client-race (self-heal/confirm-flow persistten dit voorheen
+     * client-side, wat onbetrouwbaar bleek). Andere flows laten dit leeg.
+     */
+    target: z.enum(['hero']).optional(),
   })
   .strict()
   .or(z.undefined());
@@ -464,6 +471,46 @@ export async function POST(request: Request, { params }: RouteParams) {
         { error: 'All image uploads failed after generation.' },
         { status: 502 },
       );
+    }
+
+    // Server-side hero-wiring (atomisch): bust de eerste geüploade URL direct in
+    // de landing-page-puckData (BrandHero) + structuredVariant. Voorheen deed de
+    // client dit (confirm-flow/self-heal) — onbetrouwbaar door een race + stale
+    // HMR, waardoor de header-image leeg bleef ondanks geslaagde generatie. De
+    // server is de enige autoriteit op de DB → dit landt gegarandeerd. Best-effort
+    // + idempotent; we herlezen de settings vlak vóór de write (klein race-window).
+    if (body?.target === 'hero' && uploads[0]?.url) {
+      try {
+        const heroUrl = uploads[0].url;
+        const fresh = await prisma.deliverable.findUnique({
+          where: { id: deliverableId },
+          select: { settings: true },
+        });
+        const settings = (fresh?.settings ?? {}) as Record<string, unknown>;
+        const pd = settings.puckData as { content?: Array<{ type?: string; props?: Record<string, unknown> }> } | undefined;
+        let patched = false;
+        if (Array.isArray(pd?.content)) {
+          for (const c of pd!.content!) {
+            if (c.type === 'BrandHero' && c.props) {
+              c.props.heroVisualUrl = heroUrl;
+              patched = true;
+            }
+          }
+        }
+        const sv = settings.structuredVariant as { hero?: Record<string, unknown> } | undefined;
+        if (sv?.hero) sv.hero.heroVisualUrl = heroUrl;
+        if (patched || sv?.hero) {
+          await prisma.deliverable.update({
+            where: { id: deliverableId },
+            data: { settings: settings as never },
+          });
+        }
+      } catch (err) {
+        console.error(
+          '[generate-visual] server-side hero-wiring faalde:',
+          err instanceof Error ? err.message : err,
+        );
+      }
     }
 
     // Persist as DeliverableComponent variantGroup='visual' of

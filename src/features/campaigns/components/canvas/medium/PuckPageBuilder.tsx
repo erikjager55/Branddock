@@ -186,12 +186,14 @@ export function PuckPageBuilder({
     Promise.resolve()
       .then(() => {
         setIsHealingHero(true);
-        return generateCanvasVisual(deliverableId, { instruction, aspectRatio: '16:9', count: 1 });
+        // target:'hero' → de route PERSISTEERT de hero atomisch server-side
+        // (BrandHero + structuredVariant). Geen client-side PATCH meer (die was
+        // race-gevoelig en faalde stil); hier alleen lokaal tonen + store re-syncen.
+        return generateCanvasVisual(deliverableId, { instruction, aspectRatio: '16:9', count: 1, target: 'hero' });
       })
       .then((result) => {
         const url = result.variants?.[0]?.url;
         if (!url) return;
-        let nextData: SpikeData | null = null;
         setPuckData((prev) => {
           const items = (prev.content ?? []) as SpikeData['content'];
           const i = items.findIndex((c) => c?.type === 'BrandHero');
@@ -200,25 +202,11 @@ export function PuckPageBuilder({
             ...items[i],
             props: { ...items[i].props, heroVisualUrl: url },
           } as (typeof items)[number];
-          nextData = { ...prev, content: items.map((c, idx) => (idx === i ? updatedHero : c)) };
-          return nextData;
+          return { ...prev, content: items.map((c, idx) => (idx === i ? updatedHero : c)) };
         });
-        if (!nextData) return;
-        // Direct persisten (niet de debounce) zodat het beeld de re-mount overleeft.
-        // Daarna 'canvas:refresh-deliverable' dispatchen zodat CanvasPage /context
-        // refetcht en de store (contextStack.puckData) MET het beeld synct — anders
-        // kan de re-hydrate-effect de zojuist-gezette hero weer overschrijven met de
-        // stale (beeldloze) store-versie (clobber-race).
-        return fetch(`/api/studio/${deliverableId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ settings: { puckData: nextData } }),
-        })
-          .then((res) => {
-            if (!res.ok) throw new Error(`persist HTTP ${res.status}`);
-            window.dispatchEvent(new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }));
-          })
-          .catch((err) => console.warn('[PuckPageBuilder] hero self-heal persist failed', err));
+        // De server heeft de hero al gepersist; refetch /context zodat de store
+        // (contextStack.puckData) synct → re-hydrate-effect clobbert niet.
+        window.dispatchEvent(new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }));
       })
       .catch((err) => console.warn('[PuckPageBuilder] hero self-heal failed', err))
       .finally(() => setIsHealingHero(false));
