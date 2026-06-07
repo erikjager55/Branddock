@@ -561,8 +561,14 @@ function brandHeroComponent(tokens: BrandTokens) {
 
       // ── Section style ──────────────────────────────────────
       const sectionStyle: React.CSSProperties = {
-        background: backgroundImage ?? sectionBg,
-        backgroundImage: heroDepthBg ?? (backgroundImage ? undefined : undefined),
+        // BUGFIX: alléén longhands — NOOIT de `background`-shorthand naast de
+        // `backgroundImage`-longhand. React's client-render past de shorthand toe
+        // en wist daarna background-image omdat de longhand undefined was → de
+        // hero-foto verdween (SSR serialiseert undefined wég, dus de harness-
+        // render toonde 'm wél; de client wiste 'm). Nu: backgroundColor (basis)
+        // + backgroundImage (foto+scrim óf depth-textuur) als losse longhands.
+        backgroundColor: sectionBg,
+        backgroundImage: backgroundImage ?? heroDepthBg,
         backgroundSize: backgroundImage ? 'cover' : getBackgroundDepthSize(heroDepthLevel),
         backgroundPosition: backgroundImage ? 'center' : undefined,
         color: sectionColor,

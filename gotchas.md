@@ -199,3 +199,15 @@ Import-chain trace: client component → barrel `@/lib/ad-validation` → `runne
 - Library design: split barrel als type/runtime grens niet duidelijk is. Pattern: `lib/X/types.ts` (client-safe) + `lib/X/server.ts` (Node-only) + `lib/X/index.ts` (re-exports beide, alleen voor server-side gebruik).
 - Vóór elke push die runner / Prisma / pg / fs / tls / crypto raakt: run lokaal `DATABASE_URL=... BETTER_AUTH_SECRET=... npm run build` — duurt ~1-2 min maar vangt bundler-resolve issues die tsc + eslint missen.
 - Pre-existing PostToolUse hook runt geen build (terecht — te duur per-edit). Pre-push hook met `npm run build --silent` is een toekomstige defense-laag voor projecten die client/server-grens-fouten vaak missen.
+
+## 2026-06-07: React client-render WIST background-image bij `background`-shorthand + undefined `backgroundImage`-longhand (hero-foto onzichtbaar)
+**What went wrong**: De LP-hero-`<section>` (puck-config `brandHeroComponent`) zette in hetzelfde inline-style-object ZOWEL `background: <gradient>, url(foto)` (shorthand, dróeg de foto) ALS `backgroundImage: <undefined>` (longhand). Op de **client** past React `setValueForStyles` de props in object-volgorde toe: eerst de shorthand (zet background-image), dán de longhand `backgroundImage` — en omdat die undefined was, doet React `style.setProperty('background-image','')` → **wist de foto** die de shorthand net zette. `background-size:cover` + witte tekst bleven → lichte/transparante hero met onleesbare witte kop. De feature-`<img>`-tags werkten wél (geen shorthand-conflict).
+
+Waarom moeilijk te vinden: **SSR (`renderToStaticMarkup`) serialiseert de style naar een STRING en laat undefined wég** → de harness-render (+ elke server-render) toonde de foto WÉL. Alleen de client-imperatieve render wiste 'm. Data (puckData.heroVisualUrl), `/context`-API, image-serving (200), CSP (dev=geen) en re-hydration waren allemaal correct — uren debuggen omdat alles behalve de client-render klopte.
+
+Bewezen via Playwright: `el.style.background = '<grad>, url(...)'; el.style.setProperty('background-image','')` → `getComputedStyle().backgroundImage === 'none'`. Longhands-only → `HAS url`.
+
+**Rule**:
+- Meng NOOIT de `background`-shorthand met een `backgroundImage`/`backgroundColor`-longhand in hetzelfde React-inline-style-object. Gebruik ALLEEN longhands (`backgroundColor` + `backgroundImage` + `backgroundSize`/`Position`). Een undefined longhand naast een shorthand wist wat de shorthand zette — client-only.
+- Een `undefined` style-waarde naast een shorthand = stille reset op de client. SSR maskeert dit (string-serialisatie laat undefined weg) → een SSR-harness reproduceert client-render-bugs van deze klasse NIET. Verifieer render-bugs in een ECHTE browser (Playwright `getComputedStyle`), niet alleen via `renderToStaticMarkup`.
+- Bij "alle data klopt maar het rendert niet": vergelijk SSR-output met de live client-DOM (DevTools) — een verschil wijst op een client-imperatieve-style-eigenaardigheid (undefined-reset, shorthand/longhand-volgorde).
