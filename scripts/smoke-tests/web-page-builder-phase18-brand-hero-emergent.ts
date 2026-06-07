@@ -167,10 +167,12 @@ group('LINFI (RULER + MINIMAL) — full-bleed placeholder, dark frame');
   // Display weight 300 (sparse, lichtste)
   assert('display weight 300', html.includes('font-weight:300'));
   // Button: scraped radius 0 (sharp) — renderer leest tokens.button.radiusPx,
-  // niet de layoutStyle-preset. + uppercase + 0.1em (archetype-default).
+  // niet de layoutStyle-preset. Hero- + slot-CTA delen nu ÉÉN bron (tokens.button)
+  // i.p.v. archetype-presets → letterSpacing volgt tokens.button.letterSpacing
+  // (hier de DEFAULT 0.01em), niet de archetype-default 0.1em (button-conformiteit).
   assert('button radius 0 (scraped)', html.includes('border-radius:0'));
   assert('button uppercase', html.includes('text-transform:uppercase'));
-  assert('button letter-spacing 0.1em', html.includes('letter-spacing:0.1em'));
+  assert('button letter-spacing uit tokens.button (0.01em)', html.includes('letter-spacing:0.01em'));
 }
 
 group('LINFI met heroVisualUrl — full-bleed image rendering');

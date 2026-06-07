@@ -117,6 +117,34 @@ function resolveCtaVisual(
   return { background: fill.background, color: fill.color, border, isOutline: false };
 }
 
+// ─── Sectie-band (achtergrond-ritmiek) ──────────────────────
+
+/** Meng twee hex-kleuren: t=0 → a, t=1 → b. */
+function mixHex(a: string, b: string, t: number): string {
+  const ha = normalizeColorToHex(a);
+  const hb = normalizeColorToHex(b);
+  if (!ha || !hb) return a;
+  const pa = [parseInt(ha.slice(1, 3), 16), parseInt(ha.slice(3, 5), 16), parseInt(ha.slice(5, 7), 16)];
+  const pb = [parseInt(hb.slice(1, 3), 16), parseInt(hb.slice(3, 5), 16), parseInt(hb.slice(5, 7), 16)];
+  const mix = pa.map((c, i) => Math.round(c + (pb[i] - c) * t));
+  return `#${mix.map((c) => Math.max(0, Math.min(255, c)).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * Achtergrond voor een sectie-band. 'base' = de surface; 'alt' = een subtiele,
+ * contrast-veilige tint zodat aangrenzende secties visueel verschillen
+ * (user-eis: ritmiek). De tint is een lichte verschuiving van de surface RICHTING
+ * onSurface (donkerder bij een lichte surface, lichter bij een donkere) → blijft
+ * universeel veilig: de renderer resolvet alle tekst alsnog tegen déze bg.
+ * Prefereert een gescrapete `secondarySurface` wanneer aanwezig.
+ */
+export const SECTION_ALT_MIX = 0.06;
+export function sectionBandBg(tokens: BrandTokens, bandTone: SectionBandTone | undefined): string {
+  if (bandTone !== 'alt') return tokens.surface;
+  if (tokens.secondarySurface) return tokens.secondarySurface;
+  return mixHex(tokens.surface, tokens.onSurface, SECTION_ALT_MIX);
+}
+
 // ─── Component prop types ────────────────────────────────────
 
 export type SpikeBrandHeroProps = {
@@ -156,13 +184,20 @@ export type FeatureItem = {
    *  de FeatureGrid de icon-badge door deze foto (materiaal-/product-shot). */
   imageUrl?: string | null;
 };
+/** Achtergrond-band voor sectie-ritmiek: 'base' = surface, 'alt' = subtiele
+ *  contrast-veilige tint. Door de builder afwisselend toegekend; de renderer
+ *  resolvet alle tekst/borders tegen de gekozen band-bg. */
+export type SectionBandTone = 'base' | 'alt';
+
 export type FeatureGridProps = {
   columns: '2' | '3' | '4';
   features: FeatureItem[];
+  bandTone?: SectionBandTone;
 };
 /** P7 FeatureSplit — editorial A-B-A-B; zelfde items, geen columns. */
 export type FeatureSplitProps = {
   features: FeatureItem[];
+  bandTone?: SectionBandTone;
 };
 
 export type TestimonialProps = {
@@ -181,11 +216,13 @@ export type PricingTier = {
 };
 export type PricingTableProps = {
   tiers: PricingTier[];
+  bandTone?: SectionBandTone;
 };
 
 export type FaqItem = { question: string; answer: string };
 export type FAQProps = {
   items: FaqItem[];
+  bandTone?: SectionBandTone;
 };
 
 export type FooterLink = { label: string; href: string };
@@ -197,6 +234,7 @@ export type FooterProps = {
 
 export type RichTextProps = {
   content: string;
+  bandTone?: SectionBandTone;
 };
 
 /** C9 — StickyCtaBar: fixed bottom-bar met label + CTA, sticky on scroll.
@@ -216,6 +254,7 @@ export type StatsItem = {
 };
 export type StatsBlockProps = {
   items: StatsItem[];
+  bandTone?: SectionBandTone;
 };
 
 export type BrandNavLink = { label: string; href: string };
@@ -314,15 +353,8 @@ function statsBlockComponent(tokens: BrandTokens) {
   // ondanks zijn donkere identiteit.
   const darkBg = tokens.darkSectionBg ?? tokens.onSurface;
   const useDarkBg = tokens.hasDarkSections && tokens.darkSectionBg != null;
-  const sectionBg = useDarkBg ? darkBg : tokens.surface;
-  // Review-fix: clamp het cijfer (de accent) tegen de échte band-bg. Een
-  // donker-merk waarvan de accent zelf donker is (brand recycelt onSurface)
-  // gaf anders near-black cijfers op een near-black band (onzichtbaar). Op
-  // licht blijft de accent ongemoeid. 3:1 = AA-large (cijfers zijn display).
-  const numberColor = useDarkBg
-    ? resolveOnColor(tokens.brand, sectionBg, { fallback: '#FFFFFF', minRatio: 3.0 })
-    : tokens.brand;
-  const labelColor = useDarkBg ? '#FFFFFF' : tokens.surfaceMuted;
+  // bg/number/label/border worden per-band IN render berekend (bandTone) zodat
+  // contrast tegen de échte band-bg geclampt wordt — zie render().
   // Number sizes — gebruik scraped display.fontSize wanneer aanwezig, anders
   // archetype-default 64-88px range
   const numberFontSize = tbr.display.fontSize ?? (useDarkBg ? 72 : 48);
@@ -348,10 +380,19 @@ function statsBlockComponent(tokens: BrandTokens) {
         { value: '24/7', label: 'Support' },
       ],
     },
-    render: ({ items }: StatsBlockProps) => (
+    render: ({ items, bandTone }: StatsBlockProps) => {
+      // Band-ritmiek: donker-merk houdt z'n donkere band; een licht-merk krijgt
+      // bij 'alt' de subtiele tint. Alle kleuren resolven tegen de échte band-bg.
+      const effBg = useDarkBg ? darkBg : sectionBandBg(tokens, bandTone);
+      const effNumberColor = useDarkBg
+        ? resolveOnColor(tokens.brand, effBg, { fallback: '#FFFFFF', minRatio: 3.0 })
+        : resolveOnColor(tokens.brand, effBg, { fallback: tokens.onSurface, minRatio: 3.0 });
+      const effLabelColor = useDarkBg ? '#FFFFFF' : readableTextColor(tokens.surfaceMuted, effBg, tokens.onSurface);
+      const effBorderColor = useDarkBg ? 'rgba(255,255,255,0.15)' : resolveOnColor(tokens.surfaceBorder, effBg, { fallback: tokens.onSurface, minRatio: 1.3 });
+      return (
       <section
         style={{
-          background: sectionBg,
+          background: effBg,
           padding: `${tokens.sectionRhythm.sectionPaddingY}px ${responsivePaddingX(tokens.sectionRhythm.sectionPaddingX)}`,
           fontFamily: bodyFont,
         }}
@@ -375,7 +416,7 @@ function statsBlockComponent(tokens: BrandTokens) {
               style={{
                 textAlign: 'center',
                 padding: '24px 16px',
-                borderLeft: i > 0 ? `1px solid ${useDarkBg ? 'rgba(255,255,255,0.15)' : tokens.surfaceBorder}` : undefined,
+                borderLeft: i > 0 ? `1px solid ${effBorderColor}` : undefined,
               }}
             >
               <div
@@ -390,7 +431,7 @@ function statsBlockComponent(tokens: BrandTokens) {
                   })(),
                   fontWeight: numberFontWeight,
                   lineHeight: numberLineHeight,
-                  color: numberColor,
+                  color: effNumberColor,
                   marginBottom: 12,
                 }}
               >
@@ -403,7 +444,7 @@ function statsBlockComponent(tokens: BrandTokens) {
                   fontWeight: tokens.text.banner.weight,
                   letterSpacing: tokens.text.banner.letterSpacing,
                   textTransform: tokens.text.banner.textTransform,
-                  color: labelColor,
+                  color: effLabelColor,
                   opacity: 0.85,
                 }}
               >
@@ -413,7 +454,8 @@ function statsBlockComponent(tokens: BrandTokens) {
           ))}
         </div>
       </section>
-    ),
+      );
+    },
   };
 }
 
@@ -1228,16 +1270,15 @@ function featureGridComponent(tokens: BrandTokens, provenance?: TokenProvenance)
         { title: 'Schaalbaar', description: 'Groeit mee met je business.', icon: 'trending-up' },
       ],
     },
-    render: ({ features }: FeatureGridProps) => {
+    render: ({ features, bandTone }: FeatureGridProps) => {
       // #8 bg-depth — voor FeatureGrid section. Texture matched
       // archetype: JESTER/CREATOR krijgen rich, MINIMAL subtle, etc.
       const depthLevel = pickBackgroundDepth(tokens.archetype, tokens.layoutStyle);
       const depthBg = buildBackgroundDepth(depthLevel, tokens.brand);
       const depthBgSize = getBackgroundDepthSize(depthLevel);
-      // 1-op-1 met brand-styleguide: gebruik secondarySurface wanneer
-      // gescraped (LINFI's tweede lichte bg) zodat FeatureGrid visueel
-      // alternates t.o.v. de witte Hero/Testimonial/FAQ sections.
-      const featureGridBg = tokens.secondarySurface ?? tokens.surface;
+      // Band-ritmiek: bandTone bepaalt base (surface) vs alt (subtiele tint);
+      // sectionBandBg prefereert een gescrapete secondarySurface bij 'alt'.
+      const featureGridBg = sectionBandBg(tokens, bandTone);
       return (
       <section
         style={{
@@ -1306,9 +1347,12 @@ function featureGridComponent(tokens: BrandTokens, provenance?: TokenProvenance)
             // cardWrapper-bg-logica hieronder. Tekst in de card wordt hiertegen
             // gecontrasteerd, NIET tegen tokens.surface (zwarthout: zwarte
             // PRODUCT_CARD met donkere body-tekst was de bug).
+            // In TRULY-flat modus (forceFlatCards, geen card-wrapper) zit de tekst
+            // direct op de sectie-band → resolve tegen featureGridBg, niet surface.
+            const isTrulyFlat = !useCard && constraints.forceFlatCards;
             const cardBg = productCard?.background && !isTransparentBackground(productCard.background)
               ? productCard.background
-              : tokens.surface;
+              : (isTrulyFlat ? featureGridBg : tokens.surface);
             // PRODUCT_CARD fallback-chain: wanneer scraped border + boxShadow
             // beide leeg zijn, valt het terug op archetype-elevation zodat de
             // card niet visueel verdwijnt in de section-bg. Anders raken brands
@@ -1493,11 +1537,13 @@ function featureSplitComponent(tokens: BrandTokens) {
         { title: 'Tweede pilaar', description: 'Tweede bewijs, afwisselend uitgelijnd.', imageUrl: null },
       ],
     },
-    render: ({ features }: FeatureSplitProps) => (
+    render: ({ features, bandTone }: FeatureSplitProps) => {
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      return (
       <section
         style={{
           padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
-          background: tokens.surface,
+          background: sectionBg,
           fontFamily: bodyFont,
         }}
       >
@@ -1532,7 +1578,7 @@ function featureSplitComponent(tokens: BrandTokens) {
                       letterSpacing: tbr.heading.letterSpacing ?? undefined,
                       textTransform: tbr.heading.textTransform ?? undefined,
                       margin: '0 0 12px',
-                      color: resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), tokens.surface, { fallback: tokens.onSurface, minRatio: 3.0 }),
+                      color: resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), sectionBg, { fallback: tokens.onSurface, minRatio: 3.0 }),
                     }}
                   >
                     {f.title}
@@ -1543,7 +1589,7 @@ function featureSplitComponent(tokens: BrandTokens) {
                       lineHeight: tbr.body.lineHeight ?? 1.6,
                       maxWidth: '40em',
                       margin: 0,
-                      color: resolveOnColor(tbr.body.color ?? tokens.surfaceMuted, tokens.surface, { fallback: tokens.onSurface }),
+                      color: resolveOnColor(tbr.body.color ?? tokens.surfaceMuted, sectionBg, { fallback: tokens.onSurface }),
                     }}
                   >
                     {f.description}
@@ -1554,7 +1600,8 @@ function featureSplitComponent(tokens: BrandTokens) {
           })}
         </div>
       </section>
-    ),
+      );
+    },
   };
 }
 
@@ -1778,12 +1825,16 @@ function pricingTableComponent(tokens: BrandTokens) {
         { name: 'Pro', price: '€49/mnd', features: 'Alle features\nPriority support', highlighted: true },
       ],
     },
-    render: ({ tiers }: PricingTableProps) => (
+    render: ({ tiers, bandTone }: PricingTableProps) => {
+      // Band-ritmiek op de sectie; de tier-cards blijven surface (wit) zodat ze
+      // op de tint los-poppen — hun tekst resolvet tegen de card-bg (ongewijzigd).
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      return (
       <section
         style={{
           padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
           fontFamily: bodyFont,
-          background: tokens.surface,
+          background: sectionBg,
         }}
       >
         <div
@@ -1883,7 +1934,8 @@ function pricingTableComponent(tokens: BrandTokens) {
           })}
         </div>
       </section>
-    ),
+      );
+    },
   };
 }
 
@@ -1921,12 +1973,17 @@ function faqComponent(tokens: BrandTokens) {
         { question: 'Wat kost het?', answer: 'Zie pricing.' },
       ],
     },
-    render: ({ items }: FAQProps) => (
+    render: ({ items, bandTone }: FAQProps) => {
+      // Band-ritmiek: 'alt' geeft een subtiele tint; alle tekst/borders resolven
+      // tegen déze bg i.p.v. de hardcoded surface (anders breekt contrast).
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      const borderColor = resolveOnColor(tokens.surfaceBorder, sectionBg, { fallback: tokens.onSurface, minRatio: 1.3 });
+      return (
       <section
         style={{
           padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
           fontFamily: bodyFont,
-          background: tokens.surface,
+          background: sectionBg,
         }}
       >
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
@@ -1934,7 +1991,7 @@ function faqComponent(tokens: BrandTokens) {
             <details
               key={i}
               style={{
-                borderBottom: `1px solid ${tokens.surfaceBorder}`,
+                borderBottom: `1px solid ${borderColor}`,
                 padding: '16px 0',
               }}
             >
@@ -1947,7 +2004,7 @@ function faqComponent(tokens: BrandTokens) {
                   lineHeight: tbr.subheading.lineHeight ?? undefined,
                   letterSpacing: tbr.subheading.letterSpacing ?? undefined,
                   textTransform: tbr.subheading.textTransform ?? undefined,
-                  color: safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, tokens.surface),
+                  color: safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg),
                   cursor: 'pointer',
                 }}
               >
@@ -1956,7 +2013,7 @@ function faqComponent(tokens: BrandTokens) {
               <p
                 style={{
                   marginTop: 8,
-                  color: readableTextColor(tbr.body.color ?? tokens.surfaceMuted, tokens.surface, tokens.onSurface),
+                  color: readableTextColor(tbr.body.color ?? tokens.surfaceMuted, sectionBg, tokens.onSurface),
                   fontSize: tbr.body.fontSize ?? 15,
                   lineHeight: tbr.body.lineHeight ?? undefined,
                   letterSpacing: tbr.body.letterSpacing ?? undefined,
@@ -1968,7 +2025,8 @@ function faqComponent(tokens: BrandTokens) {
           ))}
         </div>
       </section>
-    ),
+      );
+    },
   };
 }
 
@@ -2176,7 +2234,6 @@ function brandNavComponent(tokens: BrandTokens) {
  * typography (heading-font, body-font, body-size). Section-padding adaptief.
  */
 function richTextComponent(tokens: BrandTokens) {
-  const markdownComponents = buildRichTextMarkdownComponents(tokens);
   const ds = tokens.designSystem;
   // Verbeterplan #2: section-padding uit tokens.sectionRhythm; richtext compacter
   const sectionPaddingY = Math.round(tokens.sectionRhythm.sectionPaddingY * 0.6);
@@ -2191,19 +2248,22 @@ function richTextComponent(tokens: BrandTokens) {
     defaultProps: {
       content: 'Schrijf hier je inhoud.',
     },
-    render: ({ content }: RichTextProps) => (
+    render: ({ content, bandTone }: RichTextProps) => {
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      const markdownComponents = buildRichTextMarkdownComponents(tokens, sectionBg);
+      return (
       <section
         style={{
           padding: `${sectionPaddingY}px ${responsivePaddingX(sectionPaddingX)}`,
           fontFamily: bodyFont,
-          background: tokens.surface,
+          background: sectionBg,
         }}
       >
         <div
           style={{
             maxWidth: 720,
             margin: '0 auto',
-            color: tokens.onSurface,
+            color: readableTextColor(tokens.onSurface, sectionBg, tokens.onSurface),
             fontSize: bodySize,
             lineHeight: ds.typography.body.lineHeight,
           }}
@@ -2211,7 +2271,8 @@ function richTextComponent(tokens: BrandTokens) {
           <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
         </div>
       </section>
-    ),
+      );
+    },
   };
 }
 
@@ -2221,20 +2282,26 @@ function richTextComponent(tokens: BrandTokens) {
  * en tokens.secondaryHex. Links gebruiken tokens.primaryHex zodat de
  * brand-kleur consistent doorloopt.
  */
-function buildRichTextMarkdownComponents(tokens: BrandTokens) {
+function buildRichTextMarkdownComponents(tokens: BrandTokens, bg: string = tokens.surface) {
   const headingFont = tokens.headingFont;
   const bodyFont = tokens.bodyFont;
   const primary = tokens.primaryHex;
   const text = tokens.secondaryHex;
   const tbr = tokens.typographyByRole;
-  // RichText rendert op tokens.surface — clamp élke kop-kleur tegen die bg
+  // RichText rendert op de sectie-band-bg — clamp élke kop-kleur tegen die bg
   // (accent-reservering + gegarandeerd contrast) zodat een lichte gescrapte
   // kop-kleur niet onleesbaar wordt (systematische contrast-borging).
-  const h1Color = resolveOnColor(tbr.display.color ?? text, tokens.surface, { fallback: tokens.onSurface, minRatio: 3.0 });
-  const h2Color = safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, tokens.surface);
-  const h3Color = safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, tokens.surface);
-  // Body-tekst contrast-geclampt tegen de surface (5.0 = AA-normal).
-  const safeText = readableTextColor(text, tokens.surface, tokens.onSurface);
+  const h1Color = resolveOnColor(tbr.display.color ?? text, bg, { fallback: tokens.onSurface, minRatio: 3.0 });
+  const h2Color = safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, bg);
+  const h3Color = safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, bg);
+  // Body-tekst contrast-geclampt tegen de band-bg (5.0 = AA-normal).
+  const safeText = readableTextColor(text, bg, tokens.onSurface);
+  // Code-chip + hr resolven óók tegen de band-bg (anders onzichtbaar op een tint):
+  // de code-chip is ALTIJD een stap donkerder dan de sectie; de hr-rand volgt
+  // surfaceBorder geclampt tegen de band.
+  const codeBg = mixHex(bg, tokens.onSurface, 0.08);
+  const codeText = readableTextColor(text, codeBg, tokens.onSurface);
+  const hrColor = resolveOnColor(tokens.surfaceBorder, bg, { fallback: tokens.onSurface, minRatio: 1.3 });
   return {
     h1: ({ children }: { children?: React.ReactNode }) => (
       <h1 style={{
@@ -2301,10 +2368,10 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens) {
       <blockquote style={{ fontFamily: bodyFont, borderLeft: `4px solid ${primary}`, paddingLeft: 16, fontStyle: 'italic', color: safeText, margin: '12px 0' }}>{children}</blockquote>
     ),
     code: ({ children }: { children?: React.ReactNode }) => (
-      <code style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', backgroundColor: '#f3f4f6', padding: '2px 6px', borderRadius: 4, fontSize: 14 }}>{children}</code>
+      <code style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', backgroundColor: codeBg, color: codeText, padding: '2px 6px', borderRadius: 4, fontSize: 14 }}>{children}</code>
     ),
     hr: () => (
-      <hr style={{ border: 0, borderTop: '1px solid #e5e7eb', margin: '20px 0' }} />
+      <hr style={{ border: 0, borderTop: `1px solid ${hrColor}`, margin: '20px 0' }} />
     ),
   };
 }
