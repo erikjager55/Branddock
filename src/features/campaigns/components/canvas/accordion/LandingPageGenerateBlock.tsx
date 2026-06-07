@@ -666,7 +666,7 @@ export function LandingPageGenerateBlock({
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
           <p className="font-medium">
-            {variantOptions.length} variant{variantOptions.length === 1 ? '' : 'en'} klaar — kies welke past
+            {variantOptions.length} variant{variantOptions.length === 1 ? '' : 'en'} klaar — vergelijk en kies welke past
           </p>
         </div>
         {/* Track 5 — F-VAL fidelity-score voor LP-variant. Verschijnt zodra
@@ -675,24 +675,33 @@ export function LandingPageGenerateBlock({
             aan Step2ContentVariants.tsx voor content-deliverables.
             variantIndex koppelt de bar aan de A/B-toggle hieronder zodat
             klikken op B diens score toont. */}
+        {/* Thumbnail-selector: vergelijk A/B in één oogopslag + klik om te
+            selecteren. De actieve variant drijft de preview, fidelity-score,
+            auto-iterate én de detail-kaart hieronder. */}
         {variantOptions.length > 1 ? (
-          <div className="flex items-center gap-2" role="tablist" aria-label="Variant voor fidelity-score">
-            {variantOptions.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                role="tab"
-                aria-selected={activeVariantIndex === i}
-                onClick={() => setActiveVariantIndex(i)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                  activeVariantIndex === i
-                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                Variant {String.fromCharCode(65 + i)}
-              </button>
-            ))}
+          <div className="grid grid-cols-2 gap-3" role="tablist" aria-label="Kies een variant">
+            {variantOptions.map((v, i) => {
+              const isActive = activeVariantIndex === i;
+              const ring = i === 0 ? 'border-emerald-400 ring-2 ring-emerald-100' : 'border-violet-400 ring-2 ring-violet-100';
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setActiveVariantIndex(i)}
+                  className={`text-left rounded-lg border-2 overflow-hidden bg-white transition-colors ${isActive ? ring : 'border-gray-200 hover:border-gray-300'}`}
+                >
+                  <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100">
+                    <span className={`text-xs font-medium uppercase tracking-wide ${isActive ? 'text-gray-900' : 'text-gray-500'}`}>
+                      Variant {String.fromCharCode(65 + i)} — {i === 0 ? 'conservatief' : 'creatief'}
+                    </span>
+                    {isActive ? <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" /> : null}
+                  </div>
+                  <VariantPuckPreview variant={v} contextStack={contextStack} maxHeight={200} />
+                </button>
+              );
+            })}
           </div>
         ) : null}
         <FidelityScoreBar deliverableId={deliverableId} variantIndex={activeVariantIndex} suppressAutoIterateCta />
@@ -773,12 +782,17 @@ export function LandingPageGenerateBlock({
             </div>
           </div>
         ) : null}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {variantOptions.map((v, i) => (
+        {/* Detail: ÉÉN full-width, leesbare kaart voor de actieve variant
+            (key forceert verse local edit-state bij wisselen van variant). */}
+        {(() => {
+          const i = Math.min(activeVariantIndex, variantOptions.length - 1);
+          const v = variantOptions[i];
+          if (!v) return null;
+          return (
             <VariantCompareCard
               key={i}
               variant={v}
-              label={i === 0 ? 'Variant A — conservative' : 'Variant B — creative'}
+              label={i === 0 ? 'Variant A — conservatief' : 'Variant B — creatief'}
               accent={i === 0 ? 'emerald' : 'violet'}
               disabled={isChoosing}
               onChoose={(edited) => void handleChooseVariant(edited)}
@@ -786,8 +800,8 @@ export function LandingPageGenerateBlock({
               deliverableId={deliverableId}
               variantIndex={i}
             />
-          ))}
-        </div>
+          );
+        })()}
         {/* Deterministische hero-gen feedback: tijdens de keuze genereert de
             verplichte hero-image (de pagina opent ermee). Surface dat + een
             niet-blokkerende waarschuwing bij timeout/fout (pagina rendert dan
@@ -912,9 +926,15 @@ const PREVIEW_RENDER_WIDTH = 1180;
 function VariantPuckPreview({
   variant,
   contextStack,
+  maxHeight,
+  scroll,
 }: {
   variant: LandingPageVariantContent;
   contextStack: CanvasContextStack | null;
+  /** Cap de hoogte: thumbnail-modus (overflow verborgen) of, met `scroll`,
+   *  een leesbaar venster waarin de gebruiker de pagina scrollt. */
+  maxHeight?: number;
+  scroll?: boolean;
 }) {
   const config = useMemo(() => buildSpikePuckConfig(contextStack), [contextStack]);
   const puckData = useMemo(
@@ -944,11 +964,13 @@ function VariantPuckPreview({
 
   const brand = contextStack?.brandTokens?.brand ?? '#1FD1B2';
   const scaledHeight = contentH > 0 ? contentH * scale : 320;
+  const boxHeight = maxHeight != null ? Math.min(scaledHeight, maxHeight) : scaledHeight;
 
   return (
     <div
       ref={outerRef}
-      className="w-full overflow-hidden rounded-lg border border-gray-200 bg-white"
+      className={`w-full rounded-lg border border-gray-200 bg-white ${scroll ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'}`}
+      style={{ height: maxHeight != null ? boxHeight : undefined }}
       aria-label="Pagina-preview"
     >
       <div style={{ height: scaledHeight, position: 'relative' }}>
@@ -1045,7 +1067,7 @@ function VariantCompareCard({
 
   return (
     <EditDeliverableCtx.Provider value={deliverableId}>
-    <div className={`rounded-lg border-2 ${ringClass} bg-white p-4 flex flex-col gap-4 max-h-[calc(100vh-200px)] overflow-y-auto`}>
+    <div className={`rounded-lg border-2 ${ringClass} bg-white p-4 flex flex-col gap-4`}>
       <div className="sticky top-0 bg-white pb-2 border-b border-gray-100 -mx-4 px-4 -mt-4 pt-4 z-10">
         <span className={`inline-block text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded ${tagClass}`}>
           {label}
@@ -1053,9 +1075,9 @@ function VariantCompareCard({
       </div>
 
       {/* P1a — WYSIWYG-preview: de echte (geschaalde) pagina uit deze variant. */}
-      <VariantPuckPreview variant={v} contextStack={contextStack} />
+      <VariantPuckPreview variant={v} contextStack={contextStack} maxHeight={560} scroll />
       <p className="text-[11px] text-gray-500 -mt-2">
-        Live preview — header-foto wordt bij je keuze gegenereerd. Bewerk de tekst hieronder; de preview werkt direct bij.
+        Leesbare preview (scroll voor de hele pagina) — header-foto wordt bij je keuze gegenereerd. Bewerk de tekst hieronder; de preview werkt direct bij.
       </p>
       {regenError ? (
         <p className="text-[11px] text-red-600 -mt-1">Regenereren mislukt: {regenError}</p>
@@ -1238,7 +1260,7 @@ function VariantCompareCard({
         type="button"
         onClick={() => onChoose(v)}
         disabled={disabled}
-        className={`mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 sticky bottom-0`}
+        className={`mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50`}
       >
         {disabled ? (
           <><Loader2 className="h-4 w-4 animate-spin" />Opslaan...</>

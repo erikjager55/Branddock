@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 308. Step 2 preview-layout — leesbare thumbnails + detail + selectie drijft score
+
+User-feedback op P1a: de twee side-by-side full-page previews (grid-cols-2, ~0.34 scale) waren onleesbaar, en de variant-selectie voor de fidelity-score (losse pill-toggle) was niet vindbaar. Herzien naar **thumbnails + detail**: een rij klikbare A/B-thumbnails (`VariantPuckPreview` met `maxHeight` = bovenkant van de pagina) waarmee je in één oogopslag vergelijkt én selecteert; de actieve thumbnail drijft nu de **fidelity-score, auto-iterate én** de detail-weergave. Daaronder één **full-width, leesbare** detail-kaart van de geselecteerde variant (preview op ~0.745 scale in een 560px-venster met interne scroll), met bewerken/per-sectie-regenereren (P1b/P1c) + "Kies". `VariantPuckPreview` kreeg `maxHeight` (thumbnail-cap) + `scroll` (leesbaar venster). Lost de twee gemelde issues (onleesbaar + selectie). tsc+lint 0; 67 web-page-builder smokes groen; detail-leesbaarheid visueel geverifieerd.
+
+- Commit: branch `fix/step2-preview-thumbnails-detail`
+
 ### 307. Step 3 P2b — feature-beeld-transparantie + retry (landingspagina)
 
 Vervolg op de Step-2-audit (W7: feature-beeld-budget 4 + 60s-timeout vielen stil terug op icons, zonder feedback welke). De Puck-builder (Step 3) detecteert nu features die als icon renderen (FeatureGrid/FeatureSplit zonder `imageUrl`) en toont een **opt-in** knop "N features zonder beeld" (geen waarschuwing — icon-design kan gewenst zijn). Klik genereert de ontbrekende beelden via `generateFeatureVisuals` (prompts uit de nu gedeelde `buildFeatureVisualInstruction`, geëxtraheerd naar `landing-page-visual-prompts.ts` zodat confirm-flow + Step 3 identieke prompts geven) en patcht de puckData **immutable** (alleen gewijzigde componenten + features-arrays gekloond) + persisteert + dispatcht `canvas:refresh-deliverable`. Toont "X/N gegenereerd" bij gedeeltelijk succes. tsc+lint 0; 67 web-page-builder smokes groen. **Hiermee is P2 (a+b) compleet; resteert P3 + P4 uit het verbeterplan.**
