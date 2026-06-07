@@ -1136,6 +1136,8 @@ function buildHeroVisualInstruction(
   const parts: string[] = [];
   parts.push(`Hero-visual for landing-page about: ${variant.hero.headline}`);
   parts.push(`Subject context: ${variant.hero.subhead}`);
+  // User-eis: ALTIJD één volledige afbeelding — geen collage/triptiek.
+  parts.push('A SINGLE cohesive full-frame photograph — one continuous scene. NOT a collage, triptych, diptych, split-screen, grid, or multi-panel layout; no internal borders, seams, or dividers between sections');
   // Tier-1: scraped photographyStyle (rijkst, brand-specifiek)
   const photographyFragment = tokens?.photography?.promptFragment?.trim();
   if (photographyFragment) {
@@ -1175,6 +1177,8 @@ function buildFeatureVisualInstruction(
   parts.push(`Editorial feature image illustrating "${feature.heading ?? ''}" for a landing-page about: ${variant.hero.headline}`);
   if (feature.body) parts.push(`Depicting: ${feature.body}`);
   parts.push('Close-up material or in-context shot (real texture, real setting) — no text, no UI, no infographic, no logo');
+  // User-eis: ALTIJD één volledige afbeelding — geen collage/triptiek.
+  parts.push('A SINGLE cohesive full-frame photograph — one continuous scene, NOT a collage/triptych/split-panel/grid; no internal borders or seams');
   const photographyFragment = tokens?.photography?.promptFragment?.trim();
   if (photographyFragment) parts.push(photographyFragment);
   else if (hints) parts.push(`Photography style: ${hints.heroImagePromptFragment}`);

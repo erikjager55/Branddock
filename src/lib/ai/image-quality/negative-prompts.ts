@@ -40,6 +40,17 @@ const DEFAULT_NEGATIVE_SEGMENTS: readonly string[] = [
   "extra limbs",
   "oversaturated",
   "harsh lighting",
+  // Eén samenhangend beeld afdwingen — modellen (nano-banana-pro) maken anders
+  // soms een collage/triptiek. User-eis: altijd 1 volledige afbeelding per visual.
+  "collage",
+  "triptych",
+  "diptych",
+  "split screen",
+  "multi-panel",
+  "grid layout",
+  "image divided into panels",
+  "side-by-side frames",
+  "internal borders or seams",
 ];
 
 export interface BuildNegativePromptOptions {

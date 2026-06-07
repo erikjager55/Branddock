@@ -9,7 +9,7 @@ import {
 } from '@/lib/landing-pages/brand-tokens';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import { getRenderConstraints } from '@/lib/landing-pages/render-constraints';
-import { readableTextColor, resolveOnColor, isCardContextMismatch, reserveAccentForHeading, contrastRatio } from '@/lib/landing-pages/wcag';
+import { readableTextColor, resolveOnColor, isCardContextMismatch, reserveAccentForHeading, contrastRatio, safeHeadingColor } from '@/lib/landing-pages/wcag';
 
 import {
   buildBackgroundDepth,
@@ -850,6 +850,7 @@ function brandCtaComponent(
   personaOptions: { label: string; value: string }[],
 ) {
   const ds = tokens.designSystem;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
   // Verbeterplan Fase D: gebruik tokens.button (Tier-1 scraped > Tier-2
   // archetype-default) i.p.v. hints.buttonStyle. tokens.sectionRhythm
   // levert section-padding direct.
@@ -877,15 +878,39 @@ function brandCtaComponent(
     },
     render: ({ label, href, personaId, riskReducer, heading }: SpikeBrandCtaProps) => {
       const persona = personas.find((p) => p.id === personaId);
+      // CTA-redesign: een CONTAINED gebrande panel i.p.v. losse tekst+knop op
+      // een leeg wit vlak. Donker-merk → donkere cinematische panel; anders een
+      // zachte brand-tint. De CTA-knop draagt ALTIJD de merk-accent (P8) en popt
+      // op de panel. Heading/tekst contrast-geclampt tegen de panel-bg.
+      const isDarkPanel = tokens.hasDarkSections && tokens.darkSectionBg != null;
+      const panelBg = isDarkPanel ? (tokens.darkSectionBg ?? tokens.onSurface) : tokens.brandSubtle;
+      // Review-fix: muted meta-tekst tegen de ÉCHTE panel-bg clampen (op een
+      // lichte brand-tint kon surfaceMuted onder AA zakken).
+      const onPanelMuted = isDarkPanel
+        ? 'rgba(255,255,255,0.72)'
+        : readableTextColor(tokens.surfaceMuted, panelBg, tokens.onSurface);
       return (
         <section
           style={{
             padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
-            textAlign: 'center',
             fontFamily: bodyFont,
             background: tokens.surface,
           }}
         >
+          <div
+            style={{
+              maxWidth: 960,
+              margin: '0 auto',
+              background: panelBg,
+              borderRadius: Math.min(20, constraints.maxRadiusPx),
+              padding: 'clamp(40px, 6vw, 72px) clamp(24px, 5vw, 56px)',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: `${ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24}px`,
+            }}
+          >
           {heading && heading.trim().length > 0 ? (
             <h2
               style={{
@@ -894,8 +919,8 @@ function brandCtaComponent(
                 fontWeight: tbr.heading.fontWeight ?? (ds.typography.heading.weights[0] ?? 600),
                 lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
                 letterSpacing: tbr.heading.letterSpacing ?? undefined,
-                color: resolveOnColor(reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface), tokens.surface, { fallback: tokens.onSurface, minRatio: 3.0 }),
-                margin: `0 auto ${ds.spacing[Math.min(ds.spacing.length - 1, 4)] ?? 24}px`,
+                color: safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, panelBg),
+                margin: 0,
                 maxWidth: 720,
               }}
             >
@@ -906,27 +931,24 @@ function brandCtaComponent(
             <p
               style={{
                 fontSize: 14,
-                color: tokens.surfaceMuted,
-                marginBottom: ds.spacing[Math.min(ds.spacing.length - 1, 2)] ?? 12,
+                color: onPanelMuted,
+                margin: 0,
                 fontStyle: 'italic',
               }}
             >
               Voor: {persona.name}
             </p>
           ) : null}
-          {/* Final-CTA button: voor VIBRANT brand-colors (Better Brands
-              fel groen, hot pink, helder blauw) is een vol-veld brand-
-              button visueel té agressief op de witte CTA-section. Match
-              de hero-logica: vibrant-saturated → donkere knop met witte
-              tekst (= elegant, herkenbaar accent). Gedempte/pastel
-              brands behouden de vol-veld brand-treatment. */}
+          {/* CTA-knop draagt ALTIJD de merk-accent (P8 "this is where I act") —
+              op de gebrande panel popt de accent (geen vibrant→charcoal-
+              downgrade meer; de panel-bg levert het contrast). */}
           {(() => {
-            // Pri 1 scraped, Pri 2 vibrant-fix, Pri 3 brand-fill
-            const useDarkButton = isVibrantSaturatedColor(tokens.brand);
-            const ctaBg = tokens.button.background
-              ?? (useDarkButton ? tokens.onSurface : tokens.brand);
-            const ctaColor = tokens.button.color
-              ?? (useDarkButton ? '#FFFFFF' : tokens.onBrand);
+            const ctaBg = tokens.button.background ?? tokens.brand;
+            const ctaColor = tokens.button.color ?? tokens.onBrand;
+            // Review-fix: op een lichte brand-tint-panel kan een pastel-accent-
+            // knop in dezelfde tint oplossen (lage figure/ground). Geef 'm dan
+            // een definiërende rand zodat de knop-vorm leesbaar blijft.
+            const ctaNeedsBorder = !isDarkPanel && contrastRatio(ctaBg, panelBg) < 3;
             // Cap letterSpacing voor lange CTA-labels: 3px × 30 char = 90px
             // extra width. Voor RULER/SAGE/MAGICIAN (premium) is dat te
             // breed. Bij text-length > 20 chars: cap letterSpacing op 0.1em.
@@ -945,7 +967,7 @@ function brandCtaComponent(
               textDecoration: 'none',
               padding: `${btn.paddingY}px ${btn.paddingX}px`,
               borderRadius: btn.radiusPx,
-              border: tokens.button.border ?? 'none',
+              border: tokens.button.border ?? (ctaNeedsBorder ? `2px solid ${tokens.onSurface}` : 'none'),
               textTransform: btn.textTransform,
               letterSpacing: capLetterSpacing,
               transition: tokens.button.transition
@@ -988,15 +1010,16 @@ function brandCtaComponent(
           {riskReducer && riskReducer.trim().length > 0 ? (
             <p
               style={{
-                marginTop: ds.spacing[Math.min(ds.spacing.length - 1, 2)] ?? 12,
+                margin: 0,
                 fontSize: 13,
-                color: tokens.surfaceMuted,
+                color: onPanelMuted,
                 fontFamily: bodyFont,
               }}
             >
               {riskReducer}
             </p>
           ) : null}
+          </div>
         </section>
       );
     },
@@ -1709,7 +1732,7 @@ function pricingTableComponent(tokens: BrandTokens) {
                     letterSpacing: tbr.heading.letterSpacing ?? undefined,
                     textTransform: tbr.heading.textTransform ?? undefined,
                     margin: '0 0 8px',
-                    color: reserveAccentForHeading(tbr.heading.color, tokens.accent, tokens.onSurface),
+                    color: safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, tokens.surface),
                   }}
                 >
                   {t.name}
@@ -1806,7 +1829,7 @@ function faqComponent(tokens: BrandTokens) {
                   lineHeight: tbr.subheading.lineHeight ?? undefined,
                   letterSpacing: tbr.subheading.letterSpacing ?? undefined,
                   textTransform: tbr.subheading.textTransform ?? undefined,
-                  color: reserveAccentForHeading(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface),
+                  color: safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, tokens.surface),
                   cursor: 'pointer',
                 }}
               >
@@ -2083,10 +2106,14 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens) {
   const primary = tokens.primaryHex;
   const text = tokens.secondaryHex;
   const tbr = tokens.typographyByRole;
-  const h1Color = tbr.display.color ?? text;
-  // P8 accent-reservering: een accent-gekleurde kop wordt charcoal (text).
-  const h2Color = reserveAccentForHeading(tbr.heading.color, tokens.accent, text);
-  const h3Color = tbr.subheading.color ?? reserveAccentForHeading(tbr.heading.color, tokens.accent, text);
+  // RichText rendert op tokens.surface — clamp élke kop-kleur tegen die bg
+  // (accent-reservering + gegarandeerd contrast) zodat een lichte gescrapte
+  // kop-kleur niet onleesbaar wordt (systematische contrast-borging).
+  const h1Color = resolveOnColor(tbr.display.color ?? text, tokens.surface, { fallback: tokens.onSurface, minRatio: 3.0 });
+  const h2Color = safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, tokens.surface);
+  const h3Color = safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, tokens.surface);
+  // Body-tekst contrast-geclampt tegen de surface (5.0 = AA-normal).
+  const safeText = readableTextColor(text, tokens.surface, tokens.onSurface);
   return {
     h1: ({ children }: { children?: React.ReactNode }) => (
       <h1 style={{
@@ -2125,23 +2152,23 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens) {
       }}>{children}</h3>
     ),
     h4: ({ children }: { children?: React.ReactNode }) => (
-      <h4 style={{ fontFamily: headingFont, color: text, fontSize: 18, fontWeight: 600, marginTop: 14, marginBottom: 6 }}>{children}</h4>
+      <h4 style={{ fontFamily: headingFont, color: safeText, fontSize: 18, fontWeight: 600, marginTop: 14, marginBottom: 6 }}>{children}</h4>
     ),
     p: ({ children }: { children?: React.ReactNode }) => (
       // P12 measure-cap: ~40em ≈ 75-80 tekens + ruime leading voor leesritme.
-      <p style={{ fontFamily: bodyFont, color: text, marginBottom: 12, maxWidth: '40em', lineHeight: 1.6 }}>{children}</p>
+      <p style={{ fontFamily: bodyFont, color: safeText, marginBottom: 12, maxWidth: '40em', lineHeight: 1.6 }}>{children}</p>
     ),
     ul: ({ children }: { children?: React.ReactNode }) => (
-      <ul style={{ fontFamily: bodyFont, color: text, paddingLeft: 24, marginBottom: 12, listStyleType: 'disc' }}>{children}</ul>
+      <ul style={{ fontFamily: bodyFont, color: safeText, paddingLeft: 24, marginBottom: 12, listStyleType: 'disc' }}>{children}</ul>
     ),
     ol: ({ children }: { children?: React.ReactNode }) => (
-      <ol style={{ fontFamily: bodyFont, color: text, paddingLeft: 24, marginBottom: 12, listStyleType: 'decimal' }}>{children}</ol>
+      <ol style={{ fontFamily: bodyFont, color: safeText, paddingLeft: 24, marginBottom: 12, listStyleType: 'decimal' }}>{children}</ol>
     ),
     li: ({ children }: { children?: React.ReactNode }) => (
       <li style={{ marginBottom: 4 }}>{children}</li>
     ),
     strong: ({ children }: { children?: React.ReactNode }) => (
-      <strong style={{ fontWeight: 700, color: text }}>{children}</strong>
+      <strong style={{ fontWeight: 700, color: safeText }}>{children}</strong>
     ),
     em: ({ children }: { children?: React.ReactNode }) => (
       <em style={{ fontStyle: 'italic' }}>{children}</em>
@@ -2150,7 +2177,7 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens) {
       <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: primary, textDecoration: 'underline' }}>{children}</a>
     ),
     blockquote: ({ children }: { children?: React.ReactNode }) => (
-      <blockquote style={{ fontFamily: bodyFont, borderLeft: `4px solid ${primary}`, paddingLeft: 16, fontStyle: 'italic', color: text, margin: '12px 0' }}>{children}</blockquote>
+      <blockquote style={{ fontFamily: bodyFont, borderLeft: `4px solid ${primary}`, paddingLeft: 16, fontStyle: 'italic', color: safeText, margin: '12px 0' }}>{children}</blockquote>
     ),
     code: ({ children }: { children?: React.ReactNode }) => (
       <code style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', backgroundColor: '#f3f4f6', padding: '2px 6px', borderRadius: 4, fontSize: 14 }}>{children}</code>
