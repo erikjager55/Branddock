@@ -1106,7 +1106,7 @@ export function extractBrandTokensWithProvenance(
   // Lazy import om circular dep + extra surface te minimaliseren in deze file.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const v4 = require("./brand-tokens-v4-mappers") as typeof import("./brand-tokens-v4-mappers");
-  const button = v4.mapButtonTokens(
+  const buttonBase = v4.mapButtonTokens(
     styleguide.buttonProfile,
     archetype,
     DEFAULT_BRAND_TOKENS.button,
@@ -1269,6 +1269,13 @@ export function extractBrandTokensWithProvenance(
   // en map de raw extractedStyles naar ScrapedComponentStyle. Renderer
   // raadpleegt deze direct voor pixel-perfect match met Components-tab.
   const styleguideComponents = mapStyleguideComponents(styleguide.components ?? null);
+  // De StyleguideComponent BUTTON-card (computed-style, = Components-tab) is de
+  // accurate bron — reconcilieer de buttonProfile-tokens ermee zodat de LP-CTA
+  // de échte merk-button volgt i.p.v. archetype-presets (geldt voor élk merk).
+  const button = v4.reconcileButtonWithComponent(buttonBase, styleguideComponents.BUTTON);
+  if (styleguideComponents.BUTTON) {
+    recordOrigin(prov, 'button', { source: 'scraped', confidence: 'high', detector: 'StyleguideComponent', evidence: 'BUTTON-card (computed-style) gereconcilieerd' });
+  }
   recordOrigin(prov, 'darkSectionBg', darkSectionBg
     ? { source: 'scraped', confidence: 'medium', detector: 'usage-tag', evidence: 'dark section-bg tag + L<25' }
     : { source: 'fallback', confidence: 'low', detector: 'usage-tag', evidence: 'geen donkere section gevonden' });

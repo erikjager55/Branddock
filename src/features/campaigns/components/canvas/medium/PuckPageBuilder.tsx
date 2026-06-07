@@ -9,6 +9,8 @@ import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
 import { variantToPuckData } from './variant-to-puck-data';
+import { generateCanvasVisual } from '../../../api/canvas.api';
+import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
 import { useBrandFontLoader } from './useBrandFontLoader';
 import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
@@ -140,6 +142,62 @@ export function PuckPageBuilder({
     },
     [],
   );
+
+  // ── Hero self-heal ──────────────────────────────────────────
+  // User-eis: een landing-page heeft ALTIJD een header-image. De confirm-flow
+  // (Step 2) genereert 'm, maar bij een timeout/fout bleef de hero leeg (Better
+  // Brands). Hier herstellen we dat deterministisch: zodra de Medium-preview een
+  // BrandHero ZONDER beeld toont, genereren we 'm alsnog en patchen + persisten
+  // we de puckData. Eén poging per deliverable per sessie (ref-guard) → geen
+  // herhaalde image-gen bij re-renders.
+  const heroHealRef = useRef<Set<string>>(new Set());
+  const [isHealingHero, setIsHealingHero] = useState(false);
+  useEffect(() => {
+    if (!deliverableId) return;
+    // Ref-guard: max één poging per deliverable per sessie (geen extra
+    // state-dep nodig → geen re-run bij toggle van de indicator).
+    if (heroHealRef.current.has(deliverableId)) return;
+    const content = Array.isArray(puckData?.content) ? puckData.content : [];
+    const heroIdx = content.findIndex((c) => c?.type === 'BrandHero');
+    if (heroIdx < 0) return;
+    const heroProps = (content[heroIdx]?.props ?? {}) as { headline?: string; sub?: string; heroVisualUrl?: string };
+    const hasImage = typeof heroProps.heroVisualUrl === 'string' && heroProps.heroVisualUrl.trim().length > 0;
+    if (hasImage || !heroProps.headline) return;
+    heroHealRef.current.add(deliverableId);
+    const instruction = buildHeroVisualInstruction(
+      { hero: { headline: heroProps.headline, subhead: heroProps.sub ?? '' } },
+      contextStack,
+    );
+    // .then()-keten i.p.v. synchrone setState-in-effect (Next.js 16 ESLint).
+    Promise.resolve()
+      .then(() => {
+        setIsHealingHero(true);
+        return generateCanvasVisual(deliverableId, { instruction, aspectRatio: '16:9', count: 1 });
+      })
+      .then((result) => {
+        const url = result.variants?.[0]?.url;
+        if (!url) return;
+        setPuckData((prev) => {
+          const items = (prev.content ?? []) as SpikeData['content'];
+          const i = items.findIndex((c) => c?.type === 'BrandHero');
+          if (i < 0) return prev;
+          const updatedHero = {
+            ...items[i],
+            props: { ...items[i].props, heroVisualUrl: url },
+          } as (typeof items)[number];
+          const next: SpikeData = { ...prev, content: items.map((c, idx) => (idx === i ? updatedHero : c)) };
+          // Direct persisten (niet de debounce) zodat het beeld de re-mount overleeft.
+          fetch(`/api/studio/${deliverableId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings: { puckData: next } }),
+          }).catch((err) => console.warn('[PuckPageBuilder] hero self-heal persist failed', err));
+          return next;
+        });
+      })
+      .catch((err) => console.warn('[PuckPageBuilder] hero self-heal failed', err))
+      .finally(() => setIsHealingHero(false));
+  }, [deliverableId, puckData, contextStack]);
 
   const handlePuckChange = useCallback(
     (data: SpikeData) => {
@@ -332,6 +390,12 @@ export function PuckPageBuilder({
       {/* Top action-bar — Branddock-stijl outline buttons + lock-toggle (zoals
           Brand Styleguide header). Rechts-uitgelijnd boven de page-render. */}
       <div className="flex items-center justify-end gap-2 flex-wrap">
+        {isHealingHero ? (
+          <span className="text-xs text-gray-500 mr-2 flex items-center gap-1.5">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Header-beeld wordt gegenereerd…
+          </span>
+        ) : null}
         {pageBusy === 'auto-iterate' ? (
           <span className="text-xs text-gray-500 mr-2 flex items-center gap-1.5">
             <Loader2 className="h-3 w-3 animate-spin" />

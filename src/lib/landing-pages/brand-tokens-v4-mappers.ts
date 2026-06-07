@@ -234,6 +234,68 @@ export function mapButtonTokens(
   };
 }
 
+/** Geometrie-velden uit een StyleguideComponent BUTTON-card (computed-style). */
+export interface ComponentButtonLike {
+  color: string | null;
+  background: string | null;
+  border: string | null;
+  padding: string | null;
+  borderRadius: string | null;
+  fontSize: string | null;
+  fontWeight: string | null;
+  textTransform: string | null;
+  letterSpacing: string | null;
+  fontFamily: string | null;
+}
+
+/** Parse een CSS `padding`-shorthand naar {y, x} in px. */
+function parsePaddingShorthand(raw: string | null): { y: number; x: number } | null {
+  if (!raw) return null;
+  const parts = raw.trim().split(/\s+/);
+  if (parts.length === 0) return null;
+  const y = pxFromCssValue(parts[0], NaN);
+  // 1 waarde → alle zijden; ≥2 → top=parts[0], right=parts[1].
+  const x = pxFromCssValue(parts[1] ?? parts[0], NaN);
+  if (Number.isNaN(y) || Number.isNaN(x)) return null;
+  return { y, x };
+}
+
+/**
+ * Reconcilieert de buttonProfile-afgeleide ButtonTokens met de accurate
+ * StyleguideComponent BUTTON-card (computed-style — exact wat de Components-tab
+ * toont). De card wint per veld waar hij iets levert, zodat de LP-CTA 1-op-1
+ * de échte merk-button (radius/border/gewicht/padding/grootte/kleur) volgt
+ * i.p.v. archetype-presets. Geen card → ongewijzigde buttonProfile-tokens.
+ */
+export function reconcileButtonWithComponent(
+  button: ButtonTokens,
+  comp: ComponentButtonLike | null,
+): ButtonTokens {
+  if (!comp) return button;
+  const pad = parsePaddingShorthand(comp.padding);
+  const sanitize = (raw: string | null): string | null => {
+    if (!raw) return null;
+    const t = raw.trim().toLowerCase();
+    if (!t || t === 'inherit' || t === 'currentcolor' || t.startsWith('var(')) return null;
+    return raw;
+  };
+  return {
+    ...button,
+    radiusPx: comp.borderRadius != null ? pxFromCssValue(comp.borderRadius, button.radiusPx) : button.radiusPx,
+    fontWeight: comp.fontWeight != null ? numberFromCssValue(comp.fontWeight, button.fontWeight) : button.fontWeight,
+    fontSize: comp.fontSize != null ? pxFromCssValue(comp.fontSize, button.fontSize) : button.fontSize,
+    paddingY: pad ? pad.y : button.paddingY,
+    paddingX: pad ? pad.x : button.paddingX,
+    textTransform: normalizeTextTransform(comp.textTransform, button.textTransform),
+    letterSpacing: sanitize(comp.letterSpacing) ?? button.letterSpacing,
+    // De card is de accurate kleur/affordance-bron: background/color/border winnen.
+    background: sanitize(comp.background) ?? button.background,
+    color: sanitize(comp.color) ?? button.color,
+    border: isNoOpBorder(comp.border) ? button.border : (comp.border ?? button.border),
+    fontFamily: sanitize(comp.fontFamily) ?? button.fontFamily,
+  };
+}
+
 function normalizeTextTransform(
   raw: string | null | undefined,
   fallback: ButtonTokens["textTransform"],
