@@ -9,6 +9,7 @@ import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
 import { variantToPuckData } from './variant-to-puck-data';
+import { assignSectionBands } from './puck-templates/landing-page-from-structured';
 import { generateCanvasVisual } from '../../../api/canvas.api';
 import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
@@ -23,6 +24,18 @@ import { useDeveloperAccess } from '@/hooks/use-developer-access';
 type SpikeData = Data<SpikePuckProps>;
 
 const AUTOSAVE_DEBOUNCE_MS = 1500;
+
+/**
+ * Past de achtergrond-band-afwisseling (bandTone) toe op een puckData-tree zodat
+ * óók bestaande pagina's (gepersist vóór de bandTone-feature) direct ritmiek
+ * tonen. Cloned de content (geen store-mutatie); deterministisch + idempotent.
+ */
+function withSectionBands(data: SpikeData): SpikeData {
+  if (!data || !Array.isArray(data.content)) return data;
+  const content = data.content.map((c) => ({ ...c, props: { ...c.props } }));
+  assignSectionBands(content as Array<{ type: string; props: Record<string, unknown> }>);
+  return { ...data, content } as SpikeData;
+}
 
 /**
  * Preview-first web-page builder voor de 5 Puck-types (Phase 6.6 — 2026-05-25).
@@ -65,9 +78,9 @@ export function PuckPageBuilder({
       Array.isArray(hydratedPuckData.content) &&
       hydratedPuckData.content.length > 0
     ) {
-      return hydratedPuckData;
+      return withSectionBands(hydratedPuckData);
     }
-    return variantToPuckData(previewContent, contextStack);
+    return withSectionBands(variantToPuckData(previewContent, contextStack));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -89,10 +102,11 @@ export function PuckPageBuilder({
     if (!Array.isArray(hydratedPuckData.content) || hydratedPuckData.content.length === 0) return;
     // Cheap diff: serialize-compare op content + root. Alleen sync bij
     // change. JSON.stringify is hier OK want puckData < 50KB typically.
-    const incoming = JSON.stringify(hydratedPuckData);
+    const normalized = withSectionBands(hydratedPuckData);
+    const incoming = JSON.stringify(normalized);
     const current = JSON.stringify(puckData);
     if (incoming !== current) {
-      setPuckData(hydratedPuckData);
+      setPuckData(normalized);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydratedPuckData]);

@@ -240,9 +240,35 @@ export function buildLandingPageTemplateFromStructured(
   ];
 
   const content = sections.filter((s): s is PuckInstance => s !== null);
+  assignSectionBands(content);
 
   return {
     root: { props: {} },
     content,
   } as SpikeData;
+}
+
+/** Secties die meedoen aan de achtergrond-band-afwisseling (de "vlakke" secties).
+ *  Hero/Testimonial/CTA/Footer hebben hun eigen distinctieve bg en doen niet mee. */
+const BAND_PARTICIPATING_TYPES = new Set([
+  "FeatureGrid", "FeatureSplit", "RichText", "FAQ", "PricingTable", "StatsBlock",
+]);
+
+/**
+ * Achtergrond-ritmiek (user-eis): ken afwisselend base/alt toe aan de deelnemende
+ * secties in FINALE volgorde, zodat aangrenzende secties visueel verschillen. De
+ * renderer resolvet alle tekst tegen de gekozen band-bg → contrast-veilig.
+ *
+ * Deterministisch + idempotent (geen Puck-field → niet door de user te editen),
+ * dus PuckPageBuilder kan dit ook op een bestaande (pre-bandTone) puckData-tree
+ * toepassen bij het hydrateren. Muteert `content` in-place.
+ */
+export function assignSectionBands(content: Array<{ type: string; props: Record<string, unknown> }>): void {
+  let bandIdx = 0;
+  for (const section of content) {
+    if (BAND_PARTICIPATING_TYPES.has(section.type)) {
+      section.props = { ...section.props, bandTone: bandIdx % 2 === 0 ? "base" : "alt" };
+      bandIdx++;
+    }
+  }
 }
