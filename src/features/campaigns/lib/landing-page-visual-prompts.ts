@@ -59,3 +59,32 @@ export function buildHeroVisualInstruction(
   }
   return parts.join('. ') + '.';
 }
+
+/**
+ * Bouwt de per-feature image-prompt: een editorial materiaal-/in-context-shot die
+ * de feature illustreert, geënt op de brand-fotografie (zelfde tiers als de hero).
+ * `pageHeadline` geeft het onderwerp van de pagina als context. Geëxtraheerd zodat
+ * zowel de confirm-flow (Step 2) als de gap-fill in Step 3 dezelfde prompt geven.
+ */
+export function buildFeatureVisualInstruction(
+  feature: { heading?: string; body?: string },
+  pageHeadline: string,
+  contextStack: HeroPromptContext | null,
+): string {
+  const brand = contextStack?.brand;
+  const tokens = contextStack?.brandTokens;
+  const hints = tokens ? computeBrandRenderHints(tokens.archetype, tokens.designSystem) : null;
+  const parts: string[] = [];
+  parts.push(`Editorial feature image illustrating "${feature.heading ?? ''}" for a landing-page about: ${pageHeadline}`);
+  if (feature.body) parts.push(`Depicting: ${feature.body}`);
+  parts.push('Close-up material or in-context shot (real texture, real setting) — no text, no UI, no infographic, no logo');
+  parts.push('A SINGLE cohesive full-frame photograph — one continuous scene, NOT a collage/triptych/split-panel/grid; no internal borders or seams');
+  const photographyFragment = tokens?.photography?.promptFragment?.trim();
+  if (photographyFragment) parts.push(photographyFragment);
+  else if (hints) parts.push(`Photography style: ${hints.heroImagePromptFragment}`);
+  if (brand?.brandImageryStyle) parts.push(`Brand imagery: ${brand.brandImageryStyle}`);
+  if (brand?.brandName) parts.push(`Brand: ${brand.brandName}`);
+  const donts = brand?.brandImageryDonts;
+  parts.push(donts && donts.length > 0 ? `Avoid: ${donts.join(', ')}` : 'Avoid: stock photo people, generic SaaS illustrations, text overlays, lens flares');
+  return parts.join('. ') + '.';
+}

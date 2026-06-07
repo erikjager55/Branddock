@@ -15,9 +15,7 @@ import { assignBrandImagesToVariant } from '@/lib/landing-pages/brand-images';
 import { FidelityScoreBar } from '../FidelityScoreBar';
 import { useInlineTransform } from '../../../hooks/canvas.hooks';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
-import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
-import type { BrandTokens } from '@/lib/landing-pages/brand-tokens';
-import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
+import { buildHeroVisualInstruction, buildFeatureVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { diffVariantCopy, type CopyFieldChange } from '@/lib/landing-pages/variant-copy-diff';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ImageSourcePanel } from '../ImageSourcePanel';
@@ -437,7 +435,7 @@ export function LandingPageGenerateBlock({
         .slice(0, FEATURE_IMAGE_BUDGET);
       if (needIdx.length > 0) {
         try {
-          const prompts = needIdx.map((i) => buildFeatureVisualInstruction(chosen.features.items[i], chosen, contextStack));
+          const prompts = needIdx.map((i) => buildFeatureVisualInstruction(chosen.features.items[i], chosen.hero.headline, contextStack));
           const urls = await Promise.race([
             generateFeatureVisuals(deliverableId, prompts),
             new Promise<Array<string | null>>((resolve) => setTimeout(() => resolve([]), 60_000)),
@@ -1435,32 +1433,6 @@ function FieldRow({ label, value, accent }: { label: string; value: string; acce
  * de feature-pilaar illustreert, geënt op de merk-fotografie (zelfde tiers als
  * de hero: scraped photographyStyle > archetype-hint). Geen tekst/UI/infographic.
  */
-function buildFeatureVisualInstruction(
-  feature: { heading?: string; body?: string },
-  variant: LandingPageVariantContent,
-  contextStack: {
-    brand?: { brandImageryStyle?: string | null; brandImageryDonts?: string[] | null; brandName?: string | null } | null;
-    brandTokens?: BrandTokens;
-  } | null,
-): string {
-  const brand = contextStack?.brand;
-  const tokens = contextStack?.brandTokens;
-  const hints = tokens ? computeBrandRenderHints(tokens.archetype, tokens.designSystem) : null;
-  const parts: string[] = [];
-  parts.push(`Editorial feature image illustrating "${feature.heading ?? ''}" for a landing-page about: ${variant.hero.headline}`);
-  if (feature.body) parts.push(`Depicting: ${feature.body}`);
-  parts.push('Close-up material or in-context shot (real texture, real setting) — no text, no UI, no infographic, no logo');
-  // User-eis: ALTIJD één volledige afbeelding — geen collage/triptiek.
-  parts.push('A SINGLE cohesive full-frame photograph — one continuous scene, NOT a collage/triptych/split-panel/grid; no internal borders or seams');
-  const photographyFragment = tokens?.photography?.promptFragment?.trim();
-  if (photographyFragment) parts.push(photographyFragment);
-  else if (hints) parts.push(`Photography style: ${hints.heroImagePromptFragment}`);
-  if (brand?.brandImageryStyle) parts.push(`Brand imagery: ${brand.brandImageryStyle}`);
-  if (brand?.brandName) parts.push(`Brand: ${brand.brandName}`);
-  const donts = brand?.brandImageryDonts;
-  parts.push(donts && donts.length > 0 ? `Avoid: ${donts.join(', ')}` : 'Avoid: stock photo people, generic SaaS illustrations, text overlays, lens flares');
-  return parts.join('. ') + '.';
-}
 
 function ErrorBanner({ message }: { message: string }) {
   return (

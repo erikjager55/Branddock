@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 307. Step 3 P2b — feature-beeld-transparantie + retry (landingspagina)
+
+Vervolg op de Step-2-audit (W7: feature-beeld-budget 4 + 60s-timeout vielen stil terug op icons, zonder feedback welke). De Puck-builder (Step 3) detecteert nu features die als icon renderen (FeatureGrid/FeatureSplit zonder `imageUrl`) en toont een **opt-in** knop "N features zonder beeld" (geen waarschuwing — icon-design kan gewenst zijn). Klik genereert de ontbrekende beelden via `generateFeatureVisuals` (prompts uit de nu gedeelde `buildFeatureVisualInstruction`, geëxtraheerd naar `landing-page-visual-prompts.ts` zodat confirm-flow + Step 3 identieke prompts geven) en patcht de puckData **immutable** (alleen gewijzigde componenten + features-arrays gekloond) + persisteert + dispatcht `canvas:refresh-deliverable`. Toont "X/N gegenereerd" bij gedeeltelijk succes. tsc+lint 0; 67 web-page-builder smokes groen. **Hiermee is P2 (a+b) compleet; resteert P3 + P4 uit het verbeterplan.**
+
+- Commit: branch `feat/step3-feature-image-retry`
+
 ### 306. Step 2 P2a — auto-iterate before/after-diff + iterate-tot-threshold (landingspagina)
 
 Vervolg op de Step-2-audit (W5: auto-iterate was one-shot + opaak). "Verbeter variant automatisch" itereert nu **tot de drempel** (max 3×): elke iteratie voert het vorige resultaat terug en stopt zodra de fidelity-score ≥ drempel of niet verder verbetert (toont "Iteratie 2/3 — score …"). De uitkomst wordt **niet meer blind toegepast** maar als **voorstel** getoond: score before→after + een per-veld **before/after-diff** (nieuwe pure util `diffVariantCopy`, `src/lib/landing-pages/variant-copy-diff.ts`) met Toepassen/Verwerpen. Pas bij Toepassen wordt de variant vervangen + herscoord. tsc+lint 0; phase64 diff-smoke 9/9; 67 web-page-builder smokes groen.
