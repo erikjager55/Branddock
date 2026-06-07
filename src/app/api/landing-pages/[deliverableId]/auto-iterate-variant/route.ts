@@ -28,9 +28,25 @@ import { parseLandingPageVariantResponse } from "@/lib/landing-pages/variant-gen
  *   - { status: 'error', error }
  */
 
+/** Secties die per stuk geregenereerd mogen worden (P1b). Sleutels = top-level
+ *  keys van LandingPageVariantContent. */
+const SECTION_KEYS = ['hero', 'trust', 'problem', 'features', 'socialProof', 'pricing', 'faq', 'finalCta'] as const;
+const SECTION_LABELS: Record<(typeof SECTION_KEYS)[number], string> = {
+  hero: 'hero (headline/subhead/CTA)',
+  trust: 'trust-strip',
+  problem: 'probleem-sectie',
+  features: 'features',
+  socialProof: 'social proof (testimonials/stats)',
+  pricing: 'pricing',
+  faq: 'FAQ',
+  finalCta: 'final CTA',
+};
+
 const bodySchema = z.object({
   variantIndex: z.number().int().min(0).max(3),
   variant: landingPageVariantSchema,
+  /** P1b — optioneel: regenereer ALLEEN deze sectie (i.p.v. de hele variant). */
+  section: z.enum(SECTION_KEYS).optional(),
 });
 
 const SYSTEM_PROMPT = `Je bent een merk-bewuste copywriter. Je herschrijft de COPY van een gestructureerde landing-page-variant zodat die hoger scoort op een brand-voice + content-quality judge, ZONDER de structuur te veranderen.
@@ -41,6 +57,11 @@ Regels:
 - Wijzig GEEN icon-namen, URLs of niet-tekstuele config.
 - Schrijf in de merk-stem; vermijd generieke AI-frasen; behoud feitelijke claims (cijfers, namen, certificeringen) exact.
 - Antwoord met UITSLUITEND de volledige JSON-variant, geen uitleg, geen code-fences.`;
+
+/** Extra instructie wanneer de rewrite tot één sectie beperkt is (P1b). */
+function sectionScopeInstruction(section: (typeof SECTION_KEYS)[number]): string {
+  return `\n\nSCOPE: herschrijf UITSLUITEND de "${section}"-sectie (${SECTION_LABELS[section]}) met een frisse, andere invalshoek. Laat ALLE andere secties EXACT ongewijzigd (kopieer ze letterlijk). Geef nog steeds de volledige JSON terug.`;
+}
 
 export async function POST(
   request: NextRequest,
@@ -100,7 +121,9 @@ export async function POST(
   }
   const score = before.result.compositeScore;
   const threshold = before.result.compositeThreshold;
-  if (score >= threshold) {
+  // Whole-variant auto-iterate = "verbeter" → skip wanneer al boven drempel.
+  // Section-scoped (P1b) = expliciete "regenereer deze sectie" → altijd doorgaan.
+  if (!parsed.section && score >= threshold) {
     return NextResponse.json({ status: "skipped", reason: "above-threshold", score, threshold });
   }
 
@@ -131,10 +154,10 @@ export async function POST(
   try {
     const result = await anthropicClient.createChatCompletion(
       [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: SYSTEM_PROMPT + (parsed.section ? sectionScopeInstruction(parsed.section) : "") },
         { role: "user", content: userPrompt },
       ],
-      { useCase: "CHAT", temperature: 0.5, maxTokens, timeoutMs: 90_000 },
+      { useCase: "CHAT", temperature: parsed.section ? 0.7 : 0.5, maxTokens, timeoutMs: 90_000 },
     );
     rawResponse = result.content;
   } catch (err) {
@@ -149,7 +172,13 @@ export async function POST(
       { status: 502 },
     );
   }
-  const rewritten = parseResult.data;
+  // Section-scoped: dwing de scope server-side af — neem de originele variant en
+  // vervang ALLEEN de gevraagde sectie (zo lekt een AI-drift op andere secties niet).
+  // Fallback op de originele sectie wanneer de AI 'm wegliet (optionele secties als
+  // problem/pricing mogen ontbreken in een geldige variant) → nooit undefined mergen.
+  const rewritten = parsed.section
+    ? { ...parsed.variant, [parsed.section]: parseResult.data[parsed.section] ?? parsed.variant[parsed.section] }
+    : parseResult.data;
 
   // ── 3. Herscoor de rewrite ───────────────────────────────
   const after = await runFidelityScoring({
@@ -162,7 +191,9 @@ export async function POST(
   });
   const scoreProjected = after?.result.compositeScore ?? null;
 
-  if (scoreProjected != null && scoreProjected <= score) {
+  // Whole-variant "verbeter" → alleen aanbieden bij score-winst. Section-scoped
+  // "regenereer" → altijd de nieuwe sectie teruggeven (de user vroeg er expliciet om).
+  if (!parsed.section && scoreProjected != null && scoreProjected <= score) {
     return NextResponse.json({ status: "no_improvement", score, scoreProjected, threshold });
   }
 
