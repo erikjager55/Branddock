@@ -12,6 +12,7 @@ import { FidelityScoreBar } from '../FidelityScoreBar';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import type { BrandTokens } from '@/lib/landing-pages/brand-tokens';
+import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ImageSourcePanel } from '../ImageSourcePanel';
 import type { VisualBriefSource } from '@/lib/ai/canvas-context';
@@ -382,19 +383,23 @@ export function LandingPageGenerateBlock({
         setVisualError(null);
         try {
           // Race tegen een ceiling zodat een hangende image-API de keuze-flow
-          // niet oneindig blokkeert: bij timeout renderen we zonder foto (de
-          // gen loopt door en vult de picker zodra klaar). 45s dekt FLUX/Imagen.
-          const heroUrl = await Promise.race([
+          // niet oneindig blokkeert. 75s dekt nano-banana-pro (trager dan FLUX/
+          // Imagen — 45s gaf soms een beeldloze hero op Better Brands). Eén retry
+          // bij timeout/null vóór we de pagina zonder foto laten; mislukt het
+          // alsnog, dan vult de self-heal in Step 3 het beeld alsnog aan.
+          const genOnce = () => Promise.race([
             generateHeroVisualUrl(chosen),
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), 45_000)),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 75_000)),
           ]);
+          let heroUrl = await genOnce();
+          if (!heroUrl) heroUrl = await genOnce();
           if (heroUrl) {
             chosen = { ...chosen, hero: { ...chosen.hero, heroVisualUrl: heroUrl } };
           } else {
-            setVisualError('Automatische header-image kwam niet (op tijd) terug — genereer handmatig in Step 3.');
+            setVisualError('Automatische header-image kwam niet (op tijd) terug — Step 3 genereert \'m alsnog automatisch.');
           }
         } catch (genErr) {
-          setVisualError(genErr instanceof Error ? genErr.message : 'Automatische header-image mislukt — genereer handmatig in Step 3.');
+          setVisualError(genErr instanceof Error ? genErr.message : 'Automatische header-image mislukt — Step 3 genereert \'m alsnog automatisch.');
         } finally {
           setIsGeneratingVisual(false);
         }
@@ -1112,51 +1117,6 @@ function FieldRow({ label, value, accent }: { label: string; value: string; acce
  * heroImagePromptFragment (computeBrandRenderHints) + brand.brandImageryStyle
  * + headline/subhead + brandImageryDonts.
  */
-function buildHeroVisualInstruction(
-  variant: LandingPageVariantContent,
-  contextStack: {
-    brand?: {
-      brandImageryStyle?: string | null;
-      brandImageryDonts?: string[] | null;
-      brandName?: string | null;
-    } | null;
-    brandTokens?: BrandTokens;
-  } | null,
-): string {
-  const brand = contextStack?.brand;
-  const tokens = contextStack?.brandTokens;
-  // Verbeterplan Fase E: tokens.photography.promptFragment bevat reeds
-  // gestructureerde mood+composition+subjects uit scraped photographyStyle
-  // (BrandTokens v4 mapper). Dit is sterker dan brand.brandImageryStyle
-  // free-text. Bij beide: photography eerst, brandImageryStyle als
-  // aanvullende layer.
-  const hints = tokens
-    ? computeBrandRenderHints(tokens.archetype, tokens.designSystem)
-    : null;
-  const parts: string[] = [];
-  parts.push(`Hero-visual for landing-page about: ${variant.hero.headline}`);
-  parts.push(`Subject context: ${variant.hero.subhead}`);
-  // User-eis: ALTIJD één volledige afbeelding — geen collage/triptiek.
-  parts.push('A SINGLE cohesive full-frame photograph — one continuous scene. NOT a collage, triptych, diptych, split-screen, grid, or multi-panel layout; no internal borders, seams, or dividers between sections');
-  // Tier-1: scraped photographyStyle (rijkst, brand-specifiek)
-  const photographyFragment = tokens?.photography?.promptFragment?.trim();
-  if (photographyFragment) {
-    parts.push(photographyFragment);
-  } else if (hints) {
-    // Tier-2: archetype-default uit hints
-    parts.push(`Photography style: ${hints.heroImagePromptFragment}`);
-  }
-  if (brand?.brandImageryStyle) parts.push(`Brand imagery: ${brand.brandImageryStyle}`);
-  if (brand?.brandName) parts.push(`Brand: ${brand.brandName}`);
-  const donts = brand?.brandImageryDonts;
-  if (donts && donts.length > 0) {
-    parts.push(`Avoid: ${donts.join(', ')}`);
-  } else {
-    parts.push('Avoid: stock photo people, generic SaaS illustrations, text overlays, lens flares');
-  }
-  return parts.join('. ') + '.';
-}
-
 /**
  * P2 — per-feature image-prompt: een editorial materiaal-/in-context-shot die
  * de feature-pilaar illustreert, geënt op de merk-fotografie (zelfde tiers als
