@@ -220,8 +220,12 @@ export function PuckPageBuilder({
       // niet alsnog muteren. Locked = bevries de hele content-tree.
       const currentRoot = (data.root?.props ?? {}) as Record<string, unknown>;
       if (currentRoot.locked === true) return;
-      setPuckData(data);
-      persistPuckData(data);
+      // Puck's onChange filtert props die niet in component.fields staan → de
+      // bandTone (geen editor-field) wordt gestript en sectie-reorders breken de
+      // ritmiek. Her-toepassen na elke editor-mutatie houdt de bands correct.
+      const banded = withSectionBands(data);
+      setPuckData(banded);
+      persistPuckData(banded);
     },
     [persistPuckData],
   );

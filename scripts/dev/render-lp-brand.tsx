@@ -14,7 +14,7 @@ import { Render } from "@puckeditor/core";
 import { prisma } from "../../src/lib/prisma";
 import { extractBrandTokensFromStyleguide } from "../../src/lib/landing-pages/brand-tokens";
 import { buildSpikePuckConfig } from "../../src/features/campaigns/components/canvas/medium/puck-config";
-import { buildLandingPageTemplateFromStructured } from "../../src/features/campaigns/components/canvas/medium/puck-templates/landing-page-from-structured";
+import { buildLandingPageTemplateFromStructured, assignSectionBands } from "../../src/features/campaigns/components/canvas/medium/puck-templates/landing-page-from-structured";
 import { buildA11yStyleBlock } from "../../src/lib/landing-pages/a11y-styles";
 import type { CanvasContextStack } from "../../src/lib/ai/canvas-context";
 
@@ -52,6 +52,9 @@ async function main() {
     ? buildLandingPageTemplateFromStructured(settings.structuredVariant as never, ctx)
     : settings.puckData) as { content?: Array<Record<string, unknown>> };
   if (!pd?.content) { console.log("NO puckData for", WS); return; }
+  // NORMALIZE=1 simuleert PuckPageBuilder.withSectionBands op bestaande puckData
+  // (zonder rebuild) — bewijst dat bestaande pagina's óók bands tonen.
+  if (process.env.NORMALIZE === "1") assignSectionBands(pd.content as Array<{ type: string; props: Record<string, unknown> }>);
   for (const c of pd.content) {
     const p = c.props as Record<string, unknown> | undefined;
     if (p?.heroVisualUrl) p.heroVisualUrl = abs(p.heroVisualUrl);

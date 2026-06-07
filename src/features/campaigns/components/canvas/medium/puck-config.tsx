@@ -2296,6 +2296,12 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens, bg: string = token
   const h3Color = safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, bg);
   // Body-tekst contrast-geclampt tegen de band-bg (5.0 = AA-normal).
   const safeText = readableTextColor(text, bg, tokens.onSurface);
+  // Code-chip + hr resolven óók tegen de band-bg (anders onzichtbaar op een tint):
+  // de code-chip is ALTIJD een stap donkerder dan de sectie; de hr-rand volgt
+  // surfaceBorder geclampt tegen de band.
+  const codeBg = mixHex(bg, tokens.onSurface, 0.08);
+  const codeText = readableTextColor(text, codeBg, tokens.onSurface);
+  const hrColor = resolveOnColor(tokens.surfaceBorder, bg, { fallback: tokens.onSurface, minRatio: 1.3 });
   return {
     h1: ({ children }: { children?: React.ReactNode }) => (
       <h1 style={{
@@ -2362,10 +2368,10 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens, bg: string = token
       <blockquote style={{ fontFamily: bodyFont, borderLeft: `4px solid ${primary}`, paddingLeft: 16, fontStyle: 'italic', color: safeText, margin: '12px 0' }}>{children}</blockquote>
     ),
     code: ({ children }: { children?: React.ReactNode }) => (
-      <code style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', backgroundColor: '#f3f4f6', padding: '2px 6px', borderRadius: 4, fontSize: 14 }}>{children}</code>
+      <code style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', backgroundColor: codeBg, color: codeText, padding: '2px 6px', borderRadius: 4, fontSize: 14 }}>{children}</code>
     ),
     hr: () => (
-      <hr style={{ border: 0, borderTop: '1px solid #e5e7eb', margin: '20px 0' }} />
+      <hr style={{ border: 0, borderTop: `1px solid ${hrColor}`, margin: '20px 0' }} />
     ),
   };
 }
