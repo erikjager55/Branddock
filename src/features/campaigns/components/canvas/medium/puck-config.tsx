@@ -884,7 +884,11 @@ function brandCtaComponent(
       // op de panel. Heading/tekst contrast-geclampt tegen de panel-bg.
       const isDarkPanel = tokens.hasDarkSections && tokens.darkSectionBg != null;
       const panelBg = isDarkPanel ? (tokens.darkSectionBg ?? tokens.onSurface) : tokens.brandSubtle;
-      const onPanelMuted = isDarkPanel ? 'rgba(255,255,255,0.72)' : tokens.surfaceMuted;
+      // Review-fix: muted meta-tekst tegen de ÉCHTE panel-bg clampen (op een
+      // lichte brand-tint kon surfaceMuted onder AA zakken).
+      const onPanelMuted = isDarkPanel
+        ? 'rgba(255,255,255,0.72)'
+        : readableTextColor(tokens.surfaceMuted, panelBg, tokens.onSurface);
       return (
         <section
           style={{
@@ -941,6 +945,10 @@ function brandCtaComponent(
           {(() => {
             const ctaBg = tokens.button.background ?? tokens.brand;
             const ctaColor = tokens.button.color ?? tokens.onBrand;
+            // Review-fix: op een lichte brand-tint-panel kan een pastel-accent-
+            // knop in dezelfde tint oplossen (lage figure/ground). Geef 'm dan
+            // een definiërende rand zodat de knop-vorm leesbaar blijft.
+            const ctaNeedsBorder = !isDarkPanel && contrastRatio(ctaBg, panelBg) < 3;
             // Cap letterSpacing voor lange CTA-labels: 3px × 30 char = 90px
             // extra width. Voor RULER/SAGE/MAGICIAN (premium) is dat te
             // breed. Bij text-length > 20 chars: cap letterSpacing op 0.1em.
@@ -959,7 +967,7 @@ function brandCtaComponent(
               textDecoration: 'none',
               padding: `${btn.paddingY}px ${btn.paddingX}px`,
               borderRadius: btn.radiusPx,
-              border: tokens.button.border ?? 'none',
+              border: tokens.button.border ?? (ctaNeedsBorder ? `2px solid ${tokens.onSurface}` : 'none'),
               textTransform: btn.textTransform,
               letterSpacing: capLetterSpacing,
               transition: tokens.button.transition
