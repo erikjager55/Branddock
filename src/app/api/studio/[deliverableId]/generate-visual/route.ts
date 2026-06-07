@@ -418,74 +418,106 @@ export async function POST(request: Request, { params }: RouteParams) {
     // on post-gen. Per-image try/catch so an overlay failure falls back
     // to the raw image instead of failing the whole request.
     const storage = getStorageProvider();
-    const uploads = await Promise.all(
+    // Per-item try/catch (geen kale Promise.all): faalt één download/upload, dan
+    // mag dat de andere — al geüploade — varianten NIET orphanen + de hele
+    // request 500'en. We persisten/retourneren de geslaagde uploads.
+    const uploadResults = await Promise.all(
       successful.map(async (img, idx) => {
-        const rawBytes = await fetchWithSizeLimit(img.hostedUrl, AI_IMAGE_SIZE_CAP);
-        let bytes: Buffer = rawBytes;
-        if (logoOverlay) {
-          try {
-            bytes = await compositeLogoOverlay({
-              imageUrl: img.hostedUrl,
-              logoUrl: logoOverlay.logo.url,
-              logoFileType: logoOverlay.logo.fileType,
-              position: logoOverlay.position,
-            });
-          } catch (err) {
-            console.warn(
-              `[generate-visual] logo overlay failed for variant ${idx}, uploading raw image:`,
-              err instanceof Error ? err.message : err,
-            );
-            bytes = rawBytes;
+        try {
+          const rawBytes = await fetchWithSizeLimit(img.hostedUrl, AI_IMAGE_SIZE_CAP);
+          let bytes: Buffer = rawBytes;
+          if (logoOverlay) {
+            try {
+              bytes = await compositeLogoOverlay({
+                imageUrl: img.hostedUrl,
+                logoUrl: logoOverlay.logo.url,
+                logoFileType: logoOverlay.logo.fileType,
+                position: logoOverlay.position,
+              });
+            } catch (err) {
+              console.warn(
+                `[generate-visual] logo overlay failed for variant ${idx}, uploading raw image:`,
+                err instanceof Error ? err.message : err,
+              );
+              bytes = rawBytes;
+            }
           }
+          const fileName = `canvas-visual-${deliverableId}-${Date.now()}-${idx}.png`;
+          const upload = await storage.upload(bytes, {
+            workspaceId,
+            fileName,
+            contentType: 'image/png',
+          });
+          return { url: upload.url, prompt: img.prompt };
+        } catch (err) {
+          console.error(
+            `[generate-visual] download/upload failed for variant ${idx}:`,
+            err instanceof Error ? err.message : err,
+          );
+          return null;
         }
-        const fileName = `canvas-visual-${deliverableId}-${Date.now()}-${idx}.png`;
-        const upload = await storage.upload(bytes, {
-          workspaceId,
-          fileName,
-          contentType: 'image/png',
-        });
-        return { url: upload.url, prompt: img.prompt };
       }),
     );
+    const uploads = uploadResults.filter((u): u is NonNullable<typeof u> => u !== null);
+    if (uploads.length === 0) {
+      return NextResponse.json(
+        { error: 'All image uploads failed after generation.' },
+        { status: 502 },
+      );
+    }
 
     // Persist as DeliverableComponent variantGroup='visual' of
     // 'visual:<sceneId>'. Replace any existing visual variants in dezelfde
     // group — workspace-level vs scene-scoped staan los van elkaar.
     const elapsedMs = Date.now() - startMs;
     const variantGroup = resolveVisualGroup(body?.sceneId);
-    const components = await prisma.$transaction(async (tx) => {
-      await tx.deliverableComponent.deleteMany({
-        where: { deliverableId, variantGroup },
-      });
-      const baseOrder = await tx.deliverableComponent.count({ where: { deliverableId } });
-      const created: Array<{ id: string; url: string; prompt: string }> = [];
-      for (let i = 0; i < uploads.length; i++) {
-        const u = uploads[i];
-        const row = await tx.deliverableComponent.create({
-          data: {
-            deliverableId,
-            componentType: 'image',
-            groupType: 'variant',
-            order: baseOrder + i,
-            variantGroup,
-            variantIndex: i,
-            isSelected: i === 0,
-            imageUrl: u.url,
-            imageSource: 'ai_generated',
-            imagePromptUsed: u.prompt,
-            aiProvider: modelId.startsWith('openai/') ? 'openai' : 'fal',
-            aiModel: modelId,
-            generationDuration: elapsedMs,
-            status: 'GENERATED',
-            generatedAt: new Date(),
-            iterationCount: 0,
-          },
-          select: { id: true, imageUrl: true, imagePromptUsed: true },
+    // Persist-failure mag de hero NIET blokkeren: de client zet de hero-URL uit
+    // de respons (variants[0].url). Faalt de DB-transactie (transient/connectie),
+    // dan retourneren we tóch de geüploade URLs (zonder DB-id) zodat het beeld
+    // alsnog landt — i.p.v. een 500 die de pagina beeldloos laat (root-cause-klasse
+    // van de orphaned-files: upload lukte, persist faalde, hero bleef leeg).
+    let components: Array<{ id: string; url: string; prompt: string }>;
+    try {
+      components = await prisma.$transaction(async (tx) => {
+        await tx.deliverableComponent.deleteMany({
+          where: { deliverableId, variantGroup },
         });
-        created.push({ id: row.id, url: row.imageUrl ?? '', prompt: row.imagePromptUsed ?? '' });
-      }
-      return created;
-    });
+        const baseOrder = await tx.deliverableComponent.count({ where: { deliverableId } });
+        const created: Array<{ id: string; url: string; prompt: string }> = [];
+        for (let i = 0; i < uploads.length; i++) {
+          const u = uploads[i];
+          const row = await tx.deliverableComponent.create({
+            data: {
+              deliverableId,
+              componentType: 'image',
+              groupType: 'variant',
+              order: baseOrder + i,
+              variantGroup,
+              variantIndex: i,
+              isSelected: i === 0,
+              imageUrl: u.url,
+              imageSource: 'ai_generated',
+              imagePromptUsed: u.prompt,
+              aiProvider: modelId.startsWith('openai/') ? 'openai' : 'fal',
+              aiModel: modelId,
+              generationDuration: elapsedMs,
+              status: 'GENERATED',
+              generatedAt: new Date(),
+              iterationCount: 0,
+            },
+            select: { id: true, imageUrl: true, imagePromptUsed: true },
+          });
+          created.push({ id: row.id, url: row.imageUrl ?? '', prompt: row.imagePromptUsed ?? '' });
+        }
+        return created;
+      });
+    } catch (err) {
+      console.error(
+        '[generate-visual] variant-persist transactie faalde — retourneer geüploade URLs zonder DB-id:',
+        err instanceof Error ? err.message : err,
+      );
+      components = uploads.map((u) => ({ id: '', url: u.url, prompt: u.prompt }));
+    }
 
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
 
@@ -495,9 +527,9 @@ export async function POST(request: Request, { params }: RouteParams) {
     // forget (~$0.04 + 12-15s per call); de UI haalt scores binnen via de
     // bestaande components-query refetch.
     void Promise.allSettled(
-      components.map((c) =>
-        scoreImageFidelity({ componentId: c.id, workspaceId }),
-      ),
+      components
+        .filter((c) => c.id) // persist-fallback (id='') heeft geen DB-row om te scoren
+        .map((c) => scoreImageFidelity({ componentId: c.id, workspaceId })),
     ).catch(() => {
       /* individual failures worden binnen scoreImageFidelity gelogd */
     });
