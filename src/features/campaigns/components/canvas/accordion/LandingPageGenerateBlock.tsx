@@ -18,6 +18,7 @@ import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-sche
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import type { BrandTokens } from '@/lib/landing-pages/brand-tokens';
 import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
+import { diffVariantCopy, type CopyFieldChange } from '@/lib/landing-pages/variant-copy-diff';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ImageSourcePanel } from '../ImageSourcePanel';
 import type { VisualBriefSource, CanvasContextStack } from '@/lib/ai/canvas-context';
@@ -80,6 +81,15 @@ export function LandingPageGenerateBlock({
   // LP-specifieke auto-iterate (Step 2): verbetert de actieve variant in-place.
   const [isAutoIterating, setIsAutoIterating] = useState(false);
   const [autoIterateMsg, setAutoIterateMsg] = useState<string | null>(null);
+  // P2a — before/after-voorstel: na de iteratie-loop tonen we WAT er verandert
+  // (per veld) + de score-winst, en de user kiest Toepassen/Verwerpen.
+  const [pendingProposal, setPendingProposal] = useState<{
+    improved: LandingPageVariantContent;
+    before: number;
+    after: number;
+    iterations: number;
+    changes: CopyFieldChange[];
+  } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingVisual, setIsGeneratingVisual] = useState(false);
   const [isChoosing, setIsChoosing] = useState(false);
@@ -500,56 +510,90 @@ export function LandingPageGenerateBlock({
    * herscoort. Vervangt de generieke studio-trigger die LP-structured niet kan
    * lezen (gaf "0 woorden").
    */
+  // P2a — iterate-tot-threshold: itereer de auto-iterate (max 3×) tot de score de
+  // drempel haalt of niet verder verbetert; toon dan een before/after-voorstel
+  // (wijzigingen per veld) i.p.v. blind toe te passen.
+  const AUTO_ITERATE_MAX = 3;
+  type IterateResponse =
+    | { status: 'skipped'; reason: string }
+    | { status: 'no_improvement'; score: number; scoreProjected: number }
+    | { status: 'proposal'; score: number; scoreProjected: number | null; threshold: number; variant: LandingPageVariantContent }
+    | { status: 'error'; error: string }
+    | { status?: undefined; error?: string };
+
   const handleAutoIterateVariant = useCallback(async () => {
     if (!variantOptions) return;
-    const variant = variantOptions[activeVariantIndex];
-    if (!variant) return;
+    const original = variantOptions[activeVariantIndex];
+    if (!original) return;
     setIsAutoIterating(true);
     setAutoIterateMsg(null);
+    setPendingProposal(null);
+    let current = original;
+    let startScore: number | null = null;
+    let bestScore: number | null = null;
+    let iterations = 0;
     try {
-      const res = await fetch(`/api/landing-pages/${deliverableId}/auto-iterate-variant`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ variantIndex: activeVariantIndex, variant }),
-      });
-      const json = (await res.json()) as
-        | { status: 'skipped'; reason: string }
-        | { status: 'no_improvement'; score: number; scoreProjected: number }
-        | { status: 'proposal'; score: number; scoreProjected: number | null; variant: LandingPageVariantContent }
-        | { status: 'error'; error: string }
-        | { status?: undefined; error?: string };
-      if (!res.ok || !('status' in json) || json.status === undefined) {
-        setAutoIterateMsg(('error' in json && json.error) ? json.error : 'Verbeteren mislukt — probeer opnieuw.');
-        return;
+      for (let iter = 1; iter <= AUTO_ITERATE_MAX; iter++) {
+        setAutoIterateMsg(`Iteratie ${iter}/${AUTO_ITERATE_MAX}…${bestScore != null ? ` (score ${bestScore})` : ''}`);
+        const res = await fetch(`/api/landing-pages/${deliverableId}/auto-iterate-variant`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ variantIndex: activeVariantIndex, variant: current }),
+        });
+        const json = (await res.json().catch(() => null)) as IterateResponse | null;
+        if (!res.ok || !json || !('status' in json) || json.status === undefined) {
+          if (iterations === 0) setAutoIterateMsg((json && 'error' in json && json.error) ? json.error : 'Verbeteren mislukt — probeer opnieuw.');
+          break;
+        }
+        if (json.status === 'skipped') {
+          if (iterations === 0) setAutoIterateMsg(json.reason === 'above-threshold' ? 'Deze variant zit al boven de drempel.' : 'Te weinig content om te verbeteren.');
+          break;
+        }
+        if (json.status === 'no_improvement') {
+          if (iterations === 0) setAutoIterateMsg(`Geen verbetering gevonden (${json.score} → ${json.scoreProjected}). Huidige variant blijft.`);
+          break; // kan niet verder → stop met het beste (current)
+        }
+        if (json.status === 'error') {
+          if (iterations === 0) setAutoIterateMsg(json.error);
+          break;
+        }
+        // proposal — accumuleer + ga door tot drempel/max.
+        if (startScore === null) startScore = json.score;
+        current = json.variant;
+        bestScore = json.scoreProjected ?? bestScore;
+        iterations += 1;
+        if (json.scoreProjected != null && json.scoreProjected >= json.threshold) break;
       }
-      if (json.status === 'skipped') {
-        setAutoIterateMsg(
-          json.reason === 'above-threshold'
-            ? 'Deze variant zit al boven de drempel.'
-            : 'Te weinig content om te verbeteren.',
-        );
-        return;
+      if (iterations > 0 && current !== original) {
+        setAutoIterateMsg(null);
+        setPendingProposal({
+          improved: current,
+          before: startScore ?? 0,
+          after: bestScore ?? 0,
+          iterations,
+          changes: diffVariantCopy(original, current),
+        });
       }
-      if (json.status === 'no_improvement') {
-        setAutoIterateMsg(`Geen verbetering gevonden (${json.score} → ${json.scoreProjected}). Huidige variant blijft.`);
-        return;
-      }
-      if (json.status === 'error') {
-        setAutoIterateMsg(json.error);
-        return;
-      }
-      // proposal — vervang variant in-place + herscoor zodat de bar update.
-      setStructuredVariantOptions(
-        variantOptions.map((v, i) => (i === activeVariantIndex ? json.variant : v)),
-      );
-      void scoreVariantFidelity(json.variant, activeVariantIndex);
-      setAutoIterateMsg(`Verbeterd: ${json.score} → ${json.scoreProjected ?? '?'}.`);
     } catch (err) {
       setAutoIterateMsg(err instanceof Error ? err.message : 'Verbeteren mislukt');
     } finally {
       setIsAutoIterating(false);
     }
-  }, [variantOptions, activeVariantIndex, deliverableId, setStructuredVariantOptions, scoreVariantFidelity]);
+  }, [variantOptions, activeVariantIndex, deliverableId]);
+
+  const applyProposal = useCallback(() => {
+    if (!pendingProposal || !variantOptions) return;
+    const improved = pendingProposal.improved;
+    setStructuredVariantOptions(variantOptions.map((v, i) => (i === activeVariantIndex ? improved : v)));
+    void scoreVariantFidelity(improved, activeVariantIndex);
+    setAutoIterateMsg(`Toegepast: ${pendingProposal.before} → ${pendingProposal.after}.`);
+    setPendingProposal(null);
+  }, [pendingProposal, variantOptions, activeVariantIndex, setStructuredVariantOptions, scoreVariantFidelity]);
+
+  const discardProposal = useCallback(() => {
+    setPendingProposal(null);
+    setAutoIterateMsg('Voorstel verworpen — huidige variant blijft.');
+  }, []);
 
   // ─── Briefing incompleet ─────────────────────────────────
   if (briefIncomplete) {
@@ -673,6 +717,49 @@ export function LandingPageGenerateBlock({
             <p className="text-xs text-gray-600">{autoIterateMsg}</p>
           ) : null}
         </div>
+        {/* P2a — before/after-voorstel: toon de score-winst + wat er per veld
+            verandert, en laat de user Toepassen/Verwerpen. */}
+        {pendingProposal ? (
+          <div className="rounded-lg border border-emerald-300 bg-emerald-50/60 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-sm font-medium text-emerald-900 flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-emerald-600" />
+                Voorstel: score {pendingProposal.before} → {pendingProposal.after}
+                {pendingProposal.iterations > 1 ? ` (${pendingProposal.iterations} iteraties)` : ''}
+                {' · '}{pendingProposal.changes.length} wijziging{pendingProposal.changes.length === 1 ? '' : 'en'}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={applyProposal}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />Toepassen
+                </button>
+                <button
+                  type="button"
+                  onClick={discardProposal}
+                  className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 text-xs font-medium hover:bg-gray-50"
+                >
+                  Verwerpen
+                </button>
+              </div>
+            </div>
+            {pendingProposal.changes.length > 0 ? (
+              <div className="max-h-64 overflow-y-auto space-y-2 rounded-md border border-emerald-100 bg-white p-3">
+                {pendingProposal.changes.map((c, i) => (
+                  <div key={i} className="text-xs">
+                    <p className="font-medium text-gray-500 mb-0.5">{c.label}</p>
+                    <p className="text-red-700/80 line-through decoration-red-300">{c.before || '—'}</p>
+                    <p className="text-emerald-800">{c.after || '—'}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500">Score verbeterd zonder zichtbare tekstwijzigingen.</p>
+            )}
+          </div>
+        ) : null}
         {partialDelivery ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />

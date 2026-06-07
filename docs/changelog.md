@@ -37,6 +37,12 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 306. Step 2 P2a — auto-iterate before/after-diff + iterate-tot-threshold (landingspagina)
+
+Vervolg op de Step-2-audit (W5: auto-iterate was one-shot + opaak). "Verbeter variant automatisch" itereert nu **tot de drempel** (max 3×): elke iteratie voert het vorige resultaat terug en stopt zodra de fidelity-score ≥ drempel of niet verder verbetert (toont "Iteratie 2/3 — score …"). De uitkomst wordt **niet meer blind toegepast** maar als **voorstel** getoond: score before→after + een per-veld **before/after-diff** (nieuwe pure util `diffVariantCopy`, `src/lib/landing-pages/variant-copy-diff.ts`) met Toepassen/Verwerpen. Pas bij Toepassen wordt de variant vervangen + herscoord. tsc+lint 0; phase64 diff-smoke 9/9; 67 web-page-builder smokes groen.
+
+- Commit: branch `feat/step2-auto-iterate-diff`
+
 ### 305. Step 2 P1b + P1c — per-sectie regenereren + tone/length-microtransforms (landingspagina)
 
 Vervolg op de Step-2-audit (W2 + W3). **P1b — per-sectie regenereren**: `auto-iterate-variant`-route accepteert nu een optionele `section` (hero/trust/problem/features/socialProof/pricing/faq/finalCta); bij section-scope krijgt het een sectie-specifieke prompt-instructie, slaat het de "above-threshold"- + "no_improvement"-gates over (het is een expliciete regenereer-actie, geen auto-improve), en dwingt het de scope server-side af via een merge die ALLEEN die sectie vervangt (fallback op de originele sectie als de AI 'm wegliet → nooit `undefined` mergen). UI: een ↻-knop per sectie-header in `VariantCompareCard` (hero/problem/features/socialProof/faq/finalCta) werkt de lokale variant bij — gemerged in de laatste state zodat gelijktijdige edits aan andere secties overleven (geen clobber); de WYSIWYG-preview (P1a) werkt direct bij. **P1c — tone/length-microtransforms**: elk bewerkbaar veld krijgt in edit-mode Korter/Urgenter/Brand-voice-knoppen die de bestaande `useInlineTransform` (→ `inline-transform`-route, brand-voice-aware) hergebruiken; `deliverableId` via een `EditDeliverableCtx` (geen per-veld-prop). Adversariële review (6 dimensies) → 3 fixes toegepast (undefined-merge-fallback, regenerate-clobber-race via `vRef` + sectie-merge, skipped/no_improvement-afhandeling). tsc+lint 0; 66 web-page-builder smokes groen.
