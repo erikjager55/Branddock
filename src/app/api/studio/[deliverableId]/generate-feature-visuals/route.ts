@@ -16,6 +16,7 @@ import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
 import { selectModelForStyle } from '@/lib/ai/visual-brief-prompts';
 import { generateFalImage } from '@/lib/integrations/fal/fal-client';
+import { buildNegativePrompt } from '@/lib/ai/image-quality/negative-prompts';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { getStorageProvider } from '@/lib/storage';
 
@@ -70,6 +71,8 @@ export async function POST(request: Request, { params }: RouteParams) {
     const referenceImageUrls = anchors.slice(0, maxAnchorsForModel(modelId)).map((a) => a.fileUrl);
 
     const storage = getStorageProvider();
+    // Defaults bevatten nu anti-collage/triptiek (één volledige afbeelding-eis).
+    const negativePrompt = buildNegativePrompt();
     // Per-index resultaat (behoudt volgorde = feature-index); null bij falen.
     const urls = await Promise.all(
       prompts.map(async (prompt, idx): Promise<string | null> => {
@@ -78,6 +81,7 @@ export async function POST(request: Request, { params }: RouteParams) {
             imageSize: 'landscape_4_3',
             numImages: 1,
             referenceImageUrls: referenceImageUrls.length > 0 ? referenceImageUrls : undefined,
+            negativePrompt,
           });
           const hostedUrl = result.images?.[0]?.url;
           if (!hostedUrl) return null;

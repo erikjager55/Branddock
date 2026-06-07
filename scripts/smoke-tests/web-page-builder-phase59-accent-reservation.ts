@@ -7,7 +7,7 @@
  *
  * Run: npx tsx scripts/smoke-tests/web-page-builder-phase59-accent-reservation.ts
  */
-import { reserveAccentForHeading, isCloseColor, isLoudColor } from "../../src/lib/landing-pages/wcag";
+import { reserveAccentForHeading, isCloseColor, isLoudColor, safeHeadingColor, contrastRatio } from "../../src/lib/landing-pages/wcag";
 
 let pass = 0;
 let fail = 0;
@@ -44,6 +44,26 @@ assert("charcoal #212529 → NIET luid (neutraal)", isLoudColor("#212529") === f
 assert("near-wit #F8F9FA → NIET luid", isLoudColor("#F8F9FA") === false);
 // Gedempt-goud accent-merk (LINFI): goud-gekleurde kop BLIJFT (niet charcoal).
 assert("goud-kop bij gedempt-goud accent → BLIJFT (merk-fideliteit)", reserveAccentForHeading("#B59032", "#B59032", CHARCOAL) === "#B59032");
+
+console.log("\nsafeHeadingColor — gegarandeerde contrast-clamp (systematisch, elke klant)");
+{
+  const CHARC = "#212529";
+  // Lichte gescrapte kop op lichte sectie → MOET geclampt worden (>=3:1).
+  const r1 = safeHeadingColor("#DDDDDD", ACCENT, CHARC, "#FFFFFF");
+  assert("lichte kop (#DDD) op wit → contrast >= 3.0", contrastRatio(r1, "#FFFFFF") >= 3.0, `${r1} = ${contrastRatio(r1, "#FFFFFF").toFixed(2)}`);
+  // Donkere gescrapte kop op donkere panel → geflipt naar leesbaar (>=3:1).
+  const r2 = safeHeadingColor("#222222", ACCENT, CHARC, "#212529");
+  assert("donkere kop op donkere panel → contrast >= 3.0", contrastRatio(r2, "#212529") >= 3.0, `${r2} = ${contrastRatio(r2, "#212529").toFixed(2)}`);
+  // Loud-accent-kop op wit → gereserveerd naar charcoal, contrast ok.
+  const r3 = safeHeadingColor(ACCENT, ACCENT, CHARC, "#FFFFFF");
+  assert("loud-accent kop → niet de accent + contrast >= 3.0", r3 !== ACCENT && contrastRatio(r3, "#FFFFFF") >= 3.0);
+  // Eigen donkere kop (niet-accent) op wit → behouden + leesbaar.
+  const r4 = safeHeadingColor("#1A2B3C", "#0A58CA", CHARC, "#FFFFFF");
+  assert("eigen donkere kop op wit → leesbaar (>= 3.0)", contrastRatio(r4, "#FFFFFF") >= 3.0);
+  // null kop → onSurface fallback, leesbaar.
+  const r5 = safeHeadingColor(null, ACCENT, CHARC, "#FFFFFF");
+  assert("null kop → onSurface, contrast >= 3.0", contrastRatio(r5, "#FFFFFF") >= 3.0);
+}
 
 console.log(`\nTotal: ${pass + fail} | PASS: ${pass} | FAIL: ${fail}`);
 process.exit(fail === 0 ? 0 : 1);

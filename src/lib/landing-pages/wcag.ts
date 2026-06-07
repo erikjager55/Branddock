@@ -337,3 +337,25 @@ export function reserveAccentForHeading(
   if (!isLoudColor(accent)) return headingColor;
   return isCloseColor(headingColor, accent) ? onSurface : headingColor;
 }
+
+/**
+ * DE kop-kleur-resolver voor LP-render: combineert accent-reservering (P8) MET
+ * een GEGARANDEERDE contrast-clamp tegen de échte sectie-/card-achtergrond. Eén
+ * doorgang voor élke kop-/sub-kop, zodat geen enkele uiting — ongeacht klant —
+ * een te-lage-contrast kop kan tonen (een gescrapte lichte kop-kleur op een
+ * lichte sectie wordt naar onSurface geclampt). minRatio 3.0 = AA-large (koppen
+ * zijn groot/display); body gebruikt readableTextColor (5.0).
+ */
+export function safeHeadingColor(
+  scrapedColor: string | null | undefined,
+  accent: string,
+  onSurface: string,
+  bg: string,
+  minRatio = 3.0,
+): string {
+  return resolveOnColor(
+    reserveAccentForHeading(scrapedColor, accent, onSurface),
+    bg,
+    { fallback: onSurface, minRatio },
+  );
+}
