@@ -239,7 +239,13 @@ export function normalizeColorToHex(c: string): string | null {
   if (/^#[0-9a-f]{6}$/.test(s)) return s;
   const m3 = s.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/);
   if (m3) return `#${m3[1]}${m3[1]}${m3[2]}${m3[2]}${m3[3]}${m3[3]}`;
-  const mrgb = s.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/);
+  // 8-digit hex (#rrggbbaa) → drop alpha voor de hex-meting.
+  const m8 = s.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})[0-9a-f]{2}$/);
+  if (m8) return `#${m8[1]}${m8[2]}${m8[3]}`;
+  // Comma- (rgb(255, 255, 255)) én space-syntax (rgb(255 255 255 / .1)): de
+  // moderne space/slash-vorm lekt uit scrapes (bv. translucent overlay-buttons)
+  // en werd anders als null → onmeetbaar → onzichtbare CTA behandeld.
+  const mrgb = s.match(/^rgba?\(\s*(\d{1,3})[\s,]+(\d{1,3})[\s,]+(\d{1,3})/);
   if (mrgb) {
     const h = (n: number) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, '0');
     return `#${h(+mrgb[1])}${h(+mrgb[2])}${h(+mrgb[3])}`;

@@ -37,11 +37,28 @@ function instance(type: string, props: Record<string, unknown>): PuckInstance {
 
 // ─── Section builders ─────────────────────────────────────
 
-function heroSection(v: LandingPageVariantContent): PuckInstance {
+/**
+ * Bepaalt de CTA-doel-URL uit de Step 1-input `landingPageUrl` ("Where the CTA
+ * should link to"). Accepteert http(s)://, root-relatieve paden (/...), en
+ * mailto:/tel:. Alles anders (of leeg) → "#" zodat er nooit een kapotte/lekkende
+ * URL in een <a href> belandt.
+ */
+export function resolveCtaHref(ctx: CanvasContextStack | null): string {
+  const raw = ctx?.contentTypeInputs?.landingPageUrl;
+  const url = typeof raw === "string" ? raw.trim() : "";
+  if (!url) return "#";
+  if (/^https?:\/\/[^\s]+$/i.test(url)) return url;
+  if (/^(?:mailto:|tel:)[^\s]+$/i.test(url)) return url;
+  if (/^\/[^\s]*$/.test(url)) return url;
+  return "#";
+}
+
+function heroSection(v: LandingPageVariantContent, ctx: CanvasContextStack | null): PuckInstance {
   return instance("BrandHero", {
     headline: v.hero.headline,
     sub: v.hero.subhead,
     ctaLabel: v.hero.primaryCta,
+    ctaHref: resolveCtaHref(ctx),
     heroVisualUrl: v.hero.heroVisualUrl ?? "",
     eyebrow: v.hero.eyebrow ?? "",
   });
@@ -149,7 +166,7 @@ function finalCtaSection(
   // RichText-sectie erboven → geen dubbele gepadde band meer onderaan.
   return instance("BrandCTA", {
     label: v.finalCta.primaryCta,
-    href: "#",
+    href: resolveCtaHref(ctx),
     personaId,
     riskReducer: v.finalCta.riskReducer,
     heading: v.finalCta.heading,
@@ -210,7 +227,7 @@ export function buildLandingPageTemplateFromStructured(
   // no-op en blijven de slots leeg / vallen op placeholder/AI-gen terug).
   const variant = assignBrandImagesToVariant(rawVariant, ctx?.brandImages ?? null);
   const sections: Array<PuckInstance | null> = [
-    heroSection(variant), // 1. Hero
+    heroSection(variant, ctx), // 1. Hero
     trustStripSection(variant), // 2. Trust-strip
     problemSection(variant), // 3. Probleem-articulatie (conditional)
     featuresSection(variant), // 4. Features

@@ -3,7 +3,7 @@ import type { PreviewContent } from '../../../types/canvas.types';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 import type { SpikePuckProps } from './puck-config';
 import { resolveTemplateBuilder, type FilledFields } from './puck-templates';
-import { buildLandingPageTemplateFromStructured } from './puck-templates/landing-page-from-structured';
+import { buildLandingPageTemplateFromStructured, resolveCtaHref } from './puck-templates/landing-page-from-structured';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
 
 type SpikeData = Data<SpikePuckProps>;
@@ -125,7 +125,7 @@ export function extractFilledFields(
     headline,
     sub,
     ctaLabel,
-    ctaHref: '#',
+    ctaHref: resolveCtaHref(ctx),
     featureItems,
     faqItems,
     testimonialQuote,

@@ -9,7 +9,7 @@ import {
 } from '@/lib/landing-pages/brand-tokens';
 import { computeBrandRenderHints } from '@/lib/landing-pages/brand-render-rules';
 import { getRenderConstraints } from '@/lib/landing-pages/render-constraints';
-import { readableTextColor, resolveOnColor, isCardContextMismatch, reserveAccentForHeading, contrastRatio, safeHeadingColor } from '@/lib/landing-pages/wcag';
+import { readableTextColor, resolveOnColor, isCardContextMismatch, reserveAccentForHeading, contrastRatio, safeHeadingColor, normalizeColorToHex, blackOrWhiteFor } from '@/lib/landing-pages/wcag';
 
 import {
   buildBackgroundDepth,
@@ -17,9 +17,46 @@ import {
   pickBackgroundDepth,
 } from '@/lib/landing-pages/background-textures';
 import { IconBlock } from './lucide-icon-map';
-import { isNoOpBorder, isTransparentBackground } from '@/lib/landing-pages/scraped-css-helpers';
+import { isNoOpBorder, isTransparentBackground, isWeakButtonBackground } from '@/lib/landing-pages/scraped-css-helpers';
 import { pxFromCssValue } from '@/lib/landing-pages/brand-tokens-v4-mappers';
 import { isScrapedOrigin, type TokenProvenance } from '@/lib/landing-pages/token-provenance';
+
+// ─── CTA-fill resolver ───────────────────────────────────────
+
+/**
+ * Kiest een ZICHTBARE CTA-knop-fill + leesbare tekstkleur.
+ *
+ * Een scraped `tokens.button.background` kan onbruikbaar zijn als solide CTA:
+ *  - translucent/transparant (bv. `rgb(255 255 255 / .1)` overlay-button) →
+ *    lost op in de sectie-bg → de knop ziet eruit als platte tekst.
+ *  - bijna gelijk aan de sectie-bg (figure/ground < 1.5) → onzichtbare vorm.
+ * In die gevallen valt de knop terug op de merk-accent (`fallbackBg`) zodat de
+ * CTA ALTIJD los-popt. De tekstkleur wordt tegen de gekozen fill geclampt (≥4.5)
+ * zodat het label leesbaar blijft. Borgt CTA-zichtbaarheid voor élke klant.
+ */
+function resolveCtaFill(
+  scrapedBg: string | null | undefined,
+  scrapedColor: string | null | undefined,
+  fallbackBg: string,
+  fallbackColor: string,
+  sectionBg: string,
+): { background: string; color: string; usedFallback: boolean } {
+  let background = scrapedBg ?? fallbackBg;
+  let usedFallback = !scrapedBg;
+  if (isWeakButtonBackground(scrapedBg)) {
+    background = fallbackBg;
+    usedFallback = true;
+  } else if (scrapedBg) {
+    const hex = normalizeColorToHex(scrapedBg);
+    if (hex && contrastRatio(hex, sectionBg) < 1.5) {
+      background = fallbackBg;
+      usedFallback = true;
+    }
+  }
+  const baseColor = usedFallback ? fallbackColor : (scrapedColor ?? fallbackColor);
+  const color = readableTextColor(baseColor, background, blackOrWhiteFor(background), 4.5);
+  return { background, color, usedFallback };
+}
 
 // ─── Component prop types ────────────────────────────────────
 
@@ -27,6 +64,9 @@ export type SpikeBrandHeroProps = {
   headline: string;
   sub: string;
   ctaLabel: string;
+  /** CTA-doel-URL (uit Step 1 `landingPageUrl`). Wanneer een echte URL: de hero-
+   *  CTA wordt een navigerende <a>; bij "#"/leeg blijft het een <button>. */
+  ctaHref?: string;
   /** Optional hero-visual URL (afbeelding of GIF). Fase 5 spec §4a v2-stap;
    *  v2 wordt dit een dedicated animatie-slot. */
   heroVisualUrl?: string;
@@ -443,7 +483,7 @@ function brandHeroComponent(tokens: BrandTokens) {
       ctaLabel: 'Get started',
       heroVisualUrl: '',
     },
-    render: ({ headline, sub, ctaLabel, heroVisualUrl, eyebrow }: SpikeBrandHeroProps) => {
+    render: ({ headline, sub, ctaLabel, ctaHref, heroVisualUrl, eyebrow }: SpikeBrandHeroProps) => {
       // ── Resolve background-style ──────────────────────────
       const hasHeroVisual = !!heroVisualUrl && heroVisualUrl.trim().length > 0;
       // C10: gebruiker heeft expliciet hero-image gezet → altijd full-bleed
@@ -613,13 +653,25 @@ function brandHeroComponent(tokens: BrandTokens) {
       const darkHeroAccentOk = heroIsDark && contrastRatio(tokens.brand, sectionBg) >= 4.0;
       const fallbackBg = heroIsDark ? (darkHeroAccentOk ? tokens.brand : '#FFFFFF') : tokens.brand;
       const fallbackColor = heroIsDark ? (darkHeroAccentOk ? tokens.onBrand : tokens.onSurface) : tokens.onBrand;
+      // CTA-zichtbaarheid: een translucent/blendende scraped fill (bv. Better
+      // Brands `rgb(255 255 255 / .1)`) valt terug op de merk-accent zodat de
+      // knop niet als platte tekst verschijnt. Over een full-bleed FOTO is de
+      // sectie-bg niet representatief → meet dan tegen de accent-fallback zelf
+      // (alleen de alpha-gate telt daar, niet de figure/ground-check).
+      const ctaFill = resolveCtaFill(
+        tokens.button.background,
+        tokens.button.color,
+        fallbackBg,
+        fallbackColor,
+        useFullBleed ? fallbackBg : sectionBg,
+      );
       const buttonRender: React.CSSProperties & Record<`--${string}`, string> = {
-        background: tokens.button.background ?? fallbackBg,
-        color: tokens.button.color ?? fallbackColor,
+        background: ctaFill.background,
+        color: ctaFill.color,
         fontFamily: tokens.button.fontFamily ?? bodyFont,
         fontWeight: buttonStyle.fontWeight,
         fontSize: 16,
-        border: tokens.button.border ?? 'none',
+        border: ctaFill.usedFallback ? 'none' : (tokens.button.border ?? 'none'),
         // Cap button-padding op normale CTA-maten. De hints leiden paddingX af
         // van spacing[6] — voor brands met een ruime spacing-scale (MINIMAL)
         // geeft dat een absurd groot blok zodra de button een fill heeft.
@@ -748,21 +800,38 @@ function brandHeroComponent(tokens: BrandTokens) {
             >
               {sub}
             </p>
-            <button
-              type="button"
-              className="lp-interactive lp-reveal lp-reveal-3 lp-btn"
-              aria-label={ctaLabel}
-              style={{
+            {(() => {
+              const heroCtaStyle: React.CSSProperties & Record<`--${string}`, string> = {
                 ...buttonRender,
                 // Conditional whitespace + letterSpacing cap voor lange labels.
                 whiteSpace: (ctaLabel ?? '').length <= 24 ? 'nowrap' : 'normal',
                 letterSpacing: (ctaLabel ?? '').length > 20 ? '0.1em' : buttonStyle.letterSpacing,
                 // Center button binnen centered hero
                 marginInline: heroLayout.textAlignment === 'center' ? 'auto' : undefined,
-              }}
-            >
-              {ctaLabel}
-            </button>
+              };
+              // Step 1 `landingPageUrl` → navigerende <a>; bij "#"/leeg blijft de
+              // hero-CTA een niet-navigerende <button> (zoals voorheen).
+              const hasHref = !!ctaHref && ctaHref !== '#';
+              return hasHref ? (
+                <a
+                  href={ctaHref}
+                  className="lp-interactive lp-reveal lp-reveal-3 lp-btn"
+                  aria-label={ctaLabel}
+                  style={{ ...heroCtaStyle, display: 'inline-block', textAlign: 'center' }}
+                >
+                  {ctaLabel}
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className="lp-interactive lp-reveal lp-reveal-3 lp-btn"
+                  aria-label={ctaLabel}
+                  style={heroCtaStyle}
+                >
+                  {ctaLabel}
+                </button>
+              );
+            })()}
           </div>
         </section>
       );
@@ -943,8 +1012,11 @@ function brandCtaComponent(
               op de gebrande panel popt de accent (geen vibrant→charcoal-
               downgrade meer; de panel-bg levert het contrast). */}
           {(() => {
-            const ctaBg = tokens.button.background ?? tokens.brand;
-            const ctaColor = tokens.button.color ?? tokens.onBrand;
+            // CTA-zichtbaarheid: translucent/blendende scraped fill → merk-accent
+            // (anders verschijnt de knop als platte tekst op de panel).
+            const ctaFill = resolveCtaFill(tokens.button.background, tokens.button.color, tokens.brand, tokens.onBrand, panelBg);
+            const ctaBg = ctaFill.background;
+            const ctaColor = ctaFill.color;
             // Review-fix: op een lichte brand-tint-panel kan een pastel-accent-
             // knop in dezelfde tint oplossen (lage figure/ground). Geef 'm dan
             // een definiërende rand zodat de knop-vorm leesbaar blijft.
@@ -967,7 +1039,11 @@ function brandCtaComponent(
               textDecoration: 'none',
               padding: `${btn.paddingY}px ${btn.paddingX}px`,
               borderRadius: btn.radiusPx,
-              border: tokens.button.border ?? (ctaNeedsBorder ? `2px solid ${tokens.onSurface}` : 'none'),
+              // Bij accent-fallback de scraped border negeren (die hoorde bij de
+              // weggevallen translucent fill); alleen de figure/ground-rand zetten.
+              border: ctaFill.usedFallback
+                ? (ctaNeedsBorder ? `2px solid ${tokens.onSurface}` : 'none')
+                : (tokens.button.border ?? (ctaNeedsBorder ? `2px solid ${tokens.onSurface}` : 'none')),
               textTransform: btn.textTransform,
               letterSpacing: capLetterSpacing,
               transition: tokens.button.transition
@@ -2016,13 +2092,15 @@ function brandNavComponent(tokens: BrandTokens) {
         fontSize: nav?.fontSize ?? '15px',
         color: nav?.color ?? tokens.onSurface,
       };
+      const navBg = nav?.background && !isTransparentBackground(nav.background) ? nav.background : tokens.surface;
+      const navCtaFill = resolveCtaFill(tokens.button.background, tokens.button.color, tokens.brand, tokens.onBrand, navBg);
       const ctaInline: React.CSSProperties = {
-        background: tokens.button.background ?? tokens.brand,
-        color: tokens.button.color ?? tokens.onBrand,
+        background: navCtaFill.background,
+        color: navCtaFill.color,
         fontFamily: tokens.button.fontFamily ?? bodyFont,
         padding: '8px 18px',
         borderRadius: tokens.button.radiusPx,
-        border: tokens.button.border ?? 'none',
+        border: navCtaFill.usedFallback ? 'none' : (tokens.button.border ?? 'none'),
         textDecoration: 'none',
         fontSize: 14,
         fontWeight: tokens.button.fontWeight,
