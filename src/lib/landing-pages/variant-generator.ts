@@ -34,6 +34,7 @@ import {
 } from "./variant-schema";
 import type { BrandArchetype } from "./brand-archetype-classifier";
 import type { LayoutStyle } from "./design-system";
+import { formatAngleInstruction, type CreativeAngle } from "../ai/canvas-angle-generator";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -75,6 +76,12 @@ export interface LandingPageGenerationParams {
    *  (pijn vooraan + crisis-framing) en variant B 'benefit-led' (outcome
    *  vooraan + transformation-framing). */
   variantAxis?: VariantAxis | null;
+  /** P3b — dynamische creative-angle (uit canvas-angle-generator). Wanneer gezet
+   *  vervangt dit de generieke variantAxis als divergentie-frame (brand-/context-
+   *  specifiek). `angleInstruction` = formatAngleInstruction-output (prompt-blok);
+   *  `angleLabel` = het korte NL label dat in de UI getoond wordt. */
+  angleInstruction?: string | null;
+  angleLabel?: string | null;
 }
 
 export type VariantAxis =
@@ -128,6 +135,7 @@ export function buildLandingPageVariantPrompt(
     vocabularyDont: params.vocabularyDont ?? null,
     voiceSample: params.voiceSample ?? null,
     variantAxis: params.variantAxis ?? null,
+    angleInstruction: params.angleInstruction ?? null,
   });
   const user = buildUserPrompt(params, { locale });
   return { system, user };
@@ -168,6 +176,7 @@ function buildSystemPrompt(opts: {
   vocabularyDont?: string[] | null;
   voiceSample?: string | null;
   variantAxis?: VariantAxis | null;
+  angleInstruction?: string | null;
 }): string {
   const toneBlock = opts.archetype
     ? `\n# BRAND-ARCHETYPE: ${opts.archetype}\nTone: ${ARCHETYPE_TONE_HINTS[opts.archetype]}\n`
@@ -201,7 +210,11 @@ function buildSystemPrompt(opts: {
   // 'beste-antwoord' framing eist. We zetten dit BOVENAAN de prompt en
   // herhalen het EISEND in de output-regels zodat Claude geneigd is om
   // het te respecteren ook al klinken beide aanpakken op zich logisch.
-  const axisBlock = opts.variantAxis
+  // P3b — dynamische creative-angle wint als divergentie-frame (brand-specifiek,
+  // rijker dan de generieke axis). Valt terug op de axis wanneer geen angle.
+  const axisBlock = opts.angleInstruction
+    ? `\n# !! CREATIVE ANGLE (HARD CONSTRAINT) !!\n${opts.angleInstruction}\n`
+    : opts.variantAxis
     ? `\n# !! VARIANT-INVALSHOEK (HARD CONSTRAINT) !!: ${opts.variantAxis.toUpperCase()}\n${VARIANT_AXIS_HINTS[opts.variantAxis]}\n\nDIT IS GEEN OPTIE — het is de KERN van deze variant. Andere variants in dezelfde batch volgen een EXPLICIET ANDERE as (bv: problem-led ↔ benefit-led). Onze users zien de twee variants NAAST ELKAAR en moeten ze direct kunnen onderscheiden:\n  - Hero-headline moet de gekozen invalshoek meteen tonen\n  - Volgorde van secties moet de invalshoek versterken\n  - Tone en woordkeus moet substantieel afwijken\nWanneer beide variants 'rond hetzelfde middenpad' uitkomen, hebben we GEFAALD — neem het risico van een uitgesproken kant.\n`
     : '';
   // DTS C6 — sectie-blueprint hint uit render-constraints (alleen wanneer archetype gezet)
@@ -476,6 +489,8 @@ export interface GenerationResult {
   inputTokens: number;
   outputTokens: number;
   retried: boolean;
+  /** P3b — het creative-angle-label van deze variant (null bij axis-fallback). */
+  angleLabel?: string | null;
 }
 
 /**
@@ -526,6 +541,7 @@ export async function generateLandingPageVariant(
     inputTokens: response.inputTokens,
     outputTokens: response.outputTokens,
     retried: false,
+    angleLabel: params.angleLabel ?? null,
   };
 }
 
@@ -549,26 +565,32 @@ export async function generateLandingPageVariant(
 export async function generateLandingPageVariantBatch(
   params: LandingPageGenerationParams,
   count: 1 | 2 = 2,
+  angles?: CreativeAngle[] | null,
 ): Promise<GenerationResult[]> {
   const TEMPERATURES = count === 2 ? [0.4, 0.7] : [0.4];
   const RECOVERY_TEMPERATURES: Record<number, number> = { 0.4: 0.5, 0.7: 0.55 };
 
-  // Variant-axis per slot: kiest structureel andere invalshoek per variant
-  // zodat de twee outputs nooit bijna-identiek zijn. Default-paring is
-  // problem-led vs benefit-led (klassieke CRO A/B split). Override via
-  // params.variantAxis? Nee — voor batch overschrijven we expliciet om
-  // het paar te garanderen. Single-shot callers respecteren params.variantAxis.
+  // P3b — wanneer dynamische creative-angles beschikbaar zijn (genoeg voor de
+  // count) gebruiken we die als divergentie-frame (brand-specifiek). Anders de
+  // generieke axis-paring (problem-led vs benefit-led, klassieke CRO A/B split).
+  const useAngles = Array.isArray(angles) && angles.length >= count;
   const AXIS_PAIR: (VariantAxis | null)[] = count === 2
     ? ["problem-led", "benefit-led"]
     : [params.variantAxis ?? null];
+  const slotParams = (i: number): LandingPageGenerationParams => {
+    // Per-slot guard: `useAngles` borgt al length>=count, maar val per slot terug
+    // op de axis als een angle onverhoopt ontbreekt (defensief tegen toekomstige
+    // count>angles-mismatch) i.p.v. crashen op angles![i].
+    const angle = useAngles ? angles![i] : null;
+    return angle
+      ? { ...params, angleInstruction: formatAngleInstruction(angle), angleLabel: angle.label, variantAxis: null }
+      : { ...params, variantAxis: AXIS_PAIR[i] ?? params.variantAxis ?? null };
+  };
 
-  // Fase 1: parallel attempt — elk slot met eigen axis + temperature
+  // Fase 1: parallel attempt — elk slot met eigen angle/axis + temperature
   const initial = await Promise.allSettled(
     TEMPERATURES.map((temperature, i) =>
-      generateLandingPageVariant(
-        { ...params, variantAxis: AXIS_PAIR[i] ?? params.variantAxis ?? null },
-        { temperature },
-      ),
+      generateLandingPageVariant(slotParams(i), { temperature }),
     ),
   );
 
@@ -596,7 +618,7 @@ export async function generateLandingPageVariantBatch(
           `[variant-batch] Retrying slot ${i} with recovery-temp ${retryTemp}...`,
         );
         results[i] = await generateLandingPageVariant(
-          { ...params, variantAxis: AXIS_PAIR[i] ?? params.variantAxis ?? null },
+          slotParams(i),
           { temperature: retryTemp },
         );
       } catch (retryErr) {

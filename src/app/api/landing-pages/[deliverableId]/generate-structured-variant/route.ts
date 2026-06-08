@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
+import { generateCreativeAngles } from "@/lib/ai/canvas-angle-generator";
 import {
   generateLandingPageVariantBatch,
 } from "@/lib/landing-pages/variant-generator";
@@ -150,6 +151,11 @@ export async function POST(
     ctx.brand,
   );
 
+  // P3b — dynamische creative-angles (Gemini Flash, best-effort): geven de twee
+  // variants brand-/context-specifieke tegenpool-invalshoeken + leesbare labels.
+  // null bij failure → de batch valt terug op de generieke problem/benefit-axis.
+  const angles = await generateCreativeAngles(ctx, deliverable.contentType);
+
   let results;
   try {
     results = await generateLandingPageVariantBatch(
@@ -169,6 +175,7 @@ export async function POST(
         voiceSample: ctx.brand.voiceSample ?? null,
       },
       count,
+      angles,
     );
   } catch (err) {
     console.error("[generate-structured-variant] Batch failed", err);
@@ -182,6 +189,7 @@ export async function POST(
   }
 
   const variants = results.map((r) => r.variant);
+  const variantLabels = results.map((r) => r.angleLabel ?? null);
   const totalInputTokens = results.reduce((s, r) => s + r.inputTokens, 0);
   const totalOutputTokens = results.reduce((s, r) => s + r.outputTokens, 0);
 
@@ -198,6 +206,7 @@ export async function POST(
       settings: {
         ...existingSettings,
         structuredVariantOptions: variants,
+        structuredVariantLabels: variantLabels,
         structuredGenerationMeta: {
           generatedAt: new Date().toISOString(),
           count,
@@ -222,6 +231,7 @@ export async function POST(
 
   return NextResponse.json({
     variants,
+    variantLabels,
     deliveredCount: variants.length,
     requestedCount: count,
     inputTokens: totalInputTokens,
