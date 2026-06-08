@@ -45,8 +45,8 @@ interface RequestBody {
   userPrompt?: string;
   includeProblem?: boolean;
   includePricing?: boolean;
-  /** Aantal variants om te genereren (1 of 2, default 2). 2 levert user-keuze. */
-  count?: 1 | 2;
+  /** Aantal variants om te genereren (1-4, default 2). >=2 levert user-keuze. */
+  count?: 1 | 2 | 3 | 4;
 }
 
 export async function POST(
@@ -129,7 +129,14 @@ export async function POST(
       }
     : undefined;
 
-  const count: 1 | 2 = body.count === 1 ? 1 : 2;
+  // Strikte integer-validatie: een float (2.5) of gecoerceerde string ("2") zou
+  // anders door `>= 1 && <= 4` glippen maar downstream `count === N` missen →
+  // verkeerde batch-grootte (temps=4, axes=1). Niet-geldig → graceful default 2.
+  const count = (
+    typeof body.count === "number" && Number.isInteger(body.count) && body.count >= 1 && body.count <= 4
+      ? body.count
+      : 2
+  ) as 1 | 2 | 3 | 4;
 
   // V2-1 lazy classification — wanneer archetype nog null is, classify nu zodat
   // tone-hints + brand-render-rules vanaf deze generation actief zijn. Bij
@@ -154,7 +161,7 @@ export async function POST(
   // P3b — dynamische creative-angles (Gemini Flash, best-effort): geven de twee
   // variants brand-/context-specifieke tegenpool-invalshoeken + leesbare labels.
   // null bij failure → de batch valt terug op de generieke problem/benefit-axis.
-  const angles = await generateCreativeAngles(ctx, deliverable.contentType);
+  const angles = await generateCreativeAngles(ctx, deliverable.contentType, count);
 
   let results;
   try {

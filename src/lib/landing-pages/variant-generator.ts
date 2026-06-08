@@ -215,7 +215,7 @@ function buildSystemPrompt(opts: {
   const axisBlock = opts.angleInstruction
     ? `\n# !! CREATIVE ANGLE (HARD CONSTRAINT) !!\n${opts.angleInstruction}\n`
     : opts.variantAxis
-    ? `\n# !! VARIANT-INVALSHOEK (HARD CONSTRAINT) !!: ${opts.variantAxis.toUpperCase()}\n${VARIANT_AXIS_HINTS[opts.variantAxis]}\n\nDIT IS GEEN OPTIE — het is de KERN van deze variant. Andere variants in dezelfde batch volgen een EXPLICIET ANDERE as (bv: problem-led ↔ benefit-led). Onze users zien de twee variants NAAST ELKAAR en moeten ze direct kunnen onderscheiden:\n  - Hero-headline moet de gekozen invalshoek meteen tonen\n  - Volgorde van secties moet de invalshoek versterken\n  - Tone en woordkeus moet substantieel afwijken\nWanneer beide variants 'rond hetzelfde middenpad' uitkomen, hebben we GEFAALD — neem het risico van een uitgesproken kant.\n`
+    ? `\n# !! VARIANT-INVALSHOEK (HARD CONSTRAINT) !!: ${opts.variantAxis.toUpperCase()}\n${VARIANT_AXIS_HINTS[opts.variantAxis]}\n\nDIT IS GEEN OPTIE — het is de KERN van deze variant. Andere variants in dezelfde batch volgen een EXPLICIET ANDERE as (bv: problem-led ↔ benefit-led). Onze users zien de variants NAAST ELKAAR en moeten ze direct kunnen onderscheiden:\n  - Hero-headline moet de gekozen invalshoek meteen tonen\n  - Volgorde van secties moet de invalshoek versterken\n  - Tone en woordkeus moet substantieel afwijken\nWanneer beide variants 'rond hetzelfde middenpad' uitkomen, hebben we GEFAALD — neem het risico van een uitgesproken kant.\n`
     : '';
   // DTS C6 — sectie-blueprint hint uit render-constraints (alleen wanneer archetype gezet)
   // Maakt sectie-density consistent per merk (RULER 5 secties tight, SAGE 8 editorial)
@@ -546,37 +546,63 @@ export async function generateLandingPageVariant(
 }
 
 /**
- * Genereer N variants parallel met verschillende temperature-waarden voor
- * meaningful variation. 2 variants is de geadviseerde count voor user-keuze:
- *   - variant A (conservative, temp 0.3) — close to spec-by-the-book
- *   - variant B (creative, temp 0.7)     — more adventurous tone/framing
+ * Genereer N variants (1-4, P3a) parallel met gespreide temperature-waarden
+ * voor meaningful variation. 2 is de default (user-keuze A/B); hogere counts
+ * geven meer invalshoeken tegen evenredig meer generatie-tijd/kosten.
  *
  * Twee-fase strategie:
- *  1. Parallel via Promise.allSettled (snel, ~max(call_1, call_2))
- *  2. Bij partial failure: sequential retry per failed index met recovery-temp
- *     (creative 0.7 → 0.5; conservative 0.3 → 0.4). Levert reliability boost
- *     zonder elk de happy-path 2× zo lang te maken.
+ *  1. Parallel via Promise.allSettled (snel, ~max van de N calls)
+ *  2. Bij partial failure: sequential retry per failed index met recovery-temp.
+ *     Levert reliability boost zonder de happy-path N× zo lang te maken.
  *
- * Worst-case timing: 90s × 2 (2 sequential retries) + 90s parallel = ~4.5 min.
+ * Worst-case timing schaalt met N (parallel ~90s + per gefaalde slot 1 retry).
  * Typische timing: parallel ~30-50s, geen retry nodig.
  *
  * Bij alle attempts fail throw met aggregated error-details.
  */
+/**
+ * P3a — gespreide temperatures per count (geen clustering → meer divergentie).
+ * Pure + geëxporteerd voor deterministische smoke-tests.
+ */
+export function variantTemperatures(count: number): number[] {
+  return count === 1 ? [0.4]
+    : count === 2 ? [0.4, 0.7]
+    : count === 3 ? [0.3, 0.55, 0.8]
+    : [0.25, 0.45, 0.65, 0.85];
+}
+
+/**
+ * P3a — N-aware generieke fallback-assen (klassieke CRO-divergentie), maximaal
+ * onderling onderscheidend. Alleen gebruikt wanneer dynamische angles ontbreken.
+ * Bij count===1 (of buiten 2-4): de user-axis als enige slot. Pure + geëxporteerd.
+ */
+export function fallbackAxes(count: number, userAxis: VariantAxis | null = null): (VariantAxis | null)[] {
+  return count === 2 ? ["problem-led", "benefit-led"]
+    : count === 3 ? ["problem-led", "benefit-led", "story-led"]
+    : count === 4 ? ["problem-led", "benefit-led", "data-led", "emotional"]
+    : [userAxis];
+}
+
 export async function generateLandingPageVariantBatch(
   params: LandingPageGenerationParams,
-  count: 1 | 2 = 2,
+  count: 1 | 2 | 3 | 4 = 2,
   angles?: CreativeAngle[] | null,
 ): Promise<GenerationResult[]> {
-  const TEMPERATURES = count === 2 ? [0.4, 0.7] : [0.4];
-  const RECOVERY_TEMPERATURES: Record<number, number> = { 0.4: 0.5, 0.7: 0.55 };
+  if (!Number.isInteger(count) || count < 1 || count > 4) {
+    throw new Error(`generateLandingPageVariantBatch: count must be an integer 1-4, got ${count}`);
+  }
+  const TEMPERATURES = variantTemperatures(count);
+  // +0.1..0.15 recovery-buffer per gebruikte temp; `?? 0.5` blijft vangnet.
+  const RECOVERY_TEMPERATURES: Record<number, number> = {
+    0.25: 0.35, 0.3: 0.4, 0.4: 0.5, 0.45: 0.55,
+    0.55: 0.62, 0.65: 0.72, 0.7: 0.55, 0.8: 0.88, 0.85: 0.92,
+  };
 
   // P3b — wanneer dynamische creative-angles beschikbaar zijn (genoeg voor de
   // count) gebruiken we die als divergentie-frame (brand-specifiek). Anders de
   // generieke axis-paring (problem-led vs benefit-led, klassieke CRO A/B split).
   const useAngles = Array.isArray(angles) && angles.length >= count;
-  const AXIS_PAIR: (VariantAxis | null)[] = count === 2
-    ? ["problem-led", "benefit-led"]
-    : [params.variantAxis ?? null];
+  const AXIS_PAIR = fallbackAxes(count, params.variantAxis ?? null);
   const slotParams = (i: number): LandingPageGenerationParams => {
     // Per-slot guard: `useAngles` borgt al length>=count, maar val per slot terug
     // op de axis als een angle onverhoopt ontbreekt (defensief tegen toekomstige
@@ -641,10 +667,15 @@ export async function generateLandingPageVariantBatch(
   if (successes.length >= 2) {
     const headlines = successes.map((r, i) => `  [${i}] axis=${AXIS_PAIR[i] ?? 'none'} headline="${r.variant.hero.headline}"`).join('\n');
     console.log(`[variant-batch] Generated ${successes.length} variants:\n${headlines}`);
-    // Crude similarity check: dezelfde eerste 3 woorden = waarschuwing
+    // Crude similarity check: dezelfde eerste 3 woorden = waarschuwing.
+    // N-way: elk paar vergelijken zodat de check ook bij 3/4 variants klopt.
     const firstWords = (s: string) => s.split(/\s+/).slice(0, 3).join(' ').toLowerCase();
-    if (successes.length >= 2 && firstWords(successes[0].variant.hero.headline) === firstWords(successes[1].variant.hero.headline)) {
-      console.warn('[variant-batch] WARNING: Variants share first 3 words of headline — axis-divergentie mogelijk niet effectief. Check prompt rendering + Anthropic response.');
+    for (let j = 0; j < successes.length - 1; j++) {
+      for (let k = j + 1; k < successes.length; k++) {
+        if (firstWords(successes[j].variant.hero.headline) === firstWords(successes[k].variant.hero.headline)) {
+          console.warn(`[variant-batch] WARNING: variants ${j} en ${k} delen eerste 3 woorden van headline — axis-divergentie mogelijk niet effectief. Check prompt rendering + Anthropic response.`);
+        }
+      }
     }
   }
 
