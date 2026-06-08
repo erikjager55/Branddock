@@ -37,6 +37,24 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 311. Step 2 P3b — dynamische creative-angles per landingspagina-variant
+
+De twee variants kregen tot nu toe een vaste, generieke divergentie-as (problem-led vs benefit-led). Nu vraagt de route eerst `generateCreativeAngles(ctx, contentType)` (Gemini Flash, best-effort, exact 2 of `null`) — brand-/context-specifieke tegenpool-invalshoeken met leesbare labels — en geeft die aan `generateLandingPageVariantBatch` mee. Per slot bepaalt een `slotParams(i)`-helper of de variant op een **angle** (hard-constraint `CREATIVE ANGLE`-blok in de system-prompt, axis onderdrukt) of op de generieke axis-fallback draait; zowel de parallelle poging als de recovery-retry gebruiken dezelfde slot-params, en een per-slot guard valt terug op de axis als een angle onverhoopt ontbreekt (geen crash). De labels (`angleLabel`) reizen mee terug via het result → route-respons → UI, worden gepersist in `settings.structuredVariantLabels`, en sturen de thumbnail-, detail- en auto-iterate-labels (`Variant A — <angle>`); bij `null` valt de UI terug op conservatief/creatief. Bij angle-failure draait alles ongewijzigd door op de oude axis-split. tsc+lint 0; 69 web-page-builder smokes + nieuwe `phase65-variant-angle-prompt` (9/9, angle-wint-van-axis + fallback) groen.
+
+- Commit: branch `feat/lp-render-step23-provenance-hero-angles`
+
+### 310. Orphaned-hero clobber-guard — gegenereerde header-image blijft betrouwbaar gewired
+
+Root-cause-fix (audit 2026-06-08) voor een Napking-LP waarvan de gegenereerde + geüploade hero-image nooit in `puckData.BrandHero.heroVisualUrl` belandde terwijl feature-foto's wél wirede. Twee compounding oorzaken in `PuckPageBuilder.tsx`: (1) het re-hydrate-effect overschreef een net-gewirede hero met een stale `/context`-refetch die de BrandHero nog leeg had → nieuwe pure helper `preserveHeroVisual` (`hero-visual-preserve.ts`) behoudt een non-lege hero-URL wanneer de inkomende tree leeg is (nieuwe URL én echte clear passeren wél); (2) de self-heal zette zijn ref-guard onvoorwaardelijk vóór de async image-gen → één stille fout blokkeerde élke retry, nu gereset in de catch. Dev-recovery-tool `scripts/dev/wire-orphaned-hero.ts` hergebruikt een bestaande orphaned `DeliverableComponent variantGroup='visual'`-URL i.p.v. opnieuw te genereren. Lesson in `gotchas.md`. tsc+lint 0; nieuwe `phase61-hero-clobber-guard` smoke 7/7 (preserve / new-URL / echte-clear-passeert).
+
+- Commit: branch `feat/lp-render-step23-provenance-hero-angles`
+
+### 309. Provenance-consumptie smoke — bewijst dat de renderer brandProvenance threadt
+
+Sloot een dekkingsgat uit de audit 2026-06-07: phase40–51 + `brandstyle-provenance.ts` dekken de extractie en de gate-input (`isScrapedOrigin`), maar geen smoke bewees dat `buildSpikePuckConfig` de provenance daadwerkelijk naar de renderer threadt én dat de elevation-gate (`forceFlatCards && !elevationIsScraped`) de output verandert — precies de tak die merk-fidelity boven archetype-aanname zet (Zwarthout/Napking preset-bugklasse). Nieuwe `phase60-provenance-consumption` smoke bouwt een fixture mét `brandProvenance` en assert de scraped-override-tak. Gewired in `package.json` (`test:brandstyle-eval` + `smoke:provenance-consumption`) + de `brandstyle-eval` CI-workflow. tsc 0; 11/11.
+
+- Commit: branch `feat/lp-render-step23-provenance-hero-angles`
+
 ### 308. Step 2 preview-layout — leesbare thumbnails + detail + selectie drijft score
 
 User-feedback op P1a: de twee side-by-side full-page previews (grid-cols-2, ~0.34 scale) waren onleesbaar, en de variant-selectie voor de fidelity-score (losse pill-toggle) was niet vindbaar. Herzien naar **thumbnails + detail**: een rij klikbare A/B-thumbnails (`VariantPuckPreview` met `maxHeight` = bovenkant van de pagina) waarmee je in één oogopslag vergelijkt én selecteert; de actieve thumbnail drijft nu de **fidelity-score, auto-iterate én** de detail-weergave. Daaronder één **full-width, leesbare** detail-kaart van de geselecteerde variant (preview op ~0.745 scale in een 560px-venster met interne scroll), met bewerken/per-sectie-regenereren (P1b/P1c) + "Kies". `VariantPuckPreview` kreeg `maxHeight` (thumbnail-cap) + `scroll` (leesbaar venster). Lost de twee gemelde issues (onleesbaar + selectie). tsc+lint 0; 67 web-page-builder smokes groen; detail-leesbaarheid visueel geverifieerd.

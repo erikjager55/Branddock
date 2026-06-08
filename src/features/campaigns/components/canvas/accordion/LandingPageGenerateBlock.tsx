@@ -72,6 +72,8 @@ export function LandingPageGenerateBlock({
   // Welke variant getoond wordt in de FidelityScoreBar (klik op A/B-toggle).
   // Los van de gekozen variant — laat de user per-variant scores vergelijken.
   const [activeVariantIndex, setActiveVariantIndex] = useState(0);
+  // P3b — per-variant creative-angle-labels (uit de generatie); null bij axis-fallback.
+  const [variantLabels, setVariantLabels] = useState<(string | null)[] | null>(null);
   // Handmatig geselecteerde hero-image. Wordt geïnjecteerd in de hero van de
   // gekozen variant zodat Step 3 (die puckData rendert) de foto toont — anders
   // verdween de selectie omdat persistHeroImage de puckData niet bijwerkt.
@@ -267,10 +269,12 @@ export function LandingPageGenerateBlock({
       }
       const data = (await res.json()) as {
         variants: LandingPageVariantContent[];
+        variantLabels?: (string | null)[];
         deliveredCount?: number;
         requestedCount?: number;
       };
       setStructuredVariantOptions(data.variants);
+      setVariantLabels(Array.isArray(data.variantLabels) ? data.variantLabels : null);
       // Reset chosen variant zodat user-keuze opnieuw moet plaatsvinden
       setStructuredVariant(null);
       // Partial delivery: 1 van 2 variants gelukt — banner tonen
@@ -593,6 +597,13 @@ export function LandingPageGenerateBlock({
     setAutoIterateMsg('Voorstel verworpen — huidige variant blijft.');
   }, []);
 
+  // P3b — display-label per variant: het creative-angle-label wanneer aanwezig,
+  // anders de generieke conservatief/creatief-fallback.
+  const variantLabel = (i: number): string => {
+    const angle = variantLabels?.[i]?.trim();
+    return `Variant ${String.fromCharCode(65 + i)} — ${angle && angle.length > 0 ? angle : i === 0 ? 'conservatief' : 'creatief'}`;
+  };
+
   // ─── Briefing incompleet ─────────────────────────────────
   if (briefIncomplete) {
     return (
@@ -694,7 +705,7 @@ export function LandingPageGenerateBlock({
                 >
                   <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100">
                     <span className={`text-xs font-medium uppercase tracking-wide ${isActive ? 'text-gray-900' : 'text-gray-500'}`}>
-                      Variant {String.fromCharCode(65 + i)} — {i === 0 ? 'conservatief' : 'creatief'}
+                      {variantLabel(i)}
                     </span>
                     {isActive ? <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" /> : null}
                   </div>
@@ -717,7 +728,7 @@ export function LandingPageGenerateBlock({
             {isAutoIterating ? (
               <><Loader2 className="h-4 w-4 animate-spin" />Verbeteren…</>
             ) : (
-              <><Sparkles className="h-4 w-4" />Verbeter variant {String.fromCharCode(65 + activeVariantIndex)} automatisch</>
+              <><Sparkles className="h-4 w-4" />Verbeter {variantLabel(activeVariantIndex)} automatisch</>
             )}
           </button>
           {autoIterateMsg ? (
@@ -792,13 +803,16 @@ export function LandingPageGenerateBlock({
             <VariantCompareCard
               key={i}
               variant={v}
-              label={i === 0 ? 'Variant A — conservatief' : 'Variant B — creatief'}
+              label={variantLabel(i)}
               accent={i === 0 ? 'emerald' : 'violet'}
               disabled={isChoosing}
               onChoose={(edited) => void handleChooseVariant(edited)}
               contextStack={contextStack}
               deliverableId={deliverableId}
               variantIndex={i}
+              onVariantChange={(edited) =>
+                setStructuredVariantOptions(variantOptions.map((vo, j) => (j === i ? edited : vo)))
+              }
             />
           );
         })()}
@@ -1005,6 +1019,7 @@ function VariantCompareCard({
   contextStack,
   deliverableId,
   variantIndex,
+  onVariantChange,
 }: {
   variant: LandingPageVariantContent;
   label: string;
@@ -1014,6 +1029,9 @@ function VariantCompareCard({
   contextStack: CanvasContextStack | null;
   deliverableId: string;
   variantIndex: number;
+  /** P3c — bubbelt de (bewerkte) variant omhoog bij unmount zodat edits NIET
+   *  verloren gaan wanneer je naar de andere variant-thumbnail wisselt. */
+  onVariantChange?: (variant: LandingPageVariantContent) => void;
 }) {
   // Local edit-state: user kan inline velden bewerken voordat hij "Kies"
   // klikt. Pennetje naast elk veld toggled edit-mode.
@@ -1024,6 +1042,19 @@ function VariantCompareCard({
   // `v` in de deps (anders re-create elke edit + clobber-race).
   const vRef = useRef(v);
   useEffect(() => { vRef.current = v; }, [v]);
+  // P3c — draft-persist: bij unmount (wisselen van variant) de actuele v naar de
+  // parent bubbelen zodat de edits behouden blijven bij terugwisselen.
+  // GUARD (race-fix): alleen bubbelen wanneer `v` afwijkt van de laatste
+  // `initialVariant`-prop (ref-ongelijk = échte user-edit). Na een parent-driven
+  // update (applyProposal / regenerate) synct de effect hieronder `v` terug naar
+  // exact dezelfde ref → géén bubble → geen clobber van die parent-update.
+  const initialRef = useRef(initialVariant);
+  useEffect(() => { initialRef.current = initialVariant; }, [initialVariant]);
+  const onChangeRef = useRef(onVariantChange);
+  useEffect(() => { onChangeRef.current = onVariantChange; }, [onVariantChange]);
+  useEffect(() => () => {
+    if (vRef.current !== initialRef.current) onChangeRef.current?.(vRef.current);
+  }, []);
 
   // Re-sync wanneer parent een nieuwe variant levert (regenerate).
   // eslint-disable-next-line react-hooks/set-state-in-effect -- bewust: state-reset bij prop-change, niet derived state
