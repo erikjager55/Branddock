@@ -40,9 +40,25 @@ interface LandingPageGenerateBlockProps {
  *  1. Briefing incompleet → amber-banner + Step 1-link (geen auto-trigger)
  *  2. Genereren bezig → spinner met "30-90 sec" ETA
  *  3. Genereer-error → ErrorBanner + "Probeer opnieuw"
- *  4. Klaar → 2 variant-cards naast elkaar + "Kies deze variant" knoppen
+ *  4. Klaar → N variant-cards naast elkaar + "Kies deze variant" knoppen
  *           + na keuze: hero-visual-knop + "Bevestig & ga naar editor"
  */
+
+// P3a — N-variant ondersteuning (1-4). Per-variant accent + fallback-label.
+const ACCENTS = ['emerald', 'violet', 'blue', 'amber'] as const;
+type VariantAccent = (typeof ACCENTS)[number];
+const accentFor = (i: number): VariantAccent => ACCENTS[i % ACCENTS.length];
+const FALLBACK_LABELS = ['conservatief', 'creatief', 'verhalend', 'data-gedreven'];
+// Inline-style hexes i.p.v. Tailwind-klassen: src/index.css (gecompileerde,
+// gecommitte output) mist de blue/amber-utilities → purge-veilig (CLAUDE.md
+// Tailwind-4 gotcha). emerald/violet-hexes matchen de bestaande -400/-100-shades.
+const ACCENT_HEX: Record<VariantAccent, { border: string; ring: string; tagBg: string; tagText: string; cardBorder: string }> = {
+  emerald: { border: '#34d399', ring: '#d1fae5', tagBg: '#d1fae5', tagText: '#065f46', cardBorder: '#a7f3d0' },
+  violet:  { border: '#a78bfa', ring: '#ede9fe', tagBg: '#ede9fe', tagText: '#5b21b6', cardBorder: '#ddd6fe' },
+  blue:    { border: '#60a5fa', ring: '#dbeafe', tagBg: '#dbeafe', tagText: '#1e40af', cardBorder: '#bfdbfe' },
+  amber:   { border: '#fbbf24', ring: '#fef3c7', tagBg: '#fef3c7', tagText: '#92400e', cardBorder: '#fde68a' },
+};
+
 export function LandingPageGenerateBlock({
   deliverableId,
   onAdvance,
@@ -72,6 +88,8 @@ export function LandingPageGenerateBlock({
   // Welke variant getoond wordt in de FidelityScoreBar (klik op A/B-toggle).
   // Los van de gekozen variant — laat de user per-variant scores vergelijken.
   const [activeVariantIndex, setActiveVariantIndex] = useState(0);
+  // P3a — hoeveel varianten de regenereer-knop genereert (eerste auto-run = 2).
+  const [selectedCount, setSelectedCount] = useState<number>(2);
   // P3b — per-variant creative-angle-labels (uit de generatie); null bij axis-fallback.
   const [variantLabels, setVariantLabels] = useState<(string | null)[] | null>(null);
   // Handmatig geselecteerde hero-image. Wordt geïnjecteerd in de hero van de
@@ -241,7 +259,9 @@ export function LandingPageGenerateBlock({
     ],
   );
 
-  const handleGenerate = useCallback(async () => {
+  const handleGenerate = useCallback(async (countArg: number = 2) => {
+    // Guard: bare onClick={handleGenerate} zou een MouseEvent doorgeven → coerce.
+    const count = typeof countArg === 'number' && countArg >= 1 && countArg <= 4 ? countArg : 2;
     if (briefIncomplete) {
       setError('Vul eerst Doel of Value Proposition in Step 1.');
       return;
@@ -259,7 +279,7 @@ export function LandingPageGenerateBlock({
             userPrompt: builtPrompt,
             includeProblem,
             includePricing,
-            count: 2,
+            count,
           }),
         },
       );
@@ -601,7 +621,7 @@ export function LandingPageGenerateBlock({
   // anders de generieke conservatief/creatief-fallback.
   const variantLabel = (i: number): string => {
     const angle = variantLabels?.[i]?.trim();
-    return `Variant ${String.fromCharCode(65 + i)} — ${angle && angle.length > 0 ? angle : i === 0 ? 'conservatief' : 'creatief'}`;
+    return `Variant ${String.fromCharCode(65 + i)} — ${angle && angle.length > 0 ? angle : FALLBACK_LABELS[i] ?? 'variant'}`;
   };
 
   // ─── Briefing incompleet ─────────────────────────────────
@@ -637,9 +657,9 @@ export function LandingPageGenerateBlock({
         <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-8 flex flex-col items-center gap-3 text-center">
           <Loader2 className="h-6 w-6 text-teal-600 animate-spin" />
           <div>
-            <p className="text-sm font-medium text-teal-900">2 landing-page varianten genereren...</p>
+            <p className="text-sm font-medium text-teal-900">{selectedCount} landing-page varianten genereren...</p>
             <p className="text-xs text-teal-800 mt-1">
-              Conservative + creative variant in parallel — totaal 30-90 seconden.
+              Verschillende invalshoeken in parallel — totaal 30-90 seconden.
             </p>
           </div>
         </div>
@@ -690,10 +710,15 @@ export function LandingPageGenerateBlock({
             selecteren. De actieve variant drijft de preview, fidelity-score,
             auto-iterate én de detail-kaart hieronder. */}
         {variantOptions.length > 1 ? (
-          <div className="grid grid-cols-2 gap-3" role="tablist" aria-label="Kies een variant">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${variantOptions.length === 3 ? 3 : 2}, minmax(0, 1fr))` }}
+            role="tablist"
+            aria-label="Kies een variant"
+          >
             {variantOptions.map((v, i) => {
               const isActive = activeVariantIndex === i;
-              const ring = i === 0 ? 'border-emerald-400 ring-2 ring-emerald-100' : 'border-violet-400 ring-2 ring-violet-100';
+              const hex = ACCENT_HEX[accentFor(i)];
               return (
                 <button
                   key={i}
@@ -701,7 +726,8 @@ export function LandingPageGenerateBlock({
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => setActiveVariantIndex(i)}
-                  className={`text-left rounded-lg border-2 overflow-hidden bg-white transition-colors ${isActive ? ring : 'border-gray-200 hover:border-gray-300'}`}
+                  className={`text-left rounded-lg border-2 overflow-hidden bg-white transition-colors ${isActive ? '' : 'border-gray-200 hover:border-gray-300'}`}
+                  style={isActive ? { borderColor: hex.border, boxShadow: `0 0 0 2px ${hex.ring}` } : undefined}
                 >
                   <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-100">
                     <span className={`text-xs font-medium uppercase tracking-wide ${isActive ? 'text-gray-900' : 'text-gray-500'}`}>
@@ -714,6 +740,12 @@ export function LandingPageGenerateBlock({
               );
             })}
           </div>
+        ) : null}
+        {/* A11y: koppelt de (buiten de tablist gerenderde) score expliciet aan de
+            actieve variant, zodat een screen reader bij tab-wissel aankondigt
+            wélke variant de score betreft (relevanter nu het er tot 4 zijn). */}
+        {variantOptions.length > 1 ? (
+          <p className="sr-only" aria-live="polite">Brand-fidelity score voor {variantLabel(activeVariantIndex)}</p>
         ) : null}
         <FidelityScoreBar deliverableId={deliverableId} variantIndex={activeVariantIndex} suppressAutoIterateCta />
         {/* LP-specifieke auto-iterate: verbetert de actieve variant in-place.
@@ -786,9 +818,8 @@ export function LandingPageGenerateBlock({
                 {partialDelivery.delivered} van {partialDelivery.requested} varianten geleverd
               </p>
               <p className="text-xs text-amber-800 mt-1">
-                Eén variant is niet gelukt (timeout of validatie-fail). Klik &lsquo;Genereer
-                2 nieuwe varianten&rsquo; om opnieuw te proberen, of werk verder met de
-                geleverde.
+                {partialDelivery.requested - partialDelivery.delivered} variant(en) niet gelukt (timeout of validatie-fail). Klik op de
+                regenereer-knop om opnieuw te proberen, of werk verder met de geleverde.
               </p>
             </div>
           </div>
@@ -804,7 +835,7 @@ export function LandingPageGenerateBlock({
               key={i}
               variant={v}
               label={variantLabel(i)}
-              accent={i === 0 ? 'emerald' : 'violet'}
+              accent={accentFor(i)}
               disabled={isChoosing}
               onChoose={(edited) => void handleChooseVariant(edited)}
               contextStack={contextStack}
@@ -846,17 +877,39 @@ export function LandingPageGenerateBlock({
           onSelected={handleImageSelected}
         />
 
-        <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+        <div className="flex items-center gap-3 pt-2 border-t border-gray-100 flex-wrap">
+          {/* P3a — aantal-selector: stuurt hoeveel varianten de regenereer-knop
+              genereert. Default 2; 4 ≈ 2× generatietijd. */}
+          <div className="flex items-center gap-1.5" role="group" aria-label="Aantal varianten">
+            <span className="text-xs text-gray-500">Aantal:</span>
+            {[2, 3, 4].map((n) => {
+              const sel = selectedCount === n;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setSelectedCount(n)}
+                  disabled={isGenerating || isChoosing}
+                  aria-pressed={sel}
+                  title={n === 4 ? '4 varianten ≈ 2× generatietijd' : `${n} varianten`}
+                  className={`w-7 h-7 rounded-md text-xs font-medium border transition-colors disabled:opacity-50 ${sel ? '' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                  style={sel ? { borderColor: '#14b8a6', backgroundColor: '#f0fdfa', color: '#0f766e' } : undefined}
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
           <button
             type="button"
-            onClick={handleGenerate}
+            onClick={() => void handleGenerate(selectedCount)}
             disabled={isGenerating || isChoosing}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
           >
             {isGenerating ? (
               <><Loader2 className="h-4 w-4 animate-spin" />Regenereren...</>
             ) : (
-              <><RefreshCw className="h-4 w-4" />Genereer 2 nieuwe varianten</>
+              <><RefreshCw className="h-4 w-4" />Genereer {selectedCount} nieuwe variant{selectedCount === 1 ? '' : 'en'}</>
             )}
           </button>
           <button
@@ -1023,7 +1076,7 @@ function VariantCompareCard({
 }: {
   variant: LandingPageVariantContent;
   label: string;
-  accent: 'emerald' | 'violet';
+  accent: VariantAccent;
   disabled: boolean;
   onChoose: (variant: LandingPageVariantContent) => void;
   contextStack: CanvasContextStack | null;
@@ -1090,17 +1143,14 @@ function VariantCompareCard({
       .finally(() => setRegenSection(null));
   }, [deliverableId, variantIndex]);
 
-  const ringClass = accent === 'emerald' ? 'border-emerald-200' : 'border-violet-200';
-  const tagClass =
-    accent === 'emerald'
-      ? 'bg-emerald-100 text-emerald-800'
-      : 'bg-violet-100 text-violet-800';
+  // P3a — accent-kleuren via inline-style (purge-veilig voor blue/amber).
+  const hex = ACCENT_HEX[accent];
 
   return (
     <EditDeliverableCtx.Provider value={deliverableId}>
-    <div className={`rounded-lg border-2 ${ringClass} bg-white p-4 flex flex-col gap-4`}>
+    <div className="rounded-lg border-2 bg-white p-4 flex flex-col gap-4" style={{ borderColor: hex.cardBorder }}>
       <div className="sticky top-0 bg-white pb-2 border-b border-gray-100 -mx-4 px-4 -mt-4 pt-4 z-10">
-        <span className={`inline-block text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded ${tagClass}`}>
+        <span className="inline-block text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded" style={{ backgroundColor: hex.tagBg, color: hex.tagText }}>
           {label}
         </span>
       </div>
