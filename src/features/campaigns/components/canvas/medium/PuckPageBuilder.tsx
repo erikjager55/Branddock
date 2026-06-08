@@ -10,6 +10,7 @@ import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
 import { variantToPuckData } from './variant-to-puck-data';
 import { assignSectionBands } from './puck-templates/landing-page-from-structured';
+import { preserveHeroVisual } from './hero-visual-preserve';
 import { generateCanvasVisual, generateFeatureVisuals } from '../../../api/canvas.api';
 import { buildHeroVisualInstruction, buildFeatureVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
@@ -102,7 +103,10 @@ export function PuckPageBuilder({
     if (!Array.isArray(hydratedPuckData.content) || hydratedPuckData.content.length === 0) return;
     // Cheap diff: serialize-compare op content + root. Alleen sync bij
     // change. JSON.stringify is hier OK want puckData < 50KB typically.
-    const normalized = withSectionBands(hydratedPuckData);
+    // Clobber-guard: behoud een al-gewirede hero-image wanneer de inkomende
+    // (mogelijk stale) puckData de BrandHero nog leeg heeft — anders wist een
+    // /context-refetch de net-gezette header-image (orphaned-hero-bug).
+    const normalized = preserveHeroVisual(withSectionBands(hydratedPuckData), puckData);
     const incoming = JSON.stringify(normalized);
     const current = JSON.stringify(puckData);
     if (incoming !== current) {
@@ -208,7 +212,15 @@ export function PuckPageBuilder({
         // (contextStack.puckData) synct → re-hydrate-effect clobbert niet.
         window.dispatchEvent(new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }));
       })
-      .catch((err) => console.warn('[PuckPageBuilder] hero self-heal failed', err))
+      .catch((err) => {
+        // Reset de ref-guard zodat een gefaalde poging niet de hero permanent
+        // leeg laat: bij een volgende dep-change (verse contextStack na
+        // /context-refetch, of revisit) mag de self-heal opnieuw proberen.
+        // Zonder reset blokkeerde één stille fout elke retry binnen de sessie —
+        // mede-oorzaak van de orphaned-hero (audit 2026-06-08).
+        heroHealRef.current.delete(deliverableId);
+        console.warn('[PuckPageBuilder] hero self-heal failed', err);
+      })
       .finally(() => setIsHealingHero(false));
   }, [deliverableId, puckData, contextStack]);
 
