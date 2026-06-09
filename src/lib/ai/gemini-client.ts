@@ -521,7 +521,7 @@ export async function generateImage(
 
 // ─── Compose from images (nano-banana) ─────────────────────
 // Sub-sprint #6.A: FAL Flux Pro Kontext multi → Gemini Image Preview.
-// Model gemini-2.5-flash-image-preview ondersteunt multi-image input via
+// Model gemini-2.5-flash-image ondersteunt multi-image input via
 // inline base64 parts + tekst-instructie. Aspect-ratio gaat als instructie-
 // suffix mee (model ondersteunt geen aspect-ratio param directly).
 
@@ -566,7 +566,7 @@ export class ComposeNetworkError extends Error {
   }
 }
 
-const COMPOSE_MODEL = 'gemini-2.5-flash-image-preview';
+const COMPOSE_MODEL = 'gemini-2.5-flash-image';
 
 const ASPECT_INSTRUCTION_SUFFIX: Record<GeminiAspectLabel, string> = {
   '1:1': 'Render output as a square 1:1 image.',
@@ -579,12 +579,18 @@ const ASPECT_INSTRUCTION_SUFFIX: Record<GeminiAspectLabel, string> = {
 async function fetchImageAsInlineData(
   url: string,
 ): Promise<{ data: string; mimeType: string }> {
+  // MediaAsset-URLs zijn bij local-disk-storage (dev) relatief (/uploads/...).
+  // Node fetch vereist een absolute URL → resolve relatieve paden tegen de
+  // app-base-URL. Absolute (CDN/S3) URLs in prod blijven ongewijzigd.
+  const absoluteUrl = url.startsWith('/')
+    ? `${(process.env.BETTER_AUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '')}${url}`
+    : url;
   let res: Response;
   try {
-    res = await fetch(url);
+    res = await fetch(absoluteUrl);
   } catch (err) {
     throw new ComposeNetworkError(
-      `Failed to fetch reference image ${url}: ${(err as Error).message}`,
+      `Failed to fetch reference image ${absoluteUrl}: ${(err as Error).message}`,
     );
   }
   if (!res.ok) {

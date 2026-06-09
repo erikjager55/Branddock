@@ -37,7 +37,7 @@ import { cacheKeys } from '@/lib/api/cache-keys';
 import { patchHeroVisualUrl } from '@/lib/deliverable/patch-hero-visual';
 
 const VISUAL_GROUP = 'visual';
-const COMPOSE_MODEL = 'gemini-2.5-flash-image-preview';
+const COMPOSE_MODEL = 'gemini-2.5-flash-image';
 const COMPOSE_PROVIDER = 'google';
 
 type FalImageSize =
