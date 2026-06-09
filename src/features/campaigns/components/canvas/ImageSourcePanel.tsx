@@ -230,6 +230,10 @@ function SourceContent({
           deliverableId={deliverableId}
           onCancel={onCancel}
           onPicked={onCancel}
+          // LP/web-page-flow: laat de gekozen library-asset via het bewezen
+          // onSelected→handleImageSelected-pad in puckData.hero landen (zoals
+          // upload/url/stock). Zonder dit verscheen een library-pick niet in de LP.
+          onHeroSelected={onSelected}
         />
       );
     case 'upload':

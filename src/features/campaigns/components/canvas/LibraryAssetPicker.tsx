@@ -8,6 +8,7 @@ import { useCanvasStore } from '../../stores/useCanvasStore';
 import type { MediaAssetWithMeta, MediaCategory } from '@/features/media-library/types/media.types';
 import type { CanvasImageVariant } from '../../types/canvas.types';
 import { setHeroImage as persistHeroImage } from '../../api/canvas.api';
+import type { InsertImageSelection } from './insert-image/types';
 
 // Image-relevant subset of MediaCategory — surfaces the categories users
 // actually pick from in a Canvas visual context. A "More" expand button
@@ -29,6 +30,15 @@ interface LibraryAssetPickerProps {
   onCancel?: () => void;
   /** Called after a successful pick — used by Step 2 to dismiss the picker. */
   onPicked?: () => void;
+  /**
+   * LP/web-page-flow: surface de eerst-gekozen asset zodat de host hem in
+   * puckData/structuredVariant.hero kan vouwen (mirror van upload/url/stock via
+   * handleImageSelected). Zonder dit landde een library-pick alleen in de
+   * hero-image-DeliverableComponent + store, die de Puck-renderer NIET leest →
+   * beeld verscheen niet in de LP. Wanneer gezet, persisteert de host de
+   * hero-image zelf (geen dubbele persistHeroImage hier).
+   */
+  onHeroSelected?: (selection: InsertImageSelection) => void | Promise<void>;
 }
 
 const MAX_PICKS = 3;
@@ -44,7 +54,7 @@ const MAX_PICKS = 3;
  * order is preserved — the first picked asset becomes the default
  * (and gets promoted to hero image, mirroring the generate flow).
  */
-export function LibraryAssetPicker({ deliverableId, onCancel, onPicked }: LibraryAssetPickerProps) {
+export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSelected }: LibraryAssetPickerProps) {
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [category, setCategory] = useState<MediaCategory | null>(null);
@@ -119,14 +129,26 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked }: Librar
           mediaAssetId: firstAsset.id,
           alt: firstAsset.name,
         });
-        persistHeroImage(deliverableId, {
-          imageUrl: firstAsset.fileUrl,
-          imageSource: 'library',
-          mediaAssetId: firstAsset.id,
-          alt: firstAsset.aiDescription ?? firstAsset.name ?? null,
-        }).catch((err) => {
-          console.error('[Library] hero image persist failed', err);
-        });
+        if (onHeroSelected) {
+          // LP/web-page-flow: de host vouwt de URL in puckData/structuredVariant.hero
+          // (via handleImageSelected) zodat de Puck-renderer 'm toont, én persisteert
+          // de hero-image zelf — geen dubbele persistHeroImage.
+          await onHeroSelected({
+            url: firstAsset.fileUrl,
+            mediaAssetId: firstAsset.id,
+            alt: firstAsset.aiDescription ?? firstAsset.name ?? undefined,
+          });
+        } else {
+          // Niet-LP context (hero-image-component): persist zoals voorheen.
+          persistHeroImage(deliverableId, {
+            imageUrl: firstAsset.fileUrl,
+            imageSource: 'library',
+            mediaAssetId: firstAsset.id,
+            alt: firstAsset.aiDescription ?? firstAsset.name ?? null,
+          }).catch((err) => {
+            console.error('[Library] hero image persist failed', err);
+          });
+        }
       }
       onPicked?.();
     } catch (err) {
