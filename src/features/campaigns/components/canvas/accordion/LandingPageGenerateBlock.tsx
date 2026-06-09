@@ -71,6 +71,7 @@ export function LandingPageGenerateBlock({
   const setFidelityRunningForVariant = useCanvasStore((s) => s.setFidelityRunningForVariant);
   const setFidelityCompleteForVariant = useCanvasStore((s) => s.setFidelityCompleteForVariant);
   const setFidelityScoreSkippedForVariant = useCanvasStore((s) => s.setFidelityScoreSkippedForVariant);
+  const setVisualBriefSource = useCanvasStore((s) => s.setVisualBriefSource);
   const variantOptions = useCanvasStore((s) => s.structuredVariantOptions) as
     | LandingPageVariantContent[]
     | null;
@@ -886,9 +887,15 @@ export function LandingPageGenerateBlock({
         <ImageSourcePanel
           deliverableId={deliverableId}
           source={visualSource}
-          onSourceChange={setVisualSource}
+          onSourceChange={(next) => {
+            // Persisteer de source naast de lokale tab-state zodat compose/trained
+            // de server-gate (visualBrief.source === ...) passeren in de LP-flow.
+            setVisualSource(next);
+            setVisualBriefSource(next);
+          }}
           variant="embedded"
           onSelected={handleImageSelected}
+          target="hero"
         />
 
         <div className="flex items-center gap-3 pt-2 border-t border-gray-100 flex-wrap">

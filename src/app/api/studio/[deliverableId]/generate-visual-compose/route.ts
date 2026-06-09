@@ -34,6 +34,7 @@ import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer'
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { patchHeroVisualUrl } from '@/lib/deliverable/patch-hero-visual';
 
 const VISUAL_GROUP = 'visual';
 const COMPOSE_MODEL = 'gemini-2.5-flash-image-preview';
@@ -115,6 +116,9 @@ const requestSchema = z
   .object({
     aspectRatio: z.enum(['1:1', '16:9', '9:16', '4:3', '3:4']).optional(),
     count: z.number().int().min(1).max(3).optional(),
+    // 'hero' in de LP-flow → wire de geüploade compositie server-side in
+    // puckData.BrandHero + structuredVariant.hero (orphaned-hero-preventie).
+    target: z.enum(['hero']).optional(),
   })
   .strict()
   .or(z.undefined());
@@ -342,6 +346,12 @@ export async function POST(request: Request, { params }: RouteParams) {
         return { url: upload.url, prompt: img.prompt };
       }),
     );
+
+    // LP-hero-wiring (gedeelde helper, gelijk aan generate-visual): bust de
+    // eerste compositie-URL in puckData.BrandHero zodat de pagina ermee rendert.
+    if (body?.target === 'hero' && uploads[0]?.url) {
+      await patchHeroVisualUrl(deliverableId, uploads[0].url);
+    }
 
     const elapsedMs = Date.now() - startMs;
 
