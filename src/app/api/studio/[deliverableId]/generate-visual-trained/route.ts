@@ -23,6 +23,7 @@ import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { patchHeroVisualUrl } from '@/lib/deliverable/patch-hero-visual';
 import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
 import type { ConsistentModelType } from '@/features/consistent-models/types/consistent-model.types';
 
@@ -114,6 +115,9 @@ const requestSchema = z
     instruction: z.string().max(1000).optional(),
     aspectRatio: z.enum(['1:1', '16:9', '9:16', '4:3', '3:4']).optional(),
     count: z.number().int().min(1).max(3).optional(),
+    // 'hero' in de LP-flow → wire het getrainde beeld server-side in
+    // puckData.BrandHero + structuredVariant.hero (orphaned-hero-preventie).
+    target: z.enum(['hero']).optional(),
   })
   .strict()
   .or(z.undefined());
@@ -304,6 +308,12 @@ export async function POST(request: Request, { params }: RouteParams) {
         return { url: upload.url, prompt: img.prompt };
       }),
     );
+
+    // LP-hero-wiring (gedeelde helper, gelijk aan generate-visual): bust het
+    // eerste getrainde beeld in puckData.BrandHero zodat de pagina ermee rendert.
+    if (body?.target === 'hero' && uploads[0]?.url) {
+      await patchHeroVisualUrl(deliverableId, uploads[0].url);
+    }
 
     const elapsedMs = Date.now() - startMs;
     const aiModel = `${generatorEndpoint} (LoRA: ${trainedModel.name})`;

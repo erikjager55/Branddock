@@ -26,6 +26,8 @@ interface ComposePickerProps {
   onCancel?: () => void;
   /** Called after a successful generation — used by Step 2 to dismiss the picker. */
   onGenerated?: () => void;
+  /** 'hero' in de LP-flow → de route wiret de compositie server-side in puckData.BrandHero. */
+  target?: 'hero';
 }
 
 const MIN_PICKS = 2;
@@ -40,7 +42,7 @@ const MAX_PICKS = 9;
  * so they survive Canvas reopen and feed forward to the
  * generate-visual-compose endpoint (which reads them server-side).
  */
-export function ComposePicker({ deliverableId, onCancel, onGenerated }: ComposePickerProps) {
+export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: ComposePickerProps) {
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const setVisualBriefField = useCanvasStore((s) => s.setVisualBriefField);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
@@ -109,17 +111,22 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated }: ComposeP
     try {
       // Force-flush the Visual Brief PATCH so the endpoint reads the
       // freshly-picked references + instruction.
-      await fetch(`/api/studio/${deliverableId}`, {
+      const flushResp = await fetch(`/api/studio/${deliverableId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           settings: {
-            visualBrief: { ...visualBrief, compose: { referenceIds: picked, instruction } },
+            visualBrief: { ...visualBrief, source: 'compose', compose: { referenceIds: picked, instruction } },
           },
         }),
       });
+      // De source-persist IS de gate-garantie: faalt 'ie, dan zou generate met
+      // een stale source 400'en met een misleidende melding. Surface 'm direct.
+      if (!flushResp.ok) {
+        throw new Error(`Kon de Visual Brief niet opslaan (HTTP ${flushResp.status}) — probeer opnieuw.`);
+      }
 
-      const result = await generateCanvasVisualCompose(deliverableId);
+      const result = await generateCanvasVisualCompose(deliverableId, target ? { target } : undefined);
       const mapped: CanvasImageVariant[] = result.variants.map((v, i) => ({
         index: i,
         url: v.url,

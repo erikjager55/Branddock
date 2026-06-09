@@ -356,7 +356,7 @@ export interface GenerateTrainedVisualResponse {
  */
 export async function generateCanvasVisualTrained(
   deliverableId: string,
-  options?: { instruction?: string; aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4'; count?: number },
+  options?: { instruction?: string; aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4'; count?: number; target?: 'hero' },
 ): Promise<GenerateTrainedVisualResponse> {
   const res = await fetch(`/api/studio/${deliverableId}/generate-visual-trained`, {
     method: 'POST',
@@ -389,7 +389,7 @@ export interface GenerateComposeVisualResponse {
  */
 export async function generateCanvasVisualCompose(
   deliverableId: string,
-  options?: { aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4'; count?: number },
+  options?: { aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4'; count?: number; target?: 'hero' },
 ): Promise<GenerateComposeVisualResponse> {
   const res = await fetch(`/api/studio/${deliverableId}/generate-visual-compose`, {
     method: 'POST',

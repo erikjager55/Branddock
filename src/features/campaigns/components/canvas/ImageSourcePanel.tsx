@@ -82,6 +82,8 @@ export interface ImageSourcePanelProps {
   onSelected?: (selection: InsertImageSelection) => void;
   /** For modal variant — cancel/close button handler. */
   onCancel?: () => void;
+  /** 'hero' in de LP-flow → compose/trained-pickers wiren hun beeld als hero. */
+  target?: 'hero';
 }
 
 export function ImageSourcePanel({
@@ -91,6 +93,7 @@ export function ImageSourcePanel({
   variant,
   onSelected,
   onCancel,
+  target,
 }: ImageSourcePanelProps) {
   const isModal = variant === 'modal';
 
@@ -131,6 +134,7 @@ export function ImageSourcePanel({
         isModal={isModal}
         onSelected={onSelected}
         onCancel={onCancel}
+        target={target}
       />
     </div>
   );
@@ -142,12 +146,14 @@ function SourceContent({
   isModal,
   onSelected,
   onCancel,
+  target,
 }: {
   deliverableId: string | null;
   source: VisualBriefSource;
   isModal: boolean;
   onSelected?: (selection: InsertImageSelection) => void;
   onCancel?: () => void;
+  target?: 'hero';
 }) {
   // F35 Stap 4: smart-default seeds uit visualBrief — briefingText voedt
   // search-input voor Stock + prompt-textarea voor Generate.
@@ -262,6 +268,7 @@ function SourceContent({
           deliverableId={deliverableId}
           onCancel={onCancel}
           onGenerated={onCancel}
+          target={target}
         />
       );
     case 'trained-style':
@@ -270,6 +277,7 @@ function SourceContent({
           deliverableId={deliverableId}
           onCancel={onCancel}
           onGenerated={onCancel}
+          target={target}
         />
       );
     case 'photography-request':

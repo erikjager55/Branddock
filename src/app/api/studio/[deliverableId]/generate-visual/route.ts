@@ -35,6 +35,7 @@ import { cacheKeys } from '@/lib/api/cache-keys';
 import { parseLogoIntent, stripLogoMentions, type LogoPosition } from '@/lib/visual/logo-intent';
 import { compositeLogoOverlay } from '@/lib/visual/logo-overlay';
 import { getBrandLogo, type BrandLogo } from '@/lib/brand/get-brand-logo';
+import { patchHeroVisualUrl } from '@/lib/deliverable/patch-hero-visual';
 import { z } from 'zod';
 
 const VISUAL_GROUP = 'visual';
@@ -477,40 +478,10 @@ export async function POST(request: Request, { params }: RouteParams) {
     // de landing-page-puckData (BrandHero) + structuredVariant. Voorheen deed de
     // client dit (confirm-flow/self-heal) — onbetrouwbaar door een race + stale
     // HMR, waardoor de header-image leeg bleef ondanks geslaagde generatie. De
-    // server is de enige autoriteit op de DB → dit landt gegarandeerd. Best-effort
-    // + idempotent; we herlezen de settings vlak vóór de write (klein race-window).
+    // server is de enige autoriteit op de DB → dit landt gegarandeerd. Gedeelde
+    // helper (ook gebruikt door -compose / -trained), best-effort + idempotent.
     if (body?.target === 'hero' && uploads[0]?.url) {
-      try {
-        const heroUrl = uploads[0].url;
-        const fresh = await prisma.deliverable.findUnique({
-          where: { id: deliverableId },
-          select: { settings: true },
-        });
-        const settings = (fresh?.settings ?? {}) as Record<string, unknown>;
-        const pd = settings.puckData as { content?: Array<{ type?: string; props?: Record<string, unknown> }> } | undefined;
-        let patched = false;
-        if (Array.isArray(pd?.content)) {
-          for (const c of pd!.content!) {
-            if (c.type === 'BrandHero' && c.props) {
-              c.props.heroVisualUrl = heroUrl;
-              patched = true;
-            }
-          }
-        }
-        const sv = settings.structuredVariant as { hero?: Record<string, unknown> } | undefined;
-        if (sv?.hero) sv.hero.heroVisualUrl = heroUrl;
-        if (patched || sv?.hero) {
-          await prisma.deliverable.update({
-            where: { id: deliverableId },
-            data: { settings: settings as never },
-          });
-        }
-      } catch (err) {
-        console.error(
-          '[generate-visual] server-side hero-wiring faalde:',
-          err instanceof Error ? err.message : err,
-        );
-      }
+      await patchHeroVisualUrl(deliverableId, uploads[0].url);
     }
 
     // Persist as DeliverableComponent variantGroup='visual' of

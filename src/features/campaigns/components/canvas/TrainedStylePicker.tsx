@@ -14,6 +14,8 @@ interface TrainedStylePickerProps {
   onCancel?: () => void;
   /** Called after a successful generation — used by Step 2 to dismiss the picker. */
   onGenerated?: () => void;
+  /** 'hero' in de LP-flow → de route wiret het getrainde beeld server-side in puckData.BrandHero. */
+  target?: 'hero';
 }
 
 /**
@@ -25,7 +27,7 @@ interface TrainedStylePickerProps {
  * survive Canvas reopen and feed forward to the generate-visual-trained
  * endpoint (which reads them server-side).
  */
-export function TrainedStylePicker({ deliverableId, onCancel, onGenerated }: TrainedStylePickerProps) {
+export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, target }: TrainedStylePickerProps) {
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const setVisualBriefField = useCanvasStore((s) => s.setVisualBriefField);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
@@ -70,17 +72,22 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated }: Tra
       // Force-flush the Visual Brief PATCH so the endpoint reads the
       // freshly-picked model + strength even when the 500ms debounce
       // hasn't fired yet.
-      await fetch(`/api/studio/${deliverableId}`, {
+      const flushResp = await fetch(`/api/studio/${deliverableId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           settings: {
-            visualBrief: { ...visualBrief, trained: { modelId: selectedModelId, strength } },
+            visualBrief: { ...visualBrief, source: 'trained-style', trained: { modelId: selectedModelId, strength } },
           },
         }),
       });
+      // De source-persist IS de gate-garantie: faalt 'ie, dan zou generate met
+      // een stale source 400'en met een misleidende melding. Surface 'm direct.
+      if (!flushResp.ok) {
+        throw new Error(`Kon de Visual Brief niet opslaan (HTTP ${flushResp.status}) — probeer opnieuw.`);
+      }
 
-      const result = await generateCanvasVisualTrained(deliverableId);
+      const result = await generateCanvasVisualTrained(deliverableId, target ? { target } : undefined);
       const mapped: CanvasImageVariant[] = result.variants.map((v, i) => ({
         index: i,
         url: v.url,
