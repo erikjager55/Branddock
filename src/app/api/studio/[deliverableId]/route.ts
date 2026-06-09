@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { preserveHeroOnSettings } from "@/features/campaigns/components/canvas/medium/hero-visual-preserve";
 import { z } from "zod";
 
 // GET /api/studio/[deliverableId] — Returns full studio state
@@ -167,7 +168,12 @@ export async function PATCH(
         existing.settings && typeof existing.settings === 'object' && !Array.isArray(existing.settings)
           ? (existing.settings as Record<string, unknown>)
           : {};
-      updateData.settings = JSON.parse(JSON.stringify({ ...existingSettings, ...settings }));
+      // Hero-preserve chokepoint: een autosave/regen/race die settings.puckData
+      // of structuredVariant wholesale herschrijft mag een al-gezette hero-image
+      // niet leegclobberen (audit 2026-06-08). Behoud een bestaande niet-lege
+      // heroVisualUrl wanneer de inkomende write 'm leeg laat.
+      const preservedIncoming = preserveHeroOnSettings(existingSettings, settings as Record<string, unknown>);
+      updateData.settings = JSON.parse(JSON.stringify({ ...existingSettings, ...preservedIncoming }));
     }
     if (generatedSlides !== undefined)
       updateData.generatedSlides = JSON.parse(JSON.stringify(generatedSlides));

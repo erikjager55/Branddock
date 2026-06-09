@@ -6,7 +6,7 @@
  *
  * Run: npx tsx scripts/smoke-tests/web-page-builder-phase61-hero-clobber-guard.ts
  */
-import { preserveHeroVisual, type PuckTreeLike } from '../../src/features/campaigns/components/canvas/medium/hero-visual-preserve';
+import { preserveHeroVisual, preserveHeroOnSettings, type PuckTreeLike } from '../../src/features/campaigns/components/canvas/medium/hero-visual-preserve';
 
 let pass = 0;
 let fail = 0;
@@ -78,6 +78,44 @@ group('5 — defensief bij ontbrekende structuur');
   const incoming = tree('');
   const out = preserveHeroVisual(incoming, { content: undefined });
   assert('geen current content → ongemoeid', out === incoming);
+}
+
+// ─── 6. Server-side settings-chokepoint (preserveHeroOnSettings) ─────────────
+group('6 — preserveHeroOnSettings: PATCH-route clobber-guard');
+{
+  // puckData-clobber: inkomende settings met lege hero mag bestaande niet wissen
+  const existing = { puckData: tree(URL_A), foo: 1 };
+  const incoming = { puckData: tree('') };
+  const out = preserveHeroOnSettings(existing, incoming);
+  assert('puckData: bestaande hero-URL behouden bij lege incoming',
+    heroUrl(out.puckData as PuckTreeLike) === URL_A, heroUrl(out.puckData as PuckTreeLike));
+}
+{
+  // nieuwe URL in incoming wint
+  const out = preserveHeroOnSettings({ puckData: tree(URL_A) }, { puckData: tree(URL_B) });
+  assert('puckData: nieuwe incoming-URL respecteren',
+    heroUrl(out.puckData as PuckTreeLike) === URL_B, heroUrl(out.puckData as PuckTreeLike));
+}
+{
+  // structuredVariant-clobber: hero.heroVisualUrl
+  const existing = { structuredVariant: { hero: { heroVisualUrl: URL_A, headline: 'H' } } };
+  const incoming = { structuredVariant: { hero: { heroVisualUrl: null, headline: 'H' } } };
+  const out = preserveHeroOnSettings(existing, incoming);
+  const sv = out.structuredVariant as { hero?: { heroVisualUrl?: string | null } };
+  assert('structuredVariant: bestaande hero-URL behouden bij null incoming',
+    sv.hero?.heroVisualUrl === URL_A, String(sv.hero?.heroVisualUrl));
+}
+{
+  // incoming zonder puckData → bestaande blijft (merge in route behoudt 'm)
+  const out = preserveHeroOnSettings({ puckData: tree(URL_A) }, { otherKey: 2 });
+  assert('incoming zonder puckData → geen puckData in output (route-merge behoudt bestaande)',
+    out.puckData === undefined);
+}
+{
+  // echte clear: geen bestaande URL → incoming leeg blijft leeg
+  const out = preserveHeroOnSettings({ puckData: tree(undefined) }, { puckData: tree('') });
+  assert('geen bestaande hero → niets verzonnen',
+    !heroUrl(out.puckData as PuckTreeLike));
 }
 
 console.log(`\n${pass} PASS, ${fail} FAIL`);
