@@ -212,7 +212,7 @@ export async function POST(
         imagePromptUsed: refinePrompt,
         generatedAt: new Date(),
         aiProvider: "google",
-        aiModel: "gemini-2.5-flash-image-preview",
+        aiModel: "gemini-2.5-flash-image",
         generationDuration: elapsedMs,
       },
       select: {
@@ -240,7 +240,7 @@ export async function POST(
         scores: hint.scores,
       },
       provider: "google",
-      model: "gemini-2.5-flash-image-preview",
+      model: "gemini-2.5-flash-image",
       generationDuration: elapsedMs,
     });
   } catch (err) {
