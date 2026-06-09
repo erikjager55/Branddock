@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef, useContext, createContext } from 'react';
 import {
-  Loader2, Sparkles, AlertCircle, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon, Pencil,
+  Loader2, Sparkles, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon, Pencil,
 } from 'lucide-react';
 import { Render } from '@puckeditor/core';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
@@ -13,6 +13,7 @@ import { useBrandFontLoader } from '../medium/useBrandFontLoader';
 import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
 import { assignBrandImagesToVariant } from '@/lib/landing-pages/brand-images';
 import { FidelityScoreBar } from '../FidelityScoreBar';
+import { InfoBox } from '@/components/ui/InfoBox';
 import { useInlineTransform } from '../../../hooks/canvas.hooks';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
 import { buildHeroVisualInstruction, buildFeatureVisualInstruction } from '../../../lib/landing-page-visual-prompts';
@@ -99,6 +100,8 @@ export function LandingPageGenerateBlock({
   // LP-specifieke auto-iterate (Step 2): verbetert de actieve variant in-place.
   const [isAutoIterating, setIsAutoIterating] = useState(false);
   const [autoIterateMsg, setAutoIterateMsg] = useState<string | null>(null);
+  // P4: fouten apart van voortgang/succes zodat ze als fout-banner tonen.
+  const [autoIterateError, setAutoIterateError] = useState<string | null>(null);
   // P2a — before/after-voorstel: na de iteratie-loop tonen we WAT er verandert
   // (per veld) + de score-winst, en de user kiest Toepassen/Verwerpen.
   const [pendingProposal, setPendingProposal] = useState<{
@@ -203,7 +206,12 @@ export function LandingPageGenerateBlock({
    */
   const scoreVariantFidelity = useCallback(
     async (variant: LandingPageVariantContent, variantIndex: number) => {
-      setFidelityRunningForVariant(variantIndex);
+      // P4 race-guard: claim een verse token vóór de fetch; alle store-writes
+      // hieronder dragen 'm zodat een tragere/oudere fetch voor dezelfde index
+      // (na wissel/regeneratie/reset) bij terugkomst gedropt wordt. getState()
+      // i.p.v. een selector houdt de dep-array (en React-Compiler-memoisatie) stabiel.
+      const token = useCanvasStore.getState().bumpFidelityToken(variantIndex);
+      setFidelityRunningForVariant(variantIndex, token);
       try {
         const res = await fetch(
           `/api/landing-pages/${deliverableId}/score-variant-fidelity`,
@@ -218,6 +226,7 @@ export function LandingPageGenerateBlock({
           setFidelityScoreSkippedForVariant(
             variantIndex,
             data.error ?? `HTTP ${res.status}`,
+            token,
           );
           return;
         }
@@ -240,14 +249,15 @@ export function LandingPageGenerateBlock({
             }
           | { skipped: true; reason: string };
         if (data.skipped) {
-          setFidelityScoreSkippedForVariant(variantIndex, data.reason);
+          setFidelityScoreSkippedForVariant(variantIndex, data.reason, token);
           return;
         }
-        setFidelityCompleteForVariant(variantIndex, data.payload);
+        setFidelityCompleteForVariant(variantIndex, data.payload, token);
       } catch (err) {
         setFidelityScoreSkippedForVariant(
           variantIndex,
           err instanceof Error ? err.message : 'fetch-error',
+          token,
         );
       }
     },
@@ -549,6 +559,7 @@ export function LandingPageGenerateBlock({
     if (!original) return;
     setIsAutoIterating(true);
     setAutoIterateMsg(null);
+    setAutoIterateError(null);
     setPendingProposal(null);
     let current = original;
     let startScore: number | null = null;
@@ -564,19 +575,21 @@ export function LandingPageGenerateBlock({
         });
         const json = (await res.json().catch(() => null)) as IterateResponse | null;
         if (!res.ok || !json || !('status' in json) || json.status === undefined) {
-          if (iterations === 0) setAutoIterateMsg((json && 'error' in json && json.error) ? json.error : 'Verbeteren mislukt — probeer opnieuw.');
+          if (iterations === 0) setAutoIterateError((json && 'error' in json && json.error) ? json.error : 'Verbeteren mislukt — probeer opnieuw.');
           break;
         }
         if (json.status === 'skipped') {
+          // Informatief, geen fout (al goed genoeg / te weinig content).
           if (iterations === 0) setAutoIterateMsg(json.reason === 'above-threshold' ? 'Deze variant zit al boven de drempel.' : 'Te weinig content om te verbeteren.');
           break;
         }
         if (json.status === 'no_improvement') {
+          // Informatief, geen fout — huidige variant blijft het beste.
           if (iterations === 0) setAutoIterateMsg(`Geen verbetering gevonden (${json.score} → ${json.scoreProjected}). Huidige variant blijft.`);
           break; // kan niet verder → stop met het beste (current)
         }
         if (json.status === 'error') {
-          if (iterations === 0) setAutoIterateMsg(json.error);
+          if (iterations === 0) setAutoIterateError(json.error);
           break;
         }
         // proposal — accumuleer + ga door tot drempel/max.
@@ -597,7 +610,7 @@ export function LandingPageGenerateBlock({
         });
       }
     } catch (err) {
-      setAutoIterateMsg(err instanceof Error ? err.message : 'Verbeteren mislukt');
+      setAutoIterateError(err instanceof Error ? err.message : 'Verbeteren mislukt');
     } finally {
       setIsAutoIterating(false);
     }
@@ -608,13 +621,25 @@ export function LandingPageGenerateBlock({
     const improved = pendingProposal.improved;
     setStructuredVariantOptions(variantOptions.map((v, i) => (i === activeVariantIndex ? improved : v)));
     void scoreVariantFidelity(improved, activeVariantIndex);
+    setAutoIterateError(null);
     setAutoIterateMsg(`Toegepast: ${pendingProposal.before} → ${pendingProposal.after}.`);
     setPendingProposal(null);
   }, [pendingProposal, variantOptions, activeVariantIndex, setStructuredVariantOptions, scoreVariantFidelity]);
 
   const discardProposal = useCallback(() => {
     setPendingProposal(null);
+    setAutoIterateError(null);
     setAutoIterateMsg('Voorstel verworpen — huidige variant blijft.');
+  }, []);
+
+  // P4: auto-iterate-feedback is variant-specifiek. Reset bij het wisselen van
+  // variant (i.p.v. in een effect — voorkomt de setState-in-effect-gotcha) zodat
+  // variant B nooit de gedecontextualiseerde feedback van variant A toont.
+  const selectVariant = useCallback((i: number) => {
+    setActiveVariantIndex(i);
+    setAutoIterateMsg(null);
+    setAutoIterateError(null);
+    setPendingProposal(null);
   }, []);
 
   // P3b — display-label per variant: het creative-angle-label wanneer aanwezig,
@@ -628,24 +653,16 @@ export function LandingPageGenerateBlock({
   if (briefIncomplete) {
     return (
       <div className="space-y-6">
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-medium">Brief incompleet</p>
-              <p className="text-xs text-amber-800 mt-1">
-                Vul eerst minimaal Doel of Value Proposition in Step 1.
-              </p>
-              <button
-                type="button"
-                onClick={() => setActiveStep('context')}
-                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-amber-900 underline hover:text-amber-700"
-              >
-                <ArrowLeft className="h-3 w-3" />Terug naar Step 1
-              </button>
-            </div>
-          </div>
-        </div>
+        <InfoBox variant="warning" size="md" title="Brief incompleet">
+          <p>Vul eerst minimaal Doel of Value Proposition in Step 1.</p>
+          <button
+            type="button"
+            onClick={() => setActiveStep('context')}
+            className="mt-2 inline-flex items-center gap-1 text-xs font-medium underline hover:opacity-80"
+          >
+            <ArrowLeft className="h-3 w-3" />Terug naar Step 1
+          </button>
+        </InfoBox>
       </div>
     );
   }
@@ -654,15 +671,12 @@ export function LandingPageGenerateBlock({
   if (!variantOptions && !chosenVariant && isGenerating) {
     return (
       <div className="space-y-6">
-        <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-8 flex flex-col items-center gap-3 text-center">
-          <Loader2 className="h-6 w-6 text-teal-600 animate-spin" />
-          <div>
-            <p className="text-sm font-medium text-teal-900">{selectedCount} landing-page varianten genereren...</p>
-            <p className="text-xs text-teal-800 mt-1">
-              Verschillende invalshoeken in parallel — totaal 30-90 seconden.
-            </p>
+        <InfoBox variant="info" size="md" title={`${selectedCount} landing-page varianten genereren…`}>
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
+            <span>Verschillende invalshoeken in parallel — totaal 30-90 seconden.</span>
           </div>
-        </div>
+        </InfoBox>
       </div>
     );
   }
@@ -671,7 +685,7 @@ export function LandingPageGenerateBlock({
   if (!variantOptions && !chosenVariant && error) {
     return (
       <div className="space-y-6">
-        <ErrorBanner message={error} />
+        <InfoBox variant="error" size="md" title="Generatie mislukt">{error}</InfoBox>
         <button
           type="button"
           onClick={() => { setError(null); void handleGenerate(); }}
@@ -725,7 +739,7 @@ export function LandingPageGenerateBlock({
                   type="button"
                   role="tab"
                   aria-selected={isActive}
-                  onClick={() => setActiveVariantIndex(i)}
+                  onClick={() => selectVariant(i)}
                   className={`text-left rounded-lg border-2 overflow-hidden bg-white transition-colors ${isActive ? '' : 'border-gray-200 hover:border-gray-300'}`}
                   style={isActive ? { borderColor: hex.border, boxShadow: `0 0 0 2px ${hex.ring}` } : undefined}
                 >
@@ -763,10 +777,12 @@ export function LandingPageGenerateBlock({
               <><Sparkles className="h-4 w-4" />Verbeter {variantLabel(activeVariantIndex)} automatisch</>
             )}
           </button>
-          {autoIterateMsg ? (
-            <p className="text-xs text-gray-600">{autoIterateMsg}</p>
-          ) : null}
         </div>
+        {autoIterateError ? (
+          <InfoBox variant="error" size="sm" onDismiss={() => setAutoIterateError(null)}>{autoIterateError}</InfoBox>
+        ) : autoIterateMsg ? (
+          <InfoBox variant="info" size="sm" onDismiss={() => setAutoIterateMsg(null)}>{autoIterateMsg}</InfoBox>
+        ) : null}
         {/* P2a — before/after-voorstel: toon de score-winst + wat er per veld
             verandert, en laat de user Toepassen/Verwerpen. */}
         {pendingProposal ? (
@@ -811,18 +827,14 @@ export function LandingPageGenerateBlock({
           </div>
         ) : null}
         {partialDelivery ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-medium">
-                {partialDelivery.delivered} van {partialDelivery.requested} varianten geleverd
-              </p>
-              <p className="text-xs text-amber-800 mt-1">
-                {partialDelivery.requested - partialDelivery.delivered} variant(en) niet gelukt (timeout of validatie-fail). Klik op de
-                regenereer-knop om opnieuw te proberen, of werk verder met de geleverde.
-              </p>
-            </div>
-          </div>
+          <InfoBox
+            variant="warning"
+            size="sm"
+            title={`${partialDelivery.delivered} van ${partialDelivery.requested} varianten geleverd`}
+            onDismiss={() => setPartialDelivery(null)}
+          >
+            {partialDelivery.requested - partialDelivery.delivered} variant(en) niet gelukt (timeout of validatie-fail). Klik op de regenereer-knop om opnieuw te proberen, of werk verder met de geleverde.
+          </InfoBox>
         ) : null}
         {/* Detail: ÉÉN full-width, leesbare kaart voor de actieve variant
             (key forceert verse local edit-state bij wisselen van variant). */}
@@ -852,17 +864,19 @@ export function LandingPageGenerateBlock({
             niet-blokkerende waarschuwing bij timeout/fout (pagina rendert dan
             zonder foto). Voorheen werd deze state nergens getoond → stil. */}
         {isChoosing && isGeneratingVisual ? (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Hero-image genereren — de pagina opent met de foto…
-          </div>
+          <InfoBox variant="info" size="sm">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
+              <span>Hero-image genereren — de pagina opent met de foto…</span>
+            </div>
+          </InfoBox>
         ) : null}
         {visualError ? (
-          <div role="alert" className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
-            <p className="text-xs text-amber-700">{visualError}</p>
-          </div>
+          <InfoBox variant="warning" size="sm" onDismiss={() => setVisualError(null)}>{visualError}</InfoBox>
         ) : null}
-        {error ? <ErrorBanner message={error} /> : null}
+        {error ? (
+          <InfoBox variant="error" size="sm" title="Variant-keuze mislukt" onDismiss={() => setError(null)}>{error}</InfoBox>
+        ) : null}
 
         {/* User-feedback 2026-05-28: hetzelfde Step 2 patroon als 'Content
             Variants' — Visual-source tab-strip + Regenerate-feedback +
@@ -1161,7 +1175,7 @@ function VariantCompareCard({
         Leesbare preview (scroll voor de hele pagina) — header-foto wordt bij je keuze gegenereerd. Bewerk de tekst hieronder; de preview werkt direct bij.
       </p>
       {regenError ? (
-        <p className="text-[11px] text-red-600 -mt-1">Regenereren mislukt: {regenError}</p>
+        <InfoBox variant="error" size="sm" onDismiss={() => setRegenError(null)}>Regenereren mislukt: {regenError}</InfoBox>
       ) : null}
 
       {/* Tekst-bewerking — ingeklapt zodat de preview centraal staat.
@@ -1526,25 +1540,3 @@ function FieldRow({ label, value, accent }: { label: string; value: string; acce
   );
 }
 
-/**
- * Sub-Sprint C — Hero-visual prompt brand-aware. Combineert
- * heroImagePromptFragment (computeBrandRenderHints) + brand.brandImageryStyle
- * + headline/subhead + brandImageryDonts.
- */
-/**
- * P2 — per-feature image-prompt: een editorial materiaal-/in-context-shot die
- * de feature-pilaar illustreert, geënt op de merk-fotografie (zelfde tiers als
- * de hero: scraped photographyStyle > archetype-hint). Geen tekst/UI/infographic.
- */
-
-function ErrorBanner({ message }: { message: string }) {
-  return (
-    <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-2 text-sm text-red-900">
-      <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
-      <div>
-        <p className="font-medium">Fout</p>
-        <p className="text-xs text-red-800 mt-1">{message}</p>
-      </div>
-    </div>
-  );
-}

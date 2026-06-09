@@ -12,6 +12,7 @@ import type {
   VisualStyleDirection,
 } from '@/lib/ai/canvas-context';
 import type { MediumCategory, MediumVariant } from '../types/medium-config.types';
+import { shouldApplyFidelityWrite } from './fidelity-token-guard';
 type GenerationStatus = 'idle' | 'generating' | 'complete' | 'error';
 
 // F9 (audit 2026-05-13): per-variant fidelity score-shape, mirror van
@@ -178,6 +179,16 @@ interface CanvasStoreState {
   // bovenstaande fidelityScore. UI leest score op basis van currently-selected
   // variant; fidelityScore boven blijft alias voor variant 0 (legacy compat).
   fidelityScoresByVariantIndex: Map<number, FidelityScoreState>;
+
+  // P4 race-guard: monotone generation-token per variantIndex. Elke score-fetch
+  // capt de token bij afvuren; een write landt alleen als de token nog actueel
+  // is voor díe index. Voorkomt dat een trage/stale fetch (na variant-wissel,
+  // regeneratie of reset) op de verkeerde of vervangen variant terechtkomt.
+  // `fidelityTokenSeq` is een GLOBALE monotone teller: tokens worden nooit
+  // hergebruikt (ook niet na reset), zodat een token uit generatie N nooit per
+  // ongeluk matcht met een verse fetch uit generatie N+1 op dezelfde index.
+  fidelityTokenSeq: number;
+  fidelityTokenByVariantIndex: Map<number, number>;
 
   // ─── STRICT mode rewrite ──────────────────────────────────
   // Wordt gevuld wanneer FidelityConfig.humanVoiceMode === STRICT en het
@@ -420,7 +431,13 @@ interface CanvasStoreState {
   // F9: per-variant setters. variantIndex 0 wordt ook gespiegeld naar de
   // legacy fidelityScore-state zodat bestaande UI niets hoeft te weten van
   // de map (backwards-compat).
-  setFidelityRunningForVariant: (variantIndex: number) => void;
+  // P4: verhoog + retourneer de generation-token voor een variantIndex. Roep dit
+  // aan vlak vóór een nieuwe score-fetch; geef de teruggegeven token mee aan de
+  // running/complete/skipped-setters zodat stale writes gedropt worden.
+  bumpFidelityToken: (variantIndex: number) => number;
+  // token optioneel: LP geeft 'm mee voor de race-guard; tokenloze callers
+  // (orchestrator) blijven ongegate (backward-compat, zie fidelity-token-guard).
+  setFidelityRunningForVariant: (variantIndex: number, token?: number) => void;
   setFidelityCompleteForVariant: (variantIndex: number, data: {
     compositeScore: number;
     thresholdMet: boolean;
@@ -429,8 +446,8 @@ interface CanvasStoreState {
     humanBaselinePosition: number;
     pillars: { style: number | null; judge: number | null; rules: number | null };
     elapsedMs: number;
-  }) => void;
-  setFidelityScoreSkippedForVariant: (variantIndex: number, reason: string) => void;
+  }, token?: number) => void;
+  setFidelityScoreSkippedForVariant: (variantIndex: number, reason: string, token?: number) => void;
   setDetectorOnlyForVariant: (variantIndex: number, data: {
     verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI';
     humanBaselinePosition: number;
@@ -627,6 +644,8 @@ const INITIAL_STATE = {
     elapsedMs: null,
   },
   fidelityScoresByVariantIndex: new Map<number, FidelityScoreState>(),
+  fidelityTokenSeq: 0,
+  fidelityTokenByVariantIndex: new Map<number, number>(),
   strictRewrite: {
     stage: 'idle' as const,
     improved: false,
@@ -895,10 +914,34 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         elapsedMs: null,
       },
       fidelityScoresByVariantIndex: new Map<number, FidelityScoreState>(),
+      // P4: leeg de per-index token-map → in-flight fetches uit een vorige
+      // generatie vinden bij terugkomst geen actuele token meer en worden
+      // gedropt. `fidelityTokenSeq` blijft BEWUST staan (niet gereset) zodat de
+      // volgende bump een hoger, nooit-eerder-uitgegeven token oplevert →
+      // collisie tussen generaties onmogelijk.
+      fidelityTokenByVariantIndex: new Map<number, number>(),
     }),
 
-  setFidelityRunningForVariant: (variantIndex) =>
+  bumpFidelityToken: (variantIndex) => {
+    let next = 0;
     set((state) => {
+      // Globale monotone sequence → tokens worden NOOIT hergebruikt, ook niet
+      // na resetFidelityScore (die de per-index map leegt maar de seq laat
+      // doorlopen). Voorkomt token-collisie tussen een trage fetch uit een
+      // vorige generatie en een verse fetch op dezelfde index.
+      next = state.fidelityTokenSeq + 1;
+      const map = new Map(state.fidelityTokenByVariantIndex);
+      map.set(variantIndex, next);
+      return { fidelityTokenSeq: next, fidelityTokenByVariantIndex: map } as CanvasStoreState;
+    });
+    return next;
+  },
+
+  setFidelityRunningForVariant: (variantIndex, token) =>
+    set((state) => {
+      if (!shouldApplyFidelityWrite(state.fidelityTokenByVariantIndex.get(variantIndex), token)) {
+        return {} as CanvasStoreState; // stale → drop
+      }
       const map = new Map(state.fidelityScoresByVariantIndex);
       const existing = map.get(variantIndex) ?? {
         stage: 'idle' as const,
@@ -922,8 +965,11 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       return next as CanvasStoreState;
     }),
 
-  setFidelityCompleteForVariant: (variantIndex, data) =>
+  setFidelityCompleteForVariant: (variantIndex, data, token) =>
     set((state) => {
+      if (!shouldApplyFidelityWrite(state.fidelityTokenByVariantIndex.get(variantIndex), token)) {
+        return {} as CanvasStoreState; // stale → drop
+      }
       const map = new Map(state.fidelityScoresByVariantIndex);
       map.set(variantIndex, {
         stage: 'complete',
@@ -955,8 +1001,11 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       return next as CanvasStoreState;
     }),
 
-  setFidelityScoreSkippedForVariant: (variantIndex, reason) =>
+  setFidelityScoreSkippedForVariant: (variantIndex, reason, token) =>
     set((state) => {
+      if (!shouldApplyFidelityWrite(state.fidelityTokenByVariantIndex.get(variantIndex), token)) {
+        return {} as CanvasStoreState; // stale → drop
+      }
       const map = new Map(state.fidelityScoresByVariantIndex);
       const existing = map.get(variantIndex) ?? {
         stage: 'idle' as const,
