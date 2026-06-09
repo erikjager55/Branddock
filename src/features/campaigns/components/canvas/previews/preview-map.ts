@@ -121,10 +121,9 @@ const CONTENT_TYPE_PREVIEW_MAP: Record<string, PreviewRegistryEntry> = {
 // Phase 6.4 (2026-05-24): Step 2 ContentVariants behoudt de legacy
 // LandingPagePreview (plain-text + image-suggestion) voor de 5 web-page
 // types — user-feedback wees uit dat die opzet beter werkt voor variant-
-// compare dan een mini Puck thumbnail. De LandingPageVariantPreview mini-
-// thumbnail bestaat nog in src/.../previews/ maar wordt niet meer
-// gedispatcht; bewaard voor toekomstig hergebruik in een Step 3-tab of
-// publisher-flow.
+// compare dan een mini Puck thumbnail. (De nooit-gedispatchte
+// LandingPageVariantPreview mini-thumbnail is in P4 verwijderd als dead-code;
+// Step 2 gebruikt nu VariantPuckPreview voor de WYSIWYG-thumbnails.)
 //
 // PuckPageBuilder zelf (Step 3, preview-first met fullscreen layout-editor
 // modal) routet via `GenericConfigPanel` → `PuckLayoutWrapper`, niet via

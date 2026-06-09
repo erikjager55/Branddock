@@ -88,10 +88,15 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
     if (!firstGroup) return 0;
     return selections.get(firstGroup) ?? 0;
   }, [variantIndex, variantGroups, selections]);
+  // P4: toon NOOIT de score van variant 0 op een andere (nog niet gescoorde)
+  // variant. Eigen entry → die; map helemaal leeg → legacy-fallback; map gevuld
+  // maar deze index nog niet gescoord → neutrale 'computing'-placeholder
+  // (spinner i.p.v. een vreemde score) tot de eigen score landt.
   const fidelity =
     variantScores.get(selectedVariantIndex) ??
-    variantScores.get(0) ??
-    fidelityFallback;
+    (variantScores.size === 0
+      ? fidelityFallback
+      : { ...fidelityFallback, stage: 'computing' as const, compositeScore: null });
 
   const strict = useCanvasStore((s) => s.strictRewrite);
   const autoIterate = useCanvasStore((s) => s.autoIterate);

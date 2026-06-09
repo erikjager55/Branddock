@@ -1,12 +1,13 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { getStatusColors } from '@/constants/design-system';
-import { 
-  Info, 
-  CheckCircle, 
-  AlertTriangle, 
+import {
+  Info,
+  CheckCircle,
+  AlertTriangle,
   XCircle,
-  LucideIcon 
+  X,
+  LucideIcon
 } from 'lucide-react';
 
 /**
@@ -69,6 +70,13 @@ export interface InfoBoxProps {
    * Size variant
    */
   size?: 'sm' | 'md' | 'lg';
+
+  /**
+   * Optional dismiss handler — renders a small close (X) button top-right.
+   * Use voor transiënte fout-/afgerond-banners; laat weg voor auto-resettende
+   * of permanente meldingen.
+   */
+  onDismiss?: () => void;
 }
 
 // ============================================================================
@@ -93,6 +101,7 @@ export function InfoBox({
   children,
   className,
   size = 'md',
+  onDismiss,
 }: InfoBoxProps) {
   const colors = getStatusColors(variant === 'error' ? 'error' : variant === 'warning' ? 'warning' : variant === 'success' ? 'success' : 'info');
   const Icon = icon || DEFAULT_ICONS[variant];
@@ -156,6 +165,19 @@ export function InfoBox({
             {children}
           </div>
         </div>
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Sluiten"
+            className={cn(
+              'flex-shrink-0 ml-auto -mr-0.5 -mt-0.5 rounded p-0.5 opacity-60 hover:opacity-100 transition-opacity',
+              colors.text
+            )}
+          >
+            <X className={sizeClass.icon} />
+          </button>
+        )}
       </div>
     </div>
   );
