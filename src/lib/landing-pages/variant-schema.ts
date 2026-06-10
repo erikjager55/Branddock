@@ -29,6 +29,27 @@ import { z } from "zod";
 
 // ─── Sectie-schema's ─────────────────────────────────────────
 
+/**
+ * Image-brief per sectie-beeld (R7, audit 2026-06-10-lp-feature-image-diversity).
+ * Geproduceerd door de copy-LLM (variant-generator) die de volledige brand/
+ * persona-context heeft — het [VISUAL:]-precedent uit het video-pad, maar
+ * gestructureerd. De sceneType-enum maakt de cross-brief-diversiteitsregel
+ * (≥3 verschillende types per pagina, max 1 person) mechanisch valideerbaar.
+ * Optioneel + nullable: bestaande gepersisteerde variants parsen ongewijzigd.
+ */
+const imageBriefSchema = z.object({
+  /** Concreet, sectie-specifiek onderwerp ("stapel gevouwen servetten met GOTS-label"). */
+  subject: z.string().min(1, "imageBrief.subject mag niet leeg zijn").max(200, "imageBrief.subject max 200 tekens"),
+  /** Scene-typologie — stuurt het compositie-sjabloon van de prompt-builder. */
+  sceneType: z.enum(["object", "process", "location", "detail", "person"]),
+  /** Compositie-richting in 1 zin ("macro close-up, zachte zijbelichting"). */
+  composition: z.string().min(1, "imageBrief.composition mag niet leeg zijn").max(200, "imageBrief.composition max 200 tekens"),
+  /** Wat dit beeld NIET moet tonen — gaat naar de negative-prompt (userNegations-slot). */
+  avoid: z.string().max(200, "imageBrief.avoid max 200 tekens").nullable().optional(),
+});
+
+export type ImageBrief = z.infer<typeof imageBriefSchema>;
+
 const heroSchema = z.object({
   /** Max 60 chars (was 44 — relaxed 2026-05-27 omdat C2 voice-sample longer
    *  rhythm injecteert; 44 was te strict bij brand-voice imitation). */
@@ -46,6 +67,8 @@ const heroSchema = z.object({
   heroVisualUrl: z.string().nullable().optional(),
   /** C5 — optionele uppercase eyebrow boven headline (civic / categorie-marker). */
   eyebrow: z.string().max(40, "hero.eyebrow max 40 tekens").nullable().optional(),
+  /** R7 — visuele richting voor de hero-foto, uit de copy-LLM. */
+  imageBrief: imageBriefSchema.nullable().optional(),
 });
 
 const trustItemSchema = z.object({
@@ -91,6 +114,10 @@ const featureItemSchema = z.object({
    *  deze foto. Producer (brandImages-mapping / AI-gen) is een verbeterplan-
    *  track — de renderer is hiermee per-feature beeld-capabel. */
   imageUrl: z.string().url("features.items[].imageUrl moet een geldige URL zijn").nullable().optional(),
+  /** R7 — visuele richting voor het feature-beeld: visualiseert HET BEWIJS van
+   *  déze feature. Briefs moeten onderling verschillende sceneTypes/subjects
+   *  hebben (regel 15 in de generator-system-prompt). */
+  imageBrief: imageBriefSchema.nullable().optional(),
 });
 
 const featuresSchema = z.object({
