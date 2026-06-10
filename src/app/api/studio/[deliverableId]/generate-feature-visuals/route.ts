@@ -189,7 +189,13 @@ export async function POST(request: Request, { params }: RouteParams) {
         });
         const hosted = (result.images ?? []).map((i) => i?.url).filter((u): u is string => Boolean(u)).slice(0, wantCandidates);
         if (hosted.length === 0) return null;
-        const candidates = await Promise.all(hosted.map((u) => fetchWithSizeLimit(u, AI_IMAGE_SIZE_CAP)));
+        // allSettled: één mislukte/oversized kandidaat mag het slot niet
+        // killen wanneer een andere kandidaat wél binnen is (review follow-ups).
+        const settled = await Promise.allSettled(hosted.map((u) => fetchWithSizeLimit(u, AI_IMAGE_SIZE_CAP)));
+        const candidates = settled
+          .filter((r): r is PromiseFulfilledResult<Buffer> => r.status === 'fulfilled')
+          .map((r) => r.value);
+        if (candidates.length === 0) return null;
 
         // Kandidaat-selectie (quality-mode): per kandidaat een G4-coherence-
         // oordeel vóór upload — alleen de winnaar wordt geüpload; de beste
@@ -202,6 +208,7 @@ export async function POST(request: Request, { params }: RouteParams) {
           const scored = await Promise.all(
             candidates.map(async (bytes) => {
               const prepared = await prepareJudgeImage(bytes);
+              judgeCalls++;
               const r = await runCopyImageCoherenceJudge(
                 { type: 'base64', mediaType: prepared.mediaType, data: prepared.buffer.toString('base64') },
                 judgeText,
@@ -238,6 +245,9 @@ export async function POST(request: Request, { params }: RouteParams) {
     };
 
     // Per-index resultaat (behoudt request-volgorde); null bij falen.
+    let judgeCalls = 0;
+    let diversityCalls = 0;
+    let retryAttempts = 0;
     const generated = await Promise.all(built.map((slot) => generateOne(slot)));
 
     // ── Fase 4 kwaliteitspoort (alleen v2: legacy mist de copy om tegen te
@@ -257,6 +267,7 @@ export async function POST(request: Request, { params }: RouteParams) {
           const judgeText = judgeTextFor(g.index);
           if (!judgeText) return null;
           const prepared = await prepareJudgeImage(g.bytes);
+          judgeCalls++;
           return runCopyImageCoherenceJudge(
             { type: 'base64', mediaType: prepared.mediaType, data: prepared.buffer.toString('base64') },
             judgeText,
@@ -273,35 +284,65 @@ export async function POST(request: Request, { params }: RouteParams) {
       const setImages = preparedWinners
         .filter((p): p is NonNullable<typeof p> => Boolean(p))
         .map(({ g, prepared }) => ({ index: g.index, buffer: prepared.buffer, mediaType: prepared.mediaType }));
+      diversityCalls++;
       const diversity = await runFeatureSetDiversityJudge(setImages);
       dupePairs = diversity?.duplicatePairs ?? [];
 
       // Gratis dupe-swap (quality-mode): de verliezer van een dupe-paar wisselt
       // naar zijn runner-up-kandidaat — al gegenereerd, dus $0 extra. Pas
       // daarna beslist de gate over (resterende) regeneraties.
-      const unresolvedPairs: Array<[number, number]> = [];
+      let unresolvedPairs: Array<[number, number]> = [];
       for (const [a, b2] of dupePairs) {
         const posA = generated.findIndex((g) => g?.index === a);
         const posB = generated.findIndex((g) => g?.index === b2);
         if (posA < 0 || posB < 0) { continue; }
         const sa = coherenceScores[posA];
         const sb = coherenceScores[posB];
-        const loserPos = sa !== null && sb !== null && sa !== sb ? (sa < sb ? posA : posB) : posB;
+        // Laagste coherence verliest; bij tie/onbekend wint het lid MET een
+        // runner-up de verliezersrol (gratis swap > betaalde regen).
+        let loserPos: number;
+        if (sa !== null && sb !== null && sa !== sb) loserPos = sa < sb ? posA : posB;
+        else if (generated[posB]?.runnerUp) loserPos = posB;
+        else if (generated[posA]?.runnerUp) loserPos = posA;
+        else loserPos = posB;
         const loser = generated[loserPos];
         if (loser?.runnerUp) {
-          const url = await uploadBytes(loser.runnerUp.bytes, loser.index);
-          generated[loserPos] = {
-            ...loser,
-            url,
-            bytes: loser.runnerUp.bytes,
-            coherence: loser.runnerUp.coherence,
-            runnerUp: null,
-          };
-          coherenceScores[loserPos] = loser.runnerUp.coherence;
-          swapped.push(loser.index);
+          // Fail-soft: een falende runner-up-upload mag de run niet 500'en —
+          // dan blijft de originele winnaar staan en beslist de gate.
+          try {
+            const url = await uploadBytes(loser.runnerUp.bytes, loser.index);
+            generated[loserPos] = {
+              ...loser,
+              url,
+              bytes: loser.runnerUp.bytes,
+              coherence: loser.runnerUp.coherence,
+              runnerUp: null,
+            };
+            coherenceScores[loserPos] = loser.runnerUp.coherence;
+            swapped.push(loser.index);
+          } catch (err) {
+            console.warn(`[generate-feature-visuals] runner-up-swap idx=${loser.index} faalde — origineel blijft:`, err instanceof Error ? err.message : err);
+            unresolvedPairs.push([a, b2]);
+          }
         } else {
           unresolvedPairs.push([a, b2]);
         }
+      }
+
+      // Her-verificatie na swaps: een runner-up uit dezelfde batch kan zélf op
+      // de partner lijken — zonder re-judge zou het paar stil aan de gate
+      // onttrokken worden (review follow-ups). Eén extra Haiku-call (~$0,005).
+      if (swapped.length > 0) {
+        const rePrepared = await Promise.all(
+          generated.map(async (g) => (g ? { g, prepared: await prepareJudgeImage(g.bytes) } : null)),
+        );
+        diversityCalls++;
+        const reCheck = await runFeatureSetDiversityJudge(
+          rePrepared
+            .filter((x): x is NonNullable<typeof x> => Boolean(x))
+            .map(({ g, prepared }) => ({ index: g.index, buffer: prepared.buffer, mediaType: prepared.mediaType })),
+        );
+        unresolvedPairs = reCheck?.duplicatePairs ?? unresolvedPairs;
       }
 
       const decision = decideFeatureRegenerations(
@@ -332,6 +373,7 @@ export async function POST(request: Request, { params }: RouteParams) {
             );
             // Retry bewust met 1 kandidaat (kosten-cap); iteration=1 in de
             // audit-row. `regenerated` telt alleen GESLAAGDE retries (§9).
+            retryAttempts++;
             const retry = await generateOne(sharpened, { iteration: 1, candidates: 1 });
             if (retry) {
               generated[pos] = retry;
@@ -345,16 +387,14 @@ export async function POST(request: Request, { params }: RouteParams) {
     const elapsedMs = Date.now() - startMs;
     // Kosten-telemetrie per page-run (pilot-stuurbaarheid, audit §5).
     const genCount = generated.filter(Boolean).length;
-    const diversityRan = Boolean(body.features) && genCount >= 2;
-    const coherenceJudgeCalls = body.features
-      ? (candidateCount > 1 ? genCount * candidateCount : genCount) + regenerated.length
-      : 0;
+    // Werkelijke tellers i.p.v. afgeleide formules: gefaalde retries kosten
+    // wél fal-spend en geskipte judges tellen niet (review follow-ups).
     const estCost =
-      (genCount * candidateCount + regenerated.length) * 0.13 +
-      coherenceJudgeCalls * 0.001 +
-      (diversityRan ? 0.005 : 0);
+      (genCount * candidateCount + retryAttempts) * 0.13 +
+      judgeCalls * 0.001 +
+      diversityCalls * 0.005;
     console.log(
-      `[generate-feature-visuals] page-run deliverable=${deliverableId} model=${modelId} slots=${built.length} ok=${genCount} candidates=${candidateCount} coherence=[${coherenceScores.map((s) => s ?? '–').join(',')}] dupes=${JSON.stringify(dupePairs)} swaps=[${swapped.join(',')}] regens=[${regenerated.join(',')}] durationMs=${elapsedMs} estCost=$${estCost.toFixed(2)}`,
+      `[generate-feature-visuals] page-run deliverable=${deliverableId} model=${modelId} slots=${built.length} ok=${genCount} candidates=${candidateCount} coherence=[${coherenceScores.map((s) => s ?? '–').join(',')}] dupes=${JSON.stringify(dupePairs)} swaps=[${swapped.join(',')}] regens=[${regenerated.join(',')}] retryAttempts=${retryAttempts} judges=${judgeCalls}+${diversityCalls} durationMs=${elapsedMs} estCost=$${estCost.toFixed(2)}`,
     );
 
     // Persist alleen op het v2-pad (legacy mist de feature-index-semantiek).

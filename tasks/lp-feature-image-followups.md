@@ -35,11 +35,9 @@ Vier bewust-deferde punten uit de #317-reviews, waarvan er één inmiddels een e
 - `src/app/api/studio/[deliverableId]/generate-feature-visuals/route.ts`
 - `src/lib/landing-pages/feature-image-config.ts` (NIEUW)
 - `src/lib/brand-fidelity/judge-image.ts` (NIEUW)
-- `src/lib/brand-fidelity/feature-set-diversity-judge.ts` (mediaType-flexibel)
-- `src/features/campaigns/lib/feature-visual-preserve.ts` (sentinel)
+- `src/features/campaigns/lib/feature-visual-preserve.ts` (sentinel + sv-spiegeling)
 - `src/features/campaigns/components/canvas/medium/PuckImageField.tsx` (sentinel + badge)
 - `src/features/campaigns/components/canvas/medium/puck-config.tsx` (sentinel in renderers)
-- `src/features/campaigns/components/canvas/medium/PuckPageBuilder.tsx` (sentinel in gap-detectie)
 - smokes: feature-visual-preserve.ts (sentinel-cases) + judge-image.ts (NIEUW)
 
 # Bestanden die ik NIET aanraak

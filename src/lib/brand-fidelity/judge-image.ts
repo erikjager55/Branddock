@@ -25,9 +25,15 @@ export interface JudgeImagePayload {
  * Fail-soft: faalt sharp, dan gaat de originele buffer door (de judge zelf
  * is al fail-soft op een API-weigering).
  */
+/** Magic-byte sniff — een jpeg-output van een toekomstig model mag geen
+ *  png-mediaType meekrijgen (Anthropic reject → judge stil null). */
+function sniffMediaType(bytes: Buffer): "image/png" | "image/jpeg" {
+  return bytes.length > 2 && bytes[0] === 0xff && bytes[1] === 0xd8 ? "image/jpeg" : "image/png";
+}
+
 export async function prepareJudgeImage(bytes: Buffer): Promise<JudgeImagePayload> {
   if (bytes.length <= MAX_JUDGE_BYTES) {
-    return { buffer: bytes, mediaType: "image/png" };
+    return { buffer: bytes, mediaType: sniffMediaType(bytes) };
   }
   try {
     const scaled = await sharp(bytes)
@@ -40,6 +46,6 @@ export async function prepareJudgeImage(bytes: Buffer): Promise<JudgeImagePayloa
       "[judge-image] downscale faalde — origineel door (judge is fail-soft):",
       err instanceof Error ? err.message : err,
     );
-    return { buffer: bytes, mediaType: "image/png" };
+    return { buffer: bytes, mediaType: sniffMediaType(bytes) };
   }
 }

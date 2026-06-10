@@ -161,7 +161,7 @@ export function PuckImageField({
   // Bron-heuristiek op de URL — zero-fetch herkomst-badge (AI-bestandsnamen
   // uit de generate-routes vs media-library-uploads vs externe URLs).
   const sourceBadge = !hasValue ? null
-    : /feature-visual-|canvas-visual-/.test(value as string)
+    : /feature-visual-|canvas-visual-|canvas-refined-/.test(value as string)
       ? { label: 'AI-gegenereerd', Icon: Sparkles }
     : (value as string).startsWith('/uploads/')
       ? { label: 'Media library', Icon: FolderOpen }

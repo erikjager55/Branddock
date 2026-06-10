@@ -138,5 +138,24 @@ group("clear-sentinel (follow-up 2026-06-10) — expliciete user-clear passeert"
   assert("structuredVariant race blijft beschermd", sv.features.items[1].imageUrl === "/uploads/b.png");
 }
 
+
+group("clear-sentinel — clear-only patch (geen andere preserves)");
+{
+  const existing = { puckData: tree(["/uploads/a.png", null, null, null]) };
+  const incoming = { puckData: tree([CLEAR_IMAGE_SENTINEL, null, null, null]) };
+  const out = preserveFeatureVisualsOnSettings(existing, incoming);
+  const feats = ((out.puckData as ReturnType<typeof tree>).content[1].props as { features: Array<{ imageUrl: string | null }> }).features;
+  assert("clear-only: slot geleegd", feats[0].imageUrl === "");
+  assert("clear-only: geen sentinel-residu", JSON.stringify(out).indexOf(CLEAR_IMAGE_SENTINEL) === -1);
+  // sv-spiegeling zonder incoming sv: bestaande sv-item met zelfde titel wordt mee-gecleared
+  const existing2 = {
+    puckData: tree(["/uploads/a.png", null, null, null]),
+    structuredVariant: { features: { items: [{ heading: "A", body: "b", imageUrl: "/uploads/a.png" }] } },
+  };
+  const out2 = preserveFeatureVisualsOnSettings(existing2, { puckData: tree([CLEAR_IMAGE_SENTINEL, null, null, null]) });
+  const sv2 = out2.structuredVariant as { features: { items: Array<{ imageUrl: string | null }> } };
+  assert("sv-spiegeling bij puckData-only patch", sv2.features.items[0].imageUrl === "");
+}
+
 console.log(`\n${pass} PASS, ${fail} FAIL`);
 if (fail > 0) process.exit(1);
