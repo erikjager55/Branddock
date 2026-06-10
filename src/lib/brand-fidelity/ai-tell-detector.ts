@@ -453,6 +453,30 @@ export const TELL_DEFINITIONS: TellDefinition[] = [
     description: 'Em-dash trailing modifier (zonder gepaarde em-dash) — Engels patroon in NL',
   },
   {
+    id: 'em_dash_glued',
+    category: 'PUNCTUATION',
+    severity: 'MEDIUM',
+    softness: 'SOFT',
+    /** Audit 2026-06-10: de AANEENGEPLAKTE vorm ("ligt—zonder", "over—zodat")
+     *  ontsnapte aan em_dash_overuse (dat een spatie ná de dash eist) terwijl
+     *  het de dominante LP-variant was (44% van alle LP-em-dashes; PO-klacht #1).
+     *  Lowercase-aan-beide-kanten: "Amsterdam—Berlijn"-routenotatie blijft buiten
+     *  schot. [à-öø-ÿ] i.p.v. [à-ÿ] om ÷ (U+00F7) uit te sluiten. */
+    pattern: /[a-zà-öø-ÿ]—[a-zà-öø-ÿ]/g,
+    description: 'Em-dash zonder spaties die twee zinsdelen aan elkaar plakt ("over—zodat")',
+  },
+  {
+    id: 'hyphen_splice_conjunction',
+    category: 'PUNCTUATION',
+    severity: 'LOW',
+    softness: 'SOFT',
+    /** Kale koppelteken-lijm direct vóór een voegwoord ("over-zodat"). Bewust
+     *  smalle voegwoorden-lijst: legitieme NL-samenstellingen (e-mail,
+     *  AI-tekst) mogen nooit matchen. */
+    pattern: /[a-zà-öø-ÿ]-(?:zodat|zonder|waardoor|terwijl|oftewel|ofwel)\b/g,
+    description: 'Koppelteken als zinslijm vóór voegwoord ("over-zodat") i.p.v. komma of punt',
+  },
+  {
     id: 'smart_quotes',
     category: 'PUNCTUATION',
     severity: 'LOW',
@@ -610,16 +634,44 @@ function computeHumanBaselinePosition(scorePer1000: number): number {
   return Math.max(0, Math.min(100, Math.round(scorePer1000)));
 }
 
-export function detectAiTells(text: string): AiTellResult {
+/** Lexicon-categorieën waarop de brand-vocabulary-whitelist van toepassing is.
+ *  Structurele tells (interpunctie, zinsbouw) blijven altijd tellen — een merk
+ *  kan woorden claimen, geen em-dash-lijm. */
+const VOCAB_WHITELIST_CATEGORIES = new Set<TellCategory>(['NL_WORD', 'EN_WORD']);
+
+export interface DetectAiTellsOptions {
+  /**
+   * Audit 2026-06-10: merk-eigen vocabulaire (wordsWeUse/vocabularyDo). De
+   * prompt seedt deze woorden bewust ("Gebruik waar natuurlijk") terwijl het
+   * detector-lexicon er letterlijk een paar bevat ('naadloos', 'op maat') —
+   * de judge prees en bestrafte hetzelfde woord binnen één score-rij. Geseede
+   * brand-woorden tellen niet mee als lexicon-tell; minimaal 3 tekens per term.
+   */
+  brandVocabulary?: string[];
+}
+
+export function detectAiTells(text: string, options?: DetectAiTellsOptions): AiTellResult {
   const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
   const detected: DetectedTell[] = [];
   const byCategory = emptyByCategory();
   let score = 0;
   let totalMatches = 0;
 
+  // Review-fix 2026-06-10: word-boundary match i.p.v. substring — een korte
+  // vocab-term ('maat') mag geen ongerelateerde lexicon-match ('automaat')
+  // maskeren. Regex-escape voorkomt dat user-data het patroon breekt.
+  const vocabWhitelist = (options?.brandVocabulary ?? [])
+    .filter((w): w is string => typeof w === 'string')
+    .map((w) => w.trim().toLowerCase())
+    .filter((w) => w.length >= 3)
+    .map((w) => new RegExp(`(?:^|[^\\p{L}])${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:[^\\p{L}]|$)`, 'iu'));
+
   for (const def of TELL_DEFINITIONS) {
     const re = new RegExp(def.pattern.source, def.pattern.flags);
-    const matches = Array.from(text.matchAll(re)).map((m) => m[0]);
+    let matches = Array.from(text.matchAll(re)).map((m) => m[0]);
+    if (vocabWhitelist.length > 0 && VOCAB_WHITELIST_CATEGORIES.has(def.category)) {
+      matches = matches.filter((m) => !vocabWhitelist.some((termRe) => termRe.test(m)));
+    }
     if (matches.length === 0) continue;
 
     const tellScore = tellWeight(def) * matches.length;

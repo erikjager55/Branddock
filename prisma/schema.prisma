@@ -5271,6 +5271,13 @@ model ContentFidelityScore {
   scorerVersion String?
 
   /**
+   * LP-target-fix (audit 2026-06-10): sha-256 prefix (16 hex) van de gescoorde
+   * contentText. Dedupe-guard tegen herhaald scoren van identieke content
+   * (één placeholder-deliverable was 21% van alle LP-scores). NULL = pre-fix rij.
+   */
+  contentHash String?
+
+  /**
    * ADR-1: nullable aggregate-counter voor snelle UI-counts zonder join.
    * null = pre-Δ-1 row (geen findings-pad gerunde); 0 = run zonder findings.
    */

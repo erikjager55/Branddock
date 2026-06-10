@@ -4,11 +4,25 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
 import { generateCreativeAngles } from "@/lib/ai/canvas-angle-generator";
+import { anthropicClient } from "@/lib/ai/anthropic-client";
+import { resolveCanvasModelForContentType } from "@/lib/ai/canvas-model-routing";
+import { resolveHumanVoiceMode } from "@/lib/brand-fidelity/fidelity-config";
 import {
   generateLandingPageVariantBatch,
+  parseLandingPageVariantResponse,
+  LP_VARIANT_PROMPT_VERSION,
 } from "@/lib/landing-pages/variant-generator";
+import {
+  runVariantTellRewriteIfNeeded,
+  buildVariantTellFeedback,
+  VARIANT_REWRITE_SYSTEM_PROMPT,
+} from "@/lib/landing-pages/variant-tell-rewrite";
+import { flattenVariantToText } from "@/lib/landing-pages/flatten-variant";
+import { runFidelityScoring } from "@/lib/brand-fidelity/fidelity-runner";
+import { detectAiTells } from "@/lib/brand-fidelity/ai-tell-detector";
 import { ensureBrandArchetype } from "@/lib/landing-pages/ensure-archetype";
 import { ensureLayoutStyle } from "@/lib/landing-pages/ensure-layout-style";
+import { trackAICallStart, trackAICallComplete } from "@/lib/learning-loop/call-tracker";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 
@@ -163,6 +177,29 @@ export async function POST(
   // null bij failure → de batch valt terug op de generieke problem/benefit-axis.
   const angles = await generateCreativeAngles(ctx, deliverable.contentType, count);
 
+  // Audit 2026-06-10 — locale volgde hardcoded 'nl-NL'; nu dezelfde precedentie
+  // als prompt-templates (BrandVoiceguide.contentLocale > Workspace.contentLanguage,
+  // al verwerkt in ctx.brand.contentLanguage als ISO-prefix).
+  const contentLang = ctx.brand.contentLanguage ?? "nl";
+  const locale = contentLang.includes("-")
+    ? contentLang
+    : contentLang === "nl"
+      ? "nl-NL"
+      : contentLang === "en"
+        ? "en-US"
+        : contentLang;
+
+  // Audit 2026-06-10 — HVD-gating (pariteit canvas-orchestrator) + per-type
+  // model-routing ('Website & Landing Pages' → claude-sonnet-4-6, benchmark 91).
+  // De generator ondersteunt alleen Anthropic; een niet-Anthropic workspace-
+  // override valt terug op de generator-default.
+  const [humanVoiceMode, routedModel] = await Promise.all([
+    resolveHumanVoiceMode(workspaceId),
+    resolveCanvasModelForContentType(workspaceId, deliverable.contentType),
+  ]);
+  const generationModel =
+    routedModel.provider === "anthropic" ? routedModel.model : undefined;
+
   let results;
   try {
     results = await generateLandingPageVariantBatch(
@@ -170,7 +207,7 @@ export async function POST(
         brand: ctx.brand,
         persona: personaForGenerator,
         userPrompt,
-        locale: "nl-NL",
+        locale,
         includeProblem: body.includeProblem ?? true,
         includePricing: body.includePricing ?? false,
         // Sub-Sprint E — brand-archetype + layoutStyle hints voor tone + depth
@@ -180,9 +217,11 @@ export async function POST(
         vocabularyDo: ctx.brand.vocabularyDo ?? null,
         vocabularyDont: ctx.brand.vocabularyDont ?? null,
         voiceSample: ctx.brand.voiceSample ?? null,
+        humanVoiceMode,
       },
       count,
       angles,
+      { model: generationModel },
     );
   } catch (err) {
     console.error("[generate-structured-variant] Batch failed", err);
@@ -193,6 +232,184 @@ export async function POST(
       },
       { status: 502 },
     );
+  }
+
+  // Audit 2026-06-10 — learning-loop zichtbaarheid: LP-generatie schreef nooit
+  // AICallSnapshot/AICallTrace (prompt-registry + dashboards zagen 0 entries).
+  // Best-effort per variant; falen blokkeert nooit. Review-fix: ge-await via
+  // allSettled (niet fire-and-forget) — serverless kan post-response werk
+  // bevriezen en de writes zijn enkel DB (~ms), geen LLM.
+  const trackingPromises: Promise<void>[] = [];
+  for (const [slot, r] of results.entries()) {
+    trackingPromises.push((async () => {
+      try {
+        const { traceId } = await trackAICallStart({
+          workspaceId,
+          brandContext: ctx.brand,
+          payload: {
+            model: r.modelUsed,
+            messages: [
+              { role: "system", content: r.prompt.system },
+              { role: "user", content: r.prompt.user },
+            ],
+          },
+          sourceType: "ts-builder",
+          sourceIdentifier: "landing-pages.variant-generator",
+          parentEntityType: "deliverable",
+          parentEntityId: deliverableId,
+          callOrder: slot,
+          promptVersion: LP_VARIANT_PROMPT_VERSION,
+        });
+        await trackAICallComplete({
+          traceId,
+          responseMetadata: {
+            inputTokens: r.inputTokens,
+            outputTokens: r.outputTokens,
+            stopReason: "end_turn",
+            latencyMs: 0,
+            wasFromCache: false,
+          },
+        });
+      } catch (trackErr) {
+        console.warn(
+          "[generate-structured-variant] AI-call tracking failed (non-fatal):",
+          trackErr instanceof Error ? trackErr.message : trackErr,
+        );
+      }
+    })());
+  }
+  await Promise.allSettled(trackingPromises);
+
+  // Audit 2026-06-10 — STRICT-pariteit (fase 4): voor STRICT-workspaces draait
+  // per variant een detector-gated anti-tell rewrite (zelfde semantiek als
+  // runStrictModeIfApplicable in de canvas-flow). Detector is regex (~0 kosten);
+  // de rewrite-LLM-call gebeurt alleen bij verdict AI_LEANING/PURE_AI.
+  // Review-fix 2026-06-10: zelfde brand-vocab-whitelist als de composite-
+  // detector — anders gate/beloont de rewrite het strippen van geseede woorden.
+  const brandVocabulary = (ctx.brand.vocabularyDo ?? []).filter(Boolean);
+
+  if (humanVoiceMode === "STRICT") {
+    const rewritten = await Promise.all(
+      results.map((r) =>
+        runVariantTellRewriteIfNeeded(r.variant, async ({ systemPrompt, userPrompt: rwPrompt }) => {
+          const res = await anthropicClient.createChatCompletion(
+            [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: rwPrompt },
+            ],
+            {
+              useCase: "CHAT",
+              temperature: 0.5,
+              maxTokens: Math.min(8000, Math.max(2000, Math.round((JSON.stringify(r.variant).length / 3) * 1.4))),
+              timeoutMs: 90_000,
+              ...(generationModel ? { model: generationModel } : {}),
+            },
+          );
+          return res.content;
+        }, { brandVocabulary }),
+      ),
+    );
+    rewritten.forEach((rw, i) => {
+      if (rw.rewritten) {
+        console.log(
+          "[generate-structured-variant] STRICT tell-rewrite variant %d: %s",
+          i,
+          rw.decisionReason,
+        );
+        results[i] = { ...results[i], variant: rw.variant };
+      }
+    });
+  }
+
+  // Audit 2026-06-10 (fase 4, item 13) — silent composite-iterate: score elke
+  // variant server-side en draai bij composite < drempel één rewrite + rescore
+  // (keep-if-better), naar canvas-orchestrator-voorbeeld (silent auto-iterate
+  // bij <70). OPT-IN via LP_SILENT_ITERATE=1 (zelfde patroon als
+  // AUTO_ITERATE_DEEP_SCORE): scoring is in deze flow bewust client-getriggerd
+  // (zie score-variant-fidelity docblock — de generator-route houdt zijn fast
+  // response); altijd-aan zou de latency +20-60s en judge-kosten ×2 maken.
+  if (process.env.LP_SILENT_ITERATE === "1") {
+    const iterated = await Promise.all(
+      results.map(async (r, slot) => {
+        try {
+          const text = flattenVariantToText(r.variant);
+          const wc = text.trim().split(/\s+/).filter(Boolean).length;
+          const scored = await runFidelityScoring({
+            workspaceId,
+            deliverableId,
+            contentTypeId: deliverable.contentType,
+            contentText: text,
+            stack: ctx,
+            generatorProvider: "anthropic",
+            targetWordCountOverride: wc,
+            // Review-fix: transient beslis-score — persist racet anders met de
+            // finale settings-write van deze route (variant-verlies-risico).
+            skipPersist: true,
+          });
+          if (!scored || scored.result.compositeScore >= scored.result.compositeThreshold) {
+            return null;
+          }
+          const tellFeedback = buildVariantTellFeedback(detectAiTells(text, { brandVocabulary }));
+          const rewriteUserPrompt = [
+            ctx.brand?.brandName ? `Merk: ${ctx.brand.brandName}` : "",
+            ctx.brand?.brandToneOfVoice ? `Tone of voice: ${ctx.brand.brandToneOfVoice}` : "",
+            ctx.brand?.brandVoiceguide ? `\nVoice-fingerprint:\n${ctx.brand.brandVoiceguide.slice(0, 2500)}` : "",
+            `\nFidelity-score: ${scored.result.compositeScore}/${scored.result.compositeThreshold} (onder drempel).`,
+            tellFeedback ? `\n${tellFeedback}` : "",
+            "",
+            "Huidige variant (JSON):",
+            JSON.stringify(r.variant),
+            "",
+            "Geef de verbeterde variant terug als volledige JSON.",
+          ].filter(Boolean).join("\n");
+          const res = await anthropicClient.createChatCompletion(
+            [
+              { role: "system", content: VARIANT_REWRITE_SYSTEM_PROMPT },
+              { role: "user", content: rewriteUserPrompt },
+            ],
+            {
+              useCase: "CHAT",
+              temperature: 0.5,
+              maxTokens: Math.min(8000, Math.max(2000, Math.round((JSON.stringify(r.variant).length / 3) * 1.4))),
+              timeoutMs: 90_000,
+              ...(generationModel ? { model: generationModel } : {}),
+            },
+          );
+          const parsedRw = parseLandingPageVariantResponse(res.content);
+          if (!parsedRw.success) return null;
+          const afterText = flattenVariantToText(parsedRw.data);
+          const rescored = await runFidelityScoring({
+            workspaceId,
+            deliverableId,
+            contentTypeId: deliverable.contentType,
+            contentText: afterText,
+            stack: ctx,
+            generatorProvider: "anthropic",
+            targetWordCountOverride: afterText.trim().split(/\s+/).filter(Boolean).length,
+            skipPersist: true,
+          });
+          if (rescored && rescored.result.compositeScore > scored.result.compositeScore) {
+            console.log(
+              "[generate-structured-variant] silent-iterate variant %d: composite %d → %d",
+              slot,
+              scored.result.compositeScore,
+              rescored.result.compositeScore,
+            );
+            return parsedRw.data;
+          }
+          return null;
+        } catch (err) {
+          console.warn(
+            "[generate-structured-variant] silent-iterate variant faalde (non-fatal):",
+            err instanceof Error ? err.message : err,
+          );
+          return null;
+        }
+      }),
+    );
+    iterated.forEach((v, i) => {
+      if (v) results[i] = { ...results[i], variant: v };
+    });
   }
 
   const variants = results.map((r) => r.variant);

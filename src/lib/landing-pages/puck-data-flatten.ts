@@ -24,8 +24,17 @@ interface PuckLikeData {
  * personaId, etc.) so the output is only human-readable copy.
  */
 const EXCLUDED_KEYS = new Set([
-  'id', 'href', 'personaId', 'columns', 'metadata',
+  'id', 'href', 'personaId', 'columns', 'metadata', 'icon',
 ]);
+
+/**
+ * Audit 2026-06-10: asset-URLs lekten in de judge-input via exact-match-miss —
+ * de echte key was `heroVisualUrl`, niet `src`/`url`. Suffix-matching vangt
+ * elke huidige én toekomstige asset-prop (mediaUrl, imageSrc, linkHref, ...).
+ */
+function isAssetKey(key: string): boolean {
+  return /(?:Url|Src|Href)$/.test(key) || key === 'url' || key === 'src';
+}
 
 function collectStrings(value: unknown, keyPath: string[], out: string[]): void {
   if (typeof value === 'string') {
@@ -37,8 +46,22 @@ function collectStrings(value: unknown, keyPath: string[], out: string[]): void 
     return;
   }
   if (value && typeof value === 'object') {
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (EXCLUDED_KEYS.has(k)) continue;
+    const record = value as Record<string, unknown>;
+    // Audit 2026-06-10: FAQ-items serialiseerden in insertion-order
+    // ({answer, question}) waardoor de judge antwoorden VÓÓR vragen zag en
+    // coherence afstrafte. Q&A-paren altijd als vraag → antwoord.
+    if (typeof record.question === 'string' && typeof record.answer === 'string') {
+      out.push(record.question);
+      out.push(record.answer);
+      for (const [k, v] of Object.entries(record)) {
+        if (k === 'question' || k === 'answer') continue;
+        if (EXCLUDED_KEYS.has(k) || isAssetKey(k)) continue;
+        collectStrings(v, [...keyPath, k], out);
+      }
+      return;
+    }
+    for (const [k, v] of Object.entries(record)) {
+      if (EXCLUDED_KEYS.has(k) || isAssetKey(k)) continue;
       collectStrings(v, [...keyPath, k], out);
     }
   }
@@ -54,6 +77,28 @@ export function flattenPuckText(data: PuckLikeData): string {
   collectStrings(data.root?.props ?? {}, ['root'], parts);
   for (const item of data.content) {
     collectStrings(item.props ?? {}, [item.type], parts);
+  }
+  return parts.filter((s) => s.trim().length > 0).join('\n');
+}
+
+/**
+ * Audit 2026-06-10: judge-input-variant met `[ComponentType]`-sectielabels
+ * zodat de F-VAL judge structuur ziet i.p.v. één ongelabelde fragment-soep
+ * (mei-batch judge-rationales citeerden footer-items en losse UI-strings als
+ * incoherentie). Bewust een aparte functie: flattenPuckText voedt óók
+ * readability-woordtellingen en edit-distance, waar labels het signaal
+ * zouden vervuilen.
+ */
+export function flattenPuckTextForJudge(data: PuckLikeData): string {
+  const parts: string[] = [];
+  collectStrings(data.root?.props ?? {}, ['root'], parts);
+  for (const item of data.content) {
+    const sectionParts: string[] = [];
+    collectStrings(item.props ?? {}, [item.type], sectionParts);
+    if (sectionParts.some((s) => s.trim().length > 0)) {
+      parts.push(`[${item.type}]`);
+      parts.push(...sectionParts);
+    }
   }
   return parts.filter((s) => s.trim().length > 0).join('\n');
 }

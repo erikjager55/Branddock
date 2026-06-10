@@ -5,10 +5,18 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
 import { runFidelityScoring } from "@/lib/brand-fidelity/fidelity-runner";
+import { detectAiTells } from "@/lib/brand-fidelity/ai-tell-detector";
+import { buildHumanVoiceDirective } from "@/lib/studio/human-voice-directive";
+import { resolveHumanVoiceMode } from "@/lib/brand-fidelity/fidelity-config";
 import { anthropicClient } from "@/lib/ai/anthropic-client";
+import { resolveCanvasModelForContentType } from "@/lib/ai/canvas-model-routing";
 import { landingPageVariantSchema } from "@/lib/landing-pages/variant-schema";
 import { flattenVariantToText } from "@/lib/landing-pages/flatten-variant";
 import { parseLandingPageVariantResponse } from "@/lib/landing-pages/variant-generator";
+import {
+  VARIANT_REWRITE_SYSTEM_PROMPT,
+  buildVariantTellFeedback,
+} from "@/lib/landing-pages/variant-tell-rewrite";
 
 /**
  * POST /api/landing-pages/[deliverableId]/auto-iterate-variant
@@ -49,14 +57,10 @@ const bodySchema = z.object({
   section: z.enum(SECTION_KEYS).optional(),
 });
 
-const SYSTEM_PROMPT = `Je bent een merk-bewuste copywriter. Je herschrijft de COPY van een gestructureerde landing-page-variant zodat die hoger scoort op een brand-voice + content-quality judge, ZONDER de structuur te veranderen.
-
-Regels:
-- Behoud exact dezelfde JSON-structuur: dezelfde keys en hetzelfde aantal array-items.
-- Wijzig ALLEEN tekstuele copy-waarden (headline, subhead, bullets, body, quotes, CTA-labels, etc.).
-- Wijzig GEEN icon-namen, URLs of niet-tekstuele config.
-- Schrijf in de merk-stem; vermijd generieke AI-frasen; behoud feitelijke claims (cijfers, namen, certificeringen) exact.
-- Antwoord met UITSLUITEND de volledige JSON-variant, geen uitleg, geen code-fences.`;
+// Audit 2026-06-10 (fase 4): de basis-systemprompt is gedeeld met de STRICT
+// tell-rewrite (variant-tell-rewrite.ts) zodat beide paden dezelfde
+// JSON-structuur-discipline afdwingen. HVD wordt er mode-gated achter geplakt.
+const SYSTEM_PROMPT = VARIANT_REWRITE_SYSTEM_PROMPT;
 
 /** Extra instructie wanneer de rewrite tot één sectie beperkt is (P1b). */
 function sectionScopeInstruction(section: (typeof SECTION_KEYS)[number]): string {
@@ -108,6 +112,7 @@ export async function POST(
 
   // ── 1. Score huidige variant ────────────────────────────
   const beforeText = flattenVariantToText(parsed.variant);
+  const beforeWordCount = beforeText.trim().split(/\s+/).filter(Boolean).length;
   const before = await runFidelityScoring({
     workspaceId,
     deliverableId,
@@ -115,6 +120,9 @@ export async function POST(
     contentText: beforeText,
     stack: ctx,
     generatorProvider: "anthropic",
+    // F33-pariteit (audit 2026-06-10): zonder override krijgt variant-copy een
+    // ×0.6 length-penalty tegen het 1550-woorden registry-target.
+    targetWordCountOverride: beforeWordCount,
   });
   if (!before) {
     return NextResponse.json({ status: "skipped", reason: "insufficient-content" });
@@ -136,11 +144,34 @@ export async function POST(
     judge: before.result.pillars.judge?.score ?? null,
     rules: before.result.pillars.rules.score,
   };
+
+  // Audit 2026-06-10 (fase 4, item 15) — de rewrite-prompt bevatte alleen
+  // brandName + tone + pijler-getallen; de rewriter zag de werkelijke voice-
+  // fingerprint nooit (F13-bis-les uit auto-iterate-integration). Nu mee:
+  // voiceguide-fingerprint (cap 2500), vocab-rails, concrete detector-tells
+  // en top rule-violations zodat de LLM wéét wat er te fixen valt.
+  const voiceguideText =
+    ctx.brand?.brandVoiceguide?.trim() || ctx.brand?.voiceBaseline1Pager?.trim() || null;
+  const vocabDo = (ctx.brand?.vocabularyDo ?? []).filter(Boolean);
+  const vocabDont = (ctx.brand?.vocabularyDont ?? []).filter(Boolean);
+  // Review-fix 2026-06-10: detector mét brand-vocab-whitelist — anders zegt
+  // dezelfde prompt "gebruik 'naadloos'" (vocab-rails) én "vermijd 'naadloos'"
+  // (tell-feedback) wanneer een seed-woord in het detector-lexicon staat.
+  const tellFeedback = buildVariantTellFeedback(detectAiTells(beforeText, { brandVocabulary: vocabDo }));
+  const topViolations = before.result.pillars.rules.result.rules.violations
+    .slice(0, 3)
+    .map((v) => `- ${v.message}${v.snippet ? ` ("${v.snippet.slice(0, 60)}")` : ""}`);
+
   const userPrompt = [
     ctx.brand?.brandName ? `Merk: ${ctx.brand.brandName}` : "",
     ctx.brand?.brandToneOfVoice ? `Tone of voice: ${ctx.brand.brandToneOfVoice}` : "",
-    `Huidige fidelity-score: ${score}/${threshold} (onder drempel).`,
-    `Pijler-scores — stijl: ${pillars.style ?? "n.v.t."}, judge: ${pillars.judge ?? "n.v.t."}, regels: ${pillars.rules ?? "n.v.t."}. Focus op de laagste pijler.`,
+    voiceguideText ? `\nVoice-fingerprint (volg dit ritme + vocabulaire):\n${voiceguideText.slice(0, 2500)}` : "",
+    vocabDo.length > 0 ? `Gebruik waar natuurlijk: ${vocabDo.map((w) => `"${w}"`).join(", ")}.` : "",
+    vocabDont.length > 0 ? `Vermijd: ${vocabDont.map((w) => `"${w}"`).join(", ")}.` : "",
+    `\nHuidige fidelity-score: ${score}/${threshold}${score < threshold ? " (onder drempel)" : ""}.`,
+    `Pijler-scores: stijl ${pillars.style ?? "n.v.t."}, judge ${pillars.judge ?? "n.v.t."}, regels ${pillars.rules ?? "n.v.t."}. Focus op de laagste pijler.`,
+    topViolations.length > 0 ? `\nGeconstateerde regel-schendingen:\n${topViolations.join("\n")}` : "",
+    tellFeedback ? `\n${tellFeedback}` : "",
     "",
     "Huidige variant (JSON):",
     variantJson,
@@ -150,14 +181,32 @@ export async function POST(
     .filter(Boolean)
     .join("\n");
 
+  // HVD mode-gated achter de gedeelde rewrite-systemprompt + model-routing
+  // ('Website & Landing Pages' → claude-sonnet-4-6; alleen Anthropic-providers).
+  const [humanVoiceMode, routedModel] = await Promise.all([
+    resolveHumanVoiceMode(workspaceId),
+    resolveCanvasModelForContentType(workspaceId, deliverable.contentType),
+  ]);
+  const hvd =
+    humanVoiceMode === "OFF"
+      ? ""
+      : `\n\n${buildHumanVoiceDirective({ language: ctx.brand?.contentLanguage ?? "nl" })}`;
+  const rewriteModel = routedModel.provider === "anthropic" ? routedModel.model : undefined;
+
   let rawResponse: string;
   try {
     const result = await anthropicClient.createChatCompletion(
       [
-        { role: "system", content: SYSTEM_PROMPT + (parsed.section ? sectionScopeInstruction(parsed.section) : "") },
+        { role: "system", content: SYSTEM_PROMPT + hvd + (parsed.section ? sectionScopeInstruction(parsed.section) : "") },
         { role: "user", content: userPrompt },
       ],
-      { useCase: "CHAT", temperature: parsed.section ? 0.7 : 0.5, maxTokens, timeoutMs: 90_000 },
+      {
+        useCase: "CHAT",
+        temperature: parsed.section ? 0.7 : 0.5,
+        maxTokens,
+        timeoutMs: 90_000,
+        ...(rewriteModel ? { model: rewriteModel } : {}),
+      },
     );
     rawResponse = result.content;
   } catch (err) {
@@ -181,13 +230,15 @@ export async function POST(
     : parseResult.data;
 
   // ── 3. Herscoor de rewrite ───────────────────────────────
+  const afterText = flattenVariantToText(rewritten);
   const after = await runFidelityScoring({
     workspaceId,
     deliverableId,
     contentTypeId: deliverable.contentType,
-    contentText: flattenVariantToText(rewritten),
+    contentText: afterText,
     stack: ctx,
     generatorProvider: "anthropic",
+    targetWordCountOverride: afterText.trim().split(/\s+/).filter(Boolean).length,
   });
   const scoreProjected = after?.result.compositeScore ?? null;
 

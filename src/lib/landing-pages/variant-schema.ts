@@ -106,11 +106,23 @@ const featuresSchema = z.object({
     .max(4, "features.items max 4 — voorkomt 3-col grid asymmetrie en respecteert paradox of choice"),
 });
 
+/**
+ * Audit 2026-06-10 (anti-fabricage): de prompt verbiedt verzonnen persoons-/
+ * bedrijfsnamen; zonder brondata levert het model author-velden soms leeg op.
+ * Lege velden krijgen een eerlijk-generieke fallback i.p.v. een validation-
+ * throw die de hele variant-batch laat falen.
+ */
+const authorFieldWithFallback = (fallback: string) =>
+  z
+    .string()
+    .optional()
+    .transform((s) => (s && s.trim().length > 0 ? s : fallback));
+
 const testimonialSchema = z.object({
   quote: z.string().min(1),
-  authorName: z.string().min(1),
-  authorRole: z.string().min(1),
-  authorCompany: z.string().min(1),
+  authorName: authorFieldWithFallback("Tevreden klant"),
+  authorRole: authorFieldWithFallback("Klant"),
+  authorCompany: authorFieldWithFallback(""),
   /** Concrete uitkomst-cijfer ("30 uur per maand bespaard"). */
   outcome: z.string().optional(),
 });
