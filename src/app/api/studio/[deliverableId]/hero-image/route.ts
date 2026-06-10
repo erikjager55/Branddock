@@ -13,7 +13,7 @@
 // =============================================================================
 
 import { NextResponse } from 'next/server';
-import { resolveWorkspaceId } from '@/lib/auth-server';
+import { requireDeliverableAccess } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -52,20 +52,13 @@ interface RouteParams {
 
 export async function POST(request: Request, { params }: RouteParams) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { deliverableId } = await params;
 
-    // Verify ownership
-    const deliverable = await prisma.deliverable.findFirst({
-      where: { id: deliverableId, campaign: { workspaceId } },
-      select: { id: true },
-    });
-    if (!deliverable) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    // Resource-based auth: workspace van het deliverable, niet cookie-gelijkheid
+    // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
+    const access = await requireDeliverableAccess(deliverableId);
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
     }
 
     const raw = await request.json();
@@ -138,20 +131,13 @@ export async function POST(request: Request, { params }: RouteParams) {
 
 export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { deliverableId } = await params;
 
-    // Verify ownership
-    const deliverable = await prisma.deliverable.findFirst({
-      where: { id: deliverableId, campaign: { workspaceId } },
-      select: { id: true },
-    });
-    if (!deliverable) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    // Resource-based auth: workspace van het deliverable, niet cookie-gelijkheid
+    // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
+    const access = await requireDeliverableAccess(deliverableId);
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
     }
 
     await prisma.deliverableComponent.deleteMany({

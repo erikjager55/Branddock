@@ -19,7 +19,7 @@
 
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { resolveWorkspaceId } from '@/lib/auth-server';
+import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
 import { runFidelityScoring } from '@/lib/brand-fidelity/fidelity-runner';
 import { runAutoIterateIntegration } from '@/lib/ai/auto-iterate-integration';
@@ -31,7 +31,8 @@ interface RouteParams {
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
-  const workspaceId = await resolveWorkspaceId();
+  // Resource-based: workspace van het deliverable i.p.v. cookie-gelijkheid (zombie-tab fix).
+  const workspaceId = await resolveDeliverableWorkspaceId((await params).deliverableId);
   if (!workspaceId) {
     return new Response(JSON.stringify({ error: 'No workspace found' }), {
       status: 403,

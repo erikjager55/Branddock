@@ -112,7 +112,7 @@ export async function POST(
   const lpScreenshot = await capturePuckTreeScreenshot(puckData, ctx);
   if (!lpScreenshot) {
     return NextResponse.json(
-      { error: "LP-screenshot capture mislukt — Playwright niet beschikbaar?" },
+      { error: "LP-screenshot render mislukt — zie server-logs ([lp-screenshotter])" },
       { status: 500 },
     );
   }

@@ -11,6 +11,7 @@ import { useClawStore } from './stores/useClawStore';
 import { openClawWithPrompt } from './features/claw/lib/open-with-prompt';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TooltipProvider } from './components/ui/tooltip';
+import { WorkspaceSwitchGuard } from './components/shared/WorkspaceSwitchGuard';
 import { LazyWrapper } from './components/shared';
 
 // ─── Contexts, stores, hooks, utils ────────────────────────
@@ -1057,6 +1058,7 @@ export default function App() {
         <ErrorBoundary>
           <TooltipProvider>
             <AppContent />
+            <WorkspaceSwitchGuard />
           </TooltipProvider>
         </ErrorBoundary>
       </AppProviders>

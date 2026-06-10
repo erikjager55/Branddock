@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId } from "@/lib/auth-server";
-import { preserveHeroOnSettings } from "@/features/campaigns/components/canvas/medium/hero-visual-preserve";
+import { requireDeliverableAccess } from "@/lib/deliverable/deliverable-access";
+import { preserveHeroOnSettings, syncHeroFromPuck } from "@/features/campaigns/components/canvas/medium/hero-visual-preserve";
 import { z } from "zod";
 
 // GET /api/studio/[deliverableId] — Returns full studio state
@@ -10,9 +10,13 @@ export async function GET(
   { params }: { params: Promise<{ deliverableId: string }> }
 ) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { deliverableId } = await params;
+    // Resource-based auth: workspace van het deliverable, niet cookie-gelijkheid
+    // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
+    const access = await requireDeliverableAccess(deliverableId);
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
+    }
 
     const deliverable = await prisma.deliverable.findUnique({
       where: { id: deliverableId },
@@ -37,11 +41,6 @@ export async function GET(
         { error: "Deliverable not found" },
         { status: 404 }
       );
-    }
-
-    // Verify workspace ownership
-    if (deliverable.campaign.workspaceId !== workspaceId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const imageUrls = deliverable.generatedImageUrls as string[] | null;
@@ -121,9 +120,13 @@ export async function PATCH(
   { params }: { params: Promise<{ deliverableId: string }> }
 ) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { deliverableId } = await params;
+    // Resource-based auth (zombie-tab fix): de puckData-autosave loopt via deze
+    // PATCH — cookie-gelijkheid betekende stille data-loss in andere tabs.
+    const access = await requireDeliverableAccess(deliverableId);
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
+    }
 
     const body = await request.json();
     const parsed = patchSchema.safeParse(body);
@@ -135,7 +138,6 @@ export async function PATCH(
       );
     }
 
-    // Verify ownership
     const existing = await prisma.deliverable.findUnique({
       where: { id: deliverableId },
       include: {
@@ -148,10 +150,6 @@ export async function PATCH(
         { error: "Deliverable not found" },
         { status: 404 }
       );
-    }
-
-    if (existing.campaign.workspaceId !== workspaceId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     // Build update data, casting JSON fields for Prisma compatibility
@@ -173,7 +171,18 @@ export async function PATCH(
       // niet leegclobberen (audit 2026-06-08). Behoud een bestaande niet-lege
       // heroVisualUrl wanneer de inkomende write 'm leeg laat.
       const preservedIncoming = preserveHeroOnSettings(existingSettings, settings as Record<string, unknown>);
-      updateData.settings = JSON.parse(JSON.stringify({ ...existingSettings, ...preservedIncoming }));
+      // Dual-track sync ná de merge: autosave/image-field PATCHen alleen
+      // puckData — spiegel een non-lege puckData-hero naar
+      // structuredVariant.hero zodat export/regenerate niet op een stale URL
+      // lezen. Volgorde: eerst de clear-guard (preserve), dan de sync.
+      // Alleen wanneer de schrijver zélf puckData meestuurt: een (toekomstige)
+      // structuredVariant-only PATCH mag niet stil worden teruggedraaid naar
+      // de bestaande (mogelijk oudere) puckData-hero.
+      const merged = { ...existingSettings, ...preservedIncoming };
+      const incomingTouchesPuckData = !!(settings as Record<string, unknown>).puckData;
+      updateData.settings = JSON.parse(
+        JSON.stringify(incomingTouchesPuckData ? syncHeroFromPuck(merged) : merged),
+      );
     }
     if (generatedSlides !== undefined)
       updateData.generatedSlides = JSON.parse(JSON.stringify(generatedSlides));

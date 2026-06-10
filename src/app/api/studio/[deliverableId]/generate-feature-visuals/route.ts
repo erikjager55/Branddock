@@ -10,7 +10,8 @@
 // Budget: max 4 prompts per pagina (de client capt al; hier hard begrensd).
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
+import { getServerSession } from '@/lib/auth-server';
+import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
@@ -34,7 +35,9 @@ interface RouteParams {
 
 export async function POST(request: Request, { params }: RouteParams) {
   try {
-    const workspaceId = await resolveWorkspaceId();
+    // Resource-based: workspace van het deliverable i.p.v. cookie-gelijkheid
+    // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
+    const workspaceId = await resolveDeliverableWorkspaceId((await params).deliverableId);
     if (!workspaceId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const session = await getServerSession();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

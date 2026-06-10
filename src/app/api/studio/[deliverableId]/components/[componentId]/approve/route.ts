@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { resolveWorkspaceId } from '@/lib/auth-server';
+import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
 
 export async function PATCH(
@@ -7,7 +7,9 @@ export async function PATCH(
   { params }: { params: Promise<{ deliverableId: string; componentId: string }> },
 ) {
   try {
-    const workspaceId = await resolveWorkspaceId();
+    // Resource-based: workspace van het deliverable i.p.v. cookie-gelijkheid
+    // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
+    const workspaceId = await resolveDeliverableWorkspaceId((await params).deliverableId);
     if (!workspaceId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { deliverableId, componentId } = await params;
