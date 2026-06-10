@@ -83,10 +83,13 @@ export const writeTools: ClawToolDefinition[] = [
     },
     execute: async (params, ctx) => {
       const p = params as { assetId: string; content: string };
-      await prisma.brandAsset.update({
-        where: { id: p.assetId },
+      // Workspace-scoped write (defence in depth): execute draait los van
+      // buildProposal via de confirm-route, dus de tenant-check MOET hier ook.
+      const res = await prisma.brandAsset.updateMany({
+        where: { id: p.assetId, workspaceId: ctx.workspaceId },
         data: { content: p.content },
       });
+      if (res.count === 0) throw new Error('Brand asset not found in this workspace');
       invalidateDashboard(ctx.workspaceId);
       return { success: true, message: 'Brand asset content updated' };
     },
@@ -162,7 +165,10 @@ export const writeTools: ClawToolDefinition[] = [
         where: { id: p.assetId, workspaceId: ctx.workspaceId },
         select: { frameworkData: true },
       });
-      const existing = (asset?.frameworkData ?? {}) as Record<string, unknown>;
+      // Tenant-guard: zonder deze check zou een asset uit een andere workspace
+      // (asset === null) alsnog via `update({ where: { id } })` worden geschreven.
+      if (!asset) throw new Error('Brand asset not found in this workspace');
+      const existing = (asset.frameworkData ?? {}) as Record<string, unknown>;
 
       let updated: Record<string, unknown>;
       if (p.fieldPath) {
@@ -252,7 +258,11 @@ export const writeTools: ClawToolDefinition[] = [
         data[f] = v;
       }
 
-      await prisma.persona.update({ where: { id: p.personaId }, data });
+      const res = await prisma.persona.updateMany({
+        where: { id: p.personaId, workspaceId: ctx.workspaceId },
+        data,
+      });
+      if (res.count === 0) throw new Error('Persona not found in this workspace');
       invalidateDashboard(ctx.workspaceId);
       return { success: true, message: 'Persona updated' };
     },
@@ -291,7 +301,11 @@ export const writeTools: ClawToolDefinition[] = [
     },
     execute: async (params, ctx) => {
       const p = params as { productId: string; updates: Record<string, unknown> };
-      await prisma.product.update({ where: { id: p.productId }, data: p.updates });
+      const res = await prisma.product.updateMany({
+        where: { id: p.productId, workspaceId: ctx.workspaceId },
+        data: p.updates,
+      });
+      if (res.count === 0) throw new Error('Product not found in this workspace');
       invalidateCache(cacheKeys.prefixes.products(ctx.workspaceId));
       return { success: true, message: 'Product updated' };
     },
@@ -330,7 +344,11 @@ export const writeTools: ClawToolDefinition[] = [
     },
     execute: async (params, ctx) => {
       const p = params as { competitorId: string; updates: Record<string, unknown> };
-      await prisma.competitor.update({ where: { id: p.competitorId }, data: p.updates });
+      const res = await prisma.competitor.updateMany({
+        where: { id: p.competitorId, workspaceId: ctx.workspaceId },
+        data: p.updates,
+      });
+      if (res.count === 0) throw new Error('Competitor not found in this workspace');
       invalidateCache(cacheKeys.prefixes.competitors(ctx.workspaceId));
       return { success: true, message: 'Competitor updated' };
     },
@@ -371,7 +389,11 @@ export const writeTools: ClawToolDefinition[] = [
       if (p.vision !== undefined) data.vision = p.vision;
       if (p.rationale !== undefined) data.rationale = p.rationale;
       if (p.keyAssumptions !== undefined) data.keyAssumptions = p.keyAssumptions;
-      await prisma.businessStrategy.update({ where: { id: p.strategyId }, data });
+      const res = await prisma.businessStrategy.updateMany({
+        where: { id: p.strategyId, workspaceId: ctx.workspaceId },
+        data,
+      });
+      if (res.count === 0) throw new Error('Strategy not found in this workspace');
       invalidateDashboard(ctx.workspaceId);
       return { success: true, message: 'Strategy context updated' };
     },
@@ -533,20 +555,31 @@ export const writeTools: ClawToolDefinition[] = [
         lockedAt: p.locked ? new Date() : null,
       };
 
+      // Workspace-scoped: lock_entity heeft geen workspace-check in buildProposal,
+      // dus de tenant-guard leeft volledig hier — een (un)lock op een id uit een
+      // andere workspace mag niet doorgaan.
+      let count = 0;
       switch (p.entityType) {
-        case 'brand_asset':
-          await prisma.brandAsset.update({ where: { id: p.entityId }, data });
+        case 'brand_asset': {
+          const res = await prisma.brandAsset.updateMany({ where: { id: p.entityId, workspaceId: ctx.workspaceId }, data });
+          count = res.count;
           invalidateDashboard(ctx.workspaceId);
           break;
-        case 'persona':
-          await prisma.persona.update({ where: { id: p.entityId }, data });
+        }
+        case 'persona': {
+          const res = await prisma.persona.updateMany({ where: { id: p.entityId, workspaceId: ctx.workspaceId }, data });
+          count = res.count;
           invalidateDashboard(ctx.workspaceId);
           break;
-        case 'product':
-          await prisma.product.update({ where: { id: p.entityId }, data });
+        }
+        case 'product': {
+          const res = await prisma.product.updateMany({ where: { id: p.entityId, workspaceId: ctx.workspaceId }, data });
+          count = res.count;
           invalidateCache(cacheKeys.prefixes.products(ctx.workspaceId));
           break;
+        }
       }
+      if (count === 0) throw new Error('Entity not found in this workspace');
       return { success: true, message: `Entity ${p.locked ? 'locked' : 'unlocked'}` };
     },
   },
