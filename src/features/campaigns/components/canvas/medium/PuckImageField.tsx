@@ -99,17 +99,24 @@ export function PuckImageField({
   onChange,
   label,
   allowClear,
+  readOnly,
 }: {
   value?: string | null;
   onChange: (v: string) => void;
   label?: string;
   allowClear?: boolean;
+  /** Puck's field-render readOnly-arg: toon alleen de preview, geen acties. */
+  readOnly?: boolean;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [LazyPanel, setLazyPanel] = useState(() => makeLazyImageSourcePanel());
   const deliverableId = useCanvasStore((s) => s.deliverableId);
   const [activeSource, setActiveSource] = useState<VisualBriefSource>('library');
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  // Broken-URL fallback: een 404'ende/verwijderde media-URL toont anders het
+  // browser-broken-image-glyph. Geen reset-effect nodig — een nieuwe value
+  // matcht de bewaarde broken-URL niet meer.
+  const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
 
   // Focus-restore: shared Modal auto-focust de picker, maar laat focus bij
   // sluiten op document.body achter — keyboard-users verliezen hun plek in de
@@ -146,6 +153,7 @@ export function PuckImageField({
   }, [pickerOpen]);
 
   const hasValue = typeof value === 'string' && value.trim().length > 0;
+  const showThumb = hasValue && value !== brokenUrl;
 
   const handleSelected = (selection: InsertImageSelection) => {
     onChange(selection.url);
@@ -161,43 +169,48 @@ export function PuckImageField({
         </div>
       ) : null}
 
-      {hasValue ? (
+      {showThumb ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={value as string}
           alt={label ?? 'Gekozen afbeelding'}
+          onError={() => setBrokenUrl(value as string)}
           className="aspect-video w-full rounded-md border border-gray-200 object-cover"
         />
       ) : (
         <div className="flex aspect-video w-full items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50">
           <span className="inline-flex items-center gap-1.5 text-xs text-gray-400">
             <ImageIcon className="h-4 w-4" />
-            Geen afbeelding
+            {hasValue ? 'Afbeelding niet laadbaar' : 'Geen afbeelding'}
           </span>
         </div>
       )}
 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          ref={triggerRef}
-          onClick={openPicker}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
-        >
-          <ImageIcon className="h-3.5 w-3.5" />
-          {hasValue ? 'Vervang afbeelding' : 'Kies afbeelding'}
-        </button>
-        {allowClear && hasValue ? (
+      {readOnly ? null : (
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onChange('')}
-            className="inline-flex items-center gap-1.5 rounded-md bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100"
+            ref={triggerRef}
+            onClick={openPicker}
+            aria-label={`${hasValue ? 'Vervang' : 'Kies'} afbeelding${label ? ` — ${label}` : ''}`}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
           >
-            <Trash2 className="h-3.5 w-3.5" />
-            Verwijderen
+            <ImageIcon className="h-3.5 w-3.5" />
+            {hasValue ? 'Vervang afbeelding' : 'Kies afbeelding'}
           </button>
-        ) : null}
-      </div>
+          {allowClear && hasValue ? (
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              aria-label={`Verwijder afbeelding${label ? ` — ${label}` : ''}`}
+              className="inline-flex items-center gap-1.5 rounded-md bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Verwijderen
+            </button>
+          ) : null}
+        </div>
+      )}
 
       {pickerOpen && typeof window !== 'undefined'
         ? createPortal(
@@ -220,8 +233,9 @@ export function PuckImageField({
               <PickerErrorBoundary onRetry={() => setLazyPanel(() => makeLazyImageSourcePanel())}>
                 <Suspense
                   fallback={
-                    <div className="flex items-center justify-center py-12">
+                    <div role="status" className="flex items-center justify-center py-12">
                       <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                      <span className="sr-only">Afbeeldingskiezer laden…</span>
                     </div>
                   }
                 >

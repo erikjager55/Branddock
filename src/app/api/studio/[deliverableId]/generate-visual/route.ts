@@ -166,6 +166,11 @@ const requestSchema = z
     heroWriteMode: z.enum(['fill-only', 'overwrite']).optional(),
   })
   .strict()
+  // Contract afdwingen i.p.v. stil negeren: heroWriteMode zonder target:'hero'
+  // is een caller-fout en hoort een 400 te geven (review-minor 2026-06-10).
+  .refine((v) => !v.heroWriteMode || v.target === 'hero', {
+    message: "heroWriteMode vereist target: 'hero'",
+  })
   .or(z.undefined());
 
 interface RouteParams {

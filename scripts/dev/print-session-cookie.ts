@@ -71,8 +71,13 @@ async function main(): Promise<void> {
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
+  .then(async () => {
+    // Nette afsluiting i.p.v. process.exit(): een harde exit kan bij piped
+    // stdout de nog-niet-geflushte JSON-regel afkappen (Node stream-flush).
+    await prisma.$disconnect();
   })
-  .finally(() => process.exit());
+  .catch(async (e) => {
+    console.error(e);
+    process.exitCode = 1;
+    await prisma.$disconnect();
+  });

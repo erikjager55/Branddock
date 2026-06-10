@@ -40,8 +40,8 @@ import { PuckImageField } from './PuckImageField';
 function imageField(label: string, allowClear: boolean) {
   return {
     type: 'custom' as const,
-    render: ({ value, onChange }: { value?: string | null; onChange: (v: string) => void }) => (
-      <PuckImageField value={value} onChange={onChange} label={label} allowClear={allowClear} />
+    render: ({ value, onChange, readOnly }: { value?: string | null; onChange: (v: string) => void; readOnly?: boolean }) => (
+      <PuckImageField value={value} onChange={onChange} label={label} allowClear={allowClear} readOnly={readOnly} />
     ),
   };
 }
