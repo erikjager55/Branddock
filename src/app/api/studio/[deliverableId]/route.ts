@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { preserveHeroOnSettings } from "@/features/campaigns/components/canvas/medium/hero-visual-preserve";
+import { preserveFeatureVisualsOnSettings } from "@/features/campaigns/lib/feature-visual-preserve";
 import { z } from "zod";
 
 // GET /api/studio/[deliverableId] — Returns full studio state
@@ -172,7 +173,12 @@ export async function PATCH(
       // of structuredVariant wholesale herschrijft mag een al-gezette hero-image
       // niet leegclobberen (audit 2026-06-08). Behoud een bestaande niet-lege
       // heroVisualUrl wanneer de inkomende write 'm leeg laat.
-      const preservedIncoming = preserveHeroOnSettings(existingSettings, settings as Record<string, unknown>);
+      // R9 (audit 2026-06-10): zelfde guard voor feature-imageUrls — een
+      // wholesale settings-replace mag gezette feature-beelden niet stil wissen.
+      const preservedIncoming = preserveFeatureVisualsOnSettings(
+        existingSettings,
+        preserveHeroOnSettings(existingSettings, settings as Record<string, unknown>),
+      );
       updateData.settings = JSON.parse(JSON.stringify({ ...existingSettings, ...preservedIncoming }));
     }
     if (generatedSlides !== undefined)
