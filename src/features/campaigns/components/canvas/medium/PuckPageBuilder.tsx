@@ -12,7 +12,7 @@ import { variantToPuckData } from './variant-to-puck-data';
 import { assignSectionBands } from './puck-templates/landing-page-from-structured';
 import { preserveHeroVisual } from './hero-visual-preserve';
 import { generateCanvasVisual, generateFeatureVisuals } from '../../../api/canvas.api';
-import { buildHeroVisualInstruction, buildFeatureVisualInstruction } from '../../../lib/landing-page-visual-prompts';
+import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
 import { useBrandFontLoader } from './useBrandFontLoader';
 import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
@@ -229,15 +229,38 @@ export function PuckPageBuilder({
   // bewust icon-design). Detecteer features ZONDER beeld + bied een opt-in knop
   // om ze alsnog te genereren (geen waarschuwing — icons kunnen gewenst zijn).
   const featureGaps = useMemo(() => {
-    const gaps: Array<{ ci: number; fi: number; title: string; description: string }> = [];
+    const gaps: Array<{ ci: number; fi: number; slotIndex: number; title: string; description: string }> = [];
     const content = Array.isArray(puckData?.content) ? puckData.content : [];
+    // slotIndex = cumulatieve feature-positie over alle image-capable feature-
+    // componenten heen: uniek binnen de request én gelijk aan de structured-
+    // Variant-index bij het standaard 1-component-geval — zodat de persist-
+    // namespace 'feature-visual:<i>' van de route consistent blijft met de
+    // confirm-flow (review-2 2026-06-10). Rest-gat (geaccepteerd, audit §9):
+    // plaatst een user een eigen feature-sectie VÓÓR de variant-sectie, dan
+    // verschuift de namespace en kan gap-fill een audit-row van een andere
+    // feature vervangen — audit-only impact, de renderer leest puckData.
+    let slotOffset = 0;
     content.forEach((c, ci) => {
       if (c?.type !== 'FeatureGrid' && c?.type !== 'FeatureSplit') return;
-      const feats = (c.props as { features?: Array<{ title?: string; description?: string; imageUrl?: string | null }> })?.features ?? [];
+      const feats = (c.props as { features?: Array<{ title?: string; description?: string; icon?: string; imageUrl?: string | null }> })?.features ?? [];
+      // De TrustStrip rendert óók als FeatureGrid (MVP-workaround in
+      // landing-page-from-structured: alle items icon 'badge-check', en
+      // description = mediaUrl-of-leeg) — trust-logo-items zijn geen beeld-
+      // kandidaten en telden onterecht mee als gaps (audit 2026-06-10).
+      // Twee onafhankelijke signaturen (review-3): één user-geëdit icon mag de
+      // detectie niet breken, dus we checken óók op de description-vorm — een
+      // echte features-grid heeft prose-descriptions (schema: body min 1).
+      const urlOrEmpty = (s?: string) => !s?.trim() || /^https?:\/\//.test(s) || s.startsWith('/uploads/');
+      const isTrustStrip = feats.length > 0 && (
+        feats.every((f) => f.icon === 'badge-check') ||
+        feats.every((f) => urlOrEmpty(f.description))
+      );
+      if (isTrustStrip) return;
       feats.forEach((f, fi) => {
         const has = typeof f.imageUrl === 'string' && f.imageUrl.trim().length > 0;
-        if (!has) gaps.push({ ci, fi, title: f.title ?? '', description: f.description ?? '' });
+        if (!has) gaps.push({ ci, fi, slotIndex: slotOffset + fi, title: f.title ?? '', description: f.description ?? '' });
       });
+      slotOffset += feats.length;
     });
     return gaps;
   }, [puckData]);
@@ -248,12 +271,32 @@ export function PuckPageBuilder({
     if (!deliverableId || featureGaps.length === 0) return;
     const heroItem = (puckData.content ?? []).find((c) => c?.type === 'BrandHero');
     const headline = ((heroItem?.props as { headline?: string })?.headline) ?? '';
-    const prompts = featureGaps.map((g) =>
-      buildFeatureVisualInstruction({ heading: g.title, body: g.description }, headline, contextStack),
-    );
+    // Fase 3 (audit 2026-06-10): feature-copy naar de route — prompts worden
+    // server-side gebouwd. Gap-fill werkt op (mogelijk user-geëdite) puckData-
+    // titels en heeft geen imageBrief → server-fallback met angle-rotatie.
+    // index = g.slotIndex (cumulatief over componenten): uniek én consistent
+    // met de persist-namespace van de confirm-flow (review-2 2026-06-10).
+    // Batch gecapt op het route-budget (4) — meer gaps zouden anders de hele
+    // request laten 400'en; de rest volgt bij een volgende klik.
+    // 120s-abort: gap-fill had (anders dan de confirm-flow) géén timeout; een
+    // AbortController i.p.v. een kale race zodat de fetch écht stopt en een
+    // her-klik geen tweede concurrent run naast een zombie-request start.
+    const batch = featureGaps.filter((g) => g.slotIndex <= 99).slice(0, 4);
+    const featureSlots = batch.map((g) => ({
+      index: g.slotIndex,
+      heading: (g.title || 'feature').slice(0, 200),
+      body: (g.description || g.title || 'feature').slice(0, 600),
+      imageBrief: null,
+    }));
     setIsFillingFeatures(true);
     setFeatureFillMsg(null);
-    generateFeatureVisuals(deliverableId, prompts)
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 120_000);
+    generateFeatureVisuals(deliverableId, { features: featureSlots, pageHeadline: headline.slice(0, 200) }, { signal: controller.signal })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return [] as Array<string | null>;
+        throw err;
+      })
       .then((urls) => {
         const got = urls.filter((u) => !!u).length;
         if (got === 0) { setFeatureFillMsg('Geen feature-beelden gegenereerd — probeer opnieuw.'); return; }
@@ -267,7 +310,7 @@ export function PuckPageBuilder({
             if (!Array.isArray(props.features)) return c;
             let changed = false;
             const newFeats = props.features.map((f, fi) => {
-              const k = featureGaps.findIndex((g) => g.ci === ci && g.fi === fi);
+              const k = batch.findIndex((g) => g.ci === ci && g.fi === fi);
               if (k >= 0 && urls[k]) { changed = true; return { ...f, imageUrl: urls[k] }; }
               return f;
             });
@@ -283,11 +326,11 @@ export function PuckPageBuilder({
             .catch((err) => console.warn('[PuckPageBuilder] feature-fill persist failed', err));
           return next;
         });
-        setFeatureFillMsg(got < featureGaps.length ? `${got}/${featureGaps.length} beelden gegenereerd.` : null);
+        setFeatureFillMsg(got < batch.length ? `${got}/${batch.length} beelden gegenereerd.` : null);
       })
       .catch((err) => setFeatureFillMsg(err instanceof Error ? err.message : 'Genereren mislukt'))
-      .finally(() => setIsFillingFeatures(false));
-  }, [deliverableId, featureGaps, puckData, contextStack]);
+      .finally(() => { clearTimeout(abortTimer); setIsFillingFeatures(false); });
+  }, [deliverableId, featureGaps, puckData]);
 
   const handlePuckChange = useCallback(
     (data: SpikeData) => {

@@ -523,6 +523,12 @@ export async function assembleCanvasContext(
       layoutStyle: true,
       layoutStyleInferred: true,
       archetype: true,
+      // R5-gate (audit 2026-06-10-lp-feature-image-diversity): photographyStyle
+      // voedt image-gen prompts en mag alleen meedoen na user-review — zelfde
+      // semantiek als de imagery-gate in brand-context.ts (published-blok →
+      // imagerySavedForAi). Rendering-tokens blijven bewust ongegate.
+      published: true,
+      imagerySavedForAi: true,
       // Verbeterplan Fase B — rendering-profiles (Json velden voor v4 tokens)
       buttonProfile: true,
       typographyProfile: true,
@@ -554,8 +560,16 @@ export async function assembleCanvasContext(
       },
     },
   });
+  // R5-gate: een OBSERVED scrape-beschrijving mag niet prescriptief alle
+  // gegenereerde beelden sturen zolang de imagery niet gereviewd is. Bij
+  // gate-dicht vallen de photography-tokens op DEFAULT terug; prompt-builders
+  // gebruiken dan hun archetype-fallback (pickHeroImagePromptFragment).
+  const imageryGateOpen = Boolean(styleguide?.published && styleguide?.imagerySavedForAi);
+  const gatedStyleguide = styleguide && !imageryGateOpen
+    ? { ...styleguide, photographyStyle: null }
+    : styleguide;
   const { tokens: brandTokens, provenance: brandProvenance } =
-    extractBrandTokensWithProvenance(styleguide, {
+    extractBrandTokensWithProvenance(gatedStyleguide, {
       adobeFontsKitId: styleguide?.workspace?.adobeFontsKitId ?? null,
     });
 

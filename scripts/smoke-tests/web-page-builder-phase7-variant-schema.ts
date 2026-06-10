@@ -285,6 +285,47 @@ group("Cross-field: finalCta.primaryCta == hero.primaryCta");
   }
 }
 
+group("ImageBrief (R7, audit 2026-06-10) — optioneel + gevalideerd");
+{
+  // Zonder imageBrief blijft alles geldig (backwards-compat met persisted variants).
+  const without = clone(completeVariant);
+  assert("variant zónder imageBrief valide", validateLandingPageVariant(without).success);
+
+  // Met geldige briefs op hero + features.
+  const withBriefs = clone(completeVariant);
+  (withBriefs.hero as Record<string, unknown>).imageBrief = {
+    subject: "Lichte restaurantzaal met gedekte tafels en gestreken linnen",
+    sceneType: "location",
+    composition: "breed overzicht, natuurlijk licht, negatieve ruimte links",
+  };
+  (withBriefs.features.items[0] as Record<string, unknown>).imageBrief = {
+    subject: "Stapel gevouwen servetten met GOTS-certificaatlabel",
+    sceneType: "detail",
+    composition: "macro close-up, zachte zijbelichting",
+    avoid: "personen frontaal in beeld",
+  };
+  assert("variant mét geldige imageBriefs valide", validateLandingPageVariant(withBriefs).success);
+
+  // Ongeldige sceneType degradeert naar null (.catch — review 2026-06-10:
+  // een nice-to-have-veld mag de hele variant-validatie niet laten falen).
+  const badScene = clone(completeVariant);
+  (badScene.features.items[0] as Record<string, unknown>).imageBrief = {
+    subject: "X",
+    sceneType: "portrait",
+    composition: "Y",
+  };
+  const badResult = validateLandingPageVariant(badScene);
+  assert("ongeldige sceneType degradeert (variant blijft valide)", badResult.success);
+  if (badResult.success) {
+    assert("  brief is null na degradatie", badResult.data.features.items[0].imageBrief === null);
+  }
+
+  // null-brief expliciet toegestaan (LLM mag null retourneren).
+  const nullBrief = clone(completeVariant);
+  (nullBrief.hero as Record<string, unknown>).imageBrief = null;
+  assert("imageBrief null valide", validateLandingPageVariant(nullBrief).success);
+}
+
 group("Edge cases");
 {
   const result = validateLandingPageVariant({});
