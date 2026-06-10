@@ -289,19 +289,42 @@ export async function generateCanvasVisual(
   return res.json();
 }
 
+/** v2-slot voor generateFeatureVisuals — feature-copy i.p.v. client-prompt. */
+export interface FeatureVisualSlot {
+  index: number;
+  heading: string;
+  body: string;
+  imageBrief?: {
+    subject: string;
+    sceneType: 'object' | 'process' | 'location' | 'detail' | 'person';
+    composition: string;
+    avoid?: string | null;
+  } | null;
+}
+
 /**
- * P2 — genereer AI-feature-beelden (max 4) voor de feature-cards van een
- * landing-page. Eén beeld per prompt; returnt stabiele storage-URLs in dezelfde
- * volgorde (null bij falen per index). Raakt de hero-picker NIET aan.
+ * P2 + Fase 3 (audit 2026-06-10) — genereer AI-feature-beelden (max 4) voor de
+ * feature-cards van een landing-page. v2: stuur feature-copy ({features,
+ * pageHeadline}) zodat de route de prompts server-side bouwt (scene-templates,
+ * sibling-differentiatie, seeds, persist). Legacy string[]-payload blijft één
+ * release werken. Returnt storage-URLs in request-volgorde (null bij falen per
+ * index). Raakt de hero-picker NIET aan.
  */
 export async function generateFeatureVisuals(
   deliverableId: string,
-  prompts: string[],
+  promptsOrPayload: string[] | { features: FeatureVisualSlot[]; pageHeadline?: string },
+  opts?: { signal?: AbortSignal },
 ): Promise<Array<string | null>> {
+  const body = Array.isArray(promptsOrPayload)
+    ? { prompts: promptsOrPayload }
+    : { features: promptsOrPayload.features, pageHeadline: promptsOrPayload.pageHeadline };
   const res = await fetch(`/api/studio/${deliverableId}/generate-feature-visuals`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompts }),
+    body: JSON.stringify(body),
+    // Timeout-abort vanaf de caller: een kale Promise.race liet de fetch
+    // doorlopen (zombie-request naast een her-klik, review-2 2026-06-10).
+    signal: opts?.signal,
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Failed to generate feature visuals' }));

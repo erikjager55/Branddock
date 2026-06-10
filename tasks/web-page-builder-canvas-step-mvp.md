@@ -9,7 +9,7 @@ status: in-progress
 created: 2026-05-23
 started: 2026-05-24
 phases-complete: 6 of 6 (backend + UI) + 6.1 + 6.2 follow-ups + design-batches 1-8 + brandstyle Fase A-E (LP-fidelity werkstroom) + F-VAL vision-judge dim 8 + auto-iterate hardening + DTS content-quality C1-C11
-remaining: brand-fidelity Step 2 LP wiring (Track 5) + Track 4 acceptance (README, BrandOnboardingWizard, F-VAL HTML calibration, dual-render perf, marketing-site-pricing dogfood) + Track 2 4-squash-merges + browser-smoke door user + bug-report submission
+remaining: Track 4 acceptance-rest (README, F-VAL HTML calibration, dual-render perf, marketing-site-pricing dogfood) + browser-smoke door user + bug-report submission — de-staled 2026-06-10; Track 5 brand-fidelity Step 2 wiring ✅ (086486d3, changelog #270E), Track 2 squash-merges ✅ (PR #14 71c1542e), BrandOnboardingWizard ✅ (PR #15 e3475713)
 related-adr: docs/adr/2026-05-22-landing-page-builder-architectuur.md + 3 ADR-aanvullingen volgen (2026-05-29)
 related-spec: tasks/_drafts/idea-landing-page-builder.md + docs/specs/{dts-content-quality-improvements,dts-comparison-improvements,brandstyle-analyzer-improvement-plan}.md
 related-plan: ~/.claude/plans/zippy-twirling-feigenbaum.md (approved 2026-05-29)

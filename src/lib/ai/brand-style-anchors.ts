@@ -45,7 +45,7 @@ export async function fetchBrandStyleAnchors(
     // Preserve original order from anchorIds; filter out anchors die niet
     // meer bestaan (asset deleted).
     const assetMap = new Map(assets.map((a) => [a.id, a]));
-    return anchorIds
+    const hydrated = anchorIds
       .map((id) => assetMap.get(id))
       .filter((a): a is NonNullable<typeof a> => Boolean(a))
       .map((a) => ({
@@ -53,6 +53,14 @@ export async function fetchBrandStyleAnchors(
         fileUrl: a.fileUrl,
         alt: a.name ?? null,
       }));
+    // Orphans falen anders silent naar [] terwijl de user denkt dat anchors
+    // actief zijn (Napking: 10/10 orphaned — audit 2026-06-10).
+    if (hydrated.length < anchorIds.length) {
+      console.warn(
+        `[brand-style-anchors] workspace ${workspaceId}: ${anchorIds.length - hydrated.length}/${anchorIds.length} anchor-ids verwijzen naar verwijderde MediaAssets — opschonen via brand-styleguide instellingen`,
+      );
+    }
+    return hydrated;
   } catch (err) {
     console.warn(
       '[brand-style-anchors] fetch failed (non-blocking):',
