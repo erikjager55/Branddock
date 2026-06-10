@@ -58,3 +58,6 @@ docs/experiments/*-gpt-image-2-retest.json
 
 # LP fidelity baseline-recompute lokale backups (audit 2026-06-10)
 scripts/dev/.backup-lp-fidelity-baseline-*.json
+
+# Browser-smoke screenshots (artefacten, niet voor git)
+test-screenshots/
