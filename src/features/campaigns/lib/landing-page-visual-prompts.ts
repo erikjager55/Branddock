@@ -83,9 +83,12 @@ export function buildHeroVisualInstruction(
   // een lange brief/headline-combinatie nooit een 400 geeft (review 2026-06-10).
   const instruction = parts.join('. ') + '.';
   if (instruction.length <= 1000) return instruction;
-  const sliced = instruction.slice(0, 1000);
+  // Fallback-tak knipt op 999 vóór de punt-append: een spatieloze staart gaf
+  // anders exact 1001 chars en alsnog een 400 (review-4 2026-06-10).
+  const sliced = instruction.slice(0, 999);
   const lastSpace = sliced.lastIndexOf(' ');
-  return (lastSpace > 800 ? sliced.slice(0, lastSpace) : sliced).trim().replace(/[,;:]$/, '') + '.';
+  const cut = (lastSpace > 800 ? sliced.slice(0, lastSpace) : sliced).trim().replace(/[,;:]$/, '');
+  return `${cut}.`.slice(0, 1000);
 }
 
 /**

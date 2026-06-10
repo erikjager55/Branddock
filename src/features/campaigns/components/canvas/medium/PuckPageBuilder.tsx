@@ -235,8 +235,10 @@ export function PuckPageBuilder({
     // componenten heen: uniek binnen de request én gelijk aan de structured-
     // Variant-index bij het standaard 1-component-geval — zodat de persist-
     // namespace 'feature-visual:<i>' van de route consistent blijft met de
-    // confirm-flow en gap-fill geen audit-rows van andere features wist
-    // (review-2 2026-06-10).
+    // confirm-flow (review-2 2026-06-10). Rest-gat (geaccepteerd, audit §9):
+    // plaatst een user een eigen feature-sectie VÓÓR de variant-sectie, dan
+    // verschuift de namespace en kan gap-fill een audit-row van een andere
+    // feature vervangen — audit-only impact, de renderer leest puckData.
     let slotOffset = 0;
     content.forEach((c, ci) => {
       if (c?.type !== 'FeatureGrid' && c?.type !== 'FeatureSplit') return;
