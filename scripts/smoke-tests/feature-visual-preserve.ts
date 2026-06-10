@@ -98,7 +98,10 @@ group("settings-chokepoint — puckData + structuredVariant");
   assert("structuredVariant nieuwe URL passeert", sv.features.items[1].imageUrl === "/uploads/nieuw-b.png");
 }
 
-group("settings-chokepoint — bewuste clear (existing leeg) passeert");
+// NB: een clear bij BESTAANDE url wordt bewust hersteld (gedocumenteerde
+// trade-off in feature-visual-preserve.ts — guard kan race niet van intentie
+// onderscheiden); alleen zonder bestaande url is er niets te beschermen.
+group("settings-chokepoint — geen bestaande url → niets te beschermen");
 {
   const existing = { puckData: tree([null, null, null, null]) };
   const incoming = { puckData: tree([null, null, null, null]) };

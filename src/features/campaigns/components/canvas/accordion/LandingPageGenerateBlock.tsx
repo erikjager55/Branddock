@@ -481,10 +481,19 @@ export function LandingPageGenerateBlock({
             body: chosen.features.items[i].body.slice(0, 600),
             imageBrief: chosen.features.items[i].imageBrief ?? null,
           }));
-          const urls = await Promise.race([
-            generateFeatureVisuals(deliverableId, { features: featureSlots, pageHeadline: chosen.hero.headline.slice(0, 200) }),
-            new Promise<Array<string | null>>((resolve) => setTimeout(() => resolve([]), 120_000)),
-          ]);
+          // 120s-abort i.p.v. kale race: de fetch stopt écht bij timeout, zodat
+          // er geen zombie-request doorloopt naast een eventuele her-klik
+          // (review-2 2026-06-10).
+          const featureAbort = new AbortController();
+          const featureTimer = setTimeout(() => featureAbort.abort(), 120_000);
+          const urls = await generateFeatureVisuals(
+            deliverableId,
+            { features: featureSlots, pageHeadline: chosen.hero.headline.slice(0, 200) },
+            { signal: featureAbort.signal },
+          ).catch((err: unknown) => {
+            if (err instanceof DOMException && err.name === 'AbortError') return [] as Array<string | null>;
+            throw err;
+          }).finally(() => clearTimeout(featureTimer));
           if (urls.length > 0) {
             const items = chosen.features.items.map((it, i) => {
               const k = needIdx.indexOf(i);

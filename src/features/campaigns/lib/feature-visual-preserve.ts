@@ -8,7 +8,15 @@
  * PATCH die puckData/structuredVariant wholesale vervangt (autosave, regen,
  * stale race) kon al-gezette feature-imageUrls stil leegmaken. Deze guard
  * behoudt NIET-lege feature-beelden wanneer de inkomende write ze leeg laat;
- * een nieuwe URL en een bewuste clear (geen bestaande URL) passeren ongemoeid.
+ * een nieuwe (vervangende) URL passeert altijd.
+ *
+ * BEKENDE TRADE-OFF (review-2 2026-06-10, zelfde keuze als de hero-guard):
+ * een BEWUSTE clear via het editbare imageUrl-veld in de Puck-editor wordt
+ * óók hersteld zolang de feature-titel gelijk blijft — de guard kan een
+ * stale-race niet van een user-intentie onderscheiden. Workaround voor de
+ * user: vervang de URL (of wijzig titel + leeg het veld). Een expliciet
+ * clear-pad (marker/dedicated route) is een UI-follow-up; gekozen omdat de
+ * stil-wissende race destructiever is dan een herstelde clear.
  */
 
 interface PuckTreeLike {

@@ -313,6 +313,7 @@ export interface FeatureVisualSlot {
 export async function generateFeatureVisuals(
   deliverableId: string,
   promptsOrPayload: string[] | { features: FeatureVisualSlot[]; pageHeadline?: string },
+  opts?: { signal?: AbortSignal },
 ): Promise<Array<string | null>> {
   const body = Array.isArray(promptsOrPayload)
     ? { prompts: promptsOrPayload }
@@ -321,6 +322,9 @@ export async function generateFeatureVisuals(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    // Timeout-abort vanaf de caller: een kale Promise.race liet de fetch
+    // doorlopen (zombie-request naast een her-klik, review-2 2026-06-10).
+    signal: opts?.signal,
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Failed to generate feature visuals' }));

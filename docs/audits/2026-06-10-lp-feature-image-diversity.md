@@ -160,3 +160,9 @@ Gedeelde hotspots: `LandingPageGenerateBlock.tsx`, `PuckPageBuilder.tsx`, `canva
 1. Honoreert `fal-ai/nano-banana-pro` de `seed`-param? (Fase 3 pre-check; zo niet → judge-laag is verplicht, niet optioneel.)
 2. Honoreert het `num_images > 1`? (Alleen relevant voor de latere quality-mode.)
 3. Hoe vaak produceert de copy-LLM degenerate briefs (te vaag / te uniform)? (Fase 2 live-monitoring; de Fase-4-poort is de dubbele bodem.)
+
+## 9. Bekende beperkingen (review-2, 2026-06-10)
+
+- **Bewuste clear van een feature-beeld** via het editbare imageUrl-veld wordt door de R9-guard hersteld zolang de titel gelijk blijft (zelfde trade-off als de hero-guard — een stil-wissende race is destructiever dan een herstelde clear). Workaround: URL vervangen. Expliciet clear-pad = UI-follow-up.
+- **Server-side spend bij client-timeout**: de 120s-abort stopt de fetch, maar de route genereert/persisteert door (Next.js cancelt route-handlers niet op disconnect). Dubbele spend bij her-klik is beperkt tot één extra page-run.
+- **Afwijking van het oorspronkelijke fase-3-ontwerp**: de route leest structuredVariant níet server-side; heading/body/brief komen uit de (gevalideerde, getrunceerde) client-payload. Reden: in de Step-2 confirm-flow is de gekozen variant op generatie-moment nog niet gepersisteerd — een server-read zou stale data zien. Functioneel equivalent; legacy accepteerde al verbatim prompts.
