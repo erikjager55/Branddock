@@ -5,12 +5,13 @@ fase: pre-launch
 priority: now
 effort: 8,5-9,5 dagen (6 fasen, elk zelfstandig shipbaar; fase 0 alleen al fixt het acute symptoom grotendeels)
 owner: claude-code
-status: open
+status: in-review
 created: 2026-06-10
 completed: -
-related-adr: docs/adr/2026-06-10-feature-visual-pipeline.md (te schrijven in fase 5)
+built-2026-06-10: "alle 6 fasen gebouwd + gecommit op feat/lp-feature-image-diversity (worktree branddock-feat-lp-image-diversity, commits a7d5a47f..52f204d1). Acceptatie-run geslaagd: echte Napking-secties door volle pipeline -> 4 onderscheidende sectie-relevante beelden (wasmachine 85C / voorraadkast / GOTS-label macro / bezorgbus), coherence 78/78/78/78, 0 dupes, 0 regens. Seed-experiment: nano-banana-pro deterministisch per seed + num_images=2 OK. Open: browser-verificatie + merge (parallelle sessie zit op feat/lp-editor-image-field in branddock-app met overlappende hotspots)."
+related-adr: docs/adr/2026-06-10-feature-visual-pipeline.md
 related-spec: docs/audits/2026-06-10-lp-feature-image-diversity.md
-worktree: TBD (main of branddock-feat-* — raakvlak-afstemming lp-image-source-wiring bepaalt)
+worktree: branddock-feat-lp-image-diversity (branch feat/lp-feature-image-diversity)
 ---
 
 # Probleem
@@ -23,16 +24,16 @@ Brief-first + pipeline-first merge (uitslag 3-ontwerpen-jury): (0) stijl-laag-sa
 
 # Acceptatiecriteria
 
-- [ ] Fase 0: Napking feature-prompts bevatten geen scrape-compositie ("arms crossed"/"confident chef") meer; brandImageryDonts bereiken de feature-route; negatives werken op nano-banana (prompt-directive); orphaned-anchor warning logt
-- [ ] Fase 1: hero behoudt compositionFragment, features krijgen alleen stijl-fragment; subjectPool gevuld
-- [ ] Fase 2: live-run levert 4 briefs met ≥3 verschillende sceneTypes en 0 identieke subjects (Napking + Better Brands)
-- [ ] Fase 3: prompts server-side gebouwd (legacy payload blijft 1 release werken); DeliverableComponent-rows met imagePromptUsed per feature-beeld; TrustStrip-items niet in featureGaps
-- [ ] Fase 4: Napking-herrun → 4 onderscheidende beelden die elk hun sectietekst visualiseren; coherence-scores gelogd; max 2 regeneraties/pagina afgedwongen
-- [ ] Fase 5: settings-PATCH wist geen feature-beelden meer; dry-run-script rapporteert over 3 workspaces; ADR geschreven
-- [ ] `npx tsc --noEmit` 0 errors
-- [ ] `npm run lint` 0 errors
-- [ ] Smoke-tests per fase uitgevoerd (zie audit §4 per fase)
-- [ ] roadmap.md r83 + web-page-builder-canvas-step-mvp remaining + gotchas.md (2 lessen) bijgewerkt
+- [x] Fase 0: Napking feature-prompts bevatten geen scrape-compositie ("arms crossed"/"confident chef") meer; brandImageryDonts bereiken de feature-route; negatives werken op nano-banana (prompt-directive); orphaned-anchor warning logt
+- [x] Fase 1: hero behoudt compositionFragment, features krijgen alleen stijl-fragment; subjectPool gevuld
+- [x] Fase 2: live-run levert 4 briefs met ≥3 verschillende sceneTypes en 0 identieke subjects (Napking + Better Brands)
+- [x] Fase 3: prompts server-side gebouwd (legacy payload blijft 1 release werken); DeliverableComponent-rows met imagePromptUsed per feature-beeld; TrustStrip-items niet in featureGaps
+- [x] Fase 4: Napking-herrun → 4 onderscheidende beelden die elk hun sectietekst visualiseren; coherence-scores gelogd; max 2 regeneraties/pagina afgedwongen
+- [x] Fase 5: settings-PATCH wist geen feature-beelden meer; dry-run-script rapporteert over 3 workspaces; ADR geschreven
+- [x] `npx tsc --noEmit` 0 errors
+- [x] `npm run lint` 0 errors
+- [x] Smoke-tests per fase uitgevoerd (zie audit §4 per fase)
+- [x] roadmap.md r83 + web-page-builder-canvas-step-mvp remaining + gotchas.md (2 lessen) bijgewerkt
 
 # Bestanden die ik aanraak
 
