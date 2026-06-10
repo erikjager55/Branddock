@@ -283,7 +283,8 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
     "subhead": string (1-2 zinnen, max ~25 woorden — maakt de headline GELOOFWAARDIG: hoe het werkt + waarom de claim klopt, niet een tweede slogan),
     "primaryCta": string (laagdrempelige EERSTE actie passend bij een koude lezer — een micro-commitment, bv "Vraag stalen aan"/"Bekijk demo"/"Plan adviesgesprek", NIET een zware ask als "Koop nu"/"Vraag offerte" voor een eerste bezoek. Action-led werkwoord),
     "secondaryCta": string | optional (Hobson's Choice +1, bv "Bekijk demo"),
-    "heroVisualUrl": string | optional (placeholder voor v2)
+    "heroVisualUrl": string | optional (placeholder voor v2),
+    "imageBrief": { "subject": string (max 200 tekens, concreet sectie-specifiek onderwerp), "sceneType": "object" | "process" | "location" | "detail" | "person", "composition": string (max 200 tekens, compositie-richting in 1 zin), "avoid": string | optional (wat dit beeld NIET toont) } (visuele richting voor de hero-foto: de SCÈNE die de hero-belofte toont, geen abstracte sfeer)
   },
   "trust": {
     "type": "logos" | "testimonial-quote" | "authority-statement",
@@ -296,7 +297,7 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
   },` : ""}
   "features": {
     "sectionHeading": string,
-    "items": [{ "icon": string (lucide-icon naam, geen emoji), "heading": string (2-4 woorden), "body": string (1-2 zinnen benefit-frame) }] (3 of 4 items — 5 verstoort grid-balans. Elke feature BEWIJST één pilaar van de hero-belofte — geen losse, willekeurige features. Samen dekken ze de kern-belofte uit de headline/subhead)
+    "items": [{ "icon": string (lucide-icon naam, geen emoji), "heading": string (2-4 woorden), "body": string (1-2 zinnen benefit-frame), "imageBrief": { "subject": string (max 200 tekens), "sceneType": "object" | "process" | "location" | "detail" | "person", "composition": string (max 200 tekens), "avoid": string | optional } }] (3 of 4 items — 5 verstoort grid-balans. Elke feature BEWIJST één pilaar van de hero-belofte — geen losse, willekeurige features. Samen dekken ze de kern-belofte uit de headline/subhead)
   },
   "socialProof": {
     "testimonials": [{ "quote": string, "authorName": string, "authorRole": string, "authorCompany": string, "outcome": string | optional }] (EXACT 1 item — sterkste single quote met outcome-cijfer wint van meerdere generieke quotes),
@@ -330,6 +331,7 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
 12. **Houd de bron-website-stijl aan, improviseer NIET**: tone-of-voice, sector-termen, klant-aanspreking en typische zinsstructuren komen uit de geanalyseerde bron-website. Gebruik voorbeelden die op de échte bron passen (LINFI = vloerluiken/precisie/architectonisch; Better Brands = purpose/strategie/transformatie). Geen generic SaaS-frasen voor traditionele branches en omgekeerd.
 13. **Feature-pilaren binden terug op de hero (PAS-narratief)**: elke feature BEWIJST één pilaar van de hero-belofte; samen dekken ze de kern uit headline+subhead. De problem-sectie (van-kant) → features+testimonial (naar-kant) vormen één doorlopende boog. Geen losse, willekeurige features die "niet van elkaar weten".
 14. **CTA = laagdrempelige eerste ask (micro-commitment)**: de primaire CTA is een lichte eerste stap passend bij een koude lezer (stalen/demo/adviesgesprek), NIET een zware ask (offerte/koop) die te vroeg komt en afschrikt. De single-CTA-discipline (regel 1) blijft — kies één lichte ask en herhaal die.
+15. **Image-briefs = bewijs + onderlinge diversiteit**: elke feature-imageBrief visualiseert HET BEWIJS van DIE specifieke feature (reiniging → textiel in een wasserij-omgeving; levering → bezorgbus; duurzaamheid → certificaat-label op materiaal). De 3-4 feature-briefs MOETEN onderling verschillende sceneTypes hebben (minimaal 3 verschillende van de 5 types) óf duidelijk verschillende subjects. Max 1 "person"-scene per pagina, en NOOIT een frontale geposeerde portret-pose (geen "persoon kijkt met gekruiste armen in de camera") — kies candid/werkend/over-de-schouder. Subjects zijn concreet en fotografeerbaar (een object, een handeling, een plek), geen abstracties als "kwaliteit" of "vertrouwen".
 
 # COGNITIEVE FUNDAMENTEN (waarom dit werkt)
 - Fogg's Behavior Model: elke sectie moet motivatie + ability + trigger versterken
@@ -520,7 +522,9 @@ export async function generateLandingPageVariant(
     ],
     {
       useCase: "STRUCTURED",
-      maxTokens: 3500,
+      // 3500 → 4500 (R7, audit 2026-06-10): 4-5 imageBriefs (~400 extra
+      // output-tokens) mogen de JSON-staart niet afkappen.
+      maxTokens: 4500,
       timeoutMs: 90_000,
       ...(opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
     },

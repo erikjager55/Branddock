@@ -404,12 +404,16 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
     for (const comp of existingComponents) {
       // Skip hero-image (handled above) and visual-group image variants
       // (handled directly into imageVariants above)
-      // Skip image-group rows: 'visual' (workspace) of 'visual:hook/body/cta' (scene-scoped).
+      // Skip image-group rows: 'visual' (workspace) of 'visual:hook/body/cta'
+      // (scene-scoped), en 'feature-visual:<i>' (LP feature-beeld audit-rows,
+      // audit 2026-06-10) — anders laden die als lege tekst-variantgroepen
+      // met isSelected=true in de store.
       if (
         !comp.variantGroup ||
         comp.variantGroup === 'hero-image' ||
         comp.variantGroup === 'visual' ||
-        comp.variantGroup.startsWith('visual:')
+        comp.variantGroup.startsWith('visual:') ||
+        comp.variantGroup.startsWith('feature-visual:')
       ) {
         continue;
       }

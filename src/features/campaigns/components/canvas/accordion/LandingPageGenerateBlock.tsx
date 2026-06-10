@@ -16,7 +16,7 @@ import { FidelityScoreBar } from '../FidelityScoreBar';
 import { InfoBox } from '@/components/ui/InfoBox';
 import { useInlineTransform } from '../../../hooks/canvas.hooks';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
-import { buildHeroVisualInstruction, buildFeatureVisualInstruction } from '../../../lib/landing-page-visual-prompts';
+import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { diffVariantCopy, type CopyFieldChange } from '@/lib/landing-pages/variant-copy-diff';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ImageSourcePanel } from '../ImageSourcePanel';
@@ -458,11 +458,13 @@ export function LandingPageGenerateBlock({
           setIsGeneratingVisual(false);
         }
       }
-      // P2 AI-feature-beelden (budget 4/pagina): genereer een materiaal-/in-
-      // context-shot voor elke feature ZONDER beeld (brandImages vulden de rest
-      // al). Best-effort + 60s-race zodat een hangende image-API de keuze-flow
-      // niet blokkeert; mislukte/overgeslagen features vallen terug op de icon-
-      // grid (FeatureGrid). Geslaagde beelden → editorial FeatureSplit (P7).
+      // P2 AI-feature-beelden (budget 4/pagina): genereer een sectie-relevante
+      // shot voor elke feature ZONDER beeld (brandImages vulden de rest al).
+      // Fase 3 (audit 2026-06-10): we sturen feature-COPY + imageBrief — de
+      // route bouwt de prompts server-side (scene-templates, sibling-
+      // differentiatie, seeds, persist). Best-effort + 120s-race (judges +
+      // gerichte retry in de route maken de run langer dan de oude 60s);
+      // mislukte/overgeslagen features vallen terug op de icon-grid.
       const FEATURE_IMAGE_BUDGET = 4;
       const needIdx = chosen.features.items
         .map((f, i) => (f.imageUrl ? -1 : i))
@@ -470,11 +472,28 @@ export function LandingPageGenerateBlock({
         .slice(0, FEATURE_IMAGE_BUDGET);
       if (needIdx.length > 0) {
         try {
-          const prompts = needIdx.map((i) => buildFeatureVisualInstruction(chosen.features.items[i], chosen.hero.headline, contextStack));
-          const urls = await Promise.race([
-            generateFeatureVisuals(deliverableId, prompts),
-            new Promise<Array<string | null>>((resolve) => setTimeout(() => resolve([]), 60_000)),
-          ]);
+          // Truncatie matcht het route-schema (zod-max) — variant-schema heeft
+          // geen max op heading/body, dus één lange waarde mag niet de hele
+          // batch laten 400'en (review 2026-06-10).
+          const featureSlots = needIdx.map((i) => ({
+            index: i,
+            heading: chosen.features.items[i].heading.slice(0, 200),
+            body: chosen.features.items[i].body.slice(0, 600),
+            imageBrief: chosen.features.items[i].imageBrief ?? null,
+          }));
+          // 120s-abort i.p.v. kale race: de fetch stopt écht bij timeout, zodat
+          // er geen zombie-request doorloopt naast een eventuele her-klik
+          // (review-2 2026-06-10).
+          const featureAbort = new AbortController();
+          const featureTimer = setTimeout(() => featureAbort.abort(), 120_000);
+          const urls = await generateFeatureVisuals(
+            deliverableId,
+            { features: featureSlots, pageHeadline: chosen.hero.headline.slice(0, 200) },
+            { signal: featureAbort.signal },
+          ).catch((err: unknown) => {
+            if (err instanceof DOMException && err.name === 'AbortError') return [] as Array<string | null>;
+            throw err;
+          }).finally(() => clearTimeout(featureTimer));
           if (urls.length > 0) {
             const items = chosen.features.items.map((it, i) => {
               const k = needIdx.indexOf(i);

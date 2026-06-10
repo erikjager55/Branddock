@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireDeliverableAccess } from "@/lib/deliverable/deliverable-access";
 import { preserveHeroOnSettings, syncHeroFromPuck } from "@/features/campaigns/components/canvas/medium/hero-visual-preserve";
+import { preserveFeatureVisualsOnSettings } from "@/features/campaigns/lib/feature-visual-preserve";
 import { z } from "zod";
 
 // GET /api/studio/[deliverableId] — Returns full studio state
@@ -170,12 +171,17 @@ export async function PATCH(
       // of structuredVariant wholesale herschrijft mag een al-gezette hero-image
       // niet leegclobberen (audit 2026-06-08). Behoud een bestaande niet-lege
       // heroVisualUrl wanneer de inkomende write 'm leeg laat.
-      const preservedIncoming = preserveHeroOnSettings(existingSettings, settings as Record<string, unknown>);
+      // R9 (audit 2026-06-10): zelfde guard voor feature-imageUrls — een
+      // wholesale settings-replace mag gezette feature-beelden niet stil wissen.
+      const preservedIncoming = preserveFeatureVisualsOnSettings(
+        existingSettings,
+        preserveHeroOnSettings(existingSettings, settings as Record<string, unknown>),
+      );
       // Dual-track sync ná de merge: autosave/image-field PATCHen alleen
       // puckData — spiegel een non-lege puckData-hero naar
       // structuredVariant.hero zodat export/regenerate niet op een stale URL
-      // lezen. Volgorde: eerst de clear-guard (preserve), dan de sync.
-      // Alleen wanneer de schrijver puckData meestuurt ZONDER eigen
+      // lezen. Volgorde: clear-guards (hero + feature-preserve) eerst, dan de
+      // sync. Alleen wanneer de schrijver puckData meestuurt ZONDER eigen
       // structuredVariant (= het autosave/image-field-pad). Stuurt een writer
       // beide tracks (variant-keuze, regenerate), dan is hij zelf
       // verantwoordelijk voor consistentie en mag zijn expliciete sv-hero

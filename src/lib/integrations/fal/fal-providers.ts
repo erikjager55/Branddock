@@ -41,6 +41,15 @@ export interface FalProvider {
   cost: string;
   /** Preview image path (relative to /images/fal-providers/) */
   preview: string;
+  /**
+   * Of het fal-endpoint een native `negative_prompt` input-param consumeert.
+   * Gemini-familie endpoints (nano-banana) hebben die param niet — fal negeert
+   * hem fail-soft, waardoor negatives daar effectief een no-op waren. Voor
+   * modellen met `false` vouwt fal-client de negative als prompt-text-directive
+   * in de positive prompt. Undefined = aannemen dat de native param werkt
+   * (status-quo gedrag, fail-soft voor onbekende endpoints).
+   */
+  supportsNegativePrompt?: boolean;
 }
 
 /** Usage categories for the AI Studio questionnaire filter */
@@ -62,7 +71,7 @@ const ALL_FAL_PROVIDERS: Record<string, FalProvider> = {
   'fal-ai/seedream-v4-5':   { id: 'fal-ai/seedream-v4-5',   endpoint: 'fal-ai/bytedance/seedream/v4/text-to-image', label: 'Seedream V4', description: 'Specialized in rendering readable text within images. Ideal for product labels, packaging, and signage.', cost: '$0.04/img', preview: 'seedream-v4-5.svg' },
   'fal-ai/flux-2':          { id: 'fal-ai/flux-2',          label: 'FLUX.2 Dev',      description: 'Fast and cost-effective. Strong prompt adherence with good quality — suitable for high-volume reference generation.',          cost: '$0.025/MP', preview: 'flux-2-dev.svg' },
   'fal-ai/ideogram-v3':     { id: 'fal-ai/ideogram-v3',     endpoint: 'fal-ai/ideogram/v3', label: 'Ideogram V3', description: 'Creative versatility with excellent typography. Handles mixed styles, complex compositions, and text-in-image well.', cost: '$0.04/img', preview: 'ideogram-v3.svg' },
-  'fal-ai/nano-banana-pro': { id: 'fal-ai/nano-banana-pro', label: 'Nano Banana Pro', description: 'Optimized for portraits and people. Fast generation with strong face consistency, natural skin detail, and accurate lighting.', cost: '$0.02/img', preview: 'nanobanana-pro.svg' },
+  'fal-ai/nano-banana-pro': { id: 'fal-ai/nano-banana-pro', label: 'Nano Banana Pro', description: 'Optimized for portraits and people. Fast generation with strong face consistency, natural skin detail, and accurate lighting.', cost: '$0.02/img', preview: 'nanobanana-pro.svg', supportsNegativePrompt: false },
   'fal-ai/phota':           { id: 'fal-ai/phota',           label: 'Phota',           description: 'Photographic realism specialist. Produces natural skin tones, studio-quality lighting, and authentic photographic depth.',      cost: '$0.03/img', preview: 'phota.svg' },
 };
 
