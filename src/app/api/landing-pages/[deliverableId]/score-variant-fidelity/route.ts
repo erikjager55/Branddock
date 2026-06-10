@@ -117,6 +117,12 @@ export async function POST(
       // generate-structured-variant route). Cross-family judge wordt door
       // de runner zelf afgeleid uit deze hint.
       generatorProvider: "anthropic",
+      // F33-pariteit (audit 2026-06-10): zonder override viel het target terug
+      // op het registry-midpoint (1550 woorden) terwijl variant-copy ~650 is →
+      // ratio < 0.5 → ×0.6 length-penalty op de judge-pijler bij 46/47 LP-scores.
+      // target = actual disablet length-control; het variant-schema bewaakt de
+      // copy-lengte al structureel.
+      targetWordCountOverride: wordCount,
     });
 
     if (!outcome) {

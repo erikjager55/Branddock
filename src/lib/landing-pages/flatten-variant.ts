@@ -37,7 +37,9 @@ export function flattenVariantToText(variant: LandingPageVariantContent): string
 
   for (const t of variant.socialProof.testimonials) {
     parts.push(t.quote);
-    parts.push(`${t.authorName}, ${t.authorRole}, ${t.authorCompany}`);
+    // Audit 2026-06-10: authorCompany mag leeg zijn (anti-fabricage fallback) —
+    // filter lege delen zodat er geen hangende komma in de judge-input komt.
+    parts.push([t.authorName, t.authorRole, t.authorCompany].filter(Boolean).join(", "));
     if (t.outcome) parts.push(t.outcome);
   }
   for (const s of variant.socialProof.impactStats ?? []) {

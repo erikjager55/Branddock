@@ -17,6 +17,8 @@
     "smoke:hero-clobber-guard": "tsx scripts/smoke-tests/web-page-builder-phase61-hero-clobber-guard.ts",
     "smoke:zombie-tab-guard": "node scripts/dev/f2-zombie-tab-smoke.mjs",
     "eval:brandstyle-golden": "tsx scripts/eval/brandstyle-golden-set/run.ts",
+    "eval:lp-variant-golden": "tsx scripts/eval/lp-variant-golden/run.ts",
+    "smoke:lp-text-quality": "tsx scripts/smoke-tests/lp-text-quality-fidelity.ts",
     "smoke:studio": "tsx scripts/smoke-tests/studio-generation.ts",
     "smoke:locale": "tsx scripts/smoke-tests/locale-enforcement.ts",
     "smoke:conversion-tweaks": "tsx scripts/smoke-tests/conversion-tweaks.ts",

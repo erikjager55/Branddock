@@ -21,7 +21,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
-import { runFidelityScoring } from '@/lib/brand-fidelity/fidelity-runner';
+import { runFidelityScoring, resolveScoringWordCountOverride } from '@/lib/brand-fidelity/fidelity-runner';
 import { runAutoIterateIntegration } from '@/lib/ai/auto-iterate-integration';
 import type { AutoIterateEvent } from '@/lib/ai/auto-iterate';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
@@ -133,7 +133,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return;
         }
 
-        // Run initial F-VAL om huidige score + compositionInput te krijgen
+        // Run initial F-VAL om huidige score + compositionInput te krijgen.
+        // Review-fix 2026-06-10: webpage-types target=actual (F33-scoped) —
+        // variant-targets (~650) passen niet op full component-text; overige
+        // types: undefined → registry-gedrag ongewijzigd.
         const initialOutcome = await runFidelityScoring({
           workspaceId,
           deliverableId,
@@ -141,6 +144,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           contentText: blobText,
           stack,
           generatorProvider: 'anthropic',
+          targetWordCountOverride: resolveScoringWordCountOverride(stack.deliverableTypeId, blobText),
         });
         if (!initialOutcome) {
           sendError('Score-berekening faalde — probeer opnieuw');
