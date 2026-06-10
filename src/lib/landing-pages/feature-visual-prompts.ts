@@ -146,3 +146,34 @@ export function buildFeatureVisualPrompts(
     };
   });
 }
+
+/** Reden waarom de kwaliteitspoort een regeneratie afdwingt (Fase 4). */
+export type FeatureRetryReason =
+  | { kind: "low-coherence"; subject: string; rationale?: string | null }
+  | { kind: "duplicate"; otherSubject: string };
+
+/**
+ * Scherp een gebouwde prompt aan voor een gerichte regeneratie + nieuwe seed.
+ * Pure functie (unit-smokebaar). NB: de coherence-dimensie heeft géén template
+ * in DIMENSION_REFINE_HINTS (refine-loop is gebouwd voor de 6 visual-dimensies)
+ * — vandaar een eigen, copy-gedreven aanscherping i.p.v. extractRefineHint.
+ */
+export function sharpenFeaturePromptForRetry(
+  built: BuiltFeaturePrompt,
+  reason: FeatureRetryReason,
+): BuiltFeaturePrompt {
+  if (reason.kind === "low-coherence") {
+    const judgeNote = reason.rationale?.trim() ? ` Judge feedback on the rejected attempt: ${reason.rationale.trim()}` : "";
+    return {
+      ...built,
+      prompt: `CRITICAL: the photograph must literally and unmistakably depict: ${reason.subject}. ${built.prompt}${judgeNote}`,
+      seed: randomSeed(),
+    };
+  }
+  return {
+    ...built,
+    prompt: `${built.prompt} CRITICAL: choose a clearly DIFFERENT subject, setting and camera distance than: ${reason.otherSubject}.`,
+    avoid: [built.avoid, `near-duplicate of: ${reason.otherSubject}`].filter(Boolean).join("; "),
+    seed: randomSeed(),
+  };
+}
