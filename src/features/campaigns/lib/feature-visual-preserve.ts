@@ -10,14 +10,20 @@
  * behoudt NIET-lege feature-beelden wanneer de inkomende write ze leeg laat;
  * een nieuwe (vervangende) URL passeert altijd.
  *
- * BEKENDE TRADE-OFF (review-2 2026-06-10, zelfde keuze als de hero-guard):
- * een BEWUSTE clear via het editbare imageUrl-veld in de Puck-editor wordt
- * óók hersteld zolang de feature-titel gelijk blijft — de guard kan een
- * stale-race niet van een user-intentie onderscheiden. Workaround voor de
- * user: vervang de URL (of wijzig titel + leeg het veld). Een expliciet
- * clear-pad (marker/dedicated route) is een UI-follow-up; gekozen omdat de
- * stil-wissende race destructiever is dan een herstelde clear.
+ * BEWUSTE CLEAR (follow-up 2026-06-10): de "Verwijderen"-knop in
+ * PuckImageField stuurt CLEAR_IMAGE_SENTINEL i.p.v. '' — een gewone lege
+ * waarde kan een stale-race zijn (en wordt beschermd), de sentinel is een
+ * expliciete user-intentie en passeert de guard. Bij persist normaliseert de
+ * guard de sentinel naar '' zodat hij nooit in de opgeslagen tree belandt.
  */
+
+/** Expliciete clear-intentie uit de Puck-editor — passeert de preserve-guard. */
+export const CLEAR_IMAGE_SENTINEL = "__bd_clear_image__";
+
+/** True wanneer de waarde de expliciete clear-sentinel is. */
+export function isClearedImage(value: unknown): boolean {
+  return value === CLEAR_IMAGE_SENTINEL;
+}
 
 interface PuckTreeLike {
   content?: Array<{ type?: string; props?: Record<string, unknown> } | null>;
@@ -32,7 +38,7 @@ interface FeatureLike {
 const FEATURE_COMPONENT_TYPES = new Set(["FeatureGrid", "FeatureSplit"]);
 
 function nonEmpty(url: unknown): url is string {
-  return typeof url === "string" && url.trim().length > 0;
+  return typeof url === "string" && url.trim().length > 0 && url !== CLEAR_IMAGE_SENTINEL;
 }
 
 /**
@@ -59,6 +65,12 @@ export function preserveFeatureVisuals<T extends PuckTreeLike>(incoming: T, curr
     if (!Array.isArray(incomingFeats) || !Array.isArray(currentFeats)) return c;
     let featChanged = false;
     const features = incomingFeats.map((f, fi) => {
+      // Expliciete clear-sentinel: user-intentie uit PuckImageField — niet
+      // preserven én normaliseren naar '' zodat de sentinel nooit persist.
+      if (f && isClearedImage(f.imageUrl)) {
+        featChanged = true;
+        return { ...f, imageUrl: "" };
+      }
       const curF = currentFeats[fi];
       if (!curF || nonEmpty(f?.imageUrl) || !nonEmpty(curF.imageUrl)) return f;
       // Titel-gelijkheid voorkomt cross-feature contaminatie bij reorder.
@@ -109,6 +121,10 @@ export function preserveFeatureVisualsOnSettings(
   if (incSv && Array.isArray(incItems) && Array.isArray(exItems)) {
     let changed = false;
     const items = incItems.map((it, i) => {
+      if (it && isClearedImage(it.imageUrl)) {
+        changed = true;
+        return { ...it, imageUrl: "" };
+      }
       const exIt = exItems[i];
       if (!exIt || nonEmpty(it?.imageUrl) || !nonEmpty(exIt.imageUrl)) return it;
       if ((it?.heading ?? "") !== (exIt.heading ?? "")) return it;

@@ -29,15 +29,14 @@ import { decideFeatureRegenerations } from '@/lib/landing-pages/feature-visual-g
 import { runCopyImageCoherenceJudge } from '@/lib/brand-fidelity/copy-image-coherence-judge';
 import { runFeatureSetDiversityJudge } from '@/lib/brand-fidelity/feature-set-diversity-judge';
 import { imageBriefSchema } from '@/lib/landing-pages/variant-schema';
+import { resolveFeatureCandidateCount } from '@/lib/landing-pages/feature-image-config';
+import { prepareJudgeImage } from '@/lib/brand-fidelity/judge-image';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 
 export const FEATURE_IMAGE_BUDGET = 4;
-/** Kandidaten per slot. Default 1 + judge-gated retry (kosten-bewust); 2-3 =
- *  quality-mode met beste-kandidaat-selectie — later via WorkspaceAiConfig. */
-const FEATURE_CANDIDATE_COUNT = 1;
 
 const featureSlotSchema = z.object({
   // max 99: de gap-fill stuurt een cumulatieve slotIndex over componenten —
@@ -132,11 +131,45 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     const storage = getStorageProvider();
     const startMs = Date.now();
+    // F-C quality-mode (follow-up §9): kandidaten per slot via WorkspaceAiConfig
+    // (featureKey 'lp-feature-image-candidates'); 1 = budget-default.
+    const candidateCount = body.features ? await resolveFeatureCandidateCount(workspaceId) : 1;
+    const slotsByIndex = new Map((body.features ?? []).map((f) => [f.index, f]));
+    const judgeTextFor = (index: number): string => {
+      const slot = slotsByIndex.get(index);
+      return slot ? `${slot.heading}\n${slot.body}` : '';
+    };
+
+    interface GenResult {
+      url: string;
+      bytes: Buffer;
+      prompt: string;
+      index: number;
+      durationMs: number;
+      iterationCount: number;
+      /** Beste niet-gekozen kandidaat (quality-mode) — gratis dupe-swap. */
+      runnerUp: { bytes: Buffer; coherence: number | null } | null;
+      /** Winnaar-score uit de kandidaat-selectie (null bij count=1/judge-skip). */
+      coherence: number | null;
+    }
+
+    const uploadBytes = async (bytes: Buffer, index: number) => {
+      const upload = await storage.upload(bytes, {
+        workspaceId,
+        fileName: `feature-visual-${deliverableId}-${Date.now()}-${index}.png`,
+        contentType: 'image/png',
+      });
+      return upload.url;
+    };
 
     // Eén generatie-pad voor initiële slots én gerichte retries (Fase 4).
+    // Per-slot duration + iteration in het resultaat: de audit-rows kregen
+    // eerder de page-run-totaalduur en iterationCount 0 (follow-up §9).
     const generateOne = async (
       slot: BuiltFeaturePrompt,
-    ): Promise<{ url: string; bytes: Buffer; prompt: string; index: number } | null> => {
+      opts?: { iteration?: number; candidates?: number },
+    ): Promise<GenResult | null> => {
+      const t0 = Date.now();
       try {
         // Defaults bevatten anti-collage/triptiek; brandImageryDonts komen
         // gate-correct uit getBrandContext; brief.avoid → userNegations (R6/R7).
@@ -144,28 +177,60 @@ export async function POST(request: Request, { params }: RouteParams) {
           brandImageryDonts: stack.brand?.brandImageryDonts ?? [],
           userNegations: slot.avoid ? [slot.avoid] : [],
         });
+        const wantCandidates = opts?.candidates ?? candidateCount;
         const result = await generateFalImage(modelId, slot.prompt, {
           imageSize: 'landscape_4_3',
-          // Quality-mode-haak: 1 kandidaat + judge-gated retry is het kosten-
-          // bewuste default ($0,53-0,79/pagina); 2-3 kandidaten + selectie kan
-          // later via WorkspaceAiConfig (ontwerp-beslissing audit §4 fase 4).
-          numImages: FEATURE_CANDIDATE_COUNT,
+          // Empirisch geverifieerd (scripts/experiments/test-nano-banana-seed.ts):
+          // nano-banana-pro honoreert num_images én is deterministisch per seed.
+          numImages: wantCandidates,
           referenceImageUrls: referenceImageUrls.length > 0 ? referenceImageUrls : undefined,
           negativePrompt,
-          // Empirisch geverifieerd (scripts/experiments/test-nano-banana-seed.ts):
-          // nano-banana-pro is deterministisch per seed — verschillende seeds
-          // garanderen verschillende beelden binnen de set (R4).
           seed: slot.seed,
         });
-        const hostedUrl = result.images?.[0]?.url;
-        if (!hostedUrl) return null;
-        const bytes = await fetchWithSizeLimit(hostedUrl, AI_IMAGE_SIZE_CAP);
-        const upload = await storage.upload(bytes, {
-          workspaceId,
-          fileName: `feature-visual-${deliverableId}-${Date.now()}-${slot.index}.png`,
-          contentType: 'image/png',
-        });
-        return { url: upload.url, bytes, prompt: slot.prompt, index: slot.index };
+        const hosted = (result.images ?? []).map((i) => i?.url).filter((u): u is string => Boolean(u)).slice(0, wantCandidates);
+        if (hosted.length === 0) return null;
+        const candidates = await Promise.all(hosted.map((u) => fetchWithSizeLimit(u, AI_IMAGE_SIZE_CAP)));
+
+        // Kandidaat-selectie (quality-mode): per kandidaat een G4-coherence-
+        // oordeel vóór upload — alleen de winnaar wordt geüpload; de beste
+        // verliezer blijft in geheugen als gratis dupe-swap.
+        let winnerPos = 0;
+        let winnerScore: number | null = null;
+        let runnerUp: GenResult['runnerUp'] = null;
+        const judgeText = judgeTextFor(slot.index);
+        if (candidates.length > 1 && judgeText) {
+          const scored = await Promise.all(
+            candidates.map(async (bytes) => {
+              const prepared = await prepareJudgeImage(bytes);
+              const r = await runCopyImageCoherenceJudge(
+                { type: 'base64', mediaType: prepared.mediaType, data: prepared.buffer.toString('base64') },
+                judgeText,
+              );
+              return r?.score ?? null;
+            }),
+          );
+          const order = candidates
+            .map((_, i) => i)
+            .sort((a, b2) => (scored[b2] ?? -1) - (scored[a] ?? -1));
+          winnerPos = order[0];
+          winnerScore = scored[winnerPos];
+          const second = order[1];
+          if (second !== undefined) {
+            runnerUp = { bytes: candidates[second], coherence: scored[second] };
+          }
+        }
+
+        const url = await uploadBytes(candidates[winnerPos], slot.index);
+        return {
+          url,
+          bytes: candidates[winnerPos],
+          prompt: slot.prompt,
+          index: slot.index,
+          durationMs: Date.now() - t0,
+          iterationCount: opts?.iteration ?? 0,
+          runnerUp,
+          coherence: winnerScore,
+        };
       } catch (err) {
         console.error(`[generate-feature-visuals] ${modelId} idx=${slot.index} failed:`, err instanceof Error ? err.message : err);
         return null;
@@ -176,24 +241,25 @@ export async function POST(request: Request, { params }: RouteParams) {
     const generated = await Promise.all(built.map((slot) => generateOne(slot)));
 
     // ── Fase 4 kwaliteitspoort (alleen v2: legacy mist de copy om tegen te
-    // judgen). Paired G4-coherence (beeld-i vs copy-i — niet vs sibling-text)
-    // + multi-image set-diversity-judge + budget-capped gerichte retry.
-    const coherenceScores: Array<number | null> = generated.map(() => null);
+    // judgen). Paired G4-coherence (beeld-i vs copy-i) + multi-image set-
+    // diversity-judge + gratis runner-up-swap + budget-capped gerichte retry.
+    const coherenceScores: Array<number | null> = generated.map((g) => g?.coherence ?? null);
     let dupePairs: Array<[number, number]> = [];
-    let regenerated: number[] = [];
+    const regenerated: number[] = [];
+    const swapped: number[] = [];
     if (body.features) {
-      const slotsByIndex = new Map(body.features.map((f) => [f.index, f]));
+      // count=1-pad: winnaar is nog niet gejudged — paired judge op de upload.
+      // Beelden gaan voorbereid (≤4MB, judge-image.ts) naar de vision-judges;
+      // ongeschaalde PNG's >5MB maakten de judge anders stil inert (§9).
       const judged = await Promise.all(
         generated.map(async (g, pos) => {
-          if (!g) return null;
-          const slot = slotsByIndex.get(g.index);
-          if (!slot) return null;
-          // Lokale uploads zijn niet publiek bereikbaar voor de Anthropic
-          // url-source → base64 uit de al-aanwezige bytes (disk/fetch-patroon
-          // van visual-fidelity-scorer).
+          if (!g || coherenceScores[pos] !== null) return null;
+          const judgeText = judgeTextFor(g.index);
+          if (!judgeText) return null;
+          const prepared = await prepareJudgeImage(g.bytes);
           return runCopyImageCoherenceJudge(
-            { type: 'base64', mediaType: 'image/png', data: g.bytes.toString('base64') },
-            `${slot.heading}\n${slot.body}`,
+            { type: 'base64', mediaType: prepared.mediaType, data: prepared.buffer.toString('base64') },
+            judgeText,
           ).then((r) => ({ pos, result: r }));
         }),
       );
@@ -201,19 +267,49 @@ export async function POST(request: Request, { params }: RouteParams) {
         if (j?.result) coherenceScores[j.pos] = j.result.score;
       }
 
-      const setImages = generated
-        .filter((g): g is NonNullable<typeof g> => Boolean(g))
-        .map((g) => ({ index: g.index, buffer: g.bytes, mediaType: 'image/png' as const }));
+      const preparedWinners = await Promise.all(
+        generated.map(async (g) => (g ? { g, prepared: await prepareJudgeImage(g.bytes) } : null)),
+      );
+      const setImages = preparedWinners
+        .filter((p): p is NonNullable<typeof p> => Boolean(p))
+        .map(({ g, prepared }) => ({ index: g.index, buffer: prepared.buffer, mediaType: prepared.mediaType }));
       const diversity = await runFeatureSetDiversityJudge(setImages);
       dupePairs = diversity?.duplicatePairs ?? [];
+
+      // Gratis dupe-swap (quality-mode): de verliezer van een dupe-paar wisselt
+      // naar zijn runner-up-kandidaat — al gegenereerd, dus $0 extra. Pas
+      // daarna beslist de gate over (resterende) regeneraties.
+      const unresolvedPairs: Array<[number, number]> = [];
+      for (const [a, b2] of dupePairs) {
+        const posA = generated.findIndex((g) => g?.index === a);
+        const posB = generated.findIndex((g) => g?.index === b2);
+        if (posA < 0 || posB < 0) { continue; }
+        const sa = coherenceScores[posA];
+        const sb = coherenceScores[posB];
+        const loserPos = sa !== null && sb !== null && sa !== sb ? (sa < sb ? posA : posB) : posB;
+        const loser = generated[loserPos];
+        if (loser?.runnerUp) {
+          const url = await uploadBytes(loser.runnerUp.bytes, loser.index);
+          generated[loserPos] = {
+            ...loser,
+            url,
+            bytes: loser.runnerUp.bytes,
+            coherence: loser.runnerUp.coherence,
+            runnerUp: null,
+          };
+          coherenceScores[loserPos] = loser.runnerUp.coherence;
+          swapped.push(loser.index);
+        } else {
+          unresolvedPairs.push([a, b2]);
+        }
+      }
 
       const decision = decideFeatureRegenerations(
         generated
           .map((g, pos) => (g ? { index: g.index, coherenceScore: coherenceScores[pos] } : null))
           .filter((s): s is { index: number; coherenceScore: number | null } => Boolean(s)),
-        dupePairs,
+        unresolvedPairs,
       );
-      regenerated = decision.regenerate;
 
       if (decision.regenerate.length > 0) {
         const subjectFor = (index: number): string => {
@@ -226,7 +322,7 @@ export async function POST(request: Request, { params }: RouteParams) {
             if (pos < 0) return;
             const reason = decision.reasons.get(index);
             const judgeRationale = judged.find((j) => j && generated[j.pos]?.index === index)?.result?.rationale ?? null;
-            const dupePartner = dupePairs.find(([a, b2]) => a === index || b2 === index);
+            const dupePartner = unresolvedPairs.find(([a, b2]) => a === index || b2 === index);
             const otherIndex = dupePartner ? (dupePartner[0] === index ? dupePartner[1] : dupePartner[0]) : null;
             const sharpened = sharpenFeaturePromptForRetry(
               built[pos],
@@ -234,13 +330,13 @@ export async function POST(request: Request, { params }: RouteParams) {
                 ? { kind: 'duplicate', otherSubject: subjectFor(otherIndex) }
                 : { kind: 'low-coherence', subject: subjectFor(index), rationale: judgeRationale },
             );
-            const retry = await generateOne(sharpened);
+            // Retry bewust met 1 kandidaat (kosten-cap); iteration=1 in de
+            // audit-row. `regenerated` telt alleen GESLAAGDE retries (§9).
+            const retry = await generateOne(sharpened, { iteration: 1, candidates: 1 });
             if (retry) {
               generated[pos] = retry;
-              // De G4-score hoorde bij het weggegooide beeld — null voorkomt
-              // dat een toekomstige bron-badge de oude score bij het nieuwe
-              // beeld toont (review 2026-06-10).
-              coherenceScores[pos] = null;
+              coherenceScores[pos] = retry.coherence;
+              regenerated.push(index);
             }
           }),
         );
@@ -249,11 +345,16 @@ export async function POST(request: Request, { params }: RouteParams) {
     const elapsedMs = Date.now() - startMs;
     // Kosten-telemetrie per page-run (pilot-stuurbaarheid, audit §5).
     const genCount = generated.filter(Boolean).length;
-    const diversityRan = Boolean(body.features) && generated.filter(Boolean).length >= 2;
-    const judgeCount = coherenceScores.filter((s) => s !== null).length + (diversityRan ? 1 : 0);
-    const estCost = (genCount + regenerated.length) * 0.13 + judgeCount * 0.001 + (diversityRan ? 0.005 : 0);
+    const diversityRan = Boolean(body.features) && genCount >= 2;
+    const coherenceJudgeCalls = body.features
+      ? (candidateCount > 1 ? genCount * candidateCount : genCount) + regenerated.length
+      : 0;
+    const estCost =
+      (genCount * candidateCount + regenerated.length) * 0.13 +
+      coherenceJudgeCalls * 0.001 +
+      (diversityRan ? 0.005 : 0);
     console.log(
-      `[generate-feature-visuals] page-run deliverable=${deliverableId} model=${modelId} slots=${built.length} ok=${genCount} coherence=[${coherenceScores.map((s) => s ?? '–').join(',')}] dupes=${JSON.stringify(dupePairs)} regens=[${regenerated.join(',')}] durationMs=${elapsedMs} estCost=$${estCost.toFixed(2)}`,
+      `[generate-feature-visuals] page-run deliverable=${deliverableId} model=${modelId} slots=${built.length} ok=${genCount} candidates=${candidateCount} coherence=[${coherenceScores.map((s) => s ?? '–').join(',')}] dupes=${JSON.stringify(dupePairs)} swaps=[${swapped.join(',')}] regens=[${regenerated.join(',')}] durationMs=${elapsedMs} estCost=$${estCost.toFixed(2)}`,
     );
 
     // Persist alleen op het v2-pad (legacy mist de feature-index-semantiek).
@@ -281,10 +382,10 @@ export async function POST(request: Request, { params }: RouteParams) {
                 imagePromptUsed: g.prompt,
                 aiProvider: modelId.startsWith('openai/') ? 'openai' : 'fal',
                 aiModel: modelId,
-                generationDuration: elapsedMs,
+                generationDuration: g.durationMs,
                 status: 'GENERATED',
                 generatedAt: new Date(),
-                iterationCount: 0,
+                iterationCount: g.iterationCount,
               },
             });
           }
@@ -304,7 +405,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     // in de variant-editor (audit §4 fase 5, UI-follow-up).
     const urls = generated.map((g) => g?.url ?? null);
     const sources = generated.map((g) => (g ? ('generated' as const) : null));
-    return NextResponse.json({ urls, sources, coherence: coherenceScores, regenerated });
+    return NextResponse.json({ urls, sources, coherence: coherenceScores, regenerated, swapped });
   } catch (err) {
     console.error('[generate-feature-visuals] error:', err);
     return NextResponse.json({ error: 'Failed to generate feature visuals' }, { status: 500 });

@@ -4,6 +4,7 @@
 import {
   preserveFeatureVisuals,
   preserveFeatureVisualsOnSettings,
+  CLEAR_IMAGE_SENTINEL,
 } from "../../src/features/campaigns/lib/feature-visual-preserve";
 
 let pass = 0;
@@ -107,6 +108,34 @@ group("settings-chokepoint — geen bestaande url → niets te beschermen");
   const incoming = { puckData: tree([null, null, null, null]) };
   const out = preserveFeatureVisualsOnSettings(existing, incoming);
   assert("niets te beschermen → incoming-shape ongewijzigd", out.puckData === incoming.puckData);
+}
+
+
+group("clear-sentinel (follow-up 2026-06-10) — expliciete user-clear passeert");
+{
+  const existing = {
+    puckData: tree(["/uploads/a.png", "/uploads/b.png", null, null]),
+    structuredVariant: { features: { items: [
+      { heading: "A", body: "b", imageUrl: "/uploads/a.png" },
+      { heading: "B", body: "b", imageUrl: "/uploads/b.png" },
+    ] } },
+  };
+  const incoming = {
+    puckData: tree([CLEAR_IMAGE_SENTINEL, null, null, null]),
+    structuredVariant: { features: { items: [
+      { heading: "A", body: "b", imageUrl: CLEAR_IMAGE_SENTINEL },
+      { heading: "B", body: "b", imageUrl: null },
+    ] } },
+  };
+  const out = preserveFeatureVisualsOnSettings(existing, incoming);
+  const pd = out.puckData as ReturnType<typeof tree>;
+  const feats = (pd.content[1].props as { features: Array<{ imageUrl: string | null }> }).features;
+  assert("sentinel-slot 0 geleegd (niet hersteld)", feats[0].imageUrl === "");
+  assert("sentinel nooit gepersist", JSON.stringify(out).indexOf(CLEAR_IMAGE_SENTINEL) === -1);
+  assert("stale-race slot 1 (kale null) blijft beschermd", feats[1].imageUrl === "/uploads/b.png");
+  const sv = out.structuredVariant as { features: { items: Array<{ imageUrl: string | null }> } };
+  assert("structuredVariant sentinel → ''", sv.features.items[0].imageUrl === "");
+  assert("structuredVariant race blijft beschermd", sv.features.items[1].imageUrl === "/uploads/b.png");
 }
 
 console.log(`\n${pass} PASS, ${fail} FAIL`);

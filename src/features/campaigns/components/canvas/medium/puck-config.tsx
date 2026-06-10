@@ -23,6 +23,7 @@ import {
 } from '@/lib/landing-pages/background-textures';
 import { IconBlock } from './lucide-icon-map';
 import { isNoOpBorder, isTransparentBackground, isWeakButtonBackground } from '@/lib/landing-pages/scraped-css-helpers';
+import { isClearedImage } from '../../../lib/feature-visual-preserve';
 import { pxFromCssValue } from '@/lib/landing-pages/brand-tokens-v4-mappers';
 import { isScrapedOrigin, type TokenProvenance } from '@/lib/landing-pages/token-provenance';
 import { PuckImageField } from './PuckImageField';
@@ -1430,7 +1431,7 @@ function featureGridComponent(tokens: BrandTokens, provenance?: TokenProvenance)
               };
             return (
               <div key={i} className={useCard ? 'lp-card' : undefined} style={cardWrapper}>
-                {f.imageUrl ? (
+                {f.imageUrl && !isClearedImage(f.imageUrl) ? (
                   // Track 2: per-feature beeld vervangt de icon-badge. Cover-fit
                   // op een vaste verhouding zodat de grid uitgelijnd blijft; radius
                   // spiegelt de card zodat het beeld binnen de card-vorm valt.
@@ -1586,7 +1587,7 @@ function featureSplitComponent(tokens: BrandTokens) {
                 style={{ display: 'flex', flexDirection: imageRight ? 'row-reverse' : 'row', gap: 48, alignItems: 'center', flexWrap: 'wrap' }}
               >
                 <div style={{ flex: '1 1 320px', minWidth: 280 }}>
-                  {f.imageUrl ? (
+                  {f.imageUrl && !isClearedImage(f.imageUrl) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={f.imageUrl}
