@@ -44,7 +44,7 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 - Task: [tasks/done/lp-editor-image-field.md](../tasks/done/lp-editor-image-field.md)
 - ADR: -
 - Spec: -
-- Commit: (volgt)
+- Commit: d681ba50
 
 ### 315. Compose-pipeline deblokkeerd — dode Gemini-model + relatieve ref-URL gefixt
 
