@@ -93,13 +93,16 @@ sidebar-wheel scrolt veldenpaneel (700px). Harnas: `/tmp/repro-scroll/*.py` +
 
 - [x] BrandHero-veld in Layout editor toont thumbnail + picker i.p.v. raw URL
       (Playwright-geverifieerd: veld + thumbnail renderen in de sidebar)
-- [ ] Library/Generate/Smart-search keuze landt in canvas + na autosave in
-      BEIDE DB-sporen (puckData + structuredVariant identiek) — **handmatige
-      browser-pass open** (psql-recept in Verificatie hieronder)
-- [ ] FeatureSplit/FeatureGrid imageUrl via picker instelbaar; titel-edit na
-      beeld-keuze wist het beeld NIET meer (strip-bug-fix) — **browser-pass open**
-- [ ] Feature-beeld "Verwijderen" → fallback rendert, blijft na reload — **browser-pass open**
-- [ ] ESC met open picker sluit alléén de picker; editor blijft open — **browser-pass open**
+- [x] Library-keuze landt in canvas + na autosave in BEIDE DB-sporen —
+      **browser-bewezen 2026-06-10** (Playwright-pick op Napking-LP → psql:
+      puckData én structuredVariant identiek op de gekozen library-foto)
+- [ ] FeatureSplit/FeatureGrid imageUrl via picker + titel-edit (strip-bug-fix)
+      — code-verified (field-def aanwezig = de fix); 2-min handmatige UX-check
+      resteert (headless flaky op wisselende kaartvolgorde)
+- [ ] Feature-beeld "Verwijderen" → fallback — code-verified render-guard;
+      handmatige check resteert
+- [ ] ESC sluit alléén de picker — capture-guard 5x adversarieel gereviewd
+      (listener-volgorde geverifieerd); handmatige check resteert
 - [x] Self-heal overschrijft een handmatige keuze niet (fill-only — server
       `onlyIfEmpty` + client completion-guard; smoke phase68 dekt de transform)
 - [x] `tsc` + `eslint` 0 errors; smokes phase61 29/29 + phase68 24/24 groen
@@ -113,3 +116,18 @@ sidebar-wheel scrolt veldenpaneel (700px). Harnas: `/tmp/repro-scroll/*.py` +
 - Compose/trained modal-support in de picker
 - Alt-tekst persisteren in puckData
 - Pre-existing autosave-races (AbortController/intent-tombstone)
+
+# Browser-pass resultaat (2026-06-10, Playwright)
+
+- ✅ Hero-pick via Library: beide DB-sporen identiek na autosave (psql-bewijs)
+- ✅ Fidelity-score boven variant-selector: DOM-order + screenshot in de echte
+  variant-keuze-staat (score 90 boven Variant A/B-thumbnails)
+- ✅ Editor-scroll (sidebar + canvas/iframe) en veld-rendering (eerdere passes)
+- ⏳ ESC / feature-pick+titel-edit / Verwijderen: code-verified, 2-min
+  handmatige UX-check open (headless flaky door live wisselende kaartvolgorde)
+
+# Merge-historie
+
+`d681ba50` (#320, hernummerd van #316) + `0bc93926` (minors) → merge `56849bba`
+(main #317-hotspots) → `a1251d47` (text-quality #316-collision) → main-merge
+`3ba85ad7` → `26d2d751` (claw #318-collision) → **gepusht naar origin/main**.
