@@ -242,10 +242,17 @@ export function PuckPageBuilder({
       if (c?.type !== 'FeatureGrid' && c?.type !== 'FeatureSplit') return;
       const feats = (c.props as { features?: Array<{ title?: string; description?: string; icon?: string; imageUrl?: string | null }> })?.features ?? [];
       // De TrustStrip rendert óók als FeatureGrid (MVP-workaround in
-      // landing-page-from-structured: alle items icon 'badge-check') — trust-
-      // logo-items zijn geen beeld-kandidaten en telden onterecht mee als gaps
-      // (audit 2026-06-10). Een echte features-grid heeft gevarieerde icons.
-      const isTrustStrip = feats.length > 0 && feats.every((f) => f.icon === 'badge-check');
+      // landing-page-from-structured: alle items icon 'badge-check', en
+      // description = mediaUrl-of-leeg) — trust-logo-items zijn geen beeld-
+      // kandidaten en telden onterecht mee als gaps (audit 2026-06-10).
+      // Twee onafhankelijke signaturen (review-3): één user-geëdit icon mag de
+      // detectie niet breken, dus we checken óók op de description-vorm — een
+      // echte features-grid heeft prose-descriptions (schema: body min 1).
+      const urlOrEmpty = (s?: string) => !s?.trim() || /^https?:\/\//.test(s) || s.startsWith('/uploads/');
+      const isTrustStrip = feats.length > 0 && (
+        feats.every((f) => f.icon === 'badge-check') ||
+        feats.every((f) => urlOrEmpty(f.description))
+      );
       if (isTrustStrip) return;
       feats.forEach((f, fi) => {
         const has = typeof f.imageUrl === 'string' && f.imageUrl.trim().length > 0;
@@ -272,7 +279,7 @@ export function PuckPageBuilder({
     // 120s-abort: gap-fill had (anders dan de confirm-flow) géén timeout; een
     // AbortController i.p.v. een kale race zodat de fetch écht stopt en een
     // her-klik geen tweede concurrent run naast een zombie-request start.
-    const batch = featureGaps.slice(0, 4);
+    const batch = featureGaps.filter((g) => g.slotIndex <= 99).slice(0, 4);
     const featureSlots = batch.map((g) => ({
       index: g.slotIndex,
       heading: (g.title || 'feature').slice(0, 200),

@@ -55,14 +55,16 @@ export function buildHeroVisualInstruction(
   const photographyFragment = tokens?.photography?.promptFragment?.trim();
   if (photographyFragment) {
     parts.push(photographyFragment);
-    // Hero is een single-image context: de scraped compositie kwam van een
-    // echte hero-foto en is hier legitiem (feature-prompts krijgen 'm bewust
-    // NIET — R1-split). Bij een hero-brief wint de brief-compositie.
-    const compositionFragment = tokens?.photography?.compositionFragment?.trim();
-    if (compositionFragment && !heroBrief) parts.push(compositionFragment);
   } else if (hints) {
     parts.push(`Photography style: ${hints.heroImagePromptFragment}`);
   }
+  // Hero is een single-image context: de scraped compositie kwam van een echte
+  // hero-foto en is hier legitiem (feature-prompts krijgen 'm bewust NIET —
+  // R1-split). Bewust BUITEN de fragment-branch: een scrape mét compositie maar
+  // zónder mood (leeg fragment → archetype-fallback) behoudt zo de compositie
+  // (review-3 2026-06-10). Bij een hero-brief wint de brief-compositie.
+  const compositionFragment = tokens?.photography?.compositionFragment?.trim();
+  if (compositionFragment && !heroBrief) parts.push(compositionFragment);
   if (brand?.brandImageryStyle) parts.push(`Brand imagery: ${brand.brandImageryStyle}`);
   if (brand?.brandName) parts.push(`Brand: ${brand.brandName}`);
   // Donts staan bewust NIET meer in de positive prompt: ze reizen via het

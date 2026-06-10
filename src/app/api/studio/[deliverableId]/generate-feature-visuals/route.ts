@@ -39,7 +39,10 @@ export const FEATURE_IMAGE_BUDGET = 4;
 const FEATURE_CANDIDATE_COUNT = 1;
 
 const featureSlotSchema = z.object({
-  index: z.number().int().min(0).max(11),
+  // max 99: de gap-fill stuurt een cumulatieve slotIndex over componenten —
+  // bij user-toegevoegde feature-secties kan die boven het feature-budget
+  // uitkomen; een te krappe cap 400'de dan de hele batch (review-3 2026-06-10).
+  index: z.number().int().min(0).max(99),
   heading: z.string().min(1).max(200),
   body: z.string().min(1).max(600),
   // .catch(null): een malformed brief degradeert naar het heading/body-

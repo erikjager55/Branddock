@@ -67,7 +67,7 @@ async function main() {
   });
   console.log(`\nModel: ${modelId}`);
 
-  let built = buildFeatureVisualPrompts(slots, sv?.hero?.headline ?? "", {
+  const built = buildFeatureVisualPrompts(slots, sv?.hero?.headline ?? "", {
     brand: stack.brand,
     brandTokens: stack.brandTokens,
   });

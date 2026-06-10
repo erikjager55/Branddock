@@ -137,6 +137,32 @@ group("E1 — Avoid-gedrag (donts via negative-kanaal, review 2026-06-10)");
   assert("instructie geclamped op ≤1000", longBrief.length <= 1000);
 }
 
+// ─── Compositie zonder mood (review-3) ───────────────────
+
+group("E1 — compositie overleeft een mood-loze scrape (leeg fragment)");
+{
+  const tokens: BrandTokens = {
+    ...DEFAULT_BRAND_TOKENS,
+    layoutStyle: "MINIMAL",
+    designSystem: getDesignSystemForLayoutStyle("MINIMAL"),
+    archetype: "RULER",
+    photography: {
+      mood: null,
+      compositionStyle: "Wide-angle interior shots",
+      subjectMatter: null,
+      promptFragment: "",
+      compositionFragment: "Composition: Wide-angle interior shots.",
+      subjectPool: [],
+    },
+  };
+  const result = buildHeroVisualInstruction(VARIANT, {
+    brand: { brandName: "X" },
+    brandTokens: tokens,
+  });
+  assert("archetype-fallback actief (geen mood)", result.includes("Photography style:"));
+  assert("compositie blijft behouden", result.toLowerCase().includes("wide-angle"));
+}
+
 // ─── Strip OBSERVED-prefix is al gedaan in mapPhotographyTokens ──
 
 group("E1 — promptFragment is al opgeschoond (OBSERVED-prefix uit Fase C)");
