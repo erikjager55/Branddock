@@ -37,7 +37,7 @@ import { z } from "zod";
  * (≥3 verschillende types per pagina, max 1 person) mechanisch valideerbaar.
  * Optioneel + nullable: bestaande gepersisteerde variants parsen ongewijzigd.
  */
-const imageBriefSchema = z.object({
+export const imageBriefSchema = z.object({
   /** Concreet, sectie-specifiek onderwerp ("stapel gevouwen servetten met GOTS-label"). */
   subject: z.string().min(1, "imageBrief.subject mag niet leeg zijn").max(200, "imageBrief.subject max 200 tekens"),
   /** Scene-typologie — stuurt het compositie-sjabloon van de prompt-builder. */

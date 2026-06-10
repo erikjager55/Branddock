@@ -12,7 +12,7 @@ import { variantToPuckData } from './variant-to-puck-data';
 import { assignSectionBands } from './puck-templates/landing-page-from-structured';
 import { preserveHeroVisual } from './hero-visual-preserve';
 import { generateCanvasVisual, generateFeatureVisuals } from '../../../api/canvas.api';
-import { buildHeroVisualInstruction, buildFeatureVisualInstruction } from '../../../lib/landing-page-visual-prompts';
+import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
 import { useBrandFontLoader } from './useBrandFontLoader';
 import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
@@ -233,7 +233,13 @@ export function PuckPageBuilder({
     const content = Array.isArray(puckData?.content) ? puckData.content : [];
     content.forEach((c, ci) => {
       if (c?.type !== 'FeatureGrid' && c?.type !== 'FeatureSplit') return;
-      const feats = (c.props as { features?: Array<{ title?: string; description?: string; imageUrl?: string | null }> })?.features ?? [];
+      const feats = (c.props as { features?: Array<{ title?: string; description?: string; icon?: string; imageUrl?: string | null }> })?.features ?? [];
+      // De TrustStrip rendert óók als FeatureGrid (MVP-workaround in
+      // landing-page-from-structured: alle items icon 'badge-check') — trust-
+      // logo-items zijn geen beeld-kandidaten en telden onterecht mee als gaps
+      // (audit 2026-06-10). Een echte features-grid heeft gevarieerde icons.
+      const isTrustStrip = feats.length > 0 && feats.every((f) => f.icon === 'badge-check');
+      if (isTrustStrip) return;
       feats.forEach((f, fi) => {
         const has = typeof f.imageUrl === 'string' && f.imageUrl.trim().length > 0;
         if (!has) gaps.push({ ci, fi, title: f.title ?? '', description: f.description ?? '' });
@@ -248,12 +254,23 @@ export function PuckPageBuilder({
     if (!deliverableId || featureGaps.length === 0) return;
     const heroItem = (puckData.content ?? []).find((c) => c?.type === 'BrandHero');
     const headline = ((heroItem?.props as { headline?: string })?.headline) ?? '';
-    const prompts = featureGaps.map((g) =>
-      buildFeatureVisualInstruction({ heading: g.title, body: g.description }, headline, contextStack),
-    );
+    // Fase 3 (audit 2026-06-10): feature-copy naar de route — prompts worden
+    // server-side gebouwd. Gap-fill werkt op (mogelijk user-geëdite) puckData-
+    // titels en heeft geen imageBrief → server-fallback met angle-rotatie.
+    // 120s-ceiling: gap-fill had (anders dan de confirm-flow) géén timeout,
+    // waardoor een hangende image-API de knop oneindig liet spinnen.
+    const featureSlots = featureGaps.map((g) => ({
+      index: g.fi,
+      heading: g.title || 'feature',
+      body: g.description || g.title || 'feature',
+      imageBrief: null,
+    }));
     setIsFillingFeatures(true);
     setFeatureFillMsg(null);
-    generateFeatureVisuals(deliverableId, prompts)
+    Promise.race([
+      generateFeatureVisuals(deliverableId, { features: featureSlots, pageHeadline: headline }),
+      new Promise<Array<string | null>>((resolve) => setTimeout(() => resolve([]), 120_000)),
+    ])
       .then((urls) => {
         const got = urls.filter((u) => !!u).length;
         if (got === 0) { setFeatureFillMsg('Geen feature-beelden gegenereerd — probeer opnieuw.'); return; }
@@ -287,7 +304,7 @@ export function PuckPageBuilder({
       })
       .catch((err) => setFeatureFillMsg(err instanceof Error ? err.message : 'Genereren mislukt'))
       .finally(() => setIsFillingFeatures(false));
-  }, [deliverableId, featureGaps, puckData, contextStack]);
+  }, [deliverableId, featureGaps, puckData]);
 
   const handlePuckChange = useCallback(
     (data: SpikeData) => {

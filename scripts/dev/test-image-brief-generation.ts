@@ -21,8 +21,8 @@ async function main() {
   const result = await generateLandingPageVariant({
     brand: {
       brandName: "Napking",
-      tagline: "Textielbeheer voor restaurants",
-      missionStatement:
+      brandEssence: "Textielbeheer voor restaurants",
+      brandMission:
         "HACCP-compliant reiniging, 24/7 voorraadbeheer en duurzaam textiel in één abonnement voor restaurants in de Randstad.",
     },
     persona: {

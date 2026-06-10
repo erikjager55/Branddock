@@ -66,10 +66,11 @@ export function buildHeroVisualInstruction(
 }
 
 /**
- * Bouwt de per-feature image-prompt: een editorial materiaal-/in-context-shot die
- * de feature illustreert, geënt op de brand-fotografie (zelfde tiers als de hero).
- * `pageHeadline` geeft het onderwerp van de pagina als context. Geëxtraheerd zodat
- * zowel de confirm-flow (Step 2) als de gap-fill in Step 3 dezelfde prompt geven.
+ * @deprecated Fase 3 (audit 2026-06-10-lp-feature-image-diversity): beide
+ * callsites (confirm-flow + gap-fill) sturen nu feature-copy naar de route,
+ * die server-side bouwt via src/lib/landing-pages/feature-visual-prompts.ts
+ * (scene-templates + sibling-differentiatie + seeds). Verwijderen zodra de
+ * legacy prompts-payload van de route uitgefaseerd is.
  */
 export function buildFeatureVisualInstruction(
   feature: { heading?: string; body?: string },

@@ -16,7 +16,7 @@ import { FidelityScoreBar } from '../FidelityScoreBar';
 import { InfoBox } from '@/components/ui/InfoBox';
 import { useInlineTransform } from '../../../hooks/canvas.hooks';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
-import { buildHeroVisualInstruction, buildFeatureVisualInstruction } from '../../../lib/landing-page-visual-prompts';
+import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { diffVariantCopy, type CopyFieldChange } from '@/lib/landing-pages/variant-copy-diff';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ImageSourcePanel } from '../ImageSourcePanel';
@@ -458,11 +458,13 @@ export function LandingPageGenerateBlock({
           setIsGeneratingVisual(false);
         }
       }
-      // P2 AI-feature-beelden (budget 4/pagina): genereer een materiaal-/in-
-      // context-shot voor elke feature ZONDER beeld (brandImages vulden de rest
-      // al). Best-effort + 60s-race zodat een hangende image-API de keuze-flow
-      // niet blokkeert; mislukte/overgeslagen features vallen terug op de icon-
-      // grid (FeatureGrid). Geslaagde beelden → editorial FeatureSplit (P7).
+      // P2 AI-feature-beelden (budget 4/pagina): genereer een sectie-relevante
+      // shot voor elke feature ZONDER beeld (brandImages vulden de rest al).
+      // Fase 3 (audit 2026-06-10): we sturen feature-COPY + imageBrief — de
+      // route bouwt de prompts server-side (scene-templates, sibling-
+      // differentiatie, seeds, persist). Best-effort + 120s-race (judges +
+      // gerichte retry in de route maken de run langer dan de oude 60s);
+      // mislukte/overgeslagen features vallen terug op de icon-grid.
       const FEATURE_IMAGE_BUDGET = 4;
       const needIdx = chosen.features.items
         .map((f, i) => (f.imageUrl ? -1 : i))
@@ -470,10 +472,15 @@ export function LandingPageGenerateBlock({
         .slice(0, FEATURE_IMAGE_BUDGET);
       if (needIdx.length > 0) {
         try {
-          const prompts = needIdx.map((i) => buildFeatureVisualInstruction(chosen.features.items[i], chosen.hero.headline, contextStack));
+          const featureSlots = needIdx.map((i) => ({
+            index: i,
+            heading: chosen.features.items[i].heading,
+            body: chosen.features.items[i].body,
+            imageBrief: chosen.features.items[i].imageBrief ?? null,
+          }));
           const urls = await Promise.race([
-            generateFeatureVisuals(deliverableId, prompts),
-            new Promise<Array<string | null>>((resolve) => setTimeout(() => resolve([]), 60_000)),
+            generateFeatureVisuals(deliverableId, { features: featureSlots, pageHeadline: chosen.hero.headline }),
+            new Promise<Array<string | null>>((resolve) => setTimeout(() => resolve([]), 120_000)),
           ]);
           if (urls.length > 0) {
             const items = chosen.features.items.map((it, i) => {
