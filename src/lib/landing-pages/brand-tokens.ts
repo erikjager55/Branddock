@@ -325,8 +325,26 @@ export interface PhotographyTokens {
   mood: string | null;
   compositionStyle: string | null;
   subjectMatter: string | null;
-  /** Hero-visual-prompt extension; klaar voor opname in image-gen prompt. */
+  /**
+   * Gedeeld stijl-fragment voor image-gen prompts — STIJL-ONLY (mood/licht/
+   * sfeer). Onderwerp en compositie zitten hier bewust NIET in: een OBSERVED
+   * scrape-beschrijving van één bron-foto mag niet prescriptief elk gegenereerd
+   * beeld sturen (R1, audit 2026-06-10-lp-feature-image-diversity).
+   */
   promptFragment: string;
+  /**
+   * Compositie-fragment, los van het gedeelde stijl-fragment. Alleen voor
+   * single-image contexten waar de scrape-compositie legitiem is (hero: de
+   * observed compositie kwam van een echte hero-foto). Feature-prompts
+   * gebruiken dit NIET.
+   */
+  compositionFragment: string | null;
+  /**
+   * Geparsede onderwerpen uit scraped photographyStyle.subjects — per-slot
+   * inspiratiepool voor de server-side feature-prompt-builder (suggestie,
+   * geen commando).
+   */
+  subjectPool: string[];
 }
 
 export const DEFAULT_BRAND_TOKENS: BrandTokens = {
@@ -425,6 +443,8 @@ export const DEFAULT_BRAND_TOKENS: BrandTokens = {
     compositionStyle: null,
     subjectMatter: null,
     promptFragment: "",
+    compositionFragment: null,
+    subjectPool: [],
   },
   // v5 — Text-hiërarchie (defaults = backward-compat met v3 onSurface/muted)
   text: {

@@ -46,6 +46,11 @@ export function buildHeroVisualInstruction(
   const photographyFragment = tokens?.photography?.promptFragment?.trim();
   if (photographyFragment) {
     parts.push(photographyFragment);
+    // Hero is een single-image context: de scraped compositie kwam van een
+    // echte hero-foto en is hier legitiem. Feature-prompts krijgen 'm bewust
+    // NIET (R1-split, audit 2026-06-10).
+    const compositionFragment = tokens?.photography?.compositionFragment?.trim();
+    if (compositionFragment) parts.push(compositionFragment);
   } else if (hints) {
     parts.push(`Photography style: ${hints.heroImagePromptFragment}`);
   }

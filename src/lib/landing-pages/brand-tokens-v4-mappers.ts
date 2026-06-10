@@ -461,6 +461,13 @@ interface PhotographyStyleLike {
   composition?: string | null;
 }
 
+// Per-segment word-safe budgets (R2, audit 2026-06-10): één cap over de join
+// liet segment-volgorde bepalen welke data overleefde — voor Napking viel
+// exact het diverse Subjects-deel weg.
+const PHOTOGRAPHY_MOOD_BUDGET = 200;
+const PHOTOGRAPHY_COMPOSITION_BUDGET = 200;
+const PHOTOGRAPHY_SUBJECT_BUDGET = 80; // per subjectPool-item
+
 export function mapPhotographyTokens(
   photographyStyle: unknown,
   fallback: PhotographyTokens,
@@ -468,28 +475,62 @@ export function mapPhotographyTokens(
   const ps = (photographyStyle as PhotographyStyleLike | null) ?? null;
   if (!ps) return fallback;
 
-  const mood = (ps.mood ?? "").trim() || null;
-  const composition = (ps.composition ?? "").trim() || null;
-  const subjects = (ps.subjects ?? "").trim() || null;
+  const mood = stripAnalyzerMarkers(ps.mood) || null;
+  const composition = stripAnalyzerMarkers(ps.composition) || null;
+  const subjects = stripAnalyzerMarkers(ps.subjects) || null;
 
-  // Build prompt-fragment voor image-gen: combineer beknopt voor max 200 chars
-  const promptParts: string[] = [];
-  if (mood) promptParts.push(`Photography mood: ${stripObservedPrefix(mood)}.`);
-  if (composition) promptParts.push(`Composition: ${stripObservedPrefix(composition)}.`);
-  if (subjects) promptParts.push(`Subjects: ${stripObservedPrefix(subjects)}.`);
-  const promptFragment = promptParts.join(" ").slice(0, 500);
+  // R1-split: het gedeelde fragment is stijl-only (mood). Compositie gaat
+  // apart (alleen single-image contexten); subjects worden een per-slot
+  // inspiratiepool — nooit meer een gedeelde prescriptieve staart.
+  const promptFragment = mood
+    ? truncateAtWordBoundary(`Photography mood: ${mood}.`, PHOTOGRAPHY_MOOD_BUDGET)
+    : "";
+  const compositionFragment = composition
+    ? truncateAtWordBoundary(`Composition: ${composition}.`, PHOTOGRAPHY_COMPOSITION_BUDGET)
+    : null;
 
   return {
     mood,
     compositionStyle: composition,
     subjectMatter: subjects,
     promptFragment,
+    compositionFragment,
+    subjectPool: parseSubjectPool(subjects),
   };
 }
 
-function stripObservedPrefix(text: string): string {
-  // Brandstyle-analyzer prefixt vaak "OBSERVED: ..." / "RECOMMENDED: ..."
-  return text.replace(/^(observed|recommended|note):\s*/i, "").trim();
+/**
+ * Verwijder ALLE analyzer-markers (OBSERVED:/RECOMMENDED:/NOTE:) — de oude
+ * variant stripte alleen het leading prefix waardoor mid-string markers de
+ * image-prompts in lekten.
+ */
+function stripAnalyzerMarkers(text: string | null | undefined): string {
+  return (text ?? "")
+    .replace(/\b(observed|recommended|note):\s*/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/** Word-safe truncatie: knip op laatste spatie binnen budget, nooit mid-woord. */
+function truncateAtWordBoundary(text: string, budget: number): string {
+  if (text.length <= budget) return text;
+  const sliced = text.slice(0, budget);
+  const lastSpace = sliced.lastIndexOf(" ");
+  const cut = (lastSpace > budget * 0.6 ? sliced.slice(0, lastSpace) : sliced).trim().replace(/[,;:]$/, "");
+  return cut.endsWith(".") ? cut : `${cut}.`;
+}
+
+/**
+ * Parse scraped subjects-proza naar een lijst losse onderwerpen. Splitst op
+ * komma/punt-komma/" and ", dropt te korte of te lange fragmenten.
+ */
+function parseSubjectPool(subjects: string | null): string[] {
+  if (!subjects) return [];
+  return subjects
+    .split(/[,;]|\band\b|\ben\b/i)
+    .map((s) => s.trim().replace(/^[-–•]\s*/, "").replace(/[.]+$/, ""))
+    .filter((s) => s.length >= 4 && s.length <= PHOTOGRAPHY_SUBJECT_BUDGET)
+    .slice(0, 12);
 }
 
 // ─── Typography per rol (DTS audit-fix) ──────────────────

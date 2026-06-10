@@ -2,9 +2,9 @@
  * Smoke-test voor Fase E1 — hero-visual prompt met photography-DNA uit
  * tokens.photography.promptFragment.
  *
- * Test alleen de pure helper (geen UI / image-gen call). De functie zit als
- * inline helper in LandingPageGenerateBlock.tsx; we testen via een
- * gespiegelde reproductie van de logica vanaf de externe shape.
+ * Test de ECHTE pure helper uit landing-page-visual-prompts.ts (de functie is
+ * sinds de extractie uit LandingPageGenerateBlock importeerbaar — de eerdere
+ * "gespiegelde reproductie" hier dreef stilletjes uit sync, gefixt 2026-06-10).
  *
  * Run: npx tsx scripts/smoke-tests/web-page-builder-phase32-hero-visual-prompt.ts
  */
@@ -15,7 +15,7 @@ import {
   type BrandTokens,
 } from "../../src/lib/landing-pages/brand-tokens";
 import { getDesignSystemForLayoutStyle } from "../../src/lib/landing-pages/design-system";
-import { computeBrandRenderHints } from "../../src/lib/landing-pages/brand-render-rules";
+import { buildHeroVisualInstruction } from "../../src/features/campaigns/lib/landing-page-visual-prompts";
 
 let pass = 0;
 let fail = 0;
@@ -24,45 +24,6 @@ function assert(name: string, cond: boolean, detail?: string): void {
   else { console.error(`  FAIL ${name}${detail ? ` -- ${detail}` : ""}`); fail++; }
 }
 function group(name: string): void { console.log(`\n${name}`); }
-
-// ─── Reproductie van buildHeroVisualInstruction logic ────
-// (Houden in sync met src/features/.../LandingPageGenerateBlock.tsx)
-
-function buildHeroVisualInstruction(
-  variant: { hero: { headline: string; subhead: string } },
-  contextStack: {
-    brand?: {
-      brandImageryStyle?: string | null;
-      brandImageryDonts?: string[] | null;
-      brandName?: string | null;
-    } | null;
-    brandTokens?: BrandTokens;
-  } | null,
-): string {
-  const brand = contextStack?.brand;
-  const tokens = contextStack?.brandTokens;
-  const hints = tokens
-    ? computeBrandRenderHints(tokens.archetype, tokens.designSystem)
-    : null;
-  const parts: string[] = [];
-  parts.push(`Hero-visual for landing-page about: ${variant.hero.headline}`);
-  parts.push(`Subject context: ${variant.hero.subhead}`);
-  const photographyFragment = tokens?.photography?.promptFragment?.trim();
-  if (photographyFragment) {
-    parts.push(photographyFragment);
-  } else if (hints) {
-    parts.push(`Photography style: ${hints.heroImagePromptFragment}`);
-  }
-  if (brand?.brandImageryStyle) parts.push(`Brand imagery: ${brand.brandImageryStyle}`);
-  if (brand?.brandName) parts.push(`Brand: ${brand.brandName}`);
-  const donts = brand?.brandImageryDonts;
-  if (donts && donts.length > 0) {
-    parts.push(`Avoid: ${donts.join(", ")}`);
-  } else {
-    parts.push("Avoid: stock photo people, generic SaaS illustrations, text overlays, lens flares");
-  }
-  return parts.join(". ") + ".";
-}
 
 // ─── Fixtures ────────────────────────────────────────────
 
@@ -86,8 +47,12 @@ group("E1 — scraped photography.promptFragment wint van archetype-default");
       mood: "Sophisticated, architectural, aspirational",
       compositionStyle: "Wide-angle interior shots",
       subjectMatter: "Installed floor hatches in luxury homes",
-      promptFragment:
-        "Photography mood: Sophisticated, architectural, aspirational. Composition: Wide-angle interior shots. Subjects: Installed floor hatches in luxury homes.",
+      // R1-split (audit 2026-06-10): promptFragment is stijl-only; compositie
+      // gaat apart mee voor single-image contexten (hero); subjects zijn een
+      // pool en horen NIET meer in de hero-prompt.
+      promptFragment: "Photography mood: Sophisticated, architectural, aspirational.",
+      compositionFragment: "Composition: Wide-angle interior shots.",
+      subjectPool: ["Installed floor hatches in luxury homes"],
     },
   };
   const result = buildHeroVisualInstruction(VARIANT, {
@@ -95,8 +60,8 @@ group("E1 — scraped photography.promptFragment wint van archetype-default");
     brandTokens: tokens,
   });
   assert("bevat scraped mood", result.toLowerCase().includes("sophisticated"));
-  assert("bevat composition", result.toLowerCase().includes("wide-angle"));
-  assert("bevat subjects", result.toLowerCase().includes("floor hatches"));
+  assert("bevat composition (hero = single-image context)", result.toLowerCase().includes("wide-angle"));
+  assert("subjects NIET in hero-prompt (pool, geen staart)", !result.toLowerCase().includes("floor hatches"));
   assert("bevat brand-name", result.includes("LINFI"));
   assert("bevat headline", result.includes("Vloerluiken"));
 }
@@ -115,6 +80,8 @@ group("E1 — geen scraped photography → archetype-default fragment");
       compositionStyle: null,
       subjectMatter: null,
       promptFragment: "",  // empty
+      compositionFragment: null,
+      subjectPool: [],
     },
   };
   const result = buildHeroVisualInstruction(VARIANT, {
@@ -164,7 +131,9 @@ group("E1 — promptFragment is al opgeschoond (OBSERVED-prefix uit Fase C)");
       mood: "Sophisticated",
       compositionStyle: "Wide-angle",
       subjectMatter: "Luxury homes",
-      promptFragment: "Photography mood: Sophisticated. Composition: Wide-angle. Subjects: Luxury homes.",
+      promptFragment: "Photography mood: Sophisticated.",
+      compositionFragment: "Composition: Wide-angle.",
+      subjectPool: ["Luxury homes"],
     },
   };
   const result = buildHeroVisualInstruction(VARIANT, {
