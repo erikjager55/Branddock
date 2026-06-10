@@ -3,33 +3,17 @@ import { prisma } from '@/lib/prisma';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { deepSet } from '@/lib/utils/deep-set';
+import {
+  collectEditableTextFields,
+  readPath,
+} from '@/lib/landing-pages/puck-text-fields';
+import { preserveHeroOnSettings } from '@/features/campaigns/components/canvas/medium/hero-visual-preserve';
+import { isPuckWebpageType } from '@/lib/landing-pages/webpage-types';
 import type { ClawToolDefinition, MutationProposal } from '../claw.types';
 
 // Helper: invalidate dashboard cache (always safe to call)
 function invalidateDashboard(workspaceId: string) {
   invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
-}
-
-/**
- * Read a nested value using bracket notation (same syntax as deepSet).
- * Returns undefined if any segment doesn't exist.
- */
-function readPath(obj: unknown, path: string): unknown {
-  const segments = path.split('.');
-  let cur: unknown = obj;
-  for (const seg of segments) {
-    if (cur === null || typeof cur !== 'object') return undefined;
-    const arrMatch = seg.match(/^(.+)\[(\d+)\]$/);
-    if (arrMatch) {
-      const arrName = arrMatch[1];
-      const idx = parseInt(arrMatch[2]);
-      const container = (cur as Record<string, unknown>)[arrName];
-      cur = Array.isArray(container) ? container[idx] : undefined;
-    } else {
-      cur = (cur as Record<string, unknown>)[seg];
-    }
-  }
-  return cur;
 }
 
 /** Render a value for the MutationConfirmCard preview — strings stay raw, other types go through JSON. */
@@ -1653,6 +1637,128 @@ export const writeTools: ClawToolDefinition[] = [
         productId: product.id,
         personaId: persona.id,
         message: `Linked "${persona.name}" to "${product.name}"`,
+      };
+    },
+  },
+
+  // ─── Update Landing Page Content (Puck web-page builder) ──
+  // Canvas Step 3 Medium renders web-page types via Puck; the page tree lives
+  // in Deliverable.settings.puckData. This tool lets Claw apply TARGETED TEXT
+  // edits (headlines, body, CTA labels) to existing fields. Always pairs with
+  // `read_landing_page_content` for path discovery. Persists via the same
+  // hero-preserve chokepoint as the studio autosave so a text edit can never
+  // clobber a generated hero image (audit 2026-06-08/09).
+  {
+    name: 'update_landing_page_content',
+    description:
+      'Apply targeted TEXT edits to a landing-page / web-page deliverable (Canvas Step 3 Medium, Puck builder). Use when the user asks to rewrite, shorten, sharpen, or fix copy on THE CURRENT page ("maak de hero-kop korter", "punchier CTA", "herschrijf de intro"). ALWAYS call `read_landing_page_content` first to get the exact paths + current values — only edit paths it returned; never invent paths or components. Text only: you cannot add/remove/reorder components, change layout, images, links, or colors. Provide the full new text per field (not a diff). Ground every rewrite in the brand voice + tone from context.',
+    inputSchema: z.object({
+      deliverableId: z.string().describe('The deliverable ID from the Current Page context.'),
+      edits: z.array(z.object({
+        path: z.string().describe('Exact field path from read_landing_page_content, e.g. `content[0].props.headline`.'),
+        value: z.string().describe('The full new text for this field.'),
+      })).min(1).describe('One entry per field to change — non-empty.'),
+    }),
+    requiresConfirmation: true,
+    category: 'write',
+    buildProposal: async (params, ctx) => {
+      const p = params as { deliverableId: string; edits: Array<{ path: string; value: string }> };
+      const deliverable = await prisma.deliverable.findFirst({
+        where: { id: p.deliverableId },
+        include: { campaign: { select: { workspaceId: true, title: true } } },
+      });
+      if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
+        throw new Error('Deliverable not found in this workspace');
+      }
+      if (!isPuckWebpageType(deliverable.contentType)) {
+        throw new Error(`"${deliverable.title}" is a ${deliverable.contentType}, not a Puck web-page — text edits are not supported here.`);
+      }
+      const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
+      const puckData = settings.puckData;
+      if (!puckData || typeof puckData !== 'object') {
+        throw new Error('This landing page has no generated layout yet — run Step 2 first.');
+      }
+
+      // Validate every path against the editable-text-field set so the model
+      // can't target an invented path or a non-text prop (image/href/token).
+      const allowed = new Set(collectEditableTextFields(puckData).map((f) => f.path));
+      const invalid = p.edits.filter((e) => !allowed.has(e.path)).map((e) => e.path);
+      if (invalid.length > 0) {
+        throw new Error(`Unknown or non-editable path(s): ${invalid.join(', ')}. Call read_landing_page_content and use only the paths it returns.`);
+      }
+
+      const changes: MutationProposal['changes'] = p.edits.map((e) => {
+        const current = readPath(puckData, e.path);
+        return {
+          field: e.path,
+          label: e.path.replace(/^content\[\d+\]\.props\./, ''),
+          currentValue: typeof current === 'string' ? current : null,
+          proposedValue: e.value,
+        };
+      });
+
+      return {
+        toolCallId: '',
+        toolName: 'update_landing_page_content',
+        params,
+        description: `Edit ${changes.length} text field${changes.length === 1 ? '' : 's'} on "${deliverable.title}"`,
+        entityType: 'Deliverable',
+        entityId: p.deliverableId,
+        entityName: deliverable.title,
+        changes,
+      };
+    },
+    execute: async (params, ctx) => {
+      const p = params as { deliverableId: string; edits: Array<{ path: string; value: string }> };
+      const deliverable = await prisma.deliverable.findFirst({
+        where: { id: p.deliverableId },
+        include: { campaign: { select: { workspaceId: true } } },
+      });
+      if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
+        throw new Error('Deliverable not found in this workspace');
+      }
+      if (!isPuckWebpageType(deliverable.contentType)) {
+        throw new Error('Not a Puck web-page deliverable');
+      }
+      const existingSettings = (deliverable.settings ?? {}) as Record<string, unknown>;
+      const puckData = existingSettings.puckData;
+      if (!puckData || typeof puckData !== 'object') {
+        throw new Error('This landing page has no generated layout yet');
+      }
+
+      // Re-validate paths server-side (defence in depth — execute may run on a
+      // newer tree than buildProposal saw). De allowlist wordt bewust uit de
+      // PRE-clone `puckData` afgeleid (identieke structuur als `updated` vóór de
+      // edits); deepSet schrijft op de clone zodat het Prisma-resultaat ongemoeid blijft.
+      const updated = structuredClone(puckData) as Record<string, unknown>;
+      const allowed = new Set(collectEditableTextFields(puckData).map((f) => f.path));
+      let touched = 0;
+      for (const edit of p.edits) {
+        if (!allowed.has(edit.path)) continue;
+        deepSet(updated, edit.path, edit.value);
+        touched++;
+      }
+      if (touched === 0) {
+        return { success: false, message: 'No valid editable paths to update' };
+      }
+
+      // Hero-preserve chokepoint (audit 2026-06-08/09): write the new puckData
+      // through the same guard the studio autosave uses so a text edit can
+      // never clear an already-wired hero image.
+      const incoming = { ...existingSettings, puckData: updated };
+      const preserved = preserveHeroOnSettings(existingSettings, incoming);
+      const mergedSettings = JSON.parse(JSON.stringify({ ...existingSettings, ...preserved }));
+
+      await prisma.deliverable.update({
+        where: { id: p.deliverableId },
+        data: { settings: mergedSettings },
+      });
+      invalidateCache(cacheKeys.prefixes.campaigns(ctx.workspaceId));
+      invalidateDashboard(ctx.workspaceId);
+      return {
+        success: true,
+        deliverableId: p.deliverableId,
+        message: `Updated ${touched} text field${touched === 1 ? '' : 's'} on the landing page`,
       };
     },
   },

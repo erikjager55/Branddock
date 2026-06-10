@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { getBrandContext } from '@/lib/ai/brand-context';
 import { formatBrandContext } from '@/lib/ai/prompt-templates';
+import { isPuckWebpageType } from '@/lib/landing-pages/webpage-types';
 import type { ContextSelection, ContextModule, ClawAttachment, ClawPageContext } from './claw.types';
 
 const MAX_CONTEXT_TOKENS_ESTIMATE = 12_000;
@@ -480,9 +481,18 @@ function formatPageContext(ctx: ClawPageContext): string {
       lines.push(
         '  4. Only call `update_deliverable_visual_brief` when the user EXPLICITLY asks for the visual brief: "vul de visual brief", "stel de visual brief in", "kies een chip", "set the photo brief", "pick the visual style", etc. On broad fill requests the Visual Brief stays untouched — the user triggers it themselves via the "Suggest setup from content" button.'
       );
-      lines.push(
-        '  5. For content body / variant rewrites (after Step 2 has run), give targeted writing advice the user can apply via the inline edit on each preview section. The Canvas variant grid is not directly editable through tools.'
-      );
+      if (isPuckWebpageType(ctx.contentType)) {
+        // Web-page deliverables (Canvas Step 3 Medium, Puck builder) DO have
+        // directly-editable page copy via dedicated tools — overrides the
+        // generic "not editable" guidance in rule 5 for this content-type.
+        lines.push(
+          `  5. This is a **web-page deliverable** (${ctx.contentType}) built with the Puck builder — its page COPY is directly editable. When the user asks to rewrite, shorten, sharpen, or fix text on THIS page ("maak de hero-kop korter", "punchier CTA", "herschrijf de intro"): (a) call \`read_landing_page_content\` with the deliverable id to get the exact field paths + current values; (b) propose the rewrite via \`update_landing_page_content\` using ONLY those paths — never invent paths/components. Text only: you cannot add/remove/reorder components or change layout, images, links, or colors (advise the user to use the layout editor for those). Ground every rewrite in the brand voice + tone.`
+        );
+      } else {
+        lines.push(
+          '  5. For content body / variant rewrites (after Step 2 has run), give targeted writing advice the user can apply via the inline edit on each preview section. The Canvas variant grid is not directly editable through tools.'
+        );
+      }
     } else {
       lines.push(
         'When the user says "this asset", "deze persona", "dit product", or "this competitor", ' +

@@ -5,6 +5,8 @@ import {
   getAssetCompletenessFields,
   getAssetCompletenessPercentage,
 } from '@/lib/brand-asset-completeness';
+import { collectEditableTextFields } from '@/lib/landing-pages/puck-text-fields';
+import { isPuckWebpageType } from '@/lib/landing-pages/webpage-types';
 
 // ─── Helpers for inspect_current_entity ──────────────────────
 
@@ -894,6 +896,49 @@ export const readTools: ClawToolDefinition[] = [
         })),
         count: items.length,
         window: `${days}d`,
+      };
+    },
+  },
+
+  // ─── Landing Page Content (Puck web-page builder) ────────
+  {
+    name: 'read_landing_page_content',
+    description:
+      'Read the editable TEXT fields of a landing-page / web-page deliverable built with the Puck builder (Canvas Step 3 Medium). Returns each text field with its exact `path` (e.g. `content[2].props.headline`), the owning `component`, and the current `value`. Call this BEFORE `update_landing_page_content` so you target real existing paths and never invent components. Only use on web-page deliverables (landing-page / product-page / faq-page / comparison-page / microsite).',
+    inputSchema: z.object({
+      deliverableId: z.string().describe('The deliverable ID from the Current Page context.'),
+    }),
+    requiresConfirmation: false,
+    category: 'read',
+    execute: async (params, ctx: ToolExecutionContext) => {
+      const p = params as { deliverableId: string };
+      const deliverable = await prisma.deliverable.findFirst({
+        where: { id: p.deliverableId },
+        include: { campaign: { select: { workspaceId: true } } },
+      });
+      if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
+        return { error: 'Deliverable not found in this workspace' };
+      }
+      if (!isPuckWebpageType(deliverable.contentType)) {
+        return {
+          error: `Deliverable "${deliverable.title}" is a ${deliverable.contentType}, not a Puck web-page. This tool only works on landing-page / product-page / faq-page / comparison-page / microsite.`,
+        };
+      }
+      const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
+      const puckData = settings.puckData;
+      if (!puckData || typeof puckData !== 'object') {
+        return {
+          error: 'This landing page has no generated layout yet. The user must run Step 2 generation first.',
+        };
+      }
+      const fields = collectEditableTextFields(puckData);
+      return {
+        deliverableId: deliverable.id,
+        title: deliverable.title,
+        contentType: deliverable.contentType,
+        fields,
+        count: fields.length,
+        tip: 'Propose targeted edits via update_landing_page_content using these exact paths. Text only — never change layout, structure, images, or links.',
       };
     },
   },

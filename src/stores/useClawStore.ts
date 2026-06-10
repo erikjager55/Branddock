@@ -19,6 +19,9 @@ export type ActiveEntity = {
    *  belongs to. Lets Claw fire create_deliverable in the same campaign
    *  without a second question. */
   campaignId?: string;
+  /** Only set when type === 'deliverable' — the content-type slug. Lets the
+   *  system prompt route web-page deliverables to the LP text-edit tools. */
+  contentType?: string;
 };
 
 /** Navigation intent emitted by the Brand Assistant (e.g. after a create). App.tsx watches this and routes accordingly. */

@@ -183,6 +183,7 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
             id: deliverableId,
             name: d.title,
             campaignId,
+            contentType: typeof d.contentType === 'string' ? d.contentType : undefined,
           });
         }
         useCanvasStore.getState().setApprovalState({

@@ -176,6 +176,9 @@ export interface ClawPageContext {
   /** For deliverables — the campaign this deliverable belongs to. Lets Claw
    *  call create_deliverable / update_deliverable without re-asking. */
   campaignId?: string;
+  /** For deliverables — the content-type slug (e.g. 'landing-page'). Lets the
+   *  system prompt route web-page deliverables to the LP text-edit tools. */
+  contentType?: string;
   /**
    * Client-side snapshot of an in-progress wizard or multi-step form that
    * has no DB representation yet (e.g. the Campaign Wizard before launch).

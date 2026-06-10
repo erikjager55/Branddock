@@ -17,16 +17,8 @@ import type { PreviewContent } from '../../../types/canvas.types';
 import { Loader2, Sparkles, ArrowRight, Check, Film, MessageSquare, MousePointerClick, Image as ImageIcon, RefreshCw, X } from 'lucide-react';
 import { SeoProgressPanel } from '../SeoProgressPanel';
 import { LandingPageGenerateBlock } from './LandingPageGenerateBlock';
-
-// Web-page builder PUCK types (web-page-builder spec §4b paradigma B) —
-// vervangen multi-variant flow met single structured generation.
-const PUCK_WEBPAGE_TYPES = new Set([
-  'landing-page',
-  'product-page',
-  'faq-page',
-  'comparison-page',
-  'microsite',
-]);
+// Web-page builder PUCK types — centrale bron (web-page-builder spec §4b paradigma B).
+import { PUCK_WEBPAGE_TYPES } from '@/lib/landing-pages/webpage-types';
 import { getEstimatedDuration } from '../../../lib/content-type-inputs';
 import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
 import type { SceneId } from '../../../stores/useCanvasStore';

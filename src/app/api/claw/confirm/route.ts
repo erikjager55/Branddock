@@ -87,11 +87,20 @@ export async function POST(req: NextRequest) {
     };
   }
 
-  // Append the tool result to the conversation
+  // Append the tool result to the conversation. Reflecteer het echte resultaat
+  // in de leesbare content: een execute die `success: false` teruggeeft (bv. geen
+  // geldige velden om te wijzigen) mag niet als "applied successfully" loggen.
+  const innerResult = result.result as { success?: boolean } | undefined;
+  const applied = approved && !result.isError && innerResult?.success !== false;
+  const resultContent = approved
+    ? applied
+      ? 'Change applied successfully.'
+      : 'Change could not be applied.'
+    : 'Change was declined by user.';
   const toolResultMessage: ClawMessage = {
     id: crypto.randomUUID(),
     role: 'tool_result',
-    content: approved ? 'Change applied successfully.' : 'Change was declined by user.',
+    content: resultContent,
     toolResults: [result],
     createdAt: new Date().toISOString(),
   };
@@ -223,6 +232,7 @@ function resolveAffectedEntity(
     case 'update_deliverable_brief':
     case 'update_deliverable_content_inputs':
     case 'update_deliverable_visual_brief':
+    case 'update_landing_page_content':
       return {
         entityType: 'deliverable',
         entityId: inputId('deliverableId'),
