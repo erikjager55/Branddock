@@ -8,6 +8,7 @@
 
 import { fal } from '@fal-ai/client';
 import { getFalProviderById, getFalEndpoint } from './fal-providers';
+import { formatNegativeAsPromptDirective } from '@/lib/ai/image-quality/negative-prompts';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -336,6 +337,40 @@ function truncatePromptForModel(prompt: string, modelId: string): string {
   return sliced.slice(0, cutoff).trim();
 }
 
+/**
+ * Word-safe cap op de negative-directive zodat een lange donts-lijst de
+ * prompt-adherence van het model niet verwatert (R6, audit 2026-06-10).
+ */
+const NEGATIVE_DIRECTIVE_MAX_CHARS = 600;
+
+/**
+ * Bepaal de negative-prompt-strategie voor een model (geëxporteerd voor
+ * smoke-tests, pure functie). Modellen zonder native `negative_prompt`-param
+ * (Gemini-familie: nano-banana — fal negeert de param fail-soft, waardoor
+ * negatives daar vóór deze fix een no-op waren) krijgen de negative als
+ * prompt-text-directive in de positive prompt gevouwen via
+ * formatNegativeAsPromptDirective; overige modellen houden de native param.
+ */
+export function applyNegativePromptStrategy(
+  modelId: string,
+  prompt: string,
+  negativePrompt: string | undefined,
+): { prompt: string; nativeNegative: string | undefined } {
+  if (!negativePrompt?.trim()) return { prompt, nativeNegative: undefined };
+  const provider = getFalProviderById(modelId);
+  if (provider?.supportsNegativePrompt !== false) {
+    return { prompt, nativeNegative: negativePrompt };
+  }
+  let directive = formatNegativeAsPromptDirective(negativePrompt);
+  if (directive.length > NEGATIVE_DIRECTIVE_MAX_CHARS) {
+    const sliced = directive.slice(0, NEGATIVE_DIRECTIVE_MAX_CHARS);
+    const lastComma = sliced.lastIndexOf(', ');
+    directive = (lastComma > NEGATIVE_DIRECTIVE_MAX_CHARS * 0.6 ? sliced.slice(0, lastComma) : sliced).trimEnd();
+    if (!directive.endsWith('.')) directive += '.';
+  }
+  return { prompt: prompt + directive, nativeNegative: undefined };
+}
+
 /** Map image_size preset to aspect_ratio string */
 function toAspectRatio(imageSize: string): string {
   const map: Record<string, string> = {
@@ -368,12 +403,17 @@ export async function generateFalImage(
   const refUrls = options?.referenceImageUrls ?? [];
   const hasRefs = refUrls.length > 0;
 
+  // R6 (audit 2026-06-10): modellen zonder native negative_prompt-param krijgen
+  // de negative als prompt-text-directive — vóór de truncatie zodat de cap blijft
+  // gelden voor het geheel.
+  const negStrategy = applyNegativePromptStrategy(modelId, prompt, options?.negativePrompt);
+
   // F42c (audit 2026-05-14): truncate prompt naar model-specific cap.
   // Recraft V3 / Seedream / Ideogram weigeren prompts > N chars met 422.
-  const truncatedPrompt = truncatePromptForModel(prompt, modelId);
-  if (truncatedPrompt.length < prompt.length) {
+  const truncatedPrompt = truncatePromptForModel(negStrategy.prompt, modelId);
+  if (truncatedPrompt.length < negStrategy.prompt.length) {
     console.log(
-      `[fal-client] prompt truncated from ${prompt.length} → ${truncatedPrompt.length} chars for ${modelId}`,
+      `[fal-client] prompt truncated from ${negStrategy.prompt.length} → ${truncatedPrompt.length} chars for ${modelId}`,
     );
   }
 
@@ -392,10 +432,10 @@ export async function generateFalImage(
       ? { style: options.recraftStyle }
       : {}),
     // Pattern A image-quality-chain: native negative-prompt parameter.
-    // FAL Flux Pro Kontext + FLUX 2 Pro consumeren dit. Endpoints zonder
-    // deze param negeren het bij input-validation (fail-soft).
-    ...(options?.negativePrompt
-      ? { negative_prompt: options.negativePrompt }
+    // FAL Flux Pro Kontext + FLUX 2 Pro consumeren dit. Modellen met
+    // supportsNegativePrompt=false kregen 'm hierboven al als prompt-directive.
+    ...(negStrategy.nativeNegative
+      ? { negative_prompt: negStrategy.nativeNegative }
       : {}),
   };
 

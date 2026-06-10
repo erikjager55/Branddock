@@ -71,8 +71,12 @@ export async function POST(request: Request, { params }: RouteParams) {
     const referenceImageUrls = anchors.slice(0, maxAnchorsForModel(modelId)).map((a) => a.fileUrl);
 
     const storage = getStorageProvider();
-    // Defaults bevatten nu anti-collage/triptiek (één volledige afbeelding-eis).
-    const negativePrompt = buildNegativePrompt();
+    // Defaults bevatten anti-collage/triptiek; brandImageryDonts komen gate-correct
+    // uit getBrandContext (published + imagerySavedForAi) — vóór deze fix bereikten
+    // de gecureerde workspace-donts de feature-generatie nooit (R6, audit 2026-06-10).
+    const negativePrompt = buildNegativePrompt({
+      brandImageryDonts: stack.brand?.brandImageryDonts ?? [],
+    });
     // Per-index resultaat (behoudt volgorde = feature-index); null bij falen.
     const urls = await Promise.all(
       prompts.map(async (prompt, idx): Promise<string | null> => {
