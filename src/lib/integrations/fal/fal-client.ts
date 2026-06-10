@@ -8,7 +8,7 @@
 
 import { fal } from '@fal-ai/client';
 import { getFalProviderById, getFalEndpoint } from './fal-providers';
-import { formatNegativeAsPromptDirective } from '@/lib/ai/image-quality/negative-prompts';
+import { formatNegativeAsPromptDirective, NEGATIVE_PROMPT_DEFAULTS } from '@/lib/ai/image-quality/negative-prompts';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -340,16 +340,25 @@ function truncatePromptForModel(prompt: string, modelId: string): string {
 /**
  * Word-safe cap op de negative-directive zodat een lange donts-lijst de
  * prompt-adherence van het model niet verwatert (R6, audit 2026-06-10).
+ * Ruim genoeg voor defaults (~310) + gecureerde donts + brief-avoid.
  */
-const NEGATIVE_DIRECTIVE_MAX_CHARS = 600;
+const NEGATIVE_DIRECTIVE_MAX_CHARS = 1200;
+
+const NEGATIVE_DEFAULTS_SET = new Set(NEGATIVE_PROMPT_DEFAULTS);
 
 /**
  * Bepaal de negative-prompt-strategie voor een model (geëxporteerd voor
  * smoke-tests, pure functie). Modellen zonder native `negative_prompt`-param
  * (Gemini-familie: nano-banana — fal negeert de param fail-soft, waardoor
  * negatives daar vóór deze fix een no-op waren) krijgen de negative als
- * prompt-text-directive in de positive prompt gevouwen via
- * formatNegativeAsPromptDirective; overige modellen houden de native param.
+ * prompt-text-directive in de positive prompt gevouwen; overige modellen
+ * houden de native param.
+ *
+ * Review-fixes 2026-06-10: (a) de directive wordt SPECIFIEK-EERST herordend
+ * (donts/userNegations vóór de defaults) zodat een eventuele cap nooit eerst
+ * de meest specifieke negaties wegknipt; (b) de positive prompt wordt vooraf
+ * op (model-cap − directive-lengte) getrimd zodat truncatePromptForModel de
+ * directive nooit stil van de staart kapt.
  */
 export function applyNegativePromptStrategy(
   modelId: string,
@@ -361,14 +370,33 @@ export function applyNegativePromptStrategy(
   if (provider?.supportsNegativePrompt !== false) {
     return { prompt, nativeNegative: negativePrompt };
   }
-  let directive = formatNegativeAsPromptDirective(negativePrompt);
+  // Specifiek-eerst: buildNegativePrompt ordent defaults→donts→negations;
+  // voor het directive-pad draaien we dat om (exact-match op de defaults-set;
+  // segmenten met een komma erin splitsen onschadelijk en blijven custom).
+  const segments = negativePrompt.split(', ');
+  const custom = segments.filter((s) => !NEGATIVE_DEFAULTS_SET.has(s));
+  const defaults = segments.filter((s) => NEGATIVE_DEFAULTS_SET.has(s));
+  let directive = formatNegativeAsPromptDirective([...custom, ...defaults].join(', '));
   if (directive.length > NEGATIVE_DIRECTIVE_MAX_CHARS) {
     const sliced = directive.slice(0, NEGATIVE_DIRECTIVE_MAX_CHARS);
     const lastComma = sliced.lastIndexOf(', ');
     directive = (lastComma > NEGATIVE_DIRECTIVE_MAX_CHARS * 0.6 ? sliced.slice(0, lastComma) : sliced).trimEnd();
     if (!directive.endsWith('.')) directive += '.';
   }
-  return { prompt: prompt + directive, nativeNegative: undefined };
+  // Budget reserveren: anders kapt truncatePromptForModel (staart-truncatie)
+  // bij lange prompts exact de directive er weer af.
+  const cap = MAX_PROMPT_LENGTH_BY_MODEL[modelId] ?? DEFAULT_MAX_PROMPT_LENGTH;
+  const budget = Math.max(cap - directive.length, Math.floor(cap * 0.5));
+  const trimmedPrompt = prompt.length > budget ? truncateWordSafe(prompt, budget) : prompt;
+  return { prompt: trimmedPrompt + directive, nativeNegative: undefined };
+}
+
+function truncateWordSafe(text: string, budget: number): string {
+  const sliced = text.slice(0, budget);
+  const lastSentence = sliced.lastIndexOf('. ');
+  const lastSpace = sliced.lastIndexOf(' ');
+  const cutoff = lastSentence > budget * 0.7 ? lastSentence + 1 : lastSpace > budget * 0.8 ? lastSpace : budget;
+  return sliced.slice(0, cutoff).trim();
 }
 
 /** Map image_size preset to aspect_ratio string */

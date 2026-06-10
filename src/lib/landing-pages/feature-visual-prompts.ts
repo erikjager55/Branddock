@@ -72,6 +72,31 @@ const FALLBACK_ANGLES: readonly string[] = [
 const SINGLE_PHOTO_RULE =
   "A SINGLE cohesive full-frame photograph — one continuous scene, NOT a collage/triptych/split-panel/grid; no internal borders or seams. No text, no UI, no infographic, no logo";
 
+/**
+ * R1-zijdeur-fix (review 2026-06-10): brand-context bouwt brandImageryStyle als
+ * "Photography mood: …. Subjects: …. Composition: …. Guidelines: …" — de
+ * integrale string her-importeert de per-beeld dimensies (subjects/compositie)
+ * die de token-split juist uit feature-prompts haalde. Parse per marker en
+ * lever alleen de deelbare delen (mood + guidelines) voor het feature-pad.
+ */
+function featureSafeImagerySegments(
+  style: string | null | undefined,
+): { mood: string | null; guidelines: string | null } {
+  if (!style?.trim()) return { mood: null, guidelines: null };
+  const markers = [...style.matchAll(/\b(Photography mood|Subjects|Composition|Guidelines):/gi)];
+  if (markers.length === 0) return { mood: style.trim(), guidelines: null };
+  const segments = markers.map((m, i) => ({
+    label: m[1].toLowerCase(),
+    text: style.slice((m.index ?? 0), markers[i + 1]?.index ?? style.length).replace(/[.\s]+$/, "").trim(),
+  }));
+  const mood = segments.find((s) => s.label === "photography mood")?.text ?? null;
+  return {
+    // Label strippen — anders wordt het "Brand imagery: Photography mood: …".
+    mood: mood ? mood.replace(/^photography mood:\s*/i, "").trim() || null : null,
+    guidelines: segments.find((s) => s.label === "guidelines")?.text ?? null,
+  };
+}
+
 /** Begrensde, niet-cryptografische seed (fal verwacht een 32-bit int). */
 function randomSeed(): number {
   return Math.floor(Math.random() * 2_147_483_647);
@@ -131,11 +156,17 @@ export function buildFeatureVisualPrompts(
       );
     }
 
-    // 4. Vorm-regels + gesaneerde stijl-laag (mood-only, R1) + brand.
+    // 4. Vorm-regels + gesaneerde stijl-laag (mood-only, R1) + brand. De
+    // integrale brandImageryStyle wordt bewust NIET gepusht (bevat subjects/
+    // compositie van de scrape — de tweede R1-zijdeur, review 2026-06-10):
+    // alleen het mood-deel (en dan alleen als de tokens-laag 'm niet al
+    // draagt — zelfde bron) + eventuele guidelines.
     parts.push(SINGLE_PHOTO_RULE);
     const styleFragment = ctx?.brandTokens?.photography?.promptFragment?.trim();
     if (styleFragment) parts.push(styleFragment);
-    if (ctx?.brand?.brandImageryStyle) parts.push(`Brand imagery: ${ctx.brand.brandImageryStyle}`);
+    const imagery = featureSafeImagerySegments(ctx?.brand?.brandImageryStyle);
+    if (!styleFragment && imagery.mood) parts.push(`Brand imagery: ${imagery.mood}`);
+    if (imagery.guidelines) parts.push(`Imagery ${imagery.guidelines.charAt(0).toLowerCase()}${imagery.guidelines.slice(1)}`);
     if (ctx?.brand?.brandName) parts.push(`Brand: ${ctx.brand.brandName}`);
 
     return {

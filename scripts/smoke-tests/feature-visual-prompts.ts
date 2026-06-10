@@ -61,6 +61,31 @@ group("R1 — geen compositie/subjects-staart uit de scrape in feature-prompts")
   assert("mood-stijlfragment wél aanwezig", built.every((b) => b.prompt.includes("Photography mood:")));
 }
 
+group("R1-zijdeur — brandImageryStyle (gate-open) lekt geen compositie/subjects (review-fix)");
+{
+  // brand-context bouwt brandImageryStyle als mood+subjects+composition zodra
+  // de imagery-gate open is — alleen mood/guidelines mogen het feature-pad in.
+  const gateOpenCtx = {
+    brand: {
+      brandName: "Napking",
+      brandImageryStyle:
+        "Photography mood: Clean and professional. Subjects: confident chef in kitchen. Composition: Subject centered with arms crossed in confident pose. Guidelines: natural light only",
+    },
+    brandTokens: CTX.brandTokens,
+  };
+  const slots = BRIEFS.map((b, i) => ({ index: i, heading: `H${i}`, body: `B${i}`, imageBrief: b }));
+  const built = buildFeatureVisualPrompts(slots, "X", gateOpenCtx);
+  assert("geen arms-crossed via imagery-zijdeur", built.every((b) => !b.prompt.includes("arms crossed")));
+  assert("geen Subjects-segment via imagery-zijdeur", built.every((b) => !b.prompt.includes("confident chef")));
+  assert("guidelines blijven wél behouden", built.every((b) => b.prompt.includes("natural light only")));
+  assert("mood niet dubbel (tokens-laag draagt 'm al)", built.every((b) => !b.prompt.includes("Brand imagery: Photography mood")));
+
+  const noTokensCtx = { brand: gateOpenCtx.brand, brandTokens: null };
+  const builtNoTokens = buildFeatureVisualPrompts(slots, "X", noTokensCtx);
+  assert("zonder tokens-laag: mood via imagery-pad", builtNoTokens.every((b) => b.prompt.includes("Clean and professional")));
+  assert("zonder tokens-laag: compositie blijft eruit", builtNoTokens.every((b) => !b.prompt.includes("arms crossed")));
+}
+
 group("R4 — sibling-differentiatie + unieke seeds");
 {
   const slots = BRIEFS.map((b, i) => ({ index: i, heading: `H${i}`, body: `B${i}`, imageBrief: b }));

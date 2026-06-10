@@ -39,7 +39,13 @@ export function preserveFeatureVisuals<T extends PuckTreeLike>(incoming: T, curr
   const content = incoming.content.map((c, ci) => {
     if (!c || !FEATURE_COMPONENT_TYPES.has(c.type ?? "")) return c;
     const cur = current.content?.[ci];
-    if (!cur || cur.type !== c.type) return c;
+    // FeatureGrid ↔ FeatureSplit zijn equivalent: het type WISSELT op basis van
+    // beeld-aanwezigheid (featuresSection rendert Split bij 4/4 beelden, Grid
+    // anders) — een stale autosave van vóór de image-fill stuurt dus per
+    // definitie het ándere type. Exacte type-match zou de guard precies in het
+    // hoofd-clobber-scenario uitschakelen (review 2026-06-10). De titel-
+    // gelijkheid per feature beschermt tegen verkeerd-overplakken.
+    if (!cur || !FEATURE_COMPONENT_TYPES.has(cur.type ?? "")) return c;
     const incomingFeats = (c.props as { features?: FeatureLike[] } | undefined)?.features;
     const currentFeats = (cur.props as { features?: FeatureLike[] } | undefined)?.features;
     if (!Array.isArray(incomingFeats) || !Array.isArray(currentFeats)) return c;

@@ -94,12 +94,14 @@ group("E1 — geen scraped photography → archetype-default fragment");
 
 // ─── Donts inclusie ──────────────────────────────────────
 
-group("E1 — brandImageryDonts inclusie + fallback");
+group("E1 — Avoid-gedrag (donts via negative-kanaal, review 2026-06-10)");
 {
   const tokens: BrandTokens = {
     ...DEFAULT_BRAND_TOKENS,
     photography: { ...DEFAULT_BRAND_TOKENS.photography, promptFragment: "" },
   };
+  // Donts reizen via het dedicated negative-kanaal (werkt sinds de R6-fix ook
+  // op nano-banana) — in-prompt herhalen zou dupliceren vlak bij de model-cap.
   const withDonts = buildHeroVisualInstruction(VARIANT, {
     brand: {
       brandName: "X",
@@ -107,18 +109,32 @@ group("E1 — brandImageryDonts inclusie + fallback");
     },
     brandTokens: tokens,
   });
-  assert("custom donts opgenomen", withDonts.includes("No stock photography"));
-  assert("custom donts opgenomen 2", withDonts.includes("No generic interiors"));
-  assert("geen default-donts wanneer custom aanwezig", !withDonts.includes("generic SaaS illustrations"));
+  assert("donts NIET in positive prompt (negative-kanaal)", !withDonts.includes("No stock photography"));
+  assert("geen generieke Avoid-fallback wanneer donts bestaan", !withDonts.includes("generic SaaS illustrations"));
 
   const withoutDonts = buildHeroVisualInstruction(VARIANT, {
     brand: { brandName: "X" },
     brandTokens: tokens,
   });
   assert(
-    "default-donts gebruikt wanneer geen custom",
+    "generieke Avoid-fallback wanneer geen donts",
     withoutDonts.includes("generic SaaS illustrations"),
   );
+
+  // brief.avoid blijft in-prompt (specifiek, klein).
+  const withBriefAvoid = buildHeroVisualInstruction(
+    { hero: { headline: "H", subhead: "S", imageBrief: { subject: "restaurantzaal", sceneType: "location", composition: "breed overzicht", avoid: "lege tafels" } } },
+    { brand: { brandName: "X", brandImageryDonts: ["No stock photography"] }, brandTokens: tokens },
+  );
+  assert("brief.avoid in-prompt", withBriefAvoid.includes("Avoid: lege tafels"));
+  assert("brief-subject in-prompt", withBriefAvoid.includes("restaurantzaal"));
+
+  // 1000-cap (generate-visual zod-max) — word-safe.
+  const longBrief = buildHeroVisualInstruction(
+    { hero: { headline: "H".repeat(60), subhead: "S ".repeat(40), imageBrief: { subject: "x".repeat(190) + " einde", sceneType: "location", composition: "y".repeat(190) + " slot" } } },
+    { brand: { brandName: "X", brandImageryStyle: "z".repeat(400) }, brandTokens: tokens },
+  );
+  assert("instructie geclamped op ≤1000", longBrief.length <= 1000);
 }
 
 // ─── Strip OBSERVED-prefix is al gedaan in mapPhotographyTokens ──

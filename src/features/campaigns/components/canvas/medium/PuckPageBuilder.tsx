@@ -257,18 +257,22 @@ export function PuckPageBuilder({
     // Fase 3 (audit 2026-06-10): feature-copy naar de route — prompts worden
     // server-side gebouwd. Gap-fill werkt op (mogelijk user-geëdite) puckData-
     // titels en heeft geen imageBrief → server-fallback met angle-rotatie.
+    // index = request-POSITIE (k), niet g.fi: fi is alleen uniek bínnen één
+    // component en zou bij twee feature-componenten duplicate indices sturen
+    // (route 400't daarop, review 2026-06-10); de terugmapping is toch al
+    // positioneel via urls[k]. Truncatie matcht het route-schema (zod-max).
     // 120s-ceiling: gap-fill had (anders dan de confirm-flow) géén timeout,
     // waardoor een hangende image-API de knop oneindig liet spinnen.
-    const featureSlots = featureGaps.map((g) => ({
-      index: g.fi,
-      heading: g.title || 'feature',
-      body: g.description || g.title || 'feature',
+    const featureSlots = featureGaps.map((g, k) => ({
+      index: k,
+      heading: (g.title || 'feature').slice(0, 200),
+      body: (g.description || g.title || 'feature').slice(0, 600),
       imageBrief: null,
     }));
     setIsFillingFeatures(true);
     setFeatureFillMsg(null);
     Promise.race([
-      generateFeatureVisuals(deliverableId, { features: featureSlots, pageHeadline: headline }),
+      generateFeatureVisuals(deliverableId, { features: featureSlots, pageHeadline: headline.slice(0, 200) }),
       new Promise<Array<string | null>>((resolve) => setTimeout(() => resolve([]), 120_000)),
     ])
       .then((urls) => {

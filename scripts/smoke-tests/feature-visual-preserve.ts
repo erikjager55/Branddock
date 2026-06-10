@@ -45,6 +45,20 @@ group("puckData — titel-mismatch (reorder) wordt NIET overgeplakt");
   assert("geen cross-feature contaminatie bij reorder", feats.every((f) => !f.imageUrl));
 }
 
+group("puckData — type-wissel FeatureGrid ↔ FeatureSplit (review 2026-06-10)");
+{
+  // Hoofd-clobber-scenario: stale autosave van vóór de image-fill stuurt een
+  // FeatureGrid (geen beelden → Grid) terwijl existing een FeatureSplit-met-
+  // beelden is. De guard moet beide typen als equivalent behandelen.
+  const current = tree(["/uploads/a.png", "/uploads/b.png", "/uploads/c.png", "/uploads/d.png"]);
+  const incoming = tree([null, null, null, null]);
+  (incoming.content[1] as { type: string }).type = "FeatureGrid";
+  const out = preserveFeatureVisuals(incoming, current);
+  const feats = (out.content[1].props as { features: Array<{ imageUrl: string | null }> }).features;
+  assert("type-wissel: alle 4 beelden hersteld", feats.every((f, i) => f.imageUrl === ["/uploads/a.png", "/uploads/b.png", "/uploads/c.png", "/uploads/d.png"][i]));
+  assert("type-wissel: incoming type blijft FeatureGrid", (out.content[1] as { type: string }).type === "FeatureGrid");
+}
+
 group("puckData — incoming zonder features-array / ander component-type");
 {
   const current = tree(["/uploads/a.png", null, null, null]);

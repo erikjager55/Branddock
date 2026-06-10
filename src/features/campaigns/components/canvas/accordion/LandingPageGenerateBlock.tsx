@@ -472,14 +472,17 @@ export function LandingPageGenerateBlock({
         .slice(0, FEATURE_IMAGE_BUDGET);
       if (needIdx.length > 0) {
         try {
+          // Truncatie matcht het route-schema (zod-max) — variant-schema heeft
+          // geen max op heading/body, dus één lange waarde mag niet de hele
+          // batch laten 400'en (review 2026-06-10).
           const featureSlots = needIdx.map((i) => ({
             index: i,
-            heading: chosen.features.items[i].heading,
-            body: chosen.features.items[i].body,
+            heading: chosen.features.items[i].heading.slice(0, 200),
+            body: chosen.features.items[i].body.slice(0, 600),
             imageBrief: chosen.features.items[i].imageBrief ?? null,
           }));
           const urls = await Promise.race([
-            generateFeatureVisuals(deliverableId, { features: featureSlots, pageHeadline: chosen.hero.headline }),
+            generateFeatureVisuals(deliverableId, { features: featureSlots, pageHeadline: chosen.hero.headline.slice(0, 200) }),
             new Promise<Array<string | null>>((resolve) => setTimeout(() => resolve([]), 120_000)),
           ]);
           if (urls.length > 0) {

@@ -42,7 +42,9 @@ const featureSlotSchema = z.object({
   index: z.number().int().min(0).max(11),
   heading: z.string().min(1).max(200),
   body: z.string().min(1).max(600),
-  imageBrief: imageBriefSchema.nullable().optional(),
+  // .catch(null): een malformed brief degradeert naar het heading/body-
+  // fallback-pad i.p.v. de hele batch te laten 400'en.
+  imageBrief: imageBriefSchema.nullable().optional().catch(null),
 });
 
 const requestSchema = z
@@ -57,6 +59,13 @@ const requestSchema = z
   .refine(
     (b) => Boolean(b.prompts?.length) !== Boolean(b.features?.length),
     'stuur óf prompts (legacy) óf features (v2), niet beide',
+  )
+  // Duplicate indices zouden de Map-lookups (coherence-pairing), de retry-
+  // targeting én de persist-variantGroups corrumperen (review 2026-06-10) —
+  // liever een expliciete 400 dan stil verkeerd gedrag.
+  .refine(
+    (b) => !b.features || new Set(b.features.map((f) => f.index)).size === b.features.length,
+    'features[].index moet uniek zijn binnen de request',
   );
 
 interface RouteParams {
@@ -220,7 +229,13 @@ export async function POST(request: Request, { params }: RouteParams) {
                 : { kind: 'low-coherence', subject: subjectFor(index), rationale: judgeRationale },
             );
             const retry = await generateOne(sharpened);
-            if (retry) generated[pos] = retry;
+            if (retry) {
+              generated[pos] = retry;
+              // De G4-score hoorde bij het weggegooide beeld — null voorkomt
+              // dat een toekomstige bron-badge de oude score bij het nieuwe
+              // beeld toont (review 2026-06-10).
+              coherenceScores[pos] = null;
+            }
           }),
         );
       }
@@ -228,8 +243,9 @@ export async function POST(request: Request, { params }: RouteParams) {
     const elapsedMs = Date.now() - startMs;
     // Kosten-telemetrie per page-run (pilot-stuurbaarheid, audit §5).
     const genCount = generated.filter(Boolean).length;
-    const judgeCount = coherenceScores.filter((s) => s !== null).length + (dupePairs ? 1 : 0);
-    const estCost = (genCount + regenerated.length) * 0.13 + judgeCount * 0.001 + 0.005;
+    const diversityRan = Boolean(body.features) && generated.filter(Boolean).length >= 2;
+    const judgeCount = coherenceScores.filter((s) => s !== null).length + (diversityRan ? 1 : 0);
+    const estCost = (genCount + regenerated.length) * 0.13 + judgeCount * 0.001 + (diversityRan ? 0.005 : 0);
     console.log(
       `[generate-feature-visuals] page-run deliverable=${deliverableId} model=${modelId} slots=${built.length} ok=${genCount} coherence=[${coherenceScores.map((s) => s ?? '–').join(',')}] dupes=${JSON.stringify(dupePairs)} regens=[${regenerated.join(',')}] durationMs=${elapsedMs} estCost=$${estCost.toFixed(2)}`,
     );
@@ -282,7 +298,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     // in de variant-editor (audit §4 fase 5, UI-follow-up).
     const urls = generated.map((g) => g?.url ?? null);
     const sources = generated.map((g) => (g ? ('generated' as const) : null));
-    return NextResponse.json({ urls, sources, coherence: coherenceScores });
+    return NextResponse.json({ urls, sources, coherence: coherenceScores, regenerated });
   } catch (err) {
     console.error('[generate-feature-visuals] error:', err);
     return NextResponse.json({ error: 'Failed to generate feature visuals' }, { status: 500 });

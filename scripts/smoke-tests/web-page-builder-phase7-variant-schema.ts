@@ -306,7 +306,8 @@ group("ImageBrief (R7, audit 2026-06-10) — optioneel + gevalideerd");
   };
   assert("variant mét geldige imageBriefs valide", validateLandingPageVariant(withBriefs).success);
 
-  // Ongeldige sceneType faalt.
+  // Ongeldige sceneType degradeert naar null (.catch — review 2026-06-10:
+  // een nice-to-have-veld mag de hele variant-validatie niet laten falen).
   const badScene = clone(completeVariant);
   (badScene.features.items[0] as Record<string, unknown>).imageBrief = {
     subject: "X",
@@ -314,7 +315,10 @@ group("ImageBrief (R7, audit 2026-06-10) — optioneel + gevalideerd");
     composition: "Y",
   };
   const badResult = validateLandingPageVariant(badScene);
-  assert("ongeldige sceneType rejects", !badResult.success);
+  assert("ongeldige sceneType degradeert (variant blijft valide)", badResult.success);
+  if (badResult.success) {
+    assert("  brief is null na degradatie", badResult.data.features.items[0].imageBrief === null);
+  }
 
   // null-brief expliciet toegestaan (LLM mag null retourneren).
   const nullBrief = clone(completeVariant);

@@ -65,16 +65,25 @@ export function buildHeroVisualInstruction(
   }
   if (brand?.brandImageryStyle) parts.push(`Brand imagery: ${brand.brandImageryStyle}`);
   if (brand?.brandName) parts.push(`Brand: ${brand.brandName}`);
-  const avoidItems = [
-    ...(brand?.brandImageryDonts ?? []),
-    ...(heroBrief?.avoid?.trim() ? [heroBrief.avoid.trim()] : []),
-  ];
-  if (avoidItems.length > 0) {
-    parts.push(`Avoid: ${avoidItems.join(', ')}`);
-  } else {
+  // Donts staan bewust NIET meer in de positive prompt: ze reizen via het
+  // dedicated negative-kanaal van de route, dat sinds de R6-fix óók op
+  // nano-banana werkt (prompt-directive-fallback in fal-client). In-prompt
+  // herhalen zou ze dupliceren vlak bij de model-cap (review 2026-06-10).
+  // brief.avoid blijft in-prompt (specifiek, klein) en de generieke fallback
+  // alleen wanneer er géén donts via het negative-kanaal meereizen.
+  const hasDonts = (brand?.brandImageryDonts?.length ?? 0) > 0;
+  if (heroBrief?.avoid?.trim()) {
+    parts.push(`Avoid: ${heroBrief.avoid.trim()}`);
+  } else if (!hasDonts) {
     parts.push('Avoid: stock photo people, generic SaaS illustrations, text overlays, lens flares');
   }
-  return parts.join('. ') + '.';
+  // generate-visual capt instruction op 1000 (zod) — word-safe clampen zodat
+  // een lange brief/headline-combinatie nooit een 400 geeft (review 2026-06-10).
+  const instruction = parts.join('. ') + '.';
+  if (instruction.length <= 1000) return instruction;
+  const sliced = instruction.slice(0, 1000);
+  const lastSpace = sliced.lastIndexOf(' ');
+  return (lastSpace > 800 ? sliced.slice(0, lastSpace) : sliced).trim().replace(/[,;:]$/, '') + '.';
 }
 
 /**

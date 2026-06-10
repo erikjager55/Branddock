@@ -67,8 +67,11 @@ const heroSchema = z.object({
   heroVisualUrl: z.string().nullable().optional(),
   /** C5 — optionele uppercase eyebrow boven headline (civic / categorie-marker). */
   eyebrow: z.string().max(40, "hero.eyebrow max 40 tekens").nullable().optional(),
-  /** R7 — visuele richting voor de hero-foto, uit de copy-LLM. */
-  imageBrief: imageBriefSchema.nullable().optional(),
+  /** R7 — visuele richting voor de hero-foto, uit de copy-LLM. `.catch(null)`:
+   *  een invalide brief (te lang / onbekend sceneType) degradeert naar null
+   *  i.p.v. de hele variant-validatie te laten falen — het is een
+   *  nice-to-have-veld met een heading/body-fallback (review 2026-06-10). */
+  imageBrief: imageBriefSchema.nullable().optional().catch(null),
 });
 
 const trustItemSchema = z.object({
@@ -116,8 +119,9 @@ const featureItemSchema = z.object({
   imageUrl: z.string().url("features.items[].imageUrl moet een geldige URL zijn").nullable().optional(),
   /** R7 — visuele richting voor het feature-beeld: visualiseert HET BEWIJS van
    *  déze feature. Briefs moeten onderling verschillende sceneTypes/subjects
-   *  hebben (regel 15 in de generator-system-prompt). */
-  imageBrief: imageBriefSchema.nullable().optional(),
+   *  hebben (regel 15 in de generator-system-prompt). `.catch(null)`: invalide
+   *  brief degradeert naar null i.p.v. de variant te laten falen. */
+  imageBrief: imageBriefSchema.nullable().optional().catch(null),
 });
 
 const featuresSchema = z.object({

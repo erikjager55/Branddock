@@ -88,12 +88,35 @@ group("R6 — negative-strategie: flux behoudt native param");
   assert("prompt ongewijzigd", r.prompt === "A photo.");
 }
 
-group("R6 — directive word-safe gecapt bij extreem lange donts-lijst");
+group("R6 — directive specifiek-eerst + word-safe cap (review-fix)");
 {
-  const huge = Array.from({ length: 80 }, (_, i) => `verboden onderwerp nummer ${i}`).join(", ");
+  const huge = Array.from({ length: 120 }, (_, i) => `verboden onderwerp nummer ${i}`).join(", ");
   const r = applyNegativePromptStrategy("fal-ai/nano-banana-pro", "P.", huge);
-  assert("directive gecapt (~600)", r.prompt.length <= 620);
+  assert("directive gecapt (~1200)", r.prompt.length <= 1230);
   assert("eindigt op punt", r.prompt.endsWith("."));
+
+  // Specifiek-eerst: donts + brief-avoid komen vóór de defaults zodat een cap
+  // nooit eerst de meest specifieke negaties wegknipt.
+  const negative = buildNegativePrompt({
+    brandImageryDonts: ["geen geposeerde stockmensen"],
+    userNegations: ["lege tafels"],
+  });
+  const ordered = applyNegativePromptStrategy("fal-ai/nano-banana-pro", "P.", negative);
+  const iDont = ordered.prompt.indexOf("geen geposeerde stockmensen");
+  const iNeg = ordered.prompt.indexOf("lege tafels");
+  const iDefault = ordered.prompt.indexOf("collage");
+  assert("dont vóór defaults", iDont >= 0 && iDefault > iDont);
+  assert("userNegation vóór defaults", iNeg >= 0 && iDefault > iNeg);
+}
+
+group("R6 — budget-reservering: directive overleeft de model-cap (review-fix)");
+{
+  const longPrompt = "Editorial photograph of textiles. " + "warm natural light with authentic texture detail ".repeat(70);
+  const negative = buildNegativePrompt({ brandImageryDonts: ["geen geposeerde stockmensen"] });
+  const r = applyNegativePromptStrategy("fal-ai/nano-banana-pro", longPrompt, negative);
+  assert("totaal binnen nano-banana-cap (3000)", r.prompt.length <= 3000);
+  assert("directive aanwezig ondanks lange prompt", r.prompt.includes("geen geposeerde stockmensen"));
+  assert("positive prompt word-safe getrimd", r.prompt.startsWith("Editorial photograph"));
 }
 
 group("R6 — geen negative → passthrough");
