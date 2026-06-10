@@ -2451,12 +2451,33 @@ async function writeResultToDb(
     if (Array.isArray(result.examplePhrases) && result.examplePhrases.length > 0) {
       tovUpdate.examplePhrases = result.examplePhrases as Prisma.InputJsonValue;
     }
-    // DTS-plan C1+C2 — vocabulary + voice-sample
+    // DTS-plan C1+C2 — vocabulary + voice-sample.
+    // Audit 2026-06-10: do-lijst ontdubbeld tegen de avoid-lijst (avoid wint) —
+    // een term in beide lijsten seedt de prompt met een woord dat de
+    // rules-pijler daarna bestraft (Linfi: 'exclusief'/'luxe' in beide).
+    const incomingDont = Array.isArray(result.vocabularyDont) ? result.vocabularyDont : [];
     if (Array.isArray(result.vocabularyDo) && result.vocabularyDo.length > 0) {
-      tovUpdate.vocabularyDo = result.vocabularyDo;
+      const { dedupeVocabularyAgainstAvoid } = await import('../brandvoice/vocab-dedupe');
+      const existing = await prisma.brandVoiceguide.findUnique({
+        where: { workspaceId: sgMeta.workspaceId },
+        select: { vocabularyDont: true, wordsWeAvoid: true },
+      });
+      const { cleanedDo, removed } = dedupeVocabularyAgainstAvoid(
+        result.vocabularyDo,
+        incomingDont,
+        existing?.vocabularyDont ?? [],
+        existing?.wordsWeAvoid ?? [],
+      );
+      if (removed.length > 0) {
+        console.warn(
+          '[analysis-engine] vocabularyDo/avoid-contradictie ontdubbeld (avoid wint): %s',
+          removed.join(', '),
+        );
+      }
+      if (cleanedDo.length > 0) tovUpdate.vocabularyDo = cleanedDo;
     }
-    if (Array.isArray(result.vocabularyDont) && result.vocabularyDont.length > 0) {
-      tovUpdate.vocabularyDont = result.vocabularyDont;
+    if (incomingDont.length > 0) {
+      tovUpdate.vocabularyDont = incomingDont;
     }
     if (typeof result.voiceSample === 'string' && result.voiceSample.trim().length > 0) {
       tovUpdate.voiceSample = result.voiceSample.trim();

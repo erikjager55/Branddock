@@ -84,13 +84,19 @@ export function buildRewriteFeedbackPrompt(
   ].join('\n');
 }
 
-function formatTellInstruction(detected: DetectedTell): string {
+/** Geëxporteerd (audit 2026-06-10) zodat de LP variant-tell-rewrite dezelfde
+ *  concrete herwerk-instructies kan hergebruiken op variant-JSON copy. */
+export function formatTellInstruction(detected: DetectedTell): string {
   const { definition, count, matches } = detected;
   const examples = matches.slice(0, 3).map((m) => `"${m.replace(/\n/g, ' ').slice(0, 60)}"`).join(', ');
 
   switch (definition.id) {
     case 'em_dash_overuse':
       return `- ${count}× em-dash trailing modifier (e.g. ${examples}). Replace standalone em-dashes with commas, periods, or paired em-dashes around a parenthetical. Reserve "—" for genuine asides.`;
+    case 'em_dash_glued':
+      return `- ${count}× aaneengeplakte em-dash die twee zinsdelen lijmt (${examples}). Vervang door een komma, punt of herformuleer als twee zinnen. Schrijf NOOIT "woord—woord".`;
+    case 'hyphen_splice_conjunction':
+      return `- ${count}× koppelteken als zinslijm vóór een voegwoord (${examples}). Vervang door komma of punt; een koppelteken verbindt samenstellingen, geen zinsdelen.`;
     case 'not_because_but_because':
       return `- ${count}× "niet omdat... maar omdat..." constructie (${examples}). Replace ALL with "Niet [X]. Wel [Y]." or simply state the reason directly.`;
     case 'contrast_formula_nl':

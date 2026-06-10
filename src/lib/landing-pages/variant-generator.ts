@@ -25,7 +25,9 @@
  *    werken voor legacy deliverables.
  */
 
+import type { HumanVoiceMode } from "@prisma/client";
 import { anthropicClient } from "../ai/anthropic-client";
+import { buildHumanVoiceDirective } from "../studio/human-voice-directive";
 import type { BrandContextBlock } from "../ai/prompt-templates";
 import {
   landingPageVariantSchema,
@@ -82,6 +84,12 @@ export interface LandingPageGenerationParams {
    *  `angleLabel` = het korte NL label dat in de UI getoond wordt. */
   angleInstruction?: string | null;
   angleLabel?: string | null;
+  /** Audit 2026-06-10 — Human Voice Directive gating (pariteit met
+   *  canvas-orchestrator). 'OFF' = geen HVD; alles anders (BASELINE/STRICT,
+   *  default BASELINE) injecteert de anti-AI-tell-laag in het system-prompt.
+   *  Vóór deze fix kreeg het LP-pad nooit een em-dash-verbod: 92% van
+   *  LP-deliverables bevatte em-dash-lijm vs 25% op het orchestrator-pad. */
+  humanVoiceMode?: HumanVoiceMode | null;
 }
 
 export type VariantAxis =
@@ -96,13 +104,13 @@ const VARIANT_AXIS_HINTS: Record<VariantAxis, string> = {
   "problem-led":
     "Open met de pijn van de doelgroep. Hero-headline benoemt het probleem direct (vraag-vorm of confronterende stelling). Problem-sectie is het emotionele hart van de pagina. Bridge van 'pijn' naar 'oplossing' is hard en duidelijk.",
   "benefit-led":
-    "Open met de outcome. Hero-headline beschrijft het eindresultaat dat de doelgroep wil bereiken. Features-sectie is het hart van de pagina, ge-framed als concrete vooruitgangen. Geen lange pijn-uitwijding — direct naar transformation.",
+    "Open met de outcome. Hero-headline beschrijft het eindresultaat dat de doelgroep wil bereiken. Features-sectie is het hart van de pagina, ge-framed als concrete vooruitgangen. Geen lange pijn-uitwijding, direct naar transformation.",
   rational:
     "Argumenten op cijfers, mechaniek en evidence. Concrete getallen in headlines waar mogelijk. Testimonials nadruk op meetbare resultaten (uren bespaard, conversie-lift). Geen superlatieven, geen emotie-driven taal.",
   emotional:
     "Argumenten op identiteit, gevoel en aspiratie. Headlines spreken tot wie de lezer wil zijn. Testimonials nadruk op transformatie van persoon/team. Sensorische taal en aspirational verbs.",
   "story-led":
-    "Hero-headline introduceert protagonist + spanning. Sections lopen narrative-arc: situatie → conflict → resolutie. Final-CTA als climax. Geen losse feature-lijstjes — alles ingebed in verhaal.",
+    "Hero-headline introduceert protagonist + spanning. Sections lopen narrative-arc: situatie → conflict → resolutie. Final-CTA als climax. Geen losse feature-lijstjes, alles ingebed in verhaal.",
   "data-led":
     "Hero-headline bevat een verrassend cijfer. Stats-sectie prominent, vóór social proof. Features ge-framed als percentage/factor-verbeteringen. FAQ-antwoorden onderbouwd met data-points.",
 };
@@ -136,6 +144,7 @@ export function buildLandingPageVariantPrompt(
     voiceSample: params.voiceSample ?? null,
     variantAxis: params.variantAxis ?? null,
     angleInstruction: params.angleInstruction ?? null,
+    humanVoiceMode: params.humanVoiceMode ?? null,
   });
   const user = buildUserPrompt(params, { locale });
   return { system, user };
@@ -144,22 +153,22 @@ export function buildLandingPageVariantPrompt(
 // ─── Tone + content-depth hints (Sub-Sprint E) ────────────
 
 const ARCHETYPE_TONE_HINTS: Record<BrandArchetype, string> = {
-  INNOCENT: 'optimistic, simple, honest, hopeful — use positive verbs, avoid corporate jargon',
-  EXPLORER: 'adventurous, independent, authentic — speak to autonomy and discovery',
-  SAGE: 'authoritative, considered, knowledgeable — evidence-led, no exaggeration',
-  HERO: 'bold, confident, action-led — strong verbs, no hedging, "you can"-framing',
-  OUTLAW: 'rebellious, direct, anti-establishment — challenge conventions explicitly',
-  MAGICIAN: 'visionary, transformative, mysterious — speak to possibility and change',
-  REGULAR_GUY: 'down-to-earth, friendly, inclusive — plain language, no superlatives',
-  LOVER: 'intimate, passionate, sensual — evoke emotion and beauty',
-  JESTER: 'playful, witty, light — humor where appropriate, never preachy',
-  CARETAKER: 'warm, protective, supportive — empathy first, reassurance throughout',
-  CREATOR: 'inventive, original, expressive — celebrate craft and intentionality',
-  RULER: 'premium, authoritative, refined — quiet confidence, no sales-y exclamation',
+  INNOCENT: 'optimistic, simple, honest, hopeful: use positive verbs, avoid corporate jargon',
+  EXPLORER: 'adventurous, independent, authentic: speak to autonomy and discovery',
+  SAGE: 'authoritative, considered, knowledgeable: evidence-led, no exaggeration',
+  HERO: 'bold, confident, action-led: strong verbs, no hedging, "you can"-framing',
+  OUTLAW: 'rebellious, direct, anti-establishment: challenge conventions explicitly',
+  MAGICIAN: 'visionary, transformative, mysterious: speak to possibility and change',
+  REGULAR_GUY: 'down-to-earth, friendly, inclusive: plain language, no superlatives',
+  LOVER: 'intimate, passionate, sensual: evoke emotion and beauty',
+  JESTER: 'playful, witty, light: humor where appropriate, never preachy',
+  CARETAKER: 'warm, protective, supportive: empathy first, reassurance throughout',
+  CREATOR: 'inventive, original, expressive: celebrate craft and intentionality',
+  RULER: 'premium, authoritative, refined: quiet confidence, no sales-y exclamation',
 };
 
 const LAYOUT_DEPTH_HINTS: Record<LayoutStyle, string> = {
-  MINIMAL: 'Sparse content. Body sentences max 14 words. Each section feels considered. White-space respect — say less.',
+  MINIMAL: 'Sparse content. Body sentences max 14 words. Each section feels considered. White-space respect: say less.',
   EDITORIAL: 'Magazine-style depth. Body paragraphs 2-3 sentences. Sub-headlines that develop the theme. Reward attentive readers.',
   COMMERCIAL: 'Tight, scannable. Direct value-prop. Bullet-friendly. Quick wins above the fold.',
   EXPERIENTIAL: 'Story-driven. Hero headline emotional. Build narrative through sections. Pay off at final CTA.',
@@ -177,6 +186,7 @@ function buildSystemPrompt(opts: {
   voiceSample?: string | null;
   variantAxis?: VariantAxis | null;
   angleInstruction?: string | null;
+  humanVoiceMode?: HumanVoiceMode | null;
 }): string {
   const toneBlock = opts.archetype
     ? `\n# BRAND-ARCHETYPE: ${opts.archetype}\nTone: ${ARCHETYPE_TONE_HINTS[opts.archetype]}\n`
@@ -197,13 +207,21 @@ function buildSystemPrompt(opts: {
   if (doList.length > 0) vocabLines.push(`Gebruik deze woorden/zinnen waar natuurlijk: ${doList.map((w) => `"${w}"`).join(', ')}.`);
   if (dontList.length > 0) vocabLines.push(`Vermijd deze: ${dontList.map((w) => `"${w}"`).join(', ')}.`);
   const vocabBlock = vocabLines.length > 0
-    ? `\n# VOCABULAIRE-DISCIPLINE\n${vocabLines.join('\n')}\n`
+    ? `\n# BRAND VOICE: VOCABULAIRE-DISCIPLINE (wordsWeUse)\n${vocabLines.join('\n')}\n`
     : '';
   // DTS C2 — voice few-shot sample
   const sample = opts.voiceSample?.trim();
   const voiceBlock = sample && sample.length >= 30
     ? `\n# VOICE-VOORBEELD (match dit rhythm + sentence-length + vocabulaire)\n> ${sample.replace(/\n/g, '\n> ')}\n`
     : '';
+  // Audit 2026-06-10 — Human Voice Directive (anti-AI-tell-laag, pariteit met
+  // canvas-orchestrator.ts:320-327). Default aan (BASELINE); alleen expliciete
+  // 'OFF' slaat over. NA het vocab/voice-blok geplaatst: de HVD verwijst naar
+  // "de Brand Voice sectie hierboven" voor de wordsWeUse-uitzondering.
+  const hvdBlock =
+    opts.humanVoiceMode === 'OFF'
+      ? ''
+      : `\n${buildHumanVoiceDirective({ language: opts.locale.toLowerCase().startsWith('en') ? 'en' : 'nl' })}\n`;
   // Variant-axis block — forceert structureel andere invalshoek voor
   // batch-variants. Zonder dit produceert temperature-variatie alleen
   // bijna-identieke output omdat de rest van de prompt deterministische
@@ -215,7 +233,7 @@ function buildSystemPrompt(opts: {
   const axisBlock = opts.angleInstruction
     ? `\n# !! CREATIVE ANGLE (HARD CONSTRAINT) !!\n${opts.angleInstruction}\n`
     : opts.variantAxis
-    ? `\n# !! VARIANT-INVALSHOEK (HARD CONSTRAINT) !!: ${opts.variantAxis.toUpperCase()}\n${VARIANT_AXIS_HINTS[opts.variantAxis]}\n\nDIT IS GEEN OPTIE — het is de KERN van deze variant. Andere variants in dezelfde batch volgen een EXPLICIET ANDERE as (bv: problem-led ↔ benefit-led). Onze users zien de variants NAAST ELKAAR en moeten ze direct kunnen onderscheiden:\n  - Hero-headline moet de gekozen invalshoek meteen tonen\n  - Volgorde van secties moet de invalshoek versterken\n  - Tone en woordkeus moet substantieel afwijken\nWanneer beide variants 'rond hetzelfde middenpad' uitkomen, hebben we GEFAALD — neem het risico van een uitgesproken kant.\n`
+    ? `\n# !! VARIANT-INVALSHOEK (HARD CONSTRAINT) !!: ${opts.variantAxis.toUpperCase()}\n${VARIANT_AXIS_HINTS[opts.variantAxis]}\n\nDIT IS GEEN OPTIE, het is de KERN van deze variant. Andere variants in dezelfde batch volgen een EXPLICIET ANDERE as (bv: problem-led ↔ benefit-led). Onze users zien de variants NAAST ELKAAR en moeten ze direct kunnen onderscheiden:\n  - Hero-headline moet de gekozen invalshoek meteen tonen\n  - Volgorde van secties moet de invalshoek versterken\n  - Tone en woordkeus moet substantieel afwijken\nWanneer beide variants 'rond hetzelfde middenpad' uitkomen, hebben we GEFAALD. Neem het risico van een uitgesproken kant.\n`
     : '';
   // DTS C6 — sectie-blueprint hint uit render-constraints (alleen wanneer archetype gezet)
   // Maakt sectie-density consistent per merk (RULER 5 secties tight, SAGE 8 editorial)
@@ -234,31 +252,31 @@ function buildSystemPrompt(opts: {
   const designDirectionBlock = `
 # DESIGN-DIRECTION COMMITMENT
 Voordat je copy schrijft, commit eerst aan deze 4 visuele beslissingen
-(maar SCHRIJF deze niet in output — alleen interne richtlijn):
+(maar SCHRIJF deze niet in output, alleen interne richtlijn):
 
-1. AESTHETIC EXTREME — kies één en stuur ALLE keuzes ernaar:
+1. AESTHETIC EXTREME: kies één en stuur ALLE keuzes ernaar:
    - 'refined minimalism' (witruimte, beperkt palet, premium typografie)
    - 'bold maximalism' (grote contrasten, asymmetrie, durf-kleur)
    - 'editorial magazine' (long-form, serif display, rythme uit spacing)
    - 'industrial/technical' (mono-typografie, grid, data-driven feel)
    - 'warm humanist' (zachte palet, ronde vormen, persoonlijke taal)
    - 'rebellious/anti-corporate' (sharp edges, contrast, unexpected layout)
-   Wees uitgesproken — een variant die 'op alle merken zou kunnen passen'
+   Wees uitgesproken: een variant die 'op alle merken zou kunnen passen'
    is mislukt.
 
-2. TRANSFORMATIE-ARC — articuleer in 1 zin de reis die de lezer maakt:
+2. TRANSFORMATIE-ARC: articuleer in 1 zin de reis die de lezer maakt:
    'van ... naar ...' (bv: 'van frustratie naar controle', 'van handmatig
    naar geautomatiseerd', 'van isolatie naar community'). Alle copy moet
-   die arc reflecteren — pijn-bullets aan de 'van'-kant, features +
+   die arc reflecteren: pijn-bullets aan de 'van'-kant, features +
    testimonial + CTA aan de 'naar'-kant.
 
-3. REFERENCE-AESTHETIC — denk aan welk merk visueel/tonaal de norm zet
+3. REFERENCE-AESTHETIC: denk aan welk merk visueel/tonaal de norm zet
    voor deze pagina. Bv: 'Linear voor B2B-clarity', 'Patagonia voor
    purpose-driven', 'Apple voor premium-restraint', 'Notion voor
-   playful-pragmatic'. Niet copiëren — gebruik als compass voor
+   playful-pragmatic'. Niet copiëren, gebruik als compass voor
    tone-of-voice en woordkeus.
 
-4. ANTI-DEFAULTS — vermijd actief:
+4. ANTI-DEFAULTS: vermijd actief:
    - 'Welkom bij ...', 'Ontdek de ...', 'De #1 platform voor ...'
    - Synoniemen-spreuken zonder concreet voordeel
    - 'Wij geloven dat ...' filler-zinnen
@@ -272,16 +290,16 @@ Je bent een Senior UX-conversion strategist + brand-copywriter met 12+
 jaar ervaring. Voor deze opdracht ben je in de huid van een art-director
 die een one-shot variant aflevert die concurreert met de bron-website
 op visuele kwaliteit en commerciële scherpte.
-${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${axisBlock}${blueprintBlock}${designDirectionBlock}
+${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${hvdBlock}${axisBlock}${blueprintBlock}${designDirectionBlock}
 # OPDRACHT
-Genereer een complete landing-page variant als **gestructureerd JSON** volgens het schema hieronder. Geen prose, geen toelichting, geen code-fences — alleen het JSON-object als response.
+Genereer een complete landing-page variant als **gestructureerd JSON** volgens het schema hieronder. Antwoord uitsluitend met het JSON-object (zonder prose, toelichting of code-fences).
 
 # OUTPUT-SCHEMA
 {
   "hero": {
     "headline": string (max 60 tekens, DESCRIPTIEF: noem concreet WAT je verkoopt + de differentiator. Slaagt voor de 5-seconden-test (als de lezer ALLEEN dit leest, weet hij exact wat het product is) ÉN draagt de emotionele register. Een descriptieve kern, GEEN vage benefit-slogan. Goed: "Verkoold gevelhout dat een leven lang zwart blijft". Fout: "Tijdloze schoonheid in hout"),
-    "subhead": string (1-2 zinnen, max ~25 woorden — maakt de headline GELOOFWAARDIG: hoe het werkt + waarom de claim klopt, niet een tweede slogan),
-    "primaryCta": string (laagdrempelige EERSTE actie passend bij een koude lezer — een micro-commitment, bv "Vraag stalen aan"/"Bekijk demo"/"Plan adviesgesprek", NIET een zware ask als "Koop nu"/"Vraag offerte" voor een eerste bezoek. Action-led werkwoord),
+    "subhead": string (1-2 zinnen, max ~25 woorden, maakt de headline GELOOFWAARDIG: hoe het werkt + waarom de claim klopt, niet een tweede slogan),
+    "primaryCta": string (laagdrempelige EERSTE actie passend bij een koude lezer: een micro-commitment, bv "Vraag stalen aan"/"Bekijk demo"/"Plan adviesgesprek", NIET een zware ask als "Koop nu"/"Vraag offerte" voor een eerste bezoek. Action-led werkwoord),
     "secondaryCta": string | optional (Hobson's Choice +1, bv "Bekijk demo"),
     "heroVisualUrl": string | optional (placeholder voor v2),
     "imageBrief": { "subject": string (max 200 tekens, concreet sectie-specifiek onderwerp), "sceneType": "object" | "process" | "location" | "detail" | "person", "composition": string (max 200 tekens, compositie-richting in 1 zin), "avoid": string | optional (wat dit beeld NIET toont) } (visuele richting voor de hero-foto: de SCÈNE die de hero-belofte toont, geen abstracte sfeer)
@@ -293,45 +311,46 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
   "problem": {
     "heading": string (pijn als vraag of stelling),
     "painBullets": string[] (3-5 concrete frustraties),
-    "bridgingSentence": string (brug naar oplossing — voorkomt doom-and-gloom)
+    "bridgingSentence": string (brug naar oplossing, voorkomt doom-and-gloom)
   },` : ""}
   "features": {
     "sectionHeading": string,
-    "items": [{ "icon": string (lucide-icon naam, geen emoji), "heading": string (2-4 woorden), "body": string (1-2 zinnen benefit-frame), "imageBrief": { "subject": string (max 200 tekens), "sceneType": "object" | "process" | "location" | "detail" | "person", "composition": string (max 200 tekens), "avoid": string | optional } }] (3 of 4 items — 5 verstoort grid-balans. Elke feature BEWIJST één pilaar van de hero-belofte — geen losse, willekeurige features. Samen dekken ze de kern-belofte uit de headline/subhead)
+    "items": [{ "icon": string (lucide-icon naam, geen emoji), "heading": string (2-4 woorden), "body": string (1-2 zinnen benefit-frame), "imageBrief": { "subject": string (max 200 tekens), "sceneType": "object" | "process" | "location" | "detail" | "person", "composition": string (max 200 tekens), "avoid": string | optional } }] (3 of 4 items; 5 verstoort grid-balans. Elke feature BEWIJST één pilaar van de hero-belofte, dus geen losse willekeurige features. Samen dekken ze de kern-belofte uit de headline/subhead)
   },
   "socialProof": {
-    "testimonials": [{ "quote": string, "authorName": string, "authorRole": string, "authorCompany": string, "outcome": string | optional }] (EXACT 1 item — sterkste single quote met outcome-cijfer wint van meerdere generieke quotes),
-    "impactStats": [{ "value": string, "label": string }] | optional (max 4 items)
+    "testimonials": [{ "quote": string, "authorName": string, "authorRole": string, "authorCompany": string, "outcome": string | optional }] (EXACT 1 item. Gebruik UITSLUITEND testimonials/namen/cijfers die in de brand-context of opdracht staan; staan die er niet, schrijf dan een kwalitatieve quote zonder cijfers en vul authorName met een generieke functie-aanduiding (bv "Eigenaar van een grand café") en authorCompany met een sector-aanduiding of leeg. Laat authorName NOOIT leeg en verzin NOOIT echte bedrijfsnamen, persoonsnamen of resultaatcijfers),
+    "impactStats": [{ "value": string, "label": string }] | optional (max 4 items, ALLEEN met cijfers uit de aangeleverde context; geen brondata = veld weglaten)
   },${opts.includePricing ? `
   "pricing": {
-    "tiers": [{ "name": string, "price": string, "features": string[], "highlighted": boolean }] (EXACT 3 tiers — decoy-effect)
+    "tiers": [{ "name": string, "price": string, "features": string[], "highlighted": boolean }] (EXACT 3 tiers, decoy-effect)
   },` : ""}
   "faq": {
     "items": [{ "question": string, "answer": string (2-4 zinnen) }] (5-8 items, gesorteerd op gewicht)
   },
   "finalCta": {
     "heading": string (belofte herhalen),
-    "riskReducer": string (bv "Geen creditcard nodig"),
-    "primaryCta": string (MOET IDENTIEK zijn aan hero.primaryCta — single-CTA discipline)
+    "riskReducer": string (concreet drempel-verlagend element, bv "Vrijblijvend en binnen 24 uur reactie"; vermijd opsommende ontkenningen als "Geen X nodig"),
+    "primaryCta": string (MOET IDENTIEK zijn aan hero.primaryCta, single-CTA discipline)
   }
 }
 
 # KRITISCHE REGELS (overtreding = automatic rejection)
 1. **Single-CTA discipline**: finalCta.primaryCta MOET letterlijk identiek zijn aan hero.primaryCta. Geen synoniemen, geen variatie. Alle CTA's op de pagina drijven naar dezelfde actie.
 2. **Headline = descriptief, max 60 tekens**: na 5 seconden moet de lezer exact weten WAT je verkoopt. Noem het product + de differentiator (descriptieve kern + emotionele register), geen vage benefit-slogan. Geen "Welkom bij..." of "De #1 oplossing voor...".
-3. **Readability**: schrijf op 5e-7e graders niveau. Max 50 "moeilijke" woorden (3+ lettergrepen) per pagina. Geen jargon, geen acronymen zonder uitleg.
+3. **Readability**: schrijf op 5e-7e graders niveau. Max 50 "moeilijke" woorden (3+ lettergrepen) per pagina. Vermijd jargon en leg acroniemen uit.
 4. **Features 3-5 items**: paradox of choice. Belangrijkste feature eerst (anchoring).
 5. **FAQ 5-8 items**: dek 3+ koop-barrières (prijs / implementatie / lock-in / security / vergelijking / geschiktheid).
-6. **Concrete cijfers** in testimonials: "30 uur per maand bespaard" wint van "geweldig product".
+6. **Cijfers uitsluitend uit context**: een concreet getal uit de brand-context ("30 uur per maand bespaard") wint van "geweldig product", maar een verzonnen getal is ERGER dan geen getal. Geen cijfers in de context = kwalitatief formuleren.
 7. **Geen stockfoto-uitstraling**: alle copy authentiek en specifiek voor de brand.
 8. **Locale ${opts.locale}**: alle content in deze taal.
 9. **Transformatie-arc consistent**: pijn-bullets aan de 'van'-kant, features/testimonial/CTA aan de 'naar'-kant van de gekozen transformatie. Geen mismatch tussen problem-articulation en outcome-claims.
 10. **Specifiek > generiek**: vervang elk woord dat op meerdere merken zou passen ("krachtig platform", "innovatieve oplossing") door iets dat ALLEEN bij DIT merk past (concrete output, sector-term, uitspraak die de bron-website zou kunnen onderschrijven).
-11. **Geen herhaal-vocabulaire**: gebruik elk content-woord MAX 2× in de hele page (uitgezonderd: brand-naam, lidwoorden, kleine functiewoorden). Specifiek: "vakkundig"/"vakmanschap"/"professioneel"/"kwaliteit"/"deskundig" mogen samen niet vaker dan 3× verschijnen — herhaal-effect verzwakt de boodschap.
-12. **Houd de bron-website-stijl aan, improviseer NIET**: tone-of-voice, sector-termen, klant-aanspreking en typische zinsstructuren komen uit de geanalyseerde bron-website. Gebruik voorbeelden die op de échte bron passen (LINFI = vloerluiken/precisie/architectonisch; Better Brands = purpose/strategie/transformatie). Geen generic SaaS-frasen voor traditionele branches en omgekeerd.
+11. **Geen herhaal-vocabulaire**: gebruik elk content-woord MAX 2× in de hele page (uitgezonderd: brand-naam, lidwoorden, kleine functiewoorden). Specifiek: "vakkundig"/"vakmanschap"/"professioneel"/"kwaliteit"/"deskundig" mogen samen niet vaker dan 3× verschijnen; herhaal-effect verzwakt de boodschap.
+12. **Houd de bron-website-stijl aan, improviseer NIET**: tone-of-voice, sector-termen, klant-aanspreking en typische zinsstructuren komen uit de aangeleverde brand-context. Gebruik uitsluitend voorbeelden die bij DIT merk en DEZE sector passen. Geen generic SaaS-frasen voor traditionele branches en omgekeerd.
 13. **Feature-pilaren binden terug op de hero (PAS-narratief)**: elke feature BEWIJST één pilaar van de hero-belofte; samen dekken ze de kern uit headline+subhead. De problem-sectie (van-kant) → features+testimonial (naar-kant) vormen één doorlopende boog. Geen losse, willekeurige features die "niet van elkaar weten".
-14. **CTA = laagdrempelige eerste ask (micro-commitment)**: de primaire CTA is een lichte eerste stap passend bij een koude lezer (stalen/demo/adviesgesprek), NIET een zware ask (offerte/koop) die te vroeg komt en afschrikt. De single-CTA-discipline (regel 1) blijft — kies één lichte ask en herhaal die.
-15. **Image-briefs = bewijs + onderlinge diversiteit**: elke feature-imageBrief visualiseert HET BEWIJS van DIE specifieke feature (reiniging → textiel in een wasserij-omgeving; levering → bezorgbus; duurzaamheid → certificaat-label op materiaal). De 3-4 feature-briefs MOETEN onderling verschillende sceneTypes hebben (minimaal 3 verschillende van de 5 types) óf duidelijk verschillende subjects. Max 1 "person"-scene per pagina, en NOOIT een frontale geposeerde portret-pose (geen "persoon kijkt met gekruiste armen in de camera") — kies candid/werkend/over-de-schouder. Subjects zijn concreet en fotografeerbaar (een object, een handeling, een plek), geen abstracties als "kwaliteit" of "vertrouwen".
+14. **CTA = laagdrempelige eerste ask (micro-commitment)**: de primaire CTA is een lichte eerste stap passend bij een koude lezer (stalen/demo/adviesgesprek), NIET een zware ask (offerte/koop) die te vroeg komt en afschrikt. De single-CTA-discipline (regel 1) blijft: kies één lichte ask en herhaal die.
+15. **Image-briefs = bewijs + onderlinge diversiteit**: elke feature-imageBrief visualiseert HET BEWIJS van DIE specifieke feature (reiniging → textiel in een wasserij-omgeving; levering → bezorgbus; duurzaamheid → certificaat-label op materiaal). De 3-4 feature-briefs MOETEN onderling verschillende sceneTypes hebben (minimaal 3 verschillende van de 5 types) óf duidelijk verschillende subjects. Max 1 "person"-scene per pagina, en NOOIT een frontale geposeerde portret-pose (geen "persoon kijkt met gekruiste armen in de camera"); kies candid/werkend/over-de-schouder. Subjects zijn concreet en fotografeerbaar (een object, een handeling, een plek), geen abstracties als "kwaliteit" of "vertrouwen".
+16. **Maximaal 1 opsommende ontkenning per pagina**: constructies als "geen X, geen Y" zijn maximaal 1 keer toegestaan op de hele pagina en NOOIT als drieslag of met een "alleen Z"-afsluiting ("geen X, geen Y, alleen Z" is verboden). Formuleer voordelen positief: wat de lezer WEL krijgt.
 
 # COGNITIEVE FUNDAMENTEN (waarom dit werkt)
 - Fogg's Behavior Model: elke sectie moet motivatie + ability + trigger versterken
@@ -339,7 +358,7 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
 - Kahneman's biases: anchoring in pricing, loss aversion in CTA-copy, paradox of choice → max 3-5 opties
 
 # JSON-ONLY OUTPUT
-Genereer ALLEEN het JSON-object. Geen "Hier is de landing-page:" prefix, geen markdown code-fence, geen post-script. Begin direct met { en eindig met }.`;
+Genereer ALLEEN het JSON-object, zonder prefix-zin, markdown code-fence of post-script. Begin direct met { en eindig met }.`;
 }
 
 function buildUserPrompt(
@@ -486,6 +505,13 @@ function extractJsonBlock(text: string): string | null {
 
 // ─── Generator orchestrator ──────────────────────────────
 
+/**
+ * Prompt-template semver voor AICallSnapshot.promptVersion (learning-loop).
+ * 2.0.0 = audit 2026-06-10: HVD-injectie + anti-fabricage + anti-drieslag +
+ * de-em-dash + dynamische brand-voorbeelden (was ongeversioneerd).
+ */
+export const LP_VARIANT_PROMPT_VERSION = "2.0.0";
+
 export interface GenerationResult {
   variant: LandingPageVariantContent;
   inputTokens: number;
@@ -493,6 +519,11 @@ export interface GenerationResult {
   retried: boolean;
   /** P3b — het creative-angle-label van deze variant (null bij axis-fallback). */
   angleLabel?: string | null;
+  /** Audit 2026-06-10 — werkelijk gebruikte prompt + model, zodat de route
+   *  AICallSnapshot/AICallTrace kan schrijven (LP was onzichtbaar voor de
+   *  prompt-registry/learning-loop). */
+  prompt: BuiltPrompt;
+  modelUsed: string;
 }
 
 /**
@@ -511,10 +542,15 @@ export interface GenerationResult {
  */
 export async function generateLandingPageVariant(
   params: LandingPageGenerationParams,
-  opts?: { temperature?: number },
+  opts?: { temperature?: number; model?: string },
 ): Promise<GenerationResult> {
   const prompt = buildLandingPageVariantPrompt(params);
 
+  // Audit 2026-06-10: model komt via canvas-model-routing uit de route
+  // ('Website & Landing Pages' → claude-sonnet-4-6, benchmark 91). NB: op
+  // sonnet-4-6+ dropt anthropic-client de temperature-param (deprecated) —
+  // variant-divergentie leunt dan volledig op angles/axes, wat sinds P3a/P3b
+  // toch al het primaire divergentie-mechanisme is.
   const response = await anthropicClient.createChatCompletion(
     [
       { role: "system", content: prompt.system },
@@ -526,6 +562,7 @@ export async function generateLandingPageVariant(
       // output-tokens) mogen de JSON-staart niet afkappen.
       maxTokens: 4500,
       timeoutMs: 90_000,
+      ...(opts?.model ? { model: opts.model } : {}),
       ...(opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
     },
   );
@@ -546,6 +583,8 @@ export async function generateLandingPageVariant(
     outputTokens: response.outputTokens,
     retried: false,
     angleLabel: params.angleLabel ?? null,
+    prompt,
+    modelUsed: opts?.model ?? "claude-sonnet-4-5-20250929",
   };
 }
 
@@ -591,6 +630,7 @@ export async function generateLandingPageVariantBatch(
   params: LandingPageGenerationParams,
   count: 1 | 2 | 3 | 4 = 2,
   angles?: CreativeAngle[] | null,
+  batchOpts?: { model?: string },
 ): Promise<GenerationResult[]> {
   if (!Number.isInteger(count) || count < 1 || count > 4) {
     throw new Error(`generateLandingPageVariantBatch: count must be an integer 1-4, got ${count}`);
@@ -620,7 +660,7 @@ export async function generateLandingPageVariantBatch(
   // Fase 1: parallel attempt — elk slot met eigen angle/axis + temperature
   const initial = await Promise.allSettled(
     TEMPERATURES.map((temperature, i) =>
-      generateLandingPageVariant(slotParams(i), { temperature }),
+      generateLandingPageVariant(slotParams(i), { temperature, model: batchOpts?.model }),
     ),
   );
 
@@ -649,7 +689,7 @@ export async function generateLandingPageVariantBatch(
         );
         results[i] = await generateLandingPageVariant(
           slotParams(i),
-          { temperature: retryTemp },
+          { temperature: retryTemp, model: batchOpts?.model },
         );
       } catch (retryErr) {
         const msg = retryErr instanceof Error ? retryErr.message : String(retryErr);

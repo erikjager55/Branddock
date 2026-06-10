@@ -11,7 +11,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { prisma } from '@/lib/prisma';
-import { runFidelityScoring } from '@/lib/brand-fidelity/fidelity-runner';
+import { runFidelityScoring, resolveScoringWordCountOverride } from '@/lib/brand-fidelity/fidelity-runner';
 import type { FidelityCompositionInput, FidelityCompositeResult } from '@/lib/brand-fidelity/composition-engine';
 import {
   runAutoIterate,
@@ -100,6 +100,10 @@ export async function* runAutoIterateIntegration(
 
   // ── Bind rescore callback (re-uses compositionInput) ─────
   const rescore: RescoreFn = async ({ text }) => {
+    // Review-fix 2026-06-10: webpage-types krijgen target=actual (F33-scoped) —
+    // de nieuwe per-type variant-targets (~650) zouden full component-text
+    // (~1450 w) anders een verbose-penalty geven. Niet-webpage-types:
+    // undefined → registry-gedrag, ongewijzigd.
     const outcome = await runFidelityScoring({
       workspaceId: input.workspaceId,
       deliverableId: input.deliverableId,
@@ -107,6 +111,7 @@ export async function* runAutoIterateIntegration(
       contentText: text,
       stack: input.stack,
       generatorProvider: input.textModelProvider,
+      targetWordCountOverride: resolveScoringWordCountOverride(input.contentTypeId, text),
     });
     if (!outcome) {
       return {

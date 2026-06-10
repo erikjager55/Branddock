@@ -1,4 +1,4 @@
-import { wordCount, componentTypeCounts, flattenPuckText, type PuckLikeData } from './puck-data-flatten';
+import { wordCount, componentTypeCounts, flattenPuckTextForJudge, type PuckLikeData } from './puck-data-flatten';
 import type { CanvasContextStack } from '../ai/canvas-context';
 
 /**
@@ -112,7 +112,7 @@ export type FvalRunner = (input: {
  * Production page-quality evaluator backed by the existing F-VAL pipeline.
  *
  * Flow:
- *   1. flattenPuckText → contentText for the judge
+ *   1. flattenPuckTextForJudge → contentText for the judge (met sectielabels)
  *   2. runFidelityScoring (3-pillar composite) via injected runner
  *   3. Map FidelityRunOutcome → PageQualityResult shape so callers stay
  *      identical to the heuristic stub
@@ -124,7 +124,9 @@ export type FvalRunner = (input: {
 export async function evaluatePageQualityViaFVAL(
   input: FvalEvaluatorInputs,
 ): Promise<PageQualityResult> {
-  const contentText = flattenPuckText(input.data);
+  // Audit 2026-06-10: judge-variant met sectielabels — de judge zag voorheen
+  // één ongelabelde fragment-soep en strafte structuur af als incoherentie.
+  const contentText = flattenPuckTextForJudge(input.data);
   const fvalOutcome = await input.runFVal({
     workspaceId: input.workspaceId,
     deliverableId: input.deliverableId,

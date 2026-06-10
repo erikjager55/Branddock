@@ -13,6 +13,7 @@
 // research scripts.
 // ============================================================
 
+import { createHash } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import {
   computeFidelityScore,
@@ -72,6 +73,15 @@ export interface FidelityRunInput {
    * control effectief te disablen voor sectionele generation.
    */
   targetWordCountOverride?: number;
+  /**
+   * Review-fix 2026-06-10: sla NIETS op (geen Deliverable.settings.fidelityScore,
+   * geen ContentFidelityScore-rij). Voor transient beslis-scoring zoals de
+   * LP silent-iterate: de fire-and-forget settings-persist (read-modify-write)
+   * racete daar met de finale settings-write van de route, waardoor net
+   * gegenereerde structuredVariantOptions verloren konden gaan — zelfde
+   * clobber-klasse als gotcha 2026-06-09.
+   */
+  skipPersist?: boolean;
 }
 
 // ─── Brand Personality fetcher ──────────────────────
@@ -154,9 +164,49 @@ async function fetchBrandPersonalityInput(workspaceId: string): Promise<BrandPer
 
 // ─── Helpers ────────────────────────────────────────
 
-/** Derive target word count uit content type registry — falls back op 500 */
-function resolveTargetWordCount(contentTypeId: string | null): number {
+/**
+ * LP-target-fix (audit 2026-06-10): structured-variant webpage-types worden
+ * gescoord op de geflattende variant-copy (~440-770 woorden, flatten-variant.ts),
+ * niet op een full-page artikel. De registry-midpoint heuristiek gaf hier
+ * (100+3000)/2 = 1550 → ratio < 0.5 → ×0.6 "severely short" length-penalty op
+ * 46/47 LP-scores (judge-pijler 46.2 i.p.v. raw 75.4). Deze map levert per
+ * webpage-type een realistisch scoring-target (empirisch variant-gemiddelde
+ * ~646 woorden). Bewust hier en NIET in deliverable-types constraints —
+ * minWords/maxWords hebben daar andere consumers (content-validator,
+ * auto-iterate shrink-guard, vanilla-baseline).
+ */
+const STRUCTURED_VARIANT_WORD_TARGETS: Record<string, number> = {
+  'landing-page': 650,
+  'product-page': 650,
+  'faq-page': 700,
+  'comparison-page': 700,
+  microsite: 700,
+};
+
+/**
+ * Review-fix 2026-06-10: webpage-types worden in TWEE regimes gescoord —
+ * structured-variant-copy (~650 woorden) én full component-text via de
+ * studio auto-iterate paden (gemeten gem. ~1450 woorden). Eén vast target
+ * kan beide niet bedienen; voor webpage-types is target=actual (F33) het
+ * enige correcte mechanisme. Deze helper geeft callers die geen variant-
+ * context hebben een scoped override: actual voor webpage-types, undefined
+ * (= registry-gedrag, byte-identiek aan vóór deze branch) voor al het andere.
+ */
+export function resolveScoringWordCountOverride(
+  contentTypeId: string | null | undefined,
+  contentText: string,
+): number | undefined {
+  if (!contentTypeId || !(contentTypeId in STRUCTURED_VARIANT_WORD_TARGETS)) return undefined;
+  const wc = contentText.trim().split(/\s+/).filter(Boolean).length;
+  return wc > 0 ? wc : undefined;
+}
+
+/** Derive target word count uit content type registry — falls back op 500.
+ *  Geëxporteerd voor smoke-tests (scripts/smoke-tests/lp-text-quality-fidelity.ts). */
+export function resolveTargetWordCount(contentTypeId: string | null): number {
   if (!contentTypeId) return 500;
+  const structuredTarget = STRUCTURED_VARIANT_WORD_TARGETS[contentTypeId];
+  if (structuredTarget) return structuredTarget;
   const def = getDeliverableTypeById(contentTypeId);
   if (!def?.constraints) return 500;
   const { minWords, maxWords } = def.constraints;
@@ -183,13 +233,24 @@ const SHORT_FORM_CATEGORIES = new Set([
   'Social Media',
   'Advertising & Paid',
 ]);
-function resolveCompositeThreshold(contentTypeId: string | null | undefined): number {
+/**
+ * LP-target-fix (audit 2026-06-10): webpage-copy is fragmentarisch van aard
+ * (headlines, CTA-labels, bullets — zie flatten-variant.ts) en zit qua
+ * brand-marker-ruimte tussen long-form en short-form in. Simulatie zonder
+ * length-penalty: 94% van LP-scores ≥ 70, 57% ≥ 75 — midden-drempel 70
+ * normaliseert het type zonder de lat te laag te leggen.
+ */
+const MID_FORM_CATEGORIES = new Set(['Website & Landing Pages']);
+/** Geëxporteerd voor smoke-tests. */
+export function resolveCompositeThreshold(contentTypeId: string | null | undefined): number {
   const DEFAULT = 75;
+  const MID_FORM = 70;
   const SHORT_FORM = 65;
   if (!contentTypeId) return DEFAULT;
   const def = getDeliverableTypeById(contentTypeId);
   if (!def) return DEFAULT;
   if (SHORT_FORM_CATEGORIES.has(def.category)) return SHORT_FORM;
+  if (MID_FORM_CATEGORIES.has(def.category)) return MID_FORM;
   return DEFAULT;
 }
 
@@ -305,10 +366,20 @@ async function persistFidelityScore(
  * is 1:N met ContentVersion (multi-judge support — andere scorers zoals
  * de learning-loop scorer kunnen co-existeren).
  */
+/**
+ * Stabiele content-fingerprint voor score-dedupe. sha-256 prefix (16 hex)
+ * over getrimde tekst — collision-kans verwaarloosbaar op deze volumes.
+ * Geëxporteerd voor smoke-tests + baseline-recompute script.
+ */
+export function computeContentHash(contentText: string): string {
+  return createHash('sha256').update(contentText.trim()).digest('hex').slice(0, 16);
+}
+
 async function persistContentFidelityScoreIfPossible(
   deliverableId: string,
   workspaceId: string,
   result: FidelityCompositeResult,
+  contentHash?: string,
 ): Promise<void> {
   try {
     // Pak de meest recente ContentVersion voor deze deliverable.
@@ -380,6 +451,27 @@ async function persistContentFidelityScoreIfPossible(
       pillar: 'rules',
     }));
 
+    // Dedupe-guard (audit 2026-06-10): herhaald scoren van byte-identieke
+    // content op dezelfde ContentVersion maakt geen nieuwe rij — dat vervuilt
+    // type-gemiddelden (één placeholder-deliverable was 10/47 LP-scores).
+    // Alleen de meest recente rij telt: een oudere identieke score gevolgd
+    // door edits + terug-edit is legitiem her-scoren.
+    if (contentHash) {
+      const latest = await prisma.contentFidelityScore.findFirst({
+        where: { contentVersionId: version.id },
+        orderBy: { scoredAt: 'desc' },
+        select: { id: true, contentHash: true },
+      });
+      if (latest?.contentHash === contentHash) {
+        console.warn(
+          '[fidelity-runner] Skipping duplicate ContentFidelityScore persist (same contentHash %s, version %s)',
+          contentHash,
+          version.id,
+        );
+        return;
+      }
+    }
+
     // Δ-1 Surface E: persist BrandReviewFinding rows alongside the score so
     // PublishGate (en mogelijk andere internal-content surfaces) dezelfde
     // structured-finding shape kan tonen die external Surface C/D al gebruikt.
@@ -398,6 +490,7 @@ async function persistContentFidelityScoreIfPossible(
         ruleViolations: ruleViolationsJson,
         thresholdMet: result.thresholdMet,
         scorerVersion: result.scorerVersion,
+        contentHash: contentHash ?? null,
         // Aggregate-counter voor join-free UI counts (ADR-1). Pre-rolled bij
         // create zodat dashboards en find-list views niet per row een join
         // op BrandReviewFinding hoeven te doen.
@@ -472,6 +565,24 @@ async function persistStrictRewrite(
 
 // ─── Main API ───────────────────────────────────────
 
+/**
+ * Bekende editor/template-placeholder-markers. Content die deze bevat is
+ * unfilled scaffold, geen gegenereerde of geschreven copy. Lowercase-match.
+ * Geëxporteerd voor smoke-tests.
+ */
+export const PLACEHOLDER_CONTENT_MARKERS = [
+  'schrijf hier je inhoud',
+  'lorem ipsum',
+  'plaats hier je tekst',
+  'your content here',
+] as const;
+
+/** Geëxporteerd voor smoke-tests. */
+export function containsPlaceholderContent(text: string): boolean {
+  const lower = text.toLowerCase();
+  return PLACEHOLDER_CONTENT_MARKERS.some((marker) => lower.includes(marker));
+}
+
 export interface FidelityRunOutcome {
   result: FidelityCompositeResult;
   /** De gederiveerde composition input — re-usable voor STRICT re-scoring */
@@ -494,6 +605,17 @@ export async function runFidelityScoring(
     const wordCount = input.contentText.trim().split(/\s+/).filter(Boolean).length;
     if (wordCount < 50) {
       // Niet genoeg signaal voor een betekenisvolle score
+      return null;
+    }
+    if (containsPlaceholderContent(input.contentText)) {
+      // Score-vervuiling-guard (audit 2026-06-10): één placeholder-deliverable
+      // ("Schrijf hier je inhoud") leverde 21% van alle LP-judge-scores en
+      // drukte het type-gemiddelde ~4 punten. Unfilled editor-defaults zijn
+      // geen content — scoren ervan vervuilt benchmarks én verwart de user.
+      console.warn(
+        '[fidelity-runner] Skipping fidelity scoring: content contains editor placeholder markers (deliverable %s)',
+        input.deliverableId,
+      );
       return null;
     }
 
@@ -540,6 +662,11 @@ export async function runFidelityScoring(
       personaSummary,
       strategySummary,
       personality,
+      // Audit 2026-06-10: geseede vocabularyDo hoort in de allowlist van
+      // detector + rules-heuristiek (zie FidelityCompositionInput JSDoc).
+      brandVocabularyDo: (voiceguideRow?.vocabularyDo ?? []).filter(
+        (w): w is string => typeof w === 'string',
+      ),
       generatorProvider: input.generatorProvider,
       targetWordCount,
       // Fix C 2026-05-19: per-content-type threshold ipv DEFAULT 75 voor
@@ -559,8 +686,15 @@ export async function runFidelityScoring(
     const result = await computeFidelityScore(compositionInput);
 
     // Persist async — don't await, don't block the orchestrator
-    void persistFidelityScore(input.deliverableId, result);
-    void persistContentFidelityScoreIfPossible(input.deliverableId, input.workspaceId, result);
+    if (!input.skipPersist) {
+      void persistFidelityScore(input.deliverableId, result);
+      void persistContentFidelityScoreIfPossible(
+        input.deliverableId,
+        input.workspaceId,
+        result,
+        computeContentHash(input.contentText),
+      );
+    }
 
     return { result, compositionInput };
   } catch (err) {
@@ -704,6 +838,7 @@ export async function runStrictModeIfApplicable(
         input.deliverableId,
         input.compositionInput.workspaceId,
         finalFidelityScore,
+        computeContentHash(strictResult.finalText),
       );
     } catch (rescoringErr) {
       console.warn('[fidelity-runner] STRICT re-scoring failed:', (rescoringErr as Error).message);

@@ -59,6 +59,15 @@ export interface FidelityCompositionInput {
   /** BrandPersonality declared signals voor pijler 1 */
   personality: BrandPersonalityInput | null;
 
+  /**
+   * Audit 2026-06-10: BrandVoiceguide.vocabularyDo — wordt net als wordsWeUse
+   * bewust in generatie-prompts geseed ("Gebruik waar natuurlijk") en hoort
+   * dus in de allowlist van detector + rules-heuristiek. Zonder dit werd bv.
+   * Napking's geseede 'flexibel' 13× als vague-quality bestraft. Telt NIET
+   * mee in pijler-1-style-coverage (dat blijft wordsWeUse-only).
+   */
+  brandVocabularyDo?: string[];
+
   /** Generator provider — bepaalt cross-family judge keuze */
   generatorProvider: GeneratorProvider;
 
@@ -337,17 +346,22 @@ export async function computeFidelityScore(
   const startedAt = Date.now();
 
   const styleResult = scoreBrandStyle(input.contentText, input.personality);
-  const detectorResult = detectAiTells(input.contentText);
+
+  // 2026-05-19: brand-allowlist zodat brand-defining vocabulary (bv "maatwerk"
+  // / "op maat" voor luxe-merken) niet als vague-quality wordt geflagd.
+  // wordsWeUse fungeert als explicit-brand-signal lijst die heuristic-overlap
+  // overruled. Audit 2026-06-10: zelfde allowlist nu óók naar de ai-tell-
+  // detector — het detector-lexicon bevat letterlijk seed-woorden ('naadloos',
+  // 'op maat') waardoor de judge hetzelfde woord prees én bestrafte.
+  const brandAllowlist = [
+    ...(input.personality?.wordsWeUse ?? []),
+    ...(input.brandVocabularyDo ?? []),
+  ];
+  const detectorResult = detectAiTells(input.contentText, { brandVocabulary: brandAllowlist });
 
   // Pijler 3: parallel-fetch BrandRule evaluator (DB-backed) + heuristics
   // evaluator (Δ-2 — locale-package). Merge into single RuleEvaluationResult
   // zodat downstream pillar3 score-logic ongewijzigd blijft.
-  //
-  // 2026-05-19: brand-allowlist doorgegeven aan heuristic-evaluator zodat
-  // brand-defining vocabulary (bv "maatwerk" / "op maat" voor luxe-merken)
-  // niet als vague-quality wordt geflagd. wordsWeUse fungeert als
-  // explicit-brand-signal lijst die heuristic-overlap overruled.
-  const brandAllowlist = input.personality?.wordsWeUse ?? [];
   const [brandRulesResult, heuristicsResult] = await Promise.all([
     evaluateBrandRules(input.workspaceId, input.contentText),
     evaluateHeuristics(input.workspaceId, input.contentText, { brandAllowlist }),

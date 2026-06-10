@@ -4,6 +4,25 @@ providers:
   - id: anthropic:messages:claude-sonnet-4-5-20251001
     config: { max_tokens: 4000, temperature: 0.7 }
 
+# Audit 2026-06-10: anti-AI-tell assertions op elke test — glued em-dash
+# ("over—zodat") en de drieslag "geen X, geen Y, geen/alleen Z" waren de
+# meest voorkomende tells in LP-copy (PO-klacht). NB: de productie-prompt
+# zelf wordt geëxerceerd door scripts/eval/lp-variant-golden/run.ts.
+defaultTest:
+  assert:
+    - type: javascript
+      value: |
+        // Geen aaneengeplakte em-dash als zinslijm (woord—woord).
+        // <=1 i.p.v. ===0: stochastische output zonder HVD-laag in deze
+        // generieke prompt — zero-tolerance zou nightly flaken.
+        const glued = (output.match(/[a-zà-öø-ÿ]—[a-zà-öø-ÿ]/g) || []).length;
+        return glued <= 1 || `glued em-dashes: ${glued}`;
+    - type: javascript
+      value: |
+        // Max 1 opsommende-ontkenning-drieslag op de hele pagina
+        const triple = (output.match(/geen\s+[^.,;]{2,40},\s*geen\s+[^.,;]{2,40}[,—-]\s*(geen|alleen)/gi) || []).length;
+        return triple <= 1 || `drieslag-patronen: ${triple}`;
+
 prompts:
   - |
     Schrijf een landing-page conform deze brief:
@@ -24,6 +43,9 @@ prompts:
     7. Final CTA: urgentie + risk-reversal
 
     SEO: title-tag ≤ 60 chars, meta-description ≤ 155 chars, keyword in H1+body.
+
+    Stijlregels: gebruik GEEN em-dash (—) als zinslijm; gebruik komma's of dubbele
+    punten. Maximaal 1 opsommende ontkenning ("geen X, geen Y") op de hele pagina.
 
 tests:
   - description: 'Seed: Napking sustainability-pilot landing'
