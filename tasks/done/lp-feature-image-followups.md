@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: ~1 dag
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-10
-completed: -
+completed: 2026-06-10
 related-adr: docs/adr/2026-06-10-feature-visual-pipeline.md (addendum in deze task)
 related-spec: docs/audits/2026-06-10-lp-feature-image-diversity.md §9
 worktree: branddock-feat-lp-image-followups (branch feat/lp-image-followups)
@@ -24,11 +24,11 @@ Vier bewust-deferde punten uit de #317-reviews, waarvan er één inmiddels een e
 # Acceptatiecriteria
 
 - [ ] Clear-knop wist een feature-beeld blijvend (overleeft autosave + reload); stale-race-bescherming blijft werken
-- [ ] Bron-badge toont herkomst op de veld-thumbnail
+- [x] Bron-badge toont herkomst op de veld-thumbnail
 - [ ] WorkspaceAiConfig-row `lp-feature-image-candidates`=2 → 2 kandidaten per slot, beste wint, dupe-swap gebruikt runner-up
-- [ ] Audit-rows: per-slot duration, iterationCount=1 na retry; response `regenerated` alleen bij geslaagde retry
-- [ ] Judges krijgen nooit buffers >4MB ongeschaald
-- [ ] `npx tsc --noEmit` 0 errors · lint 0 nieuwe warnings · smokes groen
+- [x] Audit-rows: per-slot duration, iterationCount=1 na retry; response `regenerated` alleen bij geslaagde retry
+- [x] Judges krijgen nooit buffers >4MB ongeschaald
+- [x] `npx tsc --noEmit` 0 errors · lint 0 nieuwe warnings · smokes groen
 
 # Bestanden die ik aanraak
 
@@ -60,3 +60,8 @@ Vier bewust-deferde punten uit de #317-reviews, waarvan er één inmiddels een e
 
 - Bron-badge op basis van persist-rows/coherence-scores (vergt component-fetch in de editor)
 - Library-first matching (aparte task na embedding-backfill)
+
+# Notes
+
+- 2-reviewer pass: 0 critical, 6 unieke warnings — alle gefixt (swap fail-soft, sv-clear-spiegeling, allSettled, re-judge na swap, sentinel-sweep, loser-keuze) + 3 minors (telemetrie-tellers, canvas-refined-badge, magic-byte-sniff). Deferred minors: orphaned storage-files bij swap/retry (pre-existing klasse), R2-badge-heuristiek (fileName verdwijnt op R2), swap niet zichtbaar in audit-row.
+- Acceptatie clear-knop + candidates=2 live-probe: na merge uitgevoerd (zie changelog).
