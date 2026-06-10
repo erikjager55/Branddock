@@ -20,7 +20,7 @@
 // =============================================================================
 
 import { NextResponse } from 'next/server';
-import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
+import { requireDeliverableAccess } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleCanvasContext, type CanvasContextStack } from '@/lib/ai/canvas-context';
@@ -157,8 +157,20 @@ const requestSchema = z
      * client-side, wat onbetrouwbaar bleek). Andere flows laten dit leeg.
      */
     target: z.enum(['hero']).optional(),
+    /**
+     * Alleen relevant bij target:'hero'. 'fill-only' schrijft de hero-URL
+     * uitsluitend waar nog géén beeld staat — voor de async self-heal, zodat
+     * een handmatige keuze (Puck image-field) tijdens de ~30s generatie niet
+     * wordt overschreven. Default 'overwrite' (expliciete regenerate-flows).
+     */
+    heroWriteMode: z.enum(['fill-only', 'overwrite']).optional(),
   })
   .strict()
+  // Contract afdwingen i.p.v. stil negeren: heroWriteMode zonder target:'hero'
+  // is een caller-fout en hoort een 400 te geven (review-minor 2026-06-10).
+  .refine((v) => !v.heroWriteMode || v.target === 'hero', {
+    message: "heroWriteMode vereist target: 'hero'",
+  })
   .or(z.undefined());
 
 interface RouteParams {
@@ -167,23 +179,22 @@ interface RouteParams {
 
 export async function POST(request: Request, { params }: RouteParams) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { deliverableId } = await params;
+
+    // Resource-based auth: workspace van het deliverable, niet cookie-gelijkheid.
+    // De hero self-heal vanuit een zombie-tab 404'de hier stil (audit
+    // docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
+    const access = await requireDeliverableAccess(deliverableId);
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
     }
-    const session = await getServerSession();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const workspaceId = access.workspaceId;
 
     const rateLimit = await withAiRateLimit(workspaceId);
     if (rateLimit instanceof Response) return rateLimit;
 
-    const { deliverableId } = await params;
-
-    // Verify ownership
-    const deliverable = await prisma.deliverable.findFirst({
-      where: { id: deliverableId, campaign: { workspaceId } },
+    const deliverable = await prisma.deliverable.findUnique({
+      where: { id: deliverableId },
       select: { id: true, settings: true, contentType: true },
     });
     if (!deliverable) {
@@ -481,7 +492,9 @@ export async function POST(request: Request, { params }: RouteParams) {
     // server is de enige autoriteit op de DB → dit landt gegarandeerd. Gedeelde
     // helper (ook gebruikt door -compose / -trained), best-effort + idempotent.
     if (body?.target === 'hero' && uploads[0]?.url) {
-      await patchHeroVisualUrl(deliverableId, uploads[0].url);
+      await patchHeroVisualUrl(deliverableId, uploads[0].url, {
+        onlyIfEmpty: body?.heroWriteMode === 'fill-only',
+      });
     }
 
     // Persist as DeliverableComponent variantGroup='visual' of

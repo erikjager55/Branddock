@@ -1,5 +1,10 @@
-'use client';
-
+// GEEN 'use client' — dit zijn pure render-functies zonder hooks/handlers.
+// De directive maakte buildSpikePuckConfig een client-reference-proxy,
+// waardoor server-side callers (lp-fidelity-check route via lp-screenshotter,
+// /p/[slug] RSC) crashten met "Attempted to call buildSpikePuckConfig() from
+// the server". Client-importers (PuckPageBuilder e.a.) zitten al achter een
+// hogere 'use client'-boundary; interactieve fields (PuckImageField)
+// declareren hun eigen boundary.
 import type { Config } from '@puckeditor/core';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 import ReactMarkdown from 'react-markdown';
@@ -20,6 +25,26 @@ import { IconBlock } from './lucide-icon-map';
 import { isNoOpBorder, isTransparentBackground, isWeakButtonBackground } from '@/lib/landing-pages/scraped-css-helpers';
 import { pxFromCssValue } from '@/lib/landing-pages/brand-tokens-v4-mappers';
 import { isScrapedOrigin, type TokenProvenance } from '@/lib/landing-pages/token-provenance';
+import { PuckImageField } from './PuckImageField';
+
+// ─── Image-field factory ─────────────────────────────────────
+
+/**
+ * Puck custom-field voor image-URL props: thumbnail-preview + media-library
+ * picker (selecteren/zoeken/genereren) i.p.v. een kaal URL-tekstveld. Hooks
+ * leven in PuckImageField zelf (React mount het render-resultaat als
+ * component-tree), dus dit is veilig ongeacht hoe Puck `render` aanroept.
+ * `allowClear` UIT voor de hero (server-side preserve-guard + self-heal
+ * maken een clear toch ongedaan), AAN voor feature-beelden.
+ */
+function imageField(label: string, allowClear: boolean) {
+  return {
+    type: 'custom' as const,
+    render: ({ value, onChange, readOnly }: { value?: string | null; onChange: (v: string) => void; readOnly?: boolean }) => (
+      <PuckImageField value={value} onChange={onChange} label={label} allowClear={allowClear} readOnly={readOnly} />
+    ),
+  };
+}
 
 // ─── CTA-fill resolver ───────────────────────────────────────
 
@@ -575,7 +600,7 @@ function brandHeroComponent(tokens: BrandTokens) {
       headline: { type: 'text' as const },
       sub: { type: 'textarea' as const },
       ctaLabel: { type: 'text' as const },
-      heroVisualUrl: { type: 'text' as const },
+      heroVisualUrl: imageField('Hero-afbeelding', false),
     },
     defaultProps: {
       eyebrow: '',
@@ -1257,8 +1282,13 @@ function featureGridComponent(tokens: BrandTokens, provenance?: TokenProvenance)
           title: { type: 'text' as const },
           description: { type: 'textarea' as const },
           icon: { type: 'text' as const },
+          // Zonder dit field stript Puck's onChange de prop bij élke
+          // editor-edit (props zonder field-def worden gefilterd, zelfde
+          // mechanisme als de bandTone-strip) → gegenereerde feature-beelden
+          // verdwenen stil. Field-def = picker + strip-fix in één.
+          imageUrl: imageField('Afbeelding', true),
         },
-        defaultItemProps: { title: 'Feature', description: 'Korte beschrijving', icon: '' },
+        defaultItemProps: { title: 'Feature', description: 'Korte beschrijving', icon: '', imageUrl: null },
         getItemSummary: (item: FeatureItem) => item.title || 'Untitled feature',
       },
     },
@@ -1527,7 +1557,7 @@ function featureSplitComponent(tokens: BrandTokens) {
         arrayFields: {
           title: { type: 'text' as const },
           description: { type: 'textarea' as const },
-          imageUrl: { type: 'text' as const },
+          imageUrl: imageField('Afbeelding', true),
         },
       },
     },

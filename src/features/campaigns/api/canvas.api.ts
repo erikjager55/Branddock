@@ -275,6 +275,10 @@ export async function generateCanvasVisual(
     /** 'hero': de route bust de eerste URL atomisch server-side in de LP-puckData
      *  (BrandHero) + structuredVariant → betrouwbare header-image zonder client-race. */
     target?: 'hero';
+    /** Alleen bij target:'hero'. 'fill-only' schrijft uitsluitend waar nog geen
+     *  beeld staat — voor de async self-heal zodat een handmatige keuze tijdens
+     *  de generatie niet wordt overschreven. Default 'overwrite'. */
+    heroWriteMode?: 'fill-only' | 'overwrite';
   },
 ): Promise<GenerateVisualResponse> {
   const res = await fetch(`/api/studio/${deliverableId}/generate-visual`, {

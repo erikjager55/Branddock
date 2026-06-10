@@ -254,7 +254,11 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
                 mediaAssetId: null,
                 alt: first.prompt ?? null,
               }).catch((err) => {
-                console.error('[Step1Context] hero persist failed', err);
+                // Gestructureerd payload: kaal Error-object → {} in dev-log.
+                console.error('[Step1Context] hero persist failed', {
+                  deliverableId,
+                  message: err instanceof Error ? err.message : String(err),
+                });
               });
             }
             setVisualGenerationStatus('idle');

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId } from "@/lib/auth-server";
-import { preserveHeroOnSettings } from "@/features/campaigns/components/canvas/medium/hero-visual-preserve";
+import { requireDeliverableAccess } from "@/lib/deliverable/deliverable-access";
+import { preserveHeroOnSettings, syncHeroFromPuck } from "@/features/campaigns/components/canvas/medium/hero-visual-preserve";
 import { preserveFeatureVisualsOnSettings } from "@/features/campaigns/lib/feature-visual-preserve";
 import { z } from "zod";
 
@@ -11,9 +11,13 @@ export async function GET(
   { params }: { params: Promise<{ deliverableId: string }> }
 ) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { deliverableId } = await params;
+    // Resource-based auth: workspace van het deliverable, niet cookie-gelijkheid
+    // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
+    const access = await requireDeliverableAccess(deliverableId);
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
+    }
 
     const deliverable = await prisma.deliverable.findUnique({
       where: { id: deliverableId },
@@ -38,11 +42,6 @@ export async function GET(
         { error: "Deliverable not found" },
         { status: 404 }
       );
-    }
-
-    // Verify workspace ownership
-    if (deliverable.campaign.workspaceId !== workspaceId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const imageUrls = deliverable.generatedImageUrls as string[] | null;
@@ -122,9 +121,13 @@ export async function PATCH(
   { params }: { params: Promise<{ deliverableId: string }> }
 ) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { deliverableId } = await params;
+    // Resource-based auth (zombie-tab fix): de puckData-autosave loopt via deze
+    // PATCH — cookie-gelijkheid betekende stille data-loss in andere tabs.
+    const access = await requireDeliverableAccess(deliverableId);
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
+    }
 
     const body = await request.json();
     const parsed = patchSchema.safeParse(body);
@@ -136,7 +139,6 @@ export async function PATCH(
       );
     }
 
-    // Verify ownership
     const existing = await prisma.deliverable.findUnique({
       where: { id: deliverableId },
       include: {
@@ -149,10 +151,6 @@ export async function PATCH(
         { error: "Deliverable not found" },
         { status: 404 }
       );
-    }
-
-    if (existing.campaign.workspaceId !== workspaceId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     // Build update data, casting JSON fields for Prisma compatibility
@@ -179,7 +177,24 @@ export async function PATCH(
         existingSettings,
         preserveHeroOnSettings(existingSettings, settings as Record<string, unknown>),
       );
-      updateData.settings = JSON.parse(JSON.stringify({ ...existingSettings, ...preservedIncoming }));
+      // Dual-track sync ná de merge: autosave/image-field PATCHen alleen
+      // puckData — spiegel een non-lege puckData-hero naar
+      // structuredVariant.hero zodat export/regenerate niet op een stale URL
+      // lezen. Volgorde: clear-guards (hero + feature-preserve) eerst, dan de
+      // sync. Alleen wanneer de schrijver puckData meestuurt ZONDER eigen
+      // structuredVariant (= het autosave/image-field-pad). Stuurt een writer
+      // beide tracks (variant-keuze, regenerate), dan is hij zelf
+      // verantwoordelijk voor consistentie en mag zijn expliciete sv-hero
+      // niet stil door de (mogelijk stale) puckData worden overschreven;
+      // een sv-only PATCH idem. Bekende rest-race (pre-existing klasse, zie
+      // gotchas 2026-06-09): een stale in-flight autosave kan een net
+      // out-of-band gezette hero op beide tracks terugdraaien.
+      const merged = { ...existingSettings, ...preservedIncoming };
+      const incomingSettings = settings as Record<string, unknown>;
+      const autosaveShapedWrite = !!incomingSettings.puckData && !incomingSettings.structuredVariant;
+      updateData.settings = JSON.parse(
+        JSON.stringify(autosaveShapedWrite ? syncHeroFromPuck(merged) : merged),
+      );
     }
     if (generatedSlides !== undefined)
       updateData.generatedSlides = JSON.parse(JSON.stringify(generatedSlides));

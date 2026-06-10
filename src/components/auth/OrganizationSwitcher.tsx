@@ -4,6 +4,28 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { authClient, useSession } from '@/lib/auth-client';
 import { Building2, ChevronDown, Check, Plus, Loader2, Briefcase } from 'lucide-react';
 import { clearAllStorage } from '@/utils/storage';
+import {
+  WORKSPACE_SWITCH_CHANNEL,
+  type WorkspaceSwitchMessage,
+} from '@/components/shared/WorkspaceSwitchGuard';
+
+/**
+ * Meld andere open tabs dat de workspace-cookie is gewijzigd, zodat de
+ * WorkspaceSwitchGuard daar een blocking herlaad-overlay kan tonen (de
+ * reload hieronder ververst alleen de eigen tab — zombie-tab fix, audit
+ * docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
+ */
+function broadcastWorkspaceSwitch(workspaceId: string | null, name: string | null) {
+  if (typeof BroadcastChannel === 'undefined') return;
+  try {
+    const channel = new BroadcastChannel(WORKSPACE_SWITCH_CHANNEL);
+    const message: WorkspaceSwitchMessage = { type: 'workspace-switched', workspaceId, name };
+    channel.postMessage(message);
+    channel.close();
+  } catch {
+    // Broadcast is best-effort — een falende channel mag de switch niet blokkeren.
+  }
+}
 
 interface OrgData {
   id: string;
@@ -109,6 +131,7 @@ export function OrganizationSwitcher() {
       await fetch('/api/workspace/switch', { method: 'DELETE' });
       await authClient.organization.setActive({ organizationId: orgId });
       setIsOpen(false);
+      broadcastWorkspaceSwitch(null, null);
       // Clear client-side localStorage to prevent stale data from previous workspace
       clearAllStorage();
       window.location.reload();
@@ -128,6 +151,7 @@ export function OrganizationSwitcher() {
       if (res.ok) {
         setActiveWorkspace(workspace);
         setIsOpen(false);
+        broadcastWorkspaceSwitch(workspace.id, workspace.name);
         // Clear client-side localStorage to prevent stale data from previous workspace
         clearAllStorage();
         window.location.reload();

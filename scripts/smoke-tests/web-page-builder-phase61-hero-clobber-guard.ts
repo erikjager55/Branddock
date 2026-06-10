@@ -6,7 +6,7 @@
  *
  * Run: npx tsx scripts/smoke-tests/web-page-builder-phase61-hero-clobber-guard.ts
  */
-import { preserveHeroVisual, preserveHeroOnSettings, type PuckTreeLike } from '../../src/features/campaigns/components/canvas/medium/hero-visual-preserve';
+import { preserveHeroVisual, preserveHeroOnSettings, syncHeroFromPuck, type PuckTreeLike } from '../../src/features/campaigns/components/canvas/medium/hero-visual-preserve';
 
 let pass = 0;
 let fail = 0;
@@ -116,6 +116,103 @@ group('6 — preserveHeroOnSettings: PATCH-route clobber-guard');
   const out = preserveHeroOnSettings({ puckData: tree(undefined) }, { puckData: tree('') });
   assert('geen bestaande hero → niets verzonnen',
     !heroUrl(out.puckData as PuckTreeLike));
+}
+
+// ─── 7. Dual-track sync (syncHeroFromPuck) — PATCH-chokepoint ────────────────
+group('7 — syncHeroFromPuck: structuredVariant.hero volgt non-lege puckData-hero');
+{
+  // divergentie: puckData heeft nieuwe URL, structuredVariant nog de oude → spiegelen
+  const merged = {
+    puckData: tree(URL_B),
+    structuredVariant: { hero: { heroVisualUrl: URL_A, headline: 'H' } },
+    other: 1,
+  };
+  const out = syncHeroFromPuck(merged);
+  const sv = out.structuredVariant as { hero?: { heroVisualUrl?: string; headline?: string } };
+  assert('structuredVariant gespiegeld naar puckData-URL', sv.hero?.heroVisualUrl === URL_B, String(sv.hero?.heroVisualUrl));
+  assert('overige hero-velden intact', sv.hero?.headline === 'H');
+  assert('overige settings-keys intact', out.other === 1);
+}
+{
+  // lege puckData-hero → NIET syncen (clear-pad blijft bij preserve-guard)
+  const merged = { puckData: tree(''), structuredVariant: { hero: { heroVisualUrl: URL_A } } };
+  const out = syncHeroFromPuck(merged);
+  const sv = out.structuredVariant as { hero?: { heroVisualUrl?: string } };
+  assert('lege puckData-hero laat structuredVariant ongemoeid', sv.hero?.heroVisualUrl === URL_A);
+  assert('zelfde referentie bij no-op (leeg)', out === merged);
+}
+{
+  // ontbrekende structuredVariant / hero-key → no-op zonder throw
+  const noSv = { puckData: tree(URL_B) };
+  assert('geen structuredVariant → no-op', syncHeroFromPuck(noSv) === noSv);
+  const noHero = { puckData: tree(URL_B), structuredVariant: { headline: 'x' } };
+  assert('structuredVariant zonder hero → no-op', syncHeroFromPuck(noHero) === noHero);
+  const noPd = { structuredVariant: { hero: { heroVisualUrl: URL_A } } };
+  assert('geen puckData → no-op', syncHeroFromPuck(noPd) === noPd);
+}
+{
+  // idempotent: al gelijk → zelfde referentie (geen onnodige write)
+  const merged = { puckData: tree(URL_B), structuredVariant: { hero: { heroVisualUrl: URL_B } } };
+  assert('al in sync → zelfde referentie', syncHeroFromPuck(merged) === merged);
+}
+{
+  // samenspel met preserveHeroOnSettings (route-volgorde: preserve → merge → sync):
+  // incoming lege hero + bestaande URL_A → preserve herstelt URL_A; sync laat sv op URL_A
+  const existing = { puckData: tree(URL_A), structuredVariant: { hero: { heroVisualUrl: URL_A } } };
+  const incoming = { puckData: tree('') };
+  const preserved = preserveHeroOnSettings(existing, incoming);
+  const out = syncHeroFromPuck({ ...existing, ...preserved });
+  assert('preserve+sync: puckData behoudt URL_A', heroUrl(out.puckData as PuckTreeLike) === URL_A);
+  const sv = out.structuredVariant as { hero?: { heroVisualUrl?: string } };
+  assert('preserve+sync: structuredVariant blijft URL_A', sv.hero?.heroVisualUrl === URL_A);
+}
+{
+  // samenspel: incoming met NIEUWE puckData-URL (image-field pick via autosave)
+  // → preserve laat passeren, sync trekt structuredVariant bij
+  const existing = { puckData: tree(URL_A), structuredVariant: { hero: { heroVisualUrl: URL_A } } };
+  const incoming = { puckData: tree(URL_B) };
+  const preserved = preserveHeroOnSettings(existing, incoming);
+  const out = syncHeroFromPuck({ ...existing, ...preserved });
+  assert('pick-pad: puckData = nieuwe URL', heroUrl(out.puckData as PuckTreeLike) === URL_B);
+  const sv = out.structuredVariant as { hero?: { heroVisualUrl?: string } };
+  assert('pick-pad: structuredVariant gesynct naar nieuwe URL', sv.hero?.heroVisualUrl === URL_B);
+}
+{
+  // route-gate (gemodelleerd zoals route.ts — sync alleen bij autosave-vormige
+  // writes: incoming.puckData aanwezig ZONDER eigen structuredVariant). Een
+  // sv-only PATCH én een beide-tracks PATCH mogen hun expliciete sv-hero
+  // niet door de sync teruggedraaid zien.
+  const routeGate = (incoming: Record<string, unknown>, merged: Record<string, unknown>) =>
+    incoming.puckData && !incoming.structuredVariant ? syncHeroFromPuck(merged) : merged;
+  {
+    // sv-only: expliciete sv-hero blijft staan
+    const existing = { puckData: tree(URL_A), structuredVariant: { hero: { heroVisualUrl: URL_A } } };
+    const incoming = { structuredVariant: { hero: { heroVisualUrl: URL_B } } };
+    const merged = { ...existing, ...preserveHeroOnSettings(existing, incoming) };
+    const out = routeGate(incoming, merged);
+    const sv = out.structuredVariant as { hero?: { heroVisualUrl?: string } };
+    assert('sv-only PATCH: expliciete sv-hero blijft staan (geen sync-revert)', sv.hero?.heroVisualUrl === URL_B);
+    assert('sv-only PATCH: puckData ongemoeid', heroUrl(out.puckData as PuckTreeLike) === URL_A);
+  }
+  {
+    // mixed write: writer stuurt beide tracks (sv-hero B, stale puckData A) →
+    // geen sync, expliciete sv wint
+    const existing = { puckData: tree(URL_A), structuredVariant: { hero: { heroVisualUrl: URL_A } } };
+    const incoming = { puckData: tree(URL_A), structuredVariant: { hero: { heroVisualUrl: URL_B } } };
+    const merged = { ...existing, ...preserveHeroOnSettings(existing, incoming) };
+    const out = routeGate(incoming, merged);
+    const sv = out.structuredVariant as { hero?: { heroVisualUrl?: string } };
+    assert('mixed PATCH: expliciete sv-hero niet door sync overschreven', sv.hero?.heroVisualUrl === URL_B);
+  }
+  {
+    // autosave-vorm (alleen puckData) → sync draait wél
+    const existing = { puckData: tree(URL_A), structuredVariant: { hero: { heroVisualUrl: URL_A } } };
+    const incoming = { puckData: tree(URL_B) };
+    const merged = { ...existing, ...preserveHeroOnSettings(existing, incoming) };
+    const out = routeGate(incoming as Record<string, unknown>, merged);
+    const sv = out.structuredVariant as { hero?: { heroVisualUrl?: string } };
+    assert('autosave-vorm: sync spiegelt sv naar nieuwe puckData-hero', sv.hero?.heroVisualUrl === URL_B);
+  }
 }
 
 console.log(`\n${pass} PASS, ${fail} FAIL`);

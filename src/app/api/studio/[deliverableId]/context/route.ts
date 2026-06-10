@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveWorkspaceId } from '@/lib/auth-server';
+import { requireDeliverableAccess } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
 
@@ -12,14 +12,16 @@ export async function GET(
   { params }: { params: Promise<{ deliverableId: string }> },
 ) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: 'No workspace found' }, { status: 403 });
-    }
-
     const { deliverableId } = await params;
 
-    // Verify deliverable ownership
+    // Resource-based auth: workspace van het deliverable, niet cookie-gelijkheid
+    // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
+    const access = await requireDeliverableAccess(deliverableId);
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
+    }
+    const workspaceId = access.workspaceId;
+
     const deliverable = await prisma.deliverable.findUnique({
       where: { id: deliverableId },
       include: {
@@ -31,10 +33,6 @@ export async function GET(
 
     if (!deliverable) {
       return NextResponse.json({ error: 'Deliverable not found' }, { status: 404 });
-    }
-
-    if (!deliverable.campaign || deliverable.campaign.workspaceId !== workspaceId) {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
 
     const contextStack = await assembleCanvasContext(deliverableId, workspaceId);

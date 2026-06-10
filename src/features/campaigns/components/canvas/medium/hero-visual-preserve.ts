@@ -13,7 +13,8 @@ export interface PuckTreeLike {
   content?: Array<{ type?: string; props?: Record<string, unknown> } | null>;
 }
 
-function heroUrlOf(tree: PuckTreeLike): string | undefined {
+/** Niet-lege hero-URL van de eerste BrandHero in een puckData-tree, anders undefined. */
+export function heroUrlOf(tree: PuckTreeLike): string | undefined {
   if (!Array.isArray(tree.content)) return undefined;
   const hero = tree.content.find((c) => c?.type === 'BrandHero');
   const url = (hero?.props as { heroVisualUrl?: string } | undefined)?.heroVisualUrl;
@@ -89,4 +90,35 @@ export function preserveHeroOnSettings(
   }
 
   return out;
+}
+
+/**
+ * Chokepoint-sync ná de settings-merge in de studio-PATCH-route: spiegelt een
+ * NIET-lege hero-URL uit `merged.puckData` (BrandHero-prop) één richting op
+ * naar `merged.structuredVariant.hero.heroVisualUrl`.
+ *
+ * Waarom: de Step 3-autosave (en het Puck image-field) PATCHen alleen
+ * `settings.puckData` — `structuredVariant.hero` liep daardoor stil achter,
+ * terwijl export/regenerate dáár lezen. puckData is de render-source-of-truth
+ * (alle user-edits landen daar), dus die wint. Op de persist-route i.p.v. in
+ * elke client, zodat élke schrijver gedekt is (gotchas-les 2026-06-09).
+ *
+ * Lege puckData-hero synct bewust NIET (clear-pad blijft bij
+ * `preserveHeroOnSettings`); ontbrekende structuredVariant/hero = no-op.
+ * Pure functie, immutable — bewust geen hergebruik van
+ * `applyHeroUrlToSettings` (patch-hero-visual.ts importeert prisma op
+ * module-scope en muteert in place; dit bestand moet tsx-smoke-baar blijven).
+ */
+export function syncHeroFromPuck(merged: Record<string, unknown>): Record<string, unknown> {
+  const pd = merged.puckData;
+  if (!pd || typeof pd !== 'object') return merged;
+  const puckUrl = heroUrlOf(pd as PuckTreeLike);
+  if (!puckUrl) return merged;
+  const sv = merged.structuredVariant as { hero?: Record<string, unknown> } | null | undefined;
+  if (!sv || typeof sv !== 'object' || !sv.hero || typeof sv.hero !== 'object') return merged;
+  if (structuredHeroUrl(sv) === puckUrl) return merged;
+  return {
+    ...merged,
+    structuredVariant: { ...sv, hero: { ...sv.hero, heroVisualUrl: puckUrl } },
+  };
 }

@@ -84,6 +84,14 @@ export interface ImageSourcePanelProps {
   onCancel?: () => void;
   /** 'hero' in de LP-flow → compose/trained-pickers wiren hun beeld als hero. */
   target?: 'hero';
+  /**
+   * Optionele subset van bronnen — filtert de tab-strip. Gebruikt door het
+   * Puck image-field (Layout editor) om dead-ends weg te laten (compose/
+   * trained zijn niet modal-ready; photography-request/none leveren geen
+   * selectie). Zonder deze prop blijven alle 10 tabs zichtbaar
+   * (backward-compatible: InsertImageModal + Step 2 embedded ongewijzigd).
+   */
+  sources?: VisualBriefSource[];
 }
 
 export function ImageSourcePanel({
@@ -94,8 +102,18 @@ export function ImageSourcePanel({
   onSelected,
   onCancel,
   target,
+  sources,
 }: ImageSourcePanelProps) {
   const isModal = variant === 'modal';
+  const visibleTabs = sources
+    ? IMAGE_SOURCE_TABS.filter((t) => sources.includes(t.value))
+    : IMAGE_SOURCE_TABS;
+  // Clamp: een actieve source buiten de subset zou content tonen van een tab
+  // die niet bestaat in de strip — val defensief terug op de eerste zichtbare.
+  const effectiveSource =
+    sources && !sources.includes(source) && visibleTabs.length > 0
+      ? visibleTabs[0].value
+      : source;
 
   return (
     <div className={isModal ? '' : 'rounded-lg border border-gray-200 bg-white p-4'}>
@@ -104,11 +122,11 @@ export function ImageSourcePanel({
       <div className="mb-3">
         <ModalityHint />
       </div>
-      {/* Tab-strip — 8 sources horizontal */}
+      {/* Tab-strip — sources horizontal (optioneel gefilterd via `sources`) */}
       <div className="flex flex-wrap gap-1.5 border-b border-gray-200 pb-3 mb-4">
-        {IMAGE_SOURCE_TABS.map((t) => {
+        {visibleTabs.map((t) => {
           const Icon = t.icon;
-          const active = source === t.value;
+          const active = effectiveSource === t.value;
           return (
             <button
               key={t.value}
@@ -130,7 +148,7 @@ export function ImageSourcePanel({
       {/* Tab content per source */}
       <SourceContent
         deliverableId={deliverableId}
-        source={source}
+        source={effectiveSource}
         isModal={isModal}
         onSelected={onSelected}
         onCancel={onCancel}

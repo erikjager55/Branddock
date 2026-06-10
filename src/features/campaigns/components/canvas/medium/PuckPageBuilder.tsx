@@ -4,14 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Puck, Render, type Data } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
-import { Loader2, Shield, Wand2, Layout, X, ScanEye, ImageIcon } from 'lucide-react';
+import { Loader2, Shield, Wand2, Layout, X, ScanEye } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { buildSpikePuckConfig, type SpikePuckProps } from './puck-config';
 import { variantToPuckData } from './variant-to-puck-data';
 import { assignSectionBands } from './puck-templates/landing-page-from-structured';
 import { preserveHeroVisual } from './hero-visual-preserve';
-import { generateCanvasVisual, generateFeatureVisuals } from '../../../api/canvas.api';
+import { generateCanvasVisual } from '../../../api/canvas.api';
 import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { PageDiffPreviewModal } from './PageDiffPreviewModal';
 import { useBrandFontLoader } from './useBrandFontLoader';
@@ -87,6 +87,21 @@ export function PuckPageBuilder({
 
   const [puckData, setPuckData] = useState<SpikeData>(initialData);
   const [editorOpen, setEditorOpen] = useState(false);
+  // Altijd-actuele spiegel van puckData voor async completion-handlers
+  // (self-heal): de closure-`puckData` is daar seconden oud, en een beslissing
+  // nemen via side-effects in een setState-updater is onbetrouwbaar (React
+  // draait updaters alleen synchroon op het eager-pad; review 2026-06-10).
+  const puckDataRef = useRef<SpikeData>(initialData);
+  useEffect(() => {
+    puckDataRef.current = puckData;
+  }, [puckData]);
+  // True van schedule t/m afronding van ALLE autosave-PATCHes — het
+  // re-hydrate-effect gebruikt dit om geen stale DB-staat over nieuwere
+  // lokale edits te leggen. In-flight-teller naast de timer-check: een PATCH
+  // die langer duurt dan de debounce (1500ms) overlapt anders met z'n
+  // opvolger en gaf de vlag te vroeg vrij (review-iteratie 5).
+  const pendingSaveRef = useRef(false);
+  const inFlightSavesRef = useRef(0);
 
   // Re-hydrate puckData wanneer canvas-store.contextStack.puckData verandert
   // (typisch: async hero-visual generation in LandingPageGenerateBlock
@@ -101,6 +116,12 @@ export function PuckPageBuilder({
   useEffect(() => {
     if (!hydratedPuckData) return;
     if (!Array.isArray(hydratedPuckData.content) || hydratedPuckData.content.length === 0) return;
+    // Lokale edits winnen van een refetch: zolang een autosave pending of
+    // in-flight is, is de lokale state per definitie nieuwer dan de DB —
+    // re-hydrateren zou verse edits (sinds het image-field óók picks op
+    // feature-beelden, niet alleen de hero) wegspoelen met stale data. De
+    // volgende contextStack-wijziging ná het landen van de save synct alsnog.
+    if (pendingSaveRef.current) return;
     // Cheap diff: serialize-compare op content + root. Alleen sync bij
     // change. JSON.stringify is hier OK want puckData < 50KB typically.
     // Clobber-guard: behoud een al-gewirede hero-image wanneer de inkomende
@@ -141,14 +162,27 @@ export function PuckPageBuilder({
     (data: SpikeData) => {
       if (!deliverableId) return;
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      pendingSaveRef.current = true;
       saveTimerRef.current = setTimeout(() => {
+        saveTimerRef.current = null;
+        inFlightSavesRef.current += 1;
         fetch(`/api/studio/${deliverableId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ settings: { puckData: data } }),
-        }).catch((err) => {
-          console.warn('[PuckPageBuilder] auto-save failed', err);
-        });
+        })
+          .catch((err) => {
+            console.warn('[PuckPageBuilder] auto-save failed', err);
+          })
+          .finally(() => {
+            // Pas vrijgeven wanneer er géén nieuwe save gepland is ÉN geen
+            // andere PATCH meer in-flight is — een trage PATCH (> debounce)
+            // overlapt anders met z'n opvolger en de vlag viel te vroeg.
+            inFlightSavesRef.current = Math.max(0, inFlightSavesRef.current - 1);
+            if (!saveTimerRef.current && inFlightSavesRef.current === 0) {
+              pendingSaveRef.current = false;
+            }
+          });
       }, AUTOSAVE_DEBOUNCE_MS);
     },
     [deliverableId],
@@ -193,15 +227,37 @@ export function PuckPageBuilder({
         // target:'hero' → de route PERSISTEERT de hero atomisch server-side
         // (BrandHero + structuredVariant). Geen client-side PATCH meer (die was
         // race-gevoelig en faalde stil); hier alleen lokaal tonen + store re-syncen.
-        return generateCanvasVisual(deliverableId, { instruction, aspectRatio: '16:9', count: 1, target: 'hero' });
+        // fill-only: kiest de user tijdens de ~30s generatie handmatig een beeld
+        // (Puck image-field), dan mag de heal-completion die keuze niet
+        // overschrijven — server schrijft alleen op een nog-lege hero.
+        return generateCanvasVisual(deliverableId, { instruction, aspectRatio: '16:9', count: 1, target: 'hero', heroWriteMode: 'fill-only' });
       })
       .then((result) => {
         const url = result.variants?.[0]?.url;
         if (!url) return;
+        // Fill-only client-side: pickte de user intussen handmatig een beeld
+        // (autosave mogelijk nog in-flight), dan niets toepassen én géén
+        // refresh dispatchen — de refetch zou de DB-staat (heal-URL) over de
+        // verse pick heen re-hydrateren (preserveHeroVisual beschermt alleen
+        // non-leeg→leeg, niet oud-over-nieuw). Beslissing via puckDataRef
+        // (altijd actueel), NIET via een side-effect-flag in de updater:
+        // React draait updaters alleen synchroon op het eager-pad, dus zo'n
+        // flag is onbetrouwbaar precies wanneer er pending edits zijn.
+        const liveItems = (puckDataRef.current?.content ?? []) as SpikeData['content'];
+        const liveHero = liveItems.find((c) => c?.type === 'BrandHero');
+        // Verwijderde de user de BrandHero tijdens de generatie: niets toepassen
+        // én geen refresh — een refetch zou de hero direct uit de DB resurrecten.
+        if (!liveHero) return;
+        const liveUrl = (liveHero.props as { heroVisualUrl?: string } | undefined)?.heroVisualUrl;
+        if (typeof liveUrl === 'string' && liveUrl.trim().length > 0) return;
         setPuckData((prev) => {
           const items = (prev.content ?? []) as SpikeData['content'];
           const i = items.findIndex((c) => c?.type === 'BrandHero');
           if (i < 0) return prev;
+          // Zelfde guard nogmaals binnen de updater (pure, defense-in-depth
+          // tegen het micro-venster tussen ref-read en updater-run).
+          const existing = (items[i]?.props as { heroVisualUrl?: string } | undefined)?.heroVisualUrl;
+          if (typeof existing === 'string' && existing.trim().length > 0) return prev;
           const updatedHero = {
             ...items[i],
             props: { ...items[i].props, heroVisualUrl: url },
@@ -219,118 +275,16 @@ export function PuckPageBuilder({
         // Zonder reset blokkeerde één stille fout elke retry binnen de sessie —
         // mede-oorzaak van de orphaned-hero (audit 2026-06-08).
         heroHealRef.current.delete(deliverableId);
-        console.warn('[PuckPageBuilder] hero self-heal failed', err);
+        // Gestructureerd payload-object: een kaal Error-object serialiseert
+        // naar {} in de doorgestuurde dev-log en maskeert de oorzaak (zo bleef
+        // de "Not found" workspace-mismatch van 2026-06-10 onzichtbaar).
+        console.warn('[PuckPageBuilder] hero self-heal failed', {
+          deliverableId,
+          message: err instanceof Error ? err.message : String(err),
+        });
       })
       .finally(() => setIsHealingHero(false));
   }, [deliverableId, puckData, contextStack]);
-
-  // ── P2b — feature-beeld-transparantie + retry ───────────────
-  // Sommige features renderen als icon (feature-gen over-budget/timeout, of
-  // bewust icon-design). Detecteer features ZONDER beeld + bied een opt-in knop
-  // om ze alsnog te genereren (geen waarschuwing — icons kunnen gewenst zijn).
-  const featureGaps = useMemo(() => {
-    const gaps: Array<{ ci: number; fi: number; slotIndex: number; title: string; description: string }> = [];
-    const content = Array.isArray(puckData?.content) ? puckData.content : [];
-    // slotIndex = cumulatieve feature-positie over alle image-capable feature-
-    // componenten heen: uniek binnen de request én gelijk aan de structured-
-    // Variant-index bij het standaard 1-component-geval — zodat de persist-
-    // namespace 'feature-visual:<i>' van de route consistent blijft met de
-    // confirm-flow (review-2 2026-06-10). Rest-gat (geaccepteerd, audit §9):
-    // plaatst een user een eigen feature-sectie VÓÓR de variant-sectie, dan
-    // verschuift de namespace en kan gap-fill een audit-row van een andere
-    // feature vervangen — audit-only impact, de renderer leest puckData.
-    let slotOffset = 0;
-    content.forEach((c, ci) => {
-      if (c?.type !== 'FeatureGrid' && c?.type !== 'FeatureSplit') return;
-      const feats = (c.props as { features?: Array<{ title?: string; description?: string; icon?: string; imageUrl?: string | null }> })?.features ?? [];
-      // De TrustStrip rendert óók als FeatureGrid (MVP-workaround in
-      // landing-page-from-structured: alle items icon 'badge-check', en
-      // description = mediaUrl-of-leeg) — trust-logo-items zijn geen beeld-
-      // kandidaten en telden onterecht mee als gaps (audit 2026-06-10).
-      // Twee onafhankelijke signaturen (review-3): één user-geëdit icon mag de
-      // detectie niet breken, dus we checken óók op de description-vorm — een
-      // echte features-grid heeft prose-descriptions (schema: body min 1).
-      const urlOrEmpty = (s?: string) => !s?.trim() || /^https?:\/\//.test(s) || s.startsWith('/uploads/');
-      const isTrustStrip = feats.length > 0 && (
-        feats.every((f) => f.icon === 'badge-check') ||
-        feats.every((f) => urlOrEmpty(f.description))
-      );
-      if (isTrustStrip) return;
-      feats.forEach((f, fi) => {
-        const has = typeof f.imageUrl === 'string' && f.imageUrl.trim().length > 0;
-        if (!has) gaps.push({ ci, fi, slotIndex: slotOffset + fi, title: f.title ?? '', description: f.description ?? '' });
-      });
-      slotOffset += feats.length;
-    });
-    return gaps;
-  }, [puckData]);
-  const [isFillingFeatures, setIsFillingFeatures] = useState(false);
-  const [featureFillMsg, setFeatureFillMsg] = useState<string | null>(null);
-
-  const fillFeatureImages = useCallback(() => {
-    if (!deliverableId || featureGaps.length === 0) return;
-    const heroItem = (puckData.content ?? []).find((c) => c?.type === 'BrandHero');
-    const headline = ((heroItem?.props as { headline?: string })?.headline) ?? '';
-    // Fase 3 (audit 2026-06-10): feature-copy naar de route — prompts worden
-    // server-side gebouwd. Gap-fill werkt op (mogelijk user-geëdite) puckData-
-    // titels en heeft geen imageBrief → server-fallback met angle-rotatie.
-    // index = g.slotIndex (cumulatief over componenten): uniek én consistent
-    // met de persist-namespace van de confirm-flow (review-2 2026-06-10).
-    // Batch gecapt op het route-budget (4) — meer gaps zouden anders de hele
-    // request laten 400'en; de rest volgt bij een volgende klik.
-    // 120s-abort: gap-fill had (anders dan de confirm-flow) géén timeout; een
-    // AbortController i.p.v. een kale race zodat de fetch écht stopt en een
-    // her-klik geen tweede concurrent run naast een zombie-request start.
-    const batch = featureGaps.filter((g) => g.slotIndex <= 99).slice(0, 4);
-    const featureSlots = batch.map((g) => ({
-      index: g.slotIndex,
-      heading: (g.title || 'feature').slice(0, 200),
-      body: (g.description || g.title || 'feature').slice(0, 600),
-      imageBrief: null,
-    }));
-    setIsFillingFeatures(true);
-    setFeatureFillMsg(null);
-    const controller = new AbortController();
-    const abortTimer = setTimeout(() => controller.abort(), 120_000);
-    generateFeatureVisuals(deliverableId, { features: featureSlots, pageHeadline: headline.slice(0, 200) }, { signal: controller.signal })
-      .catch((err: unknown) => {
-        if (err instanceof DOMException && err.name === 'AbortError') return [] as Array<string | null>;
-        throw err;
-      })
-      .then((urls) => {
-        const got = urls.filter((u) => !!u).length;
-        if (got === 0) { setFeatureFillMsg('Geen feature-beelden gegenereerd — probeer opnieuw.'); return; }
-        setPuckData((prev) => {
-          const items = (prev.content ?? []) as SpikeData['content'];
-          // Volledig immutable: clone alleen gewijzigde componenten + hun
-          // features-array (geen mutatie van de vorige-state arrays).
-          const nextContent = items.map((c, ci) => {
-            if (c?.type !== 'FeatureGrid' && c?.type !== 'FeatureSplit') return c;
-            const props = c.props as { features?: Array<Record<string, unknown>> };
-            if (!Array.isArray(props.features)) return c;
-            let changed = false;
-            const newFeats = props.features.map((f, fi) => {
-              const k = batch.findIndex((g) => g.ci === ci && g.fi === fi);
-              if (k >= 0 && urls[k]) { changed = true; return { ...f, imageUrl: urls[k] }; }
-              return f;
-            });
-            return changed ? { ...c, props: { ...props, features: newFeats } } : c;
-          }) as SpikeData['content'];
-          const next = { ...prev, content: nextContent } as SpikeData;
-          fetch(`/api/studio/${deliverableId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ settings: { puckData: next } }),
-          })
-            .then((res) => { if (res.ok) window.dispatchEvent(new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } })); })
-            .catch((err) => console.warn('[PuckPageBuilder] feature-fill persist failed', err));
-          return next;
-        });
-        setFeatureFillMsg(got < batch.length ? `${got}/${batch.length} beelden gegenereerd.` : null);
-      })
-      .catch((err) => setFeatureFillMsg(err instanceof Error ? err.message : 'Genereren mislukt'))
-      .finally(() => { clearTimeout(abortTimer); setIsFillingFeatures(false); });
-  }, [deliverableId, featureGaps, puckData]);
 
   const handlePuckChange = useCallback(
     (data: SpikeData) => {
@@ -343,6 +297,11 @@ export function PuckPageBuilder({
       // bandTone (geen editor-field) wordt gestript en sectie-reorders breken de
       // ritmiek. Her-toepassen na elke editor-mutatie houdt de bands correct.
       const banded = withSectionBands(data);
+      // Synchroon (niet wachten op de effect-flush): de self-heal-completion
+      // leest puckDataRef om een verse user-pick te respecteren — het
+      // effect-gesyncte pad loopt één commit achter en liet een micro-venster
+      // open waarin de heal een refresh over de pick heen kon dispatchen.
+      puckDataRef.current = banded;
       setPuckData(banded);
       persistPuckData(banded);
     },
@@ -541,22 +500,6 @@ export function PuckPageBuilder({
         ) : null}
         {pageError ? (
           <span className="text-xs text-red-600 mr-2">{pageError}</span>
-        ) : null}
-        {featureFillMsg ? (
-          <span className="text-xs text-gray-500 mr-2">{featureFillMsg}</span>
-        ) : null}
-        {/* P2b — opt-in: genereer beelden voor features die nu als icon renderen. */}
-        {featureGaps.length > 0 ? (
-          <button
-            type="button"
-            onClick={fillFeatureImages}
-            disabled={isFillingFeatures}
-            title="Genereer beelden voor features die nu een icon tonen"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 text-xs font-medium hover:border-teal-300 hover:text-teal-700 disabled:opacity-50 transition-colors"
-          >
-            {isFillingFeatures ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
-            {isFillingFeatures ? 'Genereren…' : `${featureGaps.length} feature${featureGaps.length === 1 ? '' : 's'} zonder beeld`}
-          </button>
         ) : null}
         <ActionButton
           icon={pageBusy === 'auto-iterate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
@@ -803,6 +746,25 @@ function FullscreenEditorModal({
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  // BEWUST GEEN body-scroll-lock hier (Playwright-diagnose 2026-06-10): Puck
+  // spiegelt de parent-`<body>`-attributen (incl. inline style) de preview-
+  // iframe in — een `document.body.style.overflow = 'hidden'` belandt dan als
+  // inline style op de iframe-body en maakt de pagina-preview onscrollbaar
+  // ("pagina zelf scrollt niet"). Een lock is hier ook onnodig: Branddock's
+  // app-shell scrollt via inner containers (h-full overflow-auto), nooit via
+  // body, dus er is geen scroll-bleed achter de fixed overlay.
+  //
+  // Wél defensief OPRUIMEN bij mount: een vóór de editor verkregen modal-lock
+  // (keyboard-pad: Tab uit een open modal → Enter op "Bewerk layout") zou
+  // anders alsnog one-shot de iframe in gespiegeld worden. De iframe laadt
+  // async, dus dit effect wint die race; shared Modal's release zet later
+  // hooguit nogmaals '' (no-op).
+  useEffect(() => {
+    if (document.body.style.overflow) {
+      document.body.style.overflow = '';
+    }
+  }, []);
+
   if (typeof window === 'undefined') return null;
 
   return createPortal(
@@ -831,6 +793,20 @@ function FullscreenEditorModal({
         ['--puck-color-azure-12' as string]: '#f0fdfa',
       } as React.CSSProperties}
     >
+      {/* Puck's eigen CSS zet `._PuckLayout_ { height: 100dvh }` (hardcoded,
+          geen var) — met onze topbar erboven groeit de editor dan ~50px
+          voorbij het viewport. Gevolg: de onderste strook van sidebars +
+          canvas wordt door `overflow: hidden` afgekapt en is onbereikbaar,
+          en er valt niets te scrollen omdat Puck intern denkt dat alles past
+          (Playwright-diagnose 2026-06-10: sidebar scrollHeight==clientHeight
+          terwijl de velden visueel afgekapt waren). Scoped override: laat de
+          layout de beschikbare wrapper-hoogte volgen. `[class*="_PuckLayout_"]`
+          matcht alléén de layout-root — header/nav/inner gebruiken een
+          `-`-suffix in de CSS-module-naam, modifiers een `--`. */}
+      <style>{`
+        .bd-puck-editor-fit .Puck { height: 100%; }
+        .bd-puck-editor-fit [class*="_PuckLayout_"] { height: 100%; }
+      `}</style>
       {/* Branddock-style topbar ABOVE Puck — guarantees that "Close editor"
           is always visible at viewport-top, independent of Puck's own
           header-layout or any CSS conflicts. */}
@@ -852,7 +828,7 @@ function FullscreenEditorModal({
           Close editor
         </button>
       </div>
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      <div className="bd-puck-editor-fit" style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
         <Puck
           config={config}
           data={data}

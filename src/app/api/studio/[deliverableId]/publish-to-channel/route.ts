@@ -14,7 +14,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
+import { getServerSession } from '@/lib/auth-server';
+import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
 import { publishToLinkedIn } from '@/lib/integrations/linkedin/linkedin-client';
 import { refreshTokenIfNeeded, type StoredCredentials } from '@/lib/integrations/social-oauth/token-refresh';
 import { sendViaResend, contentToEmailHtml } from '@/lib/integrations/resend/resend-publish';
@@ -42,7 +43,9 @@ const publishSchema = z.object({
 
 export async function POST(request: Request, { params }: RouteParams) {
   try {
-    const workspaceId = await resolveWorkspaceId();
+    // Resource-based: workspace van het deliverable i.p.v. cookie-gelijkheid
+    // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
+    const workspaceId = await resolveDeliverableWorkspaceId((await params).deliverableId);
     if (!workspaceId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { deliverableId } = await params;

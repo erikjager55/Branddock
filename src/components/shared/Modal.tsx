@@ -9,6 +9,13 @@ import { COMPONENTS, COLORS, TYPOGRAPHY, cn } from '@/lib/constants/design-token
 export interface ModalProps {
   /** Whether the modal is visible */
   isOpen: boolean;
+  /**
+   * Body-scroll-lock uitzetten. Nodig wanneer de modal bóven een Puck-editor
+   * rendert: Puck spiegelt body-attributen (incl. inline style) one-shot de
+   * preview-iframe in, dus een body-`overflow:hidden` kan daar permanent
+   * landen en de pagina-preview onscrollbaar maken (zie gotchas 2026-06-10).
+   */
+  lockBodyScroll?: boolean;
   /** Called when the modal should close */
   onClose: () => void;
   /** Modal title */
@@ -40,10 +47,52 @@ const SIZE_MAP: Record<NonNullable<ModalProps['size']>, string> = {
   xl: 'max-w-4xl',
 };
 
+// ─── Body-scroll-lock (module-level teller) ───────────────
+//
+// Een per-modal save/restore is alleen correct bij LIFO-sluiting; sluiten
+// twee overlappende modals in omgekeerde volgorde, dan restored de laatste
+// een gesnapshotte 'hidden' en blijft body permanent gelockt. De teller lockt
+// bij 0→1 en released pas wanneer de láátste lock verdwijnt —
+// volgorde-onafhankelijk. Release zet bewust '' (geen snapshot-restore):
+// enkele componenten schrijven body-overflow nog direct (LockConfirmDialog,
+// ClawOverlay, ChatWithPersonaModal, BrandOnboardingWizard) en een snapshot
+// kan hun 'hidden' bevriezen ná hun eigen cleanup; '' is in deze app altijd
+// veilig omdat de app-shell via inner containers scrollt, nooit via body.
+
+let bodyLockCount = 0;
+
+/**
+ * Centrale handhaving van de gotcha-regel 2026-06-10: NOOIT inline styles op
+ * `document.body` zetten terwijl een Puck-editor gemount is — Puck spiegelt
+ * body-attributen de preview-iframe in en maakt de pagina-preview dan
+ * onscrollbaar. Op het chokepoint i.p.v. per caller, zodat ook geneste modals
+ * (bv. GenerateImageModal binnen de image-picker) automatisch veilig zijn.
+ */
+function puckEditorMounted(): boolean {
+  return !!document.querySelector('.Puck');
+}
+
+function acquireBodyLock(): void {
+  if (bodyLockCount === 0 && !puckEditorMounted()) {
+    document.body.style.overflow = 'hidden';
+  }
+  bodyLockCount += 1;
+}
+
+function releaseBodyLock(): void {
+  bodyLockCount = Math.max(0, bodyLockCount - 1);
+  if (bodyLockCount === 0) {
+    // '' is altijd veilig: de app-shell scrollt via inner containers, en als
+    // de acquire door de Puck-guard niets schreef is dit een no-op.
+    document.body.style.overflow = '';
+  }
+}
+
 // ─── Component ────────────────────────────────────────────
 
 export function Modal({
   isOpen,
+  lockBodyScroll = true,
   onClose,
   title,
   subtitle,
@@ -83,13 +132,10 @@ export function Modal({
 
   // ── Prevent body scroll while open ──
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+    if (!isOpen || !lockBodyScroll) return;
+    acquireBodyLock();
+    return releaseBodyLock;
+  }, [isOpen, lockBodyScroll]);
 
   if (!isOpen) return null;
 

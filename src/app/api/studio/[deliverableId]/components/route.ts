@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { resolveWorkspaceId } from '@/lib/auth-server';
+import { requireDeliverableAccess } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(
@@ -7,14 +7,18 @@ export async function GET(
   { params }: { params: Promise<{ deliverableId: string }> },
 ) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     const { deliverableId } = await params;
 
-    // Verify ownership + load settings for variantAngles hydration
-    const deliverable = await prisma.deliverable.findFirst({
-      where: { id: deliverableId, campaign: { workspaceId } },
+    // Resource-based auth: workspace van het deliverable, niet cookie-gelijkheid
+    // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
+    const access = await requireDeliverableAccess(deliverableId);
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
+    }
+
+    // Load settings for variantAngles hydration
+    const deliverable = await prisma.deliverable.findUnique({
+      where: { id: deliverableId },
       select: { id: true, pipelineStatus: true, settings: true },
     });
     if (!deliverable) return NextResponse.json({ error: 'Not found' }, { status: 404 });
