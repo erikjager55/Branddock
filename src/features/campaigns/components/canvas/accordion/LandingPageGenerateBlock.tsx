@@ -719,8 +719,17 @@ export function LandingPageGenerateBlock({
             scoring-call gestart is (running state) en update naar complete
             (~20s later) via setFidelityCompleteForVariant. Identiek pattern
             aan Step2ContentVariants.tsx voor content-deliverables.
-            variantIndex koppelt de bar aan de A/B-toggle hieronder zodat
-            klikken op B diens score toont. */}
+            variantIndex koppelt de bar aan de A/B-toggle eronder zodat
+            klikken op B diens score toont. Boven de selector geplaatst
+            (user-verzoek 2026-06-10): de score is het primaire vergelijk-
+            signaal bij het kiezen. */}
+        {/* A11y: koppelt de (buiten de tablist gerenderde) score expliciet aan de
+            actieve variant, zodat een screen reader bij tab-wissel aankondigt
+            wélke variant de score betreft (relevanter nu het er tot 4 zijn). */}
+        {variantOptions.length > 1 ? (
+          <p className="sr-only" aria-live="polite">Brand-fidelity score voor {variantLabel(activeVariantIndex)}</p>
+        ) : null}
+        <FidelityScoreBar deliverableId={deliverableId} variantIndex={activeVariantIndex} suppressAutoIterateCta />
         {/* Thumbnail-selector: vergelijk A/B in één oogopslag + klik om te
             selecteren. De actieve variant drijft de preview, fidelity-score,
             auto-iterate én de detail-kaart hieronder. */}
@@ -756,13 +765,6 @@ export function LandingPageGenerateBlock({
             })}
           </div>
         ) : null}
-        {/* A11y: koppelt de (buiten de tablist gerenderde) score expliciet aan de
-            actieve variant, zodat een screen reader bij tab-wissel aankondigt
-            wélke variant de score betreft (relevanter nu het er tot 4 zijn). */}
-        {variantOptions.length > 1 ? (
-          <p className="sr-only" aria-live="polite">Brand-fidelity score voor {variantLabel(activeVariantIndex)}</p>
-        ) : null}
-        <FidelityScoreBar deliverableId={deliverableId} variantIndex={activeVariantIndex} suppressAutoIterateCta />
         {/* LP-specifieke auto-iterate: verbetert de actieve variant in-place.
             Vervangt de generieke studio-trigger (gaf "0 woorden" op LP). */}
         <div className="flex items-center gap-3">

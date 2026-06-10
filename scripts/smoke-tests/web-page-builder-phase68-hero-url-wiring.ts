@@ -68,5 +68,59 @@ console.log("\nlege/ontbrekende settings → patched=false, geen throw");
   assert("BrandHero zonder props → false (geen crash)", applyHeroUrlToSettings({ puckData: { content: [{ type: "BrandHero" }] } }, URL).patched === false);
 }
 
+console.log("\nonlyIfEmpty (self-heal fill-only) — bestaande URL niet overschrijven");
+{
+  const settings: Record<string, unknown> = {
+    puckData: { content: [{ type: "BrandHero", props: { heroVisualUrl: "https://cdn.example.com/user-keuze.png" } }] },
+    structuredVariant: { hero: { heroVisualUrl: "https://cdn.example.com/user-keuze.png" } },
+  };
+  const { patched } = applyHeroUrlToSettings(settings, URL, { onlyIfEmpty: true });
+  const pd = settings.puckData as { content: Array<{ type: string; props: Record<string, unknown> }> };
+  const sv = settings.structuredVariant as { hero: Record<string, unknown> };
+  assert("patched=false bij gevulde hero", patched === false);
+  assert("puckData-hero behoudt user-keuze", pd.content[0].props.heroVisualUrl === "https://cdn.example.com/user-keuze.png");
+  assert("structuredVariant behoudt user-keuze", sv.hero.heroVisualUrl === "https://cdn.example.com/user-keuze.png");
+}
+
+console.log("\nonlyIfEmpty — lege hero wordt wél gevuld");
+{
+  const settings: Record<string, unknown> = {
+    puckData: { content: [{ type: "BrandHero", props: { heroVisualUrl: "" } }] },
+    structuredVariant: { hero: {} },
+  };
+  const { patched } = applyHeroUrlToSettings(settings, URL, { onlyIfEmpty: true });
+  const pd = settings.puckData as { content: Array<{ type: string; props: Record<string, unknown> }> };
+  const sv = settings.structuredVariant as { hero: Record<string, unknown> };
+  assert("patched=true bij lege hero", patched === true);
+  assert("lege puckData-hero gevuld", pd.content[0].props.heroVisualUrl === URL);
+  assert("lege structuredVariant-hero gevuld", sv.hero.heroVisualUrl === URL);
+}
+
+console.log("\nonlyIfEmpty — gemengd: gevulde BrandHero blijft, lege wordt gevuld");
+{
+  const settings: Record<string, unknown> = {
+    puckData: { content: [
+      { type: "BrandHero", props: { heroVisualUrl: "https://cdn.example.com/user-keuze.png" } },
+      { type: "BrandHero", props: {} },
+    ] },
+  };
+  const { patched } = applyHeroUrlToSettings(settings, URL, { onlyIfEmpty: true });
+  const pd = settings.puckData as { content: Array<{ type: string; props: Record<string, unknown> }> };
+  assert("patched=true (één van twee gevuld)", patched === true);
+  assert("gevulde hero ongemoeid", pd.content[0].props.heroVisualUrl === "https://cdn.example.com/user-keuze.png");
+  assert("lege hero gevuld", pd.content[1].props.heroVisualUrl === URL);
+}
+
+console.log("\ndefault (geen opts) — overwrite-gedrag ongewijzigd");
+{
+  const settings: Record<string, unknown> = {
+    puckData: { content: [{ type: "BrandHero", props: { heroVisualUrl: "https://cdn.example.com/oud.png" } }] },
+  };
+  const { patched } = applyHeroUrlToSettings(settings, URL);
+  const pd = settings.puckData as { content: Array<{ type: string; props: Record<string, unknown> }> };
+  assert("patched=true", patched === true);
+  assert("overwrite zonder opts", pd.content[0].props.heroVisualUrl === URL);
+}
+
 console.log(`\n${pass} PASS / ${fail} FAIL`);
 if (fail > 0) process.exit(1);

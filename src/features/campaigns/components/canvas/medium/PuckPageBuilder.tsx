@@ -87,6 +87,21 @@ export function PuckPageBuilder({
 
   const [puckData, setPuckData] = useState<SpikeData>(initialData);
   const [editorOpen, setEditorOpen] = useState(false);
+  // Altijd-actuele spiegel van puckData voor async completion-handlers
+  // (self-heal): de closure-`puckData` is daar seconden oud, en een beslissing
+  // nemen via side-effects in een setState-updater is onbetrouwbaar (React
+  // draait updaters alleen synchroon op het eager-pad; review 2026-06-10).
+  const puckDataRef = useRef<SpikeData>(initialData);
+  useEffect(() => {
+    puckDataRef.current = puckData;
+  }, [puckData]);
+  // True van schedule t/m afronding van ALLE autosave-PATCHes — het
+  // re-hydrate-effect gebruikt dit om geen stale DB-staat over nieuwere
+  // lokale edits te leggen. In-flight-teller naast de timer-check: een PATCH
+  // die langer duurt dan de debounce (1500ms) overlapt anders met z'n
+  // opvolger en gaf de vlag te vroeg vrij (review-iteratie 5).
+  const pendingSaveRef = useRef(false);
+  const inFlightSavesRef = useRef(0);
 
   // Re-hydrate puckData wanneer canvas-store.contextStack.puckData verandert
   // (typisch: async hero-visual generation in LandingPageGenerateBlock
@@ -101,6 +116,12 @@ export function PuckPageBuilder({
   useEffect(() => {
     if (!hydratedPuckData) return;
     if (!Array.isArray(hydratedPuckData.content) || hydratedPuckData.content.length === 0) return;
+    // Lokale edits winnen van een refetch: zolang een autosave pending of
+    // in-flight is, is de lokale state per definitie nieuwer dan de DB —
+    // re-hydrateren zou verse edits (sinds het image-field óók picks op
+    // feature-beelden, niet alleen de hero) wegspoelen met stale data. De
+    // volgende contextStack-wijziging ná het landen van de save synct alsnog.
+    if (pendingSaveRef.current) return;
     // Cheap diff: serialize-compare op content + root. Alleen sync bij
     // change. JSON.stringify is hier OK want puckData < 50KB typically.
     // Clobber-guard: behoud een al-gewirede hero-image wanneer de inkomende
@@ -141,14 +162,27 @@ export function PuckPageBuilder({
     (data: SpikeData) => {
       if (!deliverableId) return;
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      pendingSaveRef.current = true;
       saveTimerRef.current = setTimeout(() => {
+        saveTimerRef.current = null;
+        inFlightSavesRef.current += 1;
         fetch(`/api/studio/${deliverableId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ settings: { puckData: data } }),
-        }).catch((err) => {
-          console.warn('[PuckPageBuilder] auto-save failed', err);
-        });
+        })
+          .catch((err) => {
+            console.warn('[PuckPageBuilder] auto-save failed', err);
+          })
+          .finally(() => {
+            // Pas vrijgeven wanneer er géén nieuwe save gepland is ÉN geen
+            // andere PATCH meer in-flight is — een trage PATCH (> debounce)
+            // overlapt anders met z'n opvolger en de vlag viel te vroeg.
+            inFlightSavesRef.current = Math.max(0, inFlightSavesRef.current - 1);
+            if (!saveTimerRef.current && inFlightSavesRef.current === 0) {
+              pendingSaveRef.current = false;
+            }
+          });
       }, AUTOSAVE_DEBOUNCE_MS);
     },
     [deliverableId],
@@ -201,16 +235,29 @@ export function PuckPageBuilder({
       .then((result) => {
         const url = result.variants?.[0]?.url;
         if (!url) return;
-        let applied = false;
+        // Fill-only client-side: pickte de user intussen handmatig een beeld
+        // (autosave mogelijk nog in-flight), dan niets toepassen én géén
+        // refresh dispatchen — de refetch zou de DB-staat (heal-URL) over de
+        // verse pick heen re-hydrateren (preserveHeroVisual beschermt alleen
+        // non-leeg→leeg, niet oud-over-nieuw). Beslissing via puckDataRef
+        // (altijd actueel), NIET via een side-effect-flag in de updater:
+        // React draait updaters alleen synchroon op het eager-pad, dus zo'n
+        // flag is onbetrouwbaar precies wanneer er pending edits zijn.
+        const liveItems = (puckDataRef.current?.content ?? []) as SpikeData['content'];
+        const liveHero = liveItems.find((c) => c?.type === 'BrandHero');
+        // Verwijderde de user de BrandHero tijdens de generatie: niets toepassen
+        // én geen refresh — een refetch zou de hero direct uit de DB resurrecten.
+        if (!liveHero) return;
+        const liveUrl = (liveHero.props as { heroVisualUrl?: string } | undefined)?.heroVisualUrl;
+        if (typeof liveUrl === 'string' && liveUrl.trim().length > 0) return;
         setPuckData((prev) => {
           const items = (prev.content ?? []) as SpikeData['content'];
           const i = items.findIndex((c) => c?.type === 'BrandHero');
           if (i < 0) return prev;
-          // Zelfde fill-only-semantiek als de server: respecteer een hero die
-          // de user intussen handmatig zette.
+          // Zelfde guard nogmaals binnen de updater (pure, defense-in-depth
+          // tegen het micro-venster tussen ref-read en updater-run).
           const existing = (items[i]?.props as { heroVisualUrl?: string } | undefined)?.heroVisualUrl;
           if (typeof existing === 'string' && existing.trim().length > 0) return prev;
-          applied = true;
           const updatedHero = {
             ...items[i],
             props: { ...items[i].props, heroVisualUrl: url },
@@ -219,15 +266,7 @@ export function PuckPageBuilder({
         });
         // De server heeft de hero al gepersist; refetch /context zodat de store
         // (contextStack.puckData) synct → re-hydrate-effect clobbert niet.
-        // Alleen bij een daadwerkelijk toegepaste heal: pickte de user intussen
-        // zelf een beeld (autosave mogelijk nog in-flight), dan zou de refetch
-        // de DB-staat (heal-URL) over de verse pick heen re-hydrateren —
-        // preserveHeroVisual beschermt alleen non-leeg→leeg, niet oud-over-nieuw.
-        queueMicrotask(() => {
-          if (applied) {
-            window.dispatchEvent(new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }));
-          }
-        });
+        window.dispatchEvent(new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }));
       })
       .catch((err) => {
         // Reset de ref-guard zodat een gefaalde poging niet de hero permanent
@@ -258,6 +297,11 @@ export function PuckPageBuilder({
       // bandTone (geen editor-field) wordt gestript en sectie-reorders breken de
       // ritmiek. Her-toepassen na elke editor-mutatie houdt de bands correct.
       const banded = withSectionBands(data);
+      // Synchroon (niet wachten op de effect-flush): de self-heal-completion
+      // leest puckDataRef om een verse user-pick te respecteren — het
+      // effect-gesyncte pad loopt één commit achter en liet een micro-venster
+      // open waarin de heal een refresh over de pick heen kon dispatchen.
+      puckDataRef.current = banded;
       setPuckData(banded);
       persistPuckData(banded);
     },
@@ -709,6 +753,17 @@ function FullscreenEditorModal({
   // ("pagina zelf scrollt niet"). Een lock is hier ook onnodig: Branddock's
   // app-shell scrollt via inner containers (h-full overflow-auto), nooit via
   // body, dus er is geen scroll-bleed achter de fixed overlay.
+  //
+  // Wél defensief OPRUIMEN bij mount: een vóór de editor verkregen modal-lock
+  // (keyboard-pad: Tab uit een open modal → Enter op "Bewerk layout") zou
+  // anders alsnog one-shot de iframe in gespiegeld worden. De iframe laadt
+  // async, dus dit effect wint die race; shared Modal's release zet later
+  // hooguit nogmaals '' (no-op).
+  useEffect(() => {
+    if (document.body.style.overflow) {
+      document.body.style.overflow = '';
+    }
+  }, []);
 
   if (typeof window === 'undefined') return null;
 

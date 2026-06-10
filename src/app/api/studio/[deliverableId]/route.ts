@@ -175,13 +175,19 @@ export async function PATCH(
       // puckData — spiegel een non-lege puckData-hero naar
       // structuredVariant.hero zodat export/regenerate niet op een stale URL
       // lezen. Volgorde: eerst de clear-guard (preserve), dan de sync.
-      // Alleen wanneer de schrijver zélf puckData meestuurt: een (toekomstige)
-      // structuredVariant-only PATCH mag niet stil worden teruggedraaid naar
-      // de bestaande (mogelijk oudere) puckData-hero.
+      // Alleen wanneer de schrijver puckData meestuurt ZONDER eigen
+      // structuredVariant (= het autosave/image-field-pad). Stuurt een writer
+      // beide tracks (variant-keuze, regenerate), dan is hij zelf
+      // verantwoordelijk voor consistentie en mag zijn expliciete sv-hero
+      // niet stil door de (mogelijk stale) puckData worden overschreven;
+      // een sv-only PATCH idem. Bekende rest-race (pre-existing klasse, zie
+      // gotchas 2026-06-09): een stale in-flight autosave kan een net
+      // out-of-band gezette hero op beide tracks terugdraaien.
       const merged = { ...existingSettings, ...preservedIncoming };
-      const incomingTouchesPuckData = !!(settings as Record<string, unknown>).puckData;
+      const incomingSettings = settings as Record<string, unknown>;
+      const autosaveShapedWrite = !!incomingSettings.puckData && !incomingSettings.structuredVariant;
       updateData.settings = JSON.parse(
-        JSON.stringify(incomingTouchesPuckData ? syncHeroFromPuck(merged) : merged),
+        JSON.stringify(autosaveShapedWrite ? syncHeroFromPuck(merged) : merged),
       );
     }
     if (generatedSlides !== undefined)
