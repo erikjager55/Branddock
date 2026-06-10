@@ -166,6 +166,7 @@ export function InputBar() {
               entityId: activeEntity.id,
               entityName: activeEntity.name,
               ...(activeEntity.campaignId && { campaignId: activeEntity.campaignId }),
+              ...(activeEntity.contentType && { contentType: activeEntity.contentType }),
             }),
             ...(wizardSnapshot && { wizardSnapshot }),
             ...(formFillFields.length > 0 && {

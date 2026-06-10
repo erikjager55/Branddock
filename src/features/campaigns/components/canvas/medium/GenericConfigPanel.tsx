@@ -7,18 +7,9 @@ import type { MediumCategory } from '../../../types/medium-config.types';
 import { MediumConfigLayout } from './MediumConfigLayout';
 import { WebPageLayout } from './WebPageLayout';
 import { PuckLayoutWrapper } from './PuckLayoutWrapper';
-
-// Web-page content-types that route to the Puck-powered builder
-// (per ADR 2026-05-22-landing-page-builder-architectuur). Other web-page
-// types (blog-post / pillar-page / article / etc. — format='blog-article')
-// keep using WebPageLayout's article-preview rendering.
-const PUCK_WEBPAGE_TYPES = new Set([
-  'landing-page',
-  'product-page',
-  'faq-page',
-  'comparison-page',
-  'microsite',
-]);
+// Web-page content-types die naar de Puck-builder routeren — centrale bron
+// (per ADR 2026-05-22-landing-page-builder-architectuur).
+import { PUCK_WEBPAGE_TYPES } from '@/lib/landing-pages/webpage-types';
 import { ConfigSection } from './ConfigSection';
 import { ConfigFieldRenderer } from './ConfigFieldRenderer';
 

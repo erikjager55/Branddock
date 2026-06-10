@@ -23,6 +23,7 @@ import { detectAiTells } from "@/lib/brand-fidelity/ai-tell-detector";
 import { ensureBrandArchetype } from "@/lib/landing-pages/ensure-archetype";
 import { ensureLayoutStyle } from "@/lib/landing-pages/ensure-layout-style";
 import { trackAICallStart, trackAICallComplete } from "@/lib/learning-loop/call-tracker";
+import { PUCK_WEBPAGE_TYPES } from "@/lib/landing-pages/webpage-types";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 
@@ -116,13 +117,6 @@ export async function POST(
 
   // Verifieer dat dit een PUCK-webpage type is — voor alle andere types
   // hoort de generator niet aangeroepen te worden (spec §4b is type-specific).
-  const PUCK_WEBPAGE_TYPES = new Set([
-    "landing-page",
-    "product-page",
-    "faq-page",
-    "comparison-page",
-    "microsite",
-  ]);
   if (!PUCK_WEBPAGE_TYPES.has(deliverable.contentType)) {
     return NextResponse.json(
       {
