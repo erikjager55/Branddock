@@ -45,6 +45,45 @@ Volledige uitvoering van het 5-fasen-verbeterplan uit de prompt-audit (409 bevin
 - Audit: [docs/audits/2026-06-11-prompt-audit.md](audits/2026-06-11-prompt-audit.md) (+ data-JSON)
 - Commit: branch `fix/prompt-audit-fase-0-1`
 
+### 326. Quality-mode instelbaar via Settings → AI Models (micro-restje #322)
+
+De kandidaten-per-slot-knop voor LP feature-beelden (#322) was alleen via een handmatige WorkspaceAiConfig-row instelbaar; nu staat er een "Image generation"-sectie in de developer-only AI Models-tab met een 1/2/3-keuze (budget / quality / max, met kosten-hint per pagina) op een eigen mini-route (`/api/settings/feature-image-quality` — bewust naast `/api/settings/ai-models`, want dit is een tuning-knop en geen provider/model-keuze; 1 = row verwijderen = default, conform het reset-patroon). Tweede micro-restje gesloten zonder bouw: per-feature handmatige beeld-keuze bleek al volledig gedekt door #320's PuckImageField (picker + clear + bron-badge op beide feature-velden).
+
+- Task: [tasks/done/lp-feature-image-followups.md](../tasks/done/lp-feature-image-followups.md) (extensie)
+- ADR: `-`
+- Spec: `-`
+- Commit: branch `feat/lp-quality-mode-settings`
+
+
+### 325. Gegenereerde feature-beelden groeien de Media Library (zelf-lerend hergebruik)
+
+Sluitstuk op library-first (#323): definitieve AI-winnaars uit `generate-feature-visuals` worden fire-and-forget als MediaAsset geregistreerd (source `AI_GENERATED`, sceneType→categorie, naam = brief-subject, slug-suffix uit de unieke upload-bestandsnaam) waarna de dam-auto-tagger automatisch beschrijving + tags + pgvector-embedding levert. Daarmee kan de matcher een eerder gegenereerd beeld bij een volgende pagina hergebruiken voor $0 i.p.v. opnieuw te genereren — de bibliotheek wordt zelf-lerend. Echte foto's houden voorrang (PHOTO_REAL-boost) en de fail-closed coherence-poort blijft de kwaliteitsgrens; bewuste consequentie: her-generatie van dezelfde pagina kan het vorige beeld terugmatchen (gewenst hergebruik — vers afdwingen = asset archiveren of vervangen via de picker). Max 4 assets per page-run (alleen finals, library-matches worden niet her-geïmporteerd); import-fouten zijn non-blocking.
+
+- Task: [tasks/done/lp-library-first-matching.md](../tasks/done/lp-library-first-matching.md) (extensie)
+- ADR: [docs/adr/2026-06-10-feature-visual-pipeline.md](adr/2026-06-10-feature-visual-pipeline.md)
+- Spec: `-`
+- Commit: branch `feat/lp-generated-to-library`
+
+
+### 324. Planner-checklist false negatives voor Puck web-pages + hero-row pariteit
+
+De Publication Checklist in Canvas Step 4 false-flagde gegarandeerd op "Title or headline" en "Hero image" voor Puck web-pages: de checks lazen alleen DeliverableComponent-tekstgroep-namen en de `heroImage`-store-slice (die uitsluitend uit een `variantGroup='hero-image'`-rij hydrateert), terwijl de Puck-flow titel/hero in `settings.puckData`/`structuredVariant` persisteert. Gefixt langs vier lijnen: (1) Puck-specifieke checklist-branch ("Hero headline is set", required-pariteit met de oude web-branch); (2) checklist-signalen lezen voor Puck-types `contextStack.puckData` (gerenderde waarheid; volgt editor-edits na refetch) met de `structuredVariant`-snapshot als fallback, `has-meta` accepteert het door de SEO-pipeline teruggeschreven `contentTypeInputs.metaDescription` (puck-gated — de WordPress-excerpt van blog-article leest alleen de tekstgroep); (3) de SEO-pipeline-wipe spaart media-rijen (`notIn ['image','video','voiceover']`, orchestrator-conventie) i.p.v. alles te wissen; (4) AI-hero-flows upserten nu óók de `hero-image`-rij op het gedeelde chokepoint (`patchHeroVisualUrl`, alle 3 routes) — atomair op de compound-unique, gegate op nieuw `puckPatched`-signaal (rij spiegelt de gerenderde hero) en strikt additief in fill-only/self-heal-modus zodat een handmatige keuze nooit overschreven wordt; POST /hero-image is de andere race-helft en werd ook atomair. Review: 2 rondes × 2 verse subagents (0 critical, 7 warnings → alle gefixt) + ronde 3 inline wegens subagent-limiet. Browser-geverifieerd op de Napking LP vóór én na de rework: 5/5 groen, warning-regel weg, 0 console-errors. Smokes: phase68 30/30 (incl. nieuw `puckPatched`-contract); tsc 0, lint 0 errors.
+
+- Task: [tasks/done/planner-checklist-puck-lp.md](../tasks/done/planner-checklist-puck-lp.md)
+- ADR: `-`
+- Spec: `-`
+- Commit: `1d6ebbc1`
+
+### 323. Library-first matching — echte merkfoto's vóór AI-generatie op het LP feature-pad
+
+De Media Library is nu de eerste bron voor LP feature-beelden: een server-side slot-matcher (`source-image-matcher.ts`) matcht per slot de brief/copy semantisch tegen aiDescription-pgvector-embeddings (`findSimilarMediaAssets` + additieve `excludeCategories`-param), met greedy unieke toewijzing (één asset → max één slot), foto-categorieën-only, `auth:PHOTO_REAL`-boost, orphaned-disk-guard en throw-loze cold-start. Een match wordt pas geaccepteerd na de coherence-judge (≥55, **fail-closed** zonder oordeel) — "echt maar fout" valt terug op het AI-pad. Gedekte slots kosten $0 fal-spend (`sources: 'library'`, persist `imageSource: library:<assetId>` mét `aiProvider/aiModel: null` conform het select-library-patroon). Source-aware kwaliteitspoort: een library-foto kan nooit de duplicate-verliezer zijn van een (library, AI)-paar (swap-loop + `protectedIndices` in de gate) — de AI-sibling kan via brand-anchors op dezelfde foto geconditioneerd zijn. Review-ronde 1 ving een CRITICAL: webp-library-assets (21% van de embedde set) kregen een png-label waardoor de coherence-acceptatie fail-open passeerde én één invalide image-block de hele multi-image diversity-call stil uitschakelde → `prepareJudgeImage` sniff't nu png/jpeg/webp en converteert onbekende formats naar jpeg. Bevestigingsronde 0C/0W incl. live SQL-verificatie van de nieuwe `text[]`-param (G2-callers ongewijzigd). Smokes: matcher 11/11 (nieuw), gate 23/23 (+protected-cases), judge-image 7/7 (+webp/gif); golden-set dry-run met match-rapportage; npm smoke-entries toegevoegd.
+
+- Task: [tasks/done/lp-library-first-matching.md](../tasks/done/lp-library-first-matching.md)
+- ADR: [docs/adr/2026-06-10-feature-visual-pipeline.md](adr/2026-06-10-feature-visual-pipeline.md) beslissing 10 (geactiveerd)
+- Spec: [docs/audits/2026-06-10-lp-feature-image-diversity.md](audits/2026-06-10-lp-feature-image-diversity.md)
+- Commit: branch `feat/lp-library-first-matching`
+
+
 ### 322. LP feature-images follow-ups — werkende clear-knop, quality-mode, audit-nauwkeurigheid, judge-downscaling
 
 Vier §9-follow-ups van #317, waarvan één een echte cross-PR-bug bleek: de "Verwijderen"-knop uit #320 werd door de #317 clobber-guard stil teruggedraaid (parallel ontwikkeld). **Clear-pad**: de knop stuurt nu `CLEAR_IMAGE_SENTINEL` — de guard herkent dat als expliciete user-intentie (sweep vóór de alignment-guards zodat de magic string nooit persist), normaliseert naar '' én spiegelt de clear naar `structuredVariant` op het PATCH-chokepoint (anders resurrecteerde elke sv→puck-rebuild het gewiste beeld); stale-race-bescherming blijft intact. Plus bron-badge op de veld-thumbnail (URL-heuristiek: AI-gegenereerd / media library / extern). **Quality-mode**: WorkspaceAiConfig featureKey `lp-feature-image-candidates` (1-3, default 1) stuurt num_images per slot; elke kandidaat wordt vóór upload ge-coherence-judged, de winnaar geüpload en de runner-up dient als gratis dupe-swap — mét re-judge van de set na swaps en fail-soft swap-uploads. **Audit-nauwkeurigheid**: per-slot generationDuration, iterationCount=1 bij retry, response `regenerated`/`swapped` alleen bij succes, telemetrie op werkelijke tellers. **Judge-downscaling**: `prepareJudgeImage` (sharp, >4MB → jpeg ≤1024px + magic-byte-sniff) vóór elke vision-judge-call. Reviews: 2 reviewers, 0 critical / 6 warnings → alle gefixt. Smokes: preserve 20/20, judge-image-prep 5/5 (nieuw), bestaande suites groen; tsc 0.

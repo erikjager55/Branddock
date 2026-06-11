@@ -65,3 +65,4 @@ Vier bewust-deferde punten uit de #317-reviews, waarvan er één inmiddels een e
 
 - 2-reviewer pass: 0 critical, 6 unieke warnings — alle gefixt (swap fail-soft, sv-clear-spiegeling, allSettled, re-judge na swap, sentinel-sweep, loser-keuze) + 3 minors (telemetrie-tellers, canvas-refined-badge, magic-byte-sniff). Deferred minors: orphaned storage-files bij swap/retry (pre-existing klasse), R2-badge-heuristiek (fileName verdwijnt op R2), swap niet zichtbaar in audit-row.
 - Acceptatie clear-knop + candidates=2 live-probe: na merge uitgevoerd (zie changelog).
+- **Extensie 2026-06-11 (#326)**: quality-mode-knop in Settings → AI Models (eigen mini-route); feature-target-restje gesloten zonder bouw — al gedekt door #320 PuckImageField.

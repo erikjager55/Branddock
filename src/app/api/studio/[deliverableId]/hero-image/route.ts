@@ -76,51 +76,50 @@ export async function POST(request: Request, { params }: RouteParams) {
     const sourceTag =
       mediaAssetId ? `${imageSource ?? 'library'}:${mediaAssetId}` : imageSource ?? 'library';
 
-    // Find existing hero image component for this deliverable
-    const existing = await prisma.deliverableComponent.findFirst({
-      where: { deliverableId, variantGroup: HERO_VARIANT_GROUP },
-      select: { id: true },
+    // Determine the next order index (alleen relevant voor het create-pad)
+    const lastComponent = await prisma.deliverableComponent.findFirst({
+      where: { deliverableId },
+      orderBy: { order: 'desc' },
+      select: { order: true },
     });
+    const nextOrder = (lastComponent?.order ?? -1) + 1;
 
-    let component;
-    if (existing) {
-      component = await prisma.deliverableComponent.update({
-        where: { id: existing.id },
-        data: {
-          imageUrl,
-          imageSource: sourceTag,
-          visualBrief: alt ?? null,
-          status: 'GENERATED',
-          generatedAt: new Date(),
-        },
-      });
-    } else {
-      // Determine the next order index
-      const lastComponent = await prisma.deliverableComponent.findFirst({
-        where: { deliverableId },
-        orderBy: { order: 'desc' },
-        select: { order: true },
-      });
-      const nextOrder = (lastComponent?.order ?? -1) + 1;
-
-      component = await prisma.deliverableComponent.create({
-        data: {
+    // Atomisch op de compound-unique (deliverableId, variantGroup,
+    // variantIndex) — het eerdere findFirst→create kon onder een
+    // gelijktijdige writer (AI-hero-flow upsert via patch-hero-visual.ts)
+    // een P2002 gooien die als 500 bij de user landde (review 2026-06-11).
+    const component = await prisma.deliverableComponent.upsert({
+      where: {
+        deliverableId_variantGroup_variantIndex: {
           deliverableId,
-          componentType: 'image',
-          groupType: 'single',
-          groupIndex: 0,
-          order: nextOrder,
           variantGroup: HERO_VARIANT_GROUP,
           variantIndex: 0,
-          isSelected: true,
-          imageUrl,
-          imageSource: sourceTag,
-          visualBrief: alt ?? null,
-          status: 'GENERATED',
-          generatedAt: new Date(),
         },
-      });
-    }
+      },
+      update: {
+        imageUrl,
+        imageSource: sourceTag,
+        visualBrief: alt ?? null,
+        isSelected: true,
+        status: 'GENERATED',
+        generatedAt: new Date(),
+      },
+      create: {
+        deliverableId,
+        componentType: 'image',
+        groupType: 'single',
+        groupIndex: 0,
+        order: nextOrder,
+        variantGroup: HERO_VARIANT_GROUP,
+        variantIndex: 0,
+        isSelected: true,
+        imageUrl,
+        imageSource: sourceTag,
+        visualBrief: alt ?? null,
+        status: 'GENERATED',
+        generatedAt: new Date(),
+      },
+    });
 
     return NextResponse.json({ component });
   } catch (error) {
