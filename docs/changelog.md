@@ -37,6 +37,16 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 325. Gegenereerde feature-beelden groeien de Media Library (zelf-lerend hergebruik)
+
+Sluitstuk op library-first (#323): definitieve AI-winnaars uit `generate-feature-visuals` worden fire-and-forget als MediaAsset geregistreerd (source `AI_GENERATED`, sceneType→categorie, naam = brief-subject, slug-suffix uit de unieke upload-bestandsnaam) waarna de dam-auto-tagger automatisch beschrijving + tags + pgvector-embedding levert. Daarmee kan de matcher een eerder gegenereerd beeld bij een volgende pagina hergebruiken voor $0 i.p.v. opnieuw te genereren — de bibliotheek wordt zelf-lerend. Echte foto's houden voorrang (PHOTO_REAL-boost) en de fail-closed coherence-poort blijft de kwaliteitsgrens; bewuste consequentie: her-generatie van dezelfde pagina kan het vorige beeld terugmatchen (gewenst hergebruik — vers afdwingen = asset archiveren of vervangen via de picker). Max 4 assets per page-run (alleen finals, library-matches worden niet her-geïmporteerd); import-fouten zijn non-blocking.
+
+- Task: [tasks/done/lp-library-first-matching.md](../tasks/done/lp-library-first-matching.md) (extensie)
+- ADR: [docs/adr/2026-06-10-feature-visual-pipeline.md](adr/2026-06-10-feature-visual-pipeline.md)
+- Spec: `-`
+- Commit: branch `feat/lp-generated-to-library`
+
+
 ### 324. Planner-checklist false negatives voor Puck web-pages + hero-row pariteit
 
 De Publication Checklist in Canvas Step 4 false-flagde gegarandeerd op "Title or headline" en "Hero image" voor Puck web-pages: de checks lazen alleen DeliverableComponent-tekstgroep-namen en de `heroImage`-store-slice (die uitsluitend uit een `variantGroup='hero-image'`-rij hydrateert), terwijl de Puck-flow titel/hero in `settings.puckData`/`structuredVariant` persisteert. Gefixt langs vier lijnen: (1) Puck-specifieke checklist-branch ("Hero headline is set", required-pariteit met de oude web-branch); (2) checklist-signalen lezen voor Puck-types `contextStack.puckData` (gerenderde waarheid; volgt editor-edits na refetch) met de `structuredVariant`-snapshot als fallback, `has-meta` accepteert het door de SEO-pipeline teruggeschreven `contentTypeInputs.metaDescription` (puck-gated — de WordPress-excerpt van blog-article leest alleen de tekstgroep); (3) de SEO-pipeline-wipe spaart media-rijen (`notIn ['image','video','voiceover']`, orchestrator-conventie) i.p.v. alles te wissen; (4) AI-hero-flows upserten nu óók de `hero-image`-rij op het gedeelde chokepoint (`patchHeroVisualUrl`, alle 3 routes) — atomair op de compound-unique, gegate op nieuw `puckPatched`-signaal (rij spiegelt de gerenderde hero) en strikt additief in fill-only/self-heal-modus zodat een handmatige keuze nooit overschreven wordt; POST /hero-image is de andere race-helft en werd ook atomair. Review: 2 rondes × 2 verse subagents (0 critical, 7 warnings → alle gefixt) + ronde 3 inline wegens subagent-limiet. Browser-geverifieerd op de Napking LP vóór én na de rework: 5/5 groen, warning-regel weg, 0 console-errors. Smokes: phase68 30/30 (incl. nieuw `puckPatched`-contract); tsc 0, lint 0 errors.
