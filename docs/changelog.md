@@ -37,6 +37,16 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 326. Quality-mode instelbaar via Settings → AI Models (micro-restje #322)
+
+De kandidaten-per-slot-knop voor LP feature-beelden (#322) was alleen via een handmatige WorkspaceAiConfig-row instelbaar; nu staat er een "Image generation"-sectie in de developer-only AI Models-tab met een 1/2/3-keuze (budget / quality / max, met kosten-hint per pagina) op een eigen mini-route (`/api/settings/feature-image-quality` — bewust naast `/api/settings/ai-models`, want dit is een tuning-knop en geen provider/model-keuze; 1 = row verwijderen = default, conform het reset-patroon). Tweede micro-restje gesloten zonder bouw: per-feature handmatige beeld-keuze bleek al volledig gedekt door #320's PuckImageField (picker + clear + bron-badge op beide feature-velden).
+
+- Task: [tasks/done/lp-feature-image-followups.md](../tasks/done/lp-feature-image-followups.md) (extensie)
+- ADR: `-`
+- Spec: `-`
+- Commit: branch `feat/lp-quality-mode-settings`
+
+
 ### 325. Gegenereerde feature-beelden groeien de Media Library (zelf-lerend hergebruik)
 
 Sluitstuk op library-first (#323): definitieve AI-winnaars uit `generate-feature-visuals` worden fire-and-forget als MediaAsset geregistreerd (source `AI_GENERATED`, sceneType→categorie, naam = brief-subject, slug-suffix uit de unieke upload-bestandsnaam) waarna de dam-auto-tagger automatisch beschrijving + tags + pgvector-embedding levert. Daarmee kan de matcher een eerder gegenereerd beeld bij een volgende pagina hergebruiken voor $0 i.p.v. opnieuw te genereren — de bibliotheek wordt zelf-lerend. Echte foto's houden voorrang (PHOTO_REAL-boost) en de fail-closed coherence-poort blijft de kwaliteitsgrens; bewuste consequentie: her-generatie van dezelfde pagina kan het vorige beeld terugmatchen (gewenst hergebruik — vers afdwingen = asset archiveren of vervangen via de picker). Max 4 assets per page-run (alleen finals, library-matches worden niet her-geïmporteerd); import-fouten zijn non-blocking.

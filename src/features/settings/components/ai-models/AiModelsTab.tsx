@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Brain, RotateCcw, Check, Loader2 } from 'lucide-react';
+import { Brain, RotateCcw, Check, Loader2, Images } from 'lucide-react';
 import type { AIModelOption } from '@/lib/ai/exploration/config.types';
 import type { AiFeatureDefinition, AiProvider } from '@/lib/ai/feature-models';
 import { FEATURE_CATEGORIES } from '@/lib/ai/feature-models';
@@ -138,6 +138,110 @@ export function AiModelsTab() {
             </div>
           </div>
         ))}
+
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">
+            Image generation
+          </h3>
+          <FeatureImageQualityRow />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── LP feature-image quality mode ───────────────────────────
+// Tuning-knop (geen provider/model-keuze): kandidaten per slot voor de
+// LP feature-beelden-pipeline (#322). 1 = budget (judge-gated retry),
+// 2-3 = quality (beste kandidaat wint, runner-up = gratis dupe-swap).
+
+const featureImageQualityKeys = { all: ['feature-image-quality'] as const };
+
+const CANDIDATE_OPTIONS: Array<{ value: 1 | 2 | 3; label: string; cost: string }> = [
+  { value: 1, label: '1 — budget', cost: '~$0.55-0.80/page' },
+  { value: 2, label: '2 — quality', cost: '~$1.05/page' },
+  { value: 3, label: '3 — max', cost: '~$1.60/page' },
+];
+
+function FeatureImageQualityRow() {
+  const queryClient = useQueryClient();
+  const { data, isLoading, error } = useQuery({
+    queryKey: featureImageQualityKeys.all,
+    queryFn: async (): Promise<{ candidates: 1 | 2 | 3; isCustomized: boolean }> => {
+      const res = await fetch('/api/settings/feature-image-quality');
+      if (!res.ok) throw new Error('Failed to fetch feature-image quality');
+      return res.json();
+    },
+  });
+  const [saved, setSaved] = useState(false);
+  const mutation = useMutation({
+    mutationFn: async (candidates: 1 | 2 | 3) => {
+      const res = await fetch('/api/settings/feature-image-quality', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidates }),
+      });
+      if (!res.ok) throw new Error('Failed to update');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: featureImageQualityKeys.all });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    },
+  });
+
+  return (
+    <div className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <Images className="w-4 h-4 text-gray-400" />
+          <span className="text-sm font-medium text-gray-900">Landing-page feature images — candidates per slot</span>
+          {data?.isCustomized && (
+            <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded font-medium">
+              Custom
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-gray-500 mt-0.5">
+          1 generates once with a judge-gated retry; 2-3 generate multiple candidates per slot — the
+          coherence judge picks the winner and the runner-up doubles as a free duplicate-swap.
+        </p>
+        {error ? (
+          <p className="text-xs text-red-500 mt-1">Failed to load setting. Refresh to retry.</p>
+        ) : null}
+      </div>
+
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {isLoading ? (
+          <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+        ) : (
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+            {CANDIDATE_OPTIONS.map((opt) => {
+              const active = data?.candidates === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => mutation.mutate(opt.value)}
+                  disabled={mutation.isPending}
+                  title={opt.cost}
+                  className={
+                    active
+                      ? 'px-3 py-1.5 text-sm font-medium bg-primary/10 text-primary disabled:opacity-50'
+                      : 'px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50'
+                  }
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="w-5 h-5 flex items-center justify-center">
+          {mutation.isPending && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
+          {saved && <Check className="w-4 h-4 text-emerald-500" />}
+        </div>
       </div>
     </div>
   );
