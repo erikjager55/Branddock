@@ -36,6 +36,35 @@ Output JSON met deze velden:
 
 Wees kort en precies. Geen subjectieve oordelen. Output ONLY JSON.`;
 
+/**
+ * Anthropic's url-source eist publiek bereikbare HTTPS — lokale `/uploads`-
+ * paden (dev disk-storage) gaan daarom als base64 via disk-read, zelfde
+ * patroon als visual-fidelity-scorer/judges (gotcha localhost 2026-06-10).
+ */
+async function toImageSource(
+  fileUrl: string,
+): Promise<
+  | { type: 'url'; url: string }
+  | { type: 'base64'; media_type: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'; data: string }
+  | null
+> {
+  if (/^https:\/\//i.test(fileUrl)) return { type: 'url', url: fileUrl };
+  if (fileUrl.startsWith('/')) {
+    const { readFile } = await import('fs/promises');
+    const { resolve } = await import('path');
+    const buf = await readFile(resolve(process.cwd(), 'public' + fileUrl));
+    const ext = fileUrl.split('?')[0].split('.').pop()?.toLowerCase();
+    const media_type =
+      ext === 'png' ? ('image/png' as const)
+      : ext === 'webp' ? ('image/webp' as const)
+      : ext === 'gif' ? ('image/gif' as const)
+      : ('image/jpeg' as const);
+    return { type: 'base64', media_type, data: buf.toString('base64') };
+  }
+  console.warn(`[dam-auto-tagger] niet-ondersteund file-url-schema, skip: ${fileUrl.slice(0, 60)}`);
+  return null;
+}
+
 export async function analyzeMediaAssetForDam(
   fileUrl: string,
 ): Promise<DamAnalysisResult | null> {
@@ -47,6 +76,8 @@ export async function analyzeMediaAssetForDam(
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   try {
+    const imageSource = await toImageSource(fileUrl);
+    if (!imageSource) return null;
     const res = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1500,
@@ -58,7 +89,7 @@ export async function analyzeMediaAssetForDam(
           content: [
             {
               type: 'image',
-              source: { type: 'url', url: fileUrl },
+              source: imageSource,
             },
             {
               type: 'text',
