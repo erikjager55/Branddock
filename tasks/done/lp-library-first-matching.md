@@ -62,3 +62,4 @@ Server-side slot-matcher in de generate-feature-visuals-route (additief, vóór 
 
 - 2-reviewer ronde 1: 1 CRITICAL (webp-format vergiftigde judge-keten + fail-open accept) + 4 WARNINGs — alle gefixt; bevestigingsronde: 0 critical / 0 warning. Aanvullend t.o.v. het voorstel: fail-CLOSED accept zonder judge-oordeel, source-aware dupe-bescherming (library-foto nooit duplicate-verliezer), assetId-provenance, /uploads/-containment, parallelle matcher/prefill met deterministische tie-breakers.
 - Golden-set: 0 matches op drempel 0,55 voor de huidige libraries (conservatief zoals ontworpen); drempel-tuning via dry-run zodra libraries groeien. Live-acceptatie: zie changelog #323.
+- **Extensie 2026-06-11 (#325)**: gegenereerde finals → MediaAsset + auto-tag/embedding — de library groeit zelf-lerend; hergebruik-semantiek gedocumenteerd in `import-generated-image.ts`.

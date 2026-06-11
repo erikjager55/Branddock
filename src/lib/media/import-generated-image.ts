@@ -50,15 +50,22 @@ export interface ImportGeneratedImageOptions {
  * trigger de tagger-keten (beschrijving → embedding). aiTags blijft leeg
  * zodat de tagger de volledige vision-analyse draait — die levert ook de
  * `auth:AI_GENERATED`-tag waarmee de matcher echte foto's voorrang geeft.
+ *
+ * Bewuste consequentie: bij her-generatie van dezelfde pagina kan de matcher
+ * een eerder gegenereerd beeld als library-match teruggeven (gewenst
+ * hergebruik, $0). Wie een slot écht vers wil, vervangt via de picker of
+ * archiveert het asset — de coherence-poort blijft de kwaliteitsgrens.
  */
 export async function importGeneratedImageToLibrary(
   opts: ImportGeneratedImageOptions,
 ): Promise<void> {
   try {
     const fileName = opts.fileUrl.split("/").pop() ?? "generated.png";
-    // Tijd-suffix i.p.v. een uniqueness-roundtrip: slugs botsen praktisch
-    // nooit en de DB-constraint vangt de rest (fail-soft).
-    const slug = `${slugify(opts.name)}-${Date.now().toString(36)}`;
+    // Slug-suffix uit de upload-bestandsnaam (bevat al timestamp+slotindex,
+    // uniek per upload) — geen uniqueness-roundtrip nodig; de
+    // @@unique([workspaceId, slug])-constraint vangt de rest (fail-soft).
+    const suffix = fileName.replace(/\.[a-z]+$/i, "").split("-").slice(-2).join("-") || Date.now().toString(36);
+    const slug = `${slugify(opts.name)}-${suffix}`.slice(0, 90);
     const asset = await prisma.mediaAsset.create({
       data: {
         name: opts.name.slice(0, 120),
