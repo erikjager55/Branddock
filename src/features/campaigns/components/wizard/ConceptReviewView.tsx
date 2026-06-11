@@ -66,7 +66,7 @@ export const CONCEPT_ELEMENTS: readonly ConceptElementSpec[] = [
   {
     key: "concept.effieRationale",
     field: "effieRationale",
-    label: "Effie Award Rationale",
+    label: "Award Potential Rationale",
     highlighted: true,
     highlightBg: "bg-emerald-50",
   },

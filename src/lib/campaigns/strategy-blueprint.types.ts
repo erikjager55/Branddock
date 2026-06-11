@@ -1492,6 +1492,68 @@ export const channelPlanResponseSchema: Record<string, unknown> = {
   required: ['channels', 'timingStrategy', 'phaseDurations'],
 };
 
+// Union of all type-specific contentTypeInputs fields the asset-planner
+// prompt can emit (generic metadata + the structure-skeleton, authority-frame,
+// narrative-anchor and conversion-hook bundles in buildAssetPlannerPrompt).
+// Gemini's responseSchema is an OpenAPI subset without `additionalProperties`:
+// constrained decoding only emits declared properties, so an open object
+// schema silently drops every type-specific field the prompt asks for.
+const contentTypeInputStringFields = [
+  // Generic per-category metadata
+  'seoKeyword', 'landingPageUrl', 'adObjective', 'subjectLine', 'videoFormat',
+  'conversionGoal', 'trafficSource', 'narrativeStructure', 'newsFact',
+  'releaseDate', 'jobTitle',
+  // Structure-skeleton bundle ({kind} = slide/section/chapter/agenda/page/scene)
+  'slideSkeleton', 'sectionSkeleton', 'chapterSkeleton', 'agendaSkeleton',
+  'pageSkeleton', 'sceneSkeleton', 'slideHook', 'sectionHook', 'chapterHook',
+  'agendaHook', 'pageHook', 'sceneHook',
+  // Structured-content per-type extras
+  'valueProposition', 'targetObjection', 'featureBenefitMap',
+  'differentiatorClaim', 'tonePosition', 'centralPainPoint',
+  'competitorContext', 'targetTakeaway', 'narrativeArc', 'centralQuestion',
+  'coreAnalogy', 'narrativeFlow', 'featuredItem', 'recurringSegments',
+  // Authority-frame bundle
+  'uniqueAngle', 'evidencePieces', 'counterClaim', 'coreThesis',
+  'dataSourcesUsed', 'industryNorm', 'authorPerspective',
+  'personalCredentials', 'subTopicMap', 'internalSubpages',
+  // Narrative-anchor bundle
+  'whyNowAngle', 'pivotMoment', 'industryContext', 'solutionPhases',
+  'failureFootnote', 'dataPoint', 'cultureSignal',
+  // Conversion-hook bundle
+  'hookFormat', 'payoffPromise', 'proofPoint', 'dominantVisualElement',
+  'previousActionContext', 'incentiveOffer', 'hookSecond', 'payoffMoment',
+  'skipDeterrent', 'editorialPretext', 'urgencyMechanism',
+  'socialProofSnippet', 'lastValueDelivered', 'pivotAngle', 'captionLength',
+  'firstLineMagnet', 'openingHook', 'tweetSkeleton', 'audienceMood',
+];
+
+const contentTypeInputNumberFields = [
+  'targetWordCount', 'emailCount', 'videoDuration', 'slidesCount',
+  'payoffPosition', 'targetCitationCount', 'headlineCount',
+];
+
+const contentTypeInputStringArrayFields = [
+  'secondaryKeywords', 'targetKeywords', 'keyRequirements',
+];
+
+const contentTypeInputBooleanFields = ['personalAnecdote'];
+
+/**
+ * Gemini sub-schema for `AssetPlanDeliverable.contentTypeInputs` — the union
+ * of every type-specific field the asset-planner prompt may request, all
+ * optional so the model only fills what is relevant for the contentType.
+ */
+export const contentTypeInputsResponseSchema: Record<string, unknown> = {
+  type: 'object',
+  description: 'Optional type-specific metadata (SEO keywords, landing URL, structure skeletons, etc.). Only include fields relevant to this contentType; omit the rest.',
+  properties: {
+    ...Object.fromEntries(contentTypeInputStringFields.map((field) => [field, { type: 'string' }])),
+    ...Object.fromEntries(contentTypeInputNumberFields.map((field) => [field, { type: 'number' }])),
+    ...Object.fromEntries(contentTypeInputStringArrayFields.map((field) => [field, { type: 'array', items: { type: 'string' } }])),
+    ...Object.fromEntries(contentTypeInputBooleanFields.map((field) => [field, { type: 'boolean' }])),
+  },
+};
+
 /** Gemini responseSchema for Asset Plan (step 6) */
 export const assetPlanResponseSchema: Record<string, unknown> = {
   type: 'object',
@@ -1520,7 +1582,7 @@ export const assetPlanResponseSchema: Record<string, unknown> = {
           productionPriority: { type: 'string', enum: ['must-have', 'should-have', 'nice-to-have'] },
           estimatedEffort: { type: 'string', enum: ['low', 'medium', 'high'] },
           suggestedOrder: { type: 'number' },
-          contentTypeInputs: { type: 'object', description: 'Optional type-specific metadata (SEO keywords, landing URL, etc.)' },
+          contentTypeInputs: contentTypeInputsResponseSchema,
         },
         required: ['title', 'contentType', 'channel', 'phase', 'targetPersonas', 'brief', 'productionPriority', 'estimatedEffort', 'suggestedOrder'],
       },

@@ -133,8 +133,12 @@ async function callAnthropicJudge(model: string, systemPrompt: string, userPromp
   });
 
   const block = response.content.find((b) => b.type === 'text');
-  const text = block && 'text' in block ? block.text : '{}';
+  if (!block || !('text' in block)) {
+    throw new Error(
+      `Anthropic judge returned no text block (model=${model}, stop_reason=${response.stop_reason})`,
+    );
+  }
   // Strip optional markdown fence if Claude includes one despite instructions
-  const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  const cleaned = block.text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
   return JSON.parse(cleaned);
 }

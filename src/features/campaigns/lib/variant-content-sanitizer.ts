@@ -52,9 +52,25 @@ function matchesPlainTextPattern(group: string): boolean {
   if (group.startsWith("tweet-")) return true; // tweet-2..6 (X thread)
   if (group.startsWith("sitelink-")) return true; // sitelink-N-title / -description
   if (group.startsWith("path-")) return true; // path-1/2 (search-ad display URL)
-  if (group.startsWith("cta-") || group.endsWith("-cta")) return true; // cta-tweet etc.
+  if (group.startsWith("cta-") || group.endsWith("-cta")) return true; // cta-tweet, closing-cta
+  if (/^email-\d+-subject$/.test(group)) return true; // email-1..7-subject (sequence contracts)
+  if (group === "preview-text") return true; // re-engagement inbox preview text
+  if (/^question-\d+$/.test(group)) return true; // question-1..6 (faq-page)
   return false;
 }
+
+/**
+ * Length caps for plain-text groups matched by pattern rather than exact
+ * name — numbered contract groups (email-3-subject, question-4) can't live
+ * in the exact-match PLAIN_TEXT_MAX_LENGTH map. First matching entry wins.
+ * Caps mirror the component-contract maxLength values in
+ * component-templates-fallback.ts so prompt budget and storage clamp agree.
+ */
+const PLAIN_TEXT_PATTERN_MAX_LENGTH: ReadonlyArray<{ pattern: RegExp; cap: number }> = [
+  { pattern: /^email-\d+-subject$/, cap: 60 },
+  { pattern: /^preview-text$/, cap: 110 },
+  { pattern: /^question-\d+$/, cap: 120 },
+];
 
 /** True if a variant group must be rendered without markdown. */
 export function isPlainTextGroup(group: string | null | undefined): boolean {
@@ -156,7 +172,9 @@ export function sanitizeVariantContent(
   if (!isPlainTextGroup(group)) return content;
   const normalizedGroup = group!.toLowerCase().trim();
   const stripped = stripMarkdown(content, preservesLineBreaks(normalizedGroup));
-  const cap = PLAIN_TEXT_MAX_LENGTH[normalizedGroup];
+  const cap =
+    PLAIN_TEXT_MAX_LENGTH[normalizedGroup] ??
+    PLAIN_TEXT_PATTERN_MAX_LENGTH.find(({ pattern }) => pattern.test(normalizedGroup))?.cap;
   if (cap && stripped.length > cap) {
     // Soft truncate: cut on the last word boundary within the cap so the
     // clamp never chops mid-word.

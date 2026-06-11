@@ -4,9 +4,13 @@
 // ────────────────────────────────────────────────────────────
 
 import { prisma } from '@/lib/prisma';
+import { getBrandContext } from '@/lib/ai/brand-context';
 import type { ItemTypeConfig, DimensionQuestion } from '../item-type-registry';
-import { generateReport, resolveModelConfig } from '../exploration-llm';
+import { generateReport } from '../exploration-llm';
 import type { GeneratedReport } from '../exploration-llm';
+import { resolveExplorationConfig } from '../config-resolver';
+import { resolveItemSubType } from '../constants';
+import { buildBrandContextString } from '../prompt-engine';
 import { calculatePersonaValidation } from '@/features/personas/constants/persona-research-methods';
 import type { ResearchMethodSummary } from '@/features/personas/types/persona.types';
 
@@ -116,7 +120,9 @@ export const personaItemConfig: ItemTypeConfig = {
     return `Welcome to the AI Persona Analysis for **${name}**${tagline ? ` — ${tagline}` : ''}. I'll guide you through ${PERSONA_DIMENSIONS.length} key dimensions to build a comprehensive understanding of this persona. Let's begin!`;
   },
 
-  async generateInsights(item, session, knowledgeContext, fieldSuggestionsConfig) {
+  // knowledgeContext is unused here: the resolved exploration config below
+  // supplies customKnowledge/assetKnowledge directly (same source of truth).
+  async generateInsights(item, session, passedConfig, fieldSuggestionsConfig) {
     const persona = item;
     const name = persona.name as string;
 
@@ -186,10 +192,7 @@ export const personaItemConfig: ItemTypeConfig = {
       }
     }
 
-    // 4. Resolve model config
-    const modelConfig = resolveModelConfig(modelId);
-
-    // 5. Use config-driven dimensions from session metadata instead of hardcoded fallback
+    // 4. Use config-driven dimensions from session metadata instead of hardcoded fallback
     const sessionMeta = (session as { metadata?: { dimensions?: Array<{ key: string; title: string; icon: string; question?: string }> } }).metadata;
     const reportDimensions = sessionMeta?.dimensions?.length
       ? sessionMeta.dimensions.map(d => ({
@@ -202,6 +205,23 @@ export const personaItemConfig: ItemTypeConfig = {
 
     console.log('[persona-builder] Using dimensions for report:', reportDimensions.map(d => d.key));
 
+    // 5. Report language follows the workspace content language
+    // (canonical resolution incl. voiceguide-locale precedence, 5-min cache).
+    const sessionWorkspaceId = (session as { workspaceId?: string }).workspaceId;
+    const language = sessionWorkspaceId
+      ? (await getBrandContext(sessionWorkspaceId)).contentLanguage
+      : undefined;
+
+    // 6. The complete-route passes its resolved config (C12) — report
+    // template + model/sampling + knowledge sources. Fallback resolution
+    // covers callers that don't (defensive; the route always passes it).
+    const explorationConfig = passedConfig ?? (sessionWorkspaceId
+      ? await resolveExplorationConfig(sessionWorkspaceId, 'persona', resolveItemSubType(persona), persona.id as string)
+      : undefined);
+    const brandContext = sessionWorkspaceId
+      ? await buildBrandContextString(sessionWorkspaceId)
+      : '';
+
     // 7. Generate report via LLM
     const report: GeneratedReport = await generateReport({
       itemType: 'persona',
@@ -211,8 +231,10 @@ export const personaItemConfig: ItemTypeConfig = {
       allQA,
       fieldMapping,
       currentFieldValues,
-      modelConfig,
-      knowledgeContext,
+      sessionModelId: modelId,
+      config: explorationConfig,
+      brandContext,
+      language,
     });
 
     // 8. Transform to ExplorationInsightsData format

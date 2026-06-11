@@ -32,7 +32,7 @@ export const metaFacebookAdJudge: AdJudge = {
     const headline = ctx.groups.get('headline') ?? '(empty)';
     const description = ctx.groups.get('description') ?? '(empty)';
     const cta = ctx.groups.get('cta-button') ?? '(empty)';
-    const imageDirection = ctx.groups.get('image') ?? '(empty — visual pipeline produces hero)';
+    const imageDirection = ctx.imageDirection ?? '(empty — visual pipeline produces hero)';
 
     return [
       'You are a senior Meta advertising creative director with 10+ years auditing Facebook/Instagram link-card ads against Quality Ranking + Engagement Rate Ranking + Conversion Rate Ranking signals.',

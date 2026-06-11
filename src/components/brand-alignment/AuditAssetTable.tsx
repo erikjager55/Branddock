@@ -82,7 +82,7 @@ export function AuditAssetTable({ assetScores, onNavigateToAsset }: Props) {
             <p className="text-xs text-gray-500 mb-1">
               {asset.qualitySummary}
             </p>
-            {asset.improvements.length > 0 && (
+            {Array.isArray(asset.improvements) && asset.improvements.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {asset.improvements.map((imp, i) => (
                   <span

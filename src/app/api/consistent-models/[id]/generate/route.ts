@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
-import { isFalConfigured, runFalGeneration } from '@/lib/integrations/fal/fal-client';
+import { foldNegativeIntoPrompt, isFalConfigured, runFalGeneration } from '@/lib/integrations/fal/fal-client';
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
@@ -114,15 +114,25 @@ export async function POST(
 
     // Call fal.ai to generate
     const generatorEndpoint = model.generatorEndpoint ?? 'fal-ai/flux-lora';
+    // The LoRA generators (fal-ai/flux-2/lora, fal-ai/flux-lora) have no
+    // negative_prompt input field and fal drops unknown fields silently, so
+    // sending the merged negatives as a native param was a dead no-op
+    // (prompt-audit 2026-06-11). Fold them into the positive prompt instead.
+    const promptForModel = foldNegativeIntoPrompt(generatorEndpoint, combinedPrompt, mergedNegative);
     const result = await runFalGeneration(generatorEndpoint, {
-      prompt: combinedPrompt,
-      loras: [{ path: model.falLoraUrl!, scale: guidanceScale ? 1.0 : baseLoraScale }],
+      prompt: promptForModel,
+      // LoRA scale is independent of the CFG choice — it previously reset to
+      // 1.0 whenever the user set guidanceScale, silently weakening style
+      // enforcement (prompt-audit 2026-06-11).
+      loras: [{ path: model.falLoraUrl!, scale: baseLoraScale }],
       num_images: numImages ?? 1,
-      guidance_scale: guidanceScale ?? 7.5,
+      // Only send guidance_scale when the user set it, so each endpoint keeps
+      // its conforming default (fal-ai/flux-2/lora: 2.5, legacy flux-lora:
+      // 3.5). The previous hardcoded 7.5 oversaturated FLUX-family output.
+      ...(guidanceScale != null ? { guidance_scale: guidanceScale } : {}),
       image_size: { width: width ?? 1024, height: height ?? 1024 },
       seed,
       output_format: 'png',
-      ...(mergedNegative ? { negative_prompt: mergedNegative } : {}),
     });
 
     // Process each generated image

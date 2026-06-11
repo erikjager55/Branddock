@@ -372,7 +372,9 @@ export function buildFullVariantBPrompt(params: FullVariantPromptParams): { syst
   const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
-  const system = `You are a creative provocateur who creates Cannes Lions-winning campaigns through cultural tensions, cross-industry analogies, and unexpected creative leaps.
+  const system = `You are a creative provocateur who creates world-class, breakthrough campaigns through cultural tensions, cross-industry analogies, and unexpected creative leaps.
+
+**Output language guard**: Your output is user-facing. Never use the words "Effie", "Effie Award", "effie-waardig" or similar award-name references in any output field. The internal quality criteria below are your INTERNAL rubric only — apply them silently. Phrase rationale fields in terms of insight depth, strategic distinctiveness, behavioral plausibility, and KPI-impact potential.
 
 Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response. Your strategy must SURPRISE — find the angle that makes people stop, think, and share.
 ${INSIGHT_MINING_INSTRUCTIONS}
@@ -463,7 +465,9 @@ export function buildFullVariantCPrompt(params: FullVariantPromptParams): { syst
   const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
-  const system = `You are a data-driven innovation strategist who creates D&AD-winning campaigns at the intersection of behavioral science, cultural intelligence, and platform-native thinking.
+  const system = `You are a data-driven innovation strategist who creates world-class campaigns at the intersection of behavioral science, cultural intelligence, and platform-native thinking.
+
+**Output language guard**: Your output is user-facing. Never use the words "Effie", "Effie Award", "effie-waardig" or similar award-name references in any output field. The internal quality criteria below are your INTERNAL rubric only — apply them silently. Phrase rationale fields in terms of insight depth, strategic distinctiveness, behavioral plausibility, and KPI-impact potential.
 
 Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response. Your strategy must be GROUNDED IN DATA but BRILLIANT IN EXECUTION — where science meets creativity.
 ${INSIGHT_MINING_INSTRUCTIONS}
@@ -674,7 +678,7 @@ SYNTHESIS APPROACH — ELEVATION, NOT COMBINATION
 You are NOT averaging three good ideas into one mediocre idea.
 You ARE identifying the single strongest creative platform and making it unstoppable.
 
-Your task: Elevate the BEST variant into an award-winning campaign, informed by persona feedback:
+Your task: Elevate the BEST variant into a world-class campaign, informed by persona feedback:
 - Variant A: evidence-based, proven methodologies (behavioral science frameworks)
 - Variant B: creative provocateur (cultural tensions, cross-industry analogies)
 - Variant C: data-driven innovation (CEP maximization, nudge architecture, platform-native)${goalContext}${campaignTypeContext}${goalInsights}
@@ -1121,7 +1125,7 @@ interface BriefingValidationPromptParams {
 export function buildBriefingValidationPrompt(params: BriefingValidationPromptParams): { system: string; user: string } {
   const system = `You are a senior brand strategist evaluating a campaign briefing for completeness and quality before strategy generation begins.
 
-Your role: Assess whether the provided briefing contains sufficient information to generate a high-quality, award-winning campaign strategy. Be honest but constructive — flag gaps that would materially weaken the output.
+Your role: Assess whether the provided briefing contains sufficient information to generate a high-quality, world-class campaign strategy. Be honest but constructive — flag gaps that would materially weaken the output.
 
 Evaluation criteria:
 - Brand context: Is the brand's positioning, values, and voice clear enough to build a campaign?
@@ -1423,7 +1427,7 @@ interface CreativeLeapPromptParams {
 export function buildCreativeLeapPrompt(params: CreativeLeapPromptParams): { system: string; user: string } {
   const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
 
-  const system = `You are a creative director at a Cannes Lions-winning agency. You have ONE job: transform a human insight into a brilliant creative concept using a SPECIFIC structural creativity template.
+  const system = `You are a creative director at a world-class creative agency. You have ONE job: transform a human insight into a brilliant creative concept using a SPECIFIC structural creativity template.
 
 ## Your Assignment
 - Human Insight: provided below
@@ -1667,7 +1671,6 @@ interface QuickConceptPromptParams {
 export function buildQuickConceptPrompt(params: QuickConceptPromptParams): { system: string; user: string } {
   const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
   const system = `You are a creative strategist generating a campaign concept in a single pass.
-IMPORTANT: All output MUST be in English.
 Your task: Discover ONE human insight and build ONE creative concept on top of it.
 Use a Goldenberg creativity template (extreme_consequence, absurd_alternative, inversion, metaphor, activation, subtraction, unification, extreme_effort).
 Connect to an unrelated domain (bisociation) for creative surprise.

@@ -7,7 +7,7 @@ import { getStorageProvider } from '@/lib/storage';
 import { z } from 'zod';
 import { generateImage } from '@/lib/ai/gemini-client';
 import { generateDalleImage } from '@/lib/ai/openai-client';
-import { runFalGeneration, generateFalImage } from '@/lib/integrations/fal/fal-client';
+import { runFalGeneration, generateFalImage, foldNegativeIntoPrompt } from '@/lib/integrations/fal/fal-client';
 import { getFalProviderById, getFalEndpoint } from '@/lib/integrations/fal/fal-providers';
 import { buildPromptWithContext } from '@/lib/ai/prompt-context-builder';
 import { resolveWorkspaceBrandContext } from '@/lib/consistent-models/workspace-context-resolver';
@@ -175,7 +175,9 @@ export async function POST(request: NextRequest) {
       const generatorEndpoint = readyModels[0].generatorEndpoint ?? 'fal-ai/flux-lora';
 
       const result = await runFalGeneration(generatorEndpoint, {
-        prompt: loraPrompt,
+        // LoRA generator endpoints have no negative_prompt input (fal drops
+        // unknown fields silently) — fold negatives into the prompt instead.
+        prompt: foldNegativeIntoPrompt(generatorEndpoint, loraPrompt, combinedNegativePrompt),
         loras,
         num_images: 1,
         num_inference_steps: maxInferenceSteps || 40,
@@ -186,7 +188,6 @@ export async function POST(request: NextRequest) {
           : aspectRatio === '3:4' ? { width: 896, height: 1152 }
           : aspectRatio === '4:3' ? { width: 1152, height: 896 }
           : { width: 1024, height: 1024 },
-        ...(combinedNegativePrompt ? { negative_prompt: combinedNegativePrompt } : {}),
       });
 
       if (!result.images?.[0]?.url) {

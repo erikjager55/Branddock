@@ -325,7 +325,12 @@ const MAX_PROMPT_LENGTH_BY_MODEL: Record<string, number> = {
 };
 const DEFAULT_MAX_PROMPT_LENGTH = 3000;
 
-function truncatePromptForModel(prompt: string, modelId: string): string {
+/**
+ * Word-safe truncation of a prompt to the per-model character cap (3000
+ * default). Exported so routes that call fal.subscribe directly apply the
+ * same prompt-cap guard as generateFalImage (prompt-audit 2026-06-11, T7).
+ */
+export function truncatePromptForModel(prompt: string, modelId: string): string {
   const cap = MAX_PROMPT_LENGTH_BY_MODEL[modelId] ?? DEFAULT_MAX_PROMPT_LENGTH;
   if (prompt.length <= cap) return prompt;
   // Snijd af op laatste punt/spatie binnen cap zodat we niet midden in een
@@ -370,9 +375,29 @@ export function applyNegativePromptStrategy(
   if (provider?.supportsNegativePrompt !== false) {
     return { prompt, nativeNegative: negativePrompt };
   }
-  // Specifiek-eerst: buildNegativePrompt ordent defaults→donts→negations;
-  // voor het directive-pad draaien we dat om (exact-match op de defaults-set;
-  // segmenten met een komma erin splitsen onschadelijk en blijven custom).
+  return { prompt: foldNegativeIntoPrompt(modelId, prompt, negativePrompt), nativeNegative: undefined };
+}
+
+/**
+ * Fold a negative prompt into the positive prompt as a capped,
+ * specificity-first "Avoid: ..." directive. For endpoints WITHOUT a native
+ * `negative_prompt` input — the Gemini family (nano-banana) and the LoRA
+ * generators (fal-ai/flux-2/lora, fal-ai/flux-lora). fal drops unknown input
+ * fields silently, so sending a native param to those endpoints is a dead
+ * no-op (prompt-audit 2026-06-11, gap-fal-image-paths).
+ *
+ * Returns the prompt unchanged when there is nothing to fold.
+ */
+export function foldNegativeIntoPrompt(
+  modelId: string,
+  prompt: string,
+  negativePrompt: string | undefined,
+): string {
+  if (!negativePrompt?.trim()) return prompt;
+  // Specificity-first: buildNegativePrompt orders defaults→donts→negations;
+  // for the directive path we reverse that (exact match against the defaults
+  // set; segments containing a comma split harmlessly and stay custom) so a
+  // cap never cuts the most specific negations first.
   const segments = negativePrompt.split(', ');
   const custom = segments.filter((s) => !NEGATIVE_DEFAULTS_SET.has(s));
   const defaults = segments.filter((s) => NEGATIVE_DEFAULTS_SET.has(s));
@@ -383,12 +408,12 @@ export function applyNegativePromptStrategy(
     directive = (lastComma > NEGATIVE_DIRECTIVE_MAX_CHARS * 0.6 ? sliced.slice(0, lastComma) : sliced).trimEnd();
     if (!directive.endsWith('.')) directive += '.';
   }
-  // Budget reserveren: anders kapt truncatePromptForModel (staart-truncatie)
-  // bij lange prompts exact de directive er weer af.
+  // Reserve budget: otherwise truncatePromptForModel (tail truncation) cuts
+  // exactly the directive off again for long prompts.
   const cap = MAX_PROMPT_LENGTH_BY_MODEL[modelId] ?? DEFAULT_MAX_PROMPT_LENGTH;
   const budget = Math.max(cap - directive.length, Math.floor(cap * 0.5));
   const trimmedPrompt = prompt.length > budget ? truncateWordSafe(prompt, budget) : prompt;
-  return { prompt: trimmedPrompt + directive, nativeNegative: undefined };
+  return trimmedPrompt + directive;
 }
 
 function truncateWordSafe(text: string, budget: number): string {

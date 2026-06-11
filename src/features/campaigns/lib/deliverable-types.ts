@@ -395,8 +395,10 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Carousel"],
     icon: "GalleryHorizontalEnd",
-    // 7-10 slides x 15-30 words = ~100-300w total text content.
-    constraints: { minWords: 100, maxWords: 300, maxSlides: 10, maxChars: 3000, maxHashtags: 5 },
+    // 2026-06-11 (prompt-audit fase 2): bounds afgestemd op het component-
+    // contract (cover-slide + content-slides + cta-slide + caption + hashtags,
+    // samen ~4.750 chars) — maxWords 300 / maxChars 3000 botste daarmee.
+    constraints: { minWords: 100, maxWords: 700, maxSlides: 10, maxChars: 4800, maxHashtags: 5 },
     qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
     exportFormats: ['pdf', 'png'],
     // 2026-05-19 verborgen uit Add Content per user — carousel asset-
@@ -692,7 +694,12 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "retention",
     outputFormats: ["HTML", "Text"],
     icon: "MailPlus",
-    constraints: { minWords: 50, maxWords: 500, requiredSections: ['subject', 'greeting', 'body', 'cta'] },
+    // 2026-06-11 (prompt-audit fase 2): structuur komt uit het per-email
+    // group-contract (email-N-subject/email-N-body in component-templates-
+    // fallback); de oude single-email sectienamen bestaan niet meer als
+    // groepen en per-N namen horen niet in requiredSections — daarom geen
+    // requiredSections. maxWords ≈ 5 mails × ~260 woorden.
+    constraints: { minWords: 50, maxWords: 1300 },
     qualityCriteria: EMAIL_DEFAULTS.qualityCriteria,
     exportFormats: EMAIL_DEFAULTS.exportFormats,
   },
@@ -716,7 +723,11 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "consideration",
     outputFormats: ["HTML", "Text"],
     icon: "Timer",
-    constraints: EMAIL_DEFAULTS.constraints,
+    // 2026-06-11 (prompt-audit fase 2): eigen bounds i.p.v. EMAIL_DEFAULTS —
+    // de single-email requiredSections (subject/body/cta) botsen met het
+    // per-email group-contract (email-N-subject/email-N-body), en 5-7 mails
+    // passen niet binnen 1000 woorden. maxWords ≈ 7 mails × ~215 woorden.
+    constraints: { minWords: 50, maxWords: 1500 },
     qualityCriteria: EMAIL_DEFAULTS.qualityCriteria,
     exportFormats: EMAIL_DEFAULTS.exportFormats,
   },
@@ -728,7 +739,10 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "retention",
     outputFormats: ["HTML", "Text"],
     icon: "MailWarning",
-    constraints: { minWords: 50, maxWords: 300, requiredSections: ['subject', 'body', 'cta', 'unsubscribe'] },
+    // 2026-06-11 (prompt-audit fase 2): secties gelijkgetrokken met het
+    // single-email group-contract ('preview-text' nieuw); 'unsubscribe' is
+    // footer-chrome van de e-mailclient, geen content-groep.
+    constraints: { minWords: 50, maxWords: 300, requiredSections: ['subject', 'preview-text', 'body', 'cta'] },
     qualityCriteria: EMAIL_DEFAULTS.qualityCriteria,
     exportFormats: EMAIL_DEFAULTS.exportFormats,
   },
@@ -766,7 +780,11 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "consideration",
     outputFormats: ["Text", "HTML"],
     icon: "HelpCircle",
-    constraints: { minWords: 300, maxWords: 5000, requiredSections: ['questions', 'answers'] },
+    // 2026-06-11 (prompt-audit fase 2): de Q&A-structuur wordt afgedwongen
+    // door het per-N group-contract (intro + question-N/answer-N +
+    // closing-cta) — per-N namen horen niet in requiredSections. maxWords ≈
+    // som van de group-caps (~6.900 chars).
+    constraints: { minWords: 300, maxWords: 1000 },
     qualityCriteria: [
       { name: 'Answer Quality', weight: 0.25, description: 'Completeness, accuracy, helpfulness' },
       { name: 'SEO', weight: 0.25, description: 'Question-based keywords, structured data readiness' },
@@ -784,7 +802,11 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "consideration",
     outputFormats: ["Text", "HTML"],
     icon: "GitCompareArrows",
-    constraints: { minWords: 500, maxWords: 3000, requiredSections: ['intro', 'comparison-matrix', 'recommendation'] },
+    // 2026-06-11 (prompt-audit fase 2): 'recommendation' heet in het group-
+    // contract 'summary'; 'closing-cta' toegevoegd; differentiator-N is per-N
+    // en wordt door het group-contract zelf afgedwongen. maxWords ≈ som van
+    // de group-caps (~6.100 chars).
+    constraints: { minWords: 500, maxWords: 1000, requiredSections: ['intro', 'comparison-matrix', 'summary', 'closing-cta'] },
     qualityCriteria: WEBSITE_DEFAULTS.qualityCriteria,
     exportFormats: WEBSITE_DEFAULTS.exportFormats,
   },
@@ -796,7 +818,11 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Text", "HTML"],
     icon: "Globe",
-    constraints: { minWords: 500, maxWords: 5000, requiredSections: ['hero', 'sections', 'cta'] },
+    // 2026-06-11 (prompt-audit fase 2): structuur = per-N group-contract
+    // (page-1..5); de oude hero/sections/cta-namen bestaan niet als groepen
+    // en per-N namen horen niet in requiredSections. maxWords ≈ 5 pagina's
+    // × 2.500 chars.
+    constraints: { minWords: 500, maxWords: 2000 },
     qualityCriteria: WEBSITE_DEFAULTS.qualityCriteria,
     exportFormats: WEBSITE_DEFAULTS.exportFormats,
   },
@@ -824,7 +850,11 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "consideration",
     outputFormats: ["Text"],
     icon: "MessageSquareQuote",
-    constraints: { minWords: 100, maxWords: 400, requiredSections: ['intro', 'questions', 'closing'] },
+    // 2026-06-11 (prompt-audit fase 2): sectienamen gelijkgetrokken met het
+    // group-contract ('intro' → 'production-brief', 'questions' →
+    // 'interview-questions'); maxWords verruimd naar de som van de
+    // group-caps (~4.200 chars).
+    constraints: { minWords: 100, maxWords: 650, requiredSections: ['production-brief', 'interview-questions', 'closing'] },
     qualityCriteria: VIDEO_AUDIO_DEFAULTS.qualityCriteria,
     exportFormats: VIDEO_AUDIO_DEFAULTS.exportFormats,
     // 2026-05-19 — verborgen uit Add Content (zie linkedin-video-ad voor reden).
@@ -852,7 +882,10 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "consideration",
     outputFormats: ["Text", "PDF"],
     icon: "Presentation",
-    constraints: { minWords: 500, maxWords: 3000, requiredSections: ['agenda', 'slides', 'talking-points'] },
+    // 2026-06-11 (prompt-audit fase 2): 'slides'/'talking-points' bestaan
+    // niet als groepen; section-N is per-N en wordt door het group-contract
+    // afgedwongen. maxWords ≈ som van de group-caps (~5.900 chars).
+    constraints: { minWords: 500, maxWords: 900, requiredSections: ['title', 'hook', 'agenda', 'closing'] },
     qualityCriteria: VIDEO_AUDIO_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'pdf'],
     // 2026-05-19 — hele "Video & Audio" categorie verwijderd uit Add Content.
@@ -866,7 +899,10 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Text"],
     icon: "Mic",
-    constraints: { minWords: 300, maxWords: 2000, requiredSections: ['intro', 'segments', 'questions', 'outro'] },
+    // 2026-06-11 (prompt-audit fase 2): 'segments'/'questions' bestaan niet
+    // als groepen (segment-N is per-N en wordt door het group-contract
+    // afgedwongen). maxWords ≈ som van de group-caps (~5.000 chars).
+    constraints: { minWords: 300, maxWords: 800, requiredSections: ['title', 'cold-open', 'intro', 'outro'] },
     qualityCriteria: VIDEO_AUDIO_DEFAULTS.qualityCriteria,
     exportFormats: VIDEO_AUDIO_DEFAULTS.exportFormats,
     // 2026-05-19 — hele "Video & Audio" categorie verwijderd uit Add Content.
@@ -882,7 +918,10 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "conversion",
     outputFormats: ["Text", "PDF"],
     icon: "BarChart3",
-    constraints: { minWords: 500, maxWords: 3000, requiredSections: ['title', 'problem', 'solution', 'proof', 'cta'] },
+    // 2026-06-11 (prompt-audit fase 2): de afsluiter heet in het group-
+    // contract 'next-steps' (volwaardige paragraaf, geen button-cta).
+    // maxWords ≈ som van de group-caps (~7.400 chars).
+    constraints: { minWords: 500, maxWords: 1200, requiredSections: ['title', 'problem', 'solution', 'proof', 'next-steps'] },
     qualityCriteria: SALES_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'pdf', 'pptx'],
   },
@@ -906,7 +945,10 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "conversion",
     outputFormats: ["Text", "PDF"],
     icon: "ClipboardList",
-    constraints: { minWords: 1000, maxWords: 5000, requiredSections: ['executive-summary', 'scope', 'approach', 'timeline', 'pricing'] },
+    // 2026-06-11 (prompt-audit fase 2): maxWords ≈ som van de group-caps
+    // (~9.800 chars) — 5000 woorden was onhaalbaar binnen het component-
+    // contract. Sectienamen matchen de groepen 1-op-1.
+    constraints: { minWords: 1000, maxWords: 1500, requiredSections: ['executive-summary', 'scope', 'approach', 'timeline', 'pricing'] },
     qualityCriteria: SALES_DEFAULTS.qualityCriteria,
     exportFormats: SALES_DEFAULTS.exportFormats,
   },
@@ -918,7 +960,9 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "consideration",
     outputFormats: ["Text"],
     icon: "Tag",
-    constraints: { minWords: 50, maxWords: 300 },
+    // 2026-06-11 (prompt-audit fase 2): 300 woorden paste niet bij het
+    // group-contract (headline t/m key-features + SEO-velden, ~4.000 chars).
+    constraints: { minWords: 50, maxWords: 600 },
     qualityCriteria: SALES_DEFAULTS.qualityCriteria,
     exportFormats: SALES_DEFAULTS.exportFormats,
   },
@@ -932,7 +976,11 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Text"],
     icon: "Newspaper",
-    constraints: { minWords: 300, maxWords: 800, requiredSections: ['headline', 'dateline', 'lead', 'body', 'boilerplate'] },
+    // 2026-06-11 (prompt-audit fase 2): sectienamen gelijkgetrokken met het
+    // group-contract ('dateline'+'lead' → 'dateline-lead'; subheadline en
+    // media-contact zijn verplichte groepen; quote-N is per-N en wordt door
+    // het group-contract afgedwongen).
+    constraints: { minWords: 300, maxWords: 800, requiredSections: ['headline', 'subheadline', 'dateline-lead', 'body', 'boilerplate', 'media-contact'] },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: PR_HR_DEFAULTS.exportFormats,
   },
@@ -944,7 +992,10 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Text"],
     icon: "Send",
-    constraints: { minWords: 100, maxWords: 300, requiredSections: ['subject', 'hook', 'pitch', 'cta'] },
+    // 2026-06-11 (prompt-audit fase 2): de journalist-ask heet in het group-
+    // contract 'ask' (volle zin — bewust geen 'cta', dat de button-text-regel
+    // + 48-char storage-clamp zou triggeren).
+    constraints: { minWords: 100, maxWords: 300, requiredSections: ['subject', 'hook', 'pitch', 'ask'] },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: ['txt'],
   },
@@ -956,7 +1007,9 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "retention",
     outputFormats: ["Text", "HTML"],
     icon: "Building2",
-    constraints: PR_HR_DEFAULTS.constraints,
+    // 2026-06-11 (prompt-audit fase 2): eigen bounds i.p.v. PR_HR_DEFAULTS —
+    // maxWords 2000 was onhaalbaar binnen het group-contract (~5.600 chars).
+    constraints: { minWords: 100, maxWords: 900 },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: PR_HR_DEFAULTS.exportFormats,
   },
@@ -968,7 +1021,10 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Text", "HTML"],
     icon: "Briefcase",
-    constraints: { minWords: 300, maxWords: 2000, requiredSections: ['culture', 'benefits', 'positions', 'cta'] },
+    // 2026-06-11 (prompt-audit fase 2): 'positions' bestaat niet als groep;
+    // gelijkgetrokken met de verplichte groepen uit het group-contract.
+    // maxWords ≈ som van de group-caps (~5.700 chars).
+    constraints: { minWords: 300, maxWords: 900, requiredSections: ['hero', 'why-work-here', 'culture', 'benefits', 'application-process', 'cta'] },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'html'],
   },
@@ -980,7 +1036,9 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "conversion",
     outputFormats: ["Text"],
     icon: "UserPlus",
-    constraints: { minWords: 200, maxWords: 800, requiredSections: ['title', 'about', 'responsibilities', 'requirements', 'benefits'] },
+    // 2026-06-11 (prompt-audit fase 2): 'about' heet in het group-contract
+    // 'about-role'.
+    constraints: { minWords: 200, maxWords: 800, requiredSections: ['title', 'about-role', 'responsibilities', 'requirements', 'benefits'] },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: PR_HR_DEFAULTS.exportFormats,
   },
@@ -992,7 +1050,10 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "awareness",
     outputFormats: ["Text", "HTML"],
     icon: "Users",
-    constraints: { minWords: 300, maxWords: 1500 },
+    // 2026-06-11 (prompt-audit fase 2): maxWords ≈ som van de group-caps
+    // (~4.200 chars) — 1500 woorden was onhaalbaar binnen het component-
+    // contract.
+    constraints: { minWords: 300, maxWords: 650 },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'html'],
   },
@@ -1018,7 +1079,11 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     funnelStage: "retention",
     outputFormats: ["Text", "PDF"],
     icon: "Leaf",
-    constraints: { minWords: 1000, maxWords: 5000, requiredSections: ['executive-summary', 'metrics', 'stories', 'outlook'] },
+    // 2026-06-11 (prompt-audit fase 2): sectienamen gelijkgetrokken met het
+    // group-contract ('metrics' → 'impact-metrics', 'stories' →
+    // 'stakeholder-stories', 'outlook' → 'goals-commitments'). maxWords ≈
+    // som van de group-caps (~12.200 chars).
+    constraints: { minWords: 1000, maxWords: 2000, requiredSections: ['executive-summary', 'impact-metrics', 'stakeholder-stories', 'goals-commitments'] },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'pdf'],
   },

@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { GoogleGenAI } from '@google/genai';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 import { timeoutForTokens } from '@/lib/ai/call-budget';
+import { isTempDeprecatedModel } from '@/lib/ai/anthropic-client';
 
 import type {
   AICallPayload,
@@ -106,7 +107,9 @@ export async function generateAIResponse(
           model,
           system: systemPrompt,
           messages: [{ role: 'user', content: userPrompt }],
-          temperature,
+          // Workspace-configurable models can be temp-deprecated generations
+          // (opus-4-7+ 400s on temperature) — same guard as the other paths.
+          ...(isTempDeprecatedModel(model) ? {} : { temperature }),
           max_tokens: maxTokens,
         },
         { timeout: timeoutMs },
@@ -442,12 +445,9 @@ export async function createClaudeStructuredCompletion<T>(
   // structured-extraction) kunnen alsnog explicit lager zetten.
   const maxTokens = options?.maxTokens ?? 16000;
   const useThinking = !!options?.thinking;
-  // 2026-05-24: Opus 4.7+ heeft `temperature` deprecated (Anthropic API
-  // returnt 400 `temperature is deprecated for this model`). Geldt voor
-  // alle Opus 4.7/4.8/5 + Sonnet 4.6+ variants. Behandel net als
-  // thinking-mode: temperature undefined laten.
-  const isTempDeprecated = /opus-4-[789]|opus-5|sonnet-4-[6789]|sonnet-5/.test(model);
-  const temperature = (useThinking || isTempDeprecated) ? undefined : (options?.temperature ?? 0.3);
+  // Temperature-deprecated models (zie isTempDeprecatedModel JSDoc): net als
+  // thinking-mode temperature undefined laten.
+  const temperature = (useThinking || isTempDeprecatedModel(model)) ? undefined : (options?.temperature ?? 0.3);
   // Extended thinking needs more time (thinking + generation) — default 10 min
   const defaultTimeout = useThinking ? 600_000 : 90_000;
 

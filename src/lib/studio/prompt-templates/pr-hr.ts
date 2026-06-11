@@ -5,7 +5,13 @@
 // Employer Branding Video, Impact Report
 // =============================================================
 
-export const PROMPT_VERSION = '1.2.0';
+// 2.0.0 (2026-06-11, prompt-audit C3/T2): multi-version demands removed
+// (media-pitch 3 variations, employer-brand-video dual cuts) — the canvas
+// variant mechanism owns variation; press-release "###" end marker dropped
+// (whole-document artifact that collides with markdown H3 in per-group
+// output); metrics grounded to brief/brand context (anti-fabrication);
+// media-pitch few-shot subject brought within its own 8-word/~40-char cap.
+export const PROMPT_VERSION = '2.0.0';
 
 import type { PromptTemplate } from './helpers';
 import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './helpers';
@@ -62,7 +68,6 @@ Follow this exact structure:
 - **Quote 2**: Customer or partner perspective (optional), 1-2 sentences, use [PLACEHOLDER NAME]
 - **Boilerplate**: Company description, 50-75 words, include founded date, HQ location, company size, and mission
 - **Media contact**: [PLACEHOLDER NAME], [PLACEHOLDER EMAIL], [PLACEHOLDER PHONE]
-- **###** (end marker)
 
 Total length: 300-400 words ideal. Never exceed 500 words.
 
@@ -85,7 +90,7 @@ Notice: it's factual, specific, includes a data point, and a journalist could ru
 Before finalizing, verify:
 - [ ] Content serves journalists as the primary audience
 - [ ] No placeholder values without [PLACEHOLDER] markers
-- [ ] Claims are specific and verifiable (numbers, names, dates)
+- [ ] Claims are specific and verifiable (numbers, names, dates) — every figure comes from the provided brief or brand context; omit specifics that are not in the source material rather than invent them
 - [ ] Tone is formal, factual, and professional — no marketing fluff
 - [ ] AP Style guidelines followed throughout
 - [ ] Inverted pyramid structure maintained — most important info first
@@ -114,14 +119,14 @@ The pitch structure mirrors what journalists need:
 2. What's the news hook (trend, data, exclusive)
 3. What assets you can provide (interview, data, embargo)
 
-Generate **3 VARIATION STRATEGY** pitches:
-- **Variation A (Exclusive)**: Offer exclusive access/data to one journalist. Higher response rate but limited reach. Lead with "I'd like to offer you an exclusive..."
-- **Variation B (Trend hook)**: Connect your news to an existing trend the journalist covers. Lead with a trend observation, then bridge to your news.
-- **Variation C (Data angle)**: Lead with a surprising statistic that your news explains. Data-first pitches get 3x more responses than announcement-first pitches.
+Choose ONE **ANGLE STRATEGY** — the one that best fits the brief and the target journalist:
+- **Exclusive angle**: Offer exclusive access/data to one journalist. Higher response rate but limited reach. Lead with "I'd like to offer you an exclusive..."
+- **Trend-hook angle**: Connect your news to an existing trend the journalist covers. Lead with a trend observation, then bridge to your news.
+- **Data angle**: Lead with a surprising statistic that your news explains. Data-first pitches get 3x more responses than announcement-first pitches.
 
-Each variation targets a DIFFERENT journalist archetype — the exclusive-hunter, the trend-spotter, and the data-driven reporter.
+Each angle targets a different journalist archetype — the exclusive-hunter, the trend-spotter, or the data-driven reporter. Write ONE pitch committed to ONE angle. Variation happens at the variant level: when the platform requests multiple variants, use a different angle per variant — never combine angles or stack multiple pitches in a single output.
 
-## STRUCTURE SKELETON (per variation, max 150 words each)
+## STRUCTURE SKELETON (max 150 words total)
 - **Subject line**: Max 8 words, no "Press Release:" prefix, newsworthy hook that creates curiosity
 - **Greeting**: Personalized placeholder (Hi [JOURNALIST NAME])
 - **Hook sentence**: 1 sentence — why their SPECIFIC audience cares RIGHT NOW
@@ -130,8 +135,8 @@ Each variation targets a DIFFERENT journalist archetype — the exclusive-hunter
 - **The ask**: 1 sentence — specific request (interview, review, exclusive, embargo offer)
 - **Availability + sign-off**: When you're available, how to reach you
 
-## FEW-SHOT EXAMPLE (Trend Hook Variation)
-"Subject: The shift from 6-month brand projects to 30-day sprints
+## FEW-SHOT EXAMPLE (trend-hook angle)
+"Subject: Brand strategy: 6 months to 30 days
 
 Hi [Name],
 
@@ -153,20 +158,20 @@ I can share exclusive data from 2,000 companies who've made this shift. Happy to
 Before finalizing, verify:
 - [ ] Content serves journalists as the primary audience
 - [ ] No placeholder values without [PLACEHOLDER] markers
-- [ ] Each variation is under 150 words
-- [ ] Subject lines are max 8 words and create genuine curiosity
-- [ ] Each variation uses a different angle (exclusive, trend, data)
+- [ ] The pitch is under 150 words
+- [ ] The subject line is max 8 words and creates genuine curiosity
+- [ ] The pitch commits to ONE angle (exclusive, trend, or data) — no references to other angles or versions
 - [ ] The ask is specific and actionable
 - [ ] No attachments referenced — links only
 - [ ] Tone is professional but human — not robotic or overly formal
-- [ ] Each pitch could stand alone — no cross-references between variations`,
+- [ ] Every data point comes from the provided brief or brand context — if no data is available, omit the number rather than invent one`,
     ),
     buildUserPrompt: (params) =>
       buildPrHrUserPrompt(
         params.userPrompt,
         params.context,
         params.settings,
-        'Format: 3 media pitch email variations. Each under 150 words. Include subject line and clear ask.',
+        'Format: one media pitch email, under 150 words. Include subject line and clear ask.',
       ),
   },
 
@@ -279,6 +284,7 @@ Before finalizing, verify:
 - [ ] Content serves candidates as the primary audience
 - [ ] No placeholder values without [PLACEHOLDER] markers
 - [ ] Every claim is backed by a specific, verifiable example
+- [ ] Metrics and numbers come from the provided brief or brand context — if the source material has none, make the claim qualitative rather than invent a figure
 - [ ] Tone is authentic, second-person ("you"), and inviting
 - [ ] DEI section has specific programs/metrics, not just a statement
 - [ ] Benefits are organized by category with specific items
@@ -452,7 +458,7 @@ The **CONTRADICTION TEST**: If you could replace your company name with a compet
 
 **Music**: Upbeat but authentic — indie/acoustic tracks, not corporate stock music. Suggest specific mood (e.g., "Think: The Head and the Heart, not 'Inspiring Corporate Background #7'")
 
-**Also provide a 60-second cut** with tighter edits and guidance on what to cut.
+Write ONE script for the duration requested in the brief (default: 90 seconds). For a 60-second brief, tighten the same arc — never deliver two cuts in one output.
 
 ## FEW-SHOT EXAMPLE (Hook)
 "[VISUAL: Close-up of hands typing, pull back to reveal a bustling office. Cut to an employee laughing mid-sentence.] (VOICEOVER): 'We asked our team what they'd tell someone thinking about joining. Nobody said what we expected.'"
@@ -475,7 +481,7 @@ Before finalizing, verify:
 - [ ] 3 employees from different levels and backgrounds
 - [ ] At least one genuinely unexpected/human moment
 - [ ] Music suggestion is specific and authentic (not "corporate background")
-- [ ] Both 90-second and 60-second cuts are provided
+- [ ] The script matches the single duration requested in the brief (default 90 seconds)
 - [ ] The CONTRADICTION TEST passes — this video could only be about THIS company
 - [ ] CTA includes careers URL placeholder`,
     ),
@@ -484,7 +490,7 @@ Before finalizing, verify:
         params.userPrompt,
         params.context,
         params.settings,
-        'Format: Employer branding video script with [VISUAL] directions, interview segments, and music mood. 60s and 90s versions.',
+        'Format: Employer branding video script with [VISUAL] directions, interview segments, and music mood. One version — 90s by default, 60s only if the brief requests it.',
       ),
   },
 
@@ -550,6 +556,7 @@ Before finalizing, verify:
 - [ ] No placeholder values without [PLACEHOLDER] markers
 - [ ] At least 2 areas of honest shortfall are acknowledged with next steps
 - [ ] Every metric has context (vs. target, vs. industry, vs. prior year)
+- [ ] Every metric comes from the provided brief or brand context — omit numbers that are not in the source material rather than invent them
 - [ ] Data visualization suggestions are included for key metrics
 - [ ] Forward-looking goals have specific timelines
 - [ ] Methodology note explains how impact was measured

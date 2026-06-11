@@ -7,6 +7,7 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
+import { stripAnalyzerMarkers, stripAnalyzerMarkersFromList } from '@/lib/brandstyle/analyzer-markers';
 import type { ConsistentModelType } from '@prisma/client';
 import type { ModelBrandContext } from '@/features/consistent-models/types/consistent-model.types';
 
@@ -111,6 +112,7 @@ export async function resolveModelBrandContext(
             photographyGuidelines: true,
             designLanguageSavedForAi: true,
             imagerySavedForAi: true,
+            published: true,
           },
         })
       : null,
@@ -194,11 +196,23 @@ export async function resolveModelBrandContext(
     ctx.brandFonts = [styleguide.primaryFontName];
   }
 
-  // Imagery style
-  if (needs.brandImageryStyle && styleguide) {
+  // Imagery style — same review-gate + marker-stripping as the workspace
+  // resolver: raw JSON.stringify of the unreviewed scrape leaked
+  // OBSERVED:/RECOMMENDED: markers into per-model generation prompts, and
+  // subjects/composition are per-image dimensions that must not ride along
+  // in shared prompt material (gotcha 2026-06-10).
+  if (needs.brandImageryStyle && styleguide?.published && styleguide.imagerySavedForAi) {
     const parts: string[] = [];
-    if (styleguide.photographyStyle) parts.push(typeof styleguide.photographyStyle === 'string' ? styleguide.photographyStyle : JSON.stringify(styleguide.photographyStyle));
-    if (styleguide.photographyGuidelines?.length) parts.push(styleguide.photographyGuidelines.join('. '));
+    const photoStyle = styleguide.photographyStyle as
+      | { mood?: string | null }
+      | string
+      | null;
+    const mood = stripAnalyzerMarkers(
+      typeof photoStyle === 'string' ? photoStyle : photoStyle?.mood,
+    );
+    if (mood) parts.push(mood);
+    const guidelines = stripAnalyzerMarkersFromList(styleguide.photographyGuidelines ?? []);
+    if (guidelines.length) parts.push(guidelines.join('. '));
     if (parts.length) ctx.brandImageryStyle = parts.join('. ');
   }
 

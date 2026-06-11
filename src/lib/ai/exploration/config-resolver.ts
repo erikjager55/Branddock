@@ -173,7 +173,20 @@ Acknowledge what's strong. If something could be explored further, note it gentl
 Reference their specific words. Never ask a follow-up question.
 Respond in the same language as the user.`;
 
-const DEFAULT_REPORT_PROMPT = `Generate an analysis report based on the exploration session.
+/**
+ * Default report-prompt template — the fallback when a workspace config has
+ * no (or an empty) reportPrompt.
+ *
+ * CONTRACT (C12): a reportPrompt template — this default or an admin-edited
+ * DB config — supplies only the INSTRUCTION content of the report prompt
+ * (role, focus, framework guidance) via {{template}} variables. The JSON
+ * output shape ({ executiveSummary, dimensions, findings, recommendations,
+ * fieldSuggestions }) is owned by code and appended by generateReport() in
+ * exploration-llm.ts, because parseReportJSON() only understands that
+ * canonical shape. Framework-specific extras promised by older seeded
+ * templates (e.g. purposeScore) are tolerated and ignored by the parser.
+ */
+export const DEFAULT_REPORT_PROMPT = `Generate an analysis report based on the exploration session.
 Item: {{itemName}} ({{itemType}})
 {{itemDescription}}
 
@@ -185,16 +198,7 @@ Brand Context:
 
 {{customKnowledge}}
 
-{{assetKnowledge}}
-
-Generate JSON:
-{
-  "executiveSummary": "2-3 paragraph strategic summary",
-  "findings": [{ "title": "...", "description": "..." }],
-  "recommendations": ["..."],
-  "fieldSuggestions": [{ "field": "...", "label": "...", "suggestedValue": "...", "reason": "..." }]
-}
-Respond with valid JSON only.`;
+{{assetKnowledge}}`;
 
 const BRAND_ARCHETYPE_SYSTEM_PROMPT = `You are a senior brand strategist specializing in Jungian archetype analysis, conducting a two-phase exploration.
 

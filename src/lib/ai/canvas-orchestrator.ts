@@ -24,7 +24,7 @@ import { cacheKeys } from '@/lib/api/cache-keys';
 import type { JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
 import { getDeliverableTypeById, VIDEO_ADJACENT_TYPES } from '@/features/campaigns/lib/deliverable-types';
 import { getPromptTemplate } from '@/lib/studio/prompt-templates';
-import { getComponentTemplateFallback } from './component-templates-fallback';
+import { FALLBACK_FIRST_TYPES, getComponentTemplateFallback } from './component-templates-fallback';
 import { getContentTypeInputs } from '@/features/campaigns/lib/content-type-inputs';
 import { getLinkedInAdFormatLabel } from '@/features/campaigns/lib/linkedin-ad-formats';
 import {
@@ -35,6 +35,7 @@ import {
 import { buildHumanVoiceDirective } from '@/lib/studio/human-voice-directive';
 import { resolveHumanVoiceMode } from '@/lib/brand-fidelity/fidelity-config';
 import { logBrandLanguageMismatchIfAny } from '@/lib/i18n/detect-brand-language';
+import { resolveLocaleLabel } from './locale-instruction';
 import { detectAiTells } from '@/lib/brand-fidelity/ai-tell-detector';
 import { generateCreativeAngles, formatAngleInstruction, type CreativeAngle } from './canvas-angle-generator';
 import {
@@ -75,7 +76,14 @@ function buildPropertyEvalContextBase(
       min: typeDef?.constraints?.minWords ?? null,
       max: typeDef?.constraints?.maxWords ?? null,
     },
-    requiresCTA: typeDef?.constraints?.requiredSections?.includes('cta') ?? false,
+    // CTA can live in requiredSections OR as a required contract group with
+    // a cta-suffix name (closing-cta, cta-slide) — exact 'cta' match alone
+    // dropped the gate for types renamed in the fase-2 group contracts.
+    requiresCTA:
+      (typeDef?.constraints?.requiredSections?.some((s) => s.toLowerCase().includes('cta')) ?? false) ||
+      (getComponentTemplateFallback(stack.deliverableTypeId ?? '') ?? []).some(
+        (g) => g.required === true && g.type.toLowerCase().includes('cta'),
+      ),
     knownEntities,
   };
 }
@@ -145,14 +153,26 @@ interface ComponentTemplateItem {
  * template — without the fallback, video-script types end up with zero
  * group instructions and the model collapses everything to a single
  * `script` group, breaking the Scene Breakdown.
+ *
+ * FALLBACK_FIRST_TYPES (prompt-audit 2026-06-11, fase 2) inverts that
+ * precedence: for those types the registry IS the contract and a generic
+ * medium row would silently strip it (tiktok-script loses
+ * `isScriptedScene` to the tiktok/video row; sequences and website types
+ * inherit newsletter/landing-page groups that have no slot for their
+ * structure). Registry wins whenever it has an entry for the type.
  */
 function resolveComponentTemplate(
   medium: { componentTemplate?: unknown[] } | null | undefined,
   contentType: string | null | undefined,
 ): ComponentTemplateItem[] {
+  const fromFallback = (getComponentTemplateFallback(contentType) ??
+    []) as ComponentTemplateItem[];
+  if (contentType && FALLBACK_FIRST_TYPES.has(contentType) && fromFallback.length > 0) {
+    return fromFallback;
+  }
   const fromMedium = (medium?.componentTemplate ?? []) as ComponentTemplateItem[];
   if (fromMedium.length > 0) return fromMedium;
-  return (getComponentTemplateFallback(contentType) ?? []) as ComponentTemplateItem[];
+  return fromFallback;
 }
 
 // ─── OpenAI Singleton ─────────────────────────────────────
@@ -878,201 +898,6 @@ export async function* orchestrateContentGeneration(
     }
   }
 
-  // ── Step 2.8a: Silent auto-iterate-1 (F24, audit 2026-05-13) ──
-  // Lift initial score >= 70 zonder dat user handmatig op CTA hoeft te
-  // klikken. Werkt 1 silent iter af op variant 0 wanneer composite < 70.
-  // F8 (auto-iterate opt-in) blijft van toepassing voor verdere iters
-  // boven de 70-grens; deze flow voegt 1 onzichtbare pass toe om de
-  // baseline op een acceptabel niveau te brengen.
-  //
-  // Result: variant 0 generatedContent + ContentFidelityScore worden
-  // direct vervangen door iter-result; user ziet alleen het hogere
-  // eindresultaat (geen banner over iter).
-  const SILENT_ITER_THRESHOLD = 70;
-  const silentIterEligible =
-    fidelityPipelineReturn &&
-    fidelityPipelineReturn.initialResult.compositeScore < SILENT_ITER_THRESHOLD &&
-    humanVoiceMode !== 'STRICT' &&
-    process.env.FEATURE_AUTO_ITERATE !== 'true'; // gewone flow, geen E2E/smoke override
-
-  if (silentIterEligible && fidelityPipelineReturn) {
-    try {
-      // C11 (prompt-audit 2026-06-11): de rewriter kreeg de VOLLEDIGE multi-
-      // group blob als baseline terwijl het resultaat in het LANGSTE component
-      // werd gepersisteerd — titel/meta/CTA dupliceerden zo de body in. Tot er
-      // een per-group rewrite bestaat itereren we alleen single-text-group
-      // resultaten, met het persisted component (niet de blob) als baseline.
-      const textGroupCount = textResult.components.filter(
-        (c) => (c.variants?.[0]?.content ?? '').trim().length > 0,
-      ).length;
-      if (textGroupCount > 1) {
-        console.warn('[silent-iter] skipped: multi-group result', {
-          deliverableId,
-          contentTypeId: stack.deliverableTypeId,
-          textGroupCount,
-          reason: 'blob-baseline zou titel/meta/CTA de body in dupliceren (C11); per-group rewrite nog niet gebouwd',
-        });
-      } else {
-        // Scope-fix 2026-05-17: variantIndex: 0 + skip image/video/voiceover-
-        // rows, anders kan silent-iter variant B/C/D clobberen of een non-text
-        // row raken.
-        const components = await prisma.deliverableComponent.findMany({
-          where: {
-            deliverableId,
-            groupIndex: 0,
-            variantIndex: 0,
-            componentType: { notIn: ['image', 'video', 'voiceover'] },
-            generatedContent: { not: null },
-          },
-          select: { id: true, generatedContent: true },
-        });
-        const longest = components.length > 0
-          ? components.reduce((a, b) =>
-              (b.generatedContent?.length ?? 0) > (a.generatedContent?.length ?? 0) ? b : a,
-            )
-          : null;
-        if (!longest) {
-          // Symmetric warn met andere skip-paden; geen yield (originele score-
-          // event is al gepost door runFidelityScoringPipeline).
-          console.warn('[silent-iter] skipped: no eligible component', {
-            deliverableId,
-            contentTypeId: stack.deliverableTypeId,
-            reason: 'variant-0 leverde 0 text-componenten (geregenererd, of niet-text deliverable)',
-          });
-        } else {
-          // Baseline = persisted content van het component dat we hieronder
-          // overschrijven — rewrite-input en persist-target zijn zo identiek.
-          const baselineText = longest.generatedContent ?? '';
-          const { runAutoIterateIntegration } = await import(
-            '@/lib/ai/auto-iterate-integration'
-          );
-          const silentGen = runAutoIterateIntegration({
-            workspaceId,
-            deliverableId,
-            contentTypeId: stack.deliverableTypeId,
-            compositionInput: fidelityPipelineReturn.compositionInput,
-            initialResult: fidelityPipelineReturn.initialResult,
-            initialText: baselineText,
-            enabled: true,
-            maxIterations: 1,
-            stack,
-            textModelProvider: textModel.provider,
-          });
-          let silentResult: import('@/lib/ai/auto-iterate').AutoIterateResult | null = null;
-          while (true) {
-            const { value, done } = await silentGen.next();
-            if (done) {
-              silentResult = value;
-              break;
-            }
-            // F24: events bewust NIET door-yielden — silent flow voor user.
-          }
-          const initialCompositeScore = fidelityPipelineReturn.initialResult.compositeScore;
-          if (
-            silentResult &&
-            silentResult.attemptsExecuted > 0 &&
-            silentResult.finalScore > initialCompositeScore &&
-            typeof silentResult.finalText === 'string' &&
-            silentResult.finalText.trim().length > 0
-          ) {
-            // Don't-shrink guard: respecteer content-type minWords EN
-            // relatieve shrink-floor (70% van origineel) zodat long-form niet
-            // silently 50% wordt afgekapt; maxWords-cap prevents balloon-rewrites.
-            const newWordCount = silentResult.finalText.trim().split(/\s+/).filter(Boolean).length;
-            const typeDef = stack.deliverableTypeId
-              ? getDeliverableTypeById(stack.deliverableTypeId)
-              : undefined;
-            if (stack.deliverableTypeId && !typeDef) {
-              console.warn('[silent-iter] registry miss', {
-                deliverableId,
-                contentTypeId: stack.deliverableTypeId,
-              });
-            }
-            const typeMinWords = typeDef?.constraints?.minWords ?? 50;
-            const typeMaxWords = typeDef?.constraints?.maxWords ?? Infinity;
-            const oldWordCount = baselineText
-              .trim()
-              .split(/\s+/)
-              .filter(Boolean).length;
-            // Floor combineert content-type minimum + relatieve shrink-guard.
-            // De relatieve 70%-floor (gekozen als pragmatische balans: kortere
-            // tightenings van 30% zijn typisch voor F-VAL rewrites, scherper dan
-            // 50% zou de meeste accepts blokkeren) voorkomt dat een ebook
-            // (minWords 5000) van 6000→4500 silently 25% verliest — absolute
-            // floor (5000) zou een 5000-w rewrite accepteren maar dat is alleen
-            // length-correctness, niet shrink-protection. Voor short-form waar
-            // typeMinWords > 0.7×old (bv push 20 minWords op 25 oldWordCount =
-            // floor 20 > 17.5) is de relatieve guard dead code — bewust trade-off.
-            // maxWords-cap geldt alleen voor types die `maxWords` declareren;
-            // types met enkel `maxChars` (bv tweet) krijgen Infinity-cap (no-op).
-            const shrinkFloor = Math.max(typeMinWords, Math.floor(oldWordCount * 0.7));
-            const passesFloor = newWordCount >= shrinkFloor;
-            const passesCap = newWordCount <= typeMaxWords;
-            if (passesFloor && passesCap) {
-              await prisma.deliverableComponent.update({
-                where: { id: longest.id },
-                data: {
-                  generatedContent: silentResult.finalText,
-                  iterationCount: { increment: 1 },
-                  version: { increment: 1 },
-                },
-              });
-              // console.warn (niet .info) zodat prod log-aggregators (Vercel,
-              // Datadog default surface alleen warn/error) deze accept-events zien.
-              console.warn('[silent-iter] accepted', {
-                deliverableId,
-                variantIndex: 0,
-                componentId: longest.id,
-                oldWordCount,
-                newWordCount,
-                shrinkFloor,
-                oldScore: initialCompositeScore,
-                newScore: silentResult.finalScore,
-              });
-              // Yield bijgewerkt fidelity_score_complete event zodat frontend
-              // de nieuwe (hogere) score toont. variantIndex: 0 = primary.
-              // pillarScores uit silent-iter zijn niet beschikbaar; we sturen
-              // alleen compositeScore + thresholdMet update. Frontend store
-              // muteert compositeScore zonder pillars te vernieuwen (volgende
-              // re-fetch krijgt verse data). Yield alleen bij persistence —
-              // anders zou UI nieuwe score tonen terwijl DB oude content houdt.
-              const threshold = fidelityPipelineReturn.initialResult.compositeThreshold;
-              yield {
-                event: 'fidelity_score_complete',
-                data: {
-                  ...buildFidelityScoreEventPayload(fidelityPipelineReturn.initialResult),
-                  compositeScore: silentResult.finalScore,
-                  thresholdMet: silentResult.finalScore >= threshold,
-                  variantIndex: 0,
-                  silentIter: true, // signal voor telemetry / future UI
-                },
-              };
-            } else {
-              // Beide guards kunnen tegelijk falen — toon ze allebei i.p.v.
-              // binary picker die de andere reden verbergt.
-              const reasons: string[] = [];
-              if (!passesFloor) reasons.push('below_shrink_floor');
-              if (!passesCap) reasons.push('above_max_words');
-              console.warn(`[silent-iter] skipped: ${reasons.join(',')}`, {
-                deliverableId,
-                contentTypeId: stack.deliverableTypeId,
-                oldWordCount,
-                newWordCount,
-                shrinkFloor,
-                typeMaxWords: typeMaxWords === Infinity ? null : typeMaxWords,
-              });
-            }
-          } // end: if (silentResult accepted-guards)
-        } // end: else (longest != null branch)
-      } // end: else (textGroupCount <= 1)
-    } catch (silentErr) {
-      console.warn(
-        '[canvas-orchestrator] silent auto-iterate failed (non-blocking):',
-        (silentErr as Error).message,
-      );
-    }
-  }
-
   // ── Step 2.8: Auto-iterate (sub-sprint #6.B wiring) ─
   // UX-overhaul 2026-05-13 (F8 herzien): auto-iterate is NIET meer automatisch
   // tijdens generation. User triggert via "Verbeter automatisch" CTA in canvas
@@ -1276,6 +1101,243 @@ export async function* orchestrateContentGeneration(
       data: { message: `Failed to save generated content: ${message}`, recoverable: true },
     };
     return;
+  }
+
+  // ── Step 5.2: Silent auto-iterate-1 (F24, audit 2026-05-13) ──
+  // Lift initial score >= 70 zonder dat user handmatig op CTA hoeft te
+  // klikken. Werkt 1 silent iter af op variant 0 wanneer composite < 70.
+  // F8 (auto-iterate opt-in) blijft van toepassing voor verdere iters
+  // boven de 70-grens; deze flow voegt 1 onzichtbare pass toe om de
+  // baseline op een acceptabel niveau te brengen.
+  //
+  // C11 per-group (prompt-audit 2026-06-11, fase 2): voorheen Step 2.8a,
+  // vóór persistVariants. Dat was dubbel defect: (1) de rewriter kreeg de
+  // volledige multi-group blob als baseline en persistte die in het langste
+  // component (titel/meta/CTA dupliceerden de body in — fase 0 zette dit
+  // op skip bij >1 text-group), en (2) de DB-write raakte rijen van de
+  // VORIGE generatie die Step 5 daarna met deleteMany+create verving — het
+  // iter-resultaat landde dus nooit in het eindresultaat. Nu draait de pass
+  // ná persistVariants: kies de langste variant-0 text-group, rewrite
+  // ALLEEN diens generatedContent, en schrijf variantGroup-gescoped terug
+  // (gotcha 2026-05-17: nooit op een proxy-veld leunen). Vóór Step 5.5
+  // zodat de ContentVersion het eindresultaat vastlegt.
+  //
+  // Result: variant 0 generatedContent + ContentFidelityScore worden
+  // direct vervangen door iter-result; user ziet alleen het hogere
+  // eindresultaat (geen banner over iter).
+  const SILENT_ITER_THRESHOLD = 70;
+  const silentIterEligible =
+    fidelityPipelineReturn &&
+    fidelityPipelineReturn.initialResult.compositeScore < SILENT_ITER_THRESHOLD &&
+    humanVoiceMode !== 'STRICT' &&
+    process.env.FEATURE_AUTO_ITERATE !== 'true'; // gewone flow, geen E2E/smoke override
+
+  if (silentIterEligible && fidelityPipelineReturn) {
+    try {
+      // Scope-fix 2026-05-17: variantIndex: 0 + skip image/video/voiceover-
+      // rows, anders kan silent-iter variant B/C/D clobberen of een non-text
+      // row raken. Rows zijn hier de zojuist gepersiste variant-0 componenten
+      // van DEZE generatie (Step 5 hierboven).
+      const components = await prisma.deliverableComponent.findMany({
+        where: {
+          deliverableId,
+          groupIndex: 0,
+          variantIndex: 0,
+          componentType: { notIn: ['image', 'video', 'voiceover'] },
+          generatedContent: { not: null },
+        },
+        select: { id: true, variantGroup: true, generatedContent: true },
+      });
+      const longest = components.length > 0
+        ? components.reduce((a, b) =>
+            (b.generatedContent?.length ?? 0) > (a.generatedContent?.length ?? 0) ? b : a,
+          )
+        : null;
+      if (!longest) {
+        // Symmetric warn met andere skip-paden; geen yield (originele score-
+        // event is al gepost door runFidelityScoringPipeline).
+        console.warn('[silent-iter] skipped: no eligible component', {
+          deliverableId,
+          contentTypeId: stack.deliverableTypeId,
+          reason: 'variant-0 leverde 0 text-componenten (niet-text deliverable)',
+        });
+      } else if (
+        // componentTemplate is hierboven al resolved (Step "Determine
+        // component groups") via resolveComponentTemplate(stack.medium,
+        // stack.deliverableTypeId) — zelfde deliverable, dus herbruikbaar.
+        componentTemplate.some(
+          (t) => t.isScriptedScene === true && t.type === longest.variantGroup,
+        )
+      ) {
+        // De rewriter is scene-onbewust: hij herschrijft naar gewone prose
+        // en sloopt daarbij de [VISUAL:]/[B-ROLL:]/[CAPTION]-markup waar de
+        // image/video-generator op draait → skip i.p.v. scene-structuur
+        // verliezen (fail-safe: originele scripted scene blijft staan).
+        console.warn('[silent-iter] skipped: scripted-scene group', {
+          deliverableId,
+          contentTypeId: stack.deliverableTypeId,
+          variantGroup: longest.variantGroup,
+        });
+      } else {
+        // Baseline = persisted content van ALLEEN de gekozen group — nooit
+        // de multi-group blob (C11): rewrite-input en persist-target zijn
+        // zo identiek, andere groups blijven onaangeraakt.
+        const baselineText = longest.generatedContent ?? '';
+        const { runAutoIterateIntegration } = await import(
+          '@/lib/ai/auto-iterate-integration'
+        );
+        const silentGen = runAutoIterateIntegration({
+          workspaceId,
+          deliverableId,
+          contentTypeId: stack.deliverableTypeId,
+          compositionInput: fidelityPipelineReturn.compositionInput,
+          initialResult: fidelityPipelineReturn.initialResult,
+          initialText: baselineText,
+          enabled: true,
+          maxIterations: 1,
+          stack,
+          textModelProvider: textModel.provider,
+        });
+        let silentResult: import('@/lib/ai/auto-iterate').AutoIterateResult | null = null;
+        while (true) {
+          const { value, done } = await silentGen.next();
+          if (done) {
+            silentResult = value;
+            break;
+          }
+          // F24: events bewust NIET door-yielden — silent flow voor user.
+        }
+        const initialCompositeScore = fidelityPipelineReturn.initialResult.compositeScore;
+        if (
+          silentResult &&
+          silentResult.attemptsExecuted > 0 &&
+          silentResult.finalScore > initialCompositeScore &&
+          typeof silentResult.finalText === 'string' &&
+          silentResult.finalText.trim().length > 0
+        ) {
+          // Don't-shrink guard: respecteer content-type minWords EN
+          // relatieve shrink-floor (70% van origineel) zodat long-form niet
+          // silently 50% wordt afgekapt; maxWords-cap prevents balloon-rewrites.
+          const newWordCount = silentResult.finalText.trim().split(/\s+/).filter(Boolean).length;
+          const typeDef = stack.deliverableTypeId
+            ? getDeliverableTypeById(stack.deliverableTypeId)
+            : undefined;
+          if (stack.deliverableTypeId && !typeDef) {
+            console.warn('[silent-iter] registry miss', {
+              deliverableId,
+              contentTypeId: stack.deliverableTypeId,
+            });
+          }
+          const typeMinWords = typeDef?.constraints?.minWords ?? 50;
+          const typeMaxWords = typeDef?.constraints?.maxWords ?? Infinity;
+          const oldWordCount = baselineText
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean).length;
+          // Floor combineert content-type minimum + relatieve shrink-guard.
+          // De relatieve 70%-floor (gekozen als pragmatische balans: kortere
+          // tightenings van 30% zijn typisch voor F-VAL rewrites, scherper dan
+          // 50% zou de meeste accepts blokkeren) voorkomt dat een ebook
+          // (minWords 5000) van 6000→4500 silently 25% verliest — absolute
+          // floor (5000) zou een 5000-w rewrite accepteren maar dat is alleen
+          // length-correctness, niet shrink-protection. Voor short-form waar
+          // typeMinWords > 0.7×old (bv push 20 minWords op 25 oldWordCount =
+          // floor 20 > 17.5) is de relatieve guard dead code — bewust trade-off.
+          // Voor multi-group types geldt typeMinWords over het hele document,
+          // dus een enkele group kan eronder blijven → skip (fail-safe: de
+          // originele content blijft staan, structured warn maakt het zichtbaar).
+          // maxWords-cap geldt alleen voor types die `maxWords` declareren;
+          // types met enkel `maxChars` (bv tweet) krijgen Infinity-cap (no-op).
+          const shrinkFloor = Math.max(typeMinWords, Math.floor(oldWordCount * 0.7));
+          const passesFloor = newWordCount >= shrinkFloor;
+          const passesCap = newWordCount <= typeMaxWords;
+          if (passesFloor && passesCap) {
+            // Persist UITSLUITEND naar het gekozen component: id + volledige
+            // C11-scope (variantGroup van de groep, variant 0, group 0, geen
+            // media-row, content non-null) in de where. updateMany i.p.v.
+            // update-op-id zodat de scope-velden afgedwongen blijven; count 0
+            // betekent dat de row tussentijds is veranderd → skip met warn
+            // i.p.v. clobber.
+            const updated = await prisma.deliverableComponent.updateMany({
+              where: {
+                id: longest.id,
+                deliverableId,
+                groupIndex: 0,
+                variantIndex: 0,
+                variantGroup: longest.variantGroup,
+                componentType: { notIn: ['image', 'video', 'voiceover'] },
+                generatedContent: { not: null },
+              },
+              data: {
+                generatedContent: silentResult.finalText,
+                iterationCount: { increment: 1 },
+                version: { increment: 1 },
+              },
+            });
+            if (updated.count === 0) {
+              console.warn('[silent-iter] skipped: scoped persist matched 0 rows', {
+                deliverableId,
+                contentTypeId: stack.deliverableTypeId,
+                componentId: longest.id,
+                variantGroup: longest.variantGroup,
+              });
+            } else {
+              // console.warn (niet .info) zodat prod log-aggregators (Vercel,
+              // Datadog default surface alleen warn/error) deze accept-events zien.
+              console.warn('[silent-iter] accepted', {
+                deliverableId,
+                variantIndex: 0,
+                componentId: longest.id,
+                variantGroup: longest.variantGroup,
+                oldWordCount,
+                newWordCount,
+                shrinkFloor,
+                oldScore: initialCompositeScore,
+                newScore: silentResult.finalScore,
+              });
+              // Yield bijgewerkt fidelity_score_complete event zodat frontend
+              // de nieuwe (hogere) score toont. variantIndex: 0 = primary.
+              // pillarScores uit silent-iter zijn niet beschikbaar; we sturen
+              // alleen compositeScore + thresholdMet update. Frontend store
+              // muteert compositeScore zonder pillars te vernieuwen (volgende
+              // re-fetch krijgt verse data). Yield alleen bij persistence —
+              // anders zou UI nieuwe score tonen terwijl DB oude content houdt.
+              const threshold = fidelityPipelineReturn.initialResult.compositeThreshold;
+              yield {
+                event: 'fidelity_score_complete',
+                data: {
+                  ...buildFidelityScoreEventPayload(fidelityPipelineReturn.initialResult),
+                  compositeScore: silentResult.finalScore,
+                  thresholdMet: silentResult.finalScore >= threshold,
+                  variantIndex: 0,
+                  silentIter: true, // signal voor telemetry / future UI
+                },
+              };
+            }
+          } else {
+            // Beide guards kunnen tegelijk falen — toon ze allebei i.p.v.
+            // binary picker die de andere reden verbergt.
+            const reasons: string[] = [];
+            if (!passesFloor) reasons.push('below_shrink_floor');
+            if (!passesCap) reasons.push('above_max_words');
+            console.warn(`[silent-iter] skipped: ${reasons.join(',')}`, {
+              deliverableId,
+              contentTypeId: stack.deliverableTypeId,
+              variantGroup: longest.variantGroup,
+              oldWordCount,
+              newWordCount,
+              shrinkFloor,
+              typeMaxWords: typeMaxWords === Infinity ? null : typeMaxWords,
+            });
+          }
+        } // end: if (silentResult accepted-guards)
+      } // end: else (longest != null branch)
+    } catch (silentErr) {
+      console.warn(
+        '[canvas-orchestrator] silent auto-iterate failed (non-blocking):',
+        (silentErr as Error).message,
+      );
+    }
   }
 
   // ── Step 5.5: Create ContentVersion (F32, audit 2026-05-13) ──
@@ -1799,7 +1861,9 @@ async function pickBestCandidate(
 
   const brandName = stack.brand.brandName ?? 'Brand';
   const voiceguide = (stack.brand.brandVoiceguide ?? '').slice(0, 2000);
-  const lang = (stack.brand.contentLanguage ?? 'nl').startsWith('nl') ? 'Nederlands' : 'English';
+  // Fase 5 M6: real language name via the shared resolver — previously a
+  // binary nl/en choice that collapsed e.g. sv/de workspaces to English.
+  const lang = resolveLocaleLabel(stack.brand.contentLanguage ?? 'nl')?.nativeName ?? 'English';
 
   const systemPrompt = `Je bent een brand-fit judge voor ${brandName}. Evalueer welke versie het beste matched bij de brand voice fingerprint. Schrijf in ${lang}.
 
@@ -2269,6 +2333,23 @@ function buildCanvasPrompt(
       required: t.required ?? false,
       isScriptedScene: t.isScriptedScene ?? false,
     }));
+  // C3 (prompt-audit 2026-06-11): zero resolved groups previously produced a
+  // self-contradicting prompt — "components array MUST contain exactly 0
+  // entries" while the system prompt demands a complete document. The model
+  // invents structure or returns nothing. Fail fast instead: both consumers
+  // (studio orchestrate + campaign bulk-generate routes) catch generator
+  // throws and surface them to the user as a generation-failure event.
+  if (textGroups.length === 0) {
+    console.error('[canvas-orchestrator] no component template resolved', {
+      contentType: contentType || null,
+      mediumPlatform: medium?.platform ?? null,
+      mediumFormat: medium?.format ?? null,
+      mediumTemplateLength: medium?.componentTemplate?.length ?? 0,
+    });
+    throw new Error(
+      `No component template resolved for content type "${contentType || 'unknown'}" — generation aborted to avoid self-contradicting prompt`,
+    );
+  }
   const hasImageComponent = componentTemplate.some(
     (t) => t.type === 'image' || t.type === 'hero-image',
   );
@@ -2311,6 +2392,14 @@ function buildCanvasPrompt(
       return `- "${g.type}"${maxLen}${g.required ? ' [REQUIRED]' : ''}`;
     })
     .join('\n');
+
+  // Prompt-audit fase 2 review: de oude "exactly N entries"-eis telde ook
+  // optionele groepen mee en sprak de type-template skip-instructies
+  // ("OPTIONAL — skip rather than pad", o.a. faq/comparison/microsite)
+  // direct tegen. Tel required apart; bij 0 required-markeringen (DB
+  // medium-rows zonder flags) valt de prompt terug op exact-count, anders
+  // zou "at least the 0 groups" alles omitbaar maken.
+  const requiredGroupCount = textGroups.filter((g) => g.required).length;
 
   const imageInstruction = hasImageComponent
     ? buildImagePromptInstruction(stack.visualBrief ?? null)
@@ -2398,7 +2487,9 @@ function buildCanvasPrompt(
     '  "components": [',
     '    { "group": "<group-name-from-list-above>", "variants": [{ "content": "...", "tone": "...", "cta": "..." }, ...] },',
     '    { "group": "<another-group-name>", "variants": [...] },',
-    `    // ... ONE entry per group listed above (total: ${textGroups.length} component(s))`,
+    requiredGroupCount > 0
+      ? `    // ... ONE entry per group listed above (${requiredGroupCount} marked [REQUIRED]; groups not marked [REQUIRED] may be omitted)`
+      : `    // ... ONE entry per group listed above (total: ${textGroups.length} component(s))`,
     '  ],',
     hasImageComponent
       ? '  "imagePrompts": [{ "description": "...", "style": "..." }]'
@@ -2409,7 +2500,9 @@ function buildCanvasPrompt(
     // search-ad with 15) need explicit reinforcement that the schema example
     // shows SHAPE not COUNT. Otherwise model emits 1 generic "description"
     // group and 10 banner-fields stay empty in the preview.
-    `CRITICAL: The "components" array MUST contain exactly ${textGroups.length} ${textGroups.length === 1 ? 'entry' : 'entries'} — one per group listed above. Skipping any group leaves its UI slot empty (placeholder text instead of generated content). Do NOT collapse multiple groups into one generic "description" or "content" group.`,
+    requiredGroupCount > 0
+      ? `CRITICAL: The "components" array MUST contain at least the ${requiredGroupCount} ${requiredGroupCount === 1 ? 'group' : 'groups'} marked [REQUIRED] (in the order listed); groups not marked [REQUIRED] may be omitted when the brief does not support them — never pad with empty entries. Skipping a [REQUIRED] group leaves its UI slot empty (placeholder text instead of generated content). Do NOT collapse multiple groups into one generic "description" or "content" group.`
+      : `CRITICAL: The "components" array MUST contain exactly ${textGroups.length} ${textGroups.length === 1 ? 'entry' : 'entries'} — one per group listed above. Skipping any group leaves its UI slot empty (placeholder text instead of generated content). Do NOT collapse multiple groups into one generic "description" or "content" group.`,
     angle
       ? 'Each group has exactly 1 variant — make it fully express the angle.'
       : 'Each group must have exactly 2 variants with different creative approaches.',

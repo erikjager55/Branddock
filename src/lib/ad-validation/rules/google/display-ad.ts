@@ -96,7 +96,7 @@ const duplicateDescriptionsRule = makeDuplicateRule(PREFIX, {
 const TEXT_OVERLAY_PATTERN = /\b(text\s?overlay|logo\s?(top|bottom|left|right|center)|tagline\s?(on|overlaid|burned)|headline\s?on\s?image|caption\s?burned|burned-in\s?(text|caption))\b/i;
 
 const imageDirectionNoTextOverlayRule: Rule = (ctx: ValidatorContext): RuleResult[] => {
-  const imagePrompt = ctx.groups.get('image') ?? '';
+  const imagePrompt = ctx.imageDirection ?? '';
   if (imagePrompt.trim().length === 0) {
     return [
       {

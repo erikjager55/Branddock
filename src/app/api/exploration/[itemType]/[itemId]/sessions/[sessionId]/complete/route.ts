@@ -65,19 +65,14 @@ export async function POST(
     const itemSubType = resolveItemSubType(item as Record<string, unknown>);
     const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, itemSubType, itemId);
 
-    // Build knowledge context (customKnowledge + assetKnowledge)
-    const knowledgeParts: string[] = [];
-    if (explorationConfig.customKnowledge) knowledgeParts.push(explorationConfig.customKnowledge);
-    if (explorationConfig.assetKnowledge) knowledgeParts.push(explorationConfig.assetKnowledge);
-    const knowledgeContext = knowledgeParts.join('\n\n') || undefined;
-
     // Generate report via the item type builder — this ensures fieldSuggestions
     // include id, currentValue, and status fields that the frontend needs.
-    // Pass fieldSuggestionsConfig so the builder can discover fields even when frameworkData is empty.
+    // The resolved config travels along so builders don't re-resolve it
+    // (knowledge sources + report template + model settings come from there).
     const fieldSuggestionsConfig = explorationConfig.fieldSuggestionsConfig as Array<{ field: string; label: string; type: string; extractionHint: string }> | null;
     let insightsData: Record<string, unknown>;
     try {
-      insightsData = await config.generateInsights(item, analysisSession, knowledgeContext, fieldSuggestionsConfig);
+      insightsData = await config.generateInsights(item, analysisSession, explorationConfig, fieldSuggestionsConfig);
     } catch (err) {
       console.error('[exploration-complete] generateInsights failed:', err);
       throw err;

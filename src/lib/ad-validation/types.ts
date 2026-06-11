@@ -46,6 +46,10 @@ export interface ValidatorContext {
   brandContext: BrandContextBlock;
   /** Indicates whether an image asset was selected (hero image or generated). */
   hasImage: boolean;
+  /** Image-generation prompt of the selected hero image (imagePromptUsed), if any.
+   *  Image components carry no generatedContent, so groups.get('image') is
+   *  always empty — judges must read this field instead. */
+  imageDirection: string | null;
 }
 
 export type Rule = (ctx: ValidatorContext) => RuleResult[];

@@ -1,10 +1,14 @@
 /**
- * Seed ExplorationConfig records for all brand asset types.
- * Creates or updates (upsert) configs in the database so they
- * are visible and editable in Settings → Administrator → AI Exploration Configuration.
+ * Seed ExplorationConfig records for all brand asset types so they are
+ * visible and editable in Settings → Administrator → AI Exploration Configuration.
+ *
+ * Non-destructive by default: existing configs are SKIPPED so admin edits in
+ * the database always win over this script. Pass --force to overwrite
+ * existing configs with the script defaults (the old wholesale-update
+ * semantics).
  *
  * Usage:
- *   DATABASE_URL="postgresql://erikjager:@localhost:5432/branddock" npx tsx scripts/seed-exploration-configs.ts
+ *   DATABASE_URL="postgresql://erikjager:@localhost:5432/branddock" npx tsx scripts/seed-exploration-configs.ts [--force]
  */
 
 import { Prisma, PrismaClient } from '@prisma/client';
@@ -13,7 +17,10 @@ import { PrismaPg } from '@prisma/adapter-pg';
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-// ─── Prompts (match config-resolver.ts system defaults) ──────
+// ─── Prompts ─────────────────────────────────────────────────
+// Seed defaults — based on (but not guaranteed identical to) the
+// config-resolver.ts system defaults; the resolver is the runtime fallback
+// when no DB config exists.
 
 const SYSTEM_PROMPT = `You are a senior brand strategist conducting a structured exploration session.
 Guide the user through strategic dimensions with thoughtful questions.
@@ -71,6 +78,9 @@ Acknowledge what's strong. If something could be explored further, note it gentl
 Reference their specific words. Never ask a follow-up question.
 Respond in the same language as the user.`;
 
+// Instruction content only — the JSON output shape is owned by code and
+// appended by generateReport() (see exploration-llm.ts + DEFAULT_REPORT_PROMPT
+// in config-resolver.ts).
 const REPORT_PROMPT = `Generate an analysis report based on the exploration session.
 Item: {{itemName}} ({{itemType}})
 {{itemDescription}}
@@ -83,16 +93,7 @@ Brand Context:
 
 {{customKnowledge}}
 
-{{assetKnowledge}}
-
-Generate JSON:
-{
-  "executiveSummary": "2-3 paragraph strategic summary",
-  "findings": [{ "title": "...", "description": "..." }],
-  "recommendations": ["..."],
-  "fieldSuggestions": [{ "field": "...", "label": "...", "suggestedValue": "...", "reason": "..." }]
-}
-Respond with valid JSON only.`;
+{{assetKnowledge}}`;
 
 // ─── Dimension definitions per subtype ───────────────────────
 
@@ -307,10 +308,12 @@ const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
   },
   {
     subType: 'brand-personality',
-    label: 'Brand Personality \u2014 Character & Voice',
+    // BV-WIRE W-5: voice fields live in BrandVoiceguide, not frameworkData \u2014
+    // the voice dimension + voice fieldSuggestions are stripped here, in
+    // prisma/seed.ts and in the resolver default alike.
+    label: 'Brand Personality \u2014 Aaker Dimensions',
     dimensions: [
       { key: 'traits', title: 'Core Traits', icon: 'User', question: 'If your brand were a person at a dinner party, how would other guests describe them? Name 3-5 key personality traits.' },
-      { key: 'voice', title: 'Voice & Tone', icon: 'MessageCircle', question: 'How does your brand speak? What words would it use \u2014 and never use? What\u2019s the tone in different situations?' },
       { key: 'relationships', title: 'Relationship Style', icon: 'Heart', question: 'What kind of relationship does your brand build with people? A trusted advisor? A fun friend? A wise mentor?' },
       { key: 'boundaries', title: 'Personality Boundaries', icon: 'AlertCircle', question: 'What is your brand personality NOT? What traits would feel inauthentic or off-brand?' },
     ],
@@ -327,21 +330,10 @@ const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
       { field: 'frameworkData.spectrumSliders.playfulSerious', label: 'Spectrum: Playful vs Serious', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Fun/Playful/Lighthearted, 7 = Serious/Professional/Business-like' },
       { field: 'frameworkData.spectrumSliders.inclusiveExclusive', label: 'Spectrum: Inclusive vs Exclusive', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Inclusive/Welcoming/Mass appeal, 7 = Exclusive/Selective/Limited access' },
       { field: 'frameworkData.spectrumSliders.boldReserved', label: 'Spectrum: Bold vs Reserved', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Bold/Daring/Provocative, 7 = Reserved/Understated/Subtle' },
-      // Tone dimensions — individual numeric fields (1-7 scale, NN/g model)
-      { field: 'frameworkData.toneDimensions.formalCasual', label: 'Tone: Formal vs Casual', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Formal/Structured/Professional, 7 = Casual/Conversational/Relaxed' },
-      { field: 'frameworkData.toneDimensions.seriousFunny', label: 'Tone: Serious vs Funny', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Serious/Straightforward, 7 = Funny/Intentionally humorous' },
-      { field: 'frameworkData.toneDimensions.respectfulIrreverent', label: 'Tone: Respectful vs Irreverent', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Respectful/Dignified, 7 = Irreverent/Playful/Unconventional' },
-      { field: 'frameworkData.toneDimensions.matterOfFactEnthusiastic', label: 'Tone: Matter-of-fact vs Enthusiastic', type: 'text' as const, extractionHint: 'Return a single number 1-7. 1 = Matter-of-fact/Neutral/Dry, 7 = Enthusiastic/Energetic/Emotionally engaged' },
-      { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice', type: 'text' as const, extractionHint: 'Describe the overall brand voice in 2-3 sentences' },
-      { field: 'frameworkData.wordsWeUse', label: 'Words We Use', type: 'array' as const, extractionHint: 'Extract 5-10 words or phrases the brand should use as a JSON array of strings' },
-      { field: 'frameworkData.wordsWeAvoid', label: 'Words We Avoid', type: 'array' as const, extractionHint: 'Extract 5-10 words or phrases the brand should avoid as a JSON array of strings' },
-      { field: 'frameworkData.writingSample', label: 'Writing Sample', type: 'text' as const, extractionHint: 'Create a writing sample that demonstrates the brand voice' },
-      // Channel tones — individual string fields per communication channel
-      { field: 'frameworkData.channelTones.website', label: 'Channel: Website', type: 'text' as const, extractionHint: 'Describe the brand tone for the website in 1-2 sentences (e.g. "Core voice, slightly formal, authoritative")' },
-      { field: 'frameworkData.channelTones.socialMedia', label: 'Channel: Social Media', type: 'text' as const, extractionHint: 'Describe the brand tone for social media in 1-2 sentences (e.g. "More casual, personality-forward, engaging")' },
-      { field: 'frameworkData.channelTones.customerSupport', label: 'Channel: Customer Support', type: 'text' as const, extractionHint: 'Describe the brand tone for customer support in 1-2 sentences (e.g. "Empathetic, solution-focused, patient")' },
-      { field: 'frameworkData.channelTones.email', label: 'Channel: Email', type: 'text' as const, extractionHint: 'Describe the brand tone for email marketing in 1-2 sentences (e.g. "Warm, personal, value-focused")' },
-      { field: 'frameworkData.channelTones.crisis', label: 'Channel: Crisis', type: 'text' as const, extractionHint: 'Describe the brand tone for crisis communication in 1-2 sentences (e.g. "Transparent, serious, accountable")' },
+
+
+
+
       { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Describe the color direction that matches the brand personality' },
       { field: 'frameworkData.typographyDirection', label: 'Typography Direction', type: 'text' as const, extractionHint: 'Describe the typography style that matches the brand personality' },
       { field: 'frameworkData.imageryDirection', label: 'Imagery Direction', type: 'text' as const, extractionHint: 'Describe the imagery style that represents the brand personality' },
@@ -388,6 +380,8 @@ const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
 // ─── Main ────────────────────────────────────────────────────
 
 async function main() {
+  const force = process.argv.includes('--force');
+
   // 1. Get the first workspace
   const workspace = await prisma.workspace.findFirst({
     orderBy: { createdAt: 'asc' },
@@ -399,10 +393,11 @@ async function main() {
   }
 
   console.log(`Using workspace: "${workspace.name}" (${workspace.id})`);
-  console.log(`Seeding ${ASSET_TYPE_CONFIGS.length} brand asset exploration configs...\n`);
+  console.log(`Seeding ${ASSET_TYPE_CONFIGS.length} brand asset exploration configs${force ? ' (--force: overwriting existing)' : ''}...\n`);
 
   let created = 0;
   let updated = 0;
+  let skipped = 0;
 
   for (const cfg of ASSET_TYPE_CONFIGS) {
     // Check if config already exists
@@ -437,11 +432,18 @@ async function main() {
     };
 
     if (existing) {
+      // Existing configs may carry admin edits — never overwrite them
+      // unless explicitly forced.
+      if (!force) {
+        console.log(`  Skipped (exists): ${cfg.label} (${cfg.subType}) — pass --force to overwrite`);
+        skipped++;
+        continue;
+      }
       await prisma.explorationConfig.update({
         where: { id: existing.id },
         data,
       });
-      console.log(`  Updated: ${cfg.label} (${cfg.subType})`);
+      console.log(`  Updated (--force): ${cfg.label} (${cfg.subType})`);
       updated++;
     } else {
       await prisma.explorationConfig.create({
@@ -490,7 +492,7 @@ async function main() {
     console.log(`  Skipped: Persona base config already exists`);
   }
 
-  console.log(`\nDone! Created: ${created}, Updated: ${updated}`);
+  console.log(`\nDone! Created: ${created}, Updated: ${updated}, Skipped: ${skipped}`);
   console.log('Configs are now visible in Settings \u2192 Administrator \u2192 AI Exploration Configuration.');
 }
 

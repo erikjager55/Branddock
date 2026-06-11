@@ -17,6 +17,8 @@ import {
 } from '@/lib/integrations/fal/fal-optimize-providers';
 import { mapGeneratedImage } from '@/features/media-library/utils/media-utils';
 import { withAiRateLimit } from '@/lib/ai/middleware';
+import { truncatePromptForModel } from '@/lib/integrations/fal/fal-client';
+import { buildNegativePrompt } from '@/lib/ai/image-quality/negative-prompts';
 
 const optimizeSchema = z.object({
   name: z.string().min(1).max(200),
@@ -29,6 +31,14 @@ const optimizeSchema = z.object({
 type OptimizeInputResult =
   | { ok: true; input: Record<string, unknown> }
   | { ok: false; error: string };
+
+/**
+ * Optimize providers with a native `negative_prompt` input (per fal OpenAPI
+ * schemas): only the diffusion-based upscalers. The Kontext/Qwen edit models
+ * and the deterministic tools (ESRGAN, background removal, face restore)
+ * have no such field — fal drops it silently, so sending it there is noise.
+ */
+const OPTIMIZE_PROVIDER_IDS_WITH_NEGATIVE = new Set(['creative-upscaler', 'clarity-upscaler']);
 
 /**
  * Builds the fal.subscribe input, handling per-model differences in field
@@ -45,10 +55,21 @@ function buildOptimizeInput(
   const base: Record<string, unknown> = {
     [provider.imageUrlField]: provider.imageUrlIsArray ? [resolvedImageUrl] : resolvedImageUrl,
     ...provider.fixedParams,
+    // Central quality defaults — this route subscribes directly, which
+    // bypassed NEGATIVE_PROMPT_DEFAULTS (prompt-audit 2026-06-11).
+    ...(OPTIMIZE_PROVIDER_IDS_WITH_NEGATIVE.has(provider.id)
+      ? { negative_prompt: buildNegativePrompt() }
+      : {}),
   };
 
   if (provider.id !== 'style-transfer') {
-    return { ok: true, input: trimmedPrompt ? { ...base, prompt: trimmedPrompt } : base };
+    return {
+      ok: true,
+      // Same per-model prompt-cap guard as generateFalImage applies.
+      input: trimmedPrompt
+        ? { ...base, prompt: truncatePromptForModel(trimmedPrompt, provider.endpoint) }
+        : base,
+    };
   }
 
   // No style given → let the provider apply its default ("impressionist")

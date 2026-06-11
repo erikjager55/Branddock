@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 5-7 dagen (audit-schatting; parallel uitgevoerd)
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-11
-completed: -
+completed: 2026-06-11
 related-adr: -
 related-spec: docs/audits/2026-06-11-prompt-audit.md
 worktree: branddock-feat-prompt-audit

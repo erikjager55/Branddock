@@ -17,10 +17,21 @@
 // Onschuldige woorden ("effectief", "Jeffie") matchen niet omdat hun
 // omringende char wél een letter is.
 const EFFIE = '(?<![A-Za-z0-9\\u00C0-\\u017F])[ÉéEe]ffie(?![A-Za-z0-9\\u00C0-\\u017F])';
+// "Cannes" alleen scrubben in award-context ("Lions", "-winning", "-waardig") —
+// de kale stadsnaam kan legitieme campagne-inhoud zijn (bv. een travel-merk).
+const CANNES = '(?<![A-Za-z0-9\\u00C0-\\u017F])[Cc]annes(?:[-\\s/_]?[Ll]ions?)?(?![A-Za-z0-9\\u00C0-\\u017F])';
+const CANNES_LIONS = '(?<![A-Za-z0-9\\u00C0-\\u017F])[Cc]annes[-\\s/_]?[Ll]ions?(?![A-Za-z0-9\\u00C0-\\u017F])';
 const REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
-  [new RegExp(`${EFFIE}[-\\s]?waardig(e|er|ste)?`, 'gi'), 'sterk'],
-  [new RegExp(`${EFFIE}[-\\s/_]?award[-\\s_]?winning`, 'gi'), 'award-worthy'],
-  [new RegExp(`${EFFIE}[-\\s/_]?award`, 'gi'), 'strategic-quality'],
+  // Cannes-regels vóór de Effie-regels zodat combinaties ("Effie/Cannes Lions")
+  // in twee nette stappen scrubben i.p.v. een halve restant achter te laten.
+  [new RegExp(`${CANNES}[-\\s]?winning`, 'gi'), 'world-class'],
+  // Langste alternatief eerst: '(e|er|ste)' matchte 'waardige' binnen
+  // 'waardiger' en liet een losse 'r' achter ('sterkr').
+  [new RegExp(`${CANNES}[-\\s]?waardig(er|ste|e)?`, 'gi'), 'sterk'],
+  [new RegExp(`${CANNES_LIONS}(?:[-\\s]?awards?)?`, 'gi'), 'creative-excellence'],
+  [new RegExp(`${EFFIE}[-\\s]?waardig(er|ste|e)?`, 'gi'), 'sterk'],
+  [new RegExp(`${EFFIE}[-\\s/_]?awards?[-\\s_]?winning`, 'gi'), 'award-worthy'],
+  [new RegExp(`${EFFIE}[-\\s/_]?awards?`, 'gi'), 'strategic-quality'],
   [new RegExp(`${EFFIE}[-\\s/_]cannes`, 'gi'), 'creative-excellence'],
   [new RegExp(`${EFFIE}['’]s`, 'gi'), 'strategic-quality\'s'],
   [new RegExp(EFFIE, 'gi'), 'strategic-quality'],

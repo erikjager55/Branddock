@@ -8,6 +8,7 @@ import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, ChevronLeft, ChevronRigh
 import { extractCta } from './CtaButton';
 import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
 import { AdditionalComponentsSection } from './AdditionalComponentsSection';
+import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
 const LINKEDIN_BLUE = '#0A66C2';
 
@@ -17,6 +18,7 @@ export function LinkedInCarouselPreview({ previewContent, imageVariants, isGener
   const captionEntryPrimary = useEditableEntry('body');
   const captionEntryFallback = useEditableEntry('caption');
   const captionEntry = captionEntryPrimary ?? captionEntryFallback;
+  const hashtagsEntry = useEditableEntry('hashtags');
 
   const cta = extractCta(previewContent);
   const totalSlides = imageVariants.length;
@@ -75,6 +77,18 @@ export function LinkedInCarouselPreview({ previewContent, imageVariants, isGener
               <div className="text-sm text-gray-800 leading-relaxed line-clamp-4">
                 <SimpleMarkdown text={text} />
               </div>
+            )}
+          />
+        </div>
+      )}
+
+      {/* Hashtags — same blue inline row as LinkedInPostPreview */}
+      {hashtagsEntry && (
+        <div className="mb-3">
+          <InlineEditableSection
+            entry={hashtagsEntry}
+            render={(text) => (
+              <p className="text-sm" style={{ color: LINKEDIN_BLUE }}>{stripMarkdownForPlainText(text)}</p>
             )}
           />
         </div>

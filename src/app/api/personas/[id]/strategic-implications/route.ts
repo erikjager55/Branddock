@@ -3,8 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
 import { withAiRateLimit } from "@/lib/ai/middleware";
+import { getBrandContext } from "@/lib/ai/brand-context";
+import { formatBrandContextTier } from "@/lib/ai/prompt-templates";
+import { createClaudeStructuredCompletion } from "@/lib/ai/exploration/ai-caller";
+import { getPromptVersion } from "@/lib/ai/prompt-version-registry";
+import { timeoutForTokens } from "@/lib/ai/call-budget";
 import { createVersion } from "@/lib/versioning";
 import { buildPersonaSnapshot } from "@/lib/snapshot-builders";
+
+// 1024 truncated 5 descriptions in verbose locales; timeout stays coupled
+// to the budget via timeoutForTokens (gotcha 2026-05-24).
+const IMPLICATIONS_MAX_TOKENS = 2048;
 
 interface StrategicImplication {
   category: string;
@@ -65,63 +74,64 @@ export async function POST(
       return NextResponse.json({ error: "Persona not found" }, { status: 404 });
     }
 
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (!anthropicKey) {
+    if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 });
     }
 
     const personaProfile = buildPrompt(persona as unknown as Record<string, unknown>);
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: `You are a strategic brand consultant. Analyze the following persona and generate exactly 5 strategic implications.
+    // Implications must be about the REAL brand (audit 2026-06-11 HIGH:
+    // persona-only prompt produced generic consultant output). Medium tier
+    // injects name/positioning/products and — F4 — puts the workspace
+    // content-language instruction first, so locale enforcement is preserved.
+    const brandContext = await getBrandContext(workspaceId);
+    const brandContextBlock = formatBrandContextTier(brandContext, "medium");
+
+    const systemPrompt = `You are a strategic brand consultant. You analyze a customer persona and derive strategic implications for the specific brand described below — ground every implication in this brand's positioning, products and audience instead of giving generic advice.
+
+${brandContextBlock}`;
+
+    const userPrompt = `Analyze the following persona and generate exactly 5 strategic implications for this brand.
 
 ${personaProfile}
 
 Generate exactly 5 strategic implications in these categories:
-1. Messaging — How to communicate with this persona?
+1. Messaging — How should this brand communicate with this persona?
 2. Channel Strategy — Which channels reach this persona?
-3. Content — What content resonates?
-4. Product — What product adjustments are needed?
-5. Brand — How to build trust?
+3. Content — What content from this brand resonates?
+4. Product — What adjustments to this brand's products/services are needed?
+5. Brand — How does this brand build trust with this persona?
 
-Respond ONLY with valid JSON, no markdown, no backticks:
-{"implications":[{"category":"Messaging","title":"short title max 8 words","description":"2-3 sentences concrete recommendation","priority":"high"},...]}`
-          }
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      console.error("[Anthropic API error]", err);
-      return NextResponse.json({ error: "AI generation failed" }, { status: 500 });
-    }
-
-    const data = await response.json();
-    const text = data.content?.[0]?.text ?? "";
+Respond ONLY with valid JSON, no markdown, no backticks. JSON keys and the "priority" values ("high", "medium", "low") must stay in English exactly as shown:
+{"implications":[{"category":"Messaging","title":"short title max 8 words","description":"2-3 sentences concrete recommendation","priority":"high"},...]}`;
 
     let implications: StrategicImplication[];
     try {
-      const parsed = JSON.parse(text);
-      implications = parsed.implications;
+      // Central client (T7): retry, streaming, truncation detection,
+      // temperature-guard, JSON parse path and learning-loop tracking.
+      const result = await createClaudeStructuredCompletion<{ implications: StrategicImplication[] }>(
+        systemPrompt,
+        userPrompt,
+        {
+          maxTokens: IMPLICATIONS_MAX_TOKENS,
+          timeoutMs: timeoutForTokens(IMPLICATIONS_MAX_TOKENS),
+        },
+        {
+          workspaceId,
+          parentEntityType: "Persona",
+          parentEntityId: id,
+          sourceIdentifier: "src/app/api/personas/[id]/strategic-implications/route.ts:POST",
+          brandContext,
+          promptVersion: getPromptVersion("strategic-implications"),
+        },
+      );
+      implications = result.implications;
       if (!Array.isArray(implications) || implications.length === 0) {
-        throw new Error("No implications array");
+        throw new Error("No implications array in AI response");
       }
-    } catch (parseErr) {
-      console.error("[Strategic implications parse error]", parseErr, text);
-      return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
+    } catch (aiErr) {
+      console.error("[Strategic implications generation error]", aiErr);
+      return NextResponse.json({ error: "AI generation failed" }, { status: 500 });
     }
 
     const strategicImplications = JSON.stringify(implications);

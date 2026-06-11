@@ -227,7 +227,7 @@ export function ReviewStep() {
               )}
               {blueprintResult.strategy.effieRationale && (
                 <div>
-                  <span className="text-xs text-gray-500">Effie Rationale</span>
+                  <span className="text-xs text-gray-500">Award Potential</span>
                   <p className="text-sm text-gray-700 mt-0.5 line-clamp-2">
                     {blueprintResult.strategy.effieRationale}
                   </p>

@@ -254,12 +254,22 @@ const CONTENT_TYPE_TO_MEDIUM: Record<string, { platform: string; format: string 
   // Ads
   'social-ad': { platform: 'linkedin', format: 'ad' },
   // Email
+  // Sequences keep the email/newsletter mapping for deliverability specs +
+  // best practices, but their component contract comes from the fallback
+  // registry: FALLBACK_FIRST_TYPES (component-templates-fallback.ts) makes
+  // the orchestrator override ONLY the row's componentTemplate (audit C4 —
+  // the newsletter row forced 5-7 emails into one body field).
   'newsletter': { platform: 'email', format: 'newsletter' },
   'welcome-sequence': { platform: 'email', format: 'newsletter' },
   'promotional-email': { platform: 'email', format: 'newsletter' },
   'nurture-sequence': { platform: 'email', format: 'newsletter' },
   're-engagement-email': { platform: 'email', format: 'newsletter' },
   // Web — landing/product pages (hero + CTA focused)
+  // faq/comparison/microsite intentionally stay on web/landing-page: the
+  // medium row supplies layout-context (specs, best practices, preview/Puck
+  // routing). Their type-specific component groups come from the fallback
+  // registry via FALLBACK_FIRST_TYPES, which overrides only the row's
+  // componentTemplate (audit C5 — no slot for Q&A pairs/matrix/pages).
   'landing-page': { platform: 'web', format: 'landing-page' },
   'product-page': { platform: 'web', format: 'landing-page' },
   'faq-page': { platform: 'web', format: 'landing-page' },
@@ -273,7 +283,10 @@ const CONTENT_TYPE_TO_MEDIUM: Record<string, { platform: string; format: string 
   'whitepaper': { platform: 'web', format: 'blog-article' },
   'case-study': { platform: 'web', format: 'blog-article' },
   'ebook': { platform: 'web', format: 'blog-article' },
-  // Sales enablement
+  // Sales enablement + PR/HR — no MediumEnrichment rows are seeded for
+  // these platform/format combos; the mappings allow future (workspace)
+  // rows to take over, until then the fallback registry supplies the
+  // component groups (audit C3).
   'one-pager': { platform: 'sales', format: 'one-pager' },
   'sales-deck': { platform: 'sales', format: 'sales-deck' },
   'proposal-template': { platform: 'sales', format: 'proposal' },

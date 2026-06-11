@@ -283,8 +283,88 @@ export interface GEvalResult {
 }
 
 /**
+ * Minimum number of rubric dimensions that must carry a numeric score before
+ * a judge response is accepted. Below this the response is rejected: silently
+ * defaulting absent dimensions to the neutral midpoint would fabricate a
+ * composite of ~50 on the judge pillar (45% of the F-VAL composite).
+ */
+export const MIN_PRESENT_DIMENSIONS = 4;
+
+/**
+ * Coerce a raw judge score to a clamped 1-10 integer.
+ * Returns null when the value is not a number or numeric string — null/bool/
+ * array would coerce via Number() to a misleading finite value otherwise.
+ */
+function coerceDimensionScore(n: unknown): number | null {
+  const v =
+    typeof n === 'number' ? n
+    : typeof n === 'string' && n.trim() !== '' ? Number(n)
+    : NaN;
+  return Number.isFinite(v) ? Math.max(1, Math.min(10, Math.round(v))) : null;
+}
+
+/**
+ * Extract all six dimension scores from a raw judge response.
+ * A stray missing dimension falls back to the neutral midpoint 5 only when
+ * at least MIN_PRESENT_DIMENSIONS dimensions carry a numeric score.
+ *
+ * @throws Error when fewer than MIN_PRESENT_DIMENSIONS dimensions are present
+ *   and numeric — judge response is unusable, not repairable.
+ */
+function extractDimensionScores(
+  rawScores: Record<string, Partial<DimensionScore>>,
+  judgeLabel: string,
+): Record<GEvalDimension, DimensionScore> {
+  const coerced = new Map<GEvalDimension, DimensionScore>();
+  const missing: GEvalDimension[] = [];
+  for (const def of DIMENSIONS) {
+    const d = rawScores[def.key];
+    // Judges sometimes emit bare numbers instead of {score, reasoning}
+    // objects — coerce-first doctrine: a recoverable shape counts as present.
+    const score = coerceDimensionScore(
+      d !== null && typeof d === 'object' ? (d as Partial<DimensionScore>).score : (d as unknown),
+    );
+    if (score === null) {
+      missing.push(def.key);
+      continue;
+    }
+    coerced.set(def.key, {
+      score,
+      reasoning: typeof d?.reasoning === 'string' ? d.reasoning : '',
+    });
+  }
+
+  if (DIMENSIONS.length - missing.length < MIN_PRESENT_DIMENSIONS) {
+    throw new Error(
+      `G-Eval judge response malformed: only ${DIMENSIONS.length - missing.length}/${DIMENSIONS.length} ` +
+        `rubric dimensions have a numeric score (missing/invalid: ${missing.join(', ')}; ` +
+        `judge=${judgeLabel})`,
+    );
+  }
+
+  const dim = (key: GEvalDimension): DimensionScore =>
+    coerced.get(key) ?? { score: 5, reasoning: '' };
+
+  return {
+    strategicAnchoring: dim('strategicAnchoring'),
+    audienceFit: dim('audienceFit'),
+    brandRecognition: dim('brandRecognition'),
+    antiPattern: dim('antiPattern'),
+    coherence: dim('coherence'),
+    concreteness: dim('concreteness'),
+  };
+}
+
+/**
  * Validate + normalize a raw judge response into typed GEvalResult.
- * Clamp scores to 1-10. Reject malformed.
+ *
+ * Coerce-first: numeric strings are accepted and clamped to 1-10; a single
+ * stray missing dimension defaults to the neutral midpoint 5.
+ *
+ * @throws Error when fewer than MIN_PRESENT_DIMENSIONS dimensions are present
+ *   and numeric. This lands on the existing judge-fail contract: runRubricJudge
+ *   already throws on transport/JSON errors, and fidelity-runner catches +
+ *   surfaces those as fidelity_score_skipped.
  */
 export function normalizeRubricResponse(
   raw: unknown,
@@ -299,28 +379,10 @@ export function normalizeRubricResponse(
   const obj = raw as { scores?: Record<string, Partial<DimensionScore>> };
   const rawScores = obj?.scores ?? {};
 
-  function clampScore(n: unknown): number {
-    const v = typeof n === 'number' ? n : Number(n);
-    if (!Number.isFinite(v)) return 5;
-    return Math.max(1, Math.min(10, Math.round(v)));
-  }
-
-  function dim(key: GEvalDimension): DimensionScore {
-    const d = rawScores[key] ?? {};
-    return {
-      score: clampScore(d.score),
-      reasoning: typeof d.reasoning === 'string' ? d.reasoning : '',
-    };
-  }
-
-  const scores: Record<GEvalDimension, DimensionScore> = {
-    strategicAnchoring: dim('strategicAnchoring'),
-    audienceFit: dim('audienceFit'),
-    brandRecognition: dim('brandRecognition'),
-    antiPattern: dim('antiPattern'),
-    coherence: dim('coherence'),
-    concreteness: dim('concreteness'),
-  };
+  const scores = extractDimensionScores(
+    rawScores,
+    `${meta.judgeProvider}/${meta.judgeModel}`,
+  );
 
   // Weighted composite (1-10 scale, then *10 = 0-100)
   let weightedSum = 0;

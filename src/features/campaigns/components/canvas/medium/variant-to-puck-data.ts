@@ -79,13 +79,19 @@ export function extractFilledFields(
     .sort((a, b) => b.length - a.length)[0] ?? null;
   const blobParse = longestBlob ? parseMarkdownArticle(longestBlob) : null;
 
+  // Contract-aware extraction (prompt-audit Fase 2): faq-page / microsite /
+  // comparison-page emit numbered contract groups the needle heuristics
+  // can't pair (question-N/answer-N) or even see (page-N). Contract values
+  // win per-field; the needle/blob fallback keeps handling everything else.
+  const contract = extractContractFields(textEntries, ctx?.deliverableTypeId ?? null);
+
   const headline = stripMarkers(
     find('headline', 'hero', 'title')
       ?? blobParse?.headline
       ?? ctx?.concept?.campaignTheme
       ?? '',
   );
-  const sub = stripMarkers(
+  const sub = contract.sub ?? stripMarkers(
     find('sub', 'description', 'value', 'tagline')
       ?? blobParse?.sub
       ?? ctx?.concept?.positioningStatement
@@ -94,14 +100,12 @@ export function extractFilledFields(
   const ctaLabel = stripMarkers(find('cta', 'button') ?? blobParse?.ctaLabel ?? '').slice(0, 60);
 
   const keyedFeatures = parseFeatureItems(findAll('feature', 'benefit'));
-  const featureItems = keyedFeatures.length > 0
-    ? keyedFeatures
-    : (blobParse?.featureItems ?? []);
+  const featureItems = contract.featureItems
+    ?? (keyedFeatures.length > 0 ? keyedFeatures : (blobParse?.featureItems ?? []));
 
   const keyedFaq = parseFaqItems(findAll('faq', 'question'));
-  const faqItems = keyedFaq.length > 0
-    ? keyedFaq
-    : (blobParse?.faqItems ?? []);
+  const faqItems = contract.faqItems
+    ?? (keyedFaq.length > 0 ? keyedFaq : (blobParse?.faqItems ?? []));
 
   const testimonialQuote = stripMarkers(
     find('testimonial', 'quote', 'social-proof')
@@ -117,9 +121,12 @@ export function extractFilledFields(
   // Cap longText at 1500 chars so a SEO-pipeline 2000-woorden article doesn't
   // overwhelm the RichText component default; truncation marker signals the
   // user that the source content is longer than what landed in the page.
-  const longText = longTextRaw.length > 1500
+  // Contract longText skips the cap: clamping would re-introduce exactly the
+  // page-2..5 loss the contract path fixes, and the per-group storage caps
+  // (max 2500 chars/group) already bound it.
+  const longText = contract.longText ?? (longTextRaw.length > 1500
     ? longTextRaw.slice(0, 1497) + '…'
-    : longTextRaw;
+    : longTextRaw);
 
   return {
     headline,
@@ -132,6 +139,102 @@ export function extractFilledFields(
     testimonialAuthor: '',
     pricingTiers,
     longText,
+  };
+}
+
+/** Text-shaped previewContent entry as produced by extractFilledFields. */
+type TextEntry = readonly [string, PreviewContent[string]];
+
+/**
+ * Contract-aware extraction for the Fase 2 web-page group contracts
+ * (component-templates-fallback.ts):
+ *
+ *  - faq-page: zip question-N with answer-N (paired on number) into
+ *    faqItems — the substring needle `question` only matched the questions,
+ *    so every answer rendered as "TBD". The intro group becomes the hero sub.
+ *  - microsite: concatenate page-1..page-5 in numeric order into longText —
+ *    the blob fallback only kept the single longest page, losing the rest.
+ *  - comparison-page: intro → hero sub, differentiator-N → FeatureGrid
+ *    items, comparison-matrix + switching-guide + summary → the RichText
+ *    block (markdown preserved — the matrix is a markdown table).
+ *
+ * Returns per-field overrides; empty object when the deliverable type isn't
+ * a contract type or the contract groups are absent (legacy variants), so
+ * the existing needle/blob fallback stays authoritative for everything else.
+ */
+function extractContractFields(
+  textEntries: ReadonlyArray<TextEntry>,
+  deliverableTypeId: string | null,
+): Partial<FilledFields> {
+  const exact = (key: string): string | null =>
+    textEntries.find(([k]) => k.toLowerCase() === key)?.[1]?.content ?? null;
+
+  if (deliverableTypeId === 'faq-page') {
+    const questions = numberedGroups(textEntries, /^question-(\d+)$/);
+    if (questions.length === 0) return {};
+    const answersByNumber = new Map(numberedGroups(textEntries, /^answer-(\d+)$/));
+    const faqItems = questions.map(([n, question]) => ({
+      question: stripMarkers(question),
+      // Pairs zip on number (answer-3 answers question-3) — a missing half
+      // renders as TBD instead of shifting the remaining answers up.
+      answer: stripMarkers(answersByNumber.get(n) ?? '') || 'TBD',
+    }));
+    const intro = exact('intro');
+    return intro ? { faqItems, sub: stripMarkers(intro) } : { faqItems };
+  }
+
+  if (deliverableTypeId === 'microsite') {
+    const pages = numberedGroups(textEntries, /^page-(\d+)$/);
+    if (pages.length === 0) return {};
+    return { longText: pages.map(([, content]) => content).join('\n\n') };
+  }
+
+  if (deliverableTypeId === 'comparison-page') {
+    const out: Partial<FilledFields> = {};
+    const intro = exact('intro');
+    if (intro) out.sub = stripMarkers(intro);
+    const differentiators = numberedGroups(textEntries, /^differentiator-(\d+)$/);
+    if (differentiators.length > 0) {
+      out.featureItems = differentiators.map(([, content]) => splitTitleDescription(content));
+    }
+    const longParts = [exact('comparison-matrix'), exact('switching-guide'), exact('summary')]
+      .filter((part): part is string => Boolean(part));
+    if (longParts.length > 0) out.longText = longParts.join('\n\n');
+    return out;
+  }
+
+  return {};
+}
+
+/**
+ * Collect numbered contract groups (`question-N`, `page-N`, …) as
+ * [number, content] pairs sorted ascending by N. Gaps are allowed — the
+ * contracts let the AI skip optional slots.
+ */
+function numberedGroups(
+  textEntries: ReadonlyArray<TextEntry>,
+  pattern: RegExp,
+): [number, string][] {
+  const byNumber = new Map<number, string>();
+  for (const [key, value] of textEntries) {
+    const m = pattern.exec(key.toLowerCase().trim());
+    if (m && value.content) byNumber.set(Number(m[1]), value.content);
+  }
+  return [...byNumber.entries()].sort(([a], [b]) => a - b);
+}
+
+/**
+ * Split a single-paragraph contract group (differentiator-N) into a
+ * FeatureGrid card: first sentence as title, remainder as description —
+ * the contract has no separate title/body halves for these groups.
+ */
+function splitTitleDescription(raw: string): { title: string; description: string } {
+  const stripped = stripMarkers(raw).replace(/\s+/g, ' ').trim();
+  const end = stripped.search(/(?<=[.!?])\s/);
+  if (end === -1) return { title: stripped, description: '' };
+  return {
+    title: stripped.slice(0, end).trim(),
+    description: stripped.slice(end + 1).trim(),
   };
 }
 

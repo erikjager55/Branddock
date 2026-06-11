@@ -21,6 +21,7 @@ import {
   createStructuredCompletion,
   type AICallTracking,
 } from '@/lib/ai/exploration/ai-caller';
+import { fenceUntrustedContent } from '@/lib/ai/prompts/product-analysis';
 import type {
   CanonicalExtracted,
   DetectedActivity,
@@ -187,9 +188,11 @@ function buildUserPrompt(prev: CanonicalExtracted, next: CanonicalExtracted): st
   const truncList = (items: string[]): string =>
     JSON.stringify(items.map((item) => truncate(item, MAX_INPUT_CHARS_PER_LIST_ITEM)));
 
-  return `Analyze this prev/next snapshot pair:
-
-PREV:
+  // Snapshot fields originate from the competitor's scraped website
+  // (attacker-controllable) — fenced so injected text cannot fabricate
+  // CATEGORY_REPOSITIONING MAJOR-events. SYSTEM_PROMPT stays verbatim
+  // (A1 96,7% accuracy); fencing is additive on the user prompt only.
+  const snapshots = `PREV:
 - valueProposition: ${truncate(prev.valueProposition)}
 - targetAudience: ${truncate(prev.targetAudience)}
 - differentiators: ${truncList(prev.differentiators)}
@@ -199,7 +202,11 @@ NEXT:
 - valueProposition: ${truncate(next.valueProposition)}
 - targetAudience: ${truncate(next.targetAudience)}
 - differentiators: ${truncList(next.differentiators)}
-- mainOfferings: ${truncList(next.mainOfferings)}
+- mainOfferings: ${truncList(next.mainOfferings)}`;
+
+  return `Analyze this prev/next snapshot pair:
+
+${fenceUntrustedContent(snapshots, 'competitor positioning snapshots')}
 
 What pattern-events do you detect?`;
 }

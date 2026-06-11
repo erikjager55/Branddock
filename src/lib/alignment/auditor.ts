@@ -19,6 +19,7 @@ import type {
   AuditDimension,
   AssetAuditScore,
   ImprovementPoint,
+  ImprovementImpact,
   AuditDimensionKey,
 } from "@/types/brand-alignment";
 
@@ -247,7 +248,7 @@ Respond as JSON matching this exact structure:
 }`;
 
   try {
-    return await createClaudeStructuredCompletion<AiAuditResponse>(
+    const raw = await createClaudeStructuredCompletion<unknown>(
       systemPrompt,
       userPrompt,
       { maxTokens: 8000, temperature: 0.3 },
@@ -259,6 +260,7 @@ Respond as JSON matching this exact structure:
         sourceIdentifier: 'src/lib/alignment/auditor.ts:runAiAnalysis',
       },
     );
+    return normalizeAiAuditResponse(raw);
   } catch (error) {
     console.error("[auditor] AI analysis failed, using fallback:", error);
     return {
@@ -285,6 +287,109 @@ Respond as JSON matching this exact structure:
       ],
     };
   }
+}
+
+// ─── AI response validation ─────────────────────────────────
+
+/**
+ * Validates and coerces the raw AI completion into a well-formed
+ * AiAuditResponse. Coerces recoverable deviations (string numbers,
+ * lowercase enums, missing arrays) and throws only when the response
+ * is not an object at all — the caller's catch then serves the
+ * deterministic fallback. Without this, a missing assetAssessments
+ * array 500s the audit route and an off-enum impact/effort value gets
+ * persisted and crashes the audit view on every subsequent render.
+ */
+function normalizeAiAuditResponse(raw: unknown): AiAuditResponse {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    throw new Error(
+      `AI audit response is not an object (got ${Array.isArray(raw) ? "array" : typeof raw})`
+    );
+  }
+  const o = raw as Record<string, unknown>;
+  return {
+    clarityScore: toFiniteNumber(o.clarityScore, 50),
+    claritySummary: toNonEmptyString(o.claritySummary, "No clarity summary provided."),
+    differentiationScore: toFiniteNumber(o.differentiationScore, 50),
+    differentiationSummary: toNonEmptyString(
+      o.differentiationSummary,
+      "No differentiation summary provided."
+    ),
+    assetAssessments: normalizeAssetAssessments(o.assetAssessments),
+    improvements: normalizeImprovements(o.improvements),
+  };
+}
+
+function normalizeAssetAssessments(
+  value: unknown
+): AiAuditResponse["assetAssessments"] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (typeof item !== "object" || item === null) return [];
+    const o = item as Record<string, unknown>;
+    // Without a usable name the assessment can never match an asset.
+    if (typeof o.assetName !== "string" || o.assetName.trim() === "") return [];
+    return [
+      {
+        assetName: o.assetName,
+        qualityScore: toFiniteNumber(o.qualityScore, 5),
+        qualitySummary: toNonEmptyString(o.qualitySummary, "No AI assessment available."),
+        improvements: Array.isArray(o.improvements)
+          ? o.improvements.filter((s): s is string => typeof s === "string")
+          : [],
+      },
+    ];
+  });
+}
+
+function normalizeImprovements(value: unknown): AiAuditResponse["improvements"] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (typeof item !== "object" || item === null) return [];
+    const o = item as Record<string, unknown>;
+    const title = toNullableString(o.title);
+    if (!title) return [];
+    return [
+      {
+        title,
+        description: toNonEmptyString(o.description, ""),
+        impact: normalizeImpactEffort(o.impact, "impact"),
+        effort: normalizeImpactEffort(o.effort, "effort"),
+        assetName: toNullableString(o.assetName),
+        frameworkType: toNullableString(o.frameworkType),
+      },
+    ];
+  });
+}
+
+function normalizeImpactEffort(
+  value: unknown,
+  field: "impact" | "effort"
+): ImprovementImpact {
+  const upper = typeof value === "string" ? value.toUpperCase() : "";
+  if (upper === "HIGH" || upper === "MEDIUM" || upper === "LOW") return upper;
+  console.warn("[auditor] Invalid enum value in AI response, using MEDIUM", {
+    field,
+    value,
+  });
+  return "MEDIUM";
+}
+
+function toFiniteNumber(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return fallback;
+}
+
+function toNonEmptyString(value: unknown, fallback: string): string {
+  return typeof value === "string" && value.trim() !== "" ? value : fallback;
+}
+
+function toNullableString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() !== "" ? value : null;
 }
 
 // ─── Helpers ────────────────────────────────────────────────

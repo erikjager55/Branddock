@@ -5,13 +5,16 @@
 // Legacy 3-variant pipeline functions removed — see CQP pipeline below
 // =============================================================================
 
+import type { ZodType } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getBrandContext } from '@/lib/ai/brand-context';
+import { timeoutForTokens } from '@/lib/ai/call-budget';
 import { formatBrandContext, formatBrandContextTier } from '@/lib/ai/prompt-templates';
 import { buildSelectedPersonasContext } from '@/lib/ai/persona-context';
 import { createClaudeStructuredCompletion, createStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
-import { scrubStrategyLayer } from '@/lib/ai/sanitize-strategy-output';
+import { scrubAwardJargonString, scrubStrategyLayer } from '@/lib/ai/sanitize-strategy-output';
+import { buildLocaleSystemFragment } from '@/lib/ai/locale-instruction';
 import type { AICallTracking } from '@/lib/learning-loop';
 import { calculateBlueprintConfidence } from './confidence-calculator';
 import { computePhaseSchedule } from './phase-scheduler';
@@ -44,8 +47,6 @@ import { getLlmProfile } from '@/lib/campaigns/llm-creative-profiles';
 import type { CreativeAngleDefinition } from '@/lib/campaigns/creative-angles';
 import type { AiProvider } from '@/lib/ai/feature-models';
 import {
-  strategyLayerSchema,
-  architectureLayerSchema,
   fullVariantSchema,
   channelPlanLayerSchema,
   assetPlanLayerSchema,
@@ -186,6 +187,37 @@ function thinkingForRigor(
   return undefined;
 }
 
+/**
+ * Compute the maxTokens/timeout pair for a call with extended thinking.
+ * Thinking tokens count toward max_tokens (Anthropic/Gemini), so the thinking
+ * budget must be reserved ON TOP of the output budget — nesting it inside
+ * squeezed the net output (12k thinking in 16k maxTokens left ~4k), which
+ * hard-throws since the Fase 1 truncation guards (audit 2026-06-11). The
+ * timeout follows the total budget via timeoutForTokens so the two never
+ * drift apart (gotcha 2026-05-24).
+ */
+function budgetWithThinking(
+  outputTokens: number,
+  thinking: ReturnType<typeof thinkingForRigor>,
+): { maxTokens: number; timeoutMs: number } {
+  // OpenAI reasoning has no explicit token budget but its reasoning tokens
+  // DO count toward max_completion_tokens — reserve a fixed allowance so
+  // the net output isn't squeezed (high effort routinely burns 8-12k).
+  const thinkingTokens =
+    thinking?.anthropic?.budgetTokens ??
+    thinking?.google?.thinkingBudget ??
+    (thinking?.openai ? (thinking.openai.reasoningEffort === 'high' ? 12_000 : 6_000) : 0);
+  const maxTokens = outputTokens + thinkingTokens;
+  // Thinking-enabled calls previously ran on the SDK wrappers' 600s default
+  // (no timeoutMs passed); the token-coupled formula may only extend, never
+  // shorten, that — slow Opus-class emission with thinking outruns the
+  // 10ms/token rule well before these budgets.
+  const timeoutMs = thinking
+    ? Math.max(timeoutForTokens(maxTokens), 600_000)
+    : timeoutForTokens(maxTokens);
+  return { maxTokens, timeoutMs };
+}
+
 /** Wraps an AI call with step-specific error context for better debugging */
 async function withStepContext<T>(stepLabel: string, timeoutSec: number, fn: () => Promise<T>): Promise<T> {
   try {
@@ -198,6 +230,55 @@ async function withStepContext<T>(stepLabel: string, timeoutSec: number, fn: () 
     }
     throw new Error(`${stepLabel} failed: ${msg}`);
   }
+}
+
+// ─── Output-language contract + concept jargon-scrub ────────
+
+/**
+ * Append the workspace output-language contract to a system prompt.
+ * Deliberately placed at the END: trailing instructions outrank earlier ones,
+ * so this also overrides language directives baked into shared prompt text
+ * (e.g. the quick-concept prompt hardcodes English — audit 2026-06-11 T5).
+ * No-op when the language is unknown.
+ */
+function withLocaleContract(systemPrompt: string, contentLanguage: string | undefined): string {
+  const fragment = buildLocaleSystemFragment(contentLanguage);
+  return fragment ? `${systemPrompt}\n\n${fragment}` : systemPrompt;
+}
+
+/**
+ * Deep-scrub award-rubric jargon (Effie/Cannes vocabulary) from every string
+ * in a parsed LLM value. The concept path (creative leap / debate / quick
+ * concept) bypasses scrubStrategyLayer, which only knows StrategyLayer fields;
+ * this walker covers arbitrary concept/critique shapes (audit 2026-06-11 T5).
+ * Warns when the vangnet actually fired — the prompt output-guards should
+ * normally suppress this vocabulary at the source.
+ */
+function scrubConceptOutput<T>(value: T, stepName: string): T {
+  let replaced = 0;
+  const visit = (node: unknown): unknown => {
+    if (typeof node === 'string') {
+      const scrubbed = scrubAwardJargonString(node);
+      if (scrubbed !== node) replaced += 1;
+      return scrubbed;
+    }
+    if (Array.isArray(node)) return node.map(visit);
+    if (node !== null && typeof node === 'object') {
+      const out: Record<string, unknown> = {};
+      for (const [key, child] of Object.entries(node as Record<string, unknown>)) {
+        out[key] = visit(child);
+      }
+      return out;
+    }
+    return node;
+  };
+  const result = visit(value) as T;
+  if (replaced > 0) {
+    console.warn(
+      `[strategy-chain] ${stepName}: award-jargon scrubber replaced ${replaced} string field(s) in LLM output — prompt output-guards did not suppress internal rubric vocabulary`,
+    );
+  }
+  return result;
 }
 
 // ─── Types ──────────────────────────────────────────────────
@@ -430,22 +511,127 @@ function selectCreativeAngles(
   return assignments;
 }
 
-// ─── Zod validation helper ──────────────────────────────────
+// ─── Zod validation helpers ─────────────────────────────────
+
+/** Minimal structural view on a Zod issue — keeps the helpers version-agnostic. */
+interface ZodIssueLike {
+  code?: string;
+  path: ReadonlyArray<PropertyKey>;
+  message: string;
+}
 
 /**
- * Validate AI output against a Zod schema. If validation fails, we log a warning
- * but return the raw data as-is (never throws). Rationale: AI-generated JSON may
- * have minor schema deviations (extra fields, slightly different enum values) that
- * don't break the UI. Crashing the entire 7-step pipeline for a cosmetic schema
- * mismatch is worse than proceeding with best-effort data.
+ * Convert an AI-returned value to a display string. Models regularly return
+ * objects where the schema expects strings (gotcha 2026-03-24); pick the most
+ * descriptive field instead of letting "[object Object]" reach the UI.
  */
-function validateOrWarn<T>(schema: { safeParse: (data: unknown) => { success: boolean; data?: T; error?: { message: string } } }, data: unknown, stepName: string): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    console.warn(`[strategy-chain] Zod validation warning for ${stepName} — proceeding with raw data:`, result.error);
-    return data as T;
+function toDisplayString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return value.map(toDisplayString).filter(Boolean).join(', ');
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    for (const key of ['barrier', 'name', 'title', 'description']) {
+      const candidate = record[key];
+      if (typeof candidate === 'string' && candidate.trim().length > 0) return candidate;
+    }
+    const stringValues = Object.values(record).filter(
+      (v): v is string => typeof v === 'string' && v.trim().length > 0,
+    );
+    if (stringValues.length > 0) return stringValues.join(' — ');
+    return JSON.stringify(value);
   }
-  return result.data as T;
+  return '';
+}
+
+function getAtPath(root: unknown, path: ReadonlyArray<PropertyKey>): unknown {
+  let current: unknown = root;
+  for (const key of path) {
+    if (current === null || typeof current !== 'object') return undefined;
+    current = (current as Record<PropertyKey, unknown>)[key];
+  }
+  return current;
+}
+
+function setAtPath(root: unknown, path: ReadonlyArray<PropertyKey>, value: unknown): void {
+  if (path.length === 0) return;
+  const parent = getAtPath(root, path.slice(0, -1));
+  if (parent === null || typeof parent !== 'object') return;
+  (parent as Record<PropertyKey, unknown>)[path[path.length - 1]] = value;
+}
+
+/**
+ * Best-effort coercion of AI output toward a Zod schema, guided by the issues
+ * of a failed parse. Repairs the three recurring AI deviations (gotcha
+ * 2026-03-24): numbers serialized as strings, objects where strings are
+ * expected, and null/missing arrays.
+ */
+function coerceTowardSchema(data: unknown, issues: ReadonlyArray<ZodIssueLike>): unknown {
+  const clone = structuredClone(data);
+  for (const issue of issues) {
+    if (issue.code !== 'invalid_type') continue;
+    const expected = (issue as { expected?: unknown }).expected;
+    const current = getAtPath(clone, issue.path);
+    if (expected === 'number') {
+      const coerced = Number(current);
+      if (Number.isFinite(coerced)) setAtPath(clone, issue.path, coerced);
+    } else if (expected === 'string') {
+      if (current !== null && current !== undefined) setAtPath(clone, issue.path, toDisplayString(current));
+    } else if (expected === 'array') {
+      if (current === null || current === undefined) setAtPath(clone, issue.path, []);
+    }
+  }
+  return clone;
+}
+
+function summarizeZodIssues(issues: ReadonlyArray<ZodIssueLike>, limit = 5): string {
+  const lines = issues.slice(0, limit).map(i => `${i.path.map(String).join('.') || '(root)'}: ${i.message}`);
+  const remainder = issues.length - limit;
+  return lines.join('; ') + (remainder > 0 ? `; … +${remainder} more` : '');
+}
+
+/**
+ * Validate AI output against a Zod schema with coerce-then-enforce semantics
+ * (successor of the warn-only `validateOrWarn`, audit 2026-06-11 T3):
+ *
+ * 1. First `safeParse` — on success return the parsed (schema-clean) data.
+ * 2. On failure, run a coercion pass over the raw data (string→number,
+ *    object→string, null→[]) and re-validate; on success warn and return
+ *    the coerced data.
+ * 3. Still failing: by default keep the historical warn-and-passthrough
+ *    behavior (cosmetic AI deviations should not kill a 7-step pipeline).
+ *    With `enforce: true` — only set at call-sites where malformed data is
+ *    guaranteed to crash downstream anyway — throw a clear error instead of
+ *    letting raw data flow on.
+ */
+function validateAndCoerce<T>(
+  schema: ZodType<T>,
+  data: unknown,
+  stepName: string,
+  options?: { enforce?: boolean },
+): T {
+  const first = schema.safeParse(data);
+  if (first.success) return first.data;
+
+  const coerced = coerceTowardSchema(data, first.error.issues);
+  const second = schema.safeParse(coerced);
+  if (second.success) {
+    console.warn(
+      `[strategy-chain] ${stepName}: AI output deviated from schema but was repaired by coercion (${first.error.issues.length} issue(s)): ${summarizeZodIssues(first.error.issues)}`,
+    );
+    return second.data;
+  }
+
+  if (options?.enforce) {
+    throw new Error(
+      `${stepName} returned data that does not match the expected schema (even after coercion): ${summarizeZodIssues(second.error.issues)}`,
+    );
+  }
+
+  console.warn(
+    `[strategy-chain] Zod validation warning for ${stepName} — proceeding with raw data: ${summarizeZodIssues(second.error.issues)}`,
+  );
+  return data as T;
 }
 
 // ─── Architecture Normalization ─────────────────────────────
@@ -482,7 +668,9 @@ function normalizePersonaRelevance(raw: unknown): TouchpointPersonaRelevance[] {
 function normalizeArchitectureLayer(raw: ArchitectureLayer): ArchitectureLayer {
   return {
     campaignType: raw.campaignType ?? 'hybrid',
-    journeyPhases: (raw.journeyPhases ?? []).map((rawPhase, index) => {
+    // Non-array shapes (model keys phases by name) fall back to [] so the
+    // follow-up schema parse reports a clean error instead of a TypeError.
+    journeyPhases: (Array.isArray(raw.journeyPhases) ? raw.journeyPhases : []).map((rawPhase, index) => {
       // Cast to access potential non-schema fields (e.g. `phase` instead of `name`)
       const p = rawPhase as unknown as Record<string, unknown>;
       return {
@@ -556,6 +744,10 @@ export async function elaborateJourney(
   const campaignGoalType = data.wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
   const campaignType = data.wizardContext.campaignType;
   const selectedContentType = data.wizardContext.selectedContentType;
+  // Journey/channel/asset prompts carry no brand-context block, so they need
+  // the locale contract explicitly — asset-planner briefs are user-visible
+  // (audit 2026-06-11 T5). getBrandContext is 5-min cached.
+  const { contentLanguage } = await getBrandContext(workspaceId);
   const goalGuidance = getGoalTypeGuidance(campaignGoalType);
   const personaIds = data.personaIds ?? [];
   const productIds = data.productIds ?? [];
@@ -593,7 +785,7 @@ export async function elaborateJourney(
 
     const jpRaw = await withStepContext('Step 4.5 (Journey Phases — Gemini Lite)', 60, () =>
       createGeminiStructuredCompletion<ArchitectureLayer>(
-        jpPrompt.system, jpPrompt.user,
+        withLocaleContract(jpPrompt.system, contentLanguage), jpPrompt.user,
         { model: GEMINI_FLASH_LITE, temperature: 0.3, maxOutputTokens: 8000, timeoutMs: 60_000, responseSchema: journeyPhasesResponseSchema },
         buildStrategyTracking({ workspaceId, campaignId }, 'elaborateJourney:journeyPhases', 4),
       ),
@@ -629,18 +821,25 @@ export async function elaborateJourney(
 
   const channelPlanRaw = await withStepContext('Step 5 (Channel Planner — Gemini Lite)', 180, () =>
     createGeminiStructuredCompletion<ChannelPlanLayer>(
-      step5Prompt.system, step5Prompt.user,
+      withLocaleContract(step5Prompt.system, contentLanguage), step5Prompt.user,
       { model: GEMINI_FLASH_LITE, temperature: 0.2, maxOutputTokens: 12000, timeoutMs: 180_000, responseSchema: channelPlanResponseSchema },
       buildStrategyTracking({ workspaceId, campaignId }, 'elaborateJourney:channelPlanner', 5),
     ),
   );
-  const channelPlan = validateOrWarn(channelPlanLayerSchema, channelPlanRaw, 'Step 5 Channel Plan');
+  // enforce: the next line dereferences channelPlan.channels unguarded — a
+  // malformed plan would crash here anyway, just with a cryptic TypeError.
+  const channelPlan = validateAndCoerce(channelPlanLayerSchema, channelPlanRaw, 'Step 5 Channel Plan', { enforce: true });
   onProgress?.({ step: 5, name: 'Channel Planner', status: 'complete', label: 'Channel plan complete', preview: `${channelPlan.channels.length} channels` });
 
   // Step 6: Asset Planner
   onProgress?.({ step: 6, name: 'Asset Planner', status: 'running', label: 'Creating asset plan...' });
 
-  const phaseNames = (architecture.journeyPhases ?? []).map((p: { name: string }) => p.name);
+  // Filter out unnamed phases — un-normalized architectures can carry
+  // `name: undefined`, which would otherwise reach the asset-planner prompt
+  // as the literal string "undefined" (audit 2026-06-11 T3).
+  const phaseNames = (architecture.journeyPhases ?? [])
+    .map((p: { name?: string }) => p.name)
+    .filter((name): name is string => typeof name === 'string' && name.trim().length > 0 && name !== 'undefined');
 
   const step6Prompt = buildAssetPlannerPrompt({
     synthesizedStrategy: synthesizedStrategyJson,
@@ -662,12 +861,14 @@ export async function elaborateJourney(
 
   const assetPlanRaw = await withStepContext('Step 6 (Asset Planner — Gemini Lite)', 120, () =>
     createGeminiStructuredCompletion<AssetPlanLayer>(
-      step6Prompt.system, step6Prompt.user,
+      withLocaleContract(step6Prompt.system, contentLanguage), step6Prompt.user,
       { model: GEMINI_FLASH_LITE, temperature: 0.3, maxOutputTokens: 16000, timeoutMs: 120_000, responseSchema: assetPlanResponseSchema },
       buildStrategyTracking({ workspaceId, campaignId }, 'elaborateJourney:assetPlanner', 6),
     ),
   );
-  const assetPlan = validateOrWarn(assetPlanLayerSchema, assetPlanRaw, 'Step 6 Asset Plan');
+  // No enforce: immediate use is interpolation-only and the launch route
+  // guards `deliverables?.length` before consuming the plan.
+  const assetPlan = validateAndCoerce(assetPlanLayerSchema, assetPlanRaw, 'Step 6 Asset Plan');
   onProgress?.({ step: 6, name: 'Asset Planner', status: 'complete', label: 'Asset plan complete', preview: `${assetPlan.totalDeliverables} deliverables` });
 
   // Return architecture when journey phases were auto-generated so the caller
@@ -714,6 +915,15 @@ export async function createDeliverablesFromBlueprint(
     : new Map<string, Date>();
 
   // 2. Create new deliverables from blueprint
+  // Observability for the audit-2026-06-11 schema fix: contentTypeInputs was
+  // structurally always {} (responseSchema declared an empty object) — this
+  // rate makes a regression to that state visible in the logs.
+  const filledInputs = assetPlanDeliverables.filter(
+    (d) => d.contentTypeInputs && Object.keys(d.contentTypeInputs).length > 0,
+  ).length;
+  console.info(
+    `[asset-plan] contentTypeInputs non-empty: ${filledInputs}/${assetPlanDeliverables.length} deliverables`,
+  );
   for (const d of assetPlanDeliverables) {
     const suggestedDate = schedule.get(d.title) ?? null;
     await prisma.deliverable.create({
@@ -747,6 +957,34 @@ export async function createDeliverablesFromBlueprint(
 // ─── Per-Layer Regeneration ─────────────────────────────────
 
 /**
+ * Lenient-first validation for a regenerated full variant (audit 2026-06-11
+ * T3): the old code ran the strict parse BEFORE normalizeArchitectureLayer,
+ * so regeneration failed on exactly the deviations (`phase` vs `name`, flat
+ * personaRelevance, …) the normalizer exists to repair. Normalize + coerce
+ * first; only when the repaired object still fails do we throw, as the
+ * strict parse did. Return type stays zod-inferred on purpose — the
+ * `StrategyLayer` interface lacks the index signature scrubStrategyLayer needs.
+ */
+function parseRegeneratedFullVariant(raw: unknown) {
+  const first = fullVariantSchema.safeParse(raw);
+  if (first.success) return first.data;
+  const rawRecord = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+  // Only repair an architecture that exists as an object — substituting an
+  // empty default here would let a response WITHOUT architecture pass the
+  // second parse and silently wipe the stored journey (empty journeyPhases
+  // is schema-valid). Missing/garbage architecture must fail into enforce.
+  const arch = rawRecord.architecture;
+  const repaired = {
+    ...rawRecord,
+    architecture:
+      arch && typeof arch === 'object' && !Array.isArray(arch)
+        ? normalizeArchitectureLayer(arch as ArchitectureLayer)
+        : arch,
+  };
+  return validateAndCoerce(fullVariantSchema, repaired, 'Regenerate Full Variant (Step 1)', { enforce: true });
+}
+
+/**
  * Regenerate a specific layer and all downstream layers.
  * Accepts user feedback to guide the regeneration.
  */
@@ -763,6 +1001,9 @@ export async function regenerateBlueprintLayer(
 
   // Resolve configurable model for campaign-strategy feature
   const { model: resolvedModel, provider: resolvedProvider } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
+  // Regen-prompts carry no brand-context block — locale contract is
+  // injected per call-site (audit 2026-06-11 T5). 5-min cached.
+  const { contentLanguage } = await getBrandContext(workspaceId);
 
   const campaign = await prisma.campaign.findFirst({
     where: { id: campaignId, workspaceId },
@@ -899,16 +1140,14 @@ export async function regenerateBlueprintLayer(
     const fullVariantRaw = await withStepContext('Regenerate Full Variant (Step 1)', 300, () =>
       createStructuredCompletion<FullVariant>(
         resolvedProvider, resolvedModel,
-        prompt.system, prompt.user,
+        withLocaleContract(prompt.system, contentLanguage), prompt.user,
         { temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
         buildStrategyTracking({ workspaceId, campaignId }, 'regenerateBlueprintLayer:fullVariant', 1),
       ),
     );
-    const fullVariant = fullVariantSchema.parse(fullVariantRaw);
-    blueprint.strategy = scrubStrategyLayer(
-      validateOrWarn(strategyLayerSchema, fullVariant.strategy, 'Regenerate Strategy'),
-    );
-    blueprint.architecture = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, fullVariant.architecture, 'Regenerate Architecture'));
+    const fullVariant = parseRegeneratedFullVariant(fullVariantRaw);
+    blueprint.strategy = scrubStrategyLayer(fullVariant.strategy);
+    blueprint.architecture = normalizeArchitectureLayer(fullVariant.architecture);
 
     // Clear stale persona validation — it was scored against the previous strategy.
     blueprint.personaValidation = [];
@@ -938,12 +1177,14 @@ export async function regenerateBlueprintLayer(
 
     const channelRaw = await withStepContext('Regenerate Channel Plan (Step 4)', 180, () =>
       createGeminiStructuredCompletion<ChannelPlanLayer>(
-        prompt.system, prompt.user,
+        withLocaleContract(prompt.system, contentLanguage), prompt.user,
         { model: GEMINI_FLASH_LITE, temperature: 0.2, maxOutputTokens: 12000, timeoutMs: 180_000, responseSchema: channelPlanResponseSchema },
         buildStrategyTracking({ workspaceId, campaignId }, 'regenerateBlueprintLayer:channelPlan', 4),
       ),
     );
-    blueprint.channelPlan = validateOrWarn(channelPlanLayerSchema, channelRaw, 'Regenerate Channel Plan');
+    // enforce: the regenerate route immediately maps over
+    // updatedBlueprint.channelPlan.channels unguarded when persisting.
+    blueprint.channelPlan = validateAndCoerce(channelPlanLayerSchema, channelRaw, 'Regenerate Channel Plan', { enforce: true });
 
     onProgress?.({ step: 4, name: 'Channel Planner', status: 'complete', label: 'Channel plan regenerated' });
     // Fall through to regenerate asset plan
@@ -954,7 +1195,11 @@ export async function regenerateBlueprintLayer(
 
   const assetFeedback = layer === 'assetPlan' && feedback ? `\n\nUser feedback: ${feedback}` : '';
   const assetRegenGoalType = campaign.campaignGoalType || 'BRAND_AWARENESS';
-  const regenPhaseNames = (blueprint.architecture?.journeyPhases ?? []).map((p: { name: string }) => p.name);
+  // Same truthy-filter as elaborateJourney — stored blueprints may predate
+  // architecture normalization and carry unnamed phases.
+  const regenPhaseNames = (blueprint.architecture?.journeyPhases ?? [])
+    .map((p: { name?: string }) => p.name)
+    .filter((name): name is string => typeof name === 'string' && name.trim().length > 0 && name !== 'undefined');
   const assetPrompt = buildAssetPlannerPrompt({
     synthesizedStrategy: JSON.stringify(blueprint.strategy) + assetFeedback,
     synthesizedArchitecture: JSON.stringify(blueprint.architecture),
@@ -972,12 +1217,14 @@ export async function regenerateBlueprintLayer(
 
   const assetRaw = await withStepContext('Regenerate Asset Plan (Step 5)', 180, () =>
     createGeminiStructuredCompletion<AssetPlanLayer>(
-      assetPrompt.system, assetPrompt.user,
+      withLocaleContract(assetPrompt.system, contentLanguage), assetPrompt.user,
       { model: GEMINI_FLASH_LITE, temperature: 0.3, maxOutputTokens: 16000, timeoutMs: 180_000, responseSchema: assetPlanResponseSchema },
       buildStrategyTracking({ workspaceId, campaignId }, 'regenerateBlueprintLayer:assetPlan', 5),
     ),
   );
-  blueprint.assetPlan = validateOrWarn(assetPlanLayerSchema, assetRaw, 'Regenerate Asset Plan');
+  // No enforce: the regenerate route only persists the asset plan; the launch
+  // route guards `deliverables?.length` before creating deliverables.
+  blueprint.assetPlan = validateAndCoerce(assetPlanLayerSchema, assetRaw, 'Regenerate Asset Plan');
 
   onProgress?.({ step: 5, name: 'Asset Planner', status: 'complete', label: 'Asset plan regenerated' });
 
@@ -991,7 +1238,6 @@ export async function regenerateBlueprintLayer(
   const { confidence, breakdown } = calculateBlueprintConfidence({
     brandAssetCount,
     personaCount: resolvedPersonaIds.length,
-    personaValidation: blueprint.personaValidation,
     productCount,
     competitorAndTrendCount: ctCount,
     knowledgeAssetCount: campaign.knowledgeAssets.length,
@@ -1095,7 +1341,9 @@ export async function validateBriefing(
   // Step 3: Score results
   onProgress?.({ step: 3, name: 'Scoring Results', status: 'running', label: 'Scoring results...' });
 
-  const result = validateOrWarn(briefingValidationSchema, raw, 'Phase 1 Briefing Validation');
+  // No enforce: downstream consumers (BriefingReviewView, improveBriefing)
+  // guard all array access defensively (gotcha 2026-03-24).
+  const result = validateAndCoerce(briefingValidationSchema, raw, 'Phase 1 Briefing Validation');
 
   onProgress?.({ step: 3, name: 'Scoring Results', status: 'complete', label: `Score: ${result.overallScore}/100 — ${result.isComplete ? 'Ready' : 'Gaps found'}` });
 
@@ -1116,6 +1364,18 @@ export async function improveBriefing(
 ): Promise<ImprovedBriefing> {
   const goalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
 
+  // This call gets no brand context, so the workspace output language must be
+  // derived here — without it the rewrite drifted to English on NL briefings
+  // (audit 2026-06-11 T5). The only caller always passes tracking with a
+  // workspaceId; getBrandContext is 5-min cached, so this stays cheap. The
+  // fallback keeps the briefing language stable for tracking-less callers.
+  const contentLanguage = tracking?.workspaceId
+    ? (await getBrandContext(tracking.workspaceId)).contentLanguage
+    : undefined;
+  const localeContract =
+    buildLocaleSystemFragment(contentLanguage) ||
+    "Output language requirement: write every field in the same language as the current briefing fields. Do not translate the briefing into another language.";
+
   const systemPrompt = `You are a senior campaign strategist. Your task is to improve a campaign briefing based on AI validation feedback. Rewrite each field to address the identified gaps and apply the suggestions while preserving the user's original intent.
 
 Return a JSON object with exactly these 5 fields:
@@ -1125,10 +1385,14 @@ Return a JSON object with exactly these 5 fields:
 - tonePreference: string (desired tone and communication style)
 - constraints: string (limitations, budget, timeline, requirements)
 
-Each field must be a substantive, well-written paragraph. Do NOT leave any field empty.`;
+Each field must be a substantive, well-written paragraph. Do NOT leave any field empty.
 
-  const gapsText = validation.gaps.map(g => `- [${g.severity}] ${g.field}: ${g.suggestion}`).join('\n');
-  const suggestionsText = validation.suggestions.map(s => `- ${s}`).join('\n');
+${localeContract}`;
+
+  // Defensive `?? []`: validation may stem from warn-and-passthrough
+  // validateAndCoerce output with missing arrays (gotcha 2026-03-24).
+  const gapsText = (validation.gaps ?? []).map(g => `- [${g.severity}] ${g.field}: ${g.suggestion}`).join('\n');
+  const suggestionsText = (validation.suggestions ?? []).map(s => `- ${s}`).join('\n');
 
   const userPrompt = `Campaign: ${wizardContext.campaignName}
 Description: ${wizardContext.campaignDescription ?? 'Not provided'}
@@ -1151,7 +1415,7 @@ Improvement Suggestions:
 ${suggestionsText || 'None'}
 
 Strengths (preserve these):
-${validation.strengths.map(s => `- ${s}`).join('\n') || 'None'}
+${(validation.strengths ?? []).map(s => `- ${s}`).join('\n') || 'None'}
 
 Rewrite all 5 briefing fields, addressing every gap and applying the suggestions. Preserve what's already strong. Make the briefing score-worthy of 90+/100.`;
 
@@ -1315,12 +1579,13 @@ export async function buildStrategyFoundation(
   // Scale thinking budget by rigor. Base 16k maps to Deliberate's full 16k;
   // Balanced gets ~6k; Fast skips thinking entirely (rigor multiplier 0).
   const foundationThinking = thinkingForRigor(resolvedProvider, 16_000, rigor);
+  const foundationBudget = budgetWithThinking(16_000, foundationThinking);
 
-  const raw = await withStepContext('Phase 2 (Strategy Foundation)', 600, () =>
+  const raw = await withStepContext('Phase 2 (Strategy Foundation)', Math.round(foundationBudget.timeoutMs / 1000), () =>
     createStructuredCompletion<StrategyFoundation>(
       resolvedProvider, resolvedModel,
       prompt.system, prompt.user,
-      { temperature: 0.4, maxTokens: 24000, timeoutMs: 600_000, thinking: foundationThinking },
+      { temperature: 0.4, maxTokens: foundationBudget.maxTokens, timeoutMs: foundationBudget.timeoutMs, thinking: foundationThinking },
       buildStrategyTracking(ctx, 'buildStrategyFoundation', 2),
     ),
   );
@@ -1330,7 +1595,9 @@ export async function buildStrategyFoundation(
   // Step 4: Finalize foundation
   onProgress?.({ step: 4, name: 'Finalizing Foundation', status: 'running', label: 'Synthesizing foundation insights...' });
 
-  const foundation = validateOrWarn(strategyFoundationSchema, raw, 'Phase 2 Strategy Foundation');
+  // No enforce: StrategyFoundationReviewView guards all array access
+  // defensively (gotcha 2026-03-24) and immediate access below is optional-chained.
+  const foundation = validateAndCoerce(strategyFoundationSchema, raw, 'Phase 2 Strategy Foundation');
 
   onProgress?.({ step: 4, name: 'Finalizing Foundation', status: 'complete', label: `Foundation built — ${foundation.keyInsights?.length ?? 0} insights synthesized` });
 
@@ -1516,13 +1783,15 @@ export async function generateInsights(
       providerRole: lens.role,
     });
 
-    const result = await withStepContext(`Insight Mining (${lens.role})`, 120, () =>
+    const lensThinking = thinkingForRigor(lens.provider, 8000, rigor);
+    const lensBudget = budgetWithThinking(8_000, lensThinking);
+    const result = await withStepContext(`Insight Mining (${lens.role})`, Math.round(lensBudget.timeoutMs / 1000), () =>
       createStructuredCompletion(
         lens.provider,
         lens.model,
-        prompt.system,
+        withLocaleContract(prompt.system, ctx.brandContextData.contentLanguage),
         prompt.user,
-        { maxTokens: 16000, thinking: thinkingForRigor(lens.provider, 8000, rigor) },
+        { maxTokens: lensBudget.maxTokens, timeoutMs: lensBudget.timeoutMs, thinking: lensThinking },
         buildStrategyTracking(ctx, `generateInsights:${lens.role}`, 1),
       ),
     );
@@ -1647,13 +1916,15 @@ ${regenerationContext.failedConcepts.map(fc => `- "${fc.campaignLine}" — faile
 Generate DIFFERENT concepts that address these failures.` : undefined,
     });
 
-    const result = await withStepContext(`Creative Leap (${a.template.name} × ${a.angle.name})`, 120, () =>
+    const leapThinking = thinkingForRigor(a.provider, 12_000, rigor);
+    const leapBudget = budgetWithThinking(8_000, leapThinking);
+    const result = await withStepContext(`Creative Leap (${a.template.name} × ${a.angle.name})`, Math.round(leapBudget.timeoutMs / 1000), () =>
       createStructuredCompletion(
         a.provider,
         a.model,
-        prompt.system,
+        withLocaleContract(prompt.system, ctx.brandContextData.contentLanguage),
         prompt.user,
-        { maxTokens: 16000, thinking: thinkingForRigor(a.provider, 12_000, rigor) },
+        { maxTokens: leapBudget.maxTokens, timeoutMs: leapBudget.timeoutMs, thinking: leapThinking },
         buildStrategyTracking(ctx, `generateCreativeConcepts:${a.template.id}`, 2),
       ),
     );
@@ -1664,11 +1935,14 @@ Generate DIFFERENT concepts that address these failures.` : undefined,
     } catch {
       throw new Error('Concept generation returned invalid JSON');
     }
-    return {
-      ...(parsed as Record<string, unknown>),
-      providerUsed: a.provider,
-      modelUsed: a.model,
-    } as CreativeConcept;
+    return scrubConceptOutput(
+      {
+        ...(parsed as Record<string, unknown>),
+        providerUsed: a.provider,
+        modelUsed: a.model,
+      } as CreativeConcept,
+      `Creative Leap (${a.template.name})`,
+    );
   });
 
   const settled = await Promise.allSettled(conceptPromises);
@@ -1750,13 +2024,15 @@ export async function runCreativeDebate(
 
     const rigor = ctx.pipelineConfig.modelRigor;
     const { model: criticModel, provider: criticProvider } = await resolveModelForRigor(ctx.workspaceId, 'campaign-strategy', rigor);
-    const critiqueRaw = await withStepContext(`Creative Critic (Round ${roundNum})`, 120, () =>
+    const criticThinking = thinkingForRigor(criticProvider, budgets.critic, rigor);
+    const criticBudget = budgetWithThinking(8_000, criticThinking);
+    const critiqueRaw = await withStepContext(`Creative Critic (Round ${roundNum})`, Math.round(criticBudget.timeoutMs / 1000), () =>
       createStructuredCompletion(
         criticProvider,
         criticModel,
-        criticPrompt.system,
+        withLocaleContract(criticPrompt.system, ctx.brandContextData.contentLanguage),
         criticPrompt.user,
-        { maxTokens: 16000, thinking: thinkingForRigor(criticProvider, budgets.critic, rigor) },
+        { maxTokens: criticBudget.maxTokens, timeoutMs: criticBudget.timeoutMs, thinking: criticThinking },
         buildStrategyTracking(ctx, `runCreativeDebate:critic:round${roundNum}`, 3),
       ),
     );
@@ -1766,11 +2042,22 @@ export async function runCreativeDebate(
     } catch {
       throw new Error(`Creative Critic (Round ${roundNum}) returned invalid JSON`);
     }
+    critique = scrubConceptOutput(critique, `Creative Critic (Round ${roundNum})`);
     latestCritique = critique;
 
-    const critiqueScore = typeof (critique as Record<string, unknown>)?.overallCreativeScore === 'number'
-      ? (critique as Record<string, unknown>).overallCreativeScore as number
-      : 0;
+    // Gotcha 2026-03-24: models return numeric scores as strings — coerce
+    // with Number() instead of a typeof check that silently zeroes them.
+    const rawScore = Number((critique as Record<string, unknown>)?.overallCreativeScore);
+    let critiqueScore = Number.isFinite(rawScore) ? rawScore : 0;
+    // Defensive scale normalization: the quality gate assumes 0-100, but
+    // models sometimes score on a 0-10 rubric — such a score could never
+    // pass the gate and silently forced all 3 debate rounds.
+    if (critiqueScore > 0 && critiqueScore <= 10) {
+      console.warn(
+        `[strategy-chain] runCreativeDebate round ${roundNum}: overallCreativeScore ${critiqueScore} looks 0-10 scaled — normalizing to ${critiqueScore * 10} for the 0-100 quality gate`,
+      );
+      critiqueScore = critiqueScore * 10;
+    }
     finalScore = critiqueScore;
 
     onProgress?.({ type: 'step', step: round * 2 + 1, name: `Creative Critic (Round ${roundNum})`, status: 'complete', label: `Round ${roundNum}: Score ${critiqueScore}/100` } as PipelineEvent);
@@ -1799,13 +2086,15 @@ export async function runCreativeDebate(
     });
 
     const { model: defenseModel, provider: defenseProvider } = await resolveModelForRigor(ctx.workspaceId, 'campaign-strategy-b', rigor);
-    const defenseRaw = await withStepContext(`Creative Defense (Round ${roundNum})`, 120, () =>
+    const defenseThinking = thinkingForRigor(defenseProvider, budgets.defense, rigor);
+    const defenseBudget = budgetWithThinking(8_000, defenseThinking);
+    const defenseRaw = await withStepContext(`Creative Defense (Round ${roundNum})`, Math.round(defenseBudget.timeoutMs / 1000), () =>
       createStructuredCompletion(
         defenseProvider,
         defenseModel,
-        defensePrompt.system,
+        withLocaleContract(defensePrompt.system, ctx.brandContextData.contentLanguage),
         defensePrompt.user,
-        { maxTokens: 16000, thinking: thinkingForRigor(defenseProvider, budgets.defense, rigor) },
+        { maxTokens: defenseBudget.maxTokens, timeoutMs: defenseBudget.timeoutMs, thinking: defenseThinking },
         buildStrategyTracking(ctx, `runCreativeDebate:defense:round${roundNum}`, 4),
       ),
     );
@@ -1815,6 +2104,9 @@ export async function runCreativeDebate(
     } catch {
       throw new Error(`Creative Defense (Round ${roundNum}) returned invalid JSON`);
     }
+    // Scrubbing the defense BEFORE the revisedConcept merge below keeps the
+    // improved concept (and its round snapshot) free of award jargon too.
+    defense = scrubConceptOutput(defense, `Creative Defense (Round ${roundNum})`);
     latestDefense = defense;
 
     onProgress?.({ type: 'step', step: round * 2 + 2, name: `Creative Defense (Round ${roundNum})`, status: 'complete', label: `Round ${roundNum}: Concept improved` } as PipelineEvent);
@@ -1854,11 +2146,14 @@ export async function generateQuickConcept(
     briefing: ctx.briefing,
   });
 
+  // The trailing locale contract pins the workspace language — the prompt
+  // itself carries no language instruction since the Fase 4 jargon/locale
+  // sweep removed its hardcoded English-forcing (audit 2026-06-11 T5).
   const result = await withStepContext('Quick Concept Generation', 60, () =>
     createStructuredCompletion(
       'google' as AiProvider,
       GEMINI_FLASH,
-      quickPrompt.system,
+      withLocaleContract(quickPrompt.system, ctx.brandContextData.contentLanguage),
       quickPrompt.user,
       { maxTokens: 8000 },
       buildStrategyTracking(ctx, 'generateQuickConcept', 1),
@@ -1871,6 +2166,8 @@ export async function generateQuickConcept(
   } catch {
     throw new Error('Quick concept generation returned invalid JSON');
   }
+  // Single scrub point covers both the insight and the concept built below.
+  parsed = scrubConceptOutput(parsed, 'Quick Concept');
 
   const insight: HumanInsight = {
     insightStatement: (parsed.insightStatement as string) ?? '',
@@ -1909,6 +2206,62 @@ export async function generateQuickConcept(
 }
 
 // ─── Phase 3: Strategy Build (concept-first) ────────────────
+
+/**
+ * Architecture JSON contract appended to the strategy-build system prompt.
+ * Taken from the synthesizer prompt — the only prompt that spelled out the
+ * exact field names. The concept-driven build prompt describes the
+ * architecture only loosely, which yielded `phase`-keyed phases without
+ * `name` and flat personaRelevance objects (audit 2026-06-11 T3).
+ */
+const ARCHITECTURE_EXACT_SCHEMA_BLOCK = `CRITICAL JSON SCHEMA — the architecture object MUST use these EXACT field names:
+
+architecture: {
+  campaignType: string,
+  journeyPhases: [
+    {
+      id: string,           // lowercase slug, no spaces
+      name: string,          // display name for the phase
+      description: string,   // Brief description of the phase
+      orderIndex: number,    // 0-based position
+      goal: string,          // What to achieve in this phase
+      kpis: string[],
+      personaPhaseData: [    // One entry per persona — REQUIRED
+        {
+          personaId: string,
+          personaName: string,
+          needs: string[],
+          painPoints: string[],
+          mindset: string,
+          keyQuestion: string,
+          triggers: string[]
+        }
+      ],
+      touchpoints: [
+        {
+          channel: string,
+          contentType: string,
+          message: string,
+          role: "primary" | "supporting",
+          personaRelevance: [  // MUST be an ARRAY of objects, NOT a flat object
+            {
+              personaId: string,
+              relevance: "high" | "medium" | "low",
+              messagingAngle: string
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+IMPORTANT:
+- Use "name" (NOT "phase") for the journey phase display name
+- Use "id" for the phase identifier (lowercase slug)
+- personaRelevance MUST be an ARRAY of objects, NOT a flat object
+- personaPhaseData MUST be included — one entry per persona from the input
+- Every persona from the input MUST appear in EVERY phase's personaPhaseData`;
 
 /**
  * Builds the full strategy + architecture ON TOP of an approved creative concept.
@@ -1969,13 +2322,18 @@ Bisociation: ${approvedConcept.bisociationDomain.domain} — ${approvedConcept.b
   const rigor = ctx.pipelineConfig.modelRigor;
   const { model, provider } = await resolveModelForRigor(ctx.workspaceId, 'campaign-strategy', rigor);
 
-  const result = await withStepContext('Strategy Build', 180, () =>
+  // Thinking budget on top of the 16k output budget — nesting it inside
+  // left ~4k net output and hard-throws on truncation since Fase 1.
+  const thinking = thinkingForRigor(provider, 12_000, rigor);
+  const { maxTokens, timeoutMs } = budgetWithThinking(16_000, thinking);
+
+  const result = await withStepContext('Strategy Build', Math.round(timeoutMs / 1000), () =>
     createStructuredCompletion(
       provider,
       model,
-      prompt.system,
+      withLocaleContract(`${prompt.system}\n\n${ARCHITECTURE_EXACT_SCHEMA_BLOCK}`, ctx.brandContextData.contentLanguage),
       prompt.user,
-      { maxTokens: 16000, thinking: thinkingForRigor(provider, 12_000, rigor) },
+      { maxTokens, timeoutMs, thinking },
       buildStrategyTracking(ctx, 'buildConceptDrivenStrategy', 5),
     ),
   );
@@ -2002,7 +2360,12 @@ Bisociation: ${approvedConcept.bisociationDomain.domain} — ${approvedConcept.b
   if (!parsed.architecture) {
     console.warn('[buildConceptDrivenStrategy] AI did not return architecture object — journey phases will be generated in elaborateJourney()');
   }
-  const architecture = (parsed.architecture ?? { campaignType: 'strategic', journeyPhases: [] }) as ArchitectureLayer;
+  // Normalize like the regen path does — without it, `phase`-keyed phases
+  // without `name` flow into the store and later into the asset-planner
+  // prompt as literal "undefined" phase names (audit 2026-06-11 T3).
+  const architecture = normalizeArchitectureLayer(
+    (parsed.architecture ?? { campaignType: 'strategic', journeyPhases: [] }) as ArchitectureLayer,
+  );
 
   onProgress?.({ type: 'step', step: 1, name: 'Strategy Build', status: 'complete', label: 'Strategy built on approved concept' } as PipelineEvent);
 

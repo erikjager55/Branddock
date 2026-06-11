@@ -11,9 +11,7 @@
 // Legacy single-source analyzeTrends() and multi-source
 // analyzeMultipleSources() were removed 2026-05-17 (Cluster B
 // code-debt cleanup). Their prompt helpers in prompts/trend-analysis.ts
-// (buildTrendAnalysisSystemPrompt / buildTrendAnalysisUserPrompt /
-// buildMultiSourceSystemPrompt / buildMultiSourceUserPrompt) are also
-// dead code but live in a separate file; cleanup deferred.
+// were removed in the prompt-audit Fase 5 cleanup (2026-06-11).
 //
 // Includes dedup check against existing trends in workspace.
 // =============================================================

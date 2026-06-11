@@ -45,8 +45,13 @@ console.log('## buildLocaleInstruction');
   const bcp47 = buildLocaleInstruction('nl-BE');
   assert('BCP-47 nl-BE → tolerated, returns Dutch', bcp47.includes('Dutch'));
 
+  // Fase 4 (audit 2026-06-11): a non-empty code NEVER yields '' anymore —
+  // unknown codes get an explicit ISO-code fallback instruction.
   const unknown = buildLocaleInstruction('xx');
-  assert('unknown lang → empty', unknown === '');
+  assert("unknown lang → ISO-code fallback instruction", unknown.includes("ISO code 'xx'"));
+
+  const intlResolved = buildLocaleInstruction('sv');
+  assert('Intl-resolved lang (sv) → Swedish', intlResolved.includes('Swedish'));
 
   const undef = buildLocaleInstruction(undefined);
   assert('undefined → empty', undef === '');

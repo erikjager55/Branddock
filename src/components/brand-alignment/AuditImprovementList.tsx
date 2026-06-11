@@ -35,8 +35,11 @@ export function AuditImprovementList({ improvements, onNavigateToAsset }: Props)
 
       <div className="divide-y divide-gray-100">
         {improvements.map((imp, i) => {
-          const impact = IMPACT_CONFIG[imp.impact];
-          const effort = EFFORT_CONFIG[imp.effort];
+          // Audits persisted before AI-output validation may carry
+          // non-enum impact/effort values — fall back to MEDIUM
+          // instead of crashing the entire audit view.
+          const impact = IMPACT_CONFIG[imp.impact] ?? IMPACT_CONFIG.MEDIUM;
+          const effort = EFFORT_CONFIG[imp.effort] ?? EFFORT_CONFIG.MEDIUM;
           const ImpactIcon = impact.icon;
 
           return (

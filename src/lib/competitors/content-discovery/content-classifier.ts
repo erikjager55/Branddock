@@ -14,6 +14,7 @@ import {
   createStructuredCompletion,
   type AICallTracking,
 } from "@/lib/ai/exploration/ai-caller";
+import { fenceUntrustedContent } from "@/lib/ai/prompts/product-analysis";
 
 const MODEL = "claude-haiku-4-5-20251001";
 const TEMPERATURE = 0.3;
@@ -92,7 +93,7 @@ async function classifyViaHaiku(
       "anthropic",
       MODEL,
       SYSTEM_FORMAT,
-      `Classify these URLs:\n${urls.map((u) => `- ${u}`).join("\n")}`,
+      `Classify these URLs:\n${fenceUntrustedContent(urls.map((u) => `- ${u}`).join("\n"), "competitor sitemap/RSS URLs")}`,
       { temperature: TEMPERATURE, maxTokens: 1200, timeoutMs: TIMEOUT_MS },
       buildTracking(ctx, "src/lib/competitors/content-discovery/content-classifier.ts:classifyViaHaiku"),
     );
@@ -149,7 +150,7 @@ export async function tagThemes(
       "anthropic",
       MODEL,
       SYSTEM_THEMES,
-      `Tag these items:\n${items.map((i) => `- ${i.url}${i.title ? ` (${i.title})` : ""}`).join("\n")}`,
+      `Tag these items:\n${fenceUntrustedContent(items.map((i) => `- ${i.url}${i.title ? ` (${i.title})` : ""}`).join("\n"), "competitor RSS/sitemap items")}`,
       { temperature: TEMPERATURE, maxTokens: 1500, timeoutMs: TIMEOUT_MS },
       buildTracking(ctx, "src/lib/competitors/content-discovery/content-classifier.ts:tagThemes"),
     );

@@ -4,7 +4,12 @@
 // Proposal Template, Product Description
 // =============================================================
 
-export const PROMPT_VERSION = '1.2.0';
+// 2.0.0 (2026-06-11, prompt-audit C3/T2): product-description "3 tone
+// variations in one output" replaced by a single tone position (canvas
+// variant mechanism owns variation); metrics grounded to brief/brand context
+// (anti-fabrication); sales-deck few-shot bullets brought within their own
+// 10-word cap (were 13/12 words).
+export const PROMPT_VERSION = '2.0.0';
 
 import type { PromptTemplate } from './helpers';
 import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './helpers';
@@ -65,8 +70,8 @@ Here is an example of a well-crafted Slide 2:
 
 Title: Your Market Changed Last Quarter
 Bullets:
-- 67% of your buyers now research 3+ vendors before first contact (Gartner 2025)
-- Average sales cycle extended from 45 to 73 days in your segment
+- 67% of buyers research 3+ vendors before first contact
+- Sales cycles extended from 45 to 73 days
 - Your competitors are investing 2.3x more in brand strategy
 Speaker notes: "This is not meant to alarm you — it is meant to help you see the shift that is happening. The companies that recognize this shift early are the ones capturing market share right now. Let me show you what they are doing differently..."
 Visual direction: Split-screen timeline showing "Then vs Now" with key metrics highlighted in brand accent color.
@@ -82,6 +87,7 @@ Visual direction: Split-screen timeline showing "Then vs Now" with key metrics h
 
 ## COMPLETENESS CHECKLIST — VERIFY EVERY ITEM
 - [ ] Every claim is backed by a specific metric, example, or proof point
+- [ ] Every metric comes from the provided brief or brand context — if the source material has none, omit the number rather than invent one
 - [ ] CTA is specific (not "contact us" but "Book your 30-minute strategy call")
 - [ ] Content addresses the BUYER's problem, not the SELLER's features
 - [ ] Visual hierarchy is clear (someone can get the gist in 3 seconds per slide)
@@ -119,7 +125,7 @@ Follow this precise layout:
   - THE CHALLENGE: 3 bullet pain points, each starting with "You..." (e.g., "You spend 40+ hours per quarter on brand audits that go nowhere"). Starting with "You" forces customer-centric framing.
   - THE SOLUTION: 3-4 capabilities, each formatted as "verb + outcome" (e.g., "Automate brand consistency checks across 50+ touchpoints"). Never describe what the product IS — describe what it DOES for the buyer.
 - Right column (40% width):
-  - KEY METRICS: 3 proof points with specific numbers (e.g., "87% faster brand audits", "3.2x higher campaign ROI", "$1.4M average cost savings in year one"). Vague metrics are noise.
+  - KEY METRICS: 3 proof points with specific numbers (e.g., "87% faster brand audits", "3.2x higher campaign ROI", "$1.4M average cost savings in year one"). Vague metrics are noise. Use ONLY numbers from the provided brief or brand context — if none exist, use concrete qualitative proof points instead of invented metrics.
   - COMPETITIVE EDGE: 3 "Only we..." differentiators. Each must be verifiable and specific — not "Only we have the best technology" but "Only we provide real-time multi-channel brand monitoring across 12 platforms."
 - Bottom band: Ideal Customer Profile (one sentence describing exactly who this is for) + CTA (specific next step with contact information — name, email, phone, or calendar link).
 - Design notes: Suggest a 2-column layout with brand colors, recommend icon suggestions per section, and specify font size minimums.
@@ -136,12 +142,13 @@ Note how the header contains three elements: brand name, core promise with a tim
 2. NEVER use paragraphs — bullets only. This is a reference card, not a document. Paragraphs signal "read me later" and one-pagers that get read later get read never.
 3. NEVER badmouth competitors by name — say "Unlike traditional approaches" not "Unlike [Competitor X]." Named attacks in enterprise sales backfire because decision-makers often have existing relationships with those vendors.
 4. NEVER use font smaller than 9pt — if it does not fit, cut content, do not shrink text. Unreadable one-pagers are worse than no one-pager.
-5. NEVER skip proof points — claims without numbers are noise. Every differentiator needs a metric, case study reference, or specific example.
+5. NEVER skip proof points — claims without numbers are noise. Every differentiator needs a metric, case study reference, or specific example — sourced from the brief or brand context, never invented.
 6. NEVER use jargon without explanation — the one-pager may be shared beyond the initial contact to stakeholders who lack context.
 7. NEVER forget the CTA — a one-pager without a next step is a brochure, not a sales tool.
 
 ## COMPLETENESS CHECKLIST — VERIFY EVERY ITEM
 - [ ] Every claim is backed by a specific metric, example, or proof point
+- [ ] Every metric comes from the provided brief or brand context — if the source material has none, omit the number rather than invent one
 - [ ] CTA is specific (not "contact us" but "Book your 30-minute strategy call")
 - [ ] Content addresses the BUYER's problem, not the SELLER's features
 - [ ] Visual hierarchy is clear (someone can get the gist in 3 seconds)
@@ -211,6 +218,7 @@ Note how every sentence uses the client's own words and data.
 
 ## COMPLETENESS CHECKLIST — VERIFY EVERY ITEM
 - [ ] Every claim is backed by a specific metric, example, or proof point
+- [ ] Every metric comes from the provided brief or brand context — if the source material has none, omit the number rather than invent one
 - [ ] CTA is specific (not "contact us" but "Book your 30-minute strategy call")
 - [ ] Content addresses the BUYER's problem, not the SELLER's features
 - [ ] Visual hierarchy is clear (someone can get the gist in 3 seconds)
@@ -254,10 +262,11 @@ Generate all of the following elements:
 - Long description (150-250 words, 2-3 paragraphs): Opening benefit hook (first sentence must earn the second sentence), feature-benefit paragraphs (each paragraph leads with the benefit, not the feature), closing aspiration (connect the product to the buyer's desired identity).
 - Key Features (4-6 bullet points): Each bullet follows this format: "Feature name — which means [benefit]." The feature name is bold, the benefit is in plain text. Each bullet must be scannable in under 2 seconds.
 - Specifications (structured list): Technical details organized logically (dimensions, materials, compatibility, warranty, etc.). This section is for the informed buyer who has already decided emotionally and needs rational justification.
-- 3 Tone Variations with labels:
-  - Variation A "Premium" — Aspirational, sensory language, for luxury and premium positioning. Uses words that evoke quality, craftsmanship, and exclusivity. Shorter sentences. More white space in the mind.
-  - Variation B "Practical" — Clear, benefit-driven, for value-conscious buyers. Focuses on ROI, durability, and real-world performance. Longer sentences with more detail. Comparison-friendly language.
-  - Variation C "Technical" — Spec-focused, comparison-ready, for informed and B2B buyers. Leads with data, certifications, and benchmarks. Assumes the reader knows the category and wants to compare.
+- Tone position (applies to every element above — pick ONE, never deliver multiple versions in one output):
+  - "Premium" — Aspirational, sensory language, for luxury and premium positioning. Uses words that evoke quality, craftsmanship, and exclusivity. Shorter sentences. More white space in the mind.
+  - "Practical" — Clear, benefit-driven, for value-conscious buyers. Focuses on ROI, durability, and real-world performance. Longer sentences with more detail. Comparison-friendly language.
+  - "Technical" — Spec-focused, comparison-ready, for informed and B2B buyers. Leads with data, certifications, and benchmarks. Assumes the reader knows the category and wants to compare.
+  Choose the position that matches the brief's audience and positioning. Variation happens at the variant level: when the platform requests multiple variants, shift the tone position per variant — never stack multiple tone versions in a single output.
 - SEO block: Meta title (55-60 characters, includes primary keyword and brand name), meta description (150-155 characters, includes primary keyword and a call-to-action), 5 target keywords (1 primary, 2 secondary, 2 long-tail).
 
 ## FEW-SHOT EXAMPLE
@@ -276,19 +285,20 @@ The strong headline would outperform the weak headline by 3-5x in click-through 
 2. NEVER use "innovative" or "cutting-edge" — these words mean nothing because every product claims them. Show what it does instead: "Processes 10,000 brand touchpoints in 3 seconds" is innovative without saying the word.
 3. NEVER write descriptions longer than 250 words — description fatigue is real. After 250 words, conversion drops. Say more with less.
 4. NEVER skip SEO metadata — the description nobody finds is the description nobody reads. Meta title and description are the first impression for 70%+ of buyers.
-5. NEVER use the same tone for all audiences — premium, value, and technical buyers have fundamentally different decision-making processes. What persuades one repels another.
+5. NEVER mix tone positions — premium, value, and technical buyers have fundamentally different decision-making processes. Commit to the position that matches the brief's target audience; what persuades one repels another.
 6. NEVER use superlatives without proof — "the best" means nothing. "Rated #1 by 12,000 verified buyers" means everything.
 7. NEVER start multiple bullets with the same word — it signals lazy copywriting and reduces scannability.
 8. NEVER write a tagline that requires context to understand — it must work in isolation, on a billboard, in a tweet, on packaging.
 
 ## COMPLETENESS CHECKLIST — VERIFY EVERY ITEM
 - [ ] Every claim is backed by a specific metric, example, or proof point
+- [ ] Every metric comes from the provided brief or brand context — if the source material has none, omit the number rather than invent one
 - [ ] CTA is specific (not "contact us" but "Book your 30-minute strategy call")
 - [ ] Content addresses the BUYER's problem, not the SELLER's features
 - [ ] Visual hierarchy is clear (someone can get the gist in 3 seconds)
 - [ ] Competitive positioning is present but professional (no attacks)
 - [ ] No placeholder values, no [INSERT], no TBD, no "starting at $X"
-- [ ] All 3 tone variations are genuinely distinct — not the same copy with different adjectives
+- [ ] ONE tone position (premium, practical, or technical) is applied consistently across headline, descriptions, and features
 - [ ] SEO metadata is complete and within character limits`,
     ),
     buildUserPrompt: (params) =>
@@ -296,7 +306,7 @@ The strong headline would outperform the weak headline by 3-5x in click-through 
         params.userPrompt,
         params.context,
         params.settings,
-        'Format: Product description with 3 tone variations. Include short desc, long desc, features, specs, and SEO metadata.',
+        'Format: Product description in one tone position matched to the brief. Include short description, long description, key features, specifications, and SEO metadata.',
       ),
   },
 };

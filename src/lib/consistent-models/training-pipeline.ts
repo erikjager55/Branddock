@@ -18,6 +18,7 @@ import {
   uploadTrainingImages,
   startFalTraining,
   runFalGeneration,
+  foldNegativeIntoPrompt,
 } from '@/lib/integrations/fal/fal-client';
 import { getStorageProvider } from '@/lib/storage';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
@@ -309,13 +310,13 @@ export async function handleTrainingComplete(
         for (const prompt of prompts) {
           try {
             const result = await runFalGeneration(generatorEndpoint, {
-              prompt,
+              // LoRA endpoints have no negative_prompt input — fold instead.
+              prompt: foldNegativeIntoPrompt(generatorEndpoint, prompt, qualityConfig.negativePrompt),
               loras: [{ path: loraToUse, scale: qualityConfig.loraScale }],
               num_images: 1,
               num_inference_steps: qualityConfig.inferenceSteps,
               guidance_scale: qualityConfig.guidanceScale,
               output_format: 'png',
-              ...(qualityConfig.negativePrompt ? { negative_prompt: qualityConfig.negativePrompt } : {}),
             });
 
             if (result.images?.[0]) {
@@ -357,13 +358,17 @@ export async function handleTrainingComplete(
         for (const prompt of illustrationSamplePrompts) {
           try {
             const result = await runFalGeneration(generatorEndpoint, {
-              prompt,
+              // LoRA endpoints have no negative_prompt input — fold instead.
+              prompt: foldNegativeIntoPrompt(
+                generatorEndpoint,
+                prompt,
+                styleNegative ? `${qualityConfig.negativePrompt}, ${styleNegative}` : qualityConfig.negativePrompt,
+              ),
               loras: [{ path: loraToUse, scale: qualityConfig.loraScale }],
               num_images: 1,
               num_inference_steps: qualityConfig.inferenceSteps,
               guidance_scale: qualityConfig.guidanceScale,
               output_format: 'png',
-              ...(styleNegative ? { negative_prompt: `${qualityConfig.negativePrompt}, ${styleNegative}` } : { negative_prompt: qualityConfig.negativePrompt }),
             });
 
             if (result.images?.[0]) {
@@ -388,13 +393,13 @@ export async function handleTrainingComplete(
         const qualityConfig = LORA_QUALITY_CONFIG[model.type];
         if (samplePrompt) {
           const result = await runFalGeneration(generatorEndpoint, {
-            prompt: samplePrompt,
+            // LoRA endpoints have no negative_prompt input — fold instead.
+            prompt: foldNegativeIntoPrompt(generatorEndpoint, samplePrompt, qualityConfig.negativePrompt),
             loras: [{ path: loraToUse, scale: qualityConfig.loraScale }],
             num_images: NUM_SAMPLE_IMAGES_DEFAULT,
             num_inference_steps: qualityConfig.inferenceSteps,
             guidance_scale: qualityConfig.guidanceScale,
             output_format: 'png',
-            ...(qualityConfig.negativePrompt ? { negative_prompt: qualityConfig.negativePrompt } : {}),
           });
 
           if (result.images && result.images.length > 0) {

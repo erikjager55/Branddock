@@ -29,6 +29,21 @@ const globalForAnthropic = globalThis as unknown as {
   anthropic: Anthropic | undefined;
 };
 
+/**
+ * Whether the `temperature` parameter must be omitted for the given Claude
+ * model. Anthropic deprecated `temperature` on newer model generations
+ * (2026-05-24 gotcha: API returns 400 `temperature is deprecated for this
+ * model`). Live-API verified 2026-06-11: only opus-4-7+ actually 400s today;
+ * sonnet-4-6 still accepts temperature — the sonnet/opus-5 matches are a
+ * precaution against the announced deprecation, not an active breakage.
+ *
+ * Central guard for all Claude call paths (T7, prompt-audit 2026-06-11) —
+ * do not duplicate this regex inline.
+ */
+export function isTempDeprecatedModel(model: string): boolean {
+  return /opus-4-[789]|opus-5|sonnet-4-[6789]|sonnet-5/.test(model);
+}
+
 function getClient(): Anthropic {
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error(
@@ -94,11 +109,7 @@ export const anthropicClient = {
   ): Promise<AnthropicCompletionResult> {
     const useCase = options?.useCase ?? 'CHAT';
     const model = options?.model ?? 'claude-sonnet-4-5-20250929';
-    // 2026-05-24: Opus 4.7+ + Sonnet 4.6+ hebben `temperature` deprecated
-    // (Anthropic 400 `temperature is deprecated for this model`). Skip de
-    // param voor die models; oudere models behouden temperature-control.
-    const isTempDeprecated = /opus-4-[789]|opus-5|sonnet-4-[6789]|sonnet-5/.test(model);
-    const temperature = isTempDeprecated
+    const temperature = isTempDeprecatedModel(model)
       ? undefined
       : (options?.temperature ?? aiConfig.temperature(useCase));
     const max_tokens = options?.maxTokens ?? aiConfig.maxTokens(useCase);

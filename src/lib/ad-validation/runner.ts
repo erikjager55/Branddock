@@ -36,6 +36,45 @@ export class AdQualityError extends Error {
   }
 }
 
+/**
+ * Load the text-component contents for one variant of a deliverable,
+ * keyed by component-group name (`variantGroup`, falling back to
+ * `componentType`) — the same names the L1-rules and L2-judges read
+ * (e.g. `headline`, `description-1`, `body`).
+ *
+ * Mirrors the proven variant-component query in canvas-orchestrator:
+ * variants are selected via `variantIndex` (NOT `groupIndex`, which is
+ * the position within sequence/slide groups) and non-text components
+ * are excluded by `componentType` (there is no 'TEXT' componentType —
+ * the column holds per-field type names).
+ */
+async function loadVariantGroups(
+  deliverableId: string,
+  variantIndex: number,
+): Promise<GroupContents> {
+  const components = await prisma.deliverableComponent.findMany({
+    where: {
+      deliverableId,
+      variantIndex,
+      componentType: { notIn: ['image', 'video', 'voiceover'] },
+      generatedContent: { not: null },
+    },
+    select: {
+      componentType: true,
+      variantGroup: true,
+      generatedContent: true,
+    },
+  });
+
+  const groups: GroupContents = new Map();
+  for (const c of components) {
+    if (c.generatedContent && c.generatedContent.trim().length > 0) {
+      groups.set(c.variantGroup ?? c.componentType, c.generatedContent);
+    }
+  }
+  return groups;
+}
+
 export async function runAdQualityValidation(
   deliverableId: string,
   variantIndex: number,
@@ -70,38 +109,37 @@ export async function runAdQualityValidation(
   // + platform/format). Cached 5-min for brand.
   const stack = await assembleCanvasContext(deliverableId, workspaceId);
 
-  // Load DeliverableComponent rows for the requested variant. We use
-  // groupIndex == variantIndex to select per-variant components.
-  const components = await prisma.deliverableComponent.findMany({
-    where: {
-      deliverableId,
-      componentType: 'TEXT',
-      groupIndex: variantIndex,
-    },
-    select: {
-      groupType: true,
-      generatedContent: true,
-    },
-  });
-
-  const groups: GroupContents = new Map();
-  for (const c of components) {
-    if (c.generatedContent && c.generatedContent.trim().length > 0) {
-      groups.set(c.groupType, c.generatedContent);
-    }
+  // Cache self-healing note: contentHash serializes ctx.groups, so any
+  // historic score rows persisted while this query was broken (empty
+  // groups → judges scored "(empty)") hash differently from real
+  // content. The idempotency-lookup below misses them, a fresh score
+  // is created, and the GET route's newest-generatedAt dedup shadows
+  // the orphaned empty-score rows.
+  const groups = await loadVariantGroups(deliverableId, variantIndex);
+  if (groups.size === 0) {
+    throw new AdQualityError(
+      `Deliverable ${deliverableId} variant ${variantIndex} has no generated text components to score`,
+      422,
+    );
   }
 
   // Image is een aparte componentType — count whether any selected
-  // hero-image exists for this deliverable.
+  // hero-image exists for this deliverable. The judges' image-direction
+  // input lives on that row too (imagePromptUsed/visualBrief), NOT in
+  // generatedContent — groups.get('image') was structurally empty
+  // (audit 2026-06-11 follow-up of C7).
   const heroImage = await prisma.deliverableComponent.findFirst({
     where: {
       deliverableId,
       componentType: 'image',
       imageUrl: { not: null },
     },
-    select: { id: true },
+    select: { id: true, imagePromptUsed: true },
   });
   const hasImage = !!heroImage;
+  // visualBrief is deliberately NOT a fallback: it holds raw JSON, which
+  // would inject brace-noise into the judge prompts.
+  const imageDirection = heroImage?.imagePromptUsed?.trim() || null;
 
   // Primary keyword from contentTypeInputs (search-ad only)
   const primaryKeyword =
@@ -123,6 +161,7 @@ export async function runAdQualityValidation(
     componentTemplate,
     brandContext: stack.brand,
     hasImage,
+    imageDirection,
   };
 
   // Idempotency check — same hash means we've scored this exact input

@@ -4,7 +4,12 @@
 // Promo Video Script, Webinar Outline, Podcast Outline
 // =============================================================
 
-export const PROMPT_VERSION = '1.2.0';
+// 2.0.0 (2026-06-11, prompt-audit C3/T2): dual-duration demands removed —
+// explainer (60s+120s) and promo (15s+60s) now produce ONE script for the
+// duration requested in the brief (canvas variant mechanism owns variation;
+// promo maxWords 200 could never fit two cuts anyway). Both duration
+// skeletons remain as pick-one references; section names unchanged.
+export const PROMPT_VERSION = '2.0.0';
 
 import type { PromptTemplate } from './helpers';
 import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './helpers';
@@ -50,6 +55,7 @@ Structure every explainer using this arc:
 - NOW WHAT (clear CTA with specific next action)
 
 ## STRUCTURE SKELETON WITH TIMESTAMPS AND WORD COUNTS
+Write ONE script for the duration requested in the brief (default: 60 seconds) using the matching skeleton below — never deliver both durations in one output.
 
 ### 60-Second Version
 - **Hook question (0-5s):** 15 words voiceover. [VISUAL: problem visualization — the viewer should immediately recognize their own pain]
@@ -101,7 +107,7 @@ Before finalizing, verify:
 - [ ] Timestamps are realistic (count the words: approximately 150 words per minute for voiceover)
 - [ ] CTA is specific, visible, and actionable
 - [ ] Music and mood direction is specified per section
-- [ ] Both 60-second and 120-second versions are provided
+- [ ] The script matches the single duration requested in the brief (default 60 seconds)
 - [ ] No shot exceeds 7 seconds without a visual change`,
     ),
     buildUserPrompt: (params) =>
@@ -109,7 +115,7 @@ Before finalizing, verify:
         params.userPrompt,
         params.context,
         params.settings,
-        'Format: Explainer video script with timestamps, [VISUAL] directions, and (VOICEOVER) text. Provide both 60s and 120s versions. Include music/mood direction per section.',
+        'Format: Explainer video script with timestamps, [VISUAL] directions, and (VOICEOVER) text. One version: 60s by default, 120s only if the brief requests it. Include music/mood direction per section.',
       ),
   },
 
@@ -222,7 +228,7 @@ Before finalizing, verify:
   'promo-video': {
     systemPrompt: buildBaseSystemPrompt(
       `## EXPERT PERSONA
-You are a commercial director and scriptwriter with experience at top agencies including BBDO, Wieden+Kennedy, and Droga5. You have produced Super Bowl-level spots on startup budgets. You understand that a great promo video is not a compressed explainer — it is an emotional experience that happens to feature a brand. Your work has won Cannes Lions and Effie Awards because you know that information without emotion is forgettable, but emotion without information is purposeless. You bring both.
+You are a commercial director and scriptwriter with experience at top agencies including BBDO, Wieden+Kennedy, and Droga5. You have produced Super Bowl-level spots on startup budgets. You understand that a great promo video is not a compressed explainer — it is an emotional experience that happens to feature a brand. Your work has earned the highest international creative honors because you know that information without emotion is forgettable, but emotion without information is purposeless. You bring both.
 
 ## METHODOLOGY: PATTERN-INTERRUPT
 Apply the PATTERN-INTERRUPT method for all promo video scripts:
@@ -244,6 +250,7 @@ Then: EMOTION (not information) drives the first 15 seconds. Nobody remembers sp
 - Key moments where music should hit (drops, builds, silences)
 
 ## STRUCTURE SKELETON WITH TIMESTAMPS
+Write ONE script, conceived from scratch for the duration requested in the brief (default: 60 seconds) — never deliver both durations in one output.
 
 ### 15-Second Version
 - **Hook / Pattern Interrupt (0-2s):** No voiceover. [VISUAL: something that stops the scroll — unexpected, intriguing, or visually striking]. Music: high energy, 120+ BPM, immediate impact.
@@ -291,7 +298,7 @@ Before finalizing, verify:
 - [ ] Timestamps are realistic (count the words: approximately 150 words per minute for VO)
 - [ ] CTA is specific, visible on screen for 3+ seconds, and actionable
 - [ ] Music direction is specified per section with BPM, mood, and instrumentation
-- [ ] Both 15-second and 60-second versions are provided, each written from scratch
+- [ ] The script is conceived from scratch for the single requested duration (default 60 seconds)
 - [ ] Cut rhythm varies throughout and is specified per section`,
     ),
     buildUserPrompt: (params) =>
@@ -299,7 +306,7 @@ Before finalizing, verify:
         params.userPrompt,
         params.context,
         params.settings,
-        'Format: Promo video script with timestamps, [VISUAL] directions (including camera angles), (VOICEOVER), and music/mood direction with BPM. Provide both 15s and 60s versions written from scratch.',
+        'Format: Promo video script with timestamps, [VISUAL] directions (including camera angles), (VOICEOVER), and music/mood direction with BPM. One version — 60s by default, 15s only if the brief requests it — written from scratch for that duration.',
       ),
   },
 

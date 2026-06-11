@@ -2,8 +2,9 @@
 // Voice Analysis prompts (Claude structured output)
 //
 // Two prompts:
-//   - SYSTEM_PROMPT: durable role + output contract
-//   - buildUserPrompt(corpus, channelHints): the per-call body
+//   - buildVoiceAnalysisSystemPrompt(language): durable role + output
+//     contract + workspace-language guard
+//   - buildVoiceAnalysisUserPrompt(input): the per-call body
 //
 // Output shape (validated as VoiceAnalysisResult on the server):
 //
@@ -19,7 +20,9 @@
 //   }
 // =============================================================
 
-export const VOICE_ANALYSIS_SYSTEM = `You are a senior brand strategist and editor specializing in verbal identity.
+import { buildLocaleSystemFragment } from "@/lib/ai/locale-instruction";
+
+const VOICE_ANALYSIS_SYSTEM = `You are a senior brand strategist and editor specializing in verbal identity.
 
 Your job: read long-form brand text and extract a compact, actionable voice profile.
 
@@ -39,6 +42,30 @@ Rules:
 - Channel tones describe how the voice flexes per medium. Be specific about what
   changes (rhythm, length, formality, density).
 - Output strict JSON matching the schema. No prose around it.`;
+
+/**
+ * Build the voice-analysis system prompt with the workspace output-language
+ * guard appended.
+ *
+ * Descriptive fields (voiceDescription, channelTones, wordsWeAvoid,
+ * antiPatterns, rationale) must follow the workspace content language — that
+ * is what the Voice DNA tab renders. Verbatim corpus fields are exempt:
+ * translating them would break the extraction contract.
+ *
+ * @param language ISO 639-1 workspace content language (BCP-47 tolerated).
+ */
+export function buildVoiceAnalysisSystemPrompt(language: string | undefined | null): string {
+  const localeFragment = buildLocaleSystemFragment(language);
+  if (!localeFragment) return VOICE_ANALYSIS_SYSTEM;
+
+  return `${VOICE_ANALYSIS_SYSTEM}
+
+${localeFragment}
+Exceptions to the language rule:
+- "writingSamples" stay VERBATIM in the corpus's original language — never translate them.
+- "wordsWeUse" are pulled from the corpus — keep the exact corpus spelling.
+- JSON keys stay in English exactly as specified in the schema.`;
+}
 
 interface PromptInput {
   brandName?: string | null;
