@@ -24,6 +24,10 @@ export interface SimilarMediaAsset {
   aiDescription: string | null;
   similarity: number;
   mediaType: string;
+  /** MediaCategory (HERO_IMAGE/LIFESTYLE/…) — null bij ongeclassificeerd. */
+  category: string | null;
+  /** dam-auto-tagger tags incl. 'auth:PHOTO_REAL' / 'style:…'-prefixen. */
+  aiTags: string[];
 }
 
 export interface FindSimilarOptions {
@@ -33,6 +37,9 @@ export interface FindSimilarOptions {
   limit?: number;
   /** Filter op specifieke mediaType (IMAGE / VIDEO / etc.). Default IMAGE. */
   mediaType?: string;
+  /** MediaCategory-waarden die NOOIT mogen matchen (bv. LOGO/ICON voor het
+   *  library-first feature-pad). Additief — bestaande callers ongewijzigd. */
+  excludeCategories?: string[];
 }
 
 /**
@@ -101,7 +108,7 @@ export async function findSimilarMediaAssets(
   queryText: string,
   options: FindSimilarOptions = {},
 ): Promise<SimilarMediaAsset[]> {
-  const { threshold = 0.75, limit = 6, mediaType = "IMAGE" } = options;
+  const { threshold = 0.75, limit = 6, mediaType = "IMAGE", excludeCategories = [] } = options;
 
   const trimmed = queryText.trim();
   if (trimmed.length < 8) return [];
@@ -130,6 +137,8 @@ export async function findSimilarMediaAssets(
     aiDescription: string | null;
     distance: number;
     mediaType: string;
+    category: string | null;
+    aiTags: string[] | null;
   };
 
   const rows = await prisma.$queryRawUnsafe<Row[]>(
@@ -140,13 +149,16 @@ export async function findSimilarMediaAssets(
        "thumbnailUrl",
        "aiDescription",
        ("embedding" <=> $1::vector) AS "distance",
-       "mediaType"
+       "mediaType",
+       "category"::text AS "category",
+       "aiTags"
      FROM "MediaAsset"
      WHERE "workspaceId" = $2
        AND "isArchived" = false
        AND "mediaType" = $3::"MediaType"
        AND "embedding" IS NOT NULL
        AND ("embedding" <=> $1::vector) <= $4
+       AND ($6::text[] IS NULL OR "category" IS NULL OR NOT ("category"::text = ANY($6::text[])))
      ORDER BY "embedding" <=> $1::vector
      LIMIT $5`,
     literal,
@@ -154,6 +166,7 @@ export async function findSimilarMediaAssets(
     mediaType,
     distanceCutoff,
     limit,
+    excludeCategories.length > 0 ? excludeCategories : null,
   );
 
   return rows.map((r) => ({
@@ -163,6 +176,8 @@ export async function findSimilarMediaAssets(
     thumbnailUrl: r.thumbnailUrl,
     aiDescription: r.aiDescription,
     mediaType: r.mediaType,
+    category: r.category,
+    aiTags: r.aiTags ?? [],
     similarity: 1 - Number(r.distance),
   }));
 }

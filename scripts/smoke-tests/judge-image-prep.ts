@@ -30,6 +30,17 @@ async function main() {
   assert(`gedownscaled (≤1024px, was 2600): ${meta.width}x${meta.height}`, (meta.width ?? 9999) <= 1024 && (meta.height ?? 9999) <= 1024);
   assert("ruim onder Anthropic-limiet", bigOut.buffer.length < 4_000_000);
 
+  // webp ≤4MB → passthrough mét correct mediaType (review 2026-06-11: png-label
+  // op webp = Anthropic-reject = judge stil null + hele diversity-set kapot)
+  const webp = await sharp({ create: { width: 320, height: 240, channels: 3, background: { r: 10, g: 120, b: 80 } } }).webp().toBuffer();
+  const webpOut = await prepareJudgeImage(webp);
+  assert("webp passthrough met webp-mediaType", webpOut.mediaType === "image/webp" && webpOut.buffer.equals(webp));
+
+  // onbekend format (gif) → geconverteerd naar jpeg
+  const gif = await sharp({ create: { width: 64, height: 64, channels: 3, background: { r: 5, g: 5, b: 5 } } }).gif().toBuffer();
+  const gifOut = await prepareJudgeImage(gif);
+  assert("gif → jpeg-conversie", gifOut.mediaType === "image/jpeg");
+
   console.log(`\n${pass} PASS, ${fail} FAIL`);
   if (fail > 0) process.exit(1);
 }

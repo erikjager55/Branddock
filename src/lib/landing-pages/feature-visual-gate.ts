@@ -48,6 +48,11 @@ export function decideFeatureRegenerations(
   slots: FeatureGateSlot[],
   duplicatePairs: Array<[number, number]>,
   budget: number = MAX_REGENERATIONS_PER_PAGE,
+  /** Indices die nooit duplicate-verliezer mogen worden (library-first: een
+   *  échte merkfoto vervangen door AI keert de feature-premisse om — review
+   *  2026-06-11). Bij een beschermd paar verliest de partner; zijn beide
+   *  beschermd, dan wordt niets geregenereerd voor dat paar. */
+  protectedIndices: ReadonlySet<number> = new Set(),
 ): FeatureGateDecision {
   const scoreByIndex = new Map<number, number | null>(
     slots.map((s) => [s.index, s.coherenceScore]),
@@ -62,10 +67,18 @@ export function decideFeatureRegenerations(
 
   for (const [a, b] of duplicatePairs) {
     if (!scoreByIndex.has(a) || !scoreByIndex.has(b)) continue;
-    const sa = scoreByIndex.get(a) ?? null;
-    const sb = scoreByIndex.get(b) ?? null;
-    // Laagste coherence verliest; tie/onbekend → tweede lid (b).
-    const loser = sa !== null && sb !== null && sa !== sb ? (sa < sb ? a : b) : b;
+    const aProt = protectedIndices.has(a);
+    const bProt = protectedIndices.has(b);
+    if (aProt && bProt) continue;
+    let loser: number;
+    if (aProt) loser = b;
+    else if (bProt) loser = a;
+    else {
+      const sa = scoreByIndex.get(a) ?? null;
+      const sb = scoreByIndex.get(b) ?? null;
+      // Laagste coherence verliest; tie/onbekend → tweede lid (b).
+      loser = sa !== null && sb !== null && sa !== sb ? (sa < sb ? a : b) : b;
+    }
     if (!reasons.has(loser)) reasons.set(loser, "duplicate");
   }
 

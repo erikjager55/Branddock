@@ -25,6 +25,14 @@ function assert(label: string, cond: boolean) {
 }
 
 async function main() {
+  // Orphan-guard is cwd-gebonden: vanuit een verse worktree zonder
+  // public/uploads worden ALLE kandidaten als orphan geskipt en lijkt de
+  // golden-set leeg (review 2026-06-11) — run vanuit branddock-app.
+  const { existsSync } = await import("node:fs");
+  if (!existsSync("public/uploads")) {
+    console.warn("WAARSCHUWING: public/uploads ontbreekt in deze cwd — matcher-resultaten zijn dan onbetrouwbaar (alles orphan). Run vanuit de branddock-app checkout.");
+  }
+
   const { prisma } = await import("../../src/lib/prisma");
   const { assembleCanvasContext } = await import("../../src/lib/ai/canvas-context");
   const { buildFeatureVisualPrompts } = await import("../../src/lib/landing-pages/feature-visual-prompts");
@@ -72,6 +80,19 @@ async function main() {
       settings?.structuredVariant?.hero?.headline ?? "",
       { brand: stack.brand, brandTokens: stack.brandTokens },
     );
+
+    // Library-first rapportage (tasks/lp-library-first-matching): welke slots
+    // zou de matcher dekken, en waarmee?
+    const { matchLibraryImagesToSlots } = await import("../../src/lib/landing-pages/source-image-matcher");
+    const matchRes = await matchLibraryImagesToSlots(
+      workspace.id,
+      slots.map((sl) => ({ index: sl.index, query: (sl.imageBrief as { subject?: string } | null)?.subject?.trim() || `${sl.heading}. ${sl.body}` })),
+    );
+    for (const [idx, m] of matchRes.assignments) {
+      console.log(`  match slot ${idx}: ${m.fileUrl.slice(0, 70)} (sim ${m.similarity.toFixed(2)}, ${m.category ?? "?"})`);
+    }
+    if (matchRes.assignments.size === 0) console.log("  library-first: geen matches (AI-pad voor alle slots)");
+    if (matchRes.diagnostics.length) console.log(`  diagnostiek: ${matchRes.diagnostics.join(" | ")}`);
 
     built.forEach((b) => {
       const briefed = Boolean(slots[built.indexOf(b)]?.imageBrief);
