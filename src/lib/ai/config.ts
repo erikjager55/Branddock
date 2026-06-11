@@ -22,15 +22,18 @@ const TEMPERATURE: Record<AiUseCase, number> = {
 const MAX_TOKENS: Record<AiUseCase, number> = {
   ANALYSIS: 4096,
   CREATIVE: 2048,
-  CHAT: 1024,
+  // 1024 left no headroom now that clients throw on truncation instead of
+  // silently clipping (prompt-audit 2026-06-11): a long persona answer
+  // would lose the whole response to the fallback path.
+  CHAT: 2048,
   STRUCTURED: 2048,
 };
 
 const TIMEOUT_MS: Record<AiUseCase, number> = {
   ANALYSIS: 120_000,
   CREATIVE: 60_000,
-  CHAT: 30_000,
-  STRUCTURED: 30_000,
+  CHAT: 50_000, // timeoutForTokens(2048) — keep coupled to MAX_TOKENS.CHAT
+  STRUCTURED: 50_000,
 };
 
 // ─── Config object ─────────────────────────────────────────

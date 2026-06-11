@@ -127,27 +127,59 @@ export function sanitizeUserInput(input: string, maxLength: number = USER_INPUT_
   return stripped.length > maxLength ? stripped.slice(0, maxLength) : stripped;
 }
 
-/**
- * Conservative per-component-type token cap. Body/long-form components need
- * more headroom; single-line types like headlines + meta-descriptions stay tight.
- *
- * Exact match (Set lookup) — substring matching previously over-allocated for
- * meta_description / ad description (~150 chars) which only need 2048 tokens.
- */
-const LONG_FORM_TYPES: ReadonlySet<string> = new Set([
-  'body_text',
-  'article',
-  'blog_body',
-  'long_form',
-  'newsletter_body',
-  'whitepaper_body',
-  'case_study_body',
-  'press_release_body',
-  'caption_long',
+// DeliverableComponent.componentType carries two vocabularies:
+// - component-registry snake_case spec types ('body_text', 'headline', …)
+//   written by the pipeline initialize route;
+// - content-template kebab-case group names ('body', 'body-sections',
+//   'introduction', …) written by the canvas orchestrator
+//   (componentType: component.group).
+// Budget matching must cover both, or long-form bodies (1000-4000+ words
+// demanded by their prompts) get truncated mid-sentence and persisted silently.
+
+/** Output budget for full bodies / long-form documents (≥ ~5000 words headroom). */
+const LONG_FORM_BUDGET = 8192;
+/** Output budget for section-level chunks of a larger piece. */
+const SECTION_BUDGET = 4096;
+/** Tight budget for short single-line fields (headline / cta / subject / meta). */
+const DEFAULT_BUDGET = 2048;
+
+/** Body-level component names from both vocabularies. */
+const LONG_FORM_EXACT: ReadonlySet<string> = new Set([
+  'body_text', // registry: blog/article/whitepaper/case-study/email body
+  'body', // template group: generic body
+  'body-sections', // template group: article/whitepaper main sections
+  'content', // template group: generic page content
 ]);
 
+/** Section-level component names: substantial but bounded chunks. */
+const SECTION_EXACT: ReadonlySet<string> = new Set([
+  'introduction',
+  'conclusion',
+  'outline',
+  'talking_points',
+  'video_script', // registry: one script section per component
+  'show-notes',
+]);
+
+/**
+ * Per-component-type output-token budget for studio component generation.
+ *
+ * Tiers: body-like components get long-form headroom, section-like components
+ * a mid tier, and everything else (headline, cta, subject_line, hashtags,
+ * meta_description, ad copy, …) stays on a tight default. The body substring
+ * match deliberately covers compounds from both vocabularies ('body-script',
+ * 'script-body', 'newsletter_body'); it does NOT match 'description' fields,
+ * which previously over-allocated under broader substring matching.
+ */
 export function getMaxTokensForComponent(componentType: string): number {
-  return LONG_FORM_TYPES.has(componentType) ? 8192 : 2048;
+  const normalized = componentType.toLowerCase();
+  if (LONG_FORM_EXACT.has(normalized) || normalized.includes('body')) {
+    return LONG_FORM_BUDGET;
+  }
+  if (SECTION_EXACT.has(normalized)) {
+    return SECTION_BUDGET;
+  }
+  return DEFAULT_BUDGET;
 }
 
 // Re-export so route code can use the same buildContextBlock helper if needed

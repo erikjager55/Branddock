@@ -160,9 +160,9 @@ Generate 3 fix options. For options A and B, include specific changes that can b
 For each change, specify:
 - entityType: The Prisma model name ("Persona", "Product", "BrandAsset", "BusinessStrategy", "Brandstyle", "DetectedTrend")
 - entityId: The id of the entity to update
-- field: The field to update (e.g., "description", "goals", "content"). For JSON framework fields use dot notation like "frameworkData.toneDimensions"
+- field: The field to update (e.g., "description", "goals", "content"). For JSON framework fields use dot notation like "frameworkData.toneDimensions" — only that sub-field is updated, sibling keys are preserved
 - currentValue: The current value (as a string)
-- newValue: The proposed new value (as a string)
+- newValue: The proposed new value (as a string). For structured sub-fields (objects or arrays) provide it as a JSON string
 
 Respond with valid JSON only:
 {

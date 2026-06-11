@@ -42,7 +42,7 @@ export async function POST(
     // (single-component generate/regenerate) running concurrently on the same component.
     const pendingComponents = await prisma.deliverableComponent.findMany({
       where: { deliverableId, status: { in: ['PENDING', 'NEEDS_REVISION'] } },
-      orderBy: { order: 'asc' },
+      orderBy: [{ order: 'asc' }, { variantIndex: 'asc' }, { id: 'asc' }],
     });
 
     if (pendingComponents.length === 0) {

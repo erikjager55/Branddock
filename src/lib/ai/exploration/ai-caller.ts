@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenAI } from '@google/genai';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
+import { timeoutForTokens } from '@/lib/ai/call-budget';
 
 import type {
   AICallPayload,
@@ -79,6 +80,10 @@ export async function generateAIResponse(
   tracking?: AICallTracking,
 ): Promise<string> {
   const startTime = Date.now();
+  // 120s floor: this generic path serves workspace-configurable models, and
+  // Opus-class generation (~30 tok/s) outruns the 10ms/token rule-of-thumb
+  // at small budgets. Previously these calls ran on SDK defaults (~600s).
+  const timeoutMs = Math.max(timeoutForTokens(maxTokens), 120_000);
   let traceId: string | null = null;
 
   if (tracking) {
@@ -96,14 +101,25 @@ export async function generateAIResponse(
   try {
     if (provider === 'anthropic') {
       const client = getAnthropicClient();
-      const response = await client.messages.create({
-        model,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
-        temperature,
-        max_tokens: maxTokens,
-      });
+      const response = await client.messages.create(
+        {
+          model,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userPrompt }],
+          temperature,
+          max_tokens: maxTokens,
+        },
+        { timeout: timeoutMs },
+      );
       const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
+
+      if (response.stop_reason === 'max_tokens') {
+        console.error(`[ai-caller] Claude response truncated (max_tokens reached). Model: ${model}, maxTokens: ${maxTokens}, output length: ${text.length} chars. Increase maxTokens to avoid this.`);
+        throw new Error(
+          `Claude response was truncated (hit ${maxTokens} token limit). The output is incomplete. ` +
+          `Try increasing maxTokens or simplifying the prompt. Output was ${text.length} chars.`
+        );
+      }
 
       if (traceId) {
         const usage = response.usage;
@@ -130,9 +146,18 @@ export async function generateAIResponse(
           systemInstruction: systemPrompt,
           temperature,
           maxOutputTokens: maxTokens,
+          abortSignal: AbortSignal.timeout(timeoutMs),
         },
       });
       const text = response.text?.trim() ?? '';
+
+      if (response.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+        console.error(`[ai-caller] Gemini response truncated (MAX_TOKENS). Model: ${model}, maxTokens: ${maxTokens}, output length: ${text.length} chars. Increase maxTokens to avoid this.`);
+        throw new Error(
+          `Gemini response was truncated (hit ${maxTokens} token limit). The output is incomplete. ` +
+          `Try increasing maxTokens or simplifying the prompt. Output was ${text.length} chars.`
+        );
+      }
 
       if (traceId) {
         const usage = (response as unknown as { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } }).usageMetadata;
@@ -155,16 +180,27 @@ export async function generateAIResponse(
 
     // OpenAI
     const client = getOpenAIClient();
-    const response = await client.chat.completions.create({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature,
-      max_completion_tokens: maxTokens,
-    });
+    const response = await client.chat.completions.create(
+      {
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature,
+        max_completion_tokens: maxTokens,
+      },
+      { timeout: timeoutMs },
+    );
     const text = response.choices[0]?.message?.content ?? '';
+
+    if (response.choices[0]?.finish_reason === 'length') {
+      console.error(`[ai-caller] OpenAI response truncated (finish_reason=length). Model: ${model}, maxTokens: ${maxTokens}, output length: ${text.length} chars. Increase maxTokens to avoid this.`);
+      throw new Error(
+        `OpenAI response was truncated (hit ${maxTokens} token limit). The output is incomplete. ` +
+        `Try increasing maxTokens or simplifying the prompt. Output was ${text.length} chars.`
+      );
+    }
 
     if (traceId) {
       await tryTrackComplete(traceId, {
@@ -228,6 +264,16 @@ export async function createOpenAIStructuredCompletion<T>(
   const text = response.choices[0]?.message?.content ?? '';
   if (!text) {
     throw new Error(`Empty response from OpenAI ${model} (structured completion)`);
+  }
+
+  // Truncated JSON would otherwise surface as an opaque parse error
+  // that hides the real cause (token budget, not malformed output).
+  if (response.choices[0]?.finish_reason === 'length') {
+    console.error(`[ai-caller] OpenAI structured response truncated (finish_reason=length). Model: ${model}, maxTokens: ${maxTokens}, output length: ${text.length} chars. Increase maxTokens to avoid this.`);
+    throw new Error(
+      `OpenAI response was truncated (hit ${maxTokens} token limit). ` +
+      `Try increasing maxTokens or simplifying the prompt. Output was ${text.length} chars.`
+    );
   }
 
   try {
@@ -701,6 +747,16 @@ export async function createStructuredCompletion<T>(
         const text = response.choices[0]?.message?.content ?? '';
         if (!text) {
           throw new Error(`Empty response from OpenAI ${model} (structured completion)`);
+        }
+
+        // Truncated JSON would otherwise surface as an opaque parse error
+        // that hides the real cause (token budget, not malformed output).
+        if (response.choices[0]?.finish_reason === 'length') {
+          console.error(`[ai-caller] OpenAI structured response truncated (finish_reason=length). Model: ${model}, maxTokens: ${maxTokens}, output length: ${text.length} chars. Increase maxTokens to avoid this.`);
+          throw new Error(
+            `OpenAI response was truncated (hit ${maxTokens} token limit). ` +
+            `Try increasing maxTokens or simplifying the prompt. Output was ${text.length} chars.`
+          );
         }
 
         let parsed: T;

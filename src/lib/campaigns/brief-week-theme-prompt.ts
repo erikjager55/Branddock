@@ -3,8 +3,11 @@
  * campaign-brief. Genereert per-week-thema's afgeleid uit campagne-strategie,
  * persona's en asset-distributie. Geen persistentie: één AI-call per render.
  *
- * Hard timeout van 6 seconden via `timeoutMs` in `anthropicClient` —
- * respecteert het ≤5s p95-render budget uit de task-spec. Bij timeout/fail
+ * Token-budget en timeout schalen mee met het aantal campagne-weken via
+ * `resolveCallBudget` (vuistregel: maxTokens × 10ms + 30s). De oude vaste
+ * 6s/1500-tokens kon "exactly N themes" nooit leveren voor campagnes langer
+ * dan ~6 weken — permanente 'Weekly themes unavailable'. Een complete
+ * kalender na tientallen seconden is beter dan nooit. Bij timeout/fail
  * retourneert deze functie een `error`-string i.p.v. te throwen, zodat de
  * renderer een fallback-melding kan tonen en de overige 9 secties gewoon
  * kunnen renderen.
@@ -12,13 +15,8 @@
 
 import { z } from 'zod';
 import { anthropicClient } from '@/lib/ai/anthropic-client';
+import { resolveCallBudget } from '@/lib/ai/call-budget';
 import type { WeekTheme, BriefViewModel } from '@/lib/campaigns/brief-types';
-
-// 6s respecteert het ≤5s p95-render budget uit task-spec — Anthropic-call zit
-// gemiddeld 3-5s, dus 6s laat een buffer voor slechte API-dagen zonder de
-// counter-metric te slopen. Bij timeout/fail toont sectie 5 een fallback met
-// retry-knop — geen harde fout naar de user.
-const WEEK_THEME_TIMEOUT_MS = 6_000;
 
 const WeekThemeSchema = z.object({
   weekNumber: z.number().int().min(1).max(104), // hard cap: 2 jaar — voorkomt absurde waardes
@@ -65,13 +63,18 @@ export async function generateWeekThemes(
   const systemPrompt = buildSystemPrompt();
   const userPrompt = buildUserPrompt(viewModel, weeks, brandContextSummary);
 
+  // ~80 output-tokens per week (theme + rationale + JSON-overhead), met een
+  // vloer van 1500 zodat korte campagnes hun oude budget behouden. Timeout
+  // volgt het budget via de gedeelde vuistregel.
+  const budget = resolveCallBudget(Math.max(1500, weeks * 80 + 200));
+
   try {
     const result = await anthropicClient.createChatCompletion(
       [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      { useCase: 'STRUCTURED', timeoutMs: WEEK_THEME_TIMEOUT_MS, maxTokens: 1500 },
+      { useCase: 'STRUCTURED', timeoutMs: budget.timeoutMs, maxTokens: budget.maxTokens },
     );
 
     const parsed = parseWeekThemesResponse(result.content);

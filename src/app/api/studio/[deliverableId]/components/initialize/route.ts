@@ -69,7 +69,7 @@ export async function POST(
       // Fetch created components
       return tx.deliverableComponent.findMany({
         where: { deliverableId },
-        orderBy: { order: 'asc' },
+        orderBy: [{ order: 'asc' }, { variantIndex: 'asc' }, { id: 'asc' }],
       });
     });
 

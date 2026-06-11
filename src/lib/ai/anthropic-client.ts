@@ -125,6 +125,18 @@ export const anthropicClient = {
     const textBlock = response.content.find((b) => b.type === 'text');
     const content = textBlock && textBlock.type === 'text' ? textBlock.text : '';
 
+    // Detect truncation: silent max_tokens cut-offs corrupt downstream
+    // parsing/persistence — fail loudly instead (prompt-audit 2026-06-11).
+    if (response.stop_reason === 'max_tokens') {
+      console.error(
+        `[anthropic-client] Claude response truncated (max_tokens reached). Model: ${model}, maxTokens: ${max_tokens}, output length: ${content.length} chars. Increase maxTokens to avoid this.`,
+      );
+      throw new Error(
+        `Claude response was truncated (hit ${max_tokens} token limit). The output is incomplete. ` +
+        `Try increasing maxTokens or simplifying the prompt. Output was ${content.length} chars.`,
+      );
+    }
+
     return {
       content,
       inputTokens: response.usage.input_tokens,

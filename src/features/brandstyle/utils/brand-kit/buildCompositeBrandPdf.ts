@@ -675,6 +675,39 @@ function renderAsset(ctx: Ctx, asset: BrandKitBrandAsset, index: number) {
 
 // ─── Personas ───────────────────────────────────────────────
 
+function implicationToDisplayString(item: unknown): string {
+  if (typeof item === "string") return item;
+  if (item === null || typeof item !== "object") return String(item);
+  const rec = item as Record<string, unknown>;
+  const text = (v: unknown): string | undefined =>
+    typeof v === "string" && v.trim().length > 0 ? v.trim() : undefined;
+  const category = text(rec.category);
+  const body = [text(rec.title), text(rec.description) ?? text(rec.implication)]
+    .filter((s): s is string => s !== undefined)
+    .join(": ");
+  if (category && body) return `${category} — ${body}`;
+  return body || category || JSON.stringify(item);
+}
+
+/**
+ * Formats the persona `strategicImplications` field for PDF display.
+ *
+ * After AI generation (POST /api/personas/[id]/strategic-implications) the
+ * field holds a JSON-array string of `{ category, title, description,
+ * priority }` objects; legacy personas store plain text. Returns one display
+ * line per implication, or the raw string as-is when it is not a JSON array.
+ */
+function formatStrategicImplications(raw: string): string[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [raw];
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0) return [raw];
+  return parsed.map((item) => implicationToDisplayString(item));
+}
+
 function renderPersonas(ctx: Ctx, personas: BrandKitPersona[]) {
   if (personas.length === 0) return;
   ctx.addPage();
@@ -700,7 +733,7 @@ function renderPersonas(ctx: Ctx, personas: BrandKitPersona[]) {
     ctx.addList("Frustrations", p.frustrations);
     if (p.quote) ctx.addField("Quote", p.quote);
     if (p.strategicImplications) {
-      ctx.addField("Strategic implications", p.strategicImplications);
+      ctx.addList("Strategic implications", formatStrategicImplications(p.strategicImplications));
     }
     ctx.setY(ctx.y + 3);
   }

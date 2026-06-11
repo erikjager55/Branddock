@@ -1253,6 +1253,9 @@ export const strategyFoundationSchema = z.object({
   suggestedApproach: z.string(),
   targetBehaviors: z.array(z.string()),
   audienceInsights: z.array(audienceInsightSchema),
+  coreMessage: z.string().optional(),
+  proofPoints: z.array(z.string()).optional(),
+  reasonToAct: z.string().optional(),
 });
 
 // ─── Creative Hook Schemas ──────────────────────────────────
@@ -1731,6 +1734,9 @@ export const strategyFoundationResponseSchema: Record<string, unknown> = {
         required: ['personaId', 'personaName', 'insight', 'ttmStage', 'topCasiBarriers', 'recommendedBCTs', 'elmRoute'],
       },
     },
+    coreMessage: { type: 'string' },
+    proofPoints: { type: 'array', items: { type: 'string' } },
+    reasonToAct: { type: 'string' },
   },
   required: ['strategicDirection', 'behavioralDiagnosis', 'enrichmentSynthesis', 'behavioralStrategy', 'elmRouteRecommendation', 'mindspaceAssessment', 'keyInsights', 'suggestedApproach', 'targetBehaviors', 'audienceInsights'],
 };

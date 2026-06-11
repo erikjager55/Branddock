@@ -57,6 +57,7 @@ const requestSchema = z.object({
     entityId: z.string().optional(),
     entityName: z.string().optional(),
     campaignId: z.string().optional(),
+    contentType: z.string().optional(),
     wizardSnapshot: z.object({
       name: z.string(),
       currentStep: z.string().optional(),

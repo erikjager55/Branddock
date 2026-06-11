@@ -86,7 +86,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             variantIndex: 0,
             componentType: { notIn: ['image', 'video', 'voiceover'] },
           },
-          orderBy: { order: 'asc' },
+          orderBy: [{ order: 'asc' }, { variantIndex: 'asc' }, { id: 'asc' }],
           select: { generatedContent: true, componentType: true },
         });
         const blobText = components

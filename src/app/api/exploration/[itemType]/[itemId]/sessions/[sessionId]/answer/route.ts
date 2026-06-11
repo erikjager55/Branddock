@@ -147,7 +147,9 @@ export async function POST(
         feedbackSystemPrompt,
         feedbackUserPrompt,
         explorationConfig.temperature,
-        512,
+        // 512 left no headroom now that generateAIResponse throws on
+        // truncation; 1024 is a ceiling, not a cost, for short feedback.
+        1024,
         {
           workspaceId,
           parentEntityType: 'ExplorationSession',

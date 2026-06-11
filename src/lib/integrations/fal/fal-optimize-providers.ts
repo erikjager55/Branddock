@@ -174,6 +174,54 @@ const ALL_OPTIMIZE_PROVIDERS: Record<string, FalOptimizeProvider> = {
   },
 };
 
+// ─── Style Transfer enum ─────────────────────────────────────
+
+/**
+ * Allowed `target_style` values for `fal-ai/image-apps-v2/style-transfer`.
+ * The endpoint has no free-text prompt field — anything outside this enum
+ * is rejected by fal with a 422 (source: fal.ai OpenAPI schema).
+ */
+export const STYLE_TRANSFER_TARGET_STYLES = [
+  'anime_character',
+  'cartoon_3d',
+  'hand_drawn_animation',
+  'cyberpunk_future',
+  'anime_game_style',
+  'comic_book_animation',
+  'animated_series',
+  'cartoon_animation',
+  'lofi_aesthetic',
+  'cottagecore',
+  'dark_academia',
+  'y2k',
+  'vaporwave',
+  'liminal_space',
+  'weirdcore',
+  'dreamcore',
+  'synthwave',
+  'outrun',
+  'photorealistic',
+  'hyperrealistic',
+  'digital_art',
+  'concept_art',
+  'impressionist',
+  'anime',
+  'pixel_art',
+  'claymation',
+] as const;
+
+export type StyleTransferTargetStyle = (typeof STYLE_TRANSFER_TARGET_STYLES)[number];
+
+/**
+ * Matches free-form user input to a valid style-transfer target style.
+ * Case-insensitive and tolerant of spaces/hyphens ("Pixel Art" → "pixel_art").
+ * Returns null when the input is not one of the allowed enum values.
+ */
+export function matchStyleTransferTargetStyle(input: string): StyleTransferTargetStyle | null {
+  const normalized = input.trim().toLowerCase().replace(/[\s-]+/g, '_');
+  return STYLE_TRANSFER_TARGET_STYLES.find((style) => style === normalized) ?? null;
+}
+
 // ─── Category config for UI ──────────────────────────────────
 
 export const OPTIMIZE_CATEGORIES = [

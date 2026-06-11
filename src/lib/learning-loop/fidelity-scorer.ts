@@ -245,6 +245,28 @@ interface AiJudgeResponse {
   }>;
 }
 
+// Judge-input cap — boven deze grens stijgt de promptkost zonder dat het
+// structuur-oordeel verbetert.
+const JUDGE_CONTENT_CHAR_CAP = 12_000;
+const TRUNCATION_MARKER =
+  '[CONTENT TRUNCATED AT 12000 CHARS — score structure on the visible portion only]';
+
+/**
+ * Caps judge input at the char limit, cutting on a word boundary and
+ * appending an explicit marker. Without the marker the judge sees an
+ * apparently mid-sentence ending and scores the cut-off as a content defect.
+ */
+function capJudgeContent(content: string): string {
+  if (content.length <= JUDGE_CONTENT_CHAR_CAP) return content;
+  const slice = content.slice(0, JUDGE_CONTENT_CHAR_CAP);
+  const lastWhitespace = Math.max(slice.lastIndexOf(' '), slice.lastIndexOf('\n'));
+  // Respect the word boundary only when it costs <200 chars — pathological
+  // no-whitespace content falls back to a hard cut.
+  const wordSafe =
+    lastWhitespace > JUDGE_CONTENT_CHAR_CAP - 200 ? slice.slice(0, lastWhitespace) : slice;
+  return `${wordSafe}\n${TRUNCATION_MARKER}`;
+}
+
 async function runAiJudge(
   aiCriteria: FidelityCriterionDefinition[],
   content: string,
@@ -294,7 +316,7 @@ ${brandContextStr}
 Type: ${contentType}
 
 \`\`\`
-${content.slice(0, 12000)}
+${capJudgeContent(content)}
 \`\`\`
 
 # Dimensions to Score

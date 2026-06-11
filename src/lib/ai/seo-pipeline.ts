@@ -388,7 +388,9 @@ function extractText(result: unknown): string {
 //
 // Token-keuze: Step 8 hit 8K met 16749 chars (~5500 tokens); 32K geeft
 // ~4× headroom. Step 5/7 zitten typisch tussen 8K-16K op aggregate
-// outputs; 24K geeft 1.5-3× headroom.
+// outputs; 24K geeft 1.5-3× headroom. Step 6 draagt de volledige page-
+// draft in een JSON-envelope (~15% escaping-overhead) — zelfde payload-
+// klasse als step 7, dus zelfde budget.
 //
 // Timeout-keuze: Opus 4.7 met thinking + 32K output kan 3-5 min duren.
 // Vorige 120s default abortte mid-stream; 300s = 5 min is veilige
@@ -401,9 +403,24 @@ interface StepBudget {
 
 const STEP_BUDGETS: Record<number, StepBudget> = {
   5: { maxTokens: 24000, timeoutMs: 240_000 },  // Outline & Internal Links
+  6: { maxTokens: 24000, timeoutMs: 240_000 },  // First Draft (full page in JSON envelope)
   7: { maxTokens: 24000, timeoutMs: 240_000 },  // Editorial Review
   8: { maxTokens: 32000, timeoutMs: 300_000 },  // Publication Prep (aggregator)
 };
+
+/**
+ * Extracts the markdown draft from the `{ "draft": "..." }` JSON envelope
+ * that the step-6 and variant-B prompts request. Accepts a bare string as
+ * defensive fallback (model returned the markdown as a JSON string).
+ */
+function extractDraft(result: unknown): string {
+  if (typeof result === 'string' && result.trim()) return result;
+  if (result && typeof result === 'object') {
+    const draft = (result as Record<string, unknown>).draft;
+    if (typeof draft === 'string' && draft.trim()) return draft;
+  }
+  throw new Error('AI draft response is missing the "draft" field');
+}
 
 async function runStructuredStep(
   step: number,
@@ -467,7 +484,8 @@ async function runDraftStep(
   textModel: ResolvedModel,
   stepTracking?: { workspaceId: string; deliverableId: string },
 ): Promise<string> {
-  // Step 6 produces markdown, not JSON — use non-structured completion
+  // Step 6 produces a markdown draft wrapped in a `{ "draft": "..." }`
+  // JSON envelope, so the structured-completion JSON contract holds.
   const ctx = {
     brandContext,
     personaContext,
@@ -480,13 +498,14 @@ async function runDraftStep(
   };
 
   const { systemPrompt, userPrompt } = buildSeoStepPrompt(step, ctx);
+  const budget = STEP_BUDGETS[step];
 
-  const result = await createStructuredCompletion(
+  const result = await createStructuredCompletion<{ draft: string }>(
     textModel.provider,
     textModel.model,
     systemPrompt,
     userPrompt,
-    { timeoutMs: 180_000 },
+    { timeoutMs: budget?.timeoutMs ?? 180_000, maxTokens: budget?.maxTokens },
     stepTracking
       ? {
           workspaceId: stepTracking.workspaceId,
@@ -498,7 +517,7 @@ async function runDraftStep(
       : undefined,
   );
 
-  return extractText(result);
+  return extractDraft(result);
 }
 
 async function runCompetitorAnalysisStep(
@@ -582,7 +601,13 @@ What should be DIFFERENT in variant B:
 - Different CTA framing (urgency vs. value vs. exclusivity)
 - Different emotional register (while staying within brand voice guidelines)
 
-Output the complete alternative page in markdown format. Do NOT output JSON.
+OUTPUT FORMAT:
+Respond with a JSON object matching this exact schema:
+{
+  "draft": "string — the complete alternative page in markdown"
+}
+
+The "draft" field is the ONLY field. Inside it, write the full alternative page in markdown.
 Use sentence case for ALL headings (capitalize only first word + proper nouns, NEVER Title Case).
 Preserve the official capitalization of every brand, product and company name (e.g., "Napking", "iPhone", "LinkedIn") — never lowercase or uppercase them unless the brand officially does so. Applies to headings, body, meta tags, alt text and CTAs.
 Do NOT generate a table of contents with anchor links. Do NOT use --- horizontal rules.
@@ -594,14 +619,15 @@ ${originalContent}
 ## SEO RESEARCH CONTEXT (preserve all SEO elements from this research)
 ${accumulatedResearch.slice(-20000)}
 
-Write the complete alternative version (Variant B). Different creative angle, same SEO foundation.`;
+Write the complete alternative version (Variant B). Different creative angle, same SEO foundation. Return the full markdown page in the "draft" field.`;
 
-  const result = await createStructuredCompletion(
+  const result = await createStructuredCompletion<{ draft: string }>(
     textModel.provider,
     textModel.model,
     systemPrompt,
     userPrompt,
-    { timeoutMs: 180_000 },
+    // Same payload class as step 6 (full page in JSON envelope) — same budget.
+    { timeoutMs: 240_000, maxTokens: 24000 },
     stepTracking
       ? {
           workspaceId: stepTracking.workspaceId,
@@ -613,7 +639,7 @@ Write the complete alternative version (Variant B). Different creative angle, sa
       : undefined,
   );
 
-  return extractText(result);
+  return extractDraft(result);
 }
 
 // ─── Preview Generator ───────────────────────────────────────

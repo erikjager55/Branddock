@@ -55,7 +55,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       include: {
         components: {
           where: { isSelected: true },
-          orderBy: { order: 'asc' },
+          orderBy: [{ order: 'asc' }, { variantIndex: 'asc' }, { id: 'asc' }],
         },
         campaign: { select: { title: true } },
       },
