@@ -122,5 +122,44 @@ console.log("\ndefault (geen opts) — overwrite-gedrag ongewijzigd");
   assert("overwrite zonder opts", pd.content[0].props.heroVisualUrl === URL);
 }
 
+console.log("\npuckPatched-discriminator — rij-write gate (review 2026-06-11)");
+{
+  // puckPatched gate't de hero-image-rij-upsert in patchHeroVisualUrl: de rij
+  // spiegelt de GERENDERDE hero en mag dus alleen geschreven worden wanneer de
+  // BrandHero in puckData daadwerkelijk deze URL kreeg.
+  const both: Record<string, unknown> = {
+    puckData: { content: [{ type: "BrandHero", props: {} }] },
+    structuredVariant: { hero: {} },
+  };
+  const rBoth = applyHeroUrlToSettings(both, URL);
+  assert("beide doelen → puckPatched=true", rBoth.patched === true && rBoth.puckPatched === true);
+
+  const svOnly: Record<string, unknown> = { structuredVariant: { hero: {} } };
+  const rSv = applyHeroUrlToSettings(svOnly, URL);
+  assert("alleen sv-tak → patched=true / puckPatched=false", rSv.patched === true && rSv.puckPatched === false);
+
+  // Het load-bearing asymmetrische geval: fill-only heal terwijl puckData een
+  // handmatige keuze vasthoudt en alleen sv leeg is. patched=true (sv gevuld)
+  // maar puckPatched=false → de rij van de handmatige keuze blijft onaangetast.
+  const manualPick: Record<string, unknown> = {
+    puckData: { content: [{ type: "BrandHero", props: { heroVisualUrl: "https://cdn.example.com/user-keuze.png" } }] },
+    structuredVariant: { hero: {} },
+  };
+  const rManual = applyHeroUrlToSettings(manualPick, URL, { onlyIfEmpty: true });
+  const mpd = manualPick.puckData as { content: Array<{ props: Record<string, unknown> }> };
+  assert("fill-only + gevulde puck-hero → patched=true / puckPatched=false", rManual.patched === true && rManual.puckPatched === false);
+  assert("handmatige puck-keuze ongemoeid", mpd.content[0].props.heroVisualUrl === "https://cdn.example.com/user-keuze.png");
+
+  const bothEmpty: Record<string, unknown> = {
+    puckData: { content: [{ type: "BrandHero", props: {} }] },
+    structuredVariant: { hero: {} },
+  };
+  const rEmpty = applyHeroUrlToSettings(bothEmpty, URL, { onlyIfEmpty: true });
+  assert("fill-only + beide leeg → puckPatched=true", rEmpty.patched === true && rEmpty.puckPatched === true);
+
+  const rNone = applyHeroUrlToSettings({}, URL);
+  assert("geen doelen → puckPatched=false", rNone.patched === false && rNone.puckPatched === false);
+}
+
 console.log(`\n${pass} PASS / ${fail} FAIL`);
 if (fail > 0) process.exit(1);

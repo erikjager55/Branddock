@@ -261,9 +261,14 @@ export async function* runSeoPipeline(
     const textDurationMs = Date.now() - startTime;
 
     await prisma.$transaction(async (tx) => {
-      // Delete existing components
+      // Delete existing TEXT components only. Media-rijen (hero-image /
+      // visual / visual:<scene> / feature-visual:<i> / video / voiceover)
+      // zijn producten van aparte flows en moeten een SEO-rerun overleven —
+      // de eerdere wipe-all verwijderde o.a. de hero-image-rij, waardoor de
+      // Planner-checklist "Hero image added" false-negative gaf (audit
+      // 2026-06-10). Zelfde notIn-conventie als canvas-orchestrator.
       await tx.deliverableComponent.deleteMany({
-        where: { deliverableId },
+        where: { deliverableId, componentType: { notIn: ['image', 'video', 'voiceover'] } },
       });
 
       // Create 2 text variants

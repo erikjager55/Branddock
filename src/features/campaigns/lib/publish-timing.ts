@@ -3,6 +3,8 @@
  * Returns suggested day + time for each platform/format combination.
  */
 
+import { PUCK_WEBPAGE_TYPES } from '@/lib/landing-pages/webpage-types';
+
 export interface PublishTimeSuggestion {
   day: string;
   time: string;
@@ -105,6 +107,9 @@ export interface ChecklistItem {
  */
 const TITLE_REQUIRED_FORMATS = new Set([
   'blog-article',  // blog-post, pillar-page, case-study, whitepaper, ebook, article, thought-leadership
+  // 2026-06-10: de 5 Puck web-page contentTypes worden vóór dit pad
+  // afgevangen door de PUCK_WEBPAGE_TYPES-branch; deze entry blijft alleen
+  // bereikbaar wanneer contentType null is terwijl format 'landing-page' is.
   'landing-page',  // landing-page, product-page, faq-page, comparison-page, microsite
 ]);
 
@@ -204,6 +209,23 @@ export function getChecklistForPlatform(
       { id: 'has-rda-business-name', label: 'Business name set (≤25 chars)', required: true },
       { id: 'has-image', label: 'Image asset added (landscape 1.91:1 + square 1:1)', required: true },
       { id: 'rda-char-limits', label: 'All assets within Google RDA character limits', required: true },
+    ];
+  }
+
+  // 2026-06-10 — Puck web-page types (landing-page / product-page / faq-page /
+  // comparison-page / microsite) persisteren hun content in
+  // settings.structuredVariant + puckData, niet als DeliverableComponent-
+  // tekstgroepen. De generieke web-branch hieronder false-flagde daardoor
+  // gegarandeerd op title/hero (audit: Planner-checklist Napking LP). Eigen
+  // itemset met passende labels; de evaluatie in Step4Timeline leest voor deze
+  // types de structuredVariant-store-slice als fallback-bron.
+  if (contentType && PUCK_WEBPAGE_TYPES.has(contentType)) {
+    return [
+      { id: 'has-title', label: 'Hero headline is set', required: true },
+      { id: 'has-body', label: 'Body content is complete', required: true },
+      { id: 'has-image', label: 'Hero image added', required: true },
+      { id: 'has-meta', label: 'Meta description set', required: false },
+      { id: 'has-cta', label: 'Call-to-action included', required: false },
     ];
   }
 

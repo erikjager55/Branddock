@@ -15,6 +15,7 @@ import {
   CHAR_LIMITS,
 } from '../../../lib/publish-timing';
 import { usePublishChannels } from '@/features/settings/hooks/use-publish-channels';
+import { isPuckWebpageType } from '@/lib/landing-pages/webpage-types';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { PublishGate } from '../PublishGate';
 import { VersionHistorySidebar } from '../VersionHistorySidebar';
@@ -126,6 +127,56 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
     [platform, format, adFormat, contentType],
   );
 
+  // 2026-06-10 — Puck web-page types persisteren titel/hero/CTA in
+  // settings.puckData + structuredVariant i.p.v. DeliverableComponent-
+  // tekstgroepen; de group-name-checks hieronder zien die data niet en
+  // false-flagden daardoor gegarandeerd op title/hero (Planner-checklist
+  // audit, Napking LP). Voorkeursbron: contextStack.puckData — de
+  // gerenderde waarheid, die editor-edits via autosave + context-refetch
+  // wél volgt. structuredVariant is een generatie-snapshot die nooit
+  // terug-synct en dient alleen als fallback voor deliverables waarvan de
+  // contextStack (nog) geen puckData draagt. Disjunctief toegepast per
+  // check — bestaand gedrag voor niet-Puck types blijft identiek.
+  const isPuckType = isPuckWebpageType(contentType);
+  const structuredVariant = useCanvasStore((s) => s.structuredVariant);
+  const puckSignals = useMemo(() => {
+    if (!isPuckType) return null;
+    const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+    const pd = (contextStack?.puckData ?? null) as
+      | { content?: Array<{ type?: string; props?: Record<string, unknown> }> }
+      | null;
+    if (Array.isArray(pd?.content)) {
+      const hero = pd!.content!.find((c) => c?.type === 'BrandHero')?.props ?? null;
+      // Chrome-blocks (nav/footer/sticky-CTA) zijn geen body-content; alleen
+      // echte secties (FeatureGrid/RichText/FAQ/...) tellen voor has-body.
+      const CHROME_BLOCKS = new Set(['BrandHero', 'Footer', 'BrandNav', 'StickyCtaBar']);
+      const sectionCount = pd!.content!.filter(
+        (c) => !!c?.type && !CHROME_BLOCKS.has(c.type),
+      ).length;
+      return {
+        headline: str(hero?.headline),
+        heroVisualUrl: str(hero?.heroVisualUrl),
+        primaryCta: str(hero?.ctaLabel),
+        sectionItemCount: sectionCount,
+      };
+    }
+    if (!structuredVariant || typeof structuredVariant !== 'object') return null;
+    const sv = structuredVariant as Record<string, unknown>;
+    const hero =
+      sv.hero && typeof sv.hero === 'object' ? (sv.hero as Record<string, unknown>) : null;
+    const itemCount = (section: unknown) => {
+      if (!section || typeof section !== 'object') return 0;
+      const items = (section as { items?: unknown }).items;
+      return Array.isArray(items) ? items.length : 0;
+    };
+    return {
+      headline: str(hero?.headline),
+      heroVisualUrl: str(hero?.heroVisualUrl),
+      primaryCta: str(hero?.primaryCta),
+      sectionItemCount: itemCount(sv.features) + itemCount(sv.faq) + itemCount(sv.trust),
+    };
+  }, [isPuckType, contextStack, structuredVariant]);
+
   const checklistResults = useMemo(() => {
     const textGroups = Object.keys(previewContent);
     const charCount = allText.length;
@@ -135,17 +186,19 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
       let passed = false;
       switch (item.id) {
         case 'has-title':
-          passed = textGroups.some((g) => g === 'title' || g === 'headline' || g === 'subject');
+          passed =
+            textGroups.some((g) => g === 'title' || g === 'headline' || g === 'subject') ||
+            !!puckSignals?.headline;
           break;
         case 'has-body':
           passed = textGroups.some((g) =>
             g === 'body' || g === 'caption' || g === 'introduction' || g === 'body-sections' ||
             g === 'content' || g === 'hook' || g === 'email-body' || g === 'main' || g === 'text' ||
             g === 'copy' || g === 'post' || g === 'article' || g === 'script'
-          );
+          ) || (puckSignals?.sectionItemCount ?? 0) > 0;
           break;
         case 'has-image':
-          passed = !!heroImage?.url;
+          passed = !!heroImage?.url || !!puckSignals?.heroVisualUrl;
           break;
         case 'has-hashtags':
           passed = textGroups.some((g) => g === 'hashtags');
@@ -174,12 +227,25 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
               const content = previewContent[g]?.content;
               if (!content) return false;
               return CTA_VERB_PATTERN.test(content) || URL_PATTERN.test(content);
-            });
+            }) ||
+            !!puckSignals?.primaryCta;
           break;
         }
-        case 'has-meta':
-          passed = textGroups.some((g) => g.includes('meta'));
+        case 'has-meta': {
+          // 2026-06-10 — de SEO-pipeline schrijft de gegenereerde meta
+          // description terug naar contentTypeInputs.metaDescription
+          // (seo-pipeline.ts) maar produceert geen 'meta'-tekstgroep.
+          // Alleen voor Puck-types als signaal accepteren: hun publish-pad
+          // (Puck-page + seoChecklist) consumeert die waarde, terwijl bv.
+          // de WordPress-excerpt van blog-article uitsluitend de
+          // 'meta-description'-tekstgroep leest — daar zou dit signaal een
+          // required-gate groen maken die de publish-payload niet dekt.
+          const metaInput = isPuckType ? contentTypeInputs.metaDescription : undefined;
+          passed =
+            textGroups.some((g) => g.includes('meta')) ||
+            (typeof metaInput === 'string' && metaInput.trim().length > 0);
           break;
+        }
         // 2026-05-20 — LinkedIn-poll specific checks (group structure:
         // context / question / option-1..4 / follow-up-comment / hashtags).
         case 'has-question':
@@ -389,7 +455,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
       }
       return { ...item, passed };
     });
-  }, [checklist, previewContent, allText, heroImage, platform]);
+  }, [checklist, previewContent, allText, heroImage, platform, puckSignals, contentTypeInputs, isPuckType]);
 
   const requiredPassed = checklistResults.filter((c) => c.required).every((c) => c.passed);
   const allPassed = checklistResults.every((c) => c.passed);
