@@ -30,6 +30,9 @@ import { runCopyImageCoherenceJudge } from '@/lib/brand-fidelity/copy-image-cohe
 import { runFeatureSetDiversityJudge } from '@/lib/brand-fidelity/feature-set-diversity-judge';
 import { imageBriefSchema } from '@/lib/landing-pages/variant-schema';
 import { resolveFeatureCandidateCount } from '@/lib/landing-pages/feature-image-config';
+import { matchLibraryImagesToSlots } from '@/lib/landing-pages/source-image-matcher';
+import { readFile } from 'node:fs/promises';
+import { resolve as resolvePath } from 'node:path';
 import { prepareJudgeImage } from '@/lib/brand-fidelity/judge-image';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { getStorageProvider } from '@/lib/storage';
@@ -37,6 +40,8 @@ import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 
 export const FEATURE_IMAGE_BUDGET = 4;
+/** Een library-match moet óók de coherence-judge passeren — anders AI-pad. */
+const LIBRARY_ACCEPT_COHERENCE = 55;
 
 const featureSlotSchema = z.object({
   // max 99: de gap-fill stuurt een cumulatieve slotIndex over componenten —
@@ -151,6 +156,8 @@ export async function POST(request: Request, { params }: RouteParams) {
       runnerUp: { bytes: Buffer; coherence: number | null } | null;
       /** Winnaar-score uit de kandidaat-selectie (null bij count=1/judge-skip). */
       coherence: number | null;
+      /** Herkomst: AI-generatie of een library-first match. */
+      source: 'generated' | 'library';
     }
 
     const uploadBytes = async (bytes: Buffer, index: number) => {
@@ -237,6 +244,7 @@ export async function POST(request: Request, { params }: RouteParams) {
           iterationCount: opts?.iteration ?? 0,
           runnerUp,
           coherence: winnerScore,
+          source: 'generated',
         };
       } catch (err) {
         console.error(`[generate-feature-visuals] ${modelId} idx=${slot.index} failed:`, err instanceof Error ? err.message : err);
@@ -248,7 +256,64 @@ export async function POST(request: Request, { params }: RouteParams) {
     let judgeCalls = 0;
     let diversityCalls = 0;
     let retryAttempts = 0;
-    const generated = await Promise.all(built.map((slot) => generateOne(slot)));
+
+    // ── Library-first (tasks/lp-library-first-matching): echte merkfoto's
+    // matchen vóór er gegenereerd wordt. Een match wordt alleen geaccepteerd
+    // als de coherence-judge 'm ook bij de sectie-copy vindt passen ("echt
+    // maar fout" is erger dan goed AI) — anders valt het slot terug op het
+    // AI-pad. Gedekte slots kosten $0 aan fal-spend.
+    const prefilled = new Map<number, GenResult>();
+    if (body.features) {
+      const matchRes = await matchLibraryImagesToSlots(
+        workspaceId,
+        body.features.map((f) => ({
+          index: f.index,
+          query: f.imageBrief?.subject?.trim() || `${f.heading}. ${f.body}`,
+        })),
+      );
+      for (const [index, match] of matchRes.assignments) {
+        try {
+          const bytes = match.fileUrl.startsWith('/')
+            ? await readFile(resolvePath(process.cwd(), 'public' + match.fileUrl))
+            : await fetchWithSizeLimit(match.fileUrl, AI_IMAGE_SIZE_CAP);
+          const judgeText = judgeTextFor(index);
+          let score: number | null = null;
+          if (judgeText) {
+            const prepared = await prepareJudgeImage(bytes);
+            judgeCalls++;
+            const r = await runCopyImageCoherenceJudge(
+              { type: 'base64', mediaType: prepared.mediaType, data: prepared.buffer.toString('base64') },
+              judgeText,
+            );
+            score = r?.score ?? null;
+          }
+          if (score !== null && score < LIBRARY_ACCEPT_COHERENCE) {
+            console.log(`[generate-feature-visuals] library-match idx=${index} afgewezen door coherence ${score} (< ${LIBRARY_ACCEPT_COHERENCE}) — AI-pad`);
+            continue;
+          }
+          prefilled.set(index, {
+            url: match.fileUrl,
+            bytes,
+            prompt: `library:${match.assetId} (similarity ${match.similarity.toFixed(2)})`,
+            index,
+            durationMs: 0,
+            iterationCount: 0,
+            runnerUp: null,
+            coherence: score,
+            source: 'library',
+          });
+        } catch (err) {
+          console.warn(`[generate-feature-visuals] library-match idx=${index} laad-fout — AI-pad:`, err instanceof Error ? err.message : err);
+        }
+      }
+      if (matchRes.diagnostics.length > 0) {
+        console.log(`[generate-feature-visuals] library-first diagnostiek: ${matchRes.diagnostics.join(' | ')}`);
+      }
+    }
+
+    const generated = await Promise.all(
+      built.map((slot) => prefilled.get(slot.index) ?? generateOne(slot)),
+    );
 
     // ── Fase 4 kwaliteitspoort (alleen v2: legacy mist de copy om tegen te
     // judgen). Paired G4-coherence (beeld-i vs copy-i) + multi-image set-
@@ -389,8 +454,9 @@ export async function POST(request: Request, { params }: RouteParams) {
     const genCount = generated.filter(Boolean).length;
     // Werkelijke tellers i.p.v. afgeleide formules: gefaalde retries kosten
     // wél fal-spend en geskipte judges tellen niet (review follow-ups).
+    const aiGenCount = generated.filter((g) => g?.source === 'generated').length;
     const estCost =
-      (genCount * candidateCount + retryAttempts) * 0.13 +
+      (aiGenCount * candidateCount + retryAttempts) * 0.13 +
       judgeCalls * 0.001 +
       diversityCalls * 0.005;
     console.log(
@@ -418,7 +484,7 @@ export async function POST(request: Request, { params }: RouteParams) {
                 variantIndex: 0,
                 isSelected: true,
                 imageUrl: g.url,
-                imageSource: 'ai_generated',
+                imageSource: g.source === 'library' ? g.prompt.split(' ')[0] : 'ai_generated',
                 imagePromptUsed: g.prompt,
                 aiProvider: modelId.startsWith('openai/') ? 'openai' : 'fal',
                 aiModel: modelId,
@@ -444,7 +510,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     // G4-score per slot (null = judge geskipt) — opstap naar een bron-badge
     // in de variant-editor (audit §4 fase 5, UI-follow-up).
     const urls = generated.map((g) => g?.url ?? null);
-    const sources = generated.map((g) => (g ? ('generated' as const) : null));
+    const sources = generated.map((g) => g?.source ?? null);
     return NextResponse.json({ urls, sources, coherence: coherenceScores, regenerated, swapped });
   } catch (err) {
     console.error('[generate-feature-visuals] error:', err);

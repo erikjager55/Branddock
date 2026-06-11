@@ -73,6 +73,19 @@ async function main() {
       { brand: stack.brand, brandTokens: stack.brandTokens },
     );
 
+    // Library-first rapportage (tasks/lp-library-first-matching): welke slots
+    // zou de matcher dekken, en waarmee?
+    const { matchLibraryImagesToSlots } = await import("../../src/lib/landing-pages/source-image-matcher");
+    const matchRes = await matchLibraryImagesToSlots(
+      workspace.id,
+      slots.map((sl) => ({ index: sl.index, query: (sl.imageBrief as { subject?: string } | null)?.subject?.trim() || `${sl.heading}. ${sl.body}` })),
+    );
+    for (const [idx, m] of matchRes.assignments) {
+      console.log(`  match slot ${idx}: ${m.fileUrl.slice(0, 70)} (sim ${m.similarity.toFixed(2)}, ${m.category ?? "?"})`);
+    }
+    if (matchRes.assignments.size === 0) console.log("  library-first: geen matches (AI-pad voor alle slots)");
+    if (matchRes.diagnostics.length) console.log(`  diagnostiek: ${matchRes.diagnostics.join(" | ")}`);
+
     built.forEach((b) => {
       const briefed = Boolean(slots[built.indexOf(b)]?.imageBrief);
       console.log(`  slot ${b.index} (${briefed ? "brief" : "fallback"}; seed ${b.seed}):`);
