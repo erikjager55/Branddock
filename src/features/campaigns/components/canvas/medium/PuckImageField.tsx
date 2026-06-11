@@ -2,8 +2,9 @@
 
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ImageIcon, Loader2, Trash2 } from 'lucide-react';
+import { ImageIcon, Loader2, Sparkles, FolderOpen, Globe, Trash2 } from 'lucide-react';
 import { Modal } from '@/components/shared';
+import { CLEAR_IMAGE_SENTINEL, isClearedImage } from '../../../lib/feature-visual-preserve';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import type { VisualBriefSource } from '@/lib/ai/canvas-context';
 import type { InsertImageSelection } from '../insert-image/types';
@@ -91,8 +92,11 @@ const FIELD_PICKER_SOURCES: VisualBriefSource[] = [
  * `allowClear` staat UIT voor de hero: een lege hero wordt server-side
  * teruggedraaid door `preserveHeroOnSettings` én de self-heal genereert dan
  * direct opnieuw — een wis-knop die niets blijvends doet is misleidend.
- * Feature-beelden hebben die guards niet en mogen wél gewist worden
- * (render valt terug op icon/placeholder).
+ * Feature-beelden hebben sinds #317 óók een clobber-guard
+ * (`preserveFeatureVisualsOnSettings`) — een kale '' zou stil hersteld
+ * worden. De wis-knop stuurt daarom CLEAR_IMAGE_SENTINEL: de guard herkent
+ * dat als expliciete user-intentie, slaat de preserve over en normaliseert
+ * naar '' bij persist (follow-up 2026-06-10).
  */
 export function PuckImageField({
   value,
@@ -152,8 +156,18 @@ export function PuckImageField({
     return () => window.removeEventListener('keydown', handler, true);
   }, [pickerOpen]);
 
-  const hasValue = typeof value === 'string' && value.trim().length > 0;
+  const hasValue = typeof value === 'string' && value.trim().length > 0 && !isClearedImage(value);
   const showThumb = hasValue && value !== brokenUrl;
+  // Bron-heuristiek op de URL — zero-fetch herkomst-badge (AI-bestandsnamen
+  // uit de generate-routes vs media-library-uploads vs externe URLs).
+  const sourceBadge = !hasValue ? null
+    : /feature-visual-|canvas-visual-|canvas-refined-/.test(value as string)
+      ? { label: 'AI-gegenereerd', Icon: Sparkles }
+    : (value as string).startsWith('/uploads/')
+      ? { label: 'Media library', Icon: FolderOpen }
+    : /^https?:\/\//.test(value as string)
+      ? { label: 'Extern', Icon: Globe }
+    : null;
 
   const handleSelected = (selection: InsertImageSelection) => {
     onChange(selection.url);
@@ -170,13 +184,21 @@ export function PuckImageField({
       ) : null}
 
       {showThumb ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={value as string}
-          alt={label ?? 'Gekozen afbeelding'}
-          onError={() => setBrokenUrl(value as string)}
-          className="aspect-video w-full rounded-md border border-gray-200 object-cover"
-        />
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={value as string}
+            alt={label ?? 'Gekozen afbeelding'}
+            onError={() => setBrokenUrl(value as string)}
+            className="aspect-video w-full rounded-md border border-gray-200 object-cover"
+          />
+          {sourceBadge ? (
+            <span className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white">
+              <sourceBadge.Icon className="h-3 w-3" />
+              {sourceBadge.label}
+            </span>
+          ) : null}
+        </div>
       ) : (
         <div className="flex aspect-video w-full items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50">
           <span className="inline-flex items-center gap-1.5 text-xs text-gray-400">
@@ -201,7 +223,7 @@ export function PuckImageField({
           {allowClear && hasValue ? (
             <button
               type="button"
-              onClick={() => onChange('')}
+              onClick={() => onChange(CLEAR_IMAGE_SENTINEL)}
               aria-label={`Verwijder afbeelding${label ? ` — ${label}` : ''}`}
               className="inline-flex items-center gap-1.5 rounded-md bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100"
             >
