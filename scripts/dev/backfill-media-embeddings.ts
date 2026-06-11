@@ -43,7 +43,7 @@ async function main() {
     const assets = await prisma.$queryRawUnsafe<Array<{ id: string; aiDescription: string | null; hasEmbedding: boolean }>>(
       `SELECT "id", "aiDescription", ("embedding" IS NOT NULL) AS "hasEmbedding"
        FROM "MediaAsset"
-       WHERE "workspaceId" = $1 AND "fileType" = 'IMAGE'
+       WHERE "workspaceId" = $1 AND "fileType" LIKE 'image/%'
        ORDER BY "createdAt" ASC`,
       ws.id,
     );
