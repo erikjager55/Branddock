@@ -23,8 +23,14 @@ import {
 } from "../brand-fidelity/ai-tell-detector";
 import { formatTellInstruction } from "../brand-fidelity/strict-mode";
 import { flattenVariantToText } from "./flatten-variant";
-import type { LandingPageVariantContent } from "./variant-schema";
-import { parseLandingPageVariantResponse } from "./variant-generator";
+import {
+  validateLandingPageVariant,
+  type LandingPageVariantContent,
+} from "./variant-schema";
+import {
+  parseLandingPageVariantResponse,
+  type ParseResult,
+} from "./variant-generator";
 
 // ─── Gedeelde rewrite-prompt (structuur intact) ──────────
 
@@ -38,6 +44,7 @@ export const VARIANT_REWRITE_SYSTEM_PROMPT = `Je bent een merk-bewuste copywrite
 Regels:
 - Behoud exact dezelfde JSON-structuur: dezelfde keys en hetzelfde aantal array-items.
 - Wijzig ALLEEN tekstuele copy-waarden (headline, subhead, bullets, body, quotes, CTA-labels, etc.).
+- hero.primaryCta en finalCta.primaryCta MOETEN letterlijk identiek aan elkaar blijven (single-CTA discipline): wijzig je er één, wijzig dan beide naar exact dezelfde tekst.
 - Wijzig GEEN icon-namen, URLs of niet-tekstuele config.
 - Schrijf in de merk-stem; vermijd generieke AI-frasen; behoud feitelijke claims (cijfers, namen, certificeringen) exact.
 - Antwoord met UITSLUITEND de volledige JSON-variant, geen uitleg, geen code-fences.`;
@@ -59,6 +66,85 @@ export function buildVariantTellFeedback(
     `AI-tell-detector signaleert (${detectorResult.scorePer1000Words.toFixed(0)}/1000, verdict ${detectorResult.verdict}):`,
     ...lines,
   ].join("\n");
+}
+
+// ─── CTA-pariteit (single-CTA discipline) ────────────────
+
+/**
+ * Lijnt finalCta.primaryCta uit op hero.primaryCta wanneer een rewrite ze uit
+ * elkaar liet lopen. Het variant-schema dwingt letterlijke gelijkheid af
+ * (single-CTA discipline, superRefine in variant-schema.ts); zonder deze
+ * defensieve normalisatie wordt een verder goede rewrite wholesale afgekeurd.
+ * No-op (zelfde referentie) wanneer de labels al identiek zijn.
+ */
+export function alignVariantCtaParity(
+  variant: LandingPageVariantContent,
+): LandingPageVariantContent {
+  if (variant.finalCta.primaryCta === variant.hero.primaryCta) return variant;
+  console.warn("[variant-rewrite] CTA-pariteit genormaliseerd naar hero-label (single-CTA discipline)", {
+    heroCta: variant.hero.primaryCta,
+    finalCta: variant.finalCta.primaryCta,
+  });
+  return {
+    ...variant,
+    finalCta: { ...variant.finalCta, primaryCta: variant.hero.primaryCta },
+  };
+}
+
+/**
+ * Unknown-narrowing tegenhanger van alignVariantCtaParity voor nog niet
+ * gevalideerde kandidaten. Retourneert null wanneer er niets te normaliseren
+ * valt (geen object, labels ontbreken/geen string, of al identiek).
+ */
+function alignCandidateCtaParity(
+  candidate: unknown,
+): Record<string, unknown> | null {
+  if (typeof candidate !== "object" || candidate === null) return null;
+  const record = candidate as Record<string, unknown>;
+  const hero = record.hero;
+  const finalCta = record.finalCta;
+  if (typeof hero !== "object" || hero === null) return null;
+  if (typeof finalCta !== "object" || finalCta === null) return null;
+  const heroCta = (hero as Record<string, unknown>).primaryCta;
+  const finalCtaLabel = (finalCta as Record<string, unknown>).primaryCta;
+  if (typeof heroCta !== "string" || typeof finalCtaLabel !== "string") return null;
+  if (heroCta === finalCtaLabel) return null;
+  console.warn("[variant-rewrite] CTA-pariteit genormaliseerd naar hero-label (single-CTA discipline)", {
+    heroCta,
+    finalCta: finalCtaLabel,
+  });
+  return {
+    ...record,
+    finalCta: { ...(finalCta as Record<string, unknown>), primaryCta: heroCta },
+  };
+}
+
+/**
+ * Parse voor rewrite-output van VARIANT_REWRITE_SYSTEM_PROMPT-paden (STRICT
+ * tell-rewrite, auto-iterate "Verbeter", silent-iterate). Zelfde contract als
+ * parseLandingPageVariantResponse, maar met defensieve CTA-pariteit-
+ * normalisatie: faalt de strikte parse en is de enige structurele afwijking
+ * dat de rewrite hero.primaryCta en finalCta.primaryCta uit elkaar liet
+ * lopen, dan wordt finalCta gelijkgetrokken en opnieuw gevalideerd i.p.v. de
+ * hele (betaalde) rewrite af te keuren.
+ */
+export function parseVariantRewriteResponse(text: string): ParseResult {
+  const direct = parseLandingPageVariantResponse(text);
+  if (direct.success) return direct;
+
+  let candidate: unknown;
+  try {
+    candidate = JSON.parse(direct.rawText);
+  } catch {
+    return direct;
+  }
+  const aligned = alignCandidateCtaParity(candidate);
+  if (aligned === null) return direct;
+
+  const validation = validateLandingPageVariant(aligned);
+  return validation.success
+    ? { success: true, data: validation.data }
+    : direct;
 }
 
 // ─── STRICT tell-rewrite ─────────────────────────────────
@@ -144,7 +230,7 @@ export async function runVariantTellRewriteIfNeeded(
     };
   }
 
-  const parsed = parseLandingPageVariantResponse(raw);
+  const parsed = parseVariantRewriteResponse(raw);
   if (!parsed.success) {
     return {
       variant,

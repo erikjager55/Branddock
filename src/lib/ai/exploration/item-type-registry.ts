@@ -9,6 +9,7 @@
 
 import { personaItemConfig } from './builders/persona-builder';
 import { brandAssetItemConfig } from './builders/brand-asset-builder';
+import type { ExplorationConfigData } from './config.types';
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -38,11 +39,13 @@ export interface ItemTypeConfig {
   /** Build the intro message for the exploration session */
   buildIntro: (item: Record<string, unknown>) => string;
 
-  /** Generate insights data (report + field suggestions) after completion */
+  /** Generate insights data (report + field suggestions) after completion.
+   *  The route passes its already-resolved exploration config so builders
+   *  don't re-resolve it (same request, avoids a config-drift race). */
   generateInsights: (
     item: Record<string, unknown>,
     session: Record<string, unknown>,
-    knowledgeContext?: string,
+    explorationConfig?: ExplorationConfigData,
     fieldSuggestionsConfig?: Array<{ field: string; label: string; type: string; extractionHint: string }> | null,
   ) => Promise<Record<string, unknown>>;
 

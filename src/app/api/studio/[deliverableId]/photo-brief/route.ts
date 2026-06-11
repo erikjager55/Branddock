@@ -11,7 +11,7 @@
 // =============================================================================
 
 import { NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { anthropicClient } from '@/lib/ai/anthropic-client';
 import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
@@ -87,17 +87,17 @@ export async function POST(_request: Request, { params }: RouteParams) {
 
     const userPrompt = `# Brand context\n${brandSummary}\n\n# Visual brief\n${briefSummary}\n\n# Content type\n${stack.deliverableTypeId ?? 'unknown'}\n\nSchrijf een fotograaf-briefing in markdown.`;
 
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      temperature: 0.4,
-      system: PHOTO_BRIEF_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
-    });
-
-    const textBlock = response.content.find((b) => b.type === 'text');
-    const markdown = textBlock && 'text' in textBlock ? textBlock.text : '';
+    // Central client (T7, prompt-audit 2026-06-11): retry, truncation
+    // detection and the temperature-deprecation guard — the raw SDK call
+    // here bypassed all of them. Temperature is passed through; the client
+    // drops it for temp-deprecated models (sonnet-4-6 today, precaution).
+    const { content: markdown } = await anthropicClient.createChatCompletion(
+      [
+        { role: 'system', content: PHOTO_BRIEF_SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt },
+      ],
+      { model: 'claude-sonnet-4-6', maxTokens: 2000, temperature: 0.4 },
+    );
     if (!markdown.trim()) {
       return NextResponse.json({ error: 'Generation produced empty brief' }, { status: 502 });
     }

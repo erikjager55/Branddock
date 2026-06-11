@@ -89,6 +89,12 @@ export async function POST(
     return NextResponse.json(updatedBlueprint);
   } catch (error) {
     console.error('[POST /api/campaigns/:id/strategy/regenerate]', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // The enforce-validation path (audit 2026-06-11 T3) produces clear,
+    // actionable messages — masking them as 'Internal server error' would
+    // undo exactly that. Same pattern as the elaborate route's SSE error.
+    const message = error instanceof Error && /validation|invalid|schema|timed out/i.test(error.message)
+      ? error.message
+      : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

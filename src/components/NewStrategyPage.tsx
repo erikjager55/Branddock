@@ -31,7 +31,6 @@ import {
   Filter,
   X
 } from 'lucide-react';
-import { UniversalAIExploration } from './strategy-tools/UniversalAIExploration';
 import { FrameworkWorkspace } from './strategy-tools/FrameworkWorkspace';
 import { frameworkConfigs } from './strategy-tools/framework-configs';
 

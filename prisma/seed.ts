@@ -4515,31 +4515,31 @@ Respond only with valid JSON.`,
       contextSources: ['brand_asset', 'product', 'persona'],
       isActive: true,
     },
+    // BV-WIRE W-5: voice exploration (voice_tone, writing_sample,
+    // channel_adaptation dims + voice field suggestions) removed from this
+    // seed — voice signals are owned by the BrandVoiceguide module. Existing
+    // DB rows are intentionally NOT migrated by this seed.
     {
       itemType: 'brand_asset',
       itemSubType: 'brand-personality',
-      label: 'Brand Personality — Aaker Dimensions & NN/g Tone of Voice',
+      label: 'Brand Personality — Aaker Dimensions',
       provider: 'anthropic',
       model: 'claude-sonnet-4-20250514',
       temperature: 0.4,
       maxTokens: 2048,
-      systemPrompt: `You are a senior brand strategist specialized in brand personality frameworks, particularly Jennifer Aaker's Brand Personality Dimensions (1997) and the Nielsen Norman Group's Tone of Voice model.
+      systemPrompt: `You are a senior brand strategist specialized in brand personality frameworks, particularly Jennifer Aaker's Brand Personality Dimensions (1997).
 
-You guide a structured exploration through 7 phases:
+You guide a structured exploration through 4 phases:
 1. Dimension Mapping — assess the brand across the 5 Aaker dimensions (Sincerity, Excitement, Competence, Sophistication, Ruggedness)
 2. Core Traits — identify 3-5 defining personality traits with "We Are / But Never" guard rails
 3. Spectrum Positioning — place the brand on 7 opposing trait spectrums
-4. Voice & Tone — define the brand's voice characteristics and word preferences using NN/g's 4 tone dimensions
-5. Voice in Action — create a writing sample that demonstrates the personality
-6. Channel Adaptation — describe how tone shifts across communication channels
-7. Visual Expression — translate personality into color, typography, and imagery direction
+4. Visual Expression — translate personality into color, typography, and imagery direction
 
 Key principles:
 - Brand personality is the set of human traits attributed to a brand (Aaker, 1997)
-- Voice is consistent (who you are), tone adapts (how you say it depending on context)
 - The "We Are / But Never" framework prevents personality traits from becoming caricatures
 - Visual expression should be a natural extension of personality traits
-- Channel adaptation keeps voice constant but adjusts tone for context
+- Voice and tone are managed exclusively in the Brand Voiceguide module — do NOT explore voice characteristics, word preferences, writing samples, or channel adaptation here
 
 Be warm and conversational. Ask ONE question at a time. Build on previous answers.
 Respond in the same language as the user.
@@ -4553,9 +4553,6 @@ Respond in the same language as the user.
         { key: 'dimension_mapping', title: 'Personality Dimensions', icon: 'User', question: 'If your brand walked into a room, what impression would it make? Describe its character in terms of sincerity (honest, warm), excitement (daring, spirited), competence (reliable, intelligent), sophistication (elegant, charming), and ruggedness (tough, outdoorsy). Which 1-2 dimensions feel most dominant?' },
         { key: 'core_traits', title: 'Core Traits', icon: 'Fingerprint', question: 'Name 3-5 defining personality traits for your brand. For each trait, give a concrete example of what it looks like in action ("We Are This") and what the "too far" version would be that your brand should never become ("But Never That").' },
         { key: 'spectrum_positioning', title: 'Personality Spectrum', icon: 'Sliders', question: 'Position your brand on these spectrums: friendly vs. formal, energetic vs. thoughtful, modern vs. traditional, innovative vs. proven, playful vs. serious, inclusive vs. exclusive, bold vs. reserved. Where do you sit, and why?' },
-        { key: 'voice_tone', title: 'Voice & Tone', icon: 'MessageCircle', question: 'Describe how your brand sounds in writing and speech. Is it formal or casual? Serious or humorous? Respectful or irreverent? Matter-of-fact or enthusiastic? What specific words or phrases does your brand love to use — and which would it never use?' },
-        { key: 'writing_sample', title: 'Voice in Action', icon: 'Award', question: "Write a short paragraph (3-4 sentences) in your brand's authentic voice. This could be a product description, email opening, or social media post. Show us how the personality comes alive in real communication." },
-        { key: 'channel_adaptation', title: 'Channel Adaptation', icon: 'MessageCircle', question: "How does your brand's tone shift across different channels — website, social media, customer support, email marketing, and crisis communication? The voice stays the same, but the tone adapts. Describe the differences." },
         { key: 'visual_expression', title: 'Visual Personality', icon: 'Palette', question: 'How should your brand personality translate into visual design? Think about what colors feel right for your personality, what typography style matches your character, and what kind of imagery represents your brand.' },
       ],
       feedbackPrompt: `Give warm, constructive feedback (2-3 sentences) on the answer.
@@ -4567,13 +4564,10 @@ Guidelines:
 - For Dimension Mapping: identify dominant Aaker dimensions, validate with examples from their answers
 - For Core Traits: check if traits are specific and actionable, validate the "But Never" guard rails
 - For Spectrum Positioning: probe for consistency between spectrum choices and stated traits
-- For Voice & Tone: distinguish between voice (consistent personality) and tone (contextual adaptation)
-- For Voice in Action: evaluate if the writing sample authentically reflects stated traits and voice
-- For Channel Adaptation: check if the core voice remains recognizable while tone appropriately shifts
 - For Visual Expression: validate alignment between personality traits and visual direction
 
 Do not ask follow-up questions. Respond in the same language as the user.`,
-      reportPrompt: `Generate a Brand Personality report based on the Aaker/NN/g exploration.
+      reportPrompt: `Generate a Brand Personality report based on the Aaker dimensions exploration.
 Brand Asset: {{itemName}}
 {{itemDescription}}
 
@@ -4598,7 +4592,7 @@ Generate JSON:
     "ruggedness": <1-5>
   },
   "findings": [
-    { "title": "...", "description": "...", "dimension": "dimension_mapping | core_traits | spectrum_positioning | voice_tone | writing_sample | channel_adaptation | visual_expression" }
+    { "title": "...", "description": "...", "dimension": "dimension_mapping | core_traits | spectrum_positioning | visual_expression" }
   ],
   "recommendations": ["..."],
   "fieldSuggestions": [
@@ -4606,34 +4600,22 @@ Generate JSON:
     { "field": "frameworkData.primaryDimension", "label": "Primary Dimension", "suggestedValue": "sincerity | excitement | competence | sophistication | ruggedness", "reason": "..." },
     { "field": "frameworkData.dimensionScores", "label": "Dimension Scores", "suggestedValue": { "sincerity": 0, "excitement": 0, "competence": 0, "sophistication": 0, "ruggedness": 0 }, "reason": "..." },
     { "field": "frameworkData.personalityTraits", "label": "Personality Traits", "suggestedValue": [{ "name": "...", "description": "...", "weAreThis": "...", "butNeverThat": "..." }], "reason": "..." },
-    { "field": "frameworkData.brandVoiceDescription", "label": "Brand Voice", "suggestedValue": "...", "reason": "..." },
-    { "field": "frameworkData.wordsWeUse", "label": "Words We Use", "suggestedValue": ["..."], "reason": "..." },
-    { "field": "frameworkData.wordsWeAvoid", "label": "Words We Avoid", "suggestedValue": ["..."], "reason": "..." },
-    { "field": "frameworkData.writingSample", "label": "Writing Sample", "suggestedValue": "...", "reason": "..." },
-    { "field": "frameworkData.channelTones", "label": "Channel Tones", "suggestedValue": { "website": "...", "socialMedia": "...", "customerSupport": "...", "emailMarketing": "...", "crisisCommunication": "..." }, "reason": "..." },
     { "field": "frameworkData.colorDirection", "label": "Color Direction", "suggestedValue": "...", "reason": "..." },
     { "field": "frameworkData.typographyDirection", "label": "Typography Direction", "suggestedValue": "...", "reason": "..." },
     { "field": "frameworkData.imageryDirection", "label": "Imagery Direction", "suggestedValue": "...", "reason": "..." },
-    { "field": "frameworkData.spectrumSliders", "label": "Spectrum Sliders", "suggestedValue": { "friendlyFormal": 4, "energeticThoughtful": 4, "modernTraditional": 4, "innovativeProven": 4, "playfulSerious": 4, "inclusiveExclusive": 4, "boldReserved": 4 }, "reason": "..." },
-    { "field": "frameworkData.toneDimensions", "label": "Tone Dimensions", "suggestedValue": { "formalCasual": 4, "seriousFunny": 4, "respectfulIrreverent": 4, "matterOfFactEnthusiastic": 4 }, "reason": "..." }
+    { "field": "frameworkData.spectrumSliders", "label": "Spectrum Sliders", "suggestedValue": { "friendlyFormal": 4, "energeticThoughtful": 4, "modernTraditional": 4, "innovativeProven": 4, "playfulSerious": 4, "inclusiveExclusive": 4, "boldReserved": 4 }, "reason": "..." }
   ]
 }
 Respond only with valid JSON.`,
       fieldSuggestionsConfig: [
         { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the brand personality in one compelling paragraph' },
         { field: 'frameworkData.primaryDimension', label: 'Primary Dimension', type: 'text' as const, extractionHint: 'Identify the dominant Aaker dimension (sincerity, excitement, competence, sophistication, or ruggedness)' },
-        { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice', type: 'text' as const, extractionHint: 'Describe the overall brand voice in 2-3 sentences' },
-        { field: 'frameworkData.wordsWeUse', label: 'Words We Use', type: 'array' as const, extractionHint: 'Extract 5-10 words or phrases the brand should use as a JSON array of strings' },
-        { field: 'frameworkData.wordsWeAvoid', label: 'Words We Avoid', type: 'array' as const, extractionHint: 'Extract 5-10 words or phrases the brand should avoid as a JSON array of strings' },
-        { field: 'frameworkData.writingSample', label: 'Writing Sample', type: 'text' as const, extractionHint: 'Create a writing sample that demonstrates the brand voice' },
         { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Describe the color direction that matches the brand personality' },
         { field: 'frameworkData.typographyDirection', label: 'Typography Direction', type: 'text' as const, extractionHint: 'Describe the typography style that matches the brand personality' },
         { field: 'frameworkData.imageryDirection', label: 'Imagery Direction', type: 'text' as const, extractionHint: 'Describe the imagery style that represents the brand personality' },
         { field: 'frameworkData.personalityTraits', label: 'Personality Traits', type: 'text' as const, extractionHint: 'Extract 3-5 personality traits with name, description, weAreThis, and butNeverThat for each' },
         { field: 'frameworkData.dimensionScores', label: 'Dimension Scores', type: 'text' as const, extractionHint: 'Score each Aaker dimension 1-5 based on the exploration answers' },
         { field: 'frameworkData.spectrumSliders', label: 'Spectrum Sliders', type: 'text' as const, extractionHint: 'Position the brand on each spectrum (1-7 scale) based on the exploration answers' },
-        { field: 'frameworkData.toneDimensions', label: 'Tone Dimensions', type: 'text' as const, extractionHint: 'Position the brand on each NN/g tone dimension (1-7 scale)' },
-        { field: 'frameworkData.channelTones', label: 'Channel Tones', type: 'text' as const, extractionHint: 'Describe the appropriate tone for each communication channel' },
       ],
       contextSources: ['brand_asset', 'product', 'persona'],
       isActive: true,

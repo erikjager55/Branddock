@@ -9,7 +9,16 @@ import {
   OPTIMIZE_CATEGORIES,
   getFalOptimizeProviderById,
   DEFAULT_OPTIMIZE_PROVIDER,
+  STYLE_TRANSFER_TARGET_STYLES,
 } from '@/lib/integrations/fal/fal-optimize-providers';
+
+/** Formats a style enum value like "pixel_art" as a display label ("Pixel Art"). */
+function formatStyleLabel(value: string): string {
+  return value
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
 
 interface SourceImage {
   url: string;
@@ -121,7 +130,13 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
   };
 
   const isEditCategory = selectedProvider?.category === 'edit';
-  const isValid = name.trim().length > 0 && sourceImage !== null && (!isEditCategory || prompt.trim().length > 0);
+  const isStyleTransfer = selectedProvider?.id === 'style-transfer';
+  // Style-transfer only accepts fixed enum styles (fal 422 on free text),
+  // so a leftover free-text prompt from another provider must not validate.
+  const hasValidPrompt = isStyleTransfer
+    ? (STYLE_TRANSFER_TARGET_STYLES as readonly string[]).includes(prompt)
+    : !isEditCategory || prompt.trim().length > 0;
+  const isValid = name.trim().length > 0 && sourceImage !== null && hasValidPrompt;
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Optimize Image" size="lg">
@@ -277,8 +292,28 @@ export function OptimizeImageModal({ isOpen, onClose }: OptimizeImageModalProps)
               </div>
             </div>
 
+            {/* Style picker — style-transfer only accepts fixed enum styles */}
+            {isStyleTransfer && (
+              <div>
+                <label htmlFor="style-transfer-style" className="block text-sm font-medium text-gray-700 mb-1">
+                  Target style
+                </label>
+                <select
+                  id="style-transfer-style"
+                  value={(STYLE_TRANSFER_TARGET_STYLES as readonly string[]).includes(prompt) ? prompt : ''}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                >
+                  <option value="" disabled>Choose a style...</option>
+                  {STYLE_TRANSFER_TARGET_STYLES.map((style) => (
+                    <option key={style} value={style}>{formatStyleLabel(style)}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Prompt field — required for edit category, optional for creative/clarity upscaler */}
-            {selectedProvider && (() => {
+            {selectedProvider && !isStyleTransfer && (() => {
               const isEdit = selectedProvider.category === 'edit';
               const supportsPrompt = isEdit || selectedProvider.id === 'creative-upscaler' || selectedProvider.id === 'clarity-upscaler';
               if (!supportsPrompt) return null;

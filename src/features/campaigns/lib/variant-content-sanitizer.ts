@@ -36,10 +36,47 @@ export const PLAIN_TEXT_MAX_LENGTH: Record<string, number> = {
   slug: 80,
 };
 
+/**
+ * Prefix/pattern rules for short plain-text component groups emitted by
+ * platform-specific content types (search/display ads, LinkedIn polls,
+ * X threads). These fields render verbatim in platform previews, so
+ * markdown would leak as raw characters. Centralized here so prompt
+ * building (canvas-orchestrator regeneration) and storage-time
+ * sanitization share one classification (prompt-audit 2026-06-11).
+ */
+function matchesPlainTextPattern(group: string): boolean {
+  if (group.includes("headline")) return true; // headline-1, short-headline-3, long-headline
+  if (group.startsWith("description-")) return true; // description-1..5 (ads)
+  if (group.startsWith("option-")) return true; // option-1..4 (LinkedIn poll)
+  if (group === "question") return true; // LinkedIn poll question
+  if (group.startsWith("tweet-")) return true; // tweet-2..6 (X thread)
+  if (group.startsWith("sitelink-")) return true; // sitelink-N-title / -description
+  if (group.startsWith("path-")) return true; // path-1/2 (search-ad display URL)
+  if (group.startsWith("cta-") || group.endsWith("-cta")) return true; // cta-tweet, closing-cta
+  if (/^email-\d+-subject$/.test(group)) return true; // email-1..7-subject (sequence contracts)
+  if (group === "preview-text") return true; // re-engagement inbox preview text
+  if (/^question-\d+$/.test(group)) return true; // question-1..6 (faq-page)
+  return false;
+}
+
+/**
+ * Length caps for plain-text groups matched by pattern rather than exact
+ * name — numbered contract groups (email-3-subject, question-4) can't live
+ * in the exact-match PLAIN_TEXT_MAX_LENGTH map. First matching entry wins.
+ * Caps mirror the component-contract maxLength values in
+ * component-templates-fallback.ts so prompt budget and storage clamp agree.
+ */
+const PLAIN_TEXT_PATTERN_MAX_LENGTH: ReadonlyArray<{ pattern: RegExp; cap: number }> = [
+  { pattern: /^email-\d+-subject$/, cap: 60 },
+  { pattern: /^preview-text$/, cap: 110 },
+  { pattern: /^question-\d+$/, cap: 120 },
+];
+
 /** True if a variant group must be rendered without markdown. */
 export function isPlainTextGroup(group: string | null | undefined): boolean {
   if (!group) return false;
-  return PLAIN_TEXT_GROUPS.has(group.toLowerCase().trim());
+  const g = group.toLowerCase().trim();
+  return PLAIN_TEXT_GROUPS.has(g) || matchesPlainTextPattern(g);
 }
 
 /**
@@ -59,7 +96,7 @@ export function isPlainTextGroup(group: string | null | undefined): boolean {
  * Whitespace is collapsed to single spaces and trimmed, so multi-line
  * output becomes a single clean line (appropriate for title/cta/meta).
  */
-export function stripMarkdown(input: string): string {
+export function stripMarkdown(input: string, preserveLineBreaks = false): string {
   if (!input) return "";
   let s = input;
 
@@ -101,10 +138,26 @@ export function stripMarkdown(input: string): string {
   // Strikethrough ~~x~~
   s = s.replace(/~~([^~]+)~~/g, "$1");
 
-  // Collapse all whitespace (including newlines) to single spaces.
-  s = s.replace(/\s+/g, " ").trim();
+  // Collapse whitespace. Multi-line groups (tweets) keep their line breaks:
+  // X renders newlines verbatim, so collapsing them flattens deliberate
+  // thread formatting. Other plain-text groups collapse to a single line.
+  if (preserveLineBreaks) {
+    s = s
+      .split("\n")
+      .map((line) => line.replace(/[^\S\n]+/g, " ").trim())
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  } else {
+    s = s.replace(/\s+/g, " ").trim();
+  }
 
   return s;
+}
+
+/** Plain-text groups where line breaks are meaningful platform formatting. */
+function preservesLineBreaks(group: string): boolean {
+  return group.startsWith("tweet-") || group === "cta-tweet";
 }
 
 /**
@@ -117,15 +170,28 @@ export function sanitizeVariantContent(
   group: string | null | undefined,
 ): string {
   if (!isPlainTextGroup(group)) return content;
-  const stripped = stripMarkdown(content);
-  const cap = PLAIN_TEXT_MAX_LENGTH[group!.toLowerCase().trim()];
+  const normalizedGroup = group!.toLowerCase().trim();
+  const stripped = stripMarkdown(content, preservesLineBreaks(normalizedGroup));
+  const cap =
+    PLAIN_TEXT_MAX_LENGTH[normalizedGroup] ??
+    PLAIN_TEXT_PATTERN_MAX_LENGTH.find(({ pattern }) => pattern.test(normalizedGroup))?.cap;
   if (cap && stripped.length > cap) {
-    // Soft truncate: cut on last word boundary within cap, then add ellipsis
-    // only if we actually cut. Keeps clamp from chopping mid-word.
+    // Soft truncate: cut on the last word boundary within the cap so the
+    // clamp never chops mid-word.
     const slice = stripped.slice(0, cap);
     const lastSpace = slice.lastIndexOf(" ");
     const safeCut = lastSpace > cap * 0.6 ? slice.slice(0, lastSpace) : slice;
-    return safeCut.trimEnd();
+    const clamped = safeCut.trimEnd();
+    // Truncation must be observable (gotcha 2026-05-17: silent paths emit a
+    // structured warn). A silent clamp hides prompt-vs-storage budget
+    // mismatches until a user notices missing words.
+    console.warn("[variant-content-sanitizer] plain-text cap clamped output", {
+      group: normalizedGroup,
+      cap,
+      strippedLength: stripped.length,
+      clampedLength: clamped.length,
+    });
+    return clamped;
   }
   return stripped;
 }

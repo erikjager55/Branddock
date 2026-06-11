@@ -24,6 +24,7 @@ import type { FeedbackCompilerFinding } from '@/lib/content-test/feedback-compil
 import { getThresholdForType, DEFAULT_FIDELITY_THRESHOLD } from '@/lib/content-test/per-type-thresholds';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 import type { AiProvider } from '@/lib/ai/feature-models';
+import { resolveLocaleLabel } from '@/lib/ai/locale-instruction';
 
 // F24/F27/F28 (audit 2026-05-13): rewrite-model = Opus 4.7 met adaptive
 // thinking (correcte API sinds F27 ai-caller.ts). Experiment v2 toonde
@@ -269,7 +270,9 @@ async function regenerateWithFeedback({
   // herschrijven. Bij rules-focus blijft surface-rewrite voldoende want
   // dat zijn lexicale fixes.
   const focusStyleOrJudge = /Style-fit|Brand-fidelity/.test(promptHint);
-  const lang = contentLanguage === 'nl' ? 'Nederlands' : 'English';
+  // Fase 5 M6: real language name via the shared resolver — previously a
+  // binary nl/en choice that collapsed e.g. sv/de workspaces to English.
+  const lang = resolveLocaleLabel(contentLanguage)?.nativeName ?? 'English';
 
   // F13-bis (audit 2026-05-13): voice-fingerprint block. Cap op 2500 chars
   // (~625 tokens) zodat de rewriter context-budget houdt voor baseline + hint.

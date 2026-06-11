@@ -200,7 +200,7 @@ export function BriefingReviewView({
       if (improved.constraints) onBriefingChange('constraints', improved.constraints);
 
       // Mark all gaps as applied
-      const allGapIndices = new Set(validation.gaps.map((_, i) => i));
+      const allGapIndices = new Set((validation.gaps ?? []).map((_, i) => i));
       setAppliedGaps(allGapIndices);
       setShowEditor(true);
       setHasEdited(true);
@@ -458,7 +458,7 @@ export function BriefingReviewView({
       )}
 
       {/* AI Improve Button — single action to improve all fields based on gaps */}
-      {validation.gaps.length > 0 && !appliedGaps.size && (
+      {(validation.gaps ?? []).length > 0 && !appliedGaps.size && (
         <div className="flex flex-col items-center gap-2">
           <Button
             variant="cta"

@@ -32,6 +32,7 @@ import {
   AICallPayload,
 } from "@/types/learning-loop";
 import { tryTrackStart, tryTrackComplete } from "@/lib/learning-loop/track-helpers";
+import { getPromptVersion } from "@/lib/ai/prompt-version-registry";
 import { emitLearningEvent } from "@/lib/learning-loop/event-emitter";
 import { extractTextFromImage, computeTextPollutionPenalty, type OcrCheckResult } from "@/lib/ai/image-quality/ocr-check";
 import { runCopyImageCoherenceJudge, type CoherenceJudgeResult } from "./copy-image-coherence-judge";
@@ -136,6 +137,7 @@ export async function scoreImageFidelity(
       parentEntityId: componentId,
       sourceIdentifier: "src/lib/brand-fidelity/visual-fidelity-scorer.ts:scoreImageFidelity",
       callOrder: 0,
+      promptVersion: getPromptVersion("fidelity-judge"),
     },
     judgePayload,
   );
@@ -443,8 +445,14 @@ function serializeJudgeResult(
 
 /**
  * Pattern G4 helper: fetch concat'd text-content van zustercomponenten in
- * dezelfde variant. Pakt componentType='text' rows met dezelfde
- * deliverableId + variantIndex en concateneert hun generatedContent.
+ * dezelfde variant (zelfde deliverableId + variantIndex).
+ *
+ * Er bestaat geen componentType 'text' — de kolom bevat per-veld type-namen
+ * (headline, body, …). Tekst-zusters worden daarom geselecteerd door de
+ * media-types uit te sluiten, het bewezen patroon uit
+ * ad-validation/runner.ts:loadVariantGroups (prompt-audit T8: de letterlijke
+ * 'text'-match matchte nul rijen en liet de coherence-judge dood op het
+ * hero-pad).
  *
  * Returns lege string wanneer geen tekst-componenten gevonden — caller
  * skipt de coherence-judge call.
@@ -457,10 +465,10 @@ async function fetchSiblingTextContent(
     where: {
       deliverableId,
       variantIndex,
-      componentType: "text",
+      componentType: { notIn: ["image", "video", "voiceover"] },
       generatedContent: { not: null },
     },
-    select: { variantGroup: true, generatedContent: true },
+    select: { variantGroup: true, componentType: true, generatedContent: true },
     orderBy: { order: "asc" },
   });
 
@@ -468,7 +476,7 @@ async function fetchSiblingTextContent(
 
   const parts: string[] = [];
   for (const s of siblings) {
-    const groupLabel = s.variantGroup ?? "content";
+    const groupLabel = s.variantGroup ?? s.componentType;
     const content = (s.generatedContent ?? "").trim();
     if (content.length > 0) {
       parts.push(`[${groupLabel}]\n${content}`);

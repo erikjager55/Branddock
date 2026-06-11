@@ -20,6 +20,10 @@ import {
   deriveVoiceBaseline1Pager,
   formatVoiceBaseline1Pager,
 } from '../brand-fidelity/voice-baseline-1pager';
+import {
+  stripAnalyzerMarkers,
+  stripAnalyzerMarkersFromList,
+} from '../brandstyle/analyzer-markers';
 
 // ─── Cache ─────────────────────────────────────────────────
 
@@ -1323,15 +1327,23 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       if (toneParts.length > 0) ctx.brandToneOfVoice = toneParts.join('. ');
     }
 
-    // Imagery
+    // Imagery — analyzer markers (OBSERVED:/RECOMMENDED:) are review metadata,
+    // not style direction; strip them here, before the cache write, so every
+    // consumer (image/video/canvas prompts) gets clean text (audit T5). The
+    // "label: value" segment structure must stay intact: downstream parsers
+    // (featureSafeImagerySegments) split on these labels.
     if (styleguide.imagerySavedForAi) {
       const imgParts: string[] = [];
       const photoStyle = styleguide.photographyStyle as { mood?: string; subjects?: string; composition?: string } | null;
-      if (photoStyle?.mood) imgParts.push(`Photography mood: ${photoStyle.mood}`);
-      if (photoStyle?.subjects) imgParts.push(`Subjects: ${photoStyle.subjects}`);
-      if (photoStyle?.composition) imgParts.push(`Composition: ${photoStyle.composition}`);
-      if (styleguide.photographyGuidelines.length > 0) {
-        imgParts.push(`Guidelines: ${styleguide.photographyGuidelines.join('; ')}`);
+      const mood = stripAnalyzerMarkers(photoStyle?.mood);
+      const subjects = stripAnalyzerMarkers(photoStyle?.subjects);
+      const composition = stripAnalyzerMarkers(photoStyle?.composition);
+      if (mood) imgParts.push(`Photography mood: ${mood}`);
+      if (subjects) imgParts.push(`Subjects: ${subjects}`);
+      if (composition) imgParts.push(`Composition: ${composition}`);
+      const guidelines = stripAnalyzerMarkersFromList(styleguide.photographyGuidelines);
+      if (guidelines.length > 0) {
+        imgParts.push(`Guidelines: ${guidelines.join('; ')}`);
       }
       if (imgParts.length > 0) ctx.brandImageryStyle = imgParts.join('. ');
       // imageryDonts wordt apart geëxposeerd zodat image-providers het via

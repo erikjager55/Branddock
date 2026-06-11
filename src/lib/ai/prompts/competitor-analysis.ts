@@ -2,7 +2,7 @@
 // Competitor Analysis Prompts — AI extraction from competitor URL content
 // =============================================================
 
-import { parseOutputLanguage } from "./product-analysis";
+import { fenceUntrustedContent, parseOutputLanguage } from "./product-analysis";
 
 export { parseOutputLanguage };
 
@@ -89,14 +89,18 @@ export function buildCompetitorUrlAnalysisPrompt(data: {
     `Competitor URL: ${data.url}`,
   ];
 
+  // Title, meta description and body text are all scraped from the
+  // competitor's site (attacker-controllable), so they go inside the fence.
+  const scraped: string[] = [];
   if (data.title) {
-    parts.push(`Page Title: ${data.title}`);
+    scraped.push(`Page Title: ${data.title}`);
   }
   if (data.description) {
-    parts.push(`Meta Description: ${data.description}`);
+    scraped.push(`Meta Description: ${data.description}`);
   }
+  scraped.push(``, `--- Website Content ---`, data.bodyText);
 
-  parts.push(``, `--- Website Content ---`, data.bodyText);
+  parts.push(``, fenceUntrustedContent(scraped.join('\n'), 'scraped competitor website'));
 
   if (data.brandContext) {
     parts.push(

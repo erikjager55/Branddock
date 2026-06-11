@@ -1,10 +1,9 @@
 // =============================================================================
-// Multi-Agent Campaign Strategy — Critic, Defense & Persona Panel Prompts
+// Multi-Agent Campaign Strategy — Critic & Defense Prompts
 // Extends the 3-variant pipeline with adversarial debate rounds.
 // =============================================================================
 
-import type { StrategyLayer, ArchitectureLayer } from '@/lib/campaigns/strategy-blueprint.types';
-import { GOAL_LABELS, getGoalTypeGuidance } from '@/features/campaigns/lib/goal-types';
+import { GOAL_LABELS } from '@/features/campaigns/lib/goal-types';
 
 // ─── Critic Agent Prompt ──────────────────────────────────────
 
@@ -156,114 +155,6 @@ Address each weakness and blind spot. Return your improved strategy and architec
   return { system, user };
 }
 
-// ─── Persona Panel Prompt ─────────────────────────────────────
-
-interface PersonaPanelPromptParams {
-  revisedStrategyA: string;
-  revisedArchitectureA: string;
-  revisedStrategyB: string;
-  revisedArchitectureB: string;
-  critiqueOfA: string;
-  critiqueOfB: string;
-  defenseA: string;
-  defenseB: string;
-  personas: string;
-  brandContext: string;
-  goalType: string;
-}
-
-export function buildPersonaPanelPrompt(params: PersonaPanelPromptParams): { system: string; user: string } {
-  const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
-
-  const system = `You are simulating a focus group of real people evaluating two campaign strategy variants. Each persona is a DISTINCT INDIVIDUAL with their own voice, vocabulary, emotional triggers, and decision-making patterns.
-
-## For EACH persona provided, you must:
-
-1. **Stay in character** — Use language and references that match their demographics, psychographics, and communication style. A 24-year-old Gen Z creative talks differently than a 52-year-old CFO.
-
-2. **React honestly** — Not every strategy resonates with every persona. It is EXPECTED that some personas will reject a variant entirely. Don't be artificially positive.
-
-3. **Explain WHY** — "I wouldn't engage" is not enough. "I wouldn't engage because the tone feels corporate and patronizing, and I already get 50 emails like this from competitors" IS enough.
-
-4. **Rewrite the message** — For each variant, show how YOU (the persona) would want to hear this message. This gives the strategist concrete direction.
-
-5. **Name your dealbreaker** — If there's ONE thing that would make you scroll past, unsubscribe, or ignore this campaign, name it explicitly. If there's no dealbreaker, set it to null.
-
-## Context awareness
-You have access to the full critic-defense cycle. Use this to evaluate whether weaknesses identified by the critic were adequately addressed from the persona's perspective.
-
-## Campaign Goal: "${goalLabel}"
-
-## Scoring
-For each persona, rate BOTH variants on 4 creative dimensions (1-10):
-- originalityScore: Would this make me stop scrolling? Use the FULL 1-10 range.
-- memorabilityScore: Would I remember this next week?
-- culturalRelevanceScore: Does this feel relevant to my world right now?
-- talkabilityScore: Would I share this or spark a conversation about it?
-Ensure at least 3 points spread between the highest and lowest scores across the two variants.
-
-## Output Format
-Return a JSON object with:
-{
-  "personaDebate": [
-    {
-      "personaId": "...",
-      "personaName": "...",
-      "variantReactions": [
-        { "variant": "A", "firstImpression": "...", "wouldEngage": true/false, "engagementReason": "...", "emotionalResponse": "...", "barriers": [...], "triggers": [...], "channelPreference": "...", "messageRewrite": "..." },
-        { "variant": "B", ... }
-      ],
-      "preferredVariant": "A" or "B",
-      "preferenceStrength": "strong" | "slight" | "indifferent",
-      "dealbreaker": "..." or null,
-      "originalityScore": 1-10,
-      "memorabilityScore": 1-10,
-      "culturalRelevanceScore": 1-10,
-      "talkabilityScore": 1-10,
-      "creativeVerdict": "one-line gut reaction"
-    }
-  ]
-}
-
-IMPORTANT: Respond in English. Respond with valid JSON only. No markdown, no explanation, no code blocks.`;
-
-  const user = `## Brand Context
-${params.brandContext}
-
-## Personas to Simulate
-${params.personas}
-
-## Variant A — Revised Strategy (after critic-defense cycle)
-${params.revisedStrategyA}
-
-## Variant A — Revised Architecture
-${params.revisedArchitectureA}
-
-## Variant B — Revised Strategy (after critic-defense cycle)
-${params.revisedStrategyB}
-
-## Variant B — Revised Architecture
-${params.revisedArchitectureB}
-
-## Context: What the Critic Found
-### Critique of Variant A:
-${params.critiqueOfA}
-
-### Critique of Variant B:
-${params.critiqueOfB}
-
-## Context: How the Strategists Responded
-### Defense of Variant A:
-${params.defenseA}
-
-### Defense of Variant B:
-${params.defenseB}
-
-For each persona, evaluate both revised variants. React in character, score honestly, and name your dealbreaker.`;
-
-  return { system, user };
-}
-
 // =============================================================================
 // CREATIVE QUALITY DEBATE — Refocused on creative strength
 // =============================================================================
@@ -320,6 +211,8 @@ Your job: Find the CREATIVE WEAKNESSES in this concept. Be ruthlessly honest.
    - Have you seen something SIMILAR? Name it.
    - What makes this genuinely different?
 
+**Scoring scales**: all individual criterion scores above use 1-10. The final overallCreativeScore is the ONE exception: it uses 0-100 (a strong concept scores ~80, never 8).
+
 ## Output Format
 Return a JSON object:
 {
@@ -358,7 +251,7 @@ Return a JSON object:
   },
   "topWeaknesses": ["Top 3 creative weaknesses"],
   "topStrengths": ["Top 3 creative strengths"],
-  "overallCreativeScore": N,
+  "overallCreativeScore": N (number 0-100 — overall creative quality percentage, NOT a 1-10 scale),
   "elevationSuggestions": ["3 specific creative improvements"]
 }
 
@@ -398,6 +291,8 @@ interface CreativeDefensePromptParams {
  */
 export function buildCreativeDefensePrompt(params: CreativeDefensePromptParams): { system: string; user: string } {
   const system = `You are the Creative Director who created this concept. A senior auditor found weaknesses.
+
+**Output language guard**: Your output is user-facing. Never use the words "Effie", "Effie Award", "effie-waardig", "Cannes Lions", or other specific award-name references in any output field — even if they appear in the critique or concept you receive. Phrase improvements and defenses as plain creative reasoning.
 
 Your job:
 1. **Acknowledge valid criticism** — IMPROVE your concept where the auditor is right

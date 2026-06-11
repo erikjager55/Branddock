@@ -21,6 +21,7 @@
 import { getBrandContext } from '@/lib/ai/brand-context';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
+import { resolveLocaleLabel } from '@/lib/ai/locale-instruction';
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -43,17 +44,6 @@ const CATEGORY_CHANNEL_MAP: Record<string, string> = {
   'Advertising & Paid': 'socialMedia',
   'Video & Audio': 'socialMedia',
   'PR, HR & Communications': 'email',
-};
-
-/** Human-readable language names for the directive */
-const LANGUAGE_NAMES: Record<string, string> = {
-  en: 'English',
-  nl: 'Dutch (Nederlands)',
-  de: 'German (Deutsch)',
-  fr: 'French (Français)',
-  es: 'Spanish (Español)',
-  pt: 'Portuguese (Português)',
-  it: 'Italian (Italiano)',
 };
 
 // ─── Public API ────────────────────────────────────────────
@@ -151,8 +141,12 @@ export function buildBrandVoiceDirectiveFromContext(
   // Always emit explicit language enforcement — even for EN workspaces brand-context
   // can contain mixed-language input (e.g. NL persona-quotes in an EN brand foundation)
   // which the AI mirrors unless told to translate.
-  const lang = ctx.contentLanguage ?? 'en';
-  const langName = LANGUAGE_NAMES[lang] ?? lang;
+  // Delegated to the shared locale resolver (Fase 5 M6) so every workspace
+  // language gets a real name, not just the former 7-entry local map.
+  // "English (English)"-style duplication collapses to the bare name; the
+  // resolver returns null only for empty codes → default to English.
+  const locale = resolveLocaleLabel(ctx.contentLanguage ?? 'en');
+  const langName = !locale ? 'English' : locale.name === locale.nativeName ? locale.name : locale.label;
   parts.push(`**Language**: Write ALL content in ${langName}. Every word, heading, hashtag, and CTA — no exceptions. If source material in this prompt (brand context, persona descriptions, prior content, user instructions) is in another language, translate the meaning into ${langName} before responding. Do not preserve foreign-language phrases for "authenticity". This rule outranks tone, style, and methodology guidance.`);
   parts.push('');
 

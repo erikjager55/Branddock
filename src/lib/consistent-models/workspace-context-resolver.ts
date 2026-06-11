@@ -10,6 +10,10 @@
 import { prisma } from '@/lib/prisma';
 import type { ModelBrandContext } from '@/features/consistent-models/types/consistent-model.types';
 import { extractBrandTags } from '@/lib/consistent-models/reference-prompt-builder';
+import {
+  stripAnalyzerMarkers,
+  stripAnalyzerMarkersFromList,
+} from '@/lib/brandstyle/analyzer-markers';
 
 /**
  * Resolve the full brand context for a workspace.
@@ -43,6 +47,7 @@ export async function resolveWorkspaceBrandContext(
         photographyGuidelines: true,
         designLanguageSavedForAi: true,
         imagerySavedForAi: true,
+        published: true,
         logos: {
           orderBy: { sortOrder: 'asc' },
           select: { variant: true, fileUrl: true, description: true },
@@ -104,18 +109,27 @@ export async function resolveWorkspaceBrandContext(
   if (styleguide?.primaryFontName) {
     ctx.brandFonts = [styleguide.primaryFontName];
   }
-  if (styleguide) {
+  // Imagery follows the same review-gate as brand-context (published +
+  // imagerySavedForAi) — this path used to push raw JSON.stringify of the
+  // unreviewed scrape (incl. OBSERVED:/RECOMMENDED: markers) into every
+  // generation prompt. Only the mood dimension is shareable prompt material:
+  // subjects/composition describe the scraped source photos and are
+  // per-image dimensions that must not ride along in the shared
+  // contextSummary tail (gotcha 2026-06-10).
+  if (styleguide?.published && styleguide.imagerySavedForAi) {
     const parts: string[] = [];
-    if (styleguide.photographyStyle) {
-      parts.push(
-        typeof styleguide.photographyStyle === 'string'
-          ? styleguide.photographyStyle
-          : JSON.stringify(styleguide.photographyStyle),
-      );
-    }
-    if (styleguide.photographyGuidelines?.length) {
-      parts.push(styleguide.photographyGuidelines.join('. '));
-    }
+    const photoStyle = styleguide.photographyStyle as
+      | { mood?: string | null }
+      | string
+      | null;
+    const mood = stripAnalyzerMarkers(
+      typeof photoStyle === 'string' ? photoStyle : photoStyle?.mood,
+    );
+    if (mood) parts.push(mood);
+    const guidelines = stripAnalyzerMarkersFromList(
+      styleguide.photographyGuidelines ?? [],
+    );
+    if (guidelines.length) parts.push(guidelines.join('. '));
     if (parts.length) ctx.brandImageryStyle = parts.join('. ');
   }
   if (styleguide?.designLanguageSavedForAi) {

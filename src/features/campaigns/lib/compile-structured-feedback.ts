@@ -15,7 +15,9 @@ const RATING_LABELS: Record<string, string> = {
   creativeTerritory: "Creative Territory",
   brandRole: "Brand Role",
   memorableDevice: "Memorable Device",
-  effieRationale: "Effie Award Rationale",
+  // Label intentionally avoids award names ("Effie") — compiled feedback is
+  // re-injected into downstream prompts that lack a jargon output-guard.
+  effieRationale: "Award Potential Rationale",
   campaignTheme: "Campaign Theme",
   theme: "Campaign Theme",
   positioning: "Positioning Statement",

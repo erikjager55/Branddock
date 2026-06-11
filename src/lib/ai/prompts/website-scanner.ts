@@ -3,6 +3,7 @@
 // =============================================================
 
 import type { CrawledPage, WebsiteExtraction } from '@/lib/website-scanner/types';
+import { fenceUntrustedContent } from './product-analysis';
 
 // ─── 1. Extraction (Gemini) ──────────────────────────────────
 
@@ -71,33 +72,36 @@ Guidelines:
  * Format crawled pages into a user prompt for the extraction LLM.
  */
 export function buildExtractionUserPrompt(pages: CrawledPage[]): string {
-  const parts: string[] = [
-    `Analyze the following ${pages.length} crawled pages from a single website and extract structured brand information.`,
-    '',
-  ];
+  // Page URLs, titles, body text and image alts are all scraped
+  // (attacker-controllable), so the entire pages section goes inside the fence.
+  const pageBlocks: string[] = [];
 
   for (const page of pages) {
-    parts.push(`=== PAGE: ${page.pageType.toUpperCase()} ===`);
-    parts.push(`URL: ${page.url}`);
-    if (page.title) parts.push(`Title: ${page.title}`);
-    parts.push('');
-    parts.push(page.bodyText.slice(0, 4000));
+    pageBlocks.push(`=== PAGE: ${page.pageType.toUpperCase()} ===`);
+    pageBlocks.push(`URL: ${page.url}`);
+    if (page.title) pageBlocks.push(`Title: ${page.title}`);
+    pageBlocks.push('');
+    pageBlocks.push(page.bodyText.slice(0, 4000));
     if (page.images?.length > 0) {
-      parts.push('');
-      parts.push(`Images found: ${page.images.length}`);
+      pageBlocks.push('');
+      pageBlocks.push(`Images found: ${page.images.length}`);
       const imageList = page.images.slice(0, 5).map(img =>
         `  - ${img.url}${img.alt ? ` (alt: ${img.alt})` : ''}`
       );
-      parts.push(imageList.join('\n'));
+      pageBlocks.push(imageList.join('\n'));
     }
-    parts.push('');
-    parts.push('---');
-    parts.push('');
+    pageBlocks.push('');
+    pageBlocks.push('---');
+    pageBlocks.push('');
   }
 
-  parts.push('Respond with a JSON object following the schema described in your instructions.');
-
-  return parts.join('\n');
+  return [
+    `Analyze the following ${pages.length} crawled pages from a single website and extract structured brand information.`,
+    '',
+    fenceUntrustedContent(pageBlocks.join('\n'), 'crawled website pages'),
+    '',
+    'Respond with a JSON object following the schema described in your instructions.',
+  ].join('\n');
 }
 
 // ─── 2. Brand Foundation A (Claude) ──────────────────────────
@@ -511,9 +515,9 @@ export function buildAnalysisUserPrompt(
   companyName: string,
 ): string {
   const profile = extraction.companyProfile;
+  // The extraction data is LLM-derived from scraped pages and therefore
+  // attacker-influenceable — the whole data section goes inside the fence.
   const parts: string[] = [
-    `Analyze the following structured data extracted from ${companyName}'s website and generate the requested brand framework content.`,
-    '',
     '=== COMPANY PROFILE ===',
     `Name: ${profile?.name ?? companyName}`,
   ];
@@ -605,8 +609,11 @@ export function buildAnalysisUserPrompt(
     }
   }
 
-  parts.push('');
-  parts.push('Respond with a JSON object following the schema described in your instructions.');
-
-  return parts.join('\n');
+  return [
+    `Analyze the following structured data extracted from ${companyName}'s website and generate the requested brand framework content.`,
+    '',
+    fenceUntrustedContent(parts.join('\n'), 'website extraction data'),
+    '',
+    'Respond with a JSON object following the schema described in your instructions.',
+  ].join('\n');
 }

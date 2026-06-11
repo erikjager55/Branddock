@@ -24,6 +24,7 @@ import type {
 } from "./brand-tokens";
 import { relativeLuminance } from "./brand-tokens";
 import type { LayoutStyle, DesignSystem } from "./design-system";
+import { stripAnalyzerMarkers } from "@/lib/brandstyle/analyzer-markers";
 
 /**
  * Nullt een near-white button-background. Een wit/near-wit button-bg (bv. een
@@ -497,18 +498,6 @@ export function mapPhotographyTokens(
     compositionFragment,
     subjectPool: parseSubjectPool(subjects),
   };
-}
-
-/**
- * Verwijder ALLE analyzer-markers (OBSERVED:/RECOMMENDED:/NOTE:) — de oude
- * variant stripte alleen het leading prefix waardoor mid-string markers de
- * image-prompts in lekten.
- */
-function stripAnalyzerMarkers(text: string | null | undefined): string {
-  return (text ?? "")
-    .replace(/\b(observed|recommended|note):\s*/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
 }
 
 /** Word-safe truncatie: knip op laatste spatie binnen budget, nooit mid-woord. */

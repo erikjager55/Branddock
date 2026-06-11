@@ -5,6 +5,11 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenAI } from '@google/genai';
+import { buildLocaleInstruction } from '@/lib/ai/locale-instruction';
+import { isTempDeprecatedModel } from '@/lib/ai/anthropic-client';
+import { DEFAULT_REPORT_PROMPT } from './config-resolver';
+import { EXPLORATION_AI_MODELS } from './config.types';
+import { resolveTemplate } from './prompt-engine';
 
 // ─── Provider Types ─────────────────────────────────────────
 
@@ -110,11 +115,13 @@ async function callLLM(params: {
       content: m.content,
     }));
 
+    const isTempDeprecated = isTempDeprecatedModel(modelConfig.model);
+
     const response = await client.messages.create({
       model: modelConfig.model,
       system: systemPrompt,
       messages: anthropicMessages,
-      temperature,
+      ...(isTempDeprecated ? {} : { temperature }),
       max_tokens: maxTokens,
     });
 
@@ -146,108 +153,6 @@ async function callLLM(params: {
   throw new Error(`Unsupported provider: ${modelConfig.provider}`);
 }
 
-// ─── System Prompt Builder ──────────────────────────────────
-
-function buildExplorationSystemPrompt(
-  itemType: string,
-  itemName: string,
-  itemContext: string,
-  dimensions: DimensionDef[],
-): string {
-  const dimensionList = dimensions
-    .map((d, i) => `${i + 1}. ${d.title} (key: ${d.key})`)
-    .join('\n');
-
-  return `You are a senior brand strategist conducting an AI-guided exploration session for a ${itemType} called "${itemName}".
-
-## Item Context
-${itemContext}
-
-## Exploration Dimensions
-${dimensionList}
-
-## Rules
-- Ask ONE clear, open-ended question at a time
-- Build on previous answers — reference what the user said
-- Be warm but professional, like a trusted advisor
-- Keep questions concise (1-2 sentences max)
-- Focus on actionable insights for brand strategy
-- Questions should be in English`;
-}
-
-// ─── Generate Next Question ─────────────────────────────────
-
-export async function generateNextQuestion(params: {
-  itemType: string;
-  itemName: string;
-  itemContext: string;
-  dimensions: DimensionDef[];
-  currentDimension: DimensionDef;
-  previousQA: QAPair[];
-  modelConfig?: ExplorationModelConfig;
-}): Promise<string> {
-  const {
-    itemType, itemName, itemContext, dimensions,
-    currentDimension, previousQA,
-    modelConfig = DEFAULT_EXPLORATION_MODEL,
-  } = params;
-
-  const systemPrompt = buildExplorationSystemPrompt(itemType, itemName, itemContext, dimensions);
-
-  const messages: { role: 'user' | 'assistant'; content: string }[] = [];
-  for (const qa of previousQA) {
-    messages.push({ role: 'assistant', content: qa.question });
-    messages.push({ role: 'user', content: qa.answer });
-  }
-  messages.push({
-    role: 'user',
-    content: `Now ask a question about the "${currentDimension.title}" dimension. Focus on understanding this aspect of ${itemName}. Ask only ONE question.`,
-  });
-
-  try {
-    const text = await callLLM({ modelConfig, systemPrompt, messages, temperature: 0.7, maxTokens: 300 });
-    return text || currentDimension.question;
-  } catch (error) {
-    console.error('[exploration-llm] generateNextQuestion failed:', error);
-    return currentDimension.question;
-  }
-}
-
-// ─── Generate Feedback ──────────────────────────────────────
-
-export async function generateFeedback(params: {
-  itemType: string;
-  itemName: string;
-  dimensionTitle: string;
-  question: string;
-  answer: string;
-  modelConfig?: ExplorationModelConfig;
-}): Promise<string> {
-  const {
-    itemType, itemName, dimensionTitle, question, answer,
-    modelConfig = DEFAULT_EXPLORATION_MODEL,
-  } = params;
-
-  const systemPrompt = `You are a senior brand strategist. Give brief, encouraging feedback (1-2 sentences) on the user's answer about the "${dimensionTitle}" dimension of a ${itemType} called "${itemName}". Acknowledge what they said and highlight what's useful for brand strategy. Be warm and specific — reference their actual answer. Respond in English.`;
-
-  try {
-    const text = await callLLM({
-      modelConfig,
-      systemPrompt,
-      messages: [
-        { role: 'assistant', content: question },
-        { role: 'user', content: `${answer}\n\nGive brief feedback on my answer above.` },
-      ],
-      temperature: 0.7,
-      maxTokens: 200,
-    });
-    return text || 'Great insight! This helps build a clearer picture.';
-  } catch (error) {
-    console.error('[exploration-llm] generateFeedback failed:', error);
-    return 'Thank you for sharing that perspective. This is valuable input for the analysis.';
-  }
-}
-
 // ─── Report Types ───────────────────────────────────────────
 
 interface ReportDimensionInsight {
@@ -277,8 +182,169 @@ export interface GeneratedReport {
   fieldSuggestions: ReportFieldSuggestion[];
 }
 
+// ─── Report Prompt Config ───────────────────────────────────
+
+/**
+ * Slice of the resolved exploration config that drives report generation.
+ * Structurally compatible with ExplorationConfigData, so builders can pass
+ * the resolveExplorationConfig() result directly.
+ */
+export interface ReportPromptConfig {
+  /** Admin-editable instruction template; blank falls back to DEFAULT_REPORT_PROMPT. */
+  reportPrompt: string;
+  /** Admin-configured model (EXPLORATION_MODELS id or raw model string). */
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  customKnowledge: string;
+  assetKnowledge: string;
+}
+
+/**
+ * Resolve the effective report model.
+ * Priority: explicit per-session choice → admin-config model → default.
+ * Both are validated against the EXPLORATION_MODELS whitelist so a stale or
+ * mistyped config value can never route to an unknown provider/model.
+ */
+function resolveReportModel(
+  sessionModelId: string | null | undefined,
+  configModel: string | null | undefined,
+): ExplorationModelConfig {
+  if (sessionModelId) {
+    const bySession = EXPLORATION_MODELS.find((m) => m.id === sessionModelId);
+    if (bySession) return bySession;
+  }
+  if (configModel) {
+    const byConfig = EXPLORATION_MODELS.find((m) => m.id === configModel || m.model === configModel);
+    if (byConfig) return byConfig;
+    // The admin UI whitelists against EXPLORATION_AI_MODELS (raw SDK model
+    // ids, incl. the seeded default claude-sonnet-4-20250514) — honor the
+    // anthropic/google entries here too. OpenAI entries can't be honored:
+    // callLLM has no openai path (ExplorationProvider excludes it).
+    const adminModel = EXPLORATION_AI_MODELS.find((m) => m.id === configModel);
+    if (adminModel && (adminModel.provider === 'anthropic' || adminModel.provider === 'google')) {
+      return { provider: adminModel.provider, model: adminModel.id };
+    }
+    console.warn('[exploration-report] config.model not usable — falling back to default', {
+      configModel,
+      reason: adminModel ? 'openai not supported by report path' : 'not in any whitelist',
+      fallback: DEFAULT_EXPLORATION_MODEL.model,
+    });
+  }
+  return DEFAULT_EXPLORATION_MODEL;
+}
+
+// ─── Report Prompt Assembly ─────────────────────────────────
+
+// CONTRACT (C12): the admin-editable config.reportPrompt supplies only the
+// INSTRUCTION content of the report prompt (role, focus, framework guidance)
+// via {{template}} variables. The JSON output shape ({ executiveSummary,
+// dimensions, findings, recommendations, fieldSuggestions }) stays CODE-side
+// — REPORT_RULES + REPORT_SHAPE_CONTRACT are appended after the template —
+// because parseReportJSON() only understands that canonical shape. Seeded
+// framework templates that promise extra keys (purposeScore,
+// goldenCircleScore, …) keep working: the parser ignores unknown keys.
+
+const REPORT_RULES = `## Rules
+- Keep all JSON keys and identifier values ("key", "icon", "field") exactly as provided above — never translate identifiers
+- Be specific and actionable — reference actual answers from the conversation
+- Executive summary: 2-3 sentences synthesizing the key takeaway
+- Dimension summaries: 1-2 sentences each, highlighting the most important insight from that dimension
+- Findings: 5 key findings with title + description (1-2 sentences each)
+- Recommendations: 5 strategic recommendations (1 sentence each)
+- Field suggestions: suggest a value for EVERY field listed in "Updatable Fields" above. For fields that are empty, provide a value based on the conversation. For fields that already have a value, suggest an improved or refined version if the conversation reveals better content. Include the field key, label, suggested value, and a brief reason for each.
+- CRITICAL: For fields with type "array", you MUST provide suggestedValue as a JSON array of strings, e.g. ["item1", "item2", "item3"]. NEVER return a comma-separated string for array fields.
+- For fields with type "text" or "string", provide a single string as suggestedValue
+- For object fields (like scores or slider positions), provide a JSON object as suggestedValue
+- Respond ONLY with valid JSON, no markdown code blocks, no extra text`;
+
+const REPORT_SHAPE_CONTRACT = `Generate a comprehensive analysis report as JSON with this exact structure:
+{
+  "executiveSummary": "...",
+  "dimensions": [
+    { "key": "...", "title": "...", "icon": "...", "summary": "..." }
+  ],
+  "findings": [
+    { "title": "...", "description": "..." }
+  ],
+  "recommendations": ["...", "..."],
+  "fieldSuggestions": [
+    { "field": "fieldKey", "label": "Field Label", "suggestedValue": "..." or ["..."], "reason": "..." }
+  ]
+}`;
+
+function buildReportPrompts(params: {
+  template: string;
+  itemType: string;
+  itemName: string;
+  itemContext: string;
+  qaText: string;
+  dimensionList: string;
+  fieldList: string;
+  brandContext: string;
+  customKnowledge: string;
+  assetKnowledge: string;
+  language?: string;
+}): { systemPrompt: string; userMessage: string } {
+  const {
+    template, itemType, itemName, itemContext, qaText,
+    dimensionList, fieldList, brandContext, customKnowledge, assetKnowledge,
+    language,
+  } = params;
+  const templateHas = (variable: string) => template.includes(`{{${variable}}}`);
+
+  const instruction = resolveTemplate(template, {
+    itemName,
+    itemType,
+    itemDescription: itemContext,
+    allAnswers: qaText,
+    brandContext,
+    customKnowledge,
+    assetKnowledge,
+  });
+
+  // Append code-side sections only when the template did not already consume
+  // the equivalent variable — avoids feeding the model the same block twice.
+  const itemSection = templateHas('itemDescription') ? '' : `\n## Item Context\n${itemContext}\n`;
+  // Dedup per variable: a template consuming only ONE of the two knowledge
+  // vars must not silently drop the other source.
+  const leftoverKnowledge = [
+    templateHas('customKnowledge') ? '' : customKnowledge,
+    templateHas('assetKnowledge') ? '' : assetKnowledge,
+  ].filter(Boolean).join('\n\n');
+  const knowledgeSection = leftoverKnowledge
+    ? `\n## Knowledge Sources\n${leftoverKnowledge}\n`
+    : '';
+
+  const systemPrompt = `${instruction}
+
+${buildLocaleInstruction(language)}${itemSection}${knowledgeSection}
+## Exploration Dimensions
+${dimensionList}
+
+## Updatable Fields
+${fieldList}
+
+${REPORT_RULES}`;
+
+  // The conversation must reach the model exactly once: inside the template
+  // when it consumes {{allAnswers}}, otherwise via the user message.
+  const userMessage = templateHas('allAnswers')
+    ? `The full exploration conversation is included in your instructions above.\n\n${REPORT_SHAPE_CONTRACT}`
+    : `Here is the full exploration conversation:\n\n${qaText}\n\n${REPORT_SHAPE_CONTRACT}`;
+
+  return { systemPrompt, userMessage };
+}
+
 // ─── Generate Report ────────────────────────────────────────
 
+/**
+ * Generate the exploration analysis report.
+ *
+ * The instruction content comes from the admin-editable config.reportPrompt
+ * (fallback: DEFAULT_REPORT_PROMPT from the config-resolver); the JSON shape
+ * contract is appended code-side — see CONTRACT comment above.
+ */
 export async function generateReport(params: {
   itemType: string;
   itemName: string;
@@ -287,14 +353,20 @@ export async function generateReport(params: {
   allQA: QAPair[];
   fieldMapping: { field: string; label: string; type: string; extractionHint?: string }[];
   currentFieldValues: Record<string, unknown>;
-  modelConfig?: ExplorationModelConfig;
-  knowledgeContext?: string;
+  /** Explicit per-session model choice (EXPLORATION_MODELS id); wins over config.model. */
+  sessionModelId?: string | null;
+  /** Resolved exploration config — supplies the report template + model/sampling settings. */
+  config?: ReportPromptConfig;
+  /** Pre-formatted brand context for the {{brandContext}} template variable. */
+  brandContext?: string;
+  /** ISO 639-1 workspace content language for the report output (defaults to English). */
+  language?: string;
 }): Promise<GeneratedReport> {
   const {
     itemType, itemName, itemContext, dimensions, allQA,
     fieldMapping, currentFieldValues,
-    modelConfig = DEFAULT_EXPLORATION_MODEL,
-    knowledgeContext,
+    sessionModelId, config, brandContext = '',
+    language = 'en',
   } = params;
 
   const qaText = allQA
@@ -314,48 +386,20 @@ export async function generateReport(params: {
     })
     .join('\n');
 
-  const knowledgeSection = knowledgeContext
-    ? `\n## Knowledge Sources\n${knowledgeContext}\n`
-    : '';
+  const template = config?.reportPrompt.trim() ? config.reportPrompt : DEFAULT_REPORT_PROMPT;
+  const modelConfig = resolveReportModel(sessionModelId, config?.model);
 
-  const systemPrompt = `You are a senior brand strategist producing an analysis report for a ${itemType} called "${itemName}".
+  const { systemPrompt, userMessage } = buildReportPrompts({
+    template, itemType, itemName, itemContext, qaText,
+    dimensionList, fieldList, brandContext,
+    customKnowledge: config?.customKnowledge ?? '',
+    assetKnowledge: config?.assetKnowledge ?? '',
+    language,
+  });
 
-## Item Context
-${itemContext}
-${knowledgeSection}
-## Exploration Dimensions
-${dimensionList}
-
-## Updatable Fields
-${fieldList}
-
-## Rules
-- Write in English
-- Be specific and actionable — reference actual answers from the conversation
-- Executive summary: 2-3 sentences synthesizing the key takeaway
-- Dimension summaries: 1-2 sentences each, highlighting the most important insight from that dimension
-- Findings: 5 key findings with title + description (1-2 sentences each)
-- Recommendations: 5 strategic recommendations (1 sentence each)
-- Field suggestions: suggest a value for EVERY field listed in "Updatable Fields" above. For fields that are empty, provide a value based on the conversation. For fields that already have a value, suggest an improved or refined version if the conversation reveals better content. Include the field key, label, suggested value, and a brief reason for each.
-- CRITICAL: For fields with type "array", you MUST provide suggestedValue as a JSON array of strings, e.g. ["item1", "item2", "item3"]. NEVER return a comma-separated string for array fields.
-- For fields with type "text" or "string", provide a single string as suggestedValue
-- For object fields (like scores or slider positions), provide a JSON object as suggestedValue
-- Respond ONLY with valid JSON, no markdown code blocks, no extra text`;
-
-  const userMessage = `Here is the full exploration conversation:\n\n${qaText}\n\nGenerate a comprehensive analysis report as JSON with this exact structure:
-{
-  "executiveSummary": "...",
-  "dimensions": [
-    { "key": "...", "title": "...", "icon": "...", "summary": "..." }
-  ],
-  "findings": [
-    { "title": "...", "description": "..." }
-  ],
-  "recommendations": ["...", "..."],
-  "fieldSuggestions": [
-    { "field": "fieldKey", "label": "Field Label", "suggestedValue": "..." or ["..."], "reason": "..." }
-  ]
-}`;
+  // Reports regularly exceed the seeded 2048-token config default now that
+  // truncation throws (F1) — consume the admin value but keep a 16k floor.
+  const maxTokens = Math.max(config?.maxTokens ?? 0, 16000);
 
   console.log('[exploration-llm] generateReport: allQA pairs:', allQA.length, '| model:', modelConfig.model);
 
@@ -364,8 +408,8 @@ ${fieldList}
       modelConfig,
       systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
-      temperature: 0.4,
-      maxTokens: 16000,
+      temperature: config?.temperature ?? 0.4,
+      maxTokens,
     });
 
     console.log('[exploration-llm] generateReport raw response length:', text.length);
@@ -486,11 +530,3 @@ function buildFallbackReport(
   };
 }
 
-// ─── Resolve Model Config ───────────────────────────────────
-
-/** Look up full model config from a model ID string (e.g. 'claude-sonnet-4-6') */
-export function resolveModelConfig(modelId: string | null | undefined): ExplorationModelConfig {
-  if (!modelId) return DEFAULT_EXPLORATION_MODEL;
-  const found = EXPLORATION_MODELS.find((m) => m.id === modelId);
-  return found ?? DEFAULT_EXPLORATION_MODEL;
-}

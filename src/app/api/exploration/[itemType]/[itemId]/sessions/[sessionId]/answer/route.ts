@@ -7,6 +7,7 @@ import { getItemTypeConfig } from '@/lib/ai/exploration/item-type-registry';
 import { resolveExplorationConfig } from '@/lib/ai/exploration/config-resolver';
 import { buildBrandContextString, resolveTemplate } from '@/lib/ai/exploration/prompt-engine';
 import { generateAIResponse } from '@/lib/ai/exploration/ai-caller';
+import { getPromptVersion } from '@/lib/ai/prompt-version-registry';
 import { resolveItemSubType } from '@/lib/ai/exploration/constants';
 import { sanitizeAiInputString } from '@/lib/security/input-sanitizer';
 
@@ -147,12 +148,15 @@ export async function POST(
         feedbackSystemPrompt,
         feedbackUserPrompt,
         explorationConfig.temperature,
-        512,
+        // 512 left no headroom now that generateAIResponse throws on
+        // truncation; 1024 is a ceiling, not a cost, for short feedback.
+        1024,
         {
           workspaceId,
           parentEntityType: 'ExplorationSession',
           parentEntityId: sessionId,
           sourceIdentifier: 'src/app/api/exploration/[itemType]/[itemId]/sessions/[sessionId]/answer/route.ts:POST',
+          promptVersion: getPromptVersion('exploration'),
         },
       );
     } catch (err) {

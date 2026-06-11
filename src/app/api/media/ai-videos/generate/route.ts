@@ -9,6 +9,8 @@ import { cacheKeys } from '@/lib/api/cache-keys';
 import { getStorageProvider } from '@/lib/storage';
 import { z } from 'zod';
 import { getFalVideoProviderById } from '@/lib/integrations/fal/fal-video-providers';
+import { truncatePromptForModel } from '@/lib/integrations/fal/fal-client';
+import { buildNegativePrompt } from '@/lib/ai/image-quality/negative-prompts';
 import { mapGeneratedVideo } from '@/features/media-library/utils/media-utils';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { fetchWithSizeLimit, AI_VIDEO_SIZE_CAP } from '@/lib/security/fetch-with-limit';
@@ -70,11 +72,16 @@ export async function POST(request: NextRequest) {
 
     // Build fal.ai input based on the provider
     const isKling = provider.endpoint.includes('kling');
+    // Kling and Veo expose a native negative_prompt input; Seedance and LTX
+    // do not, so the quality defaults are only sent where they take effect
+    // (prompt-audit 2026-06-11, gap-fal-image-paths).
+    const supportsNegativePrompt = isKling || provider.endpoint.includes('veo');
     const input: Record<string, unknown> = {
       prompt,
       duration: isKling ? String(duration) : duration,
       aspect_ratio: aspectRatio,
       generate_audio: true,
+      ...(supportsNegativePrompt ? { negative_prompt: buildNegativePrompt() } : {}),
     };
 
     // Determine endpoint: image-to-video or text-to-video
@@ -101,6 +108,10 @@ export async function POST(request: NextRequest) {
       // Text-to-video: use the text-to-video endpoint
       endpoint = provider.textToVideoEndpoint ?? provider.endpoint;
     }
+
+    // Central per-model prompt cap — this route subscribes directly, which
+    // bypassed the truncatePromptForModel guard that generateFalImage applies.
+    input.prompt = truncatePromptForModel(prompt, endpoint);
 
     // Call fal.ai — 5 minute timeout since video generation is slow
     console.log('[video-generate] endpoint:', endpoint, 'input:', JSON.stringify(input));

@@ -9,12 +9,12 @@ import { resolveCanvasModelForContentType } from "@/lib/ai/canvas-model-routing"
 import { resolveHumanVoiceMode } from "@/lib/brand-fidelity/fidelity-config";
 import {
   generateLandingPageVariantBatch,
-  parseLandingPageVariantResponse,
   LP_VARIANT_PROMPT_VERSION,
 } from "@/lib/landing-pages/variant-generator";
 import {
   runVariantTellRewriteIfNeeded,
   buildVariantTellFeedback,
+  parseVariantRewriteResponse,
   VARIANT_REWRITE_SYSTEM_PROMPT,
 } from "@/lib/landing-pages/variant-tell-rewrite";
 import { flattenVariantToText } from "@/lib/landing-pages/flatten-variant";
@@ -369,7 +369,7 @@ export async function POST(
               ...(generationModel ? { model: generationModel } : {}),
             },
           );
-          const parsedRw = parseLandingPageVariantResponse(res.content);
+          const parsedRw = parseVariantRewriteResponse(res.content);
           if (!parsedRw.success) return null;
           const afterText = flattenVariantToText(parsedRw.data);
           const rescored = await runFidelityScoring({

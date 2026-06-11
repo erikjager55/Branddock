@@ -97,6 +97,30 @@ function resolveOptions(opts?: CompletionOptions) {
   };
 }
 
+// ─── Truncation guard ──────────────────────────────────────
+
+/**
+ * Throws when OpenAI stopped generating because the token limit was hit
+ * (`finish_reason === 'length'`). Silent truncation corrupts downstream
+ * parsing/persistence — fail loudly with actionable context instead.
+ */
+function assertNotTruncated(
+  response: OpenAI.Chat.Completions.ChatCompletion,
+  model: string,
+  maxTokens: number,
+): void {
+  const choice = response.choices[0];
+  if (choice?.finish_reason !== 'length') return;
+  const outputChars = choice.message?.content?.length ?? 0;
+  console.error(
+    `[openai-client] OpenAI response truncated (finish_reason=length). Model: ${model}, maxTokens: ${maxTokens}, output length: ${outputChars} chars. Increase maxTokens to avoid this.`,
+  );
+  throw new Error(
+    `OpenAI response was truncated (hit ${maxTokens} token limit). The output is incomplete. ` +
+    `Try increasing maxTokens or simplifying the prompt. Output was ${outputChars} chars.`,
+  );
+}
+
 // ─── Public API ────────────────────────────────────────────
 
 export const openaiClient = {
@@ -118,6 +142,7 @@ export const openaiClient = {
       ),
     );
 
+    assertNotTruncated(response, model, max_completion_tokens);
     return response.choices[0]?.message?.content ?? '';
   },
 
@@ -139,6 +164,7 @@ export const openaiClient = {
       ),
     );
 
+    assertNotTruncated(response, model, max_completion_tokens);
     return {
       content: response.choices[0]?.message?.content ?? '',
       inputTokens: response.usage?.prompt_tokens ?? 0,

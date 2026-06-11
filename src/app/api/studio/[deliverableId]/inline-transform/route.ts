@@ -3,6 +3,7 @@ import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-acc
 import { prisma } from '@/lib/prisma';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import { createStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
+import { resolveCallBudget } from '@/lib/ai/call-budget';
 import { checkRateLimit } from '@/lib/ai/rate-limiter';
 import { buildBrandVoiceDirective } from '@/lib/studio/brand-voice-directive';
 import { sanitizeAiInputString } from '@/lib/security/input-sanitizer';
@@ -123,12 +124,21 @@ export async function POST(
 
     const { provider, model } = await resolveFeatureModel(workspaceId, 'content-improve');
 
+    // Scale the output budget with the selection (~2.5 chars per token plus
+    // JSON-envelope headroom) — a fixed 1024 truncated transforms of
+    // selections near the 5000-char cap. 'shorter' targets condensed output,
+    // so half the rewrite budget suffices.
+    const rewriteTokens = Math.min(4096, Math.ceil(selectedText.length / 2.5) + 512);
+    const { maxTokens, timeoutMs } = resolveCallBudget(
+      transformAction === 'shorter' ? Math.ceil(rewriteTokens / 2) : rewriteTokens,
+    );
+
     const aiResponse = await createStructuredCompletion<TransformAIResponse>(
       provider,
       model,
       systemPrompt,
       userPrompt,
-      { temperature: 0.7, maxTokens: 1024 },
+      { temperature: 0.7, maxTokens, timeoutMs },
       {
         workspaceId,
         parentEntityType: 'Deliverable',
@@ -149,6 +159,15 @@ export async function POST(
     return NextResponse.json({ transformedText });
   } catch (error) {
     console.error('[POST /api/studio/[deliverableId]/inline-transform]', error);
+    // Truncation surfaces as a distinct error (ai-caller throws on
+    // stop_reason max_tokens) — give the user an actionable message instead
+    // of a generic 500.
+    if (error instanceof Error && /truncated|token limit/i.test(error.message)) {
+      return NextResponse.json(
+        { error: 'The AI response was cut off before the transform completed. Try a shorter selection.' },
+        { status: 502 },
+      );
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

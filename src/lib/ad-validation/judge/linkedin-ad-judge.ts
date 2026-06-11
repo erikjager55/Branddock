@@ -31,7 +31,7 @@ export const linkedinAdJudge: AdJudge = {
     const headline = ctx.groups.get('headline') ?? '(empty)';
     const description = ctx.groups.get('description') ?? '(empty)';
     const cta = ctx.groups.get('cta-button') ?? '(empty)';
-    const imageDirection = ctx.groups.get('image') ?? '(empty)';
+    const imageDirection = ctx.imageDirection ?? '(empty)';
 
     return [
       'You are a senior LinkedIn advertising creative director with 10+ years auditing B2B Sponsored Posts against LinkedIn Relevance Score + Click-Through-Rate signals. You understand the LinkedIn audience demands corporate / formal register and reward content that directly addresses business pain-points.',

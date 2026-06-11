@@ -4,9 +4,13 @@
 // ────────────────────────────────────────────────────────────
 
 import { prisma } from '@/lib/prisma';
+import { getBrandContext } from '@/lib/ai/brand-context';
 import type { ItemTypeConfig, DimensionQuestion } from '../item-type-registry';
-import { generateReport, resolveModelConfig } from '../exploration-llm';
+import { generateReport } from '../exploration-llm';
 import type { GeneratedReport } from '../exploration-llm';
+import { resolveExplorationConfig } from '../config-resolver';
+import { resolveItemSubType } from '../constants';
+import { buildBrandContextString } from '../prompt-engine';
 
 // ─── Dimension Questions (generic, used for all brand assets) ──
 
@@ -231,7 +235,7 @@ export const brandAssetItemConfig: ItemTypeConfig = {
     return `Welcome to the AI Exploration for **${name}** (${categoryLabel} asset). I'll guide you through ${BRAND_ASSET_DIMENSIONS.length} key dimensions to validate and strengthen this brand asset. Let's begin!`;
   },
 
-  async generateInsights(item, session, knowledgeContext, fieldSuggestionsConfig) {
+  async generateInsights(item, session, passedConfig, fieldSuggestionsConfig) {
     const name = item.name as string;
     const sessionId = (session as { id: string }).id;
     const modelId = (session as { modelId?: string }).modelId;
@@ -300,9 +304,6 @@ export const brandAssetItemConfig: ItemTypeConfig = {
 
     console.log('[brand-asset-builder] Final field mapping:', fieldMapping.map(f => f.field));
 
-    // Resolve model config
-    const modelConfig = resolveModelConfig(modelId);
-
     // Use config-driven dimensions from session metadata (stored at session creation
     // by analyze/route.ts) instead of the generic BRAND_ASSET_DIMENSIONS fallback.
     // This ensures the report prompt matches the actual questions asked.
@@ -318,6 +319,23 @@ export const brandAssetItemConfig: ItemTypeConfig = {
 
     console.log('[brand-asset-builder] Using dimensions for report:', reportDimensions.map(d => d.key));
 
+    // Report language follows the workspace content language
+    // (canonical resolution incl. voiceguide-locale precedence, 5-min cache).
+    const sessionWorkspaceId = (session as { workspaceId?: string }).workspaceId;
+    const language = sessionWorkspaceId
+      ? (await getBrandContext(sessionWorkspaceId)).contentLanguage
+      : undefined;
+
+    // The complete-route passes its resolved config (C12) — report template +
+    // model/sampling + knowledge sources. Fallback resolution covers callers
+    // that don't (defensive; the route always passes it).
+    const explorationConfig = passedConfig ?? (sessionWorkspaceId
+      ? await resolveExplorationConfig(sessionWorkspaceId, 'brand_asset', resolveItemSubType(item), item.id as string)
+      : undefined);
+    const brandContext = sessionWorkspaceId
+      ? await buildBrandContextString(sessionWorkspaceId)
+      : '';
+
     // Generate report via LLM
     const report: GeneratedReport = await generateReport({
       itemType: 'brand_asset',
@@ -327,8 +345,10 @@ export const brandAssetItemConfig: ItemTypeConfig = {
       allQA,
       fieldMapping,
       currentFieldValues,
-      modelConfig,
-      knowledgeContext,
+      sessionModelId: modelId,
+      config: explorationConfig,
+      brandContext,
+      language,
     });
 
     // Transform to ExplorationInsightsData format

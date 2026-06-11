@@ -12,10 +12,11 @@ import { anthropicClient } from "@/lib/ai/anthropic-client";
 import { resolveCanvasModelForContentType } from "@/lib/ai/canvas-model-routing";
 import { landingPageVariantSchema } from "@/lib/landing-pages/variant-schema";
 import { flattenVariantToText } from "@/lib/landing-pages/flatten-variant";
-import { parseLandingPageVariantResponse } from "@/lib/landing-pages/variant-generator";
 import {
   VARIANT_REWRITE_SYSTEM_PROMPT,
   buildVariantTellFeedback,
+  parseVariantRewriteResponse,
+  alignVariantCtaParity,
 } from "@/lib/landing-pages/variant-tell-rewrite";
 
 /**
@@ -214,7 +215,7 @@ export async function POST(
     return NextResponse.json({ status: "error", error: message }, { status: 500 });
   }
 
-  const parseResult = parseLandingPageVariantResponse(rawResponse);
+  const parseResult = parseVariantRewriteResponse(rawResponse);
   if (!parseResult.success) {
     return NextResponse.json(
       { status: "error", error: "AI-respons niet verwerkbaar als variant — probeer opnieuw." },
@@ -225,9 +226,14 @@ export async function POST(
   // vervang ALLEEN de gevraagde sectie (zo lekt een AI-drift op andere secties niet).
   // Fallback op de originele sectie wanneer de AI 'm wegliet (optionele secties als
   // problem/pricing mogen ontbreken in een geldige variant) → nooit undefined mergen.
-  const rewritten = parsed.section
-    ? { ...parsed.variant, [parsed.section]: parseResult.data[parsed.section] ?? parsed.variant[parsed.section] }
-    : parseResult.data;
+  // alignVariantCtaParity: een hero/finalCta-scoped rewrite kan na de merge de
+  // single-CTA discipline breken (nieuwe hero-CTA naast oude finalCta-CTA) —
+  // lijn finalCta dan gelijk; no-op voor whole-variant (al schema-gevalideerd).
+  const rewritten = alignVariantCtaParity(
+    parsed.section
+      ? { ...parsed.variant, [parsed.section]: parseResult.data[parsed.section] ?? parsed.variant[parsed.section] }
+      : parseResult.data,
+  );
 
   // ── 3. Herscoor de rewrite ───────────────────────────────
   const afterText = flattenVariantToText(rewritten);

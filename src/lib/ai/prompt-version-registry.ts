@@ -14,8 +14,10 @@
 // =============================================================
 
 /**
- * Categorieën corresponderen met 8 prompt-template files in
- * src/lib/studio/prompt-templates/.
+ * Categorieën corresponderen met de 8 prompt-template files in
+ * src/lib/studio/prompt-templates/, plus prompt-families buiten die map
+ * die wél AICallSnapshot-tracking hebben (campaign-strategy/-concept,
+ * exploration, fidelity-judge, strategic-implications).
  */
 export type PromptCategory =
   | 'long-form'
@@ -27,7 +29,10 @@ export type PromptCategory =
   | 'sales-enablement'
   | 'pr-hr-comms'
   | 'campaign-strategy'
-  | 'campaign-concept';
+  | 'campaign-concept'
+  | 'exploration'
+  | 'fidelity-judge'
+  | 'strategic-implications';
 
 /**
  * Authoritative versie-mapping. Wordt door canvas-orchestrator + andere
@@ -41,18 +46,41 @@ export const PROMPT_VERSIONS: Record<PromptCategory, string> = {
   // verbeterpunten #2/#3/#5 uit Cowork-analyse 2026-05-12: expliciete
   // headline-formules + hook-types + CTA-richtlijnen). Output-format compat.
   // 1.1.0 = REASONING_APPROACH implicit-CoT.
-  'long-form': '1.2.0',
-  'social-media': '1.2.0',
+  // 1.3.0 (2026-06-11): registry liep achter op long-form.ts (pre-existing
+  // drift, gevonden door smoke:prompt-contracts) — gelijkgetrokken met de
+  // file zodat AICallSnapshot.promptVersion truthful is.
+  'long-form': '1.3.0',
+  // 2.0.0 (2026-06-11) = prompt-audit Fase 2: output-schema gewijzigd naar
+  // per-group component-contracten (C3/C4/C5) — nieuwe/hernoemde groepen voor
+  // email-sequences, website-types, sales, pr-hr, video-outlines en
+  // linkedin-carousel/tiktok-script. Major: output-format breaking t.o.v. 1.2.0.
+  'social-media': '2.0.0',
   'advertising': '1.2.0',
-  'email': '1.2.0',
-  'website': '1.2.0',
-  'video-audio': '1.2.0',
-  'sales-enablement': '1.2.0',
-  'pr-hr-comms': '1.2.0',
-  // campaign-strategy + campaign-concept gebruiken niet buildBaseSystemPrompt,
-  // dus blijven nog op 1.0.0 — Plan-and-Solve + ToT upgrades komen apart
-  'campaign-strategy': '1.0.0',
+  'email': '2.0.0',
+  'website': '2.0.0',
+  'video-audio': '2.0.0',
+  'sales-enablement': '2.0.0',
+  'pr-hr-comms': '2.0.0',
+  // campaign-strategy + campaign-concept gebruiken niet buildBaseSystemPrompt.
+  // 1.1.0 (2026-06-11): Fase 4 jargon-sweep (award-namen vervangen, output-
+  // language-guards in variant B/C + defense, English-forcering quick-concept
+  // verwijderd) + runtime locale-fragment/EXACT-schema-block appends.
+  'campaign-strategy': '1.1.0',
   'campaign-concept': '1.0.0',
+  // Niet-content-template-families met bestaande AICallSnapshot-tracking maar
+  // zonder registry-entry tot nu toe (prompt-audit 2026-06-11 §4 T8).
+  // 'exploration' = de admin-configureerbare ExplorationConfig-prompts
+  // (system/feedback/report), gelogd via generateAIResponse in de exploration
+  // answer-route. 'fidelity-judge' = de visual-fidelity judge-stack
+  // (visual-ai-judge + OCR-penalty + copy-image-coherence), gelogd via
+  // tryTrackStart in visual-fidelity-scorer.ts. 'strategic-implications' =
+  // de persona strategic-implications-prompt, gelogd via
+  // createClaudeStructuredCompletion in de personas-route (Fase 5 M2).
+  // 1.0.0 = baseline op moment van opname; bump bij prompt-wijzigingen in
+  // die families.
+  'exploration': '1.0.0',
+  'fidelity-judge': '1.0.0',
+  'strategic-implications': '1.0.0',
 };
 
 /**

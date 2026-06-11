@@ -20,8 +20,9 @@
 import { scrapeUrlMultiPage } from "@/lib/brandstyle/multi-page-scraper";
 import { scrapeUrl } from "@/lib/brandstyle/url-scraper";
 import { createClaudeStructuredCompletion } from "@/lib/ai/exploration/ai-caller";
+import { getBrandContext } from "@/lib/ai/brand-context";
 import {
-  VOICE_ANALYSIS_SYSTEM,
+  buildVoiceAnalysisSystemPrompt,
   buildVoiceAnalysisUserPrompt,
 } from "./voice-analysis-prompts";
 
@@ -144,6 +145,16 @@ export async function startVoiceAnalysisPipeline(input: StartVoiceAnalysisInput)
 
       setStatus(jobId, "EXTRACTING", { progress: 35, currentStep: "Preparing corpus for Claude" });
 
+      // Descriptive output fields must follow the workspace content language
+      // (what the Voice DNA tab shows). Resolution failure is non-critical:
+      // fall back to the unguarded prompt rather than failing the whole job.
+      let contentLanguage: string | undefined;
+      try {
+        contentLanguage = (await getBrandContext(input.workspaceId)).contentLanguage;
+      } catch (langErr) {
+        console.warn("[voice-analyzer] workspace language resolution failed, prompt has no locale guard", langErr);
+      }
+
       const userPrompt = buildVoiceAnalysisUserPrompt({
         brandName: input.brandName ?? null,
         industry: input.industry ?? null,
@@ -154,7 +165,7 @@ export async function startVoiceAnalysisPipeline(input: StartVoiceAnalysisInput)
       setStatus(jobId, "ANALYZING", { progress: 60, currentStep: "Claude analyzing voice" });
 
       const result = await createClaudeStructuredCompletion<VoiceAnalysisResult>(
-        VOICE_ANALYSIS_SYSTEM,
+        buildVoiceAnalysisSystemPrompt(contentLanguage),
         userPrompt,
         {
           temperature: 0.4,

@@ -3,15 +3,11 @@
 // Weighted scoring based on available context quality
 // =============================================================================
 
-import type { PersonaValidationResult } from './strategy-blueprint.types';
-
 interface ConfidenceInputs {
   /** Number of non-empty canonical brand assets (out of 12) */
   brandAssetCount: number;
   /** Number of personas in workspace */
   personaCount: number;
-  /** Persona validation results from step 3 */
-  personaValidation: PersonaValidationResult[];
   /** Number of products in workspace */
   productCount: number;
   /** Number of competitors + activated trends */
@@ -25,13 +21,18 @@ interface ConfidenceResult {
   breakdown: Record<string, number>;
 }
 
+// The former personaValidation pillar (0.20) was removed 2026-06-11: no live
+// prompt produces PersonaValidationResult anymore (the 3-variant
+// persona-validator died with the CQP pipeline), so the pillar scored a
+// permanent 0 and every blueprint lost 20 confidence points. Its weight is
+// redistributed proportionally (×1.25) over the remaining pillars; the
+// breakdown key is omitted entirely so UIs don't render a dead 0% pillar.
 const WEIGHTS = {
-  brandAssets: 0.25,
-  personas: 0.25,
-  personaValidation: 0.20,
-  products: 0.10,
-  competitorsAndTrends: 0.10,
-  knowledgeAssets: 0.10,
+  brandAssets: 0.3125,
+  personas: 0.3125,
+  products: 0.125,
+  competitorsAndTrends: 0.125,
+  knowledgeAssets: 0.125,
 } as const;
 
 const MAX_BRAND_ASSETS = 12;
@@ -50,13 +51,6 @@ export function calculateBlueprintConfidence(inputs: ConfidenceInputs): Confiden
   else if (inputs.personaCount === 1) personaScore = 50;
   else if (inputs.personaCount === 2) personaScore = 75;
   else personaScore = 100;
-
-  // Persona validation: average score normalized to 0-100
-  let validationScore = 0;
-  if (inputs.personaValidation.length > 0) {
-    const avgScore = inputs.personaValidation.reduce((sum, p) => sum + p.overallScore, 0) / inputs.personaValidation.length;
-    validationScore = (avgScore / 10) * 100;
-  }
 
   // Products: 0 = 0%, 1 = 50%, 2 = 75%, 3+ = 100%
   let productScore: number;
@@ -83,7 +77,6 @@ export function calculateBlueprintConfidence(inputs: ConfidenceInputs): Confiden
   const breakdown: Record<string, number> = {
     brandAssets: Math.round(brandAssetScore),
     personas: Math.round(personaScore),
-    personaValidation: Math.round(validationScore),
     products: Math.round(productScore),
     competitorsAndTrends: Math.round(ctScore),
     knowledgeAssets: Math.round(knowledgeScore),
@@ -92,7 +85,6 @@ export function calculateBlueprintConfidence(inputs: ConfidenceInputs): Confiden
   const confidence = Math.round(
     brandAssetScore * WEIGHTS.brandAssets +
     personaScore * WEIGHTS.personas +
-    validationScore * WEIGHTS.personaValidation +
     productScore * WEIGHTS.products +
     ctScore * WEIGHTS.competitorsAndTrends +
     knowledgeScore * WEIGHTS.knowledgeAssets

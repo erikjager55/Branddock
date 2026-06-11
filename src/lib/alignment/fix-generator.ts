@@ -418,10 +418,26 @@ export async function applyFixOption(
 
       // Apply the update
       try {
-        const updateData = buildUpdateData(change.field, change.newValue);
         const delegate = tx[modelName as keyof typeof tx] as unknown as {
+          findUnique: (args: { where: { id: string }; select: Record<string, boolean> }) => Promise<Record<string, unknown> | null>;
           update: (args: { where: { id: string }; data: Record<string, unknown> }) => Promise<unknown>;
         };
+        // Dot-notation fields target a sub-path inside a Json column and
+        // need read-modify-write so sibling keys survive the update.
+        const updateData = change.field.startsWith("frameworkData.")
+          ? await buildJsonPathUpdate(
+              delegate,
+              change.entityId,
+              change.field,
+              change.newValue,
+            )
+          : buildUpdateData(change.field, change.newValue);
+        if (!updateData) {
+          console.warn(
+            `[fix-generator] Entity not found for JSON merge: ${change.entityType}#${change.entityId}`,
+          );
+          continue;
+        }
         await delegate.update({
           where: { id: change.entityId },
           data: updateData,
@@ -516,20 +532,14 @@ function validateModule(module: string): AlignmentModule {
 }
 
 /**
- * Build Prisma update data from a field path and new value.
- * Handles both simple fields and dot-notation paths for JSON fields.
+ * Build Prisma update data for a simple (non-dot-notation) field.
+ * Dot-notation JSON paths like "frameworkData.toneDimensions" are handled
+ * by buildJsonPathUpdate, which does a read-modify-write merge.
  */
 function buildUpdateData(
   field: string,
   newValue: string
 ): Record<string, unknown> {
-  // Handle dot-notation paths like "frameworkData.toneDimensions"
-  // TODO: This replaces the entire frameworkData JSON field. For partial
-  // updates, a read-modify-write cycle with JSON merge is needed.
-  if (field.startsWith("frameworkData.")) {
-    return { [field.split(".")[0]]: newValue };
-  }
-
   // Handle string array fields
   if (
     [
@@ -562,6 +572,74 @@ function buildUpdateData(
   }
 
   return { [field]: newValue };
+}
+
+/**
+ * Build Prisma update data for a dot-notation path into a Json column
+ * (e.g. "frameworkData.toneDimensions") via read-modify-write: the current
+ * column value is fetched and only the addressed sub-path is replaced, so
+ * sibling keys are preserved. Returns null when the entity cannot be read
+ * (caller should skip the change).
+ */
+async function buildJsonPathUpdate(
+  delegate: {
+    findUnique: (args: {
+      where: { id: string };
+      select: Record<string, boolean>;
+    }) => Promise<Record<string, unknown> | null>;
+  },
+  entityId: string,
+  field: string,
+  newValue: string,
+): Promise<Record<string, unknown> | null> {
+  const [column, ...subPath] = field.split(".");
+  const record = await delegate.findUnique({
+    where: { id: entityId },
+    select: { [column]: true },
+  });
+  if (!record) return null;
+
+  const current = record[column];
+  const base =
+    current && typeof current === "object" && !Array.isArray(current)
+      ? (current as Record<string, unknown>)
+      : {};
+  return { [column]: setByPath(base, subPath, parseJsonValue(newValue)) };
+}
+
+/**
+ * Immutably set a value at a dot-notation path inside a JSON-like object.
+ * Missing or non-object intermediate values are replaced by fresh objects
+ * so arbitrarily deep paths always resolve.
+ */
+function setByPath(
+  target: Record<string, unknown>,
+  path: string[],
+  value: unknown,
+): Record<string, unknown> {
+  if (path.length === 0) return target;
+  const [head, ...rest] = path;
+  if (rest.length === 0) {
+    return { ...target, [head]: value };
+  }
+  const current = target[head];
+  const child =
+    current && typeof current === "object" && !Array.isArray(current)
+      ? (current as Record<string, unknown>)
+      : {};
+  return { ...target, [head]: setByPath(child, rest, value) };
+}
+
+/**
+ * Parse an AI-provided value string: JSON when valid (objects, arrays,
+ * numbers, booleans), otherwise the raw string.
+ */
+function parseJsonValue(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
 }
 
 /**

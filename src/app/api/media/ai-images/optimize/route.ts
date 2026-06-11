@@ -9,9 +9,16 @@ import { cacheKeys } from '@/lib/api/cache-keys';
 import { getStorageProvider } from '@/lib/storage';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP, ResponseTooLargeError } from '@/lib/security/fetch-with-limit';
 import { z } from 'zod';
-import { getFalOptimizeProviderById } from '@/lib/integrations/fal/fal-optimize-providers';
+import {
+  getFalOptimizeProviderById,
+  matchStyleTransferTargetStyle,
+  STYLE_TRANSFER_TARGET_STYLES,
+  type FalOptimizeProvider,
+} from '@/lib/integrations/fal/fal-optimize-providers';
 import { mapGeneratedImage } from '@/features/media-library/utils/media-utils';
 import { withAiRateLimit } from '@/lib/ai/middleware';
+import { truncatePromptForModel } from '@/lib/integrations/fal/fal-client';
+import { buildNegativePrompt } from '@/lib/ai/image-quality/negative-prompts';
 
 const optimizeSchema = z.object({
   name: z.string().min(1).max(200),
@@ -20,6 +27,67 @@ const optimizeSchema = z.object({
   /** Optional prompt for models that support it (e.g. creative upscaler) */
   prompt: z.string().max(1000).optional(),
 });
+
+type OptimizeInputResult =
+  | { ok: true; input: Record<string, unknown> }
+  | { ok: false; error: string };
+
+/**
+ * Optimize providers with a native `negative_prompt` input (per fal OpenAPI
+ * schemas): only the diffusion-based upscalers. The Kontext/Qwen edit models
+ * and the deterministic tools (ESRGAN, background removal, face restore)
+ * have no such field — fal drops it silently, so sending it there is noise.
+ */
+const OPTIMIZE_PROVIDER_IDS_WITH_NEGATIVE = new Set(['creative-upscaler', 'clarity-upscaler']);
+
+/**
+ * Builds the fal.subscribe input, handling per-model differences in field
+ * names. Style-transfer accepts only a fixed `target_style` enum (no prompt
+ * field) — free text causes a fal 422 — so unknown styles are rejected here
+ * with a user-facing error instead of being forwarded.
+ */
+function buildOptimizeInput(
+  provider: FalOptimizeProvider,
+  resolvedImageUrl: string,
+  prompt: string | undefined
+): OptimizeInputResult {
+  const trimmedPrompt = prompt?.trim();
+  const base: Record<string, unknown> = {
+    [provider.imageUrlField]: provider.imageUrlIsArray ? [resolvedImageUrl] : resolvedImageUrl,
+    ...provider.fixedParams,
+    // Central quality defaults — this route subscribes directly, which
+    // bypassed NEGATIVE_PROMPT_DEFAULTS (prompt-audit 2026-06-11).
+    ...(OPTIMIZE_PROVIDER_IDS_WITH_NEGATIVE.has(provider.id)
+      ? { negative_prompt: buildNegativePrompt() }
+      : {}),
+  };
+
+  if (provider.id !== 'style-transfer') {
+    return {
+      ok: true,
+      // Same per-model prompt-cap guard as generateFalImage applies.
+      input: trimmedPrompt
+        ? { ...base, prompt: truncatePromptForModel(trimmedPrompt, provider.endpoint) }
+        : base,
+    };
+  }
+
+  // No style given → let the provider apply its default ("impressionist")
+  if (!trimmedPrompt) {
+    return { ok: true, input: base };
+  }
+
+  const matchedStyle = matchStyleTransferTargetStyle(trimmedPrompt);
+  if (!matchedStyle) {
+    return {
+      ok: false,
+      error:
+        `Unknown style "${trimmedPrompt}" — Style Transfer only accepts a fixed set of styles. ` +
+        `See allowedStyles for the supported values.`,
+    };
+  }
+  return { ok: true, input: { ...base, target_style: matchedStyle } };
+}
 
 /** POST /api/media/ai-images/optimize — Optimize an existing image via fal.ai */
 export async function POST(request: NextRequest) {
@@ -74,18 +142,14 @@ export async function POST(request: NextRequest) {
       resolvedImageUrl = await fal.storage.upload(file);
     }
 
-    // Build input — handle per-model differences in field names and formats
-    const isStyleTransfer = provider.id === 'style-transfer';
-    const imageValue = provider.imageUrlIsArray ? [resolvedImageUrl] : resolvedImageUrl;
-    const input: Record<string, unknown> = {
-      [provider.imageUrlField]: imageValue,
-      ...provider.fixedParams,
-      ...(prompt?.trim()
-        ? isStyleTransfer
-          ? { target_style: prompt.trim() }
-          : { prompt: prompt.trim() }
-        : {}),
-    };
+    const built = buildOptimizeInput(provider, resolvedImageUrl, prompt);
+    if (!built.ok) {
+      return NextResponse.json(
+        { error: built.error, allowedStyles: STYLE_TRANSFER_TARGET_STYLES },
+        { status: 400 }
+      );
+    }
+    const input = built.input;
 
     console.log('[image-optimize] endpoint:', provider.endpoint, 'input keys:', Object.keys(input));
 

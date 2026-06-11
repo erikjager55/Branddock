@@ -51,6 +51,39 @@ function getItemText(item: string | { text?: string; name?: string; title?: stri
   return item.text || item.name || item.title || String(item);
 }
 
+function implicationToDisplayString(item: unknown): string {
+  if (typeof item === 'string') return item;
+  if (item === null || typeof item !== 'object') return String(item);
+  const rec = item as Record<string, unknown>;
+  const text = (v: unknown): string | undefined =>
+    typeof v === 'string' && v.trim().length > 0 ? v.trim() : undefined;
+  const category = text(rec.category);
+  const body = [text(rec.title), text(rec.description) ?? text(rec.implication)]
+    .filter((s): s is string => s !== undefined)
+    .join(': ');
+  if (category && body) return `${category} — ${body}`;
+  return body || category || JSON.stringify(item);
+}
+
+/**
+ * Formats the persona `strategicImplications` field for PDF display.
+ *
+ * After AI generation (POST /api/personas/[id]/strategic-implications) the
+ * field holds a JSON-array string of `{ category, title, description,
+ * priority }` objects; legacy personas store plain text. Returns one display
+ * line per implication, or the raw string as-is when it is not a JSON array.
+ */
+function formatStrategicImplications(raw: string): string[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [raw];
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0) return [raw];
+  return parsed.map((item) => implicationToDisplayString(item));
+}
+
 export function exportPersonaPdf(data: PersonaExportData) {
   try {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -227,13 +260,7 @@ export function exportPersonaPdf(data: PersonaExportData) {
 
   // Strategic Implications
   if (data.strategicImplications) {
-    addSectionHeader('Strategic Implications');
-    doc.setTextColor(55, 65, 81);
-    doc.setFontSize(10);
-    const implLines = doc.splitTextToSize(data.strategicImplications, contentWidth);
-    checkPageBreak(implLines.length * 5 + 4);
-    doc.text(implLines, margin, y);
-    y += implLines.length * 5 + 4;
+    addList('Strategic Implications', formatStrategicImplications(data.strategicImplications));
   }
 
   // AI Exploration Results

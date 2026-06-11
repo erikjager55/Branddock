@@ -51,7 +51,7 @@ export const googleDisplayAdJudge: AdJudge = {
       .join('\n');
 
     const businessName = ctx.groups.get('business-name') ?? '(empty)';
-    const imageDirection = ctx.groups.get('image') ?? '(empty)';
+    const imageDirection = ctx.imageDirection ?? '(empty)';
 
     return [
       'You are a senior Google Ads strategist with 12+ years auditing Responsive Display Ads against Google Ad Strength scoring (Poor / Average / Good / Excellent).',

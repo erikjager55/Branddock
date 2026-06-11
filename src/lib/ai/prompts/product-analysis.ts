@@ -2,6 +2,11 @@
 // Product Analysis Prompts — AI extraction from URL/PDF content
 // =============================================================
 
+// Untrusted-content fencing moved to its own module; re-exported here so
+// existing importers keep working.
+export { fenceUntrustedContent } from '@/lib/ai/untrusted-fence';
+import { fenceUntrustedContent } from '@/lib/ai/untrusted-fence';
+
 /**
  * Parse the primary language from an Accept-Language header value.
  * Returns a human-readable language name (e.g. "Dutch", "English", "German").
@@ -66,14 +71,18 @@ export function buildUrlAnalysisPrompt(data: {
     `Source URL: ${data.url}`,
   ];
 
+  // Title, meta description and body text are all scraped (attacker-
+  // controllable), so they go inside the fence together.
+  const scraped: string[] = [];
   if (data.title) {
-    parts.push(`Page Title: ${data.title}`);
+    scraped.push(`Page Title: ${data.title}`);
   }
   if (data.description) {
-    parts.push(`Meta Description: ${data.description}`);
+    scraped.push(`Meta Description: ${data.description}`);
   }
+  scraped.push(``, `--- Page Content ---`, data.bodyText);
 
-  parts.push(``, `--- Page Content ---`, data.bodyText);
+  parts.push(``, fenceUntrustedContent(scraped.join('\n'), 'scraped website'));
 
   if (data.brandContext) {
     parts.push(``, `--- Brand Context ---`, data.brandContext);
@@ -99,14 +108,18 @@ export function buildPdfAnalysisPrompt(data: {
     `File Name: ${data.fileName}`,
   ];
 
+  // PDF metadata and text come from the uploaded document (attacker-
+  // controllable), so they go inside the fence together.
+  const untrusted: string[] = [];
   if (data.metadata.title) {
-    parts.push(`Document Title: ${data.metadata.title}`);
+    untrusted.push(`Document Title: ${data.metadata.title}`);
   }
   if (data.metadata.author) {
-    parts.push(`Author: ${data.metadata.author}`);
+    untrusted.push(`Author: ${data.metadata.author}`);
   }
+  untrusted.push(``, `--- Document Content ---`, data.text);
 
-  parts.push(``, `--- Document Content ---`, data.text);
+  parts.push(``, fenceUntrustedContent(untrusted.join('\n'), 'uploaded PDF document'));
 
   if (data.brandContext) {
     parts.push(``, `--- Brand Context ---`, data.brandContext);

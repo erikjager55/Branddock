@@ -18,7 +18,7 @@ import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleCanvasContext, type CanvasContextStack } from '@/lib/ai/canvas-context';
 import { buildVisualBriefImagePrompts } from '@/lib/ai/visual-brief-prompts';
 import { getMultiCandidateDefault } from '@/features/campaigns/lib/deliverable-types';
-import { runFalGeneration } from '@/lib/integrations/fal/fal-client';
+import { foldNegativeIntoPrompt, runFalGeneration } from '@/lib/integrations/fal/fal-client';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
@@ -234,16 +234,24 @@ export async function POST(request: Request, { params }: RouteParams) {
       p.includes(triggerWord) ? p : triggerPrefix + p,
     );
 
-    // Pattern A image-quality-chain: combineer LoRA-config negative-prompt
-    // met workspace negative-prompt (defaults + imageryDonts). Beide signalen
-    // hebben waarde; comma-joined naar FAL native parameter.
+    // Pattern A image-quality-chain: combine the LoRA-config negative prompt
+    // with the workspace negative prompt (defaults + imageryDonts).
     const combinedNegativePrompt = [config.negativePrompt, negativePrompt]
       .filter((s): s is string => !!s && s.trim().length > 0)
       .join(', ');
 
-    const finalPrompts = body?.instruction
+    const generatorEndpoint = trainedModel.generatorEndpoint ?? DEFAULT_GENERATOR;
+
+    const instructedPrompts = body?.instruction
       ? prompts.map((p) => `${p} ${body!.instruction}`)
       : prompts;
+    // The LoRA generators (fal-ai/flux-2/lora, fal-ai/flux-lora) have no
+    // negative_prompt input field and fal drops unknown fields silently, so
+    // sending the negatives as a native param was a dead no-op (prompt-audit
+    // 2026-06-11). Fold them into the positive prompt as a capped directive.
+    const finalPrompts = instructedPrompts.map((p) =>
+      foldNegativeIntoPrompt(generatorEndpoint, p, combinedNegativePrompt),
+    );
 
     const explicitFalSize = body?.aspectRatio ? FAL_SIZE_FOR_LABEL[body.aspectRatio] : null;
     const falImageSize: FalImageSize =
@@ -259,8 +267,6 @@ export async function POST(request: Request, { params }: RouteParams) {
         : 1.0;
     const loraScale = config.loraScale * strengthFactor;
 
-    const generatorEndpoint = trainedModel.generatorEndpoint ?? DEFAULT_GENERATOR;
-
     const startMs = Date.now();
     const generated = await Promise.all(
       finalPrompts.map(async (prompt) => {
@@ -273,9 +279,8 @@ export async function POST(request: Request, { params }: RouteParams) {
             guidance_scale: config.guidanceScale || 4.5,
             output_format: 'png',
             image_size: falSizeToDims(falImageSize),
-            ...(combinedNegativePrompt
-              ? { negative_prompt: combinedNegativePrompt }
-              : {}),
+            // No negative_prompt here: the endpoint has no such input — the
+            // negatives are folded into the prompt above.
           });
           const url = result.images?.[0]?.url;
           if (!url) return null;

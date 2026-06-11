@@ -156,6 +156,8 @@ export interface FidelityCompositeResult {
   elapsedMs: number;
   /** Versie van de scoring-logica voor reproducibility (bewaard in ContentFidelityScore.scorerVersion) */
   scorerVersion: string;
+  /** Gezet wanneer de judge-pijler faalde en de weging zonder judge is herverdeeld (foutmelding als reden). */
+  judgeDegraded?: string;
 }
 
 // ─── Constants ──────────────────────────────────────
@@ -396,33 +398,45 @@ export async function computeFidelityScore(
 
   const skipJudge = input.skipJudge === true;
   let judgeBreakdown: PillarBreakdown<GEvalResult> | null = null;
+  let judgeDegraded: string | null = null;
 
   if (!skipJudge) {
-    const judgeResult = await runRubricJudge(
-      {
-        contentText: input.contentText,
-        brandName: input.brandName,
-        brandVoiceSummary: input.brandVoiceSummary,
-        voiceBaseline1Pager: input.voiceBaseline1Pager,
-        personaSummary: input.personaSummary,
-        strategySummary: input.strategySummary,
-        detectorResult,
-      },
-      {
-        generatorProvider: input.generatorProvider,
-        rubricWeights: input.rubricWeights,
-        targetWordCount: input.targetWordCount,
-      },
-    );
+    // A judge failure (malformed response, <4 scoreable dimensions, missing
+    // text block) degrades to a judge-less composite via the existing
+    // skipJudge weight redistribution instead of killing the whole run —
+    // a fabricated composite-50 was the old behavior, a 500 the alternative.
+    try {
+      const judgeResult = await runRubricJudge(
+        {
+          contentText: input.contentText,
+          brandName: input.brandName,
+          brandVoiceSummary: input.brandVoiceSummary,
+          voiceBaseline1Pager: input.voiceBaseline1Pager,
+          personaSummary: input.personaSummary,
+          strategySummary: input.strategySummary,
+          detectorResult,
+        },
+        {
+          generatorProvider: input.generatorProvider,
+          rubricWeights: input.rubricWeights,
+          targetWordCount: input.targetWordCount,
+        },
+      );
 
-    judgeBreakdown = {
-      score: judgeResult.finalComposite,
-      weight: 0, // filled in below after weight normalization
-      result: judgeResult,
-    };
+      judgeBreakdown = {
+        score: judgeResult.finalComposite,
+        weight: 0, // filled in below after weight normalization
+        result: judgeResult,
+      };
+    } catch (err) {
+      judgeDegraded = err instanceof Error ? err.message : String(err);
+      console.warn('[composition-engine] judge pillar degraded — weights redistributed', {
+        message: judgeDegraded,
+      });
+    }
   }
 
-  const weights = normalizeWeights(input.pillarWeights ?? {}, skipJudge, skipStyle);
+  const weights = normalizeWeights(input.pillarWeights ?? {}, skipJudge || judgeDegraded !== null, skipStyle);
 
   const compositeScore = Math.round(
     (skipStyle ? 0 : pillar1EffectiveScore * weights.style) +
@@ -450,6 +464,7 @@ export async function computeFidelityScore(
     wordCount: detectorResult.wordCount,
     elapsedMs: Date.now() - startedAt,
     scorerVersion: hasSemanticSignal ? `${SCORER_VERSION}+voice-emb-1.0` : SCORER_VERSION,
+    ...(judgeDegraded !== null ? { judgeDegraded } : {}),
   };
 }
 

@@ -276,7 +276,12 @@ LENGTH GUIDELINE:
 Match the dominant word count from the competitor analysis. Deviate by max 20% unless content gaps justify a longer page.
 
 OUTPUT FORMAT:
-Write the full page in markdown format:
+Respond with a JSON object matching this exact schema:
+{
+  "draft": "string — the COMPLETE page text in markdown"
+}
+
+The "draft" field is the ONLY field. Inside it, write the full page in markdown:
 - Use # for H1, ## for H2, ### for H3
 - Use sentence case for ALL headings (capitalize only first word + proper nouns). NEVER use Title Case.
 - BRAND, PRODUCT AND COMPANY NAMES: Always preserve the official capitalization — "iPhone", "LinkedIn", "HubSpot", "Napking", "HelloFresh". NEVER lowercase a brand name and NEVER uppercase every letter unless the brand does so. This applies to H1, H2, H3, body text, meta tags, alt text, CTAs and FAQ.
@@ -286,9 +291,7 @@ Write the full page in markdown format:
 - Use bullet lists for benefits, features, steps
 - Separate paragraphs with blank lines
 - Include the FAQ section with proper Q&A format
-- End with the call to action
-
-Do NOT wrap output in JSON. Output pure markdown.`,
+- End with the call to action`,
     userPrompt: `${accumulatedBlock(ctx.accumulatedOutputs)}
 
 ${ctx.brandContext}
@@ -297,7 +300,7 @@ ${ctx.personaContext}
 
 ${ctx.productContext}
 ${outputLanguageInstruction(ctx.voiceDirective)}
-Write the complete page text. Follow the outline structure exactly. Incorporate all keywords naturally. Include E-E-A-T elements, FAQ section, internal link markers, and the primary CTA.`,
+Write the complete page text. Follow the outline structure exactly. Incorporate all keywords naturally. Include E-E-A-T elements, FAQ section, internal link markers, and the primary CTA. Return the full markdown page in the "draft" field.`,
   };
 }
 

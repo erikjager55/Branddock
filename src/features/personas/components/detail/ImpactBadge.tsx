@@ -7,7 +7,10 @@ interface ImpactBadgeProps {
 }
 
 export function ImpactBadge({ impact }: ImpactBadgeProps) {
-  const style = IMPACT_BADGES[impact];
+  // Persisted AI output can carry off-enum values ('High', 'HIGH') despite
+  // the prop type — fall back to medium instead of crashing the render
+  // (same defect class as audit 2026-06-11 alignment-auditor finding).
+  const style = IMPACT_BADGES[impact] ?? IMPACT_BADGES.medium;
 
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${style.bg} ${style.color} ${style.border}`}>

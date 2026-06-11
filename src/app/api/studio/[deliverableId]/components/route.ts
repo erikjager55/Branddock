@@ -25,7 +25,7 @@ export async function GET(
 
     const components = await prisma.deliverableComponent.findMany({
       where: { deliverableId },
-      orderBy: { order: 'asc' },
+      orderBy: [{ order: 'asc' }, { variantIndex: 'asc' }, { id: 'asc' }],
     });
 
     // G8 — fetch the most recent visual fidelity score per image component

@@ -26,6 +26,7 @@
     "smoke:conversion-tweaks": "tsx scripts/smoke-tests/conversion-tweaks.ts",
     "smoke:longform-tweaks": "tsx scripts/smoke-tests/longform-tweaks.ts",
     "smoke:structured-tweaks": "tsx scripts/smoke-tests/structured-tweaks.ts",
+    "smoke:prompt-contracts": "tsx scripts/smoke-tests/prompt-contracts.ts",
     "smoke:image-defaults": "tsx scripts/smoke-tests/image-briefing-defaults.ts",
     "smoke:image-coupling": "tsx scripts/smoke-tests/image-content-coupling.ts",
     "smoke:image-briefing": "tsx scripts/smoke-tests/image-briefing-textarea.ts",

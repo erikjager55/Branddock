@@ -49,6 +49,14 @@ jobs:
       - name: Verify Promptfoo installation
         run: npx promptfoo --version
 
+      # Gate design (prompt-audit 2026-06-11 T8): this set runs a live LLM
+      # (generation + llm-rubric judges), so individual cases are inherently
+      # flaky. Promptfoo's own exit code is per-case strict (non-zero on ANY
+      # failing case), which would make the gate stricter than intended for a
+      # main-merge workflow. We therefore swallow the per-case exit code HERE
+      # and enforce the real gate in the "Enforce golden-set pass-rate
+      # threshold" step on the TOTAL pass-rate (>= 70%). A promptfoo crash
+      # produces no results file, which the gate step fails on hard.
       - name: Run blog-post golden-set (long-form representant)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -59,7 +67,7 @@ jobs:
           npx promptfoo eval \
             -c tests/content-golden-sets/long-form/blog-post.yaml \
             --output .promptfoo-results/blog-post-results.json \
-            --no-progress-bar || echo "::warning::Golden-set evaluation completed with failures — review artifact"
+            --no-progress-bar || echo "::notice::promptfoo exited non-zero (per-case failures or crash) — pass-rate gate step decides"
 
       - name: Run property-evals smoke (Layer 1 regression check)
         env:
@@ -78,6 +86,36 @@ jobs:
 
       - name: Run position-swap calibration smoke
         run: npx tsx scripts/smoke-tests/position-swap-judge.ts
+
+      # Runs after the deterministic smokes so a sub-threshold golden-set
+      # doesn't mask their signal; artifact upload + PR comment below have
+      # `if: always()` and still run when this gate fails.
+      - name: Enforce golden-set pass-rate threshold (70%)
+        run: |
+          node - <<'EOF'
+          const fs = require('fs');
+          const THRESHOLD = 70;
+          const path = '.promptfoo-results/blog-post-results.json';
+          if (!fs.existsSync(path)) {
+            console.error('::error::Golden-set gate: no results file — promptfoo crashed before producing output.');
+            process.exit(1);
+          }
+          // Same shape-handling as the PR-comment step below — keep in sync.
+          const results = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const tests = results.results?.results ?? results.results ?? [];
+          const total = tests.length;
+          if (total === 0) {
+            console.error('::error::Golden-set gate: results file contains zero test cases — eval misconfigured.');
+            process.exit(1);
+          }
+          const passed = tests.filter((t) => t.success || t.passed).length;
+          const passRate = Math.round((passed / total) * 100);
+          if (passRate < THRESHOLD) {
+            console.error(`::error::Golden-set gate FAILED: pass-rate ${passed}/${total} (${passRate}%) is below the ${THRESHOLD}% threshold.`);
+            process.exit(1);
+          }
+          console.log(`Golden-set gate passed: ${passed}/${total} (${passRate}%) >= ${THRESHOLD}%.`);
+          EOF
 
       - name: Upload golden-set results
         if: always()
