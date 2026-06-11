@@ -74,6 +74,38 @@ group("Budget-cap + prioriteit low-coherence > duplicate");
   assert("reasons beperkt tot gecapte set", d.reasons.size === 2);
 }
 
+group("protectedIndices — library-slot nooit duplicate-verliezer (review 2026-06-11)");
+{
+  const prot = new Set([0]);
+  const d = decideFeatureRegenerations(
+    [
+      { index: 0, coherenceScore: 56 },
+      { index: 1, coherenceScore: 80 },
+    ],
+    [[0, 1]],
+    undefined,
+    prot,
+  );
+  assert("AI-partner verliest ondanks hogere coherence", d.regenerate.length === 1 && d.regenerate[0] === 1);
+  const dBoth = decideFeatureRegenerations(
+    [
+      { index: 0, coherenceScore: 60 },
+      { index: 1, coherenceScore: 70 },
+    ],
+    [[0, 1]],
+    undefined,
+    new Set([0, 1]),
+  );
+  assert("beide beschermd → geen regen voor dat paar", dBoth.regenerate.length === 0);
+  const dLow = decideFeatureRegenerations(
+    [{ index: 0, coherenceScore: 30 }],
+    [],
+    undefined,
+    new Set([0]),
+  );
+  assert("bescherming geldt alleen voor duplicate-rol, niet voor low-coherence", dLow.regenerate.includes(0));
+}
+
 group("Budget 0 / lege input");
 {
   const d0 = decideFeatureRegenerations([{ index: 0, coherenceScore: 10 }], [], 0);

@@ -68,7 +68,10 @@ export interface MatchLibraryOptions {
 function defaultFileExists(fileUrl: string): boolean {
   // Orphaned-records-guard: lokale uploads moeten op disk bestaan; remote
   // URLs (R2/CDN) kunnen we hier niet goedkoop checken → doorlaten.
+  // Containment naar het bestaande send-to-library-patroon: alleen /uploads/
+  // — een vergiftigde DB-row mag nooit buiten public/ lezen (review).
   if (!fileUrl.startsWith("/")) return true;
+  if (!fileUrl.startsWith("/uploads/") || fileUrl.includes("..")) return false;
   try {
     return existsSync(resolve(process.cwd(), "public" + fileUrl));
   } catch {
@@ -94,18 +97,32 @@ export async function matchLibraryImagesToSlots(
   type Candidate = { slotIndex: number; asset: SimilarMediaAsset; score: number };
   const candidates: Candidate[] = [];
 
-  for (const slot of slots) {
-    const query = slot.query.trim();
-    if (query.length < 8) {
-      diagnostics.push(`slot ${slot.index}: query te kort voor matching`);
-      continue;
-    }
-    try {
-      const results = await search(workspaceId, query, {
+  // Identieke queries delen één search-call (dedupe — bespaart embed-calls);
+  // de slot-loops draaien parallel (latency zit vóór de generatie-fase).
+  const searchCache = new Map<string, Promise<SimilarMediaAsset[]>>();
+  const cachedSearch = (query: string) => {
+    let p = searchCache.get(query);
+    if (!p) {
+      p = search(workspaceId, query, {
+        // NB: de drempel snijdt PRE-boost — de PHOTO_REAL-boost herordent
+        // alleen, hij laat geen assets ónder de drempel binnen (bewust).
         threshold,
         limit: 8,
         excludeCategories: EXCLUDED_MATCH_CATEGORIES,
       });
+      searchCache.set(query, p);
+    }
+    return p;
+  };
+
+  await Promise.all(slots.map(async (slot) => {
+    const query = slot.query.trim();
+    if (query.length < 8) {
+      diagnostics.push(`slot ${slot.index}: query te kort voor matching`);
+      return;
+    }
+    try {
+      const results = await cachedSearch(query);
       let orphans = 0;
       for (const asset of results) {
         if (!fileExists(asset.fileUrl)) {
@@ -121,11 +138,13 @@ export async function matchLibraryImagesToSlots(
       // Cold-start / geen OPENAI_API_KEY / pgvector-fout → slot blijft AI-pad.
       diagnostics.push(`slot ${slot.index}: matching faalde (${err instanceof Error ? err.message : "onbekend"})`);
     }
-  }
+  }));
 
   // Greedy unieke toewijzing op aflopende (geboostte) score: het sterkste
-  // (slot, asset)-paar wint; een asset kan maar één slot dekken.
-  candidates.sort((a, b) => b.score - a.score);
+  // (slot, asset)-paar wint; een asset kan maar één slot dekken. Expliciete
+  // tie-breakers (slotIndex, assetId) houden de uitkomst deterministisch nu
+  // de slot-loops parallel pushen.
+  candidates.sort((a, b) => b.score - a.score || a.slotIndex - b.slotIndex || a.asset.id.localeCompare(b.asset.id));
   const assignments = new Map<number, SlotMatch>();
   const usedAssets = new Set<string>();
   for (const c of candidates) {

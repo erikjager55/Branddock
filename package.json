@@ -43,7 +43,10 @@
     "db:backup": "mkdir -p backups && pg_dump \"$DATABASE_URL\" > backups/db-manual-$(date +%Y%m%d-%H%M).sql",
     "db:migrate": "npx prisma migrate dev",
     "db:migrate:deploy": "npx prisma migrate deploy",
-    "db:cleanup": "npx tsx scripts/cleanup-demo-data.ts"
+    "db:cleanup": "npx tsx scripts/cleanup-demo-data.ts",
+    "smoke:source-image-matcher": "tsx scripts/smoke-tests/source-image-matcher.ts",
+    "smoke:feature-visual-gate": "tsx scripts/smoke-tests/feature-visual-gate.ts",
+    "smoke:judge-image-prep": "tsx scripts/smoke-tests/judge-image-prep.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
