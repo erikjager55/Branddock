@@ -31,6 +31,7 @@ import { runFeatureSetDiversityJudge } from '@/lib/brand-fidelity/feature-set-di
 import { imageBriefSchema } from '@/lib/landing-pages/variant-schema';
 import { resolveFeatureCandidateCount } from '@/lib/landing-pages/feature-image-config';
 import { matchLibraryImagesToSlots } from '@/lib/landing-pages/source-image-matcher';
+import { importGeneratedImageToLibrary } from '@/lib/media/import-generated-image';
 import { readFile } from 'node:fs/promises';
 import { resolve as resolvePath } from 'node:path';
 import { prepareJudgeImage } from '@/lib/brand-fidelity/judge-image';
@@ -534,6 +535,26 @@ export async function POST(request: Request, { params }: RouteParams) {
           '[generate-feature-visuals] component-persist faalde — URLs worden tóch geretourneerd:',
           err instanceof Error ? err.message : err,
         );
+      }
+    }
+
+    // Library-groei (follow-up 2026-06-11): definitieve AI-winnaars worden
+    // fire-and-forget als MediaAsset geregistreerd — de tagger-keten levert
+    // beschrijving + embedding zodat de matcher ze bij een volgende pagina
+    // kan hergebruiken ($0) i.p.v. opnieuw te genereren. Alleen v2 + alleen
+    // 'generated' (library-matches zíjn al assets).
+    if (body.features) {
+      for (const g of generated) {
+        if (!g || g.source !== 'generated') continue;
+        const slot = slotsByIndex.get(g.index);
+        void importGeneratedImageToLibrary({
+          workspaceId,
+          fileUrl: g.url,
+          fileSize: g.bytes.length,
+          name: slot?.imageBrief?.subject?.trim() || slot?.heading || 'Gegenereerd feature-beeld',
+          sceneType: slot?.imageBrief?.sceneType ?? null,
+          uploadedById: session.user.id,
+        });
       }
     }
 
