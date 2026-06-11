@@ -5,9 +5,9 @@ fase: pre-launch
 priority: next
 effort: ~2 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-06-11
-completed: -
+completed: 2026-06-11
 related-adr: docs/adr/2026-06-10-feature-visual-pipeline.md (beslissing 10)
 related-spec: docs/audits/2026-06-10-lp-feature-image-diversity.md (jury-grafts source-first lens)
 worktree: branddock-feat-lp-library-first (bij start aanmaken)
@@ -23,12 +23,12 @@ Server-side slot-matcher in de generate-feature-visuals-route (additief, vóór 
 
 # Acceptatiecriteria
 
-- [ ] Slot met passende library-foto (similarity ≥ drempel) gebruikt die foto; response `sources` toont 'library'; geen fal-kosten voor dat slot
-- [ ] Geen asset op twee slots; LOGO/ICON/illustraties nooit gematcht
-- [ ] Cold-start (workspace zonder embeddings) → volledig AI-pad, geen errors
-- [ ] Golden-set dry-run over Napking/Zwarthout/Better Brands met asserts op verwachte match-categorieën (drempel-tuning meetbaar)
-- [ ] Bron-badge in PuckImageField toont 'Media library' voor gematchte beelden (werkt al via URL-heuristiek)
-- [ ] tsc 0 · lint 0 · smokes groen
+- [x] Slot met passende library-foto (similarity ≥ drempel) gebruikt die foto; response `sources` toont 'library'; geen fal-kosten voor dat slot
+- [x] Geen asset op twee slots; LOGO/ICON/illustraties nooit gematcht
+- [x] Cold-start (workspace zonder embeddings) → volledig AI-pad, geen errors
+- [x] Golden-set dry-run over Napking/Zwarthout/Better Brands met asserts op verwachte match-categorieën (drempel-tuning meetbaar)
+- [x] Bron-badge in PuckImageField toont 'Media library' voor gematchte beelden (werkt al via URL-heuristiek)
+- [x] tsc 0 · lint 0 · smokes groen
 
 # Bestanden die ik aanraak
 
@@ -57,3 +57,8 @@ Server-side slot-matcher in de generate-feature-visuals-route (additief, vóór 
 
 - Feature-target in de source-keuze-UI (handmatige per-slot picker)
 - Gegenereerde beelden als MediaAsset importeren + embedden (reuse-detectie-uitbreiding)
+
+# Notes
+
+- 2-reviewer ronde 1: 1 CRITICAL (webp-format vergiftigde judge-keten + fail-open accept) + 4 WARNINGs — alle gefixt; bevestigingsronde: 0 critical / 0 warning. Aanvullend t.o.v. het voorstel: fail-CLOSED accept zonder judge-oordeel, source-aware dupe-bescherming (library-foto nooit duplicate-verliezer), assetId-provenance, /uploads/-containment, parallelle matcher/prefill met deterministische tie-breakers.
+- Golden-set: 0 matches op drempel 0,55 voor de huidige libraries (conservatief zoals ontworpen); drempel-tuning via dry-run zodra libraries groeien. Live-acceptatie: zie changelog #323.

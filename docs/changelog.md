@@ -37,7 +37,7 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
-### 323. Planner-checklist false negatives voor Puck web-pages + hero-row pariteit
+### 324. Planner-checklist false negatives voor Puck web-pages + hero-row pariteit
 
 De Publication Checklist in Canvas Step 4 false-flagde gegarandeerd op "Title or headline" en "Hero image" voor Puck web-pages: de checks lazen alleen DeliverableComponent-tekstgroep-namen en de `heroImage`-store-slice (die uitsluitend uit een `variantGroup='hero-image'`-rij hydrateert), terwijl de Puck-flow titel/hero in `settings.puckData`/`structuredVariant` persisteert. Gefixt langs vier lijnen: (1) Puck-specifieke checklist-branch ("Hero headline is set", required-pariteit met de oude web-branch); (2) checklist-signalen lezen voor Puck-types `contextStack.puckData` (gerenderde waarheid; volgt editor-edits na refetch) met de `structuredVariant`-snapshot als fallback, `has-meta` accepteert het door de SEO-pipeline teruggeschreven `contentTypeInputs.metaDescription` (puck-gated — de WordPress-excerpt van blog-article leest alleen de tekstgroep); (3) de SEO-pipeline-wipe spaart media-rijen (`notIn ['image','video','voiceover']`, orchestrator-conventie) i.p.v. alles te wissen; (4) AI-hero-flows upserten nu óók de `hero-image`-rij op het gedeelde chokepoint (`patchHeroVisualUrl`, alle 3 routes) — atomair op de compound-unique, gegate op nieuw `puckPatched`-signaal (rij spiegelt de gerenderde hero) en strikt additief in fill-only/self-heal-modus zodat een handmatige keuze nooit overschreven wordt; POST /hero-image is de andere race-helft en werd ook atomair. Review: 2 rondes × 2 verse subagents (0 critical, 7 warnings → alle gefixt) + ronde 3 inline wegens subagent-limiet. Browser-geverifieerd op de Napking LP vóór én na de rework: 5/5 groen, warning-regel weg, 0 console-errors. Smokes: phase68 30/30 (incl. nieuw `puckPatched`-contract); tsc 0, lint 0 errors.
 
@@ -45,6 +45,15 @@ De Publication Checklist in Canvas Step 4 false-flagde gegarandeerd op "Title or
 - ADR: `-`
 - Spec: `-`
 - Commit: `1d6ebbc1`
+
+### 323. Library-first matching — echte merkfoto's vóór AI-generatie op het LP feature-pad
+
+De Media Library is nu de eerste bron voor LP feature-beelden: een server-side slot-matcher (`source-image-matcher.ts`) matcht per slot de brief/copy semantisch tegen aiDescription-pgvector-embeddings (`findSimilarMediaAssets` + additieve `excludeCategories`-param), met greedy unieke toewijzing (één asset → max één slot), foto-categorieën-only, `auth:PHOTO_REAL`-boost, orphaned-disk-guard en throw-loze cold-start. Een match wordt pas geaccepteerd na de coherence-judge (≥55, **fail-closed** zonder oordeel) — "echt maar fout" valt terug op het AI-pad. Gedekte slots kosten $0 fal-spend (`sources: 'library'`, persist `imageSource: library:<assetId>` mét `aiProvider/aiModel: null` conform het select-library-patroon). Source-aware kwaliteitspoort: een library-foto kan nooit de duplicate-verliezer zijn van een (library, AI)-paar (swap-loop + `protectedIndices` in de gate) — de AI-sibling kan via brand-anchors op dezelfde foto geconditioneerd zijn. Review-ronde 1 ving een CRITICAL: webp-library-assets (21% van de embedde set) kregen een png-label waardoor de coherence-acceptatie fail-open passeerde én één invalide image-block de hele multi-image diversity-call stil uitschakelde → `prepareJudgeImage` sniff't nu png/jpeg/webp en converteert onbekende formats naar jpeg. Bevestigingsronde 0C/0W incl. live SQL-verificatie van de nieuwe `text[]`-param (G2-callers ongewijzigd). Smokes: matcher 11/11 (nieuw), gate 23/23 (+protected-cases), judge-image 7/7 (+webp/gif); golden-set dry-run met match-rapportage; npm smoke-entries toegevoegd.
+
+- Task: [tasks/done/lp-library-first-matching.md](../tasks/done/lp-library-first-matching.md)
+- ADR: [docs/adr/2026-06-10-feature-visual-pipeline.md](adr/2026-06-10-feature-visual-pipeline.md) beslissing 10 (geactiveerd)
+- Spec: [docs/audits/2026-06-10-lp-feature-image-diversity.md](audits/2026-06-10-lp-feature-image-diversity.md)
+- Commit: branch `feat/lp-library-first-matching`
 
 
 ### 322. LP feature-images follow-ups — werkende clear-knop, quality-mode, audit-nauwkeurigheid, judge-downscaling
