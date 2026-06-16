@@ -335,12 +335,12 @@ group("E. buildMicrositeTemplateFromStructured");
 const microTree = buildMicrositeTemplateFromStructured(micrositeFixture, null);
 const microTypes = sectionTypes(microTree);
 // W4: BrandNav → sticky AnchorNav; hoofdstukken als StoryChapter. W4-fix:
-// HighlightCards uit de default-build (dubbele sectie-opsomming met de nav);
-// nav-links = chapters-only, join wordt de korte CTA-knop.
+// HighlightCards staat in de tree maar INACTIEF (active:false) → niet zichtbaar,
+// geen dubbele opsomming; nav-links = chapters-only, join wordt de korte CTA-knop.
 assert("start met AnchorNav (sticky ankernavigatie)", microTypes[0] === "AnchorNav");
 assert(
-  "sectie-volgorde nav → hero → story (chapter+stat+quote) → impact → join → footer",
-  microTypes.join(",") === "AnchorNav,BrandHero,StoryChapter,StatsBlock,Testimonial,StoryChapter,BrandCTA,Footer",
+  "sectie-volgorde nav → hero → highlights(inactief) → story → impact → join → footer",
+  microTypes.join(",") === "AnchorNav,BrandHero,HighlightCards,StoryChapter,StatsBlock,Testimonial,StoryChapter,BrandCTA,Footer",
   microTypes.join(","),
 );
 const nav = sectionsOf(microTree, "AnchorNav")[0];
@@ -353,7 +353,7 @@ assert(
 );
 assert("nav genummerd (story-arc expliciet)", nav.props.numbered === true);
 assert("nav-CTA = korte join-label, scrollt naar join-anker", nav.props.ctaLabel === micrositeFixture.join.navLabel && nav.props.ctaHref === "#meedoen");
-assert("geen HighlightCards meer in default-build", !microTypes.includes("HighlightCards"));
+assert("HighlightCards present maar INACTIEF (active:false)", sectionsOf(microTree, "HighlightCards")[0]?.props.active === false);
 assert("hero-CTA scrollt naar join-anker", sectionsOf(microTree, "BrandHero")[0].props.ctaHref === "#meedoen");
 const microChapters = sectionsOf(microTree, "StoryChapter");
 assert("één StoryChapter per hoofdstuk (2 hoofdstukken)", microChapters.length === 2);

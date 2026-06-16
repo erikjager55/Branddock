@@ -125,10 +125,12 @@ assert(
 group("B. buildMicrositeTemplateFromStructured (W4-skelet)");
 const tree = buildMicrositeTemplateFromStructured(micrositeFixture, null);
 const types = sectionTypes(tree);
-// W4-fix: HighlightCards verwijderd uit de default-build (gaf dubbele sectie-
-// opsomming met de AnchorNav); hero wordt direct gevolgd door het eerste hoofdstuk.
-assert("AnchorNav eerst, hero, dan direct het eerste StoryChapter", types[0] === "AnchorNav" && types[1] === "BrandHero" && types[2] === "StoryChapter", types.join(","));
-assert("geen HighlightCards in de default-build (anti-dubbel)", !types.includes("HighlightCards"));
+// W4-fix: HighlightCards staan in de tree maar INACTIEF (active:false) zodat ze
+// niet dubbel zijn met de AnchorNav, maar met één klik te activeren blijven.
+assert("AnchorNav eerst, hero, dan HighlightCards (inactief)", types[0] === "AnchorNav" && types[1] === "BrandHero" && types[2] === "HighlightCards", types.join(","));
+const highlights = sectionsOf(tree, "HighlightCards")[0];
+assert("HighlightCards present maar inactief (active:false)", highlights?.props.active === false);
+assert("HighlightCards-items = hoofdstukken + join (klaar voor activeren)", (highlights.props.items as unknown[]).length === 3);
 const nav = sectionsOf(tree, "AnchorNav")[0];
 const navLinks = nav.props.links as Array<{ href: string }>;
 // W4-fix: nav-links = alléén hoofdstukken (story+impact), join is de korte CTA.

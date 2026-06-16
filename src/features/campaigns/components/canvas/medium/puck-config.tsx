@@ -349,6 +349,10 @@ export type HighlightCardItem = { title: string; description?: string | null; hr
 export type HighlightCardsProps = {
   items: HighlightCardItem[];
   bandTone?: SectionBandTone;
+  /** W4-fix: in de microsite default-build staat dit op `false` (inactief) zodat
+   *  de AnchorNav niet dubbel wordt; de component blijft in de tree + Puck-layers
+   *  zodat de user 'm kan activeren. Handmatig toegevoegd → default actief. */
+  active?: boolean;
 };
 
 export type SpikePuckProps = {
@@ -2730,6 +2734,15 @@ function highlightCardsComponent(tokens: BrandTokens) {
   const tbr = tokens.typographyByRole;
   return {
     fields: {
+      // W4-fix: aan/uit-schakelaar bovenaan zodat de user de highlight-kaarten
+      // met één klik kan activeren (default in de microsite-build: inactief).
+      active: {
+        type: 'radio' as const,
+        options: [
+          { label: 'Inactief (verborgen)', value: false },
+          { label: 'Actief (tonen)', value: true },
+        ],
+      },
       items: {
         type: 'array' as const,
         arrayFields: {
@@ -2742,12 +2755,18 @@ function highlightCardsComponent(tokens: BrandTokens) {
       },
     },
     defaultProps: {
+      // Handmatig toegevoegd via de component-picker → meteen actief; de
+      // microsite-builder zet 'm expliciet op false (inactief, present-in-tree).
+      active: true,
       items: [
         { title: 'Ons verhaal', description: 'Waarom deze campagne bestaat.', href: '#verhaal' },
         { title: 'Doe mee', description: 'Sluit je aan.', href: '#meedoen' },
       ],
     },
-    render: ({ items, bandTone }: HighlightCardsProps) => {
+    render: ({ items, bandTone, active }: HighlightCardsProps) => {
+      // Inactief → leeg fragment (niets zichtbaar); blijft wel in de Puck-layers,
+      // met één klik te activeren. (Puck's render-type staat geen null toe.)
+      if (active === false) return <></>;
       const sectionBg = sectionBandBg(tokens, bandTone);
       const cardBg = tokens.surface;
       const borderColor = resolveOnColor(tokens.surfaceBorder, sectionBg, { fallback: tokens.onSurface, minRatio: 1.3 });
