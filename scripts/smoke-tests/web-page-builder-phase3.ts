@@ -216,8 +216,10 @@ function testPerTypeTemplates(): void {
       mustInclude: ['PricingTable', 'RichText'],
     },
     {
+      // W0-B (plan website-page-types §4.3a): de tweede RichText rendereerde
+      // dezelfde longText dubbel en is uit het seed-skelet verwijderd.
       type: 'microsite',
-      expectedTypes: ['BrandHero', 'RichText', 'FeatureGrid', 'Testimonial', 'RichText', 'BrandCTA', 'Footer'],
+      expectedTypes: ['BrandHero', 'RichText', 'FeatureGrid', 'Testimonial', 'BrandCTA', 'Footer'],
       mustInclude: ['RichText', 'Testimonial'],
     },
   ];

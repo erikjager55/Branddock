@@ -10,7 +10,7 @@
 // =============================================================
 
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, X, Sparkles, Loader2, AlertCircle, ShieldAlert } from 'lucide-react';
 import { useMediaAssets } from '@/features/media-library/hooks';
 
 interface Anchor {
@@ -19,12 +19,31 @@ interface Anchor {
   alt: string | null;
 }
 
+// W5 L-Fase 3 — anchor-curatie (plan §5 T2): logo-dominante referentiebeelden
+// leren het model dat logo na te maken in elke generatie.
+type LogoProminence = 'none' | 'incidental' | 'dominant';
+interface AnchorLogoFinding {
+  mediaAssetId: string;
+  visibleLogo: boolean;
+  prominence: LogoProminence;
+  rationale: string;
+}
+interface AnchorLogoAudit {
+  findings: AnchorLogoFinding[];
+  dominantCount: number;
+  visibleCount: number;
+  warning: string | null;
+}
+
 export function BrandStyleAnchorsPanel() {
   const [anchors, setAnchors] = useState<Anchor[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // W5 L-Fase 3 — anchor logo-audit (opt-in, vision-call per anchor).
+  const [audit, setAudit] = useState<AnchorLogoAudit | null>(null);
+  const [auditing, setAuditing] = useState(false);
 
   // Initial load
   useEffect(() => {
@@ -72,7 +91,27 @@ export function BrandStyleAnchorsPanel() {
 
   const handleRemove = (id: string) => {
     void persist(anchors.filter((a) => a.mediaAssetId !== id));
+    setAudit(null); // stale na wijziging
   };
+
+  const runAudit = async () => {
+    setAuditing(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/workspace/brand-style-anchors?audit=1');
+      if (!res.ok) throw new Error(`Audit mislukt (${res.status})`);
+      const data = (await res.json()) as { logoAudit?: AnchorLogoAudit };
+      setAudit(data.logoAudit ?? { findings: [], dominantCount: 0, visibleCount: 0, warning: null });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Audit mislukt');
+    } finally {
+      setAuditing(false);
+    }
+  };
+
+  /** Prominentie per anchor uit de laatste audit (voor de badge op de tegel). */
+  const prominenceOf = (id: string): LogoProminence | null =>
+    audit?.findings.find((f) => f.mediaAssetId === id)?.prominence ?? null;
 
   const handleAdd = (asset: { id: string; fileUrl: string; name?: string | null }) => {
     if (anchors.length >= 10) {
@@ -88,6 +127,7 @@ export function BrandStyleAnchorsPanel() {
       { mediaAssetId: asset.id, fileUrl: asset.fileUrl, alt: asset.name ?? null },
     ];
     void persist(newAnchors);
+    setAudit(null); // stale na wijziging
     setPickerOpen(false);
   };
 
@@ -127,6 +167,33 @@ export function BrandStyleAnchorsPanel() {
         </div>
       )}
 
+      {/* W5 L-Fase 3 — anchor-curatie: check op logo-dominante anchors. */}
+      {!loading && count > 0 && (
+        <div className="mb-3">
+          <button
+            type="button"
+            onClick={runAudit}
+            disabled={auditing}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-purple-700 disabled:opacity-50"
+          >
+            {auditing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldAlert className="h-3.5 w-3.5" />}
+            Controleer anchors op logo&apos;s
+          </button>
+          {audit && (
+            audit.warning ? (
+              <div className="mt-2 flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-2 text-xs text-amber-800">
+                <ShieldAlert className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                <span>{audit.warning}</span>
+              </div>
+            ) : (
+              <p className="mt-2 text-[11px] text-emerald-700">
+                Geen logo-dominante anchors gevonden{audit.visibleCount > 0 ? ` (${audit.visibleCount} met een klein/onopvallend logo)` : ''}.
+              </p>
+            )
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center gap-2 text-xs text-gray-500 py-4">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -146,6 +213,15 @@ export function BrandStyleAnchorsPanel() {
                   alt={anchor.alt ?? 'Anchor'}
                   className="w-full h-full object-cover"
                 />
+                {prominenceOf(anchor.mediaAssetId) === 'dominant' && (
+                  <span
+                    className="absolute bottom-1 left-1 inline-flex items-center gap-0.5 rounded bg-amber-500/95 px-1 py-0.5 text-[9px] font-semibold text-white shadow-sm"
+                    title="Dit beeld toont een prominent logo — vervang het voor schone generaties"
+                  >
+                    <ShieldAlert className="h-2.5 w-2.5" />
+                    logo
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() => handleRemove(anchor.mediaAssetId)}

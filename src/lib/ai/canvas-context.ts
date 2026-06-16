@@ -157,6 +157,15 @@ export interface VisualBrief {
   };
 }
 
+/** W2 (plan §2.3) — productbeeld voor de product-page beeld-pijplijn. `category`
+ *  is de ProductImageCategory-string (HERO/FEATURE/DETAIL/LIFESTYLE/…). */
+export interface ProductImageContext {
+  url: string;
+  category: string;
+  altText: string | null;
+  sortOrder: number;
+}
+
 export interface ProductContext {
   id: string;
   name: string;
@@ -167,6 +176,9 @@ export interface ProductContext {
   features: string[];
   benefits: string[];
   useCases: string[];
+  /** W2 — gescrapte/geüploade productbeelden, op sortOrder gesorteerd. Leeg
+   *  wanneer het product geen beelden heeft (34/39 producten vandaag). */
+  images: ProductImageContext[];
 }
 
 export interface CanvasContextStack {
@@ -478,22 +490,43 @@ export async function assembleCanvasContext(
     return { objective, keyMessage, toneDirection, callToAction, contentOutline };
   })();
 
-  // Layer 7: Product context from campaign knowledge assets
+  // Layer 7: Product context. W2 (plan §2.3) — settings-first: een product-page
+  // koppelt expliciet via settings.contentTypeInputs.productId (de product-select
+  // dropdown). Die wint en wordt workspace-gevalideerd. Valt die weg, dan vallen
+  // we terug op de CampaignKnowledgeAsset-productIds (legacy/blueprint-pad). Zo
+  // krijgt de generator de échte productdata i.p.v. niets (vandaag: 0/53 campagnes
+  // hebben een Product-knowledge-asset).
+  const settingsInputs = (settings.contentTypeInputs ?? {}) as Record<string, unknown>;
+  const selectedProductId =
+    typeof settingsInputs.productId === 'string' && settingsInputs.productId.trim().length > 0
+      ? settingsInputs.productId.trim()
+      : null;
+
   let productIds: string[] = [];
-  const productAssets = await prisma.campaignKnowledgeAsset.findMany({
-    where: { campaignId: deliverable.campaignId, assetType: 'Product', productId: { not: null } },
-    select: { productId: true },
-  });
-  productIds = productAssets.map((a) => a.productId).filter((id): id is string => id !== null);
+  if (selectedProductId) {
+    productIds = [selectedProductId];
+  } else {
+    const productAssets = await prisma.campaignKnowledgeAsset.findMany({
+      where: { campaignId: deliverable.campaignId, assetType: 'Product', productId: { not: null } },
+      select: { productId: true },
+    });
+    productIds = productAssets.map((a) => a.productId).filter((id): id is string => id !== null);
+  }
 
   const products: ProductContext[] = [];
   if (productIds.length > 0) {
     const productRecords = await prisma.product.findMany({
+      // workspaceId in de where filtert een cross-tenant/stale productId
+      // (settings kan een verwijderd of fremd product noemen) defensief weg.
       where: { id: { in: productIds }, workspaceId },
       select: {
         id: true, name: true, description: true, category: true,
         pricingModel: true, pricingDetails: true, features: true,
         benefits: true, useCases: true,
+        images: {
+          select: { url: true, category: true, altText: true, sortOrder: true },
+          orderBy: { sortOrder: 'asc' },
+        },
       },
     });
     for (const p of productRecords) {
@@ -507,6 +540,12 @@ export async function assembleCanvasContext(
         features: p.features,
         benefits: p.benefits,
         useCases: p.useCases,
+        images: p.images.map((img) => ({
+          url: img.url,
+          category: String(img.category),
+          altText: img.altText,
+          sortOrder: img.sortOrder,
+        })),
       });
     }
   }

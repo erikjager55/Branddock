@@ -12,7 +12,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
-import { fetchBrandStyleAnchors } from '@/lib/ai/brand-style-anchors';
+import { fetchBrandStyleAnchors, auditStyleAnchorsForLogos } from '@/lib/ai/brand-style-anchors';
 
 const MAX_ANCHORS = 10;
 const MIN_ANCHORS = 0; // 0 toegestaan (geen anchors); aanbevolen 3-10
@@ -23,14 +23,19 @@ const putSchema = z
   })
   .strict();
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const anchors = await fetchBrandStyleAnchors(workspaceId);
-    return NextResponse.json({ anchors });
+    // W5 L-Fase 3 — anchor-curatie is opt-in via ?audit=1 (1 vision-call per
+    // anchor; niet op elke GET draaien). Surface't de logo-waarschuwing voor
+    // de styleguide-UI zodat de user logo-dominante anchors kan vervangen.
+    const wantAudit = new URL(request.url).searchParams.get('audit') === '1';
+    const logoAudit = wantAudit ? await auditStyleAnchorsForLogos(workspaceId) : null;
+    return NextResponse.json({ anchors, logoAudit });
   } catch (err) {
     console.error('[GET /api/workspace/brand-style-anchors]', err);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

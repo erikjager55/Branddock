@@ -33,7 +33,11 @@ export type InputFieldType =
   | "tags"
   | "number"
   | "boolean"
-  | "select";
+  | "select"
+  // W2 (plan §2.3): product-koppeling. Dropdown gevoed door GET /api/products;
+  // de waarde is een Product-id (cuid). Wordt server-side in Layer 7
+  // (settings-first) opgelost naar volledige ProductContext + ProductImages.
+  | "product-select";
 
 export type ContentTypeInputValue = string | string[] | number | boolean;
 
@@ -2251,6 +2255,20 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "product-page": [
+    // W2 (plan §2.3): een product-page is ALTIJD aan een Product gekoppeld.
+    // De generator krijgt zo de echte naam/features/benefits/prijzen/beelden
+    // mee i.p.v. te verzinnen. Staat bewust bovenaan — het is de spil van
+    // de pagina.
+    {
+      key: "productId",
+      label: "Gekoppeld product",
+      category: "campaign-details",
+      type: "product-select",
+      required: true,
+      helpText: "Het product/de dienst uit je knowledge-sectie waar deze pagina over gaat",
+      aiDerivable: true,
+      aiHint: "Kies het product dat het beste past bij het campagne-doel; verplicht voor een product-page",
+    },
     valueProposition(),
     targetObjection(),
     featureBenefitMap(),
@@ -2258,12 +2276,11 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
     seoKeyword(),
     {
       key: "productSpecs",
-      label: "Key Product Specs",
+      label: "Extra product-specs (optioneel)",
       category: "references",
       type: "textarea",
       placeholder: "e.g. Dimensions, materials, compatibility, pricing",
-      required: true,
-      helpText: "Technical specifications to include",
+      helpText: "Aanvullende specs bovenop het gekoppelde product — alleen wat nog niet in het product-record staat",
       aiDerivable: true,
       aiHint: "Based on linked products in campaign",
     },

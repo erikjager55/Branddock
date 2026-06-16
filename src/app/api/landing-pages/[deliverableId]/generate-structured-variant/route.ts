@@ -17,7 +17,9 @@ import {
   parseVariantRewriteResponse,
   VARIANT_REWRITE_SYSTEM_PROMPT,
 } from "@/lib/landing-pages/variant-tell-rewrite";
-import { flattenVariantToText } from "@/lib/landing-pages/flatten-variant";
+import { flattenPageVariantToText } from "@/lib/landing-pages/flatten-variant";
+import { hasOwnVariantSchema } from "@/lib/landing-pages/page-type-schemas";
+import type { LandingPageVariantContent } from "@/lib/landing-pages/variant-schema";
 import { runFidelityScoring } from "@/lib/brand-fidelity/fidelity-runner";
 import { detectAiTells } from "@/lib/brand-fidelity/ai-tell-detector";
 import { ensureBrandArchetype } from "@/lib/landing-pages/ensure-archetype";
@@ -129,6 +131,20 @@ export async function POST(
   // Brand + persona context uit canvas-context (5-min cache)
   const ctx = await assembleCanvasContext(deliverable.id, workspaceId);
 
+  // W2 (plan §2.3 stap 5) — een product-page is ALTIJD aan een product
+  // gekoppeld. Layer 7 vult ctx.products settings-first uit de product-select.
+  // Geen product → harde guard zodat de generator nooit product-details verzint.
+  const linkedProduct = ctx.products[0] ?? null;
+  if (deliverable.contentType === "product-page" && !linkedProduct) {
+    return NextResponse.json(
+      {
+        error:
+          "Koppel eerst een product. Een product-page hoort altijd bij een product/dienst uit je knowledge-sectie — kies er één in Stap 1.",
+      },
+      { status: 400 },
+    );
+  }
+
   const primaryPersona = ctx.personas[0];
   const personaForGenerator = primaryPersona
     ? {
@@ -198,8 +214,13 @@ export async function POST(
   try {
     results = await generateLandingPageVariantBatch(
       {
+        // W1 — type-dispatch: server-side contentType (niet client-vertrouwd)
+        // stuurt schema + system-prompt; LP/comparison blijven het oude pad.
+        contentType: deliverable.contentType,
         brand: ctx.brand,
         persona: personaForGenerator,
+        // W2 — gekoppeld product (alleen voor product-page; andere types null).
+        product: deliverable.contentType === "product-page" ? linkedProduct : null,
         userPrompt,
         locale,
         includeProblem: body.includeProblem ?? true,
@@ -282,10 +303,19 @@ export async function POST(
   // detector — anders gate/beloont de rewrite het strippen van geseede woorden.
   const brandVocabulary = (ctx.brand.vocabularyDo ?? []).filter(Boolean);
 
-  if (humanVoiceMode === "STRICT") {
+  // W1 — tell-rewrite parset het LP-schema hard; voor de type-eigen schemas
+  // (faq/product/microsite) degraderen we expliciet tot een per-type rewrite
+  // bestaat (W2-W4). Structured warn conform de silent-return-regel.
+  if (humanVoiceMode === "STRICT" && hasOwnVariantSchema(deliverable.contentType)) {
+    console.warn("[generate-structured-variant] STRICT tell-rewrite geskipt: geen per-type rewrite-prompt", {
+      deliverableId,
+      contentType: deliverable.contentType,
+    });
+  }
+  if (humanVoiceMode === "STRICT" && !hasOwnVariantSchema(deliverable.contentType)) {
     const rewritten = await Promise.all(
       results.map((r) =>
-        runVariantTellRewriteIfNeeded(r.variant, async ({ systemPrompt, userPrompt: rwPrompt }) => {
+        runVariantTellRewriteIfNeeded(r.variant as LandingPageVariantContent, async ({ systemPrompt, userPrompt: rwPrompt }) => {
           const res = await anthropicClient.createChatCompletion(
             [
               { role: "system", content: systemPrompt },
@@ -322,11 +352,20 @@ export async function POST(
   // AUTO_ITERATE_DEEP_SCORE): scoring is in deze flow bewust client-getriggerd
   // (zie score-variant-fidelity docblock — de generator-route houdt zijn fast
   // response); altijd-aan zou de latency +20-60s en judge-kosten ×2 maken.
-  if (process.env.LP_SILENT_ITERATE === "1") {
+  // W1 — de iterate-helft van dit blok rewrite't via het LP-schema
+  // (parseVariantRewriteResponse); voor type-eigen schemas degraderen we
+  // expliciet tot er per-type rewrites bestaan (W2-W4).
+  if (process.env.LP_SILENT_ITERATE === "1" && hasOwnVariantSchema(deliverable.contentType)) {
+    console.warn("[generate-structured-variant] silent-iterate geskipt: geen per-type rewrite", {
+      deliverableId,
+      contentType: deliverable.contentType,
+    });
+  }
+  if (process.env.LP_SILENT_ITERATE === "1" && !hasOwnVariantSchema(deliverable.contentType)) {
     const iterated = await Promise.all(
       results.map(async (r, slot) => {
         try {
-          const text = flattenVariantToText(r.variant);
+          const text = flattenPageVariantToText(r.variant);
           const wc = text.trim().split(/\s+/).filter(Boolean).length;
           const scored = await runFidelityScoring({
             workspaceId,
@@ -371,7 +410,7 @@ export async function POST(
           );
           const parsedRw = parseVariantRewriteResponse(res.content);
           if (!parsedRw.success) return null;
-          const afterText = flattenVariantToText(parsedRw.data);
+          const afterText = flattenPageVariantToText(parsedRw.data);
           const rescored = await runFidelityScoring({
             workspaceId,
             deliverableId,

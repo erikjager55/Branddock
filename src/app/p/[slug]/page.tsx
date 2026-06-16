@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { resolvePublishedPage } from '@/lib/landing-pages/publish-page';
 import { buildSpikePuckConfig, type SpikePuckProps } from '@/features/campaigns/components/canvas/medium/puck-config';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
+import { getVariantSchemaForType, type PageVariantContent } from '@/lib/landing-pages/page-type-schemas';
+import { buildPageJsonLd, flavorFromProduct } from '@/lib/landing-pages/page-json-ld';
 
 type SpikeData = Data<SpikePuckProps>;
 
@@ -53,5 +55,52 @@ export default async function PublishedPage({ params, searchParams }: Props) {
   const config = buildSpikePuckConfig(ctx);
   const data = resolved.puckData as SpikeData;
 
-  return <Render config={config} data={data} />;
+  // W2/W3 — JSON-LD (Product/Service voor product-page, FAQPage voor faq-page).
+  // Leest de gepersisteerde structuredVariant + valideert tegen het type-schema;
+  // bij afwezig/ongeldig/ander type wordt niets geïnjecteerd (shape-dispatch).
+  const jsonLd = await buildPageJsonLdForDeliverable(deliverableContext.deliverableId, ctx);
+
+  return (
+    <>
+      {jsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      ) : null}
+      <Render config={config} data={data} />
+    </>
+  );
+}
+
+/**
+ * Bouwt de JSON-LD voor een gepubliceerd deliverable uit de gepersisteerde
+ * settings.structuredVariant. Fail-soft: elke afwijking (geen variant, ander
+ * content-type, schema-mismatch) geeft null → geen script-tag.
+ */
+async function buildPageJsonLdForDeliverable(
+  deliverableId: string,
+  ctx: Awaited<ReturnType<typeof assembleCanvasContext>>,
+): Promise<Record<string, unknown> | null> {
+  const deliverable = await prisma.deliverable.findUnique({
+    where: { id: deliverableId },
+    select: { contentType: true, settings: true },
+  });
+  if (!deliverable) return null;
+  const settings =
+    deliverable.settings && typeof deliverable.settings === 'object' && !Array.isArray(deliverable.settings)
+      ? (deliverable.settings as Record<string, unknown>)
+      : {};
+  const rawVariant = settings.structuredVariant;
+  if (!rawVariant || typeof rawVariant !== 'object') return null;
+
+  const parsed = getVariantSchemaForType(deliverable.contentType).safeParse(rawVariant);
+  if (!parsed.success) return null;
+
+  const product = ctx.products[0] ?? null;
+  return buildPageJsonLd(parsed.data as PageVariantContent, {
+    brandName: ctx.brand?.brandName ?? null,
+    imageUrl: product?.images?.find((img) => /^https?:\/\//i.test(img.url))?.url ?? null,
+    flavor: flavorFromProduct(product),
+  });
 }

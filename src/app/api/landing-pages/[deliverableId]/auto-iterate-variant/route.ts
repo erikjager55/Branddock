@@ -4,6 +4,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
+import { hasOwnVariantSchema } from "@/lib/landing-pages/page-type-schemas";
 import { runFidelityScoring } from "@/lib/brand-fidelity/fidelity-runner";
 import { detectAiTells } from "@/lib/brand-fidelity/ai-tell-detector";
 import { buildHumanVoiceDirective } from "@/lib/studio/human-voice-directive";
@@ -79,9 +80,13 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let parsed: z.infer<typeof bodySchema>;
+  // W1 — variant als unknown parsen: de LP-schema-validatie volgt ná de
+  // deliverable-fetch zodat type-eigen pagina's een duidelijke 422 krijgen
+  // i.p.v. een cryptische schema-400.
+  const rawBodySchema = bodySchema.extend({ variant: z.unknown() });
+  let rawParsed: z.infer<typeof rawBodySchema>;
   try {
-    parsed = bodySchema.parse(await request.json());
+    rawParsed = rawBodySchema.parse(await request.json());
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid request body", details: err.issues }, { status: 400 });
@@ -96,6 +101,26 @@ export async function POST(
   if (!deliverable) {
     return NextResponse.json({ error: "Deliverable not found" }, { status: 404 });
   }
+  // W1 — de rewrite-prompt + parser zijn LP-schema-gebonden; per-type rewrites
+  // zijn W2-W4. Expliciete degrade conform de silent-return-regel.
+  if (hasOwnVariantSchema(deliverable.contentType)) {
+    console.warn("[auto-iterate-variant] geskipt: geen per-type rewrite voor dit paginatype", {
+      deliverableId,
+      contentType: deliverable.contentType,
+    });
+    return NextResponse.json(
+      { error: "Automatisch verbeteren is nog niet beschikbaar voor dit paginatype" },
+      { status: 422 },
+    );
+  }
+  const variantParse = landingPageVariantSchema.safeParse(rawParsed.variant);
+  if (!variantParse.success) {
+    return NextResponse.json(
+      { error: "Invalid request body", details: variantParse.error.issues },
+      { status: 400 },
+    );
+  }
+  const parsed: z.infer<typeof bodySchema> = { ...rawParsed, variant: variantParse.data };
   const workspaceId = deliverable.campaign.workspaceId;
 
   const membership = await prisma.organizationMember.findFirst({

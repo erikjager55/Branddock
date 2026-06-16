@@ -28,6 +28,10 @@ function instance(type: string, props: Record<string, unknown>) {
   };
 }
 
+// Fallback copy below must stay recognisably placeholder: no brand names,
+// prices, policy claims or offer details that could pass for real content
+// if it leaks onto a published customer page (anti-fabrication rule).
+
 export function defaultBrandHero(f: FilledFields) {
   return instance('BrandHero', {
     headline: f.headline || 'Headline placeholder',
@@ -39,7 +43,7 @@ export function defaultBrandHero(f: FilledFields) {
 export function defaultBrandCta(f: FilledFields, ctx: CanvasContextStack | null) {
   const personaId = ctx?.personas?.[0]?.id ?? '';
   return instance('BrandCTA', {
-    label: f.ctaLabel || 'Start your trial',
+    label: f.ctaLabel || 'Meer informatie',
     href: f.ctaHref || '#',
     personaId,
   });
@@ -49,9 +53,9 @@ export function defaultFeatureGrid(f: FilledFields) {
   const features = f.featureItems.length > 0
     ? f.featureItems
     : [
-        { title: 'Snel', description: 'In minuten opgezet, niet weken.' },
-        { title: 'Eenvoudig', description: 'Geen technische kennis nodig.' },
-        { title: 'Schaalbaar', description: 'Groeit mee met je business.' },
+        { title: 'Snel', description: 'Licht hier het snelheidsvoordeel toe — vervang met echte content.' },
+        { title: 'Eenvoudig', description: 'Licht hier het gebruiksgemak toe — vervang met echte content.' },
+        { title: 'Schaalbaar', description: 'Licht hier de schaalbaarheid toe — vervang met echte content.' },
       ];
   const columns = features.length >= 4 ? '4' : features.length === 2 ? '2' : '3';
   return instance('FeatureGrid', { columns, features });
@@ -61,9 +65,9 @@ export function defaultFaq(f: FilledFields) {
   const items = f.faqItems.length > 0
     ? f.faqItems
     : [
-        { question: 'Hoe werkt het?', answer: 'Snel en eenvoudig.' },
-        { question: 'Wat kost het?', answer: 'Zie de pricing-sectie.' },
-        { question: 'Kan ik annuleren?', answer: 'Maandelijks opzegbaar.' },
+        { question: 'Hoe werkt het?', answer: 'Placeholder — vervang met het echte antwoord.' },
+        { question: 'Wat kost het?', answer: 'Placeholder — vervang met het echte antwoord.' },
+        { question: 'Kan ik annuleren?', answer: 'Placeholder — vervang met het echte antwoord.' },
       ];
   return instance('FAQ', { items });
 }
@@ -71,8 +75,8 @@ export function defaultFaq(f: FilledFields) {
 export function defaultTestimonial(f: FilledFields, ctx: CanvasContextStack | null) {
   const personaId = ctx?.personas?.[0]?.id ?? '';
   return instance('Testimonial', {
-    quote: f.testimonialQuote || '"Branddock heeft onze launch-snelheid verdubbeld."',
-    author: f.testimonialAuthor || 'Tevreden klant',
+    quote: f.testimonialQuote || '"Quote van een tevreden klant — vervang met een echte review."',
+    author: f.testimonialAuthor || 'Klantnaam, Bedrijf',
     personaId,
   });
 }
@@ -81,9 +85,9 @@ export function defaultPricingTable(f: FilledFields) {
   const tiers = f.pricingTiers.length > 0
     ? f.pricingTiers
     : [
-        { name: 'Starter', price: '€19/mnd', features: 'Basis features\nE-mail support' },
-        { name: 'Pro', price: '€49/mnd', features: 'Alle features\nPriority support' },
-        { name: 'Enterprise', price: 'Op aanvraag', features: 'Custom contract\nSLA' },
+        { name: 'Starter', price: '€ —', features: 'Vervang met echte features\nEén feature per regel' },
+        { name: 'Pro', price: '€ —', features: 'Vervang met echte features\nEén feature per regel' },
+        { name: 'Enterprise', price: '€ —', features: 'Vervang met echte features\nEén feature per regel' },
       ];
   return instance('PricingTable', { tiers });
 }

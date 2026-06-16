@@ -4,7 +4,10 @@ import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 import type { SpikePuckProps } from './puck-config';
 import { resolveTemplateBuilder, type FilledFields } from './puck-templates';
 import { buildLandingPageTemplateFromStructured, resolveCtaHref } from './puck-templates/landing-page-from-structured';
-import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
+import { buildFaqPageTemplateFromStructured } from './puck-templates/faq-page-from-structured';
+import { buildProductPageTemplateFromStructured } from './puck-templates/product-page-from-structured';
+import { buildMicrositeTemplateFromStructured } from './puck-templates/microsite-from-structured';
+import type { PageVariantContent } from '@/lib/landing-pages/page-type-schemas';
 
 type SpikeData = Data<SpikePuckProps>;
 
@@ -442,18 +445,23 @@ function stripMarkers(text: string): string {
 /**
  * Fase 3 entry voor structured-variant flow (docs/specs/web-page-types/
  * landing-page.md §4b). Bypasst heuristic FilledFields-extractie en
- * mapt direct van LandingPageVariantContent naar Puck-tree.
+ * mapt direct van een structured page-variant naar de Puck-tree.
  *
- * Caller is verantwoordelijk voor het valideren van de variant via
- * validateLandingPageVariant() vóór deze functie aan te roepen.
+ * Caller is verantwoordelijk voor het valideren van de variant via het
+ * juiste schema (getVariantSchemaForType) vóór deze functie aan te roepen.
  *
- * Naast variantToPuckData (legacy markdown-blob route) — wiring beslist
- * welke route gebruikt wordt op basis van of de variant gestructureerd is.
- * Die dispatch komt in Fase 5 of bij de canvas-orchestrator integratie.
+ * W1 — dispatch op SHAPE i.p.v. contentType (zelfde discriminatoren als
+ * flattenPageVariantToText): heroManifest → microsite, popularQuestions →
+ * faq-page, solution → product-page, anders LP. Shape-dispatch houdt
+ * legacy data werkend — faq/microsite-deliverables van vóór W1 hebben
+ * LP-shaped structuredVariants opgeslagen en blijven op de LP-builder.
  */
 export function variantToPuckDataFromStructured(
-  variant: LandingPageVariantContent,
+  variant: PageVariantContent,
   ctx: CanvasContextStack | null,
 ): SpikeData {
+  if ("heroManifest" in variant) return buildMicrositeTemplateFromStructured(variant, ctx);
+  if ("popularQuestions" in variant) return buildFaqPageTemplateFromStructured(variant, ctx);
+  if ("solution" in variant) return buildProductPageTemplateFromStructured(variant, ctx);
   return buildLandingPageTemplateFromStructured(variant, ctx);
 }

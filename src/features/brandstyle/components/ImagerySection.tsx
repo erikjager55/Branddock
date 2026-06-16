@@ -8,6 +8,7 @@ import { EditableStringList } from "./EditableStringList";
 import { useUpdateSection } from "../hooks/useBrandstyleHooks";
 import type { BrandStyleguide, PhotographyStyle } from "../types/brandstyle.types";
 import { BrandStyleAnchorsPanel } from "@/components/brand-foundation/BrandStyleAnchorsPanel";
+import { HeroLogoOverlayPanel } from "@/components/brand-foundation/HeroLogoOverlayPanel";
 
 /** Parse "OBSERVED:" or "RECOMMENDED:" prefix from a guideline string */
 function parseGuidelinePrefix(text: string): { prefix: "observed" | "recommended" | null; content: string } {
@@ -79,6 +80,9 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
     <div data-testid="imagery-section" className="space-y-6">
       {/* Brand-style anchors — AI image-gen style-references */}
       <BrandStyleAnchorsPanel />
+
+      {/* W5 L-Fase 3 — opt-in: echt merklogo op de hero-afbeelding */}
+      <HeroLogoOverlayPanel />
 
       {/* Photography */}
       <Card>

@@ -55,6 +55,7 @@ const product: ProductContext = {
   features: [],
   benefits: [],
   useCases: [],
+  images: [],
 };
 
 console.log('\n=== image-briefing-textarea smoke ===\n');

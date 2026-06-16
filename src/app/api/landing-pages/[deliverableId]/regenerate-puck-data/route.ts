@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
 import { variantToPuckDataFromStructured } from "@/features/campaigns/components/canvas/medium/variant-to-puck-data";
-import type { LandingPageVariantContent } from "@/lib/landing-pages/variant-schema";
+import type { PageVariantContent } from "@/lib/landing-pages/page-type-schemas";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 
@@ -61,7 +61,9 @@ export async function POST(
     deliverable.settings && typeof deliverable.settings === "object" && !Array.isArray(deliverable.settings)
       ? (deliverable.settings as Record<string, unknown>)
       : {};
-  const structuredVariant = settings.structuredVariant as LandingPageVariantContent | undefined;
+  // W1: shape-based dispatch in variantToPuckDataFromStructured routet zowel
+  // LP- als faq/product/microsite-shaped variants naar de juiste builder.
+  const structuredVariant = settings.structuredVariant as PageVariantContent | undefined;
   if (!structuredVariant || typeof structuredVariant !== "object") {
     return NextResponse.json(
       { error: "Geen structuredVariant aanwezig om uit te regenereren" },

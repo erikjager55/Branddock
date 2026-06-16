@@ -70,7 +70,7 @@ const FALLBACK_ANGLES: readonly string[] = [
 ];
 
 const SINGLE_PHOTO_RULE =
-  "A SINGLE cohesive full-frame photograph — one continuous scene, NOT a collage/triptych/split-panel/grid; no internal borders or seams. No text, no UI, no infographic, no logo";
+  "A SINGLE cohesive full-frame photograph — one continuous scene, NOT a collage/triptych/split-panel/grid; no internal borders or seams. No text, no UI, no infographic, no logos, no brand marks or lettering on objects, clothing, vehicles or signage — plain, unbranded surfaces";
 
 /**
  * R1-zijdeur-fix (review 2026-06-10): brand-context bouwt brandImageryStyle als
@@ -167,7 +167,7 @@ export function buildFeatureVisualPrompts(
     const imagery = featureSafeImagerySegments(ctx?.brand?.brandImageryStyle);
     if (!styleFragment && imagery.mood) parts.push(`Brand imagery: ${imagery.mood}`);
     if (imagery.guidelines) parts.push(`Imagery ${imagery.guidelines.charAt(0).toLowerCase()}${imagery.guidelines.slice(1)}`);
-    if (ctx?.brand?.brandName) parts.push(`Brand: ${ctx.brand.brandName}`);
+    // W0 logo-fix (plan §5 T1): geen merknaam-token — pseudo-wordmark-trigger.
 
     return {
       index: slot.index,
@@ -178,10 +178,12 @@ export function buildFeatureVisualPrompts(
   });
 }
 
-/** Reden waarom de kwaliteitspoort een regeneratie afdwingt (Fase 4). */
+/** Reden waarom de kwaliteitspoort een regeneratie afdwingt (Fase 4 + W5). */
 export type FeatureRetryReason =
   | { kind: "low-coherence"; subject: string; rationale?: string | null }
-  | { kind: "duplicate"; otherSubject: string };
+  | { kind: "duplicate"; otherSubject: string }
+  /** W5 logo L-Fase 2: de judge zag een (verzonnen) logo/wordmark op het beeld. */
+  | { kind: "visible-logo"; subject: string };
 
 /**
  * Scherp een gebouwde prompt aan voor een gerichte regeneratie + nieuwe seed.
@@ -198,6 +200,17 @@ export function sharpenFeaturePromptForRetry(
     return {
       ...built,
       prompt: `CRITICAL: the photograph must literally and unmistakably depict: ${reason.subject}. ${built.prompt}${judgeNote}`,
+      seed: randomSeed(),
+    };
+  }
+  if (reason.kind === "visible-logo") {
+    // W5 — het vorige beeld bevatte een verzonnen logo/wordmark (prompt-laag
+    // alleen drukt de frequentie, haalt nooit 0 — plan §5). Hard front-loaded
+    // verbod + subject-anker zodat de retry relevant blijft.
+    return {
+      ...built,
+      prompt: `CRITICAL: the previous attempt contained a fabricated logo or wordmark. Absolutely NO logos, NO brand marks, NO lettering or text of any kind anywhere in the image — every surface, garment, vehicle, package and sign must be plain and unbranded. Depict: ${reason.subject}. ${built.prompt}`,
+      avoid: [built.avoid, "logos, wordmarks, brand lettering, any visible text"].filter(Boolean).join("; "),
       seed: randomSeed(),
     };
   }

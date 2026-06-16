@@ -8,8 +8,11 @@ import {
   runFidelityScoring,
   buildFidelityScoreEventPayload,
 } from "@/lib/brand-fidelity/fidelity-runner";
-import { landingPageVariantSchema } from "@/lib/landing-pages/variant-schema";
-import { flattenVariantToText } from "@/lib/landing-pages/flatten-variant";
+import {
+  getVariantSchemaForType,
+  type PageVariantContent,
+} from "@/lib/landing-pages/page-type-schemas";
+import { flattenPageVariantToText } from "@/lib/landing-pages/flatten-variant";
 
 /**
  * POST /api/landing-pages/[deliverableId]/score-variant-fidelity
@@ -41,9 +44,12 @@ import { flattenVariantToText } from "@/lib/landing-pages/flatten-variant";
  *     voor de generation-flow)
  */
 
+// W1 — de variant valideert tegen het schema van het deliverable-contentType
+// (faq/product/microsite eigen schema, anders LP). De body-parse accepteert
+// daarom unknown; type-validatie volgt ná de deliverable-fetch.
 const bodySchema = z.object({
   variantIndex: z.number().int().min(0).max(3),
-  variant: landingPageVariantSchema,
+  variant: z.unknown(),
 });
 
 export async function POST(
@@ -95,7 +101,14 @@ export async function POST(
     return NextResponse.json({ error: "No access to this workspace" }, { status: 403 });
   }
 
-  const contentText = flattenVariantToText(parsed.variant);
+  const variantParse = getVariantSchemaForType(deliverable.contentType).safeParse(parsed.variant);
+  if (!variantParse.success) {
+    return NextResponse.json(
+      { error: "Invalid variant for content type", details: variantParse.error.issues },
+      { status: 400 },
+    );
+  }
+  const contentText = flattenPageVariantToText(variantParse.data as PageVariantContent);
 
   // Same minWords gate als runFidelityScoring (< 50 → null). Vroeg afvangen
   // voorkomt een onnodige canvas-context-assembly call voor te korte variants.

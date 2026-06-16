@@ -177,8 +177,14 @@ async function fetchBrandPersonalityInput(workspaceId: string): Promise<BrandPer
  */
 const STRUCTURED_VARIANT_WORD_TARGETS: Record<string, number> = {
   'landing-page': 650,
-  'product-page': 650,
-  'faq-page': 700,
+  // W1 (page-type-schemas): eigen contracten veranderen de verwachte omvang —
+  // product: 3-6 feature-blokken + problem/solution/faq (~750); faq: 3-5
+  // popular + 1-3 categorieën × 3-5 items met 40-60-woorden-antwoorden (~800);
+  // microsite: 2-4 chapters × 2-3 blokken à 20-60 woorden (~700, ongewijzigd).
+  // Afgeleid uit de schema-caps; target=actual (F33) blijft het primaire
+  // mechanisme waar de caller de echte wordcount kent.
+  'product-page': 750,
+  'faq-page': 800,
   'comparison-page': 700,
   microsite: 700,
 };

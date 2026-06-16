@@ -5,6 +5,7 @@ import { withAiRateLimit } from '@/lib/ai/middleware';
 import { prisma } from '@/lib/prisma';
 import { orchestrateContentGeneration } from '@/lib/ai/canvas-orchestrator';
 import { serializeContextForPrompt } from '@/lib/ai/context/fetcher';
+import { isPuckWebpageType } from '@/lib/landing-pages/webpage-types';
 
 // Allow up to 5 minutes for full generation pipeline (text + images)
 export const maxDuration = 300;
@@ -70,6 +71,36 @@ export async function POST(
 
     if (!deliverable.campaign || deliverable.campaign.workspaceId !== workspaceId) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+    }
+
+    // W1 dubbelpad-gate (plan website-page-types §1): de 5 PUCK_WEBPAGE_TYPES
+    // genereren via generate-structured-variant (Step 2 LandingPageGenerateBlock).
+    // Deze legacy pipeline draaide er een tweede, ongebruikte generatie naast
+    // (Step 3 rendert puckData, niet variant-groups) — o.a. via de Step 1
+    // "Doorgaan"-CTA en de derive-auto-trigger. Benigne SSE-complete i.p.v.
+    // een 4xx zodat callers gewoon doorlopen zonder error-banner; bestaande
+    // legacy variant-groups blijven leesbaar (dit gate alleen NIEUWE runs).
+    if (isPuckWebpageType(deliverable.contentType)) {
+      console.warn(
+        '[POST /api/studio/orchestrate] skipped: contentType=%s gebruikt het structured-variant-pad (deliverable %s)',
+        deliverable.contentType,
+        deliverableId,
+      );
+      const skipEncoder = new TextEncoder();
+      const skipStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(skipEncoder.encode(
+            `event: complete\ndata: ${JSON.stringify({ skipped: true, reason: 'puck-webpage-type' })}\n\n`,
+          ));
+          controller.close();
+        },
+      });
+      return new Response(skipStream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+        },
+      });
     }
 
     // Parse and validate body

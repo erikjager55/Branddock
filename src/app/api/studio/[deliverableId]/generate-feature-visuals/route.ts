@@ -154,9 +154,12 @@ export async function POST(request: Request, { params }: RouteParams) {
       durationMs: number;
       iterationCount: number;
       /** Beste niet-gekozen kandidaat (quality-mode) — gratis dupe-swap. */
-      runnerUp: { bytes: Buffer; coherence: number | null } | null;
+      runnerUp: { bytes: Buffer; coherence: number | null; visibleLogo: boolean | null } | null;
       /** Winnaar-score uit de kandidaat-selectie (null bij count=1/judge-skip). */
       coherence: number | null;
+      /** W5 logo L-Fase 2 — judge-boolean "zichtbaar logo?"; null = ongejudged
+       *  of library-beeld (echte merkfoto mag het échte logo dragen). */
+      visibleLogo: boolean | null;
       /** Herkomst: AI-generatie of een library-first match. */
       source: 'generated' | 'library';
       /** MediaAsset-id bij een library-match (provenance zonder string-parse). */
@@ -209,9 +212,12 @@ export async function POST(request: Request, { params }: RouteParams) {
 
         // Kandidaat-selectie (quality-mode): per kandidaat een G4-coherence-
         // oordeel vóór upload — alleen de winnaar wordt geüpload; de beste
-        // verliezer blijft in geheugen als gratis dupe-swap.
+        // verliezer blijft in geheugen als gratis dupe-swap. W5: een logo-vrije
+        // kandidaat wint ALTIJD van een kandidaat mét (pseudo-)logo, daarna
+        // pas op coherence — gratis logo-preventie (judges draaien toch al).
         let winnerPos = 0;
         let winnerScore: number | null = null;
+        let winnerVisibleLogo: boolean | null = null;
         let runnerUp: GenResult['runnerUp'] = null;
         const judgeText = judgeTextFor(slot.index);
         if (candidates.length > 1 && judgeText) {
@@ -223,17 +229,23 @@ export async function POST(request: Request, { params }: RouteParams) {
                 { type: 'base64', mediaType: prepared.mediaType, data: prepared.buffer.toString('base64') },
                 judgeText,
               );
-              return r?.score ?? null;
+              return r ? { score: r.score, visibleLogo: r.visibleLogo } : null;
             }),
           );
+          const logoRank = (i: number): number => (scored[i]?.visibleLogo === true ? 1 : 0);
           const order = candidates
             .map((_, i) => i)
-            .sort((a, b2) => (scored[b2] ?? -1) - (scored[a] ?? -1));
+            .sort((a, b2) => logoRank(a) - logoRank(b2) || (scored[b2]?.score ?? -1) - (scored[a]?.score ?? -1));
           winnerPos = order[0];
-          winnerScore = scored[winnerPos];
+          winnerScore = scored[winnerPos]?.score ?? null;
+          winnerVisibleLogo = scored[winnerPos]?.visibleLogo ?? null;
           const second = order[1];
           if (second !== undefined) {
-            runnerUp = { bytes: candidates[second], coherence: scored[second] };
+            runnerUp = {
+              bytes: candidates[second],
+              coherence: scored[second]?.score ?? null,
+              visibleLogo: scored[second]?.visibleLogo ?? null,
+            };
           }
         }
 
@@ -247,6 +259,7 @@ export async function POST(request: Request, { params }: RouteParams) {
           iterationCount: opts?.iteration ?? 0,
           runnerUp,
           coherence: winnerScore,
+          visibleLogo: winnerVisibleLogo,
           source: 'generated',
         };
       } catch (err) {
@@ -316,6 +329,9 @@ export async function POST(request: Request, { params }: RouteParams) {
             iterationCount: 0,
             runnerUp: null,
             coherence: score,
+            // W5: een library-beeld is een échte merkfoto — een logo daarop is
+            // het échte logo en dus toegestaan ("of het juiste, of geen").
+            visibleLogo: null,
             source: 'library',
             assetId: match.assetId,
           });
@@ -336,6 +352,8 @@ export async function POST(request: Request, { params }: RouteParams) {
     // judgen). Paired G4-coherence (beeld-i vs copy-i) + multi-image set-
     // diversity-judge + gratis runner-up-swap + budget-capped gerichte retry.
     const coherenceScores: Array<number | null> = generated.map((g) => g?.coherence ?? null);
+    // W5 — logo-spiegel naast de coherence-scores; null = ongejudged/library.
+    const visibleLogos: Array<boolean | null> = generated.map((g) => g?.visibleLogo ?? null);
     let dupePairs: Array<[number, number]> = [];
     const regenerated: number[] = [];
     const swapped: number[] = [];
@@ -357,7 +375,11 @@ export async function POST(request: Request, { params }: RouteParams) {
         }),
       );
       for (const j of judged) {
-        if (j?.result) coherenceScores[j.pos] = j.result.score;
+        if (j?.result) {
+          coherenceScores[j.pos] = j.result.score;
+          // W5: alleen AI-beelden — library blijft null (echte logo toegestaan).
+          if (generated[j.pos]?.source !== 'library') visibleLogos[j.pos] = j.result.visibleLogo;
+        }
       }
 
       const preparedWinners = await Promise.all(
@@ -404,9 +426,11 @@ export async function POST(request: Request, { params }: RouteParams) {
               url,
               bytes: loser.runnerUp.bytes,
               coherence: loser.runnerUp.coherence,
+              visibleLogo: loser.runnerUp.visibleLogo,
               runnerUp: null,
             };
             coherenceScores[loserPos] = loser.runnerUp.coherence;
+            visibleLogos[loserPos] = loser.runnerUp.visibleLogo;
             swapped.push(loser.index);
           } catch (err) {
             console.warn(`[generate-feature-visuals] runner-up-swap idx=${loser.index} faalde — origineel blijft:`, err instanceof Error ? err.message : err);
@@ -438,8 +462,8 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
       const decision = decideFeatureRegenerations(
         generated
-          .map((g, pos) => (g ? { index: g.index, coherenceScore: coherenceScores[pos] } : null))
-          .filter((s): s is { index: number; coherenceScore: number | null } => Boolean(s)),
+          .map((g, pos) => (g ? { index: g.index, coherenceScore: coherenceScores[pos], visibleLogo: visibleLogos[pos] } : null))
+          .filter((s): s is { index: number; coherenceScore: number | null; visibleLogo: boolean | null } => Boolean(s)),
         unresolvedPairs,
         undefined,
         protectedIndices,
@@ -460,9 +484,13 @@ export async function POST(request: Request, { params }: RouteParams) {
             const otherIndex = dupePartner ? (dupePartner[0] === index ? dupePartner[1] : dupePartner[0]) : null;
             const sharpened = sharpenFeaturePromptForRetry(
               built[pos],
-              reason === 'duplicate' && otherIndex !== null
-                ? { kind: 'duplicate', otherSubject: subjectFor(otherIndex) }
-                : { kind: 'low-coherence', subject: subjectFor(index), rationale: judgeRationale },
+              // W5: een gedetecteerd (pseudo-)logo krijgt z'n eigen hard-verbod-
+              // aanscherping — prompt-laag alleen haalt nooit 0 (plan §5).
+              reason === 'visible-logo'
+                ? { kind: 'visible-logo', subject: subjectFor(index) }
+                : reason === 'duplicate' && otherIndex !== null
+                  ? { kind: 'duplicate', otherSubject: subjectFor(otherIndex) }
+                  : { kind: 'low-coherence', subject: subjectFor(index), rationale: judgeRationale },
             );
             // Retry bewust met 1 kandidaat (kosten-cap); iteration=1 in de
             // audit-row. `regenerated` telt alleen GESLAAGDE retries (§9).
@@ -471,6 +499,7 @@ export async function POST(request: Request, { params }: RouteParams) {
             if (retry) {
               generated[pos] = retry;
               coherenceScores[pos] = retry.coherence;
+              visibleLogos[pos] = retry.visibleLogo;
               regenerated.push(index);
             }
           }),
@@ -491,7 +520,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       judgeCalls * 0.001 +
       diversityCalls * 0.005;
     console.log(
-      `[generate-feature-visuals] page-run deliverable=${deliverableId} model=${modelId} slots=${built.length} ok=${genCount} candidates=${candidateCount} coherence=[${coherenceScores.map((s) => s ?? '–').join(',')}] dupes=${JSON.stringify(dupePairs)} swaps=[${swapped.join(',')}] regens=[${regenerated.join(',')}] retryAttempts=${retryAttempts} judges=${judgeCalls}+${diversityCalls} durationMs=${elapsedMs} estCost=$${estCost.toFixed(2)}`,
+      `[generate-feature-visuals] page-run deliverable=${deliverableId} model=${modelId} slots=${built.length} ok=${genCount} candidates=${candidateCount} coherence=[${coherenceScores.map((s) => s ?? '–').join(',')}] logos=[${visibleLogos.map((l) => (l === null ? '–' : l ? 'Y' : 'n')).join(',')}] dupes=${JSON.stringify(dupePairs)} swaps=[${swapped.join(',')}] regens=[${regenerated.join(',')}] retryAttempts=${retryAttempts} judges=${judgeCalls}+${diversityCalls} durationMs=${elapsedMs} estCost=$${estCost.toFixed(2)}`,
     );
 
     // Persist alleen op het v2-pad (legacy mist de feature-index-semantiek).

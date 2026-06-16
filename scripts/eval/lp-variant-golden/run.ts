@@ -92,7 +92,8 @@ async function run() {
       console.log('  ... live generatie (Anthropic) ...');
       try {
         const result = await generateLandingPageVariant(fx.params, { model: 'claude-sonnet-4-6' });
-        const text = flattenVariantToText(result.variant);
+        // LP-golden-set: fixtures hebben geen contentType → LP-shape gegarandeerd.
+        const text = flattenVariantToText(result.variant as import('../../../src/lib/landing-pages/variant-schema').LandingPageVariantContent);
         const gluedCount = (text.match(GLUED_DASH) ?? []).length;
         const tripleCount = (text.match(TRIPLE_GEEN) ?? []).length;
         const detector = detectAiTells(text, { brandVocabulary: fx.params.vocabularyDo ?? [] });

@@ -62,7 +62,11 @@ group("E1 — scraped photography.promptFragment wint van archetype-default");
   assert("bevat scraped mood", result.toLowerCase().includes("sophisticated"));
   assert("bevat composition (hero = single-image context)", result.toLowerCase().includes("wide-angle"));
   assert("subjects NIET in hero-prompt (pool, geen staart)", !result.toLowerCase().includes("floor hatches"));
-  assert("bevat brand-name", result.includes("LINFI"));
+  // W0 logo-fix (plan website-page-types §5 T1): `Brand: <naam>` triggerde
+  // verzonnen logo's op objecten/kleding — brand-naam mag NIET in de
+  // image-prompt; de onconditionele unbranded-guard moet er wél in.
+  assert("brand-naam NIET in image-prompt (logo-fix W0)", !result.includes("LINFI"));
+  assert("bevat unbranded-guard", result.includes("no brand marks"));
   assert("bevat headline", result.includes("Vloerluiken"));
 }
 

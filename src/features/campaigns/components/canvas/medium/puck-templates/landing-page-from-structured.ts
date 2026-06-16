@@ -251,7 +251,7 @@ export function buildLandingPageTemplateFromStructured(
 /** Secties die meedoen aan de achtergrond-band-afwisseling (de "vlakke" secties).
  *  Hero/Testimonial/CTA/Footer hebben hun eigen distinctieve bg en doen niet mee. */
 const BAND_PARTICIPATING_TYPES = new Set([
-  "FeatureGrid", "FeatureSplit", "RichText", "FAQ", "PricingTable", "StatsBlock",
+  "FeatureGrid", "FeatureSplit", "RichText", "FAQ", "PricingTable", "StatsBlock", "SpecTable",
 ]);
 
 /**

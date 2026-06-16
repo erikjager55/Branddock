@@ -28,6 +28,13 @@
  * - `oversaturated, harsh lighting`: voorkomt over-stylized lifestyle look
  */
 const DEFAULT_NEGATIVE_SEGMENTS: readonly string[] = [
+  // W0 logo-fix (plan §5): modellen hallucineren pseudo-wordmarks van het
+  // EIGEN merk — "competitor logos" alleen dekte die niet. Het scene-pad
+  // stript logo-mentions toch al en composit het echte logo post-gen, dus
+  // deze negatives conflicteren daar niet.
+  "logos",
+  "brand logos",
+  "fictional brand marks",
   "competitor logos",
   "blurry",
   "low quality",

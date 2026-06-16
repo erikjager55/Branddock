@@ -55,6 +55,7 @@ const product: ProductContext = {
   features: ['Voice-fidelity scoring real-time', 'Multi-channel content audit', 'Brand-voice baseline definition'],
   benefits: [],
   useCases: [],
+  images: [],
 };
 
 const baseBrief: VisualBrief = {

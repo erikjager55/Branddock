@@ -83,3 +83,57 @@ export async function getBrandLogo(workspaceId: string): Promise<BrandLogo | nul
     height: fallback.height,
   };
 }
+
+/**
+ * W5 L-Fase 3 — alle logo-assets van een workspace (op sortOrder), zodat de
+ * hero-overlay luminantie-bewust een LIGHT/DARK-variant kan kiezen. Returnt []
+ * bij geen styleguide/logos.
+ */
+export async function getBrandLogos(workspaceId: string): Promise<BrandLogo[]> {
+  const styleguide = await prisma.brandStyleguide.findFirst({
+    where: { workspaceId },
+    select: {
+      logos: {
+        select: { variant: true, fileUrl: true, fileType: true, width: true, height: true, sortOrder: true },
+        orderBy: { sortOrder: "asc" },
+      },
+    },
+  });
+  if (!styleguide || styleguide.logos.length === 0) return [];
+  return styleguide.logos.map((l) => ({
+    url: l.fileUrl,
+    fileType: l.fileType.toLowerCase(),
+    variant: l.variant,
+    width: l.width,
+    height: l.height,
+  }));
+}
+
+/**
+ * W5 L-Fase 3 — kies de best leesbare logo-variant voor de achtergrond-
+ * luminantie van de overlay-hoek. Pure functie (unit-smokebaar).
+ *
+ * - Donkere hoek → LIGHT-logo (licht logo contrasteert), anders PRIMARY/ICON/…
+ * - Lichte hoek → DARK-logo, anders PRIMARY/ICON/…
+ * - De gevraagde polariteit wint; ontbreekt die variant, dan de algemene
+ *   voorkeursvolgorde (zoals getBrandLogo). Geen logos → null.
+ */
+export function pickLogoForBackground(
+  logos: BrandLogo[],
+  backgroundIsDark: boolean,
+): BrandLogo | null {
+  if (logos.length === 0) return null;
+  const byVariant = (variant: string): BrandLogo | undefined => logos.find((l) => l.variant === variant);
+  // Polariteit-eerst: op een donkere hoek wil je een licht logo en omgekeerd.
+  const polarity = backgroundIsDark ? "LIGHT" : "DARK";
+  const order = backgroundIsDark
+    ? ["LIGHT", "PRIMARY", "LOCKUP", "ICON", "DARK", "WORDMARK"]
+    : ["DARK", "PRIMARY", "LOCKUP", "ICON", "LIGHT", "WORDMARK"];
+  const polarityMatch = byVariant(polarity);
+  if (polarityMatch) return polarityMatch;
+  for (const variant of order) {
+    const pick = byVariant(variant);
+    if (pick) return pick;
+  }
+  return logos[0];
+}

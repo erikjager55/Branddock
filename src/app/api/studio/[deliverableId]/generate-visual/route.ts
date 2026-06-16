@@ -33,9 +33,11 @@ import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { parseLogoIntent, stripLogoMentions, type LogoPosition } from '@/lib/visual/logo-intent';
-import { compositeLogoOverlay } from '@/lib/visual/logo-overlay';
-import { getBrandLogo, type BrandLogo } from '@/lib/brand/get-brand-logo';
+import { compositeLogoOverlay, sampleCornerLuminance, DARK_CORNER_LUMINANCE_THRESHOLD } from '@/lib/visual/logo-overlay';
+import { getBrandLogo, getBrandLogos, pickLogoForBackground, type BrandLogo } from '@/lib/brand/get-brand-logo';
+import { resolveHeroLogoOverlayEnabled } from '@/lib/landing-pages/hero-logo-config';
 import { patchHeroVisualUrl } from '@/lib/deliverable/patch-hero-visual';
+import { runHeroLogoGate } from '@/lib/landing-pages/hero-logo-gate';
 import { z } from 'zod';
 
 const VISUAL_GROUP = 'visual';
@@ -310,6 +312,28 @@ export async function POST(request: Request, { params }: RouteParams) {
       }
     }
 
+    // W5 logo L-Fase 3 (plan §5): opt-in hero-logo-overlay. Stempelt post-gen
+    // het ÉCHTE merklogo op de hero (image-modellen hallucineren logo's; W0/L2
+    // dringen ze terug, deze overlay levert het juiste logo wanneer de user dat
+    // wil). Default top-right — vermijdt de hero-tekst (links/gecentreerd in
+    // BrandHero). Per-variant luminantie-bewuste LIGHT/DARK-keuze gebeurt in de
+    // upload-loop (elke variant kan een andere hoek-helderheid hebben). Los van
+    // het scene-intent-pad hierboven (dat is video-scene-gedreven).
+    let heroLogoOverlay: { logos: BrandLogo[]; position: LogoPosition } | null = null;
+    if (body?.target === 'hero' && !logoOverlay) {
+      const overlayEnabled = await resolveHeroLogoOverlayEnabled(workspaceId);
+      if (overlayEnabled) {
+        const logos = await getBrandLogos(workspaceId);
+        if (logos.length > 0) {
+          heroLogoOverlay = { logos, position: 'top-right' };
+        } else {
+          console.warn(
+            `[generate-visual] hero-logo-overlay aan maar workspace ${workspaceId} heeft geen styleguide-logo — overslaan`,
+          );
+        }
+      }
+    }
+
     // Multi-candidate default per content-type (Pattern B image-quality-chain).
     // Expensive types (landing-page, explainer-video, social hero) krijgen 3
     // candidates voor head-to-head selectie; rest 2.
@@ -460,6 +484,32 @@ export async function POST(request: Request, { params }: RouteParams) {
               );
               bytes = rawBytes;
             }
+          } else if (heroLogoOverlay) {
+            // W5 L-Fase 3: per-variant luminantie-bewuste hero-overlay. Sample
+            // de hoek uit de al-opgehaalde rawBytes (geen tweede fetch) → kies
+            // LIGHT/DARK-logovariant → composite. Faalt het, dan het rauwe beeld
+            // (een ontbrekend logo is beter dan een 500 of een leeg vlak).
+            try {
+              const luminance = await sampleCornerLuminance(rawBytes, heroLogoOverlay.position);
+              const logo = pickLogoForBackground(
+                heroLogoOverlay.logos,
+                luminance < DARK_CORNER_LUMINANCE_THRESHOLD,
+              );
+              if (logo) {
+                bytes = await compositeLogoOverlay({
+                  imageBuffer: rawBytes,
+                  logoUrl: logo.url,
+                  logoFileType: logo.fileType,
+                  position: heroLogoOverlay.position,
+                });
+              }
+            } catch (err) {
+              console.warn(
+                `[generate-visual] hero-logo overlay failed for variant ${idx}, uploading raw image:`,
+                err instanceof Error ? err.message : err,
+              );
+              bytes = rawBytes;
+            }
           }
           const fileName = `canvas-visual-${deliverableId}-${Date.now()}-${idx}.png`;
           const upload = await storage.upload(bytes, {
@@ -557,13 +607,28 @@ export async function POST(request: Request, { params }: RouteParams) {
     // en -trained routes; vandaag aangevuld voor lifestyle-flow. Fire-and-
     // forget (~$0.04 + 12-15s per call); de UI haalt scores binnen via de
     // bestaande components-query refetch.
+    // W5 logo L-Fase 2 (plan §5): ná de scoring draait op het hero-pad de
+    // logo-gate in dezelfde continuation — logo-fidelity < 50 op de actieve
+    // hero → auto-deselect naar een schone zustervariant. Geen latency op de
+    // respons; race-guard in de gate (alleen wisselen zolang de hero één van
+    // déze varianten is).
+    const scorable = components.filter((c) => c.id); // persist-fallback (id='') heeft geen DB-row om te scoren
     void Promise.allSettled(
-      components
-        .filter((c) => c.id) // persist-fallback (id='') heeft geen DB-row om te scoren
-        .map((c) => scoreImageFidelity({ componentId: c.id, workspaceId })),
-    ).catch(() => {
-      /* individual failures worden binnen scoreImageFidelity gelogd */
-    });
+      scorable.map((c) => scoreImageFidelity({ componentId: c.id, workspaceId })),
+    )
+      .then(() => {
+        if (body?.target === 'hero' && scorable.length > 1) {
+          return runHeroLogoGate({
+            deliverableId,
+            workspaceId,
+            variants: scorable.map((c) => ({ componentId: c.id, url: c.url })),
+          });
+        }
+        return null;
+      })
+      .catch(() => {
+        /* individual failures worden binnen scoreImageFidelity/runHeroLogoGate gelogd */
+      });
 
     return NextResponse.json({
       variants: components,

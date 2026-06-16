@@ -18,8 +18,12 @@ import path from 'path';
 import type { LogoPosition } from './logo-intent';
 
 interface CompositeArgs {
-  /** The AI-generated base image (https URL — fetched server-side). */
-  imageUrl: string;
+  /** The AI-generated base image (https URL — fetched server-side). Genegeerd
+   *  wanneer `imageBuffer` is meegegeven (W5 hero-pad: bytes al in geheugen,
+   *  voorkomt een tweede fetch op een verlopende fal-URL). */
+  imageUrl?: string;
+  /** Pre-fetched base-image bytes — wint van imageUrl wanneer aanwezig. */
+  imageBuffer?: Buffer;
   /** The brand-logo asset URL (PNG / SVG with alpha). */
   logoUrl: string;
   /** "svg" | "png" | "jpg" — drives rasterisation strategy. */
@@ -42,6 +46,7 @@ interface CompositeArgs {
  */
 export async function compositeLogoOverlay({
   imageUrl,
+  imageBuffer,
   logoUrl,
   logoFileType,
   position,
@@ -49,8 +54,12 @@ export async function compositeLogoOverlay({
   paddingFraction = 0.04,
 }: CompositeArgs): Promise<Buffer> {
   // ── Fetch both assets ─────────────────────────────────────
+  // Base uit het meegegeven buffer (hero-pad) of anders alsnog fetchen (scene).
+  if (!imageBuffer && !imageUrl) {
+    throw new Error('compositeLogoOverlay requires imageBuffer or imageUrl');
+  }
   const [baseBuf, logoBuf] = await Promise.all([
-    fetchAsBuffer(imageUrl, 'base image'),
+    imageBuffer ? Promise.resolve(imageBuffer) : fetchAsBuffer(imageUrl!, 'base image'),
     fetchAsBuffer(logoUrl, 'logo asset'),
   ]);
 
@@ -98,6 +107,48 @@ export async function compositeLogoOverlay({
     .composite([{ input: logoPngBuf, top, left }])
     .png()
     .toBuffer();
+}
+
+/** Grens (0-255 gemiddelde luminantie) waaronder een hoek als "donker" geldt. */
+export const DARK_CORNER_LUMINANCE_THRESHOLD = 128;
+
+/**
+ * W5 L-Fase 3 — sample de gemiddelde luminantie (0-255, Rec. 601) van de
+ * overlay-hoek zodat de caller een LIGHT/DARK-logovariant kan kiezen. Sampelt
+ * een vierkant ter grootte van `fraction` × de kortste zijde in de gevraagde
+ * hoek. Gooit niet voor een degraderend caller-pad: bij een decode-fout valt
+ * 'm terug op het midden-grijs (128) → polariteit-neutraal.
+ */
+export async function sampleCornerLuminance(
+  imageBuffer: Buffer,
+  position: LogoPosition,
+  fraction: number = 0.22,
+): Promise<number> {
+  try {
+    const img = sharp(imageBuffer);
+    const meta = await img.metadata();
+    const w = meta.width;
+    const h = meta.height;
+    if (!w || !h) return 128;
+    const size = Math.max(8, Math.round(Math.min(w, h) * fraction));
+    const sw = Math.min(size, w);
+    const sh = Math.min(size, h);
+    const left = position === "top-right" || position === "bottom-right" ? Math.max(0, w - sw) : 0;
+    const top = position === "bottom-left" || position === "bottom-right" ? Math.max(0, h - sh) : 0;
+    // Resize het hoek-uitsnede naar 1×1 → de pixelwaarde IS het gemiddelde.
+    const { data } = await img
+      .extract({ left, top, width: sw, height: sh })
+      .resize(1, 1, { fit: "fill" })
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const r = data[0] ?? 128;
+    const g = data[1] ?? 128;
+    const b = data[2] ?? 128;
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  } catch {
+    return 128;
+  }
 }
 
 async function fetchAsBuffer(url: string, label: string): Promise<Buffer> {

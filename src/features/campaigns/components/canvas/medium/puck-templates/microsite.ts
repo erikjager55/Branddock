@@ -10,7 +10,7 @@ import {
 type SpikeData = Data<SpikePuckProps>;
 
 /**
- * microsite template — hero + 3 content sections + features + testimonial +
+ * microsite template — hero + content section + features + testimonial +
  * CTA + footer. Densest of the 5 templates; designed for campaign-specific
  * microsites that need to carry a longer narrative around an event /
  * launch / report.
@@ -26,7 +26,9 @@ export function buildMicrositeTemplate(
       defaultRichText(filled),
       defaultFeatureGrid(filled),
       defaultTestimonial(filled, ctx),
-      defaultRichText(filled),
+      // No second RichText here: it rendered the same `filled.longText`
+      // twice on the page (plan §4.3a). Chapter structure comes from the
+      // from-structured builder (W1), not this seed fallback.
       defaultBrandCta(filled, ctx),
       defaultFooter(filled, ctx),
     ],

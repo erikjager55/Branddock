@@ -27,11 +27,19 @@ const TIMEOUT_MS = 30_000;
 export interface CoherenceJudgeResult {
   score: number;
   rationale: string;
+  /** W5 logo L-Fase 2 (plan §5): true wanneer het beeld een zichtbaar logo,
+   *  wordmark of leesbare merk-lettering bevat (incl. verzonnen pseudo-logo's).
+   *  FLUX negeert negative prompts en nano-banana kent alleen semantic
+   *  negatives — detectie + gerichte retry is de enige sluitende laag. */
+  visibleLogo: boolean;
 }
 
 const responseSchema = z.object({
   score: z.number().min(0).max(100),
   rationale: z.string(),
+  // Fail-soft: een (oudere/afwijkende) judge-respons zonder het veld mag het
+  // coherence-oordeel niet laten vallen — default false = geen regen-signaal.
+  visibleLogo: z.boolean().optional().default(false),
 });
 
 let cached: Anthropic | null = null;
@@ -78,8 +86,11 @@ export async function runCopyImageCoherenceJudge(
 3. **Message reinforcement**: does the image carry forward the key message, or does it feel generic?
 4. **No contradictions**: image must not contradict claims, persona, or scenario described in the copy
 
+## LOGO CHECK (separate boolean, does NOT affect the score)
+Set "visibleLogo" to true if the image contains ANY visible logo, wordmark, brand symbol or readable brand lettering — on products, packaging, clothing, vehicles, storefronts or signage — including fictional, garbled or AI-invented pseudo-logos. Incidental unreadable texture or abstract shapes are NOT logos. When unsure whether a mark is a deliberate logo, set true.
+
 ## OUTPUT
-Return JSON exactly matching: { "score": number, "rationale": string }
+Return JSON exactly matching: { "score": number, "rationale": string, "visibleLogo": boolean }
 Rationale 1-2 sentences citing concrete observations from both the image and the copy.`;
 
   const truncatedText = trimmedText.length > 1500

@@ -16,6 +16,11 @@ import { FidelityScoreBar } from '../FidelityScoreBar';
 import { InfoBox } from '@/components/ui/InfoBox';
 import { useInlineTransform } from '../../../hooks/canvas.hooks';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
+import {
+  isLandingPageVariant,
+  hasOwnVariantSchema,
+  type PageVariantContent,
+} from '@/lib/landing-pages/page-type-schemas';
 import { buildHeroVisualInstruction } from '../../../lib/landing-page-visual-prompts';
 import { diffVariantCopy, type CopyFieldChange } from '@/lib/landing-pages/variant-copy-diff';
 import { STUDIO } from '@/lib/constants/design-tokens';
@@ -72,11 +77,13 @@ export function LandingPageGenerateBlock({
   const setFidelityCompleteForVariant = useCanvasStore((s) => s.setFidelityCompleteForVariant);
   const setFidelityScoreSkippedForVariant = useCanvasStore((s) => s.setFidelityScoreSkippedForVariant);
   const setVisualBriefSource = useCanvasStore((s) => s.setVisualBriefSource);
+  // W1: kan naast LP- ook faq/product/microsite-shaped variants bevatten —
+  // alle LP-specifieke paden hieronder gaten op isLandingPageVariant (shape).
   const variantOptions = useCanvasStore((s) => s.structuredVariantOptions) as
-    | LandingPageVariantContent[]
+    | PageVariantContent[]
     | null;
   const chosenVariant = useCanvasStore((s) => s.structuredVariant) as
-    | LandingPageVariantContent
+    | PageVariantContent
     | null;
   const brief = useCanvasStore((s) => s.brief);
   const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
@@ -147,7 +154,9 @@ export function LandingPageGenerateBlock({
       setSelectedHeroImageUrl(selection.url);
       // Wanneer al een variant gekozen is (user kwam via back-nav terug), werk
       // de puckData meteen bij — anders rendert Step 3 de oude (lege) hero.
-      if (chosenVariant) {
+      // W1: alleen voor LP-shaped variants (eigen-schema-typen hebben geen
+      // hero.heroVisualUrl-slot; hun panel is sowieso verborgen).
+      if (chosenVariant && isLandingPageVariant(chosenVariant)) {
         const updated: LandingPageVariantContent = {
           ...chosenVariant,
           hero: { ...chosenVariant.hero, heroVisualUrl: selection.url },
@@ -184,6 +193,31 @@ export function LandingPageGenerateBlock({
     if (Array.isArray(socialProof) && socialProof.length > 0) parts.push(`Beschikbare social proof: ${socialProof.join(', ')}`);
     if (brief.callToAction?.trim()) parts.push(`Gewenste CTA-tekst: ${brief.callToAction.trim()}`);
     if (brief.toneDirection?.trim()) parts.push(`Tone-direction: ${brief.toneDirection.trim()}`);
+    // W0 (plan §6): de type-eigen inputs (topQuestions, featureBenefitMap,
+    // productSpecs, narrativeFlow, …) bereikten de generator nooit — alleen
+    // de LP-velden hierboven werden gerenderd. Generieke doorvoer van alle
+    // overige gevulde velden i.p.v. een tweede hardcoded lijst.
+    const rendered = new Set([
+      'valueProposition', 'targetObjection', 'conversionGoal', 'trafficSource', 'socialProof',
+    ]);
+    const internal = new Set(['productId']);
+    const extraLabels: Record<string, string> = {
+      topQuestions: 'Belangrijkste klantvragen',
+      featureBenefitMap: 'Feature-benefit-koppels',
+      productSpecs: 'Productspecificaties',
+      pricingInfo: 'Prijsinformatie',
+      narrativeFlow: 'Verhaallijn',
+      micrositePages: 'Aantal secties',
+      pageSkeleton: 'Pagina-opzet',
+      seoKeyword: 'SEO-keyword',
+    };
+    for (const [key, value] of Object.entries(contentTypeInputs)) {
+      if (rendered.has(key) || internal.has(key)) continue;
+      const label = extraLabels[key] ?? key.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, (c) => c.toUpperCase());
+      if (typeof value === 'string' && value.trim()) parts.push(`${label}: ${value.trim()}`);
+      else if (Array.isArray(value) && value.length > 0) parts.push(`${label}: ${value.join(', ')}`);
+      else if (typeof value === 'number') parts.push(`${label}: ${value}`);
+    }
     return parts.join('\n');
   }, [brief, contentTypeInputs]);
 
@@ -196,7 +230,29 @@ export function LandingPageGenerateBlock({
     return { includeProblem: hasObjection, includePricing: wantsPricing };
   }, [contentTypeInputs]);
 
-  const briefIncomplete = !brief.objective?.trim() && !contentTypeInputs.valueProposition;
+  // W0 (plan §6): type-bewuste gate — faq-page heeft geen valueProposition-veld
+  // (blokkeerde onnodig) en kan op topQuestions varen; microsite op narrativeFlow.
+  const contentType = useCanvasStore((s) => s.contentType);
+  const briefIncomplete = useMemo(() => {
+    const hasObjective = Boolean(brief.objective?.trim());
+    if (hasObjective || contentTypeInputs.valueProposition) return false;
+    if (contentType === 'faq-page') {
+      const tq = contentTypeInputs.topQuestions;
+      return !(typeof tq === 'string' ? tq.trim() : Array.isArray(tq) && tq.length > 0);
+    }
+    if (contentType === 'microsite') {
+      const nf = contentTypeInputs.narrativeFlow;
+      return !(typeof nf === 'string' && nf.trim());
+    }
+    if (contentType === 'product-page') {
+      // W2: een gekoppeld product is genoeg context om te genereren (en is
+      // server-side verplicht). De brief is dus pas incompleet als óók het
+      // product ontbreekt.
+      const pid = contentTypeInputs.productId;
+      return !(typeof pid === 'string' && pid.trim());
+    }
+    return true;
+  }, [brief.objective, contentTypeInputs, contentType]);
 
   /**
    * Track 5 (plan zippy-twirling-feigenbaum 2026-05-29) — fire-and-forget
@@ -206,7 +262,7 @@ export function LandingPageGenerateBlock({
    * (scope A); per-variant scoring is scope B (out-of-scope).
    */
   const scoreVariantFidelity = useCallback(
-    async (variant: LandingPageVariantContent, variantIndex: number) => {
+    async (variant: PageVariantContent, variantIndex: number) => {
       // P4 race-guard: claim een verse token vóór de fetch; alle store-writes
       // hieronder dragen 'm zodat een tragere/oudere fetch voor dezelfde index
       // (na wissel/regeneratie/reset) bij terugkomst gedropt wordt. getState()
@@ -299,7 +355,7 @@ export function LandingPageGenerateBlock({
         throw new Error(data.error ?? `HTTP ${res.status}`);
       }
       const data = (await res.json()) as {
-        variants: LandingPageVariantContent[];
+        variants: PageVariantContent[];
         variantLabels?: (string | null)[];
         deliveredCount?: number;
         requestedCount?: number;
@@ -410,21 +466,28 @@ export function LandingPageGenerateBlock({
     [generateHeroVisualUrl, contextStack, deliverableId, setStructuredVariant],
   );
 
-  const handleChooseVariant = useCallback(async (variant: LandingPageVariantContent) => {
+  const handleChooseVariant = useCallback(async (variant: PageVariantContent) => {
     setIsChoosing(true);
     setError(null);
     try {
+      let chosen: PageVariantContent = variant;
+      // W1: het hele beeld-blok hieronder (hero-injectie, brandImages-fill,
+      // hero-AI-gen, feature-AI-gen) is LP-shaped. Eigen-schema-variants
+      // (faq/product/microsite) slaan het over — hun builders vullen brand-
+      // beelden zelf bij de puckData-build; AI-beeld-gen per type volgt in
+      // de beeld-fase van het plan (W2/W3).
+      if (isLandingPageVariant(variant)) {
       // Injecteer een eerder handmatig geselecteerde hero-image zodat Step 3
       // (die puckData rendert) de foto toont. Behoud een reeds aanwezige
       // heroVisualUrl op de variant wanneer er geen losse selectie is.
-      let chosen: LandingPageVariantContent = selectedHeroImageUrl
+      let lpChosen: LandingPageVariantContent = selectedHeroImageUrl
         ? { ...variant, hero: { ...variant.hero, heroVisualUrl: selectedHeroImageUrl } }
         : variant;
       // P2 beeld-prioriteit (handmatig > merk-eigen brandImages > AI): vul lege
       // hero/feature-slots eerst met de brand-eigen brandImages, zodat de hero-
       // AI-gen + feature-AI-gen hieronder alleen de slots vullen die GEEN
       // bronbeeld hebben. (De mapper past dezelfde producer nog idempotent toe.)
-      chosen = assignBrandImagesToVariant(chosen, contextStack?.brandImages ?? null);
+      lpChosen = assignBrandImagesToVariant(lpChosen, contextStack?.brandImages ?? null);
       // Verplichte header-image (user-feedback 2026-06-03): een LP zonder hero-
       // image is niet toegestaan. DETERMINISTISCH: genereer 'm hier en vouw 'm
       // IN de variant vóór de éne persist+render — zodat Step 3 de pagina MÉT de
@@ -432,7 +495,7 @@ export function LandingPageGenerateBlock({
       // onAdvance liet soms een beeldloze hero zien). Faalt de generatie, dan
       // surfacen we dat + de pagina rendert zonder foto (handmatige knop in
       // Step 3 blijft beschikbaar) — navigatie wordt niet geblokkeerd.
-      if (!chosen.hero.heroVisualUrl) {
+      if (!lpChosen.hero.heroVisualUrl) {
         setIsGeneratingVisual(true);
         setVisualError(null);
         try {
@@ -442,13 +505,13 @@ export function LandingPageGenerateBlock({
           // bij timeout/null vóór we de pagina zonder foto laten; mislukt het
           // alsnog, dan vult de self-heal in Step 3 het beeld alsnog aan.
           const genOnce = () => Promise.race([
-            generateHeroVisualUrl(chosen),
+            generateHeroVisualUrl(lpChosen),
             new Promise<null>((resolve) => setTimeout(() => resolve(null), 75_000)),
           ]);
           let heroUrl = await genOnce();
           if (!heroUrl) heroUrl = await genOnce();
           if (heroUrl) {
-            chosen = { ...chosen, hero: { ...chosen.hero, heroVisualUrl: heroUrl } };
+            lpChosen = { ...lpChosen, hero: { ...lpChosen.hero, heroVisualUrl: heroUrl } };
           } else {
             setVisualError('Automatische header-image kwam niet (op tijd) terug — Step 3 genereert \'m alsnog automatisch.');
           }
@@ -466,7 +529,7 @@ export function LandingPageGenerateBlock({
       // gerichte retry in de route maken de run langer dan de oude 60s);
       // mislukte/overgeslagen features vallen terug op de icon-grid.
       const FEATURE_IMAGE_BUDGET = 4;
-      const needIdx = chosen.features.items
+      const needIdx = lpChosen.features.items
         .map((f, i) => (f.imageUrl ? -1 : i))
         .filter((i) => i >= 0)
         .slice(0, FEATURE_IMAGE_BUDGET);
@@ -477,9 +540,9 @@ export function LandingPageGenerateBlock({
           // batch laten 400'en (review 2026-06-10).
           const featureSlots = needIdx.map((i) => ({
             index: i,
-            heading: chosen.features.items[i].heading.slice(0, 200),
-            body: chosen.features.items[i].body.slice(0, 600),
-            imageBrief: chosen.features.items[i].imageBrief ?? null,
+            heading: lpChosen.features.items[i].heading.slice(0, 200),
+            body: lpChosen.features.items[i].body.slice(0, 600),
+            imageBrief: lpChosen.features.items[i].imageBrief ?? null,
           }));
           // 120s-abort i.p.v. kale race: de fetch stopt écht bij timeout, zodat
           // er geen zombie-request doorloopt naast een eventuele her-klik
@@ -488,23 +551,25 @@ export function LandingPageGenerateBlock({
           const featureTimer = setTimeout(() => featureAbort.abort(), 120_000);
           const urls = await generateFeatureVisuals(
             deliverableId,
-            { features: featureSlots, pageHeadline: chosen.hero.headline.slice(0, 200) },
+            { features: featureSlots, pageHeadline: lpChosen.hero.headline.slice(0, 200) },
             { signal: featureAbort.signal },
           ).catch((err: unknown) => {
             if (err instanceof DOMException && err.name === 'AbortError') return [] as Array<string | null>;
             throw err;
           }).finally(() => clearTimeout(featureTimer));
           if (urls.length > 0) {
-            const items = chosen.features.items.map((it, i) => {
+            const items = lpChosen.features.items.map((it, i) => {
               const k = needIdx.indexOf(i);
               return k >= 0 && urls[k] ? { ...it, imageUrl: urls[k] as string } : it;
             });
-            chosen = { ...chosen, features: { ...chosen.features, items } };
+            lpChosen = { ...lpChosen, features: { ...lpChosen.features, items } };
           }
         } catch {
           // Niet-blokkerend: zonder feature-beelden rendert de icon-grid.
         }
       }
+      chosen = lpChosen;
+      } // einde LP-shaped beeld-blok (W1)
       const puckData = variantToPuckDataFromStructured(chosen, contextStack);
       const patchRes = await fetch(`/api/studio/${deliverableId}`, {
         method: 'PATCH',
@@ -544,7 +609,8 @@ export function LandingPageGenerateBlock({
   }, [contextStack, deliverableId, selectedHeroImageUrl, setContextStack, setStructuredVariant, onAdvance, generateHeroVisualUrl]);
 
   const handleGenerateVisual = useCallback(async () => {
-    if (!chosenVariant) return;
+    // W1: hero-AI-gen is LP-shaped (buildHeroVisualInstruction leest hero.subhead).
+    if (!chosenVariant || !isLandingPageVariant(chosenVariant)) return;
     setIsGeneratingVisual(true);
     setVisualError(null);
     try {
@@ -576,7 +642,9 @@ export function LandingPageGenerateBlock({
   const handleAutoIterateVariant = useCallback(async () => {
     if (!variantOptions) return;
     const original = variantOptions[activeVariantIndex];
-    if (!original) return;
+    // W1: auto-iterate is LP-only (server geeft 422 voor eigen-schema-typen);
+    // de knop is voor die typen verborgen — dit is de belt-and-braces-guard.
+    if (!original || !isLandingPageVariant(original)) return;
     setIsAutoIterating(true);
     setAutoIterateMsg(null);
     setAutoIterateError(null);
@@ -785,7 +853,10 @@ export function LandingPageGenerateBlock({
           </div>
         ) : null}
         {/* LP-specifieke auto-iterate: verbetert de actieve variant in-place.
-            Vervangt de generieke studio-trigger (gaf "0 woorden" op LP). */}
+            Vervangt de generieke studio-trigger (gaf "0 woorden" op LP).
+            W1: verborgen voor eigen-schema-typen (faq/product/microsite) —
+            de server-route geeft daar bewust 422 (per-type rewrite = W2-W4). */}
+        {!hasOwnVariantSchema(contentType) ? (
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -800,6 +871,7 @@ export function LandingPageGenerateBlock({
             )}
           </button>
         </div>
+        ) : null}
         {autoIterateError ? (
           <InfoBox variant="error" size="sm" onDismiss={() => setAutoIterateError(null)}>{autoIterateError}</InfoBox>
         ) : autoIterateMsg ? (
@@ -859,11 +931,42 @@ export function LandingPageGenerateBlock({
           </InfoBox>
         ) : null}
         {/* Detail: ÉÉN full-width, leesbare kaart voor de actieve variant
-            (key forceert verse local edit-state bij wisselen van variant). */}
+            (key forceert verse local edit-state bij wisselen van variant).
+            W1: het inline edit-panel (VariantCompareCard) is LP-shaped —
+            eigen-schema-variants krijgen preview + keuze; tekst bewerken
+            gebeurt voor die typen in Step 3 (Puck-editor). */}
         {(() => {
           const i = Math.min(activeVariantIndex, variantOptions.length - 1);
           const v = variantOptions[i];
           if (!v) return null;
+          if (!isLandingPageVariant(v)) {
+            const hex = ACCENT_HEX[accentFor(i)];
+            return (
+              <div key={i} className="rounded-lg border-2 bg-white p-4 flex flex-col gap-4" style={{ borderColor: hex.cardBorder }}>
+                <div>
+                  <span className="inline-block text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded" style={{ backgroundColor: hex.tagBg, color: hex.tagText }}>
+                    {variantLabel(i)}
+                  </span>
+                </div>
+                <VariantPuckPreview variant={v} contextStack={contextStack} maxHeight={560} scroll />
+                <p className="text-[11px] text-gray-500 -mt-2">
+                  Leesbare preview (scroll voor de hele pagina) — tekst bewerk je na je keuze in de editor (Step 3).
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void handleChooseVariant(v)}
+                  disabled={isChoosing}
+                  className={`mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50`}
+                >
+                  {isChoosing ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" />Opslaan...</>
+                  ) : (
+                    <><CheckCircle2 className="h-4 w-4" />Kies deze variant</>
+                  )}
+                </button>
+              </div>
+            );
+          }
           return (
             <VariantCompareCard
               key={i}
@@ -904,7 +1007,11 @@ export function LandingPageGenerateBlock({
             Variants' — Visual-source tab-strip + Regenerate-feedback +
             Confirm & Continue onderaan. ImageSourcePanel embedded handelt
             alle 10 image-sources (smart-search/generate/library/upload/url/
-            stock/compose/trained-style/photography-request/none). */}
+            stock/compose/trained-style/photography-request/none).
+            W1: verborgen voor eigen-schema-typen — de hero-injectie is
+            LP-shaped (faq heeft geen hero-beeld; product/microsite-beeld-
+            picking volgt in de beeld-fase van het plan). */}
+        {!hasOwnVariantSchema(contentType) ? (
         <ImageSourcePanel
           deliverableId={deliverableId}
           source={visualSource}
@@ -918,6 +1025,7 @@ export function LandingPageGenerateBlock({
           onSelected={handleImageSelected}
           target="hero"
         />
+        ) : null}
 
         <div className="flex items-center gap-3 pt-2 border-t border-gray-100 flex-wrap">
           {/* P3a — aantal-selector: stuurt hoeveel varianten de regenereer-knop
@@ -1038,7 +1146,8 @@ function VariantPuckPreview({
   maxHeight,
   scroll,
 }: {
-  variant: LandingPageVariantContent;
+  /** W1: alle page-variant-shapes — variantToPuckDataFromStructured dispatcht. */
+  variant: PageVariantContent;
   contextStack: CanvasContextStack | null;
   /** Cap de hoogte: thumbnail-modus (overflow verborgen) of, met `scroll`,
    *  een leesbaar venster waarin de gebruiker de pagina scrollt. */

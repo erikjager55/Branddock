@@ -8,9 +8,9 @@
  * Renders fields from the content-type-inputs registry, grouped by category.
  */
 
-import React, { useCallback } from 'react';
-import { X, Plus, HelpCircle, Sparkles } from 'lucide-react';
-import { Input, Select } from '@/components/shared';
+import React, { useCallback, useEffect, useState } from 'react';
+import { X, Plus, HelpCircle, Sparkles, Loader2 } from 'lucide-react';
+import { Select } from '@/components/shared';
 import {
   getContentTypeInputs,
   getInputCategories,
@@ -111,6 +111,94 @@ function TagInput({
         </button>
       </div>
     </div>
+  );
+}
+
+// ─── Product Select Sub-Component (W2 product-koppeling) ───
+
+interface ProductOption {
+  id: string;
+  name: string;
+  category: string | null;
+}
+
+/**
+ * W2 (plan §2.3) — dropdown gevoed door GET /api/products. De waarde is een
+ * Product-id; Layer 7 lost die settings-first op naar volledige ProductContext.
+ * Toont de huidige selectie-naam ook tijdens het laden, en degradeert naar een
+ * lege-staat-melding wanneer de workspace nog geen producten heeft.
+ */
+function ProductSelectField({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  const [products, setProducts] = useState<ProductOption[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/products')
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<{ products?: ProductOption[] }>;
+      })
+      .then((data) => {
+        if (!active) return;
+        setProducts(
+          (data.products ?? []).map((p) => ({ id: p.id, name: p.name, category: p.category })),
+        );
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : 'Laden mislukt');
+        setProducts([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (products === null && !error) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-gray-400 border border-gray-200 rounded-lg px-3 py-1.5">
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        Producten laden…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <p className="text-xs text-red-600 border border-red-200 bg-red-50 rounded-lg px-3 py-1.5">
+        Producten laden mislukt ({error}). Vernieuw de pagina om opnieuw te proberen.
+      </p>
+    );
+  }
+
+  if (products && products.length === 0) {
+    return (
+      <p className="text-xs text-amber-700 border border-amber-200 bg-amber-50 rounded-lg px-3 py-1.5">
+        Nog geen producten in deze workspace. Voeg er eerst één toe in de Producten-sectie — een product-page is altijd aan een product gekoppeld.
+      </p>
+    );
+  }
+
+  return (
+    <Select
+      value={value || null}
+      onChange={(v) => onChange(v ?? '')}
+      options={(products ?? []).map((p) => ({
+        value: p.id,
+        label: p.category ? `${p.name} · ${p.category}` : p.name,
+      }))}
+      placeholder={placeholder ?? 'Kies een product…'}
+      allowClear
+    />
   );
 }
 
@@ -244,6 +332,18 @@ function FieldRenderer({
           <TagInput
             value={Array.isArray(value) ? (value as string[]) : []}
             onChange={(tags) => onChange(tags)}
+            placeholder={field.placeholder}
+          />
+        </div>
+      );
+
+    case 'product-select':
+      return (
+        <div>
+          {labelContent}
+          <ProductSelectField
+            value={(value as string) ?? ''}
+            onChange={(v) => onChange(v)}
             placeholder={field.placeholder}
           />
         </div>

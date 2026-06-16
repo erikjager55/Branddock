@@ -36,11 +36,22 @@ import {
 } from "./variant-schema";
 import type { BrandArchetype } from "./brand-archetype-classifier";
 import type { LayoutStyle } from "./design-system";
+import type { ProductContext } from "../ai/canvas-context";
 import { formatAngleInstruction, type CreativeAngle } from "../ai/canvas-angle-generator";
+import {
+  getVariantSchemaForType,
+  hasOwnVariantSchema,
+  type PageVariantContent,
+} from "./page-type-schemas";
 
 // ─── Types ───────────────────────────────────────────────
 
 export interface LandingPageGenerationParams {
+  /** W1 (plan §1 Optie A) — content-type-dispatch: faq-page/product-page/
+   *  microsite krijgen een eigen schema + system-prompt; landing-page,
+   *  comparison-page en onbekende types volgen het bestaande LP-pad
+   *  byte-compatibel. Default: 'landing-page'. */
+  contentType?: string;
   /** Brand-context van Branddock workspace (kleuren, voice, tagline, etc.). */
   brand: Partial<BrandContextBlock>;
   /** Doelgroep-persona — bepaalt copy-tone en pijnpunten. */
@@ -54,6 +65,11 @@ export interface LandingPageGenerationParams {
      *  context heeft. */
     serialized?: string;
   };
+  /** W2 (plan §2.3) — gekoppeld product voor een product-page. Levert de échte
+   *  naam/description/pricing/feature→benefit-paren/useCases zodat de generator
+   *  niet hoeft te verzinnen. Alleen gezet voor product-page; andere types
+   *  negeren dit veld. */
+  product?: ProductContext | null;
   /** User-prompt — wat moet deze landing-page bereiken. */
   userPrompt: string;
   /** Optionele locale (default 'nl-NL' bij Branddock NL workspaces). */
@@ -133,7 +149,7 @@ export function buildLandingPageVariantPrompt(
   const includeProblem = params.includeProblem ?? true;
   const includePricing = params.includePricing ?? false;
 
-  const system = buildSystemPrompt({
+  const opts: SystemPromptOpts = {
     locale,
     includeProblem,
     includePricing,
@@ -145,7 +161,19 @@ export function buildLandingPageVariantPrompt(
     variantAxis: params.variantAxis ?? null,
     angleInstruction: params.angleInstruction ?? null,
     humanVoiceMode: params.humanVoiceMode ?? null,
-  });
+  };
+  // W1 — type-dispatch: eigen prompt voor faq/product/microsite; al het
+  // andere (landing-page, comparison-page, onbekend) volgt het bestaande
+  // LP-pad ongewijzigd.
+  const contentType = params.contentType ?? "landing-page";
+  const system =
+    contentType === "faq-page"
+      ? buildFaqSystemPrompt(opts)
+      : contentType === "product-page"
+      ? buildProductSystemPrompt(opts)
+      : contentType === "microsite"
+      ? buildMicrositeSystemPrompt(opts)
+      : buildSystemPrompt(opts);
   const user = buildUserPrompt(params, { locale });
   return { system, user };
 }
@@ -175,7 +203,7 @@ const LAYOUT_DEPTH_HINTS: Record<LayoutStyle, string> = {
   PLAYFUL: 'Warm + casual. Conversational tone. Concrete examples over abstract claims. Joy in micro-copy.',
 };
 
-function buildSystemPrompt(opts: {
+interface SystemPromptOpts {
   locale: string;
   includeProblem: boolean;
   includePricing: boolean;
@@ -187,7 +215,15 @@ function buildSystemPrompt(opts: {
   variantAxis?: VariantAxis | null;
   angleInstruction?: string | null;
   humanVoiceMode?: HumanVoiceMode | null;
-}): string {
+}
+
+/**
+ * W1 — gedeelde stijl-stack (tone/depth/vocab/voice/HVD/axis-blokken),
+ * geëxtraheerd uit buildSystemPrompt zodat de per-type prompts dezelfde
+ * brand-voice-erfenis krijgen. String-output is byte-identiek aan de
+ * oorspronkelijke inline-compositie — het LP-pad merkt niets.
+ */
+function buildSharedStyleBlocks(opts: SystemPromptOpts): string {
   const toneBlock = opts.archetype
     ? `\n# BRAND-ARCHETYPE: ${opts.archetype}\nTone: ${ARCHETYPE_TONE_HINTS[opts.archetype]}\n`
     : '';
@@ -235,6 +271,11 @@ function buildSystemPrompt(opts: {
     : opts.variantAxis
     ? `\n# !! VARIANT-INVALSHOEK (HARD CONSTRAINT) !!: ${opts.variantAxis.toUpperCase()}\n${VARIANT_AXIS_HINTS[opts.variantAxis]}\n\nDIT IS GEEN OPTIE, het is de KERN van deze variant. Andere variants in dezelfde batch volgen een EXPLICIET ANDERE as (bv: problem-led ↔ benefit-led). Onze users zien de variants NAAST ELKAAR en moeten ze direct kunnen onderscheiden:\n  - Hero-headline moet de gekozen invalshoek meteen tonen\n  - Volgorde van secties moet de invalshoek versterken\n  - Tone en woordkeus moet substantieel afwijken\nWanneer beide variants 'rond hetzelfde middenpad' uitkomen, hebben we GEFAALD. Neem het risico van een uitgesproken kant.\n`
     : '';
+  return `${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${hvdBlock}${axisBlock}`;
+}
+
+function buildSystemPrompt(opts: SystemPromptOpts): string {
+  const styleBlocks = buildSharedStyleBlocks(opts);
   // DTS C6 — sectie-blueprint hint uit render-constraints (alleen wanneer archetype gezet)
   // Maakt sectie-density consistent per merk (RULER 5 secties tight, SAGE 8 editorial)
   let blueprintBlock = '';
@@ -290,7 +331,7 @@ Je bent een Senior UX-conversion strategist + brand-copywriter met 12+
 jaar ervaring. Voor deze opdracht ben je in de huid van een art-director
 die een one-shot variant aflevert die concurreert met de bron-website
 op visuele kwaliteit en commerciële scherpte.
-${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${hvdBlock}${axisBlock}${blueprintBlock}${designDirectionBlock}
+${styleBlocks}${blueprintBlock}${designDirectionBlock}
 # OPDRACHT
 Genereer een complete landing-page variant als **gestructureerd JSON** volgens het schema hieronder. Antwoord uitsluitend met het JSON-object (zonder prose, toelichting of code-fences).
 
@@ -349,7 +390,7 @@ Genereer een complete landing-page variant als **gestructureerd JSON** volgens h
 12. **Houd de bron-website-stijl aan, improviseer NIET**: tone-of-voice, sector-termen, klant-aanspreking en typische zinsstructuren komen uit de aangeleverde brand-context. Gebruik uitsluitend voorbeelden die bij DIT merk en DEZE sector passen. Geen generic SaaS-frasen voor traditionele branches en omgekeerd.
 13. **Feature-pilaren binden terug op de hero (PAS-narratief)**: elke feature BEWIJST één pilaar van de hero-belofte; samen dekken ze de kern uit headline+subhead. De problem-sectie (van-kant) → features+testimonial (naar-kant) vormen één doorlopende boog. Geen losse, willekeurige features die "niet van elkaar weten".
 14. **CTA = laagdrempelige eerste ask (micro-commitment)**: de primaire CTA is een lichte eerste stap passend bij een koude lezer (stalen/demo/adviesgesprek), NIET een zware ask (offerte/koop) die te vroeg komt en afschrikt. De single-CTA-discipline (regel 1) blijft: kies één lichte ask en herhaal die.
-15. **Image-briefs = bewijs + onderlinge diversiteit**: elke feature-imageBrief visualiseert HET BEWIJS van DIE specifieke feature (reiniging → textiel in een wasserij-omgeving; levering → bezorgbus; duurzaamheid → certificaat-label op materiaal). De 3-4 feature-briefs MOETEN onderling verschillende sceneTypes hebben (minimaal 3 verschillende van de 5 types) óf duidelijk verschillende subjects. Max 1 "person"-scene per pagina, en NOOIT een frontale geposeerde portret-pose (geen "persoon kijkt met gekruiste armen in de camera"); kies candid/werkend/over-de-schouder. Subjects zijn concreet en fotografeerbaar (een object, een handeling, een plek), geen abstracties als "kwaliteit" of "vertrouwen".
+15. **Image-briefs = bewijs + onderlinge diversiteit**: elke feature-imageBrief visualiseert HET BEWIJS van DIE specifieke feature (reiniging → textiel in een wasserij-omgeving; levering → bezorgbus; duurzaamheid → certificaat-label op materiaal). De 3-4 feature-briefs MOETEN onderling verschillende sceneTypes hebben (minimaal 3 verschillende van de 5 types) óf duidelijk verschillende subjects. Max 1 "person"-scene per pagina, en NOOIT een frontale geposeerde portret-pose (geen "persoon kijkt met gekruiste armen in de camera"); kies candid/werkend/over-de-schouder. Subjects zijn concreet en fotografeerbaar (een object, een handeling, een plek), geen abstracties als "kwaliteit" of "vertrouwen". Beschrijf subjects UNBRANDED (geen logo's, merknamen of lettering op objecten/kleding/voertuigen) en neem in elke "avoid" standaard "brand logos or lettering" op (image-modellen verzinnen anders pseudo-logo's).
 16. **Maximaal 1 opsommende ontkenning per pagina**: constructies als "geen X, geen Y" zijn maximaal 1 keer toegestaan op de hele pagina en NOOIT als drieslag of met een "alleen Z"-afsluiting ("geen X, geen Y, alleen Z" is verboden). Formuleer voordelen positief: wat de lezer WEL krijgt.
 
 # COGNITIEVE FUNDAMENTEN (waarom dit werkt)
@@ -392,13 +433,25 @@ function buildUserPrompt(
   }
   const personaBlock = personaLines.length > 0 ? personaLines.join("\n") : "- (geen persona aangeleverd — schrijf voor breed publiek)";
 
+  const opdrachtLabel =
+    USER_PROMPT_LABELS[params.contentType ?? ""] ?? "LANDING-PAGE OPDRACHT";
+
+  // W2 (plan §2.3) — productblok: de generator schrijft UITSLUITEND over dit
+  // product, met de échte data. Het anti-hallucinatie-mandaat staat hard in
+  // het blok zelf. Alleen voor product-page — andere types negeren een
+  // (per ongeluk) meegegeven product zodat hun prompt onveranderd blijft.
+  const productSection =
+    params.product && params.contentType === "product-page"
+      ? `\n\n# GEKOPPELD PRODUCT (schrijf UITSLUITEND hierover)\n${buildProductBlock(params.product)}`
+      : "";
+
   return `# BRAND-CONTEXT
 ${brandBlock}
 
 # DOELGROEP
-${personaBlock}
+${personaBlock}${productSection}
 
-# LANDING-PAGE OPDRACHT
+# ${opdrachtLabel}
 ${params.userPrompt}
 
 # LOCALE
@@ -406,6 +459,247 @@ ${opts.locale}
 
 # OUTPUT
 Genereer nu het JSON-object volgens schema. JSON-only, geen prose.`;
+}
+
+/**
+ * W2 (plan §2.3) — rendert het ProductContext-blok voor de user-prompt. Toont
+ * naam/description/category/pricing + feature→benefit-paren (gezipt op index;
+ * een losse feature of benefit blijft staan) + useCases. Sluit af met een
+ * harde anti-hallucinatie-regel: de generator mag geen features/specs/prijzen
+ * verzinnen die niet in dit blok staan.
+ */
+function buildProductBlock(product: ProductContext): string {
+  const lines: string[] = [];
+  lines.push(`- Naam: ${product.name}`);
+  if (product.category) lines.push(`- Categorie: ${product.category}`);
+  if (product.description) lines.push(`- Beschrijving: ${product.description}`);
+  if (product.pricingModel) lines.push(`- Prijsmodel: ${product.pricingModel}`);
+  if (product.pricingDetails) lines.push(`- Prijsdetails: ${product.pricingDetails}`);
+
+  const featureCount = Math.max(product.features.length, product.benefits.length);
+  if (featureCount > 0) {
+    lines.push(`- Feature → benefit-paren:`);
+    for (let i = 0; i < featureCount; i++) {
+      const feature = product.features[i];
+      const benefit = product.benefits[i];
+      if (feature && benefit) lines.push(`  * ${feature} → ${benefit}`);
+      else if (feature) lines.push(`  * ${feature}`);
+      else if (benefit) lines.push(`  * (benefit) ${benefit}`);
+    }
+  }
+  if (product.useCases.length > 0) {
+    lines.push(`- Use-cases:\n  ${product.useCases.map((u) => `* ${u}`).join("\n  ")}`);
+  }
+
+  // W2 (plan §2.1) — pageFlavor-preset stuurt welke conditionele secties de
+  // generator benadrukt; één template, drie nadruk-presets.
+  lines.push(`- Pagina-type: ${PAGE_FLAVOR_HINTS[derivePageFlavor(product)]}`);
+
+  lines.push(
+    `\nANTI-HALLUCINATIE: gebruik UITSLUITEND de features, benefits, use-cases, specs en prijzen uit dit blok. Verzin er geen bij: geen extra features, geen verzonnen specs, geen prijzen die hier niet staan. Ontbreekt prijsinformatie, laat de pricing-sectie dan weg of verwijs naar contact.`,
+  );
+  return lines.join("\n");
+}
+
+export type PageFlavor = "saas" | "physical" | "service";
+
+const PAGE_FLAVOR_HINTS: Record<PageFlavor, string> = {
+  saas:
+    "SOFTWARE/SaaS. Benadruk processSteps ('zo werkt het') en integraties; geen fysieke specs-tabel tenzij de context echte specs noemt. Pricing alleen bij aangeleverde prijsinfo.",
+  physical:
+    "FYSIEK PRODUCT. Vul de specs-sectie met de aangeleverde specs (materiaal/afmetingen/compatibiliteit); benadruk tastbaar gebruik. Geen processSteps.",
+  service:
+    "DIENST. Benadruk processSteps ('zo werken we', 3-5 stappen); geen specs-tabel. Pricing alleen wanneer de context een prijs noemt, anders naar contact verwijzen.",
+};
+
+/**
+ * W2 (plan §2.1) — leidt de pageFlavor af uit category + pricingModel. Heuristiek
+ * met service- en saas-signaalwoorden; valt terug op prijsmodel-patronen en
+ * uiteindelijk 'saas' (het meest voorkomende Branddock-producttype).
+ */
+export function derivePageFlavor(product: Pick<ProductContext, "category" | "pricingModel">): PageFlavor {
+  const cat = (product.category ?? "").toLowerCase();
+  const pm = (product.pricingModel ?? "").toLowerCase();
+  const hay = `${cat} ${pm}`;
+  const serviceSignals = ["service", "dienst", "consult", "agency", "bureau", "coaching", "training", "advies", "project"];
+  const saasSignals = ["saas", "software", "platform", "app", "tool", "api", "cloud", "subscription"];
+  if (serviceSignals.some((s) => hay.includes(s))) return "service";
+  if (saasSignals.some((s) => hay.includes(s))) return "saas";
+  if (/(subscription|monthly|per maand|maandelijks|mrr|abonnement)/.test(pm)) return "saas";
+  if (/(one-?time|eenmalig|per stuk|per unit|aankoop|koop)/.test(pm)) return "physical";
+  return "saas";
+}
+
+// ─── Per-type system-prompts (W1, plan §2.1/§3/§4) ───────
+
+/** Gedeeld imageBrief-schemafragment voor de per-type OUTPUT-SCHEMA-blokken. */
+const IMAGE_BRIEF_JSON =
+  '{ "subject": string (max 200 tekens, concreet en UNBRANDED; geen logo\'s/merknaam-lettering op objecten), "sceneType": "object" | "process" | "location" | "detail" | "person", "composition": string (max 200 tekens), "avoid": string (neem standaard "brand logos or lettering" op) }';
+
+/** Gedeelde anti-fabricage-regel — letterlijk per plan §3.2. */
+const ANTI_FABRICATION_RULE =
+  'Verzin geen prijzen, termijnen, garanties of beleid: staat het feit niet in de aangeleverde context, sla de vraag/sectie dan over of verwijs naar contact. Geen cijfers buiten de context; geen echte persoons- of bedrijfsnamen verzinnen.';
+
+function buildFaqSystemPrompt(opts: SystemPromptOpts): string {
+  return `# ROL
+Je bent een Senior support-content-strateeg + brand-copywriter. Je schrijft
+een standalone FAQ-pagina die echte klantvragen beantwoordt, geen
+marketing-vragen (de klassieke NN/g-faalwijze van FAQ-pagina's).
+${buildSharedStyleBlocks(opts)}
+# OPDRACHT
+Genereer een complete FAQ-pagina als **gestructureerd JSON** volgens het schema hieronder. Antwoord uitsluitend met het JSON-object (zonder prose, toelichting of code-fences).
+
+# OUTPUT-SCHEMA
+{
+  "hero": {
+    "headline": string (max 60 tekens, conversationeel in merkstem zoals "We helpen je graag", NIET droog "FAQ" of "Veelgestelde vragen" zonder merkstem),
+    "subline": string (1-2 zinnen: waar deze pagina bij helpt + uitnodigende toon)
+  },
+  "popularQuestions": [{ "question": string (max 120 tekens, volledige vraagzin in KLANTTAAL met front-loaded keyword), "answer": string }] (3-5 items: de vragen met de hoogste koop-angst-lading EERST; denk verzending/levertijd/retour/prijs-onzekerheid),
+  "categories": [{ "label": string (max 40 tekens, TAAK-gebaseerd en werkwoord-gedreven zoals "Bestellen & betalen"; nooit "Algemeen" als eerste), "items": [{ "question": string (max 120 tekens), "answer": string }] (3-5 per categorie) }] (1-3 categorieën),
+  "contactEscape": {
+    "heading": string ("Staat je vraag er niet bij?"-strekking, in merkstem),
+    "body": string (1-2 zinnen: hoe en hoe snel er geholpen wordt; alleen kanalen/termijnen uit de context),
+    "ctaLabel": string (max 48 tekens, action-led)
+  },
+  "closingCta": { "heading": string (zachte vervolgstap-belofte), "ctaLabel": string (max 48 tekens) }
+}
+
+# KRITISCHE REGELS (overtreding = automatic rejection)
+1. **Antwoord-eerst (AEO)**: de EERSTE zin van elk antwoord beantwoordt de vraag volledig en zelfstandig leesbaar (40-60 woorden kern); daarna pas toelichting. Het antwoord moet citeerbaar zijn zonder de vraag erbij.
+2. **Klanttaal**: vragen geformuleerd zoals een klant ze zou typen, niet zoals het bedrijf erover praat. Front-load het kernwoord ("Retourneren: hoe werkt het?").
+3. **Anti-fabricage**: ${ANTI_FABRICATION_RULE}
+4. **Bron-gedreven vragen**: leid vragen uitsluitend af uit de aangeleverde brand-context, producten, persona-bezwaren en opdracht; mix pre-purchase (bezwaren) en post-purchase (gebruik).
+5. **Geen duplicaten**: een vraag staat in popularQuestions OF in een categorie, nooit in beide; geen near-duplicate vragen.
+6. **Zinnen ≤25 woorden** (GOV.UK-leesbaarheid); schrijf op 5e-7e graders niveau.
+7. **Locale ${opts.locale}**: alle content in deze taal.
+8. **Volgorde = waarschijnlijkheid**: binnen elke lijst de meest waarschijnlijke klantvraag eerst.
+
+# JSON-ONLY OUTPUT
+Genereer ALLEEN het JSON-object, zonder prefix-zin, markdown code-fence of post-script. Begin direct met { en eindig met }.`;
+}
+
+function buildProductSystemPrompt(opts: SystemPromptOpts): string {
+  return `# ROL
+Je bent een Senior product-marketeer + conversion-copywriter. Je schrijft een
+product/service-pagina volgens de bewezen arc: belofte → bewijs → diepte →
+conversie (patroon van best-in-class pagina's als Stripe, Mollie, Linear).
+${buildSharedStyleBlocks(opts)}
+# OPDRACHT
+Genereer een complete product/service-pagina als **gestructureerd JSON** volgens het schema hieronder. Antwoord uitsluitend met het JSON-object (zonder prose, toelichting of code-fences).
+
+# OUTPUT-SCHEMA
+{
+  "hero": {
+    "headline": string (max 60 tekens, OUTCOME-headline: de uitkomst voor de klant, niet de productcategorie. Goed: "Genereer sneller inkomsten". Fout: "Billing software"),
+    "subline": string (1-2 zinnen die het GROOTSTE bezwaar van de doelgroep afvangen),
+    "primaryCta": string (laagdrempelige self-serve eerste stap, action-led),
+    "secondaryCta": string | optional (tweede koopmodus: demo/adviesgesprek/offerte; dual-CTA-patroon),
+    "imageBrief": ${IMAGE_BRIEF_JSON} (de productcontext of dienst-in-uitvoering als scène)
+  },
+  "problem": { "heading": string, "body": string (korte alinea: de pijn zonder dit product, herkenbaar en concreet) },
+  "solution": { "heading": string, "body": string (korte alinea: hoe dit product/deze dienst die pijn wegneemt; de brug naar de features) },
+  "features": [{ "heading": string (2-6 woorden, benefit-led), "body": string (1-3 zinnen: feature-uitleg in benefit-frame; "wat je krijgt, wat dat betekent"), "imageBrief": ${IMAGE_BRIEF_JSON} }] (3-6 items in GEBRUIKSVOLGORDE van de klant, niet interne prioriteit; elke feature bewijst één pilaar van de hero-belofte),
+  "useCases": [{ "heading": string, "body": string }] | optional (0-3 "voor wie / wanneer"-kaarten; alleen wanneer de context use-cases bevat),
+  "specs": [{ "label": string, "value": string }] | optional (2-12 rijen, ALLEEN specificaties die letterlijk in de context staan; weglaten bij een dienst of ontbrekende specs),
+  "processSteps": [{ "heading": string, "body": string }] | optional (3-5 stappen "zo werken we"; gebruik dit bij een DIENST i.p.v. specs),
+  "pricing": { "heading": string, "body": string } | optional (UITSLUITEND wanneer prijsinformatie in de context staat; formuleer zoals aangeleverd; "vanaf"-indicatie mag, verzonnen bedragen nooit),
+  "faq": [{ "question": string (max 120 tekens), "answer": string }] (3-4 bezwaar-gedreven vragen vlak voor de final CTA),
+  "finalCta": {
+    "heading": string (belofte herhalen),
+    "body": string (1-2 zinnen risico-reductie/volgende stap),
+    "primaryCta": string (MOET IDENTIEK zijn aan hero.primaryCta; single-CTA discipline),
+    "secondaryCta": string | optional (zelfde tweede koopmodus als de hero)
+  }
+}
+
+# KRITISCHE REGELS (overtreding = automatic rejection)
+1. **Single-CTA discipline**: finalCta.primaryCta letterlijk identiek aan hero.primaryCta.
+2. **Outcome boven categorie**: de headline beschrijft wat de klant BEREIKT; de subline maakt het geloofwaardig.
+3. **Features = gebruiksvolgorde + bewijs**: orden features zoals de klant ze tegenkomt; elke feature-body eindigt impliciet of expliciet op het voordeel ("which means …"-methodiek).
+4. **Anti-fabricage**: ${ANTI_FABRICATION_RULE} Geen testimonials of klantnamen; die sectie bestaat bewust niet in dit schema.
+5. **Specs vs processSteps**: een fysiek/technisch product krijgt specs; een dienst krijgt processSteps; nooit allebei leeg verzinnen; weglaten mag.
+6. **Image-briefs = bewijs + diversiteit**: elke feature-brief visualiseert het bewijs van DIE feature; onderling verschillende sceneTypes/subjects; max 1 "person"-scene; subjects UNBRANDED en "avoid" bevat standaard "brand logos or lettering".
+7. **Readability**: 5e-7e graders niveau, zinnen ≤25 woorden, geen jargon zonder uitleg.
+8. **Locale ${opts.locale}**: alle content in deze taal.
+9. **Specifiek > generiek**: geen woorden die op elk merk passen; gebruik sector-termen en concrete output uit de context.
+
+# JSON-ONLY OUTPUT
+Genereer ALLEEN het JSON-object, zonder prefix-zin, markdown code-fence of post-script. Begin direct met { en eindig met }.`;
+}
+
+function buildMicrositeSystemPrompt(opts: SystemPromptOpts): string {
+  return `# ROL
+Je bent een Senior campagne-strateeg + storytelling-copywriter. Je schrijft een
+campagne-microsite als ÉÉN lange scroll-pagina met ankersecties (IKEA Life at
+Home / Patagonia Blue Heart-patroon): een these die hoofdstuk voor hoofdstuk
+wordt bewezen en eindigt in één duidelijke deelname-actie.
+${buildSharedStyleBlocks(opts)}
+# OPDRACHT
+Genereer een complete campagne-microsite als **gestructureerd JSON** volgens het schema hieronder. Antwoord uitsluitend met het JSON-object (zonder prose, toelichting of code-fences).
+
+# OUTPUT-SCHEMA
+{
+  "heroManifest": {
+    "navLabel": string (max 24 tekens, 1-2 woorden voor de ankernavigatie),
+    "headline": string (max 80 tekens, THESE-headline met een meetbare claim of uitgesproken standpunt; moet zelfstandig de hele campagne communiceren),
+    "subline": string (1-2 zinnen die de these laden),
+    "primaryCta": string (de deelname-actie, action-led),
+    "imageBrief": ${IMAGE_BRIEF_JSON} (full-bleed campagnebeeld)
+  },
+  "story": CHAPTER (verplicht; het verhaal/de aanleiding van de campagne),
+  "impact": CHAPTER | optional (cijfers/resultaten/fases; alleen bij voldoende substantie in de context),
+  "community": CHAPTER | optional (wie doet mee/bewijs uit de doelgroep; alleen bij voldoende substantie),
+  "join": {
+    "navLabel": string (max 24 tekens),
+    "heading": string (de deelname-vraag),
+    "body": string (1-3 zinnen: wat deelname inhoudt + waarom nu),
+    "primaryCta": string (identieke strekking als heroManifest.primaryCta),
+    "deadline": string | optional (einddatum/tijdvenster uit de context; HET urgentie-element van een campagne)
+  }
+}
+
+CHAPTER = {
+  "navLabel": string (max 24 tekens),
+  "heading": string (hoofdstuk-kop die de arc verder vertelt),
+  "intro": string | optional (1-2 zinnen hoofdstuk-inleiding),
+  "blocks": [{ "heading": string | optional, "body": string (20-60 woorden; het vaste ritme vervangt animatie), "imageBrief": ${IMAGE_BRIEF_JSON} | optional }] (2-3 blokken),
+  "stat": { "value": string (groot cijfer in merkstijl), "context": string (1 regel context) } | optional (ALLEEN cijfers uit de context),
+  "quote": { "text": string, "attribution": string (functie-aanduiding, geen verzonnen naam) } | optional
+}
+
+# KRITISCHE REGELS (overtreding = automatic rejection)
+1. **Storytelling-arc**: heroManifest stelt de these; story bewijst de aanleiding; impact/community verdiepen; join sluit af met actie. Elke sectie-kop vertelt de arc verder; de navLabels samen lezen als een verhaal.
+2. **Zelfstandige hero**: de meerderheid scrollt niet ver; heroManifest moet de hele campagne alleen kunnen dragen.
+3. **Urgentie via deadline**: tijdelijkheid onderscheidt een campagne van een evergreen pagina; neem de deadline op wanneer de context die geeft.
+4. **20-60 woorden per blok**: korte, ritmische blokken; geen lange lappen tekst.
+5. **Skip rather than pad**: laat impact/community weg wanneer de context te weinig substantie biedt; een dunne sectie verzwakt de arc.
+6. **Anti-fabricage**: ${ANTI_FABRICATION_RULE}
+7. **Image-briefs**: per hoofdstuk maximaal de blocks met een brief; onderling verschillende sceneTypes; subjects UNBRANDED en "avoid" bevat standaard "brand logos or lettering".
+8. **Locale ${opts.locale}**: alle content in deze taal.
+9. **Campagne-blueprint-mapping**: bevat de opdracht een campagne-strategie of verhaallijn, map die dan zo: kernconcept/these → heroManifest, aanleiding/strategie → story, fases/cijfers/resultaten → impact, bewijs/doelgroep-stemmen → community, aanbod + einddatum → join.
+
+# JSON-ONLY OUTPUT
+Genereer ALLEEN het JSON-object, zonder prefix-zin, markdown code-fence of post-script. Begin direct met { en eindig met }.`;
+}
+
+/** Type-aware opdracht-label voor het user-prompt (LP behoudt het exacte oude label). */
+const USER_PROMPT_LABELS: Record<string, string> = {
+  "faq-page": "FAQ-PAGINA OPDRACHT",
+  "product-page": "PRODUCT/SERVICE-PAGINA OPDRACHT",
+  microsite: "CAMPAGNE-MICROSITE OPDRACHT",
+};
+
+/** Union-veilige headline-accessor (diagnostiek/divergentie-checks). */
+export function variantHeadline(v: PageVariantContent): string {
+  if ("heroManifest" in v) return v.heroManifest.headline;
+  return v.hero.headline;
+}
+
+/** Union-veilige hero-visual-accessor; faq-page heeft geen hero-beeldslot. */
+export function variantHeroVisualUrl(v: PageVariantContent): string | null | undefined {
+  if ("heroManifest" in v) return v.heroManifest.heroVisualUrl;
+  return "heroVisualUrl" in v.hero ? v.hero.heroVisualUrl : null;
 }
 
 // ─── Response parser ─────────────────────────────────────
@@ -455,6 +749,57 @@ export function parseLandingPageVariantResponse(text: string): ParseResult {
     };
   }
   return { success: true, data: validation.data };
+}
+
+export type PageParseResult =
+  | { success: true; data: PageVariantContent }
+  | { success: false; errors: Array<{ path: string; message: string }>; rawText: string };
+
+/**
+ * W1 — type-aware variant van parseLandingPageVariantResponse: valideert
+ * tegen het schema van het content-type (faq/product/microsite eigen schema;
+ * al het andere het LP-schema). parseLandingPageVariantResponse blijft
+ * bestaan voor LP-getypeerde consumers (tell-rewrite, auto-iterate).
+ */
+export function parsePageVariantResponse(
+  text: string,
+  contentType: string | null | undefined,
+): PageParseResult {
+  if (!hasOwnVariantSchema(contentType)) {
+    return parseLandingPageVariantResponse(text);
+  }
+  const jsonText = extractJsonBlock(text);
+  if (!jsonText) {
+    return {
+      success: false,
+      errors: [{ path: "", message: "Geen JSON-object gevonden in response" }],
+      rawText: text,
+    };
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch (err) {
+    return {
+      success: false,
+      errors: [
+        { path: "", message: `JSON parse error: ${err instanceof Error ? err.message : String(err)}` },
+      ],
+      rawText: jsonText,
+    };
+  }
+  const result = getVariantSchemaForType(contentType).safeParse(parsed);
+  if (!result.success) {
+    return {
+      success: false,
+      errors: result.error.issues.map((issue) => ({
+        path: issue.path.join("."),
+        message: issue.message,
+      })),
+      rawText: jsonText,
+    };
+  }
+  return { success: true, data: result.data as PageVariantContent };
 }
 
 /**
@@ -513,7 +858,10 @@ function extractJsonBlock(text: string): string | null {
 export const LP_VARIANT_PROMPT_VERSION = "2.0.0";
 
 export interface GenerationResult {
-  variant: LandingPageVariantContent;
+  /** LP-shape voor landing-page/comparison-page; type-eigen shape (W1) voor
+   *  faq-page/product-page/microsite. Consumers die LP-velden lezen moeten
+   *  op contentType gaten of via de schema-dispatch narrowen. */
+  variant: PageVariantContent;
   inputTokens: number;
   outputTokens: number;
   retried: boolean;
@@ -546,6 +894,12 @@ export async function generateLandingPageVariant(
 ): Promise<GenerationResult> {
   const prompt = buildLandingPageVariantPrompt(params);
 
+  // W1 — per-type output-budget: faq (tot 20 Q&A's), product (6 features +
+  // specs) en microsite (4 chapters) zijn omvangrijker dan een LP; sinds de
+  // F1 truncatie-throws betekent een krap budget een harde fout, geen stille
+  // afkapping. LP behoudt exact het bestaande budget.
+  const maxTokens = hasOwnVariantSchema(params.contentType) ? 6000 : 4500;
+
   // Audit 2026-06-10: model komt via canvas-model-routing uit de route
   // ('Website & Landing Pages' → claude-sonnet-4-6, benchmark 91). NB: op
   // sonnet-4-6+ dropt anthropic-client de temperature-param (deprecated) —
@@ -560,14 +914,14 @@ export async function generateLandingPageVariant(
       useCase: "STRUCTURED",
       // 3500 → 4500 (R7, audit 2026-06-10): 4-5 imageBriefs (~400 extra
       // output-tokens) mogen de JSON-staart niet afkappen.
-      maxTokens: 4500,
+      maxTokens,
       timeoutMs: 90_000,
       ...(opts?.model ? { model: opts.model } : {}),
       ...(opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
     },
   );
 
-  const parse = parseLandingPageVariantResponse(response.content);
+  const parse = parsePageVariantResponse(response.content, params.contentType);
   if (!parse.success) {
     const errorList = parse.errors
       .map((e) => `${e.path || "(root)"}: ${e.message}`)
@@ -709,14 +1063,14 @@ export async function generateLandingPageVariantBatch(
   // direct kunnen zien of de axis-divergentie effectief is. User-bevinding
   // 2026-05-27 dat variants nog 'identiek' lijken kunnen we hier herleiden.
   if (successes.length >= 2) {
-    const headlines = successes.map((r, i) => `  [${i}] axis=${AXIS_PAIR[i] ?? 'none'} headline="${r.variant.hero.headline}"`).join('\n');
+    const headlines = successes.map((r, i) => `  [${i}] axis=${AXIS_PAIR[i] ?? 'none'} headline="${variantHeadline(r.variant)}"`).join('\n');
     console.log(`[variant-batch] Generated ${successes.length} variants:\n${headlines}`);
     // Crude similarity check: dezelfde eerste 3 woorden = waarschuwing.
     // N-way: elk paar vergelijken zodat de check ook bij 3/4 variants klopt.
     const firstWords = (s: string) => s.split(/\s+/).slice(0, 3).join(' ').toLowerCase();
     for (let j = 0; j < successes.length - 1; j++) {
       for (let k = j + 1; k < successes.length; k++) {
-        if (firstWords(successes[j].variant.hero.headline) === firstWords(successes[k].variant.hero.headline)) {
+        if (firstWords(variantHeadline(successes[j].variant)) === firstWords(variantHeadline(successes[k].variant))) {
           console.warn(`[variant-batch] WARNING: variants ${j} en ${k} delen eerste 3 woorden van headline — axis-divergentie mogelijk niet effectief. Check prompt rendering + Anthropic response.`);
         }
       }
@@ -733,7 +1087,7 @@ export async function generateLandingPageVariantBatch(
     successes.forEach((r, i) => {
       // Schat section-bgs op basis van archetype + variant-content
       // Hero: useFullBleed wanneer heroVisualUrl gezet → secondary, anders dominant
-      const heroBgCategory: Category = r.variant.hero.heroVisualUrl ? 'secondary' : 'dominant';
+      const heroBgCategory: Category = variantHeroVisualUrl(r.variant) ? 'secondary' : 'dominant';
       const sections: { componentType: string; areaPct: number; bgCategory: Category }[] = [
         { componentType: 'BrandHero', areaPct: dist.getComponentAreaPct('BrandHero'), bgCategory: heroBgCategory },
         { componentType: 'FeatureGrid', areaPct: dist.getComponentAreaPct('FeatureGrid'), bgCategory: 'dominant' },

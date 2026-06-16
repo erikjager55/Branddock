@@ -41,7 +41,8 @@ async function main() {
     includePricing: false,
   });
 
-  const v = result.variant;
+  // LP-harness zonder contentType-param — narrow't veilig naar de LP-shape.
+  const v = result.variant as import("../../src/lib/landing-pages/variant-schema").LandingPageVariantContent;
   const secs = ((Date.now() - started) / 1000).toFixed(1);
   console.log(`\nGeneratie OK in ${secs}s — headline: "${v.hero.headline}"`);
 

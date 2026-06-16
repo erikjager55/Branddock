@@ -1,4 +1,11 @@
 import type { LandingPageVariantContent } from "./variant-schema";
+import type {
+  FaqPageVariantContent,
+  MicrositeChapter,
+  MicrositeVariantContent,
+  PageVariantContent,
+  ProductPageVariantContent,
+} from "./page-type-schemas";
 
 /**
  * Plat-tekst-projectie van LandingPageVariantContent voor F-VAL scoring.
@@ -63,4 +70,71 @@ export function flattenVariantToText(variant: LandingPageVariantContent): string
   parts.push(variant.finalCta.primaryCta);
 
   return parts.filter((p) => typeof p === "string" && p.trim().length > 0).join("\n\n");
+}
+
+const joinParts = (parts: Array<string | null | undefined>): string =>
+  parts.filter((p): p is string => typeof p === "string" && p.trim().length > 0).join("\n\n");
+
+/** W1 — flatten voor FaqPageVariantContent: hero → popular → categorieën → escape → cta. */
+function flattenFaqVariant(v: FaqPageVariantContent): string {
+  const parts: Array<string | null | undefined> = [v.hero.headline, v.hero.subline];
+  for (const qa of v.popularQuestions) parts.push(qa.question, qa.answer);
+  for (const cat of v.categories) {
+    parts.push(cat.label);
+    for (const qa of cat.items) parts.push(qa.question, qa.answer);
+  }
+  parts.push(v.contactEscape.heading, v.contactEscape.body, v.contactEscape.ctaLabel);
+  parts.push(v.closingCta.heading, v.closingCta.ctaLabel);
+  return joinParts(parts);
+}
+
+/** W1 — flatten voor ProductPageVariantContent in display-volgorde (plan §2.1). */
+function flattenProductVariant(v: ProductPageVariantContent): string {
+  const parts: Array<string | null | undefined> = [
+    v.hero.headline, v.hero.subline, v.hero.primaryCta, v.hero.secondaryCta,
+    v.problem.heading, v.problem.body,
+    v.solution.heading, v.solution.body,
+  ];
+  for (const f of v.features) parts.push(f.heading, f.body);
+  for (const u of v.useCases ?? []) parts.push(u.heading, u.body);
+  for (const s of v.specs ?? []) parts.push(`${s.label}: ${s.value}`);
+  for (const p of v.processSteps ?? []) parts.push(p.heading, p.body);
+  if (v.pricing) parts.push(v.pricing.heading, v.pricing.body);
+  for (const qa of v.faq) parts.push(qa.question, qa.answer);
+  parts.push(v.finalCta.heading, v.finalCta.body, v.finalCta.primaryCta, v.finalCta.secondaryCta);
+  return joinParts(parts);
+}
+
+function flattenChapter(c: MicrositeChapter | null | undefined): Array<string | null | undefined> {
+  if (!c) return [];
+  const parts: Array<string | null | undefined> = [c.heading, c.intro];
+  for (const b of c.blocks) parts.push(b.heading, b.body);
+  if (c.stat) parts.push(`${c.stat.value} ${c.stat.context}`);
+  if (c.quote) parts.push(c.quote.text, c.quote.attribution);
+  return parts;
+}
+
+/** W1 — flatten voor MicrositeVariantContent: hero → chapters → join. */
+function flattenMicrositeVariant(v: MicrositeVariantContent): string {
+  const parts: Array<string | null | undefined> = [
+    v.heroManifest.headline, v.heroManifest.subline, v.heroManifest.primaryCta,
+    ...flattenChapter(v.story),
+    ...flattenChapter(v.impact),
+    ...flattenChapter(v.community),
+    v.join.heading, v.join.body, v.join.primaryCta, v.join.deadline,
+  ];
+  return joinParts(parts);
+}
+
+/**
+ * W1 — type-aware flatten voor F-VAL scoring over de PageVariantContent-union.
+ * Dispatcht op shape (structureel, geen contentType nodig): deterministische
+ * volgorde per type zodat scoring stabiel blijft. LP-varianten lopen door de
+ * bestaande flattenVariantToText ongewijzigd.
+ */
+export function flattenPageVariantToText(variant: PageVariantContent): string {
+  if ("heroManifest" in variant) return flattenMicrositeVariant(variant);
+  if ("popularQuestions" in variant) return flattenFaqVariant(variant);
+  if ("solution" in variant) return flattenProductVariant(variant);
+  return flattenVariantToText(variant);
 }

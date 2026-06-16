@@ -171,6 +171,12 @@ function testPuckConfig(): void {
     'StatsBlock',
     // BrandNav — navigatie-component
     'BrandNav',
+    // W2 — SpecTable (native 2-koloms product-specificatietabel)
+    'SpecTable',
+    // W4 — microsite: sticky scroll-spy-nav, hoofdstuk-template, TL;DR-jump-cards
+    'AnchorNav',
+    'StoryChapter',
+    'HighlightCards',
   ];
 
   // Afgeleid van `expected` zodat de assert zowel ontbrekende als EXTRA

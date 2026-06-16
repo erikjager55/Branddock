@@ -8,6 +8,7 @@
  */
 import fs from "fs";
 import { generateLandingPageVariant } from "../../src/lib/landing-pages/variant-generator";
+import type { LandingPageVariantContent } from "../../src/lib/landing-pages/variant-schema";
 
 async function main() {
   const res = await generateLandingPageVariant({
@@ -42,7 +43,9 @@ async function main() {
     layoutStyle: "EXPERIENTIAL",
   });
 
-  const v = res.variant;
+  // Dit harness genereert expliciet een landing-page (geen contentType-param),
+  // dus de union narrow't veilig naar de LP-shape.
+  const v = res.variant as LandingPageVariantContent;
   fs.writeFileSync("/tmp/variant-zwart.json", JSON.stringify(v, null, 2));
   console.log("=== HERO ===");
   console.log("eyebrow :", v.hero.eyebrow ?? "(geen)");

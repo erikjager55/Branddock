@@ -66,7 +66,12 @@ export function buildHeroVisualInstruction(
   const compositionFragment = tokens?.photography?.compositionFragment?.trim();
   if (compositionFragment && !heroBrief) parts.push(compositionFragment);
   if (brand?.brandImageryStyle) parts.push(`Brand imagery: ${brand.brandImageryStyle}`);
-  if (brand?.brandName) parts.push(`Brand: ${brand.brandName}`);
+  // GEEN `Brand: ${brandName}`-segment meer (W0 logo-fix, plan §5 T1): een kale
+  // merknaam-token primet het model om een pseudo-wordmark op objecten te
+  // renderen — de merk-look reist al via brandTokens.photography + anchors.
+  // Onconditionele unbranded-guard: het hero-pad had als enige géén
+  // text/logo-guard; modellen hallucineren branding op bussen/gevels/schorten.
+  parts.push('No text, no logos, no brand marks or lettering on objects, clothing, vehicles or signage — plain, unbranded surfaces');
   // Donts staan bewust NIET meer in de positive prompt: ze reizen via het
   // dedicated negative-kanaal van de route, dat sinds de R6-fix óók op
   // nano-banana werkt (prompt-directive-fallback in fal-client). In-prompt
@@ -115,7 +120,7 @@ export function buildFeatureVisualInstruction(
   if (photographyFragment) parts.push(photographyFragment);
   else if (hints) parts.push(`Photography style: ${hints.heroImagePromptFragment}`);
   if (brand?.brandImageryStyle) parts.push(`Brand imagery: ${brand.brandImageryStyle}`);
-  if (brand?.brandName) parts.push(`Brand: ${brand.brandName}`);
+  // W0 logo-fix: geen merknaam-token in image-prompts (pseudo-wordmark-trigger).
   const donts = brand?.brandImageryDonts;
   parts.push(donts && donts.length > 0 ? `Avoid: ${donts.join(', ')}` : 'Avoid: stock photo people, generic SaaS illustrations, text overlays, lens flares');
   return parts.join('. ') + '.';

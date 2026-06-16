@@ -27,6 +27,11 @@ import { isClearedImage } from '../../../lib/feature-visual-preserve';
 import { pxFromCssValue } from '@/lib/landing-pages/brand-tokens-v4-mappers';
 import { isScrapedOrigin, type TokenProvenance } from '@/lib/landing-pages/token-provenance';
 import { PuckImageField } from './PuckImageField';
+// W4 — AnchorNav heeft hooks (scroll-spy) en leeft daarom in een eigen
+// 'use client'-bestand; deze server-safe config rendert hem met uitsluitend
+// serialiseerbare props (RSC-grens).
+import { AnchorNavClient, type AnchorNavStyles } from './AnchorNavClient';
+import { ArrowDown } from 'lucide-react';
 
 // ─── Image-field factory ─────────────────────────────────────
 
@@ -198,6 +203,10 @@ export type SpikeBrandCtaProps = {
   /** Optionele kop-zin (belofte-herhaling) IN dezelfde CTA-sectie. Track 4 —
    *  voorheen een losse RichText-sectie erboven → dubbele gepadde band. */
   heading?: string;
+  /** W1 microsite — optioneel DOM-anker (`id` op de section) zodat
+   *  BrandNav-links (#join) hierheen scrollen. Geen Puck-field (zoals
+   *  bandTone): door de builder gezet, niet door de user te editen. */
+  anchorId?: string;
 };
 
 export type FeatureItem = {
@@ -249,6 +258,22 @@ export type FaqItem = { question: string; answer: string };
 export type FAQProps = {
   items: FaqItem[];
   bandTone?: SectionBandTone;
+  /** W1 faq-page — optionele sectiekop bóven de Q&A's (popular-questions-blok
+   *  en categorie-blokken). Binnen de FAQ-sectie zodat kop + items op
+   *  dezelfde achtergrond-band blijven. Leeg/absent → geen kop (LP-gedrag). */
+  heading?: string;
+  /** W3 faq-page — optioneel DOM-anker voor de categorie-sprongnavigatie.
+   *  Geen Puck-field (zoals bandTone/anchorId elders). */
+  anchorId?: string;
+};
+
+/** W2 product-page — specificatie-rij (label/waarde). */
+export type SpecRow = { label: string; value: string };
+export type SpecTableProps = {
+  items: SpecRow[];
+  /** Optionele sectiekop ("Specificaties"). */
+  heading?: string;
+  bandTone?: SectionBandTone;
 };
 
 export type FooterLink = { label: string; href: string };
@@ -261,6 +286,9 @@ export type FooterProps = {
 export type RichTextProps = {
   content: string;
   bandTone?: SectionBandTone;
+  /** W1 microsite — optioneel DOM-anker (`id` op de section) voor de
+   *  hoofdstuk-ankernavigatie. Geen Puck-field (zoals bandTone). */
+  anchorId?: string;
 };
 
 /** C9 — StickyCtaBar: fixed bottom-bar met label + CTA, sticky on scroll.
@@ -291,6 +319,38 @@ export type BrandNavProps = {
   ctaHref: string;
 };
 
+/** W4 — sticky ankernavigatie met scroll-spy (microsite + faq-categorieën).
+ *  Render delegeert naar AnchorNavClient ('use client') zodat puck-config
+ *  zelf server-safe blijft. */
+export type AnchorNavProps = {
+  brandName: string;
+  links: BrandNavLink[];
+  ctaLabel: string;
+  ctaHref: string;
+  /** Genummerde labels (01/02/…) maken de story-arc expliciet. Geen
+   *  Puck-field (bandTone-precedent) — de builder beslist. */
+  numbered?: boolean;
+};
+
+/** W4 microsite — hoofdstuk-blok: optioneel kopje + 20-60 woorden, optioneel beeld. */
+export type ChapterBlock = { heading?: string | null; body: string; imageUrl?: string | null };
+export type StoryChapterProps = {
+  heading: string;
+  intro?: string | null;
+  blocks: ChapterBlock[];
+  /** DOM-anker voor de ankernavigatie (geen Puck-field). */
+  anchorId?: string;
+  bandTone?: SectionBandTone;
+};
+
+/** W4 microsite — TL;DR-kaarten direct na de hero, tevens jump-links
+ *  (Apple "Get the highlights"-patroon). */
+export type HighlightCardItem = { title: string; description?: string | null; href: string };
+export type HighlightCardsProps = {
+  items: HighlightCardItem[];
+  bandTone?: SectionBandTone;
+};
+
 export type SpikePuckProps = {
   BrandHero: SpikeBrandHeroProps;
   BrandCTA: SpikeBrandCtaProps;
@@ -304,6 +364,10 @@ export type SpikePuckProps = {
   StickyCtaBar: StickyCtaBarProps;
   StatsBlock: StatsBlockProps;
   BrandNav: BrandNavProps;
+  SpecTable: SpecTableProps;
+  AnchorNav: AnchorNavProps;
+  StoryChapter: StoryChapterProps;
+  HighlightCards: HighlightCardsProps;
 };
 
 // ─── Config builder ──────────────────────────────────────────
@@ -345,6 +409,10 @@ export function buildSpikePuckConfig(
       StickyCtaBar: stickyCtaBarComponent(tokens),
       StatsBlock: statsBlockComponent(tokens),
       BrandNav: brandNavComponent(tokens),
+      SpecTable: specTableComponent(tokens),
+      AnchorNav: anchorNavComponent(tokens),
+      StoryChapter: storyChapterComponent(tokens),
+      HighlightCards: highlightCardsComponent(tokens),
     },
   };
 }
@@ -922,7 +990,9 @@ function brandHeroComponent(tokens: BrandTokens) {
             >
               {sub}
             </p>
-            {(() => {
+            {/* W1 faq-page: hero zonder CTA (schema heeft geen hero-CTA) →
+                lege ctaLabel skipt de hele knop i.p.v. een lege button. */}
+            {!(ctaLabel ?? '').trim() ? null : (() => {
               const heroCtaStyle: React.CSSProperties & Record<`--${string}`, string> = {
                 ...buttonRender,
                 // Conditional whitespace + letterSpacing cap voor lange labels.
@@ -1069,7 +1139,7 @@ function brandCtaComponent(
       riskReducer: '',
       heading: '',
     },
-    render: ({ label, href, personaId, riskReducer, heading }: SpikeBrandCtaProps) => {
+    render: ({ label, href, personaId, riskReducer, heading, anchorId }: SpikeBrandCtaProps) => {
       const persona = personas.find((p) => p.id === personaId);
       // CTA-redesign: een CONTAINED gebrande panel i.p.v. losse tekst+knop op
       // een leeg wit vlak. Donker-merk → donkere cinematische panel; anders een
@@ -1084,10 +1154,14 @@ function brandCtaComponent(
         : readableTextColor(tokens.surfaceMuted, panelBg, tokens.onSurface);
       return (
         <section
+          id={anchorId?.trim() ? anchorId : undefined}
+          tabIndex={anchorId?.trim() ? -1 : undefined}
           style={{
             padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
             fontFamily: bodyFont,
             background: tokens.surface,
+            scrollMarginTop: anchorId?.trim() ? 80 : undefined,
+            outline: anchorId?.trim() ? 'none' : undefined,
           }}
         >
           <div
@@ -2004,20 +2078,39 @@ function faqComponent(tokens: BrandTokens) {
         { question: 'Wat kost het?', answer: 'Zie pricing.' },
       ],
     },
-    render: ({ items, bandTone }: FAQProps) => {
+    render: ({ items, bandTone, heading, anchorId }: FAQProps) => {
       // Band-ritmiek: 'alt' geeft een subtiele tint; alle tekst/borders resolven
       // tegen déze bg i.p.v. de hardcoded surface (anders breekt contrast).
       const sectionBg = sectionBandBg(tokens, bandTone);
       const borderColor = resolveOnColor(tokens.surfaceBorder, sectionBg, { fallback: tokens.onSurface, minRatio: 1.3 });
       return (
       <section
+        id={anchorId?.trim() ? anchorId : undefined}
+        tabIndex={anchorId?.trim() ? -1 : undefined}
         style={{
           padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
           fontFamily: bodyFont,
           background: sectionBg,
+          scrollMarginTop: anchorId?.trim() ? 80 : undefined,
+          outline: anchorId?.trim() ? 'none' : undefined,
         }}
       >
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          {heading && heading.trim().length > 0 ? (
+            <h2
+              style={{
+                fontFamily: headingFont,
+                fontSize: tbr.heading.fontSize ?? ds.typography.heading.sizes[Math.max(0, ds.typography.heading.sizes.length - 2)] ?? 28,
+                fontWeight: tbr.heading.fontWeight ?? (ds.typography.heading.weights[0] ?? 600),
+                lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
+                letterSpacing: tbr.heading.letterSpacing ?? undefined,
+                color: safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg),
+                margin: '0 0 24px',
+              }}
+            >
+              {heading}
+            </h2>
+          ) : null}
           {items.map((item, i) => (
             <details
               key={i}
@@ -2056,6 +2149,120 @@ function faqComponent(tokens: BrandTokens) {
           ))}
         </div>
       </section>
+      );
+    },
+  };
+}
+
+/**
+ * SpecTable (W2 product-page) — native 2-koloms specificatie-tabel. Vervangt
+ * de markdown-bullet-workaround: RichText kent geen GFM-tabellen en remark-gfm
+ * is geen dependency. Brand-emergent: heading-font voor labels, body-font voor
+ * waarden, contrast-geclampt tegen de band-bg, zebra-rijen via surfaceMuted.
+ */
+function specTableComponent(tokens: BrandTokens) {
+  const { sectionRhythm } = tokens;
+  const ds = tokens.designSystem;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const tbr = tokens.typographyByRole;
+  return {
+    fields: {
+      heading: { type: 'text' as const },
+      items: {
+        type: 'array' as const,
+        arrayFields: {
+          label: { type: 'text' as const },
+          value: { type: 'text' as const },
+        },
+        defaultItemProps: { label: 'Eigenschap', value: 'Waarde' },
+        getItemSummary: (item: SpecRow) => item.label || 'Spec',
+      },
+    },
+    defaultProps: {
+      heading: 'Specificaties',
+      items: [
+        { label: 'Materiaal', value: '—' },
+        { label: 'Afmetingen', value: '—' },
+      ],
+    },
+    render: ({ items, heading, bandTone }: SpecTableProps) => {
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      const borderColor = resolveOnColor(tokens.surfaceBorder, sectionBg, { fallback: tokens.onSurface, minRatio: 1.3 });
+      const labelColor = safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg);
+      const valueColor = readableTextColor(tbr.body.color ?? tokens.onSurface, sectionBg, tokens.onSurface);
+      const zebraBg = sectionBandBg(tokens, bandTone === 'alt' ? 'base' : 'alt');
+      return (
+        <section
+          style={{
+            padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
+            fontFamily: bodyFont,
+            background: sectionBg,
+          }}
+        >
+          <div style={{ maxWidth: 720, margin: '0 auto' }}>
+            {heading && heading.trim().length > 0 ? (
+              <h2
+                style={{
+                  fontFamily: headingFont,
+                  fontSize: tbr.heading.fontSize ?? ds.typography.heading.sizes[Math.max(0, ds.typography.heading.sizes.length - 2)] ?? 28,
+                  fontWeight: tbr.heading.fontWeight ?? (ds.typography.heading.weights[0] ?? 600),
+                  lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
+                  color: safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg),
+                  margin: '0 0 24px',
+                }}
+              >
+                {heading}
+              </h2>
+            ) : null}
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                border: `1px solid ${borderColor}`,
+                borderRadius: Math.min(12, constraints.maxRadiusPx),
+                overflow: 'hidden',
+              }}
+            >
+              <tbody>
+                {items.map((row, i) => (
+                  <tr key={i} style={{ background: i % 2 === 1 ? zebraBg : 'transparent' }}>
+                    <th
+                      scope="row"
+                      style={{
+                        textAlign: 'left',
+                        verticalAlign: 'top',
+                        padding: '12px 16px',
+                        width: '40%',
+                        fontFamily: headingFont,
+                        fontWeight: tbr.subheading.fontWeight ?? 600,
+                        fontSize: tbr.body.fontSize ?? 15,
+                        color: labelColor,
+                        borderBottom: i < items.length - 1 ? `1px solid ${borderColor}` : undefined,
+                      }}
+                    >
+                      {row.label}
+                    </th>
+                    <td
+                      style={{
+                        padding: '12px 16px',
+                        fontSize: tbr.body.fontSize ?? 15,
+                        lineHeight: tbr.body.lineHeight ?? undefined,
+                        color: valueColor,
+                        borderBottom: i < items.length - 1 ? `1px solid ${borderColor}` : undefined,
+                      }}
+                    >
+                      {row.value}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       );
     },
   };
@@ -2261,6 +2468,352 @@ function brandNavComponent(tokens: BrandTokens) {
 }
 
 /**
+ * AnchorNav (W4) — sticky ankernavigatie met scroll-spy, per a11y-spec §4.3
+ * van het page-types-plan. Styling spiegelt brandNavComponent (scraped
+ * TOP_NAVIGATION-sample wint, anders brand-tokens); de interactie leeft in
+ * AnchorNavClient ('use client') zodat deze config server-safe blijft.
+ */
+function anchorNavComponent(tokens: BrandTokens) {
+  const ds = tokens.designSystem;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const nav = tokens.styleguideComponents.TOP_NAVIGATION;
+  const navBg = nav?.background && !isTransparentBackground(nav.background) ? nav.background : tokens.surface;
+  const navCtaVisual = resolveCtaVisual(tokens.button, navBg, tokens.brand, tokens.onBrand);
+  const styles: AnchorNavStyles = {
+    background: navBg,
+    borderBottom: nav?.border && !isNoOpBorder(nav.border)
+      ? nav.border
+      : `1px solid ${tokens.surfaceBorder}`,
+    fontFamily: nav?.fontFamily ?? bodyFont,
+    fontSize: nav?.fontSize ?? '15px',
+    color: nav?.color ?? tokens.onSurface,
+    activeColor: resolveOnColor(tokens.brand, navBg, { fallback: nav?.color ?? tokens.onSurface, minRatio: 3.0 }),
+    headingFontFamily: headingFont,
+    cta: {
+      background: navCtaVisual.background,
+      color: navCtaVisual.color,
+      fontFamily: tokens.button.fontFamily ?? bodyFont,
+      padding: '8px 18px',
+      borderRadius: Math.min(tokens.button.radiusPx, constraints.maxRadiusPx),
+      border: navCtaVisual.border,
+      textDecoration: 'none',
+      fontSize: 14,
+      fontWeight: tokens.button.fontWeight,
+      whiteSpace: 'nowrap',
+    },
+  };
+  return {
+    fields: {
+      brandName: { type: 'text' as const },
+      links: {
+        type: 'array' as const,
+        arrayFields: {
+          label: { type: 'text' as const },
+          href: { type: 'text' as const },
+        },
+        defaultItemProps: { label: 'Sectie', href: '#' },
+        getItemSummary: (item: BrandNavLink) => item.label || 'Untitled link',
+      },
+      ctaLabel: { type: 'text' as const },
+      ctaHref: { type: 'text' as const },
+    },
+    defaultProps: {
+      brandName: 'Brand Name',
+      links: [
+        { label: 'Verhaal', href: '#verhaal' },
+        { label: 'Meedoen', href: '#meedoen' },
+      ],
+      ctaLabel: 'Doe mee',
+      ctaHref: '#meedoen',
+    },
+    render: ({ brandName, links, ctaLabel, ctaHref, numbered }: AnchorNavProps) => (
+      <AnchorNavClient
+        brandName={brandName}
+        links={links}
+        ctaLabel={ctaLabel}
+        ctaHref={ctaHref}
+        numbered={numbered}
+        styles={styles}
+      />
+    ),
+  };
+}
+
+/**
+ * StoryChapter (W4 microsite) — herhaalbaar hoofdstuk-template (IKEA/Patagonia-
+ * patroon): kop + intro + 2-3 blokken, alternerend beeld/tekst wanneer een blok
+ * een imageUrl heeft. Het vaste ritme vervangt animatie. Sectie draagt het
+ * DOM-anker (tabindex="-1" + scroll-margin) voor de AnchorNav.
+ */
+function storyChapterComponent(tokens: BrandTokens) {
+  const ds = tokens.designSystem;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  const { sectionRhythm } = tokens;
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const tbr = tokens.typographyByRole;
+  return {
+    fields: {
+      heading: { type: 'text' as const },
+      intro: { type: 'textarea' as const },
+      blocks: {
+        type: 'array' as const,
+        arrayFields: {
+          heading: { type: 'text' as const },
+          body: { type: 'textarea' as const },
+          imageUrl: { type: 'text' as const },
+        },
+        defaultItemProps: { heading: '', body: 'Bloktekst (20-60 woorden).', imageUrl: '' },
+        getItemSummary: (item: ChapterBlock) => item.heading || (item.body ?? '').slice(0, 40) || 'Blok',
+      },
+    },
+    defaultProps: {
+      heading: 'Hoofdstuk',
+      intro: '',
+      blocks: [
+        { heading: '', body: 'Eerste blok van dit hoofdstuk.', imageUrl: '' },
+        { heading: '', body: 'Tweede blok van dit hoofdstuk.', imageUrl: '' },
+      ],
+    },
+    render: ({ heading, intro, blocks, anchorId, bandTone }: StoryChapterProps) => {
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      const headingColor = safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg);
+      const bodyColor = readableTextColor(tbr.body.color ?? tokens.onSurface, sectionBg, tokens.onSurface);
+      const introColor = readableTextColor(tokens.surfaceMuted, sectionBg, tokens.onSurface);
+      const bodySize = tbr.body.fontSize ?? ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 2)] ?? 16;
+      let imageRowIndex = 0;
+      return (
+        <section
+          id={anchorId?.trim() ? anchorId : undefined}
+          tabIndex={anchorId?.trim() ? -1 : undefined}
+          style={{
+            padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
+            fontFamily: bodyFont,
+            background: sectionBg,
+            scrollMarginTop: anchorId?.trim() ? 80 : undefined,
+            outline: 'none',
+          }}
+        >
+          <div style={{ maxWidth: constraints.maxContentWidth, margin: '0 auto' }}>
+            <h2
+              style={{
+                fontFamily: headingFont,
+                fontSize: tbr.heading.fontSize ?? ds.typography.heading.sizes[ds.typography.heading.sizes.length - 1] ?? 32,
+                fontWeight: tbr.heading.fontWeight ?? (ds.typography.heading.weights[0] ?? 600),
+                lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight,
+                letterSpacing: tbr.heading.letterSpacing ?? undefined,
+                color: headingColor,
+                margin: '0 0 16px',
+                maxWidth: 720,
+              }}
+            >
+              {heading}
+            </h2>
+            {intro && intro.trim().length > 0 ? (
+              <p
+                style={{
+                  fontSize: Math.round(bodySize * 1.15),
+                  lineHeight: tbr.body.lineHeight ?? ds.typography.body.lineHeight,
+                  color: introColor,
+                  margin: '0 0 32px',
+                  maxWidth: 640,
+                }}
+              >
+                {intro}
+              </p>
+            ) : null}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+              {blocks.map((block, i) => {
+                const text = (
+                  <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+                    {block.heading && block.heading.trim().length > 0 ? (
+                      <h3
+                        style={{
+                          fontFamily: headingFont,
+                          fontSize: tbr.subheading.fontSize ?? 20,
+                          fontWeight: tbr.subheading.fontWeight ?? 600,
+                          lineHeight: tbr.subheading.lineHeight ?? undefined,
+                          color: safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg),
+                          margin: '0 0 8px',
+                        }}
+                      >
+                        {block.heading}
+                      </h3>
+                    ) : null}
+                    <p
+                      style={{
+                        fontSize: bodySize,
+                        lineHeight: tbr.body.lineHeight ?? ds.typography.body.lineHeight,
+                        color: bodyColor,
+                        margin: 0,
+                        maxWidth: 640,
+                      }}
+                    >
+                      {block.body}
+                    </p>
+                  </div>
+                );
+                if (block.imageUrl && !isClearedImage(block.imageUrl)) {
+                  // Alternerend beeld links/rechts op basis van het aantal
+                  // eerdere beeld-rijen — het IKEA-ritme.
+                  const reversed = imageRowIndex % 2 === 1;
+                  imageRowIndex++;
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        flexDirection: reversed ? 'row-reverse' : 'row',
+                        flexWrap: 'wrap',
+                        gap: 32,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={block.imageUrl}
+                          alt={block.heading ?? ''}
+                          style={{
+                            width: '100%',
+                            aspectRatio: '4 / 3',
+                            objectFit: 'cover',
+                            borderRadius: Math.min(16, constraints.maxRadiusPx),
+                            display: 'block',
+                          }}
+                        />
+                      </div>
+                      {text}
+                    </div>
+                  );
+                }
+                return <div key={i}>{text}</div>;
+              })}
+            </div>
+          </div>
+        </section>
+      );
+    },
+  };
+}
+
+/**
+ * HighlightCards (W4 microsite) — 4-6 TL;DR-kaarten direct na de hero die
+ * tegelijk jump-links zijn (Apple "Get the highlights"-patroon). Bedient de
+ * meerderheid die de bodem nooit haalt: kern + navigatie in één blok.
+ */
+function highlightCardsComponent(tokens: BrandTokens) {
+  const ds = tokens.designSystem;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  const { sectionRhythm } = tokens;
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const tbr = tokens.typographyByRole;
+  return {
+    fields: {
+      items: {
+        type: 'array' as const,
+        arrayFields: {
+          title: { type: 'text' as const },
+          description: { type: 'textarea' as const },
+          href: { type: 'text' as const },
+        },
+        defaultItemProps: { title: 'Highlight', description: '', href: '#' },
+        getItemSummary: (item: HighlightCardItem) => item.title || 'Highlight',
+      },
+    },
+    defaultProps: {
+      items: [
+        { title: 'Ons verhaal', description: 'Waarom deze campagne bestaat.', href: '#verhaal' },
+        { title: 'Doe mee', description: 'Sluit je aan.', href: '#meedoen' },
+      ],
+    },
+    render: ({ items, bandTone }: HighlightCardsProps) => {
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      const cardBg = tokens.surface;
+      const borderColor = resolveOnColor(tokens.surfaceBorder, sectionBg, { fallback: tokens.onSurface, minRatio: 1.3 });
+      const titleColor = safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, cardBg);
+      const descColor = readableTextColor(tokens.surfaceMuted, cardBg, tokens.onSurface);
+      const accent = resolveOnColor(tokens.brand, cardBg, { fallback: tokens.onSurface, minRatio: 3.0 });
+      return (
+        <section
+          style={{
+            padding: `${Math.round(sectionRhythm.sectionPaddingY * 0.6)}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`,
+            fontFamily: bodyFont,
+            background: sectionBg,
+          }}
+        >
+          <div
+            style={{
+              maxWidth: constraints.maxContentWidth,
+              margin: '0 auto',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))',
+              gap: 16,
+            }}
+          >
+            {items.map((item, i) => (
+              <a
+                key={i}
+                href={item.href}
+                className="lp-interactive"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  padding: '20px 20px 16px',
+                  background: cardBg,
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: Math.min(14, constraints.maxRadiusPx),
+                  textDecoration: 'none',
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    fontSize: 12,
+                    fontVariantNumeric: 'tabular-nums',
+                    color: accent,
+                    fontWeight: 600,
+                  }}
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span
+                  style={{
+                    fontFamily: headingFont,
+                    fontSize: tbr.subheading.fontSize ?? 18,
+                    fontWeight: tbr.subheading.fontWeight ?? 600,
+                    lineHeight: 1.3,
+                    color: titleColor,
+                  }}
+                >
+                  {item.title}
+                </span>
+                {item.description && item.description.trim().length > 0 ? (
+                  <span style={{ fontSize: 14, lineHeight: 1.5, color: descColor }}>
+                    {item.description}
+                  </span>
+                ) : null}
+                <ArrowDown aria-hidden="true" style={{ width: 16, height: 16, color: accent, marginTop: 'auto' }} />
+              </a>
+            ))}
+          </div>
+        </section>
+      );
+    },
+  };
+}
+
+/**
  * RichText — brand-emergent (Phase 6). Markdown-render met designSystem-
  * typography (heading-font, body-font, body-size). Section-padding adaptief.
  */
@@ -2279,15 +2832,19 @@ function richTextComponent(tokens: BrandTokens) {
     defaultProps: {
       content: 'Schrijf hier je inhoud.',
     },
-    render: ({ content, bandTone }: RichTextProps) => {
+    render: ({ content, bandTone, anchorId }: RichTextProps) => {
       const sectionBg = sectionBandBg(tokens, bandTone);
       const markdownComponents = buildRichTextMarkdownComponents(tokens, sectionBg);
       return (
       <section
+        id={anchorId?.trim() ? anchorId : undefined}
+        tabIndex={anchorId?.trim() ? -1 : undefined}
         style={{
           padding: `${sectionPaddingY}px ${responsivePaddingX(sectionPaddingX)}`,
           fontFamily: bodyFont,
           background: sectionBg,
+          scrollMarginTop: anchorId?.trim() ? 80 : undefined,
+          outline: anchorId?.trim() ? 'none' : undefined,
         }}
       >
         <div

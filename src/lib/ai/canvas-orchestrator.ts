@@ -3159,6 +3159,10 @@ function formatContentTypeInputs(
     // Skip keys that formatMediumConfig handles richly — avoid duplicate
     // "- Tone: professional" + "- Tone: Write in a professional voice."
     .filter((f) => !MEDIUM_CONFIG_HANDLED_KEYS.has(f.key))
+    // W2 — product-select-velden bevatten een rauwe Product-id (cuid). Die
+    // mag NOOIT als "- Gekoppeld product: clx123…" de prompt in lekken; de
+    // product-context komt rijk via Layer 7 (ctx.products). Skippen.
+    .filter((f) => f.type !== 'product-select')
     .filter((f) => inputs[f.key] != null && inputs[f.key] !== '')
     .map((f) => {
       const val = inputs[f.key];

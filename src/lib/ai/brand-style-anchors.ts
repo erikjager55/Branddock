@@ -13,6 +13,9 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
+import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
+import { prepareJudgeImage } from '@/lib/brand-fidelity/judge-image';
+import { detectLogoInImage, type LogoProminence } from '@/lib/visual/detect-logo-in-image';
 
 export interface BrandStyleAnchor {
   mediaAssetId: string;
@@ -68,6 +71,84 @@ export async function fetchBrandStyleAnchors(
     );
     return [];
   }
+}
+
+// ─── W5 L-Fase 3 — anchor-curatie (plan §5 T2) ───────────────
+
+export interface AnchorLogoFinding {
+  mediaAssetId: string;
+  alt: string | null;
+  visibleLogo: boolean;
+  prominence: LogoProminence;
+  rationale: string;
+}
+
+export interface AnchorLogoAudit {
+  /** Per-anchor bevinding; alleen anchors die gejudged konden worden. */
+  findings: AnchorLogoFinding[];
+  /** Aantal anchors waarvan een logo het beeld DOMINEERT — de T2-risicogroep. */
+  dominantCount: number;
+  /** Aantal anchors waar überhaupt een logo zichtbaar is. */
+  visibleCount: number;
+  /** User-gerichte waarschuwing (NL) wanneer ≥1 dominante logo-anchor; anders null. */
+  warning: string | null;
+}
+
+/**
+ * Pure samenvatting van per-anchor logo-detecties → audit + waarschuwing.
+ * Geëxporteerd zodat de drempel-/copy-logica unit-smokebaar is zonder een
+ * echte vision-call. Een DOMINANT logo op een style-anchor is het defect dat
+ * prompt-fixes niet kunnen dichten (multi-ref-fusion kopieert het mark terug).
+ */
+export function summarizeAnchorLogoAudit(findings: AnchorLogoFinding[]): AnchorLogoAudit {
+  const dominantCount = findings.filter((f) => f.prominence === 'dominant').length;
+  const visibleCount = findings.filter((f) => f.visibleLogo).length;
+  const warning = dominantCount > 0
+    ? `${dominantCount} van je ${findings.length} brand-style-anchors tonen een prominent logo. Die referentiebeelden leren het AI-model dat logo na te maken (vaak verminkt) in elke generatie — dit is niet met prompts te voorkomen. Vervang deze anchors door beeld zonder logo voor schone resultaten.`
+    : null;
+  return { findings, dominantCount, visibleCount, warning };
+}
+
+/**
+ * Audit de brand-style-anchors van een workspace op zichtbare/dominante logo's
+ * (plan §5 T2). On-demand bedoeld (1 Haiku-vision-call per anchor) — NIET per
+ * generatie. Anchors die niet gejudged kunnen worden (geen API-key, laad-fout)
+ * vallen stil weg uit de findings. Gooit niet.
+ */
+export async function auditStyleAnchorsForLogos(workspaceId: string): Promise<AnchorLogoAudit> {
+  const anchors = await fetchBrandStyleAnchors(workspaceId);
+  const findings = await Promise.all(
+    anchors.map(async (anchor): Promise<AnchorLogoFinding | null> => {
+      try {
+        const bytes = anchor.fileUrl.startsWith('/')
+          ? await (await import('fs/promises')).readFile(
+              (await import('path')).join('public', anchor.fileUrl.replace(/^\//, '')),
+            )
+          : await fetchWithSizeLimit(anchor.fileUrl, AI_IMAGE_SIZE_CAP);
+        const prepared = await prepareJudgeImage(bytes);
+        const result = await detectLogoInImage({
+          type: 'base64',
+          mediaType: prepared.mediaType,
+          data: prepared.buffer.toString('base64'),
+        });
+        if (!result) return null;
+        return {
+          mediaAssetId: anchor.mediaAssetId,
+          alt: anchor.alt,
+          visibleLogo: result.visibleLogo,
+          prominence: result.prominence,
+          rationale: result.rationale,
+        };
+      } catch (err) {
+        console.warn(
+          `[brand-style-anchors] logo-audit anchor ${anchor.mediaAssetId} faalde — overslaan:`,
+          err instanceof Error ? err.message : err,
+        );
+        return null;
+      }
+    }),
+  );
+  return summarizeAnchorLogoAudit(findings.filter((f): f is AnchorLogoFinding => f !== null));
 }
 
 /**

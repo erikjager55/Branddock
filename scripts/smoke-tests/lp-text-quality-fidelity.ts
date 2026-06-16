@@ -41,7 +41,10 @@ function group(name: string): void { console.log(`\n${name}`); }
 // ─── 1. Scoring-targets + drempel ─────────────────────────
 group('1. resolveTargetWordCount + resolveCompositeThreshold');
 assert('landing-page target = 650 (was 1550 via registry-midpoint)', resolveTargetWordCount('landing-page') === 650);
-assert('product-page target = 650', resolveTargetWordCount('product-page') === 650);
+// W1 (page-type-schemas): eigen contracten herijken de verwachte omvang —
+// product 750 (3-6 features + problem/solution/faq), faq 800, microsite 700.
+assert('product-page target = 750 (W1-herijking)', resolveTargetWordCount('product-page') === 750);
+assert('faq-page target = 800 (W1-herijking)', resolveTargetWordCount('faq-page') === 800);
 assert('microsite target = 700', resolveTargetWordCount('microsite') === 700);
 assert('blog-post target onaangetast (≠ structured-variant-map)', resolveTargetWordCount('blog-post') !== 650 && resolveTargetWordCount('blog-post') > 0);
 assert('landing-page drempel = 70 (mid-form)', resolveCompositeThreshold('landing-page') === 70);
