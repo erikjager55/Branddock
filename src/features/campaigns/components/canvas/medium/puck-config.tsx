@@ -391,7 +391,15 @@ export type SpikePuckProps = {
  */
 export function buildSpikePuckConfig(
   ctx: CanvasContextStack | null,
+  opts?: {
+    /** W4-fix: AnchorNav sticky (default true = gepubliceerde pagina). In de
+     *  ingebedde editor-/variant-preview op false zetten — daar pint top:0 aan
+     *  de panel-scrollcontainer onder de app-toolbar en oogt de nav als een
+     *  zwevende strook. Niet-sticky = de nav scrollt gewoon mee in de preview. */
+    stickyNav?: boolean;
+  },
 ): Config<SpikePuckProps> {
+  const stickyNav = opts?.stickyNav ?? true;
   const tokens: BrandTokens = ctx?.brandTokens ?? extractBrandTokensFromContext(ctx?.brand);
   const personas = ctx?.personas ?? [];
   const personaOptions = [
@@ -414,7 +422,7 @@ export function buildSpikePuckConfig(
       StatsBlock: statsBlockComponent(tokens),
       BrandNav: brandNavComponent(tokens, ctx?.brandNavLogoUrl ?? null),
       SpecTable: specTableComponent(tokens),
-      AnchorNav: anchorNavComponent(tokens, ctx?.brandNavLogoUrl ?? null),
+      AnchorNav: anchorNavComponent(tokens, ctx?.brandNavLogoUrl ?? null, stickyNav),
       StoryChapter: storyChapterComponent(tokens),
       HighlightCards: highlightCardsComponent(tokens),
     },
@@ -2482,7 +2490,7 @@ function brandNavComponent(tokens: BrandTokens, logoUrl: string | null = null) {
  * TOP_NAVIGATION-sample wint, anders brand-tokens); de interactie leeft in
  * AnchorNavClient ('use client') zodat deze config server-safe blijft.
  */
-function anchorNavComponent(tokens: BrandTokens, logoUrl: string | null = null) {
+function anchorNavComponent(tokens: BrandTokens, logoUrl: string | null = null, sticky: boolean = true) {
   const ds = tokens.designSystem;
   const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
   const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
@@ -2520,6 +2528,7 @@ function anchorNavComponent(tokens: BrandTokens, logoUrl: string | null = null) 
       textOverflow: 'ellipsis',
     },
     logoUrl,
+    sticky,
   };
   return {
     fields: {

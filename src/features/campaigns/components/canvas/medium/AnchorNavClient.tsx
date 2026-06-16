@@ -38,6 +38,9 @@ export interface AnchorNavStyles {
   cta: React.CSSProperties;
   /** W4-fix — URL van het merklogo voor het brand-slot; leeg → merknaam-tekst. */
   logoUrl?: string | null;
+  /** W4-fix — sticky op de gepubliceerde pagina; false in de ingebedde preview
+   *  (daar pint top:0 aan de panel-scrollcontainer → zwevende strook). */
+  sticky?: boolean;
 }
 
 const MAX_ANCHORS = 5;
@@ -92,6 +95,8 @@ export function AnchorNavClient({
   }, [JSON.stringify(shownLinks)]);
 
   useEffect(() => {
+    // Hide-on-scroll-down geldt alleen voor de sticky (gepubliceerde) nav.
+    if (styles.sticky === false) return;
     let lastY = window.scrollY;
     const onScroll = () => {
       const isMobile = window.matchMedia('(max-width: 767px)').matches;
@@ -107,7 +112,7 @@ export function AnchorNavClient({
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [styles.sticky]);
 
   const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (!href.startsWith('#')) return;
@@ -121,12 +126,15 @@ export function AnchorNavClient({
     window.history.replaceState(null, '', href);
   };
 
+  const isSticky = styles.sticky !== false;
   return (
     <nav
       aria-label="Sectienavigatie"
       style={{
-        position: 'sticky',
-        top: 0,
+        // W4-fix: alleen sticky op de gepubliceerde pagina; in de ingebedde
+        // preview relatief (anders pint top:0 aan de panel-scroll → strook).
+        position: isSticky ? 'sticky' : 'relative',
+        top: isSticky ? 0 : undefined,
         zIndex: 40,
         display: 'flex',
         alignItems: 'center',
@@ -138,7 +146,7 @@ export function AnchorNavClient({
         fontFamily: styles.fontFamily,
         fontSize: styles.fontSize,
         color: styles.color,
-        transform: hidden ? 'translateY(-100%)' : 'translateY(0)',
+        transform: isSticky && hidden ? 'translateY(-100%)' : 'translateY(0)',
         transition: 'transform 200ms ease',
       }}
     >

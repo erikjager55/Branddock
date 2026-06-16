@@ -1154,7 +1154,8 @@ function VariantPuckPreview({
   maxHeight?: number;
   scroll?: boolean;
 }) {
-  const config = useMemo(() => buildSpikePuckConfig(contextStack), [contextStack]);
+  // Step 2 variant-preview is geschaald/ingebed → niet-sticky nav.
+  const config = useMemo(() => buildSpikePuckConfig(contextStack, { stickyNav: false }), [contextStack]);
   const puckData = useMemo(
     () => variantToPuckDataFromStructured(variant, contextStack),
     [variant, contextStack],

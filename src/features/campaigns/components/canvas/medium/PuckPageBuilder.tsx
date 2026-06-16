@@ -66,7 +66,9 @@ export function PuckPageBuilder({
   const { data: isDeveloper } = useDeveloperAccess();
   const hydratedPuckData = (contextStack?.puckData ?? null) as SpikeData | null;
 
-  const config = useMemo(() => buildSpikePuckConfig(contextStack), [contextStack]);
+  // Ingebedde Step 3-preview → niet-sticky nav (sticky pint hier aan de panel-
+  // scrollcontainer onder de toolbar → zwevende strook). Live /p/[slug] = sticky.
+  const config = useMemo(() => buildSpikePuckConfig(contextStack, { stickyNav: false }), [contextStack]);
 
   // Laadt brand-fonts (Oranienbaum / Cormorant Garamond / Poppins / etc.)
   // dynamisch via Google Fonts zodat Puck-render de juiste typography toont

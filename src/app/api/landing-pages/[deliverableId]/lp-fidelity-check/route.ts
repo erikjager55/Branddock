@@ -3,10 +3,19 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
-import { judgeLpFidelity } from "@/lib/landing-pages/lp-fidelity-judge";
+import { judgeLpFidelity, type LpFidelityResult } from "@/lib/landing-pages/lp-fidelity-judge";
+import { judgeVisualBrandFit } from "@/lib/landing-pages/visual-brand-fit-judge";
 import { capturePuckTreeScreenshot } from "@/lib/landing-pages/lp-screenshotter";
 import { fetchMediaAsBuffer } from "@/lib/storage/fetch-media-buffer";
 import type { Data } from "@puckeditor/core";
+
+/** Verdict-bucket uit een 0-100 score — zelfde grenzen als de side-by-side judge. */
+function verdictForScore(score: number): LpFidelityResult["verdict"] {
+  if (score >= 85) return "excellent";
+  if (score >= 70) return "good";
+  if (score >= 50) return "fair";
+  return "poor";
+}
 
 /**
  * POST /api/landing-pages/[deliverableId]/lp-fidelity-check
@@ -73,41 +82,23 @@ export async function POST(
     );
   }
 
-  // Load bron hero-screenshot URL uit styleguide.visualLanguage
+  // Load bron-hero-screenshot URL + fallback-velden (designPhilosophy) uit de
+  // styleguide. De bron-hero is de side-by-side referentie; designPhilosophy
+  // voedt de tekstuele fallback-judge wanneer die referentie ontbreekt.
   const styleguide = await prisma.brandStyleguide.findUnique({
     where: { workspaceId },
-    select: { visualLanguage: true },
+    select: {
+      visualLanguage: true,
+      designPhilosophy: true,
+      colors: { where: { category: "PRIMARY" }, orderBy: { sortOrder: "asc" }, select: { hex: true }, take: 3 },
+    },
   });
   const heroScreenshotUrl = (() => {
     const vl = styleguide?.visualLanguage as { heroScreenshotUrl?: string } | null;
     return vl?.heroScreenshotUrl ?? null;
   })();
-  if (!heroScreenshotUrl) {
-    return NextResponse.json(
-      {
-        error:
-          "Geen bron-hero-screenshot beschikbaar — voer brandstyle-analyse opnieuw uit (vereist BRANDSTYLE_VISUAL_AI=1)",
-      },
-      { status: 400 },
-    );
-  }
 
-  // Fetch bron-screenshot als buffer. heroScreenshotUrl is doorgaans een
-  // lokaal storage-pad ("/uploads/media/…") — server-side fetch() kan dat
-  // niet resolven, dus fetchMediaAsBuffer leest relatieve paden van disk.
-  let sourceHeroBuffer: Buffer;
-  try {
-    sourceHeroBuffer = await fetchMediaAsBuffer(heroScreenshotUrl, "bron-screenshot");
-  } catch (err) {
-    return NextResponse.json(
-      {
-        error: `Kon bron-screenshot niet ophalen: ${err instanceof Error ? err.message : String(err)}`,
-      },
-      { status: 502 },
-    );
-  }
-
-  // Render LP-screenshot
+  // Render LP-screenshot (nodig voor beide paden).
   const ctx = await assembleCanvasContext(deliverable.id, workspaceId);
   const lpScreenshot = await capturePuckTreeScreenshot(puckData, ctx);
   if (!lpScreenshot) {
@@ -117,17 +108,76 @@ export async function POST(
     );
   }
 
-  // Run judge
-  const result = await judgeLpFidelity({
-    lpScreenshot,
-    sourceHeroScreenshot: sourceHeroBuffer,
-    brandName: ctx.brand.brandName,
-  });
-  if (!result) {
-    return NextResponse.json(
-      { error: "Fidelity-judge faalde (zie server logs)" },
-      { status: 500 },
-    );
+  // Probeer de bron-hero-screenshot te laden. heroScreenshotUrl is doorgaans een
+  // lokaal storage-pad ("/uploads/media/…"); fetchMediaAsBuffer leest relatieve
+  // paden van disk. Ontbreekt de URL OF is het bestand weg (orphaned scrape-asset
+  // → ENOENT), dan vallen we terug op de tekstuele design-philosophy-judge i.p.v.
+  // een harde fout — de "Brand-fit check"-knop levert zo altijd een oordeel.
+  let sourceHeroBuffer: Buffer | null = null;
+  if (heroScreenshotUrl) {
+    try {
+      sourceHeroBuffer = await fetchMediaAsBuffer(heroScreenshotUrl, "bron-screenshot");
+    } catch (err) {
+      console.warn(
+        `[lp-fidelity-check] bron-screenshot niet beschikbaar (${err instanceof Error ? err.message : String(err)}) — fallback naar design-philosophy-judge`,
+      );
+    }
+  }
+
+  let result: LpFidelityResult;
+  if (sourceHeroBuffer) {
+    // Pad 1 — side-by-side vergelijking met de bron-hero.
+    const sideBySide = await judgeLpFidelity({
+      lpScreenshot,
+      sourceHeroScreenshot: sourceHeroBuffer,
+      brandName: ctx.brand.brandName,
+    });
+    if (!sideBySide) {
+      return NextResponse.json(
+        { error: "Fidelity-judge faalde (zie server logs)" },
+        { status: 500 },
+      );
+    }
+    result = sideBySide;
+  } else {
+    // Pad 2 — fallback: tekstuele design-philosophy-judge (geen bron-image).
+    if (!styleguide?.designPhilosophy) {
+      return NextResponse.json(
+        {
+          error:
+            "Geen bron-hero-screenshot én geen design-philosophy beschikbaar — voer de brandstyle-analyse opnieuw uit om de brand-fit-check te kunnen draaien.",
+        },
+        { status: 400 },
+      );
+    }
+    const fit = await judgeVisualBrandFit({
+      screenshotBuffer: lpScreenshot,
+      designPhilosophy: styleguide.designPhilosophy,
+      brandName: ctx.brand.brandName,
+      brandColors: styleguide.colors.map((c) => c.hex),
+      brandImageryStyle: ctx.brand.brandImageryStyle ?? null,
+    });
+    if (fit.status !== "scored" || typeof fit.score !== "number") {
+      return NextResponse.json(
+        { error: `Brand-fit-judge faalde (status: ${fit.status})` },
+        { status: 500 },
+      );
+    }
+    // Map naar het LpFidelityResult-shape dat de UI verwacht (score/verdict/
+    // reasoning/mismatches). Dimensies zijn niet beschikbaar in de tekstuele
+    // judge → de composite-score op alle vier zodat de UI niet leeg toont.
+    result = {
+      score: fit.score,
+      dimensions: {
+        colorDiscipline: fit.score,
+        typographyFeel: fit.score,
+        layoutDensity: fit.score,
+        overallVibe: fit.score,
+      },
+      mismatches: [],
+      reasoning: `${fit.reasoning ?? ""} (Beoordeeld op merk-DNA — geen bron-screenshot beschikbaar voor een side-by-side vergelijking.)`.trim(),
+      verdict: verdictForScore(fit.score),
+    };
   }
 
   // Persist resultaat in deliverable.settings voor later inspecteren / UI
