@@ -992,6 +992,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 300, maxWords: 800, requiredSections: ['headline', 'subheadline', 'dateline-lead', 'body', 'boilerplate', 'media-contact'] },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: PR_HR_DEFAULTS.exportFormats,
+    hidden: true,
   },
   {
     id: "media-pitch",
@@ -1007,6 +1008,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 100, maxWords: 300, requiredSections: ['subject', 'hook', 'pitch', 'ask'] },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: ['txt'],
+    hidden: true,
   },
   {
     id: "internal-comms",
@@ -1021,6 +1023,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 100, maxWords: 900 },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: PR_HR_DEFAULTS.exportFormats,
+    hidden: true,
   },
   {
     id: "career-page",
@@ -1036,6 +1039,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 300, maxWords: 900, requiredSections: ['hero', 'why-work-here', 'culture', 'benefits', 'application-process', 'cta'] },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'html'],
+    hidden: true,
   },
   {
     id: "job-ad-copy",
@@ -1050,6 +1054,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 200, maxWords: 800, requiredSections: ['title', 'about-role', 'responsibilities', 'requirements', 'benefits'] },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: PR_HR_DEFAULTS.exportFormats,
+    hidden: true,
   },
   {
     id: "employee-story",
@@ -1065,6 +1070,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 300, maxWords: 650 },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'html'],
+    hidden: true,
   },
   {
     id: "employer-brand-video",
@@ -1095,6 +1101,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 1000, maxWords: 2000, requiredSections: ['executive-summary', 'impact-metrics', 'stakeholder-stories', 'goals-commitments'] },
     qualityCriteria: PR_HR_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'pdf'],
+    hidden: true,
   },
 ];
 
@@ -1116,7 +1123,10 @@ export const DELIVERABLE_CATEGORIES = [
   // 2026-06-16 — "Sales Enablement" verwijderd uit de picker per user; de 4
   // items (sales-deck / one-pager / proposal-template / product-description)
   // staan hidden:true. Re-enable = hidden→false + deze regel terugzetten.
-  "PR, HR & Communications",
+  // 2026-06-16 — "PR, HR & Communications" verwijderd uit de picker per user;
+  // de 8 items (press-release / media-pitch / internal-comms / career-page /
+  // job-ad-copy / employee-story / employer-brand-video / impact-report) staan
+  // hidden:true. Re-enable = hidden→false + deze regel terugzetten.
 ] as const;
 
 /** All valid deliverable type IDs — used to constrain AI output */
