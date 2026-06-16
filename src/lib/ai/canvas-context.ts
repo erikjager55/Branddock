@@ -224,6 +224,12 @@ export interface CanvasContextStack {
    */
   brandImages?: BrandImage[];
   /**
+   * W4-fix — URL van het merklogo voor het brand-slot van de AnchorNav/BrandNav
+   * (LOCKUP/PRIMARY/WORDMARK-voorkeur). Null wanneer de workspace geen logo heeft
+   * → de nav valt terug op de merknaam als tekst.
+   */
+  brandNavLogoUrl?: string | null;
+  /**
    * Brand-meta voor V2 lazy-inference gates (geen render-impact). Bevat
    * flags die onderscheid maken tussen schema-default sentinels en
    * expliciet inferred / user-set waardes.
@@ -602,6 +608,8 @@ export async function assembleCanvasContext(
       workspace: { select: { adobeFontsKitId: true } },
       // P2 — brand-eigen beelden voor de beeld-producer.
       brandImages: true,
+      // W4-fix (logo in de nav): logo-assets voor de AnchorNav/BrandNav-brandslot.
+      logos: { select: { variant: true, fileUrl: true, sortOrder: true } },
       components: {
         select: {
           type: true, label: true, extractedStyles: true, confidence: true,
@@ -616,6 +624,23 @@ export async function assembleCanvasContext(
   // gegenereerde beelden sturen zolang de imagery niet gereviewd is. Bij
   // gate-dicht vallen de photography-tokens op DEFAULT terug; prompt-builders
   // gebruiken dan hun archetype-fallback (pickHeroImagePromptFragment).
+  // W4-fix — nav-logo: kies een horizontaal-vriendelijke variant voor het
+  // brand-slot van de AnchorNav/BrandNav (LOCKUP/PRIMARY/WORDMARK lezen breed;
+  // ICON als laatste). Leeg → de nav valt terug op de merknaam als tekst.
+  const brandNavLogoUrl = (() => {
+    const logos = styleguide?.logos ?? [];
+    if (logos.length === 0) return null;
+    const pref = ['LOCKUP', 'PRIMARY', 'WORDMARK', 'DARK', 'ICON', 'LIGHT'];
+    for (const variant of pref) {
+      const pick = logos
+        .filter((l) => l.variant === variant && typeof l.fileUrl === 'string' && l.fileUrl.length > 0)
+        .sort((a, b) => a.sortOrder - b.sortOrder)[0];
+      if (pick) return pick.fileUrl;
+    }
+    const any = [...logos].sort((a, b) => a.sortOrder - b.sortOrder)[0];
+    return any?.fileUrl ?? null;
+  })();
+
   const imageryGateOpen = Boolean(styleguide?.published && styleguide?.imagerySavedForAi);
   const gatedStyleguide = styleguide && !imageryGateOpen
     ? { ...styleguide, photographyStyle: null }
@@ -630,6 +655,7 @@ export async function assembleCanvasContext(
     deliverableTypeId: deliverable.contentType ?? null,
     personas, brief, products, contentTypeInputs, visualBrief, puckData, brandTokens, brandProvenance,
     brandImages: parseBrandImages(styleguide?.brandImages),
+    brandNavLogoUrl,
     brandStyleguideMeta: {
       layoutStyleInferred: styleguide?.layoutStyleInferred ?? false,
     },

@@ -247,9 +247,10 @@ assert(
 group("C. buildFaqPageTemplateFromStructured");
 const faqTree = buildFaqPageTemplateFromStructured(faqFixture, null);
 assert(
-  // W3: ≥2 categorieën → jump-nav prepended; W4: sticky AnchorNav met scroll-spy.
-  "sectie-volgorde nav → hero → popular → 2 categorieën → 2 CTA's → footer",
-  sectionTypes(faqTree).join(",") === "AnchorNav,BrandHero,FAQ,FAQ,FAQ,BrandCTA,BrandCTA,Footer",
+  // W3: ≥2 categorieën → jump-nav prepended; W4: sticky AnchorNav; W3-fix:
+  // escape-hatch + closingCta samengevoegd tot ÉÉN afsluitende BrandCTA.
+  "sectie-volgorde nav → hero → popular → 2 categorieën → 1 CTA → footer",
+  sectionTypes(faqTree).join(",") === "AnchorNav,BrandHero,FAQ,FAQ,FAQ,BrandCTA,Footer",
   sectionTypes(faqTree).join(","),
 );
 const faqHero = sectionsOf(faqTree, "BrandHero")[0];
@@ -263,12 +264,12 @@ assert(
 assert("categorie-label wordt FAQ-heading", faqBlocks[1].props.heading === "Bestellen & betalen" && faqBlocks[2].props.heading === "Levering & retour");
 const faqCtas = sectionsOf(faqTree, "BrandCTA");
 assert(
-  "contactEscape: heading + body (riskReducer) + ctaLabel",
-  faqCtas[0].props.heading === faqFixture.contactEscape.heading
+  "één afsluitende CTA: escape-hatch heading + body, closingCta-knoplabel",
+  faqCtas.length === 1
+    && faqCtas[0].props.heading === faqFixture.contactEscape.heading
     && faqCtas[0].props.riskReducer === faqFixture.contactEscape.body
-    && faqCtas[0].props.label === faqFixture.contactEscape.ctaLabel,
+    && faqCtas[0].props.label === faqFixture.closingCta.ctaLabel,
 );
-assert("closingCta als laatste CTA", faqCtas[1].props.heading === faqFixture.closingCta.heading);
 assert("footer brandName-fallback bij null ctx", sectionsOf(faqTree, "Footer")[0].props.companyName === "Brand Name");
 assert(
   "band-ritmiek afwisselend op FAQ-blokken",
@@ -333,24 +334,26 @@ assert("footer companyName uit ctx", sectionsOf(productTreeImg, "Footer")[0].pro
 group("E. buildMicrositeTemplateFromStructured");
 const microTree = buildMicrositeTemplateFromStructured(micrositeFixture, null);
 const microTypes = sectionTypes(microTree);
-// W4: BrandNav → sticky AnchorNav; HighlightCards na de hero (≥2 hoofdstukken);
-// hoofdstukken renderen als StoryChapter i.p.v. markdown-RichText.
+// W4: BrandNav → sticky AnchorNav; hoofdstukken als StoryChapter. W4-fix:
+// HighlightCards uit de default-build (dubbele sectie-opsomming met de nav);
+// nav-links = chapters-only, join wordt de korte CTA-knop.
 assert("start met AnchorNav (sticky ankernavigatie)", microTypes[0] === "AnchorNav");
 assert(
-  "sectie-volgorde nav → hero → highlights → story (chapter+stat+quote) → impact → join → footer",
-  microTypes.join(",") === "AnchorNav,BrandHero,HighlightCards,StoryChapter,StatsBlock,Testimonial,StoryChapter,BrandCTA,Footer",
+  "sectie-volgorde nav → hero → story (chapter+stat+quote) → impact → join → footer",
+  microTypes.join(",") === "AnchorNav,BrandHero,StoryChapter,StatsBlock,Testimonial,StoryChapter,BrandCTA,Footer",
   microTypes.join(","),
 );
 const nav = sectionsOf(microTree, "AnchorNav")[0];
 const navLinks = nav.props.links as Array<{ label: string; href: string }>;
 assert(
-  "nav-links = hoofdstukken + join met #slug-hrefs",
-  navLinks.length === 3
-    && navLinks[0].href === "#verhaal" && navLinks[1].href === "#impact" && navLinks[2].href === "#meedoen",
+  "nav-links = alléén hoofdstukken (join is de CTA, niet een link)",
+  navLinks.length === 2
+    && navLinks[0].href === "#verhaal" && navLinks[1].href === "#impact",
   JSON.stringify(navLinks),
 );
 assert("nav genummerd (story-arc expliciet)", nav.props.numbered === true);
-assert("nav-CTA scrollt naar join-anker", nav.props.ctaHref === "#meedoen");
+assert("nav-CTA = korte join-label, scrollt naar join-anker", nav.props.ctaLabel === micrositeFixture.join.navLabel && nav.props.ctaHref === "#meedoen");
+assert("geen HighlightCards meer in default-build", !microTypes.includes("HighlightCards"));
 assert("hero-CTA scrollt naar join-anker", sectionsOf(microTree, "BrandHero")[0].props.ctaHref === "#meedoen");
 const microChapters = sectionsOf(microTree, "StoryChapter");
 assert("één StoryChapter per hoofdstuk (2 hoofdstukken)", microChapters.length === 2);

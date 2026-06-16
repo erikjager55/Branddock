@@ -194,6 +194,8 @@ const faqNavLinks = faqNav.props.links as Array<{ label: string; href: string }>
 assert("nav linkt naar de 2 categorie-ankers", faqNavLinks.length === 2 && faqNavLinks[0].href === "#bestellen-betalen" && faqNavLinks[1].href === "#levering-retour");
 const categoryFaqs = sectionsOf(faqTree, "FAQ").filter((s) => s.props.anchorId);
 assert("categorie-FAQ-secties dragen de matchende anchorId", categoryFaqs.length === 2 && categoryFaqs[0].props.anchorId === "bestellen-betalen" && categoryFaqs[1].props.anchorId === "levering-retour");
+// W3-fix: escape-hatch + closingCta samengevoegd tot één afsluitende CTA.
+assert("precies één afsluitende BrandCTA (geen dubbel paneel)", sectionsOf(faqTree, "BrandCTA").length === 1);
 
 const oneCatFaq = buildFaqPageTemplateFromStructured(
   { ...faqVariant, categories: [faqVariant.categories[0]] },

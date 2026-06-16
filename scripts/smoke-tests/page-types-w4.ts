@@ -120,30 +120,24 @@ assert(
   }).success,
 );
 
-// ─── B. Microsite-tree: AnchorNav + HighlightCards + StoryChapter ──
+// ─── B. Microsite-tree: AnchorNav + StoryChapter ──
 
 group("B. buildMicrositeTemplateFromStructured (W4-skelet)");
 const tree = buildMicrositeTemplateFromStructured(micrositeFixture, null);
 const types = sectionTypes(tree);
-assert("AnchorNav eerst, HighlightCards na hero", types[0] === "AnchorNav" && types[1] === "BrandHero" && types[2] === "HighlightCards", types.join(","));
+// W4-fix: HighlightCards verwijderd uit de default-build (gaf dubbele sectie-
+// opsomming met de AnchorNav); hero wordt direct gevolgd door het eerste hoofdstuk.
+assert("AnchorNav eerst, hero, dan direct het eerste StoryChapter", types[0] === "AnchorNav" && types[1] === "BrandHero" && types[2] === "StoryChapter", types.join(","));
+assert("geen HighlightCards in de default-build (anti-dubbel)", !types.includes("HighlightCards"));
 const nav = sectionsOf(tree, "AnchorNav")[0];
-assert("nav genummerd + ≤5 links + CTA → #meedoen", nav.props.numbered === true && (nav.props.links as unknown[]).length <= 5 && nav.props.ctaHref === "#meedoen");
-const highlights = sectionsOf(tree, "HighlightCards")[0];
-const cards = highlights.props.items as Array<{ title: string; description: string; href: string }>;
-assert("highlight-cards = hoofdstukken + join", cards.length === 3 && cards[0].href === "#verhaal" && cards[1].href === "#impact" && cards[2].href === "#meedoen", JSON.stringify(cards.map((c) => c.href)));
-assert("join-card draagt de deadline (urgentie)", cards[2].description === "Aanmelden kan tot 1 juli");
-assert("hoofdstuk-card beschrijving uit intro", cards[0].description === "Waarom we deze campagne zijn gestart.");
+const navLinks = nav.props.links as Array<{ href: string }>;
+// W4-fix: nav-links = alléén hoofdstukken (story+impact), join is de korte CTA.
+assert("nav genummerd + links = chapters-only + CTA → #meedoen", nav.props.numbered === true && navLinks.length === 2 && navLinks.every((l) => l.href !== "#meedoen") && nav.props.ctaHref === "#meedoen");
+assert("nav-CTA = korte join-label (geen volledige primaryCta-zin)", nav.props.ctaLabel === micrositeFixture.join.navLabel);
 const chapters = sectionsOf(tree, "StoryChapter");
 assert("StoryChapter per hoofdstuk met anker", chapters.length === 2 && chapters[0].props.anchorId === "verhaal" && chapters[1].props.anchorId === "impact");
 const storyBlocks = chapters[0].props.blocks as Array<{ body: string; imageUrl: string }>;
 assert("blok-eigen imageUrl blijft staan (geen ctx)", storyBlocks[2].imageUrl === "https://example.com/own-block.jpg");
-
-// HighlightCards weggelaten bij 1 hoofdstuk (pagina kort genoeg)
-const singleChapter = buildMicrositeTemplateFromStructured(
-  { ...micrositeFixture, impact: null },
-  null,
-);
-assert("1 hoofdstuk → geen HighlightCards", !sectionTypes(singleChapter).includes("HighlightCards"));
 
 // ─── C. Beeld-vulling (hero + block-slots) ─────────────
 

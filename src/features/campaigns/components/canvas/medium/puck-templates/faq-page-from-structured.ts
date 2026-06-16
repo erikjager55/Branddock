@@ -80,19 +80,17 @@ export function buildFaqPageTemplateFromStructured(
     ...variant.categories.map((category, i) =>
       instance("FAQ", { heading: category.label, items: category.items, anchorId: categorySlugs[i] }),
     ),
+    // Eén afsluitende CTA (W3-fix): voorheen rende de escape-hatch én de
+    // closingCta als twee bijna identieke BrandCTA-panelen onder elkaar. We
+    // houden de escape-hatch ("Staat je vraag er niet bij?") — de FAQ-idiomatische
+    // afsluiter mét body — en combineren 'm met de sterkere closing-CTA-knop
+    // wanneer die een eigen actie biedt. closingCta.heading vervalt in de render.
     instance("BrandCTA", {
-      label: variant.contactEscape.ctaLabel,
+      label: variant.closingCta.ctaLabel || variant.contactEscape.ctaLabel,
       href: ctaHref,
       personaId,
       riskReducer: variant.contactEscape.body,
       heading: variant.contactEscape.heading,
-    }),
-    instance("BrandCTA", {
-      label: variant.closingCta.ctaLabel,
-      href: ctaHref,
-      personaId,
-      riskReducer: "",
-      heading: variant.closingCta.heading,
     }),
     footerInstance(ctx, taglineFromSubline(variant.hero.subline)),
   ];

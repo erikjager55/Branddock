@@ -36,6 +36,8 @@ export interface AnchorNavStyles {
   activeColor: string;
   headingFontFamily: string;
   cta: React.CSSProperties;
+  /** W4-fix — URL van het merklogo voor het brand-slot; leeg → merknaam-tekst. */
+  logoUrl?: string | null;
 }
 
 const MAX_ANCHORS = 5;
@@ -140,14 +142,26 @@ export function AnchorNavClient({
         transition: 'transform 200ms ease',
       }}
     >
-      <span style={{ fontFamily: styles.headingFontFamily, fontWeight: 700, fontSize: 18 }}>
-        {brandName}
-      </span>
-      <ul style={{ display: 'flex', gap: 24, listStyle: 'none', margin: 0, padding: 0, flexWrap: 'wrap' }}>
+      {styles.logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={styles.logoUrl}
+          alt={brandName}
+          style={{ height: 28, width: 'auto', maxWidth: 180, objectFit: 'contain', flexShrink: 0, display: 'block' }}
+        />
+      ) : (
+        <span style={{ fontFamily: styles.headingFontFamily, fontWeight: 700, fontSize: 18, flexShrink: 0 }}>
+          {brandName}
+        </span>
+      )}
+      {/* Eén regel: nowrap + horizontaal schuifbaar bij overflow i.p.v. naar een
+          tweede regel wrappen (W4-fix — de microsite-nav wrapte met 4 lange
+          labels + lange CTA). minWidth:0 laat de lijst krimpen binnen de flex. */}
+      <ul style={{ display: 'flex', gap: 24, listStyle: 'none', margin: 0, padding: 0, flexWrap: 'nowrap', overflowX: 'auto', minWidth: 0, scrollbarWidth: 'none' }}>
         {shownLinks.map((link, i) => {
           const isActive = link.href === `#${activeId}`;
           return (
-            <li key={i}>
+            <li key={i} style={{ flexShrink: 0 }}>
               <a
                 href={link.href}
                 onClick={(e) => handleAnchorClick(e, link.href)}
@@ -161,6 +175,7 @@ export function AnchorNavClient({
                   display: 'inline-flex',
                   alignItems: 'baseline',
                   gap: 6,
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {numbered ? (

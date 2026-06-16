@@ -48,17 +48,6 @@ function buildAnchorSlugs(labels: string[]): string[] {
   });
 }
 
-/** Eerste zin van een tekst, op woordgrens afgekapt op ~90 tekens (card-copy). */
-function cardDescription(text: string | null | undefined): string {
-  const trimmed = (text ?? "").trim();
-  if (!trimmed) return "";
-  const firstSentence = trimmed.split(/(?<=[.!?])\s+/)[0] ?? trimmed;
-  if (firstSentence.length <= 90) return firstSentence;
-  const cut = firstSentence.slice(0, 90);
-  const lastSpace = cut.lastIndexOf(" ");
-  return (lastSpace > 40 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
-}
-
 /**
  * W4 — vul lege block-beeld-slots met brand-beelden (immutable). `pool` wordt
  * gemuteerd (shift) zodat opeenvolgende hoofdstukken verschillende beelden
@@ -142,34 +131,18 @@ export function buildMicrositeTemplateFromStructured(
     ?? "";
   const chapters = rawChapters.map((c) => fillChapterImages(c, imagePool));
 
-  const navLinks = [
-    ...chapters.map((c, i) => ({ label: c.navLabel, href: `#${slugs[i]}` })),
-    { label: variant.join.navLabel, href: `#${joinSlug}` },
-  ];
-
-  // W4 — HighlightCards (TL;DR + jump-links) alleen bij ≥2 hoofdstukken.
-  const highlightCards = chapters.length >= 2
-    ? instance("HighlightCards", {
-        items: [
-          ...chapters.map((c, i) => ({
-            title: c.heading,
-            description: cardDescription(c.intro ?? c.blocks[0]?.body),
-            href: `#${slugs[i]}`,
-          })),
-          {
-            title: variant.join.heading,
-            description: variant.join.deadline ?? cardDescription(variant.join.body),
-            href: `#${joinSlug}`,
-          },
-        ],
-      })
-    : null;
+  // W4-fix: nav-links = alléén de hoofdstukken; de join wordt de korte CTA-knop
+  // (href #join). Voorheen stond join óók als link → dubbel met de CTA, en de
+  // CTA droeg de volledige heroManifest-zin → menu wrapte naar 2 regels.
+  const navLinks = chapters.map((c, i) => ({ label: c.navLabel, href: `#${slugs[i]}` }));
+  // Korte nav-CTA: het join-navLabel (≤24 tekens, bv "Doe mee"/"Kennismaken"),
+  // niet de volledige primaryCta-zin. De hero + join-sectie dragen de volle CTA.
 
   const sections: PuckInstance[] = [
     instance("AnchorNav", {
       brandName,
       links: navLinks,
-      ctaLabel: variant.heroManifest.primaryCta,
+      ctaLabel: variant.join.navLabel,
       ctaHref: `#${joinSlug}`,
       numbered: true,
     }),
@@ -181,7 +154,10 @@ export function buildMicrositeTemplateFromStructured(
       heroVisualUrl,
       eyebrow: "",
     }),
-    ...(highlightCards ? [highlightCards] : []),
+    // W4-fix: HighlightCards verwijderd uit de default-build — de AnchorNav
+    // somt de secties al op, dus de kaarten-rij eronder gaf een dubbele
+    // sectie-opsomming bovenaan ("opsomming staat dubbel"). De component blijft
+    // beschikbaar om handmatig in de Puck-editor toe te voegen.
     ...chapters.flatMap((chapter, i) => chapterSections(chapter, slugs[i], personaId)),
     instance("BrandCTA", {
       label: variant.join.primaryCta,

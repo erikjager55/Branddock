@@ -408,9 +408,9 @@ export function buildSpikePuckConfig(
       RichText: richTextComponent(tokens),
       StickyCtaBar: stickyCtaBarComponent(tokens),
       StatsBlock: statsBlockComponent(tokens),
-      BrandNav: brandNavComponent(tokens),
+      BrandNav: brandNavComponent(tokens, ctx?.brandNavLogoUrl ?? null),
       SpecTable: specTableComponent(tokens),
-      AnchorNav: anchorNavComponent(tokens),
+      AnchorNav: anchorNavComponent(tokens, ctx?.brandNavLogoUrl ?? null),
       StoryChapter: storyChapterComponent(tokens),
       HighlightCards: highlightCardsComponent(tokens),
     },
@@ -2380,7 +2380,7 @@ function footerComponent(tokens: BrandTokens) {
  * Renderer kiest scraped sample wanneer aanwezig en past extractedStyles
  * direct toe; anders een minimale brand-tokens-driven fallback.
  */
-function brandNavComponent(tokens: BrandTokens) {
+function brandNavComponent(tokens: BrandTokens, logoUrl: string | null = null) {
   const ds = tokens.designSystem;
   const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
   const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
@@ -2446,9 +2446,14 @@ function brandNavComponent(tokens: BrandTokens) {
       };
       return (
         <nav style={navStyle}>
-          <span style={{ fontFamily: headingFont, fontWeight: 700, fontSize: 18 }}>
-            {brandName}
-          </span>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={brandName} style={{ height: 28, width: 'auto', maxWidth: 180, objectFit: 'contain', display: 'block' }} />
+          ) : (
+            <span style={{ fontFamily: headingFont, fontWeight: 700, fontSize: 18 }}>
+              {brandName}
+            </span>
+          )}
           <ul style={{ display: 'flex', gap: 24, listStyle: 'none', margin: 0, padding: 0 }}>
             {links.map((l, i) => (
               <li key={i}>
@@ -2473,7 +2478,7 @@ function brandNavComponent(tokens: BrandTokens) {
  * TOP_NAVIGATION-sample wint, anders brand-tokens); de interactie leeft in
  * AnchorNavClient ('use client') zodat deze config server-safe blijft.
  */
-function anchorNavComponent(tokens: BrandTokens) {
+function anchorNavComponent(tokens: BrandTokens, logoUrl: string | null = null) {
   const ds = tokens.designSystem;
   const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
   const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
@@ -2504,7 +2509,13 @@ function anchorNavComponent(tokens: BrandTokens) {
       fontSize: 14,
       fontWeight: tokens.button.fontWeight,
       whiteSpace: 'nowrap',
+      // W4-fix: CTA krimpt nooit en kapt af i.p.v. de nav naar 2 regels te duwen.
+      flexShrink: 0,
+      maxWidth: 260,
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
     },
+    logoUrl,
   };
   return {
     fields: {
@@ -2824,7 +2835,13 @@ function richTextComponent(tokens: BrandTokens) {
   const sectionPaddingX = tokens.sectionRhythm.sectionPaddingX;
   const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
   const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
-  const bodySize = ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 2)] ?? 16;
+  // Body-grootte gelijk aan de role-body die de andere componenten (FeatureGrid,
+  // StoryChapter, FAQ) gebruiken — voorheen pakte RichText sizes[2] (vaak een
+  // stap kleiner), waardoor de RichText-alinea's op product-/microsite-pagina's
+  // kleiner oogden dan de rest ("font kleiner dan normaal", W2/W4-feedback).
+  const bodySize = tokens.typographyByRole.body.fontSize
+    ?? ds.typography.body.sizes[Math.min(ds.typography.body.sizes.length - 1, 2)]
+    ?? 16;
   return {
     fields: {
       content: { type: 'textarea' as const },
