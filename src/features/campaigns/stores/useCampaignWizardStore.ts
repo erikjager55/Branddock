@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { getTimeBinding } from "../lib/goal-types";
 import { getRecommendedCampaignType } from "../lib/campaign-types";
 import { getStepsForMode } from "../lib/wizard-steps";
+import { DELIVERABLE_CATEGORIES } from "../lib/deliverable-types";
 import {
   PIPELINE_PRESETS,
   getDefaultPresetForMode,
@@ -915,6 +916,16 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
       // dead state because isGenerating is excluded from partialize.
       onRehydrateStorage: () => (state) => {
         if (!state) return;
+        // Een persisted activeDeliverableTab kan wijzen naar een categorie die
+        // sindsdien uit de picker is verwijderd (hidden-flag patroon, bv. Email &
+        // Automation / Sales Enablement / PR, HR & Communications). Zonder deze
+        // guard landt de wizard op een orphaned tab waarvan
+        // getDeliverablesByCategory de inmiddels-hidden types alsnog als
+        // selecteerbaar rendert. Reset naar een geldige tab — self-healing voor
+        // elke huidige én toekomstige categorie-verwijdering.
+        if (!(DELIVERABLE_CATEGORIES as readonly string[]).includes(state.activeDeliverableTab)) {
+          state.activeDeliverableTab = DELIVERABLE_CATEGORIES[0];
+        }
         switch (state.strategyPhase) {
           case 'validating_briefing':
             state.strategyPhase = 'idle';
