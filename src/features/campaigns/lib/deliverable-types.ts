@@ -685,6 +685,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: EMAIL_DEFAULTS.constraints,
     qualityCriteria: EMAIL_DEFAULTS.qualityCriteria,
     exportFormats: EMAIL_DEFAULTS.exportFormats,
+    hidden: true,
   },
   {
     id: "welcome-sequence",
@@ -702,6 +703,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 50, maxWords: 1300 },
     qualityCriteria: EMAIL_DEFAULTS.qualityCriteria,
     exportFormats: EMAIL_DEFAULTS.exportFormats,
+    hidden: true,
   },
   {
     id: "promotional-email",
@@ -714,6 +716,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: EMAIL_DEFAULTS.constraints,
     qualityCriteria: EMAIL_DEFAULTS.qualityCriteria,
     exportFormats: EMAIL_DEFAULTS.exportFormats,
+    hidden: true,
   },
   {
     id: "nurture-sequence",
@@ -730,6 +733,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 50, maxWords: 1500 },
     qualityCriteria: EMAIL_DEFAULTS.qualityCriteria,
     exportFormats: EMAIL_DEFAULTS.exportFormats,
+    hidden: true,
   },
   {
     id: "re-engagement-email",
@@ -745,6 +749,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 50, maxWords: 300, requiredSections: ['subject', 'preview-text', 'body', 'cta'] },
     qualityCriteria: EMAIL_DEFAULTS.qualityCriteria,
     exportFormats: EMAIL_DEFAULTS.exportFormats,
+    hidden: true,
   },
 
   // ─── Website & Landing Pages (5) ────────────────────────
@@ -924,6 +929,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 500, maxWords: 1200, requiredSections: ['title', 'problem', 'solution', 'proof', 'next-steps'] },
     qualityCriteria: SALES_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'pdf', 'pptx'],
+    hidden: true,
   },
   {
     id: "one-pager",
@@ -936,6 +942,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 200, maxWords: 600, requiredSections: ['headline', 'value-prop', 'differentiators', 'cta'] },
     qualityCriteria: SALES_DEFAULTS.qualityCriteria,
     exportFormats: SALES_DEFAULTS.exportFormats,
+    hidden: true,
   },
   {
     id: "proposal-template",
@@ -951,6 +958,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 1000, maxWords: 1500, requiredSections: ['executive-summary', 'scope', 'approach', 'timeline', 'pricing'] },
     qualityCriteria: SALES_DEFAULTS.qualityCriteria,
     exportFormats: SALES_DEFAULTS.exportFormats,
+    hidden: true,
   },
   {
     id: "product-description",
@@ -965,6 +973,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 50, maxWords: 600 },
     qualityCriteria: SALES_DEFAULTS.qualityCriteria,
     exportFormats: SALES_DEFAULTS.exportFormats,
+    hidden: true,
   },
 
   // ─── PR, HR & Communications (8) ───────────────────────
@@ -1093,14 +1102,20 @@ export const DELIVERABLE_CATEGORIES = [
   "Long-Form Content",
   "Social Media",
   "Advertising & Paid",
-  "Email & Automation",
+  // 2026-06-16 — "Email & Automation" verwijderd uit de picker per user; de 5
+  // items (newsletter / welcome-sequence / promotional-email / nurture-sequence
+  // / re-engagement-email) staan hidden:true. Categorie-string blijft op de
+  // items zelf + in de category-keyed maps zodat re-enable enkel hidden→false +
+  // deze regel terugzetten vereist.
   "Website & Landing Pages",
   // 2026-05-19 — "Video & Audio" verwijderd; alle items in die categorie zijn
   // hidden tot post-launch (zie hidden-flags op explainer-video / promo-video /
   // testimonial-video / webinar-outline / podcast-outline). Categorie-string
   // blijft elders bestaan op de items zelf zodat re-enable enkel hidden→false
   // vereist.
-  "Sales Enablement",
+  // 2026-06-16 — "Sales Enablement" verwijderd uit de picker per user; de 4
+  // items (sales-deck / one-pager / proposal-template / product-description)
+  // staan hidden:true. Re-enable = hidden→false + deze regel terugzetten.
   "PR, HR & Communications",
 ] as const;
 
