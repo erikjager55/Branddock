@@ -61,6 +61,10 @@ export function useCanvasOrchestration(deliverableId: string | null) {
 
     const store = useCanvasStore.getState();
     store.setGlobalStatus('generating');
+    // Markeer dit als de initiële generatie zodat Step 2 de voortgangs-
+    // indicator toont totdat ALLE groups gestreamd zijn, i.p.v. een half-
+    // gevuld variant-grid terwijl groups nog binnenkomen.
+    store.setInitialGenerating(true);
     store.resetFidelityScore();
     store.resetStrictRewrite();
     store.resetAutoIterate();
@@ -169,6 +173,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
       isGeneratingRef.current = false;
       abortRef.current = null;
       const finalStore = useCanvasStore.getState();
+      finalStore.setInitialGenerating(false);
       if (finalStore.globalStatus === 'generating') {
         finalStore.setGlobalStatus('complete');
       }
@@ -183,6 +188,9 @@ export function useCanvasOrchestration(deliverableId: string | null) {
       store.setGenerationStatus(g, 'generating');
     }
     store.setGlobalStatus('generating');
+    // Regeneratie behoudt de bestaande variant-set (overlay-state), dus dit is
+    // expliciet GEEN initiële generatie.
+    store.setInitialGenerating(false);
     isGeneratingRef.current = true;
 
     abortRef.current?.abort();
@@ -251,6 +259,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
       isGeneratingRef.current = false;
       abortRef.current = null;
       const finalStore = useCanvasStore.getState();
+      finalStore.setInitialGenerating(false);
       if (finalStore.globalStatus === 'generating') {
         finalStore.setGlobalStatus('complete');
       }
@@ -261,7 +270,9 @@ export function useCanvasOrchestration(deliverableId: string | null) {
     abortRef.current?.abort();
     abortRef.current = null;
     isGeneratingRef.current = false;
-    useCanvasStore.getState().setGlobalStatus('idle');
+    const store = useCanvasStore.getState();
+    store.setInitialGenerating(false);
+    store.setGlobalStatus('idle');
   }, []);
 
   const isGenerating = useCanvasStore((s) => s.globalStatus === 'generating');

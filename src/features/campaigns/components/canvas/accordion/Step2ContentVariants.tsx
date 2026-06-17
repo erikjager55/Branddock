@@ -81,6 +81,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
+  const isInitialGenerating = useCanvasStore((s) => s.isInitialGenerating);
   const generationStatus = useCanvasStore((s) => s.generationStatus);
   const imageVariants = useCanvasStore((s) => s.imageVariants);
   const contextStack = useCanvasStore((s) => s.contextStack);
@@ -317,7 +318,13 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   }
 
   // ─── Generating state ──────────────────────────────────────
-  if (isGenerating && !hasVariants) {
+  // Tijdens de INITIËLE generatie blijft de voortgangs-indicator staan tot
+  // alle groups gestreamd zijn — ook nadat de eerste group binnen is (anders
+  // toont het grid een half-gevulde variant, bv. een display-ad met alleen
+  // headlines en nog lege descriptions, wat als een bug oogt). Bij regeneratie
+  // (isInitialGenerating === false) valt het door naar de bestaande varianten
+  // met de "Regenerating…"-overlay.
+  if (isGenerating && (isInitialGenerating || !hasVariants)) {
     // Show SEO progress panel when the 8-step pipeline is running
     if (hasSeoSteps) {
       return (

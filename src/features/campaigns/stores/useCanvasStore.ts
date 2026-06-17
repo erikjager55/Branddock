@@ -110,6 +110,12 @@ interface CanvasStoreState {
   generationStatus: Map<string, GenerationStatus>;
   globalStatus: GenerationStatus;
   globalErrorMessage: string | null;
+  // True tijdens de INITIËLE generatie (groups streamen één voor één binnen
+  // via text_complete). Onderscheidt het van regeneratie, waar een volledige
+  // variant-set al bestaat en we de bestaande varianten met overlay tonen.
+  // Step 2 houdt de voortgangs-indicator zichtbaar zolang dit true is, zodat
+  // er geen half-gevulde varianten getoond worden voordat alles klaar is.
+  isInitialGenerating: boolean;
 
   // ─── Image variants ───────────────────────────────────────
   imageVariants: CanvasImageVariant[];
@@ -400,6 +406,7 @@ interface CanvasStoreState {
   setSelection: (group: string, index: number) => void;
   setGenerationStatus: (group: string, status: GenerationStatus) => void;
   setGlobalStatus: (status: GenerationStatus, errorMessage?: string) => void;
+  setInitialGenerating: (value: boolean) => void;
   setImageVariants: (variants: CanvasImageVariant[]) => void;
 
   // ─── Scene-scoped image setters (video-script types) ──────
@@ -624,6 +631,7 @@ const INITIAL_STATE = {
   generationStatus: new Map<string, GenerationStatus>(),
   globalStatus: 'idle' as GenerationStatus,
   globalErrorMessage: null as string | null,
+  isInitialGenerating: false,
   imageVariants: [],
   sceneImageVariants: { hook: [], body: [], cta: [] },
   sceneHeroImage: { hook: null, body: null, cta: null },
@@ -839,6 +847,8 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
     }),
 
   setGlobalStatus: (status, errorMessage) => set({ globalStatus: status, globalErrorMessage: errorMessage ?? (status === 'error' ? 'An unknown error occurred' : null) }),
+
+  setInitialGenerating: (value) => set({ isInitialGenerating: value }),
 
   setImageVariants: (variants) => set({ imageVariants: variants }),
 
