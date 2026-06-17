@@ -89,7 +89,7 @@ export function PublishGate({
           {blocked ? (
             <div className="flex items-center gap-2">
               <Button variant="primary" size="sm" disabled title={blockedTooltip(data)}>
-                Publiceer
+                Publish
               </Button>
               <Button
                 variant="secondary"
@@ -111,12 +111,12 @@ export function PublishGate({
               {isPublishing ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Publiceren…
+                  Publishing…
                 </>
               ) : noScoreYet ? (
-                'Publiceer zonder score'
+                'Publish without score'
               ) : (
-                'Publiceer'
+                'Publish'
               )}
             </Button>
           )}
@@ -196,7 +196,7 @@ function FindingsBlock({ fidelityScoreId }: { fidelityScoreId: string }) {
     return (
       <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500 inline-flex items-center gap-2">
         <Loader2 className="h-3 w-3 animate-spin" />
-        Findings laden…
+        Loading findings…
       </div>
     );
   }
@@ -252,14 +252,14 @@ function FindingsBlockContent({
         <AlertTriangle className="h-3.5 w-3.5" />
         <span>
           {data.findingsCount} finding{data.findingsCount === 1 ? '' : 's'} — fix
-          deze om de score te verhogen
+          these to raise the score
         </span>
       </button>
 
       {expanded && (
         <div className="px-3 pb-3 pt-1 space-y-2 border-t border-amber-200/70">
           <div className="text-[10px] uppercase tracking-wide text-amber-700/70 font-medium">
-            Top {top.length} van {data.findingsCount}
+            Top {top.length} of {data.findingsCount}
           </div>
           {top.map((f) => (
             <div key={f.id} className="flex gap-2 items-start text-xs">
@@ -290,7 +290,7 @@ function FindingsBlockContent({
                 onClick={handleViewAll}
                 className="text-amber-800 hover:text-amber-900 hover:underline"
               >
-                + {remaining} more — bekijk alles in Brand Alignment → Content Review
+                + {remaining} more — see all in Brand Alignment → Content Review
               </button>
             </div>
           )}
@@ -314,7 +314,7 @@ function ReadinessBadge({ readiness }: { readiness: ContentReadiness }) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs">
         <AlertTriangle className="h-3 w-3" />
-        Nog niet gescoord
+        Not scored yet
       </span>
     );
   }
@@ -323,7 +323,7 @@ function ReadinessBadge({ readiness }: { readiness: ContentReadiness }) {
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-xs">
       <ShieldOff className="h-3 w-3" />
-      Score {score} / drempel {threshold}
+      Score {score} / threshold {threshold}
     </span>
   );
 }
@@ -332,9 +332,9 @@ function blockedTooltip(readiness: ContentReadiness): string {
   if (readiness.latestScore) {
     const score = Math.round(readiness.latestScore.compositeScore);
     const threshold = readiness.latestScore.threshold;
-    return `Fidelity-score ${score} ligt onder de drempel ${threshold}. Override mogelijk met reden.`;
+    return `Fidelity score ${score} is below the threshold ${threshold}. Override possible with a reason.`;
   }
-  return 'Publish geblokkeerd door QA-poort.';
+  return 'Publish blocked by the QA gate.';
 }
 
 function OverrideModal({
@@ -384,23 +384,23 @@ function OverrideModal({
           <ShieldOff className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
           <div>
             <h2 id="override-modal-title" className="text-base font-semibold text-gray-900">
-              Override publish-poort
+              Override publish gate
             </h2>
             <p className="text-sm text-gray-600 mt-1">
               {score !== undefined && threshold !== undefined ? (
                 <>
-                  Fidelity-score is <strong>{Math.round(score)}</strong>, onder de drempel{' '}
+                  Fidelity score is <strong>{Math.round(score)}</strong>, below the threshold{' '}
                   <strong>{threshold}</strong>.
                 </>
               ) : (
-                'De QA-poort blokkeert publish op deze content.'
+                'The QA gate is blocking publish on this content.'
               )}
             </p>
           </div>
         </div>
 
         <label htmlFor="override-reason" className="block text-sm font-medium text-gray-700 mb-1">
-          Waarom publiceer je toch? (verplicht, min. 10 tekens)
+          Why are you publishing anyway? (required, min. 10 characters)
         </label>
         <textarea
           id="override-reason"
@@ -409,23 +409,23 @@ function OverrideModal({
           onChange={(e) => setReason(e.target.value)}
           rows={3}
           maxLength={500}
-          placeholder="bv. 'Klant heeft expliciet goedgekeurd — score-tooling is hier te streng'"
+          placeholder="e.g. 'Client explicitly approved — the scoring tooling is too strict here'"
           className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           disabled={isPending}
         />
         <p className="text-xs text-gray-500 mt-1">
-          Wordt opgeslagen in het audit-trail (LearningEvent + reason-prefix).
+          Stored in the audit trail (LearningEvent + reason prefix).
         </p>
 
         {publishedVia && (
           <p className="text-xs text-gray-500 mt-3">
-            Distributie via: <code className="text-gray-700">{publishedVia}</code>
+            Distribution via: <code className="text-gray-700">{publishedVia}</code>
           </p>
         )}
 
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="secondary" size="sm" onClick={onCancel} disabled={isPending}>
-            Annuleer
+            Cancel
           </Button>
           <Button
             variant="primary"
@@ -439,7 +439,7 @@ function OverrideModal({
                 Override…
               </>
             ) : (
-              'Bevestig override'
+              'Confirm override'
             )}
           </Button>
         </div>

@@ -370,7 +370,7 @@ function AssetTile({
       onClick={onClick}
       disabled={isBroken}
       aria-disabled={isBroken}
-      title={isBroken ? 'Bestand ontbreekt — niet selecteerbaar' : undefined}
+      title={isBroken ? 'File missing — not selectable' : undefined}
       className={`relative rounded-md overflow-hidden border-2 transition-all aspect-square bg-gray-50 ${isBroken ? 'cursor-not-allowed' : ''}`}
       style={{ borderColor: isPicked ? '#0d9488' : '#e5e7eb' }}
     >
@@ -390,7 +390,7 @@ function AssetTile({
           if (parent && !parent.querySelector('.lp-img-fallback')) {
             const fb = document.createElement('div');
             fb.className = 'lp-img-fallback flex items-center justify-center w-full h-full bg-gray-100 text-gray-400 text-xs px-2 text-center';
-            fb.textContent = 'Bestand ontbreekt';
+            fb.textContent = 'File missing';
             parent.appendChild(fb);
           }
         }}

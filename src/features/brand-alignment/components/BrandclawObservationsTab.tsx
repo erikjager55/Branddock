@@ -111,8 +111,8 @@ export function BrandclawObservationsTab() {
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Strategy Analyst</h2>
             <p className="text-xs text-gray-500 leading-snug max-w-prose">
-              Brandclaw observations over alignment / fidelity / review / voice drift.
-              Read-only suggesties — geen autonomy. Mens beslist welke worden opgepakt.
+              Brandclaw observations on alignment / fidelity / review / voice drift.
+              Read-only suggestions — no autonomy. You decide which ones to act on.
             </p>
             {lastRun && (
               <p className="text-[11px] text-gray-400 mt-1 font-mono">
@@ -241,7 +241,7 @@ export function BrandclawObservationsTab() {
           <Inbox className="w-8 h-8 text-gray-300" />
           <p className="text-sm">No observations yet</p>
           <p className="text-xs text-gray-400">
-            Klik &ldquo;Run Analyst&rdquo; bovenaan om de eerste run te starten.
+            Click &ldquo;Run Analyst&rdquo; at the top to start the first run.
           </p>
         </div>
       ) : viewMode === "flat" ? (

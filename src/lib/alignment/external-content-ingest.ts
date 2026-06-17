@@ -54,7 +54,7 @@ export class IngestError extends Error {
 export function ingestPaste(content: string): IngestResult {
   const normalised = content.replace(/\r\n/g, '\n').trim();
   if (!normalised) {
-    throw new IngestError('Paste-content is leeg', 'EMPTY');
+    throw new IngestError('Pasted content is empty', 'EMPTY');
   }
   return capLength(normalised);
 }
@@ -91,10 +91,10 @@ export async function ingestUrl(url: string): Promise<IngestResult> {
     } catch (err) {
       clearTimeout(timeoutId);
       if (err instanceof Error && err.name === 'AbortError') {
-        throw new IngestError(`URL-fetch timeout na ${URL_FETCH_TIMEOUT_MS}ms`, 'TIMEOUT', { cause: err });
+        throw new IngestError(`URL fetch timed out after ${URL_FETCH_TIMEOUT_MS}ms`, 'TIMEOUT', { cause: err });
       }
       throw new IngestError(
-        `URL-fetch faalde: ${(err as Error).message}`,
+        `URL fetch failed: ${(err as Error).message}`,
         'FETCH_FAILED',
         { cause: err instanceof Error ? err : undefined },
       );
@@ -107,7 +107,7 @@ export async function ingestUrl(url: string): Promise<IngestResult> {
     // doorvallen naar een non-OK pad zonder Location-handling.
     if (response.type === 'opaqueredirect') {
       throw new IngestError(
-        'URL gaf opaque-redirect (Location-header niet leesbaar in deze runtime)',
+        'URL returned an opaque redirect (Location header not readable in this runtime)',
         'FETCH_FAILED',
       );
     }
@@ -115,14 +115,14 @@ export async function ingestUrl(url: string): Promise<IngestResult> {
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location');
       if (!location) {
-        throw new IngestError(`URL gaf ${response.status} zonder Location-header`, 'FETCH_FAILED');
+        throw new IngestError(`URL returned ${response.status} without a Location header`, 'FETCH_FAILED');
       }
       currentUrl = new URL(location, currentUrl).toString();
       continue;
     }
 
     if (!response.ok) {
-      throw new IngestError(`URL retourneerde ${response.status}`, 'FETCH_FAILED');
+      throw new IngestError(`URL returned ${response.status}`, 'FETCH_FAILED');
     }
 
     const contentType = response.headers.get('content-type') ?? '';
@@ -130,7 +130,7 @@ export async function ingestUrl(url: string): Promise<IngestResult> {
     const isPlain = contentType.includes('text/plain');
     if (!isHtml && !isPlain) {
       throw new IngestError(
-        `URL content-type "${contentType}" niet ondersteund (alleen HTML/text)`,
+        `URL content-type "${contentType}" not supported (HTML/text only)`,
         'NOT_SUPPORTED',
       );
     }
@@ -138,7 +138,7 @@ export async function ingestUrl(url: string): Promise<IngestResult> {
     const declaredLength = Number(response.headers.get('content-length') ?? '0');
     if (declaredLength > URL_FETCH_BYTE_CAP) {
       throw new IngestError(
-        `URL response te groot (Content-Length ${declaredLength} > ${URL_FETCH_BYTE_CAP} bytes)`,
+        `URL response too large (Content-Length ${declaredLength} > ${URL_FETCH_BYTE_CAP} bytes)`,
         'PAYLOAD_TOO_LARGE',
       );
     }
@@ -148,7 +148,7 @@ export async function ingestUrl(url: string): Promise<IngestResult> {
 
     if (!text.trim()) {
       throw new IngestError(
-        'URL retourneerde geen leesbare tekst (mogelijk paywall, JS-rendered SPA, of empty page)',
+        'URL returned no readable text (possibly a paywall, JS-rendered SPA, or empty page)',
         'PAYWALL_OR_EMPTY',
       );
     }
@@ -157,7 +157,7 @@ export async function ingestUrl(url: string): Promise<IngestResult> {
   }
 
   throw new IngestError(
-    `URL volgde meer dan ${URL_MAX_REDIRECTS} redirects`,
+    `URL followed more than ${URL_MAX_REDIRECTS} redirects`,
     'FETCH_FAILED',
   );
 }
@@ -189,18 +189,18 @@ async function assertSafeUrl(rawUrl: string): Promise<void> {
   }
   if (!URL_ALLOWED_PROTOCOLS.has(parsed.protocol)) {
     throw new IngestError(
-      `Scheme "${parsed.protocol}" niet toegestaan (alleen http/https)`,
+      `Scheme "${parsed.protocol}" not allowed (http/https only)`,
       'INVALID_URL',
     );
   }
   const host = parsed.hostname;
   if (!host) {
-    throw new IngestError('URL mist hostname', 'INVALID_URL');
+    throw new IngestError('URL is missing a hostname', 'INVALID_URL');
   }
   // Direct-IP literal: valideer zonder DNS-lookup.
   if (isIP(host)) {
     if (isPrivateIp(host)) {
-      throw new IngestError(`Host ${host} is privé/loopback/link-local`, 'BLOCKED_HOST');
+      throw new IngestError(`Host ${host} is private/loopback/link-local`, 'BLOCKED_HOST');
     }
     return;
   }
@@ -214,12 +214,12 @@ async function assertSafeUrl(rawUrl: string): Promise<void> {
   try {
     resolved = await lookup(host, { all: true });
   } catch (err) {
-    throw new IngestError(`DNS lookup faalde voor ${host}: ${(err as Error).message}`, 'FETCH_FAILED');
+    throw new IngestError(`DNS lookup failed for ${host}: ${(err as Error).message}`, 'FETCH_FAILED');
   }
   for (const record of resolved) {
     if (isPrivateIp(record.address)) {
       throw new IngestError(
-        `Host ${host} resolved naar privé/loopback/link-local IP ${record.address}`,
+        `Host ${host} resolved to a private/loopback/link-local IP ${record.address}`,
         'BLOCKED_HOST',
       );
     }
@@ -271,7 +271,7 @@ async function readBodyWithCap(response: Response, byteCap: number): Promise<str
       if (total > byteCap) {
         await reader.cancel();
         throw new IngestError(
-          `URL response overschreed byte-cap (${byteCap} bytes)`,
+          `URL response exceeded byte cap (${byteCap} bytes)`,
           'PAYLOAD_TOO_LARGE',
         );
       }

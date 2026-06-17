@@ -469,8 +469,8 @@ function FontDisplayCard({
         <p className="inline-flex items-start gap-1.5 text-[11px] text-gray-500 leading-snug">
           <Sparkles className="h-3 w-3 mt-0.5 flex-shrink-0 text-indigo-400" />
           <span>
-            Preview met <span className="font-medium text-gray-700">{substituteFont}</span> —{" "}
-            {availability === "COMMERCIAL" ? "upload de .woff2 voor de echte font" : "echte font via je eigen Adobe Fonts-kit"}.
+            Preview with <span className="font-medium text-gray-700">{substituteFont}</span> —{" "}
+            {availability === "COMMERCIAL" ? "upload the .woff2 for the real font" : "real font via your own Adobe Fonts kit"}.
           </span>
         </p>
       )}

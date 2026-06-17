@@ -111,10 +111,10 @@ async function previewText(text: string): Promise<PreviewResult> {
 // ─── Helpers ──────────────────────────────────────────────
 
 const RULE_TYPE_LABELS: Record<RuleType, string> = {
-  FORBIDDEN_WORD: 'Verboden woord',
-  REQUIRED_PHRASE: 'Vereiste formulering',
-  STYLE_LIMIT: 'Stijlgrens',
-  PILLAR_REFERENCE: 'Pijler-verwijzing',
+  FORBIDDEN_WORD: 'Forbidden word',
+  REQUIRED_PHRASE: 'Required phrase',
+  STYLE_LIMIT: 'Style limit',
+  PILLAR_REFERENCE: 'Pillar reference',
 };
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -172,7 +172,7 @@ export function RulesTab() {
   const handleSubmit = () => {
     setFormError(null);
     if (!form.pattern.trim()) {
-      setFormError('Pattern mag niet leeg zijn');
+      setFormError('Pattern cannot be empty');
       return;
     }
     if (editingId) {
@@ -206,7 +206,7 @@ export function RulesTab() {
   if (error) {
     return (
       <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-        Fout bij laden: {(error as Error).message}
+        Failed to load: {(error as Error).message}
       </div>
     );
   }
@@ -222,8 +222,8 @@ export function RulesTab() {
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Brand Rules</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Werkspecifieke verboden woorden, vereiste formuleringen en stijlgrenzen.
-            Gegenereerde content wordt hiertegen gecheckt.
+            Workspace-specific forbidden words, required phrases and style limits.
+            Generated content is checked against these.
           </p>
         </div>
         <button
@@ -237,7 +237,7 @@ export function RulesTab() {
           style={{ backgroundColor: '#0d9488' }}
         >
           <Plus className="h-4 w-4" />
-          Regel toevoegen
+          Add rule
         </button>
       </div>
 
@@ -245,7 +245,7 @@ export function RulesTab() {
       {showForm && (
         <div className="rounded-md border border-gray-200 bg-gray-50 p-4 space-y-3">
           <h3 className="text-sm font-semibold text-gray-900">
-            {editingId ? 'Regel bewerken' : 'Nieuwe regel'}
+            {editingId ? 'Edit rule' : 'New rule'}
           </h3>
 
           <div className="grid grid-cols-2 gap-3">
@@ -282,7 +282,7 @@ export function RulesTab() {
               type="text"
               value={form.pattern}
               onChange={(e) => setForm({ ...form, pattern: e.target.value })}
-              placeholder="bv. synergy, deal, of regex /\\bsynergy\\b/i"
+              placeholder="e.g. synergy, deal, or regex /\\bsynergy\\b/i"
               className="mt-1 block w-full rounded-md border-gray-300 text-sm font-mono"
             />
             <label className="mt-1 inline-flex items-center gap-1.5 text-xs text-gray-600">
@@ -291,17 +291,17 @@ export function RulesTab() {
                 checked={form.patternIsRegex}
                 onChange={(e) => setForm({ ...form, patternIsRegex: e.target.checked })}
               />
-              Pattern is regex (anders: literal woord-match)
+              Pattern is regex (otherwise: literal word match)
             </label>
           </label>
 
           <label className="block">
-            <span className="text-xs font-medium text-gray-700">Bericht (optioneel)</span>
+            <span className="text-xs font-medium text-gray-700">Message (optional)</span>
             <input
               type="text"
               value={form.message}
               onChange={(e) => setForm({ ...form, message: e.target.value })}
-              placeholder="Uitleg bij detectie"
+              placeholder="Explanation shown on detection"
               className="mt-1 block w-full rounded-md border-gray-300 text-sm"
             />
           </label>
@@ -312,7 +312,7 @@ export function RulesTab() {
               checked={form.isActive}
               onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
             />
-            Actief
+            Active
           </label>
 
           {formError && (
@@ -329,7 +329,7 @@ export function RulesTab() {
               className="rounded-md px-3 py-1.5 text-sm font-medium text-white"
               style={{ backgroundColor: '#0d9488' }}
             >
-              {(createMutation.isPending || updateMutation.isPending) ? 'Bezig…' : 'Opslaan'}
+              {(createMutation.isPending || updateMutation.isPending) ? 'Saving…' : 'Save'}
             </button>
             <button
               onClick={() => {
@@ -339,7 +339,7 @@ export function RulesTab() {
               }}
               className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700"
             >
-              Annuleren
+              Cancel
             </button>
           </div>
         </div>
@@ -348,10 +348,10 @@ export function RulesTab() {
       {/* Manual rules list */}
       <section>
         <h3 className="mb-2 text-sm font-semibold text-gray-700">
-          Handmatig ({manualRules.length})
+          Manual ({manualRules.length})
         </h3>
         {manualRules.length === 0 ? (
-          <p className="text-sm text-gray-500 italic">Nog geen handmatige regels.</p>
+          <p className="text-sm text-gray-500 italic">No manual rules yet.</p>
         ) : (
           <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
             {manualRules.map((rule) => (
@@ -363,7 +363,7 @@ export function RulesTab() {
                     </span>
                     <span className="text-xs text-gray-500">{RULE_TYPE_LABELS[rule.ruleType]}</span>
                     {!rule.isActive && (
-                      <span className="text-xs text-gray-400">(inactief)</span>
+                      <span className="text-xs text-gray-400">(inactive)</span>
                     )}
                   </div>
                   <code className="mt-1 block truncate text-sm font-mono text-gray-900">
@@ -377,18 +377,18 @@ export function RulesTab() {
                   <button
                     onClick={() => startEdit(rule)}
                     className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-                    aria-label="Bewerken"
+                    aria-label="Edit"
                   >
                     <Edit3 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => {
-                      if (confirm(`Regel "${rule.pattern}" verwijderen?`)) {
+                      if (confirm(`Delete rule "${rule.pattern}"?`)) {
                         deleteMutation.mutate(rule.id);
                       }
                     }}
                     className="rounded p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600"
-                    aria-label="Verwijderen"
+                    aria-label="Delete"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -404,11 +404,11 @@ export function RulesTab() {
         <section>
           <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-gray-700">
             <Lock className="h-3.5 w-3.5 text-gray-400" />
-            Auto-gesyncteerd uit Brand Personality ({autoRules.length})
+            Auto-synced from Brand Personality ({autoRules.length})
           </h3>
           <p className="mb-2 text-xs text-gray-500">
-            Deze regels komen uit <code>BrandPersonality.wordsWeAvoid</code> en worden automatisch
-            geüpdatet wanneer dat veld wijzigt. Niet handmatig bewerkbaar — pas Brand Personality aan.
+            These rules come from <code>BrandPersonality.wordsWeAvoid</code> and are updated
+            automatically when that field changes. Not manually editable — adjust Brand Personality instead.
           </p>
           <ul className="divide-y divide-gray-100 rounded-md border border-gray-200 bg-gray-50">
             {autoRules.map((rule) => (
@@ -423,14 +423,14 @@ export function RulesTab() {
 
       {/* Preview tool */}
       <section className="rounded-md border border-gray-200 bg-white p-4">
-        <h3 className="mb-2 text-sm font-semibold text-gray-900">Test je content</h3>
+        <h3 className="mb-2 text-sm font-semibold text-gray-900">Test your content</h3>
         <p className="mb-3 text-xs text-gray-600">
-          Plak een stuk content en zie welke regels zouden triggeren.
+          Paste a piece of content and see which rules would trigger.
         </p>
         <textarea
           value={previewText_}
           onChange={(e) => setPreviewText_(e.target.value)}
-          placeholder="Plak content hier…"
+          placeholder="Paste content here…"
           rows={6}
           className="block w-full rounded-md border-gray-300 text-sm"
         />
@@ -441,7 +441,7 @@ export function RulesTab() {
             className="rounded-md px-3 py-1.5 text-sm font-medium text-white"
             style={{ backgroundColor: '#0d9488' }}
           >
-            {previewMutation.isPending ? 'Bezig…' : 'Test'}
+            {previewMutation.isPending ? 'Working…' : 'Test'}
           </button>
           {previewResult && (
             <button
@@ -451,7 +451,7 @@ export function RulesTab() {
               }}
               className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-600"
             >
-              Wissen
+              Clear
             </button>
           )}
         </div>
@@ -461,13 +461,13 @@ export function RulesTab() {
             {previewResult.rulesWithMatches === 0 ? (
               <div className="flex items-center gap-1.5 text-emerald-700">
                 <Check className="h-4 w-4" />
-                <span>Geen regels getriggerd (gecheckt tegen {previewResult.totalRules} actieve rules).</span>
+                <span>No rules triggered (checked against {previewResult.totalRules} active rules).</span>
               </div>
             ) : (
               <div>
                 <div className="font-medium text-gray-900">
-                  {previewResult.rulesWithMatches} van {previewResult.totalRules} regels getriggerd
-                  ({previewResult.totalMatches} matches totaal)
+                  {previewResult.rulesWithMatches} of {previewResult.totalRules} rules triggered
+                  ({previewResult.totalMatches} matches total)
                 </div>
                 <ul className="mt-2 space-y-1.5">
                   {previewResult.results.map((r, i) => (
@@ -476,7 +476,7 @@ export function RulesTab() {
                       <span className="text-gray-500"> — {r.matches.length}× match: </span>
                       <span className="text-gray-600">
                         {r.matches.slice(0, 3).map((m) => `"${m.value}"`).join(', ')}
-                        {r.matches.length > 3 ? ` (+${r.matches.length - 3} meer)` : ''}
+                        {r.matches.length > 3 ? ` (+${r.matches.length - 3} more)` : ''}
                       </span>
                     </li>
                   ))}

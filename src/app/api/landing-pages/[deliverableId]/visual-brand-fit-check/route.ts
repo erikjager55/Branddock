@@ -62,7 +62,7 @@ export async function POST(
   const puckData = settings.puckData as Data | undefined;
   if (!puckData || typeof puckData !== "object") {
     return NextResponse.json(
-      { error: "Geen puckData aanwezig — genereer eerst een variant via Step 2" },
+      { error: "No puckData present — generate a variant via Step 2 first" },
       { status: 400 },
     );
   }
@@ -83,7 +83,7 @@ export async function POST(
   if (!styleguide?.designPhilosophy) {
     return NextResponse.json(
       {
-        error: "Geen designPhilosophy aanwezig — voer brandstyle-analyse uit om vision-judge te enablen",
+        error: "No designPhilosophy present — run the brand style analysis to enable the vision judge",
       },
       { status: 400 },
     );

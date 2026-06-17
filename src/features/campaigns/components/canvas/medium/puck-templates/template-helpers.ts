@@ -43,7 +43,7 @@ export function defaultBrandHero(f: FilledFields) {
 export function defaultBrandCta(f: FilledFields, ctx: CanvasContextStack | null) {
   const personaId = ctx?.personas?.[0]?.id ?? '';
   return instance('BrandCTA', {
-    label: f.ctaLabel || 'Meer informatie',
+    label: f.ctaLabel || 'Learn more',
     href: f.ctaHref || '#',
     personaId,
   });
@@ -53,9 +53,9 @@ export function defaultFeatureGrid(f: FilledFields) {
   const features = f.featureItems.length > 0
     ? f.featureItems
     : [
-        { title: 'Snel', description: 'Licht hier het snelheidsvoordeel toe — vervang met echte content.' },
-        { title: 'Eenvoudig', description: 'Licht hier het gebruiksgemak toe — vervang met echte content.' },
-        { title: 'Schaalbaar', description: 'Licht hier de schaalbaarheid toe — vervang met echte content.' },
+        { title: 'Fast', description: 'Describe the speed benefit here — replace with real content.' },
+        { title: 'Simple', description: 'Describe the ease of use here — replace with real content.' },
+        { title: 'Scalable', description: 'Describe the scalability here — replace with real content.' },
       ];
   const columns = features.length >= 4 ? '4' : features.length === 2 ? '2' : '3';
   return instance('FeatureGrid', { columns, features });
@@ -65,9 +65,9 @@ export function defaultFaq(f: FilledFields) {
   const items = f.faqItems.length > 0
     ? f.faqItems
     : [
-        { question: 'Hoe werkt het?', answer: 'Placeholder — vervang met het echte antwoord.' },
-        { question: 'Wat kost het?', answer: 'Placeholder — vervang met het echte antwoord.' },
-        { question: 'Kan ik annuleren?', answer: 'Placeholder — vervang met het echte antwoord.' },
+        { question: 'How does it work?', answer: 'Placeholder — replace with the real answer.' },
+        { question: 'What does it cost?', answer: 'Placeholder — replace with the real answer.' },
+        { question: 'Can I cancel?', answer: 'Placeholder — replace with the real answer.' },
       ];
   return instance('FAQ', { items });
 }
@@ -75,8 +75,8 @@ export function defaultFaq(f: FilledFields) {
 export function defaultTestimonial(f: FilledFields, ctx: CanvasContextStack | null) {
   const personaId = ctx?.personas?.[0]?.id ?? '';
   return instance('Testimonial', {
-    quote: f.testimonialQuote || '"Quote van een tevreden klant — vervang met een echte review."',
-    author: f.testimonialAuthor || 'Klantnaam, Bedrijf',
+    quote: f.testimonialQuote || '"Quote from a happy customer — replace with a real review."',
+    author: f.testimonialAuthor || 'Customer name, Company',
     personaId,
   });
 }
@@ -85,16 +85,16 @@ export function defaultPricingTable(f: FilledFields) {
   const tiers = f.pricingTiers.length > 0
     ? f.pricingTiers
     : [
-        { name: 'Starter', price: '€ —', features: 'Vervang met echte features\nEén feature per regel' },
-        { name: 'Pro', price: '€ —', features: 'Vervang met echte features\nEén feature per regel' },
-        { name: 'Enterprise', price: '€ —', features: 'Vervang met echte features\nEén feature per regel' },
+        { name: 'Starter', price: '€ —', features: 'Replace with real features\nOne feature per line' },
+        { name: 'Pro', price: '€ —', features: 'Replace with real features\nOne feature per line' },
+        { name: 'Enterprise', price: '€ —', features: 'Replace with real features\nOne feature per line' },
       ];
   return instance('PricingTable', { tiers });
 }
 
 export function defaultRichText(f: FilledFields) {
   return instance('RichText', {
-    content: f.longText || 'Voeg hier extra context, achtergrond of differentiator-toelichting toe.',
+    content: f.longText || 'Add extra context, background, or differentiator details here.',
   });
 }
 
@@ -102,7 +102,7 @@ export function defaultFooter(_f: FilledFields, ctx: CanvasContextStack | null) 
   const brandName = ctx?.brand?.brandName ?? 'Brand Name';
   return instance('Footer', {
     companyName: brandName,
-    tagline: 'Korte tagline',
+    tagline: 'Short tagline',
     links: [
       { label: 'Privacy', href: '/privacy' },
       { label: 'Terms', href: '/terms' },

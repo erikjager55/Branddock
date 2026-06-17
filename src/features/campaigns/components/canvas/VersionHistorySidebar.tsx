@@ -44,7 +44,7 @@ export function VersionHistorySidebar({ deliverableId, onRestored }: VersionHist
         <History className="h-4 w-4 text-gray-600" />
         <h2 className="text-sm font-semibold text-gray-900">Version history</h2>
         {data && (
-          <span className="text-xs text-gray-500 ml-auto">{data.total} versies</span>
+          <span className="text-xs text-gray-500 ml-auto">{data.total} versions</span>
         )}
       </div>
 
@@ -93,7 +93,7 @@ function VersionRow({
   const Icon = isAi ? Sparkles : User;
   const iconColor = isAi ? 'text-emerald-600' : 'text-blue-600';
   const date = new Date(version.createdAt);
-  const dateLabel = date.toLocaleString('nl-NL', {
+  const dateLabel = date.toLocaleString('en-US', {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
@@ -147,7 +147,7 @@ function LoadingState() {
   return (
     <div className="px-4 py-8 flex items-center justify-center gap-2 text-sm text-gray-500">
       <Loader2 className="h-4 w-4 animate-spin" />
-      Laden…
+      Loading…
     </div>
   );
 }
@@ -158,7 +158,7 @@ function ErrorState({ message }: { message: string }) {
       <div className="flex items-start gap-2">
         <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
         <div>
-          <div className="font-medium">Versies laden mislukt</div>
+          <div className="font-medium">Failed to load versions</div>
           <div className="text-xs text-red-600 mt-1 break-words">{message}</div>
         </div>
       </div>
@@ -170,7 +170,7 @@ function EmptyState() {
   return (
     <div className="px-4 py-12 text-center text-sm text-gray-500">
       <History className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-      Nog geen versies. Genereer of bewerk content om hier een trail op te bouwen.
+      No versions yet. Generate or edit content to build up a trail here.
     </div>
   );
 }
@@ -187,7 +187,7 @@ function RestoreConfirm({
   return (
     <div className="flex-shrink-0 border-t border-gray-200 bg-amber-50 px-4 py-3">
       <p className="text-xs text-amber-900 mb-2">
-        Restore overschrijft de huidige content. Deze actie wordt zelf vastgelegd als nieuwe versie.
+        Restore overwrites the current content. This action is itself recorded as a new version.
       </p>
       <div className="flex gap-2">
         <Button variant="primary" size="sm" onClick={onConfirm} disabled={isPending}>
@@ -197,11 +197,11 @@ function RestoreConfirm({
               Restoring…
             </>
           ) : (
-            'Bevestig restore'
+            'Confirm restore'
           )}
         </Button>
         <Button variant="secondary" size="sm" onClick={onCancel} disabled={isPending}>
-          Annuleer
+          Cancel
         </Button>
       </div>
     </div>

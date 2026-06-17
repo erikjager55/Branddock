@@ -33,12 +33,12 @@ import {
  *   - hashtags             → topic-relevant hashtags, rendered between widget
  *                            and action bar
  */
-// LinkedIn poll-duration labels — Dutch UI copy matching real LinkedIn.
+// LinkedIn poll-duration labels — UI copy matching real LinkedIn.
 const POLL_DURATION_LABELS: Record<string, string> = {
-  '1d': 'Nog 1 dag',
-  '3d': 'Nog 3 dagen',
-  '1w': 'Nog 1 week',
-  '2w': 'Nog 2 weken',
+  '1d': '1 day left',
+  '3d': '3 days left',
+  '1w': '1 week left',
+  '2w': '2 weeks left',
 };
 
 export function LinkedInPollPreview({ isGenerating, brandName, mediumConfig }: PlatformPreviewProps) {
@@ -178,9 +178,9 @@ export function LinkedInPollPreview({ isGenerating, brandName, mediumConfig }: P
             vote count + countdown that ticks down. */}
         <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
           <span className="text-xs text-gray-500">
-            245 stemmen · {POLL_DURATION_LABELS[(mediumConfig?.pollDuration as string) ?? '1w'] ?? 'Nog 1 week'}
+            245 votes · {POLL_DURATION_LABELS[(mediumConfig?.pollDuration as string) ?? '1w'] ?? '1 week left'}
           </span>
-          <span className="text-xs text-gray-400">Anoniem stemmen</span>
+          <span className="text-xs text-gray-400">Anonymous voting</span>
         </div>
       </div>
 

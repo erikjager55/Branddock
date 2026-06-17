@@ -480,8 +480,8 @@ function ColorPairingsPanel({ pairings }: { pairings: ColorPairing[] }) {
   return (
     <Card>
       <div className="flex items-center justify-between gap-3 mb-5">
-        <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Kleurcombinaties</h3>
-        <p className="text-xs text-gray-400">WCAG-geverifieerde combinaties uit het palet</p>
+        <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Color combinations</h3>
+        <p className="text-xs text-gray-400">WCAG-verified combinations from the palette</p>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {valid.map((p, i) => (
@@ -539,7 +539,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
     setColorError(null);
     addColorMutation.mutate(data, {
       onSuccess: () => setShowAddColorForm(false),
-      onError: (err) => setColorError(err instanceof Error ? err.message : "Kon kleur niet toevoegen"),
+      onError: (err) => setColorError(err instanceof Error ? err.message : "Could not add color"),
     });
   };
 
@@ -547,7 +547,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
     setColorError(null);
     setDeletingColorId(colorId);
     deleteColorMutation.mutate(colorId, {
-      onError: (err) => setColorError(err instanceof Error ? err.message : "Kon kleur niet verwijderen"),
+      onError: (err) => setColorError(err instanceof Error ? err.message : "Could not delete color"),
       onSettled: () => setDeletingColorId(null),
     });
   };

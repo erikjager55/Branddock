@@ -150,9 +150,9 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
           <h3 className="text-sm font-semibold text-gray-900">Content locale</h3>
         </div>
         <p className="text-xs text-gray-500 mb-3">
-          Bepaalt welke F-VAL heuristic-pack wordt gebruikt voor cliché-detectie
-          en welke taal-instructie de AI krijgt bij content-generatie. Laat
-          leeg om de workspace-default te volgen.
+          Determines which F-VAL heuristic pack is used for cliché detection and
+          which language instruction the AI receives during content generation.
+          Leave empty to follow the workspace default.
         </p>
 
         {/* Currently-active status: toont welke locale F-VAL momenteel
@@ -174,20 +174,20 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
             blijft wanneer de resolver-call (nog) niet beschikbaar is. */}
         {(voiceguide.contentLocale ?? null) !== contentLocale && (
           <div className="mb-2 text-xs text-amber-700 italic">
-            Unsaved change — klik Save om toe te passen.
+            Unsaved change — click Save to apply.
           </div>
         )}
 
         <select
           id="content-locale-select"
-          aria-label="Content locale — kies welke taal F-VAL heuristic-pack gebruikt"
+          aria-label="Content locale — choose which language the F-VAL heuristic pack uses"
           value={contentLocale ?? ""}
           onChange={(e) =>
             setContentLocale((e.target.value as ContentLocale | "") || null)
           }
           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
         >
-          <option value="">— Workspace-default —</option>
+          <option value="">— Workspace default —</option>
           {LOCALE_OPTIONS.map((opt) => (
             <option key={opt.code} value={opt.code}>
               {opt.label}
@@ -202,14 +202,14 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
             return (
               <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Detecteren op basis van brand-content...
+                Detecting based on brand content...
               </div>
             );
           }
           if (suggested.isError) {
             return (
               <p className="mt-3 text-xs text-amber-700 italic">
-                Auto-detectie tijdelijk niet beschikbaar.
+                Auto-detection temporarily unavailable.
               </p>
             );
           }
@@ -217,7 +217,7 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
           if (!data?.locale) {
             return (
               <p className="mt-3 text-xs text-gray-400 italic">
-                Geen taal-signaal gedetecteerd — voeg writing-samples of brand-assets toe.
+                No language signal detected — add writing samples or brand assets.
               </p>
             );
           }

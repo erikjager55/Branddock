@@ -170,10 +170,10 @@ export function ScrapedButtonProfilePreview({ buttonProfile }: { buttonProfile: 
                       dus tonen we de STYLING zonder een verzonnen CTA te suggereren
                       (Fase 6 brand-fidelity — gefabriceerde tekst was misleidend). */}
                   {b.role === "primary"
-                    ? "Primaire knop"
+                    ? "Primary button"
                     : b.role === "secondary"
-                      ? "Secundaire knop"
-                      : "Knop"}
+                      ? "Secondary button"
+                      : "Button"}
                 </button>
               </div>
               <StyleProperties b={b} />

@@ -77,7 +77,7 @@ export async function POST(
   const puckData = settings.puckData as Data | undefined;
   if (!puckData || typeof puckData !== "object") {
     return NextResponse.json(
-      { error: "Geen puckData aanwezig — genereer eerst een variant via Step 2" },
+      { error: "No puckData present — generate a variant via Step 2 first" },
       { status: 400 },
     );
   }
@@ -103,7 +103,7 @@ export async function POST(
   const lpScreenshot = await capturePuckTreeScreenshot(puckData, ctx);
   if (!lpScreenshot) {
     return NextResponse.json(
-      { error: "LP-screenshot render mislukt — zie server-logs ([lp-screenshotter])" },
+      { error: "LP screenshot render failed — see server logs ([lp-screenshotter])" },
       { status: 500 },
     );
   }
@@ -134,7 +134,7 @@ export async function POST(
     });
     if (!sideBySide) {
       return NextResponse.json(
-        { error: "Fidelity-judge faalde (zie server logs)" },
+        { error: "Fidelity judge failed (see server logs)" },
         { status: 500 },
       );
     }
@@ -145,7 +145,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Geen bron-hero-screenshot én geen design-philosophy beschikbaar — voer de brandstyle-analyse opnieuw uit om de brand-fit-check te kunnen draaien.",
+            "No source hero screenshot and no design philosophy available — re-run the brand style analysis to be able to run the brand-fit check.",
         },
         { status: 400 },
       );
@@ -159,7 +159,7 @@ export async function POST(
     });
     if (fit.status !== "scored" || typeof fit.score !== "number") {
       return NextResponse.json(
-        { error: `Brand-fit-judge faalde (status: ${fit.status})` },
+        { error: `Brand-fit judge failed (status: ${fit.status})` },
         { status: 500 },
       );
     }
@@ -175,7 +175,7 @@ export async function POST(
         overallVibe: fit.score,
       },
       mismatches: [],
-      reasoning: `${fit.reasoning ?? ""} (Beoordeeld op merk-DNA — geen bron-screenshot beschikbaar voor een side-by-side vergelijking.)`.trim(),
+      reasoning: `${fit.reasoning ?? ""} (Assessed against brand DNA — no source screenshot available for a side-by-side comparison.)`.trim(),
       verdict: verdictForScore(fit.score),
     };
   }

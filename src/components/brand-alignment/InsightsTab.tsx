@@ -82,11 +82,11 @@ export function InsightsTab() {
         >
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
           <div>
-            <div className="font-medium">Workspace context niet beschikbaar</div>
+            <div className="font-medium">Workspace context unavailable</div>
             <div className="text-xs mt-0.5">
-              Insights worden per workspace berekend, maar er kon geen actieve
-              workspace worden gevonden. Probeer opnieuw in te loggen of
-              switchen naar een andere workspace via de header.
+              Insights are calculated per workspace, but no active workspace
+              could be found. Try signing in again or switch to a different
+              workspace via the header.
             </div>
           </div>
         </div>
@@ -126,12 +126,12 @@ export function InsightsTab() {
           <Sparkles size={24} className="text-emerald-700" />
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Geen reviews de afgelopen 30 dagen
+          No reviews in the past 30 days
         </h3>
         <p className="text-sm text-gray-500 max-w-md">
-          Run een review via de <strong>Content Review</strong> tab, vraag de
-          Brand Assistant om feedback, of laat content via Canvas genereren —
-          insights verschijnen hier zodra er data is.
+          Run a review via the <strong>Content Review</strong> tab, ask the
+          Brand Assistant for feedback, or generate content via Canvas —
+          insights appear here as soon as there is data.
         </p>
       </div>
     );
@@ -144,8 +144,8 @@ export function InsightsTab() {
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Insights</h2>
           <p className="text-sm text-gray-500">
-            Aggregaten over de afgelopen 30 dagen — extern (paste/url) +
-            intern (canvas) gecombineerd, per workspace.
+            Aggregates over the past 30 days — external (paste/url) +
+            internal (canvas) combined, per workspace.
           </p>
         </div>
       </header>
@@ -161,12 +161,11 @@ export function InsightsTab() {
         >
           <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           <div>
-            <span className="font-medium">Gedeeltelijke aggregatie</span> —
-            er zijn meer dan 5000 reviews in 30 dagen; de getoonde
-            percentages zijn berekend over de 5000 meest recente reviews.
-            Oudere records zijn niet meegenomen, dus zowel absolute counts
-            als de 7d-trend kunnen voor minder recente dagen ondergeschat
-            zijn.
+            <span className="font-medium">Partial aggregation</span> —
+            there are more than 5000 reviews in 30 days; the percentages
+            shown are calculated over the 5000 most recent reviews. Older
+            records are not included, so both absolute counts and the 7d
+            trend may be underestimated for less recent days.
           </div>
         </div>
       )}
@@ -177,13 +176,13 @@ export function InsightsTab() {
           icon={FileSearch}
           label="Reviews 30d"
           value={totals.totalReviews}
-          sub={`${totals.externalReviews} extern · ${totals.internalReviews} intern`}
+          sub={`${totals.externalReviews} external · ${totals.internalReviews} internal`}
         />
         <KpiTile
           icon={CheckCircle2}
           label="Threshold pass-rate"
           value={`${totals.thresholdPassRate}%`}
-          sub={`${totals.reviewsLast7d} reviews afgelopen 7d`}
+          sub={`${totals.reviewsLast7d} reviews in last 7d`}
           accent={totals.thresholdPassRate >= 60 ? "good" : "warn"}
         />
         <KpiTile
@@ -192,13 +191,13 @@ export function InsightsTab() {
           value={totals.totalFindings}
           sub={
             totals.totalReviews > 0
-              ? `${(totals.totalFindings / totals.totalReviews).toFixed(1)} per review gemiddeld`
+              ? `${(totals.totalFindings / totals.totalReviews).toFixed(1)} per review on average`
               : "0 per review"
           }
         />
         <KpiTile
           icon={ShieldOff}
-          label="Below-threshold gepubliceerd"
+          label="Below-threshold published"
           value={
             totals.blockedCount > 0
               ? `${totals.blockedPublishedRate}%`
@@ -207,7 +206,7 @@ export function InsightsTab() {
           sub={
             totals.blockedCount > 0
               ? `${totals.blockedCount} below-threshold internal scores`
-              : "Geen below-threshold scores"
+              : "No below-threshold scores"
           }
           accent={
             totals.blockedCount === 0
@@ -297,12 +296,12 @@ function PassRateTrendCard({ data }: { data: PassRatePoint[] }) {
           <div className="text-[11px] text-gray-400 leading-tight text-right">
             {totalReviews} reviews
             <br />
-            in 7 dagen
+            in 7 days
           </div>
         </div>
       ) : (
         <div className="text-xs text-gray-400 italic py-3">
-          Geen reviews in de afgelopen 7 dagen.
+          No reviews in the past 7 days.
         </div>
       )}
     </div>
@@ -316,7 +315,7 @@ function computeTrend(series: number[]): { label: string; color: string } | null
   const delta = last - first;
   if (delta > 5) return { label: `+${delta}pp`, color: "text-emerald-600" };
   if (delta < -5) return { label: `${delta}pp`, color: "text-amber-600" };
-  return { label: "stabiel", color: "text-gray-500" };
+  return { label: "stable", color: "text-gray-500" };
 }
 
 // ─── Top Categories Card ────────────────────────────
@@ -326,10 +325,10 @@ function TopCategoriesCard({ data }: { data: CategoryCount[] }) {
     <div className="rounded-lg border border-gray-200 bg-white p-3">
       <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
         <AlertTriangle className="w-3.5 h-3.5" />
-        Top finding-categorieën
+        Top finding categories
       </div>
       {data.length === 0 ? (
-        <div className="text-xs text-gray-400 italic">Geen findings.</div>
+        <div className="text-xs text-gray-400 italic">No findings.</div>
       ) : (
         <div className="space-y-1.5">
           {data.map((c, i) => (
@@ -357,7 +356,7 @@ function RecentReviewsCard({ reviews }: { reviews: RecentReview[] }) {
         Recent reviews
       </div>
       {reviews.length === 0 ? (
-        <div className="text-xs text-gray-400 italic">Geen reviews.</div>
+        <div className="text-xs text-gray-400 italic">No reviews.</div>
       ) : (
         <div className="divide-y divide-gray-100">
           {reviews.map((r) => (
@@ -401,12 +400,12 @@ function formatRelative(iso: string): string {
   const ts = new Date(iso).getTime();
   const diffMs = Date.now() - ts;
   const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 60) return `${minutes}m geleden`;
+  if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}u geleden`;
+  if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d geleden`;
-  return new Date(iso).toLocaleDateString("nl-NL", {
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString("en-US", {
     day: "numeric",
     month: "short",
   });

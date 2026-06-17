@@ -156,7 +156,7 @@ export function ContentReviewTab() {
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Content review</h2>
           <p className="text-sm text-gray-500">
-            Plak een tekst of URL voor F-VAL fidelity-scoring met findings.
+            Paste a text or URL for F-VAL fidelity scoring with findings.
           </p>
         </div>
       </header>

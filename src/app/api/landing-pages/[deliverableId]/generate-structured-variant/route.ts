@@ -190,7 +190,7 @@ export async function POST(
   // Audit 2026-06-10 — locale volgde hardcoded 'nl-NL'; nu dezelfde precedentie
   // als prompt-templates (BrandVoiceguide.contentLocale > Workspace.contentLanguage,
   // al verwerkt in ctx.brand.contentLanguage als ISO-prefix).
-  const contentLang = ctx.brand.contentLanguage ?? "nl";
+  const contentLang = ctx.brand.contentLanguage ?? "en";
   const locale = contentLang.includes("-")
     ? contentLang
     : contentLang === "nl"

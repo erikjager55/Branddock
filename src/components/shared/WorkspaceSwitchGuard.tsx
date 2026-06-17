@@ -73,14 +73,14 @@ export function WorkspaceSwitchGuard() {
           </div>
           <div className="flex-1">
             <h2 id="workspace-switch-guard-title" className="text-base font-semibold text-gray-900">
-              Workspace gewijzigd in een ander tabblad
+              Workspace changed in another tab
             </h2>
             <p className="mt-1.5 text-sm text-gray-600">
               {switchedTo.name
-                ? `De actieve workspace is nu “${switchedTo.name}”.`
-                : 'De actieve workspace of organisatie is gewijzigd.'}{' '}
-              Dit tabblad keek naar een andere workspace en kan niet veilig
-              doorwerken — wijzigingen zouden stil verloren gaan.
+                ? `The active workspace is now “${switchedTo.name}”.`
+                : 'The active workspace or organization has changed.'}{' '}
+              This tab was looking at a different workspace and cannot safely
+              continue — changes would be silently lost.
             </p>
           </div>
         </div>
@@ -90,7 +90,7 @@ export function WorkspaceSwitchGuard() {
           className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
         >
           <RefreshCw className="h-4 w-4" />
-          Herlaad dit tabblad
+          Reload this tab
         </button>
       </div>
     </div>

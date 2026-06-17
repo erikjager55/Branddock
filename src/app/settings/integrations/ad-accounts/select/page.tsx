@@ -34,12 +34,12 @@ interface PendingPayload {
 }
 
 const ERROR_LABELS: Record<string, string> = {
-  missing_params: 'OAuth-flow miste required parameters.',
-  invalid_state: 'CSRF state-token is verlopen of ongeldig. Probeer opnieuw te verbinden.',
-  no_ad_accounts: 'Geen ad-accounts gevonden onder dit Meta-account.',
-  not_configured: 'Meta integration niet geconfigureerd (META_APP_ID/SECRET ontbreekt).',
-  meta_api_error: 'Meta API gaf een fout terug.',
-  internal_error: 'Interne fout tijdens OAuth-flow.',
+  missing_params: 'The OAuth flow was missing required parameters.',
+  invalid_state: 'The CSRF state token has expired or is invalid. Please try connecting again.',
+  no_ad_accounts: 'No ad accounts found under this Meta account.',
+  not_configured: 'Meta integration is not configured (META_APP_ID/SECRET missing).',
+  meta_api_error: 'The Meta API returned an error.',
+  internal_error: 'Internal error during the OAuth flow.',
 };
 
 /**
@@ -126,22 +126,22 @@ function AdAccountSelectInner() {
       <PageShell maxWidth="3xl">
         <Link href="/settings/integrations/ad-accounts" className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
           <ArrowLeft className="w-4 h-4" />
-          Terug naar ad-accounts
+          Back to ad accounts
         </Link>
         <div className="rounded-lg border border-red-200 bg-red-50 p-6">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-red-700 mt-0.5 shrink-0" />
             <div>
-              <h2 className="text-base font-semibold text-red-900">OAuth-flow afgebroken</h2>
+              <h2 className="text-base font-semibold text-red-900">OAuth flow aborted</h2>
               <p className="text-sm text-red-800 mt-1">
-                {ERROR_LABELS[errorCode] ?? `Onbekende fout: ${errorCode}`}
+                {ERROR_LABELS[errorCode] ?? `Unknown error: ${errorCode}`}
               </p>
               {errorDetail && <p className="text-xs text-red-700 mt-2 font-mono">{errorDetail}</p>}
               <a
                 href="/api/ad-accounts/meta/connect"
                 className="inline-block mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg"
               >
-                Opnieuw proberen
+                Try again
               </a>
             </div>
           </div>
@@ -153,9 +153,9 @@ function AdAccountSelectInner() {
   if (!sessionId) {
     return (
       <PageShell maxWidth="3xl">
-        <p className="text-sm text-gray-600">Geen sessie-ID — open deze pagina via de OAuth-flow.</p>
+        <p className="text-sm text-gray-600">No session ID — open this page through the OAuth flow.</p>
         <Link href="/settings/integrations/ad-accounts" className="text-sm text-emerald-700 hover:underline">
-          Naar ad-accounts overzicht
+          To ad accounts overview
         </Link>
       </PageShell>
     );
@@ -168,13 +168,13 @@ function AdAccountSelectInner() {
         className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
       >
         <ArrowLeft className="w-4 h-4" />
-        Terug naar ad-accounts
+        Back to ad accounts
       </Link>
 
       <PageHeader
         moduleKey="settings"
-        title="Kies een ad-account"
-        subtitle="Welk Meta ad-account wil je aan deze workspace koppelen?"
+        title="Choose an ad account"
+        subtitle="Which Meta ad account would you like to connect to this workspace?"
       />
 
       {!pending && !loadError && (
@@ -191,7 +191,7 @@ function AdAccountSelectInner() {
 
       {pending && pending.availableAccounts.length === 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          Dit Meta-account heeft geen ad-accounts. Controleer in Business Manager dat de ingelogde user toegang heeft.
+          This Meta account has no ad accounts. Check in Business Manager that the logged-in user has access.
         </div>
       )}
 
@@ -237,7 +237,7 @@ function AdAccountSelectInner() {
               href="/settings/integrations/ad-accounts"
               className="px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50"
             >
-              Annuleren
+              Cancel
             </Link>
             <button
               type="button"
@@ -246,7 +246,7 @@ function AdAccountSelectInner() {
               className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg disabled:opacity-50"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              Koppel account
+              Connect account
             </button>
           </div>
         </>

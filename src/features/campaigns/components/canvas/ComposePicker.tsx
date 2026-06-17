@@ -123,7 +123,7 @@ export function ComposePicker({ deliverableId, onCancel, onGenerated, target }: 
       // De source-persist IS de gate-garantie: faalt 'ie, dan zou generate met
       // een stale source 400'en met een misleidende melding. Surface 'm direct.
       if (!flushResp.ok) {
-        throw new Error(`Kon de Visual Brief niet opslaan (HTTP ${flushResp.status}) — probeer opnieuw.`);
+        throw new Error(`Could not save the Visual Brief (HTTP ${flushResp.status}) — please try again.`);
       }
 
       const result = await generateCanvasVisualCompose(deliverableId, target ? { target } : undefined);

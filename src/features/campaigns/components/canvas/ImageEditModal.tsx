@@ -26,11 +26,11 @@ interface ImageEditModalProps {
 }
 
 const DEFAULT_EXAMPLES = [
-  'Vervaag de achtergrond',
-  'Maak het lichter / warmer',
-  'Verwijder de tekst-elementen',
-  'Toon meer detail in de voorgrond',
-  'Verander de tijd van dag naar avond',
+  'Blur the background',
+  'Make it lighter / warmer',
+  'Remove the text elements',
+  'Show more detail in the foreground',
+  'Change the time of day to evening',
 ];
 
 export function ImageEditModal({
@@ -73,18 +73,18 @@ export function ImageEditModal({
       onEdited(data.editedImageUrl);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Edit mislukt');
+      setError(err instanceof Error ? err.message : 'Edit failed');
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Image bewerken met instructie" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit image with an instruction" size="md">
       <div className="space-y-4">
         {imageUrl && (
           <div className="relative rounded-lg overflow-hidden border border-gray-200">
-            <img src={imageUrl} alt="Te bewerken" className="w-full aspect-video object-cover" />
+            <img src={imageUrl} alt="To edit" className="w-full aspect-video object-cover" />
             <div className="absolute top-2 left-2 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2 py-1 text-[11px] font-medium text-purple-700 shadow-sm">
               <Wand2 className="h-3 w-3" />
               Powered by Nano Banana Pro
@@ -94,26 +94,26 @@ export function ImageEditModal({
 
         <div>
           <label htmlFor="edit-instruction" className="block text-xs font-medium text-gray-700 mb-1.5">
-            Wat wil je veranderen?
+            What do you want to change?
           </label>
           <textarea
             id="edit-instruction"
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
-            placeholder='Bijv. "vervaag de achtergrond zodat de persoon prominenter wordt" of "verander de muur naar warm bruin hout"'
+            placeholder='e.g. "blur the background so the person stands out more" or "change the wall to warm brown wood"'
             rows={3}
             className="w-full text-sm px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 resize-y"
             disabled={busy}
           />
           <p className="mt-1 text-[11px] text-gray-500">
-            Gebruik concrete, lokale instructies. Werkt het beste voor specifieke aanpassingen, niet volledige hertekeningen.
+            Use concrete, local instructions. Works best for specific tweaks, not full redraws.
           </p>
         </div>
 
         {exampleInstructions.length > 0 && (
           <div>
             <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-              Voorbeelden
+              Examples
             </p>
             <div className="flex flex-wrap gap-1.5">
               {exampleInstructions.map((ex) => (
@@ -139,7 +139,7 @@ export function ImageEditModal({
         )}
 
         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-          <span className="text-[11px] text-gray-500">~$0.02 per bewerking</span>
+          <span className="text-[11px] text-gray-500">~$0.02 per edit</span>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -147,7 +147,7 @@ export function ImageEditModal({
               disabled={busy}
               className="text-xs font-medium px-3 py-1.5 rounded-md text-gray-700 hover:bg-gray-100 disabled:opacity-50"
             >
-              Annuleren
+              Cancel
             </button>
             <button
               type="button"
@@ -158,12 +158,12 @@ export function ImageEditModal({
               {busy ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Bewerken...
+                  Editing...
                 </>
               ) : (
                 <>
                   <Wand2 className="h-3.5 w-3.5" />
-                  Toepassen
+                  Apply
                 </>
               )}
             </button>

@@ -37,7 +37,7 @@ const SEVERITY_VARIANT: Record<ActivitySeverity, BadgeVariant> = {
 const METHOD_LABEL: Record<string, string> = {
   "ai-classified": "AI",
   "hash-diff": "Auto",
-  "manual": "Handmatig",
+  "manual": "Manual",
   "rss-feed": "RSS",
 };
 
@@ -85,14 +85,14 @@ export function ActivityTimelineSection({ competitorId }: ActivityTimelineSectio
       <div className="rounded-lg border border-red-200 bg-white p-5">
         <div className="flex items-center gap-2 text-red-600 mb-2">
           <AlertTriangle className="h-4 w-4" />
-          <span className="text-sm font-medium">Kan activities niet laden</span>
+          <span className="text-sm font-medium">Couldn't load activities</span>
         </div>
         <button
           type="button"
           onClick={() => refetch()}
           className="text-sm text-red-600 hover:text-red-700 underline"
         >
-          Opnieuw proberen
+          Try again
         </button>
       </div>
     );
@@ -145,7 +145,7 @@ export function ActivityTimelineSection({ competitorId }: ActivityTimelineSectio
         </FilterChip>
         <span className="border-l border-gray-200 mx-1" />
         <FilterChip active={methodFilter === undefined} onClick={() => setMethodFilter(undefined)}>
-          Alle bronnen
+          All sources
         </FilterChip>
         <FilterChip
           active={methodFilter === "ai-classified"}
@@ -157,13 +157,13 @@ export function ActivityTimelineSection({ competitorId }: ActivityTimelineSectio
           Auto
         </FilterChip>
         <FilterChip active={methodFilter === "manual"} onClick={() => setMethodFilter("manual")}>
-          Handmatig
+          Manual
         </FilterChip>
       </div>
 
       {items.length === 0 ? (
         <p className="text-sm text-gray-500 italic">
-          Nog geen detectie-events voor deze concurrent.
+          No detection events for this competitor yet.
         </p>
       ) : (
         <ul className="divide-y divide-gray-100">
@@ -181,7 +181,7 @@ export function ActivityTimelineSection({ competitorId }: ActivityTimelineSectio
       {canLoadMore && (
         <div className="mt-4">
           <Button variant="ghost" size="sm" onClick={() => setLimit((l) => l + INITIAL_LIMIT)}>
-            Meer laden ({total - items.length})
+            Load more ({total - items.length})
           </Button>
         </div>
       )}
@@ -314,7 +314,7 @@ function ActivityRow({ item, onAcknowledge, ackPending }: ActivityRowProps) {
             className="mt-1.5 text-xs text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
           >
             {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            {expanded ? "Verberg details" : "Toon details"}
+            {expanded ? "Hide details" : "Show details"}
           </button>
           {expanded && (
             <div className="mt-2">
@@ -327,7 +327,7 @@ function ActivityRow({ item, onAcknowledge, ackPending }: ActivityRowProps) {
             <span
               title={
                 item.acknowledgedBy?.name
-                  ? `Ack'd door ${item.acknowledgedBy.name}`
+                  ? `Ack'd by ${item.acknowledgedBy.name}`
                   : "Ack'd"
               }
               className="inline-flex items-center text-gray-400"
@@ -399,7 +399,7 @@ function DiffPayloadRender({ payload }: DiffPayloadRenderProps) {
       <div className="space-y-2 text-xs">
         {added.length > 0 && (
           <div>
-            <div className="text-gray-500 mb-1">Toegevoegd</div>
+            <div className="text-gray-500 mb-1">Added</div>
             <div className="flex flex-wrap gap-1">
               {added.map((v) => (
                 <span
@@ -414,7 +414,7 @@ function DiffPayloadRender({ payload }: DiffPayloadRenderProps) {
         )}
         {removed.length > 0 && (
           <div>
-            <div className="text-gray-500 mb-1">Verwijderd</div>
+            <div className="text-gray-500 mb-1">Removed</div>
             <div className="flex flex-wrap gap-1">
               {removed.map((v) => (
                 <span
@@ -481,7 +481,7 @@ function DiffPayloadRender({ payload }: DiffPayloadRenderProps) {
           </a>
         )}
         {publishedAt && (
-          <div className="text-gray-500">Gepubliceerd: {publishedAt}</div>
+          <div className="text-gray-500">Published: {publishedAt}</div>
         )}
       </div>
     );
@@ -502,12 +502,12 @@ function BeforeAfterGrid({ label, before, after }: BeforeAfterGridProps) {
       <div className="text-gray-500 mb-1">{label}</div>
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded bg-red-50 p-2 text-red-800">
-          <div className="text-[10px] uppercase tracking-wide text-red-500 mb-1">Voor</div>
-          <div className="line-through whitespace-pre-wrap break-words">{before ?? "(leeg)"}</div>
+          <div className="text-[10px] uppercase tracking-wide text-red-500 mb-1">Before</div>
+          <div className="line-through whitespace-pre-wrap break-words">{before ?? "(empty)"}</div>
         </div>
         <div className="rounded bg-emerald-50 p-2 text-emerald-800">
-          <div className="text-[10px] uppercase tracking-wide text-emerald-600 mb-1">Na</div>
-          <div className="whitespace-pre-wrap break-words">{after ?? "(leeg)"}</div>
+          <div className="text-[10px] uppercase tracking-wide text-emerald-600 mb-1">After</div>
+          <div className="whitespace-pre-wrap break-words">{after ?? "(empty)"}</div>
         </div>
       </div>
     </div>

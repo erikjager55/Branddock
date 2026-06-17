@@ -81,8 +81,8 @@ export default function AdAccountsPage() {
 
   async function disconnect(accountId: string, activeCount: number) {
     const note = activeCount > 0
-      ? `Je hebt ${activeCount} actieve campagnes via dit account — die blijven draaien in Meta maar Branddock kan niet meer pollen/aanpassen tot je opnieuw verbindt. Doorgaan?`
-      : 'Weet je zeker dat je dit account wilt loskoppelen?';
+      ? `You have ${activeCount} active campaigns through this account — they will keep running in Meta, but Branddock can no longer poll or adjust them until you reconnect. Continue?`
+      : 'Are you sure you want to disconnect this account?';
     if (!confirm(note)) return;
     setBusyId(accountId);
     try {
@@ -113,7 +113,7 @@ export default function AdAccountsPage() {
       <PageHeader
         moduleKey="settings"
         title="Ad accounts"
-        subtitle="Koppel Meta, LinkedIn of Google ad-accounts om campagnes vanuit Branddock te publiceren."
+        subtitle="Connect Meta, LinkedIn or Google ad accounts to publish campaigns from Branddock."
         actions={
           <a
             href="/api/ad-accounts/meta/connect"
@@ -133,17 +133,17 @@ export default function AdAccountsPage() {
 
       {query.isError && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          Kan ad-accounts niet laden: {(query.error as Error).message}
+          Failed to load ad accounts: {(query.error as Error).message}
         </div>
       )}
 
       {query.data && accounts.length === 0 && (
         <div className="rounded-lg border border-dashed border-gray-300 p-12 text-center">
           <Plug className="w-10 h-10 mx-auto text-gray-300 mb-3" />
-          <h2 className="text-base font-semibold text-gray-900">Nog geen ad-accounts gekoppeld</h2>
+          <h2 className="text-base font-semibold text-gray-900">No ad accounts connected yet</h2>
           <p className="text-sm text-gray-600 mt-1 max-w-md mx-auto">
-            Verbind een Meta Business Manager ad-account om campagnes vanuit Branddock te publiceren.
-            Branddock publiceert standaard als PAUSED — je activeert pas in Meta Business Manager zelf.
+            Connect a Meta Business Manager ad account to publish campaigns from Branddock.
+            Branddock publishes as PAUSED by default — you activate them in Meta Business Manager yourself.
           </p>
         </div>
       )}
@@ -174,16 +174,16 @@ export default function AdAccountsPage() {
                       {account.externalAccountId} · {account.currency ?? '—'} · {account.timezone ?? '—'}
                     </p>
                     <div className="mt-3 text-xs text-gray-600 space-y-0.5">
-                      <p>Gekoppeld door {account.connectedBy.name ?? account.connectedBy.email}</p>
+                      <p>Connected by {account.connectedBy.name ?? account.connectedBy.email}</p>
                       {account.tokenExpiresAt && (
                         <p>
-                          Token verloopt op {new Date(account.tokenExpiresAt).toLocaleDateString()}
+                          Token expires on {new Date(account.tokenExpiresAt).toLocaleDateString()}
                           {' · '}
-                          {account._count.campaigns} campagne{account._count.campaigns === 1 ? '' : 's'}
+                          {account._count.campaigns} campaign{account._count.campaigns === 1 ? '' : 's'}
                         </p>
                       )}
                       {account.lastErrorMessage && (
-                        <p className="text-red-700">Laatste fout: {account.lastErrorMessage}</p>
+                        <p className="text-red-700">Last error: {account.lastErrorMessage}</p>
                       )}
                     </div>
                   </div>

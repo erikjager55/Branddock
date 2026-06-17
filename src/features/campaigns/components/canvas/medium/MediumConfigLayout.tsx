@@ -204,7 +204,7 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
                   color: '#1e40af',
                   boxShadow: '0 0 0 1px #bfdbfe',
                 }}
-                title={`Tonen Variant ${String.fromCharCode(65 + currentVariantIndex)} — wijzig in stap 2`}
+                title={`Showing Variant ${String.fromCharCode(65 + currentVariantIndex)} — change in step 2`}
               >
                 Variant {String.fromCharCode(65 + currentVariantIndex)}
               </span>

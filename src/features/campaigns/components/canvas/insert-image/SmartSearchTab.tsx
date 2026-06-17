@@ -160,8 +160,8 @@ export function SmartSearchTab({ onSelected, initialQuery }: InsertImageTabProps
       {/* Results grid */}
       {debouncedQuery.length < 3 ? (
         <p className="text-xs text-gray-400 italic px-1">
-          Tik 3+ karakters in om te zoeken. Library-resultaten verschijnen eerst
-          (semantic match op aiDescription), daarna Pexels stock.
+          Type 3+ characters to search. Library results appear first
+          (semantic match on aiDescription), then Pexels stock.
         </p>
       ) : loading ? (
         <div className="flex items-center justify-center py-12 text-gray-500">
@@ -169,7 +169,7 @@ export function SmartSearchTab({ onSelected, initialQuery }: InsertImageTabProps
         </div>
       ) : results.length === 0 ? (
         <p className="text-xs text-gray-400 italic px-1">
-          Geen resultaten gevonden voor &ldquo;{debouncedQuery}&rdquo;.
+          No results found for &ldquo;{debouncedQuery}&rdquo;.
         </p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">

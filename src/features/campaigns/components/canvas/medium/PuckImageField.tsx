@@ -45,7 +45,7 @@ class PickerErrorBoundary extends React.Component<
       return (
         <div className="flex flex-col items-center gap-3 py-10 text-center">
           <p className="text-sm text-gray-600">
-            De afbeeldingskiezer kon niet worden geladen.
+            The image picker could not be loaded.
           </p>
           <button
             type="button"
@@ -224,11 +224,11 @@ export function PuckImageField({
             <button
               type="button"
               onClick={() => onChange(CLEAR_IMAGE_SENTINEL)}
-              aria-label={`Verwijder afbeelding${label ? ` — ${label}` : ''}`}
+              aria-label={`Remove image${label ? ` — ${label}` : ''}`}
               className="inline-flex items-center gap-1.5 rounded-md bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Verwijderen
+              Remove
             </button>
           ) : null}
         </div>
@@ -243,8 +243,8 @@ export function PuckImageField({
             <Modal
               isOpen
               onClose={() => setPickerOpen(false)}
-              title="Afbeelding kiezen"
-              subtitle="Selecteer, zoek of genereer een afbeelding uit je media library"
+              title="Choose image"
+              subtitle="Select, search or generate an image from your media library"
               size="xl"
               zIndex={2147483647}
               // Nooit body-attrs muteren terwijl de Puck-editor gemount is:
@@ -257,7 +257,7 @@ export function PuckImageField({
                   fallback={
                     <div role="status" className="flex items-center justify-center py-12">
                       <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                      <span className="sr-only">Afbeeldingskiezer laden…</span>
+                      <span className="sr-only">Loading image picker…</span>
                     </div>
                   }
                 >

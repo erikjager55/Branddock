@@ -17,10 +17,10 @@ interface ColorDetailModalProps {
 /** Fase E — usage-tags die user via toggles kan setten/clearen. Subset
  *  van ColorUsageTag uit color-usage-extractor. Brand-relevante hero-roles. */
 const TOGGLEABLE_USAGE_TAGS = [
-  { key: "hero-bg", label: "Hero achtergrond", hint: "Gebruik deze kleur als achtergrond van de hero-sectie op gegenereerde LPs" },
-  { key: "heading-text", label: "Heading kleur", hint: "Gebruik deze kleur voor h1/h2 in gegenereerde content" },
-  { key: "button-bg", label: "Button achtergrond", hint: "Primaire CTA-buttons gebruiken deze kleur" },
-  { key: "link", label: "Link kleur", hint: "Hyperlinks renderen in deze kleur" },
+  { key: "hero-bg", label: "Hero background", hint: "Use this color as the background of the hero section on generated LPs" },
+  { key: "heading-text", label: "Heading color", hint: "Use this color for h1/h2 in generated content" },
+  { key: "button-bg", label: "Button background", hint: "Primary CTA buttons use this color" },
+  { key: "link", label: "Link color", hint: "Hyperlinks render in this color" },
 ] as const;
 
 function CopyButton({ value, label }: { value: string; label: string }) {
@@ -159,7 +159,7 @@ export function ColorDetailModal({ isOpen, onClose, color, onTagsChanged }: Colo
               usage-tags overrulen wanneer de scraper het verkeerd had. */}
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-              Gebruik in gegenereerde content
+              Use in generated content
             </p>
             <div className="space-y-1.5">
               {TOGGLEABLE_USAGE_TAGS.map(({ key, label, hint }) => {

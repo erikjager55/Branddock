@@ -259,21 +259,21 @@ function DataQualityBadge({ uncertain, total }: { uncertain: number; total: numb
     return (
       <span
         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700"
-        title={`Alle ${total} kern-tokens zijn met vertrouwen uit de bron-site afgeleid.`}
+        title={`All ${total} core tokens were confidently derived from the source site.`}
       >
         <ShieldCheck className="h-3 w-3" />
-        <span className="font-medium">Data-kwaliteit OK</span>
+        <span className="font-medium">Data quality OK</span>
       </span>
     );
   }
   return (
     <span
       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-amber-200 bg-amber-50 text-amber-700"
-      title={`${uncertain} van ${total} kern-tokens konden we niet zeker bepalen — bevestig ze in de Onboarding-wizard of de Kleuren/Typografie-tabs.`}
+      title={`We could not determine ${uncertain} of ${total} core tokens with confidence — confirm them in the Onboarding wizard or the Colors/Typography tabs.`}
     >
       <ShieldAlert className="h-3 w-3" />
       <span className="font-medium">{uncertain}</span>
-      <span>onzeker</span>
+      <span>uncertain</span>
     </span>
   );
 }

@@ -26,10 +26,10 @@ const ZONE_HEX = {
 } as const;
 
 const VERDICT_LABELS: Record<'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI', string> = {
-  TOP_TIER: 'Klinkt heel menselijk',
-  HUMAN_BASELINE: 'Klinkt menselijk',
-  AI_LEANING: 'Voelt AI-achtig',
-  PURE_AI: 'Klinkt als AI',
+  TOP_TIER: 'Sounds very human',
+  HUMAN_BASELINE: 'Sounds human',
+  AI_LEANING: 'Feels AI-like',
+  PURE_AI: 'Sounds like AI',
 };
 
 const VERDICT_COLOR: Record<keyof typeof VERDICT_LABELS, string> = {
@@ -124,12 +124,12 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
             {isComputing && !isComplete && !isSkipped && (
               <span className="inline-flex items-center gap-1 text-xs font-normal text-gray-500 ml-2">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                bezig met meten…
+                measuring…
               </span>
             )}
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Hoe goed past deze tekst bij jouw merk?
+            How well does this text fit your brand?
           </p>
         </div>
 
@@ -151,8 +151,8 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
       <div className="space-y-1">
         <PositionBar position={position} />
         <div className="flex items-center justify-between text-[10px] text-gray-500 font-medium uppercase tracking-wide">
-          <span>← Klinkt als AI</span>
-          <span>Klinkt menselijk + brand-fit →</span>
+          <span>← Sounds like AI</span>
+          <span>Sounds human + brand-fit →</span>
         </div>
       </div>
 
@@ -162,12 +162,12 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
           <span className="font-medium" style={{ color: VERDICT_COLOR[verdict] }}>
             {VERDICT_LABELS[verdict]}
           </span>
-          <span className="text-gray-400"> — meet AI-patronen. </span>
+          <span className="text-gray-400"> — measures AI patterns. </span>
           <span className="text-gray-500">
-            De score bovenaan combineert dit met merkstijl + strategie.
+            The score at the top combines this with brand style + strategy.
           </span>
           {isComplete && fidelity.elapsedMs !== null && (
-            <span className="text-gray-500"> · gemeten in {(fidelity.elapsedMs / 1000).toFixed(0)}s</span>
+            <span className="text-gray-500"> · measured in {(fidelity.elapsedMs / 1000).toFixed(0)}s</span>
           )}
         </div>
       )}
@@ -181,12 +181,12 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
         <div className="mt-2 text-xs text-gray-500 italic space-y-1">
           <div>
             {verdict
-              ? `${VERDICT_LABELS[verdict]} — uitgebreide score niet beschikbaar.`
-              : 'Score kon niet berekend worden.'}
+              ? `${VERDICT_LABELS[verdict]} — detailed score not available.`
+              : 'Score could not be calculated.'}
           </div>
           {fidelity.skippedReason && (
             <div className="text-[11px] not-italic text-amber-700">
-              Reden: {fidelity.skippedReason}
+              Reason: {fidelity.skippedReason}
             </div>
           )}
         </div>
@@ -201,9 +201,9 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
         fidelity.thresholdMet === false &&
         (verdict === 'TOP_TIER' || verdict === 'HUMAN_BASELINE') && (
           <div className="mt-2 rounded-md bg-amber-50/60 border border-amber-200/60 px-2.5 py-1.5 text-[11px] text-amber-900 leading-relaxed">
-            <span className="font-medium">Klinkt menselijk, past nog niet bij merk.</span>{' '}
-            Detector ziet weinig AI-patronen (pin links), maar merkstijl + strategie
-            zijn lager dan ideaal. Zie pijler-breakdown hieronder voor waar te verbeteren.
+            <span className="font-medium">Sounds human, but doesn&apos;t fit the brand yet.</span>{' '}
+            The detector sees few AI patterns (pin on the left), but brand style + strategy
+            are lower than ideal. See the pillar breakdown below for where to improve.
           </div>
         )}
 
@@ -212,9 +212,9 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
         <div className="mt-3 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2 flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-violet-900">Branddock verbetert de output…</p>
+            <p className="text-sm font-medium text-violet-900">Branddock is improving the output…</p>
             <p className="text-xs text-violet-700">
-              De tekst klinkt nog AI-achtig — we schrijven hem menselijker. ~15-30s.
+              The text still sounds AI-like — we&apos;re making it more human. ~15-30s.
             </p>
           </div>
         </div>
@@ -235,7 +235,7 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
         <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-emerald-900">Auto-iterate verbetert de score…</p>
+            <p className="text-sm font-medium text-emerald-900">Auto-iterate is improving the score…</p>
             <p className="text-xs text-emerald-700">
               Initial {autoIterate.initialScore} / threshold {autoIterate.threshold} — feedback-driven rewrite.
             </p>
@@ -267,7 +267,7 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
             onClick={() => setShowPillars((v) => !v)}
             className="w-full flex items-center justify-between text-xs font-medium text-gray-700 hover:text-gray-900"
           >
-            <span>Bekijk hoe deze score is opgebouwd</span>
+            <span>See how this score is built up</span>
             {showPillars ? (
               <ChevronUp className="w-3.5 h-3.5" />
             ) : (
@@ -276,9 +276,9 @@ export function FidelityScoreBar({ compact = false, deliverableId = null, varian
           </button>
           {showPillars && (
             <div className="mt-2 grid grid-cols-3 gap-2">
-              <PillarChip label="Merkstijl" sublabel="Gebruikt jouw woorden" score={fidelity.pillars.style} />
-              <PillarChip label="Strategie" sublabel="AI-beoordeling" score={fidelity.pillars.judge} />
-              <PillarChip label="Menselijk" sublabel="Geen AI-patronen" score={fidelity.pillars.rules} />
+              <PillarChip label="Brand style" sublabel="Uses your words" score={fidelity.pillars.style} />
+              <PillarChip label="Strategy" sublabel="AI assessment" score={fidelity.pillars.judge} />
+              <PillarChip label="Human" sublabel="No AI patterns" score={fidelity.pillars.rules} />
             </div>
           )}
         </div>
@@ -342,7 +342,7 @@ function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
       });
       if (!res.ok || !res.body) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error ?? `Iteratie-start mislukte (${res.status})`);
+        throw new Error(body?.error ?? `Failed to start iteration (${res.status})`);
       }
       // Lees SSE-stream en route naar canvas-store via dezelfde setters
       // die de orchestrator gebruikt. Re-import store voor concurrency-safe
@@ -403,13 +403,13 @@ function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
               stopReason: typeof data.stopReason === 'string' ? data.stopReason : 'max_iterations',
             });
           } else if (eventName === 'error') {
-            const errMsg = typeof data.message === 'string' ? data.message : 'Iteratie faalde';
+            const errMsg = typeof data.message === 'string' ? data.message : 'Iteration failed';
             throw new Error(errMsg);
           }
         }
       }
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Iteratie mislukt');
+      setErrorMsg(err instanceof Error ? err.message : 'Iteration failed');
     } finally {
       setBusy(false);
     }
@@ -423,11 +423,11 @@ function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
         <Sparkles className="w-5 h-5 text-teal-700 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900">
-            Score onder drempel — wil je dat Branddock het automatisch verbetert?
+            Score below threshold — want Branddock to improve it automatically?
           </p>
           <p className="text-xs text-gray-600 mt-0.5">
-            Branddock herschrijft de tekst tot 5× en stopt zodra de score boven de
-            drempel komt of niet meer verbetert. Duurt ~30-90 seconden.
+            Branddock rewrites the text up to 5× and stops as soon as the score rises
+            above the threshold or no longer improves. Takes ~30-90 seconds.
           </p>
           <button
             type="button"
@@ -438,14 +438,14 @@ function AutoIterateOptInCta({ deliverableId }: { deliverableId: string }) {
             {isRunning ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Bezig met verbeteren…
+                Improving…
                 {autoIterate.attemptsExecuted > 0 &&
-                  ` (poging ${autoIterate.attemptsExecuted}, score ${autoIterate.finalScore ?? '—'})`}
+                  ` (attempt ${autoIterate.attemptsExecuted}, score ${autoIterate.finalScore ?? '—'})`}
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Verbeter automatisch
+                Improve automatically
               </>
             )}
           </button>
@@ -530,7 +530,7 @@ function AutoIterateImprovedBlock({
       });
       setApplyState('applied');
     } catch (err) {
-      setApplyError(err instanceof Error ? err.message : 'Apply mislukt');
+      setApplyError(err instanceof Error ? err.message : 'Apply failed');
       setApplyState('error');
     }
   }, [deliverableId, finalScore, queryClient]);
@@ -555,21 +555,21 @@ function AutoIterateImprovedBlock({
   const accentClass = improved ? 'text-emerald-700' : 'text-amber-700';
   const iconClass = improved ? 'text-emerald-600' : 'text-amber-600';
 
-  const pogingen = `${attemptsExecuted} ${attemptsExecuted === 1 ? 'poging' : 'pogingen'}`;
+  const attempts = `${attemptsExecuted} ${attemptsExecuted === 1 ? 'attempt' : 'attempts'}`;
   const stopReasonLabel = improved
     ? thresholdMet
-      ? `Verbeterd van ${initialScore} naar ${finalScore} — klaar voor publish`
+      ? `Improved from ${initialScore} to ${finalScore} — ready to publish`
       : stopReason === 'early_stop_stagnation'
-        ? `Verbeterd van ${initialScore} naar ${finalScore} — verdere iteraties leveren weinig op`
+        ? `Improved from ${initialScore} to ${finalScore} — further iterations yield little`
         : stopReason === 'max_iterations'
-          ? `Verbeterd van ${initialScore} naar ${finalScore} in ${pogingen} — pas brief aan voor verdere verbetering`
-          : `Verbeterd van ${initialScore} naar ${finalScore}`
+          ? `Improved from ${initialScore} to ${finalScore} in ${attempts} — adjust the brief for further improvement`
+          : `Improved from ${initialScore} to ${finalScore}`
     : regressed
       ? // Regressie: eindscore is lager dan start — auto-iterate maakte het slechter,
         // orchestrator heeft daarom origineel behouden.
-        `Score daalde van ${initialScore} naar ${finalScore} in ${pogingen} — origineel content behouden (auto-iterate leverde geen winst)`
+        `Score dropped from ${initialScore} to ${finalScore} in ${attempts} — kept original content (auto-iterate yielded no gain)`
       : // delta === 0: stagnatie, geen verschuiving.
-        `Score bleef gelijk op ${initialScore} in ${pogingen} — origineel content behouden`;
+        `Score stayed at ${initialScore} across ${attempts} — kept original content`;
 
   return (
     <div className={`mt-3 rounded-lg border px-3 py-2.5 ${bannerClass}`}>
@@ -583,13 +583,13 @@ function AutoIterateImprovedBlock({
         <span className="font-medium">{finalScore}</span>
         <span className={`ml-1 ${accentClass}`}>
           ({delta >= 0 ? '+' : ''}
-          {delta} punten in {attemptsExecuted} {attemptsExecuted === 1 ? 'poging' : 'pogingen'})
+          {delta} points in {attemptsExecuted} {attemptsExecuted === 1 ? 'attempt' : 'attempts'})
         </span>
       </div>
 
       {appliedTemplates.length > 0 && improved && (
         <div className={`mt-2 text-[11px] ${accentClass}`}>
-          Toegepast: {appliedTemplates.slice(0, 3).join(' · ')}
+          Applied: {appliedTemplates.slice(0, 3).join(' · ')}
           {appliedTemplates.length > 3 && ` +${appliedTemplates.length - 3}`}
         </div>
       )}
@@ -607,12 +607,12 @@ function AutoIterateImprovedBlock({
           {applyState === 'applying' ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Toepassen…
+              Applying…
             </>
           ) : (
             <>
               <Sparkles className="w-3.5 h-3.5" />
-              Gebruik verbeterde versie
+              Use improved version
             </>
           )}
         </button>
@@ -620,14 +620,14 @@ function AutoIterateImprovedBlock({
 
       {!improved && (
         <div className="mt-2 text-[11px] text-amber-700 italic">
-          Tip: maak de brief specifieker (concrete CTA, scherpere keyMessage) of pas voiceguide aan voor dit content-type.
+          Tip: make the brief more specific (concrete CTA, sharper keyMessage) or adjust the voiceguide for this content type.
         </div>
       )}
 
       {applyState === 'applied' && (
         <div className="mt-2 text-xs text-emerald-700 font-medium inline-flex items-center gap-1">
           <ShieldCheck className="w-3.5 h-3.5" />
-          Toegepast — verbeterde tekst is geladen
+          Applied — improved text is loaded
         </div>
       )}
 
@@ -671,7 +671,7 @@ function StrictImprovedBlock({
       }
       setApplyState('applied');
     } catch (err) {
-      setApplyError(err instanceof Error ? err.message : 'Apply mislukt');
+      setApplyError(err instanceof Error ? err.message : 'Apply failed');
       setApplyState('error');
     }
   }, [deliverableId]);
@@ -680,12 +680,12 @@ function StrictImprovedBlock({
     <div className="mt-3 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5">
       <div className="flex items-center gap-1.5 mb-1">
         <Sparkles className="w-4 h-4 text-violet-600" />
-        <span className="text-sm font-semibold text-violet-900">Branddock heeft de tekst menselijker gemaakt</span>
+        <span className="text-sm font-semibold text-violet-900">Branddock made the text more human</span>
       </div>
       <div className="text-xs text-violet-800">
         Was: <span className="font-medium">{VERDICT_LABELS[before.verdict]}</span>
         <span className="mx-1.5">→</span>
-        Nu: <span className="font-medium">{VERDICT_LABELS[after.verdict]}</span>
+        Now: <span className="font-medium">{VERDICT_LABELS[after.verdict]}</span>
       </div>
 
       {rewritePreview && (
@@ -695,7 +695,7 @@ function StrictImprovedBlock({
             onClick={() => setShowPreview((v) => !v)}
             className="w-full flex items-center justify-between text-xs font-medium text-violet-700 hover:text-violet-900"
           >
-            <span>{showPreview ? 'Verberg' : 'Bekijk'} de menselijkere versie</span>
+            <span>{showPreview ? 'Hide' : 'View'} the more human version</span>
             {showPreview ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
           {showPreview && (
@@ -717,12 +717,12 @@ function StrictImprovedBlock({
               {applyState === 'applying' ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Toepassen…
+                  Applying…
                 </>
               ) : (
                 <>
                   <Sparkles className="w-3.5 h-3.5" />
-                  Gebruik deze versie
+                  Use this version
                 </>
               )}
             </button>
@@ -731,7 +731,7 @@ function StrictImprovedBlock({
           {applyState === 'applied' && (
             <div className="mt-2 text-xs text-violet-700 font-medium inline-flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
-              Toegepast — ververs de pagina om de nieuwe tekst te zien
+              Applied — refresh the page to see the new text
             </div>
           )}
 
@@ -780,14 +780,14 @@ function ThresholdBadge({ thresholdMet, threshold }: { thresholdMet: boolean; th
     return (
       <div className="inline-flex items-center gap-1 text-[11px] text-emerald-700">
         <ShieldCheck className="w-3 h-3" />
-        boven drempel ({threshold})
+        above threshold ({threshold})
       </div>
     );
   }
   return (
     <div className="inline-flex items-center gap-1 text-[11px] text-amber-700">
       <AlertTriangle className="w-3 h-3" />
-      onder drempel ({threshold})
+      below threshold ({threshold})
     </div>
   );
 }
@@ -811,7 +811,7 @@ function PillarChip({
       <div className="flex items-baseline justify-between">
         <span className="text-[11px] font-semibold text-gray-700">{label}</span>
         <span className={`text-sm font-bold ${skipped ? 'text-gray-400' : 'text-gray-900'}`}>
-          {skipped ? 'n.v.t.' : `${score}`}
+          {skipped ? 'N/A' : `${score}`}
         </span>
       </div>
       <div className="text-[10px] text-gray-500 mt-0.5">{sublabel}</div>

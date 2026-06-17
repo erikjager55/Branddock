@@ -818,7 +818,7 @@ function SceneBreakdownCard({
                       value={effective}
                       onSave={(next) => setOverride(id, { visualText: next })}
                       italic
-                      placeholder="Beschrijf de on-screen actie / camera"
+                      placeholder="Describe the on-screen action / camera"
                     />
                   ) : (
                     <span className="italic">{effective}</span>
@@ -842,7 +842,7 @@ function SceneBreakdownCard({
                       value={effective}
                       onSave={(next) => setOverride(id, { bRollText: next })}
                       italic
-                      placeholder="Motion-direction voor video-gen — camera pan, intercut, dolly, etc."
+                      placeholder="Motion direction for video gen — camera pan, intercut, dolly, etc."
                     />
                   ) : (
                     <span className="italic">{effective}</span>
@@ -865,7 +865,7 @@ function SceneBreakdownCard({
                     <EditableInlineText
                       value={effective}
                       onSave={(next) => setOverride(id, { captionText: next })}
-                      placeholder="Burned-in caption — max ~32 tekens per regel"
+                      placeholder="Burned-in caption — max ~32 characters per line"
                     />
                   ) : (
                     <span>{effective}</span>
@@ -948,9 +948,9 @@ function EditableInlineText({
       type="button"
       onClick={enterEdit}
       className={`flex-1 min-w-0 text-left ${italic ? 'italic' : ''} cursor-text hover:bg-white/60 rounded px-0.5 -mx-0.5 transition-colors`}
-      title="Klik om te bewerken (Cmd/Ctrl+Enter om op te slaan, Esc om te annuleren)"
+      title="Click to edit (Cmd/Ctrl+Enter to save, Esc to cancel)"
     >
-      {value || <span className="text-gray-400">{placeholder ?? 'Klik om in te vullen'}</span>}
+      {value || <span className="text-gray-400">{placeholder ?? 'Click to fill in'}</span>}
     </button>
   );
 }
@@ -1400,7 +1400,7 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
                       e.stopPropagation();
                       setEditingImage({ url: img.url, variantIndex: idx });
                     }}
-                    title="Bewerk met tekstinstructie (Nano Banana)"
+                    title="Edit with text instruction (Nano Banana)"
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-600/90 hover:bg-purple-700 text-white text-[10px] font-medium shadow-sm transition-colors"
                   >
                     <Sparkles className="h-2.5 w-2.5" />

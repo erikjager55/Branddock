@@ -54,7 +54,7 @@ interface LandingPageGenerateBlockProps {
 const ACCENTS = ['emerald', 'violet', 'blue', 'amber'] as const;
 type VariantAccent = (typeof ACCENTS)[number];
 const accentFor = (i: number): VariantAccent => ACCENTS[i % ACCENTS.length];
-const FALLBACK_LABELS = ['conservatief', 'creatief', 'verhalend', 'data-gedreven'];
+const FALLBACK_LABELS = ['conservative', 'creative', 'narrative', 'data-driven'];
 // Inline-style hexes i.p.v. Tailwind-klassen: src/index.css (gecompileerde,
 // gecommitte output) mist de blue/amber-utilities → purge-veilig (CLAUDE.md
 // Tailwind-4 gotcha). emerald/violet-hexes matchen de bestaande -400/-100-shades.
@@ -173,7 +173,7 @@ export function LandingPageGenerateBlock({
         new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
       );
     } catch (err) {
-      setVisualError(err instanceof Error ? err.message : 'Hero-image opslaan mislukt');
+      setVisualError(err instanceof Error ? err.message : 'Failed to save hero image');
     }
   }, [deliverableId, visualSource, chosenVariant, contextStack, setStructuredVariant]);
 
@@ -330,7 +330,7 @@ export function LandingPageGenerateBlock({
     // Guard: bare onClick={handleGenerate} zou een MouseEvent doorgeven → coerce.
     const count = typeof countArg === 'number' && countArg >= 1 && countArg <= 4 ? countArg : 2;
     if (briefIncomplete) {
-      setError('Vul eerst Doel of Value Proposition in Step 1.');
+      setError('First fill in Objective or Value Proposition in Step 1.');
       return;
     }
     setIsGenerating(true);
@@ -380,7 +380,7 @@ export function LandingPageGenerateBlock({
       // await — variant-keuze mag niet blokkeren op scoring-latency.
       data.variants.forEach((v, i) => void scoreVariantFidelity(v, i));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generatie mislukt');
+      setError(err instanceof Error ? err.message : 'Generation failed');
     } finally {
       setIsGenerating(false);
     }
@@ -513,10 +513,10 @@ export function LandingPageGenerateBlock({
           if (heroUrl) {
             lpChosen = { ...lpChosen, hero: { ...lpChosen.hero, heroVisualUrl: heroUrl } };
           } else {
-            setVisualError('Automatische header-image kwam niet (op tijd) terug — Step 3 genereert \'m alsnog automatisch.');
+            setVisualError('The automatic header image didn\'t come back (in time) — Step 3 will generate it automatically.');
           }
         } catch (genErr) {
-          setVisualError(genErr instanceof Error ? genErr.message : 'Automatische header-image mislukt — Step 3 genereert \'m alsnog automatisch.');
+          setVisualError(genErr instanceof Error ? genErr.message : 'Automatic header image failed — Step 3 will generate it automatically.');
         } finally {
           setIsGeneratingVisual(false);
         }
@@ -579,7 +579,7 @@ export function LandingPageGenerateBlock({
         }),
       });
       if (!patchRes.ok) {
-        throw new Error(`Persist mislukt: HTTP ${patchRes.status}`);
+        throw new Error(`Save failed: HTTP ${patchRes.status}`);
       }
       setStructuredVariant(chosen);
       // Fetch /context expliciet zodat contextStack.puckData synchroon
@@ -602,7 +602,7 @@ export function LandingPageGenerateBlock({
       // puckData → Step 3 rendert de pagina MÉT de foto.
       onAdvance();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Variant-keuze opslaan mislukt');
+      setError(err instanceof Error ? err.message : 'Failed to save variant choice');
     } finally {
       setIsChoosing(false);
     }
@@ -616,7 +616,7 @@ export function LandingPageGenerateBlock({
     try {
       await generateHeroVisualFor(chosenVariant);
     } catch (err) {
-      setVisualError(err instanceof Error ? err.message : 'Visual-generatie mislukt');
+      setVisualError(err instanceof Error ? err.message : 'Visual generation failed');
     } finally {
       setIsGeneratingVisual(false);
     }
@@ -655,7 +655,7 @@ export function LandingPageGenerateBlock({
     let iterations = 0;
     try {
       for (let iter = 1; iter <= AUTO_ITERATE_MAX; iter++) {
-        setAutoIterateMsg(`Iteratie ${iter}/${AUTO_ITERATE_MAX}…${bestScore != null ? ` (score ${bestScore})` : ''}`);
+        setAutoIterateMsg(`Iteration ${iter}/${AUTO_ITERATE_MAX}…${bestScore != null ? ` (score ${bestScore})` : ''}`);
         const res = await fetch(`/api/landing-pages/${deliverableId}/auto-iterate-variant`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -663,17 +663,17 @@ export function LandingPageGenerateBlock({
         });
         const json = (await res.json().catch(() => null)) as IterateResponse | null;
         if (!res.ok || !json || !('status' in json) || json.status === undefined) {
-          if (iterations === 0) setAutoIterateError((json && 'error' in json && json.error) ? json.error : 'Verbeteren mislukt — probeer opnieuw.');
+          if (iterations === 0) setAutoIterateError((json && 'error' in json && json.error) ? json.error : 'Improvement failed — please try again.');
           break;
         }
         if (json.status === 'skipped') {
           // Informatief, geen fout (al goed genoeg / te weinig content).
-          if (iterations === 0) setAutoIterateMsg(json.reason === 'above-threshold' ? 'Deze variant zit al boven de drempel.' : 'Te weinig content om te verbeteren.');
+          if (iterations === 0) setAutoIterateMsg(json.reason === 'above-threshold' ? 'This variant is already above the threshold.' : 'Not enough content to improve.');
           break;
         }
         if (json.status === 'no_improvement') {
           // Informatief, geen fout — huidige variant blijft het beste.
-          if (iterations === 0) setAutoIterateMsg(`Geen verbetering gevonden (${json.score} → ${json.scoreProjected}). Huidige variant blijft.`);
+          if (iterations === 0) setAutoIterateMsg(`No improvement found (${json.score} → ${json.scoreProjected}). Keeping the current variant.`);
           break; // kan niet verder → stop met het beste (current)
         }
         if (json.status === 'error') {
@@ -698,7 +698,7 @@ export function LandingPageGenerateBlock({
         });
       }
     } catch (err) {
-      setAutoIterateError(err instanceof Error ? err.message : 'Verbeteren mislukt');
+      setAutoIterateError(err instanceof Error ? err.message : 'Improvement failed');
     } finally {
       setIsAutoIterating(false);
     }
@@ -710,14 +710,14 @@ export function LandingPageGenerateBlock({
     setStructuredVariantOptions(variantOptions.map((v, i) => (i === activeVariantIndex ? improved : v)));
     void scoreVariantFidelity(improved, activeVariantIndex);
     setAutoIterateError(null);
-    setAutoIterateMsg(`Toegepast: ${pendingProposal.before} → ${pendingProposal.after}.`);
+    setAutoIterateMsg(`Applied: ${pendingProposal.before} → ${pendingProposal.after}.`);
     setPendingProposal(null);
   }, [pendingProposal, variantOptions, activeVariantIndex, setStructuredVariantOptions, scoreVariantFidelity]);
 
   const discardProposal = useCallback(() => {
     setPendingProposal(null);
     setAutoIterateError(null);
-    setAutoIterateMsg('Voorstel verworpen — huidige variant blijft.');
+    setAutoIterateMsg('Proposal discarded — keeping the current variant.');
   }, []);
 
   // P4: auto-iterate-feedback is variant-specifiek. Reset bij het wisselen van
@@ -741,14 +741,14 @@ export function LandingPageGenerateBlock({
   if (briefIncomplete) {
     return (
       <div className="space-y-6">
-        <InfoBox variant="warning" size="md" title="Brief incompleet">
-          <p>Vul eerst minimaal Doel of Value Proposition in Step 1.</p>
+        <InfoBox variant="warning" size="md" title="Brief incomplete">
+          <p>First fill in at least Objective or Value Proposition in Step 1.</p>
           <button
             type="button"
             onClick={() => setActiveStep('context')}
             className="mt-2 inline-flex items-center gap-1 text-xs font-medium underline hover:opacity-80"
           >
-            <ArrowLeft className="h-3 w-3" />Terug naar Step 1
+            <ArrowLeft className="h-3 w-3" />Back to Step 1
           </button>
         </InfoBox>
       </div>
@@ -759,10 +759,10 @@ export function LandingPageGenerateBlock({
   if (!variantOptions && !chosenVariant && isGenerating) {
     return (
       <div className="space-y-6">
-        <InfoBox variant="info" size="md" title={`${selectedCount} landing-page varianten genereren…`}>
+        <InfoBox variant="info" size="md" title={`Generating ${selectedCount} landing page variants…`}>
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
-            <span>Verschillende invalshoeken in parallel — totaal 30-90 seconden.</span>
+            <span>Different angles in parallel — 30-90 seconds total.</span>
           </div>
         </InfoBox>
       </div>
@@ -773,20 +773,20 @@ export function LandingPageGenerateBlock({
   if (!variantOptions && !chosenVariant && error) {
     return (
       <div className="space-y-6">
-        <InfoBox variant="error" size="md" title="Generatie mislukt">{error}</InfoBox>
+        <InfoBox variant="error" size="md" title="Generation failed">{error}</InfoBox>
         <button
           type="button"
           onClick={() => { setError(null); void handleGenerate(); }}
           className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
         >
-          <Sparkles className="h-4 w-4" />Probeer opnieuw
+          <Sparkles className="h-4 w-4" />Try again
         </button>
         <button
           type="button"
           onClick={() => setActiveStep('context')}
           className="w-full inline-flex items-center justify-center gap-1 text-xs text-gray-600 underline hover:text-gray-900"
         >
-          <ArrowLeft className="h-3 w-3" />Brief aanpassen in Step 1
+          <ArrowLeft className="h-3 w-3" />Edit brief in Step 1
         </button>
       </div>
     );
@@ -799,7 +799,7 @@ export function LandingPageGenerateBlock({
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
           <p className="font-medium">
-            {variantOptions.length} variant{variantOptions.length === 1 ? '' : 'en'} klaar — vergelijk en kies welke past
+            {variantOptions.length} variant{variantOptions.length === 1 ? '' : 's'} ready — compare and pick the one that fits
           </p>
         </div>
         {/* Track 5 — F-VAL fidelity-score voor LP-variant. Verschijnt zodra
@@ -814,7 +814,7 @@ export function LandingPageGenerateBlock({
             actieve variant, zodat een screen reader bij tab-wissel aankondigt
             wélke variant de score betreft (relevanter nu het er tot 4 zijn). */}
         {variantOptions.length > 1 ? (
-          <p className="sr-only" aria-live="polite">Brand-fidelity score voor {variantLabel(activeVariantIndex)}</p>
+          <p className="sr-only" aria-live="polite">Brand fidelity score for {variantLabel(activeVariantIndex)}</p>
         ) : null}
         <FidelityScoreBar deliverableId={deliverableId} variantIndex={activeVariantIndex} suppressAutoIterateCta />
         {/* Thumbnail-selector: vergelijk A/B in één oogopslag + klik om te
@@ -825,7 +825,7 @@ export function LandingPageGenerateBlock({
             className="grid gap-3"
             style={{ gridTemplateColumns: `repeat(${variantOptions.length === 3 ? 3 : 2}, minmax(0, 1fr))` }}
             role="tablist"
-            aria-label="Kies een variant"
+            aria-label="Choose a variant"
           >
             {variantOptions.map((v, i) => {
               const isActive = activeVariantIndex === i;
@@ -865,9 +865,9 @@ export function LandingPageGenerateBlock({
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 text-sm font-medium hover:bg-emerald-100 disabled:opacity-50"
           >
             {isAutoIterating ? (
-              <><Loader2 className="h-4 w-4 animate-spin" />Verbeteren…</>
+              <><Loader2 className="h-4 w-4 animate-spin" />Improving…</>
             ) : (
-              <><Sparkles className="h-4 w-4" />Verbeter {variantLabel(activeVariantIndex)} automatisch</>
+              <><Sparkles className="h-4 w-4" />Improve {variantLabel(activeVariantIndex)} automatically</>
             )}
           </button>
         </div>
@@ -884,9 +884,9 @@ export function LandingPageGenerateBlock({
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <p className="text-sm font-medium text-emerald-900 flex items-center gap-1.5">
                 <Sparkles className="h-4 w-4 text-emerald-600" />
-                Voorstel: score {pendingProposal.before} → {pendingProposal.after}
-                {pendingProposal.iterations > 1 ? ` (${pendingProposal.iterations} iteraties)` : ''}
-                {' · '}{pendingProposal.changes.length} wijziging{pendingProposal.changes.length === 1 ? '' : 'en'}
+                Proposal: score {pendingProposal.before} → {pendingProposal.after}
+                {pendingProposal.iterations > 1 ? ` (${pendingProposal.iterations} iterations)` : ''}
+                {' · '}{pendingProposal.changes.length} change{pendingProposal.changes.length === 1 ? '' : 's'}
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -894,14 +894,14 @@ export function LandingPageGenerateBlock({
                   onClick={applyProposal}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700"
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5" />Toepassen
+                  <CheckCircle2 className="h-3.5 w-3.5" />Apply
                 </button>
                 <button
                   type="button"
                   onClick={discardProposal}
                   className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 text-xs font-medium hover:bg-gray-50"
                 >
-                  Verwerpen
+                  Discard
                 </button>
               </div>
             </div>
@@ -916,7 +916,7 @@ export function LandingPageGenerateBlock({
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-gray-500">Score verbeterd zonder zichtbare tekstwijzigingen.</p>
+              <p className="text-xs text-gray-500">Score improved without visible text changes.</p>
             )}
           </div>
         ) : null}
@@ -924,10 +924,10 @@ export function LandingPageGenerateBlock({
           <InfoBox
             variant="warning"
             size="sm"
-            title={`${partialDelivery.delivered} van ${partialDelivery.requested} varianten geleverd`}
+            title={`${partialDelivery.delivered} of ${partialDelivery.requested} variants delivered`}
             onDismiss={() => setPartialDelivery(null)}
           >
-            {partialDelivery.requested - partialDelivery.delivered} variant(en) niet gelukt (timeout of validatie-fail). Klik op de regenereer-knop om opnieuw te proberen, of werk verder met de geleverde.
+            {partialDelivery.requested - partialDelivery.delivered} variant(s) failed (timeout or validation error). Click the regenerate button to try again, or continue with the delivered ones.
           </InfoBox>
         ) : null}
         {/* Detail: ÉÉN full-width, leesbare kaart voor de actieve variant
@@ -950,7 +950,7 @@ export function LandingPageGenerateBlock({
                 </div>
                 <VariantPuckPreview variant={v} contextStack={contextStack} maxHeight={560} scroll />
                 <p className="text-[11px] text-gray-500 -mt-2">
-                  Leesbare preview (scroll voor de hele pagina) — tekst bewerk je na je keuze in de editor (Step 3).
+                  Readable preview (scroll for the full page) — edit text after your choice in the editor (Step 3).
                 </p>
                 <button
                   type="button"
@@ -959,9 +959,9 @@ export function LandingPageGenerateBlock({
                   className={`mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50`}
                 >
                   {isChoosing ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" />Opslaan...</>
+                    <><Loader2 className="h-4 w-4 animate-spin" />Saving...</>
                   ) : (
-                    <><CheckCircle2 className="h-4 w-4" />Kies deze variant</>
+                    <><CheckCircle2 className="h-4 w-4" />Choose this variant</>
                   )}
                 </button>
               </div>
@@ -992,7 +992,7 @@ export function LandingPageGenerateBlock({
           <InfoBox variant="info" size="sm">
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
-              <span>Hero-image genereren — de pagina opent met de foto…</span>
+              <span>Generating hero image — the page will open with the photo…</span>
             </div>
           </InfoBox>
         ) : null}
@@ -1000,7 +1000,7 @@ export function LandingPageGenerateBlock({
           <InfoBox variant="warning" size="sm" onDismiss={() => setVisualError(null)}>{visualError}</InfoBox>
         ) : null}
         {error ? (
-          <InfoBox variant="error" size="sm" title="Variant-keuze mislukt" onDismiss={() => setError(null)}>{error}</InfoBox>
+          <InfoBox variant="error" size="sm" title="Variant choice failed" onDismiss={() => setError(null)}>{error}</InfoBox>
         ) : null}
 
         {/* User-feedback 2026-05-28: hetzelfde Step 2 patroon als 'Content
@@ -1030,8 +1030,8 @@ export function LandingPageGenerateBlock({
         <div className="flex items-center gap-3 pt-2 border-t border-gray-100 flex-wrap">
           {/* P3a — aantal-selector: stuurt hoeveel varianten de regenereer-knop
               genereert. Default 2; 4 ≈ 2× generatietijd. */}
-          <div className="flex items-center gap-1.5" role="group" aria-label="Aantal varianten">
-            <span className="text-xs text-gray-500">Aantal:</span>
+          <div className="flex items-center gap-1.5" role="group" aria-label="Number of variants">
+            <span className="text-xs text-gray-500">Count:</span>
             {[2, 3, 4].map((n) => {
               const sel = selectedCount === n;
               return (
@@ -1041,7 +1041,7 @@ export function LandingPageGenerateBlock({
                   onClick={() => setSelectedCount(n)}
                   disabled={isGenerating || isChoosing}
                   aria-pressed={sel}
-                  title={n === 4 ? '4 varianten ≈ 2× generatietijd' : `${n} varianten`}
+                  title={n === 4 ? '4 variants ≈ 2× generation time' : `${n} variants`}
                   className={`w-7 h-7 rounded-md text-xs font-medium border transition-colors disabled:opacity-50 ${sel ? '' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
                   style={sel ? { borderColor: '#14b8a6', backgroundColor: '#f0fdfa', color: '#0f766e' } : undefined}
                 >
@@ -1057,9 +1057,9 @@ export function LandingPageGenerateBlock({
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
           >
             {isGenerating ? (
-              <><Loader2 className="h-4 w-4 animate-spin" />Regenereren...</>
+              <><Loader2 className="h-4 w-4 animate-spin" />Regenerating...</>
             ) : (
-              <><RefreshCw className="h-4 w-4" />Genereer {selectedCount} nieuwe variant{selectedCount === 1 ? '' : 'en'}</>
+              <><RefreshCw className="h-4 w-4" />Generate {selectedCount} new variant{selectedCount === 1 ? '' : 's'}</>
             )}
           </button>
           <button
@@ -1072,7 +1072,7 @@ export function LandingPageGenerateBlock({
             className={`ml-auto inline-flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-medium ${STUDIO.generateButton} disabled:opacity-50`}
           >
             {isChoosing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            Bevestig & ga door
+            Confirm & continue
           </button>
         </div>
       </div>
@@ -1094,9 +1094,9 @@ export function LandingPageGenerateBlock({
       <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 flex items-start gap-2">
         <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
         <div className="flex-1">
-          <p className="font-medium">Variant gekozen</p>
+          <p className="font-medium">Variant chosen</p>
           <p className="text-xs text-emerald-800 mt-0.5">
-            De pagina is opgebouwd in Step 3 (Medium). Klik hieronder om een andere variant te kiezen of door te gaan.
+            The page has been built in Step 3 (Medium). Click below to choose a different variant or continue.
           </p>
         </div>
       </div>
@@ -1107,7 +1107,7 @@ export function LandingPageGenerateBlock({
             onClick={() => setStructuredVariant(null)}
             className="text-xs font-medium text-gray-600 underline hover:text-gray-900"
           >
-            Andere variant kiezen
+            Choose a different variant
           </button>
         ) : null}
         <div className="ml-auto">
@@ -1190,7 +1190,7 @@ function VariantPuckPreview({
       ref={outerRef}
       className={`w-full rounded-lg border border-gray-200 bg-white ${scroll ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'}`}
       style={{ height: maxHeight != null ? boxHeight : undefined }}
-      aria-label="Pagina-preview"
+      aria-label="Page preview"
     >
       <div style={{ height: scaledHeight, position: 'relative' }}>
         <div
@@ -1284,14 +1284,14 @@ function VariantCompareCard({
           const next = data.variant as LandingPageVariantContent;
           setV((prev) => ({ ...prev, [section]: next[section] }));
         } else if (data.status === 'error') {
-          throw new Error(data.error ?? 'Regenereren mislukt');
+          throw new Error(data.error ?? 'Regeneration failed');
         } else if (data.status === 'skipped') {
-          setRegenError(data.reason === 'insufficient-content' ? 'Te weinig inhoud om te regenereren.' : 'Regenereren overgeslagen.');
+          setRegenError(data.reason === 'insufficient-content' ? 'Not enough content to regenerate.' : 'Regeneration skipped.');
         } else if (data.status === 'no_improvement') {
-          setRegenError('Geen verbetering gevonden — sectie ongewijzigd.');
+          setRegenError('No improvement found — section unchanged.');
         }
       })
-      .catch((err) => setRegenError(err instanceof Error ? err.message : 'Regenereren mislukt'))
+      .catch((err) => setRegenError(err instanceof Error ? err.message : 'Regeneration failed'))
       .finally(() => setRegenSection(null));
   }, [deliverableId, variantIndex]);
 
@@ -1310,10 +1310,10 @@ function VariantCompareCard({
       {/* P1a — WYSIWYG-preview: de echte (geschaalde) pagina uit deze variant. */}
       <VariantPuckPreview variant={v} contextStack={contextStack} maxHeight={560} scroll />
       <p className="text-[11px] text-gray-500 -mt-2">
-        Leesbare preview (scroll voor de hele pagina) — header-foto wordt bij je keuze gegenereerd. Bewerk de tekst hieronder; de preview werkt direct bij.
+        Readable preview (scroll for the full page) — the header photo is generated on your choice. Edit the text below; the preview updates instantly.
       </p>
       {regenError ? (
-        <InfoBox variant="error" size="sm" onDismiss={() => setRegenError(null)}>Regenereren mislukt: {regenError}</InfoBox>
+        <InfoBox variant="error" size="sm" onDismiss={() => setRegenError(null)}>Regeneration failed: {regenError}</InfoBox>
       ) : null}
 
       {/* Tekst-bewerking — ingeklapt zodat de preview centraal staat.
@@ -1322,7 +1322,7 @@ function VariantCompareCard({
       <details className="group">
         <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-1.5 select-none">
           <Pencil className="h-3.5 w-3.5" />
-          Bewerk inhoud · regenereer per sectie
+          Edit content · regenerate per section
         </summary>
         <div className="flex flex-col gap-4 pt-3">
 
@@ -1366,7 +1366,7 @@ function VariantCompareCard({
 
       {/* PROBLEM */}
       {v.problem ? (
-        <VariantSection title="Probleem" onRegenerate={() => regenerate('problem')} regenerating={regenSection === 'problem'}>
+        <VariantSection title="Problem" onRegenerate={() => regenerate('problem')} regenerating={regenSection === 'problem'}>
           <EditableField
             label="Heading"
             value={v.problem.heading}
@@ -1374,7 +1374,7 @@ function VariantCompareCard({
             fontClass="text-sm font-medium text-gray-800"
           />
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase mb-1">Pijnpunten</p>
+            <p className="text-xs font-medium text-gray-500 uppercase mb-1">Pain points</p>
             <ul className="text-xs text-gray-600 list-disc list-inside space-y-1">
               {v.problem.painBullets.map((p, i) => <li key={i}>{p}</li>)}
             </ul>
@@ -1496,9 +1496,9 @@ function VariantCompareCard({
         className={`mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50`}
       >
         {disabled ? (
-          <><Loader2 className="h-4 w-4 animate-spin" />Opslaan...</>
+          <><Loader2 className="h-4 w-4 animate-spin" />Saving...</>
         ) : (
-          <><CheckCircle2 className="h-4 w-4" />Kies deze variant</>
+          <><CheckCircle2 className="h-4 w-4" />Choose this variant</>
         )}
       </button>
     </div>
@@ -1529,10 +1529,10 @@ function VariantSection({
             onClick={onRegenerate}
             disabled={regenerating}
             className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-teal-700 disabled:opacity-50 transition-colors"
-            title="Regenereer alleen deze sectie"
+            title="Regenerate only this section"
           >
             {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-            {regenerating ? 'Bezig…' : 'Regenereer'}
+            {regenerating ? 'Working…' : 'Regenerate'}
           </button>
         ) : null}
       </div>
@@ -1546,8 +1546,8 @@ function VariantSection({
 const EditDeliverableCtx = createContext<string | undefined>(undefined);
 
 const MICRO_TRANSFORMS: ReadonlyArray<{ action: 'shorter' | 'urgent' | 'brand_voice'; label: string }> = [
-  { action: 'shorter', label: 'Korter' },
-  { action: 'urgent', label: 'Urgenter' },
+  { action: 'shorter', label: 'Shorter' },
+  { action: 'urgent', label: 'More urgent' },
   { action: 'brand_voice', label: 'Brand voice' },
 ];
 
@@ -1618,9 +1618,9 @@ function EditableField({
             />
           )}
           <div className="flex items-center gap-1 text-xs flex-wrap">
-            <button onClick={save} className="text-teal-700 font-medium hover:underline">Opslaan</button>
+            <button onClick={save} className="text-teal-700 font-medium hover:underline">Save</button>
             <span className="text-gray-400">·</span>
-            <button onClick={cancel} className="text-gray-500 hover:underline">Annuleer</button>
+            <button onClick={cancel} className="text-gray-500 hover:underline">Cancel</button>
             {dId ? (
               <>
                 <span className="text-gray-300 mx-1">|</span>
@@ -1650,7 +1650,7 @@ function EditableField({
             type="button"
             onClick={() => setEditing(true)}
             className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-teal-700 transition-opacity flex-shrink-0"
-            title="Bewerken"
+            title="Edit"
           >
             <Pencil className="h-3 w-3" />
           </button>

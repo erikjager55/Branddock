@@ -139,23 +139,23 @@ export function getRecommendedModality(deliverableTypeId: string): RecommendedMo
 export const MODALITY_LABELS: Record<RecommendedModality, { label: string; description: string }> = {
   photo: {
     label: "Photography",
-    description: "Realistic photo (lifestyle, product-shot, behind-the-scenes). Beste voor tastbare merkbeleving.",
+    description: "Realistic photo (lifestyle, product shot, behind-the-scenes). Best for tangible brand experience.",
   },
   illustration: {
     label: "Illustration",
-    description: "Digital illustration of vector-art. Beste voor concepten, metaphors, abstracte ideeën.",
+    description: "Digital illustration or vector art. Best for concepts, metaphors, abstract ideas.",
   },
   infographic: {
     label: "Infographic",
-    description: "Data-visualisatie, charts, diagrammen. Beste voor cijfers en complexe ideeën uitleg.",
+    description: "Data visualization, charts, diagrams. Best for numbers and explaining complex ideas.",
   },
   ugc: {
     label: "UGC-style",
-    description: "Authentieke, low-fi user-generated-content look. Beste voor TikTok, testimonials, social proof.",
+    description: "Authentic, low-fi user-generated-content look. Best for TikTok, testimonials, social proof.",
   },
   none: {
-    label: "Geen visual",
-    description: "Dit content-type werkt zonder beeld (pure-text formats zoals scripts, briefings, search ads).",
+    label: "No visual",
+    description: "This content type works without an image (pure-text formats such as scripts, briefs, search ads).",
   },
 };
 

@@ -947,7 +947,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                     <div>
                       <CardTitle>Icons</CardTitle>
                       <CardDescription>
-                        Icon stijl: <Badge variant="outline" className="ml-2">{styleData.icons.style}</Badge>
+                        Icon style: <Badge variant="outline" className="ml-2">{styleData.icons.style}</Badge>
                       </CardDescription>
                     </div>
                   </div>

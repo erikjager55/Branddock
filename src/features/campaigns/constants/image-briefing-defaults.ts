@@ -27,31 +27,31 @@ const DEFAULTS: Record<string, ImageBriefingDefaults> = {
     source: 'generate',
     styleDirection: 'lifestyle',
     modelHint: 'FLUX 2 Pro',
-    rationale: 'LinkedIn-feed converteert beter met human-context dan met productshots',
+    rationale: 'LinkedIn feed converts better with human context than with product shots',
   },
   'linkedin-article': {
     source: 'generate',
     styleDirection: 'lifestyle',
     modelHint: 'FLUX 2 Pro',
-    rationale: 'Long-form thought-leadership leunt op narratief beeld, niet op product',
+    rationale: 'Long-form thought leadership leans on narrative imagery, not product',
   },
   'linkedin-ad': {
     source: 'generate',
     styleDirection: 'product-shot',
     modelHint: 'GPT Image 2',
-    rationale: 'Ads converteren beter met clear product-focus + brand-text-accurate model',
+    rationale: 'Ads convert better with a clear product focus + a brand-text-accurate model',
   },
   'instagram-post': {
     source: 'generate',
     styleDirection: 'lifestyle',
     modelHint: 'FLUX 2 Pro',
-    rationale: 'IG-feed = lifestyle/aesthetic; persona-shot landt sterker dan product',
+    rationale: 'IG feed = lifestyle/aesthetic; a persona shot lands stronger than product',
   },
   'social-carousel': {
     source: 'generate',
     styleDirection: 'infographic',
     modelHint: 'GPT Image 2',
-    rationale: 'Carousel = stap-voor-stap → infographic-stijl met crisp text rendering',
+    rationale: 'Carousel = step-by-step → infographic style with crisp text rendering',
   },
   // tiktok-script default fallback van trained-style → lifestyle.
   // Reden (decision 2026-05-08): Better Brands pilot heeft (vermoedelijk)
@@ -63,13 +63,13 @@ const DEFAULTS: Record<string, ImageBriefingDefaults> = {
     source: 'generate',
     styleDirection: 'lifestyle',
     modelHint: 'FLUX 2 Pro',
-    rationale: 'UGC-stijl past, maar trained-style vereist getrainde LoRA — fallback naar lifestyle is pilot-veilig',
+    rationale: 'UGC style fits, but trained-style requires a trained LoRA — falling back to lifestyle is pilot-safe',
   },
   'facebook-post': {
     source: 'library',
     styleDirection: 'lifestyle',
     modelHint: 'Library asset',
-    rationale: 'FB heeft minder ruimte voor productie — library-pick is realistisch first-pass',
+    rationale: 'FB leaves less room for production — a library pick is a realistic first pass',
   },
 
   // ── Email ────────────────────────────────────────────────
@@ -77,19 +77,19 @@ const DEFAULTS: Record<string, ImageBriefingDefaults> = {
     source: 'generate',
     styleDirection: 'lifestyle',
     modelHint: 'FLUX 2 Pro',
-    rationale: 'Header-beeld lifestyle werkt beter dan productshot in inbox',
+    rationale: 'A lifestyle header image works better than a product shot in the inbox',
   },
   'welcome-sequence': {
     source: 'generate',
     styleDirection: 'illustration',
     modelHint: 'Recraft V3',
-    rationale: 'Onboarding mailings hebben friendly/illustrated beeld nodig — niet zwaar productieel',
+    rationale: 'Onboarding emails need friendly/illustrated imagery — not heavily produced',
   },
   'promotional-email': {
     source: 'generate',
     styleDirection: 'product-shot',
     modelHint: 'GPT Image 2',
-    rationale: 'Promo = product front-and-center; text-rendering nodig voor packaging/labels',
+    rationale: 'Promo = product front and center; text rendering needed for packaging/labels',
   },
 
   // ── Long-Form / Blog ─────────────────────────────────────
@@ -97,13 +97,13 @@ const DEFAULTS: Record<string, ImageBriefingDefaults> = {
     source: 'generate',
     styleDirection: 'illustration',
     modelHint: 'Recraft V3',
-    rationale: 'Editorial blog-hero is illustration > foto; differentieert van stockfoto-generieke websites',
+    rationale: 'An editorial blog hero is illustration > photo; sets you apart from generic stock-photo websites',
   },
   whitepaper: {
     source: 'generate',
     styleDirection: 'infographic',
     modelHint: 'GPT Image 2',
-    rationale: 'Tech-content = data viz, headline numbers, structured layout',
+    rationale: 'Tech content = data viz, headline numbers, structured layout',
   },
 
   // ── Web Pages ────────────────────────────────────────────
@@ -116,13 +116,13 @@ const DEFAULTS: Record<string, ImageBriefingDefaults> = {
     source: 'compose',
     styleDirection: 'lifestyle',
     modelHint: 'FLUX Pro Kontext (compose)',
-    rationale: 'Landing-hero verdient compose: persona + product + setting samengesmolten',
+    rationale: 'A landing hero deserves compose: persona + product + setting fused together',
   },
   'product-page': {
     source: 'generate',
     styleDirection: 'product-shot',
     modelHint: 'GPT Image 2',
-    rationale: 'Productshot met text-accurate packaging — de standaard hier',
+    rationale: 'Product shot with text-accurate packaging — the standard here',
   },
 
   // ── Sales / Decks ────────────────────────────────────────
@@ -130,25 +130,25 @@ const DEFAULTS: Record<string, ImageBriefingDefaults> = {
     source: 'library',
     styleDirection: 'behind-the-scenes',
     modelHint: 'Library asset',
-    rationale: 'Case-study leent op echte klant-foto\'s > AI-generation',
+    rationale: 'A case study leans on real customer photos > AI generation',
   },
   'one-pager': {
     source: 'generate',
     styleDirection: 'data-driven',
     modelHint: 'GPT Image 2',
-    rationale: 'Sales one-pager = chart-led editorial met getallen prominent',
+    rationale: 'A sales one-pager = chart-led editorial with numbers prominent',
   },
   'sales-deck': {
     source: 'generate',
     styleDirection: 'infographic',
     modelHint: 'GPT Image 2',
-    rationale: 'Per-slide infographic > foto; sluiers uitlegfunctie',
+    rationale: 'Per-slide infographic > photo; supports the explanatory function',
   },
   'proposal-template': {
     source: 'generate',
     styleDirection: 'quote-text',
     modelHint: 'GPT Image 2',
-    rationale: 'Cover = quote/headline-led, niet illustratief',
+    rationale: 'Cover = quote/headline-led, not illustrative',
   },
 
   // ── PR / Comms ───────────────────────────────────────────
@@ -156,37 +156,37 @@ const DEFAULTS: Record<string, ImageBriefingDefaults> = {
     source: 'library',
     styleDirection: 'lifestyle',
     modelHint: 'Library asset',
-    rationale: 'PR vraagt om verifieerbare beelden; library-asset > gegenereerd',
+    rationale: 'PR calls for verifiable imagery; a library asset > generated',
   },
   'media-pitch': {
     source: 'library',
     styleDirection: 'behind-the-scenes',
     modelHint: 'Library asset',
-    rationale: 'Authenticiteit > productie — idem PR',
+    rationale: 'Authenticity > production — same as PR',
   },
   'career-page': {
     source: 'library',
     styleDirection: 'behind-the-scenes',
     modelHint: 'Library asset',
-    rationale: 'Echte team-foto\'s verslaan AI-gen voor employer-branding',
+    rationale: 'Real team photos beat AI generation for employer branding',
   },
   'job-ad-copy': {
     source: 'library',
     styleDirection: 'behind-the-scenes',
     modelHint: 'Library asset',
-    rationale: 'Echte team-foto\'s verslaan AI-gen voor employer-branding',
+    rationale: 'Real team photos beat AI generation for employer branding',
   },
   'employee-story': {
     source: 'library',
     styleDirection: 'behind-the-scenes',
     modelHint: 'Library asset',
-    rationale: 'Echte team-foto\'s verslaan AI-gen voor employer-branding',
+    rationale: 'Real team photos beat AI generation for employer branding',
   },
   'internal-comms': {
     source: 'generate',
     styleDirection: 'illustration',
     modelHint: 'Recraft V3',
-    rationale: 'Intern mag illustrated; foto voelt geforceerd',
+    rationale: 'Internal can be illustrated; a photo feels forced',
   },
   'impact-report': {
     source: 'generate',

@@ -157,7 +157,7 @@ function evaluateForbiddenWord(text: string, c: CompiledRule): RuleViolation[] {
       ruleType: 'FORBIDDEN_WORD',
       pattern: c.rule.pattern,
       severity: severity(c.rule),
-      message: c.rule.message ?? `Vermijd "${m[0]}"`,
+      message: c.rule.message ?? `Avoid "${m[0]}"`,
       snippet: m[0],
       position: m.index,
     });
@@ -175,7 +175,7 @@ function evaluateRequiredPhrase(text: string, c: CompiledRule): RuleViolation[] 
       ruleType: 'REQUIRED_PHRASE',
       pattern: c.rule.pattern,
       severity: severity(c.rule),
-      message: c.rule.message ?? `Verplichte formulering ontbreekt: "${c.rule.pattern}"`,
+      message: c.rule.message ?? `Required phrasing missing: "${c.rule.pattern}"`,
       snippet: '',
       position: 0,
     },
@@ -198,7 +198,7 @@ function evaluateStyleLimit(text: string, c: CompiledRule): RuleViolation[] {
           ruleType: 'STYLE_LIMIT',
           pattern: c.rule.pattern,
           severity: severity(c.rule),
-          message: c.rule.message ?? `Zin van ${wc} woorden overschrijdt limiet (${value})`,
+          message: c.rule.message ?? `Sentence of ${wc} words exceeds limit (${value})`,
           snippet: s.slice(0, 80) + (s.length > 80 ? '…' : ''),
           position: text.indexOf(s),
         });
@@ -212,7 +212,7 @@ function evaluateStyleLimit(text: string, c: CompiledRule): RuleViolation[] {
         ruleType: 'STYLE_LIMIT',
         pattern: c.rule.pattern,
         severity: severity(c.rule),
-        message: c.rule.message ?? `${bullets} bullets overschrijdt limiet (${value})`,
+        message: c.rule.message ?? `${bullets} bullets exceed limit (${value})`,
         snippet: '',
         position: 0,
       });
@@ -226,7 +226,7 @@ function evaluateStyleLimit(text: string, c: CompiledRule): RuleViolation[] {
         ruleType: 'STYLE_LIMIT',
         pattern: c.rule.pattern,
         severity: severity(c.rule),
-        message: c.rule.message ?? `Te veel opeenvolgende bullets (limiet: ${value})`,
+        message: c.rule.message ?? `Too many consecutive bullets (limit: ${value})`,
         snippet: m[0].slice(0, 80) + '…',
         position: m.index,
       });
@@ -249,7 +249,7 @@ function evaluatePillarReference(text: string, c: CompiledRule): RuleViolation[]
       severity: severity(c.rule),
       message:
         c.rule.message ??
-        `Output mist verwijzing naar één van: ${c.pillarKeywords.join(', ')}`,
+        `Output is missing a reference to one of: ${c.pillarKeywords.join(', ')}`,
       snippet: '',
       position: 0,
     },

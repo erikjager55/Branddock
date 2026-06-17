@@ -51,15 +51,15 @@ function AutoIteratePanel({ metrics }: { metrics: AutoIterateMetrics }) {
       ? Math.round((metrics.successCount / metrics.totalRuns) * 100)
       : 0;
   return (
-    <Card icon={Repeat} title="Auto-iterate (30 dagen)">
+    <Card icon={Repeat} title="Auto-iterate (30 days)">
       {metrics.totalRuns === 0 ? (
-        <EmptyState message="Nog geen auto-iterate runs. Schakel FEATURE_AUTO_ITERATE=true in om te starten." />
+        <EmptyState message="No auto-iterate runs yet. Set FEATURE_AUTO_ITERATE=true to get started." />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Stat label="Totaal runs" value={metrics.totalRuns} />
-          <Stat label="Success-rate" value={`${successRate}%`} accent={successRate >= 70} />
-          <Stat label="Gem. iteraties" value={metrics.avgIterations.toFixed(1)} />
-          <Stat label="Gem. score-delta" value={`+${metrics.avgScoreImprovement}`} accent />
+          <Stat label="Total runs" value={metrics.totalRuns} />
+          <Stat label="Success rate" value={`${successRate}%`} accent={successRate >= 70} />
+          <Stat label="Avg. iterations" value={metrics.avgIterations.toFixed(1)} />
+          <Stat label="Avg. score delta" value={`+${metrics.avgScoreImprovement}`} accent />
         </div>
       )}
     </Card>
@@ -75,9 +75,9 @@ function TemplateEffectivenessPanel({
 }) {
   const top5 = templates.slice(0, 5);
   return (
-    <Card icon={Sparkles} title="Top hint-templates (effectiviteit)">
+    <Card icon={Sparkles} title="Top hint templates (effectiveness)">
       {top5.length === 0 ? (
-        <EmptyState message="Geen template-applications geregistreerd. Volgt na eerste auto-iterate run." />
+        <EmptyState message="No template applications recorded. Appears after the first auto-iterate run." />
       ) : (
         <div className="space-y-2">
           {top5.map((tpl) => (
@@ -112,18 +112,18 @@ function TemplateEffectivenessPanel({
 function EditDistancePanel({ rows }: { rows: EditDistanceRow[] }) {
   const totalEdits = rows.reduce((sum, r) => sum + r.totalEdits, 0);
   return (
-    <Card icon={FileEdit} title={`Inline-edits per component-type (${totalEdits} total)`}>
+    <Card icon={FileEdit} title={`Inline edits per component type (${totalEdits} total)`}>
       {rows.length === 0 ? (
-        <EmptyState message="Nog geen content.edited events geregistreerd." />
+        <EmptyState message="No content.edited events recorded yet." />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
-                <th className="py-2 pr-4">Component-type</th>
+                <th className="py-2 pr-4">Component type</th>
                 <th className="py-2 pr-4 text-right">Edits</th>
                 <th className="py-2 pr-4 text-right">Significant (&gt;20%)</th>
-                <th className="py-2 pr-4 text-right">Gem. distance</th>
+                <th className="py-2 pr-4 text-right">Avg. distance</th>
               </tr>
             </thead>
             <tbody>

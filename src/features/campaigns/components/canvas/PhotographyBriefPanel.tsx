@@ -61,13 +61,13 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
       <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
         <Camera className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-700" />
         <div>
-          <p className="font-medium">Echte fotografie workflow</p>
+          <p className="font-medium">Real photography workflow</p>
           <p className="mt-0.5">
-            Voor authenticity-critical content (case-studies, testimonials, locatie-specifiek)
-            converteert echte fotografie hoger dan AI-stock.
-            Branddock genereert een briefing voor de fotograaf op basis van je
-            Visual Brief + brand-context.
-            Na de shoot: upload de foto via de Upload-tab.
+            For authenticity-critical content (case studies, testimonials, location-specific)
+            real photography converts better than AI stock.
+            Branddock generates a brief for the photographer based on your
+            Visual Brief + brand context.
+            After the shoot: upload the photo via the Upload tab.
           </p>
         </div>
       </div>
@@ -80,14 +80,14 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium disabled:opacity-50"
         >
           <Wand2 className="h-4 w-4" />
-          Genereer fotograaf-briefing
+          Generate photographer brief
         </button>
       )}
 
       {busy && (
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Briefing wordt opgesteld op basis van brand-context...
+          Brief is being drafted based on brand context...
         </div>
       )}
 
@@ -101,7 +101,7 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
       {markdown && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-gray-700">Fotograaf-briefing</p>
+            <p className="text-xs font-medium text-gray-700">Photographer brief</p>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -117,7 +117,7 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
                 disabled={busy}
                 className="text-xs text-amber-700 hover:text-amber-800 underline"
               >
-                Opnieuw genereren
+                Regenerate
               </button>
             </div>
           </div>
@@ -127,8 +127,8 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
             </pre>
           </div>
           <div className="rounded-md bg-blue-50 border border-blue-200 p-2.5 text-[11px] text-blue-900">
-            Klaar met de shoot? Switch naar de Upload-tab om de foto aan dit
-            content-item toe te voegen.
+            Done with the shoot? Switch to the Upload tab to add the photo to this
+            content item.
           </div>
         </div>
       )}

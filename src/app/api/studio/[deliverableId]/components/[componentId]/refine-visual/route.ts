@@ -118,7 +118,7 @@ export async function POST(
     if (score.compositeScore >= REFINE_TRIGGER_THRESHOLD) {
       return NextResponse.json(
         {
-          error: `Composite score ${score.compositeScore} ≥ threshold ${REFINE_TRIGGER_THRESHOLD} — refine niet nodig`,
+          error: `Composite score ${score.compositeScore} ≥ threshold ${REFINE_TRIGGER_THRESHOLD} — refine not needed`,
           code: "threshold-met",
         },
         { status: 422 },
@@ -156,7 +156,7 @@ export async function POST(
     if (composeInputs.length < 2) {
       return NextResponse.json(
         {
-          error: "Workspace heeft geen brand-style-anchors — refine vereist minimaal 1 anchor om composeFromImages te voeden",
+          error: "Workspace has no brand-style anchors — refine requires at least 1 anchor to feed composeFromImages",
           code: "missing-anchors",
         },
         { status: 422 },
@@ -176,7 +176,7 @@ export async function POST(
       if (err instanceof ComposePolicyBlockedError) {
         return NextResponse.json(
           {
-            error: "Refine geblokkeerd door content-policy van Gemini. Pas de input aan of probeer opnieuw.",
+            error: "Refine blocked by Gemini's content policy. Adjust the input or try again.",
             code: "policy",
           },
           { status: 422 },

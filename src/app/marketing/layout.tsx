@@ -12,18 +12,18 @@ import './marketing.css';
 export const metadata: Metadata = {
   title: 'Branddock — AI-powered brand strategy + content generation',
   description:
-    'Branddock combineert brand strategy, audience research en AI content generation in één platform. Voor B2B SaaS marketing teams.',
+    'Branddock combines brand strategy, audience research and AI content generation in one platform. For B2B SaaS marketing teams.',
   openGraph: {
     title: 'Branddock — Brand strategy + AI content',
-    description: 'AI-content die past bij jouw merk. Niet generiek. Niet AI-clichés.',
+    description: 'AI content that fits your brand. Not generic. Not AI clichés.',
     type: 'website',
-    locale: 'nl_NL',
+    locale: 'en_US',
     siteName: 'Branddock',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Branddock',
-    description: 'AI-content die past bij jouw merk',
+    description: 'AI content that fits your brand',
   },
 };
 
@@ -62,7 +62,7 @@ function MarketingNav() {
           href="/?utm_source=marketing-site&utm_medium=nav"
           className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 transition-opacity"
         >
-          Start gratis
+          Start free
         </Link>
       </div>
     </header>
@@ -105,7 +105,7 @@ function MarketingFooter() {
         </div>
       </div>
       <div className="border-t border-gray-200 px-6 py-4 text-xs text-gray-500 max-w-6xl mx-auto">
-        © {new Date().getFullYear()} Branddock. Alle rechten voorbehouden.
+        © {new Date().getFullYear()} Branddock. All rights reserved.
       </div>
     </footer>
   );

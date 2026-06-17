@@ -154,7 +154,7 @@ function pushTaglineChange(
       before: prev.tagline,
       after: next.tagline,
     },
-    summary: `Tagline gewijzigd: "${prev.tagline ?? '(leeg)'}" → "${next.tagline ?? '(leeg)'}"`,
+    summary: `Tagline changed: "${prev.tagline ?? '(empty)'}" → "${next.tagline ?? '(empty)'}"`,
     detectionMethod: 'hash-diff',
     confidence: null,
   });
@@ -178,7 +178,7 @@ function pushValuePropChange(
       before: prev.valueProposition,
       after: next.valueProposition,
     },
-    summary: 'Value proposition is herschreven',
+    summary: 'Value proposition was rewritten',
     detectionMethod: 'hash-diff',
     confidence: null,
   });
@@ -213,8 +213,8 @@ function pushPricingChange(
       detailsSignificant,
     },
     summary: modelChanged
-      ? `Pricing-model gewijzigd: ${prev.pricingModel ?? '(onbekend)'} → ${next.pricingModel ?? '(onbekend)'}`
-      : 'Pricing-details substantieel herschreven',
+      ? `Pricing model changed: ${prev.pricingModel ?? '(unknown)'} → ${next.pricingModel ?? '(unknown)'}`
+      : 'Pricing details substantially rewritten',
     detectionMethod: 'hash-diff',
     confidence: null,
   });
@@ -245,8 +245,8 @@ function pushOfferingChanges(
       },
       summary:
         added.length === 1
-          ? `Nieuw aanbod: ${added[0]}`
-          : `${added.length} nieuwe aanbod-items toegevoegd`,
+          ? `New offering: ${added[0]}`
+          : `${added.length} new offering items added`,
       detectionMethod: 'hash-diff',
       confidence: null,
     });
@@ -265,8 +265,8 @@ function pushOfferingChanges(
       },
       summary:
         removed.length === 1
-          ? `Aanbod verwijderd: ${removed[0]}`
-          : `${removed.length} aanbod-items verwijderd`,
+          ? `Offering removed: ${removed[0]}`
+          : `${removed.length} offering items removed`,
       detectionMethod: 'hash-diff',
       confidence: null,
     });
@@ -366,8 +366,8 @@ const CONTENT_FORMAT_TO_ACTIVITY: Partial<Record<ContentFormat, CompetitorActivi
 };
 
 const CONTENT_FORMAT_LABEL: Partial<Record<ContentFormat, string>> = {
-  [ContentFormat.BLOG_POST]: 'blogpost',
-  [ContentFormat.PRESS_RELEASE]: 'persbericht',
+  [ContentFormat.BLOG_POST]: 'blog post',
+  [ContentFormat.PRESS_RELEASE]: 'press release',
   [ContentFormat.CASE_STUDY]: 'case study',
 };
 
@@ -395,7 +395,7 @@ export function buildContentItemActivities(
       type,
       severity: 'NOTABLE',
       diffPayload: payload,
-      summary: `Nieuwe ${CONTENT_FORMAT_LABEL[item.format] ?? 'content'}: ${item.title}`,
+      summary: `New ${CONTENT_FORMAT_LABEL[item.format] ?? 'content'}: ${item.title}`,
       detectionMethod: 'content-discovery',
       confidence: null,
     });

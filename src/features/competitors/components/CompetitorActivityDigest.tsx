@@ -47,7 +47,7 @@ export function CompetitorActivityDigest({ onNavigateToDetail }: CompetitorActiv
       <Card>
         <div className="flex items-center gap-2 text-red-600 text-sm">
           <AlertTriangle className="h-4 w-4" />
-          Kan activity-digest niet laden
+          Couldn't load activity digest
         </div>
       </Card>
     );
@@ -75,7 +75,7 @@ export function CompetitorActivityDigest({ onNavigateToDetail }: CompetitorActiv
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-emerald-600" />
           <h3 className="text-sm font-semibold text-gray-900">
-            Concurrent-signalen ({window === "7d" ? "deze week" : "30 dagen"})
+            Competitor signals ({window === "7d" ? "this week" : "30 days"})
           </h3>
         </div>
         <div className="flex gap-1">
@@ -134,7 +134,7 @@ export function CompetitorActivityDigest({ onNavigateToDetail }: CompetitorActiv
       {data.hotCompetitors.length > 0 && (
         <div>
           <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">
-            Meeste signalen
+            Most signals
           </div>
           <div className="flex flex-wrap gap-2">
             {data.hotCompetitors.map((c) => (

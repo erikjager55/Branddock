@@ -55,7 +55,7 @@ export function VoiceBaseline1Pager() {
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-gray-900">Brand Voice Baseline</span>
           <span className="text-xs text-gray-500">
-            (zoals F-VAL + Strategy Analyst de baseline lezen)
+            (as F-VAL + Strategy Analyst read the baseline)
           </span>
         </div>
         {collapsed ? (
@@ -71,7 +71,7 @@ export function VoiceBaseline1Pager() {
           <Section
             title="Tone-attributes"
             empty={data.attributes.length === 0}
-            emptyHint={`${data.derivedFromCount.attributesAvailable}/4 axes vastgelegd`}
+            emptyHint={`${data.derivedFromCount.attributesAvailable}/4 axes defined`}
           >
             <div className="space-y-2">
               {data.attributes.map((attr) => (
@@ -81,15 +81,15 @@ export function VoiceBaseline1Pager() {
           </Section>
 
           {/* Section 2: Preferred + avoid termen */}
-          <Section title="Termen" empty={false}>
+          <Section title="Terms" empty={false}>
             <div className="space-y-3">
               <TermGroup
-                label="Voorkeur (top 10)"
+                label="Preferred (top 10)"
                 terms={data.preferredTermsTop10}
                 tone="positive"
               />
               <TermGroup
-                label="Vermijden (top 10)"
+                label="Avoid (top 10)"
                 terms={data.avoidTermsTop10}
                 tone="negative"
               />
@@ -100,7 +100,7 @@ export function VoiceBaseline1Pager() {
           <Section
             title="Style rules"
             empty={data.styleRules.length === 0}
-            emptyHint="Voltooi BV anti-patterns"
+            emptyHint="Complete BV anti-patterns"
           >
             <ol className="space-y-1.5 text-sm text-gray-700 list-decimal list-inside">
               {data.styleRules.map((rule, i) => (
@@ -134,7 +134,7 @@ function Section({
       </h3>
       {empty ? (
         <p className="text-sm text-gray-400 italic">
-          Nog niet vastgelegd
+          Not yet defined
           {emptyHint ? ` (${emptyHint})` : ''}
         </p>
       ) : (
@@ -178,7 +178,7 @@ function TermGroup({
     return (
       <div>
         <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
-        <p className="text-sm text-gray-400 italic">Nog niet vastgelegd</p>
+        <p className="text-sm text-gray-400 italic">Not yet defined</p>
       </div>
     );
   }
@@ -208,11 +208,11 @@ function EmptyVoiceBaseline() {
     <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 mb-6 flex items-start gap-3">
       <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
       <div className="text-sm">
-        <p className="font-semibold text-amber-900 mb-1">Voice baseline nog niet vastgelegd</p>
+        <p className="font-semibold text-amber-900 mb-1">Voice baseline not yet defined</p>
         <p className="text-amber-800">
-          F-VAL judge en Strategy Analyst (toekomstig) hebben de Brand Voiceguide
-          nodig als baseline. Voltooi de Voice DNA + Vocabulary + Anti-patterns
-          secties om hier het werkkader te zien.
+          The F-VAL judge and Strategy Analyst (upcoming) need the Brand Voiceguide
+          as a baseline. Complete the Voice DNA + Vocabulary + Anti-patterns
+          sections to see the framework here.
         </p>
       </div>
     </div>

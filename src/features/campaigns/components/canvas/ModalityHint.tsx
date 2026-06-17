@@ -55,7 +55,7 @@ export function ModalityHint() {
         <p className={`font-medium ${accent.text}`}>
           <span className="inline-flex items-center gap-1">
             <Icon className="w-3 h-3" />
-            {meta.label} aanbevolen voor dit content-type
+            {meta.label} recommended for this content type
           </span>
         </p>
         <p className="text-gray-600 mt-0.5 leading-snug">{meta.description}</p>

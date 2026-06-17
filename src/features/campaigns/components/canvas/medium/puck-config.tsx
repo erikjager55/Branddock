@@ -403,7 +403,7 @@ export function buildSpikePuckConfig(
   const tokens: BrandTokens = ctx?.brandTokens ?? extractBrandTokensFromContext(ctx?.brand);
   const personas = ctx?.personas ?? [];
   const personaOptions = [
-    { label: '— Geen persona —', value: '' },
+    { label: '— No persona —', value: '' },
     ...personas.map((p) => ({ label: p.name, value: p.id })),
   ];
 
@@ -481,8 +481,8 @@ function statsBlockComponent(tokens: BrandTokens) {
     },
     defaultProps: {
       items: [
-        { value: '500+', label: 'Klanten' },
-        { value: '99%', label: 'Tevredenheid' },
+        { value: '500+', label: 'Customers' },
+        { value: '99%', label: 'Satisfaction' },
         { value: '24/7', label: 'Support' },
       ],
     },
@@ -581,8 +581,8 @@ function stickyCtaBarComponent(tokens: BrandTokens) {
       href: { type: 'text' as const },
     },
     defaultProps: {
-      label: 'Klaar om te starten?',
-      ctaLabel: 'Plan een afspraak',
+      label: 'Ready to get started?',
+      ctaLabel: 'Book a meeting',
       href: '#',
     },
     render: ({ label, ctaLabel, href }: StickyCtaBarProps) => {
@@ -1757,8 +1757,8 @@ function testimonialComponent(
       personaId: { type: 'select' as const, options: personaOptions },
     },
     defaultProps: {
-      quote: '"Branddock heeft onze launch-snelheid verdubbeld."',
-      author: 'Tevreden klant',
+      quote: '"Branddock doubled our launch speed."',
+      author: 'Happy customer',
       personaId: '',
     },
     render: ({ quote, author, personaId }: TestimonialProps) => {
@@ -2080,14 +2080,14 @@ function faqComponent(tokens: BrandTokens) {
           question: { type: 'text' as const },
           answer: { type: 'textarea' as const },
         },
-        defaultItemProps: { question: 'Vraag?', answer: 'Antwoord.' },
+        defaultItemProps: { question: 'Question?', answer: 'Answer.' },
         getItemSummary: (item: FaqItem) => item.question || 'Untitled question',
       },
     },
     defaultProps: {
       items: [
-        { question: 'Hoe werkt het?', answer: 'Zeer eenvoudig.' },
-        { question: 'Wat kost het?', answer: 'Zie pricing.' },
+        { question: 'How does it work?', answer: 'Very simple.' },
+        { question: 'What does it cost?', answer: 'See pricing.' },
       ],
     },
     render: ({ items, bandTone, heading, anchorId }: FAQProps) => {
@@ -2548,10 +2548,10 @@ function anchorNavComponent(tokens: BrandTokens, logoUrl: string | null = null, 
     defaultProps: {
       brandName: 'Brand Name',
       links: [
-        { label: 'Verhaal', href: '#verhaal' },
-        { label: 'Meedoen', href: '#meedoen' },
+        { label: 'Story', href: '#verhaal' },
+        { label: 'Join', href: '#meedoen' },
       ],
-      ctaLabel: 'Doe mee',
+      ctaLabel: 'Join',
       ctaHref: '#meedoen',
     },
     render: ({ brandName, links, ctaLabel, ctaHref, numbered }: AnchorNavProps) => (
@@ -2768,8 +2768,8 @@ function highlightCardsComponent(tokens: BrandTokens) {
       // microsite-builder zet 'm expliciet op false (inactief, present-in-tree).
       active: true,
       items: [
-        { title: 'Ons verhaal', description: 'Waarom deze campagne bestaat.', href: '#verhaal' },
-        { title: 'Doe mee', description: 'Sluit je aan.', href: '#meedoen' },
+        { title: 'Our story', description: 'Why this campaign exists.', href: '#verhaal' },
+        { title: 'Join', description: 'Sign up.', href: '#meedoen' },
       ],
     },
     render: ({ items, bandTone, active }: HighlightCardsProps) => {
@@ -2875,7 +2875,7 @@ function richTextComponent(tokens: BrandTokens) {
       content: { type: 'textarea' as const },
     },
     defaultProps: {
-      content: 'Schrijf hier je inhoud.',
+      content: 'Write your content here.',
     },
     render: ({ content, bandTone, anchorId }: RichTextProps) => {
       const sectionBg = sectionBandBg(tokens, bandTone);

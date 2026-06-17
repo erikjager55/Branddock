@@ -231,7 +231,7 @@ function ExamplePhrasesEditor({ voiceguide }: { voiceguide: BrandVoiceguide }) {
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h3 className="text-sm font-semibold text-gray-900 mb-2">Do / Don&apos;t examples</h3>
         <p className="text-xs text-gray-500 mb-3">
-          Concrete fraserings-voorbeelden die laten zien hoe het merk wel en niet schrijft.
+          Concrete phrasing examples that show how the brand does and does not write.
         </p>
         <button
           type="button"

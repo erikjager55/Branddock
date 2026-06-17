@@ -116,13 +116,13 @@ export function ComponentDiffPreviewModal({
                 color: '#64748b',
               }}
             >
-              AI wil {editDistance}% van de tekst wijzigen
+              AI wants to change {editDistance}% of the text
             </p>
           </div>
           <button
             type="button"
             onClick={onReject}
-            aria-label="Sluiten"
+            aria-label="Close"
             style={{
               background: 'transparent',
               border: 'none',

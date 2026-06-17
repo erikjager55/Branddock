@@ -72,7 +72,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         // Load context-stack voor brand + voiceguide + threshold lookup
         const stack = await assembleCanvasContext(deliverableId, workspaceId);
         if (!stack.brand?.brandName) {
-          sendError('Geen brand-context beschikbaar voor auto-iteratie');
+          sendError('No brand context available for auto-iteration');
           controller.close();
           return;
         }
@@ -119,15 +119,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             fvalFloor: FVAL_FLOOR,
             componentCount: components.length,
           });
-          const typeLabel = typeDef?.name ?? 'dit content-type';
+          const typeLabel = typeDef?.name ?? 'this content type';
           // Splits gate-floor (F-VAL hard requirement) van type-target
           // (advies); voor short-form types waar minWords < 50, voorkomt dit
           // dat de error "minimum 50" zegt terwijl content-type docs e.g. 20
           // noemen — beide expliciet maken haalt verwarring weg.
           const msg =
             typeMinWords < FVAL_FLOOR
-              ? `Variant A bevat ${wordCount} woorden. Minimum ${FVAL_FLOOR} woorden nodig voor fidelity-scoring (richtlijn voor ${typeLabel}: ${typeMinWords}+ woorden). Genereer opnieuw of vul handmatig aan.`
-              : `Variant A bevat ${wordCount} woorden, minimum voor ${typeLabel} is ${typeMinWords} woorden. Genereer opnieuw of vul handmatig aan.`;
+              ? `Variant A contains ${wordCount} words. At least ${FVAL_FLOOR} words are needed for fidelity scoring (guideline for ${typeLabel}: ${typeMinWords}+ words). Regenerate or add content manually.`
+              : `Variant A contains ${wordCount} words, the minimum for ${typeLabel} is ${typeMinWords} words. Regenerate or add content manually.`;
           sendError(msg);
           controller.close();
           return;
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           targetWordCountOverride: resolveScoringWordCountOverride(stack.deliverableTypeId, blobText),
         });
         if (!initialOutcome) {
-          sendError('Score-berekening faalde — probeer opnieuw');
+          sendError('Score calculation failed — please try again');
           controller.close();
           return;
         }

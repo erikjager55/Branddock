@@ -99,11 +99,11 @@ export function BrandStyleAnchorsPanel() {
     setError(null);
     try {
       const res = await fetch('/api/workspace/brand-style-anchors?audit=1');
-      if (!res.ok) throw new Error(`Audit mislukt (${res.status})`);
+      if (!res.ok) throw new Error(`Audit failed (${res.status})`);
       const data = (await res.json()) as { logoAudit?: AnchorLogoAudit };
       setAudit(data.logoAudit ?? { findings: [], dominantCount: 0, visibleCount: 0, warning: null });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Audit mislukt');
+      setError(err instanceof Error ? err.message : 'Audit failed');
     } finally {
       setAuditing(false);
     }
@@ -177,7 +177,7 @@ export function BrandStyleAnchorsPanel() {
             className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-purple-700 disabled:opacity-50"
           >
             {auditing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldAlert className="h-3.5 w-3.5" />}
-            Controleer anchors op logo&apos;s
+            Check anchors for logos
           </button>
           {audit && (
             audit.warning ? (
@@ -187,7 +187,7 @@ export function BrandStyleAnchorsPanel() {
               </div>
             ) : (
               <p className="mt-2 text-[11px] text-emerald-700">
-                Geen logo-dominante anchors gevonden{audit.visibleCount > 0 ? ` (${audit.visibleCount} met een klein/onopvallend logo)` : ''}.
+                No logo-dominant anchors found{audit.visibleCount > 0 ? ` (${audit.visibleCount} with a small/subtle logo)` : ''}.
               </p>
             )
           )}
@@ -216,7 +216,7 @@ export function BrandStyleAnchorsPanel() {
                 {prominenceOf(anchor.mediaAssetId) === 'dominant' && (
                   <span
                     className="absolute bottom-1 left-1 inline-flex items-center gap-0.5 rounded bg-amber-500/95 px-1 py-0.5 text-[9px] font-semibold text-white shadow-sm"
-                    title="Dit beeld toont een prominent logo — vervang het voor schone generaties"
+                    title="This image shows a prominent logo — replace it for clean generations"
                   >
                     <ShieldAlert className="h-2.5 w-2.5" />
                     logo

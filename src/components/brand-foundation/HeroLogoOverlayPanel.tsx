@@ -27,7 +27,7 @@ export function HeroLogoOverlayPanel() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Laden mislukt');
+          setError(err instanceof Error ? err.message : 'Failed to load');
           setEnabled(false);
         }
       });
@@ -51,13 +51,13 @@ export function HeroLogoOverlayPanel() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error ?? `Opslaan mislukt (${res.status})`);
+        throw new Error(body?.error ?? `Failed to save (${res.status})`);
       }
       const data = (await res.json()) as { enabled?: boolean };
       setEnabled(Boolean(data.enabled));
     } catch (err) {
       setEnabled(!next); // rollback
-      setError(err instanceof Error ? err.message : 'Opslaan mislukt');
+      setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
     }
@@ -69,19 +69,19 @@ export function HeroLogoOverlayPanel() {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <Stamp className="h-4 w-4 text-purple-600" />
-            <h3 className="text-sm font-semibold text-gray-900">Merklogo op hero-afbeelding</h3>
+            <h3 className="text-sm font-semibold text-gray-900">Brand logo on hero image</h3>
           </div>
           <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-            Stempelt je échte logo rechtsboven op de gegenereerde hero-afbeelding (licht/donker-
-            variant op basis van de achtergrond). AI-modellen verzinnen anders vervormde nep-logo&apos;s;
-            laat dit uit als je liever helemaal geen logo op de foto wilt.
+            Stamps your real logo in the top-right corner of the generated hero image (light/dark
+            variant based on the background). Otherwise AI models invent distorted fake logos;
+            leave this off if you prefer no logo on the photo at all.
           </p>
         </div>
         <button
           type="button"
           role="switch"
           aria-checked={enabled === true}
-          aria-label="Merklogo op hero-afbeelding"
+          aria-label="Brand logo on hero image"
           disabled={enabled === null || saving}
           onClick={toggle}
           className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
@@ -107,8 +107,8 @@ export function HeroLogoOverlayPanel() {
         </div>
       )}
       <p className="mt-2 text-[11px] text-gray-400">
-        Vereist minimaal één geüpload logo in je merkstijl. Geen logo? Dan wordt deze stap
-        automatisch overgeslagen.
+        Requires at least one uploaded logo in your brand style. No logo? Then this step is
+        skipped automatically.
       </p>
     </div>
   );

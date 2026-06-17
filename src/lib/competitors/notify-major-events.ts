@@ -66,7 +66,7 @@ export async function notifyMajorEvents(params: NotifyMajorEventsParams): Promis
     const subject =
       major.length === 1
         ? `${params.competitorName}: ${ACTIVITY_TYPE_LABEL[major[0].type] ?? major[0].type}`
-        : `${major.length} belangrijke shifts bij ${params.competitorName}`;
+        : `${major.length} major shifts at ${params.competitorName}`;
 
     const itemsHtml = major
       .slice(0, MAX_EMAIL_EVENTS)
@@ -77,23 +77,23 @@ export async function notifyMajorEvents(params: NotifyMajorEventsParams): Promis
       .join('');
     const overflow =
       major.length > MAX_EMAIL_EVENTS
-        ? `<p>… en nog ${major.length - MAX_EMAIL_EVENTS} meer.</p>`
+        ? `<p>… and ${major.length - MAX_EMAIL_EVENTS} more.</p>`
         : '';
     const detailUrl = buildCompetitorDetailUrl(params.competitorId);
     const html = `
-      <p>Branddock detecteerde een aantal substantiële wijzigingen bij <strong>${escapeHtml(params.competitorName)}</strong>:</p>
+      <p>Branddock detected several substantial changes at <strong>${escapeHtml(params.competitorName)}</strong>:</p>
       <ul>${itemsHtml}</ul>
       ${overflow}
-      <p><a href="${detailUrl}">Bekijk in Branddock</a></p>
+      <p><a href="${detailUrl}">View in Branddock</a></p>
     `.trim();
 
     const text = [
-      `Branddock detecteerde wijzigingen bij ${params.competitorName}:`,
+      `Branddock detected changes at ${params.competitorName}:`,
       ...major
         .slice(0, MAX_EMAIL_EVENTS)
         .map((a) => `- ${ACTIVITY_TYPE_LABEL[a.type] ?? a.type}: ${a.summary}`),
-      overflow ? `… en nog ${major.length - MAX_EMAIL_EVENTS} meer.` : '',
-      `Bekijk: ${detailUrl}`,
+      overflow ? `… and ${major.length - MAX_EMAIL_EVENTS} more.` : '',
+      `View: ${detailUrl}`,
     ]
       .filter(Boolean)
       .join('\n');

@@ -708,7 +708,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                 onClick={() => setShowVersionHistory((s) => !s)}
                 className="text-xs text-gray-500 hover:text-gray-700 underline-offset-2 hover:underline"
               >
-                {showVersionHistory ? 'Verberg versies' : 'Toon versies'}
+                {showVersionHistory ? 'Hide versions' : 'Show versions'}
               </button>
             </div>
             <PublishGate

@@ -211,8 +211,8 @@ function SourceContent({
         // Hint user om Step 2 te gebruiken (embedded variant).
         return (
           <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-            <strong>{source === 'compose' ? 'Compose' : 'Trained style'}</strong> is alleen beschikbaar
-            in Step 2 (Content Variants). Schakel over naar die view om te genereren.
+            <strong>{source === 'compose' ? 'Compose' : 'Trained style'}</strong> is only available
+            in Step 2 (Content Variants). Switch to that view to generate.
           </div>
         );
       case 'photography-request':
@@ -245,7 +245,7 @@ function SourceContent({
       // component naar GenerateImageTab. Voor nu: placeholder met instructie.
       return (
         <div className="text-xs text-gray-600 px-2 py-3">
-          Generate-flow is bedraad in Step 2 hoofdpaneel. Klik op de Generate-knop daar.
+          The generate flow is wired into the Step 2 main panel. Click the Generate button there.
         </div>
       );
     case 'library':
@@ -272,13 +272,13 @@ function SourceContent({
       return onSelected ? (
         <UrlImportTab onSelected={onSelected} />
       ) : (
-        <div className="text-xs text-gray-500">URL-import via Step 3 (Medium).</div>
+        <div className="text-xs text-gray-500">URL import via Step 3 (Medium).</div>
       );
     case 'stock':
       return onSelected ? (
         <StockPhotosTab onSelected={onSelected} initialQuery={seedQuery} />
       ) : (
-        <div className="text-xs text-gray-500">Stock-fotos via Step 3 (Medium).</div>
+        <div className="text-xs text-gray-500">Stock photos via Step 3 (Medium).</div>
       );
     case 'compose':
       return (

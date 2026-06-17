@@ -21,13 +21,13 @@ const TIERS: Tier[] = [
     id: 'starter',
     name: 'Starter',
     pricePerMonth: 49,
-    description: 'Voor solo-founders en early-stage teams',
+    description: 'For solo founders and early-stage teams',
     features: [
       '1 workspace',
       '1 user',
-      '50 content-items per maand',
+      '50 content items per month',
       'Brand Voice + Content Studio',
-      'E-mail support',
+      'Email support',
     ],
     ctaLabel: 'Start trial',
     ctaHref: '/?utm_source=marketing-site&utm_medium=pricing-starter',
@@ -36,11 +36,11 @@ const TIERS: Tier[] = [
     id: 'pro',
     name: 'Pro',
     pricePerMonth: 149,
-    description: 'Sweet-spot voor SMB marketing teams',
+    description: 'The sweet spot for SMB marketing teams',
     features: [
       '3 workspaces',
       '5 users',
-      '200 content-items per maand',
+      '200 content items per month',
       'Brandclaw competitive intelligence',
       'Priority support',
       'F-VAL custom thresholds',
@@ -53,11 +53,11 @@ const TIERS: Tier[] = [
     id: 'agency',
     name: 'Agency',
     pricePerMonth: 399,
-    description: 'Voor agencies + multi-tenant scenarios',
+    description: 'For agencies + multi-tenant scenarios',
     features: [
       '10 workspaces',
       '20 users',
-      'Unlimited content-items',
+      'Unlimited content items',
       'Multi-tenant organization',
       'White-label branding',
       'Dedicated success manager',
@@ -69,24 +69,24 @@ const TIERS: Tier[] = [
 
 const FAQ_ITEMS = [
   {
-    q: 'Krijg ik een trial?',
-    a: '14 dagen gratis op de Starter of Pro tier. Geen creditcard nodig. Opzeggen wanneer je wilt.',
+    q: 'Do I get a trial?',
+    a: '14 days free on the Starter or Pro tier. No credit card required. Cancel anytime.',
   },
   {
-    q: 'Hoe wordt een content-item geteld?',
-    a: 'Elke unieke generation (blogpost, social post, e-mail, etc.) telt als 1 content-item. Regeneraties van dezelfde variant tellen niet.',
+    q: 'How is a content item counted?',
+    a: 'Every unique generation (blog post, social post, email, etc.) counts as 1 content item. Regenerations of the same variant don\'t count.',
   },
   {
-    q: 'Kan ik tussen tiers wisselen?',
-    a: 'Ja, op elk moment upgrade of downgrade. Pro-rated billing. Geen lock-in.',
+    q: 'Can I switch between tiers?',
+    a: 'Yes, upgrade or downgrade at any time. Pro-rated billing. No lock-in.',
   },
   {
-    q: 'Wat als ik over mijn limiet ga?',
-    a: 'Je content-item limiet reset elke maand. Bij overschrijding pauzeert generation tot reset — geen verrassings-facturen.',
+    q: 'What happens if I exceed my limit?',
+    a: 'Your content item limit resets every month. If you go over, generation pauses until reset — no surprise invoices.',
   },
   {
-    q: 'Welke AI-modellen gebruiken jullie?',
-    a: 'Claude (Anthropic), GPT-4 (OpenAI) en Gemini (Google). Per content-type kies het meest geschikte model.',
+    q: 'Which AI models do you use?',
+    a: 'Claude (Anthropic), GPT-4 (OpenAI) and Gemini (Google). For each content type we pick the most suitable model.',
   },
 ];
 
@@ -95,9 +95,9 @@ export default function PricingPage() {
     <div>
       <section className="max-w-6xl mx-auto px-6 py-16">
         <div className="text-center mb-12 max-w-2xl mx-auto">
-          <h1 className="text-gray-900 mb-4">Eenvoudige, transparante prijzen</h1>
+          <h1 className="text-gray-900 mb-4">Simple, transparent pricing</h1>
           <p className="text-gray-600 text-lg">
-            Kies een plan dat past bij je team. Geen verborgen kosten, geen lange contracten.
+            Choose a plan that fits your team. No hidden costs, no long contracts.
           </p>
         </div>
 
@@ -108,14 +108,14 @@ export default function PricingPage() {
         </div>
 
         <div className="mt-12 text-center text-sm text-gray-500">
-          Prijzen exclusief BTW. Maandelijks of jaarlijks (10% korting). Annual billing
-          beschikbaar na pilot-fase.
+          Prices exclude VAT. Monthly or annual (10% discount). Annual billing
+          available after the pilot phase.
         </div>
       </section>
 
       <section className="bg-gray-50 border-y border-gray-200">
         <div className="max-w-3xl mx-auto px-6 py-16">
-          <h2 className="text-gray-900 mb-6 text-center">Veelgestelde vragen</h2>
+          <h2 className="text-gray-900 mb-6 text-center">Frequently asked questions</h2>
           <div className="space-y-4">
             {FAQ_ITEMS.map((item) => (
               <details key={item.q} className="bg-white rounded-lg border border-gray-200 p-4">
@@ -145,7 +145,7 @@ function TierCard({ tier }: { tier: Tier }) {
       </div>
       <div className="mb-6">
         <span className="text-4xl font-bold text-gray-900">€{tier.pricePerMonth}</span>
-        <span className="text-gray-500">/maand</span>
+        <span className="text-gray-500">/month</span>
       </div>
       <ul className="space-y-2 mb-8 flex-1">
         {tier.features.map((f) => (

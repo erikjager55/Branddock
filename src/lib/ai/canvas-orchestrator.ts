@@ -69,7 +69,7 @@ function buildPropertyEvalContextBase(
   }
   void groupType; // surface in caller, dit base-helper kent groupType niet
   return {
-    expectedLanguage: stack.brand?.contentLanguage ?? 'nl',
+    expectedLanguage: stack.brand?.contentLanguage ?? 'en',
     brandName: stack.brand?.brandName ?? '',
     contentType: stack.deliverableTypeId ?? 'unknown',
     wordBounds: {
@@ -342,7 +342,7 @@ export async function* orchestrateContentGeneration(
   const hvd =
     humanVoiceMode === 'OFF'
       ? ''
-      : buildHumanVoiceDirective({ language: stack.brand.contentLanguage ?? 'nl' });
+      : buildHumanVoiceDirective({ language: stack.brand.contentLanguage ?? 'en' });
 
   const voiceDirective = hvd ? `${bvd}\n\n${hvd}` : bvd;
 
@@ -426,7 +426,7 @@ export async function* orchestrateContentGeneration(
     const { runPlanAndSolveStream } = await import('./chains/plan-and-solve');
     const brief: import('./chains/plan-and-solve.types').PlanAndSolveBrief = {
       brandName: stack.brand?.brandName ?? 'Unknown',
-      contentLanguage: stack.brand?.contentLanguage ?? 'nl',
+      contentLanguage: stack.brand?.contentLanguage ?? 'en',
       contentType: stack.deliverableTypeId ?? 'blog-post',
       objective: stack.brief?.objective ?? '',
       keyMessage: stack.brief?.keyMessage ?? '',
@@ -1863,7 +1863,7 @@ async function pickBestCandidate(
   const voiceguide = (stack.brand.brandVoiceguide ?? '').slice(0, 2000);
   // Fase 5 M6: real language name via the shared resolver — previously a
   // binary nl/en choice that collapsed e.g. sv/de workspaces to English.
-  const lang = resolveLocaleLabel(stack.brand.contentLanguage ?? 'nl')?.nativeName ?? 'English';
+  const lang = resolveLocaleLabel(stack.brand.contentLanguage ?? 'en')?.nativeName ?? 'English';
 
   const systemPrompt = `Je bent een brand-fit judge voor ${brandName}. Evalueer welke versie het beste matched bij de brand voice fingerprint. Schrijf in ${lang}.
 

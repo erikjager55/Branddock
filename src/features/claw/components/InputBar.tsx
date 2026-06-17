@@ -336,20 +336,20 @@ export function InputBar() {
             let userText: string;
             if (isCreditError) {
               userText =
-                '**Anthropic API credits zijn op.** De AI-assistent kan niet reageren tot er credits zijn bijgevuld. ' +
-                'Ga naar [console.anthropic.com](https://console.anthropic.com/settings/billing) → Plans & Billing om credits toe te voegen. ' +
-                'Andere AI-flows (OpenAI / Gemini) blijven werken — alleen Anthropic-calls falen tot aanvulling.';
+                '**Anthropic API credits are exhausted.** The AI assistant can\'t respond until credits are topped up. ' +
+                'Go to [console.anthropic.com](https://console.anthropic.com/settings/billing) → Plans & Billing to add credits. ' +
+                'Other AI flows (OpenAI / Gemini) keep working — only Anthropic calls fail until you top up.';
             } else if (isRateLimit) {
               userText =
-                '**Even pauze.** De AI-assistent ontving te veel verzoeken in korte tijd. ' +
-                'Wacht 30 seconden en probeer opnieuw. Als dit vaker gebeurt: rate-limit op het API-account verhogen.';
+                '**Quick pause.** The AI assistant received too many requests in a short time. ' +
+                'Wait 30 seconds and try again. If this keeps happening, raise the rate limit on the API account.';
             } else if (isAuth) {
               userText =
-                '**API-sleutel ongeldig.** Controleer `ANTHROPIC_API_KEY` in de environment-config. ' +
-                'Tot dat is gefixt blijft de AI-assistent onbeschikbaar.';
+                '**API key invalid.** Check `ANTHROPIC_API_KEY` in the environment config. ' +
+                'The AI assistant stays unavailable until that\'s fixed.';
             } else {
-              const detail = raw.length > 0 ? raw.slice(0, 200) : 'onbekende fout';
-              userText = `**Fout bij AI-assistent**\n\n${detail}\n\nProbeer het opnieuw. Als de fout aanhoudt, controleer de server-logs.`;
+              const detail = raw.length > 0 ? raw.slice(0, 200) : 'unknown error';
+              userText = `**AI assistant error**\n\n${detail}\n\nTry again. If the error persists, check the server logs.`;
             }
 
             addMessage({

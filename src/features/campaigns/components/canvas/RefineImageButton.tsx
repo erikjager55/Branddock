@@ -62,20 +62,20 @@ export function RefineImageButton({
         const code = body?.code;
         const message =
           code === 'max-iterations'
-            ? 'Max 2 verfijningen bereikt voor deze afbeelding.'
+            ? 'Reached the max of 2 refinements for this image.'
             : code === 'no-score'
-              ? 'Score nog niet geladen — wacht een moment en probeer opnieuw.'
+              ? 'Score not loaded yet — wait a moment and try again.'
               : code === 'missing-anchors'
-                ? 'Geen brand-style-anchors gevonden in workspace — voeg anchors toe in Brandstyle.'
+                ? 'No brand-style anchors found in workspace — add anchors in Brandstyle.'
                 : code === 'policy'
-                  ? 'Verfijning geblokkeerd door Gemini content-policy.'
-                  : body?.error ?? `Refine mislukt (${res.status})`;
+                  ? 'Refinement blocked by Gemini content policy.'
+                  : body?.error ?? `Refine failed (${res.status})`;
         setError(message);
         return;
       }
       onRefined?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Onbekende fout');
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsRefining(false);
     }
@@ -89,15 +89,15 @@ export function RefineImageButton({
         disabled={isRefining}
         title={
           error
-            ? `Refine fout: ${error}`
-            : 'Verfijn deze afbeelding op basis van fidelity-diagnose (image-to-image refine via Gemini)'
+            ? `Refine error: ${error}`
+            : 'Refine this image based on the fidelity diagnosis (image-to-image refine via Gemini)'
         }
         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600/90 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-[10px] font-medium shadow-sm transition-colors"
       >
         {isRefining ? (
           <>
             <Loader2 className="h-2.5 w-2.5 animate-spin" />
-            Verfijnen…
+            Refining…
           </>
         ) : (
           <>

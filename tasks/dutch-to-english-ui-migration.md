@@ -5,13 +5,29 @@ fase: pre-launch
 priority: next
 effort: ~3-4 dagen (F1-F3+F5); F4 apart 1-2d opt-in
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-06-17
 completed: -
-related-adr: docs/adr/<te-maken>-generated-content-locale-defaults.md (alleen voor F4)
+related-adr: docs/adr/2026-06-17-nl-to-en-ui-migration.md
 related-spec: -
-worktree: branddock-feat-nl-to-en (aanbevolen — raakt veel files)
+worktree: branddock-feat-nl-to-en (branch feat/dutch-to-english-ui)
 ---
+
+> **Uitvoering 2026-06-17** — werkelijke scope bleek ~10× de eerste schatting:
+> de discovery vond ~690 user-facing findings (royaal geteld; ~250-350 echt) over ~80 files,
+> niet ~65. Zelfde soort werk, groter volume. Uitgevoerd in worktree `branddock-feat-nl-to-en`:
+> - **F1/F2/F3** (TIER A, 8 parallelle agents): marketing-site, settings, shared components, canvas-UI,
+>   brandstyle/voice, competitors + transactionele alert-emails (`notify-major-events.ts`), activity-labels.
+> - **F4** (handmatig): puck-config + template-helpers scaffold-defaults → Engels (consistent met de
+>   al-Engelse BrandHero + bestaande bilinguale placeholder-markers; géén locale-driven refactor want het
+>   zijn placeholders die de generatie overschrijft). `?? 'nl'`-taalfallbacks in 5 generated-content-paden
+>   uitgelijnd op `'en'` (no-preference default = schema-default; voorkeur-brands onaangeraakt).
+> - **F5**: ESLint `no-restricted-syntax`-gate tegen nieuwe NL UI-strings (vond 10 misses tijdens uitvoering, gefixt).
+> - **ADR**: `docs/adr/2026-06-17-nl-to-en-ui-migration.md`.
+> - **Verificatie**: tsc 0 · eslint 0 errors · F5-gate 0 violations · smoke:prompt-contracts 235/235 ·
+>   smoke:locale 32/32 · smoke:web-page-builder 68/68 · smoke:page-types/image-briefing/competitor-activities/feature-visual-gate groen.
+>   Géén doNotTouch/prompt-body files in de diff. Diff: ~80 files.
+> - **Buiten scope gehouden** (gebruikerskeuze): code-comments + interne docs blijven Nederlands.
 
 # Probleem
 

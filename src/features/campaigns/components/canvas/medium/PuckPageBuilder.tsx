@@ -521,12 +521,12 @@ export function PuckPageBuilder({
         />
         <ActionButton
           icon={<Layout className="h-4 w-4" />}
-          label="Bewerk layout"
+          label="Edit layout"
           onClick={() => setEditorOpen(true)}
           disabled={pageLocked}
           title={pageLocked
-            ? 'Pagina is vergrendeld — ontgrendel om de layout te bewerken'
-            : 'Open layout-editor — herorden, voeg toe of verwijder componenten'}
+            ? 'Page is locked — unlock to edit the layout'
+            : 'Open layout editor — reorder, add or remove components'}
         />
         <LockToggle
           locked={pageLocked}

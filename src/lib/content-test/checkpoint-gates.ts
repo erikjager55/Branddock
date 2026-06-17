@@ -78,14 +78,14 @@ export function validateBriefInput(brief: {
   // visueel optioneel lijkt. AI heeft sowieso brand-context + persona +
   // contentTypeInputs als context, dus een leeg brief is generation-able.
   if (filledCount === 0) {
-    reasons.push('Brief is volledig leeg — AI gebruikt brand-context + persona als enige direction');
+    reasons.push('Brief is completely empty — AI uses brand context + persona as the only direction');
     return { stage: 'brief-input', pass: false, severity: 'warn', reasons };
   }
   if (!hasObjective && !hasKeyMessage) {
-    reasons.push('Geen objective EN geen keyMessage — generation kan minder gericht zijn');
+    reasons.push('No objective AND no keyMessage — generation may be less focused');
   }
-  if (!hasTone) reasons.push('toneDirection ontbreekt — AI gebruikt brand-voice fallback');
-  if (!hasCta) reasons.push('callToAction ontbreekt — gegenereerde content krijgt geen explicit CTA');
+  if (!hasTone) reasons.push('toneDirection missing — AI uses brand-voice fallback');
+  if (!hasCta) reasons.push('callToAction missing — generated content gets no explicit CTA');
   if (filledCount < 4) {
     return { stage: 'brief-input', pass: false, severity: 'warn', reasons };
   }
@@ -117,11 +117,11 @@ export function validateContextCompleteness(stack: {
       stage: 'context-completeness',
       pass: false,
       severity: 'block',
-      reasons: ['stack.brand.brandName ontbreekt — generation kan niet on-brand zijn'],
+      reasons: ['stack.brand.brandName missing — generation cannot be on-brand'],
     };
   }
   if (!stack.brand.contentLanguage) {
-    reasons.push('stack.brand.contentLanguage ontbreekt — language-detection fallback gebruikt');
+    reasons.push('stack.brand.contentLanguage missing — language-detection fallback used');
   }
   const hasPersona = (stack.personas?.length ?? 0) > 0;
   const hasProduct = (stack.products?.length ?? 0) > 0;
@@ -130,14 +130,14 @@ export function validateContextCompleteness(stack: {
   if (!hasPersona && !hasProduct) {
     if (!wsHasPersona && !wsHasProduct) {
       reasons.push(
-        'Geen persona of product in workspace — gegenereerde content wordt generiek. Maak eerst een persona of product aan in Brand Foundation.',
+        'No persona or product in workspace — generated content will be generic. Create a persona or product in Brand Foundation first.',
       );
     } else {
       // Workspace heeft context, alleen campaign-link ontbreekt. Info-niveau,
       // niet warn — content is on-brand maar zou specifieker kunnen zijn als
       // de campaign expliciet personas linkt.
       reasons.push(
-        `Workspace heeft ${stack.workspacePersonaCount ?? 0} persona(s) en ${stack.workspaceProductCount ?? 0} product(en), maar geen daarvan gelinkt aan deze campaign — content gebruikt brand-context, niet campaign-specific persona-fit`,
+        `Workspace has ${stack.workspacePersonaCount ?? 0} persona(s) and ${stack.workspaceProductCount ?? 0} product(s), but none linked to this campaign — content uses brand context, not campaign-specific persona-fit`,
       );
     }
   }
@@ -165,7 +165,7 @@ export function validateAngleDiversity(angles: Array<{ label?: string; approach?
       stage: 'angle-diversity',
       pass: false,
       severity: 'warn',
-      reasons: [`Slechts ${angles.length} angle(s) gegenereerd — verwacht 2`],
+      reasons: [`Only ${angles.length} angle(s) generated — expected 2`],
     };
   }
   const a = angles[0].approach ?? '';
@@ -175,7 +175,7 @@ export function validateAngleDiversity(angles: Array<{ label?: string; approach?
       stage: 'angle-diversity',
       pass: false,
       severity: 'block',
-      reasons: ['Een of beide angles heeft lege approach-tekst'],
+      reasons: ['One or both angles has empty approach text'],
     };
   }
   if (a === b) {
@@ -183,7 +183,7 @@ export function validateAngleDiversity(angles: Array<{ label?: string; approach?
       stage: 'angle-diversity',
       pass: false,
       severity: 'block',
-      reasons: ['Twee angles hebben identieke approach — variant-diversity faalt'],
+      reasons: ['Two angles have an identical approach — variant diversity fails'],
     };
   }
   const distance = jaccardDistance(a, b);
@@ -192,7 +192,7 @@ export function validateAngleDiversity(angles: Array<{ label?: string; approach?
       stage: 'angle-diversity',
       pass: false,
       severity: 'warn',
-      reasons: [`Angle-diversity ${(distance * 100).toFixed(0)}% (verwacht ≥ 30%) — varianten worden mogelijk te similar`],
+      reasons: [`Angle diversity ${(distance * 100).toFixed(0)}% (expected ≥ 30%) — variants may be too similar`],
     };
   }
   return { stage: 'angle-diversity', pass: true, reasons: [] };
@@ -212,7 +212,7 @@ export function validateVariantOutput(
       stage: 'variant-output',
       pass: false,
       severity: 'block',
-      reasons: ['variant.content is leeg of ontbreekt'],
+      reasons: ['variant.content is empty or missing'],
     };
   }
   const length = variant.content.length;
@@ -235,16 +235,16 @@ export function validateVariantOutput(
       stage: 'variant-output',
       pass: false,
       severity: 'warn',
-      reasons: [`variant.content is ${length} chars — onder minimum-threshold (${minForGroup}) voor groep "${groupType}"`],
+      reasons: [`variant.content is ${length} chars — below the minimum threshold (${minForGroup}) for group "${groupType}"`],
     };
   }
   // Plain-groups: enforce ≤ 300 chars to catch runaway model output
   if (PLAIN_GROUPS.has(groupType) && length > 300) {
-    reasons.push(`${groupType} is ${length} chars — verwacht ≤ 300 voor plain-group`);
+    reasons.push(`${groupType} is ${length} chars — expected ≤ 300 for a plain group`);
   }
   // Body-group: warn als < 100 (overlapt 50 hierboven, maar past richtlijn aan)
   if (groupType === 'body' && length < 100) {
-    reasons.push(`Body-group ${length} chars — onverwacht kort voor body-content`);
+    reasons.push(`Body group ${length} chars — unexpectedly short for body content`);
   }
   if (reasons.length > 0) {
     return { stage: 'variant-output', pass: false, severity: 'warn', reasons };
@@ -268,18 +268,18 @@ export function validateSanitizationResult(
       stage: 'sanitization-result',
       pass: false,
       severity: 'block',
-      reasons: ['Sanitize stripped alle content (post-length = 0)'],
+      reasons: ['Sanitize stripped all content (post-length = 0)'],
     };
   }
   // > 60% length-reduction = waarschijnlijk over-aggressive sanitize
   if (preLength > 50 && postLength < preLength * 0.4) {
     reasons.push(
-      `Sanitize reduceerde content van ${preLength} naar ${postLength} chars (${Math.round((1 - postLength / preLength) * 100)}% verwijderd)`,
+      `Sanitize reduced content from ${preLength} to ${postLength} chars (${Math.round((1 - postLength / preLength) * 100)}% removed)`,
     );
   }
   // Lekkende markdown-fences in post-content = sanitize miste iets
   if (/```[\s\S]*```/.test(postContent)) {
-    reasons.push('Markdown code-fences in post-sanitize content — sanitize miste fence-block');
+    reasons.push('Markdown code fences in post-sanitize content — sanitize missed a fence block');
   }
   if (reasons.length > 0) {
     return { stage: 'sanitization-result', pass: false, severity: 'warn', reasons };
@@ -302,7 +302,7 @@ export function validateFidelityComposite(
       stage: 'fidelity-composite',
       pass: false,
       severity: 'warn',
-      reasons: ['F-VAL score niet gegenereerd — composite-validation skip'],
+      reasons: ['F-VAL score not generated — composite validation skipped'],
     };
   }
   if (score.composite < threshold) {
@@ -311,7 +311,7 @@ export function validateFidelityComposite(
       pass: false,
       severity: strictMode ? 'block' : 'warn',
       reasons: [
-        `F-VAL composite ${score.composite.toFixed(1)} onder threshold ${threshold}${strictMode ? ' (STRICT mode → block)' : ' (non-strict → warn, user kan publish-overrule)'}`,
+        `F-VAL composite ${score.composite.toFixed(1)} below threshold ${threshold}${strictMode ? ' (STRICT mode → block)' : ' (non-strict → warn, user can override on publish)'}`,
       ],
     };
   }
@@ -333,7 +333,7 @@ export function validateStrictRewrite(
       stage: 'strict-rewrite',
       pass: false,
       severity: 'block',
-      reasons: [`STRICT rewrite verlaagde score van ${preScore.toFixed(1)} naar ${postScore.toFixed(1)} (Δ${delta.toFixed(1)})`],
+      reasons: [`STRICT rewrite lowered score from ${preScore.toFixed(1)} to ${postScore.toFixed(1)} (Δ${delta.toFixed(1)})`],
     };
   }
   if (delta < 2) {
@@ -341,7 +341,7 @@ export function validateStrictRewrite(
       stage: 'strict-rewrite',
       pass: false,
       severity: 'warn',
-      reasons: [`STRICT rewrite-delta marginaal: ${preScore.toFixed(1)} → ${postScore.toFixed(1)} (Δ${delta.toFixed(1)})`],
+      reasons: [`STRICT rewrite delta marginal: ${preScore.toFixed(1)} → ${postScore.toFixed(1)} (Δ${delta.toFixed(1)})`],
     };
   }
   return { stage: 'strict-rewrite', pass: true, reasons: [] };
@@ -362,7 +362,7 @@ export function validatePersistenceResult(result: {
       stage: 'persistence-result',
       pass: false,
       severity: 'block',
-      reasons: ['Persistence returnde geen deliverableId'],
+      reasons: ['Persistence returned no deliverableId'],
     };
   }
   if (
@@ -371,7 +371,7 @@ export function validatePersistenceResult(result: {
     result.componentCount !== result.expectedComponentCount
   ) {
     reasons.push(
-      `Component-count mismatch: ${result.componentCount} persisted vs ${result.expectedComponentCount} expected`,
+      `Component count mismatch: ${result.componentCount} persisted vs ${result.expectedComponentCount} expected`,
     );
   }
   if (reasons.length > 0) {

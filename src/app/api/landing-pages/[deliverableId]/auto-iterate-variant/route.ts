@@ -216,7 +216,7 @@ export async function POST(
   const hvd =
     humanVoiceMode === "OFF"
       ? ""
-      : `\n\n${buildHumanVoiceDirective({ language: ctx.brand?.contentLanguage ?? "nl" })}`;
+      : `\n\n${buildHumanVoiceDirective({ language: ctx.brand?.contentLanguage ?? "en" })}`;
   const rewriteModel = routedModel.provider === "anthropic" ? routedModel.model : undefined;
 
   let rawResponse: string;

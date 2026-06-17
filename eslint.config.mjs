@@ -46,6 +46,39 @@ const eslintConfig = defineConfig([
       "react-hooks/immutability": "warn",
     },
   },
+  // NL→EN guard (tasks/dutch-to-english-ui-migration.md + ADR 2026-06-17):
+  // de product-UI is monolinguaal Engels. Deze regel blokkeert nieuwe
+  // Nederlandse UI-strings in JSX-tekst + UI-attributen met een hoog-precieze
+  // stopwoordenlijst. Klant-content-producers (Puck-config + templates) zijn
+  // uitgesloten: dáár volgt de taal de brand-locale, niet de app-UI.
+  {
+    files: [
+      "src/components/**/*.{ts,tsx}",
+      "src/features/**/*.{ts,tsx}",
+      "src/app/**/*.tsx",
+    ],
+    ignores: [
+      "src/features/campaigns/components/canvas/medium/puck-config.tsx",
+      "src/features/campaigns/components/canvas/medium/puck-templates/**",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "JSXText[value=/\\b(mislukt|gelukt|geslaagd|ongeldig|vereist|verplicht|verwijderen|annuleren|toevoegen|bewerken|opslaan|sluiten|wijzigen|bezig|laden|zoeken|kiezen|selecteer|niet gevonden|kon niet|weet je zeker)\\b/i]",
+          message:
+            "Dutch UI text detected. Product UI must be English (tasks/dutch-to-english-ui-migration.md). For client-facing generated content, drive language via the locale layer, not hardcoded strings.",
+        },
+        {
+          selector:
+            "JSXAttribute[name.name=/^(aria-label|placeholder|title|alt)$/] Literal[value=/\\b(mislukt|gelukt|geslaagd|ongeldig|vereist|verplicht|verwijderen|annuleren|toevoegen|bewerken|opslaan|sluiten|wijzigen|bezig|laden|zoeken|kiezen|selecteer)\\b/i]",
+          message:
+            "Dutch text in a UI attribute (aria-label/placeholder/title/alt). Product UI must be English.",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

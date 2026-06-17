@@ -33,7 +33,7 @@ export interface HumanVoiceOptions {
  * Brand-agnostic: same instructions across all workspaces.
  */
 export function buildHumanVoiceDirective(options?: HumanVoiceOptions): string {
-  const language = (options?.language ?? 'nl').toLowerCase();
+  const language = (options?.language ?? 'en').toLowerCase();
   const isDutch = language === 'nl';
 
   // Sharp & short — long avoid-lijsten primen het model juist op die woorden
@@ -85,6 +85,6 @@ export function buildHumanVoiceDirective(options?: HumanVoiceOptions): string {
 }
 
 /** Estimate token count of the directive (rough: chars / 4) */
-export function getHumanVoiceDirectiveTokenEstimate(language: 'nl' | 'en' = 'nl'): number {
+export function getHumanVoiceDirectiveTokenEstimate(language: 'nl' | 'en' = 'en'): number {
   return Math.round(buildHumanVoiceDirective({ language }).length / 4);
 }

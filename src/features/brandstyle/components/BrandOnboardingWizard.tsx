@@ -31,7 +31,7 @@ interface BrandOnboardingWizardProps {
   onJumpToTab: (tab: StyleguideTab) => void;
 }
 
-const STEP_LABELS = ["Welkom", "Kleuren", "Typografie", "Klaar"] as const;
+const STEP_LABELS = ["Welcome", "Colors", "Typography", "Done"] as const;
 const TOTAL_STEPS = STEP_LABELS.length;
 
 /**
@@ -291,7 +291,7 @@ function UncertaintyPanel({
       <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
         <ShieldCheck className="h-4 w-4 text-emerald-600 flex-shrink-0" />
         <p className="text-xs text-emerald-900">
-          Alles met vertrouwen uit de bron-site afgeleid — niets om te bevestigen.
+          Everything confidently derived from the source site — nothing to confirm.
         </p>
       </div>
     );
@@ -301,14 +301,14 @@ function UncertaintyPanel({
       <div className="flex items-center gap-2">
         <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0" />
         <p className="text-xs font-semibold text-amber-900">
-          {items.length} waarde{items.length === 1 ? "" : "n"} om te bevestigen
+          {items.length} value{items.length === 1 ? "" : "s"} to confirm
         </p>
       </div>
       <ul className="space-y-1">
         {items.map((it) => (
           <li key={it.path} className="text-xs text-amber-900 flex items-baseline gap-1.5">
             <span className="font-medium">{it.label}</span>
-            <span className="text-amber-700">— {it.origin.evidence ?? "onzeker"}</span>
+            <span className="text-amber-700">— {it.origin.evidence ?? "uncertain"}</span>
           </li>
         ))}
       </ul>
@@ -336,16 +336,16 @@ function EmptyStyleguideState({ onClose }: { onClose: () => void }) {
       </div>
       <div>
         <h3 className="text-lg font-semibold text-gray-900">
-          Nog geen merk-DNA gevonden
+          No brand DNA found yet
         </h3>
         <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
-          Deze styleguide bevat geen kleuren, fonts of componenten. Run eerst
-          een nieuwe analyse op je merk-URL — dan loopt deze wizard je door
-          de resultaten.
+          This styleguide contains no colors, fonts or components. Run a new
+          analysis on your brand URL first — then this wizard will walk you
+          through the results.
         </p>
       </div>
       <Button variant="primary" size="sm" onClick={onClose}>
-        Sluit wizard
+        Close wizard
       </Button>
     </div>
   );
@@ -375,7 +375,7 @@ function WizardHeader({ onClose, stepIndex, isEmpty }: WizardHeaderProps) {
           </h2>
           {!isEmpty && (
             <p className="text-xs text-gray-500">
-              Stap {stepIndex + 1} van {TOTAL_STEPS}: {STEP_LABELS[stepIndex]}
+              Step {stepIndex + 1} of {TOTAL_STEPS}: {STEP_LABELS[stepIndex]}
             </p>
           )}
         </div>
@@ -402,7 +402,7 @@ function WizardHeader({ onClose, stepIndex, isEmpty }: WizardHeaderProps) {
           type="button"
           onClick={onClose}
           className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50"
-          aria-label="Sluit wizard"
+          aria-label="Close wizard"
         >
           <X className="h-4 w-4" />
         </button>
@@ -432,15 +432,15 @@ function WizardFooter({ stepIndex, onPrev, onNext, onClose }: WizardFooterProps)
         onClick={onPrev}
         disabled={isFirst}
       >
-        Vorige
+        Previous
       </Button>
       {isLast ? (
         <Button variant="primary" size="sm" onClick={onClose}>
-          Sluit wizard
+          Close wizard
         </Button>
       ) : (
         <Button variant="primary" size="sm" icon={ChevronRight} iconPosition="right" onClick={onNext}>
-          Volgende
+          Next
         </Button>
       )}
     </div>
@@ -461,13 +461,12 @@ function WelcomeStep({ styleguide, counts, attentionCount, okCount }: WelcomeSte
     <div className="space-y-5">
       <div>
         <h3 className="text-lg font-semibold text-gray-900">
-          Welkom bij Brand Onboarding
+          Welcome to Brand Onboarding
         </h3>
         <p className="text-sm text-gray-600 mt-1">
-          We hebben jouw merk geanalyseerd. In de volgende stappen loop je door
-          de gevonden kleuren, typografie en componenten — daar kun je elke
-          auto-detectie bevestigen of overrulen voordat de brand-style live
-          gaat in landing-pages.
+          We analyzed your brand. In the next steps you walk through the colors,
+          typography and components we found — there you can confirm or override
+          each auto-detection before the brand style goes live in landing pages.
         </p>
       </div>
 
@@ -475,17 +474,18 @@ function WelcomeStep({ styleguide, counts, attentionCount, okCount }: WelcomeSte
         <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
           <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0" />
           <p className="text-xs text-amber-900">
-            <span className="font-semibold">{attentionCount}</span> van{" "}
-            {attentionCount + okCount} kern-tokens konden we niet zeker bepalen —
-            de volgende stappen zetten die bovenaan zodat je ze snel bevestigt.
+            <span className="font-semibold">{attentionCount}</span> of{" "}
+            {attentionCount + okCount} core tokens we could not determine with
+            confidence — the next steps surface those first so you can quickly
+            confirm them.
           </p>
         </div>
       ) : (
         <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
           <ShieldCheck className="h-4 w-4 text-emerald-600 flex-shrink-0" />
           <p className="text-xs text-emerald-900">
-            Alle {okCount} kern-tokens zijn met vertrouwen uit de bron-site
-            afgeleid — een snelle bevestiging volstaat.
+            All {okCount} core tokens were confidently derived from the source
+            site — a quick confirmation suffices.
           </p>
         </div>
       )}
@@ -493,7 +493,7 @@ function WelcomeStep({ styleguide, counts, attentionCount, okCount }: WelcomeSte
       {styleguide.sourceUrl && (
         <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
           <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
-            Bron
+            Source
           </p>
           <a
             href={styleguide.sourceUrl}
@@ -508,9 +508,9 @@ function WelcomeStep({ styleguide, counts, attentionCount, okCount }: WelcomeSte
       )}
 
       <div className="grid grid-cols-3 gap-3">
-        <SummaryTile icon={Palette} label="Kleuren" count={counts.colors} />
+        <SummaryTile icon={Palette} label="Colors" count={counts.colors} />
         <SummaryTile icon={Type} label="Fonts" count={counts.fonts} />
-        <SummaryTile icon={Boxes} label="Componenten" count={counts.components} />
+        <SummaryTile icon={Boxes} label="Components" count={counts.components} />
       </div>
     </div>
   );
@@ -549,24 +549,24 @@ function ColorsStep({ topColors, total, uncertain, onJumpToColors }: ColorsStepP
       <div>
         <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <Palette className="h-5 w-5 text-purple-600" />
-          Kleuren ({total})
+          Colors ({total})
         </h3>
         <p className="text-sm text-gray-600 mt-1">
-          De analyzer detecteerde {total} kleur{total === 1 ? "" : "en"} met
-          per-kleur usage-tags (PRIMARY / SECONDARY / ACCENT / NEUTRAL /
-          SEMANTIC). Bevestig eerst wat onzeker is, daarna kun je elke tag
-          overrulen in de Kleuren-tab.
+          The analyzer detected {total} color{total === 1 ? "" : "s"} with
+          per-color usage tags (PRIMARY / SECONDARY / ACCENT / NEUTRAL /
+          SEMANTIC). Confirm what is uncertain first, then you can override any
+          tag in the Colors tab.
         </p>
       </div>
 
       <UncertaintyPanel
         items={uncertain}
         onJump={onJumpToColors}
-        jumpLabel="Corrigeer in Kleuren-tab"
+        jumpLabel="Fix in Colors tab"
       />
 
       {topColors.length === 0 ? (
-        <p className="text-sm text-gray-500 italic">Geen kleuren gevonden.</p>
+        <p className="text-sm text-gray-500 italic">No colors found.</p>
       ) : (
         <ul className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           {topColors.map((c) => (
@@ -587,8 +587,8 @@ function ColorsStep({ topColors, total, uncertain, onJumpToColors }: ColorsStepP
       )}
 
       <JumpToTabBanner
-        message="Klopt de classificatie? Overrules kun je per kleur via de tag-toggles in de Kleuren-tab (Fase E user-override surface)."
-        ctaLabel="Bewerk in Kleuren-tab"
+        message="Is the classification correct? You can override per color via the tag toggles in the Colors tab."
+        ctaLabel="Edit in Colors tab"
         onJump={onJumpToColors}
       />
     </div>
@@ -617,29 +617,29 @@ function TypographyStep({
       <div>
         <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <Type className="h-5 w-5 text-purple-600" />
-          Typografie ({total})
+          Typography ({total})
         </h3>
         <p className="text-sm text-gray-600 mt-1">
-          DISPLAY-font wordt gebruikt voor hero-headlines, BODY voor lopende
-          tekst. De analyzer matchte deze tegen Google Fonts / Adobe Fonts;
-          override in de Typografie-tab als je een andere keuze wilt.
+          The DISPLAY font is used for hero headlines, BODY for body text. The
+          analyzer matched these against Google Fonts / Adobe Fonts; override in
+          the Typography tab if you want a different choice.
         </p>
       </div>
 
       <UncertaintyPanel
         items={uncertain}
         onJump={onJumpToTypography}
-        jumpLabel="Corrigeer in Typografie-tab"
+        jumpLabel="Fix in Typography tab"
       />
 
       <div className="space-y-3">
-        <FontPreview label="DISPLAY (Hero headlines)" font={displayFont} sample="Brand voice in beeld" />
-        <FontPreview label="BODY (Body text)" font={bodyFont} sample="Dit is hoe lopende tekst eruitziet in jouw brand-style." />
+        <FontPreview label="DISPLAY (Hero headlines)" font={displayFont} sample="Brand voice on display" />
+        <FontPreview label="BODY (Body text)" font={bodyFont} sample="This is how body text looks in your brand style." />
       </div>
 
       <JumpToTabBanner
-        message="Andere font in gedachten? Wissel in de Typografie-tab."
-        ctaLabel="Bewerk in Typografie-tab"
+        message="Another font in mind? Switch in the Typography tab."
+        ctaLabel="Edit in Typography tab"
         onJump={onJumpToTypography}
       />
     </div>
@@ -661,7 +661,7 @@ function FontPreview({
         <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
           {label}
         </p>
-        <p className="text-sm text-gray-400 italic mt-1">Niet gedetecteerd</p>
+        <p className="text-sm text-gray-400 italic mt-1">Not detected</p>
       </div>
     );
   }
@@ -704,22 +704,22 @@ function DoneStep({ counts, onClose, onJumpToComponents }: DoneStepProps) {
       </div>
       <div>
         <h3 className="text-lg font-semibold text-gray-900">
-          Brand-style klaar voor gebruik
+          Brand style ready to use
         </h3>
         <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
-          Jouw merk-DNA ({counts.colors} kleuren, {counts.fonts} fonts,{" "}
-          {counts.components} componenten) wordt nu meegenomen in landing-page
-          generatie, content-creatie en F-VAL fidelity-scoring. Je kunt elke
-          override later aanpassen via de Brand Styleguide tabs.
+          Your brand DNA ({counts.colors} colors, {counts.fonts} fonts,{" "}
+          {counts.components} components) is now used in landing-page generation,
+          content creation and F-VAL fidelity scoring. You can adjust any
+          override later via the Brand Styleguide tabs.
         </p>
       </div>
 
       <div className="flex items-center justify-center gap-2 pt-2">
         <Button variant="secondary" size="sm" onClick={onJumpToComponents}>
-          Bekijk componenten
+          View components
         </Button>
         <Button variant="primary" size="sm" onClick={onClose}>
-          Sluit wizard
+          Close wizard
         </Button>
       </div>
     </div>

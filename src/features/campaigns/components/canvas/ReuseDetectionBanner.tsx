@@ -79,7 +79,7 @@ export function ReuseDetectionBanner({ onPick }: ReuseDetectionBannerProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-1">
             <span className="text-xs font-semibold text-emerald-900">
-              Vergelijkbaar beeld bestaat al in je library
+              A similar image already exists in your library
             </span>
             {loading ? (
               <Loader2 className="h-3 w-3 animate-spin text-emerald-700" />
@@ -88,17 +88,17 @@ export function ReuseDetectionBanner({ onPick }: ReuseDetectionBannerProps) {
                 type="button"
                 onClick={() => setDismissed(true)}
                 className="text-emerald-600 hover:text-emerald-900 transition-colors"
-                title="Negeer suggestie en genereer toch"
-                aria-label="Verberg banner"
+                title="Ignore suggestion and generate anyway"
+                aria-label="Hide banner"
               >
                 <X className="h-3 w-3" />
               </button>
             )}
           </div>
           <p className="text-[11px] text-emerald-800 leading-snug mb-2">
-            Hergebruik bespaart een generation-call (≈ $0.13) én verbetert visuele
-            consistentie tussen content-items. Klik op een asset om in te voegen,
-            of negeer via het kruisje om alsnog nieuw te genereren.
+            Reusing saves a generation call (≈ $0.13) and improves visual
+            consistency across content items. Click an asset to insert it,
+            or dismiss with the cross to generate a new one anyway.
           </p>
           {matches.length > 0 && (
             <div className="flex flex-wrap gap-2">

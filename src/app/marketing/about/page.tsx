@@ -6,40 +6,40 @@ import Link from 'next/link';
 export default function AboutPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-16">
-      <h1 className="text-gray-900 mb-6">Waarom Branddock bestaat</h1>
+      <h1 className="text-gray-900 mb-6">Why Branddock exists</h1>
 
       {/* COPY-TODO: vervang founder-story met user's eigen versie */}
       <div className="prose prose-gray max-w-none space-y-6 text-gray-700 leading-relaxed">
         <p>
-          AI-content tools beloven snelheid. Wat ze leveren is generieke output die je
-          merk niet vertegenwoordigt. Het resultaat: marketing-teams die uren spenderen
-          aan het &quot;menselijk maken&quot; van AI-tekst.
+          AI content tools promise speed. What they deliver is generic output that
+          doesn&apos;t represent your brand. The result: marketing teams spending hours
+          &quot;humanizing&quot; AI text.
         </p>
         <p>
-          Branddock pakt het anders aan. We bouwen vanuit een rigide brand strategy
-          fundament — je merkstem, audience, brandstyle, do/dont&apos;s — en valideren
-          elke output tegen die baseline. Niet alleen &quot;klinkt het goed?&quot; maar
-          &quot;past het bij dit specifieke merk?&quot;
+          Branddock takes a different approach. We build from a rigorous brand strategy
+          foundation — your brand voice, audience, brand style, dos and don&apos;ts — and
+          validate every output against that baseline. Not just &quot;does it sound
+          good?&quot; but &quot;does it fit this specific brand?&quot;
         </p>
         <p>
-          We zijn klein (Erik + AI-assistenten), gefocust op B2B SaaS marketing-teams,
-          en bouwen open in de pilot. Feedback van de eerste 5 klanten stuurt direct
-          de roadmap.
+          We&apos;re small (Erik + AI assistants), focused on B2B SaaS marketing teams,
+          and building in the open during the pilot. Feedback from the first 5 customers
+          directly shapes the roadmap.
         </p>
 
-        <h2 className="text-gray-900 mt-12">Onze missie</h2>
+        <h2 className="text-gray-900 mt-12">Our mission</h2>
         <p>
-          Marketing-teams 10 uur per week teruggeven die ze nu spenderen aan
-          rapportage, content-bewerking en briefings, zonder kwaliteit op te offeren.
+          Give marketing teams back 10 hours a week they now spend on reporting, content
+          editing and briefings, without sacrificing quality.
         </p>
 
         <h2 className="text-gray-900 mt-12">Team</h2>
         <p>
-          Erik Jager — founder, eerder bij BetterBrands. Branddock spun off uit
-          interne tooling die we voor klanten bouwden.
+          Erik Jager — founder, previously at BetterBrands. Branddock spun off from
+          internal tooling we built for clients.
         </p>
         <p className="text-sm text-gray-500">
-          Branddock is een product van BetterBrands B.V.
+          Branddock is a product of BetterBrands B.V.
         </p>
       </div>
 
@@ -48,7 +48,7 @@ export default function AboutPage() {
           href="/?utm_source=marketing-site&utm_medium=about-cta"
           className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
         >
-          Probeer Branddock
+          Try Branddock
         </Link>
       </div>
     </div>

@@ -614,7 +614,7 @@ function CurationTipsCard() {
         onClick={() => setOpen(true)}
         className="text-xs text-teal-700 hover:text-teal-800 font-medium underline"
       >
-        Toon curatie-tips
+        Show curation tips
       </button>
     );
   }
@@ -624,43 +624,43 @@ function CurationTipsCard() {
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-amber-700" />
           <h4 className="text-sm font-semibold text-amber-900">
-            Curatie-tips voor sterke LoRA-training
+            Curation tips for strong LoRA training
           </h4>
         </div>
         <button
           type="button"
           onClick={() => setOpen(false)}
           className="text-amber-700 hover:text-amber-900"
-          aria-label="Verberg tips"
+          aria-label="Hide tips"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
       <ul className="space-y-1.5 text-xs text-amber-900 leading-relaxed">
         <li>
-          <span className="font-medium">Identificeer eerst de dominante aesthetic-cluster.</span>{' '}
-          Image-models leveren binnen één prompt vaak 2 stilistische varianten door elkaar
-          (bv. feathered vignet vs clean oval). Pak één cluster — mengen verwart het model.
+          <span className="font-medium">Identify the dominant aesthetic cluster first.</span>{' '}
+          Image models often mix 2 stylistic variants within a single prompt
+          (e.g. feathered vignette vs clean oval). Pick one cluster — mixing confuses the model.
         </li>
         <li>
-          <span className="font-medium">Vermijd sky-only / abstract prompts in scene-context.</span>{' '}
-          Prompts als "no land, just sky" triggeren wildlife-hallucinatie (silhouetten van dieren
-          op de horizon). Drop deze prompts of frame ze als pure abstract wash.
+          <span className="font-medium">Avoid sky-only / abstract prompts in scene context.</span>{' '}
+          Prompts like "no land, just sky" trigger wildlife hallucination (animal silhouettes
+          on the horizon). Drop these prompts or frame them as a pure abstract wash.
         </li>
         <li>
-          <span className="font-medium">Object-trainings: anker kleur expliciet.</span> Sunset/dawn
-          lighting laat het model object-kleuren bleichen. Gebruik neutral lighting prompts OF
-          hex-code de object-kleur per prompt-variant.
+          <span className="font-medium">Object training: anchor color explicitly.</span> Sunset/dawn
+          lighting causes the model to bleach object colors. Use neutral lighting prompts OR
+          hex-code the object color per prompt variant.
         </li>
         <li>
-          <span className="font-medium">Plan ruime margin in.</span> 160 outputs naar 30 picks (~19%
-          retentie) was passend bij Gewoon Guus. Bij krappe sets (40 → 30) kunnen cluster-outliers
-          + hallucinaties een tekort opleveren.
+          <span className="font-medium">Plan for a generous margin.</span> 160 outputs down to 30 picks (~19%
+          retention) was a good fit for Gewoon Guus. With tight sets (40 → 30), cluster outliers
+          + hallucinations can leave you short.
         </li>
         <li>
-          <span className="font-medium">Train-data moet matchen met inference-model.</span>{' '}
-          Gemini-output als training-data + FLUX-inference = domain shift. Branddock genereert
-          training-images met FLUX 2 — niet mixen.
+          <span className="font-medium">Training data must match the inference model.</span>{' '}
+          Gemini output as training data + FLUX inference = domain shift. Branddock generates
+          training images with FLUX 2 — don't mix.
         </li>
       </ul>
     </div>

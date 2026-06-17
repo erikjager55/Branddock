@@ -83,9 +83,9 @@ export function PuckLayoutWrapper({ children: _children, onAdvance, deliverableI
       <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-2.5 text-sm text-emerald-900 flex items-center gap-2">
         <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
         <div>
-          <p className="font-medium">Web-page builder actief</p>
+          <p className="font-medium">Web page builder active</p>
           <p className="text-xs text-emerald-800 mt-0.5">
-            Live preview met brand-tokens uit jouw BrandStyleguide. Gebruik &lsquo;Bewerk layout&rsquo; om componenten te herordenen, of de pagina-acties voor AI-verbeteringen op pagina-niveau.
+            Live preview with brand tokens from your BrandStyleguide. Use &lsquo;Edit layout&rsquo; to reorder components, or the page actions for page-level AI improvements.
           </p>
         </div>
       </div>

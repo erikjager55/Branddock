@@ -94,7 +94,7 @@ export async function* runAutoIterateIntegration(
       baselineText,
       promptHint,
       brandName: input.stack.brand?.brandName ?? 'Brand',
-      contentLanguage: input.stack.brand?.contentLanguage ?? 'nl',
+      contentLanguage: input.stack.brand?.contentLanguage ?? 'en',
       voiceguideText,
     });
   };

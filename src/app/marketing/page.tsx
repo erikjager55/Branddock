@@ -20,19 +20,19 @@ function Hero() {
       <div className="max-w-3xl">
         {/* COPY-TODO: vervang hero-headline + subheadline na pilot-feedback */}
         <h1 className="text-gray-900 mb-6">
-          AI-content die past bij jouw merk. Niet generiek. Niet AI-cliché.
+          AI content that fits your brand. Not generic. Not an AI cliché.
         </h1>
         <p className="text-xl text-gray-600 mb-8 max-w-2xl">
-          Branddock combineert brand strategy, audience research en AI content
-          generation in één platform. Voor B2B SaaS marketing teams die kwaliteit
-          niet willen inruilen voor snelheid.
+          Branddock combines brand strategy, audience research and AI content
+          generation in one platform. For B2B SaaS marketing teams that won&apos;t
+          trade quality for speed.
         </p>
         <div className="flex flex-wrap gap-3">
           <Link
             href="/?utm_source=marketing-site&utm_medium=hero"
             className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
           >
-            Start gratis trial
+            Start free trial
           </Link>
           <a
             href={process.env.NEXT_PUBLIC_CALENDLY_URL ?? '#'}
@@ -40,11 +40,11 @@ function Hero() {
             rel="noopener noreferrer"
             className="inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
           >
-            Boek een demo
+            Book a demo
           </a>
         </div>
         <div className="mt-6 text-xs text-gray-500">
-          14 dagen gratis · Geen creditcard nodig · Opzeggen wanneer je wilt
+          14 days free · No credit card required · Cancel anytime
         </div>
       </div>
     </section>
@@ -55,19 +55,19 @@ function FeatureTrio() {
   // COPY-TODO: vervang feature-bullets met definitieve value-props
   const features = [
     {
-      title: 'Brand Voice die echt past',
+      title: 'Brand Voice that truly fits',
       body:
-        'Bouw je merkstem vanuit voorbeeldteksten of voiceguide. Branddock leert van jouw materiaal — niet van het generieke web.',
+        'Build your brand voice from sample texts or a voiceguide. Branddock learns from your material — not from the generic web.',
     },
     {
-      title: 'Content Studio met 53 types',
+      title: 'Content Studio with 53 types',
       body:
-        'Van blogpost tot LinkedIn-ad tot e-mailsequence. Met automated quality-gates en F-VAL fidelity-scoring per output.',
+        'From blog post to LinkedIn ad to email sequence. With automated quality gates and F-VAL fidelity scoring per output.',
     },
     {
       title: 'Brand Alignment Insights',
       body:
-        'Zie welke content scoort, welke onder threshold valt en waarom. Geen black box: per-pijler breakdown + actionable findings.',
+        'See which content scores, which falls below threshold and why. No black box: per-pillar breakdown + actionable findings.',
     },
   ];
   return (
@@ -92,11 +92,11 @@ function CustomerQuote() {
       <div className="max-w-2xl mx-auto text-center">
         {/* COPY-TODO: vervang met definitieve pilot-customer quote */}
         <blockquote className="text-xl md:text-2xl text-gray-700 leading-snug mb-4">
-          &ldquo;Branddock gaf ons in 2 weken een brand voice baseline waar we anders een
-          extern bureau voor hadden moeten inhuren. AI-content voelt echt als ons.&rdquo;
+          &ldquo;In two weeks Branddock gave us a brand voice baseline we&rsquo;d otherwise
+          have had to hire an external agency for. The AI content really feels like us.&rdquo;
         </blockquote>
         <div className="text-sm text-gray-500">
-          — Pilot-customer placeholder · CMO bij B2B SaaS scale-up
+          — Pilot customer placeholder · CMO at a B2B SaaS scale-up
         </div>
       </div>
     </section>
@@ -107,15 +107,15 @@ function FinalCTA() {
   return (
     <section className="bg-primary/5 border-y border-primary/20">
       <div className="max-w-6xl mx-auto px-6 py-16 text-center">
-        <h2 className="text-gray-900 mb-4">Klaar om te starten?</h2>
+        <h2 className="text-gray-900 mb-4">Ready to get started?</h2>
         <p className="text-gray-600 mb-8 max-w-xl mx-auto">
-          Probeer Branddock 14 dagen gratis. Geen creditcard. Geen verplichtingen.
+          Try Branddock free for 14 days. No credit card. No commitments.
         </p>
         <Link
           href="/?utm_source=marketing-site&utm_medium=final-cta"
           className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-white font-medium hover:opacity-90"
         >
-          Start gratis trial
+          Start free trial
         </Link>
       </div>
     </section>

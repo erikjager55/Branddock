@@ -25,15 +25,15 @@ export function buildIterationNudges(input: {
   scoreBelowThreshold?: boolean;
 }): IterationNudge[] {
   const nudges: IterationNudge[] = [
-    { id: 'revise-section', label: 'Een sectie herzien', intent: 'revise_section' },
-    { id: 'adjust-tone', label: 'Toon aanpassen', intent: 'adjust_tone' },
+    { id: 'revise-section', label: 'Revise a section', intent: 'revise_section' },
+    { id: 'adjust-tone', label: 'Adjust tone', intent: 'adjust_tone' },
   ];
   // UX-overhaul 2026-05-13: auto-verbeteren chip wanneer score laag. Geeft
   // user een 2e entry-point naast de prominente FidelityScoreBar-CTA.
   if (input.scoreBelowThreshold) {
     nudges.push({
       id: 'auto-improve',
-      label: 'Score automatisch verbeteren',
+      label: 'Improve score automatically',
       intent: 'auto_iterate',
     });
   }
@@ -41,33 +41,33 @@ export function buildIterationNudges(input: {
   if (ct.includes('blog') || ct.includes('article') || ct.includes('long') || ct.includes('pillar')) {
     nudges.push({
       id: 'variant-linkedin',
-      label: 'LinkedIn-variant maken',
+      label: 'Create LinkedIn variant',
       intent: 'derive',
       targetContentTypeId: 'linkedin-post',
     });
     nudges.push({
       id: 'variant-email',
-      label: 'Nieuwsbrief-variant maken',
+      label: 'Create newsletter variant',
       intent: 'derive',
       targetContentTypeId: 'newsletter',
     });
   } else if (ct.includes('social') || ct.includes('linkedin') || ct.includes('twitter')) {
     nudges.push({
       id: 'variant-blog',
-      label: 'Blogpost-versie maken',
+      label: 'Create blog-post version',
       intent: 'derive',
       targetContentTypeId: 'blog-post',
     });
   } else if (ct.includes('email') || ct.includes('newsletter')) {
     nudges.push({
       id: 'variant-landing',
-      label: 'Landingspagina maken',
+      label: 'Create landing page',
       intent: 'derive',
       targetContentTypeId: 'landing-page',
     });
   }
   if (!input.hasImageComponent && (ct.includes('blog') || ct.includes('pillar'))) {
-    nudges.push({ id: 'add-hero-image', label: 'Hero-image toevoegen', intent: 'add_image' });
+    nudges.push({ id: 'add-hero-image', label: 'Add hero image', intent: 'add_image' });
   }
   return nudges;
 }

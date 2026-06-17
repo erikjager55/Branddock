@@ -67,14 +67,14 @@ const requestSchema = z
   .strict()
   .refine(
     (b) => Boolean(b.prompts?.length) !== Boolean(b.features?.length),
-    'stuur óf prompts (legacy) óf features (v2), niet beide',
+    'send either prompts (legacy) or features (v2), not both',
   )
   // Duplicate indices zouden de Map-lookups (coherence-pairing), de retry-
   // targeting én de persist-variantGroups corrumperen (review 2026-06-10) —
   // liever een expliciete 400 dan stil verkeerd gedrag.
   .refine(
     (b) => !b.features || new Set(b.features.map((f) => f.index)).size === b.features.length,
-    'features[].index moet uniek zijn binnen de request',
+    'features[].index must be unique within the request',
   );
 
 interface RouteParams {

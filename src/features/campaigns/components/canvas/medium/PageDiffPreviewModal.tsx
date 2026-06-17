@@ -141,7 +141,7 @@ export function PageDiffPreviewModal({
             <button
               type="button"
               onClick={onReject}
-              aria-label="Sluiten"
+              aria-label="Close"
               className="inline-flex items-center justify-center rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
             >
               <X size={20} />
@@ -196,7 +196,7 @@ export function PageDiffPreviewModal({
                 type="button"
                 onClick={() => isChanged && !isLocked && toggleId(id)}
                 disabled={!isChanged || isLocked}
-                title={isLocked ? 'Locked — niet gewijzigd' : isChanged ? 'Toggle accept' : 'Geen wijziging'}
+                title={isLocked ? 'Locked — not changed' : isChanged ? 'Toggle accept' : 'No change'}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -264,7 +264,7 @@ export function PageDiffPreviewModal({
               onClick={() => setAcceptedIds(new Set(changedIds))}
               className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
             >
-              Selecteer alle
+              Select all
             </button>
             <button
               type="button"

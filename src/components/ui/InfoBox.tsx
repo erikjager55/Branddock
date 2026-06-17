@@ -169,7 +169,7 @@ export function InfoBox({
           <button
             type="button"
             onClick={onDismiss}
-            aria-label="Sluiten"
+            aria-label="Close"
             className={cn(
               'flex-shrink-0 ml-auto -mr-0.5 -mt-0.5 rounded p-0.5 opacity-60 hover:opacity-100 transition-opacity',
               colors.text
