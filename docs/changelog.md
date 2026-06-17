@@ -44,7 +44,7 @@ Twee samenhangende features op de Canvas Step-1 knowledge-context picker, in é�
 - Task: [tasks/done/knowledge-context-inline-add.md](../tasks/done/knowledge-context-inline-add.md), [tasks/done/knowledge-context-priority-annotation-preselect.md](../tasks/done/knowledge-context-priority-annotation-preselect.md)
 - ADR: -
 - Spec: -
-- Commit: <hash> (main)
+- Commit: `31edcdb0` (main)
 
 ### 330. Ingeslopen Nederlandse UI/communicatie-teksten → monolinguale Engelse UI
 
