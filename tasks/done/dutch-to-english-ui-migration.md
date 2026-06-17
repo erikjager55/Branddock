@@ -5,9 +5,9 @@ fase: pre-launch
 priority: next
 effort: ~3-4 dagen (F1-F3+F5); F4 apart 1-2d opt-in
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-17
-completed: -
+completed: 2026-06-17
 related-adr: docs/adr/2026-06-17-nl-to-en-ui-migration.md
 related-spec: -
 worktree: branddock-feat-nl-to-en (branch feat/dutch-to-english-ui)
