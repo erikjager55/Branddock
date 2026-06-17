@@ -645,6 +645,9 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { maxWords: 40 },
     qualityCriteria: ADVERTISING_DEFAULTS.qualityCriteria,
     exportFormats: ADVERTISING_DEFAULTS.exportFormats,
+    // 2026-06-17 — verborgen uit Add Content per user. Definitie + preview/
+    // validation/judge blijven bestaan zodat re-enable enkel hidden→false is.
+    hidden: true,
   },
   {
     id: "video-ad",
