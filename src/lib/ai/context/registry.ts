@@ -29,8 +29,13 @@ export interface ContextSourceConfig {
   excludeFields: string[];
   includeRelations?: string[];
 
-  // Optional: custom formatting hints
-  formatHints?: Record<string, 'currency' | 'date' | 'list' | 'percentage' | 'json_summary'>;
+  // Optional: per-source override for the serialized record cap (default 2000).
+  // Knowledge resources carry full document bodies and need more room.
+  maxSerializedLength?: number;
+
+  // Optional: custom formatting hints. 'fulltext' lifts the 500-char per-field
+  // truncation for document-body fields.
+  formatHints?: Record<string, 'currency' | 'date' | 'list' | 'percentage' | 'json_summary' | 'fulltext'>;
 }
 
 export const CONTEXT_REGISTRY: ContextSourceConfig[] = [
@@ -118,11 +123,19 @@ export const CONTEXT_REGISTRY: ContextSourceConfig[] = [
     titleField: 'title',
     descriptionField: 'description',
     statusField: 'status',
+    // `content` (extracted document body) is intentionally NOT excluded — it is
+    // the substance the user attaches. 'fulltext' + a larger record cap let it
+    // reach the prompt beyond the generic 500-char truncation.
+    maxSerializedLength: 7000,
+    formatHints: { content: 'fulltext' },
     excludeFields: [
       'id', 'createdAt', 'updatedAt', 'workspaceId', 'slug',
       'fileUrl', 'fileSize', 'fileType', 'fileName',
       'importedMetadata', 'isFavorite', 'isArchived', 'isFeatured',
       'addedBy', 'createdBy', 'thumbnail',
+      // Legacy/noise fields that would otherwise serialize as bare scalars.
+      'aiSummary', 'aiKeyTakeaways', 'relatedTrends', 'relatedPersonas',
+      'relatedAssets', 'difficulty', 'rating', 'language',
     ],
   },
   {

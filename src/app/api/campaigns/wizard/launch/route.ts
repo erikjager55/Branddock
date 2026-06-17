@@ -125,22 +125,73 @@ export async function POST(request: NextRequest) {
       campaign = created;
     }
 
-    // Link knowledge assets if provided
+    // Link knowledge assets if provided. Items arrive as composite keys
+    // "sourceType:sourceId" so the source TYPE is preserved (was: every id
+    // blindly written as brand_asset, which the content-item picker hides).
+    // Bare ids without a colon are treated as brand_asset for backwards-compat.
     if (knowledgeIds && knowledgeIds.length > 0) {
-      // Look up asset names for each linked asset
-      const assets = await prisma.brandAsset.findMany({
-        where: { id: { in: knowledgeIds } },
-        select: { id: true, name: true },
-      });
-      const assetMap = new Map(assets.map((a) => [a.id, a.name]));
+      const FK_COLUMN: Record<string, "brandAssetId" | "personaId" | "productId"> = {
+        brand_asset: "brandAssetId",
+        persona: "personaId",
+        product: "productId",
+      };
+      const ASSET_TYPE_LABEL: Record<string, string> = {
+        brand_asset: "Brand",
+        persona: "Persona",
+        product: "Product",
+        detected_trend: "Trend",
+        knowledge_resource: "Knowledge",
+        competitor: "Competitor",
+        business_strategy: "Strategy",
+      };
+
+      const parsed = knowledgeIds
+        .map((key) => {
+          const idx = key.indexOf(":");
+          return {
+            sourceType: idx > 0 ? key.slice(0, idx) : "brand_asset",
+            sourceId: idx > 0 ? key.slice(idx + 1) : key,
+          };
+        })
+        .filter((p) => p.sourceId.length > 0);
+
+      // Best-effort display name for brand assets; other types resolve their
+      // real title from live context at seeding time (assembleCanvasContext).
+      const brandIds = parsed.filter((p) => p.sourceType === "brand_asset").map((p) => p.sourceId);
+      const brandNames = brandIds.length > 0
+        ? new Map(
+            (
+              await prisma.brandAsset.findMany({
+                where: { id: { in: brandIds } },
+                select: { id: true, name: true },
+              })
+            ).map((a) => [a.id, a.name]),
+          )
+        : new Map<string, string>();
+
+      const rows: Prisma.CampaignKnowledgeAssetCreateManyInput[] = parsed.map(
+        ({ sourceType, sourceId }) => {
+          const row: Prisma.CampaignKnowledgeAssetCreateManyInput = {
+            campaignId: campaign.id,
+            sourceType,
+            sourceId,
+            assetName:
+              sourceType === "brand_asset"
+                ? brandNames.get(sourceId) ?? "Unknown"
+                : ASSET_TYPE_LABEL[sourceType] ?? sourceType,
+            assetType: ASSET_TYPE_LABEL[sourceType] ?? sourceType,
+            // Wizard-selected knowledge is auto-selected for content items in
+            // the campaign (drives the Step-1 picker pre-selection).
+            isAutoSelected: true,
+          };
+          const fk = FK_COLUMN[sourceType];
+          if (fk) row[fk] = sourceId;
+          return row;
+        },
+      );
 
       await prisma.campaignKnowledgeAsset.createMany({
-        data: knowledgeIds.map((assetId) => ({
-          campaignId: campaign.id,
-          brandAssetId: assetId,
-          assetName: assetMap.get(assetId) ?? "Unknown",
-          assetType: "Brand",
-        })),
+        data: rows,
         skipDuplicates: true,
       });
     }

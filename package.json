@@ -27,6 +27,8 @@
     "smoke:longform-tweaks": "tsx scripts/smoke-tests/longform-tweaks.ts",
     "smoke:structured-tweaks": "tsx scripts/smoke-tests/structured-tweaks.ts",
     "smoke:prompt-contracts": "tsx scripts/smoke-tests/prompt-contracts.ts",
+    "smoke:knowledge-context": "tsx scripts/smoke-tests/knowledge-context.ts",
+    "smoke:context-priority": "tsx scripts/smoke-tests/context-priority.ts",
     "smoke:page-types": "tsx scripts/smoke-tests/page-types-w1.ts && tsx scripts/smoke-tests/page-types-w2-w3.ts && tsx scripts/smoke-tests/page-types-w4.ts && tsx scripts/smoke-tests/page-types-w5.ts && tsx scripts/smoke-tests/page-types-w5-l3.ts",
     "smoke:image-defaults": "tsx scripts/smoke-tests/image-briefing-defaults.ts",
     "smoke:image-coupling": "tsx scripts/smoke-tests/image-content-coupling.ts",

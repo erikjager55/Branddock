@@ -21,6 +21,9 @@ export interface ContextGroup {
   icon: string;
   category: string;
   items: ContextGroupItem[];
+  /** True when the source query threw — lets the modal show "couldn't load"
+   * instead of silently hiding the category (which reads as "empty"). */
+  error?: boolean;
 }
 
 export interface ContextGroupItem {
@@ -37,11 +40,11 @@ export async function getAvailableContextItems(workspaceId: string): Promise<Con
   const groups: ContextGroup[] = [];
 
   for (const config of CONTEXT_REGISTRY) {
-    try {
-      // Deliverables don't have workspaceId directly — skip for modal listing
-      // They are shown via their parent campaign
-      if (config.key === 'deliverable') continue;
+    // Deliverables don't have workspaceId directly — skip for modal listing.
+    // They are shown via their parent campaign.
+    if (config.key === 'deliverable') continue;
 
+    try {
       const model = (prisma as unknown as Record<string, unknown>)[config.prismaModel] as
         | { findMany: (args: Record<string, unknown>) => Promise<Record<string, unknown>[]> }
         | undefined;
@@ -61,8 +64,10 @@ export async function getAvailableContextItems(workspaceId: string): Promise<Con
         orderBy: { [config.titleField]: 'asc' },
       });
 
-      if (items.length === 0) continue;
-
+      // Emit the group even when empty — the modal shows it as a present-but-
+      // empty category (with an inline "add" affordance for knowledge) instead
+      // of hiding it, so the user can tell the category exists. (Was: silent
+      // `continue` on zero rows — root cause of "library items don't appear".)
       groups.push({
         key: config.key,
         label: config.label,
@@ -81,9 +86,17 @@ export async function getAvailableContextItems(workspaceId: string): Promise<Con
         })),
       });
     } catch (error) {
-      // Model may not exist or relation changed — skip gracefully
+      // Model may not exist or relation changed — surface as an errored empty
+      // group so the UI distinguishes "couldn't load" from "genuinely empty".
       console.warn(`[context-fetcher] Fetch failed for ${config.key}:`, error);
-      continue;
+      groups.push({
+        key: config.key,
+        label: config.label,
+        icon: config.icon,
+        category: config.category,
+        items: [],
+        error: true,
+      });
     }
   }
 
@@ -92,13 +105,28 @@ export async function getAvailableContextItems(workspaceId: string): Promise<Con
 
 // ── Serialize selected items for the prompt ───────────────
 
+interface SelectedContextRef {
+  sourceType: string;
+  sourceId: string;
+  /** Optional user guidance on how to use this source. */
+  note?: string;
+  /** 'primary' = authoritative source material; 'reference' (default) = ambient context. */
+  priority?: 'primary' | 'reference';
+}
+
+// Primary (user-flagged) sources get a far larger serialization budget so a
+// full article the user told the model to "ground its output in" is read in its
+// entirety rather than truncated to the generic per-record cap.
+const PRIMARY_MAX_SERIALIZED_LENGTH = 16000;
+
 export async function serializeContextForPrompt(
-  selectedItems: { sourceType: string; sourceId: string }[],
+  selectedItems: SelectedContextRef[],
   workspaceId: string,
 ): Promise<string> {
   if (selectedItems.length === 0) return '';
 
-  const sections: string[] = [];
+  const primarySections: string[] = [];
+  const referenceSections: string[] = [];
 
   for (const item of selectedItems) {
     const config = CONTEXT_REGISTRY.find((c) => c.key === item.sourceType);
@@ -130,7 +158,24 @@ export async function serializeContextForPrompt(
 
       if (!record) continue;
 
-      sections.push(serializeToText({ config, record: record as Record<string, unknown> }));
+      const isPrimary = item.priority === 'primary';
+      let section = serializeToText({
+        config,
+        record: record as Record<string, unknown>,
+        // Lift the cap for primary items so a long source isn't half-read.
+        ...(isPrimary
+          ? { maxLength: Math.max(config.maxSerializedLength ?? 2000, PRIMARY_MAX_SERIALIZED_LENGTH) }
+          : {}),
+      });
+
+      // Per-item user guidance travels in as an explicit instruction on HOW to
+      // use this source (e.g. "emphasize this vision", "play up this tension").
+      const note = item.note?.trim();
+      if (note) {
+        section += `\n- **User guidance on this source:** ${note}`;
+      }
+
+      (isPrimary ? primarySections : referenceSections).push(section);
     } catch (error) {
       console.warn(
         `[context-fetcher] Serialize failed for ${item.sourceType}/${item.sourceId}:`,
@@ -140,7 +185,22 @@ export async function serializeContextForPrompt(
     }
   }
 
-  if (sections.length === 0) return '';
+  if (primarySections.length === 0 && referenceSections.length === 0) return '';
 
-  return `## ADDITIONAL CONTEXT\nThe following information has been shared with you for discussion:\n\n${sections.join('\n\n')}`;
+  const blocks: string[] = [];
+  if (primarySections.length > 0) {
+    // Authoritative framing — user explicitly chose this as source material.
+    blocks.push(
+      `## PRIORITY SOURCE MATERIAL\nRead the following source material carefully and ground your output in it. Treat it as authoritative — do not contradict or omit its key points.\n\n${primarySections.join('\n\n')}`,
+    );
+  }
+  if (referenceSections.length > 0) {
+    // Unchanged framing for non-prioritised items → existing prompts stay
+    // byte-identical when nothing is flagged primary (golden-set safety).
+    blocks.push(
+      `## ADDITIONAL CONTEXT\nThe following information has been shared with you for discussion:\n\n${referenceSections.join('\n\n')}`,
+    );
+  }
+
+  return blocks.join('\n\n');
 }

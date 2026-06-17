@@ -81,7 +81,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
     try {
       // Collect user-selected knowledge context items from the store
       const contextItems = Array.from(store.additionalContextItems.values()).map(
-        ({ sourceType, sourceId }) => ({ sourceType, sourceId }),
+        ({ sourceType, sourceId, note, priority }) => ({ sourceType, sourceId, note, priority }),
       );
 
       const mediumConfigValues = store.mediumConfigValues;
@@ -204,7 +204,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
         // Collect user-selected knowledge context items from the store
         const contextItems = Array.from(
           useCanvasStore.getState().additionalContextItems.values(),
-        ).map(({ sourceType, sourceId }) => ({ sourceType, sourceId }));
+        ).map(({ sourceType, sourceId, note, priority }) => ({ sourceType, sourceId, note, priority }));
 
         const mediumConfigValues = useCanvasStore.getState().mediumConfigValues;
         const hasMediumConfig = Object.keys(mediumConfigValues).length > 0;

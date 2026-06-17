@@ -1021,6 +1021,13 @@ model CampaignKnowledgeAsset {
   personaId        String?
   productId        String?
   insightId        String?
+  // Generic context reference (preferred): sourceType is a CONTEXT_REGISTRY key
+  // (persona/product/detected_trend/knowledge_resource/competitor/business_strategy)
+  // and sourceId is the underlying row id. Lets the wizard persist ANY selected
+  // context type losslessly so the content-item picker can pre-select it. The
+  // per-type FK columns above are kept for backwards-compat.
+  sourceType       String?
+  sourceId         String?
   assetName        String
   assetType        String // Brand, Persona, Product, Trend
   validationStatus String? // Validated, Not Validated
@@ -2729,6 +2736,11 @@ model KnowledgeResource {
   fileUrl           String?
   importedMetadata  Json?
   createdBy         String?
+
+  // Full extracted text body (PDF/text uploads parsed via unpdf, or pasted
+  // text). Surfaced into AI prompts via the context registry (knowledge_resource
+  // serializer, 'fulltext' hint). Null for link-only resources.
+  content         String? @db.Text
 
   // Legacy fields (backward compat)
   difficulty      String? // beginner, intermediate, advanced
