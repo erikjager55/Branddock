@@ -62,6 +62,11 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
   const [picked, setPicked] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Assets waarvan het bestand 404't (orphan DB-record — bv. lokaal
+  // weggeschreven in een inmiddels-verwijderde worktree, of een ontbrekend
+  // R2-object in productie). Die tiles tonen "Bestand ontbreekt" en mogen
+  // niet selecteerbaar zijn — anders landt een kapotte URL in de deliverable.
+  const [brokenIds, setBrokenIds] = useState<Set<string>>(() => new Set());
 
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
   const setHeroImage = useCanvasStore((s) => s.setHeroImage);
@@ -93,7 +98,19 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
   const hasFilters =
     debouncedSearch.length > 0 || category !== null || favoritesOnly;
 
+  // Een asset met ontbrekend bestand kan nooit een geldige variant zijn.
+  const markBroken = (assetId: string) => {
+    setBrokenIds((prev) => {
+      if (prev.has(assetId)) return prev;
+      const next = new Set(prev);
+      next.add(assetId);
+      return next;
+    });
+    setPicked((prev) => (prev.includes(assetId) ? prev.filter((id) => id !== assetId) : prev));
+  };
+
   const togglePick = (assetId: string) => {
+    if (brokenIds.has(assetId)) return;
     setPicked((prev) => {
       if (prev.includes(assetId)) {
         return prev.filter((id) => id !== assetId);
@@ -272,6 +289,8 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked, onHeroSe
                 asset={asset}
                 isPicked={isPicked}
                 pickIndex={idx}
+                isBroken={brokenIds.has(asset.id)}
+                onBroken={markBroken}
                 onClick={() => togglePick(asset.id)}
               />
             );
@@ -333,11 +352,15 @@ function AssetTile({
   asset,
   isPicked,
   pickIndex,
+  isBroken,
+  onBroken,
   onClick,
 }: {
   asset: MediaAssetWithMeta;
   isPicked: boolean;
   pickIndex: number;
+  isBroken: boolean;
+  onBroken: (assetId: string) => void;
   onClick: () => void;
 }) {
   const thumbUrl = asset.thumbnailUrl ?? asset.fileUrl;
@@ -345,7 +368,10 @@ function AssetTile({
     <button
       type="button"
       onClick={onClick}
-      className="relative rounded-md overflow-hidden border-2 transition-all aspect-square bg-gray-50"
+      disabled={isBroken}
+      aria-disabled={isBroken}
+      title={isBroken ? 'Bestand ontbreekt — niet selecteerbaar' : undefined}
+      className={`relative rounded-md overflow-hidden border-2 transition-all aspect-square bg-gray-50 ${isBroken ? 'cursor-not-allowed' : ''}`}
       style={{ borderColor: isPicked ? '#0d9488' : '#e5e7eb' }}
     >
       <img
@@ -354,8 +380,10 @@ function AssetTile({
         className="w-full h-full object-cover"
         onError={(e) => {
           // Asset file ontbreekt op disk (orphan DB-record). Toon placeholder
-          // i.p.v. broken-image icon. Voorkomt dat user op een niet-werkende
-          // asset klikt + bouwt graceful degradation in voor élk merk.
+          // i.p.v. broken-image icon én meld het aan de parent zodat de tile
+          // niet-selecteerbaar wordt — voorkomt dat een kapotte URL in de
+          // deliverable landt. Graceful degradation voor élk merk.
+          onBroken(asset.id);
           const img = e.currentTarget;
           img.style.display = 'none';
           const parent = img.parentElement;
