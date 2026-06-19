@@ -276,6 +276,27 @@ export type SpecTableProps = {
   bandTone?: SectionBandTone;
 };
 
+/** GEO Fase 2 — ComparisonTable: echte multi-kolom vergelijkingstabel (een van de
+ *  hoogst-geciteerde GEO-formats). String-arrays als `{value}`-objecten zodat de
+ *  Puck-editor ze native kan bewerken (zelfde objectvorm-conventie als SpecTable). */
+export type ComparisonCell = { value: string };
+export type ComparisonRow = { label: string; cells: ComparisonCell[] };
+export type ComparisonTableProps = {
+  /** Kolomkoppen incl. de eerste (kenmerk-)kolom. */
+  columns: ComparisonCell[];
+  rows: ComparisonRow[];
+  caption?: string;
+  bandTone?: SectionBandTone;
+};
+
+/** GEO Fase 2 — Listicle: genummerde ranked-list (het andere hoogst-geciteerde GEO-format). */
+export type ListicleItem = { rank: number; title: string; body: string };
+export type ListicleProps = {
+  items: ListicleItem[];
+  heading?: string;
+  bandTone?: SectionBandTone;
+};
+
 export type FooterLink = { label: string; href: string };
 export type FooterProps = {
   companyName: string;
@@ -372,6 +393,8 @@ export type SpikePuckProps = {
   AnchorNav: AnchorNavProps;
   StoryChapter: StoryChapterProps;
   HighlightCards: HighlightCardsProps;
+  ComparisonTable: ComparisonTableProps;
+  Listicle: ListicleProps;
 };
 
 // ─── Config builder ──────────────────────────────────────────
@@ -425,6 +448,8 @@ export function buildSpikePuckConfig(
       AnchorNav: anchorNavComponent(tokens, ctx?.brandNavLogoUrl ?? null, stickyNav),
       StoryChapter: storyChapterComponent(tokens),
       HighlightCards: highlightCardsComponent(tokens),
+      ComparisonTable: comparisonTableComponent(tokens),
+      Listicle: listicleComponent(tokens),
     },
   };
 }
@@ -2273,6 +2298,144 @@ function specTableComponent(tokens: BrandTokens) {
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+      );
+    },
+  };
+}
+
+/**
+ * ComparisonTable (GEO Fase 2) — native multi-kolom vergelijkingstabel (hoog-citeerbaar
+ * GEO-format). Vervangt de RichText-markdown-placeholder uit de spike: brand-emergent
+ * (heading-font voor koppen/labels, body-font voor cellen), contrast-geclampt tegen de
+ * band-bg, zebra-rijen. String-arrays komen als `{value}`-objecten binnen (Puck-native,
+ * zelfde objectvorm-conventie als SpecTable).
+ */
+function comparisonTableComponent(tokens: BrandTokens) {
+  const { sectionRhythm } = tokens;
+  const ds = tokens.designSystem;
+  const constraints = getRenderConstraints(tokens.archetype, tokens.layoutStyle);
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const tbr = tokens.typographyByRole;
+  return {
+    fields: {
+      caption: { type: 'text' as const },
+      columns: {
+        type: 'array' as const,
+        arrayFields: { value: { type: 'text' as const } },
+        getItemSummary: (it: ComparisonCell) => it.value || 'Kolom',
+      },
+      rows: {
+        type: 'array' as const,
+        arrayFields: {
+          label: { type: 'text' as const },
+          cells: { type: 'array' as const, arrayFields: { value: { type: 'text' as const } } },
+        },
+        getItemSummary: (it: ComparisonRow) => it.label || 'Rij',
+      },
+    },
+    defaultProps: {
+      caption: '',
+      columns: [{ value: 'Kenmerk' }, { value: 'Wij' }, { value: 'Alternatief' }],
+      rows: [{ label: 'Voorbeeld', cells: [{ value: '✓' }, { value: '—' }] }],
+    },
+    render: ({ columns, rows, caption, bandTone }: ComparisonTableProps) => {
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      const borderColor = resolveOnColor(tokens.surfaceBorder, sectionBg, { fallback: tokens.onSurface, minRatio: 1.3 });
+      const labelColor = safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg);
+      const valueColor = readableTextColor(tbr.body.color ?? tokens.onSurface, sectionBg, tokens.onSurface);
+      const zebraBg = sectionBandBg(tokens, bandTone === 'alt' ? 'base' : 'alt');
+      const cols = columns.map((c) => c.value);
+      const dataColCount = Math.max(0, cols.length - 1);
+      return (
+        <section style={{ padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`, fontFamily: bodyFont, background: sectionBg }}>
+          <div style={{ maxWidth: 860, margin: '0 auto', overflowX: 'auto' }}>
+            {caption && caption.trim().length > 0 ? (
+              <h2 style={{ fontFamily: headingFont, fontSize: tbr.heading.fontSize ?? ds.typography.heading.sizes[Math.max(0, ds.typography.heading.sizes.length - 2)] ?? 28, fontWeight: tbr.heading.fontWeight ?? 600, lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight, color: safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg), margin: '0 0 24px' }}>{caption}</h2>
+            ) : null}
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${borderColor}`, borderRadius: Math.min(12, constraints.maxRadiusPx), overflow: 'hidden' }}>
+              <thead>
+                <tr style={{ background: zebraBg }}>
+                  {cols.map((c, i) => (
+                    <th key={i} scope="col" style={{ textAlign: 'left', padding: '12px 16px', fontFamily: headingFont, fontWeight: tbr.subheading.fontWeight ?? 600, fontSize: tbr.body.fontSize ?? 15, color: labelColor, borderBottom: `1px solid ${borderColor}` }}>{c}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, ri) => (
+                  <tr key={ri} style={{ background: ri % 2 === 1 ? zebraBg : 'transparent' }}>
+                    <th scope="row" style={{ textAlign: 'left', verticalAlign: 'top', padding: '12px 16px', fontFamily: headingFont, fontWeight: tbr.subheading.fontWeight ?? 600, fontSize: tbr.body.fontSize ?? 15, color: labelColor, borderBottom: ri < rows.length - 1 ? `1px solid ${borderColor}` : undefined }}>{row.label}</th>
+                    {Array.from({ length: dataColCount }).map((_, ci) => (
+                      <td key={ci} style={{ padding: '12px 16px', verticalAlign: 'top', fontSize: tbr.body.fontSize ?? 15, lineHeight: tbr.body.lineHeight ?? undefined, color: valueColor, borderBottom: ri < rows.length - 1 ? `1px solid ${borderColor}` : undefined }}>{row.cells[ci]?.value ?? ''}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      );
+    },
+  };
+}
+
+/**
+ * Listicle (GEO Fase 2) — genummerde ranked-list met rank-badge + titel + body
+ * (hoog-citeerbaar GEO-format). Vervangt de RichText-markdown-placeholder;
+ * brand-emergent + contrast-geclampt. Sorteert op rank.
+ */
+function listicleComponent(tokens: BrandTokens) {
+  const { sectionRhythm } = tokens;
+  const ds = tokens.designSystem;
+  const isCustomHeadingFont = !tokens.headingFont.trim().startsWith('system-ui');
+  const isCustomBodyFont = !tokens.bodyFont.trim().startsWith('system-ui');
+  const headingFont = isCustomHeadingFont ? tokens.headingFont : ds.typography.heading.fontFamily;
+  const bodyFont = isCustomBodyFont ? tokens.bodyFont : ds.typography.body.fontFamily;
+  const tbr = tokens.typographyByRole;
+  return {
+    fields: {
+      heading: { type: 'text' as const },
+      items: {
+        type: 'array' as const,
+        arrayFields: {
+          rank: { type: 'number' as const },
+          title: { type: 'text' as const },
+          body: { type: 'textarea' as const },
+        },
+        getItemSummary: (it: ListicleItem) => it.title || 'Item',
+      },
+    },
+    defaultProps: {
+      heading: '',
+      items: [{ rank: 1, title: 'Eerste punt', body: 'Uitleg.' }],
+    },
+    render: ({ items, heading, bandTone }: ListicleProps) => {
+      const sectionBg = sectionBandBg(tokens, bandTone);
+      const titleColor = safeHeadingColor(tbr.subheading.color ?? tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg);
+      const bodyColor = readableTextColor(tbr.body.color ?? tokens.onSurface, sectionBg, tokens.onSurface);
+      const badgeColor = safeHeadingColor(tokens.accent, tokens.accent, tokens.onSurface, sectionBg);
+      const sorted = [...items].sort((a, b) => a.rank - b.rank);
+      return (
+        <section style={{ padding: `${sectionRhythm.sectionPaddingY}px ${responsivePaddingX(sectionRhythm.sectionPaddingX)}`, fontFamily: bodyFont, background: sectionBg }}>
+          <div style={{ maxWidth: 720, margin: '0 auto' }}>
+            {heading && heading.trim().length > 0 ? (
+              <h2 style={{ fontFamily: headingFont, fontSize: tbr.heading.fontSize ?? ds.typography.heading.sizes[Math.max(0, ds.typography.heading.sizes.length - 2)] ?? 28, fontWeight: tbr.heading.fontWeight ?? 600, lineHeight: tbr.heading.lineHeight ?? ds.typography.heading.lineHeight, color: safeHeadingColor(tbr.heading.color, tokens.accent, tokens.onSurface, sectionBg), margin: '0 0 24px' }}>{heading}</h2>
+            ) : null}
+            <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {sorted.map((it, i) => (
+                <li key={i} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                  <span style={{ flexShrink: 0, fontFamily: headingFont, fontWeight: 700, fontSize: 22, color: badgeColor, lineHeight: 1.2, minWidth: 32 }}>{it.rank}.</span>
+                  <div>
+                    <div style={{ fontFamily: headingFont, fontWeight: tbr.subheading.fontWeight ?? 600, fontSize: tbr.subheading.fontSize ?? ds.typography.heading.sizes[Math.max(0, ds.typography.heading.sizes.length - 3)] ?? 18, color: titleColor, marginBottom: 4 }}>{it.title}</div>
+                    <div style={{ fontSize: tbr.body.fontSize ?? 15, lineHeight: tbr.body.lineHeight ?? 1.6, color: bodyColor }}>{it.body}</div>
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
       );

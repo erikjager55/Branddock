@@ -1,15 +1,16 @@
 /**
  * Long-form GEO-article template-builder voor STRUCTURED variants (GEO/SEO Fase 2).
  *
- * Deterministische mapping van LongFormGeoVariantContent → Puck-data-tree met
- * hergebruik van bestaande componenten:
+ * Deterministische mapping van LongFormGeoVariantContent → Puck-data-tree:
  *   BrandHero (titel) → RichText (answer-first) → RichText (TL;DR) →
  *   RichText per prose-sectie → StatsBlock (citeerbare stats) →
- *   RichText (comparison/listicle/definitions, optioneel) → FAQ (Q&A) →
- *   RichText (bronnen, optioneel) → BrandCTA → footer.
+ *   ComparisonTable (multi-kolom, optioneel) → Listicle (genummerd, optioneel) →
+ *   RichText (definities, optioneel) → FAQ (Q&A) → RichText (bronnen, optioneel) →
+ *   BrandCTA → footer.
  *
- * NB: comparison + listicle worden in deze fase als RichText-markdown gerenderd;
- * dedicated ComparisonTable/Listicle-componenten volgen in de render-increment.
+ * Comparison + listicle gebruiken dedicated structured componenten (geen markdown);
+ * definities/bronnen blijven RichText met inline-escaping. Definition/Author/Citation
+ * als eigen blokken zijn een latere increment.
  */
 
 import type { Data } from "@puckeditor/core";
@@ -20,13 +21,6 @@ import { resolveCtaHref, assignSectionBands } from "./landing-page-from-structur
 import { instance, taglineFromSubline, footerInstance, type PuckInstance } from "./from-structured-shared";
 
 type SpikeData = Data<SpikePuckProps>;
-type GeoComparison = NonNullable<LongFormGeoVariantContent["comparison"]>;
-type GeoListItem = NonNullable<LongFormGeoVariantContent["listItems"]>[number];
-
-/** Escape cel-inhoud zodat `|`/newlines de markdown-tabel niet breken. */
-function escapeCell(value: string): string {
-  return value.replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ").trim();
-}
 
 /** Escape korte INLINE-velden (kop/label/titel/link-tekst): collapse newlines +
  *  escape markdown-metachars zodat ze de gegenereerde markdown niet breken.
@@ -38,28 +32,6 @@ function escapeMdInline(value: string): string {
 /** Maak een URL veilig als markdown link-destination (ongebalanceerde `()`/spaties breken de link). */
 function safeMdUrl(url: string): string {
   return url.trim().replace(/\(/g, "%28").replace(/\)/g, "%29").replace(/\s/g, "%20");
-}
-
-/** Multi-kolom vergelijking → markdown-tabel (header = columns, rij = label + cells). */
-function comparisonMarkdown(c: GeoComparison): string {
-  const header = `| ${c.columns.map(escapeCell).join(" | ")} |`;
-  const sep = `| ${c.columns.map(() => "---").join(" | ")} |`;
-  const rows = c.rows.map((r) => {
-    const cells = [r.label, ...r.cells].slice(0, c.columns.length).map(escapeCell);
-    while (cells.length < c.columns.length) cells.push("");
-    return `| ${cells.join(" | ")} |`;
-  });
-  const title = c.caption ? `## ${escapeCell(c.caption)}\n\n` : "";
-  return `${title}${[header, sep, ...rows].join("\n")}`;
-}
-
-/** Genummerde listicle → markdown ordered list. */
-function listicleMarkdown(items: GeoListItem[]): string {
-  return items
-    .slice()
-    .sort((a, b) => a.rank - b.rank)
-    .map((it) => `${it.rank}. **${escapeMdInline(it.title)}** — ${escapeMdInline(it.body)}`)
-    .join("\n");
 }
 
 /**
@@ -91,9 +63,27 @@ export function buildLongFormGeoTemplateFromStructured(
     instance("StatsBlock", {
       items: variant.citeableStats.map((s) => ({ value: s.value, label: `${s.label} — ${s.source}` })),
     }),
-    ...(variant.comparison ? [instance("RichText", { content: comparisonMarkdown(variant.comparison) })] : []),
+    // Multi-kolom vergelijking → dedicated ComparisonTable (geen markdown meer).
+    ...(variant.comparison
+      ? [
+          instance("ComparisonTable", {
+            caption: variant.comparison.caption ?? "",
+            columns: variant.comparison.columns.map((value) => ({ value })),
+            rows: variant.comparison.rows.map((r) => ({
+              label: r.label,
+              cells: r.cells.map((value) => ({ value })),
+            })),
+          }),
+        ]
+      : []),
+    // Genummerde listicle → dedicated Listicle-component (geen markdown meer).
     ...(variant.listItems && variant.listItems.length > 0
-      ? [instance("RichText", { content: `## Op een rij\n\n${listicleMarkdown(variant.listItems)}` })]
+      ? [
+          instance("Listicle", {
+            heading: "Op een rij",
+            items: variant.listItems.map((it) => ({ rank: it.rank, title: it.title, body: it.body })),
+          }),
+        ]
       : []),
     ...(variant.definitions && variant.definitions.length > 0
       ? [
