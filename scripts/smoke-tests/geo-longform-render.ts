@@ -69,5 +69,26 @@ assert('listicle gesorteerd op rank (Eerste vóór Tweede)', richBlob.indexOf('E
 assert('definitie gerenderd', richBlob.includes('**GEO**'));
 assert('bronnen gerenderd als links', richBlob.includes('[Gartner](https://example.com)'));
 
+console.log('\n── markdown-escaping (review-fix) ──');
+const adversarial = buildLongFormGeoTemplateFromStructured(
+  {
+    ...base,
+    listItems: [{ rank: 1, title: '**Bold** title', body: 'body' }],
+    definitions: [{ term: 'GEO', definition: 'def' }],
+    sources: [{ title: 'GitHub [Awesome]', url: 'https://x.com/page(1)' }],
+    sections: [{ heading: 'Intro [edge]', body: '**intentional** prose' }],
+  },
+  null,
+);
+const advRich = (adversarial.content as Array<{ type: string; props: { content?: string } }>)
+  .filter((c) => c.type === 'RichText')
+  .map((c) => c.props.content ?? '')
+  .join('\n');
+assert('listicle titel `**` geëscaped', advRich.includes('\\*\\*Bold\\*\\* title'));
+assert('bron link-tekst `[]` geëscaped', advRich.includes('GitHub \\[Awesome\\]'));
+assert('bron-URL parens encoded', advRich.includes('https://x.com/page%281%29'));
+assert('sectie-kop `[]` geëscaped', advRich.includes('## Intro \\[edge\\]'));
+assert('block-prose (section.body) blijft RAW — geen over-escape', advRich.includes('**intentional** prose'));
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

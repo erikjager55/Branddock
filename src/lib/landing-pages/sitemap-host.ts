@@ -60,6 +60,11 @@ export interface LlmsEntry {
  * URL's van één workspace als markdown-lijst zodat AI-engines ze gericht kunnen
  * ophalen. Leeg → korte placeholder.
  */
+/** Escape markdown link-tekst (titel uit seoChecklist kan `[`/`]`/newlines bevatten → breekt de link). */
+function escapeMdLinkText(value: string): string {
+  return value.replace(/\s*\n\s*/g, " ").replace(/([\\`*_[\]])/g, "\\$1").trim();
+}
+
 export function buildLlmsTxt(opts: {
   workspaceName?: string | null;
   origin: string;
@@ -70,8 +75,9 @@ export function buildLlmsTxt(opts: {
   if (opts.entries.length === 0) {
     return `${heading}\n\n> Nog geen gepubliceerde pagina's.\n`;
   }
+  // slug is `[a-z0-9-]` (isValidSlug) → URL-veilig; alleen de link-tekst escapen.
   const links = opts.entries
-    .map((e) => `- [${(e.title?.trim() || e.slug)}](${base}/${e.slug})`)
+    .map((e) => `- [${escapeMdLinkText(e.title?.trim() || e.slug)}](${base}/${e.slug})`)
     .join("\n");
   return `${heading}\n\n## Pages\n\n${links}\n`;
 }

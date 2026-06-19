@@ -28,6 +28,18 @@ function escapeCell(value: string): string {
   return value.replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ").trim();
 }
 
+/** Escape korte INLINE-velden (kop/label/titel/link-tekst): collapse newlines +
+ *  escape markdown-metachars zodat ze de gegenereerde markdown niet breken.
+ *  NIET voor block-prose (answerFirstIntro/section.body) — die mag bewust markdown bevatten. */
+function escapeMdInline(value: string): string {
+  return value.replace(/\s*\n\s*/g, " ").replace(/([\\`*_[\]])/g, "\\$1").trim();
+}
+
+/** Maak een URL veilig als markdown link-destination (ongebalanceerde `()`/spaties breken de link). */
+function safeMdUrl(url: string): string {
+  return url.trim().replace(/\(/g, "%28").replace(/\)/g, "%29").replace(/\s/g, "%20");
+}
+
 /** Multi-kolom vergelijking → markdown-tabel (header = columns, rij = label + cells). */
 function comparisonMarkdown(c: GeoComparison): string {
   const header = `| ${c.columns.map(escapeCell).join(" | ")} |`;
@@ -46,7 +58,7 @@ function listicleMarkdown(items: GeoListItem[]): string {
   return items
     .slice()
     .sort((a, b) => a.rank - b.rank)
-    .map((it) => `${it.rank}. **${it.title}** — ${it.body}`)
+    .map((it) => `${it.rank}. **${escapeMdInline(it.title)}** — ${escapeMdInline(it.body)}`)
     .join("\n");
 }
 
@@ -72,9 +84,9 @@ export function buildLongFormGeoTemplateFromStructured(
     // Answer-first: de directe beantwoording bovenaan (AEO-citeerbaar).
     instance("RichText", { content: variant.answerFirstIntro }),
     // TL;DR / key takeaways.
-    instance("RichText", { content: `## TL;DR\n\n${variant.tldr.map((b) => `- ${b}`).join("\n")}` }),
-    // Prose-secties (artikel-body).
-    ...variant.sections.map((s) => instance("RichText", { content: `## ${s.heading}\n\n${s.body}` })),
+    instance("RichText", { content: `## TL;DR\n\n${variant.tldr.map((b) => `- ${escapeMdInline(b)}`).join("\n")}` }),
+    // Prose-secties (artikel-body): heading inline-escaped, body blijft block-prose (raw).
+    ...variant.sections.map((s) => instance("RichText", { content: `## ${escapeMdInline(s.heading)}\n\n${s.body}` })),
     // Citeerbare stats — bron in het label zodat de herkomst zichtbaar blijft.
     instance("StatsBlock", {
       items: variant.citeableStats.map((s) => ({ value: s.value, label: `${s.label} — ${s.source}` })),
@@ -86,7 +98,7 @@ export function buildLongFormGeoTemplateFromStructured(
     ...(variant.definitions && variant.definitions.length > 0
       ? [
           instance("RichText", {
-            content: variant.definitions.map((d) => `**${d.term}** — ${d.definition}`).join("\n\n"),
+            content: variant.definitions.map((d) => `**${escapeMdInline(d.term)}** — ${escapeMdInline(d.definition)}`).join("\n\n"),
           }),
         ]
       : []),
@@ -95,7 +107,7 @@ export function buildLongFormGeoTemplateFromStructured(
     ...(variant.sources && variant.sources.length > 0
       ? [
           instance("RichText", {
-            content: `## Bronnen\n\n${variant.sources.map((s) => `- [${s.title}](${s.url})`).join("\n")}`,
+            content: `## Bronnen\n\n${variant.sources.map((s) => `- [${escapeMdInline(s.title)}](${safeMdUrl(s.url)})`).join("\n")}`,
           }),
         ]
       : []),

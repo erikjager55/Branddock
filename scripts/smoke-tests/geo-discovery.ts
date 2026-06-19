@@ -78,6 +78,13 @@ assert('llms link met titel', llms.includes('[Beste CRM](https://acme.branddock.
 assert('llms link valt terug op slug', llms.includes('[about](https://acme.branddock.app/about)'));
 assert('llms heading = workspace', llms.startsWith('# acme'));
 assert('lege llms → placeholder', buildLlmsTxt({ origin: 'https://x.branddock.app', entries: [] }).includes('Nog geen gepubliceerde'));
+// review-fix: link-tekst escapen (titel uit seoChecklist kan brackets bevatten)
+assert(
+  'llms link-tekst `[]` geëscaped',
+  buildLlmsTxt({ origin: 'https://acme.branddock.app', entries: [{ slug: 'crm', title: 'Best CRM [2024]' }] }).includes(
+    '[Best CRM \\[2024\\]](https://acme.branddock.app/crm)',
+  ),
+);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);
