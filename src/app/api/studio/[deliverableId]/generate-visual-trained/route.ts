@@ -24,6 +24,7 @@ import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { ingestUploadsToLibrary } from '@/lib/media/ingest-uploads-to-library';
 import { patchHeroVisualUrl } from '@/lib/deliverable/patch-hero-visual';
 import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
 import type { ConsistentModelType } from '@/features/consistent-models/types/consistent-model.types';
@@ -313,7 +314,7 @@ export async function POST(request: Request, { params }: RouteParams) {
           fileName,
           contentType: 'image/png',
         });
-        return { url: upload.url, prompt: img.prompt };
+        return { url: upload.url, prompt: img.prompt, fileSize: bytes.length };
       }),
     );
 
@@ -361,6 +362,15 @@ export async function POST(request: Request, { params }: RouteParams) {
     });
 
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+
+    // Library-groei (#325-patroon): elk getraind AI-beeld als MediaAsset voor
+    // hergebruik via library-first matching. Fire-and-forget.
+    ingestUploadsToLibrary(uploads, {
+      workspaceId,
+      uploadedById: session.user.id,
+      deliverableTypeId: stack.deliverableTypeId,
+      defaultContentType: 'image/png',
+    });
 
     // G8 — fire-and-forget visual fidelity scoring for the new components.
     // Each call costs ~$0.04 (Claude vision). The route returns immediately
