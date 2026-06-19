@@ -91,6 +91,9 @@ import {
   CommercialDemoPage,
   ValidationMethodDemo,
 } from './lib/lazy-imports';
+// TIJDELIJK: Research Hub uitgeschakeld — fallback-surface + toggle.
+import { ComingSoonPage } from './components/shared/ComingSoonPage';
+import { RESEARCH_HUB_ENABLED } from './lib/constants/design-tokens';
 
 function AppContent() {
   const { isNotificationPanelOpen, closeNotifications } = useShellStore();
@@ -515,6 +518,8 @@ function AppContent() {
         return <DashboardPage onNavigate={handleSetActiveSection} />;
       case 'research':
       case 'research-hub':
+        if (!RESEARCH_HUB_ENABLED)
+          return <ComingSoonPage sectionId="research" onBack={() => handleSetActiveSection('dashboard')} />;
         return (
           <ResearchHubPage
             onNavigate={handleSetActiveSection}
@@ -581,6 +586,8 @@ function AppContent() {
         />;
       
       case 'research-bundles':
+        if (!RESEARCH_HUB_ENABLED)
+          return <ComingSoonPage sectionId="research-bundles" onBack={() => handleSetActiveSection('dashboard')} />;
         return (
           <ResearchBundlesPage
             onNavigate={handleSetActiveSection}
@@ -591,6 +598,8 @@ function AppContent() {
           />
         );
       case 'research-bundle-detail': {
+        if (!RESEARCH_HUB_ENABLED)
+          return <ComingSoonPage sectionId="research-bundles" onBack={() => handleSetActiveSection('dashboard')} />;
         const selectedBundleId = useResearchStore.getState().selectedBundleId;
         if (!selectedBundleId) {
           return null; // useEffect redirect handles navigation
@@ -605,6 +614,8 @@ function AppContent() {
       }
       case 'research-custom':
       case 'custom-validation':
+        if (!RESEARCH_HUB_ENABLED)
+          return <ComingSoonPage sectionId="custom-validation" onBack={() => handleSetActiveSection('dashboard')} />;
         return (
           <CustomValidationPage
             onBack={() => handleSetActiveSection('research-hub')}
@@ -811,6 +822,8 @@ function AppContent() {
         );
       }
       case 'research-validation':
+        if (!RESEARCH_HUB_ENABLED)
+          return <ComingSoonPage sectionId="research" onBack={() => handleSetActiveSection('dashboard')} />;
         return <ResearchValidationPage />;
       
       // 🆕 NEW: Agency Settings (White Label)

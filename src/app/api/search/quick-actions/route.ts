@@ -2,17 +2,21 @@ import { NextResponse } from 'next/server';
 import { withCache } from '@/lib/api/cache';
 import { cacheKeys, CACHE_TTL } from '@/lib/api/cache-keys';
 import { getServerSession } from '@/lib/auth-server';
+import { RESEARCH_HUB_ENABLED } from '@/lib/constants/design-tokens';
 
 const _GET = async () => {
   return NextResponse.json([
-    {
-      id: 'research',
-      icon: 'Sparkles',
-      label: 'Start New Research',
-      description: 'Create a research plan',
-      href: 'research',
-      color: 'text-green-600',
-    },
+    // TIJDELIJK: research quick-action verborgen wanneer de Research Hub uit staat.
+    ...(RESEARCH_HUB_ENABLED
+      ? [{
+          id: 'research',
+          icon: 'Sparkles',
+          label: 'Start New Research',
+          description: 'Create a research plan',
+          href: 'research',
+          color: 'text-green-600',
+        }]
+      : []),
     {
       id: 'persona',
       icon: 'UserPlus',
