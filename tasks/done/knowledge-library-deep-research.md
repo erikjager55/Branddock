@@ -107,10 +107,15 @@ Twee echte defecten gevonden die fakes niet dekken — beide gefixt + her-geveri
 1. **gemini-2.5-flash thinking-truncatie**: thinking-tokens vraten het krappe `maxOutputTokens` van plan/clarify/finalize → MAX_TOKENS → JSON onparseerbaar → fallback-heuristieken (leeg tags/takeaways). Fix: `thinkingConfig: { thinkingBudget: 0 }` + ruimer budget (gotchas.md 2026-06-19).
 2. **grounding-redirect-domein capte bronnen op 2**: domein-dedup draaide op het gedeelde `vertexaisearch…`-redirect-domein → max 2 bronnen/run + lelijke/vergankelijke opgeslagen URL's. Fix: redirect-links eerst resolven naar de eind-URL (parallel, 5s-timeout, fallback), dán dedupen op echt domein. Resultaat: echte bron-URL's + 3 diverse bronnen → verify-fase nu actief (≥3 bronnen).
 
+## Browser-smoke ✅ (2026-06-19, tegen live dev-server op deze branch)
+Turbopack weigert de gesymlinkte `node_modules` (gotcha) → opgelost door `node_modules` tijdelijk APFS-clone te maken (COW), dev-server op :3001, sessie-cookie gemint via `print-session-cookie.ts`. Daarna symlink hersteld.
+- **HTTP-e2e 16/16** (`scripts/dev/deep-research-e2e.ts`): geauthenticeerd door de volledige keten die de UI aanroept — clarify (3 vragen) → run SSE (182s, 6 fasen, 4 geciteerde bronnen, 1 complete, 0 error) → opslaan als RESEARCH (201) → detail geeft content/aiKeyTakeaways → cleanup DELETE 200.
+- **UI-render 6/6** (`scripts/dev/deep-research-ui-check.ts`, Playwright): Knowledge Library laadt, entry-knop heet "Add Item", "Deep Research"-tab + topic-input + Start-knop renderen, 0 client-side errors. Screenshot bevestigd.
+
 ## Open
-- **Browser-smoke** (handmatig): worktree-`node_modules` is gesymlinkt → Turbopack-dev weigert (gotcha). Draai `npm run dev` vanuit een niet-gesymlinkte checkout óf na merge; klik de flow door.
 - Kleine tuning-follow-up: verify flagde 10/10 claims in de live run — checken of de verify-prompt niet over-flagt (geen output-impact, dus niet-blokkerend).
-- `scripts/dev/deep-research-live.ts` = dev-diagnostic (kost API-budget) — bewust behouden voor toekomstige live-verificatie.
+- `scripts/dev/deep-research-{live,e2e,ui-check}.ts` = dev-diagnostics (kosten API-budget / vereisen dev-server) — bewust behouden voor herhaalbare verificatie.
+- Bij squash-merge: `DEEP_RESEARCH` `db push` op doelomgeving; changelog-hash → squash-hash.
 
 ## Bewust NIET gefixt (minor/out-of-scope)
 Dode try/catch rond Exa, brand-boilerplate bij lege context, ongebonden `brandContextFn`-await, Gemini-calls zonder expliciete `timeoutMs`, dubbele error-reset, `createSchema.type` als vrije string. Grondiger "grounding-als-context"-herontwerp = follow-up.
