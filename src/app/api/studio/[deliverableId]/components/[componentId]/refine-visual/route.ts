@@ -21,7 +21,7 @@
 // =============================================================
 
 import { NextResponse } from "next/server";
-import { resolveDeliverableWorkspaceId } from "@/lib/deliverable/deliverable-access";
+import { requireDeliverableAccess } from "@/lib/deliverable/deliverable-access";
 import { prisma } from "@/lib/prisma";
 import { withAiRateLimit } from "@/lib/ai/middleware";
 import { composeFromImages, ComposeInvalidImageError, ComposePolicyBlockedError } from "@/lib/ai/gemini-client";
@@ -29,6 +29,8 @@ import { fetchBrandStyleAnchors } from "@/lib/ai/brand-style-anchors";
 import { getStorageProvider } from "@/lib/storage";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { importGeneratedImageToLibrary } from "@/lib/media/import-generated-image";
+import { mediaCategoryForDeliverableType } from "@/lib/media/ingest-uploads-to-library";
 import {
   extractRefineHint,
   buildRefinePromptModification,
@@ -49,10 +51,11 @@ export async function POST(
   try {
     // Resource-based: workspace van het deliverable i.p.v. cookie-gelijkheid
     // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
-    const workspaceId = await resolveDeliverableWorkspaceId((await params).deliverableId);
-    if (!workspaceId) {
-      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
+    const access = await requireDeliverableAccess((await params).deliverableId);
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
     }
+    const workspaceId = access.workspaceId;
 
     const rateLimit = await withAiRateLimit(workspaceId);
     if (rateLimit instanceof Response) return rateLimit;
@@ -72,6 +75,7 @@ export async function POST(
         imagePromptUsed: true,
         iterationCount: true,
         componentType: true,
+        deliverable: { select: { contentType: true } },
       },
     });
 
@@ -226,6 +230,21 @@ export async function POST(
     });
 
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+
+    // Library-groei (#325-patroon): de verfijnde versie als MediaAsset, maar
+    // replace-per-slot (sourceUrl-marker op componentId) zodat herhaald
+    // verfijnen één — de meest recente — asset oplevert i.p.v. één per iteratie.
+    const mediaCategory = mediaCategoryForDeliverableType(component.deliverable.contentType);
+    void importGeneratedImageToLibrary({
+      workspaceId,
+      fileUrl: upload.url,
+      fileSize: composeResult.imageBytes.length,
+      name: refinePrompt.trim().slice(0, 120) || "Verbeterd beeld",
+      uploadedById: access.userId,
+      category: mediaCategory,
+      contentType: composeResult.mimeType,
+      replaceBySourceUrl: `deliverable-component:${componentId}`,
+    });
 
     // Auto-score de refined image (zelfde fire-and-forget patroon als generate-*)
     void Promise.allSettled([
