@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
+import { serializeContextForPrompt } from "@/lib/ai/context/fetcher";
 import { generateCreativeAngles } from "@/lib/ai/canvas-angle-generator";
 import { anthropicClient } from "@/lib/ai/anthropic-client";
 import { resolveCanvasModelForContentType } from "@/lib/ai/canvas-model-routing";
@@ -214,6 +215,14 @@ export async function POST(
   const generationModel =
     routedModel.provider === "anthropic" ? routedModel.model : undefined;
 
+  // Knowledge-context — serialiseer de door de gebruiker geselecteerde Step-1
+  // items (al op ctx.additionalContextItems via assembleCanvasContext) tot
+  // prompt-tekst, zodat web-page-generatie het bronmateriaal consumeert net als
+  // het orchestrator-pad. Leeg → undefined (prompt blijft dan byte-identiek).
+  const additionalContextText = ctx.additionalContextItems?.length
+    ? (await serializeContextForPrompt(ctx.additionalContextItems, workspaceId)) || undefined
+    : undefined;
+
   let results;
   try {
     results = await generateLandingPageVariantBatch(
@@ -237,6 +246,7 @@ export async function POST(
         vocabularyDont: ctx.brand.vocabularyDont ?? null,
         voiceSample: ctx.brand.voiceSample ?? null,
         humanVoiceMode,
+        additionalContextText,
       },
       count,
       angles,

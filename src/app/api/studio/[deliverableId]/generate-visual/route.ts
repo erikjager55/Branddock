@@ -38,6 +38,7 @@ import { getBrandLogo, getBrandLogos, pickLogoForBackground, type BrandLogo } fr
 import { resolveHeroLogoOverlayEnabled } from '@/lib/landing-pages/hero-logo-config';
 import { patchHeroVisualUrl } from '@/lib/deliverable/patch-hero-visual';
 import { runHeroLogoGate } from '@/lib/landing-pages/hero-logo-gate';
+import { ingestUploadsToLibrary } from '@/lib/media/ingest-uploads-to-library';
 import { z } from 'zod';
 
 const VISUAL_GROUP = 'visual';
@@ -517,7 +518,7 @@ export async function POST(request: Request, { params }: RouteParams) {
             fileName,
             contentType: 'image/png',
           });
-          return { url: upload.url, prompt: img.prompt };
+          return { url: upload.url, prompt: img.prompt, fileSize: bytes.length };
         } catch (err) {
           console.error(
             `[generate-visual] download/upload failed for variant ${idx}:`,
@@ -601,6 +602,20 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+
+    // Library-groei (#325-patroon): elk AI-gegenereerd beeld als MediaAsset
+    // zodat het herbruikbaar wordt via library-first matching. Iteratie over
+    // `uploads` (niet de persist-rijen) zodat de byte-lengte altijd klopt —
+    // ook wanneer de DB-transactie hierboven fail-soft viel. Fire-and-forget.
+    const briefingText =
+      typeof visualBrief?.briefingText === 'string' ? visualBrief.briefingText.trim() : '';
+    ingestUploadsToLibrary(uploads, {
+      workspaceId,
+      uploadedById: access.userId,
+      deliverableTypeId: stack.deliverableTypeId,
+      name: briefingText || undefined,
+      defaultContentType: 'image/png',
+    });
 
     // Pattern B parity (image-quality-chain): auto-trigger fidelity scoring
     // voor elke gegenereerde variant. Was tot 2026-05-15 alleen op -compose

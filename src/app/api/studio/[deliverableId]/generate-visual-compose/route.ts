@@ -35,6 +35,7 @@ import { scoreImageFidelity } from '@/lib/brand-fidelity/visual-fidelity-scorer'
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { ingestUploadsToLibrary } from '@/lib/media/ingest-uploads-to-library';
 import { patchHeroVisualUrl } from '@/lib/deliverable/patch-hero-visual';
 
 const VISUAL_GROUP = 'visual';
@@ -346,7 +347,12 @@ export async function POST(request: Request, { params }: RouteParams) {
           fileName,
           contentType: img.mimeType,
         });
-        return { url: upload.url, prompt: img.prompt };
+        return {
+          url: upload.url,
+          prompt: img.prompt,
+          fileSize: img.imageBytes.length,
+          contentType: img.mimeType,
+        };
       }),
     );
 
@@ -393,6 +399,16 @@ export async function POST(request: Request, { params }: RouteParams) {
     });
 
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+
+    // Library-groei (#325-patroon): elk samengesteld AI-beeld als MediaAsset
+    // voor hergebruik via library-first matching. Uploads dragen hun eigen mime
+    // (jpg/png). Fire-and-forget — faalt nooit de generatie.
+    ingestUploadsToLibrary(uploads, {
+      workspaceId,
+      uploadedById: session.user.id,
+      deliverableTypeId: stack.deliverableTypeId,
+      defaultContentType: 'image/png',
+    });
 
     // G8 — fire-and-forget visual fidelity scoring for the new components.
     // Each call costs ~$0.04 (Claude vision) and runs ~12-15s. We don't

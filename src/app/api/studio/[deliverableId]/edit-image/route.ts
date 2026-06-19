@@ -8,18 +8,25 @@
 // can only do full regeneration.
 //
 // Body: { imageUrl: string, instruction: string, componentId?: string }
-// Response: { editedImageUrl: string, mediaAssetId?: string }
+// Response: { editedImageUrl: string }
 //
-// Side-effect: sends edited image to Media Library (creates new MediaAsset)
-// zodat de variant herbruikbaar is. Caller beslist of de edited image
-// de variant vervangt of er als nieuwe variant naast komt te staan.
+// Het bewerkte beeld wordt eerst naar onze storage geüpload — fal levert een
+// gesigneerde, verlopende URL en die mag NOOIT rechtstreeks gepersisteerd
+// worden (anders dode link na ~30-60 min). De stored-URL wordt geretourneerd
+// en als MediaAsset in de Media Library geregistreerd (#325-patroon) zodat de
+// bewerking herbruikbaar is. De caller beslist of de edit de variant vervangt
+// of er als nieuwe variant naast komt.
 // =============================================================================
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
+import { requireDeliverableAccess } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
 import { editFalImageWithInstruction } from '@/lib/integrations/fal/fal-client';
+import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
+import { getStorageProvider } from '@/lib/storage';
+import { importGeneratedImageToLibrary } from '@/lib/media/import-generated-image';
+import { mediaCategoryForDeliverableType } from '@/lib/media/ingest-uploads-to-library';
 
 const editImageSchema = z
   .object({
@@ -37,19 +44,20 @@ export async function POST(request: Request, { params }: RouteParams) {
   try {
     // Resource-based: workspace van het deliverable i.p.v. cookie-gelijkheid
     // (zombie-tab fix — docs/audits/2026-06-10-workspace-cookie-zombie-tabs.md).
-    const workspaceId = await resolveDeliverableWorkspaceId((await params).deliverableId);
-    if (!workspaceId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    // requireDeliverableAccess verifieert ownership én levert de userId voor
+    // de library-import.
     const { deliverableId } = await params;
+    const access = await requireDeliverableAccess(deliverableId);
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
+    }
+    const workspaceId = access.workspaceId;
 
-    // Ownership-check op deliverable
     const deliverable = await prisma.deliverable.findUnique({
       where: { id: deliverableId },
-      include: { campaign: { select: { workspaceId: true } } },
+      select: { contentType: true },
     });
-    if (!deliverable || deliverable.campaign?.workspaceId !== workspaceId) {
+    if (!deliverable) {
       return NextResponse.json({ error: 'Deliverable not found' }, { status: 404 });
     }
 
@@ -67,13 +75,38 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({
-      editedImageUrl: first.url,
-      // mediaAssetId persistence (sending to library) deferred — caller
-      // beslist of edit als nieuwe variant of replace komt; bij replace
-      // wordt persistHeroImage (bestaande flow) gebruikt. Voor nu retour
-      // de URL; library-link in F41 DAM-pattern.
+    // De fal-URL is gesigneerd en verloopt — download + upload naar onze
+    // storage zodat de geretourneerde URL duurzaam is (root-cause dode-link).
+    // editFalImageWithInstruction forceert output_format png, dus het resultaat
+    // is png.
+    const contentType = 'image/png';
+    const ext = 'png';
+    const bytes = await fetchWithSizeLimit(first.url, AI_IMAGE_SIZE_CAP);
+    const storage = getStorageProvider();
+    const upload = await storage.upload(bytes, {
+      workspaceId,
+      fileName: `canvas-edited-${deliverableId}-${Date.now()}.${ext}`,
+      contentType,
     });
+
+    // Library-groei (#325-patroon): bewerkte beelden herbruikbaar maken.
+    // Fire-and-forget — faalt nooit de edit-respons. Categorie via id-keyed
+    // lookup: contentType is de deliverable-type-id (bv. "blog-post").
+    const mediaCategory = mediaCategoryForDeliverableType(deliverable.contentType);
+    // Géén replace-per-slot zoals refine: een edit is een losse, bewuste
+    // transformatie (en kan als nieuwe variant naast de bron landen i.p.v. die
+    // te vervangen), dus elke edit groeit als eigen library-asset.
+    void importGeneratedImageToLibrary({
+      workspaceId,
+      fileUrl: upload.url,
+      fileSize: bytes.length,
+      name: body.instruction.slice(0, 120),
+      uploadedById: access.userId,
+      category: mediaCategory,
+      contentType,
+    });
+
+    return NextResponse.json({ editedImageUrl: upload.url });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid body', details: err.issues }, { status: 400 });
