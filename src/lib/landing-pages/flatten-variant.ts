@@ -1,6 +1,7 @@
 import type { LandingPageVariantContent } from "./variant-schema";
 import type {
   FaqPageVariantContent,
+  LongFormGeoVariantContent,
   MicrositeChapter,
   MicrositeVariantContent,
   PageVariantContent,
@@ -105,6 +106,25 @@ function flattenProductVariant(v: ProductPageVariantContent): string {
   return joinParts(parts);
 }
 
+/** GEO Fase 2 — flatten voor LongFormGeoVariantContent in display-volgorde. */
+function flattenGeoArticleVariant(v: LongFormGeoVariantContent): string {
+  const parts: Array<string | null | undefined> = [v.hero.headline, v.hero.subline, v.answerFirstIntro];
+  for (const b of v.tldr) parts.push(b);
+  for (const s of v.sections) parts.push(s.heading, s.body);
+  for (const st of v.citeableStats) parts.push(`${st.value} ${st.label} (${st.source})`);
+  for (const d of v.definitions ?? []) parts.push(d.term, d.definition);
+  if (v.comparison) {
+    parts.push(v.comparison.caption);
+    parts.push(v.comparison.columns.join(" "));
+    for (const r of v.comparison.rows) parts.push([r.label, ...r.cells].join(" "));
+  }
+  for (const it of v.listItems ?? []) parts.push(it.title, it.body);
+  for (const qa of v.qa) parts.push(qa.question, qa.answer);
+  for (const src of v.sources ?? []) parts.push(src.title);
+  parts.push(v.finalCta.heading, v.finalCta.ctaLabel);
+  return joinParts(parts);
+}
+
 function flattenChapter(c: MicrositeChapter | null | undefined): Array<string | null | undefined> {
   if (!c) return [];
   const parts: Array<string | null | undefined> = [c.heading, c.intro];
@@ -136,5 +156,6 @@ export function flattenPageVariantToText(variant: PageVariantContent): string {
   if ("heroManifest" in variant) return flattenMicrositeVariant(variant);
   if ("popularQuestions" in variant) return flattenFaqVariant(variant);
   if ("solution" in variant) return flattenProductVariant(variant);
+  if ("geoArticle" in variant) return flattenGeoArticleVariant(variant);
   return flattenVariantToText(variant);
 }

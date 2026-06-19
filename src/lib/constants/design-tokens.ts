@@ -471,6 +471,14 @@ export type SidebarSection = {
   items: SidebarNavItem[];
 };
 
+/**
+ * TIJDELIJK: Research Hub uitgeschakeld. Eén bron-van-waarheid die de sidebar-nav,
+ * de App.tsx routing-cases (fallback → ComingSoonPage) en de overige ingangen
+ * (command-palette, quick-actions, dashboard-checklist) gate't. Zet op `true` om
+ * de Research Hub volledig te herstellen — geen verwijderde code.
+ */
+export const RESEARCH_HUB_ENABLED = false;
+
 export const SIDEBAR_NAV: {
   sections: SidebarSection[];
   bottomItems: SidebarNavItem[];

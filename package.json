@@ -51,7 +51,12 @@
     "db:cleanup": "npx tsx scripts/cleanup-demo-data.ts",
     "smoke:source-image-matcher": "tsx scripts/smoke-tests/source-image-matcher.ts",
     "smoke:feature-visual-gate": "tsx scripts/smoke-tests/feature-visual-gate.ts",
-    "smoke:judge-image-prep": "tsx scripts/smoke-tests/judge-image-prep.ts"
+    "smoke:judge-image-prep": "tsx scripts/smoke-tests/judge-image-prep.ts",
+    "smoke:page-seo-metadata": "tsx scripts/smoke-tests/page-seo-metadata.ts",
+    "smoke:geo-discovery": "tsx scripts/smoke-tests/geo-discovery.ts",
+    "smoke:geo-optimization-goals": "tsx scripts/smoke-tests/geo-optimization-goals.ts",
+    "smoke:geo-longform-schema": "tsx scripts/smoke-tests/geo-longform-schema.ts",
+    "smoke:geo-longform-render": "tsx scripts/smoke-tests/geo-longform-render.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

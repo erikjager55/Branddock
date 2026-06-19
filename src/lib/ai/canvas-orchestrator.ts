@@ -352,18 +352,25 @@ export async function* orchestrateContentGeneration(
     return;
   }
 
-  // ── SEO Pipeline path (website types with keyword) ───
+  // ── SEO Pipeline path (website types, of long-form met SEO-doel) ───
+  // GEO/SEO Fase 1b: long-form draait dezelfde pipeline wanneer optimizationGoals
+  // 'seo' bevat (default-aan, uitvinkbaar). Gedeelde regel: shouldRunSeoPipeline.
   const deliverableTypeId = stack.deliverableTypeId ?? '';
-  const { WEBSITE_DELIVERABLE_TYPES } = await import('./seo-pipeline.types');
+  const seoInput = options?.seoInput;
+  // Client-form-state (options) wint, maar val terug op de DB-gepersisteerde
+  // contentTypeInputs (stack) zodat een opgeslagen SEO-opt-out (optimizationGoals=[])
+  // ook geldt wanneer een generatie zonder options.contentTypeInputs wordt getriggerd.
+  const effectiveInputs = options?.contentTypeInputs ?? stack.contentTypeInputs;
+  const { shouldRunSeoPipeline } = await import('./seo-pipeline-utils');
   if (
-    WEBSITE_DELIVERABLE_TYPES.has(deliverableTypeId) &&
-    options?.seoInput?.primaryKeyword
+    seoInput &&
+    shouldRunSeoPipeline(deliverableTypeId, effectiveInputs, Boolean(seoInput.primaryKeyword))
   ) {
     const { runSeoPipeline } = await import('./seo-pipeline');
     yield* runSeoPipeline(
       deliverableId,
       workspaceId,
-      options.seoInput,
+      seoInput,
       stack,
       voiceDirective,
       deliverableTypeId,

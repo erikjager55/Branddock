@@ -175,6 +175,30 @@ export const WEBSITE_DELIVERABLE_TYPES = new Set([
   'microsite',
 ]);
 
+/**
+ * Long-form types die de SEO-pipeline mogen draaien wanneer het SEO-doel
+ * (`optimizationGoals`) aanstaat (GEO/SEO Fase 1b). Bewust APART van
+ * `WEBSITE_DELIVERABLE_TYPES` zodat het bestaande website-SEO-gedrag ongewijzigd
+ * blijft; de opt-in/gate-logica zit in `shouldRunSeoPipeline` (content-type-inputs).
+ */
+export const LONG_FORM_SEO_TYPES = new Set([
+  'blog-post',
+  'pillar-page',
+  'whitepaper',
+  'case-study',
+  'ebook',
+  'linkedin-article',
+  'thought-leadership',
+]);
+
+/** GEO/SEO Fase 1b — optimalisatie-doel. SEO + (vanaf Fase 2) GEO. */
+export type OptimizationGoal = 'seo' | 'geo';
+
+/** Single source of truth voor de per-type default van het optimizationGoals-veld:
+ *  long-form heeft SEO default-aan. Het UI-veld (content-type-inputs) én de
+ *  gate-logica (seo-pipeline-utils) lezen beide deze constante. */
+export const DEFAULT_LONG_FORM_OPTIMIZATION_GOALS: readonly OptimizationGoal[] = ['seo'];
+
 /** Map deliverable type to default page goal for SEO prompts */
 export const PAGE_GOAL_MAP: Record<string, string> = {
   'landing-page': 'lead generation or conversion',
@@ -182,4 +206,12 @@ export const PAGE_GOAL_MAP: Record<string, string> = {
   'faq-page': 'information and support',
   'comparison-page': 'competitive comparison and conversion',
   'microsite': 'campaign engagement and conversion',
+  // Long-form (Fase 1b) — informatieve/autoriteits-doelen i.p.v. directe conversie.
+  'blog-post': 'organic traffic and topical authority',
+  'pillar-page': 'topic-cluster authority and internal-link hub',
+  'whitepaper': 'lead generation via in-depth authority content',
+  'case-study': 'proof and consideration-stage conversion',
+  'ebook': 'lead generation via long-form educational content',
+  'linkedin-article': 'thought leadership and audience engagement',
+  'thought-leadership': 'brand authority and demand generation',
 };

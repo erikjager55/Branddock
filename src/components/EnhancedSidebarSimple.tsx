@@ -8,7 +8,10 @@ import {
   Settings,
   HelpCircle,
 } from 'lucide-react';
-import { SIDEBAR_NAV } from '../lib/constants/design-tokens';
+import { SIDEBAR_NAV, RESEARCH_HUB_ENABLED } from '../lib/constants/design-tokens';
+
+// TIJDELIJK: filtert het Research Hub-item uit de nav wanneer de feature uit staat.
+const isNavItemEnabled = (key: string) => RESEARCH_HUB_ENABLED || key !== 'research';
 import { ResearchMethodType } from '../types/brand-asset';
 import { preloadModule } from '../lib/lazy-imports';
 
@@ -33,7 +36,7 @@ export function EnhancedSidebarSimple({
 }: EnhancedSidebarSimpleProps) {
   // All nav items flat for collapsed mode
   const allNavItems = useMemo(() => {
-    return SIDEBAR_NAV.sections.flatMap(s => s.items);
+    return SIDEBAR_NAV.sections.flatMap(s => s.items).filter(item => isNavItemEnabled(item.key));
   }, []);
 
   if (collapsed) {
@@ -122,7 +125,7 @@ export function EnhancedSidebarSimple({
                 </h3>
               </div>
             )}
-            {section.items.map((item) => {
+            {section.items.filter((item) => isNavItemEnabled(item.key)).map((item) => {
               const Icon = getIcon(item.icon);
               const isActive = activeSection === item.key || activeSection.startsWith(item.key + '-');
 

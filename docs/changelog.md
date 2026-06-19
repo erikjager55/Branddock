@@ -37,7 +37,7 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
-### 332. Gegenereerde content-item beelden groeien automatisch de Media Library
+### 333. Gegenereerde content-item beelden groeien automatisch de Media Library
 
 Beelden die je vanuit een content-item genereert (Canvas Step 2/3) belandden alleen als `DeliverableComponent.imageUrl` en bereikten nooit de Media Library — semantische zoek (`findSimilarMediaAssets`) en library-first hergebruik misten ze. PR #325 loste dit al op voor LP-feature-cards via de fire-and-forget util `importGeneratedImageToLibrary`, maar die zat in slechts 1 van de ~5 beeld-entry-points. Nu registreren **alle** content-item beeld-routes hun AI-output als `MediaAsset(source=AI_GENERATED)`: `generate-visual` / `-trained` / `-compose` via een nieuwe gecentraliseerde wrapper `ingestUploadsToLibrary` (resolvet id-keyed `MediaCategory` + leesbare naam uit het deliverable-type, dedupliceert de ingest-loop), en `refine-visual` / `edit-image` direct. Per-`contentType` categorie-mapping (social→`SOCIAL_MEDIA`, ads→`ADVERTISEMENT`, web→`HERO_IMAGE`, rest→`LIFESTYLE`) via pure `resolveMediaCategory` + `getDeliverableTypeById` (contentType = type-id, niet de displaynaam — kernbug uit de review). `refine-visual` gebruikt replace-per-slot (`sourceUrl`-marker `deliverable-component:{id}` in een transactie + best-effort blob-cleanup) zodat herhaald verfijnen één — de meest recente — asset oplevert i.p.v. één per iteratie. **Bijvangst-bugfix**: `edit-image` gaf een gesigneerde, verlopende fal-URL terug die de frontend rechtstreeks persisteerde (dode link na ~30-60 min) — nu eerst naar onze storage geüpload en de duurzame URL geretourneerd. Ingestie is overal fire-and-forget (faalt nooit de generatie) + media-cache-invalidatie. Nieuwe `smoke:content-library-ingest` (43/0) bevat een census-regressievangnet dat elke `storage.upload`-beeld-route dwingt te ingesten of expliciet te allowlisten. Live browser-E2E geverifieerd (nieuw linkedin-post content-item → echte generatie → 2 `MediaAsset(SOCIAL_MEDIA)` met embedding → zichtbaar in de Media Library). 3 adversariële review-rondes (workflow + 2× finalize 2-subagent-loop), 0 CRITICAL; #325-feature-visual-smokes 72/0 ongewijzigd.
 
@@ -45,6 +45,15 @@ Beelden die je vanuit een content-item genereert (Canvas Step 2/3) belandden all
 - ADR: -
 - Spec: -
 - Commit: `f0b53456`
+
+### 332. GEO/SEO long-form fundament — metadata, discovery, SEO-eligibility + GEO-variant spike
+
+Voegt Generative Engine Optimization (citeerbaarheid voor AI-answer-engines) + SEO toe aan long-form/page-types, additief. **Fase 1a**: `generateMetadata` op `/p/[slug]` uit `settings.seoChecklist` + canonical-fallback, per-workspace host-aware `sitemap.xml`/`robots.txt`/`llms.txt` (geen cross-tenant lek), Organization-publisher op FAQPage. **Fase 1b**: long-form SEO-eligibility via een `optimizationGoals` opt-in checkbox-groep (SEO default-aan, nieuw `checkbox-group`-veldtype) + gedeelde `shouldRunSeoPipeline`-gate. **Fase 2 (spike)**: `LongFormGeoVariantContent`-schema (discriminant `geoArticle`) + `buildLongFormGeoTemplateFromStructured` render-bridge op de gedeelde PageVariantContent-union, backward-compat behouden. Checkpoint — fasen lopen door (resterend: GEO-generatie, gate-spread, publish-keten, BlogPosting JSON-LD). Geverifieerd: tsc 0, eslint 0, prompt-contracts 235/235, web-page-builder + page-types 176 + GEO-smokes 110 groen; review-rondes clean + 2 xhigh code-reviews verwerkt.
+
+- Task: [tasks/geo-seo-fase1a-structured-data.md](tasks/geo-seo-fase1a-structured-data.md) · [1b](tasks/geo-seo-fase1b-longform-seo-substrate.md) · [2](tasks/geo-seo-fase2-optimization-goals-puck-publish.md) · [3](tasks/geo-seo-fase3-geo-prompts-fval.md)
+- ADR: [optimization-goals-field](docs/adr/2026-06-17-geo-seo-optimization-goals-field.md) · [longform-puck-publish-chain](docs/adr/2026-06-17-longform-puck-publish-chain.md) · [seo-pipeline-composable-stage](docs/adr/2026-06-17-seo-pipeline-composable-stage.md)
+- Spec: [docs/specs/2026-06-17-geo-seo-longform-plan.md](docs/specs/2026-06-17-geo-seo-longform-plan.md)
+- Commit: PR #53 (squash op main)
 
 ### 331. Knowledge-context in de content-item flow — picker-fixes + inline toevoegen + prioriteit/toelichting + campagne-pre-selectie
 
