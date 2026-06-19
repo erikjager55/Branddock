@@ -190,11 +190,14 @@ function pillarScoresFromResult(result: FidelityCompositeResult): {
   style?: number;
   judge?: number;
   rules?: number;
+  geo?: number;
 } {
   return {
     style: Math.round(result.pillar1EffectiveScore ?? result.pillars.style.score),
     judge: result.pillars.judge ? Math.round(result.pillars.judge.score) : undefined,
     rules: Math.round(result.pillars.rules.score),
+    // GEO Fase 3 — alleen aanwezig wanneer de opt-in GEO-pijler actief was.
+    geo: result.pillars.geo ? Math.round(result.pillars.geo.score) : undefined,
   };
 }
 

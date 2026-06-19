@@ -180,6 +180,13 @@ export interface ClawPageContext {
    *  system prompt route web-page deliverables to the LP text-edit tools. */
   contentType?: string;
   /**
+   * GEO Fase 3 — persisted contentTypeInputs van het deliverable (o.a.
+   * optimizationGoals). Laat de assembler `isPuckRenderable` evalueren zodat
+   * long-form GEO-pagina's (geo-doel aan) óók de "direct bewerkbaar"-hint krijgen.
+   * Afwezig → behandeld als niet-Puck (veilige default; de tool-gates enforcen alsnog).
+   */
+  contentTypeInputs?: Record<string, unknown> | null;
+  /**
    * Client-side snapshot of an in-progress wizard or multi-step form that
    * has no DB representation yet (e.g. the Campaign Wizard before launch).
    * `inspect_current_entity` can't see this — so the AI receives it directly

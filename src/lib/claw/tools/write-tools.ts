@@ -8,7 +8,7 @@ import {
   readPath,
 } from '@/lib/landing-pages/puck-text-fields';
 import { preserveHeroOnSettings } from '@/features/campaigns/components/canvas/medium/hero-visual-preserve';
-import { isPuckWebpageType } from '@/lib/landing-pages/webpage-types';
+import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
 import type { ClawToolDefinition, MutationProposal } from '../claw.types';
 
 // Helper: invalidate dashboard cache (always safe to call)
@@ -1703,10 +1703,12 @@ export const writeTools: ClawToolDefinition[] = [
       if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
         throw new Error('Deliverable not found in this workspace');
       }
-      if (!isPuckWebpageType(deliverable.contentType)) {
-        throw new Error(`"${deliverable.title}" is a ${deliverable.contentType}, not a Puck web-page — text edits are not supported here.`);
-      }
       const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
+      // GEO Fase 3: isPuckRenderable laat long-form GEO (geo-doel aan) toe.
+      const contentTypeInputs = (settings.contentTypeInputs ?? null) as Record<string, unknown> | null;
+      if (!isPuckRenderable(deliverable.contentType, contentTypeInputs)) {
+        throw new Error(`"${deliverable.title}" is a ${deliverable.contentType}, not a Puck-renderable page — text edits are not supported here.`);
+      }
       const puckData = settings.puckData;
       if (!puckData || typeof puckData !== 'object') {
         throw new Error('This landing page has no generated layout yet — run Step 2 first.');
@@ -1750,10 +1752,12 @@ export const writeTools: ClawToolDefinition[] = [
       if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
         throw new Error('Deliverable not found in this workspace');
       }
-      if (!isPuckWebpageType(deliverable.contentType)) {
-        throw new Error('Not a Puck web-page deliverable');
-      }
       const existingSettings = (deliverable.settings ?? {}) as Record<string, unknown>;
+      // GEO Fase 3: isPuckRenderable laat long-form GEO (geo-doel aan) toe.
+      const contentTypeInputs = (existingSettings.contentTypeInputs ?? null) as Record<string, unknown> | null;
+      if (!isPuckRenderable(deliverable.contentType, contentTypeInputs)) {
+        throw new Error('Not a Puck-renderable page deliverable');
+      }
       const puckData = existingSettings.puckData;
       if (!puckData || typeof puckData !== 'object') {
         throw new Error('This landing page has no generated layout yet');

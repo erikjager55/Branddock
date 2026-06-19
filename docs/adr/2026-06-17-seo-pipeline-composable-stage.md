@@ -1,11 +1,33 @@
 ---
 id: 2026-06-17-seo-pipeline-composable-stage
 title: SEO-pipeline early-return omvormen tot composable stage voor seo-geo
-status: proposed
+status: accepted
 date: 2026-06-17
+accepted: 2026-06-19
 supersedes: -
 superseded-by: -
 ---
+
+> **Promotie-update (2026-06-19, Fase 3-implementatie).** Geaccepteerd met één
+> verfijning op het oorspronkelijke voorstel + open vraag #2 beslist:
+>
+> - **Verfijning (composable via injected stage i.p.v. return-naar-orchestrator).**
+>   In plaats van `runSeoPipeline` de finale content te láten teruggeven en de
+>   persist-transactie naar de orchestrator te verhuizen (groot blast-radius op
+>   een productie-kritiek pad), kreeg `runSeoPipeline` een optionele
+>   `optimizationGoals: OptimizationGoal[]`-parameter. De pipeline past de
+>   GEO-polish INTERN toe (op `finalContent` + `variantBContent`) vlak vóór het
+>   `text_complete`-event en de bestaande persist-transactie. Resultaat: dezelfde
+>   compositie (SEO-stage → GEO-stage), één persist-pad, geen code-duplicatie, en
+>   een triviale kill-switch — bij goals zonder `geo` is het gedrag byte-identiek.
+>   De orchestrator berekent `resolveOptimizationGoals(...)` en geeft het door.
+> - **Open vraag #2 → long-form-ONLY.** `shouldApplyGeoPolish` vereist
+>   `LONG_FORM_SEO_TYPES`. De 5 website-page-types lopen ongewijzigd door de
+>   SEO-pipeline (geen polish) — het productie-SEO-pad blijft onaangeraakt.
+> - **GEO-polish is fail-soft** (`runGeoPolish` geeft bij elke fout de originele
+>   content terug) en **stil** (geen extra `seo_step`-event, om de 8-staps
+>   frontend-tracker niet te verwarren). De feitelijke LLM-herwrite is live-AI
+>   (deferred E2E, net als de SEO-pipeline zelf).
 
 # Context
 

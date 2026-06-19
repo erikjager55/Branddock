@@ -60,6 +60,8 @@ const COPY_KEYS: ReadonlySet<string> = new Set([
   'price',
   'text',
   'body',
+  // GEO Fase 3 — ComparisonTable redactionele caption (long-form GEO-component).
+  'caption',
 ]);
 
 /** True wanneer een leaf-prop-key vrije, bewerkbare copy bevat. */

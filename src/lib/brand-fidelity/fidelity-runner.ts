@@ -65,6 +65,14 @@ export interface FidelityRunInput {
   /** Skip pijler 2 judge (fast path, deterministische scoring only) */
   skipJudge?: boolean;
   /**
+   * GEO Fase 3 — activeer de opt-in deterministische GEO-pijler (4e pijler).
+   * Compute-gated: alleen bij `true` draait computeGeoScore + telt de pijler mee.
+   * Bewust opt-in zodat de brand-fidelity-composite/threshold-semantiek voor
+   * bestaande content ongewijzigd blijft; de primaire GEO-meting loopt via de
+   * `geoOptimizationAnalysis`-haak bij publish.
+   */
+  geoOptimizationActive?: boolean;
+  /**
    * F33 (audit 2026-05-13): override targetWordCount voor length-control
    * multiplier. Canvas-flow genereert sections (~200-500 woorden), maar
    * content-type-defaults targeten full articles (blog-post 1900 woorden).
@@ -433,6 +441,10 @@ async function persistContentFidelityScoreIfPossible(
         weight: result.pillars.rules.weight,
         violationCount: result.pillars.rules.result.rules.violations.length,
       },
+      // GEO Fase 3 — alleen niet-null wanneer de (opt-in) GEO-pijler actief was.
+      geo: result.pillars.geo
+        ? { score: result.pillars.geo.score, weight: result.pillars.geo.weight }
+        : null,
     };
 
     const subCriteriaScoresJson: Record<string, { score: number; pillar: string; source: string; rationale?: string }> = {};
@@ -685,6 +697,9 @@ export async function runFidelityScoring(
       },
       rubricWeights,
       skipJudge: input.skipJudge,
+      // GEO Fase 3 — opt-in 4e pijler; alleen actief wanneer een caller dit zet
+      // (de live GEO-meting loopt primair via de geoOptimizationAnalysis-haak).
+      geoOptimizationActive: input.geoOptimizationActive,
       voiceguideCentroid,
       voiceBaseline1Pager,
     };

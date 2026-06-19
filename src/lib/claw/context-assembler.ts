@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { getBrandContext } from '@/lib/ai/brand-context';
 import { formatBrandContext } from '@/lib/ai/prompt-templates';
-import { isPuckWebpageType } from '@/lib/landing-pages/webpage-types';
+import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
 import type { ContextSelection, ContextModule, ClawAttachment, ClawPageContext } from './claw.types';
 
 const MAX_CONTEXT_TOKENS_ESTIMATE = 12_000;
@@ -494,12 +494,13 @@ function formatPageContext(ctx: ClawPageContext): string {
       lines.push(
         '  4. Only call `update_deliverable_visual_brief` when the user EXPLICITLY asks for the visual brief: "vul de visual brief", "stel de visual brief in", "kies een chip", "set the photo brief", "pick the visual style", etc. On broad fill requests the Visual Brief stays untouched — the user triggers it themselves via the "Suggest setup from content" button.'
       );
-      if (isPuckWebpageType(ctx.contentType)) {
-        // Web-page deliverables (Canvas Step 3 Medium, Puck builder) DO have
-        // directly-editable page copy via dedicated tools — overrides the
-        // generic "not editable" guidance in rule 5 for this content-type.
+      if (isPuckRenderable(ctx.contentType, ctx.contentTypeInputs)) {
+        // Web-page deliverables (Canvas Step 3 Medium, Puck builder) + long-form
+        // GEO-pagina's (geo-doel aan, Fase 3) DO have directly-editable page copy
+        // via dedicated tools — overrides the generic "not editable" guidance in
+        // rule 5 for these content-types.
         lines.push(
-          `  5. This is a **web-page deliverable** (${ctx.contentType}) built with the Puck builder — its page COPY is directly editable. When the user asks to rewrite, shorten, sharpen, or fix text on THIS page ("maak de hero-kop korter", "punchier CTA", "herschrijf de intro"): (a) call \`read_landing_page_content\` with the deliverable id to get the exact field paths + current values; (b) propose the rewrite via \`update_landing_page_content\` using ONLY those paths — never invent paths/components. Text only: you cannot add/remove/reorder components or change layout, images, links, or colors (advise the user to use the layout editor for those). Ground every rewrite in the brand voice + tone.`
+          `  5. This is a **Puck-renderable page** (${ctx.contentType}) — its page COPY is directly editable. When the user asks to rewrite, shorten, sharpen, or fix text on THIS page ("maak de hero-kop korter", "punchier CTA", "herschrijf de intro"): (a) call \`read_landing_page_content\` with the deliverable id to get the exact field paths + current values; (b) propose the rewrite via \`update_landing_page_content\` using ONLY those paths — never invent paths/components. Text only: you cannot add/remove/reorder components or change layout, images, links, or colors (advise the user to use the layout editor for those). Ground every rewrite in the brand voice + tone.`
         );
       } else {
         lines.push(

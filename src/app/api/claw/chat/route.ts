@@ -58,6 +58,11 @@ const requestSchema = z.object({
     entityName: z.string().optional(),
     campaignId: z.string().optional(),
     contentType: z.string().optional(),
+    // GEO Fase 3 — laat de context-assembler isPuckRenderable evalueren voor
+    // long-form GEO. Zonder dit veld in het schema strlooft Zod de door de client
+    // (InputBar) meegestuurde contentTypeInputs en valt de assembler-hint terug
+    // op "niet bewerkbaar". record(unknown) want de inhoud is type-vrij.
+    contentTypeInputs: z.record(z.string(), z.unknown()).nullish(),
     wizardSnapshot: z.object({
       name: z.string(),
       currentStep: z.string().optional(),

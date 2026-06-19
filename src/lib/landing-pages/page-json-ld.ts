@@ -18,6 +18,7 @@ import type {
   LongFormGeoVariantContent,
 } from "./page-type-schemas";
 import { derivePageFlavor, type PageFlavor } from "./variant-generator";
+import type { AuthorProfile } from "./author-profile";
 
 export interface JsonLdContext {
   brandName?: string | null;
@@ -28,8 +29,13 @@ export interface JsonLdContext {
   /** GEO Fase 2 — ISO-datums uit LandingPage.publishedAt/updatedAt voor BlogPosting freshness. */
   datePublished?: string | null;
   dateModified?: string | null;
-  /** BCP-47 taalcode (brand.contentLanguage) voor inLanguage. */
+  /** BCP-47 / ISO 639-1 taalcode (Workspace.contentLanguage) voor inLanguage. */
   inLanguage?: string | null;
+  /**
+   * GEO Fase 3 — E-E-A-T author-profiel (Person + sameAs). Alleen geëmit bij een
+   * verifieerbare identiteit; resolve via `resolveAuthorProfile` vóór doorgeven.
+   */
+  author?: AuthorProfile | null;
 }
 
 /** FAQPage — alle popular + categorie-Q&A's als Question/Answer-paren. Met
@@ -105,9 +111,13 @@ export function buildProductPageJsonLd(
 /**
  * Long-form GEO-article → `@graph` met BlogPosting + (bij Q&A) een geneste FAQPage
  * + (bij definities) een DefinedTermSet. Dé GEO-payoff: structured data zodat
- * AI-answer-engines het artikel én de Q&A's kunnen citeren. Publisher/dates/inLanguage
- * komen uit de ctx (LandingPage-metadata + brand); author/E-E-A-T (Person + sameAs)
- * volgt in Fase 3 met het workspace author-profiel.
+ * AI-answer-engines het artikel én de Q&A's kunnen citeren.
+ *
+ * Fase 3 entity-laag: author (Person + sameAs, alléén bij verifieerbare identiteit),
+ * ImageObject i.p.v. een kale URL, inLanguage, keywords/about/mentions afgeleid uit
+ * de definities (entity-clarity). De geneste Q&A blijft een FAQPage — QAPage is
+ * semantisch voor user-generated forum-Q&A, niet voor redactionele FAQ, en zou
+ * door validators worden afgekeurd; daarom bewust niet geëmit.
  */
 export function buildBlogPostingJsonLd(
   variant: LongFormGeoVariantContent,
@@ -125,7 +135,25 @@ export function buildBlogPostingJsonLd(
   if (ctx.inLanguage) blogPosting.inLanguage = ctx.inLanguage;
   if (ctx.datePublished) blogPosting.datePublished = ctx.datePublished;
   if (ctx.dateModified) blogPosting.dateModified = ctx.dateModified;
-  if (ctx.imageUrl && /^https?:\/\//i.test(ctx.imageUrl)) blogPosting.image = ctx.imageUrl;
+  // ImageObject (rijker dan een kale URL — voorkeur van Google/AI voor articles).
+  if (ctx.imageUrl && /^https?:\/\//i.test(ctx.imageUrl)) {
+    blogPosting.image = { "@type": "ImageObject", url: ctx.imageUrl };
+  }
+  // Author = E-E-A-T-signaal; alleen bij een verifieerbare identiteit (naam aanwezig).
+  if (ctx.author?.name) {
+    const author: Record<string, unknown> = { "@type": "Person", name: ctx.author.name };
+    if (ctx.author.jobTitle) author.jobTitle = ctx.author.jobTitle;
+    if (ctx.author.sameAs && ctx.author.sameAs.length > 0) author.sameAs = ctx.author.sameAs;
+    blogPosting.author = author;
+  }
+  // Entity-laag uit definities: keywords (platte termen), about (primaire entiteit)
+  // + mentions (alle gedefinieerde entiteiten als Thing). Versterkt entity-clarity.
+  const defs = variant.definitions ?? [];
+  if (defs.length > 0) {
+    blogPosting.keywords = defs.map((d) => d.term);
+    blogPosting.about = { "@type": "Thing", name: defs[0].term, description: defs[0].definition };
+    blogPosting.mentions = defs.map((d) => ({ "@type": "Thing", name: d.term, description: d.definition }));
+  }
 
   const graph: Record<string, unknown>[] = [blogPosting];
   if (variant.qa.length > 0) {
@@ -138,10 +166,10 @@ export function buildBlogPostingJsonLd(
       })),
     });
   }
-  if (variant.definitions && variant.definitions.length > 0) {
+  if (defs.length > 0) {
     graph.push({
       "@type": "DefinedTermSet",
-      hasDefinedTerm: variant.definitions.map((d) => ({
+      hasDefinedTerm: defs.map((d) => ({
         "@type": "DefinedTerm",
         name: d.term,
         description: d.definition,

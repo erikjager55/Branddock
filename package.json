@@ -60,7 +60,13 @@
     "smoke:geo-longform-render": "tsx scripts/smoke-tests/geo-longform-render.ts",
     "smoke:geo-puck-renderable": "tsx scripts/smoke-tests/geo-puck-renderable.ts",
     "smoke:geo-generation-prompt": "tsx scripts/smoke-tests/geo-generation-prompt.ts",
-    "smoke:geo-blogposting-jsonld": "tsx scripts/smoke-tests/geo-blogposting-jsonld.ts"
+    "smoke:geo-blogposting-jsonld": "tsx scripts/smoke-tests/geo-blogposting-jsonld.ts",
+    "smoke:geo-directives": "tsx scripts/smoke-tests/geo-directives.ts",
+    "smoke:geo-author-profile": "tsx scripts/smoke-tests/geo-author-profile.ts",
+    "smoke:geo-fidelity": "tsx scripts/smoke-tests/geo-fidelity.ts",
+    "smoke:geo-polish": "tsx scripts/smoke-tests/geo-polish.ts",
+    "smoke:geo-claw-gate": "tsx scripts/smoke-tests/geo-claw-gate.ts",
+    "smoke:geo-analysis": "tsx scripts/smoke-tests/geo-analysis.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

@@ -28,6 +28,7 @@
 import type { HumanVoiceMode } from "@prisma/client";
 import { anthropicClient } from "../ai/anthropic-client";
 import { LONG_FORM_SEO_TYPES } from "../ai/seo-pipeline.types";
+import { buildGeoDirective } from "../ai/prompts/geo-directives";
 import { buildHumanVoiceDirective } from "../studio/human-voice-directive";
 import type { BrandContextBlock } from "../ai/prompt-templates";
 import {
@@ -709,6 +710,7 @@ long-form artikel dat geoptimaliseerd is voor Generative Engine Optimization:
 AI-antwoordmachines (ChatGPT, Perplexity, Google AI Overviews, Gemini) moeten
 passages eruit zelfstandig kunnen CITEREN. Citeerbaarheid > vindbaarheid.
 ${buildSharedStyleBlocks(opts)}
+${buildGeoDirective({ locale: opts.locale })}
 # OPDRACHT
 Genereer een compleet long-form GEO-artikel als **gestructureerd JSON** volgens het schema hieronder. Antwoord uitsluitend met het JSON-object (zonder prose, toelichting of code-fences).
 
@@ -926,8 +928,10 @@ function extractJsonBlock(text: string): string | null {
  * Prompt-template semver voor AICallSnapshot.promptVersion (learning-loop).
  * 2.0.0 = audit 2026-06-10: HVD-injectie + anti-fabricage + anti-drieslag +
  * de-em-dash + dynamische brand-voorbeelden (was ongeversioneerd).
+ * 2.1.0 = GEO/SEO Fase 3: canonieke buildGeoDirective() ingebed in de long-form
+ * GEO-prompt (gedeeld met de GEO-polish-stage zodat de paden niet driften).
  */
-export const LP_VARIANT_PROMPT_VERSION = "2.0.0";
+export const LP_VARIANT_PROMPT_VERSION = "2.1.0";
 
 export interface GenerationResult {
   /** LP-shape voor landing-page/comparison-page; type-eigen shape (W1) voor

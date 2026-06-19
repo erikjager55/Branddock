@@ -361,11 +361,15 @@ export async function* orchestrateContentGeneration(
   // contentTypeInputs (stack) zodat een opgeslagen SEO-opt-out (optimizationGoals=[])
   // ook geldt wanneer een generatie zonder options.contentTypeInputs wordt getriggerd.
   const effectiveInputs = options?.contentTypeInputs ?? stack.contentTypeInputs;
-  const { shouldRunSeoPipeline } = await import('./seo-pipeline-utils');
+  const { shouldRunSeoPipeline, resolveOptimizationGoals } = await import('./seo-pipeline-utils');
   if (
     seoInput &&
     shouldRunSeoPipeline(deliverableTypeId, effectiveInputs, Boolean(seoInput.primaryKeyword))
   ) {
+    // GEO/SEO Fase 3 — composable stage: geef het optimization-profiel mee zodat
+    // de SEO-pipeline bij seo-geo op long-form een GEO-polish toepast. Bij seo-only
+    // is de lijst zonder 'geo' → gedrag byte-identiek aan vóór Fase 3.
+    const optimizationGoals = resolveOptimizationGoals(effectiveInputs, deliverableTypeId);
     const { runSeoPipeline } = await import('./seo-pipeline');
     yield* runSeoPipeline(
       deliverableId,
@@ -374,6 +378,7 @@ export async function* orchestrateContentGeneration(
       stack,
       voiceDirective,
       deliverableTypeId,
+      optimizationGoals,
     );
     return;
   }

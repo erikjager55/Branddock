@@ -13,6 +13,7 @@ import { RulesTab } from './brand-voice/RulesTab';
 import { ValidationTab } from './validation/ValidationTab';
 import { AdministratorTab } from './administrator/AdministratorTab';
 import { AiModelsTab } from './ai-models/AiModelsTab';
+import { AuthorProfileTab } from './author-profile/AuthorProfileTab';
 import { PromptRegistryTab } from './prompt-registry/PromptRegistryTab';
 import { VisualFidelityDashboardTab } from './visual-fidelity/VisualFidelityDashboardTab';
 import { BugTriageTab } from './developer/BugTriageTab';
@@ -20,7 +21,7 @@ import { FeatureTriageTab } from './developer/FeatureTriageTab';
 import { FeedbackTriageTab } from './developer/FeedbackTriageTab';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
 
-const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models', 'ai-prompts', 'visual-fidelity', 'bug-triage', 'feature-triage', 'feedback-triage'];
+const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models', 'ai-prompts', 'author-profile', 'visual-fidelity', 'bug-triage', 'feature-triage', 'feedback-triage'];
 
 interface SettingsPageProps {
   initialTab?: SettingsTab;
@@ -83,6 +84,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
         return <AiModelsTab />;
       case 'ai-prompts':
         return <PromptRegistryTab />;
+      case 'author-profile':
+        return <AuthorProfileTab />;
       case 'visual-fidelity':
         return <VisualFidelityDashboardTab />;
       case 'bug-triage':
