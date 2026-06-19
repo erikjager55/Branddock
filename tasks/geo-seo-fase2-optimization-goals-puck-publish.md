@@ -34,8 +34,8 @@ Introduceer een checkbox-groep `optimizationGoals` (SEO/GEO, default-on per spec
 **Resterend in Fase 2:**
 - [ ] **GEO content-generatie**: orchestrator/prompt produceert een `LongFormGeoVariant` (structuredVariant) wanneer GEO-doel aanstaat (nieuw generatie-pad; nu genereert niets de geo-variant)
 - [ ] **GEO-optie** toevoegen aan `optimizationGoals`-checkbox (`{value:'geo'}`)
-- [ ] `LONG_FORM_GEO_PUCK_TYPES` + `isPuckRenderable(contentType, profile)` in de UI-gate-sites (Step2/Step4/CanvasPage/GenericConfigPanel/publish-timing/orchestrate-route/generate-structured-variant) zodat de Puck-preview/-flow aan gaat voor long-form GEO
-- [ ] Dedicated **ComparisonTable** (multi-kolom) + **Listicle** Puck-componenten (nu RichText-markdown placeholder)
+- [x] `LONG_FORM_GEO_PUCK_TYPES` + `isPuckRenderable(contentType, contentTypeInputs)` (2026-06-19, `webpage-types.ts`) gewired in de **7 canvas/route-gate-sites** (Step2ContentVariants, Step4Timeline, GenericConfigPanel, Step1Context, publish-timing, orchestrate-route, generate-structured-variant). **Dormant tot de GEO-optie+generatie landen** (geen geo-goal in productie → `isPuckRenderable == isPuckWebpageType` → nul regressie). Smoke `geo-puck-renderable` 18/18; page-types 176 + web-page-builder groen. **Deferred**: de 3 Claw-edit-tool-sites (context-assembler, write-tools, read-tools) — die gaten Claw-editing van een al-gegenereerde GEO-pagina, dus gepaard met de generatie-increment.
+- [x] Dedicated **ComparisonTable** (multi-kolom) + **Listicle** Puck-componenten (2026-06-19, brand-token-aware zoals SpecTable; builder herbedraad → géén RichText-markdown-placeholder meer; markdown-injectie-surface voor die blokken weg). Smoke `geo-longform-render` 20/20; web-page-builder + page-types 176 geen regressie.
 - [ ] Publish-keten: long-form persisteert `settings.puckData` + eligible voor `/api/landing-pages/publish`; `/p/[slug]` rendert server-side
 - [ ] `buildPageJsonLdForDeliverable` → `buildBlogPostingJsonLd` voor long-form (overlapt Fase 3 JSON-LD)
 - [ ] `TEMPLATE_BY_CONTENT_TYPE`/`resolveTemplateBuilder`-pad checken (non-structured fallback) zodat long-form niet stil op landing-page terugvalt

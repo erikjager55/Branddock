@@ -25,7 +25,7 @@ import { detectAiTells } from "@/lib/brand-fidelity/ai-tell-detector";
 import { ensureBrandArchetype } from "@/lib/landing-pages/ensure-archetype";
 import { ensureLayoutStyle } from "@/lib/landing-pages/ensure-layout-style";
 import { trackAICallStart, trackAICallComplete } from "@/lib/learning-loop/call-tracker";
-import { PUCK_WEBPAGE_TYPES } from "@/lib/landing-pages/webpage-types";
+import { isPuckRenderable } from "@/lib/landing-pages/webpage-types";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 
@@ -117,9 +117,13 @@ export async function POST(
     return NextResponse.json({ error: "No access to this workspace" }, { status: 403 });
   }
 
-  // Verifieer dat dit een PUCK-webpage type is — voor alle andere types
-  // hoort de generator niet aangeroepen te worden (spec §4b is type-specific).
-  if (!PUCK_WEBPAGE_TYPES.has(deliverable.contentType)) {
+  // Verifieer dat dit een PUCK-renderable type is (de 5 web-page-types, of een
+  // long-form-type met GEO-doel) — voor alle andere types hoort de generator niet
+  // aangeroepen te worden (spec §4b is type-specific).
+  const persistedInputs = (deliverable.settings && typeof deliverable.settings === "object" && !Array.isArray(deliverable.settings)
+    ? ((deliverable.settings as Record<string, unknown>).contentTypeInputs ?? null)
+    : null) as Record<string, unknown> | null;
+  if (!isPuckRenderable(deliverable.contentType, persistedInputs)) {
     return NextResponse.json(
       {
         error: `Content-type ${deliverable.contentType} ondersteunt geen structured variant generation`,

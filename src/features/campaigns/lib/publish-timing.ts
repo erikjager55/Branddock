@@ -3,7 +3,7 @@
  * Returns suggested day + time for each platform/format combination.
  */
 
-import { PUCK_WEBPAGE_TYPES } from '@/lib/landing-pages/webpage-types';
+import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
 
 export interface PublishTimeSuggestion {
   day: string;
@@ -130,6 +130,8 @@ export function getChecklistForPlatform(
    * stable signal independent of enrichment seeding.
    */
   contentType?: string | null,
+  /** GEO/SEO Fase 2 — optimizationGoals/profile zodat long-form-GEO dezelfde Puck-checklist krijgt. */
+  contentTypeInputs?: Record<string, unknown> | null,
 ): ChecklistItem[] {
   // 2026-05-20 — LinkedIn poll has a fundamentally different group
   // structure (context / question / option-1..4 / follow-up-comment /
@@ -219,7 +221,7 @@ export function getChecklistForPlatform(
   // gegarandeerd op title/hero (audit: Planner-checklist Napking LP). Eigen
   // itemset met passende labels; de evaluatie in Step4Timeline leest voor deze
   // types de structuredVariant-store-slice als fallback-bron.
-  if (contentType && PUCK_WEBPAGE_TYPES.has(contentType)) {
+  if (isPuckRenderable(contentType, contentTypeInputs)) {
     return [
       { id: 'has-title', label: 'Hero headline is set', required: true },
       { id: 'has-body', label: 'Body content is complete', required: true },
