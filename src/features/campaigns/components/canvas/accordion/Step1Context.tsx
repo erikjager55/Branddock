@@ -7,7 +7,6 @@ import { Building2, Lightbulb, Route, Monitor, BookOpen, Plus, X, Sparkles, Sear
 import { Badge, Skeleton, SkeletonText } from '@/components/shared';
 import { WEBSITE_DELIVERABLE_TYPES } from '@/lib/ai/seo-pipeline.types';
 import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
-import { isPuckWebpageType } from '@/lib/landing-pages/webpage-types';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
 import type { VisualBriefSource, VisualStyleDirection } from '@/lib/ai/canvas-context';
@@ -437,10 +436,9 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
           even on a fresh content item (was hidden until items existed, leaving
           only a tiny text link as the cue). Empty → prominent add button;
           filled → chips + a manage button.
-          Hidden for the 5 PUCK web-page types — their generation runs via the
-          structured-variant pad, which does not consume additionalContextItems,
-          so the affordance would be a silent dead-end there. */}
-      {!isPuckWebpageType(contentType ?? '') && (
+          Also shown for the 5 PUCK web-page types: the structured-variant pad
+          now serializes additionalContextItems into the generation prompt
+          (variant-generator buildSharedStyleBlocks), so the selection lands. */}
       <div className="rounded-lg border border-gray-200 bg-white p-3">
         <div className="flex items-center gap-2 mb-2">
           <BookOpen className="h-4 w-4 text-gray-500" />
@@ -503,7 +501,6 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
           </div>
         )}
       </div>
-      )}
 
       {/* SEO Research inputs (website types only) */}
       {WEBSITE_DELIVERABLE_TYPES.has(contextStack.deliverableTypeId ?? '') && (

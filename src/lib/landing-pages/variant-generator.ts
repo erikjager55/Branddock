@@ -106,6 +106,12 @@ export interface LandingPageGenerationParams {
    *  Vóór deze fix kreeg het LP-pad nooit een em-dash-verbod: 92% van
    *  LP-deliverables bevatte em-dash-lijm vs 25% op het orchestrator-pad. */
   humanVoiceMode?: HumanVoiceMode | null;
+  /** Knowledge-context — door de gebruiker geselecteerd bronmateriaal (Step 1
+   *  picker), vooraf geserialiseerd via serializeContextForPrompt (zelf-
+   *  bevattende ## headings). Wordt raw in de gedeelde stijl-stack geïnjecteerd
+   *  zodat alle 5 web-page-types hun copy hierin gronden. Leeg/undefined wanneer
+   *  niets geselecteerd is → de prompt blijft dan byte-identiek (golden-set). */
+  additionalContextText?: string;
 }
 
 export type VariantAxis =
@@ -161,6 +167,7 @@ export function buildLandingPageVariantPrompt(
     variantAxis: params.variantAxis ?? null,
     angleInstruction: params.angleInstruction ?? null,
     humanVoiceMode: params.humanVoiceMode ?? null,
+    additionalContextText: params.additionalContextText,
   };
   // W1 — type-dispatch: eigen prompt voor faq/product/microsite; al het
   // andere (landing-page, comparison-page, onbekend) volgt het bestaande
@@ -215,6 +222,7 @@ interface SystemPromptOpts {
   variantAxis?: VariantAxis | null;
   angleInstruction?: string | null;
   humanVoiceMode?: HumanVoiceMode | null;
+  additionalContextText?: string;
 }
 
 /**
@@ -271,7 +279,15 @@ function buildSharedStyleBlocks(opts: SystemPromptOpts): string {
     : opts.variantAxis
     ? `\n# !! VARIANT-INVALSHOEK (HARD CONSTRAINT) !!: ${opts.variantAxis.toUpperCase()}\n${VARIANT_AXIS_HINTS[opts.variantAxis]}\n\nDIT IS GEEN OPTIE, het is de KERN van deze variant. Andere variants in dezelfde batch volgen een EXPLICIET ANDERE as (bv: problem-led ↔ benefit-led). Onze users zien de variants NAAST ELKAAR en moeten ze direct kunnen onderscheiden:\n  - Hero-headline moet de gekozen invalshoek meteen tonen\n  - Volgorde van secties moet de invalshoek versterken\n  - Tone en woordkeus moet substantieel afwijken\nWanneer beide variants 'rond hetzelfde middenpad' uitkomen, hebben we GEFAALD. Neem het risico van een uitgesproken kant.\n`
     : '';
-  return `${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${hvdBlock}${axisBlock}`;
+  // Knowledge-context — door de gebruiker geselecteerd bronmateriaal (Step 1
+  // picker), al geserialiseerd mét zelf-bevattende ## headings door
+  // serializeContextForPrompt. Raw injecteren (zoals canvas-orchestrator) om een
+  // geneste dubbele heading te vermijden. Leeg wanneer niets geselecteerd is →
+  // het no-knowledge-pad blijft byte-identiek (golden-set-veiligheid).
+  const knowledgeBlock = opts.additionalContextText?.trim()
+    ? `\n${opts.additionalContextText.trim()}\n`
+    : '';
+  return `${toneBlock}${depthBlock}${vocabBlock}${voiceBlock}${hvdBlock}${axisBlock}${knowledgeBlock}`;
 }
 
 function buildSystemPrompt(opts: SystemPromptOpts): string {
