@@ -44,7 +44,7 @@ Beelden die je vanuit een content-item genereert (Canvas Step 2/3) belandden all
 - Task: [tasks/done/content-item-images-to-library.md](../tasks/done/content-item-images-to-library.md)
 - ADR: -
 - Spec: -
-- Commit: `f0b53456`
+- Commit: PR #54 (squash op main)
 
 ### 332. GEO/SEO long-form fundament — metadata, discovery, SEO-eligibility + GEO-variant spike
 
