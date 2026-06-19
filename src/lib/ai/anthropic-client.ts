@@ -17,6 +17,13 @@ export interface AnthropicCompletionOptions {
   useCase?: AiUseCase;
   /** Override the per-useCase default request timeout (ms) */
   timeoutMs?: number;
+  /**
+   * Optional caller abort signal. When it fires the in-flight HTTP request is
+   * cancelled immediately (the SDK throws `APIUserAbortError`), so a long
+   * generation stops — and its token cost stops — the moment the caller aborts
+   * (e.g. a client disconnect or a deep-research deadline).
+   */
+  abortSignal?: AbortSignal;
 }
 
 export interface AnthropicCompletionResult {
@@ -66,6 +73,8 @@ async function withRetry<T>(
       return await fn();
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
+      // A caller-initiated abort must never be retried — surface it immediately.
+      if (err instanceof Anthropic.APIUserAbortError) throw err;
       if (err instanceof Anthropic.APIError) {
         if (err.status === 401 || err.status === 403 || err.status === 400) throw err;
       }
@@ -129,7 +138,10 @@ export const anthropicClient = {
           system: system || undefined,
           messages: anthropicMessages,
         },
-        { timeout: options?.timeoutMs ?? aiConfig.timeout(useCase) },
+        {
+          timeout: options?.timeoutMs ?? aiConfig.timeout(useCase),
+          ...(options?.abortSignal ? { signal: options.abortSignal } : {}),
+        },
       ),
     );
 

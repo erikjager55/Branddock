@@ -2,18 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { cachedJson, setCache } from "@/lib/api/cache";
 import { cacheKeys, CACHE_TTL } from "@/lib/api/cache-keys";
+import { RESOURCE_CATEGORIES } from "@/lib/knowledge-resources/categories";
 
-const CATEGORIES = [
-  "Brand Strategy",
-  "Research",
-  "Content",
-  "Marketing",
-  "Design",
-  "Technology",
-  "Psychology",
-  "User Experience",
-  "Trends",
-];
+const CATEGORIES = [...RESOURCE_CATEGORIES];
 
 export async function GET(request: NextRequest) {
   try {

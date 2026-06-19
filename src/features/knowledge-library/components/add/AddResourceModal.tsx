@@ -1,16 +1,18 @@
 'use client';
 
-import { Pencil, Sparkles, Upload } from 'lucide-react';
+import { Pencil, Sparkles, Telescope, Upload } from 'lucide-react';
 import { Modal } from '@/components/shared';
 import { useKnowledgeLibraryStore } from '@/stores/useKnowledgeLibraryStore';
 import { ManualEntryTab } from './ManualEntryTab';
 import { SmartImportTab } from './SmartImportTab';
 import { FileUploadTab } from './FileUploadTab';
+import { DeepResearchTab } from './DeepResearchTab';
 
 const TABS = [
   { id: 'manual' as const, label: 'Manual Entry', icon: Pencil },
   { id: 'import' as const, label: 'Smart Import', icon: Sparkles },
   { id: 'upload' as const, label: 'File Upload', icon: Upload },
+  { id: 'research' as const, label: 'Deep Research', icon: Telescope },
 ];
 
 export function AddResourceModal() {
@@ -66,6 +68,11 @@ export function AddResourceModal() {
         {store.activeAddTab === 'upload' && (
           <div data-testid="file-upload-tab">
             <FileUploadTab onClose={handleClose} />
+          </div>
+        )}
+        {store.activeAddTab === 'research' && (
+          <div data-testid="deep-research-tab">
+            <DeepResearchTab onClose={handleClose} />
           </div>
         )}
       </div>

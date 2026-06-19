@@ -31,6 +31,9 @@ export interface ResourceDetailResponse extends ResourceWithMeta {
   fileType: string | null;
   fileUrl: string | null;
   importedMetadata: unknown;
+  content: string | null;
+  aiSummary: string | null;
+  aiKeyTakeaways: string[] | null;
   isArchived: boolean;
   updatedAt: string;
 }
@@ -49,6 +52,12 @@ export interface CreateResourceBody {
   publicationDate?: string;
   isbn?: string;
   pageCount?: number;
+  /** Long-form body (o.a. Deep Research-rapport in markdown). */
+  content?: string;
+  aiSummary?: string;
+  aiKeyTakeaways?: string[];
+  source?: ResourceSource;
+  importedMetadata?: Record<string, unknown>;
 }
 
 export interface ImportUrlBody {

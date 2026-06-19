@@ -127,6 +127,18 @@ const createSchema = z.object({
   publicationDate: z.string().optional(),
   isbn: z.string().max(20).optional(),
   pageCount: z.number().int().positive().optional(),
+  // Long-form body + AI-metadata (o.a. voor Deep Research-rapporten).
+  content: z.string().max(200_000).optional(),
+  aiSummary: z.string().max(5000).optional(),
+  aiKeyTakeaways: z.array(z.string()).max(50).optional(),
+  source: z.enum(["MANUAL", "URL_IMPORT", "FILE_UPLOAD", "DEEP_RESEARCH"]).optional(),
+  importedMetadata: z
+    .unknown()
+    .refine(
+      (v) => v === undefined || JSON.stringify(v).length <= 100_000,
+      "importedMetadata exceeds 100KB",
+    )
+    .optional(),
 });
 
 function generateSlug(title: string): string {
@@ -172,7 +184,7 @@ export async function POST(request: NextRequest) {
         category: data.category,
         author: data.author,
         url: data.url || "",
-        source: "MANUAL",
+        source: data.source ?? "MANUAL",
         difficultyLevel: data.difficultyLevel as DifficultyLevel | undefined,
         estimatedDuration: data.estimatedDuration,
         tags: data.tags || [],
@@ -182,6 +194,12 @@ export async function POST(request: NextRequest) {
           : null,
         isbn: data.isbn,
         pageCount: data.pageCount,
+        content: data.content ?? null,
+        aiSummary: data.aiSummary ?? null,
+        aiKeyTakeaways: data.aiKeyTakeaways ?? undefined,
+        importedMetadata: (data.importedMetadata ?? undefined) as
+          | Prisma.InputJsonValue
+          | undefined,
         isFeatured: false,
         isFavorite: false,
         isArchived: false,

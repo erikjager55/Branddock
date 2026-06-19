@@ -56,6 +56,9 @@ function mapResourceDetail(r: KnowledgeResource) {
     fileType: r.fileType,
     fileUrl: r.fileUrl,
     importedMetadata: r.importedMetadata,
+    content: r.content,
+    aiSummary: r.aiSummary,
+    aiKeyTakeaways: (r.aiKeyTakeaways as string[] | null) ?? null,
     isArchived: r.isArchived,
     updatedAt: r.updatedAt.toISOString(),
   };
