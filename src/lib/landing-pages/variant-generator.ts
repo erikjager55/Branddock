@@ -27,6 +27,7 @@
 
 import type { HumanVoiceMode } from "@prisma/client";
 import { anthropicClient } from "../ai/anthropic-client";
+import { LONG_FORM_SEO_TYPES } from "../ai/seo-pipeline.types";
 import { buildHumanVoiceDirective } from "../studio/human-voice-directive";
 import type { BrandContextBlock } from "../ai/prompt-templates";
 import {
@@ -180,6 +181,8 @@ export function buildLandingPageVariantPrompt(
       ? buildProductSystemPrompt(opts)
       : contentType === "microsite"
       ? buildMicrositeSystemPrompt(opts)
+      : LONG_FORM_SEO_TYPES.has(contentType)
+      ? buildLongFormGeoSystemPrompt(opts)
       : buildSystemPrompt(opts);
   const user = buildUserPrompt(params, { locale });
   return { system, user };
@@ -699,11 +702,64 @@ CHAPTER = {
 Genereer ALLEEN het JSON-object, zonder prefix-zin, markdown code-fence of post-script. Begin direct met { en eindig met }.`;
 }
 
+function buildLongFormGeoSystemPrompt(opts: SystemPromptOpts): string {
+  return `# ROL
+Je bent een Senior GEO-contentstrateeg + authority-copywriter. Je schrijft een
+long-form artikel dat geoptimaliseerd is voor Generative Engine Optimization:
+AI-antwoordmachines (ChatGPT, Perplexity, Google AI Overviews, Gemini) moeten
+passages eruit zelfstandig kunnen CITEREN. Citeerbaarheid > vindbaarheid.
+${buildSharedStyleBlocks(opts)}
+# OPDRACHT
+Genereer een compleet long-form GEO-artikel als **gestructureerd JSON** volgens het schema hieronder. Antwoord uitsluitend met het JSON-object (zonder prose, toelichting of code-fences).
+
+# OUTPUT-SCHEMA
+{
+  "geoArticle": true,
+  "hero": {
+    "headline": string (max 80 tekens, het onderwerp/de kernvraag als heldere titel),
+    "subline": string (1-2 zinnen die de scope van het artikel laden),
+    "imageBrief": ${IMAGE_BRIEF_JSON} | optional
+  },
+  "answerFirstIntro": string (40-60 woorden die DE kernvraag meteen én zelfstandig beantwoorden — citeerbaar door een AI-engine zónder de rest van het artikel),
+  "tldr": [string] (2-5 bullets: de key takeaways, elk zelfstandig leesbaar),
+  "sections": [{ "heading": string, "body": string (de artikel-body in atomic chunks van 2-4 zinnen die elk los citeerbaar zijn) }] (min 1),
+  "qa": [{ "question": string (max 120 tekens, klanttaal), "answer": string (antwoord-eerst, zelfstandig leesbaar) }] (min 2),
+  "citeableStats": [{ "label": string, "value": string, "source": string (VERPLICHTE bron) }] (min 1),
+  "definitions": [{ "term": string, "definition": string }] | optional (sleuteltermen helder gedefinieerd — entity-clarity),
+  "comparison": { "caption": string | optional, "columns": [string] (min 2 koppen, incl. de eerste kenmerk-kolom), "rows": [{ "label": string, "cells": [string] }] } | optional (multi-kolom vergelijking — een van de hoogst-geciteerde formats),
+  "listItems": [{ "rank": number, "title": string, "body": string }] | optional (genummerde listicle — een van de hoogst-geciteerde formats),
+  "sources": [{ "title": string, "url": string }] | optional (bronnen uit de context),
+  "finalCta": { "heading": string, "ctaLabel": string (max 48 tekens) }
+}
+
+# KRITISCHE REGELS (overtreding = automatic rejection)
+1. **geoArticle = true**: het veld "geoArticle" MOET letterlijk true zijn (de discriminant; weglaten = rejection).
+2. **Answer-first (AEO)**: answerFirstIntro, elke qa.answer EN de eerste zin van elke sectie beantwoorden hun punt volledig + zelfstandig leesbaar; een AI-engine moet die passage los kunnen citeren.
+3. **Citeerbare stats MET bron**: elke citeableStats-entry heeft een echte source uit de aangeleverde context. Geen stat zonder bron; verzin geen cijfers.
+4. **Atomic chunking**: schrijf sections in zelfstandige brokken van 2-4 zinnen — geen lange lappen; elk brok moet los citeerbaar zijn.
+5. **Entity-clarity**: definieer sleuteltermen (definitions) en gebruik volledige entiteitsnamen, geen vage verwijzingen ("dit", "het systeem").
+6. **Anti-fabricage**: ${ANTI_FABRICATION_RULE} Stats, bronnen, URLs en definities UITSLUITEND uit de context; verzin geen bronnen of links.
+7. **Hoog-citeerbare formats**: gebruik comparison (multi-kolom) en/of listItems wanneer de inhoud zich ervoor leent — deze formats winnen AI-citaties.
+8. **Geen markdown in veld-strings**: lever platte tekst; de renderer verzorgt de opmaak (geen **bold**, # of tabel-syntax in de strings).
+9. **Readability**: 5e-7e graders niveau, zinnen ≤25 woorden, jargon alleen mét uitleg.
+10. **Locale ${opts.locale}**: alle content in deze taal.
+
+# JSON-ONLY OUTPUT
+Genereer ALLEEN het JSON-object, zonder prefix-zin, markdown code-fence of post-script. Begin direct met { en eindig met }.`;
+}
+
 /** Type-aware opdracht-label voor het user-prompt (LP behoudt het exacte oude label). */
 const USER_PROMPT_LABELS: Record<string, string> = {
   "faq-page": "FAQ-PAGINA OPDRACHT",
   "product-page": "PRODUCT/SERVICE-PAGINA OPDRACHT",
   microsite: "CAMPAGNE-MICROSITE OPDRACHT",
+  "blog-post": "LONG-FORM GEO-ARTIKEL OPDRACHT",
+  "pillar-page": "LONG-FORM GEO-ARTIKEL OPDRACHT",
+  whitepaper: "LONG-FORM GEO-ARTIKEL OPDRACHT",
+  "case-study": "LONG-FORM GEO-ARTIKEL OPDRACHT",
+  ebook: "LONG-FORM GEO-ARTIKEL OPDRACHT",
+  "linkedin-article": "LONG-FORM GEO-ARTIKEL OPDRACHT",
+  "thought-leadership": "LONG-FORM GEO-ARTIKEL OPDRACHT",
 };
 
 /** Union-veilige headline-accessor (diagnostiek/divergentie-checks). */

@@ -332,18 +332,22 @@ function secondaryKeywords(): ContentTypeInputField {
   };
 }
 
-/** GEO/SEO Fase 1b — optimalisatie-doel-veld (UI). SEO default-aan (uitvinken
- *  slaat de SEO-pipeline over). GEO-optie volgt in Fase 2. De default + de
- *  gate-logica leven in `@/lib/ai/seo-pipeline.types` + `seo-pipeline-utils`. */
+/** GEO/SEO optimalisatie-doel-veld (UI). SEO default-aan (uitvinken slaat de
+ *  SEO-pipeline over); GEO opt-in (genereert een citeerbaar GEO-artikel via de
+ *  structured-variant-flow). De default + de gate-logica leven in
+ *  `@/lib/ai/seo-pipeline.types` + `seo-pipeline-utils` + `webpage-types`. */
 function optimizationGoals(): ContentTypeInputField {
   return {
     key: "optimizationGoals",
     label: "Optimalisatiedoel",
     category: "seo",
     type: "checkbox-group",
-    options: [{ value: "seo", label: "SEO-optimalisatie" }],
+    options: [
+      { value: "seo", label: "SEO-optimalisatie" },
+      { value: "geo", label: "GEO-optimalisatie (AI-citeerbaarheid)" },
+    ],
     defaultValue: [...DEFAULT_LONG_FORM_OPTIMIZATION_GOALS],
-    helpText: "Draai de SEO-pipeline voor dit stuk. Uitvinken slaat SEO over.",
+    helpText: "SEO draait de zoekmachine-pipeline; GEO genereert een citeerbaar artikel voor AI-antwoordmachines. Uitvinken slaat dat doel over.",
   };
 }
 
