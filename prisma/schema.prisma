@@ -115,6 +115,14 @@ model Workspace {
   contentLanguage String   @default("en") // ISO 639-1: "en", "nl", "de", "fr", etc.
 
   /**
+   * GEO/SEO Fase 3 — E-E-A-T author-profiel ({ name, jobTitle?, sameAs?: string[] }).
+   * Additief Json (nullable, géén default → db push voegt de kolom toe zonder
+   * data-migratie). Voedt het Person+sameAs-knooppunt in BlogPosting JSON-LD,
+   * alleen geëmit wanneer een verifieerbare identiteit (naam) is ingevuld.
+   */
+  authorProfile Json?
+
+  /**
    * Adobe Fonts (Typekit) kit ID for THIS workspace — set once by the
    * user with their own Adobe Fonts subscription. Used across all
    * styleguides / fonts to render live previews of commercial fonts.

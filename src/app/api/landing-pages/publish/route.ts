@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { publishLandingPage, isValidSlug } from '@/lib/landing-pages/publish-page';
+import { longFormGeoVariantSchema } from '@/lib/landing-pages/page-type-schemas';
+import { buildGeoOptimizationAnalysis } from '@/lib/landing-pages/geo-analysis';
 
 /**
  * POST /api/landing-pages/publish
@@ -98,6 +100,38 @@ export async function POST(request: NextRequest) {
     const url = workspace?.slug
       ? `https://${workspace.slug}.branddock.app/${body.slug}`
       : `https://branddock.app/p/${body.slug}`;
+
+    // GEO Fase 3 — meet-haak: persist een deterministische GEO-analyse voor een
+    // gepubliceerd long-form GEO-artikel (geoScore + signalen + schema-types +
+    // canonical). Fail-soft: mag de publish nooit breken; bij republish wordt de
+    // analyse overschreven (dateModified komt los uit LandingPage.updatedAt).
+    try {
+      const parsedVariant = longFormGeoVariantSchema.safeParse(settings.structuredVariant);
+      if (parsedVariant.success) {
+        const analysis = buildGeoOptimizationAnalysis({
+          variant: parsedVariant.data,
+          canonicalUrl: url,
+          now: new Date(),
+        });
+        // Verse read zodat een gelijktijdige autosave (puckData/hero) niet wordt geclobberd.
+        const fresh = await prisma.deliverable.findUnique({
+          where: { id: deliverable.id },
+          select: { settings: true },
+        });
+        const freshSettings =
+          fresh?.settings && typeof fresh.settings === 'object' && !Array.isArray(fresh.settings)
+            ? (fresh.settings as Record<string, unknown>)
+            : {};
+        await prisma.deliverable.update({
+          where: { id: deliverable.id },
+          data: {
+            settings: JSON.parse(JSON.stringify({ ...freshSettings, geoOptimizationAnalysis: analysis })),
+          },
+        });
+      }
+    } catch (err) {
+      console.warn('[landing-pages/publish] GEO-analyse-haak faalde (genegeerd):', err instanceof Error ? err.message : err);
+    }
 
     return NextResponse.json({ ...result, url });
   } catch (err) {

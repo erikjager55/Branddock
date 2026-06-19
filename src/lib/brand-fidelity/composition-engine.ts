@@ -27,6 +27,7 @@ import { runRubricJudge, type GeneratorProvider } from './judge-dispatcher';
 import { scoreBrandStyle, type StyleScoreResult } from './style-scorer';
 import { scoreVoiceSimilarity, type VoiceSimilarityResult } from './voice-similarity';
 import type { GEvalDimension, GEvalResult } from './g-eval-rubric';
+import { computeGeoScore, GEO_SCORER_VERSION, type GeoScoreResult } from './geo-fidelity-scorer';
 
 // ─── Input ──────────────────────────────────────────
 
@@ -74,12 +75,21 @@ export interface FidelityCompositionInput {
   /** Target word count voor length-control op pijler 2 composite */
   targetWordCount: number;
 
-  /** Pillar weights — uit FidelityConfig, default 0.35 / 0.45 / 0.20 */
+  /** Pillar weights — uit FidelityConfig, default 0.35 / 0.45 / 0.20 (+ geo 0.15 wanneer actief) */
   pillarWeights?: {
     style?: number;
     judge?: number;
     rules?: number;
+    geo?: number;
   };
+
+  /**
+   * GEO/SEO Fase 3 — activeer de deterministische, judge-vrije GEO-pijler.
+   * COMPUTE-GATED: alleen bij expliciet `true` draait computeGeoScore én telt de
+   * pijler mee in de composiet. Bij afwezig/false wordt de pijler NIET berekend
+   * en blijft de 3-pijler-normalisatie byte-identiek (geen weight-0-artefact).
+   */
+  geoOptimizationActive?: boolean;
 
   /** Per-dimensie weights binnen pijler 2 — default uit DIMENSIONS const */
   rubricWeights?: Partial<Record<GEvalDimension, number>>;
@@ -149,6 +159,8 @@ export interface FidelityCompositeResult {
     style: PillarBreakdown<StyleScoreResult>;
     judge: PillarBreakdown<GEvalResult> | null;
     rules: PillarBreakdown<Pillar3RawResult>;
+    /** GEO/SEO Fase 3 — deterministische 4e pijler; null tenzij geoOptimizationActive. */
+    geo: PillarBreakdown<GeoScoreResult> | null;
   };
   /** Word count of analyzed content */
   wordCount: number;
@@ -169,6 +181,12 @@ const DEFAULT_PILLAR_WEIGHTS = {
   judge: 0.45,
   rules: 0.20,
 } as const;
+
+/**
+ * GEO/SEO Fase 3 — default-weight van de optionele 4e pijler. Telt ALLEEN mee
+ * wanneer geoOptimizationActive; bij afwezigheid blijft de som 0.35/0.45/0.20.
+ */
+const DEFAULT_GEO_PILLAR_WEIGHT = 0.15;
 
 /** Sub-weights binnen pijler 3 — detector dominant omdat rules optioneel zijn */
 const DEFAULT_PILLAR3_DETECTOR_WEIGHT = 0.6;
@@ -282,22 +300,41 @@ function mergeRuleResults(
  * aandeel wordt herverdeeld over de actieve pijlers.
  */
 function normalizeWeights(
-  raw: { style?: number; judge?: number; rules?: number },
+  raw: { style?: number; judge?: number; rules?: number; geo?: number },
   skipJudge: boolean,
   skipStyle: boolean,
-): { style: number; judge: number; rules: number } {
+  skipGeo: boolean,
+): { style: number; judge: number; rules: number; geo: number } {
   const style = skipStyle ? 0 : (raw.style ?? DEFAULT_PILLAR_WEIGHTS.style);
   const judge = skipJudge ? 0 : (raw.judge ?? DEFAULT_PILLAR_WEIGHTS.judge);
   const rules = raw.rules ?? DEFAULT_PILLAR_WEIGHTS.rules;
-  const sum = style + judge + rules;
+  // GEO telt alleen mee wanneer actief; skipGeo → 0 → som ongewijzigd t.o.v. 3-pijler.
+  const geo = skipGeo ? 0 : (raw.geo ?? DEFAULT_GEO_PILLAR_WEIGHT);
+  const sum = style + judge + rules + geo;
   if (sum <= 0) {
-    // Pathological — distribute evenly across active pillars
-    if (!skipJudge && !skipStyle) return { style: 0.34, judge: 0.33, rules: 0.33 };
-    if (!skipJudge) return { style: 0, judge: 0.5, rules: 0.5 };
-    if (!skipStyle) return { style: 0.5, judge: 0, rules: 0.5 };
-    return { style: 0, judge: 0, rules: 1 };
+    if (skipGeo) {
+      // Behoud exact het oude 3-pijler-pathologische gedrag (byte-identiek).
+      if (!skipJudge && !skipStyle) return { style: 0.34, judge: 0.33, rules: 0.33, geo: 0 };
+      if (!skipJudge) return { style: 0, judge: 0.5, rules: 0.5, geo: 0 };
+      if (!skipStyle) return { style: 0.5, judge: 0, rules: 0.5, geo: 0 };
+      return { style: 0, judge: 0, rules: 1, geo: 0 };
+    }
+    // GEO actief + pathologisch — verdeel gelijk over de actieve pijlers.
+    const active = ([
+      ['style', !skipStyle],
+      ['judge', !skipJudge],
+      ['rules', true],
+      ['geo', true],
+    ] as const).filter(([, on]) => on).map(([k]) => k);
+    const even = 1 / active.length;
+    return {
+      style: active.includes('style') ? even : 0,
+      judge: active.includes('judge') ? even : 0,
+      rules: even,
+      geo: even,
+    };
   }
-  return { style: style / sum, judge: judge / sum, rules: rules / sum };
+  return { style: style / sum, judge: judge / sum, rules: rules / sum, geo: geo / sum };
 }
 
 /**
@@ -379,6 +416,16 @@ export async function computeFidelityScore(
 
   const pillar3 = computePillar3(detectorResult, rulesResult);
 
+  // GEO/SEO Fase 3 — compute-gated 4e pijler. Draait UITSLUITEND bij een actief
+  // GEO-doel; anders wordt computeGeoScore niet aangeroepen en blijft de
+  // composiet byte-identiek aan het 3-pijler-resultaat (geen weight-0-artefact).
+  const skipGeo = input.geoOptimizationActive !== true;
+  let geoBreakdown: PillarBreakdown<GeoScoreResult> | null = null;
+  if (!skipGeo) {
+    const geoResult = computeGeoScore(input.contentText);
+    geoBreakdown = { score: geoResult.score, weight: 0, result: geoResult };
+  }
+
   // Pijler 1 effective score: combineer string-match composite met semantic
   // similarity wanneer beide beschikbaar. 50/50 wegen — beide signalen vangen
   // verschillende aspecten (declared vocab vs ritme/registers in samples).
@@ -436,17 +483,24 @@ export async function computeFidelityScore(
     }
   }
 
-  const weights = normalizeWeights(input.pillarWeights ?? {}, skipJudge || judgeDegraded !== null, skipStyle);
+  const weights = normalizeWeights(
+    input.pillarWeights ?? {},
+    skipJudge || judgeDegraded !== null,
+    skipStyle,
+    skipGeo,
+  );
 
   const compositeScore = Math.round(
     (skipStyle ? 0 : pillar1EffectiveScore * weights.style) +
       (judgeBreakdown ? judgeBreakdown.score * weights.judge : 0) +
-      pillar3.score * weights.rules,
+      pillar3.score * weights.rules +
+      (geoBreakdown ? geoBreakdown.score * weights.geo : 0),
   );
 
   const compositeThreshold = input.compositeThreshold ?? DEFAULT_COMPOSITE_THRESHOLD;
 
   if (judgeBreakdown) judgeBreakdown.weight = weights.judge;
+  if (geoBreakdown) geoBreakdown.weight = weights.geo;
 
   return {
     compositeScore,
@@ -460,10 +514,13 @@ export async function computeFidelityScore(
       style: { score: pillar1EffectiveScore, weight: weights.style, result: styleResult },
       judge: judgeBreakdown,
       rules: { score: pillar3.score, weight: weights.rules, result: pillar3.raw },
+      geo: geoBreakdown,
     },
     wordCount: detectorResult.wordCount,
     elapsedMs: Date.now() - startedAt,
-    scorerVersion: hasSemanticSignal ? `${SCORER_VERSION}+voice-emb-1.0` : SCORER_VERSION,
+    scorerVersion:
+      (hasSemanticSignal ? `${SCORER_VERSION}+voice-emb-1.0` : SCORER_VERSION) +
+      (geoBreakdown ? `+${GEO_SCORER_VERSION}` : ''),
     ...(judgeDegraded !== null ? { judgeDegraded } : {}),
   };
 }
@@ -482,6 +539,11 @@ export function formatPillarScoresJson(result: FidelityCompositeResult): Record<
       ? { score: result.pillars.judge.score, weight: result.pillars.judge.weight }
       : { score: 0, weight: 0 },
     rules: { score: result.pillars.rules.score, weight: result.pillars.rules.weight },
+    // GEO Fase 3 — alleen niet-nul wanneer de pijler actief was; oude records
+    // missen de geo-sleutel, wat backward-compatible is (lezers gebruiken ?? 0).
+    geo: result.pillars.geo
+      ? { score: result.pillars.geo.score, weight: result.pillars.geo.weight }
+      : { score: 0, weight: 0 },
   };
 }
 

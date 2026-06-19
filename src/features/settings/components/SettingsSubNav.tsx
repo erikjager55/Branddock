@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug, Bug, Lightbulb, MessageSquarePlus, FileText, FileCode, Image as ImageIcon, ShieldCheck } from 'lucide-react';
+import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug, Bug, Lightbulb, MessageSquarePlus, FileText, FileCode, Image as ImageIcon, ShieldCheck, IdCard } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useSettingsStore, type SettingsTab } from '@/stores/useSettingsStore';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
@@ -95,6 +95,18 @@ export function SettingsSubNav() {
           >
             <FileCode className="w-4 h-4" />
             AI Prompts
+          </button>
+          <button
+            data-testid="settings-tab-author-profile"
+            onClick={() => setActiveTab('author-profile')}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'author-profile'
+                ? 'bg-primary/10 text-primary'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <IdCard className="w-4 h-4" />
+            Author-profiel
           </button>
           <button
             data-testid="settings-tab-visual-fidelity"

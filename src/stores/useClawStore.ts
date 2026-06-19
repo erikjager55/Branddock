@@ -22,6 +22,10 @@ export type ActiveEntity = {
   /** Only set when type === 'deliverable' — the content-type slug. Lets the
    *  system prompt route web-page deliverables to the LP text-edit tools. */
   contentType?: string;
+  /** Only set when type === 'deliverable' — persisted contentTypeInputs (o.a.
+   *  optimizationGoals). Laat de assembler `isPuckRenderable` evalueren zodat
+   *  long-form GEO-pagina's (geo-doel aan) de "direct bewerkbaar"-hint krijgen. */
+  contentTypeInputs?: Record<string, unknown> | null;
 };
 
 /** Navigation intent emitted by the Brand Assistant (e.g. after a create). App.tsx watches this and routes accordingly. */

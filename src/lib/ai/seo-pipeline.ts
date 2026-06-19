@@ -28,8 +28,10 @@ import {
   type PublicationPrep,
   type EditorialReview,
   type KeywordResearch,
+  type OptimizationGoal,
 } from './seo-pipeline.types';
 import type { PersonaContext, BriefContext, ProductContext } from './canvas-context';
+import { runGeoPolish, shouldApplyGeoPolish } from './geo-polish';
 
 // ─── Context Formatters (reuse canvas-orchestrator patterns) ─
 
@@ -78,6 +80,10 @@ export async function* runSeoPipeline(
   stack: CanvasContextStack,
   voiceDirective: string,
   contentType: string,
+  // GEO/SEO Fase 3 — composable stage: bij het seo-geo-profiel op long-form
+  // krijgt de SEO-output een GEO-polish vóór persist. Default [] = puur SEO
+  // (byte-identiek aan vóór Fase 3; kill-switch via deze lijst).
+  optimizationGoals: OptimizationGoal[] = [],
 ): AsyncGenerator<OrchestrationEvent> {
   const startTime = Date.now();
 
@@ -240,6 +246,32 @@ export async function* runSeoPipeline(
       }
     } else {
       variantBContent = finalContent;
+    }
+  }
+
+  // ── GEO-polish (composable stage, Fase 3) ──────────────
+  // Alleen voor het seo-geo-profiel op long-form: herschrijf de SEO-output
+  // answer-first/citeerbaar zonder de SEO-structuur te slopen. Fail-soft (geeft
+  // bij fout de originele content terug) → kan de pipeline nooit breken. Bewust
+  // long-form-only (ADR open vraag #2) om het productie-SEO-pad ongemoeid te laten.
+  if (shouldApplyGeoPolish(optimizationGoals, contentType)) {
+    // Stil polishen — geen extra seo_step-event om de 8-stap frontend-tracker
+    // niet te verwarren; de gepolishte content komt mee in text_complete.
+    const polishOpts = {
+      locale: stack.brand.contentLanguage ?? 'en',
+      voiceDirective,
+      tracking: { workspaceId, deliverableId },
+    };
+    if (variantBContent === finalContent) {
+      // Fallback-pad: variant B is een kopie van A → polish één keer i.p.v. twee
+      // dubbele calls (kosten/latency + divergerende rewrites van dezelfde input).
+      finalContent = await runGeoPolish(finalContent, textModel, polishOpts);
+      variantBContent = finalContent;
+    } else {
+      [finalContent, variantBContent] = await Promise.all([
+        runGeoPolish(finalContent, textModel, polishOpts),
+        runGeoPolish(variantBContent, textModel, polishOpts),
+      ]);
     }
   }
 

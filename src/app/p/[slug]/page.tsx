@@ -8,6 +8,7 @@ import { buildSpikePuckConfig, type SpikePuckProps } from '@/features/campaigns/
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
 import { getVariantSchemaForType, type PageVariantContent } from '@/lib/landing-pages/page-type-schemas';
 import { buildPageJsonLd, flavorFromProduct } from '@/lib/landing-pages/page-json-ld';
+import { resolveAuthorProfile } from '@/lib/landing-pages/author-profile';
 import type { SeoChecklist } from '@/lib/ai/seo-pipeline.types';
 import { seoChecklistToMetadata } from '@/lib/landing-pages/page-metadata';
 
@@ -121,7 +122,11 @@ export default async function PublishedPage({ params, searchParams }: Props) {
   // geneste FAQPage/DefinedTermSet (geoArticle/long-form GEO). Leest de
   // gepersisteerde structuredVariant + valideert tegen het type-schema; bij
   // afwezig/ongeldig/ander type wordt niets geïnjecteerd (shape-dispatch).
-  const jsonLd = await buildPageJsonLdForDeliverable(deliverableContext.deliverableId, ctx);
+  const jsonLd = await buildPageJsonLdForDeliverable(
+    deliverableContext.deliverableId,
+    resolved.workspaceId,
+    ctx,
+  );
 
   return (
     <>
@@ -141,10 +146,12 @@ export default async function PublishedPage({ params, searchParams }: Props) {
  * settings.structuredVariant (faq → FAQPage, product → Product/Service, geoArticle
  * → BlogPosting). Fail-soft: elke afwijking (geen variant, ander content-type,
  * schema-mismatch) geeft null → geen script-tag. BlogPosting-dates komen uit de
- * LandingPage-metadata (publish/update-tijd).
+ * LandingPage-metadata (publish/update-tijd); inLanguage + author (E-E-A-T) uit
+ * de workspace (contentLanguage + authorProfile).
  */
 async function buildPageJsonLdForDeliverable(
   deliverableId: string,
+  workspaceId: string,
   ctx: Awaited<ReturnType<typeof assembleCanvasContext>>,
 ): Promise<Record<string, unknown> | null> {
   const deliverable = await prisma.deliverable.findUnique({
@@ -169,6 +176,21 @@ async function buildPageJsonLdForDeliverable(
     select: { publishedAt: true, updatedAt: true },
   });
 
+  // E-E-A-T + taal uit de workspace (Fase 3). contentLanguage is system-sourced
+  // (ISO 639-1); authorProfile (Json) wordt defensief gevalideerd → Person|null.
+  // Fail-soft: dit zit op het publieke render-pad van ÁLLE gepubliceerde pagina's;
+  // mocht de additieve authorProfile-kolom in een omgeving (nog) niet ge-db-pusht
+  // zijn, mag de query de paginarender niet laten crashen.
+  let workspace: { contentLanguage: string; authorProfile: unknown } | null = null;
+  try {
+    workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { contentLanguage: true, authorProfile: true },
+    });
+  } catch (err) {
+    console.warn('[p/[slug]] workspace author/lang fetch faalde (genegeerd):', err instanceof Error ? err.message : err);
+  }
+
   const product = ctx.products[0] ?? null;
   return buildPageJsonLd(parsed.data as PageVariantContent, {
     brandName: ctx.brand?.brandName ?? null,
@@ -176,5 +198,7 @@ async function buildPageJsonLdForDeliverable(
     flavor: flavorFromProduct(product),
     datePublished: landingPage?.publishedAt?.toISOString() ?? null,
     dateModified: landingPage?.updatedAt?.toISOString() ?? null,
+    inLanguage: workspace?.contentLanguage ?? null,
+    author: resolveAuthorProfile(workspace?.authorProfile),
   });
 }

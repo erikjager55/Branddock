@@ -6,7 +6,7 @@ import {
   getAssetCompletenessPercentage,
 } from '@/lib/brand-asset-completeness';
 import { collectEditableTextFields } from '@/lib/landing-pages/puck-text-fields';
-import { isPuckWebpageType } from '@/lib/landing-pages/webpage-types';
+import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
 
 // ─── Helpers for inspect_current_entity ──────────────────────
 
@@ -919,12 +919,15 @@ export const readTools: ClawToolDefinition[] = [
       if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
         return { error: 'Deliverable not found in this workspace' };
       }
-      if (!isPuckWebpageType(deliverable.contentType)) {
+      const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
+      // GEO Fase 3: isPuckRenderable laat long-form GEO (geo-doel aan) toe náást
+      // de 5 Puck web-page-types; contentTypeInputs uit settings draagt het doel.
+      const contentTypeInputs = (settings.contentTypeInputs ?? null) as Record<string, unknown> | null;
+      if (!isPuckRenderable(deliverable.contentType, contentTypeInputs)) {
         return {
-          error: `Deliverable "${deliverable.title}" is a ${deliverable.contentType}, not a Puck web-page. This tool only works on landing-page / product-page / faq-page / comparison-page / microsite.`,
+          error: `Deliverable "${deliverable.title}" is a ${deliverable.contentType}, not a Puck-renderable page. This tool works on landing-page / product-page / faq-page / comparison-page / microsite and long-form GEO pages (with the GEO goal enabled).`,
         };
       }
-      const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
       const puckData = settings.puckData;
       if (!puckData || typeof puckData !== 'object') {
         return {

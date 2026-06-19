@@ -177,6 +177,9 @@ function testPuckConfig(): void {
     'AnchorNav',
     'StoryChapter',
     'HighlightCards',
+    // GEO Fase 2 — long-form GEO: multi-koloms vergelijking + genummerde listicle
+    'ComparisonTable',
+    'Listicle',
   ];
 
   // Afgeleid van `expected` zodat de assert zowel ontbrekende als EXTRA

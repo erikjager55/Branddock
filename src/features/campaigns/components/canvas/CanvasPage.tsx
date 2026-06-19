@@ -184,6 +184,12 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
             name: d.title,
             campaignId,
             contentType: typeof d.contentType === 'string' ? d.contentType : undefined,
+            // GEO Fase 3 — geef contentTypeInputs door zodat de assembler long-form
+            // GEO-pagina's (geo-doel aan) als direct-bewerkbaar herkent.
+            contentTypeInputs:
+              d.settings && typeof d.settings === 'object' && !Array.isArray(d.settings)
+                ? ((d.settings as Record<string, unknown>).contentTypeInputs as Record<string, unknown> | null) ?? undefined
+                : undefined,
           });
         }
         useCanvasStore.getState().setApprovalState({
