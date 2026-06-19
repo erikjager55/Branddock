@@ -165,3 +165,11 @@ export function useToggleFeatured(id: string) {
     },
   });
 }
+
+// 12. useDeepResearch — clarify-mutation + getypeerde SSE-run-reader
+export { useDeepResearch } from "./useDeepResearch";
+export type {
+  DeepResearchCallbacks,
+  RunResearchArgs,
+  UseDeepResearchReturn,
+} from "./useDeepResearch";

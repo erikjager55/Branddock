@@ -48,6 +48,8 @@ export interface GeminiCompletionOptions {
   timeoutMs?: number;
   /** Enable Gemini thinking mode — model reasons internally before responding */
   thinkingConfig?: { thinkingBudget: number };
+  /** Caller abort signal — combined with the internal timeout so a disconnect/deadline cancels the in-flight call. */
+  abortSignal?: AbortSignal;
 }
 
 const DEFAULT_MODEL = 'gemini-3.1-pro-preview';
@@ -315,7 +317,12 @@ export async function createGeminiStructuredCompletion<T>(
         temperature,
         maxOutputTokens,
         responseMimeType: 'application/json',
-        abortSignal: AbortSignal.timeout(options?.timeoutMs ?? defaultTimeout),
+        abortSignal: options?.abortSignal
+          ? AbortSignal.any([
+              options.abortSignal,
+              AbortSignal.timeout(options?.timeoutMs ?? defaultTimeout),
+            ])
+          : AbortSignal.timeout(options?.timeoutMs ?? defaultTimeout),
       };
 
       if (options?.responseSchema) {

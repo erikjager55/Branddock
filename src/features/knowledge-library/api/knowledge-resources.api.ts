@@ -9,8 +9,38 @@ import type {
   ImportUrlResponse,
 } from "../types/knowledge-library.types";
 import type { ResourceType } from "@prisma/client";
+import type {
+  ClarifyRequest,
+  ClarifyResponse,
+} from "@/lib/knowledge-research/types";
 
 const BASE = "/api/knowledge-resources";
+
+/** Endpoint voor de verfijningsvragen-stap van Deep Research. */
+const DEEP_RESEARCH_CLARIFY = `${BASE}/deep-research/clarify`;
+
+/**
+ * Vraagt de verfijningsvragen op die vóór een Deep Research-run aan de
+ * gebruiker worden gesteld. De daadwerkelijke run loopt via een SSE-stream die
+ * de {@link useDeepResearch}-hook zelf leest (typed events, geen `useAiStream`).
+ */
+export async function startClarify(
+  body: ClarifyRequest
+): Promise<ClarifyResponse> {
+  const res = await fetch(DEEP_RESEARCH_CLARIFY, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    throw new Error(
+      (detail as { error?: string } | null)?.error ??
+        "Failed to start research"
+    );
+  }
+  return res.json();
+}
 
 export async function fetchResources(
   params?: ResourceListParams

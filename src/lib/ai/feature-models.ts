@@ -64,6 +64,8 @@ export type AiFeatureKey =
   | 'content-quality'
   | 'content-improve'
   | 'trend-synthesis'
+  | 'deep-research-clarify'
+  | 'deep-research-synthesis'
   | 'product-analysis'
   | 'competitor-analysis'
   | 'workshop-report';
@@ -243,6 +245,28 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     defaultProvider: 'anthropic',
     defaultModel: 'claude-sonnet-4-5-20250929',
     supportedProviders: ['anthropic', 'openai', 'google'],
+  },
+  {
+    key: 'deep-research-clarify',
+    label: 'Deep Research Clarify',
+    description: 'Generates 2-3 clarifying questions before a Knowledge Library deep-research run',
+    category: 'research-monitoring',
+    // Gemini Flash: snel + goedkoop voor de korte verfijnings-step vóór de run.
+    defaultProvider: 'google',
+    defaultModel: 'gemini-2.5-flash',
+    supportedProviders: ['anthropic', 'openai', 'google'],
+  },
+  {
+    key: 'deep-research-synthesis',
+    label: 'Deep Research Synthesis',
+    description: 'Synthesizes scraped + verified sources into a cited markdown report for the Knowledge Library',
+    category: 'research-monitoring',
+    // Sonnet 4.6: lange, geciteerde long-form synthese met sterke instructie-fit.
+    // Anthropic-only: de synthese/verify-fasen lopen via de Anthropic-wrapper en
+    // borgen dit met assertProvider — bied geen niet-werkende providers aan in de UI.
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-6',
+    supportedProviders: ['anthropic'],
   },
   {
     key: 'product-analysis',
