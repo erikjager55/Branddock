@@ -57,7 +57,10 @@
     "smoke:geo-discovery": "tsx scripts/smoke-tests/geo-discovery.ts",
     "smoke:geo-optimization-goals": "tsx scripts/smoke-tests/geo-optimization-goals.ts",
     "smoke:geo-longform-schema": "tsx scripts/smoke-tests/geo-longform-schema.ts",
-    "smoke:geo-longform-render": "tsx scripts/smoke-tests/geo-longform-render.ts"
+    "smoke:geo-longform-render": "tsx scripts/smoke-tests/geo-longform-render.ts",
+    "smoke:geo-puck-renderable": "tsx scripts/smoke-tests/geo-puck-renderable.ts",
+    "smoke:geo-generation-prompt": "tsx scripts/smoke-tests/geo-generation-prompt.ts",
+    "smoke:geo-blogposting-jsonld": "tsx scripts/smoke-tests/geo-blogposting-jsonld.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

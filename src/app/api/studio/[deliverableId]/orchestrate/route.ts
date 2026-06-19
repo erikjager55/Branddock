@@ -5,7 +5,7 @@ import { withAiRateLimit } from '@/lib/ai/middleware';
 import { prisma } from '@/lib/prisma';
 import { orchestrateContentGeneration } from '@/lib/ai/canvas-orchestrator';
 import { serializeContextForPrompt } from '@/lib/ai/context/fetcher';
-import { isPuckWebpageType } from '@/lib/landing-pages/webpage-types';
+import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
 
 // Allow up to 5 minutes for full generation pipeline (text + images)
 export const maxDuration = 300;
@@ -82,7 +82,10 @@ export async function POST(
     // "Doorgaan"-CTA en de derive-auto-trigger. Benigne SSE-complete i.p.v.
     // een 4xx zodat callers gewoon doorlopen zonder error-banner; bestaande
     // legacy variant-groups blijven leesbaar (dit gate alleen NIEUWE runs).
-    if (isPuckWebpageType(deliverable.contentType)) {
+    const persistedInputs = (deliverable.settings && typeof deliverable.settings === 'object' && !Array.isArray(deliverable.settings)
+      ? ((deliverable.settings as Record<string, unknown>).contentTypeInputs ?? null)
+      : null) as Record<string, unknown> | null;
+    if (isPuckRenderable(deliverable.contentType, persistedInputs)) {
       console.warn(
         '[POST /api/studio/orchestrate] skipped: contentType=%s gebruikt het structured-variant-pad (deliverable %s)',
         deliverable.contentType,

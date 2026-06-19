@@ -49,7 +49,7 @@ assert('bevat FAQ', types.includes('FAQ'));
 assert('bevat BrandCTA', types.includes('BrandCTA'));
 assert('eindigt met footer', types[types.length - 1] === 'Footer' || types[types.length - 1] === 'BrandFooter');
 
-console.log('\n── optionele blokken ──');
+console.log('\n── optionele blokken (dedicated componenten) ──');
 const withExtras = buildLongFormGeoTemplateFromStructured(
   {
     ...base,
@@ -60,21 +60,33 @@ const withExtras = buildLongFormGeoTemplateFromStructured(
   },
   null,
 );
-const extraRich = (withExtras.content as Array<{ type: string; props: { content?: string } }>).filter(
-  (c) => c.type === 'RichText',
+const blocks = withExtras.content as Array<{ type: string; props: Record<string, unknown> }>;
+const comp = blocks.find((c) => c.type === 'ComparisonTable');
+assert('comparison → ComparisonTable component (geen markdown)', !!comp);
+assert(
+  'ComparisonTable columns als {value}[] (Puck-native)',
+  JSON.stringify(comp?.props.columns) === JSON.stringify([{ value: 'Kenmerk' }, { value: 'Wij' }, { value: 'Concurrent' }]),
 );
-const richBlob = extraRich.map((c) => c.props.content ?? '').join('\n');
-assert('comparison gerenderd als markdown-tabel', richBlob.includes('| Kenmerk | Wij | Concurrent |'));
-assert('listicle gesorteerd op rank (Eerste vóór Tweede)', richBlob.indexOf('Eerste') < richBlob.indexOf('Tweede'));
-assert('definitie gerenderd', richBlob.includes('**GEO**'));
-assert('bronnen gerenderd als links', richBlob.includes('[Gartner](https://example.com)'));
+assert(
+  'ComparisonTable row.cells als {value}[]',
+  JSON.stringify((comp?.props.rows as Array<{ cells: unknown }>)?.[0]?.cells) === JSON.stringify([{ value: '€10' }, { value: '€20' }]),
+);
+const list = blocks.find((c) => c.type === 'Listicle');
+assert('listItems → Listicle component (geen markdown)', !!list);
+assert(
+  'Listicle behoudt rank (component sorteert bij render)',
+  JSON.stringify((list?.props.items as Array<{ rank: number }>).map((i) => i.rank)) === JSON.stringify([2, 1]),
+);
+const richBlob = blocks.filter((c) => c.type === 'RichText').map((c) => (c.props.content as string) ?? '').join('\n');
+assert('definitie gerenderd (RichText)', richBlob.includes('**GEO**'));
+assert('bronnen gerenderd als links (RichText)', richBlob.includes('[Gartner](https://example.com)'));
+assert('geen markdown-tabel-residu meer in RichText', !richBlob.includes('| Kenmerk |'));
 
-console.log('\n── markdown-escaping (review-fix) ──');
+console.log('\n── markdown-escaping (resterende RichText-velden) ──');
 const adversarial = buildLongFormGeoTemplateFromStructured(
   {
     ...base,
-    listItems: [{ rank: 1, title: '**Bold** title', body: 'body' }],
-    definitions: [{ term: 'GEO', definition: 'def' }],
+    definitions: [{ term: 'C[x]', definition: 'def' }],
     sources: [{ title: 'GitHub [Awesome]', url: 'https://x.com/page(1)' }],
     sections: [{ heading: 'Intro [edge]', body: '**intentional** prose' }],
   },
@@ -84,7 +96,7 @@ const advRich = (adversarial.content as Array<{ type: string; props: { content?:
   .filter((c) => c.type === 'RichText')
   .map((c) => c.props.content ?? '')
   .join('\n');
-assert('listicle titel `**` geëscaped', advRich.includes('\\*\\*Bold\\*\\* title'));
+assert('definitie-term `[]` geëscaped', advRich.includes('C\\[x\\]'));
 assert('bron link-tekst `[]` geëscaped', advRich.includes('GitHub \\[Awesome\\]'));
 assert('bron-URL parens encoded', advRich.includes('https://x.com/page%281%29'));
 assert('sectie-kop `[]` geëscaped', advRich.includes('## Intro \\[edge\\]'));

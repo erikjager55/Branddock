@@ -9,7 +9,7 @@ import { WebPageLayout } from './WebPageLayout';
 import { PuckLayoutWrapper } from './PuckLayoutWrapper';
 // Web-page content-types die naar de Puck-builder routeren — centrale bron
 // (per ADR 2026-05-22-landing-page-builder-architectuur).
-import { PUCK_WEBPAGE_TYPES } from '@/lib/landing-pages/webpage-types';
+import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
 import { ConfigSection } from './ConfigSection';
 import { ConfigFieldRenderer } from './ConfigFieldRenderer';
 
@@ -23,6 +23,7 @@ interface GenericConfigPanelProps {
 export function GenericConfigPanel({ category, onAdvance, deliverableId }: GenericConfigPanelProps) {
   const config = MEDIUM_CATEGORY_CONFIGS[category];
   const contentType = useCanvasStore((s) => s.contentType);
+  const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
   const pollDuration = useCanvasStore((s) => s.mediumConfigValues.pollDuration as string | undefined);
   const setConfigValue = useCanvasStore((s) => s.setMediumConfigValue);
   const isLinkedInPoll = contentType === 'linkedin-poll';
@@ -76,10 +77,9 @@ export function GenericConfigPanel({ category, onAdvance, deliverableId }: Gener
   //   - blog-article web-page types (blog-post / pillar-page / etc.) →
   //     legacy WebPageLayout with EditableArticleSection rendering
   //   - All non-web categories → unified MediumConfigLayout
-  const isPuckWebPage =
-    category === 'web-page'
-    && contentType !== null
-    && PUCK_WEBPAGE_TYPES.has(contentType);
+  // GEO/SEO Fase 2: long-form-GEO (isPuckRenderable, andere categorie dan 'web-page')
+  // krijgt óók de Puck-editor; de 5 web-page-types impliceren category==='web-page'.
+  const isPuckWebPage = isPuckRenderable(contentType, contentTypeInputs);
   const Layout = isPuckWebPage
     ? PuckLayoutWrapper
     : category === 'web-page'

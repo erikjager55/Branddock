@@ -18,7 +18,7 @@ import { Loader2, Sparkles, ArrowRight, Check, Film, MessageSquare, MousePointer
 import { SeoProgressPanel } from '../SeoProgressPanel';
 import { LandingPageGenerateBlock } from './LandingPageGenerateBlock';
 // Web-page builder PUCK types — centrale bron (web-page-builder spec §4b paradigma B).
-import { PUCK_WEBPAGE_TYPES } from '@/lib/landing-pages/webpage-types';
+import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
 import { getEstimatedDuration } from '../../../lib/content-type-inputs';
 import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
 import type { SceneId } from '../../../stores/useCanvasStore';
@@ -86,6 +86,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const imageVariants = useCanvasStore((s) => s.imageVariants);
   const contextStack = useCanvasStore((s) => s.contextStack);
   const contentType = useCanvasStore((s) => s.contentType);
+  const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
   const heroImage = useCanvasStore((s) => s.heroImage);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
   const setHeroImage = useCanvasStore((s) => s.setHeroImage);
@@ -308,7 +309,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   // Voor landing-page / product-page / faq-page / comparison-page / microsite
   // vervangt LandingPageGenerateBlock de multi-variant grid (spec §4b paradigma B).
   // Geen ABCD-vergelijking — 1 structured variant + auto-iterate refinement.
-  if (contentType !== null && PUCK_WEBPAGE_TYPES.has(contentType)) {
+  if (isPuckRenderable(contentType, contentTypeInputs)) {
     return (
       <LandingPageGenerateBlock
         deliverableId={deliverableId}

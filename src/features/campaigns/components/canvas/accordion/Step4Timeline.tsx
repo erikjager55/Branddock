@@ -15,7 +15,7 @@ import {
   CHAR_LIMITS,
 } from '../../../lib/publish-timing';
 import { usePublishChannels } from '@/features/settings/hooks/use-publish-channels';
-import { isPuckWebpageType } from '@/lib/landing-pages/webpage-types';
+import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { PublishGate } from '../PublishGate';
 import { VersionHistorySidebar } from '../VersionHistorySidebar';
@@ -123,8 +123,8 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
   const adFormat = (contentTypeInputs.adFormat as string | undefined) ?? null;
   const checklist = useMemo(
-    () => getChecklistForPlatform(platform, format, adFormat, contentType),
-    [platform, format, adFormat, contentType],
+    () => getChecklistForPlatform(platform, format, adFormat, contentType, contentTypeInputs),
+    [platform, format, adFormat, contentType, contentTypeInputs],
   );
 
   // 2026-06-10 — Puck web-page types persisteren titel/hero/CTA in
@@ -137,7 +137,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   // terug-synct en dient alleen als fallback voor deliverables waarvan de
   // contextStack (nog) geen puckData draagt. Disjunctief toegepast per
   // check — bestaand gedrag voor niet-Puck types blijft identiek.
-  const isPuckType = isPuckWebpageType(contentType);
+  const isPuckType = isPuckRenderable(contentType, contentTypeInputs);
   const structuredVariant = useCanvasStore((s) => s.structuredVariant);
   const puckSignals = useMemo(() => {
     if (!isPuckType) return null;

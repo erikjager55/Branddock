@@ -436,9 +436,10 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
           even on a fresh content item (was hidden until items existed, leaving
           only a tiny text link as the cue). Empty → prominent add button;
           filled → chips + a manage button.
-          Also shown for the 5 PUCK web-page types: the structured-variant pad
-          now serializes additionalContextItems into the generation prompt
-          (variant-generator buildSharedStyleBlocks), so the selection lands. */}
+          Also shown for the 5 PUCK web-page types (and long-form GEO): the
+          structured-variant pad now serializes additionalContextItems into the
+          generation prompt (variant-generator buildSharedStyleBlocks), so the
+          selection lands. */}
       <div className="rounded-lg border border-gray-200 bg-white p-3">
         <div className="flex items-center gap-2 mb-2">
           <BookOpen className="h-4 w-4 text-gray-500" />
