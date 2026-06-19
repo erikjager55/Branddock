@@ -15,6 +15,7 @@ import type {
   PageVariantContent,
   FaqPageVariantContent,
   ProductPageVariantContent,
+  LongFormGeoVariantContent,
 } from "./page-type-schemas";
 import { derivePageFlavor, type PageFlavor } from "./variant-generator";
 
@@ -24,6 +25,11 @@ export interface JsonLdContext {
   imageUrl?: string | null;
   /** pageFlavor uit het gekoppelde product (category+pricingModel); bepaalt Product vs Service. */
   flavor?: PageFlavor | null;
+  /** GEO Fase 2 — ISO-datums uit LandingPage.publishedAt/updatedAt voor BlogPosting freshness. */
+  datePublished?: string | null;
+  dateModified?: string | null;
+  /** BCP-47 taalcode (brand.contentLanguage) voor inLanguage. */
+  inLanguage?: string | null;
 }
 
 /** FAQPage — alle popular + categorie-Q&A's als Question/Answer-paren. Met
@@ -97,10 +103,59 @@ export function buildProductPageJsonLd(
 }
 
 /**
+ * Long-form GEO-article → `@graph` met BlogPosting + (bij Q&A) een geneste FAQPage
+ * + (bij definities) een DefinedTermSet. Dé GEO-payoff: structured data zodat
+ * AI-answer-engines het artikel én de Q&A's kunnen citeren. Publisher/dates/inLanguage
+ * komen uit de ctx (LandingPage-metadata + brand); author/E-E-A-T (Person + sameAs)
+ * volgt in Fase 3 met het workspace author-profiel.
+ */
+export function buildBlogPostingJsonLd(
+  variant: LongFormGeoVariantContent,
+  ctx: JsonLdContext = {},
+): Record<string, unknown> {
+  const articleBody = variant.sections.map((s) => `${s.heading}\n${s.body}`).join("\n\n");
+  const blogPosting: Record<string, unknown> = {
+    "@type": "BlogPosting",
+    headline: variant.hero.headline,
+    description: variant.hero.subline,
+    abstract: variant.tldr.join(" "),
+    articleBody,
+  };
+  if (ctx.brandName) blogPosting.publisher = { "@type": "Organization", name: ctx.brandName };
+  if (ctx.inLanguage) blogPosting.inLanguage = ctx.inLanguage;
+  if (ctx.datePublished) blogPosting.datePublished = ctx.datePublished;
+  if (ctx.dateModified) blogPosting.dateModified = ctx.dateModified;
+  if (ctx.imageUrl && /^https?:\/\//i.test(ctx.imageUrl)) blogPosting.image = ctx.imageUrl;
+
+  const graph: Record<string, unknown>[] = [blogPosting];
+  if (variant.qa.length > 0) {
+    graph.push({
+      "@type": "FAQPage",
+      mainEntity: variant.qa.map((qa) => ({
+        "@type": "Question",
+        name: qa.question,
+        acceptedAnswer: { "@type": "Answer", text: qa.answer },
+      })),
+    });
+  }
+  if (variant.definitions && variant.definitions.length > 0) {
+    graph.push({
+      "@type": "DefinedTermSet",
+      hasDefinedTerm: variant.definitions.map((d) => ({
+        "@type": "DefinedTerm",
+        name: d.term,
+        description: d.definition,
+      })),
+    });
+  }
+  return { "@context": "https://schema.org", "@graph": graph };
+}
+
+/**
  * Shape-dispatch: bouwt de juiste JSON-LD voor een gevalideerde page-variant.
- * Returnt null voor LP/microsite/comparison (geen rich-type), voor een long-form
- * `geoArticle` (BlogPosting/QAPage JSON-LD volgt in Fase 3 — bewust nog null, niet
- * vergeten) of een ontbrekende variant — de page injecteert dan niets.
+ * faq → FAQPage, product → Product/Service, geoArticle → BlogPosting(+FAQPage/
+ * DefinedTermSet). Returnt null voor LP/microsite/comparison (geen rich-type) of
+ * een ontbrekende variant — de page injecteert dan niets.
  */
 export function buildPageJsonLd(
   variant: PageVariantContent | null | undefined,
@@ -109,7 +164,7 @@ export function buildPageJsonLd(
   if (!variant) return null;
   if ("popularQuestions" in variant) return buildFaqPageJsonLd(variant, ctx);
   if ("solution" in variant) return buildProductPageJsonLd(variant, ctx);
-  // "geoArticle" → BlogPosting JSON-LD: Fase 3 (buildBlogPostingJsonLd). Nu null.
+  if ("geoArticle" in variant) return buildBlogPostingJsonLd(variant, ctx);
   return null;
 }
 

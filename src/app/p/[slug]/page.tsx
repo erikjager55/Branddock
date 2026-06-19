@@ -117,9 +117,10 @@ export default async function PublishedPage({ params, searchParams }: Props) {
   const config = buildSpikePuckConfig(ctx);
   const data = resolved.puckData as SpikeData;
 
-  // W2/W3 — JSON-LD (Product/Service voor product-page, FAQPage voor faq-page).
-  // Leest de gepersisteerde structuredVariant + valideert tegen het type-schema;
-  // bij afwezig/ongeldig/ander type wordt niets geïnjecteerd (shape-dispatch).
+  // JSON-LD: Product/Service (product-page), FAQPage (faq-page), BlogPosting +
+  // geneste FAQPage/DefinedTermSet (geoArticle/long-form GEO). Leest de
+  // gepersisteerde structuredVariant + valideert tegen het type-schema; bij
+  // afwezig/ongeldig/ander type wordt niets geïnjecteerd (shape-dispatch).
   const jsonLd = await buildPageJsonLdForDeliverable(deliverableContext.deliverableId, ctx);
 
   return (
@@ -137,8 +138,10 @@ export default async function PublishedPage({ params, searchParams }: Props) {
 
 /**
  * Bouwt de JSON-LD voor een gepubliceerd deliverable uit de gepersisteerde
- * settings.structuredVariant. Fail-soft: elke afwijking (geen variant, ander
- * content-type, schema-mismatch) geeft null → geen script-tag.
+ * settings.structuredVariant (faq → FAQPage, product → Product/Service, geoArticle
+ * → BlogPosting). Fail-soft: elke afwijking (geen variant, ander content-type,
+ * schema-mismatch) geeft null → geen script-tag. BlogPosting-dates komen uit de
+ * LandingPage-metadata (publish/update-tijd).
  */
 async function buildPageJsonLdForDeliverable(
   deliverableId: string,
@@ -159,10 +162,19 @@ async function buildPageJsonLdForDeliverable(
   const parsed = getVariantSchemaForType(deliverable.contentType).safeParse(rawVariant);
   if (!parsed.success) return null;
 
+  // Freshness-datums voor BlogPosting uit de LandingPage-snapshot (system-sourced,
+  // niet uit de AI-variant). Alleen relevant voor geoArticle; fail-soft.
+  const landingPage = await prisma.landingPage.findFirst({
+    where: { deliverableId },
+    select: { publishedAt: true, updatedAt: true },
+  });
+
   const product = ctx.products[0] ?? null;
   return buildPageJsonLd(parsed.data as PageVariantContent, {
     brandName: ctx.brand?.brandName ?? null,
     imageUrl: product?.images?.find((img) => /^https?:\/\//i.test(img.url))?.url ?? null,
     flavor: flavorFromProduct(product),
+    datePublished: landingPage?.publishedAt?.toISOString() ?? null,
+    dateModified: landingPage?.updatedAt?.toISOString() ?? null,
   });
 }
