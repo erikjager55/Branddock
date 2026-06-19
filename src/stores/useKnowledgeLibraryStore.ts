@@ -3,7 +3,7 @@ import type { ResourceType } from "@prisma/client";
 import type { ImportUrlResponse } from "@/features/knowledge-library/types/knowledge-library.types";
 
 type ViewMode = "grid" | "list";
-type AddTab = "manual" | "import" | "upload";
+type AddTab = "manual" | "import" | "upload" | "research";
 
 interface KnowledgeLibraryStore {
   // View

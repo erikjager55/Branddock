@@ -1,11 +1,12 @@
 'use client';
 
-import { Clock, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
+import { BookText, Clock, ExternalLink } from 'lucide-react';
 import type { ResourceWithMeta } from '../types/knowledge-library.types';
 import { ResourceTypeIcon } from './shared/ResourceTypeIcon';
 import { FavoriteButton } from './shared/FavoriteButton';
 import { CardContextMenu } from './shared/CardContextMenu';
-import { RESOURCE_TYPE_ICONS } from '../constants/library-constants';
+import { ResourceReportModal } from './ResourceReportModal';
 
 interface ResourceCardGridProps {
   resources: ResourceWithMeta[];
@@ -20,6 +21,8 @@ export function ResourceCardGrid({
   onArchive,
   onDelete,
 }: ResourceCardGridProps) {
+  const [openReportId, setOpenReportId] = useState<string | null>(null);
+
   return (
     <div className="grid grid-cols-2 gap-4" data-testid="resource-grid">
       {resources.map((r) => (
@@ -80,6 +83,16 @@ export function ResourceCardGrid({
                 Open Resource
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
+            ) : r.type === 'RESEARCH' ? (
+              <button
+                type="button"
+                onClick={() => setOpenReportId(r.id)}
+                data-testid="read-report-button"
+                className="flex items-center justify-center gap-1.5 w-full py-2 text-sm font-medium text-green-600 border border-green-200 rounded-lg hover:bg-green-50 transition-colors"
+              >
+                Read report
+                <BookText className="h-3.5 w-3.5" />
+              </button>
             ) : (
               <span className="flex items-center justify-center gap-1.5 w-full py-2 text-sm font-medium text-gray-400 border border-gray-100 rounded-lg cursor-default">
                 No URL
@@ -88,6 +101,12 @@ export function ResourceCardGrid({
           </div>
         </div>
       ))}
+
+      <ResourceReportModal
+        resourceId={openReportId ?? ''}
+        isOpen={openReportId !== null}
+        onClose={() => setOpenReportId(null)}
+      />
     </div>
   );
 }

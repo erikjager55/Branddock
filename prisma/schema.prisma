@@ -3045,6 +3045,7 @@ enum ResourceSource {
   MANUAL
   URL_IMPORT
   FILE_UPLOAD
+  DEEP_RESEARCH
 }
 
 enum DifficultyLevel {

@@ -1,10 +1,12 @@
 'use client';
 
-import { Clock, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
+import { BookText, Clock, ExternalLink } from 'lucide-react';
 import type { ResourceWithMeta } from '../types/knowledge-library.types';
 import { ResourceTypeIcon } from './shared/ResourceTypeIcon';
 import { FavoriteButton } from './shared/FavoriteButton';
 import { CardContextMenu } from './shared/CardContextMenu';
+import { ResourceReportModal } from './ResourceReportModal';
 
 interface ResourceCardListProps {
   resources: ResourceWithMeta[];
@@ -19,6 +21,8 @@ export function ResourceCardList({
   onArchive,
   onDelete,
 }: ResourceCardListProps) {
+  const [openReportId, setOpenReportId] = useState<string | null>(null);
+
   return (
     <div className="space-y-2" data-testid="resource-list">
       {resources.map((r) => (
@@ -65,6 +69,15 @@ export function ResourceCardList({
               >
                 Open <ExternalLink className="h-3.5 w-3.5" />
               </a>
+            ) : r.type === 'RESEARCH' ? (
+              <button
+                type="button"
+                onClick={() => setOpenReportId(r.id)}
+                data-testid="read-report-button"
+                className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700"
+              >
+                Read report <BookText className="h-3.5 w-3.5" />
+              </button>
             ) : (
               <span className="text-sm text-gray-400">No URL</span>
             )}
@@ -80,6 +93,12 @@ export function ResourceCardList({
           </div>
         </div>
       ))}
+
+      <ResourceReportModal
+        resourceId={openReportId ?? ''}
+        isOpen={openReportId !== null}
+        onClose={() => setOpenReportId(null)}
+      />
     </div>
   );
 }

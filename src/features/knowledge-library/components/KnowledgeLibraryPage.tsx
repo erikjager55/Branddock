@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, BookOpen, Upload } from 'lucide-react';
+import { AlertTriangle, BookOpen, Plus } from 'lucide-react';
 import { Button } from '@/components/shared';
 import { PageShell, PageHeader } from '@/components/ui/layout';
 import { useKnowledgeLibraryStore } from '@/stores/useKnowledgeLibraryStore';
@@ -53,8 +53,8 @@ export function KnowledgeLibraryPage({ onNavigate }: KnowledgeLibraryPageProps) 
         subtitle="Your research and knowledge base"
         actions={
           <Button onClick={() => store.setAddModalOpen(true)} className="gap-2" data-testid="add-resource-button">
-            <Upload className="h-4 w-4" />
-            Upload
+            <Plus className="h-4 w-4" />
+            Add Item
           </Button>
         }
       />
