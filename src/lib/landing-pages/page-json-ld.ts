@@ -26,13 +26,18 @@ export interface JsonLdContext {
   flavor?: PageFlavor | null;
 }
 
-/** FAQPage — alle popular + categorie-Q&A's als Question/Answer-paren. */
-export function buildFaqPageJsonLd(variant: FaqPageVariantContent): Record<string, unknown> {
+/** FAQPage — alle popular + categorie-Q&A's als Question/Answer-paren. Met
+ *  Organization-publisher (E-E-A-T-signaal voor AI-engines) wanneer een merknaam
+ *  bekend is; FAQPage is een CreativeWork-subtype dus `publisher` is valide. */
+export function buildFaqPageJsonLd(
+  variant: FaqPageVariantContent,
+  ctx: JsonLdContext = {},
+): Record<string, unknown> {
   const all = [
     ...variant.popularQuestions,
     ...variant.categories.flatMap((c) => c.items),
   ];
-  return {
+  const out: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     mainEntity: all.map((qa) => ({
@@ -41,6 +46,10 @@ export function buildFaqPageJsonLd(variant: FaqPageVariantContent): Record<strin
       acceptedAnswer: { "@type": "Answer", text: qa.answer },
     })),
   };
+  if (ctx.brandName) {
+    out.publisher = { "@type": "Organization", name: ctx.brandName };
+  }
+  return out;
 }
 
 /** Parse een EUR-prijs uit losse tekst (pricing.body). Conservatief: alleen een
@@ -97,7 +106,7 @@ export function buildPageJsonLd(
   ctx: JsonLdContext,
 ): Record<string, unknown> | null {
   if (!variant) return null;
-  if ("popularQuestions" in variant) return buildFaqPageJsonLd(variant);
+  if ("popularQuestions" in variant) return buildFaqPageJsonLd(variant, ctx);
   if ("solution" in variant) return buildProductPageJsonLd(variant, ctx);
   return null;
 }

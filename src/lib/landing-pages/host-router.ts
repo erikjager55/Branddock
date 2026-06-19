@@ -28,23 +28,42 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', 'lvh.me']);
 
 const APEX_SUFFIXES = ['.branddock.app', '.lvh.me'];
 
-const EXEMPT_PATH_PREFIXES = ['/api', '/_next', '/p/', '/favicon', '/static'];
+// `/sitemap.xml`, `/robots.txt`, `/llms.txt` zijn per-workspace SEO/GEO-discovery
+// route-handlers (GEO Fase 1a) die de Host-header zelf lezen — middleware mag ze
+// NIET naar /p/ herschrijven, anders worden ze als slug behandeld → 404.
+const EXEMPT_PATH_PREFIXES = [
+  '/api',
+  '/_next',
+  '/p/',
+  '/favicon',
+  '/static',
+  '/sitemap.xml',
+  '/robots.txt',
+  '/llms.txt',
+];
+
+/**
+ * Leidt de workspace-slug af uit een host: `<workspace>.branddock.app` →
+ * `workspace`. Apex/www/localhost/onbekend → null (de app-shell, geen tenant).
+ * Gedeeld met de SEO-discovery route-handlers zodat host-parsing één bron heeft.
+ */
+export function workspaceSlugFromHost(host: string): string | null {
+  const normalizedHost = stripPort(host).toLowerCase();
+  if (APEX_HOSTS.has(normalizedHost) || LOCAL_HOSTS.has(normalizedHost)) {
+    return null;
+  }
+  const sub = APEX_SUFFIXES
+    .map((suffix) => (normalizedHost.endsWith(suffix) ? normalizedHost.slice(0, -suffix.length) : null))
+    .find((s): s is string => s !== null && s.length > 0 && !s.includes('.'));
+  return sub ?? null;
+}
 
 export function decideHostRoute(host: string, path: string): HostRouteDecision {
   if (EXEMPT_PATH_PREFIXES.some((p) => path === p || path.startsWith(p))) {
     return { passthrough: true };
   }
 
-  const normalizedHost = stripPort(host).toLowerCase();
-
-  if (APEX_HOSTS.has(normalizedHost) || LOCAL_HOSTS.has(normalizedHost)) {
-    return { passthrough: true };
-  }
-
-  const subdomainMatch = APEX_SUFFIXES
-    .map((suffix) => (normalizedHost.endsWith(suffix) ? normalizedHost.slice(0, -suffix.length) : null))
-    .find((sub): sub is string => sub !== null && sub.length > 0 && !sub.includes('.'));
-
+  const subdomainMatch = workspaceSlugFromHost(host);
   if (!subdomainMatch) {
     return { passthrough: true };
   }

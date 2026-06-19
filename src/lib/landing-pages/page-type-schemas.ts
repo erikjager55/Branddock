@@ -20,6 +20,7 @@ import {
   landingPageVariantSchema,
   type LandingPageVariantContent,
 } from "./variant-schema";
+import { LONG_FORM_SEO_TYPES } from "@/lib/ai/seo-pipeline.types";
 
 // ─── Gedeelde bouwstenen ─────────────────────────────────────
 
@@ -229,19 +230,88 @@ export const micrositeVariantSchema = z.object({
 
 export type MicrositeVariantContent = z.infer<typeof micrositeVariantSchema>;
 
+// ─── Long-form GEO-article (GEO/SEO Fase 2) ──────────────────
+
+/** Stat met verplichte bron — citeerbaarheid voor AI-engines vereist herkomst. */
+const geoStatSchema = z.object({
+  label: z.string().min(1, "citeableStats[].label mag niet leeg zijn"),
+  value: z.string().min(1, "citeableStats[].value mag niet leeg zijn"),
+  source: z.string().min(1, "citeableStats[].source mag niet leeg zijn — citeerbaar = met bron"),
+});
+
+/** Prose-sectie (de body-meat van het artikel). */
+const geoSectionSchema = z.object({
+  heading: z.string().min(1, "sections[].heading mag niet leeg zijn"),
+  body: z.string().min(1, "sections[].body mag niet leeg zijn"),
+});
+
+/** Multi-kolom vergelijkingstabel — een van de hoogst-geciteerde GEO-formats. */
+const geoComparisonSchema = z.object({
+  caption: z.string().min(1).max(120).nullable().optional(),
+  columns: z.array(z.string().min(1)).min(2, "comparison.columns min 2 (multi-kolom)").max(6, "comparison.columns max 6"),
+  rows: z
+    .array(z.object({ label: z.string().min(1), cells: z.array(z.string()).min(1) }))
+    .min(1, "comparison.rows min 1"),
+});
+
+/** Genummerde listicle — het andere hoogst-geciteerde GEO-format. */
+const geoListItemSchema = z.object({
+  rank: z.number().int().positive(),
+  title: z.string().min(1),
+  body: z.string().min(1),
+});
+
+export const longFormGeoVariantSchema = z.object({
+  /** Discriminant — onderscheidt de GEO-article van LP/faq/product/microsite
+   *  (dezelfde rol als heroManifest/popularQuestions/solution). */
+  geoArticle: z.literal(true),
+  hero: z.object({
+    headline: z.string().min(1, "hero.headline mag niet leeg zijn").max(80, "hero.headline max 80 tekens"),
+    subline: z.string().min(1, "hero.subline mag niet leeg zijn"),
+    heroVisualUrl: z.string().nullable().optional(),
+    imageBrief: imageBriefSchema.nullable().optional().catch(null),
+  }),
+  /** Answer-first: ~40-60 woorden die de kernvraag meteen beantwoorden (AEO-citeerbaar). */
+  answerFirstIntro: z.string().min(1, "answerFirstIntro mag niet leeg zijn"),
+  /** TL;DR / key takeaways. */
+  tldr: z.array(z.string().min(1)).min(2, "tldr min 2 bullets").max(5, "tldr max 5 bullets"),
+  /** Prose-secties (artikel-body). */
+  sections: z.array(geoSectionSchema).min(1, "sections min 1"),
+  /** Q&A — citeerbaar + QAPage-JSON-LD-bron. */
+  qa: z.array(qaItemSchema).min(2, "qa min 2"),
+  /** Stats met bron. */
+  citeableStats: z.array(geoStatSchema).min(1, "citeableStats min 1"),
+  /** Definities — DefinedTerm-bron (optioneel). */
+  definitions: z.array(z.object({ term: z.string().min(1), definition: z.string().min(1) })).nullable().optional(),
+  /** Multi-kolom vergelijkingstabel (optioneel). */
+  comparison: geoComparisonSchema.nullable().optional(),
+  /** Genummerde listicle (optioneel). */
+  listItems: z.array(geoListItemSchema).nullable().optional(),
+  /** Bronnen/citaties (optioneel). */
+  sources: z.array(z.object({ title: z.string().min(1), url: z.string().min(1) })).nullable().optional(),
+  finalCta: z.object({
+    heading: z.string().min(1, "finalCta.heading mag niet leeg zijn"),
+    ctaLabel: z.string().min(1, "finalCta.ctaLabel mag niet leeg zijn").max(48, "finalCta.ctaLabel max 48 tekens"),
+  }),
+});
+
+export type LongFormGeoVariantContent = z.infer<typeof longFormGeoVariantSchema>;
+
 // ─── Dispatch ────────────────────────────────────────────────
 
 export type PageVariantContent =
   | LandingPageVariantContent
   | FaqPageVariantContent
   | ProductPageVariantContent
-  | MicrositeVariantContent;
+  | MicrositeVariantContent
+  | LongFormGeoVariantContent;
 
 export type PageVariantSchema =
   | typeof landingPageVariantSchema
   | typeof faqPageVariantSchema
   | typeof productPageVariantSchema
-  | typeof micrositeVariantSchema;
+  | typeof micrositeVariantSchema
+  | typeof longFormGeoVariantSchema;
 
 /**
  * Schema-dispatch per content-type. landing-page, comparison-page en elk
@@ -249,6 +319,8 @@ export type PageVariantSchema =
  * gedrag vóór W1, zodat het productie-kritieke LP-pad niets merkt.
  */
 export function getVariantSchemaForType(contentType: string | null | undefined): PageVariantSchema {
+  // GEO/SEO Fase 2: long-form-types krijgen het GEO-article-schema.
+  if (contentType && LONG_FORM_SEO_TYPES.has(contentType)) return longFormGeoVariantSchema;
   switch (contentType) {
     case "faq-page":
       return faqPageVariantSchema;
@@ -261,8 +333,9 @@ export function getVariantSchemaForType(contentType: string | null | undefined):
   }
 }
 
-/** True wanneer het type in W1 een eigen (niet-LP) schema heeft. */
+/** True wanneer het type een eigen (niet-LP) schema heeft (W1 page-types + GEO long-form). */
 export function hasOwnVariantSchema(contentType: string | null | undefined): boolean {
+  if (contentType && LONG_FORM_SEO_TYPES.has(contentType)) return true;
   return contentType === "faq-page" || contentType === "product-page" || contentType === "microsite";
 }
 
@@ -275,5 +348,10 @@ export function hasOwnVariantSchema(contentType: string | null | undefined): boo
 export function isLandingPageVariant(
   variant: PageVariantContent,
 ): variant is LandingPageVariantContent {
-  return !("heroManifest" in variant) && !("popularQuestions" in variant) && !("solution" in variant);
+  return (
+    !("heroManifest" in variant) &&
+    !("popularQuestions" in variant) &&
+    !("solution" in variant) &&
+    !("geoArticle" in variant)
+  );
 }

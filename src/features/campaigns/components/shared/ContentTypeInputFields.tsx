@@ -349,6 +349,43 @@ function FieldRenderer({
         </div>
       );
 
+    case 'checkbox-group': {
+      // Geen opgeslagen waarde → toon de field.defaultValue (bv. SEO default-aan),
+      // zodat de UI overeenkomt met wat de backend default toepast.
+      const selected = Array.isArray(value)
+        ? (value as string[])
+        : Array.isArray(field.defaultValue)
+          ? (field.defaultValue as string[])
+          : [];
+      const options = (field.options ?? []).map((o) =>
+        typeof o === 'string' ? { value: o, label: o } : o,
+      );
+      return (
+        <div>
+          {labelContent}
+          <div className="space-y-1.5">
+            {options.map((opt) => (
+              <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(opt.value)}
+                  onChange={(e) =>
+                    onChange(
+                      e.target.checked
+                        ? [...selected, opt.value]
+                        : selected.filter((v) => v !== opt.value),
+                    )
+                  }
+                  className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <span className="text-sm text-gray-700">{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     default:
       return null;
   }

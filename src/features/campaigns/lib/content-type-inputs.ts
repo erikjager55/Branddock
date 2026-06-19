@@ -11,6 +11,8 @@
  * 3. Quality nudges — Scorer flags missing required fields after generation
  */
 
+import { LONG_FORM_SEO_TYPES, DEFAULT_LONG_FORM_OPTIMIZATION_GOALS } from "@/lib/ai/seo-pipeline.types";
+
 // ─── Types ─────────────────────────────────────────────────
 
 export type InputCategory =
@@ -34,6 +36,9 @@ export type InputFieldType =
   | "number"
   | "boolean"
   | "select"
+  // GEO/SEO Fase 1b: groep onafhankelijke vinkjes die een `string[]` muteren
+  // (bv. optimizationGoals = ["seo","geo"]). Opties via `options`.
+  | "checkbox-group"
   // W2 (plan §2.3): product-koppeling. Dropdown gevoed door GET /api/products;
   // de waarde is een Product-id (cuid). Wordt server-side in Layer 7
   // (settings-first) opgelost naar volledige ProductContext + ProductImages.
@@ -60,6 +65,9 @@ export interface ContentTypeInputField {
   options?: Array<string | { value: string; label: string }>;
   /** If true, quality scorer will nudge when missing */
   required?: boolean;
+  /** Default value applied by the renderer when no stored value exists. For
+   *  'checkbox-group' a `string[]` of pre-checked option values (GEO/SEO Fase 1b). */
+  defaultValue?: ContentTypeInputValue;
   /** Short help text / tooltip */
   helpText?: string;
   /** If true, Asset Planner AI will attempt to fill this */
@@ -321,6 +329,21 @@ function secondaryKeywords(): ContentTypeInputField {
     helpText: "Related keywords to naturally incorporate",
     aiDerivable: true,
     aiHint: "3-5 related long-tail keywords",
+  };
+}
+
+/** GEO/SEO Fase 1b — optimalisatie-doel-veld (UI). SEO default-aan (uitvinken
+ *  slaat de SEO-pipeline over). GEO-optie volgt in Fase 2. De default + de
+ *  gate-logica leven in `@/lib/ai/seo-pipeline.types` + `seo-pipeline-utils`. */
+function optimizationGoals(): ContentTypeInputField {
+  return {
+    key: "optimizationGoals",
+    label: "Optimalisatiedoel",
+    category: "seo",
+    type: "checkbox-group",
+    options: [{ value: "seo", label: "SEO-optimalisatie" }],
+    defaultValue: [...DEFAULT_LONG_FORM_OPTIMIZATION_GOALS],
+    helpText: "Draai de SEO-pipeline voor dit stuk. Uitvinken slaat SEO over.",
   };
 }
 
@@ -2967,13 +2990,22 @@ const CONTENT_TYPE_ALIASES: Record<string, string> = {
  * Get all content-type-specific input fields for a deliverable type.
  * Falls back to alias mapping for non-standard AI-generated type IDs.
  * Returns empty array for unknown types.
+ *
+ * ## Dynamic field injection (GEO/SEO Fase 1b)
+ * Voor long-form-types wordt het `optimizationGoals`-veld hier RUNTIME toegevoegd
+ * (SEO opt-in, default-aan) i.p.v. in elk `CONTENT_TYPE_INPUTS`-blok. BEWUST: voeg
+ * `optimizationGoals` NIET toe aan de statische registry-entries. Callers mogen
+ * niet aannemen dat deze functie puur de statische registry teruggeeft.
  */
 export function getContentTypeInputs(
   typeId: string
 ): ContentTypeInputField[] {
-  return CONTENT_TYPE_INPUTS[typeId]
-    ?? CONTENT_TYPE_INPUTS[CONTENT_TYPE_ALIASES[typeId] ?? '']
-    ?? [];
+  const resolved = CONTENT_TYPE_ALIASES[typeId] ?? typeId;
+  const base = CONTENT_TYPE_INPUTS[typeId] ?? CONTENT_TYPE_INPUTS[resolved] ?? [];
+  if (LONG_FORM_SEO_TYPES.has(resolved) && !base.some((f) => f.key === "optimizationGoals")) {
+    return [...base, optimizationGoals()];
+  }
+  return base;
 }
 
 /**

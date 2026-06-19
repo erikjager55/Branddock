@@ -1,3 +1,5 @@
+import { cache } from 'react';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Render, type Data } from '@puckeditor/core';
 import { prisma } from '@/lib/prisma';
@@ -6,6 +8,8 @@ import { buildSpikePuckConfig, type SpikePuckProps } from '@/features/campaigns/
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
 import { getVariantSchemaForType, type PageVariantContent } from '@/lib/landing-pages/page-type-schemas';
 import { buildPageJsonLd, flavorFromProduct } from '@/lib/landing-pages/page-json-ld';
+import type { SeoChecklist } from '@/lib/ai/seo-pipeline.types';
+import { seoChecklistToMetadata } from '@/lib/landing-pages/page-metadata';
 
 type SpikeData = Data<SpikePuckProps>;
 
@@ -25,6 +29,64 @@ interface Props {
 }
 
 export const revalidate = 3600; // 1 hour fallback cache
+
+const APP_APEX = process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'branddock.app';
+
+/**
+ * Resolved een GEPUBLICEERDE page-type tot zijn (mogelijk afwezige) SEO-checklist.
+ * Returnt `null` als de pagina niet bestaat/niet gepubliceerd is; `{ checklist: null }`
+ * als de pagina wél gepubliceerd is maar geen `settings.seoChecklist` heeft (dan
+ * geldt nog steeds de canonical-fallback). Gememoïseerd per request.
+ */
+const loadPublishedPageSeo = cache(
+  async (
+    workspaceSlug: string,
+    slug: string,
+  ): Promise<{ checklist: Partial<SeoChecklist> | null } | null> => {
+    const workspace = await prisma.workspace.findUnique({
+      where: { slug: workspaceSlug },
+      select: { id: true },
+    });
+    if (!workspace) return null;
+
+    const page = await prisma.landingPage.findUnique({
+      where: { workspaceId_slug: { workspaceId: workspace.id, slug } },
+      select: { status: true, deliverableId: true },
+    });
+    if (!page || page.status !== 'PUBLISHED') return null;
+
+    const deliverable = await prisma.deliverable.findUnique({
+      where: { id: page.deliverableId },
+      select: { settings: true },
+    });
+    // Defensief: Prisma's Json is runtime-onbekend — valideer de vorm vóór cast.
+    const settings =
+      deliverable?.settings && typeof deliverable.settings === 'object' && !Array.isArray(deliverable.settings)
+        ? (deliverable.settings as Record<string, unknown>)
+        : {};
+    const raw = settings.seoChecklist;
+    const checklist = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Partial<SeoChecklist>) : null;
+    return { checklist };
+  },
+);
+
+/**
+ * Per-pagina HTML-metadata voor een gepubliceerde web-page: zet <title>,
+ * meta-description, OpenGraph en canonical uit de gepersisteerde SEO-checklist,
+ * met een canonical-fallback op de subdomein-URL. Onbekende/niet-gepubliceerde
+ * pagina → root-layout-defaults; nooit een throw.
+ */
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const { workspace } = await searchParams;
+  if (!workspace) return {};
+
+  const result = await loadPublishedPageSeo(workspace, slug);
+  if (!result) return {};
+
+  const fallbackCanonical = `https://${workspace}.${APP_APEX}/${slug}`;
+  return seoChecklistToMetadata(result.checklist, { fallbackCanonical });
+}
 
 export default async function PublishedPage({ params, searchParams }: Props) {
   const { slug } = await params;
