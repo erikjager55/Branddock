@@ -23,16 +23,21 @@ type SpikeData = Data<SpikePuckProps>;
 type GeoComparison = NonNullable<LongFormGeoVariantContent["comparison"]>;
 type GeoListItem = NonNullable<LongFormGeoVariantContent["listItems"]>[number];
 
+/** Escape cel-inhoud zodat `|`/newlines de markdown-tabel niet breken. */
+function escapeCell(value: string): string {
+  return value.replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ").trim();
+}
+
 /** Multi-kolom vergelijking → markdown-tabel (header = columns, rij = label + cells). */
 function comparisonMarkdown(c: GeoComparison): string {
-  const header = `| ${c.columns.join(" | ")} |`;
+  const header = `| ${c.columns.map(escapeCell).join(" | ")} |`;
   const sep = `| ${c.columns.map(() => "---").join(" | ")} |`;
   const rows = c.rows.map((r) => {
-    const cells = [r.label, ...r.cells].slice(0, c.columns.length);
+    const cells = [r.label, ...r.cells].slice(0, c.columns.length).map(escapeCell);
     while (cells.length < c.columns.length) cells.push("");
     return `| ${cells.join(" | ")} |`;
   });
-  const title = c.caption ? `## ${c.caption}\n\n` : "";
+  const title = c.caption ? `## ${escapeCell(c.caption)}\n\n` : "";
   return `${title}${[header, sep, ...rows].join("\n")}`;
 }
 

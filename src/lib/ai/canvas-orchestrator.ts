@@ -357,10 +357,14 @@ export async function* orchestrateContentGeneration(
   // 'seo' bevat (default-aan, uitvinkbaar). Gedeelde regel: shouldRunSeoPipeline.
   const deliverableTypeId = stack.deliverableTypeId ?? '';
   const seoInput = options?.seoInput;
+  // Client-form-state (options) wint, maar val terug op de DB-gepersisteerde
+  // contentTypeInputs (stack) zodat een opgeslagen SEO-opt-out (optimizationGoals=[])
+  // ook geldt wanneer een generatie zonder options.contentTypeInputs wordt getriggerd.
+  const effectiveInputs = options?.contentTypeInputs ?? stack.contentTypeInputs;
   const { shouldRunSeoPipeline } = await import('./seo-pipeline-utils');
   if (
     seoInput &&
-    shouldRunSeoPipeline(deliverableTypeId, options?.contentTypeInputs, Boolean(seoInput.primaryKeyword))
+    shouldRunSeoPipeline(deliverableTypeId, effectiveInputs, Boolean(seoInput.primaryKeyword))
   ) {
     const { runSeoPipeline } = await import('./seo-pipeline');
     yield* runSeoPipeline(

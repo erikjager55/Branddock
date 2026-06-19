@@ -98,8 +98,9 @@ export function buildProductPageJsonLd(
 
 /**
  * Shape-dispatch: bouwt de juiste JSON-LD voor een gevalideerde page-variant.
- * Returnt null voor LP/microsite/comparison (geen rich-type) of een ontbrekende
- * variant — de page injecteert dan niets.
+ * Returnt null voor LP/microsite/comparison (geen rich-type), voor een long-form
+ * `geoArticle` (BlogPosting/QAPage JSON-LD volgt in Fase 3 — bewust nog null, niet
+ * vergeten) of een ontbrekende variant — de page injecteert dan niets.
  */
 export function buildPageJsonLd(
   variant: PageVariantContent | null | undefined,
@@ -108,6 +109,7 @@ export function buildPageJsonLd(
   if (!variant) return null;
   if ("popularQuestions" in variant) return buildFaqPageJsonLd(variant, ctx);
   if ("solution" in variant) return buildProductPageJsonLd(variant, ctx);
+  // "geoArticle" → BlogPosting JSON-LD: Fase 3 (buildBlogPostingJsonLd). Nu null.
   return null;
 }
 
