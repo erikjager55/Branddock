@@ -44,7 +44,7 @@ Vierde manier om kennis toe te voegen naast Manual Entry / Smart Import / File U
 - Task: [tasks/done/knowledge-library-deep-research.md](../tasks/done/knowledge-library-deep-research.md)
 - ADR: [docs/adr/2026-06-19-deep-research-pipeline.md](adr/2026-06-19-deep-research-pipeline.md)
 - Spec: -
-- Commit: `e07983fc` (feat/deep-research — squash-hash invullen bij merge)
+- Commit: PR #55 (squash op main)
 
 ### 334. Knowledge-context werkend op de 5 PUCK web-page-types
 
