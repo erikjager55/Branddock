@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Laatst bijgewerkt**: 2026-05-29 (Track B doc-reconciliatie: `competitor-ai-event-classifier` #263, `competitor-activities-ui` #271 én `competitor-scraping-apify-fallback` #272 bleken al gebouwd+gemerged maar stale "open" — alle drie op done gezet; `strategy-analyst-stub` → in-progress (Phase A+B done, Phase C open). `competitor-content-item-discovery` gebouwd + done 2026-05-29 (#275) — hele competitive-intel data→detectie→zichtbaarheid→ingestie loop nu compleet; enige resterende Track B = strategy-analyst Phase C (dep op vercel). — Eerder: `web-page-builder-canvas-step-mvp` promoted post-launch → pre-launch Track A sprint #6 — 130 commits in feature-branch, 5 dagen extra scope, finalisatie + 4 squash-merges in plan `zippy-twirling-feigenbaum`. Brand-fidelity gap in Step 2 LP-deliverables toegevoegd als Track 5. `web-page-builder-v2-custom-domains` toegevoegd als post-launch follow-up. 2026-05-19 context-picker audit Brand Assistant + Persona chat → 1 Tier-1 gap: `context-picker-strategy-observations` toegevoegd aan Track A NOW. 2026-05-18 Track B Phase A + B gemerged naar main via `a0e59a5b` — `brandclaw-data-collection` ✅, `brandclaw-tool-orchestrator` ✅, `strategy-analyst-stub` Phase A + A vervolg + B ✅; Phase C 5-7d open in `branddock-brandclaw` worktree, sequential dep op vercel-deployment).
+> **Laatst bijgewerkt**: 2026-06-19 (post-launch `mcp-integration-layer` toegevoegd — bidirectionele MCP-koppeling, geparkeerd tot na launch; zie Post-launch-tabel + subsectie). — 2026-05-29 (Track B doc-reconciliatie: `competitor-ai-event-classifier` #263, `competitor-activities-ui` #271 én `competitor-scraping-apify-fallback` #272 bleken al gebouwd+gemerged maar stale "open" — alle drie op done gezet; `strategy-analyst-stub` → in-progress (Phase A+B done, Phase C open). `competitor-content-item-discovery` gebouwd + done 2026-05-29 (#275) — hele competitive-intel data→detectie→zichtbaarheid→ingestie loop nu compleet; enige resterende Track B = strategy-analyst Phase C (dep op vercel). — Eerder: `web-page-builder-canvas-step-mvp` promoted post-launch → pre-launch Track A sprint #6 — 130 commits in feature-branch, 5 dagen extra scope, finalisatie + 4 squash-merges in plan `zippy-twirling-feigenbaum`. Brand-fidelity gap in Step 2 LP-deliverables toegevoegd als Track 5. `web-page-builder-v2-custom-domains` toegevoegd als post-launch follow-up. 2026-05-19 context-picker audit Brand Assistant + Persona chat → 1 Tier-1 gap: `context-picker-strategy-observations` toegevoegd aan Track A NOW. 2026-05-18 Track B Phase A + B gemerged naar main via `a0e59a5b` — `brandclaw-data-collection` ✅, `brandclaw-tool-orchestrator` ✅, `strategy-analyst-stub` Phase A + A vervolg + B ✅; Phase C 5-7d open in `branddock-brandclaw` worktree, sequential dep op vercel-deployment).
 > **Update-cadans**: Now continu (na elke afgeronde task), Next wekelijks (vrijdagretro), Later maandelijks.
 > **Bron**: gedistilleerd uit oude TODO.md, BRANDCLAW-ROADMAP.md, STRATEGISCHE-VERVOLGSTAPPEN.md (allen in `docs/archive/old-lists/`).
 
@@ -205,6 +205,32 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | `weekly-report-email-via-resend` | Weekly report email via Emailit | post-launch | 1 dag | Task-file volgt na weekly-report generator |
 | `studio-siblings-context-variation` | Variatie-borging tussen naburige posts (lexicale diversiteit Jaccard) | post-launch | ½-1 dag | Quality-enhancement na studio-P0. Geen Brandclaw-impact. |
 | `web-page-builder-v2-custom-domains` | Vercel Domains API + CNAME provisioning + SSL monitoring + DomainMapping write-path | post-launch | 1-2w | Decision-trigger: ≥3 pilot-klanten vragen custom-domain óf `marketing-site-pricing` onder `branddock.com` gewenst. Schema staat al klaar (Phase 1 `DomainMapping` model). Idea-doc: zie ADR `2026-05-22-landing-page-builder-architectuur.md` §Notes. |
+| `mcp-integration-layer` | Bidirectionele MCP-koppeling: Branddock als **server** (brand-DNA + content-gen exposen aan externe apps) én als **client** (externe MCP-bronnen inlezen bij generatie). Zie subsectie hieronder. | post-launch | 1-3w gefaseerd | **Besluit 2026-06-19**: geparkeerd tot ná launch (remote-server-helft hangt aan `vercel-deployment` + nieuwe token/OAuth-auth-surface). Client-helft = bestaande research-task [`mcp-external-data-enrichment-research`](tasks/mcp-external-data-enrichment-research.md). Feature-discovery (feature-planner → idea-doc) bewust uitgesteld. |
+
+---
+
+### 🔌 MCP Integration Layer (post-launch — besluit 2026-06-19)
+
+> **Doel**: Branddock koppelbaar maken met andere applicaties via het Model Context Protocol, in **beide** richtingen. Geparkeerd tot na launch; hier vastgelegd als plan-skelet zodat feature-discovery later kan starten met context.
+> **Kernbevinding scoping-sessie**: het MCP-protocol zelf is laag-complex (officiële `@modelcontextprotocol/sdk`, business-logica zit al in `src/lib/`). De complexiteit zit volledig in (1) **multi-tenant auth** — session-cookie + `branddock-workspace-id`-resolutie vertaalt niet naar externe clients; vereist workspace-scoped API-key/OAuth 2.1 (security-gevoelig, let op IDOR/tenant-isolatie-historie) — en (2) **remote hosting** voor de server-richting (Streamable HTTP), wat aan `vercel-deployment` hangt.
+
+| Fase | Richting | Scope | Effort | Dep |
+|---|---|---|---|---|
+| **M0 — Spike (server)** | Branddock = server | Lokale stdio read-only server: brand-context/assets/voice exposen, testbaar in Claude Desktop. Bewijst concept zonder auth/hosting. | ~1-2d | geen (kan los van launch) |
+| **M1 — Client-enrichment** | Branddock = client | = research-task `mcp-external-data-enrichment-research`: externe MCP-bronnen (Ahrefs/HubSpot/Notion) inlezen → injecteren in canvas-context-stack vóór prompt-build. ADR MCP-vs-direct + latency-benchmark. | ~2-3d research + impl | Track B infra (credentials-mgmt, polling) |
+| **M2 — Remote server (read-only)** | Branddock = server | Multi-tenant, workspace-scoped API-key/OAuth 2.1, rate-limiting. Externe apps kunnen brand-DNA veilig lezen. | ~1w | **`vercel-deployment`** |
+| **M3 — Server write/generate** | Branddock = server | Tools die content-generatie triggeren (cost-control + extra testing; AI-pipeline + geld). | +enkele dagen | M2 |
+
+**Open beslissingen vóór feature-discovery**:
+- Welke "andere applicaties" als eerste doel (AI-assistenten / klant-apps / automatisering zoals Zapier-Make-n8n)? Bepaalt transport + auth-model.
+- Auth-model: workspace-scoped API-key (simpeler) vs OAuth 2.1 (standaard, meer werk).
+- Tool-surface server-richting: alleen lezen (veilig) vs ook genereren (cost-gevoelig).
+
+**ADR's (te schrijven bij start)**:
+- ⏳ `mcp-vs-direct-integration` (al als deliverable in `mcp-external-data-enrichment-research`)
+- ⏳ `mcp-server-auth-model` — API-key vs OAuth 2.1 + workspace-scoping
+
+**Trigger om op te pakken**: post-launch + `vercel-deployment` gemerged, óf pilot-vraag naar externe-app-koppeling.
 
 ---
 

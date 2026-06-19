@@ -92,3 +92,8 @@ Brandclaw-tool-orchestrator landing in Track B markt deze ook af
 Pre-launch out-of-scope. Eerste 5 pilot-klanten draaien op interne
 context-only (Branddock voiceguide + brandstyle + competitors). Externe
 data komt na pilot-feedback en na infra-foundation (Track B sprint #6+).
+
+**2026-06-19**: deze task is de **client-helft** van de bredere
+`mcp-integration-layer` (post-launch, zie `roadmap.md`). De server-helft
+(Branddock blootstellen aan externe apps) is daar als M0/M2/M3 toegevoegd;
+deze research = fase M1. Besluit: hele MCP-laag geparkeerd tot na launch.
