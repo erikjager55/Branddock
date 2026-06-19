@@ -44,7 +44,7 @@ Beelden die je vanuit een content-item genereert (Canvas Step 2/3) belandden all
 - Task: [tasks/done/content-item-images-to-library.md](../tasks/done/content-item-images-to-library.md)
 - ADR: -
 - Spec: -
-- Commit: `__PENDING__`
+- Commit: `f0b53456`
 
 ### 331. Knowledge-context in de content-item flow — picker-fixes + inline toevoegen + prioriteit/toelichting + campagne-pre-selectie
 
