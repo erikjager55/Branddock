@@ -229,6 +229,12 @@ assert("faq → @type FAQPage", faqLd["@type"] === "FAQPage");
 assert("faq mainEntity = alle Q&A's (3 popular + 6 categorie)", (faqLd.mainEntity as unknown[]).length === 9);
 assert("faq Question/Answer-shape", (faqLd.mainEntity as Array<{ "@type": string; acceptedAnswer: { "@type": string } }>)[0]["@type"] === "Question" && (faqLd.mainEntity as Array<{ acceptedAnswer: { "@type": string } }>)[0].acceptedAnswer["@type"] === "Answer");
 assert("buildPageJsonLd dispatcht faq correct", buildPageJsonLd(faqVariant, {})?.["@type"] === "FAQPage");
+// GEO Fase 1a — Organization-publisher (additief, alleen bij brandName)
+assert("faq zonder brandName → geen publisher", buildFaqPageJsonLd(faqVariant).publisher === undefined);
+assert(
+  "faq mét brandName → Organization-publisher",
+  (buildFaqPageJsonLd(faqVariant, { brandName: "Acme" }).publisher as { "@type": string; name: string })?.name === "Acme",
+);
 assert("flavorFromProduct null bij geen product", flavorFromProduct(null) === null);
 assert("flavorFromProduct leidt service af", flavorFromProduct({ category: "Consultancy", pricingModel: null }) === "service");
 

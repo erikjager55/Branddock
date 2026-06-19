@@ -26,13 +26,18 @@ export interface JsonLdContext {
   flavor?: PageFlavor | null;
 }
 
-/** FAQPage — alle popular + categorie-Q&A's als Question/Answer-paren. */
-export function buildFaqPageJsonLd(variant: FaqPageVariantContent): Record<string, unknown> {
+/** FAQPage — alle popular + categorie-Q&A's als Question/Answer-paren. Met
+ *  Organization-publisher (E-E-A-T-signaal voor AI-engines) wanneer een merknaam
+ *  bekend is; FAQPage is een CreativeWork-subtype dus `publisher` is valide. */
+export function buildFaqPageJsonLd(
+  variant: FaqPageVariantContent,
+  ctx: JsonLdContext = {},
+): Record<string, unknown> {
   const all = [
     ...variant.popularQuestions,
     ...variant.categories.flatMap((c) => c.items),
   ];
-  return {
+  const out: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     mainEntity: all.map((qa) => ({
@@ -41,6 +46,10 @@ export function buildFaqPageJsonLd(variant: FaqPageVariantContent): Record<strin
       acceptedAnswer: { "@type": "Answer", text: qa.answer },
     })),
   };
+  if (ctx.brandName) {
+    out.publisher = { "@type": "Organization", name: ctx.brandName };
+  }
+  return out;
 }
 
 /** Parse een EUR-prijs uit losse tekst (pricing.body). Conservatief: alleen een
@@ -89,16 +98,18 @@ export function buildProductPageJsonLd(
 
 /**
  * Shape-dispatch: bouwt de juiste JSON-LD voor een gevalideerde page-variant.
- * Returnt null voor LP/microsite/comparison (geen rich-type) of een ontbrekende
- * variant — de page injecteert dan niets.
+ * Returnt null voor LP/microsite/comparison (geen rich-type), voor een long-form
+ * `geoArticle` (BlogPosting/QAPage JSON-LD volgt in Fase 3 — bewust nog null, niet
+ * vergeten) of een ontbrekende variant — de page injecteert dan niets.
  */
 export function buildPageJsonLd(
   variant: PageVariantContent | null | undefined,
   ctx: JsonLdContext,
 ): Record<string, unknown> | null {
   if (!variant) return null;
-  if ("popularQuestions" in variant) return buildFaqPageJsonLd(variant);
+  if ("popularQuestions" in variant) return buildFaqPageJsonLd(variant, ctx);
   if ("solution" in variant) return buildProductPageJsonLd(variant, ctx);
+  // "geoArticle" → BlogPosting JSON-LD: Fase 3 (buildBlogPostingJsonLd). Nu null.
   return null;
 }
 

@@ -7,6 +7,7 @@ import { buildLandingPageTemplateFromStructured, resolveCtaHref } from './puck-t
 import { buildFaqPageTemplateFromStructured } from './puck-templates/faq-page-from-structured';
 import { buildProductPageTemplateFromStructured } from './puck-templates/product-page-from-structured';
 import { buildMicrositeTemplateFromStructured } from './puck-templates/microsite-from-structured';
+import { buildLongFormGeoTemplateFromStructured } from './puck-templates/long-form-geo-from-structured';
 import type { PageVariantContent } from '@/lib/landing-pages/page-type-schemas';
 
 type SpikeData = Data<SpikePuckProps>;
@@ -463,5 +464,6 @@ export function variantToPuckDataFromStructured(
   if ("heroManifest" in variant) return buildMicrositeTemplateFromStructured(variant, ctx);
   if ("popularQuestions" in variant) return buildFaqPageTemplateFromStructured(variant, ctx);
   if ("solution" in variant) return buildProductPageTemplateFromStructured(variant, ctx);
+  if ("geoArticle" in variant) return buildLongFormGeoTemplateFromStructured(variant, ctx);
   return buildLandingPageTemplateFromStructured(variant, ctx);
 }
