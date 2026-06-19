@@ -13,6 +13,8 @@ export const maxDuration = 300;
 const contextItemSchema = z.object({
   sourceType: z.string().max(100),
   sourceId: z.string().max(100),
+  note: z.string().max(500).optional(),
+  priority: z.enum(['primary', 'reference']).optional(),
 });
 
 const seoInputSchema = z.object({

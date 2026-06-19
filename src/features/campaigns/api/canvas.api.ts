@@ -133,6 +133,38 @@ export async function updateComponentContent(
 }
 
 /**
+ * Persist the selected knowledge-context items on the deliverable
+ * (`settings.additionalContextItems`). The PATCH shallow-merges settings, so
+ * this never touches puckData / hero / brief. Surviving reload + tab-switch +
+ * server-side regeneration is the whole point (the store Map alone is
+ * ephemeral). Non-fatal: on failure the in-memory selection still drives the
+ * current generation.
+ */
+export async function persistAdditionalContext(
+  deliverableId: string,
+  items: {
+    sourceType: string;
+    sourceId: string;
+    title: string;
+    note?: string;
+    priority?: 'primary' | 'reference';
+  }[],
+): Promise<void> {
+  try {
+    await fetch(`/api/studio/${deliverableId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings: { additionalContextItems: items } }),
+    });
+  } catch (err) {
+    console.warn('[canvas.api] persistAdditionalContext failed', {
+      deliverableId,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/**
  * Set or replace the hero image of a deliverable. Upserts a single
  * DeliverableComponent row with variantGroup='hero-image'.
  */

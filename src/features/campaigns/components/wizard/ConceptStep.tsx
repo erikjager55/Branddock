@@ -109,7 +109,9 @@ export function ConceptStep() {
   const selectedContextIds = useMemo(() => {
     if (!knowledgeData?.groups) return { personaIds: [], productIds: [], competitorIds: [], trendIds: [] };
     const allItems = knowledgeData.groups.flatMap((g) => g.items);
-    const selectedItems = allItems.filter((item) => selectedKnowledgeIds.includes(item.sourceId));
+    const selectedItems = allItems.filter((item) =>
+      selectedKnowledgeIds.includes(`${item.sourceType}:${item.sourceId}`),
+    );
     return {
       personaIds: selectedItems.filter((i) => i.sourceType === "persona").map((i) => i.sourceId),
       productIds: selectedItems.filter((i) => i.sourceType === "product").map((i) => i.sourceId),

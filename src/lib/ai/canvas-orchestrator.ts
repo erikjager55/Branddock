@@ -2383,7 +2383,9 @@ function buildCanvasPrompt(
     formatMergedMediumConfig(options?.mediumConfig, stack.contentTypeInputs),
     formatVisualBrief(stack.visualBrief ?? null),
     contentType ? formatConstraintsForPrompt(contentType) : '',
-    options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
+    // Headings (## PRIORITY SOURCE MATERIAL / ## ADDITIONAL CONTEXT) are emitted
+    // by serializeContextForPrompt — inject raw to avoid a nested double heading.
+    options?.additionalContextText ? `\n${options.additionalContextText}` : '',
     // F21 (audit 2026-05-13): self-check directive LAATSTE in system-prompt
     // zodat het de recency-positie pakt. Voiceguide-block bovenaan (BVD) +
     // self-check onderaan = bracketing dat AI dwingt te imiteren ipv
@@ -2555,7 +2557,9 @@ function buildRegenerationPrompt(
     formatMergedMediumConfig(options?.mediumConfig, stack.contentTypeInputs),
     formatVisualBrief(stack.visualBrief ?? null),
     regenContentType ? formatConstraintsForPrompt(regenContentType) : '',
-    options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
+    // Headings (## PRIORITY SOURCE MATERIAL / ## ADDITIONAL CONTEXT) are emitted
+    // by serializeContextForPrompt — inject raw to avoid a nested double heading.
+    options?.additionalContextText ? `\n${options.additionalContextText}` : '',
     // F21 (audit 2026-05-13): self-check ook in regeneration-path zodat
     // single-component-rewrites dezelfde voice-discipline volgen.
     buildVoiceSelfCheckDirective(stack.brand),

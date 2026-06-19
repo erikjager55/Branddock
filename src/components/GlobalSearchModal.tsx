@@ -17,6 +17,7 @@ import { useSearch, useQuickActions } from '../hooks/use-search';
 import { useShellStore } from '../stores/useShellStore';
 import { CardLockIndicator } from './lock';
 import type { SearchResult } from '../types/search';
+import { RESEARCH_HUB_ENABLED } from '../lib/constants/design-tokens';
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -48,7 +49,10 @@ const TYPE_FILTERS = [
 
 const GO_TO_ITEMS: DisplayItem[] = [
   { id: 'goto-dashboard', title: 'Dashboard', icon: 'LayoutDashboard', route: 'dashboard', section: 'Go To' },
-  { id: 'goto-research', title: 'Research Hub', icon: 'Target', route: 'research', section: 'Go To' },
+  // TIJDELIJK: Research Hub-shortcut verborgen wanneer de feature uit staat.
+  ...(RESEARCH_HUB_ENABLED
+    ? [{ id: 'goto-research', title: 'Research Hub', icon: 'Target', route: 'research', section: 'Go To' } as DisplayItem]
+    : []),
   { id: 'goto-brand', title: 'Brand Assets', icon: 'Layers', route: 'brand', section: 'Go To' },
   { id: 'goto-personas', title: 'Personas', icon: 'Users', route: 'personas', section: 'Go To' },
   { id: 'goto-products', title: 'Products & Services', icon: 'Package', route: 'products', section: 'Go To' },

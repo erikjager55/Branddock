@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { validateBinaryFile } from "@/lib/security/file-validator";
+import { parsePdf } from "@/lib/brandstyle/pdf-parser";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import type { KnowledgeResource } from "@prisma/client";
@@ -38,6 +41,36 @@ const ALLOWED_EXTENSIONS: ReadonlySet<string> = new Set([
   ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
   ".txt", ".md", ".csv", ".png", ".jpg", ".jpeg", ".webp",
 ]);
+
+/**
+ * Extract a text body from an uploaded file so it actually reaches AI prompts
+ * (the context serializer reads `content`). PDFs go through unpdf; plain-text
+ * formats are decoded directly. Binary office/image formats yield no body yet
+ * (out of scope) — returns null. Never throws: extraction failure must not
+ * block the upload, the resource is still created without a body.
+ * Declared after the MIME sets it reads (no read-before-declaration ordering smell).
+ */
+async function extractContent(buffer: Buffer, mimeType: string, fileName: string): Promise<string | null> {
+  try {
+    if (mimeType === "application/pdf") {
+      const parsed = await parsePdf(buffer, fileName);
+      const text = parsed.text.trim();
+      return text.length > 0 ? text : null;
+    }
+    if (TEXT_MIME_TYPES.has(mimeType)) {
+      const text = buffer.toString("utf-8").trim();
+      return text.length > 0 ? text.slice(0, 12000) : null;
+    }
+    return null;
+  } catch (error) {
+    console.warn("[POST /api/knowledge-resources/upload] content extraction failed", {
+      fileName,
+      mimeType,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
 
 function mapResource(r: KnowledgeResource) {
   return {
@@ -155,12 +188,14 @@ export async function POST(request: NextRequest) {
     const category = formData.get("category")?.toString().trim() || "General";
     const author = formData.get("author")?.toString().trim() || "Unknown";
     const detectedType = detectTypeFromMime(file.type);
+    const content = await extractContent(buffer, file.type, file.name);
 
     const resource = await prisma.knowledgeResource.create({
       data: {
         title,
         slug: generateSlug(title),
         description: "",
+        content,
         type: detectedType,
         category,
         author,
@@ -180,6 +215,9 @@ export async function POST(request: NextRequest) {
         workspaceId,
       },
     });
+
+    // Mutation route → bust the server overview cache (CLAUDE.md API rule).
+    invalidateCache(cacheKeys.prefixes.knowledgeResources(workspaceId));
 
     return NextResponse.json(mapResource(resource), { status: 201 });
   } catch (error) {

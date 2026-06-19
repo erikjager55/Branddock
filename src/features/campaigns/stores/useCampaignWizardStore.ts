@@ -842,7 +842,20 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
   }),
     {
       name: "branddock-campaign-wizard-v1",
-      version: 1,
+      version: 2,
+      // v2: selectedKnowledgeIds switched from bare ids (all implicitly
+      // brand_asset) to composite "sourceType:sourceId" keys. Prefix legacy
+      // colon-less entries so a resumed draft keeps correct checkbox membership
+      // + launch persistence instead of silently rendering everything unselected.
+      migrate: (persisted, version) => {
+        const s = persisted as Partial<CampaignWizardState> | null;
+        if (version < 2 && s && Array.isArray(s.selectedKnowledgeIds)) {
+          s.selectedKnowledgeIds = s.selectedKnowledgeIds.map((k) =>
+            typeof k === "string" && !k.includes(":") ? `brand_asset:${k}` : k,
+          );
+        }
+        return persisted as CampaignWizardState;
+      },
       storage: createJSONStorage(() => localStorage),
       // Only persist user-meaningful wizard data. Transient flags (isGenerating,
       // pipelineSteps, enrichmentStatus, contentGenPhase) and non-serializable

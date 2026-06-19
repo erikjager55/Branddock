@@ -70,10 +70,19 @@ const DEFAULT_SCENES: SceneVideoConfig[] = [
   createDefaultScene('cta'),
 ];
 
+/** Priority of a selected context item in the generation prompt.
+ * 'primary' = authoritative source material to ground the output in;
+ * 'reference' (default) = ambient context shared for discussion. */
+export type ContextItemPriority = 'primary' | 'reference';
+
 export interface SelectedContextItem {
   sourceType: string;
   sourceId: string;
   title: string;
+  /** Optional user guidance on how to use this source (e.g. "emphasize this vision"). */
+  note?: string;
+  /** How heavily the model should weight this source. Default 'reference'. */
+  priority?: ContextItemPriority;
 }
 
 interface CanvasStoreState {
@@ -312,6 +321,9 @@ interface CanvasStoreState {
 
   // ─── Additional knowledge context ────────────────────────
   additionalContextItems: Map<string, SelectedContextItem>;
+  /** True once the user changed the selection — guards setContextStack from
+   * re-hydrating (clobbering) a live edit, mirroring briefModified. */
+  additionalContextItemsModified: boolean;
   contextSelectorOpen: boolean;
 
   // ─── Feedback ─────────────────────────────────────────────
@@ -697,6 +709,7 @@ const INITIAL_STATE = {
   },
   visualFidelityScores: new Map() as CanvasStoreState['visualFidelityScores'],
   additionalContextItems: new Map<string, SelectedContextItem>(),
+  additionalContextItemsModified: false,
   contextSelectorOpen: false,
   feedbackDraft: '',
   feedbackGroup: null,
@@ -800,6 +813,20 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       const shouldHydrateVisual =
         !state.visualBriefModified && hydratedVisual != null;
 
+      // Knowledge-context selection — persisted on settings.additionalContextItems
+      // and surfaced on the stack. Rebuild the keyed Map on first mount so the
+      // selection (and its prompt-injection) survives reload / tab-switch.
+      const hydratedContextItems = stack.additionalContextItems;
+      const shouldHydrateContextItems =
+        !state.additionalContextItemsModified &&
+        Array.isArray(hydratedContextItems) &&
+        hydratedContextItems.length > 0;
+      const rebuiltContextItems = shouldHydrateContextItems
+        ? new Map(
+            hydratedContextItems!.map((i) => [`${i.sourceType}:${i.sourceId}`, i] as const),
+          )
+        : null;
+
       return {
         contextStack: stack,
         ...(shouldHydrateInputs ? { contentTypeInputs: hydratedInputs } : {}),
@@ -814,6 +841,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
             }
           : {}),
         ...(shouldHydrateVisual ? { visualBrief: hydratedVisual } : {}),
+        ...(rebuiltContextItems ? { additionalContextItems: rebuiltContextItems } : {}),
       };
     }),
 
@@ -1283,13 +1311,14 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
   toggleContextSelector: () =>
     set((state) => ({ contextSelectorOpen: !state.contextSelectorOpen })),
 
-  setAdditionalContextItems: (items) => set({ additionalContextItems: items }),
+  setAdditionalContextItems: (items) =>
+    set({ additionalContextItems: items, additionalContextItemsModified: true }),
 
   removeContextItem: (key) =>
     set((state) => {
       const next = new Map(state.additionalContextItems);
       next.delete(key);
-      return { additionalContextItems: next };
+      return { additionalContextItems: next, additionalContextItemsModified: true };
     }),
 
   setApprovalState: (data) =>
@@ -1386,6 +1415,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       briefModified: false,
       contentTypeInputsModified: false,
       visualBriefModified: false,
+      additionalContextItemsModified: false,
     }),
 
   setVisualBriefSource: (source) =>

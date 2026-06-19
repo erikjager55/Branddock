@@ -16,6 +16,7 @@ import { getBrandContext } from './brand-context';
 import type { BrandContextBlock } from './prompt-templates';
 import { detectJourneyPhase, type JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
 import { serializePersona } from './context/persona-serializer';
+import { getAvailableContextItems } from './context/fetcher';
 import {
   extractBrandTokensWithProvenance,
   type BrandTokens,
@@ -194,6 +195,18 @@ export interface CanvasContextStack {
   contentTypeInputs?: Record<string, string | string[] | number | boolean>;
   /** Strategic visual direction for this content item — see VisualBrief. */
   visualBrief?: VisualBrief | null;
+  /**
+   * User-selected knowledge-context items (Step 1 picker), persisted on
+   * `settings.additionalContextItems`. Hydrated into the Canvas store so the
+   * selection survives reload / tab-switch / server-side regeneration.
+   */
+  additionalContextItems?: {
+    sourceType: string;
+    sourceId: string;
+    title: string;
+    note?: string;
+    priority?: 'primary' | 'reference';
+  }[];
   /**
    * Puck data-tree for web-page content-types (landing-page / product-page /
    * faq-page / comparison-page / microsite). Stored on `deliverable.settings.puckData`
@@ -456,8 +469,11 @@ export async function assembleCanvasContext(
 
   // Fallback: fetch persona IDs from campaign knowledge assets
   if (targetPersonaIds.length === 0) {
+    // Match on personaId presence, NOT assetType — the latter is free-text and
+    // was written capitalized ('Persona') while this query used lowercase
+    // 'persona', so the fallback silently matched nothing (casing bug fixed).
     const knowledgeAssets = await prisma.campaignKnowledgeAsset.findMany({
-      where: { campaignId: deliverable.campaignId, assetType: 'persona', personaId: { not: null } },
+      where: { campaignId: deliverable.campaignId, personaId: { not: null } },
       select: { personaId: true },
     });
     targetPersonaIds = knowledgeAssets
@@ -566,6 +582,96 @@ export async function assembleCanvasContext(
   // don't lose their visual hint after the schema migration.
   const visualBrief = parseVisualBrief(settings.visualBrief, contentTypeInputs);
 
+  // User-selected knowledge-context items (Step 1 picker). Persisted on
+  // settings.additionalContextItems so the selection is durable; defensively
+  // parsed (only well-formed entries survive a malformed/legacy blob).
+  type AdditionalContextItem = {
+    sourceType: string;
+    sourceId: string;
+    title: string;
+    note?: string;
+    priority?: 'primary' | 'reference';
+  };
+  let additionalContextItems: AdditionalContextItem[] | undefined = Array.isArray(
+    settings.additionalContextItems,
+  )
+    ? (settings.additionalContextItems as unknown[]).flatMap((raw): AdditionalContextItem[] => {
+        if (!raw || typeof raw !== 'object') return [];
+        const o = raw as Record<string, unknown>;
+        if (typeof o.sourceType === 'string' && typeof o.sourceId === 'string') {
+          // Carry user guidance (note) + priority through hydration — else the
+          // selection survives reload but loses its weighting/annotation.
+          const note = typeof o.note === 'string' && o.note.trim().length > 0 ? o.note : undefined;
+          const priority: 'primary' | 'reference' | undefined =
+            o.priority === 'primary' || o.priority === 'reference' ? o.priority : undefined;
+          return [{
+            sourceType: o.sourceType,
+            sourceId: o.sourceId,
+            title: typeof o.title === 'string' ? o.title : 'Untitled',
+            ...(note ? { note } : {}),
+            ...(priority ? { priority } : {}),
+          }];
+        }
+        return [];
+      })
+    : undefined;
+
+  // Wens 1 — campagne-pre-selectie: seed de picker met de campagne-geselecteerde
+  // kennis (isAutoSelected) wanneer de gebruiker nog NOOIT zelf koos. `undefined`
+  // = key afwezig → seed; een bewust geleegde selectie (`[]`) wordt gerespecteerd
+  // en NIET opnieuw geseed. De store-hydration-guard (additionalContextItemsModified)
+  // zorgt dat de seed latere user-edits binnen een sessie niet clobbert.
+  if (additionalContextItems === undefined) {
+    const autoSelected = await prisma.campaignKnowledgeAsset.findMany({
+      where: {
+        campaignId: deliverable.campaignId,
+        isAutoSelected: true,
+        sourceType: { not: null },
+        sourceId: { not: null },
+      },
+      select: { sourceType: true, sourceId: true },
+    });
+    // Source types that are ALREADY injected as first-class context elsewhere in
+    // the stack must NOT be seeded here, or the same record lands twice in the
+    // prompt under conflicting framings: brand_asset = always-on brand context;
+    // persona → stack.personas (Layer 5 fallback reads personaId); product →
+    // stack.products (Layer 7 fallback reads productId). Only the types with no
+    // dedicated slot (knowledge_resource / competitor / detected_trend /
+    // business_strategy) are genuinely "additional".
+    // PERF: pre-filter to seedable candidates BEFORE the expensive live-data
+    // sweep, so the common case (campaign with only persona/product/brand_asset
+    // auto-selected) — and hot/public callers of assembleCanvasContext like the
+    // /p/[slug] render and image-gen routes — pay ONE cheap query instead of an
+    // 8-model getAvailableContextItems fan-out for a seed that ends up empty.
+    const STACK_INJECTED_TYPES = new Set(['brand_asset', 'persona', 'product']);
+    const candidates = autoSelected.filter(
+      (r): r is { sourceType: string; sourceId: string } =>
+        !!r.sourceType && !!r.sourceId && !STACK_INJECTED_TYPES.has(r.sourceType),
+    );
+    if (candidates.length > 0) {
+      // Resolve real titles + reconcile against live data. getAvailableContextItems
+      // is workspace-scoped, so deleted / cross-workspace rows simply don't
+      // resolve and are dropped (no zombie pre-selections).
+      const liveGroups = await getAvailableContextItems(workspaceId);
+      const titleByKey = new Map<string, string>();
+      for (const g of liveGroups) {
+        for (const it of g.items) titleByKey.set(`${it.sourceType}:${it.sourceId}`, it.title);
+      }
+      const seeded: AdditionalContextItem[] = [];
+      const seen = new Set<string>();
+      for (const { sourceType, sourceId } of candidates) {
+        const key = `${sourceType}:${sourceId}`;
+        if (seen.has(key)) continue;
+        const title = titleByKey.get(key);
+        if (!title) continue;
+        seen.add(key);
+        // Campaign-selected knowledge is treated as authoritative source material.
+        seeded.push({ sourceType, sourceId, title, priority: 'primary' });
+      }
+      if (seeded.length > 0) additionalContextItems = seeded;
+    }
+  }
+
   // Puck data-tree for web-page builder (per ADR 2026-05-22-landing-page-builder-architectuur).
   // Null when never edited — Canvas store seeds via variantToPuckData() on first mount.
   const puckData = settings.puckData ?? null;
@@ -653,7 +759,7 @@ export async function assembleCanvasContext(
   return {
     brand, concept, journeyPhase, medium,
     deliverableTypeId: deliverable.contentType ?? null,
-    personas, brief, products, contentTypeInputs, visualBrief, puckData, brandTokens, brandProvenance,
+    personas, brief, products, contentTypeInputs, visualBrief, additionalContextItems, puckData, brandTokens, brandProvenance,
     brandImages: parseBrandImages(styleguide?.brandImages),
     brandNavLogoUrl,
     brandStyleguideMeta: {

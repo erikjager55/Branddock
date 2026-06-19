@@ -3,10 +3,11 @@
 import React from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
-import { Building2, Lightbulb, Route, Monitor, BookOpen, Plus, X, Sparkles, Search, Trash2, FileText, Image as ImageIcon } from 'lucide-react';
+import { Building2, Lightbulb, Route, Monitor, BookOpen, Plus, X, Sparkles, Search, Trash2, FileText, Image as ImageIcon, Star, Pencil } from 'lucide-react';
 import { Badge, Skeleton, SkeletonText } from '@/components/shared';
 import { WEBSITE_DELIVERABLE_TYPES } from '@/lib/ai/seo-pipeline.types';
 import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
+import { isPuckWebpageType } from '@/lib/landing-pages/webpage-types';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
 import type { VisualBriefSource, VisualStyleDirection } from '@/lib/ai/canvas-context';
@@ -22,7 +23,7 @@ import {
   type ContentTypeInputValue,
 } from '../../../lib/content-type-inputs';
 import { useFormFillStore, type FormFillField } from '@/stores/useFormFillStore';
-import { generateCanvasVisual, setHeroImage as persistHeroImage } from '../../../api/canvas.api';
+import { generateCanvasVisual, setHeroImage as persistHeroImage, persistAdditionalContext } from '../../../api/canvas.api';
 import type { CanvasImageVariant } from '../../../types/canvas.types';
 
 /**
@@ -199,6 +200,18 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
     onAdvance?.();
   };
 
+  const openContextSelector = () => {
+    useCanvasStore.getState().toggleContextSelector();
+  };
+
+  // F4: removing a chip must also update the persisted selection, else the
+  // removed item silently returns on the next hydration.
+  const handleRemoveContextItem = (key: string) => {
+    removeContextItem(key);
+    const items = Array.from(useCanvasStore.getState().additionalContextItems.values());
+    void persistAdditionalContext(deliverableId, items);
+  };
+
   const handleGenerate = async () => {
     try {
       // F-pregen-flush (audit 2026-05-13): force-save alle wijzigingen vóór
@@ -213,6 +226,12 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       }
       if (store.visualBriefModified) {
         flushPayload.visualBrief = store.visualBrief;
+      }
+      // Re-persist the knowledge selection in the same atomic flush, BEFORE
+      // resetModifiedFlags() below re-opens hydration — otherwise a silently
+      // failed earlier persist + a server re-hydrate could drop the selection.
+      if (store.additionalContextItemsModified) {
+        flushPayload.additionalContextItems = Array.from(store.additionalContextItems.values());
       }
       try {
         await fetch(`/api/studio/${deliverableId}`, {
@@ -414,43 +433,77 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
           rendered in preview). */}
       {!(contentType && (VIDEO_ADJACENT_TYPES.has(contentType) || contentType === 'linkedin-poll' || contentType === 'search-ad')) && <VisualBriefSection />}
 
-      {/* Knowledge context */}
-      {additionalContextItems.size > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <BookOpen className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Knowledge Context</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {Array.from(additionalContextItems.entries()).map(([key, item]) => (
-              <span
-                key={key}
-                className="inline-flex items-center gap-1 max-w-full px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded-md"
-              >
-                <span className="truncate">{item.title}</span>
-                <button
-                  type="button"
-                  onClick={() => removeContextItem(key)}
-                  aria-label={`Remove ${item.title}`}
-                  className="p-0.5 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-600 flex-shrink-0"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-          </div>
+      {/* Knowledge context — always shown so the affordance is discoverable,
+          even on a fresh content item (was hidden until items existed, leaving
+          only a tiny text link as the cue). Empty → prominent add button;
+          filled → chips + a manage button.
+          Hidden for the 5 PUCK web-page types — their generation runs via the
+          structured-variant pad, which does not consume additionalContextItems,
+          so the affordance would be a silent dead-end there. */}
+      {!isPuckWebpageType(contentType ?? '') && (
+      <div className="rounded-lg border border-gray-200 bg-white p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <BookOpen className="h-4 w-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-700">Knowledge Context</span>
         </div>
-      )}
 
-      {/* Add knowledge context button */}
-      <button
-        type="button"
-        onClick={() => useCanvasStore.getState().toggleContextSelector()}
-        className="flex items-center gap-1 text-xs text-primary hover:text-primary-700 font-medium"
-      >
-        <Plus className="h-3 w-3" />
-        {additionalContextItems.size > 0 ? 'Add more context' : 'Select knowledge context'}
-      </button>
+        {additionalContextItems.size > 0 ? (
+          <>
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from(additionalContextItems.entries()).map(([key, item]) => (
+                <span
+                  key={key}
+                  title={item.note?.trim() ? `Guidance: ${item.note.trim()}` : undefined}
+                  className={`inline-flex items-center gap-1 max-w-full px-2 py-0.5 text-xs rounded-md ${
+                    item.priority === 'primary'
+                      ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-300'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  {item.priority === 'primary' && (
+                    <Star className="h-3 w-3 flex-shrink-0" aria-label="Source material" />
+                  )}
+                  <span className="truncate">{item.title}</span>
+                  {item.note?.trim() && (
+                    <Pencil className="h-3 w-3 flex-shrink-0 text-gray-400" aria-label="Has guidance note" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveContextItem(key)}
+                    aria-label={`Remove ${item.title}`}
+                    className="p-0.5 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-600 flex-shrink-0"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={openContextSelector}
+              className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add or manage knowledge
+            </button>
+          </>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-gray-500">
+              Add a link, PDF or library item as extra context the AI uses while generating this content.
+            </p>
+            <button
+              type="button"
+              onClick={openContextSelector}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-dashed border-teal-300 bg-teal-50/50 text-sm font-medium text-teal-700 hover:bg-teal-50 hover:border-teal-400 transition-colors"
+            >
+              <BookOpen className="h-4 w-4" />
+              Add knowledge context
+            </button>
+          </div>
+        )}
+      </div>
+      )}
 
       {/* SEO Research inputs (website types only) */}
       {WEBSITE_DELIVERABLE_TYPES.has(contextStack.deliverableTypeId ?? '') && (

@@ -20,6 +20,11 @@ import {
 } from "@/lib/ai/context/source-ui-config";
 import type { WizardKnowledgeGroup } from "../../types/campaign-wizard.types";
 
+// Composite selection key — preserves the source TYPE (not just the id) so the
+// wizard can persist any context type losslessly. Same "sourceType:sourceId"
+// format the content-item picker uses. The launch route splits it back apart.
+const itemKey = (i: { sourceType: string; sourceId: string }) => `${i.sourceType}:${i.sourceId}`;
+
 // ─── Component ────────────────────────────────────────────
 
 export function KnowledgeStep() {
@@ -50,12 +55,12 @@ export function KnowledgeStep() {
       return;
     }
 
-    const brandAssetIds = knowledgeData.groups
+    const brandAssetKeys = knowledgeData.groups
       .filter((g) => g.key === "brand_asset")
-      .flatMap((g) => g.items.map((i) => i.sourceId));
+      .flatMap((g) => g.items.map(itemKey));
 
-    if (brandAssetIds.length > 0) {
-      selectAllKnowledge(brandAssetIds);
+    if (brandAssetKeys.length > 0) {
+      selectAllKnowledge(brandAssetKeys);
     }
     hasAutoSelected.current = true;
   }, [knowledgeData, selectAllKnowledge]);
@@ -112,7 +117,9 @@ export function KnowledgeStep() {
   // All item IDs across all groups (unfiltered)
   const allItemIds = useMemo(() => {
     if (!knowledgeData?.groups) return [];
-    return knowledgeData.groups.flatMap((g) => g.items.map((i) => i.sourceId));
+    // Composite keys — must match the store contract used everywhere else,
+    // else "Select All" writes bare ids that break membership + launch persist.
+    return knowledgeData.groups.flatMap((g) => g.items.map(itemKey));
   }, [knowledgeData]);
 
   const toggleGroupCollapse = (groupKey: string) => {
@@ -125,7 +132,7 @@ export function KnowledgeStep() {
   };
 
   const toggleGroupSelection = (group: WizardKnowledgeGroup) => {
-    const groupIds = group.items.map((i) => i.sourceId);
+    const groupIds = group.items.map(itemKey);
     const allSelected = groupIds.every((id) =>
       selectedKnowledgeIds.includes(id),
     );
@@ -252,7 +259,7 @@ export function KnowledgeStep() {
         ) : (
           visibleGroups.map((group, groupIdx) => {
             const isCollapsed = collapsedGroups.has(group.key);
-            const groupIds = group.items.map((i) => i.sourceId);
+            const groupIds = group.items.map(itemKey);
             const selectedInGroup = groupIds.filter((id) =>
               selectedKnowledgeIds.includes(id),
             ).length;
@@ -323,7 +330,7 @@ export function KnowledgeStep() {
                 {!isCollapsed &&
                   group.items.map((item) => {
                     const isSelected = selectedKnowledgeIds.includes(
-                      item.sourceId,
+                      itemKey(item),
                     );
                     const meta = SOURCE_TYPE_META[item.sourceType];
                     const Icon = meta?.icon ?? DEFAULT_SOURCE_ICON;
@@ -332,7 +339,7 @@ export function KnowledgeStep() {
                       <button
                         key={`${item.sourceType}:${item.sourceId}`}
                         type="button"
-                        onClick={() => toggleKnowledgeId(item.sourceId)}
+                        onClick={() => toggleKnowledgeId(itemKey(item))}
                         className="flex items-center gap-2.5 w-full pl-9 pr-5 py-1.5 text-left transition-colors hover:bg-gray-50"
                         style={{
                           backgroundColor: isSelected

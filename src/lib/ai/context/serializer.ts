@@ -19,7 +19,9 @@ interface SerializeOptions {
 }
 
 export function serializeToText(options: SerializeOptions): string {
-  const { config, record, maxLength = 2000 } = options;
+  // Record-level cap: per-source override (knowledge resources carry full
+  // document bodies and need more room than the 2000-char default).
+  const { config, record, maxLength = config.maxSerializedLength ?? 2000 } = options;
   const lines: string[] = [];
 
   // Title
@@ -41,7 +43,7 @@ export function serializeToText(options: SerializeOptions): string {
     if (typeof value === 'object' && !Array.isArray(value)) continue;
 
     const label = formatFieldLabel(key);
-    const formatted = formatFieldValue(key, value, config.formatHints);
+    const formatted = formatFieldValue(key, value, config.formatHints, maxLength);
     lines.push(`- **${label}:** ${formatted}`);
   }
 
@@ -88,8 +90,17 @@ function formatFieldValue(
   key: string,
   value: unknown,
   hints?: Record<string, string>,
+  maxLength = 2000,
 ): string {
   const hint = hints?.[key];
+
+  // Full-text fields (e.g. extracted PDF/document body) get the record-level
+  // budget rather than the generic 500-char cap below — they ARE the value of a
+  // knowledge resource. The budget scales with the record cap (primary sources
+  // pass a larger maxLength), so a flagged source is read in full.
+  if (hint === 'fulltext' && typeof value === 'string') {
+    return value.length > maxLength ? value.substring(0, maxLength) + '\n  [...]' : value;
+  }
 
   // Arrays → comma-separated or bullet list
   if (Array.isArray(value)) {
