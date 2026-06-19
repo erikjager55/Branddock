@@ -5,7 +5,7 @@ fase: pre-launch
 priority: now
 effort: ~1 dag (plan-schatting; L-Fase 3 opt-in +1-2d apart beslispunt)
 owner: claude-code
-status: in-progress
+status: done — gemerged via #329 (2026-06-16)
 created: 2026-06-12
 completed: -
 related-spec: docs/specs/website-page-types-implementatieplan.md §5

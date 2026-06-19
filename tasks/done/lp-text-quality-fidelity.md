@@ -1,6 +1,6 @@
 # lp-text-quality-fidelity
 
-**Status**: built (fase 1-5 ✅ 2026-06-10, branch `feat/lp-text-quality-fidelity`; fase 6 = opt-in vervolg)
+**Status**: done — gemerged via #316 (PR #47, 2026-06-10); fase 6 = opt-in vervolg
 **Aangemaakt**: 2026-06-10
 **Bron**: PO-klacht (lage LP-tekstkwaliteit + laagste brand-fidelity) → multi-agent onderzoek
 **Audit/plan**: `docs/audits/2026-06-10-lp-text-quality-fidelity.md` (volledige onderbouwing + fase-detail)

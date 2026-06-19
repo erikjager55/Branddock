@@ -5,7 +5,7 @@ fase: pre-launch
 priority: now
 effort: ~5-7 dagen (plan W2 3-4d + W3 2-3d)
 owner: claude-code
-status: in-progress
+status: done — gemerged via #329 (2026-06-16)
 created: 2026-06-12
 completed: -
 related-spec: docs/specs/website-page-types-implementatieplan.md

@@ -5,7 +5,7 @@ fase: pre-launch
 priority: now
 effort: library ~0.5d (klaar) · compose+trained ~1d (follow-up)
 owner: claude-code
-status: in-review
+status: done — gemerged (changelog #314 + PR #43/44/45)
 created: 2026-06-08
 related-task: lp-step3-rendering-bugs, web-page-builder-canvas-step-mvp
 related-audit: orphaned-hero gotcha 2026-06-08 (gotchas.md)

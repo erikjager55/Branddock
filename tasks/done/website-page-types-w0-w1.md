@@ -5,7 +5,7 @@ fase: pre-launch
 priority: now
 effort: ~4-5 dagen (plan-schatting W0 1d + W1 3-4d; parallel uitgevoerd)
 owner: claude-code
-status: in-progress
+status: done — gemerged via #329 (2026-06-16)
 created: 2026-06-12
 completed: -
 related-adr: -
