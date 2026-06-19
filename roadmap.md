@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Laatst bijgewerkt**: 2026-06-19 (post-launch `mcp-integration-layer` toegevoegd — bidirectionele MCP-koppeling, geparkeerd tot na launch; zie Post-launch-tabel + subsectie). — 2026-05-29 (Track B doc-reconciliatie: `competitor-ai-event-classifier` #263, `competitor-activities-ui` #271 én `competitor-scraping-apify-fallback` #272 bleken al gebouwd+gemerged maar stale "open" — alle drie op done gezet; `strategy-analyst-stub` → in-progress (Phase A+B done, Phase C open). `competitor-content-item-discovery` gebouwd + done 2026-05-29 (#275) — hele competitive-intel data→detectie→zichtbaarheid→ingestie loop nu compleet; enige resterende Track B = strategy-analyst Phase C (dep op vercel). — Eerder: `web-page-builder-canvas-step-mvp` promoted post-launch → pre-launch Track A sprint #6 — 130 commits in feature-branch, 5 dagen extra scope, finalisatie + 4 squash-merges in plan `zippy-twirling-feigenbaum`. Brand-fidelity gap in Step 2 LP-deliverables toegevoegd als Track 5. `web-page-builder-v2-custom-domains` toegevoegd als post-launch follow-up. 2026-05-19 context-picker audit Brand Assistant + Persona chat → 1 Tier-1 gap: `context-picker-strategy-observations` toegevoegd aan Track A NOW. 2026-05-18 Track B Phase A + B gemerged naar main via `a0e59a5b` — `brandclaw-data-collection` ✅, `brandclaw-tool-orchestrator` ✅, `strategy-analyst-stub` Phase A + A vervolg + B ✅; Phase C 5-7d open in `branddock-brandclaw` worktree, sequential dep op vercel-deployment).
+> **Laatst bijgewerkt**: 2026-06-19 (post-launch `mcp-integration-layer` + `brand-assistant-standalone-app` toegevoegd — beide bidirectionele/standalone uitbreidingen, geparkeerd tot na launch; zie Post-launch-tabel + subsecties). — 2026-05-29 (Track B doc-reconciliatie: `competitor-ai-event-classifier` #263, `competitor-activities-ui` #271 én `competitor-scraping-apify-fallback` #272 bleken al gebouwd+gemerged maar stale "open" — alle drie op done gezet; `strategy-analyst-stub` → in-progress (Phase A+B done, Phase C open). `competitor-content-item-discovery` gebouwd + done 2026-05-29 (#275) — hele competitive-intel data→detectie→zichtbaarheid→ingestie loop nu compleet; enige resterende Track B = strategy-analyst Phase C (dep op vercel). — Eerder: `web-page-builder-canvas-step-mvp` promoted post-launch → pre-launch Track A sprint #6 — 130 commits in feature-branch, 5 dagen extra scope, finalisatie + 4 squash-merges in plan `zippy-twirling-feigenbaum`. Brand-fidelity gap in Step 2 LP-deliverables toegevoegd als Track 5. `web-page-builder-v2-custom-domains` toegevoegd als post-launch follow-up. 2026-05-19 context-picker audit Brand Assistant + Persona chat → 1 Tier-1 gap: `context-picker-strategy-observations` toegevoegd aan Track A NOW. 2026-05-18 Track B Phase A + B gemerged naar main via `a0e59a5b` — `brandclaw-data-collection` ✅, `brandclaw-tool-orchestrator` ✅, `strategy-analyst-stub` Phase A + A vervolg + B ✅; Phase C 5-7d open in `branddock-brandclaw` worktree, sequential dep op vercel-deployment).
 > **Update-cadans**: Now continu (na elke afgeronde task), Next wekelijks (vrijdagretro), Later maandelijks.
 > **Bron**: gedistilleerd uit oude TODO.md, BRANDCLAW-ROADMAP.md, STRATEGISCHE-VERVOLGSTAPPEN.md (allen in `docs/archive/old-lists/`).
 
@@ -206,6 +206,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | `studio-siblings-context-variation` | Variatie-borging tussen naburige posts (lexicale diversiteit Jaccard) | post-launch | ½-1 dag | Quality-enhancement na studio-P0. Geen Brandclaw-impact. |
 | `web-page-builder-v2-custom-domains` | Vercel Domains API + CNAME provisioning + SSL monitoring + DomainMapping write-path | post-launch | 1-2w | Decision-trigger: ≥3 pilot-klanten vragen custom-domain óf `marketing-site-pricing` onder `branddock.com` gewenst. Schema staat al klaar (Phase 1 `DomainMapping` model). Idea-doc: zie ADR `2026-05-22-landing-page-builder-architectuur.md` §Notes. |
 | `mcp-integration-layer` | Bidirectionele MCP-koppeling: Branddock als **server** (brand-DNA + content-gen exposen aan externe apps) én als **client** (externe MCP-bronnen inlezen bij generatie). Zie subsectie hieronder. | post-launch | 1-3w gefaseerd | **Besluit 2026-06-19**: geparkeerd tot ná launch (remote-server-helft hangt aan `vercel-deployment` + nieuwe token/OAuth-auth-surface). Client-helft = bestaande research-task [`mcp-external-data-enrichment-research`](tasks/mcp-external-data-enrichment-research.md). Feature-discovery (feature-planner → idea-doc) bewust uitgesteld. |
+| `brand-assistant-standalone-app` | Brand Assistant ("Claw") als gefocuste, standalone-bruikbare app rond 2 jobs: **(J1)** feedback op een door de gebruiker gemaakt middel + **(J2)** sparren over een doelgroep. Zie subsectie hieronder. | post-launch | MVP licht → v2/v3 gefaseerd | **Besluit 2026-06-19**: geparkeerd tot ná launch. Motoren bestaan al grotendeels (`review_content` + F-VAL + persona-chat) → MVP is licht; standalone/remote-variant deelt de auth-foundation van `mcp-integration-layer` (M2, dep `vercel-deployment`). Feature-discovery bewust uitgesteld. |
 
 ---
 
@@ -231,6 +232,49 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 - ⏳ `mcp-server-auth-model` — API-key vs OAuth 2.1 + workspace-scoping
 
 **Trigger om op te pakken**: post-launch + `vercel-deployment` gemerged, óf pilot-vraag naar externe-app-koppeling.
+
+---
+
+### 🤖 Brand Assistant standalone-app (post-launch — besluit 2026-06-19)
+
+> **Doel**: de Brand Assistant ("Claw") als gefocuste, standalone-bruikbare app rond twee jobs-to-be-done: **(J1)** feedback geven op een middel dat de gebruiker zélf maakte (copy, ad, social post, beeld/design, landingspagina, PDF), en **(J2)** sparren over een doelgroep/persona. Geparkeerd tot na launch; hier vastgelegd als plan-skelet voor latere feature-discovery.
+> **Kernbevinding scoping-sessie (codebase-reuse-map + product-onderzoek)**: de motoren bestaan al grotendeels → herbouwen is niet nodig, het is **bundelen achter één surface + 3 gaten dichten + de vertrouwens-mechaniek inbouwen**.
+
+**Wat er al ligt (hergebruik):**
+- J1 tekst/URL-review: `review_content`-tool (`src/lib/claw/tools/analyze-tools.ts`) → F-VAL 3-pijler (`src/lib/brand-fidelity/fidelity-runner.ts`) → `BrandReviewFinding`-persistentie.
+- J2 doelgroep: persona-chat met rollen interview/empathy/JTBD (`src/app/api/personas/chat/route.ts`).
+- Grounding: `getBrandContext()` (`src/lib/ai/brand-context.ts`). Surface: ClawOverlay heeft al een *embedded* view-mode (`src/features/claw/components/ClawOverlay.tsx`).
+
+**Drie gaten te dichten:**
+1. **Geen beeld-ingest voor review** — `review_content` neemt alleen tekst/URL/PDF-tekst; vision draait al intern (`judge-image.ts`, `visual-fidelity-scorer.ts`) maar is niet aan Claw geknoopt. = grootste net-nieuwe stuk.
+2. **Persona-chat staat los van Claw** (andere stack/model — OpenAI i.p.v. Anthropic) → samenbrengen.
+3. **Geen gefocuste standalone surface** — Claw is nu een globale overlay, geen eigen app-ingang.
+
+**Capability-ladder (gefaseerd):**
+
+| Fase | Job | Scope | Hergebruik vs nieuw | Gewicht |
+|---|---|---|---|---|
+| **MVP** | J1 | Plak/URL → gestructureerde findings (sterk / off-brand / fix) + per-dimensie merk-score + gesprek-vervolg | ~90% bestaat (`review_content`) — vooral surface + framing | Licht |
+| **MVP** | J2 | Grounded persona-role-play + devil's-advocate-mode (steelman → 3-5 objecties) | Persona-chat bestaat; anti-sycophancy + Claw-integratie nieuw | Licht-mid |
+| **v2** | J1 | Beeld/ad/design-review via vision + brandstyle-referentie + OCR; inline-annotatie + apply-rewrite | Vision bestaat intern → wiren = nieuw werk | Mid |
+| **v2** | J2 | Pre-mortem / objectie-map + message-fit-scorecard per persona; A/B twee boodschappen | Nieuw bovenop persona-data | Mid |
+| **v3** | J1 | Volledige pagina/PDF: deterministisch eerst (contrast/hiërarchie/WCAG) + attentie-predictie | Zwaar | Zwaar |
+| **v3** | J2 | Multi-persona "panel"-reactie + concurrent-context pressure-testing | Zwaar | Zwaar |
+
+**Trust-laag (dwars door alles = het differentiator):** anti-sycophancy-prompting + "jouw merk = de maatstaf" (altijd de geëxtraheerde DNA citeren, weiger ongegronde claims) + gekalibreerd vertrouwen + J2-output labelen als *simulatie die echte validatie vereist* + asset-privacy/no-train-garantie. Onderbouwing: product-onderzoek wees uit dat de dominante faalmodus van AI-feedback- én synthetic-audience-tools sycophancy/vals vertrouwen is; grounded critique + grounded adversariële sparring is de white space (generators bekritiseren niet diep; synthetic-audience-startups zijn niet grounded; Acrolinx/Vidmob/Adobe Brand Intelligence zijn enterprise-only).
+
+**De "app"-grens-beslissing (de enige echte keuze):**
+- **In-app gefocuste sectie** (embedded ClawOverlay-mode → eigen App.tsx-sectie): goedkoopst, hergebruikt sessie-auth + workspace-resolutie. **Aanrader om mee te starten.**
+- **Standalone/embeddable app** (eigen URL, voor prospects of klant-bureaus): deelt exact de auth-foundation van [`mcp-integration-layer`](#-mcp-integration-layer-post-launch--besluit-2026-06-19) M2 (workspace-scoped token/OAuth + remote hosting → dep `vercel-deployment`).
+
+**Strategische fit**: dit is letterlijk de MarTech-positionering ("de AI-sparringspartner die je merk-DNA door en door kent", [[branddock-martech-fest-stand]]) en zit op de white space uit de concurrentie-analyse ([[branddock-competitor-analysis-2026-06-16]]).
+
+**Open beslissingen vóór feature-discovery**:
+- App-grens: in-app sectie eerst vs direct standalone (zie boven).
+- J1-artefacttypen voor MVP: alleen tekst (bijna gratis) vs ook beeld (vision-gat dichten).
+- Doelgebruiker: bestaande workspace-users vs externe prospects als lead-gen-wedge (bepaalt onboarding zonder volledige brand-DNA).
+
+**Trigger om op te pakken**: post-launch; standalone-variant na `vercel-deployment` + de `mcp-integration-layer` M2-auth-foundation. De J1-tekst-MVP kan los daarvan (motor draait al), maar verbreedt dan Track A-scope.
 
 ---
 
