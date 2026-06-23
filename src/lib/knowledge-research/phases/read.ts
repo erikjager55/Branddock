@@ -42,6 +42,7 @@ export async function runRead(input: ReadInput): Promise<ReadOutput> {
   const numbered: NumberedSource[] = [];
 
   let scraped = 0;
+  let failed = 0;
   for (const src of input.sources) {
     if (input.signal.aborted) throw new DOMException("Aborted", "AbortError");
 
@@ -56,8 +57,12 @@ export async function runRead(input: ReadInput): Promise<ReadOutput> {
           content = result.bodyText.trim();
         }
       } catch (error) {
-        warnings.push(
-          `Scrape failed for ${src.url}: ${
+        failed++;
+        // Een 403/404 op één losse bron is niet-actionable voor de gebruiker:
+        // het technische detail blijft in de server-log, de UI krijgt na de loop
+        // één vriendelijke samenvatting (zie onder).
+        console.warn(
+          `[deep-research/read] Scrape failed for ${src.url}: ${
             error instanceof Error ? error.message : "unknown error"
           }`,
         );
@@ -78,6 +83,16 @@ export async function runRead(input: ReadInput): Promise<ReadOutput> {
     } else {
       input.sendEvent({ type: "source-read", index: src.index, status: "skipped" });
     }
+  }
+
+  // Eén vriendelijke samenvatting i.p.v. een rauwe 403/404-regel per bron. De
+  // overgeslagen bronnen blokkeren bots of zijn verplaatst; de synthese gebruikt
+  // de bronnen die wél gelezen konden worden (of, als geen enkele lukte, de
+  // grounding-samenvatting via orchestrator.ensureContent).
+  if (failed > 0) {
+    warnings.push(
+      `Couldn't open ${failed} of ${scraped} source${scraped === 1 ? "" : "s"} directly (blocked or moved); the report uses the sources that could be read.`,
+    );
   }
 
   return { numbered, warnings };
