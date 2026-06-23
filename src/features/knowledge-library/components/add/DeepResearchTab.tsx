@@ -61,9 +61,16 @@ export function DeepResearchTab({ onClose }: DeepResearchTabProps) {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // Voorkomt setState/onClose nadat de modal (en dus deze tab) is gesloten.
+  // De setup MOET de ref op true zetten: in React StrictMode (dev) draait de
+  // effect mount→cleanup→mount, en zonder reset blijft `.current` na de eerste
+  // cleanup voorgoed `false` hangen → elke `if (mountedRef.current)`-guard faalt
+  // (clarify-vragen verschenen daardoor nooit). Zie gotchas 2026-03-24.
   const mountedRef = useRef(true);
-  useEffect(() => () => {
-    mountedRef.current = false;
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   // ── (a) Onderwerp → verfijningsvragen ──
