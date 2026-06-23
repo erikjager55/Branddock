@@ -22,7 +22,7 @@ export interface NumberedSource {
 /** Formatteert de antwoorden van de gebruiker als compacte context-regels. */
 function formatAnswers(answers: ClarifyAnswer[]): string {
   const filled = answers.filter((a) => a.answer.trim().length > 0);
-  if (filled.length === 0) return "(geen verfijningen opgegeven)";
+  if (filled.length === 0) return "(no refinements provided)";
   return filled
     .map((a) => `- ${a.question.trim()}: ${a.answer.trim()}`)
     .join("\n");
@@ -51,7 +51,7 @@ export function buildClarifyPrompt(topic: string, brandContext?: string): string
 ${brandBlock(brandContext)}
 Generate 2-3 clarifying questions that would most sharpen this research.
 Focus on: intended scope, the decision/output the user needs, depth, time horizon, region/segment.
-Keep each question short (one sentence). Do not ask more than 3.
+Keep each question short (one sentence), and write them in English. Do not ask more than 3.
 
 Return JSON exactly in this shape:
 {
@@ -178,6 +178,7 @@ Numbered sources (cite by number):
 ${sourceBlock}
 
 STRICT REQUIREMENTS:
+- Write the entire report in English.
 - Cite every non-trivial factual claim inline using square-bracket numbers, e.g. "... grew 40% in 2025 [3]".
 - You may ONLY cite these source numbers: ${validNumbers}. Never invent a number outside this set.
 - Use markdown headings (##) to structure the report. Start with a short intro, then themed sections.

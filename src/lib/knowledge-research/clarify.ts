@@ -143,18 +143,18 @@ function fallbackQuestions(topic: string): ClarifyQuestion[] {
   return [
     {
       id: "q1",
-      question: `Wat is het doel van dit onderzoek naar "${t}" — welke beslissing of output moet het ondersteunen?`,
-      placeholder: "bijv. input voor een strategie, een blog, een investeringskeuze",
+      question: `What is the goal of researching "${t}" — which decision or output should it support?`,
+      placeholder: "e.g. input for a strategy, a blog post, an investment decision",
     },
     {
       id: "q2",
-      question: "Op welke regio, markt of doelgroep moet de focus liggen?",
-      placeholder: "bijv. NL/EU, B2B SaaS, Gen-Z",
+      question: "Which region, market, or audience should it focus on?",
+      placeholder: "e.g. NL/EU, B2B SaaS, Gen-Z",
     },
     {
       id: "q3",
-      question: "Welke tijdshorizon of recentheid is relevant?",
-      placeholder: "bijv. laatste 12 maanden, 2025-2026 vooruitblik",
+      question: "What time horizon or recency is relevant?",
+      placeholder: "e.g. last 12 months, 2025-2026 outlook",
     },
   ];
 }

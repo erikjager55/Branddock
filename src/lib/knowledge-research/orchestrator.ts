@@ -89,12 +89,12 @@ export interface RunDeepResearchInput {
 }
 
 const PHASE_LABELS: Record<ResearchPhase, string> = {
-  plan: "Onderzoeksplan opstellen",
-  search: "Bronnen zoeken",
-  read: "Bronnen lezen",
-  verify: "Claims verifiëren",
-  synthesize: "Rapport schrijven",
-  finalize: "Afronden",
+  plan: "Planning the research",
+  search: "Searching sources",
+  read: "Reading sources",
+  verify: "Verifying claims",
+  synthesize: "Synthesizing the report",
+  finalize: "Finalizing",
 };
 
 /** Gooit een AbortError als het signaal afgebroken of de deadline verstreken is. */
