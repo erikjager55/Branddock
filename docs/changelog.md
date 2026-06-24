@@ -44,7 +44,7 @@ Drie kleine render-/UX-fixes uit de Napking-pagina-review. (1) **Variant-picker*
 - Task: [tasks/done/lp-variant-picker-single-option.md](../tasks/done/lp-variant-picker-single-option.md), [tasks/done/geo-longform-heading-render-polish.md](../tasks/done/geo-longform-heading-render-polish.md)
 - ADR: -
 - Spec: [docs/specs/2026-06-17-geo-seo-longform-plan.md](specs/2026-06-17-geo-seo-longform-plan.md)
-- Commit: `PENDING`
+- Commit: `19272398`
 
 ### 341. "Model offline"-melding wanneer genereren niet mogelijk is
 
