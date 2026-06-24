@@ -3084,6 +3084,7 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens, bg: string = token
   const primary = tokens.primaryHex;
   const text = tokens.secondaryHex;
   const tbr = tokens.typographyByRole;
+  const ds = tokens.designSystem;
   // RichText rendert op de sectie-band-bg — clamp élke kop-kleur tegen die bg
   // (accent-reservering + gegarandeerd contrast) zodat een lichte gescrapte
   // kop-kleur niet onleesbaar wordt (systematische contrast-borging).
@@ -3115,7 +3116,11 @@ function buildRichTextMarkdownComponents(tokens: BrandTokens, bg: string = token
       <h2 style={{
         fontFamily: headingFont,
         color: h2Color,
-        fontSize: tbr.heading.fontSize ?? 26,
+        // Preset-bewuste fallback (i.p.v. een platte 26) zodat de RichText-`##`-sectiekop
+        // even groot is als de dedicated component-koppen (FAQ/Listicle/ComparisonTable),
+        // die exact dezelfde expressie gebruiken. Scraped-token-merken (tbr.heading.fontSize
+        // gezet) blijven byte-identiek; alleen het fallback-pad wordt gelijkgetrokken.
+        fontSize: tbr.heading.fontSize ?? ds.typography.heading.sizes[Math.max(0, ds.typography.heading.sizes.length - 2)] ?? 28,
         fontWeight: tbr.heading.fontWeight ?? 700,
         lineHeight: tbr.heading.lineHeight ?? undefined,
         letterSpacing: tbr.heading.letterSpacing ?? undefined,

@@ -5,11 +5,11 @@ fase: pre-launch
 priority: now
 effort: ~0,5-1 dag
 owner: claude-code
-status: in-progress
+status: done
 related-adr: -
 related-spec: docs/specs/2026-06-17-geo-seo-longform-plan.md
 created: 2026-06-24
-completed: -
+completed: 2026-06-24
 worktree: branddock-feat-lp-quickwins
 ---
 
@@ -71,4 +71,6 @@ Twee zichtbare render-issues op de gegenereerde GEO long-form pagina (Napking, 2
 # Notes
 
 - Gevonden tijdens [[geo-stat-citation-source-leak]]-verificatie (2026-06-24). Heading-size-indices in puck-config: RichText h2 = `tbr.heading.fontSize ?? 26` (r3118); component-koppen = `?? heading.sizes[length-2]` (r2140/2248/2358).
-- **Deelresultaat 2026-06-24** (worktree `branddock-feat-lp-quickwins`): #3 TL;DR-kop opgelost — `## TL;DR` → `## Samenvatting` in de template (NL-consistent met de overige hardcoded koppen). De template heeft geen locale beschikbaar (ctx exposeert die niet), dus volledige locale-awareness van álle section-labels vereist eerst locale-doorvoer → blijft open. **#4 fontgroottes nog open** (gedeelde `puck-config.tsx` → plan-mode + per-type visuele check vereist).
+- **Deelresultaat 2026-06-24** (worktree `branddock-feat-lp-quickwins`): #3 TL;DR-kop opgelost — `## TL;DR` → `## Samenvatting` in de template (NL-consistent met de overige hardcoded koppen). De template heeft geen locale beschikbaar (ctx exposeert die niet), dus volledige locale-awareness van álle section-labels vereist eerst locale-doorvoer → blijft open.
+- **Done 2026-06-24** (#4, main): RichText-`##`-h2-fallback in `puck-config.tsx` (`buildRichTextMarkdownComponents`) gelijkgetrokken aan de component-kop-expressie (`tbr.heading.fontSize ?? ds.typography.heading.sizes[len-2] ?? 28`) → RichText-sectiekop == FAQ/Listicle/ComparisonTable-kop by construction. Scraped-token-merken byte-identiek; alleen fallback-pad. Geen scale-inversie (`#`/h1 nooit template-geëmit). tsc/lint groen + parity bevestigd. **Beide gerapporteerde issues (#3 TL;DR + #4 fontgroottes) zijn opgelost → task done.**
+- **Resterende optionele follow-up** (geen gerapporteerd bug): volledige multi-locale-awareness van de hardcoded section-labels (TL;DR/Samenvatting, "Op een rij", "Veelgestelde vragen", "Bronnen") — vereist locale-doorvoer naar `buildLongFormGeoTemplateFromStructured`. Aparte mini-task indien ooit nodig.
