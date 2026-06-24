@@ -1124,7 +1124,11 @@ export function LandingPageGenerateBlock({
         </div>
       </div>
       <div className="flex items-center gap-3">
-        {variantOptions && variantOptions.length > 1 ? (
+        {/* >= 1 (niet > 1): ook bij één geleverde variant moet de gebruiker terug naar de
+            keuze kunnen. Bij een partial generation (slot-failure → 1 variant) zat de
+            gebruiker anders vast in deze "Variant chosen"-state zonder weg terug. De knop
+            zet de keuze leeg → de keuze-weergave (met "Choose this variant") verschijnt. */}
+        {variantOptions && variantOptions.length >= 1 ? (
           <button
             type="button"
             onClick={() => setStructuredVariant(null)}
