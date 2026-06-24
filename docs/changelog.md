@@ -44,7 +44,7 @@ Twee post-smoke-test bugfix-tasks (branch `fix/lp-smoke-bugs`, code reeds in mai
 - Task: [tasks/done/lp-step3-rendering-bugs.md](../tasks/done/lp-step3-rendering-bugs.md), [tasks/done/lp-fidelity-bugfixes-step2.md](../tasks/done/lp-fidelity-bugfixes-step2.md)
 - ADR: -
 - Spec: -
-- Commit: `<hash>`
+- Commit: `0327ee6d`
 
 ### 338. GEO-meet-paneel in de Canvas — geoOptimizationAnalysis zichtbaar (paneel-only)
 
