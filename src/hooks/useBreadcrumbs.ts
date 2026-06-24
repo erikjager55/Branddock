@@ -186,16 +186,6 @@ export function useBreadcrumbs(
       });
     }
 
-    // Content Studio
-    else if (activeSection === 'content-studio') {
-      breadcrumbs.push({
-        id: 'content-studio',
-        label: 'Content Studio',
-        icon: 'Palette',
-        isActive: true
-      });
-    }
-
     // Research Bundles
     else if (activeSection === 'research-bundles' || activeSection === 'research-bundle-detail') {
       breadcrumbs.push({

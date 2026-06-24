@@ -395,11 +395,6 @@ function AppContent() {
       redirectTo = 'ai-trainer';
     } else if (activeSection === 'consistent-model-showcase' && !useConsistentModelStore.getState().selectedModelId) {
       redirectTo = 'ai-trainer';
-    } else if (activeSection === 'content-studio') {
-      const cs = useCampaignStore.getState();
-      if (!cs.selectedCampaignId || !cs.selectedDeliverableId) {
-        redirectTo = 'active-campaigns';
-      }
     } else if (activeSection === 'content-canvas') {
       const cc = useCampaignStore.getState();
       if (!cc.selectedCampaignId || !cc.selectedDeliverableId) {
@@ -972,7 +967,6 @@ function AppContent() {
           />
         );
 
-      case 'content-studio': // fallthrough — redirects to content-canvas
       case 'content-canvas': {
         const ccCampaignId = useCampaignStore.getState().selectedCampaignId;
         const ccDeliverableId = useCampaignStore.getState().selectedDeliverableId;
