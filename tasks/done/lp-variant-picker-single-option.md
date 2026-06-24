@@ -5,12 +5,12 @@ fase: pre-launch
 priority: now
 effort: ~2-4 uur
 owner: claude-code
-status: open
+status: done
 created: 2026-06-24
-completed: -
+completed: 2026-06-24
 related-adr: -
 related-spec: -
-worktree: -
+worktree: branddock-feat-lp-quickwins
 ---
 
 # Probleem
@@ -65,3 +65,4 @@ simpelweg `setStructuredVariant(null)` → keuze-weergave verschijnt, ook voor 1
 # Notes
 
 - Live opgetreden + handmatig ontblokt tijdens [[geo-stat-citation-source-leak]]-verificatie (2026-06-24).
+- **Done 2026-06-24** (worktree `branddock-feat-lp-quickwins`): gate `> 1` → `>= 1` op de "Choose a different variant"-knop (`LandingPageGenerateBlock.tsx`). De 839/846-gates blijven `> 1` (a11y-score + vergelijk-grid voor ≥2 varianten). Optionele defense-in-depth (regeneratie reset DB-`structuredVariant`) bewust NIET meegenomen — de knop-fix deblokkeert de user-flow al; route-reset is een losse follow-up.

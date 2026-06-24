@@ -5,12 +5,12 @@ fase: pre-launch
 priority: now
 effort: ~0,5-1 dag
 owner: claude-code
-status: open
+status: in-progress
 related-adr: -
 related-spec: docs/specs/2026-06-17-geo-seo-longform-plan.md
 created: 2026-06-24
 completed: -
-worktree: -
+worktree: branddock-feat-lp-quickwins
 ---
 
 # Probleem
@@ -71,3 +71,4 @@ Twee zichtbare render-issues op de gegenereerde GEO long-form pagina (Napking, 2
 # Notes
 
 - Gevonden tijdens [[geo-stat-citation-source-leak]]-verificatie (2026-06-24). Heading-size-indices in puck-config: RichText h2 = `tbr.heading.fontSize ?? 26` (r3118); component-koppen = `?? heading.sizes[length-2]` (r2140/2248/2358).
+- **Deelresultaat 2026-06-24** (worktree `branddock-feat-lp-quickwins`): #3 TL;DR-kop opgelost — `## TL;DR` → `## Samenvatting` in de template (NL-consistent met de overige hardcoded koppen). De template heeft geen locale beschikbaar (ctx exposeert die niet), dus volledige locale-awareness van álle section-labels vereist eerst locale-doorvoer → blijft open. **#4 fontgroottes nog open** (gedeelde `puck-config.tsx` → plan-mode + per-type visuele check vereist).

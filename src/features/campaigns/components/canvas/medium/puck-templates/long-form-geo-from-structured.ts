@@ -56,8 +56,10 @@ export function buildLongFormGeoTemplateFromStructured(
     }),
     // Answer-first: de directe beantwoording bovenaan (AEO-citeerbaar).
     instance("RichText", { content: variant.answerFirstIntro }),
-    // TL;DR / key takeaways.
-    instance("RichText", { content: `## TL;DR\n\n${variant.tldr.map((b) => `- ${escapeMdInline(b)}`).join("\n")}` }),
+    // Samenvatting / key takeaways — NL-label i.p.v. het Engelse "TL;DR", consistent met
+    // de overige hardcoded template-koppen ("Op een rij"/"Veelgestelde vragen"/"Bronnen").
+    // Volledige locale-awareness van álle section-labels blijft een aparte follow-up.
+    instance("RichText", { content: `## Samenvatting\n\n${variant.tldr.map((b) => `- ${escapeMdInline(b)}`).join("\n")}` }),
     // Prose-secties (artikel-body): heading inline-escaped, body blijft block-prose (raw).
     ...variant.sections.map((s) => instance("RichText", { content: `## ${escapeMdInline(s.heading)}\n\n${s.body}` })),
     // Citeerbare stats — bron alleen tonen bij een ECHTE externe bron; first-party
