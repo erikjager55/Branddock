@@ -44,7 +44,7 @@ Een gegenereerde GEO long-form-pagina toonde interne context-laagnamen als citat
 - Task: [tasks/done/geo-stat-citation-source-leak.md](../tasks/done/geo-stat-citation-source-leak.md)
 - ADR: -
 - Spec: [docs/specs/2026-06-17-geo-seo-longform-plan.md](specs/2026-06-17-geo-seo-longform-plan.md)
-- Commit: `PENDING`
+- Commit: `2f78eec3`
 
 ### 339. LP smoke-bugs Step 2 + Step 3 ge-finalized (render-verificatie)
 
