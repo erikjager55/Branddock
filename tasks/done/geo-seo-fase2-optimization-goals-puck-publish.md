@@ -5,9 +5,9 @@ fase: pre-launch
 priority: next
 effort: 2,5-3,5 weken (XL)
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-17
-completed: -
+completed: 2026-06-24
 related-adr: docs/adr/2026-06-17-geo-seo-optimization-goals-field.md, docs/adr/2026-06-17-longform-puck-publish-chain.md
 related-spec: docs/specs/2026-06-17-geo-seo-longform-plan.md
 worktree: branddock-feat-geo-seo
@@ -80,3 +80,4 @@ Introduceer een checkbox-groep `optimizationGoals` (SEO/GEO, default-on per spec
 - ADR's vereist: optimizationGoals-veld + long-form→Puck-publish-keten.
 - Beslis vóór start: open vragen #1 (author-bron), #3 (GEO ook page-types?), #4 (welke Puck-blokken ronde 1).
 - **Opvolg-fix 2026-06-24 (changelog #337, commit `ce73e8a9`)**: de "publish-keten — GEEN code nodig"-aanname klopte voor de LandingPage-snapshot, maar miste dat de Deliverable nooit op PUBLISHED kwam — gepubliceerde GEO/web-pages verschenen daardoor niet in het "online content-items"-overzicht (de gap zat in de "NIET aanraken"-keuze om studio/publish-status niet te syncen). Opgelost in `/api/landing-pages/publish`: `approvalStatus`/`publishedAt`/`status`/`publishedVia`/`publishedUrl`-sync + `invalidateCache(campaigns/dashboard)`, fail-soft. Geldt voor alle PUCK_WEBPAGE_TYPES + long-form-GEO via deze route.
+- **Afgesloten 2026-06-24**: gebouwd + smoke-gedekt + publish-gap dicht (#337). Live-AI E2E opgetild naar `geo-seo-followup-live-ai-e2e`.

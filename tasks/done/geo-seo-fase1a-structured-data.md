@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 2-4 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-17
-completed: -
+completed: 2026-06-24
 related-adr: -
 related-spec: docs/specs/2026-06-17-geo-seo-longform-plan.md
 worktree: branddock-feat-geo-seo
@@ -73,3 +73,4 @@ Vul de head/JSON-LD/discovery-laag voor de al-gepubliceerde page-types. Drie sub
 - 2026-06-17: Fase 1a afgerond op code-niveau. Open vraag #6 (multi-tenant sitemap) opgelost na trace van `host-router.ts`: canonical-URL is deterministisch (`https://<ws>.branddock.app/<slug>`) en de juiste sitemap-vorm is **per-workspace op het subdomein** (geen globale root-sitemap → geen cross-tenant slug-lek). Discovery-files zijn host-aware route-handlers (niet de Next-metadata-files, want die kunnen de Host niet lezen); marketing `app/marketing/robots.ts`+`sitemap.ts` (branddock.com) blijven coëxisteren — niet aangeraakt.
 - 2026-06-17: 2-lens adversariële review — multitenant-security clean; nextjs-correctness-fixes verwerkt (cache-control op robots/llms, fail-soft DB-error-handling met `no-store` op sitemap/llms, llms-titels via JOIN i.p.v. N+1). Eén review-bevinding (robots error-handling) was false-positive: robots.txt doet geen DB-call.
 - node_modules in de worktree via symlink (`ln -s ../branddock-app/node_modules`) — werkt voor tsc/tsx, niet voor Turbopack-dev (gotcha).
+- **Afgesloten 2026-06-24**: code-niveau af + smoke-gedekt. Deferred items opgetild naar opvolg-tasks: deploy-time browser-smoke + BreadcrumbList/howToSchema → `geo-seo-followup-later`; long-form live-AI metadata-verificatie → `geo-seo-followup-live-ai-e2e`. De openstaande `[ ]`-criteria hierboven worden daar getrackt.

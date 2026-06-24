@@ -5,9 +5,9 @@ fase: pre-launch
 priority: next
 effort: 1-2 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-17
-completed: -
+completed: 2026-06-24
 related-adr: docs/adr/2026-06-17-seo-pipeline-composable-stage.md
 related-spec: docs/specs/2026-06-17-geo-seo-longform-plan.md
 worktree: branddock-feat-geo-seo
@@ -59,3 +59,4 @@ Maak long-form SEO-eligible via een aparte set `LONG_FORM_SEO_TYPES` (laat `WEBS
 # Notes
 
 - Levert pas zichtbare long-form-metadata NA Fase 2 (publish-keten). Fase 1b is het substraat, niet het eindresultaat.
+- **Afgesloten 2026-06-24**: code-niveau af + smoke-gedekt. Live-AI E2E-verificatie opgetild naar opvolg-task `geo-seo-followup-live-ai-e2e`.

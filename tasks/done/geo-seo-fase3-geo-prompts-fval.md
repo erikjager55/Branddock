@@ -5,9 +5,9 @@ fase: pre-launch
 priority: next
 effort: 2,5-3,5 weken (L-XL)
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-17
-completed: -
+completed: 2026-06-24
 worktree-real: branddock-feat-geo-fase2 (branch feat/geo-seo-fase3)
 related-adr: docs/adr/2026-06-17-seo-pipeline-composable-stage.md
 related-spec: docs/specs/2026-06-17-geo-seo-longform-plan.md
@@ -82,3 +82,4 @@ Voeg GEO-prompt-directives + een lichte polish-stap toe, vorm de SEO-early-retur
 - Hard afhankelijk van Fase 2 (structuredVariant + publish-keten + optimizationGoals).
 - **Beslissing Q2 (2026-06-17): E-E-A-T author-bron = nieuw workspace author-profiel** (naam + functie + sameAs-URLs zoals LinkedIn), niet OrganizationMember (vaak geen publieke sameAs + privacy). Voorkeur: additief opslaan als `Workspace.settings.authorProfile` (Json, geen migratie) i.p.v. een nieuw Prisma-model. `Person`+`sameAs` alleen emitten bij een ingevuld profiel, anders weglaten.
 - **Refinement (Fase 1b → 3)**: `datePublished`/`dateModified` komen uit system-metadata (`LandingPage.publishedAt`/`updatedAt`) bij render, NIET uit de AI-`SeoChecklist`. `SeoChecklist.author` is daarmee de enige author-toevoeging en hoort bij Fase 3, niet 1b.
+- **Afgesloten 2026-06-24**: gebouwd + adversarieel gereviewd. Deferred + bewust-geaccepteerde bevindingen opgetild: meet-haak zichtbaar maken / F-VAL-pijler activeren / puckData-scoring / settings-transactie → `geo-seo-followup-measurement-dashboard`; live-AI E2E → `geo-seo-followup-live-ai-e2e`; externe entity-reinforcement / citation-meting → `geo-seo-followup-later`.

@@ -14,7 +14,8 @@
 - **Geland op `main` in juni** (changelog #322-#337): web-page-builder/Puck als Canvas Step 3 + brandstyle-extractie-fixes; website page-types W0-W5; GEO/SEO long-form Fase 1-3 (directive + composable seo-geo + F-VAL GEO-pijler + entity-JSON-LD + meet-haak); Deep Research in de Knowledge Library; knowledge-context in de content-flow + op de 5 PUCK web-page-types; content-item-beelden auto-groeien de Media Library; prompt-audit fase 0-5; NL→EN UI-migratie; **web-page/GEO-publish markeert het content-item nu als PUBLISHED (#337, deze sessie)**.
 - **Worktrees**: `branddock-brandclaw` + `branddock-launch` staan beide op `a511e85b` (19 jun) = **~6 commits achter `main`** (de eerdere "~58 commits achter"-claim is achterhaald). Beide hebben 0 eigen commits.
 - **Research Hub** staat bewust uit achter `RESEARCH_HUB_ENABLED=false` (per-asset AI-Exploration vanuit Brand Foundation blijft wél aan).
-- **Nog open / niet ge-finalized**: de 4 `geo-seo-fase*`-tasks + `web-page-builder-canvas-step-mvp` staan op `in-progress` (motor geland, front-end/dashboard + live-AI E2E deferred); `lp-fidelity-bugfixes-step2` + `lp-step3-rendering-bugs` op `in-review`; Track C (launch-infra) onaangeroerd.
+- **Nog open / niet ge-finalized**: `web-page-builder-canvas-step-mvp` op `in-progress`; `lp-fidelity-bugfixes-step2` + `lp-step3-rendering-bugs` op `in-review`; Track C (launch-infra) onaangeroerd.
+- **GEO/SEO Fase 1a/1b/2/3 afgesloten 2026-06-24** (→ `tasks/done/`): deferred restpunten leven nu in 3 opvolg-tasks — `geo-seo-followup-measurement-dashboard` (GEO-voordeur: meten zichtbaar maken + F-VAL-pijler activeren), `geo-seo-followup-live-ai-e2e` (volledige keten lokaal verifiëren, nú oppakbaar), `geo-seo-followup-later` (entity-reinforcement + restschema + deploy-smoke).
 
 ---
 
