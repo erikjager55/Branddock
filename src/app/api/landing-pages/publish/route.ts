@@ -6,6 +6,8 @@ import { headers } from 'next/headers';
 import { publishLandingPage, isValidSlug } from '@/lib/landing-pages/publish-page';
 import { longFormGeoVariantSchema } from '@/lib/landing-pages/page-type-schemas';
 import { buildGeoOptimizationAnalysis } from '@/lib/landing-pages/geo-analysis';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 
 /**
  * POST /api/landing-pages/publish
@@ -100,6 +102,33 @@ export async function POST(request: NextRequest) {
     const url = workspace?.slug
       ? `https://${workspace.slug}.branddock.app/${body.slug}`
       : `https://branddock.app/p/${body.slug}`;
+
+    // Sync de eigenaar-Deliverable zodat een web-page/GEO-publish ook in het
+    // "online content-items"-overzicht verschijnt (dat filtert op
+    // approvalStatus === 'PUBLISHED'). Deze publish-keten maakte voorheen
+    // alleen de LandingPage + /p/[slug]-snapshot en liet de deliverable op
+    // DRAFT/APPROVED staan — de pagina ging live maar dook nooit op in de lijst.
+    // Geldt voor alle PUCK_WEBPAGE_TYPES + long-form-GEO die via deze route gaan.
+    // Fail-soft: de pagina is al gepubliceerd; deze boekhouding mag nooit 500'en.
+    try {
+      await prisma.deliverable.update({
+        where: { id: deliverable.id },
+        data: {
+          approvalStatus: 'PUBLISHED',
+          publishedAt: new Date(),
+          status: 'COMPLETED',
+          publishedVia: 'webpage',
+          publishedUrl: url,
+        },
+      });
+      invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+      invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+    } catch (err) {
+      console.warn(
+        '[landing-pages/publish] Deliverable status-sync faalde (genegeerd):',
+        err instanceof Error ? err.message : err,
+      );
+    }
 
     // GEO Fase 3 — meet-haak: persist een deterministische GEO-analyse voor een
     // gepubliceerd long-form GEO-artikel (geoScore + signalen + schema-types +
