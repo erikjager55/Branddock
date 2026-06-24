@@ -5,9 +5,9 @@ fase: pre-launch
 priority: next
 effort: ~0,5 dag
 owner: claude-code
-status: open
+status: done
 created: 2026-06-24
-completed: -
+completed: 2026-06-24
 related-adr: -
 related-spec: docs/specs/2026-06-17-geo-seo-longform-plan.md
 worktree: -
@@ -64,3 +64,4 @@ refereren). Behoud het null-gedrag uitsluitend voor échte first-party merk-cijf
 # Notes
 
 - Volgt uit de live-verificatie van [[geo-stat-citation-source-leak]] (alle 4 sources null op de Napking-pagina, 2026-06-24).
+- **Done 2026-06-24**: bindende constraint was de 7000-char-cap (user-knowledge defaultte naar reference) die de rapport-URLs (laatste ~426 chars) afkapte. Fix: nieuwe `geo-knowledge-context.ts` forceert de eerste ≤3 knowledge-resources op primary (16k) + prepend "## CITEERBARE BRONNEN"-handles; route gated op LONG_FORM_SEO_TYPES; prompt citeert uitsluitend uit die lijst. Live-harness op finale code: 1/4 citeableStats kreeg een echte bron + sources[] met echte URL (superlinen.com); first-party null; 0 interne labels. 5-ronde finalize-review clean. Bekende grens: bronnen >16k kunnen body-URLs afkappen (handle blijft fallback).

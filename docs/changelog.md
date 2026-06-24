@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 343. GEO stats citeren de echte knowledge-bron (i.p.v. genullde labels)
+
+Vervolg op de stat-citatie-leak: na de sanitizer renderden GEO-stats label-only omdat het model de échte knowledge-bron niet citeerde. Live-harness toonde de bindende constraint: user-geselecteerde knowledge-resources defaulten naar `reference` (7000-char-cap), waardoor de referenties/URLs (achteraan een research-rapport) worden afgekapt en het model ze nooit ziet. Fix: nieuwe `geo-knowledge-context.ts` forceert de eerste ≤3 knowledge-resources (dedup, bron-type-bewust) op `primary` (16k-cap → volledige bron incl. URLs bereikt het model) en prepend een expliciet "## CITEERBARE BRONNEN"-blok (titel + url als schone citeer-handle). De `generate-structured-variant`-route gebruikt dit gated op `LONG_FORM_SEO_TYPES`; de GEO-prompt citeert `citeableStats[].source` uitsluitend uit die lijst (null voor first-party / geen match; geen fabricage; geen interne labels). Live-AI-harness op de Napking-pagina + Deep Research-rapport: additionalContextText 7k→16k incl. URLs, 1/4 citeableStats kreeg een echte bron + `sources[]` met een echte externe URL (superlinen.com); first-party "280+" bleef null. 5-ronde finalize-review clean (0 CRITICAL/WARNING); tsc 0, lint 0. Bekende grens: bronnen >16k kunnen body-URLs afkappen — de title/url-handle blijft dan de citeer-fallback.
+
+- Task: [tasks/done/geo-citation-real-sources.md](../tasks/done/geo-citation-real-sources.md)
+- ADR: -
+- Spec: [docs/specs/2026-06-17-geo-seo-longform-plan.md](specs/2026-06-17-geo-seo-longform-plan.md)
+- Commit: `PENDING`
+
 ### 342. LP/GEO render quick-wins — variant-picker, TL;DR-kop NL, heading-fontgroottes gelijkgetrokken
 
 Drie kleine render-/UX-fixes uit de Napking-pagina-review. (1) **Variant-picker**: "Choose a different variant" was gegate op `> 1` en dus verborgen bij een partial generation (1 geleverde variant), waardoor de gebruiker vastzat in de "Variant chosen"-state; gate → `>= 1` (`LandingPageGenerateBlock`, commit `7b3e795b`). (2) **GEO long-form TL;DR-kop**: de hardcoded Engelse "TL;DR" → "Samenvatting", consistent met de overige NL-koppen ("Op een rij"/"Veelgestelde vragen"/"Bronnen") (commit `bd138b9d`). (3) **Heading-fontgroottes**: de RichText-`##`-sectiekop viel terug op een platte 26px terwijl de dedicated component-koppen (FAQ/Listicle/ComparisonTable) de archetype-schaal `heading.sizes[len-2]` (28-56px, preset-afhankelijk) gebruikten — bij fallback-token-merken (zoals Napking, PLAYFUL) gaf dat een zichtbaar groot verschil. De RichText-h2-fallback gebruikt nu dezelfde preset-bewuste expressie → identiek by construction; scraped-token-merken blijven byte-identiek (alleen het fallback-pad gelijkgetrokken). Verificatie: tsc/lint groen + expression-parity bevestigd (h2 == component-kop). Open follow-up: volledige locale-awareness van de section-labels (vereist locale-doorvoer naar de template).

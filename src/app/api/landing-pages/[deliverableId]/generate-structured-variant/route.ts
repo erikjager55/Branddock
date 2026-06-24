@@ -21,6 +21,8 @@ import {
 } from "@/lib/landing-pages/variant-tell-rewrite";
 import { flattenPageVariantToText } from "@/lib/landing-pages/flatten-variant";
 import { hasOwnVariantSchema } from "@/lib/landing-pages/page-type-schemas";
+import { LONG_FORM_SEO_TYPES } from "@/lib/ai/seo-pipeline.types";
+import { buildGeoKnowledgeContext } from "@/lib/landing-pages/geo-knowledge-context";
 import type { LandingPageVariantContent } from "@/lib/landing-pages/variant-schema";
 import { runFidelityScoring } from "@/lib/brand-fidelity/fidelity-runner";
 import { detectAiTells } from "@/lib/brand-fidelity/ai-tell-detector";
@@ -220,8 +222,13 @@ export async function POST(
   // items (al op ctx.additionalContextItems via assembleCanvasContext) tot
   // prompt-tekst, zodat web-page-generatie het bronmateriaal consumeert net als
   // het orchestrator-pad. Leeg → undefined (prompt blijft dan byte-identiek).
+  // Long-form GEO: forceer knowledge → primary (volledige bron incl. referenties/URLs reikt
+  // het model) + prepend expliciete "## CITEERBARE BRONNEN"-handles, zodat citeableStats een
+  // echte bron krijgen i.p.v. genullde labels. Andere page-types houden het bestaande pad.
   const additionalContextText = ctx.additionalContextItems?.length
-    ? (await serializeContextForPrompt(ctx.additionalContextItems, workspaceId)) || undefined
+    ? LONG_FORM_SEO_TYPES.has(deliverable.contentType)
+      ? await buildGeoKnowledgeContext(ctx.additionalContextItems, workspaceId)
+      : (await serializeContextForPrompt(ctx.additionalContextItems, workspaceId)) || undefined
     : undefined;
 
   let results;

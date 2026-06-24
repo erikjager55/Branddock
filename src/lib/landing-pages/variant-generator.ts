@@ -727,18 +727,18 @@ Genereer een compleet long-form GEO-artikel als **gestructureerd JSON** volgens 
   "tldr": [string] (2-5 bullets: de key takeaways, elk zelfstandig leesbaar),
   "sections": [{ "heading": string, "body": string (de artikel-body in atomic chunks van 2-4 zinnen die elk los citeerbaar zijn) }] (min 1),
   "qa": [{ "question": string (max 120 tekens, klanttaal), "answer": string (antwoord-eerst, zelfstandig leesbaar) }] (min 2),
-  "citeableStats": [{ "label": string, "value": string, "source": string | null (een ECHTE externe bron — titel met jaartal of URL — uit de knowledge-context of de "sources"-lijst; laat WEG (null) voor een eigen/first-party merk-cijfer; NOOIT een interne laagnaam) }] (min 1),
+  "citeableStats": [{ "label": string, "value": string, "source": string | null (een titel of URL EXACT uit de "## CITEERBARE BRONNEN"-lijst als het cijfer daaruit komt; null voor een eigen/first-party merk-cijfer of als er geen passende bron in die lijst staat; NOOIT een interne laagnaam of verzonnen bron) }] (min 1),
   "definitions": [{ "term": string, "definition": string }] | optional (sleuteltermen helder gedefinieerd — entity-clarity),
   "comparison": { "caption": string | optional, "columns": [string] (min 2 koppen, incl. de eerste kenmerk-kolom), "rows": [{ "label": string, "cells": [string] }] } | optional (multi-kolom vergelijking — een van de hoogst-geciteerde formats),
   "listItems": [{ "rank": number, "title": string, "body": string }] | optional (genummerde listicle — een van de hoogst-geciteerde formats),
-  "sources": [{ "title": string, "url": string }] | optional (bronnen uit de context),
+  "sources": [{ "title": string, "url": string }] | optional (de échte bronnen — titel + URL — uit het aangeleverde bronmateriaal die je in citeableStats[].source refereert),
   "finalCta": { "heading": string, "ctaLabel": string (max 48 tekens) }
 }
 
 # KRITISCHE REGELS (overtreding = automatic rejection)
 1. **geoArticle = true**: het veld "geoArticle" MOET letterlijk true zijn (de discriminant; weglaten = rejection).
 2. **Answer-first (AEO)**: answerFirstIntro, elke qa.answer EN de eerste zin van elke sectie beantwoorden hun punt volledig + zelfstandig leesbaar; een AI-engine moet die passage los kunnen citeren.
-3. **Citeerbare stats — bron alleen als die ECHT extern is**: gebruik als source uitsluitend een echte externe bron (publicatie-titel met jaartal of een URL) uit de knowledge-context of de "sources"-lijst. Is het cijfer een eigen/first-party merk-gegeven, zet dan source op null — NOOIT een bron verzinnen. Gebruik NOOIT een interne laagnaam als bron: de woorden "brand-context", "briefing", "evidence pieces" en "delivery evidence" mogen niet in een source voorkomen. Verzin nooit cijfers.
+3. **Citeerbare stats — citeer alleen uit "## CITEERBARE BRONNEN"**: komt een cijfer uit het aangeleverde bronmateriaal, zet de source dan op een titel of URL EXACT zoals vermeld in de "## CITEERBARE BRONNEN"-lijst (en neem die URL op in de top-level "sources"-lijst). Geef de VOORKEUR aan zo'n echte bron boven weglaten — een uit dat bronmateriaal afgeleid cijfer hoort een bron te krijgen. Ontbreekt de "## CITEERBARE BRONNEN"-lijst, staat er geen passende bron in, of is het cijfer een eigen/first-party merk-gegeven (bv. "X restaurants gebruiken ons"), dan source null. NOOIT een bron of cijfer verzinnen, en NOOIT een interne laagnaam als bron: de woorden "brand-context", "briefing", "evidence pieces" en "delivery evidence" mogen niet in een source voorkomen.
 4. **Atomic chunking**: schrijf sections in zelfstandige brokken van 2-4 zinnen — geen lange lappen; elk brok moet los citeerbaar zijn.
 5. **Entity-clarity**: definieer sleuteltermen (definitions) en gebruik volledige entiteitsnamen, geen vage verwijzingen ("dit", "het systeem").
 6. **Anti-fabricage**: ${ANTI_FABRICATION_RULE} Stats, bronnen, URLs en definities UITSLUITEND uit de context; verzin geen bronnen of links. Heeft een cijfer geen echte externe bron, laat de stat-source dan null — een verzonnen of interne-laag-"bron" is erger dan geen bron.
