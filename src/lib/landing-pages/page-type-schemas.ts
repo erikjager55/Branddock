@@ -232,11 +232,13 @@ export type MicrositeVariantContent = z.infer<typeof micrositeVariantSchema>;
 
 // ─── Long-form GEO-article (GEO/SEO Fase 2) ──────────────────
 
-/** Stat met verplichte bron — citeerbaarheid voor AI-engines vereist herkomst. */
+/** Stat met optionele bron. Een ECHTE externe bron maakt 'm beter citeerbaar, maar
+ *  een first-party merk-cijfer mag eerlijk zónder bron — een geforceerde bron dwong
+ *  het model juist om interne context-laagnamen als "bron" te verzinnen (leak). */
 const geoStatSchema = z.object({
   label: z.string().min(1, "citeableStats[].label mag niet leeg zijn"),
   value: z.string().min(1, "citeableStats[].value mag niet leeg zijn"),
-  source: z.string().min(1, "citeableStats[].source mag niet leeg zijn — citeerbaar = met bron"),
+  source: z.string().min(1).nullable().optional(),
 });
 
 /** Prose-sectie (de body-meat van het artikel). */

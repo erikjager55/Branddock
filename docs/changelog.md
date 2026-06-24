@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 340. GEO stat-citatie leak — interne context-laagnamen niet langer als bron
+
+Een gegenereerde GEO long-form-pagina toonde interne context-laagnamen als citatie-bron in de stats-band ("Napking briefing: evidence pieces, 2024", "brand-context: delivery evidence") — dezelfde leak-klasse als de Effie-rubric (gotcha 2026-05-17). Data-laag-curatie (een echte knowledge-bron toevoegen) bleek onvoldoende: het model citeert de context-lagen zélf. Vier verdedigingslagen: `geoStatSchema.source` van verplicht → nullable/optional (de geforceerde bron was de directe oorzaak dat het model er een verzon); prompt-guard die een echte externe bron eist óf weglaten toestaat en interne laagnamen verbiedt; nieuwe `sanitize-geo-sources.ts` (`cleanStatSource` denylist + `sanitizeLongFormGeoVariant`) gewired op het parse-return-punt zodat de opgeslagen variant schoon is; en `cleanStatSource` als render-/scoring-vangnet in de Puck-template, `geo-analysis` en `flatten-variant` (heelt ook reeds-opgeslagen pre-fix varianten bij rebuild). Stats zonder echte externe bron renderen label-only. Live-AI E2E geverifieerd op een Napking-artikel (sources → null, geen leak in `structuredVariant` + `puckData`); 3-ronde finalize-review clean (0 CRITICAL/WARNING), sanitizer-smoke 15/15.
+
+- Task: [tasks/done/geo-stat-citation-source-leak.md](../tasks/done/geo-stat-citation-source-leak.md)
+- ADR: -
+- Spec: [docs/specs/2026-06-17-geo-seo-longform-plan.md](specs/2026-06-17-geo-seo-longform-plan.md)
+- Commit: `PENDING`
+
 ### 339. LP smoke-bugs Step 2 + Step 3 ge-finalized (render-verificatie)
 
 Twee post-smoke-test bugfix-tasks (branch `fix/lp-smoke-bugs`, code reeds in main via de web-page-builder squash-merges) formeel afgerond na de openstaande browser-verificatie. Step 3 render-laag live bevestigd op een gepubliceerde Napking landing-page: CTA-affordance-floor (blauwe filled button + radius, geen uppercase/platte-tekst-CTA), Lucide icon-resolutie (geen rauwe icon-namen), quote-cap. Step 2: brand-fit-check media-URL-resolutie (disk-read) + LP auto-iterate op `structuredVariant` + beide-varianten-scoring + page-level 502-guard, gefinalized op merge-bewijs. Mapping-/UI-state-fixes (#7 footer-tagline, #1/#2 hero-image) verschijnen bij nieuwe generatie (niet retroactief op oude puckData).

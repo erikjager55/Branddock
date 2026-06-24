@@ -19,6 +19,7 @@ import type { SpikePuckProps } from "../puck-config";
 import type { LongFormGeoVariantContent } from "@/lib/landing-pages/page-type-schemas";
 import { resolveCtaHref, assignSectionBands } from "./landing-page-from-structured";
 import { instance, taglineFromSubline, footerInstance, type PuckInstance } from "./from-structured-shared";
+import { cleanStatSource } from "@/lib/landing-pages/sanitize-geo-sources";
 
 type SpikeData = Data<SpikePuckProps>;
 
@@ -59,9 +60,15 @@ export function buildLongFormGeoTemplateFromStructured(
     instance("RichText", { content: `## TL;DR\n\n${variant.tldr.map((b) => `- ${escapeMdInline(b)}`).join("\n")}` }),
     // Prose-secties (artikel-body): heading inline-escaped, body blijft block-prose (raw).
     ...variant.sections.map((s) => instance("RichText", { content: `## ${escapeMdInline(s.heading)}\n\n${s.body}` })),
-    // Citeerbare stats — bron in het label zodat de herkomst zichtbaar blijft.
+    // Citeerbare stats — bron alleen tonen bij een ECHTE externe bron; first-party
+    // cijfers (source null/leeg) vallen terug op label-only. Render-vangnet: scrub ook
+    // hier zodat reeds-opgeslagen pre-fix varianten bij een puck-rebuild geheald worden
+    // én whitespace-only bronnen wegvallen (sanitizer aan de bron blijft primair).
     instance("StatsBlock", {
-      items: variant.citeableStats.map((s) => ({ value: s.value, label: `${s.label} — ${s.source}` })),
+      items: variant.citeableStats.map((s) => {
+        const src = cleanStatSource(s.source);
+        return { value: s.value, label: src ? `${s.label} — ${src}` : s.label };
+      }),
     }),
     // Multi-kolom vergelijking → dedicated ComparisonTable (geen markdown meer).
     ...(variant.comparison

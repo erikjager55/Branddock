@@ -45,6 +45,7 @@ import {
   hasOwnVariantSchema,
   type PageVariantContent,
 } from "./page-type-schemas";
+import { sanitizeLongFormGeoVariant } from "./sanitize-geo-sources";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -726,7 +727,7 @@ Genereer een compleet long-form GEO-artikel als **gestructureerd JSON** volgens 
   "tldr": [string] (2-5 bullets: de key takeaways, elk zelfstandig leesbaar),
   "sections": [{ "heading": string, "body": string (de artikel-body in atomic chunks van 2-4 zinnen die elk los citeerbaar zijn) }] (min 1),
   "qa": [{ "question": string (max 120 tekens, klanttaal), "answer": string (antwoord-eerst, zelfstandig leesbaar) }] (min 2),
-  "citeableStats": [{ "label": string, "value": string, "source": string (VERPLICHTE bron) }] (min 1),
+  "citeableStats": [{ "label": string, "value": string, "source": string | null (een ECHTE externe bron — titel met jaartal of URL — uit de knowledge-context of de "sources"-lijst; laat WEG (null) voor een eigen/first-party merk-cijfer; NOOIT een interne laagnaam) }] (min 1),
   "definitions": [{ "term": string, "definition": string }] | optional (sleuteltermen helder gedefinieerd — entity-clarity),
   "comparison": { "caption": string | optional, "columns": [string] (min 2 koppen, incl. de eerste kenmerk-kolom), "rows": [{ "label": string, "cells": [string] }] } | optional (multi-kolom vergelijking — een van de hoogst-geciteerde formats),
   "listItems": [{ "rank": number, "title": string, "body": string }] | optional (genummerde listicle — een van de hoogst-geciteerde formats),
@@ -737,10 +738,10 @@ Genereer een compleet long-form GEO-artikel als **gestructureerd JSON** volgens 
 # KRITISCHE REGELS (overtreding = automatic rejection)
 1. **geoArticle = true**: het veld "geoArticle" MOET letterlijk true zijn (de discriminant; weglaten = rejection).
 2. **Answer-first (AEO)**: answerFirstIntro, elke qa.answer EN de eerste zin van elke sectie beantwoorden hun punt volledig + zelfstandig leesbaar; een AI-engine moet die passage los kunnen citeren.
-3. **Citeerbare stats MET bron**: elke citeableStats-entry heeft een echte source uit de aangeleverde context. Geen stat zonder bron; verzin geen cijfers.
+3. **Citeerbare stats — bron alleen als die ECHT extern is**: gebruik als source uitsluitend een echte externe bron (publicatie-titel met jaartal of een URL) uit de knowledge-context of de "sources"-lijst. Is het cijfer een eigen/first-party merk-gegeven, zet dan source op null — NOOIT een bron verzinnen. Gebruik NOOIT een interne laagnaam als bron: de woorden "brand-context", "briefing", "evidence pieces" en "delivery evidence" mogen niet in een source voorkomen. Verzin nooit cijfers.
 4. **Atomic chunking**: schrijf sections in zelfstandige brokken van 2-4 zinnen — geen lange lappen; elk brok moet los citeerbaar zijn.
 5. **Entity-clarity**: definieer sleuteltermen (definitions) en gebruik volledige entiteitsnamen, geen vage verwijzingen ("dit", "het systeem").
-6. **Anti-fabricage**: ${ANTI_FABRICATION_RULE} Stats, bronnen, URLs en definities UITSLUITEND uit de context; verzin geen bronnen of links.
+6. **Anti-fabricage**: ${ANTI_FABRICATION_RULE} Stats, bronnen, URLs en definities UITSLUITEND uit de context; verzin geen bronnen of links. Heeft een cijfer geen echte externe bron, laat de stat-source dan null — een verzonnen of interne-laag-"bron" is erger dan geen bron.
 7. **Hoog-citeerbare formats**: gebruik comparison (multi-kolom) en/of listItems wanneer de inhoud zich ervoor leent — deze formats winnen AI-citaties.
 8. **Geen markdown in veld-strings**: lever platte tekst; de renderer verzorgt de opmaak (geen **bold**, # of tabel-syntax in de strings).
 9. **Readability**: 5e-7e graders niveau, zinnen ≤25 woorden, jargon alleen mét uitleg.
@@ -873,7 +874,14 @@ export function parsePageVariantResponse(
       rawText: jsonText,
     };
   }
-  return { success: true, data: result.data as PageVariantContent };
+  // Vangnet: scrub interne context-laagnamen uit citeableStats[].source van GEO-articles
+  // (leak-klasse Effie 2026-05-17). Aan de bron, zodat de opgeslagen variant schoon is en
+  // render + geo-analysis + flatten-variant allemaal meeprofiteren.
+  const data =
+    (result.data as { geoArticle?: unknown }).geoArticle === true
+      ? sanitizeLongFormGeoVariant(result.data as Record<string, unknown>)
+      : result.data;
+  return { success: true, data: data as PageVariantContent };
 }
 
 /**

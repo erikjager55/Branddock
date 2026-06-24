@@ -7,6 +7,7 @@ import type {
   PageVariantContent,
   ProductPageVariantContent,
 } from "./page-type-schemas";
+import { cleanStatSource } from "./sanitize-geo-sources";
 
 /**
  * Plat-tekst-projectie van LandingPageVariantContent voor F-VAL scoring.
@@ -111,7 +112,10 @@ function flattenGeoArticleVariant(v: LongFormGeoVariantContent): string {
   const parts: Array<string | null | undefined> = [v.hero.headline, v.hero.subline, v.answerFirstIntro];
   for (const b of v.tldr) parts.push(b);
   for (const s of v.sections) parts.push(s.heading, s.body);
-  for (const st of v.citeableStats) parts.push(`${st.value} ${st.label} (${st.source})`);
+  for (const st of v.citeableStats) {
+    const src = cleanStatSource(st.source);
+    parts.push(src ? `${st.value} ${st.label} (${src})` : `${st.value} ${st.label}`);
+  }
   for (const d of v.definitions ?? []) parts.push(d.term, d.definition);
   if (v.comparison) {
     parts.push(v.comparison.caption);

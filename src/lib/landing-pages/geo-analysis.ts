@@ -10,6 +10,7 @@
  * Pure functie — geen DB/AI (computeGeoScore is judge-vrij + in-process).
  */
 import { computeGeoScore, type GeoSignalScores } from '../brand-fidelity/geo-fidelity-scorer';
+import { cleanStatSource } from './sanitize-geo-sources';
 import { buildBlogPostingJsonLd } from './page-json-ld';
 import type { LongFormGeoVariantContent } from './page-type-schemas';
 
@@ -27,7 +28,10 @@ function buildGeoScoringText(v: LongFormGeoVariantContent): string {
   for (const s of v.sections) parts.push(s.body);
   for (const qa of v.qa) parts.push(`${qa.question}\n${qa.answer}`);
   for (const item of v.listItems ?? []) parts.push(`${item.rank}. ${item.title}: ${item.body}`);
-  for (const stat of v.citeableStats) parts.push(`${stat.label}: ${stat.value} (bron: ${stat.source}).`);
+  for (const stat of v.citeableStats) {
+    const src = cleanStatSource(stat.source);
+    parts.push(src ? `${stat.label}: ${stat.value} (bron: ${src}).` : `${stat.label}: ${stat.value}.`);
+  }
   return parts.join('\n\n');
 }
 
