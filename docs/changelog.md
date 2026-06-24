@@ -44,7 +44,7 @@ Vervolg op de stat-citatie-leak: na de sanitizer renderden GEO-stats label-only 
 - Task: [tasks/done/geo-citation-real-sources.md](../tasks/done/geo-citation-real-sources.md)
 - ADR: -
 - Spec: [docs/specs/2026-06-17-geo-seo-longform-plan.md](specs/2026-06-17-geo-seo-longform-plan.md)
-- Commit: `PENDING`
+- Commit: `cb765045`
 
 ### 342. LP/GEO render quick-wins — variant-picker, TL;DR-kop NL, heading-fontgroottes gelijkgetrokken
 
