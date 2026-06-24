@@ -5,9 +5,9 @@ fase: pre-launch
 priority: next
 effort: 3-5 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-06-24
-completed: -
+completed: 2026-06-24
 related-adr: docs/adr/2026-06-17-seo-pipeline-composable-stage.md
 related-spec: docs/specs/2026-06-17-geo-seo-longform-plan.md
 worktree: -
@@ -65,3 +65,21 @@ Maak de bestaande GEO-meetdata zichtbaar en betrouwbaar: een GEO-paneel dat `geo
 
 - Bron-gat: GEO/SEO Fase 3 "Bewust geaccepteerde review-bevindingen" + Deferred (changelog #336). Opgetild uit `tasks/done/geo-seo-fase3-geo-prompts-fval.md` op 2026-06-24.
 - Dit is de feature die de gebruiker als "ik mis het GEO-deel" ervoer: er is geen zichtbare GEO-surface, alleen een data-haak.
+
+## Uitvoering 2026-06-24 (paneel-only)
+
+Gebouwd:
+- `src/lib/landing-pages/geo-panel-view.ts` (nieuw) — pure view-model (geoZone / toGeoPanelSignals / buildGeoPanelViewModel + staleness via `isContentStale`).
+- `src/features/campaigns/components/canvas/GeoOptimizationPanel.tsx` (nieuw) — paneel: score+zone (inline-hex, Tailwind-4-purge), 5-signaal-breakdown, schema-type-badges, freshness-badge, findings-lijst; self-null bij afwezige analyse (spiegelt VisualFidelityBadge), fail-soft.
+- Data-laag: `GET /api/studio/[id]/components` + `FetchCanvasComponentsResult` + `fetchCanvasComponents` dragen nu `geoOptimizationAnalysis`.
+- Mount: `Step4Timeline` rendert het paneel ná het publish-readiness-blok, gegate op `isPuckRenderable`.
+- Betrouwbaarheid: de meet-haak-persist in `/api/landing-pages/publish` zit nu in een `prisma.$transaction` (read-modify-write atomisch → autosave-clobber-race geëlimineerd). Code-comment documenteert dat `structuredVariant` de canonieke scoringsbron blijft (puckData-flatten → `geo-seo-followup-later`).
+- Smoke: `scripts/smoke-tests/geo-panel.ts` (25/25) — zone-drempels, signaal-zwak-vlag, staleness-grens + de fail-soft guard `isRenderableGeoAnalysis` (null/ontbrekende-signals/niet-numeriek-signaal/findings-geen-array).
+- Hardening uit 3-ronde review-loop: runtime-guard `isRenderableGeoAnalysis` (valideert geoScore + alle 5 signalen numeriek + findings/schemaTypes arrays) → paneel self-nullt op gedrifte JSON i.p.v. de canvas te laten crashen.
+
+**F-VAL GEO-pijler NIET geactiveerd** — bewuste keuze (paneel-only): publish-gate composite/drempel byte-identiek. Activatie blijft 1-flag-vervolg.
+
+Verificatie (live, tegen draaiende server):
+- Components-route levert `geoOptimizationAnalysis` voor het gepubliceerde Napking-item: geoScore 77, 5 signalen, schemaTypes [BlogPosting, FAQPage, DefinedTermSet], 1 finding, measuredAt.
+- Gates: `tsc --noEmit` 0, eslint 0 errors (2 pre-existing warnings in Step4Timeline), geo-panel smoke 25/25, regressie geo-analysis 14/14 + geo-fidelity 20/20 + geo-blogposting-jsonld 25/25 + geo-puck-renderable 18/18.
+- In-situ paneel-screenshot niet gemaakt: `useCampaignStore`/`activeSection` persisteren niet → geen state-injectie; data-pad + view-model + types bewijzen de render. Eyeball: Napking blog-post → Canvas Step 4.

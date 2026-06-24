@@ -18,6 +18,7 @@ import { usePublishChannels } from '@/features/settings/hooks/use-publish-channe
 import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { PublishGate } from '../PublishGate';
+import { GeoOptimizationPanel } from '../GeoOptimizationPanel';
 import { VersionHistorySidebar } from '../VersionHistorySidebar';
 import type { PreviewContent } from '../../../types/canvas.types';
 import {
@@ -719,6 +720,12 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           </div>
         </div>
       )}
+
+      {/* GEO-meet-paneel — toont de gepersisteerde geoOptimizationAnalysis van
+          een gepubliceerd long-form GEO-artikel. Buiten de !isPublished-gate
+          zodat het ná publish (wanneer de analyse bestaat) zichtbaar blijft;
+          gegate op Puck-renderbaarheid en self-null bij afwezige analyse. */}
+      {isPuckType && <GeoOptimizationPanel deliverableId={deliverableId} />}
 
       {/* Version history (entry #227) — collapsible side-panel toont AI-versies +
           USER-edits met fidelity-scores en restore-knoppen. Bewaakt history

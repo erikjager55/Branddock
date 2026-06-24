@@ -5,6 +5,7 @@ import type {
   PublishResponse,
   DeriveResponse,
 } from '../types/canvas.types';
+import type { GeoOptimizationAnalysis } from '@/lib/landing-pages/geo-analysis';
 
 /** Persisted fidelity score snapshot shape (uit Deliverable.settings.fidelityScore). */
 export interface PersistedFidelityScore {
@@ -92,6 +93,8 @@ export interface FetchCanvasComponentsResult {
   strictRewrite: PersistedStrictRewrite | null;
   /** G8 — most recent visual fidelity score per image component for badge hydration. */
   visualFidelityScores: PersistedVisualFidelityScore[];
+  /** GEO-meet-haak — gepersisteerd bij publish van een long-form GEO-artikel; null anders. */
+  geoOptimizationAnalysis: GeoOptimizationAnalysis | null;
 }
 
 /** Fetch all DeliverableComponent records for a deliverable + creative angle labels + persisted fidelity */
@@ -105,6 +108,7 @@ export async function fetchCanvasComponents(deliverableId: string): Promise<Fetc
     fidelityScore: data.fidelityScore ?? null,
     strictRewrite: data.strictRewrite ?? null,
     visualFidelityScores: Array.isArray(data.visualFidelityScores) ? data.visualFidelityScores : [],
+    geoOptimizationAnalysis: data.geoOptimizationAnalysis ?? null,
   };
 }
 

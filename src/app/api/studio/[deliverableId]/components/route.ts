@@ -84,6 +84,9 @@ export async function GET(
     // een eerdere succesvolle generatie.
     const fidelityScore = settings.fidelityScore ?? null;
     const strictRewrite = settings.strictRewrite ?? null;
+    // GEO/SEO meet-haak — gepersisteerd bij publish van een long-form GEO-artikel.
+    // Hydrate het GEO-meet-paneel (Fase 2-opvolg) bij page refresh.
+    const geoOptimizationAnalysis = settings.geoOptimizationAnalysis ?? null;
 
     return NextResponse.json({
       components,
@@ -91,6 +94,7 @@ export async function GET(
       variantAngles,
       fidelityScore,
       strictRewrite,
+      geoOptimizationAnalysis,
       visualFidelityScores: Array.from(
         visualFidelityByComponent.entries(),
       ).map(([componentId, data]) => ({ componentId, ...data })),

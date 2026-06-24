@@ -65,7 +65,8 @@
     "smoke:geo-fidelity": "tsx scripts/smoke-tests/geo-fidelity.ts",
     "smoke:geo-polish": "tsx scripts/smoke-tests/geo-polish.ts",
     "smoke:geo-claw-gate": "tsx scripts/smoke-tests/geo-claw-gate.ts",
-    "smoke:geo-analysis": "tsx scripts/smoke-tests/geo-analysis.ts"
+    "smoke:geo-analysis": "tsx scripts/smoke-tests/geo-analysis.ts",
+    "smoke:geo-panel": "tsx scripts/smoke-tests/geo-panel.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

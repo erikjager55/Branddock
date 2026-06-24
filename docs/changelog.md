@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 338. GEO-meet-paneel in de Canvas — geoOptimizationAnalysis zichtbaar (paneel-only)
+
+Maakt de bij publish gepersisteerde `settings.geoOptimizationAnalysis` zichtbaar in Canvas Step 4: een `GeoOptimizationPanel` toont de GEO-composietscore + zone, de 5 onderliggende signalen (answer-first / atomic chunking / cited-stats / entity-clarity / structurele cues), de geëmitte schema.org-types, een 90-dagen-freshness-badge en de verbeterpunten. Pure view-model in `geo-panel-view.ts` (incl. `isRenderableGeoAnalysis` fail-soft-guard tegen gedrifte JSON); data via een uitgebreide `GET /api/studio/[id]/components` + `useCanvasComponents`. De F-VAL GEO-pijler in de publish-gate blijft **bewust dormant** (geen drempel-impact; activatie = 1-flag-vervolg). Tevens: de meet-haak-persist in `/api/landing-pages/publish` draait nu in een `prisma.$transaction` (read-modify-write-race op `settings` geëlimineerd). Live geverifieerd op een gepubliceerd Napking-artikel (geoScore 77); 3-ronde finalize-review clean (0 CRITICAL/WARNING), geo-panel smoke 25/25.
+
+- Task: [tasks/done/geo-seo-followup-measurement-dashboard.md](../tasks/done/geo-seo-followup-measurement-dashboard.md)
+- ADR: -
+- Spec: [docs/specs/2026-06-17-geo-seo-longform-plan.md](specs/2026-06-17-geo-seo-longform-plan.md)
+- Commit: <hash>
+
 ### 337. Web-page/GEO-publish markeert het content-item nu als PUBLISHED
 
 De `/api/landing-pages/publish`-keten (GEO/long-form + de 5 PUCK_WEBPAGE_TYPES) maakte alleen de `LandingPage`-snapshot + `/p/[slug]` en liet de eigenaar-Deliverable op DRAFT/APPROVED staan — de pagina ging live maar verscheen nooit in het "online content-items"-overzicht (filtert op `approvalStatus === 'PUBLISHED'`). Bewust opengelaten gap uit GEO/SEO Fase 2 ("Bestanden die ik NIET aanraak"-lijst). Fix: na een geslaagde `publishLandingPage` synct de route de Deliverable (`approvalStatus=PUBLISHED`, `publishedAt`, `status=COMPLETED`, `publishedVia=webpage`, `publishedUrl`) + `invalidateCache(campaigns/dashboard)` (CLAUDE.md-regel #10), fail-soft zodat de al-geslaagde publish niet 500't. Geen backfill — werkt vanaf de eerstvolgende (re)publish.

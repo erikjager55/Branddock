@@ -142,20 +142,30 @@ export async function POST(request: NextRequest) {
           canonicalUrl: url,
           now: new Date(),
         });
-        // Verse read zodat een gelijktijdige autosave (puckData/hero) niet wordt geclobberd.
-        const fresh = await prisma.deliverable.findUnique({
-          where: { id: deliverable.id },
-          select: { settings: true },
-        });
-        const freshSettings =
-          fresh?.settings && typeof fresh.settings === 'object' && !Array.isArray(fresh.settings)
-            ? (fresh.settings as Record<string, unknown>)
-            : {};
-        await prisma.deliverable.update({
-          where: { id: deliverable.id },
-          data: {
-            settings: JSON.parse(JSON.stringify({ ...freshSettings, geoOptimizationAnalysis: analysis })),
-          },
+        // De meet-haak scoort `settings.structuredVariant` (de canonieke
+        // contentbron) en herberekent bij elke (re)publish. Na een latere
+        // Puck/Claw-edit van `puckData` kan de score nog de pre-edit-content
+        // beschrijven; volledige puckData-flatten-scoring is bewust uitgesteld
+        // (geo-seo-followup-later). De read-modify-write op `settings` loopt in
+        // één interactieve transactie zodat een gelijktijdige autosave
+        // (puckData/hero) de geoOptimizationAnalysis niet kan clobberen — de
+        // read-modify-write-race op `settings` is daarmee geëlimineerd. (De
+        // #337 status-sync hierboven raakt aparte kolommen, geen overlap.)
+        await prisma.$transaction(async (tx) => {
+          const fresh = await tx.deliverable.findUnique({
+            where: { id: deliverable.id },
+            select: { settings: true },
+          });
+          const freshSettings =
+            fresh?.settings && typeof fresh.settings === 'object' && !Array.isArray(fresh.settings)
+              ? (fresh.settings as Record<string, unknown>)
+              : {};
+          await tx.deliverable.update({
+            where: { id: deliverable.id },
+            data: {
+              settings: JSON.parse(JSON.stringify({ ...freshSettings, geoOptimizationAnalysis: analysis })),
+            },
+          });
         });
       }
     } catch (err) {
