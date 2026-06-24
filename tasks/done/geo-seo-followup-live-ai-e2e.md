@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: 0,5-1 dag
 owner: claude-code
-status: open
+status: done
 created: 2026-06-24
-completed: -
+completed: 2026-06-24
 related-adr: -
 related-spec: docs/specs/2026-06-17-geo-seo-longform-plan.md
 worktree: -
@@ -56,3 +56,18 @@ Draai lokaal (waar de keys + DB-data wél bestaan) de volledige keten één keer
 # Notes
 
 - Opgetild uit de Deferred-secties van `tasks/done/geo-seo-fase1b-*`, `-fase2-*`, `-fase3-*` (changelog #332/#336) op 2026-06-24. Kan nú lokaal, geen dependency.
+
+## Uitkomst live-run 2026-06-24 (Playwright + psql)
+
+Prereqs: `prisma db push` was al gedaan (authorProfile-kolom in DB), maar **`prisma generate` ontbrak** → verse client + dev-server-restart (+ `.next`-clear poging, permissie-geblokkeerd; restart volstond). Stale-client-gotcha 2026-05-29 bevestigd in de praktijk.
+
+Bevonden DB-staat vooraf: **0 gepubliceerde LandingPages + 0 `geoOptimizationAnalysis`** — de publish/meet-keten was nooit gedraaid. Wel 2 GEO-deliverables (geoArticle, Napking) + 38 met puckData.
+
+**PASS (live, echte data) — gepubliceerd `cmqqg6mzt000bw9c9a9tsfk6m` (Napking blog-post):**
+- Scenario 2: publish 200 → `/p/[slug]?workspace=napking` rendert (HTTP 200, 480KB); JSON-LD `@graph` = **BlogPosting + FAQPage + DefinedTermSet**; HTML bevat answer-first + TL;DR; visueel: hero/TL;DR/Q&A/stats-rij/vergelijkingstabel/listicle/FAQ/CTA renderen alle GEO Puck-blokken.
+- Scenario 5 (#337): deliverable → `approvalStatus=PUBLISHED`, `status=COMPLETED`, `publishedVia=webpage`, `publishedUrl` gezet → verschijnt nu in online content-items.
+- Meet-haak: `geoOptimizationAnalysis` gepersisteerd — geoScore **77**; signalen answerFirst 100 / atomicChunking 94 / entityClarity 89 / structuredCues 67 / **citedStats 26** (→ de 1 finding). Levert echte fixture voor het Fase 2-paneel.
+- Structureel (scenario 2-content): geoArticle-variant heeft answerFirstIntro + 5 TL;DR + 6 cited-stats-met-bron + 6 secties + 5 Q&A.
+
+**Residu (bewust niet live gedraaid — keuze 2026-06-24, smoke-gedekt):**
+- Scenario 1 (SEO-only long-form → seoChecklist → metadata) + 3 (composable seo+geo, beide draaien) + 4 (compute-gating): vergen een verse betaalde long-form generatie via de canvas-flow. Gedekt door bestaande unit/smoke (`shouldRunSeoPipeline`, `shouldApplyGeoPolish`, geo-fidelity compute-gating). Live-fresh-run blijft optioneel oppakbaar.
