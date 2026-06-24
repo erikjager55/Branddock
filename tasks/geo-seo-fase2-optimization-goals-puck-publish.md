@@ -79,3 +79,4 @@ Introduceer een checkbox-groep `optimizationGoals` (SEO/GEO, default-on per spec
 
 - ADR's vereist: optimizationGoals-veld + long-form→Puck-publish-keten.
 - Beslis vóór start: open vragen #1 (author-bron), #3 (GEO ook page-types?), #4 (welke Puck-blokken ronde 1).
+- **Opvolg-fix 2026-06-24 (changelog #337, commit `ce73e8a9`)**: de "publish-keten — GEEN code nodig"-aanname klopte voor de LandingPage-snapshot, maar miste dat de Deliverable nooit op PUBLISHED kwam — gepubliceerde GEO/web-pages verschenen daardoor niet in het "online content-items"-overzicht (de gap zat in de "NIET aanraken"-keuze om studio/publish-status niet te syncen). Opgelost in `/api/landing-pages/publish`: `approvalStatus`/`publishedAt`/`status`/`publishedVia`/`publishedUrl`-sync + `invalidateCache(campaigns/dashboard)`, fail-soft. Geldt voor alle PUCK_WEBPAGE_TYPES + long-form-GEO via deze route.
