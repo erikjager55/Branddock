@@ -4,7 +4,7 @@ import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
 import { withAiRateLimit } from "@/lib/ai/middleware";
 import { openaiClient } from "@/lib/ai";
-import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from "@/lib/ai/error-handler";
+import { parseAIError, getReadableErrorMessage, getAIErrorStatus, isModelUnavailable } from "@/lib/ai/error-handler";
 import { createVersion } from "@/lib/versioning";
 import { buildBrandAssetSnapshot } from "@/lib/snapshot-builders";
 
@@ -85,6 +85,14 @@ export async function POST(
   } catch (error) {
     console.error("[POST /api/brand-assets/:id/regenerate]", error);
     const parsed = parseAIError(error);
-    return NextResponse.json({ error: getReadableErrorMessage(parsed) }, { status: getAIErrorStatus(parsed) });
+    return NextResponse.json(
+      {
+        error: getReadableErrorMessage(parsed),
+        errorType: parsed.type,
+        unavailable: isModelUnavailable(parsed),
+        retryable: parsed.retryable,
+      },
+      { status: getAIErrorStatus(parsed) },
+    );
   }
 }

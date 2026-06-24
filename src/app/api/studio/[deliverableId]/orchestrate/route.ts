@@ -4,6 +4,7 @@ import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-acc
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { prisma } from '@/lib/prisma';
 import { orchestrateContentGeneration } from '@/lib/ai/canvas-orchestrator';
+import { buildAiErrorEvent } from '@/lib/ai/error-handler';
 import { serializeContextForPrompt } from '@/lib/ai/context/fetcher';
 import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
 
@@ -184,7 +185,9 @@ export async function POST(
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown error';
           console.error('[POST /api/studio/orchestrate] Pipeline error:', message);
-          sendEvent('error', { message, recoverable: false });
+          // Classify so the client can distinguish "model offline" from a
+          // generic failure. recoverable:false preserves prior semantics.
+          sendEvent('error', buildAiErrorEvent(error, { recoverable: false }));
         } finally {
           clearInterval(heartbeat);
           try {

@@ -5,6 +5,7 @@ import { Modal, Button } from '@/components/shared';
 import { Sparkles, Info } from 'lucide-react';
 import { DELIVERABLE_TYPES, DELIVERABLE_CATEGORIES } from '../../lib/deliverable-types';
 import { useBulkCreateDeliverables } from '../../hooks';
+import { interpretAiError, notifyAiError } from '@/lib/ai/ai-error-client';
 import type { DeliverableResponse } from '@/types/campaign';
 
 interface BulkGenerateModalProps {
@@ -97,7 +98,9 @@ export function BulkGenerateModal({
       onCreated(result.deliverables.map((d) => d.id));
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      const e = interpretAiError(err);
+      setError(e.message || 'Something went wrong');
+      if (e.unavailable) notifyAiError(err);
     }
   };
 

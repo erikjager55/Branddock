@@ -6,7 +6,7 @@ import {
   buildSystemPrompt,
   DEFAULT_SYSTEM_PROMPT_TEMPLATE,
 } from "@/lib/ai/context/prompt-builder";
-import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from "@/lib/ai/error-handler";
+import { parseAIError, getReadableErrorMessage, getAIErrorStatus, isModelUnavailable } from "@/lib/ai/error-handler";
 import { resolveFeatureModel } from "@/lib/ai/feature-models.server";
 // Lock guard not needed: chatting doesn't modify persona data
 
@@ -289,7 +289,15 @@ export async function POST(
   } catch (error) {
     console.error("[POST /api/personas/:id/chat]", error);
     const parsed = parseAIError(error);
-    return NextResponse.json({ error: getReadableErrorMessage(parsed) }, { status: getAIErrorStatus(parsed) });
+    return NextResponse.json(
+      {
+        error: getReadableErrorMessage(parsed),
+        errorType: parsed.type,
+        unavailable: isModelUnavailable(parsed),
+        retryable: parsed.retryable,
+      },
+      { status: getAIErrorStatus(parsed) },
+    );
   }
 }
 

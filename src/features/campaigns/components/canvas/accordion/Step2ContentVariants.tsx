@@ -23,6 +23,7 @@ import { getEstimatedDuration } from '../../../lib/content-type-inputs';
 import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
 import type { SceneId } from '../../../stores/useCanvasStore';
 import { generateCanvasVisual, setHeroImage as persistHeroImage } from '../../../api/canvas.api';
+import { interpretAiError, notifyAiError } from '@/lib/ai/ai-error-client';
 import { LibraryAssetPicker } from '../LibraryAssetPicker';
 import { ComposePicker } from '../ComposePicker';
 import { TrainedStylePicker } from '../TrainedStylePicker';
@@ -183,8 +184,9 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
         }
         setVisualGenerationStatus('idle');
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to generate visual';
-        setVisualGenerationStatus('error', message);
+        const e = interpretAiError(err);
+        setVisualGenerationStatus('error', e.message || 'Failed to generate visual');
+        if (e.unavailable) notifyAiError(err);
       }
     },
     [

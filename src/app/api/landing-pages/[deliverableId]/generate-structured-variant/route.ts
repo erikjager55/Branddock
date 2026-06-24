@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { buildAiErrorResponseInit } from "@/lib/ai/error-handler";
 import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
 import { serializeContextForPrompt } from "@/lib/ai/context/fetcher";
@@ -254,12 +255,10 @@ export async function POST(
     );
   } catch (err) {
     console.error("[generate-structured-variant] Batch failed", err);
+    const { body, status } = buildAiErrorResponseInit(err);
     return NextResponse.json(
-      {
-        error: "Variant generation failed",
-        detail: err instanceof Error ? err.message : String(err),
-      },
-      { status: 502 },
+      { ...body, detail: err instanceof Error ? err.message : String(err) },
+      { status },
     );
   }
 

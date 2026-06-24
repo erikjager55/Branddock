@@ -8,6 +8,7 @@
 import { useRef, useCallback } from 'react';
 import { useCanvasStore } from '../stores/useCanvasStore';
 import type { CanvasVariant, CanvasImageVariant } from '../types/canvas.types';
+import { interpretAiError, errorFromResponse } from '@/lib/ai/ai-error-client';
 
 // ─── Named SSE Parser ───────────────────────────────────────
 // Standard SSE events use "event:" + "data:" fields.
@@ -136,7 +137,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
       });
 
       if (!res.ok) {
-        throw new Error(`Orchestration failed: ${res.status}`);
+        throw await errorFromResponse(res, `Orchestration failed: ${res.status}`);
       }
 
       const reader = res.body?.getReader();
@@ -168,7 +169,12 @@ export function useCanvasOrchestration(deliverableId: string | null) {
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
       console.error('[useCanvasOrchestration] Error:', err);
-      useCanvasStore.getState().setGlobalStatus('error', (err as Error).message ?? 'Generation failed');
+      const e = interpretAiError(err);
+      useCanvasStore.getState().setGlobalStatus('error', {
+        message: e.message || 'Generation failed',
+        errorType: e.errorType,
+        unavailable: e.unavailable,
+      });
     } finally {
       isGeneratingRef.current = false;
       abortRef.current = null;
@@ -222,7 +228,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
         });
 
         if (!res.ok) {
-          throw new Error(`Regeneration failed: ${res.status}`);
+          throw await errorFromResponse(res, `Regeneration failed: ${res.status}`);
         }
 
         const reader = res.body?.getReader();
@@ -254,7 +260,12 @@ export function useCanvasOrchestration(deliverableId: string | null) {
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
       console.error('[useCanvasOrchestration] Regenerate error:', err);
-      useCanvasStore.getState().setGlobalStatus('error');
+      const e = interpretAiError(err);
+      useCanvasStore.getState().setGlobalStatus('error', {
+        message: e.message || 'Regeneration failed',
+        errorType: e.errorType,
+        unavailable: e.unavailable,
+      });
     } finally {
       isGeneratingRef.current = false;
       abortRef.current = null;
@@ -600,7 +611,12 @@ function routeEvent(eventName: string, rawData: string) {
         console.warn('[Canvas Orchestration] Recoverable warning:', data.message);
       } else {
         console.error('[Canvas Orchestration] Error event:', data.message);
-        store.setGlobalStatus('error', (data.message as string) ?? 'Content generation failed');
+        const e = interpretAiError(data);
+        store.setGlobalStatus('error', {
+          message: (data.message as string) ?? e.message ?? 'Content generation failed',
+          errorType: e.errorType,
+          unavailable: e.unavailable,
+        });
       }
       break;
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
+import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { getStorageProvider } from '@/lib/storage';
@@ -345,9 +346,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Error generating image:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate image. Please try again.' },
-      { status: 500 }
-    );
+    const { body, status } = buildAiErrorResponseInit(error);
+    return NextResponse.json(body, { status });
   }
 }

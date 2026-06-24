@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import { useCanvasComponents } from '../../hooks/canvas.hooks';
 import { HorizontalAccordion } from './accordion/HorizontalAccordion';
@@ -11,6 +11,8 @@ import { useCanvasOrchestration } from '../../hooks/useCanvasOrchestration';
 import { CanvasHelpButton } from '../../../claw/components/CanvasHelpButton';
 import { useClawStore } from '@/stores/useClawStore';
 import { Badge, Skeleton } from '@/components/shared';
+import { ModelUnavailableNotice } from '@/components/ui/ModelUnavailableNotice';
+import { notifyAiError } from '@/lib/ai/ai-error-client';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ArrowLeft } from 'lucide-react';
 import type { ApprovalStatus } from '../../types/canvas.types';
@@ -101,6 +103,8 @@ async function applyInheritance(
 export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPageProps) {
   const globalStatus = useCanvasStore((s) => s.globalStatus);
   const globalErrorMessage = useCanvasStore((s) => s.globalErrorMessage);
+  const globalUnavailable = useCanvasStore((s) => s.globalUnavailable);
+  const globalErrorType = useCanvasStore((s) => s.globalErrorType);
   const fidelityThresholdMet = useCanvasStore((s) => s.fidelityScore.thresholdMet);
   const fidelityStage = useCanvasStore((s) => s.fidelityScore.stage);
   const approvalStatus = useCanvasStore((s) => s.approvalStatus);
@@ -118,6 +122,27 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
   const { generate: orchestrateGenerate } = useCanvasOrchestration(deliverableId);
   const pendingAutoGenerate = useCanvasStore((s) => s.pendingAutoGenerate);
   const setPendingAutoGenerate = useCanvasStore((s) => s.setPendingAutoGenerate);
+
+  // Fire the "model offline" toast once per failed-generation transition.
+  // The inline ModelUnavailableNotice (below) stays visible afterwards.
+  const offlineToastShownRef = useRef(false);
+  useEffect(() => {
+    if (globalStatus === 'error' && globalUnavailable) {
+      if (!offlineToastShownRef.current) {
+        offlineToastShownRef.current = true;
+        notifyAiError(
+          {
+            errorType: globalErrorType ?? undefined,
+            unavailable: true,
+            message: globalErrorMessage ?? undefined,
+          },
+          { retry: () => { void orchestrateGenerate(); } },
+        );
+      }
+    } else {
+      offlineToastShownRef.current = false;
+    }
+  }, [globalStatus, globalUnavailable, globalErrorType, globalErrorMessage, orchestrateGenerate]);
 
   // Auto-trigger generation na derive: GenerationFeedbackBanners derive-handler
   // zet pendingAutoGenerate naar de nieuwe deliverableId voor navigatie.
@@ -697,12 +722,23 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
             <span className="text-sm text-emerald-600">Generation complete</span>
           )
         )}
-        {globalStatus === 'error' && (
+        {globalStatus === 'error' && !globalUnavailable && (
           <span className="text-sm text-red-500" title={globalErrorMessage ?? undefined}>
             {globalErrorMessage ?? 'Generation failed'}
           </span>
         )}
       </div>
+
+      {/* Model offline: generation impossible — dedicated notice with retry */}
+      {globalStatus === 'error' && globalUnavailable && (
+        <div className="mx-4 mt-2">
+          <ModelUnavailableNotice
+            errorType={globalErrorType ?? undefined}
+            retryable={globalErrorType !== 'authentication'}
+            onRetry={() => { void orchestrateGenerate(); }}
+          />
+        </div>
+      )}
 
       {/* Generation feedback banners: brand-voice fallback warning + iteration nudges */}
       <GenerationFeedbackBanners />

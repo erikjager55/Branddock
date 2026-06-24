@@ -14,7 +14,8 @@ import {
   useGenerateInsight,
   useDeleteInsight,
 } from './index';
-import { getReadableErrorMessage } from '@/lib/ai/error-handler';
+import type { AIErrorType } from '@/lib/ai/error-handler';
+import { interpretAiError, notifyAiError } from '@/lib/ai/ai-error-client';
 
 const MAX_MESSAGES = 50;
 const WARNING_THRESHOLD = 45;
@@ -25,6 +26,9 @@ export interface UsePersonaChatReturn {
   isLoading: boolean;
   isStreaming: boolean;
   error: string | null;
+  /** True when `error` is because the model is unreachable (drives the offline notice). */
+  errorUnavailable: boolean;
+  errorType: AIErrorType | null;
   isRetrying: boolean;
 
   // Session
@@ -64,6 +68,8 @@ export function usePersonaChat(
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorUnavailable, setErrorUnavailable] = useState(false);
+  const [errorType, setErrorType] = useState<AIErrorType | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
   const abortRef = useRef(false);
   const streamingMsgIdRef = useRef<string | null>(null);
@@ -99,6 +105,7 @@ export function usePersonaChat(
       }).catch((err) => {
         setIsLoading(false);
         setError(err?.message || 'Failed to start chat session. Please try again.');
+        setErrorUnavailable(false);
       });
     }
   }, [isOpen, personaId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -115,7 +122,7 @@ export function usePersonaChat(
         })),
       );
     }
-  }, [contextData]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [contextData]);  
 
   // ─── Compute insights data ────────────────────────────────
   const insights = insightsData?.insights ?? [];
@@ -137,6 +144,7 @@ export function usePersonaChat(
       if (!sessionId || isStreaming) return;
       if (messages.length >= MAX_MESSAGES) {
         setError('Maximum messages per session reached (50). Please start a new session.');
+      setErrorUnavailable(false);
         return;
       }
 
@@ -202,13 +210,21 @@ export function usePersonaChat(
             );
             streamingMsgIdRef.current = null;
           },
-          onError: (errMsg) => {
-            setError(errMsg);
+          onError: (errInput) => {
+            const e = interpretAiError(errInput);
+            setError(e.message || 'Failed to send message');
+            setErrorUnavailable(e.unavailable);
+            setErrorType(e.errorType);
+            if (e.unavailable) notifyAiError(errInput);
             setMessages((prev) => prev.filter((m) => m.id !== streamingId));
           },
         });
       } catch (err) {
-        setError(getReadableErrorMessage(err));
+        const e = interpretAiError(err);
+        setError(e.message || 'Failed to send message');
+        setErrorUnavailable(e.unavailable);
+        setErrorType(e.errorType);
+        if (e.unavailable) notifyAiError(err);
         setMessages((prev) => prev.filter((m) => m.id !== streamingId));
       } finally {
         setIsStreaming(false);
@@ -282,8 +298,8 @@ export function usePersonaChat(
       try {
         await generateInsightMutation.mutateAsync(messageId);
         toast.success('Insight saved!');
-      } catch {
-        toast.error('Failed to generate insight');
+      } catch (err) {
+        notifyAiError(err);
       } finally {
         setGeneratingInsightForMessageId(null);
       }
@@ -304,6 +320,8 @@ export function usePersonaChat(
     isLoading,
     isStreaming,
     error,
+    errorUnavailable,
+    errorType,
     isRetrying,
 
     // Session

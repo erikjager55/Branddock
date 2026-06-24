@@ -35,7 +35,9 @@ export interface StreamCallbacks {
   onToken: (token: string) => void;
   onDone: (fullText: string, usage: { promptTokens: number; completionTokens: number }) => void;
   onMeta: (meta: { messageId: string; userMessageId: string; sessionId: string }) => void;
-  onError: (error: string) => void;
+  // Receives the raw error payload/Error so the consumer can classify it
+  // (model offline vs generic) via interpretAiError.
+  onError: (error: unknown) => void;
 }
 
 /**
@@ -56,7 +58,14 @@ export async function streamChatMessage(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Failed to send message" }));
-    callbacks.onError(err.error || "Failed to send message");
+    callbacks.onError(
+      Object.assign(new Error(err.error || "Failed to send message"), {
+        status: res.status,
+        errorType: err.errorType,
+        unavailable: err.unavailable,
+        retryable: err.retryable,
+      }),
+    );
     return;
   }
 
@@ -87,7 +96,7 @@ export async function streamChatMessage(
         const payload = JSON.parse(trimmed.slice(6));
 
         if (payload.error) {
-          callbacks.onError(payload.error);
+          callbacks.onError(payload);
         } else if (payload.meta) {
           callbacks.onMeta({
             messageId: payload.messageId,

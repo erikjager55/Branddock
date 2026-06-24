@@ -7,6 +7,7 @@ import type { UsePersonaChatReturn } from '../../hooks/usePersonaChat';
 import { PersonaChatBubble } from './PersonaChatBubble';
 import { PersonaChatInput } from './PersonaChatInput';
 import { AIErrorCard } from '@/components/ui/AIErrorCard';
+import { ModelUnavailableNotice } from '@/components/ui/ModelUnavailableNotice';
 
 interface PersonaChatInterfaceProps {
   persona: PersonaWithMeta;
@@ -25,6 +26,8 @@ export function PersonaChatInterface({
     messages,
     isStreaming,
     error,
+    errorUnavailable,
+    errorType,
     messageCount,
     maxMessages,
     isNearLimit,
@@ -77,11 +80,20 @@ export function PersonaChatInterface({
       {/* Error message */}
       {error && (
         <div className="px-6 flex-shrink-0">
-          <AIErrorCard
-            message={error}
-            onRetry={retryLastMessage}
-            isRetrying={isRetrying}
-          />
+          {errorUnavailable ? (
+            <ModelUnavailableNotice
+              errorType={errorType ?? undefined}
+              retryable={errorType !== 'authentication'}
+              onRetry={retryLastMessage}
+              isRetrying={isRetrying}
+            />
+          ) : (
+            <AIErrorCard
+              message={error}
+              onRetry={retryLastMessage}
+              isRetrying={isRetrying}
+            />
+          )}
         </div>
       )}
 

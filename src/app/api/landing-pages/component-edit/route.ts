@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { anthropicClient } from '@/lib/ai/anthropic-client';
+import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
 import {
   getInstruction,
   isValidInstructionId,
@@ -145,8 +146,8 @@ export async function POST(request: NextRequest) {
       tokens: { input: result.inputTokens, output: result.outputTokens },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'AI call failed';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const { body, status } = buildAiErrorResponseInit(err);
+    return NextResponse.json(body, { status });
   }
 }
 

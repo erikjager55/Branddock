@@ -56,8 +56,18 @@ export type { ContextGroup, ContextGroupItem } from './context/fetcher';
 export { buildSystemPrompt, DEFAULT_SYSTEM_PROMPT_TEMPLATE } from './context/prompt-builder';
 
 // ─── Error Handler ────────────────────────────────────────
-export { parseAIError, getReadableErrorMessage, shouldAutoRetry, withAIRetry, getAIErrorStatus } from './error-handler';
-export type { AIError, AIErrorType } from './error-handler';
+export {
+  parseAIError,
+  getReadableErrorMessage,
+  shouldAutoRetry,
+  withAIRetry,
+  getAIErrorStatus,
+  isModelUnavailable,
+  buildAiErrorPayload,
+  buildAiErrorResponseInit,
+  buildAiErrorEvent,
+} from './error-handler';
+export type { AIError, AIErrorType, AiErrorPayload } from './error-handler';
 
 // ─── Client Hooks ──────────────────────────────────────────
 export { useAiStream } from './hooks/useAiStream';

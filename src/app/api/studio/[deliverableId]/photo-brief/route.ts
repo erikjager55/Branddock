@@ -12,6 +12,7 @@
 
 import { NextResponse } from 'next/server';
 import { anthropicClient } from '@/lib/ai/anthropic-client';
+import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
 import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
@@ -105,9 +106,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ markdown });
   } catch (err) {
     console.error('[POST /api/studio/photo-brief]', err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Generation failed' },
-      { status: 500 },
-    );
+    const { body, status } = buildAiErrorResponseInit(err);
+    return NextResponse.json(body, { status });
   }
 }

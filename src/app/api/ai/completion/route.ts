@@ -25,7 +25,7 @@ import { openaiClient } from '@/lib/ai/openai-client';
 import { createStreamingResponse } from '@/lib/ai/streaming';
 import { buildSystemMessage } from '@/lib/ai/prompt-templates';
 import { aiConfig, type AiUseCase } from '@/lib/ai/config';
-import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from '@/lib/ai/error-handler';
+import { parseAIError, getReadableErrorMessage, getAIErrorStatus, isModelUnavailable } from '@/lib/ai/error-handler';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 // ─── Request validation ────────────────────────────────────
@@ -118,7 +118,12 @@ export async function POST(request: Request) {
     console.error('[AI completion] Error:', err);
     const parsed = parseAIError(err);
     return NextResponse.json(
-      { error: getReadableErrorMessage(parsed) },
+      {
+        error: getReadableErrorMessage(parsed),
+        errorType: parsed.type,
+        unavailable: isModelUnavailable(parsed),
+        retryable: parsed.retryable,
+      },
       { status: getAIErrorStatus(parsed) },
     );
   }

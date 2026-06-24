@@ -12,8 +12,16 @@ import type {
   VisualStyleDirection,
 } from '@/lib/ai/canvas-context';
 import type { MediumCategory, MediumVariant } from '../types/medium-config.types';
+import type { AIErrorType } from '@/lib/ai/error-handler';
 import { shouldApplyFidelityWrite } from './fidelity-token-guard';
 type GenerationStatus = 'idle' | 'generating' | 'complete' | 'error';
+
+/** Classified error info for a failed generation (drives the "model offline" notice). */
+export interface GlobalStatusError {
+  message: string;
+  errorType?: AIErrorType;
+  unavailable?: boolean;
+}
 
 // F9 (audit 2026-05-13): per-variant fidelity score-shape, mirror van
 // canvas-store.fidelityScore inline-type voor type-safe map-storage.
@@ -119,6 +127,10 @@ interface CanvasStoreState {
   generationStatus: Map<string, GenerationStatus>;
   globalStatus: GenerationStatus;
   globalErrorMessage: string | null;
+  // Classification of the current global error — `globalUnavailable` drives the
+  // dedicated "model offline" notice instead of the generic error message.
+  globalErrorType: AIErrorType | null;
+  globalUnavailable: boolean;
   // True tijdens de INITIËLE generatie (groups streamen één voor één binnen
   // via text_complete). Onderscheidt het van regeneratie, waar een volledige
   // variant-set al bestaat en we de bestaande varianten met overlay tonen.
@@ -417,7 +429,7 @@ interface CanvasStoreState {
   addVariantGroup: (group: string, variants: CanvasVariant[]) => void;
   setSelection: (group: string, index: number) => void;
   setGenerationStatus: (group: string, status: GenerationStatus) => void;
-  setGlobalStatus: (status: GenerationStatus, errorMessage?: string) => void;
+  setGlobalStatus: (status: GenerationStatus, error?: string | GlobalStatusError) => void;
   setInitialGenerating: (value: boolean) => void;
   setImageVariants: (variants: CanvasImageVariant[]) => void;
 
@@ -643,6 +655,8 @@ const INITIAL_STATE = {
   generationStatus: new Map<string, GenerationStatus>(),
   globalStatus: 'idle' as GenerationStatus,
   globalErrorMessage: null as string | null,
+  globalErrorType: null as AIErrorType | null,
+  globalUnavailable: false,
   isInitialGenerating: false,
   imageVariants: [],
   sceneImageVariants: { hook: [], body: [], cta: [] },
@@ -874,7 +888,17 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       return { generationStatus: next };
     }),
 
-  setGlobalStatus: (status, errorMessage) => set({ globalStatus: status, globalErrorMessage: errorMessage ?? (status === 'error' ? 'An unknown error occurred' : null) }),
+  setGlobalStatus: (status, error) => {
+    const errObj: GlobalStatusError | null =
+      typeof error === 'string' ? { message: error } : (error ?? null);
+    set({
+      globalStatus: status,
+      globalErrorMessage:
+        errObj?.message ?? (status === 'error' ? 'An unknown error occurred' : null),
+      globalErrorType: status === 'error' ? (errObj?.errorType ?? null) : null,
+      globalUnavailable: status === 'error' ? (errObj?.unavailable ?? false) : false,
+    });
+  },
 
   setInitialGenerating: (value) => set({ isInitialGenerating: value }),
 

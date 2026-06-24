@@ -6,6 +6,8 @@ import { Button } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import { useCanvasStore } from "../../stores/useCanvasStore";
 import { useLaunchCampaign } from "../../hooks";
+import { ModelUnavailableNotice } from "@/components/ui/ModelUnavailableNotice";
+import { interpretAiError } from "@/lib/ai/ai-error-client";
 
 /**
  * Content Launch Step — final step in content mode wizard.
@@ -20,6 +22,8 @@ export function ContentGenerateStep() {
   const setContentGenPhase = useCampaignWizardStore((s) => s.setContentGenPhase);
   const selectedContentType = useCampaignWizardStore((s) => s.selectedContentType);
   const globalErrorMessage = useCanvasStore((s) => s.globalErrorMessage);
+  const globalUnavailable = useCanvasStore((s) => s.globalUnavailable);
+  const globalErrorType = useCanvasStore((s) => s.globalErrorType);
 
   const launchCampaign = useLaunchCampaign();
   const launchStartedRef = useRef(false);
@@ -88,8 +92,13 @@ export function ContentGenerateStep() {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown launch error';
       console.error('[ContentGenerateStep] Launch failed:', error);
+      const classified = interpretAiError(error);
       useCampaignWizardStore.getState().setContentGenPhase('error');
-      useCanvasStore.getState().setGlobalStatus('error', message);
+      useCanvasStore.getState().setGlobalStatus('error', {
+        message: classified.message || message,
+        errorType: classified.errorType,
+        unavailable: classified.unavailable,
+      });
       launchStartedRef.current = false;
     }
   }, [launchCampaign]);
@@ -137,6 +146,17 @@ export function ContentGenerateStep() {
 
   // ─── Render: Error ─────────────────────────────────────────
   if (contentGenPhase === 'error') {
+    if (globalUnavailable) {
+      return (
+        <div className="mx-auto max-w-md py-16">
+          <ModelUnavailableNotice
+            errorType={globalErrorType ?? undefined}
+            retryable={globalErrorType !== 'authentication'}
+            onRetry={handleRetry}
+          />
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-4">
         <AlertCircle className="h-8 w-8 text-red-500" />

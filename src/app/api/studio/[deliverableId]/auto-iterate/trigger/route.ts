@@ -23,6 +23,7 @@ import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-acc
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
 import { runFidelityScoring, resolveScoringWordCountOverride } from '@/lib/brand-fidelity/fidelity-runner';
 import { runAutoIterateIntegration } from '@/lib/ai/auto-iterate-integration';
+import { buildAiErrorEvent } from '@/lib/ai/error-handler';
 import type { AutoIterateEvent } from '@/lib/ai/auto-iterate';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 
@@ -211,7 +212,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         controller.close();
       } catch (err) {
         console.error('[auto-iterate/trigger] error:', err);
-        sendError(err instanceof Error ? err.message : 'Unknown error');
+        // Classify the (provider-touching) failure so the client can show a
+        // "model offline" notice. Validation gates above keep their plain
+        // sendError() — they are not model unavailability.
+        controller.enqueue(
+          encoder.encode(`event: error\ndata: ${JSON.stringify(buildAiErrorEvent(err))}\n\n`),
+        );
         controller.close();
       }
     },

@@ -16,6 +16,7 @@
 // =============================================================================
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
 import { getServerSession } from '@/lib/auth-server';
 import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
@@ -433,7 +434,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     });
   } catch (err) {
     console.error('[generate-visual-compose] error:', err);
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const { body, status } = buildAiErrorResponseInit(err);
+    return NextResponse.json(body, { status });
   }
 }

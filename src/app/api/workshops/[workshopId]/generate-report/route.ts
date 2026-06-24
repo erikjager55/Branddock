@@ -4,7 +4,7 @@ import { resolveWorkspaceId } from "@/lib/auth-server";
 import { resolveFeatureModel } from "@/lib/ai/feature-models.server";
 import { generateAIResponse } from "@/lib/ai/exploration/ai-caller";
 import { buildWorkshopReportPrompt } from "@/lib/ai/prompts/workshop-report";
-import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from "@/lib/ai/error-handler";
+import { parseAIError, getReadableErrorMessage, getAIErrorStatus, isModelUnavailable } from "@/lib/ai/error-handler";
 
 type RouteParams = { params: Promise<{ workshopId: string }> };
 
@@ -128,6 +128,14 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error("[POST /api/workshops/:workshopId/generate-report]", error);
     const parsed = parseAIError(error);
-    return NextResponse.json({ error: getReadableErrorMessage(parsed) }, { status: getAIErrorStatus(parsed) });
+    return NextResponse.json(
+      {
+        error: getReadableErrorMessage(parsed),
+        errorType: parsed.type,
+        unavailable: isModelUnavailable(parsed),
+        retryable: parsed.retryable,
+      },
+      { status: getAIErrorStatus(parsed) },
+    );
   }
 }

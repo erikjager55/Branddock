@@ -5,6 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { prisma } from '@/lib/prisma';
 import { createClaudeStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
@@ -96,10 +97,8 @@ export async function POST() {
     return NextResponse.json({ competitors: ranked });
   } catch (err) {
     console.error('[competitors/discover] Error:', err);
-    return NextResponse.json(
-      { error: 'Failed to discover competitors. Please try again.' },
-      { status: 500 },
-    );
+    const { body, status } = buildAiErrorResponseInit(err);
+    return NextResponse.json(body, { status });
   }
 }
 

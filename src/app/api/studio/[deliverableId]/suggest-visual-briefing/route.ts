@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
+import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
 import { prisma } from '@/lib/prisma';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleCanvasContext } from '@/lib/ai/canvas-context';
@@ -193,14 +194,13 @@ export async function POST(
       stack: errorObj.stack,
     });
     const isProd = process.env.NODE_ENV === 'production';
+    const { body, status } = buildAiErrorResponseInit(errorObj);
     return NextResponse.json(
       {
-        error: 'Internal server error',
-        ...(isProd
-          ? {}
-          : { details: errorObj.message, kind: errorObj.name }),
+        ...body,
+        ...(isProd ? {} : { details: errorObj.message, kind: errorObj.name }),
       },
-      { status: 500 },
+      { status },
     );
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { buildAiErrorResponseInit } from "@/lib/ai/error-handler";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
 import { withAiRateLimit } from "@/lib/ai/middleware";
@@ -75,7 +76,9 @@ export async function POST(
     }
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 });
+      // Surface as an "unavailable / model not configured" error, not a generic 500.
+      const { body, status } = buildAiErrorResponseInit(new Error("ANTHROPIC_API_KEY is not set"));
+      return NextResponse.json(body, { status });
     }
 
     const personaProfile = buildPrompt(persona as unknown as Record<string, unknown>);
@@ -131,7 +134,8 @@ Respond ONLY with valid JSON, no markdown, no backticks. JSON keys and the "prio
       }
     } catch (aiErr) {
       console.error("[Strategic implications generation error]", aiErr);
-      return NextResponse.json({ error: "AI generation failed" }, { status: 500 });
+      const { body, status } = buildAiErrorResponseInit(aiErr);
+      return NextResponse.json(body, { status });
     }
 
     const strategicImplications = JSON.stringify(implications);

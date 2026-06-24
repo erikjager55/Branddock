@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { withAiRateLimit } from '@/lib/ai/middleware';
+import { buildAiErrorEvent } from '@/lib/ai/error-handler';
 import { assembleSystemPrompt } from '@/lib/claw/context-assembler';
 import { getToolsForClaude, getToolByName } from '@/lib/claw/tools/registry';
 import type {
@@ -388,7 +389,7 @@ export async function POST(req: NextRequest) {
           });
         }
       } catch (err) {
-        sendEvent('error', { message: String(err) });
+        sendEvent('error', buildAiErrorEvent(err));
       } finally {
         try {
           controller.close();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { buildAiErrorResponseInit } from "@/lib/ai/error-handler";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assembleCanvasContext } from "@/lib/ai/canvas-context";
@@ -236,8 +237,8 @@ export async function POST(
     );
     rawResponse = result.content;
   } catch (err) {
-    const message = err instanceof Error ? err.message : "auto-iterate-variant failed";
-    return NextResponse.json({ status: "error", error: message }, { status: 500 });
+    const { body, status } = buildAiErrorResponseInit(err);
+    return NextResponse.json({ status: "error", ...body }, { status });
   }
 
   const parseResult = parseVariantRewriteResponse(rawResponse);

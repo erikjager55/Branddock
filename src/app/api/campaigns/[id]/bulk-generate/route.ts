@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
 import { orchestrateContentGeneration } from '@/lib/ai/canvas-orchestrator';
+import { buildAiErrorEvent, buildAiErrorPayload } from '@/lib/ai/error-handler';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 
@@ -154,11 +155,15 @@ export async function POST(
               }
             } catch (err) {
               failed++;
+              const classified = buildAiErrorPayload(err);
               sendEvent('progress', {
                 deliverableId: item.id,
                 title: item.title,
                 status: 'error',
                 message: err instanceof Error ? err.message : 'Unknown error',
+                errorType: classified.errorType,
+                unavailable: classified.unavailable,
+                retryable: classified.retryable,
                 index,
                 total,
               });
@@ -208,7 +213,7 @@ export async function POST(
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown error';
           console.error('[bulk-generate] Pipeline error:', message);
-          sendEvent('error', { message });
+          sendEvent('error', buildAiErrorEvent(error));
         } finally {
           clearInterval(heartbeat);
           try { controller.close(); } catch { /* already closed */ }

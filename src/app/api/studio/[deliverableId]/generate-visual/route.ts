@@ -20,6 +20,7 @@
 // =============================================================================
 
 import { NextResponse } from 'next/server';
+import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
 import { requireDeliverableAccess } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
 import { withAiRateLimit } from '@/lib/ai/middleware';
@@ -657,7 +658,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     });
   } catch (err) {
     console.error('[generate-visual] error:', err);
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const { body, status } = buildAiErrorResponseInit(err);
+    return NextResponse.json(body, { status });
   }
 }

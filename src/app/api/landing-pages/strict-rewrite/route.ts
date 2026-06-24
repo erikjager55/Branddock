@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { anthropicClient } from '@/lib/ai/anthropic-client';
+import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
 import { evaluatePageQuality } from '@/lib/landing-pages/page-quality';
 import type { PuckLikeData } from '@/lib/landing-pages/puck-data-flatten';
 
@@ -98,8 +99,8 @@ export async function POST(request: NextRequest) {
       tokens: { input: result.inputTokens, output: result.outputTokens },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'strict-rewrite failed';
-    return NextResponse.json({ status: 'error', error: message }, { status: 500 });
+    const { body, status } = buildAiErrorResponseInit(err);
+    return NextResponse.json({ status: 'error', ...body }, { status });
   }
 }
 

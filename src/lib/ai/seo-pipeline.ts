@@ -19,6 +19,7 @@ import { searchWithGrounding } from './gemini-client';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { buildSeoStepPrompt } from './prompts/seo-prompts';
+import { buildAiErrorEvent } from './error-handler';
 import {
   SEO_STEP_DEFINITIONS,
   type SeoInput,
@@ -193,7 +194,11 @@ export async function* runSeoPipeline(
 
       yield {
         event: 'error',
-        data: { message: `SEO pipeline failed at step ${stepDef.step} (${stepDef.label}): ${message}`, recoverable: false },
+        data: {
+          // Classify (unavailable/errorType) but keep the step-context message.
+          ...buildAiErrorEvent(err, { recoverable: false }),
+          message: `SEO pipeline failed at step ${stepDef.step} (${stepDef.label}): ${message}`,
+        },
       };
       return;
     }

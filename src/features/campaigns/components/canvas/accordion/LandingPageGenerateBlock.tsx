@@ -14,6 +14,9 @@ import { buildA11yStyleBlock } from '@/lib/landing-pages/a11y-styles';
 import { assignBrandImagesToVariant } from '@/lib/landing-pages/brand-images';
 import { FidelityScoreBar } from '../FidelityScoreBar';
 import { InfoBox } from '@/components/ui/InfoBox';
+import { ModelUnavailableNotice } from '@/components/ui/ModelUnavailableNotice';
+import { interpretAiError, notifyAiError, errorFromResponse } from '@/lib/ai/ai-error-client';
+import type { AIErrorType } from '@/lib/ai/error-handler';
 import { useInlineTransform } from '../../../hooks/canvas.hooks';
 import type { LandingPageVariantContent } from '@/lib/landing-pages/variant-schema';
 import {
@@ -123,6 +126,8 @@ export function LandingPageGenerateBlock({
   const [isGeneratingVisual, setIsGeneratingVisual] = useState(false);
   const [isChoosing, setIsChoosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorUnavailable, setErrorUnavailable] = useState(false);
+  const [errorType, setErrorType] = useState<AIErrorType | null>(null);
   const [visualError, setVisualError] = useState<string | null>(null);
   const [partialDelivery, setPartialDelivery] = useState<{ delivered: number; requested: number } | null>(null);
   // ImageSourcePanel state (Step 2 parity): user kiest image-source vóór
@@ -331,10 +336,12 @@ export function LandingPageGenerateBlock({
     const count = typeof countArg === 'number' && countArg >= 1 && countArg <= 4 ? countArg : 2;
     if (briefIncomplete) {
       setError('First fill in Objective or Value Proposition in Step 1.');
+      setErrorUnavailable(false);
       return;
     }
     setIsGenerating(true);
     setError(null);
+    setErrorUnavailable(false);
     resetFidelityScore();
     try {
       const res = await fetch(
@@ -351,8 +358,7 @@ export function LandingPageGenerateBlock({
         },
       );
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error ?? `HTTP ${res.status}`);
+        throw await errorFromResponse(res, `HTTP ${res.status}`);
       }
       const data = (await res.json()) as {
         variants: PageVariantContent[];
@@ -380,7 +386,11 @@ export function LandingPageGenerateBlock({
       // await — variant-keuze mag niet blokkeren op scoring-latency.
       data.variants.forEach((v, i) => void scoreVariantFidelity(v, i));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generation failed');
+      const e = interpretAiError(err);
+      setError(e.message || 'Generation failed');
+      setErrorUnavailable(e.unavailable);
+      setErrorType(e.errorType);
+      if (e.unavailable) notifyAiError(err, { retry: () => { void handleGenerate(countArg); } });
     } finally {
       setIsGenerating(false);
     }
@@ -616,7 +626,9 @@ export function LandingPageGenerateBlock({
     try {
       await generateHeroVisualFor(chosenVariant);
     } catch (err) {
-      setVisualError(err instanceof Error ? err.message : 'Visual generation failed');
+      const e = interpretAiError(err);
+      setVisualError(e.message || 'Visual generation failed');
+      if (e.unavailable) notifyAiError(err);
     } finally {
       setIsGeneratingVisual(false);
     }
@@ -698,7 +710,9 @@ export function LandingPageGenerateBlock({
         });
       }
     } catch (err) {
-      setAutoIterateError(err instanceof Error ? err.message : 'Improvement failed');
+      const e = interpretAiError(err);
+      setAutoIterateError(e.message || 'Improvement failed');
+      if (e.unavailable) notifyAiError(err);
     } finally {
       setIsAutoIterating(false);
     }
@@ -771,6 +785,15 @@ export function LandingPageGenerateBlock({
 
   // ─── Generatie-fout ──────────────────────────────────────
   if (!variantOptions && !chosenVariant && error) {
+    if (errorUnavailable) {
+      return (
+        <ModelUnavailableNotice
+          errorType={errorType ?? undefined}
+          retryable={errorType !== 'authentication'}
+          onRetry={() => { setError(null); setErrorUnavailable(false); void handleGenerate(); }}
+        />
+      );
+    }
     return (
       <div className="space-y-6">
         <InfoBox variant="error" size="md" title="Generation failed">{error}</InfoBox>

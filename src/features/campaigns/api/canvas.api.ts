@@ -6,6 +6,7 @@ import type {
   DeriveResponse,
 } from '../types/canvas.types';
 import type { GeoOptimizationAnalysis } from '@/lib/landing-pages/geo-analysis';
+import { errorFromResponse } from '@/lib/ai/ai-error-client';
 
 /** Persisted fidelity score snapshot shape (uit Deliverable.settings.fidelityScore). */
 export interface PersistedFidelityScore {
@@ -267,8 +268,7 @@ export async function inlineTransform(
     body: JSON.stringify({ selectedText, action, fullContent }),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to transform text' }));
-    throw new Error(err.error ?? 'Failed to transform text');
+    throw await errorFromResponse(res, 'Failed to transform text');
   }
   return res.json();
 }
@@ -323,8 +323,7 @@ export async function generateCanvasVisual(
     body: JSON.stringify(options ?? {}),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to generate visual' }));
-    throw new Error(err.error ?? 'Failed to generate visual');
+    throw await errorFromResponse(res, 'Failed to generate visual');
   }
   return res.json();
 }
@@ -367,8 +366,7 @@ export async function generateFeatureVisuals(
     signal: opts?.signal,
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to generate feature visuals' }));
-    throw new Error(err.error ?? 'Failed to generate feature visuals');
+    throw await errorFromResponse(res, 'Failed to generate feature visuals');
   }
   const data = (await res.json()) as { urls: Array<string | null> };
   return data.urls ?? [];
@@ -427,8 +425,7 @@ export async function generateCanvasVisualTrained(
     body: JSON.stringify(options ?? {}),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to generate trained visual' }));
-    throw new Error(err.error ?? 'Failed to generate trained visual');
+    throw await errorFromResponse(res, 'Failed to generate trained visual');
   }
   return res.json();
 }
@@ -460,8 +457,7 @@ export async function generateCanvasVisualCompose(
     body: JSON.stringify(options ?? {}),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to generate compose visual' }));
-    throw new Error(err.error ?? 'Failed to generate compose visual');
+    throw await errorFromResponse(res, 'Failed to generate compose visual');
   }
   return res.json();
 }
@@ -479,8 +475,7 @@ export async function deriveDeliverable(
     body: JSON.stringify({ targetPlatform, targetFormat, title }),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Failed to derive deliverable' }));
-    throw new Error(err.error ?? 'Failed to derive deliverable');
+    throw await errorFromResponse(res, 'Failed to derive deliverable');
   }
   return res.json();
 }

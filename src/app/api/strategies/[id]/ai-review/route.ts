@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { buildAiErrorResponseInit } from "@/lib/ai/error-handler";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { withAiRateLimit } from "@/lib/ai/middleware";
@@ -132,6 +133,7 @@ End Date: ${strategy.endDate?.toISOString().split("T")[0] ?? "Not set"}`;
     return NextResponse.json({ review: parsed.data });
   } catch (error) {
     console.error("[POST /api/strategies/[id]/ai-review]", error);
-    return NextResponse.json({ error: "Failed to generate AI review" }, { status: 500 });
+    const { body, status } = buildAiErrorResponseInit(error);
+    return NextResponse.json(body, { status });
   }
 }

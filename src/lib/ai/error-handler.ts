@@ -231,3 +231,94 @@ export async function withAIRetry<T>(
 export function getAIErrorStatus(error: AIError): number {
   return STATUS_MAP[error.type];
 }
+
+// ─── Model-unavailable contract ────────────────────────────
+//
+// "Unavailable" = the model/provider itself cannot be used right
+// now, so generating is impossible. This is distinct from a
+// content/validation failure (the model worked, the input or
+// output was the problem). The UI keys off `unavailable` to show
+// a dedicated "model offline" notice instead of a generic error.
+
+/**
+ * The AIErrorType values that mean the model cannot be used now.
+ * `rate_limit` is included (the user genuinely cannot generate),
+ * but stays `retryable: true` so the UI can soften the copy.
+ * `authentication` is unavailable but `retryable: false` (a
+ * permanent "model not configured" state). `invalid_request` and
+ * `unknown` are NOT unavailable — those are generic failures.
+ */
+const UNAVAILABLE_TYPES: ReadonlySet<AIErrorType> = new Set<AIErrorType>([
+  'overloaded',
+  'rate_limit',
+  'authentication',
+  'network',
+  'timeout',
+]);
+
+/** Whether a classified error means the model is unusable right now. */
+export function isModelUnavailable(error: AIError): boolean {
+  return UNAVAILABLE_TYPES.has(error.type);
+}
+
+/**
+ * The additive payload every AI error response/event should carry
+ * so the client can distinguish "model offline" from other errors.
+ * Keeps the legacy `error` (and, for SSE, `message`) keys intact.
+ */
+export interface AiErrorPayload {
+  error: string;
+  errorType: AIErrorType;
+  unavailable: boolean;
+  retryable: boolean;
+}
+
+/** Build the shared payload from any thrown error. */
+export function buildAiErrorPayload(err: unknown): AiErrorPayload {
+  const parsed = parseAIError(err);
+  return {
+    error: getReadableErrorMessage(parsed),
+    errorType: parsed.type,
+    unavailable: isModelUnavailable(parsed),
+    retryable: parsed.retryable,
+  };
+}
+
+/**
+ * Non-SSE route helper. The route wraps the result in
+ * `NextResponse.json(body, { status })` (this file stays free of
+ * `next/server` so it remains client-safe).
+ */
+export function buildAiErrorResponseInit(err: unknown): {
+  body: AiErrorPayload;
+  status: number;
+} {
+  const parsed = parseAIError(err);
+  return {
+    body: {
+      error: getReadableErrorMessage(parsed),
+      errorType: parsed.type,
+      unavailable: isModelUnavailable(parsed),
+      retryable: parsed.retryable,
+    },
+    status: getAIErrorStatus(parsed),
+  };
+}
+
+/**
+ * SSE helper. Preserves the `message` + `recoverable` keys existing
+ * SSE consumers already read, and adds the classification fields.
+ * `recoverable` defaults to `retryable` unless the caller forces it
+ * (content-gate paths pass `recoverable: false` explicitly elsewhere).
+ */
+export function buildAiErrorEvent(
+  err: unknown,
+  opts?: { recoverable?: boolean },
+): AiErrorPayload & { message: string; recoverable: boolean } {
+  const payload = buildAiErrorPayload(err);
+  return {
+    ...payload,
+    message: payload.error,
+    recoverable: opts?.recoverable ?? payload.retryable,
+  };
+}

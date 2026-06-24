@@ -14,6 +14,7 @@
 
 import React, { useState } from 'react';
 import { Camera, Download, Loader2, AlertCircle, Wand2 } from 'lucide-react';
+import { interpretAiError, notifyAiError, errorFromResponse } from '@/lib/ai/ai-error-client';
 
 interface PhotographyBriefPanelProps {
   deliverableId: string | null;
@@ -33,13 +34,14 @@ export function PhotographyBriefPanel({ deliverableId }: PhotographyBriefPanelPr
         method: 'POST',
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error ?? `Generation failed (${res.status})`);
+        throw await errorFromResponse(res, `Generation failed (${res.status})`);
       }
       const data = (await res.json()) as { markdown: string };
       setMarkdown(data.markdown);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generation failed');
+      const e = interpretAiError(err);
+      setError(e.message || 'Generation failed');
+      if (e.unavailable) notifyAiError(err, { retry: handleGenerate });
     } finally {
       setBusy(false);
     }

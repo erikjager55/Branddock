@@ -12,7 +12,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenAI } from '@google/genai';
-import { parseAIError, getReadableErrorMessage } from './error-handler';
+import { buildAiErrorEvent } from './error-handler';
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -131,9 +131,10 @@ async function streamAnthropic(params: PersonaChatParams): Promise<ReadableStrea
         );
         controller.close();
       } catch (err) {
-        const errorMsg = getReadableErrorMessage(err);
+        // Classify so the client can show a "model offline" notice.
+        // data:-only frame; the `error` key stays for existing consumers.
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ error: errorMsg })}\n\n`),
+          encoder.encode(`data: ${JSON.stringify(buildAiErrorEvent(err))}\n\n`),
         );
         controller.close();
       }
@@ -199,9 +200,10 @@ async function streamOpenAI(params: PersonaChatParams): Promise<ReadableStream<U
         );
         controller.close();
       } catch (err) {
-        const errorMsg = getReadableErrorMessage(err);
+        // Classify so the client can show a "model offline" notice.
+        // data:-only frame; the `error` key stays for existing consumers.
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ error: errorMsg })}\n\n`),
+          encoder.encode(`data: ${JSON.stringify(buildAiErrorEvent(err))}\n\n`),
         );
         controller.close();
       }
@@ -279,9 +281,10 @@ async function streamGoogle(params: PersonaChatParams): Promise<ReadableStream<U
         );
         controller.close();
       } catch (err) {
-        const errorMsg = getReadableErrorMessage(err);
+        // Classify so the client can show a "model offline" notice.
+        // data:-only frame; the `error` key stays for existing consumers.
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ error: errorMsg })}\n\n`),
+          encoder.encode(`data: ${JSON.stringify(buildAiErrorEvent(err))}\n\n`),
         );
         controller.close();
       }

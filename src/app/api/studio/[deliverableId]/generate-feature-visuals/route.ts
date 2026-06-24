@@ -16,6 +16,7 @@
 // Budget: max 4 slots per pagina (de client capt al; hier hard begrensd).
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
 import { getServerSession } from '@/lib/auth-server';
 import { resolveDeliverableWorkspaceId } from '@/lib/deliverable/deliverable-access';
 import { prisma } from '@/lib/prisma';
@@ -595,6 +596,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ urls, sources, coherence: coherenceScores, regenerated, swapped });
   } catch (err) {
     console.error('[generate-feature-visuals] error:', err);
-    return NextResponse.json({ error: 'Failed to generate feature visuals' }, { status: 500 });
+    const { body, status } = buildAiErrorResponseInit(err);
+    return NextResponse.json(body, { status });
   }
 }
