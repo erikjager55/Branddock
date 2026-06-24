@@ -44,7 +44,7 @@ Wanneer een AI-provider onbereikbaar is (503/overloaded, 429 rate-limit, 401/ont
 - Task: [tasks/done/model-offline-notice.md](../tasks/done/model-offline-notice.md)
 - ADR: -
 - Spec: -
-- Commit: `PENDING`
+- Commit: `b759e64c`
 
 ### 340. GEO stat-citatie leak — interne context-laagnamen niet langer als bron
 
