@@ -44,7 +44,7 @@ Maakt de bij publish gepersisteerde `settings.geoOptimizationAnalysis` zichtbaar
 - Task: [tasks/done/geo-seo-followup-measurement-dashboard.md](../tasks/done/geo-seo-followup-measurement-dashboard.md)
 - ADR: -
 - Spec: [docs/specs/2026-06-17-geo-seo-longform-plan.md](specs/2026-06-17-geo-seo-longform-plan.md)
-- Commit: <hash>
+- Commit: `9994f381`
 
 ### 337. Web-page/GEO-publish markeert het content-item nu als PUBLISHED
 
