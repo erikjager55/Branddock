@@ -5,9 +5,9 @@ fase: pre-launch
 priority: now
 effort: ~1-1,5 dag
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-24
-completed: -
+completed: 2026-06-24
 related-adr: -
 related-spec: -
 worktree: -
@@ -41,7 +41,8 @@ plus een korte sonner-toast. Géén proactieve health-ping deze ronde.
 - [x] `npx tsc --noEmit` 0 errors
 - [x] `npm run lint` 0 errors op gewijzigde bestanden (repo-baseline van pre-existing warnings ongemoeid)
 - [x] Classificatie-smoke uitgevoerd (11/11 cases groen: offline-oorzaken → unavailable, gates/validatie/truncation → niet)
-- [ ] **Live browser-smoke (gebruiker)**: forceer ongeldige API-key → genereer in Canvas → rood inline-blok + toast; herstel → "Try again" slaagt; lege brief → nog steeds gate-melding
+- [x] Live SDK-smoke: echte Anthropic + OpenAI 401 (bad-key) → `unavailable:true, errorType:authentication, retryable:false` via `buildAiErrorPayload`
+- [ ] **Live browser-pixel-smoke (gebruiker, low-risk)**: forceer ongeldige API-key → genereer in Canvas → rood inline-blok + toast; herstel → "Try again" slaagt; lege brief → nog steeds gate-melding
 
 # Bestanden die ik aanraak
 
@@ -95,3 +96,12 @@ Client:
 - Plan: `/Users/erikjager/.claude/plans/vivid-exploring-seahorse.md`.
 - Cross-ref gotcha 2026-05-17 (Effie-leak, zelfde "interne classificatie lekt/ontbreekt naar UI"-familie) +
   2026-04-15/03-24 (silent-abort stuck-state).
+- **Claw-chat bewust NIET op het contract**: `claw/chat` blijft de rauwe error-message sturen
+  (`sendEvent('error', { message: String(err) })`) omdat `InputBar.tsx` credit-/auth-fouten via regex op
+  die rauwe tekst detecteert (`buildAiErrorEvent` saneert de message → brak die detectie). Code-review-vondst.
+- **Bekende beperking (geaccepteerd)**: de image/visual-routes (`generate-visual*`, `media/ai-images/generate`)
+  en `competitors/discover` hebben een brede outer-catch die ook storage/DB/Exa omvat. Een non-provider-fout
+  met een netwerk-achtige message (bv. R2-fetch-fail) kan daar als "model offline" worden gelabeld. De
+  gangbare faalmodus is wél de provider, en de gebruikersactie (opnieuw proberen) is identiek, dus de
+  classificatie blijft staan. Echte versmalling tot enkel de provider-call = follow-up indien nodig.
+- Live SDK-smoke bevestigd: Anthropic + OpenAI met ongeldige sleutel → 401 → `unavailable:true` (authentication).

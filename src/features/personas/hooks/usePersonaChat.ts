@@ -144,7 +144,7 @@ export function usePersonaChat(
       if (!sessionId || isStreaming) return;
       if (messages.length >= MAX_MESSAGES) {
         setError('Maximum messages per session reached (50). Please start a new session.');
-      setErrorUnavailable(false);
+        setErrorUnavailable(false);
         return;
       }
 

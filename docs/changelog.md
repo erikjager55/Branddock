@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 341. "Model offline"-melding wanneer genereren niet mogelijk is
+
+Wanneer een AI-provider onbereikbaar is (503/overloaded, 429 rate-limit, 401/ontbrekende API-key, netwerk of timeout) en genereren daardoor onmogelijk is, toont de UI nu een onderscheidende "model offline"-melding (rood inline-blok met "Try again" + sonner-toast) i.p.v. een generieke fout. Eén gedeeld error-contract is additief toegevoegd aan `error-handler.ts` (`isModelUnavailable` + `buildAiErrorPayload`/`buildAiErrorResponseInit`/`buildAiErrorEvent`) en gepropageerd over de SSE-routes (orchestrate, bulk-generate, auto-iterate, persona-chat, seo-pipeline) én de non-SSE AI-routes; content-/validatie-gates (lege brief, woordtelling, truncation) blijven bewust generiek. Client-side classificeert de nieuwe `ai-error-client.ts` (`interpretAiError`/`notifyAiError`/`errorFromResponse`) en rendert `ModelUnavailableNotice`, gewired in Canvas (store + orchestration-hook), persona-chat, beeld-/LP-/foto-generatie en bulk. AbortError blijft silent; de SSE stuck-state-guard is ongemoeid. Geverifieerd: classificatie-smoke 11/11 + live SDK-smoke (echte Anthropic/OpenAI 401 → unavailable); 2-subagent finalize-review (0 CRITICAL; claw-regressie gefixt door de rauwe message te behouden voor InputBar's credit/auth-detectie). Bekende, gedocumenteerde beperking: brede catches in de image/visual/competitors-routes kunnen een zeldzame storage/DB-uitval als "model offline" labelen (zelfde retry-actie).
+
+- Task: [tasks/done/model-offline-notice.md](../tasks/done/model-offline-notice.md)
+- ADR: -
+- Spec: -
+- Commit: `PENDING`
+
 ### 340. GEO stat-citatie leak — interne context-laagnamen niet langer als bron
 
 Een gegenereerde GEO long-form-pagina toonde interne context-laagnamen als citatie-bron in de stats-band ("Napking briefing: evidence pieces, 2024", "brand-context: delivery evidence") — dezelfde leak-klasse als de Effie-rubric (gotcha 2026-05-17). Data-laag-curatie (een echte knowledge-bron toevoegen) bleek onvoldoende: het model citeert de context-lagen zélf. Vier verdedigingslagen: `geoStatSchema.source` van verplicht → nullable/optional (de geforceerde bron was de directe oorzaak dat het model er een verzon); prompt-guard die een echte externe bron eist óf weglaten toestaat en interne laagnamen verbiedt; nieuwe `sanitize-geo-sources.ts` (`cleanStatSource` denylist + `sanitizeLongFormGeoVariant`) gewired op het parse-return-punt zodat de opgeslagen variant schoon is; en `cleanStatSource` als render-/scoring-vangnet in de Puck-template, `geo-analysis` en `flatten-variant` (heelt ook reeds-opgeslagen pre-fix varianten bij rebuild). Stats zonder echte externe bron renderen label-only. Live-AI E2E geverifieerd op een Napking-artikel (sources → null, geen leak in `structuredVariant` + `puckData`); 3-ronde finalize-review clean (0 CRITICAL/WARNING), sanitizer-smoke 15/15.
