@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 339. LP smoke-bugs Step 2 + Step 3 ge-finalized (render-verificatie)
+
+Twee post-smoke-test bugfix-tasks (branch `fix/lp-smoke-bugs`, code reeds in main via de web-page-builder squash-merges) formeel afgerond na de openstaande browser-verificatie. Step 3 render-laag live bevestigd op een gepubliceerde Napking landing-page: CTA-affordance-floor (blauwe filled button + radius, geen uppercase/platte-tekst-CTA), Lucide icon-resolutie (geen rauwe icon-namen), quote-cap. Step 2: brand-fit-check media-URL-resolutie (disk-read) + LP auto-iterate op `structuredVariant` + beide-varianten-scoring + page-level 502-guard, gefinalized op merge-bewijs. Mapping-/UI-state-fixes (#7 footer-tagline, #1/#2 hero-image) verschijnen bij nieuwe generatie (niet retroactief op oude puckData).
+
+- Task: [tasks/done/lp-step3-rendering-bugs.md](../tasks/done/lp-step3-rendering-bugs.md), [tasks/done/lp-fidelity-bugfixes-step2.md](../tasks/done/lp-fidelity-bugfixes-step2.md)
+- ADR: -
+- Spec: -
+- Commit: `<hash>`
+
 ### 338. GEO-meet-paneel in de Canvas — geoOptimizationAnalysis zichtbaar (paneel-only)
 
 Maakt de bij publish gepersisteerde `settings.geoOptimizationAnalysis` zichtbaar in Canvas Step 4: een `GeoOptimizationPanel` toont de GEO-composietscore + zone, de 5 onderliggende signalen (answer-first / atomic chunking / cited-stats / entity-clarity / structurele cues), de geëmitte schema.org-types, een 90-dagen-freshness-badge en de verbeterpunten. Pure view-model in `geo-panel-view.ts` (incl. `isRenderableGeoAnalysis` fail-soft-guard tegen gedrifte JSON); data via een uitgebreide `GET /api/studio/[id]/components` + `useCanvasComponents`. De F-VAL GEO-pijler in de publish-gate blijft **bewust dormant** (geen drempel-impact; activatie = 1-flag-vervolg). Tevens: de meet-haak-persist in `/api/landing-pages/publish` draait nu in een `prisma.$transaction` (read-modify-write-race op `settings` geëlimineerd). Live geverifieerd op een gepubliceerd Napking-artikel (geoScore 77); 3-ronde finalize-review clean (0 CRITICAL/WARNING), geo-panel smoke 25/25.

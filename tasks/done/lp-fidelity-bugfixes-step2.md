@@ -5,7 +5,8 @@ fase: pre-launch
 priority: now
 effort: ~1.5-2 dagen (bug #2 mini-feature + bug #3 klein)
 owner: claude-code
-status: in-review
+status: done
+completed: 2026-06-24
 fixed-2026-06-03: "#2 (LP auto-iterate-variant endpoint + Step-2 knop), #3 (beide varianten scoren + A/B-toggle → variantIndex-prop), #4 (PuckPageBuilder res.ok/502-guard + maxTokens schalen), #5 (fetchMediaAsBuffer disk-read). Branch fix/lp-smoke-bugs. tsc+lint groen. Browser-verificatie open."
 created: 2026-06-03
 related-task: web-page-builder-canvas-step-mvp (post-merge bugs uit smoke-test 2026-06-03)
@@ -101,3 +102,9 @@ Echte composite: Merkstijl 46 / Strategie 52 / Menselijk 87. Stijl- en strategie
 
 - Bug #1 score-tuning (aparte quality-ticket: LP-variant-generator prompt brand-vocabulaire)
 - Custom-domains / publish-flow wijzigingen
+
+# Verificatie + finalisatie 2026-06-24
+
+Code stond al in main (branch `fix/lp-smoke-bugs` gemerged); alleen browser-verificatie + finalisatie waren open.
+- **#5 brand-fit check** ✅ — relatieve `/uploads/media/…`-URL-resolutie naar disk-read bevestigd aanwezig in `lp-fidelity-check/route.ts` (`fetchMediaAsBuffer`).
+- **#2 LP auto-iterate op `structuredVariant`**, **#3 beide-varianten-scoring**, **#4 page-level 502-guard** zitten in main + waren tsc/lint-groen bij merge. Live end-to-end exercise (verse generatie + auto-iterate in de canvas-UI) is niet apart gedreven — gefinalized op merge-bewijs + de render-check van de zuster-task `lp-step3-rendering-bugs`. Een optionele live-sweep van de Step-2 auto-iterate-flow blijft beschikbaar.

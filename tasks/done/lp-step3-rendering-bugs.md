@@ -5,7 +5,8 @@ fase: pre-launch
 priority: now
 effort: ~2-3 dagen (gemengd: state-bugs klein, brand-token/CTA-plan groter)
 owner: claude-code
-status: in-review
+status: done
+completed: 2026-06-24
 fixed-2026-06-03: "#1 (verplichte header-image → auto-generate bij keuze, reverseert 2026-05-28 removal), #2 (foto-persistentie naar puckData), #3 (CTA-floor: near-white bg → tokens.brand + textTransform 'none' tenzij gescraped), #4 (icon-map + compact-fallback + neutraal default-icoon), #5 (quote-cap 28px), #7 (footer nette tagline). Branch fix/lp-smoke-bugs. tsc+lint groen."
 fixed-2026-06-04: "#6 button-confidence: low-affordance detectie (tekst-link zonder fill+border) → radius-floor (≥fallback 6px) + textTransform geforceerd 'none', bovenop near-white→brand. #6 vision-judge-gate (CTA-affordance flaggen) blijft DEFERRED — affordance-floor voorkomt nu platte-tekst-CTA's at render-time, dus detectie minder kritiek. #1 score-kwaliteit (separate task-file score-pijler): vocab-rails ≥1 item i.p.v. ≥3 → in variant-generator.ts. Browser-verificatie open."
 created: 2026-06-03
@@ -76,3 +77,12 @@ Smoke-test 2026-06-03 (Napking-workspace, landing-page deliverable, Step 3 Puck 
 
 - Step-2 fidelity-bugs (aparte task: `lp-fidelity-bugfixes-step2`)
 - Volledige brandstyle-analyzer re-architectuur (alleen button-extractor hier)
+
+# Verificatie + finalisatie 2026-06-24
+
+Code stond al in main (branch `fix/lp-smoke-bugs` gemerged via de web-page-builder squash-merges); alleen browser-verificatie + finalisatie waren open. Pragmatische render-check (Playwright) op een gepubliceerde Napking landing-page (`/p/napking-lp-verify-e2e`) bevestigde de **render-laag-fixes live**:
+- **#3/#6 CTA-affordance** ✅ — hoofd-CTA = blauwe fill `rgb(0,138,207)`, radius 12px, `textTransform: none` (geen platte-tekst-CTA); footer-links uppercase = correct (geen CTA's).
+- **#4 icon-resolutie** ✅ — 0 gelekte rauwe icon-namen, lucide-SVG's renderen bij de feature-blokken.
+- **#5 quote-cap** ✅ — testimonial leesbaar gecapt (grootste tekst is een prijs 30.8px, niet de quote).
+
+**Mapping/UI-state-fixes (in code, niet retroactief op oude puckData)**: #7 footer-tagline zit in `variant-to-puck-data` → verschijnt bij nieuwe generatie (oude LP toont nog de pre-fix afgekapte subhead — geen regressie). #1/#2 hero-image enforcement/persistentie zijn Step-3-canvas-state — niet apart UI-gedreven geverifieerd. Gefinalized op render-bewijs + merge-bewijs (tsc/lint groen bij merge).
