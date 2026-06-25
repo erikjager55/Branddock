@@ -44,7 +44,7 @@ Eén surface bovenaan de Brand Styleguide die verspreide extractie-kwaliteitssig
 - Task: [tasks/done/brandstyle-calibration-report.md](../tasks/done/brandstyle-calibration-report.md)
 - ADR: -
 - Spec: -
-- Commit: `<commit>`
+- Commit: `9c8eff75`
 
 ### 343. GEO stats citeren de echte knowledge-bron (i.p.v. genullde labels)
 
