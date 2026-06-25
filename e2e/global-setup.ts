@@ -21,7 +21,10 @@ export default async function globalSetup() {
 
   console.log('[global-setup] Ensuring test database schema is up to date...');
   try {
-    execSync('npx prisma db push --skip-generate', {
+    // Prisma 7.4 dropped `--skip-generate` from `db push` and reads the datasource
+    // URL from prisma.config.ts (fed via the DATABASE_URL env below). `--accept-data-loss`
+    // keeps the push non-interactive for the ephemeral, reseeded test database.
+    execSync('npx prisma db push --accept-data-loss', {
       cwd: projectRoot,
       env: { ...process.env, DATABASE_URL: E2E_DATABASE_URL },
       stdio: 'inherit',

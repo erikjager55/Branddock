@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 344. Brandstyle kalibratie-paneel — geconsolideerde "wat heb ik nodig"-asks
+
+Eén surface bovenaan de Brand Styleguide die verspreide extractie-kwaliteitssignalen bundelt tot actiegerichte asks met severity (critical/suggestion/review) en deep-links naar de juiste tab. Pure functie `buildBrandstyleCalibrationReport` (`src/lib/brandstyle/calibration-report.ts`, geen server-imports) detecteert: ontbrekend primair logo (critical), ontbrekende donker/licht-variant (suggestion), expliciet low-confidence kleuren (review), gedetecteerde fonts zonder laadbaar bestand (suggestion), lege type-scale (review) en AI-only RECOMMENDED-richtlijnen (review). Het `BrandstyleCalibrationPanel` berekent het rapport client-side uit de reeds-geladen styleguide (geen extra fetch/route) en is gegate op `status === "COMPLETE"`. Komt uit lesson L6 van de brandstyle ↔ design-system-builder-vergelijking. Bevat ook een Prisma-7.4-fix in de e2e `global-setup` (`db push --skip-generate` → `--accept-data-loss`) die de hele e2e-suite deblokkeert, plus een seed-kleur op `confidence: "low"` voor een deterministische Playwright-smoke. Verificatie: 2-ronde finalize-review clean (0 CRITICAL/WARNING), tsc 0, lint 0, Playwright-smoke groen (paneel rendert + deep-link schakelt naar Colors-tab).
+
+- Task: [tasks/done/brandstyle-calibration-report.md](../tasks/done/brandstyle-calibration-report.md)
+- ADR: -
+- Spec: -
+- Commit: `<commit>`
+
 ### 343. GEO stats citeren de echte knowledge-bron (i.p.v. genullde labels)
 
 Vervolg op de stat-citatie-leak: na de sanitizer renderden GEO-stats label-only omdat het model de échte knowledge-bron niet citeerde. Live-harness toonde de bindende constraint: user-geselecteerde knowledge-resources defaulten naar `reference` (7000-char-cap), waardoor de referenties/URLs (achteraan een research-rapport) worden afgekapt en het model ze nooit ziet. Fix: nieuwe `geo-knowledge-context.ts` forceert de eerste ≤3 knowledge-resources (dedup, bron-type-bewust) op `primary` (16k-cap → volledige bron incl. URLs bereikt het model) en prepend een expliciet "## CITEERBARE BRONNEN"-blok (titel + url als schone citeer-handle). De `generate-structured-variant`-route gebruikt dit gated op `LONG_FORM_SEO_TYPES`; de GEO-prompt citeert `citeableStats[].source` uitsluitend uit die lijst (null voor first-party / geen match; geen fabricage; geen interne labels). Live-AI-harness op de Napking-pagina + Deep Research-rapport: additionalContextText 7k→16k incl. URLs, 1/4 citeableStats kreeg een echte bron + `sources[]` met een echte externe URL (superlinen.com); first-party "280+" bleef null. 5-ronde finalize-review clean (0 CRITICAL/WARNING); tsc 0, lint 0. Bekende grens: bronnen >16k kunnen body-URLs afkappen — de title/url-handle blijft dan de citeer-fallback.

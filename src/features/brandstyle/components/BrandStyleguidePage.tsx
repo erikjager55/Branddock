@@ -22,6 +22,7 @@ import { ComponentsSection } from "./ComponentsSection";
 // ToneOfVoiceSection verwijderd — guidelines + do/don't examples leven nu in Brand Voice (ADR 2026-05-15)
 import { ImagerySection } from "./ImagerySection";
 import { VisualSystemSection } from "./VisualSystemSection";
+import { BrandstyleCalibrationPanel } from "./BrandstyleCalibrationPanel";
 import { DesignSystemSection } from "./DesignSystemSection";
 import { HistorySection } from "./HistorySection";
 import { useAnalyzeUrl } from "../hooks/useBrandstyleHooks";
@@ -140,6 +141,8 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
         />
 
         <div className="mt-6" />
+
+        <BrandstyleCalibrationPanel styleguide={styleguide} onJumpToTab={setActiveTab} />
 
         {!styleguide.published && (
           <div className="mb-5">

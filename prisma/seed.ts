@@ -1491,7 +1491,7 @@ async function main() {
     { name: "Gray 500", hex: "#6B7280", rgb: "rgb(107, 114, 128)", hsl: "hsl(220, 9%, 46%)", cmyk: null, category: neutralCategory, tags: ["text", "secondary"], contrastWhite: "AA", contrastBlack: "AA", sortOrder: 4 },
     { name: "Gray 900", hex: "#111827", rgb: "rgb(17, 24, 39)", hsl: "hsl(221, 39%, 11%)", cmyk: null, category: neutralCategory, tags: ["text", "primary"], contrastWhite: "AAA", contrastBlack: "Fail", sortOrder: 5 },
     { name: "Red 500", hex: "#EF4444", rgb: "rgb(239, 68, 68)", hsl: "hsl(0, 84%, 60%)", cmyk: null, category: semanticCategory, tags: ["error", "danger"], contrastWhite: "AA", contrastBlack: "AA", sortOrder: 6 },
-    { name: "Amber 500", hex: "#F59E0B", rgb: "rgb(245, 158, 11)", hsl: "hsl(38, 92%, 50%)", cmyk: null, category: semanticCategory, tags: ["warning"], contrastWhite: "Fail", contrastBlack: "AAA", sortOrder: 7 },
+    { name: "Amber 500", hex: "#F59E0B", rgb: "rgb(245, 158, 11)", hsl: "hsl(38, 92%, 50%)", cmyk: null, category: semanticCategory, tags: ["warning"], contrastWhite: "Fail", contrastBlack: "AAA", confidence: "low", sortOrder: 7 },
     { name: "Emerald 500", hex: "#10B981", rgb: "rgb(16, 185, 129)", hsl: "hsl(160, 84%, 39%)", cmyk: null, category: semanticCategory, tags: ["success"], contrastWhite: "AA", contrastBlack: "AAA", sortOrder: 8 },
   ];
 

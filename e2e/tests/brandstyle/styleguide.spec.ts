@@ -263,4 +263,36 @@ test.describe('Brandstyle Styleguide', () => {
       authenticatedPage.locator('[data-testid="brandstyle-analyzer"]'),
     ).toBeVisible({ timeout: 10_000 });
   });
+
+  test('calibration panel renders and deep-links to the flagged tab', async ({
+    authenticatedPage,
+  }) => {
+    await navigateToStyleguide(authenticatedPage);
+
+    // Panel renders for the COMPLETE seeded styleguide.
+    const panel = authenticatedPage.locator(
+      '[data-testid="brandstyle-calibration-panel"]',
+    );
+    await expect(panel).toBeVisible();
+
+    // The seed flags one color `confidence: low` → exactly one low-confidence
+    // "review" ask that deep-links to the Colors tab.
+    const colorAsk = authenticatedPage.locator(
+      '[data-testid="calibration-ask-colors-low-confidence"]',
+    );
+    await expect(colorAsk).toBeVisible();
+
+    // Deterministic starting state: the store defaults to the `brand_assets` tab
+    // (Zustand without `persist`, and every test gets a fresh page), so the
+    // Colors section is not rendered yet.
+    await expect(
+      authenticatedPage.locator('[data-testid="colors-section"]'),
+    ).not.toBeVisible();
+
+    // Deep-link: clicking the ask's jump button switches to the Colors tab.
+    await colorAsk.locator('button').click();
+    await expect(
+      authenticatedPage.locator('[data-testid="colors-section"]'),
+    ).toBeVisible();
+  });
 });
