@@ -7,15 +7,15 @@
 
 ## Huidige fase
 
-**Pre-launch — peildatum 2026-06-24.** Alles draait localhost; Vercel + Stripe nog niet live. De hard launch-blocker is onverminderd `vercel-deployment` (Track C, nog niet gestart). In juni zijn twee grote feature-clusters geland op `main` die de facto de aandacht hadden: de **web-page-builder (Puck) + GEO/SEO long-form** (Fase 1-3) en de **Knowledge Library / Deep Research** + knowledge-context-laag.
+**Pre-launch — peildatum 2026-06-25.** Alles draait localhost; Vercel + Stripe nog niet live. De hard launch-blocker is onverminderd `vercel-deployment` (Track C, nog niet gestart). In juni landden twee grote feature-clusters op `main`: de **web-page-builder (Puck) + GEO/SEO long-form** (Fase 1-3 + alle followups) en de **Knowledge Library / Deep Research** + knowledge-context-laag. De GEO/SEO-arc, de bijbehorende LP-render-bugfixes én het brandstyle-kalibratie-paneel zijn nu **volledig afgerond en gemerged**.
 
-### Stand per 2026-06-24 (actueel)
+### Stand per 2026-06-25 (actueel)
 
-- **Geland op `main` in juni** (changelog #322-#337): web-page-builder/Puck als Canvas Step 3 + brandstyle-extractie-fixes; website page-types W0-W5; GEO/SEO long-form Fase 1-3 (directive + composable seo-geo + F-VAL GEO-pijler + entity-JSON-LD + meet-haak); Deep Research in de Knowledge Library; knowledge-context in de content-flow + op de 5 PUCK web-page-types; content-item-beelden auto-groeien de Media Library; prompt-audit fase 0-5; NL→EN UI-migratie; **web-page/GEO-publish markeert het content-item nu als PUBLISHED (#337, deze sessie)**.
-- **Worktrees**: `branddock-brandclaw` + `branddock-launch` staan beide op `a511e85b` (19 jun) = **~6 commits achter `main`** (de eerdere "~58 commits achter"-claim is achterhaald). Beide hebben 0 eigen commits.
+- **Geland op `main` in juni** (changelog #322-#344): web-page-builder/Puck als Canvas Step 3 + brandstyle-extractie-fixes; website page-types W0-W5; GEO/SEO long-form Fase 1-3 (directive + composable seo-geo + F-VAL GEO-pijler + entity-JSON-LD + meet-haak); Deep Research in de Knowledge Library; knowledge-context in de content-flow + op de 5 PUCK web-page-types; content-item-beelden auto-groeien de Media Library; prompt-audit fase 0-5; NL→EN UI-migratie; web-page/GEO-publish markeert het content-item als PUBLISHED (#337); GEO-meet-paneel in de Canvas (#338); LP Step 2+3 render-bugfixes ge-finalized (#339); GEO stat-citatie-leak gedicht (#340/#343); "model offline"-melding (#341); LP/GEO render quick-wins (#342); **brandstyle kalibratie-paneel (#344, deze sessie — gemerged via `37701ab7`)**.
+- **Worktrees**: `branddock-brandclaw` + `branddock-launch` staan beide op `a511e85b` (19 jun) = **32 commits achter `main`**. Beide hebben 0 eigen commits → rebase op main nodig vóór start.
 - **Research Hub** staat bewust uit achter `RESEARCH_HUB_ENABLED=false` (per-asset AI-Exploration vanuit Brand Foundation blijft wél aan).
-- **Nog open / niet ge-finalized**: `web-page-builder-canvas-step-mvp` op `in-progress`; `lp-fidelity-bugfixes-step2` + `lp-step3-rendering-bugs` op `in-review`; Track C (launch-infra) onaangeroerd.
-- **GEO/SEO Fase 1a/1b/2/3 afgesloten 2026-06-24** (→ `tasks/done/`): deferred restpunten leven nu in 3 opvolg-tasks — `geo-seo-followup-measurement-dashboard` (GEO-voordeur: meten zichtbaar maken + F-VAL-pijler activeren), `geo-seo-followup-live-ai-e2e` (volledige keten lokaal verifiëren, nú oppakbaar), `geo-seo-followup-later` (entity-reinforcement + restschema + deploy-smoke).
+- **Nog open / niet ge-finalized**: `web-page-builder-canvas-step-mvp` op `in-progress` (alle 6 fasen + squash-merges PR #14/#15 done; alleen een verspreide acceptance-staart rest: README, F-VAL HTML-calibratie, dual-render perf, marketing-site dogfood, browser-smoke door user); `strategy-analyst-stub` Phase C (wacht op vercel); Track C (launch-infra) onaangeroerd. **De `lp-*`-bugfixes (`lp-fidelity-bugfixes-step2` + `lp-step3-rendering-bugs`) zijn afgerond** — de eerdere "in-review"-claim was stale.
+- **GEO/SEO Fase 1a/1b/2/3 + 2 van 3 followups afgesloten 2026-06-24/25** (→ `tasks/done/`): `geo-seo-followup-measurement-dashboard` ✅ en `geo-seo-followup-live-ai-e2e` ✅ done. Alleen `geo-seo-followup-later` (entity-reinforcement + restschema + deploy-smoke) blijft **open**.
 
 ---
 
@@ -59,11 +59,11 @@ Pilot-start projectie: **+9-11 weken** (content-test verbeterplan Optie B Full g
 
 ## Top 3 actieve pre-launch tasks
 
-> Kritieke pad voor pilot ligt bij Track C (vercel = hard launch-blocker, ontgrendelt zowel pilot-onboarding als Phase C Vercel Cron). **Let op (2026-06-24)**: het juni-werk (web-page-builder + GEO/SEO Fase 1-3 + `lp-*`-bugfixes in-review) is feitelijk de actieve werkstroom geweest en is nog niet ge-finalized — dat afronden concurreert met het starten van Track C. De `lp-fidelity-bugfixes-step2` + `lp-step3-rendering-bugs` (beide `in-review`) zijn de snelste wins.
+> Kritieke pad voor pilot ligt bij Track C (vercel = hard launch-blocker, ontgrendelt zowel pilot-onboarding als Phase C Vercel Cron). **Stand 2026-06-25**: het juni-werk (web-page-builder + GEO/SEO Fase 1-3 + alle GEO-followups + `lp-*`-bugfixes + brandstyle-calibratie) is **afgerond en gemerged** — er is geen finalisatie-werk meer dat met Track C concurreert. Track C is nu de onbetwiste volgende stap.
 
-1. **Track C activeren — `vercel-deployment`** (3d) — eerst `git rebase main` op worktree `branddock-launch` (~6 commits achter per 2026-06-24). Hard launch-blocker. Ontgrendelt `pilot-onboarding-better-brands` (2d) én `Phase C Vercel Cron` van Track B.
+1. **Track C activeren — `vercel-deployment`** (3d) — eerst `git rebase main` op worktree `branddock-launch` (**32 commits achter** per 2026-06-25). Hard launch-blocker. Ontgrendelt `pilot-onboarding-better-brands` (2d) én `Phase C Vercel Cron` van Track B.
 
-2. **testplan-content-items Ronde 1 — 8 representanten** (~1d) — blog-post / linkedin-post / search-ad / newsletter / landing-page / explainer-video / one-pager / press-release. STOP-GATE is genomen (effie-fix gemerged), kan hervatten. Effie-fix wordt mee-geverifieerd tijdens deze sweep (DOM grep `/effie/gi` per representant op Strategy-step).
+2. **content-items-test-coverage Ronde 1 — 8 representanten** (~1d, `in-progress`) — blog-post / linkedin-post / search-ad / newsletter / landing-page / explainer-video / one-pager / press-release. STOP-GATE is genomen (effie-fix gemerged), kan hervatten. Effie-fix mee-verifiëren via DOM grep `/effie/gi` per representant op Strategy-step.
 
 3. **Track B Phase C** (5-7d, in `branddock-brandclaw` worktree) — Vercel Cron weekly + per-workspace concurrency-cap + cost-budget alerts naar PostHog (>$10/ws/maand) + BB pilot smoke met productie-data. **Wacht op vercel-deployment** voor de Cron-config + productie-smoke.
 
