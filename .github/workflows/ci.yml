@@ -10,9 +10,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           # Node 22 vereist door promptfoo transitive dep file-type@22.0.1.
           # Tevens consistent met lokale dev (Node 22+ lockfile-resolution).

@@ -28,9 +28,9 @@ jobs:
     # via job-level if vermijdt fail-on-missing-key voor forks zonder secrets.
     if: ${{ github.repository_owner == 'erikjager55' || github.event_name == 'workflow_dispatch' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           # Node 22 vereist (file-type@22 transitive dep van promptfoo).
           node-version: 22
@@ -141,7 +141,7 @@ jobs:
 
       - name: Upload golden-set results
         if: always() && steps.keys.outputs.present == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: golden-set-results-${{ github.sha }}
           path: .promptfoo-results/
@@ -149,7 +149,7 @@ jobs:
 
       - name: Comment results on PR
         if: always() && github.event_name == 'pull_request' && steps.keys.outputs.present == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
