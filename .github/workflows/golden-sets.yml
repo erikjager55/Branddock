@@ -49,6 +49,26 @@ jobs:
       - name: Verify Promptfoo installation
         run: npx promptfoo --version
 
+      # The owner-only job `if:` above does NOT prove the secret is actually
+      # set — an empty ANTHROPIC_API_KEY on the owner repo still runs the job,
+      # and promptfoo then crashes "Missing ANTHROPIC_API_KEY" BEFORE writing
+      # its results file, so the pass-rate gate fails on the absent output. That
+      # made every nightly scheduled run fail-noisily. Detect the key here and
+      # skip the live eval + gate gracefully when it's absent; the deterministic
+      # smokes below still run. Adding ANTHROPIC_API_KEY to repo secrets
+      # re-activates the live eval automatically.
+      - name: Detect LLM keys
+        id: keys
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::ANTHROPIC_API_KEY not configured — skipping live golden-set eval + pass-rate gate. Deterministic smokes still run. Add the repo secret to re-enable."
+          fi
+
       # Gate design (prompt-audit 2026-06-11 T8): this set runs a live LLM
       # (generation + llm-rubric judges), so individual cases are inherently
       # flaky. Promptfoo's own exit code is per-case strict (non-zero on ANY
@@ -58,6 +78,7 @@ jobs:
       # threshold" step on the TOTAL pass-rate (>= 70%). A promptfoo crash
       # produces no results file, which the gate step fails on hard.
       - name: Run blog-post golden-set (long-form representant)
+        if: steps.keys.outputs.present == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -91,6 +112,7 @@ jobs:
       # doesn't mask their signal; artifact upload + PR comment below have
       # `if: always()` and still run when this gate fails.
       - name: Enforce golden-set pass-rate threshold (70%)
+        if: steps.keys.outputs.present == 'true'
         run: |
           node - <<'EOF'
           const fs = require('fs');
@@ -118,7 +140,7 @@ jobs:
           EOF
 
       - name: Upload golden-set results
-        if: always()
+        if: always() && steps.keys.outputs.present == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: golden-set-results-${{ github.sha }}
@@ -126,7 +148,7 @@ jobs:
           retention-days: 14
 
       - name: Comment results on PR
-        if: github.event_name == 'pull_request' && always()
+        if: always() && github.event_name == 'pull_request' && steps.keys.outputs.present == 'true'
         uses: actions/github-script@v7
         with:
           script: |
