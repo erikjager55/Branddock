@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { enforcePlanLimit } from "@/lib/stripe/enforcement";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { PRODUCT_LIST_SELECT } from "@/lib/db/queries";
 import { setCache, cachedJson, invalidateCache } from "@/lib/api/cache";
@@ -142,6 +143,10 @@ export async function POST(request: NextRequest) {
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
+
+    // M5: server-side plan-limit enforcement (no-op while billing disabled).
+    const limited = await enforcePlanLimit(workspaceId, "PRODUCTS");
+    if (limited) return limited;
 
     const body = await request.json();
     const parsed = createProductSchema.safeParse(body);

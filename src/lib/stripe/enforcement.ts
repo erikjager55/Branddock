@@ -9,6 +9,7 @@
 // All enforcement is SKIPPED when BILLING_ENABLED=false.
 // =============================================================
 
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import type { PlanTier, FeatureKey, EffectivePlan } from '@/types/billing';
 import { PLAN_LIMITS } from '@/lib/constants/plan-limits';
@@ -217,4 +218,35 @@ export async function enforceFeature(
   if (!check.allowed) {
     throw new PlanLimitError(feature, check.limit, check.current, check.tier);
   }
+}
+
+// ─── Enforce at a route boundary (returns a 402 Response) ───
+
+/**
+ * Route-boundary plan-limit guard (M5). Returns a 402 {@link NextResponse} when
+ * the limit is reached, or `null` when within limits / billing disabled — so a
+ * route can do:
+ *   `const limited = await enforcePlanLimit(ws, 'PERSONAS'); if (limited) return limited;`
+ *
+ * Security-audit 2026-06-26 M5: plan entitlement was only enforced in the UI;
+ * the server let FREE-tier workspaces create unlimited entities once billing is
+ * on. No-op while `BILLING_ENABLED=false`.
+ */
+export async function enforcePlanLimit(
+  workspaceId: string,
+  feature: FeatureKey,
+): Promise<NextResponse | null> {
+  const check = await checkPlanLimit(workspaceId, feature);
+  if (check.allowed) return null;
+  return NextResponse.json(
+    {
+      error: `Plan limit reached: ${check.current}/${check.limit} ${feature} on the ${check.tier} plan. Upgrade to add more.`,
+      feature: check.feature,
+      current: check.current,
+      limit: check.limit,
+      tier: check.tier,
+      upgradeRequired: true,
+    },
+    { status: 402 },
+  );
 }

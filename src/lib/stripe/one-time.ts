@@ -19,9 +19,10 @@ export interface CreatePaymentIntentParams {
   workspaceId: string;
   userId: string;
   type: PurchaseType;
-  itemId: string;        // bundleId or workshopBundleId
-  amountEur: number;     // price in EUR (e.g. 99.00)
+  itemId: string;        // researchBundleId or workshopId
   description?: string;
+  // NB: the price is NOT accepted from the caller — it is derived server-side
+  // from the catalog/workshop. Security-audit 2026-06-26 H3.
 }
 
 export interface PaymentIntentResult {
@@ -52,7 +53,16 @@ export interface HandlePurchaseParams {
 export async function createPaymentIntent(
   params: CreatePaymentIntentParams,
 ): Promise<PaymentIntentResult> {
-  const { workspaceId, userId, type, itemId, amountEur, description } = params;
+  const { workspaceId, userId, type, itemId, description } = params;
+
+  // H3: derive the price server-side from the catalog/workshop — NEVER trust a
+  // client-supplied amount. Trusting the body amount let an attacker pay €0.50
+  // for a €99 bundle, or pass amount:0 to unlock the bundle tools for free.
+  // Security-audit 2026-06-26 H3.
+  const amountEur = await resolveItemPrice(workspaceId, type, itemId);
+  if (amountEur === null) {
+    return { success: false, error: 'Item not found or not purchasable in this workspace' };
+  }
 
   // When billing is disabled, auto-complete the purchase
   if (!isBillingEnabled()) {
@@ -152,6 +162,36 @@ export async function handlePurchaseSuccess(
   }
 
   await completePurchase({ workspaceId, type, itemId, pricePaid });
+}
+
+// ─── Internal: server-side canonical price (H3) ─────────────
+
+/**
+ * Resolve the authoritative price (EUR) for a purchasable item, server-side.
+ * - research_bundle → `ResearchBundle.price` (global catalog).
+ * - workshop        → `Workshop.totalPrice`, scoped to the workspace (set at
+ *   creation from `WorkshopBundle.finalPrice * count`).
+ * Returns `null` when the item does not exist / is not purchasable for this
+ * workspace, so the caller can reject instead of defaulting to a free unlock.
+ */
+async function resolveItemPrice(
+  workspaceId: string,
+  type: PurchaseType,
+  itemId: string,
+): Promise<number | null> {
+  if (type === 'research_bundle') {
+    const bundle = await prisma.researchBundle.findUnique({
+      where: { id: itemId },
+      select: { price: true },
+    });
+    return bundle ? bundle.price : null;
+  }
+  // workshop — workspace-scoped; totalPrice is set server-side at creation.
+  const workshop = await prisma.workshop.findFirst({
+    where: { id: itemId, workspaceId },
+    select: { totalPrice: true },
+  });
+  return workshop?.totalPrice ?? null;
 }
 
 // ─── Internal: complete purchase in database ────────────────
