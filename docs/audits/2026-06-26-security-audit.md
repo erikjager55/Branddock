@@ -119,11 +119,20 @@ Dev-only / breaking-fix (lagere prio): `@opentelemetry/otlp-transformer` + `prot
 
 Tenant-isolatie is over het algemeen **disciplinair correct**: verify-then-mutate-by-PK + `hasWorkspaceAccess()` + `require*Access`-helpers. Verder bevestigd-veilig: M10-token-encryptie-fundamenten (random IV, key-len-validatie, prod fail-closed, rewrap-script, tag gevalideerd vóór `setAuthTag`), Stripe-webhook (signature + idempotentie + re-fetch), Meta-OAuth-CSRF (random state, single-use, TTL, `appsecret_proof`), cron-auth (`timingSafeEqual`), login-rate-limiting (dual-layer Redis), Brandclaw autonome loop (read-only tools + caps), Claw write-tool-`execute` (server-side `workspaceId` + `updateMany`+count-guard — stopt cross-tenant tool-hijack), human-in-the-loop op alle mutaties, `toPgVectorLiteral` finite-number-gate (raw-SQL veilig), server-gegenereerde upload-filenames (path-traversal veilig), `execFile` zonder shell (geen command-injection).
 
-## Fase 3/4 — remediatie (te plannen)
+## Fase 3/4 — remediatie (in uitvoering)
 
-Domeinen, geprioriteerd: (1) tenant-isolatie/IDOR over de 500 routes — ~63 zonder auth/workspace-grep-hit als startlijst; (2) authN/authZ + rol-enforcement; (3) secrets/crypto (TOKEN_ENCRYPTION_KEY-lifecycle) + git-history-scan; (4) SSRF (website-scanner/competitor-discovery/knowledge-research vs OWASP SSRF-cheatsheet); (5) LLM prompt-injection (direct + indirect via scrape/knowledge); (6) input-validatie/Zod op mutaties; (7) Stripe webhook-signature + idempotentie + plan-enforcement; (8) headers/CSP/rate-limit-coverage.
+**✅ Chirurgische HIGHs gefixt 2026-06-26** (branch `chore/security-dep-fixes`, commit `7e86f83e`; tsc/lint/build groen):
+H2 JSON-LD stored-XSS escape · H4 billing-RBAC (nieuwe `requireOrgRole`) · H5 `/stripe/sync` IDOR · H6 3 AI-routes achter `withAi` · H8 strategy-child IDOR (5 routes).
 
-**Tooling-gap om Fase 2 te versterken**: installeer `semgrep` (volledige SAST + custom tenant-scoping-regels) + `gitleaks` (git-history secret-scan). Beide via Homebrew.
+**📋 Uitgesteld als task-files** (groter/refactor of achter billing-flag):
+- `security-h1-ssrf-guard` — vervang `isPrivateHostname` door de DNS-resolve-en-verifieer van `external-content-ingest.ts`; alle scrapers + playwright-fallback + multi-page-scraper; manual redirect-revalidatie; byte-cap + rate-limit op website-scanner/claw-scrape/parse-url.
+- `security-h3-purchase-entitlement` — server-side prijs-lookup voor one-time purchase (H3) + server-side plan-entitlement bedraden (M5: `enforceFeature`/`checkPlanLimit`/`withPlanEnforcement` hebben 0 call-sites).
+- `security-h7-claw-context-fencing` — `fenceUntrustedContent` op Claw attachments/competitor/knowledge/trends + leak-sanitizer op de chat-output-stream (M4) + `navigate.section` → `z.enum` (L5).
+- `security-medium-cluster` — M1 invite-owner-escalatie (role-enum), M2 export-PII-RBAC, M3 Claw-write-RBAC (viewer), M6 `deepSet` prototype-pollution-guard + LOWs (CSP-header, GCM-`authTagLength`, `webhooks/trigger` `timingSafeEqual`, ad-tokens-rotatie/versioning, Zod-coverage-sweep).
+
+**CI-gates** (aanrader, eigen follow-up): `gitleaks` + `semgrep` + `npm audit --audit-level=high` als workflow-gate zodat de baseline schoon blijft.
+
+**Tooling geïnstalleerd**: `semgrep` 1.168.0 + `gitleaks` 8.30.1 (Homebrew) — herbruikbaar.
 
 ---
 
