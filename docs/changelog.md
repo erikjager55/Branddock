@@ -44,7 +44,7 @@ Opvolg op #345 (OWASP Top 10 for LLM). De Claw-agent (de component mét write-to
 - Task: [tasks/done/security-h7-claw-context-fencing.md](../tasks/done/security-h7-claw-context-fencing.md)
 - ADR: -
 - Spec: [docs/audits/2026-06-26-security-audit.md](audits/2026-06-26-security-audit.md)
-- Commit: <hash> (PR #59)
+- Commit: 30779ecd (PR #59)
 
 ### 345. Security-audit pre-launch — dep-patches + remediatie HIGH-findings
 
