@@ -44,7 +44,7 @@ Sluitstuk van de pre-launch security-audit (na #345/#346/#347). **RBAC**: invite
 - Task: [tasks/done/security-medium-cluster.md](../tasks/done/security-medium-cluster.md)
 - ADR: -
 - Spec: [docs/audits/2026-06-26-security-audit.md](audits/2026-06-26-security-audit.md)
-- Commit: <hash> (PR #61)
+- Commit: eba365a1 (PR #61)
 
 ### 347. Security — billing-integriteit: server-side purchase-prijs + plan-entitlement (H3 + M5)
 
