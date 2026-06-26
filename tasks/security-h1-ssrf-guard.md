@@ -5,7 +5,7 @@ fase: pre-launch
 priority: next
 effort: 1-2 dagen
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-06-26
 completed: -
 related-adr: -
@@ -51,6 +51,15 @@ Unit-test `assertSafeUrl`/`isPrivateHostname` tegen de payload-set uit de audit 
 
 - Egress-proxy-infra (eigen ops-taak) — wel aanbevolen post-Vercel.
 
+# Status 2026-06-26 (kern gedaan, commit `6f0875e4`)
+
+**✅ Gedaan**: `ssrf.ts` herschreven (geharde `isPrivateIp` incl. hex-mapped IPv6, `isPrivateHostname` bracket-strip, async `assertSafeUrl`/`assertSafeRedirect` met DNS-resolve-en-verifieer + scheme-allowlist + `readBodyWithCap`). Alle consumers ge-`await`'d; `products/url-scraper` + `media/import-url` ge-upgrade naar `assertSafeUrl`; `playwright-fallback` + `multi-page-scraper` valideren nu; `external-content-ingest` DRY't op de gedeelde guard. Smoke `scripts/smoke-tests/ssrf-guard.ts` 48/48; tsc 0, lint 0, build groen.
+
+**⏳ Residu (defense-in-depth, lager risico)**:
+- `redirect: 'manual'` per-hop in alle scrapers (nu post-hoc revalidatie op `'follow'` met de geharde guard — de redirect-*request* zelf gebeurt nog vóór validatie). Overweeg een gedeelde `safeFetch`-helper.
+- Rate-limit + streaming byte-cap op `website-scanner`/`claw/scrape`/`briefing-sources/parse-url` (nu 0).
+- `image-scraper` + `knowledge-research/search` blijven bewust op de sync `isPrivateHostname` (krijgen de F1-hardening automatisch; geen DNS-resolve — lager risico predicate/redirect-check).
+
 # Notes
 
-- Bron: security-audit 2026-06-26 §SSRF (F1-F7). `external-content-ingest.ts` is de referentie.
+- Bron: security-audit 2026-06-26 §SSRF (F1-F7). `external-content-ingest.ts` was de referentie; is nu DRY'd op de gedeelde guard.

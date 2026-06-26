@@ -125,7 +125,7 @@ Tenant-isolatie is over het algemeen **disciplinair correct**: verify-then-mutat
 H2 JSON-LD stored-XSS escape · H4 billing-RBAC (nieuwe `requireOrgRole`) · H5 `/stripe/sync` IDOR · H6 3 AI-routes achter `withAi` · H8 strategy-child IDOR (5 routes).
 
 **📋 Uitgesteld als task-files** (groter/refactor of achter billing-flag):
-- `security-h1-ssrf-guard` — vervang `isPrivateHostname` door de DNS-resolve-en-verifieer van `external-content-ingest.ts`; alle scrapers + playwright-fallback + multi-page-scraper; manual redirect-revalidatie; byte-cap + rate-limit op website-scanner/claw-scrape/parse-url.
+- `security-h1-ssrf-guard` — **kern ✅ gefixt** (`6f0875e4`): geharde `ssrf.ts` (IPv6 incl. hex-mapped + DNS-resolve-en-verifieer + scheme-allowlist), alle scrapers + playwright-fallback + multi-page-scraper ge-await'd/gevalideerd, smoke 48/48. Residu: `redirect:'manual'` per-hop + rate-limit/byte-cap op website-scanner/claw-scrape/parse-url.
 - `security-h3-purchase-entitlement` — server-side prijs-lookup voor one-time purchase (H3) + server-side plan-entitlement bedraden (M5: `enforceFeature`/`checkPlanLimit`/`withPlanEnforcement` hebben 0 call-sites).
 - `security-h7-claw-context-fencing` — `fenceUntrustedContent` op Claw attachments/competitor/knowledge/trends + leak-sanitizer op de chat-output-stream (M4) + `navigate.section` → `z.enum` (L5).
 - `security-medium-cluster` — M1 invite-owner-escalatie (role-enum), M2 export-PII-RBAC, M3 Claw-write-RBAC (viewer), M6 `deepSet` prototype-pollution-guard + LOWs (CSP-header, GCM-`authTagLength`, `webhooks/trigger` `timingSafeEqual`, ad-tokens-rotatie/versioning, Zod-coverage-sweep).
