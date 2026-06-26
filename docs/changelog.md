@@ -44,7 +44,7 @@ OWASP-ASVS-L2-audit (Fase 0-2: dep-scan + git-history-secrets + SAST + 6 paralle
 - Task: `tasks/security-h1-ssrf-guard.md` (+ h3/h7/medium-cluster) — multi-task
 - ADR: -
 - Spec: [docs/audits/2026-06-26-security-audit.md](audits/2026-06-26-security-audit.md)
-- Commit: <hash> (PR #58)
+- Commit: 3062a142 (PR #58)
 
 ### 344. Brandstyle kalibratie-paneel — geconsolideerde "wat heb ik nodig"-asks
 
