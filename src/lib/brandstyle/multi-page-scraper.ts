@@ -22,6 +22,7 @@ import * as cheerio from 'cheerio';
 import { scrapeUrl, type ScrapedData, type CssVariable, type ColorFrequency } from './url-scraper';
 import { discoverInternalLinks } from '@/lib/products/url-scraper';
 import { classifyAndPrioritize } from '@/lib/website-scanner/page-classifier';
+import { assertSafeUrl } from '@/lib/utils/ssrf';
 
 export function isMultiPageEnabled(): boolean {
   return process.env.BRANDSTYLE_MULTI_PAGE === '1';
@@ -114,6 +115,7 @@ async function discoverInternalLinksFromHomepage(
   _homepage: ScrapedData,
 ): Promise<string[]> {
   try {
+    await assertSafeUrl(url); // SSRF guard on the re-fetch (H1)
     const res = await fetch(url, {
       headers: {
         'User-Agent':

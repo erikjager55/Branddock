@@ -4,7 +4,7 @@ import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { getStorageProvider } from "@/lib/storage";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
-import { isPrivateHostname } from "@/lib/utils/ssrf";
+import { assertSafeUrl } from "@/lib/utils/ssrf";
 import { fetchWithSizeLimit, ResponseTooLargeError } from "@/lib/security/fetch-with-limit";
 import { generateMediaSlug, detectMediaType } from "@/features/media-library/utils/media-utils";
 
@@ -58,8 +58,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Block private/internal IPs (SSRF protection)
-    if (isPrivateHostname(parsedUrl.hostname)) {
+    // Block private/internal IPs + DNS-rebind (SSRF protection). H1.
+    try {
+      await assertSafeUrl(parsedUrl.toString());
+    } catch {
       return NextResponse.json(
         { error: "URL points to a private/internal address" },
         { status: 400 }

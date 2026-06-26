@@ -3,7 +3,7 @@
 // =============================================================
 
 import * as cheerio from 'cheerio';
-import { isPrivateHostname } from '@/lib/utils/ssrf';
+import { assertSafeUrl, assertSafeRedirect } from '@/lib/utils/ssrf';
 import {
   isTrackingPixel,
   resolveImageUrl,
@@ -187,10 +187,8 @@ function findProductImages(
  * Scrape a URL and extract product-relevant text content + images.
  */
 export async function scrapeProductUrl(url: string): Promise<ScrapedProductData> {
-  const parsed = new URL(url);
-  if (isPrivateHostname(parsed.hostname)) {
-    throw new Error('URLs pointing to private or internal networks are not allowed');
-  }
+  // SSRF: block private IPs + DNS-rebind (H1).
+  await assertSafeUrl(url);
 
   const response = await fetch(url, {
     headers: BROWSER_HEADERS,
@@ -199,17 +197,7 @@ export async function scrapeProductUrl(url: string): Promise<ScrapedProductData>
   });
 
   // Check for SSRF after redirect — fetch may have followed a redirect to a private IP
-  if (response.url !== url) {
-    try {
-      const redirectedParsed = new URL(response.url);
-      if (isPrivateHostname(redirectedParsed.hostname)) {
-        throw new Error('URL redirected to a private or internal network');
-      }
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('private')) throw e;
-      // Ignore URL parse errors — will fail on content-type check below
-    }
-  }
+  await assertSafeRedirect(url, response.url);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
@@ -271,10 +259,8 @@ export async function fetchAndParse(url: string): Promise<{
   title: string | null;
   description: string | null;
 }> {
-  const parsed = new URL(url);
-  if (isPrivateHostname(parsed.hostname)) {
-    throw new Error('URLs pointing to private or internal networks are not allowed');
-  }
+  // SSRF: block private IPs + DNS-rebind (H1).
+  await assertSafeUrl(url);
 
   const response = await fetch(url, {
     headers: BROWSER_HEADERS,
@@ -282,16 +268,8 @@ export async function fetchAndParse(url: string): Promise<{
     redirect: 'follow',
   });
 
-  if (response.url !== url) {
-    try {
-      const redirectedParsed = new URL(response.url);
-      if (isPrivateHostname(redirectedParsed.hostname)) {
-        throw new Error('URL redirected to a private or internal network');
-      }
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('private')) throw e;
-    }
-  }
+  // Check for SSRF after redirect (H1).
+  await assertSafeRedirect(url, response.url);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);

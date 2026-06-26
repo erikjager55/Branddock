@@ -66,7 +66,7 @@ async function fetchImageBuffer(url: string): Promise<{
   mimeType: string;
   fileName: string;
 }> {
-  assertSafeUrl(url);
+  await assertSafeUrl(url);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);

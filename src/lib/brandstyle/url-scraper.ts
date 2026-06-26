@@ -189,8 +189,8 @@ function rankStylesheets(links: Array<{ href: string; id: string }>): string[] {
  * - Body text content for tone analysis
  */
 export async function scrapeUrl(url: string): Promise<ScrapedData> {
-  // SSRF protection: block private IPs
-  assertSafeUrl(url);
+  // SSRF protection: block private IPs + DNS-rebind
+  await assertSafeUrl(url);
 
   // Fetch HTML with retry on timeout/network errors (max 2 attempts)
   let response: Response | null = null;
@@ -236,7 +236,7 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
   }
 
   // Check for SSRF after redirect
-  assertSafeRedirect(url, response.url);
+  await assertSafeRedirect(url, response.url);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
@@ -291,7 +291,7 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
           ? cssHref
           : new URL(cssHref, baseUrl).toString();
         // SSRF protection on linked stylesheet URLs
-        assertSafeUrl(cssUrl);
+        await assertSafeUrl(cssUrl);
         const cssResponse = await fetch(cssUrl, {
           headers: { 'User-Agent': CHROME_USER_AGENT },
           signal: AbortSignal.timeout(8000),

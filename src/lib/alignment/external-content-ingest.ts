@@ -13,6 +13,7 @@
 
 import { lookup } from 'dns/promises';
 import { isIP } from 'net';
+import { isPrivateIp } from '@/lib/utils/ssrf';
 
 const INGEST_CHAR_LIMIT = 50_000;
 const URL_FETCH_TIMEOUT_MS = 10_000;
@@ -224,37 +225,6 @@ async function assertSafeUrl(rawUrl: string): Promise<void> {
       );
     }
   }
-}
-
-/** RFC1918 + loopback + link-local + cloud-metadata + IPv6-private. */
-function isPrivateIp(ip: string): boolean {
-  // IPv4
-  if (isIP(ip) === 4) {
-    const parts = ip.split('.').map(Number);
-    const [a, b] = parts;
-    if (a === 10) return true;
-    if (a === 127) return true;
-    if (a === 169 && b === 254) return true; // link-local + AWS IMDS 169.254.169.254
-    if (a === 172 && b >= 16 && b <= 31) return true;
-    if (a === 192 && b === 168) return true;
-    if (a === 0) return true;
-    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
-    return false;
-  }
-  // IPv6
-  if (isIP(ip) === 6) {
-    const lower = ip.toLowerCase();
-    if (lower === '::' || lower === '::1') return true;
-    if (lower.startsWith('fe80:')) return true; // link-local
-    if (lower.startsWith('fc') || lower.startsWith('fd')) return true; // unique-local
-    if (lower.startsWith('::ffff:')) {
-      // IPv4-mapped — recurse op embedded v4.
-      const v4 = lower.split(':').pop();
-      if (v4 && isIP(v4) === 4) return isPrivateIp(v4);
-    }
-    return false;
-  }
-  return false;
 }
 
 /** Stream response body en abort wanneer cumulatieve byte-count > cap. */

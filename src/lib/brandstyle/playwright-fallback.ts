@@ -24,6 +24,7 @@
 // =============================================================
 
 import type { ScrapedData } from './url-scraper';
+import { assertSafeUrl } from '@/lib/utils/ssrf';
 
 /** Configurable via env var so an operator can toggle the fallback without
  *  redeploying. Default OFF — pulls Chromium binary, adds latency. */
@@ -92,6 +93,9 @@ async function extractWithChromium(url: string): Promise<HeadlessExtraction> {
     });
     const page = await ctx.newPage();
 
+    // SSRF: validate before headless navigation — a headless browser is a
+    // stronger SSRF primitive (executes JS, can reach intranet SPAs). H1.
+    await assertSafeUrl(url);
     await page.goto(url, { waitUntil: 'networkidle', timeout: 30_000 });
 
     // Run extraction inside the browser. The whole script is one inline arrow

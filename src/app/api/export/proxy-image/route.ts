@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 
     // SSRF guard
     try {
-      assertSafeUrl(targetUrl);
+      await assertSafeUrl(targetUrl);
     } catch {
       return NextResponse.json({ error: "Invalid or unsafe URL" }, { status: 400 });
     }
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
 
     // SSRF redirect check
     try {
-      assertSafeRedirect(targetUrl, response.url);
+      await assertSafeRedirect(targetUrl, response.url);
     } catch {
       return NextResponse.json({ error: "Redirected to unsafe URL" }, { status: 400 });
     }
