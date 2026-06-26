@@ -5,9 +5,9 @@ fase: pre-launch
 priority: next
 effort: 1-2 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-26
-completed: -
+completed: 2026-06-26
 related-adr: -
 related-spec: docs/audits/2026-06-26-security-audit.md
 worktree: -
@@ -20,15 +20,15 @@ Resterende MEDIUM/LOW-findings uit security-audit 2026-06-26 (de HIGHs H2/H4/H5/
 # Acceptatiecriteria
 
 **MEDIUM**
-- [ ] **M1** — `organization/invite`: `role` valideren tegen `z.enum(['admin','member','viewer'])`; non-owners mogen geen `owner`-invite uitgeven (anders escaleert admin → owner).
-- [ ] **M2** — `/api/workspace/export`: gate achter owner/admin (viewer kan nu hele workspace + interviewee-PII exfiltreren).
-- [ ] **M3** — Claw write-tools: rol-gate in `chat/route.ts`+`confirm/route.ts` (viewer mag niet muteren via de agent); spiegel de directe mutatie-routes.
-- [ ] **M6** — `src/lib/utils/deep-set.ts`: segment-guard die `__proto__`/`constructor`/`prototype` weigert (raakt `update_asset_framework` + `user/preferences`); + `.refine()`-key-denylist op `preferencesBodySchema`.
+- [x] **M1** — invite-routes: `role` → enum + alléén owner mag `owner` inviten. **Beide** live routes gepatcht: `/api/organization/invite` (TeamManagementPage) én `/api/settings/team/invite` (Settings-UI/InviteMemberModal — gevonden in review-ronde 1, was de échte UI-route). Native Better Auth `invite-member` blokkeert admin→owner al ingebouwd (crud-invites.mjs:123, `creatorRole` default `owner`) — geverifieerd, geen fix nodig.
+- [x] **M2** — `/api/workspace/export`: `requireWorkspaceRole()` (owner/admin). Client `DataExportSection` toont accurate 403-melding.
+- [x] **M3** — Claw `confirm/route.ts`: `requireWorkspaceRole(['owner','admin','member'])` vóór parse/execute (chat-route voert write-tools niet uit — alleen proposal, dus gate op confirm is het juiste mutatie-pad).
+- [x] **M6** — `deepSet`: segment-guard weigert `__proto__`/`constructor`/`prototype` vóór de walk.
 
 **LOW / hardening**
-- [ ] **L1** — CSP-header toevoegen aan `src/proxy.ts`.
-- [ ] **L2** — GCM: `{ authTagLength: 16 }` op beide `createDecipheriv`-calls (`token-crypto.ts` + `ad-tokens/encryption.ts`); decrypt van bestaande tokens testen.
-- [ ] **L3** — `webhooks/trigger/[type]`: `===` op secret → `timingSafeEqual` (consistent met cron-auth).
+- [x] **L1** — CSP-header in `src/proxy.ts` (non-breaking subset).
+- [x] **L2** — GCM `{ authTagLength }` op beide `createDecipheriv` (token-crypto + ad-tokens); decrypt-roundtrip geverifieerd backward-compat.
+- [x] **L3** — `webhooks/trigger/[type]`: `timingSafeEqual` + length-guard.
 - [ ] **L4** — `workspace/brand-style-anchors` + `hero-logo-overlay`: rol-check (viewer = read-only).
 - [ ] **L5** — (zit in H7-task) `navigate.section` → enum.
 - [ ] **L6** — Help-Center markdown-renderer: `escapeHtml` in alle branches + `href`-allowlist (latent; admin-only content vandaag).
@@ -48,6 +48,11 @@ Resterende MEDIUM/LOW-findings uit security-audit 2026-06-26 (de HIGHs H2/H4/H5/
 - **L3** — `webhooks/trigger`: `timingSafeEqual` i.p.v. `===` op het Bearer-secret.
 
 Smoke `security-medium.ts` 7/7 (deepSet-guard + pollution-probe + normale paden); tsc 0, lint 0, build groen.
+
+**Finalize — 2-subagent review (2 rondes)**:
+- Ronde 1 vond 1 CRITICAL: M1-fix zat op `/api/organization/invite`, maar de UI gebruikt `/api/settings/team/invite` — die had `role: z.string()` + sloeg verbatim op → admin→owner via accept-route. Gefixt (commit `3548f415`). + 1 WARNING: export-403 gaf misleidende "try again" → accurate melding.
+- Ronde 2: Reviewer D clean. Reviewer C's "CRITICAL" (native Better Auth `invite-member` zou admin→owner toelaten) = **geverifieerde false-positive** — library-guard crud-invites.mjs:123 blokkeert het al.
+- Resterende MINORs (defer): dual-source CSP (proxy.ts + next.config.ts), dubbele workspace-resolutie in claw/confirm, smoke dekt alleen M6.
 
 **⏳ Restscope** (lager / breder, follow-up):
 - **L4** — `workspace/brand-style-anchors` + `hero-logo-overlay`: rol-check (viewer=read-only) via `requireWorkspaceRole` — zelfde patroon.
