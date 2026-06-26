@@ -5,7 +5,9 @@ import { getServerSession } from "@/lib/auth-server";
 
 const inviteSchema = z.object({
   email: z.string().email(),
-  role: z.string().optional().default("member"),
+  // M1: enum rejects junk roles at parse-time; the owner-guard below ensures
+  // only an owner may actually mint another owner.
+  role: z.enum(["owner", "admin", "member", "viewer"]).optional().default("member"),
 });
 
 // POST /api/settings/team/invite — invite a new member
@@ -62,6 +64,16 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, role } = parsed.data;
+
+    // M1: only an owner may invite another owner — an admin could otherwise
+    // escalate by inviting an `owner` (mirrors members/[id]/role + the
+    // /api/organization/invite guard). This is the UI-wired invite path.
+    if (role === "owner" && myMembership.role !== "owner") {
+      return NextResponse.json(
+        { error: "Only an owner can invite another owner" },
+        { status: 403 }
+      );
+    }
 
     // Check existing member
     const existingUser = await prisma.user.findUnique({

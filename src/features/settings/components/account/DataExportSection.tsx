@@ -12,6 +12,12 @@ export function DataExportSection() {
     setIsExporting(true);
     try {
       const res = await fetch('/api/workspace/export');
+      // M2 gates this endpoint behind owner/admin — surface an accurate message
+      // instead of the generic "try again" (retrying never helps a viewer/member).
+      if (res.status === 403) {
+        alert('Only owners and admins can export workspace data.');
+        return;
+      }
       if (!res.ok) throw new Error('Export failed');
 
       const blob = await res.blob();
