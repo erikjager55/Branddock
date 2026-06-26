@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { enforcePlanLimit } from "@/lib/stripe/enforcement";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
 import { DifficultyLevel, Prisma, type KnowledgeResource } from "@prisma/client";
@@ -161,6 +162,10 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+
+    // M5: server-side plan-limit enforcement (no-op while billing disabled).
+    const limited = await enforcePlanLimit(workspaceId, "KNOWLEDGE_RESOURCES");
+    if (limited) return limited;
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);

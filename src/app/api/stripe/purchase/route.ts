@@ -4,7 +4,9 @@
 // Creates a Stripe Payment Intent for workshops or research bundles.
 // When billing is disabled, the purchase completes instantly (free).
 //
-// Body: { type: 'research_bundle' | 'workshop', itemId: string, amount: number, description?: string }
+// Body: { type: 'research_bundle' | 'workshop', itemId: string, description?: string }
+// NB: any client-supplied `amount` is IGNORED — the price is derived server-side
+// from the catalog/workshop (security-audit 2026-06-26 H3).
 // Returns: { clientSecret, paymentIntentId, autoCompleted }
 // =============================================================
 
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { type, itemId, amount, description } = body;
+    const { type, itemId, description } = body;
 
     // Validate type
     if (!type || !VALID_TYPES.includes(type)) {
@@ -43,17 +45,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'itemId is required' }, { status: 400 });
     }
 
-    // Validate amount
-    if (typeof amount !== 'number' || amount < 0) {
-      return NextResponse.json({ error: 'amount must be a non-negative number' }, { status: 400 });
-    }
-
     const result = await createPaymentIntent({
       workspaceId,
       userId: session.user.id,
       type,
       itemId,
-      amountEur: amount,
       description,
     });
 

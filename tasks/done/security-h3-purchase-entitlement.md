@@ -5,9 +5,9 @@ fase: pre-launch
 priority: next
 effort: 1-2 dagen
 owner: claude-code
-status: open
+status: done
 created: 2026-06-26
-completed: -
+completed: 2026-06-26
 related-adr: -
 related-spec: docs/audits/2026-06-26-security-audit.md
 worktree: -
@@ -47,6 +47,21 @@ Manueel/unit: purchase-route met `amount` ≠ canonieke prijs → server gebruik
 # Out of scope
 
 - Volledige metered-billing-herziening.
+
+# Status 2026-06-26 (geïmplementeerd, branch `fix/security-h3-purchase-entitlement`)
+
+**✅ H3 — server-side prijs**: `one-time.ts` `createPaymentIntent` accepteert geen `amountEur` meer; nieuwe `resolveItemPrice()` haalt de prijs server-side uit `ResearchBundle.price` (catalogus) resp. `Workshop.totalPrice` (workspace-scoped, gezet bij creatie). Onbekend item → reject (geen gratis-unlock-default). `purchase/route.ts` negeert/leest de body-`amount` niet meer. De `amount:0`-gratis-unlock + onderprijs-tamper zijn dicht.
+
+**✅ M5 — server-side entitlement (kern-routes)**: nieuwe `enforcePlanLimit(ws, feature)` in `enforcement.ts` (402 bij over-limiet, no-op als billing uit). Gewired op de 4 hoofd-create-routes: `personas` (PERSONAS), `products` (PRODUCTS), `campaigns` (CAMPAIGNS), `knowledge-resources` (KNOWLEDGE_RESOURCES).
+
+**⏳ Restscope M5** (zelfde patroon, follow-up): overige create-paden (`personas/[id]/duplicate`, `campaigns/wizard/*`, `knowledge-resources/upload`, brand-asset-create) + de org-level limieten (`WORKSPACES` op workspace-create, `TEAM_MEMBERS` op invite) + usage-limieten (`AI_TOKENS`, `ALIGNMENT_SCANS_PER_WEEK`). Allemaal via dezelfde `enforcePlanLimit`-helper. Plus runtime-verificatie zodra `BILLING_ENABLED=true`.
+
+**Vóór billing live (uit finalize-review, geen blocker nu — billing staat uit):**
+- **TOCTOU**: `enforcePlanLimit` (count) → `create` is niet-transactioneel; bij gelijktijdige requests kan een FREE-workspace de limiet met 1-2 overschrijden. Echte hard cap = DB-constraint of count-guard binnen een transactie.
+- **Dormant H3-pad**: `/api/stripe/purchase` heeft momenteel geen client-caller; de live aankoop-flows lopen via `/api/brand-assets/[id]/workshops/purchase` (prijs al server-side uit `WorkshopBundle.finalPrice`) + `/api/research/custom/plan/[id]/purchase`. De H3-fix hardt het direct-aanroepbare endpoint; verifieer de live routes mee bij billing-livegang.
+- **Workshop status-mismatch**: `completePurchase` filtert `status:'TO_BUY'`, maar de legacy-creator maakt workshops soms direct `PURCHASED` → no-op completion. Geen security-impact (prijs is server-side); rechttrekken bij billing-livegang.
+
+**Verificatie**: smoke `plan-enforcement.ts` 6/6 (no-op-pad billing-uit + FREE-limieten), tsc 0, lint 0, build groen. H3 is door tsc (param verwijderd) + build + review afgedekt (createPaymentIntent niet unit-testbaar zonder Stripe-mock).
 
 # Notes
 
