@@ -10,6 +10,12 @@ const SECURITY_HEADERS: Record<string, string> = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'X-XSS-Protection': '0',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  // L1 (security-audit): non-breaking CSP hardening — blocks clickjacking,
+  // plugin objects, <base> injection and form hijacking WITHOUT a default-src/
+  // script-src (which would break Next.js inline scripts). A full nonce-based
+  // script-src CSP is a larger follow-up.
+  'Content-Security-Policy':
+    "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
   ...(isProduction
     ? { 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains' }
     : {}),

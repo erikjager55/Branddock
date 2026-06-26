@@ -1,7 +1,8 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
+import { requireWorkspaceRole } from '@/lib/auth/require-role';
 import { getToolByName } from '@/lib/claw/tools/registry';
 import type { ClawMessage, ClawToolResult } from '@/lib/claw/claw.types';
 
@@ -19,6 +20,10 @@ export async function POST(req: NextRequest) {
 
   const workspaceId = await resolveWorkspaceId();
   if (!workspaceId) return new Response('No workspace', { status: 400 });
+
+  // M3: executing a mutation via the agent is member+ — viewers are read-only.
+  const role = await requireWorkspaceRole(['owner', 'admin', 'member']);
+  if (role instanceof NextResponse) return role;
 
   const body = await req.json();
   const parsed = confirmSchema.safeParse(body);

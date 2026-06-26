@@ -14,6 +14,17 @@ export function deepSet(
   value: unknown,
 ): void {
   const keys = path.split('.');
+
+  // M6 (security-audit): reject prototype-pollution segments before walking the
+  // path. `update_asset_framework` feeds an LLM-/user-influenced `fieldPath`
+  // here, so a key like `__proto__.polluted` must not reach the object walk.
+  for (const seg of keys) {
+    const name = seg.replace(/\[\d+\]$/, '');
+    if (name === '__proto__' || name === 'constructor' || name === 'prototype') {
+      throw new Error(`deepSet: forbidden key segment "${name}"`);
+    }
+  }
+
   let current: Record<string, unknown> = obj;
 
   for (let i = 0; i < keys.length - 1; i++) {

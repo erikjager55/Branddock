@@ -41,6 +41,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // M1: validate the invited role + only an owner may mint another owner —
+    // an admin could otherwise escalate by inviting an `owner` (the role-change
+    // route already forbids granting owner; the invite path did not).
+    if (inviteRole === "owner") {
+      if (membership.role !== "owner") {
+        return NextResponse.json(
+          { error: "Only an owner can invite another owner" },
+          { status: 403 }
+        );
+      }
+    } else if (!["admin", "member", "viewer"].includes(inviteRole)) {
+      return NextResponse.json(
+        { error: "Invalid role. Must be one of: owner, admin, member, viewer" },
+        { status: 400 }
+      );
+    }
+
     // Check if user is already a member
     const existingUser = await prisma.user.findUnique({
       where: { email },

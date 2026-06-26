@@ -181,7 +181,7 @@ export function decryptToken(
     throw new Error("Invalid token ciphertext: auth tag length mismatch");
   }
 
-  const decipher = crypto.createDecipheriv(ALGO, key, iv);
+  const decipher = crypto.createDecipheriv(ALGO, key, iv, { authTagLength: TAG_LEN });
   decipher.setAuthTag(tag);
   const plaintext = Buffer.concat([decipher.update(ct), decipher.final()]);
   return plaintext.toString("utf8");

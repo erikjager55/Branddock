@@ -5,7 +5,7 @@ fase: pre-launch
 priority: next
 effort: 1-2 dagen
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-06-26
 completed: -
 related-adr: -
@@ -35,6 +35,25 @@ Resterende MEDIUM/LOW-findings uit security-audit 2026-06-26 (de HIGHs H2/H4/H5/
 - [ ] **L9** — `ad-tokens/encryption` version-prefix + rotatie-pad (convergeer op `token-crypto`-contract).
 - [ ] Zod-coverage-sweep: mutatie-routes zonder body-validatie (~48%) — minstens de niet-param-only routes.
 - [ ] `npx tsc --noEmit` + lint + build groen.
+
+# Status 2026-06-26 (geïmplementeerd, branch `fix/security-medium-cluster`)
+
+**✅ Gedaan**:
+- **M1** — `organization/invite`: invited-role gevalideerd tegen {admin,member,viewer}; alléén een owner mag een `owner` inviten (sluit admin→owner-escalatie).
+- **M2** — `/api/workspace/export`: nu `requireWorkspaceRole()` (owner/admin) — viewer kan niet meer de hele workspace + interviewee-PII exfiltreren.
+- **M3** — Claw `confirm/route`: mutatie-uitvoering via de agent is nu member+ (`requireWorkspaceRole(['owner','admin','member'])`) — viewer = read-only.
+- **M6** — `deepSet`: weigert `__proto__`/`constructor`/`prototype`-segmenten (prototype-pollution-guard) vóór de object-walk.
+- **L1** — CSP-header in `proxy.ts` (non-breaking: `frame-ancestors/object-src/base-uri/form-action`; geen `script-src` → breekt Next-inline-scripts niet).
+- **L2** — GCM `{ authTagLength }` op beide `createDecipheriv` (token-crypto + ad-tokens) — defense-in-depth.
+- **L3** — `webhooks/trigger`: `timingSafeEqual` i.p.v. `===` op het Bearer-secret.
+
+Smoke `security-medium.ts` 7/7 (deepSet-guard + pollution-probe + normale paden); tsc 0, lint 0, build groen.
+
+**⏳ Restscope** (lager / breder, follow-up):
+- **L4** — `workspace/brand-style-anchors` + `hero-logo-overlay`: rol-check (viewer=read-only) via `requireWorkspaceRole` — zelfde patroon.
+- **L6** — Help-Center markdown-renderer escapen (latent; content is admin-only vandaag).
+- **L9** — `ad-tokens/encryption` version-prefix + rotatie-pad (convergeer op het versioned `token-crypto`-contract).
+- **Zod-coverage-sweep** — mutatie-routes zonder body-validatie (~48%).
 
 # Bestanden die ik aanraak
 

@@ -11,6 +11,7 @@
 // =============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { z } from 'zod';
 import type { AgentJobType } from '@prisma/client';
 import { dispatchJob } from '@/lib/agents/jobs/dispatch';
@@ -40,7 +41,10 @@ const TRIGGER_MAX_PER_WINDOW = 30;
 function isAuthorized(request: NextRequest): boolean {
   const secret = process.env.WEBHOOK_TRIGGER_SECRET;
   if (!secret) return process.env.NODE_ENV !== 'production';
-  return request.headers.get('authorization') === `Bearer ${secret}`;
+  // L3: constant-time comparison (was `===`, timing-leaky) — consistent with cron-auth.
+  const a = Buffer.from(request.headers.get('authorization') ?? '');
+  const b = Buffer.from(`Bearer ${secret}`);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 function normaliseType(raw: string): AgentJobType | null {
