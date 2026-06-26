@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 347. Security — billing-integriteit: server-side purchase-prijs + plan-entitlement (H3 + M5)
+
+Opvolg op #345/#346. **H3**: de one-time-purchase-route leidde de prijs uit een client-`amount` af (→ €0,50 voor een €99-bundle, of `amount:0` voor een gratis tool-unlock). `createPaymentIntent` accepteert geen prijs meer; nieuwe `resolveItemPrice()` haalt 'm server-side uit `ResearchBundle.price` (catalogus) resp. `Workshop.totalPrice` (workspace-scoped); onbekend/cross-workspace/null → fail-closed reject. **M5**: plan-entitlement werd alleen in de UI afgedwongen (`enforceFeature` had 0 call-sites). Nieuwe `enforcePlanLimit(ws, feature)`-helper (402 bij over-limiet, no-op zolang `BILLING_ENABLED=false`) gewired op de 4 hoofd-create-routes (personas/products/campaigns/knowledge-resources). Ge-finalized via 2-subagent review-loop (0 CRITICAL/0 WARNING round 1); smoke `plan-enforcement.ts` 6/6, tsc 0, lint 0, build groen. Restscope (overige create-paden, org/usage-limieten, TOCTOU-hard-cap, dormant-route + live workshop/research-purchase-routes) gedocumenteerd vóór billing-livegang.
+
+- Task: [tasks/done/security-h3-purchase-entitlement.md](../tasks/done/security-h3-purchase-entitlement.md)
+- ADR: -
+- Spec: [docs/audits/2026-06-26-security-audit.md](audits/2026-06-26-security-audit.md)
+- Commit: e00d7238 (PR #60)
+
 ### 346. Security — Claw-context fencen tegen indirecte prompt-injectie (H7)
 
 Opvolg op #345 (OWASP Top 10 for LLM). De Claw-agent (de component mét write-tools) kreeg untrusted content rauw in z'n prompt; nu wordt élk attacker-controllable kanaal door `fenceUntrustedContent()` gehaald: (1) system-prompt-context (attachments, scraped competitor, trends, knowledge), (2) message-kanaal-attachments (`buildClaudeMessages`), (3) hoog-risico tool-results (`UNTRUSTED_RESULT_TOOLS`: review_content/read_landing_page_content/read_competitors/read_trends/read_knowledge/review_competitor_activities). Plus system-prompt-clausules (untrusted_content + tool-results zijn data, nooit instructies; geen interne tool-namen/laag-labels/award-jargon in output) en `navigate_to_page.section` `z.string()`→`z.enum` (L5). De fence stript geneste tags + escapet het `source`-attribuut (attacker-controllable filename). Ge-finalized via 4-ronde 2-subagent review-loop (0 CRITICAL/0 WARNING); smoke `claw-fencing.ts` 11/11, tsc 0, lint 0, build groen. Write-`execute`-tenant-scoping (al solide) ongemoeid.
