@@ -77,7 +77,49 @@ Dev-only / breaking-fix (lagere prio): `@opentelemetry/otlp-transformer` + `prot
 4. **Fase 2 prioriteit #0**: de 3 raw-SQL pgvector-sites + de 6 path-traversal-WARNINGs verifiëren/parametriseren.
 5. **CI-gates**: gitleaks + semgrep + `npm audit` (high-gate) als workflow zodat het schoon blijft.
 
-## Fase 2 — te plannen (handmatige diepte-review, ASVS L2)
+## Fase 2 — UITGEVOERD (handmatige diepte-review, 6 parallelle reviewers, 2026-06-26)
+
+> Elke finding adversarieel geverifieerd op exploitability. ~40 door scanners/sub-agents geflagde "critical" IDORs bleken het veilige `findFirst({id, workspaceId})`→mutate-by-PK-idioom (false-positive, verworpen). Onderstaande zijn de **bevestigde** findings.
+
+### 🔴 HIGH (vóór launch dichten)
+
+| # | Finding | Locatie | Exploit |
+|---|---|---|---|
+| H1 | **SSRF — primaire scraper-guard kapot** | `src/lib/utils/ssrf.ts` (`isPrivateHostname`) + alle scrapers | Bracketed IPv6 (`http://[::ffff:169.254.169.254]`) + DNS-rebind (`169.254.169.254.nip.io`) omzeilen de guard → AWS/GCP-metadata + interne services. `playwright-fallback.ts` valideert 0. **Latent tot Vercel (metadata-creds); loopback/intern nú al exploitabel.** Fix: hergebruik de gold-standard `external-content-ingest.ts` (DNS-resolve-en-verifieer + manual redirect-revalidatie). |
+| H2 | **Stored XSS via JSON-LD op publieke `/p/[slug]`** | `src/app/p/[slug]/page.tsx:136` + `page-json-ld.ts` | `JSON.stringify(jsonLd)` in `dangerouslySetInnerHTML` zonder `<`/`/`-escaping; AI/user-variant-velden (headline, FAQ, GEO-terms) stromen erin → `</script>`-breakout = stored XSS op publieke pagina. Fix: `</>/&`-escape + strip bij persist. *(2× bevestigd)* |
+| H3 | **One-time purchase-prijs client-gecontroleerd** | `src/app/api/stripe/purchase/route.ts:31` → `one-time.ts` | `amount` uit body, geen server-side prijs-lookup; `amount:0` ontgrendelt bundle-tools gratis. Fix: prijs server-side uit `ResearchBundle`/`Workshop` halen. *(billing-flag)* |
+| H4 | **Billing-mutaties zonder rol-check** | `settings/billing/{change-plan,cancel}`, `stripe/{checkout,portal}` | Elke member/viewer kan het org-abonnement wijzigen/opzeggen. Fix: `requireRole(['owner','admin'])`. |
+| H5 | **`/api/stripe/sync` cross-tenant IDOR + geen rol** | `stripe/sync/route.ts:32` → `subscription-sync.ts:147` | Vertrouwt body-`workspaceId`, alleen `requireAuth()` → forceer andere tenant naar FREE + verwijder Subscription-rijen. Fix: `resolveWorkspaceId()` + rol. *(2× bevestigd)* |
+| H6 | **3 ongeauthenticeerde LP-AI-routes** | `landing-pages/{component-edit,strict-rewrite,auto-iterate}` | Geen auth/rate-limit, roepen Claude (maxTokens 8000) → ongeauth. billable LLM-abuse/DoS. Fix: wrap met `withAi()`. |
+| H7 | **Claw context-stack fence't untrusted content niet** | `src/lib/claw/context-assembler.ts` | Geüploade PDF's / gescrapete competitor- / knowledge-content gaan rauw de Claw-prompt in (de component mét write-tools) → indirecte prompt-injection → tool-steering. `fenceUntrustedContent` bestaat maar wordt door Claw niet gebruikt. Fix: alle untrusted blokken door de fence. |
+| H8 | **Cross-tenant IDOR op Strategy-child-resources** | `strategies/[id]/{objectives/[objId],…/key-results/[krId],milestones/[msId],focus-areas/[faId]}` PATCH/DELETE | Scopen alleen de parent-strategy, muteren child by global-id → muteer/verwijder child van andere tenant. Fix: `updateMany({ where:{ id, strategyId }})` (sibling `reorder` doet dit al correct). |
+
+### 🟠 MEDIUM
+
+- **M1** — Admin kan member naar `owner` inviten/escaleren (`organization/invite` — role niet ge-enum'd). 
+- **M2** — `/api/workspace/export`: viewer exfiltreert hele workspace + interviewee-PII (geen rol-check). 
+- **M3** — Geen rol/RBAC op Claw write-tools (viewer kan via de agent muteren). 
+- **M4** — Leak-class-sanitizer (`scrubStrategyLayer`) niet toegepast op Claw-chat-output → Effie/GEO-jargon-leak-klasse blijft open op het chat-pad. 
+- **M5** — **Plan-tier-entitlement niet server-side afgedwongen**: `enforceFeature`/`checkPlanLimit`/`withPlanEnforcement` hebben **0 call-sites** → paywall server-side feitelijk ongebouwd. Vóór billing live. 
+- **M6** — Prototype-pollution via `deepSet` (`update_asset_framework` fieldPath uit LLM-args; + `user/preferences` `__proto__`-key). Fix: segment-guard in `deepSet`.
+
+### 🟡 LOW / INFO / hardening
+
+- **L1** GCM `{authTagLength:16}` toevoegen (bevestigd níet exploitabel — tag al op 16 gepind — wel hardening). 
+- **L2** `webhooks/trigger` timing-unsafe `===` op secret → `timingSafeEqual`. 
+- **L3** `ad-tokens/encryption` heeft geen rotatie-pad / unversioned format (vs het versioned `token-crypto`) — convergeer. 
+- **L4** Workspace-config-mutaties (`brand-style-anchors`, `hero-logo-overlay`) zonder rol-check (viewer). 
+- **L5** `navigate_to_page.section` = unconstrained `z.string()` → `z.enum`. 
+- **L6** Help-Center markdown-renderer escaped niet (latent; admin-only content vandaag). 
+- **L7** **CSP ontbreekt** in `proxy.ts`. 
+- **L8** Input-validatie-dekking ~52% van mutatie-routes (Zod-hygiëne-sweep). 
+- **L9** `proxy.ts` per-IP rate-limiter is in-memory → ineffectief over serverless; Redis in prod borgen.
+
+### ✅ Wat al goed verdedigd is (niet regresseren)
+
+Tenant-isolatie is over het algemeen **disciplinair correct**: verify-then-mutate-by-PK + `hasWorkspaceAccess()` + `require*Access`-helpers. Verder bevestigd-veilig: M10-token-encryptie-fundamenten (random IV, key-len-validatie, prod fail-closed, rewrap-script, tag gevalideerd vóór `setAuthTag`), Stripe-webhook (signature + idempotentie + re-fetch), Meta-OAuth-CSRF (random state, single-use, TTL, `appsecret_proof`), cron-auth (`timingSafeEqual`), login-rate-limiting (dual-layer Redis), Brandclaw autonome loop (read-only tools + caps), Claw write-tool-`execute` (server-side `workspaceId` + `updateMany`+count-guard — stopt cross-tenant tool-hijack), human-in-the-loop op alle mutaties, `toPgVectorLiteral` finite-number-gate (raw-SQL veilig), server-gegenereerde upload-filenames (path-traversal veilig), `execFile` zonder shell (geen command-injection).
+
+## Fase 3/4 — remediatie (te plannen)
 
 Domeinen, geprioriteerd: (1) tenant-isolatie/IDOR over de 500 routes — ~63 zonder auth/workspace-grep-hit als startlijst; (2) authN/authZ + rol-enforcement; (3) secrets/crypto (TOKEN_ENCRYPTION_KEY-lifecycle) + git-history-scan; (4) SSRF (website-scanner/competitor-discovery/knowledge-research vs OWASP SSRF-cheatsheet); (5) LLM prompt-injection (direct + indirect via scrape/knowledge); (6) input-validatie/Zod op mutaties; (7) Stripe webhook-signature + idempotentie + plan-enforcement; (8) headers/CSP/rate-limit-coverage.
 
