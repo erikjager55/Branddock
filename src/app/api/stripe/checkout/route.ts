@@ -6,8 +6,7 @@
 // =============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveWorkspaceId } from '@/lib/auth-server';
-import { requireOrgRole } from '@/lib/auth/require-role';
+import { requireWorkspaceRole } from '@/lib/auth/require-role';
 import { isBillingEnabled } from '@/lib/stripe/feature-flags';
 import { createCheckoutSession } from '@/lib/stripe/checkout';
 import type { PlanTier } from '@/types/billing';
@@ -16,9 +15,10 @@ const VALID_TIERS: PlanTier[] = ['PRO', 'AGENCY', 'ENTERPRISE'];
 const VALID_CYCLES = ['monthly', 'yearly'] as const;
 
 export async function POST(request: NextRequest) {
-  // H4: starting a paid checkout is owner/admin-only (was any member/viewer).
-  const role = await requireOrgRole();
-  if (role instanceof NextResponse) return role;
+  // H4 + review: owner/admin of the WORKSPACE's org (was any member/viewer +
+  // active-org/cookie divergence).
+  const ctx = await requireWorkspaceRole();
+  if (ctx instanceof NextResponse) return ctx;
 
   if (!isBillingEnabled()) {
     return NextResponse.json(
@@ -27,13 +27,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const workspaceId = await resolveWorkspaceId();
-  if (!workspaceId) {
-    return NextResponse.json(
-      { error: 'No workspace found' },
-      { status: 400 }
-    );
-  }
+  const { workspaceId } = ctx;
 
   const body = await request.json();
   const { planTier, billingCycle = 'monthly' } = body as {

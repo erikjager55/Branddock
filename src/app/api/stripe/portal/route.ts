@@ -6,15 +6,15 @@
 // =============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveWorkspaceId } from '@/lib/auth-server';
-import { requireOrgRole } from '@/lib/auth/require-role';
+import { requireWorkspaceRole } from '@/lib/auth/require-role';
 import { isBillingEnabled } from '@/lib/stripe/feature-flags';
 import { createPortalSession } from '@/lib/stripe/checkout';
 
 export async function POST(request: NextRequest) {
-  // H4: the billing portal (manage payment methods / cancel) is owner/admin-only.
-  const role = await requireOrgRole();
-  if (role instanceof NextResponse) return role;
+  // H4 + review: owner/admin of the WORKSPACE's org (not the active-org) — closes
+  // the cookie-vs-active-org divergence.
+  const ctx = await requireWorkspaceRole();
+  if (ctx instanceof NextResponse) return ctx;
 
   if (!isBillingEnabled()) {
     return NextResponse.json(
@@ -23,13 +23,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const workspaceId = await resolveWorkspaceId();
-  if (!workspaceId) {
-    return NextResponse.json(
-      { error: 'No workspace found' },
-      { status: 400 }
-    );
-  }
+  const { workspaceId } = ctx;
 
   try {
     const returnUrl = `${request.nextUrl.origin}/settings/billing`;

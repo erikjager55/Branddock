@@ -2,7 +2,7 @@
 
 > **Datum**: 2026-06-26 · **Fase**: 0+1 afgerond (versie-/CVE-verificatie + geautomatiseerde sweep). Fase 2 (handmatige diepte-review) nog te plannen.
 > **Framework**: OWASP ASVS 5.0 (doel: Level 2) + OWASP Multi-Tenant Cheat Sheet + OWASP Top 10 for LLM (2025).
-> **Stack**: Next.js 16.1.6, React 19, Prisma 7.4 + Postgres/pgvector, Better Auth 1.4.18, Stripe 20.3.1.
+> **Stack**: Next.js 16.2.9 (post-patch), React 19, Prisma 7.4 + Postgres/pgvector, Better Auth 1.4.18, Stripe 20.3.1.
 > **Methode-bronnen**: zie onderaan.
 
 ---

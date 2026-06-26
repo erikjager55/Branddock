@@ -22,7 +22,7 @@ import * as cheerio from 'cheerio';
 import { scrapeUrl, type ScrapedData, type CssVariable, type ColorFrequency } from './url-scraper';
 import { discoverInternalLinks } from '@/lib/products/url-scraper';
 import { classifyAndPrioritize } from '@/lib/website-scanner/page-classifier';
-import { assertSafeUrl } from '@/lib/utils/ssrf';
+import { assertSafeUrl, assertSafeRedirect } from '@/lib/utils/ssrf';
 
 export function isMultiPageEnabled(): boolean {
   return process.env.BRANDSTYLE_MULTI_PAGE === '1';
@@ -124,6 +124,7 @@ async function discoverInternalLinksFromHomepage(
       signal: AbortSignal.timeout(10_000),
       redirect: 'follow',
     });
+    await assertSafeRedirect(url, res.url); // re-validate post-redirect (H1)
     if (!res.ok) return [];
     const html = await res.text();
     const $ = cheerio.load(html);

@@ -7,21 +7,19 @@
 // =============================================================
 
 import { NextResponse } from "next/server";
-import { resolveWorkspaceId } from "@/lib/auth-server";
+import { requireWorkspaceRole } from "@/lib/auth/require-role";
 import { getStripeClient } from "@/lib/stripe/client";
 import { isBillingEnabled } from "@/lib/stripe/feature-flags";
 import { updatePlanFromStripe } from "@/lib/stripe/subscription-sync";
 
 export async function POST() {
   try {
-    // Workspace is resolved from the caller's session (membership-bound) — NOT
-    // from the request body. Trusting a body-supplied workspaceId was a cross-
-    // tenant IDOR: any authenticated user could force-sync (and force-downgrade)
-    // another tenant's subscription. Zie security-audit 2026-06-26 H5.
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
-    }
+    // Workspace + rol uit de sessie (membership-bound), NIET uit de body — dat
+    // was de cross-tenant IDOR (H5). Reconcile/force-downgrade is owner/admin-
+    // only, consistent met de overige billing-routes (security-review).
+    const ctx = await requireWorkspaceRole();
+    if (ctx instanceof NextResponse) return ctx;
+    const { workspaceId } = ctx;
 
     // Billing must be enabled for sync
     if (!isBillingEnabled()) {

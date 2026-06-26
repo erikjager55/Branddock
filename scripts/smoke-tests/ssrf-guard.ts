@@ -20,6 +20,9 @@ const BLOCK_IPS = [
   "::ffff:169.254.169.254",            // IPv4-mapped, dotted
   "::ffff:a9fe:a9fe",                  // IPv4-mapped, HEX (the gold-standard gap)
   "::ffff:10.0.0.1", "::ffff:7f00:1",  // mapped RFC1918 + loopback (hex 127.0.0.1)
+  "64:ff9b::169.254.169.254",          // NAT64 well-known prefix, dotted
+  "64:ff9b::a9fe:a9fe",                // NAT64, hex
+  "::169.254.169.254", "::a9fe:a9fe",  // IPv4-compatible (deprecated), dotted + hex
 ];
 for (const ip of BLOCK_IPS) ok(`isPrivateIp blocks ${ip}`, isPrivateIp(ip) === true);
 
@@ -50,6 +53,7 @@ async function main() {
     "http://[::ffff:a9fe:a9fe]/",                          // F1 hex form
     "http://169.254.169.254/latest/meta-data/",            // direct IMDS
     "http://[::1]/", "http://127.0.0.1:6379/", "http://10.0.0.1/", "http://localhost:5432/",
+    "http://[64:ff9b::a9fe:a9fe]/", "http://[::169.254.169.254]/",  // NAT64 + IPv4-compatible
     "ftp://example.com/", "file:///etc/passwd", "gopher://x/",  // scheme allowlist
   ];
   for (const u of BLOCK_URLS) ok(`assertSafeUrl blocks ${u}`, await blocks(u));

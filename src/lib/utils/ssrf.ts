@@ -31,16 +31,22 @@ function unbracket(host: string): string {
 }
 
 /**
- * Recover the embedded IPv4 from an IPv4-mapped IPv6 address, in BOTH the dotted
- * (`::ffff:169.254.169.254`) and the hex (`::ffff:a9fe:a9fe`) forms. The hex form
- * is the one the audit found bypassing even the prior "gold standard".
+ * Recover an embedded IPv4 from the recognised IPv4-in-IPv6 forms, so a private
+ * v4 (e.g. IMDS 169.254.169.254) can't hide inside an IPv6 literal:
+ *   - IPv4-mapped       `::ffff:x`     (the common one)
+ *   - NAT64 well-known  `64:ff9b::x`   (RFC6052 — routes to the v4 on NAT64 hosts)
+ *   - IPv4-compatible   `::x`          (deprecated, but still resolvable)
+ * Handles BOTH the dotted (`...:1.2.3.4`) and hex (`...:0102:0304`) tails — the
+ * hex form bypassed even the prior "gold standard". Returns dotted IPv4 or null.
  */
-function mappedIpv4(ipv6Lower: string): string | null {
-  const m = ipv6Lower.match(/::ffff:(.+)$/);
-  if (!m) return null;
-  const tail = m[1];
+function embeddedIpv4(ipv6Lower: string): string | null {
+  let tail: string | null = null;
+  if (ipv6Lower.startsWith("::ffff:")) tail = ipv6Lower.slice(7);
+  else if (ipv6Lower.startsWith("64:ff9b::")) tail = ipv6Lower.slice(9);
+  else if (ipv6Lower.startsWith("::") && ipv6Lower !== "::" && ipv6Lower !== "::1") tail = ipv6Lower.slice(2);
+  if (!tail) return null;
   if (tail.includes(".")) return isIP(tail) === 4 ? tail : null;
-  const groups = tail.split(":");
+  const groups = tail.split(":").filter(Boolean);
   if (groups.length === 2 && groups.every((g) => /^[0-9a-f]{1,4}$/.test(g))) {
     const hi = parseInt(groups[0], 16);
     const lo = parseInt(groups[1], 16);
@@ -71,8 +77,8 @@ export function isPrivateIp(ip: string): boolean {
     if (lower === "::" || lower === "::1") return true; // unspecified + loopback
     if (/^fe[89ab]/.test(lower)) return true; // link-local fe80::/10
     if (/^f[cd]/.test(lower)) return true; // unique-local fc00::/7
-    const v4 = mappedIpv4(lower);
-    if (v4) return isPrivateIp(v4); // IPv4-mapped — recurse on embedded v4
+    const v4 = embeddedIpv4(lower);
+    if (v4) return isPrivateIp(v4); // IPv4-in-IPv6 — recurse on embedded v4
     return false;
   }
   return false;

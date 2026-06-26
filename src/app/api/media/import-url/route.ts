@@ -4,7 +4,7 @@ import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { getStorageProvider } from "@/lib/storage";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
-import { assertSafeUrl } from "@/lib/utils/ssrf";
+import { assertSafeUrl, assertSafeRedirect } from "@/lib/utils/ssrf";
 import { fetchWithSizeLimit, ResponseTooLargeError } from "@/lib/security/fetch-with-limit";
 import { generateMediaSlug, detectMediaType } from "@/features/media-library/utils/media-utils";
 
@@ -92,6 +92,17 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeout);
     }
 
+    // Re-validate after redirects (the fetch followed them) — closes the
+    // redirect/DNS-rebind path. H1.
+    try {
+      await assertSafeRedirect(url, response.url);
+    } catch {
+      return NextResponse.json(
+        { error: "URL redirected to a private/internal address" },
+        { status: 400 }
+      );
+    }
+
     if (!response.ok) {
       return NextResponse.json(
         { error: `URL returned status ${response.status}` },
@@ -109,7 +120,9 @@ export async function POST(request: NextRequest) {
     // oversized responses are rejected before allocating a buffer.
     let buffer: Buffer;
     try {
-      buffer = await fetchWithSizeLimit(url, MAX_IMPORT_SIZE, {
+      // Use the already-validated final URL (post-redirect) so the body fetch
+      // doesn't re-traverse an unvalidated redirect chain. H1.
+      buffer = await fetchWithSizeLimit(response.url, MAX_IMPORT_SIZE, {
         headers: { "User-Agent": "Branddock-MediaImporter/1.0" },
       });
     } catch (err) {

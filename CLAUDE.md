@@ -18,7 +18,7 @@ Branddock is een SaaS-platform voor **brand strategy, research validatie en AI c
 
 ## Tech stack
 
-- **Framework**: Next.js 16.1.6 (hybride SPA), React 19
+- **Framework**: Next.js 16.2.9 (hybride SPA), React 19
 - **Styling**: Tailwind CSS 4
 - **Database**: PostgreSQL 17, Prisma 7.4 (vereist `@prisma/adapter-pg` + `pg`), pgvector
 - **Auth**: Better Auth (emailAndPassword + organization plugin + Google/Microsoft/Apple OAuth)

@@ -93,8 +93,22 @@ async function extractWithChromium(url: string): Promise<HeadlessExtraction> {
     });
     const page = await ctx.newPage();
 
-    // SSRF: validate before headless navigation — a headless browser is a
-    // stronger SSRF primitive (executes JS, can reach intranet SPAs). H1.
+    // SSRF: a headless browser is a stronger SSRF primitive (executes JS, can
+    // reach intranet SPAs). Validate the initial URL AND every navigation the
+    // browser follows (HTTP/JS/meta redirects). Subresources to public hosts
+    // pass; a navigation to a private/internal host is aborted. H1.
+    await page.route('**/*', async (route) => {
+      const req = route.request();
+      if (req.isNavigationRequest()) {
+        try {
+          await assertSafeUrl(req.url());
+        } catch {
+          await route.abort('blockedbyclient');
+          return;
+        }
+      }
+      await route.continue();
+    });
     await assertSafeUrl(url);
     await page.goto(url, { waitUntil: 'networkidle', timeout: 30_000 });
 

@@ -296,6 +296,7 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
           headers: { 'User-Agent': CHROME_USER_AGENT },
           signal: AbortSignal.timeout(8000),
         });
+        await assertSafeRedirect(cssUrl, cssResponse.url); // post-redirect (H1)
         if (cssResponse.ok) return await cssResponse.text();
       } catch {
         // Skip failed CSS fetches (including SSRF blocks, timeouts)
