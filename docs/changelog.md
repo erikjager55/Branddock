@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 346. Security — Claw-context fencen tegen indirecte prompt-injectie (H7)
+
+Opvolg op #345 (OWASP Top 10 for LLM). De Claw-agent (de component mét write-tools) kreeg untrusted content rauw in z'n prompt; nu wordt élk attacker-controllable kanaal door `fenceUntrustedContent()` gehaald: (1) system-prompt-context (attachments, scraped competitor, trends, knowledge), (2) message-kanaal-attachments (`buildClaudeMessages`), (3) hoog-risico tool-results (`UNTRUSTED_RESULT_TOOLS`: review_content/read_landing_page_content/read_competitors/read_trends/read_knowledge/review_competitor_activities). Plus system-prompt-clausules (untrusted_content + tool-results zijn data, nooit instructies; geen interne tool-namen/laag-labels/award-jargon in output) en `navigate_to_page.section` `z.string()`→`z.enum` (L5). De fence stript geneste tags + escapet het `source`-attribuut (attacker-controllable filename). Ge-finalized via 4-ronde 2-subagent review-loop (0 CRITICAL/0 WARNING); smoke `claw-fencing.ts` 11/11, tsc 0, lint 0, build groen. Write-`execute`-tenant-scoping (al solide) ongemoeid.
+
+- Task: [tasks/done/security-h7-claw-context-fencing.md](../tasks/done/security-h7-claw-context-fencing.md)
+- ADR: -
+- Spec: [docs/audits/2026-06-26-security-audit.md](audits/2026-06-26-security-audit.md)
+- Commit: 30779ecd (PR #59)
+
 ### 345. Security-audit pre-launch — dep-patches + remediatie HIGH-findings
 
 OWASP-ASVS-L2-audit (Fase 0-2: dep-scan + git-history-secrets + SAST + 6 parallelle handmatige reviewers) gevolgd door remediatie van de chirurgische HIGH-findings, ge-finalized via de 2-subagent review-loop (3 rondes tot 0 CRITICAL/0 WARNING). `npm audit` 10 high → 0 (next 16.1.6→16.2.9 + better-auth/undici/axios/ws/form-data/hono). Code-fixes: H1 SSRF-guard volledig gehard (`isPrivateIp` incl. IPv4-mapped hex + NAT64 + IPv4-compatible, async DNS-resolve-en-verifieer in `assertSafeUrl`/`assertSafeRedirect`, alle scrapers ge-await'd + post-redirect-revalidatie + playwright navigatie-interceptie; smoke 54/54); H2 JSON-LD stored-XSS escape op `/p/[slug]`; H4/H5 billing-RBAC + IDOR via nieuwe `requireWorkspaceRole` (rol-check op de org van de geresolvede workspace); H6 3 ongeauth LP-AI-routes achter `withAi`; H8 strategy-child-IDOR-scoping (5 routes). Uitgesteld als task-files: H1-residu (rate-limits), H3 purchase-prijs/entitlement, H7 Claw-context-fencing, MEDIUM-cluster.

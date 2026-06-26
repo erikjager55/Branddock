@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleSystemPrompt } from '@/lib/claw/context-assembler';
+import { fenceUntrustedContent } from '@/lib/ai/untrusted-fence';
 import { getToolsForClaude, getToolByName } from '@/lib/claw/tools/registry';
 import type {
   ClawChatRequest,
@@ -16,6 +17,23 @@ import type {
   ClawToolResult,
   MutationProposal,
 } from '@/lib/claw/claw.types';
+
+// Read-tools whose results carry scraped / third-party / user-pasted text
+// (indirect prompt-injection vector — the same data classes fenced in the
+// system-prompt path). Their results are fenced before being fed back to the
+// model. First-party tools (read_personas/products/strategies/…), structured
+// results (list_campaigns, write confirms, navigate) and inspect_current_entity
+// (mostly first-party + trusted tip/aiHint routing-hints the fence-notice would
+// degrade) are NOT fenced — the prompt-clause covers any residual. Security-
+// audit H7 (finalize-review: tool-result path).
+const UNTRUSTED_RESULT_TOOLS = new Set([
+  'review_content',
+  'read_landing_page_content',
+  'read_competitors',
+  'read_trends',
+  'read_knowledge',
+  'review_competitor_activities',
+]);
 
 // ─── Singleton Anthropic Client ────────────────────────────
 
@@ -299,10 +317,13 @@ export async function POST(req: NextRequest) {
                   result,
                 });
 
+                const resultJson = JSON.stringify(result);
                 toolResultBlocks.push({
                   type: 'tool_result',
                   tool_use_id: block.id,
-                  content: JSON.stringify(result),
+                  content: UNTRUSTED_RESULT_TOOLS.has(block.name)
+                    ? fenceUntrustedContent(resultJson, `tool result: ${block.name}`)
+                    : resultJson,
                 });
               } catch (err) {
                 const errorMsg = String(err);
@@ -421,8 +442,12 @@ function buildClaudeMessages(
     if (msg.role === 'user') {
       let content = msg.content;
       if (msg.attachments?.length) {
+        // Fence attachment bodies in the message channel too — they are
+        // attacker-controllable (uploaded files / scraped URLs) and would
+        // otherwise be an unfenced indirect prompt-injection vector alongside
+        // the fenced system-prompt copy. Security-audit H7.
         const attachmentText = msg.attachments
-          .map((a) => `\n\n--- Attachment: ${a.label} ---\n${a.content}`)
+          .map((a) => `\n\n--- Attachment: ${a.label} ---\n${fenceUntrustedContent(a.content, `user attachment: ${a.label}`)}`)
           .join('');
         content += attachmentText;
       }

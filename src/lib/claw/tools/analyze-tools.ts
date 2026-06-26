@@ -359,7 +359,17 @@ export const navigateTools: ClawToolDefinition[] = [
     description:
       'Navigate the user to a specific page in the app. Close the Claw overlay and show the requested page. Available sections: dashboard, brand, personas, products, competitors, active-campaigns, trends, knowledge, business-strategy, brand-alignment, settings-account, media-library, ai-trainer, ai-studio.',
     inputSchema: z.object({
-      section: z.string().describe('The section ID to navigate to'),
+      // Constrained to the documented valid sections (was unconstrained z.string()
+      // — least-privilege + prevents internal/arbitrary section strings leaking
+      // via tool output). Security-audit L5.
+      section: z
+        .enum([
+          'dashboard', 'brand', 'personas', 'products', 'competitors',
+          'active-campaigns', 'trends', 'knowledge', 'business-strategy',
+          'brand-alignment', 'settings-account', 'media-library', 'ai-trainer',
+          'ai-studio',
+        ])
+        .describe('The section ID to navigate to'),
       entityId: z.string().optional().describe('Optional entity ID for detail pages'),
     }),
     requiresConfirmation: false,
@@ -389,7 +399,8 @@ export const navigateTools: ClawToolDefinition[] = [
       const p = params as { assetId: string };
       return {
         action: 'navigate',
-        section: 'brand-asset-ai-exploration',
+        // Matches the App.tsx switch-case (was reversed → navigation never fired).
+        section: 'ai-exploration-brand-asset',
         entityId: p.assetId,
         message: 'Opening AI Exploration for this asset',
       };

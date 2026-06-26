@@ -24,8 +24,12 @@ const FENCE_NOTICE =
  */
 export function fenceUntrustedContent(content: string, source: string): string {
   const sanitized = content.replace(FENCE_TAG_PATTERN, "");
+  // The source label can itself be attacker-controllable (e.g. an uploaded
+  // file name or scraped URL). Strip the characters that could break out of the
+  // `source="..."` attribute and inject text onto the open-fence line.
+  const safeSource = source.replace(/["<>\r\n]/g, " ").slice(0, 80);
   return [
-    `<untrusted_content source="${source}">`,
+    `<untrusted_content source="${safeSource}">`,
     sanitized,
     `</untrusted_content>`,
     FENCE_NOTICE,
