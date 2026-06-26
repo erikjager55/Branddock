@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
+import { requireWorkspaceRole } from "@/lib/auth/require-role";
 
 const changePlanSchema = z.object({
   planId: z.string().min(1, "planId is required"),
@@ -14,15 +14,10 @@ const changePlanSchema = z.object({
 // =============================================================
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
-    }
+    // H4 + review: changing the plan is owner/admin of the WORKSPACE's org.
+    const ctx = await requireWorkspaceRole();
+    if (ctx instanceof NextResponse) return ctx;
+    const { workspaceId } = ctx;
 
     const body = await request.json();
     const parsed = changePlanSchema.safeParse(body);

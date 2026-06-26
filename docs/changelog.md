@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 345. Security-audit pre-launch — dep-patches + remediatie HIGH-findings
+
+OWASP-ASVS-L2-audit (Fase 0-2: dep-scan + git-history-secrets + SAST + 6 parallelle handmatige reviewers) gevolgd door remediatie van de chirurgische HIGH-findings, ge-finalized via de 2-subagent review-loop (3 rondes tot 0 CRITICAL/0 WARNING). `npm audit` 10 high → 0 (next 16.1.6→16.2.9 + better-auth/undici/axios/ws/form-data/hono). Code-fixes: H1 SSRF-guard volledig gehard (`isPrivateIp` incl. IPv4-mapped hex + NAT64 + IPv4-compatible, async DNS-resolve-en-verifieer in `assertSafeUrl`/`assertSafeRedirect`, alle scrapers ge-await'd + post-redirect-revalidatie + playwright navigatie-interceptie; smoke 54/54); H2 JSON-LD stored-XSS escape op `/p/[slug]`; H4/H5 billing-RBAC + IDOR via nieuwe `requireWorkspaceRole` (rol-check op de org van de geresolvede workspace); H6 3 ongeauth LP-AI-routes achter `withAi`; H8 strategy-child-IDOR-scoping (5 routes). Uitgesteld als task-files: H1-residu (rate-limits), H3 purchase-prijs/entitlement, H7 Claw-context-fencing, MEDIUM-cluster.
+
+- Task: `tasks/security-h1-ssrf-guard.md` (+ h3/h7/medium-cluster) — multi-task
+- ADR: -
+- Spec: [docs/audits/2026-06-26-security-audit.md](audits/2026-06-26-security-audit.md)
+- Commit: 3062a142 (PR #58)
+
 ### 344. Brandstyle kalibratie-paneel — geconsolideerde "wat heb ik nodig"-asks
 
 Eén surface bovenaan de Brand Styleguide die verspreide extractie-kwaliteitssignalen bundelt tot actiegerichte asks met severity (critical/suggestion/review) en deep-links naar de juiste tab. Pure functie `buildBrandstyleCalibrationReport` (`src/lib/brandstyle/calibration-report.ts`, geen server-imports) detecteert: ontbrekend primair logo (critical), ontbrekende donker/licht-variant (suggestion), expliciet low-confidence kleuren (review), gedetecteerde fonts zonder laadbaar bestand (suggestion), lege type-scale (review) en AI-only RECOMMENDED-richtlijnen (review). Het `BrandstyleCalibrationPanel` berekent het rapport client-side uit de reeds-geladen styleguide (geen extra fetch/route) en is gegate op `status === "COMPLETE"`. Komt uit lesson L6 van de brandstyle ↔ design-system-builder-vergelijking. Bevat ook een Prisma-7.4-fix in de e2e `global-setup` (`db push --skip-generate` → `--accept-data-loss`) die de hele e2e-suite deblokkeert, plus een seed-kleur op `confidence: "low"` voor een deterministische Playwright-smoke. Verificatie: 2-ronde finalize-review clean (0 CRITICAL/WARNING), tsc 0, lint 0, Playwright-smoke groen (paneel rendert + deep-link schakelt naar Colors-tab).

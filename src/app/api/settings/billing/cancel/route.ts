@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
+import { requireWorkspaceRole } from "@/lib/auth/require-role";
 
 // =============================================================
 // POST /api/settings/billing/cancel
@@ -8,15 +8,10 @@ import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
 // =============================================================
 export async function POST() {
   try {
-    const session = await getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
-    }
+    // H4 + review: cancelling is owner/admin of the WORKSPACE's org.
+    const ctx = await requireWorkspaceRole();
+    if (ctx instanceof NextResponse) return ctx;
+    const { workspaceId } = ctx;
 
     const subscription = await prisma.subscription.findUnique({
       where: { workspaceId },

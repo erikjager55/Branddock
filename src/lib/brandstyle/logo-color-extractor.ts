@@ -73,7 +73,7 @@ export async function extractLogoColors(logoUrl: string): Promise<LogoColor[]> {
   if (!/^https?:\/\//i.test(logoUrl)) return [];
 
   try {
-    assertSafeUrl(logoUrl);
+    await assertSafeUrl(logoUrl);
   } catch {
     return [];
   }
@@ -90,7 +90,7 @@ export async function extractLogoColors(logoUrl: string): Promise<LogoColor[]> {
   }
 
   try {
-    assertSafeRedirect(logoUrl, response.url);
+    await assertSafeRedirect(logoUrl, response.url);
   } catch {
     return [];
   }

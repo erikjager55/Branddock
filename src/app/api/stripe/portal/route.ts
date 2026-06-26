@@ -6,15 +6,15 @@
 // =============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, resolveWorkspaceId } from '@/lib/auth-server';
+import { requireWorkspaceRole } from '@/lib/auth/require-role';
 import { isBillingEnabled } from '@/lib/stripe/feature-flags';
 import { createPortalSession } from '@/lib/stripe/checkout';
 
 export async function POST(request: NextRequest) {
-  const session = await requireAuth();
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // H4 + review: owner/admin of the WORKSPACE's org (not the active-org) — closes
+  // the cookie-vs-active-org divergence.
+  const ctx = await requireWorkspaceRole();
+  if (ctx instanceof NextResponse) return ctx;
 
   if (!isBillingEnabled()) {
     return NextResponse.json(
@@ -23,13 +23,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const workspaceId = await resolveWorkspaceId();
-  if (!workspaceId) {
-    return NextResponse.json(
-      { error: 'No workspace found' },
-      { status: 400 }
-    );
-  }
+  const { workspaceId } = ctx;
 
   try {
     const returnUrl = `${request.nextUrl.origin}/settings/billing`;

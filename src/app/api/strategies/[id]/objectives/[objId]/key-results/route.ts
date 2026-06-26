@@ -37,6 +37,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
+    // Verify the objective belongs to THIS strategy before creating under it,
+    // otherwise a caller could attach key-results to another tenant's objective.
+    // H8 (security-audit 2026-06-26).
+    const objective = await prisma.objective.findFirst({
+      where: { id: objId, strategyId: id },
+      select: { id: true },
+    });
+    if (!objective) {
+      return NextResponse.json({ error: "Objective not found" }, { status: 404 });
+    }
+
     // Determine next sortOrder
     const maxOrder = await prisma.keyResult.aggregate({
       where: { objectiveId: objId },

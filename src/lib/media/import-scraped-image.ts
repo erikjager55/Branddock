@@ -14,7 +14,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getStorageProvider } from "@/lib/storage";
-import { assertSafeUrl } from "@/lib/utils/ssrf";
+import { assertSafeUrl, assertSafeRedirect } from "@/lib/utils/ssrf";
 import {
   generateMediaSlug,
   detectMediaType,
@@ -66,7 +66,7 @@ async function fetchImageBuffer(url: string): Promise<{
   mimeType: string;
   fileName: string;
 }> {
-  assertSafeUrl(url);
+  await assertSafeUrl(url);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -81,6 +81,8 @@ async function fetchImageBuffer(url: string): Promise<{
       },
       redirect: "follow",
     });
+
+    await assertSafeRedirect(url, response.url); // post-redirect re-validate (H1)
 
     if (!response.ok) {
       throw new Error(`Fetch failed with status ${response.status}`);

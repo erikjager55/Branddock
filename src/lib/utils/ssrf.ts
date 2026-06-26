@@ -1,48 +1,186 @@
 // =============================================================
-// SSRF Protection — Shared utility for URL scraping
-// Blocks requests to private/internal networks.
+// SSRF Protection — shared guard for all server-side URL fetches
+//
+// Blocks requests to private/internal networks + cloud-metadata endpoints.
+//
+// Security-audit 2026-06-26 (H1): the previous string-only `isPrivateHostname`
+// was bypassable via bracketed IPv6 (`[::ffff:169.254.169.254]`), IPv4-mapped
+// IPv6, and DNS-rebinding (a public hostname resolving to a private IP). This
+// guard hardens all three:
+//   - `isPrivateIp`        — full IPv4 + IPv6 (incl. IPv4-mapped, dotted AND hex form)
+//   - `isPrivateHostname`  — sync; strips IPv6 brackets, delegates IP literals to
+//                            isPrivateIp. Cannot catch DNS-rebind (no DNS) — prefer
+//                            the async `assertSafeUrl` for fetch entry points.
+//   - `assertSafeUrl`      — ASYNC: scheme-allowlist + literal check + DNS-resolve-
+//                            and-verify of every A/AAAA record (closes DNS-rebind).
+//   - `assertSafeRedirect` — ASYNC: re-runs the full check on a redirect target.
+//
+// IMPORTANT: `assertSafeUrl`/`assertSafeRedirect` are async — every caller MUST
+// `await` them, otherwise the validation is fire-and-forget and the fetch is
+// unprotected.
 // =============================================================
 
-/** Block internal/private IPs to prevent SSRF attacks */
-export function isPrivateHostname(hostname: string): boolean {
-  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true;
-  // AWS metadata endpoint
-  if (hostname === '169.254.169.254') return true;
-  // Private IP ranges
-  const parts = hostname.split('.').map(Number);
-  if (parts.length === 4 && parts.every((n) => !isNaN(n))) {
-    if (parts[0] === 10) return true;
-    if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
-    if (parts[0] === 192 && parts[1] === 168) return true;
-    if (parts[0] === 0) return true;
+import { lookup } from "dns/promises";
+import { isIP } from "net";
+
+const ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
+
+/** Strip surrounding brackets from an IPv6 URL hostname (`[::1]` → `::1`). */
+function unbracket(host: string): string {
+  return host.startsWith("[") && host.endsWith("]") ? host.slice(1, -1) : host;
+}
+
+/**
+ * Recover an embedded IPv4 from the recognised IPv4-in-IPv6 forms, so a private
+ * v4 (e.g. IMDS 169.254.169.254) can't hide inside an IPv6 literal:
+ *   - IPv4-mapped       `::ffff:x`     (the common one)
+ *   - NAT64 well-known  `64:ff9b::x`   (RFC6052 — routes to the v4 on NAT64 hosts)
+ *   - IPv4-compatible   `::x`          (deprecated, but still resolvable)
+ * Handles BOTH the dotted (`...:1.2.3.4`) and hex (`...:0102:0304`) tails — the
+ * hex form bypassed even the prior "gold standard". Returns dotted IPv4 or null.
+ */
+function embeddedIpv4(ipv6Lower: string): string | null {
+  let tail: string | null = null;
+  if (ipv6Lower.startsWith("::ffff:")) tail = ipv6Lower.slice(7);
+  else if (ipv6Lower.startsWith("64:ff9b::")) tail = ipv6Lower.slice(9);
+  else if (ipv6Lower.startsWith("::") && ipv6Lower !== "::" && ipv6Lower !== "::1") tail = ipv6Lower.slice(2);
+  if (!tail) return null;
+  if (tail.includes(".")) return isIP(tail) === 4 ? tail : null;
+  const groups = tail.split(":").filter(Boolean);
+  if (groups.length === 2 && groups.every((g) => /^[0-9a-f]{1,4}$/.test(g))) {
+    const hi = parseInt(groups[0], 16);
+    const lo = parseInt(groups[1], 16);
+    return `${(hi >> 8) & 255}.${hi & 255}.${(lo >> 8) & 255}.${lo & 255}`;
+  }
+  return null;
+}
+
+/**
+ * RFC1918 + loopback + link-local + cloud-metadata (IMDS 169.254.169.254) +
+ * CGNAT (100.64/10) + IPv6 loopback/link-local/unique-local + IPv4-mapped IPv6.
+ */
+export function isPrivateIp(ip: string): boolean {
+  const fam = isIP(ip);
+  if (fam === 4) {
+    const [a, b] = ip.split(".").map(Number);
+    if (a === 10) return true;
+    if (a === 127) return true; // loopback
+    if (a === 169 && b === 254) return true; // link-local + AWS/GCP IMDS
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 0) return true;
+    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT (RFC6598)
+    return false;
+  }
+  if (fam === 6) {
+    const lower = ip.toLowerCase();
+    if (lower === "::" || lower === "::1") return true; // unspecified + loopback
+    if (/^fe[89ab]/.test(lower)) return true; // link-local fe80::/10
+    if (/^f[cd]/.test(lower)) return true; // unique-local fc00::/7
+    const v4 = embeddedIpv4(lower);
+    if (v4) return isPrivateIp(v4); // IPv4-in-IPv6 — recurse on embedded v4
+    return false;
   }
   return false;
 }
 
 /**
- * Validate a URL is safe to fetch (not pointing to private networks).
- * Also checks post-redirect target for SSRF bypass attempts.
+ * Sync hostname check. Handles IP literals (incl. bracketed IPv6) and obvious
+ * local names. NOTE: does NOT resolve DNS, so it cannot stop DNS-rebinding —
+ * for fetch entry points use the async {@link assertSafeUrl} instead.
  */
-export function assertSafeUrl(url: string): void {
-  const parsed = new URL(url);
-  if (isPrivateHostname(parsed.hostname)) {
-    throw new Error('URLs pointing to private or internal networks are not allowed');
+export function isPrivateHostname(hostname: string): boolean {
+  const host = unbracket(hostname).toLowerCase();
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) {
+    return true;
+  }
+  if (isIP(host)) return isPrivateIp(host);
+  return false;
+}
+
+/**
+ * Validate that `url` is safe to fetch: http/https only, and its host (literal
+ * or every DNS-resolved A/AAAA record) is not private/internal. Throws on unsafe.
+ * ASYNC — callers MUST await.
+ */
+export async function assertSafeUrl(url: string): Promise<void> {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`Invalid URL: ${url}`);
+  }
+  if (!ALLOWED_PROTOCOLS.has(parsed.protocol)) {
+    throw new Error(`URL scheme "${parsed.protocol}" is not allowed (http/https only)`);
+  }
+  const host = unbracket(parsed.hostname);
+  if (!host) {
+    throw new Error("URL is missing a hostname");
+  }
+  // IP literal — validate directly, no DNS needed.
+  if (isIP(host)) {
+    if (isPrivateIp(host)) {
+      throw new Error("URLs pointing to private or internal networks are not allowed");
+    }
+    return;
+  }
+  // Local hostnames before the DNS call.
+  const lower = host.toLowerCase();
+  if (lower === "localhost" || lower.endsWith(".localhost") || lower.endsWith(".local")) {
+    throw new Error("URLs pointing to private or internal networks are not allowed");
+  }
+  // Resolve and verify EVERY record — closes DNS-rebinding to a private IP.
+  let resolved: { address: string }[];
+  try {
+    resolved = await lookup(host, { all: true });
+  } catch (err) {
+    throw new Error(`DNS lookup failed for ${host}: ${(err as Error).message}`);
+  }
+  for (const record of resolved) {
+    if (isPrivateIp(record.address)) {
+      throw new Error("URLs pointing to private or internal networks are not allowed");
+    }
   }
 }
 
 /**
- * Check if a fetch response was redirected to a private IP (SSRF bypass).
- * Should be called after fetch() with redirect: 'follow'.
+ * Re-validate a redirect target (Location / response.url) with the full guard.
+ * ASYNC — callers MUST await. Only the "private/internal" + scheme/DNS errors
+ * propagate; a malformed redirect URL is ignored (the fetch itself will fail).
  */
-export function assertSafeRedirect(originalUrl: string, responseUrl: string): void {
-  if (responseUrl !== originalUrl) {
-    try {
-      const redirectedParsed = new URL(responseUrl);
-      if (isPrivateHostname(redirectedParsed.hostname)) {
-        throw new Error('URL redirected to a private or internal network');
+export async function assertSafeRedirect(originalUrl: string, responseUrl: string): Promise<void> {
+  if (!responseUrl || responseUrl === originalUrl) return;
+  await assertSafeUrl(responseUrl);
+}
+
+/**
+ * Stream a response body and abort when the cumulative byte-count exceeds `byteCap`.
+ * Defense against OOM from a malicious/huge target. Returns the decoded text.
+ */
+export async function readBodyWithCap(response: Response, byteCap: number): Promise<string> {
+  if (!response.body) return await response.text();
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > byteCap) {
+        await reader.cancel();
+        throw new Error(`Response exceeded byte cap (${byteCap} bytes)`);
       }
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('private')) throw e;
+      chunks.push(value);
     }
+  } finally {
+    reader.releaseLock();
   }
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder("utf-8", { fatal: false }).decode(merged);
 }

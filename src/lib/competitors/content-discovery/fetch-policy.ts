@@ -84,14 +84,14 @@ async function rawFetch(
   opts?: { signal?: AbortSignal; timeoutMs?: number },
 ): Promise<Response | null> {
   try {
-    assertSafeUrl(url);
+    await assertSafeUrl(url);
     await throttleHost(new URL(url).host);
     const res = await fetch(url, {
       headers: { "User-Agent": USER_AGENT, Accept: "*/*" },
       redirect: "follow",
       signal: combinedSignal(opts?.signal, opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS),
     });
-    assertSafeRedirect(url, res.url);
+    await assertSafeRedirect(url, res.url);
     return res.ok ? res : null;
   } catch {
     return null;

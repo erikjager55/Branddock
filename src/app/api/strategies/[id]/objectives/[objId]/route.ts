@@ -45,6 +45,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
+    // Verify the objective belongs to THIS strategy before mutating by PK.
+    // Without this the route only checked the parent strategy, so a caller could
+    // PATCH another tenant's objective by id. Zie security-audit 2026-06-26 H8.
+    const owned = await prisma.objective.findFirst({
+      where: { id: objId, strategyId: id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: "Objective not found" }, { status: 404 });
+    }
+
     const objective = await prisma.objective.update({
       where: { id: objId },
       data: parsed.data,
@@ -81,7 +92,14 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Strategy not found" }, { status: 404 });
     }
 
-    await prisma.objective.delete({ where: { id: objId } });
+    // Scope the delete to THIS strategy (parent already verified above) so a
+    // caller cannot delete another tenant's objective by id. H8.
+    const res = await prisma.objective.deleteMany({
+      where: { id: objId, strategyId: id },
+    });
+    if (res.count === 0) {
+      return NextResponse.json({ error: "Objective not found" }, { status: 404 });
+    }
 
     return NextResponse.json({ deleted: true });
   } catch (error) {
