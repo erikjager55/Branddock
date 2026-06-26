@@ -38,6 +38,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
+    // Scope to this strategy so a caller cannot mutate another tenant's
+    // focus-area by id (parent verified above). H8 (security-audit 2026-06-26).
+    const owned = await prisma.focusArea.findFirst({
+      where: { id: faId, strategyId: id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: "Focus area not found" }, { status: 404 });
+    }
+
     const focusArea = await prisma.focusArea.update({
       where: { id: faId },
       data: parsed.data,
@@ -70,7 +80,12 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Strategy not found" }, { status: 404 });
     }
 
-    await prisma.focusArea.delete({ where: { id: faId } });
+    const res = await prisma.focusArea.deleteMany({
+      where: { id: faId, strategyId: id },
+    });
+    if (res.count === 0) {
+      return NextResponse.json({ error: "Focus area not found" }, { status: 404 });
+    }
 
     return NextResponse.json({ deleted: true });
   } catch (error) {

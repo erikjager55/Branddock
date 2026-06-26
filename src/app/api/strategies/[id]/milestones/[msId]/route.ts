@@ -51,6 +51,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Scope to this strategy so a caller cannot mutate another tenant's
+    // milestone by id (parent verified above). H8 (security-audit 2026-06-26).
+    const owned = await prisma.milestone.findFirst({
+      where: { id: msId, strategyId: id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: "Milestone not found" }, { status: 404 });
+    }
+
     const milestone = await prisma.milestone.update({
       where: { id: msId },
       data,
@@ -83,7 +93,12 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Strategy not found" }, { status: 404 });
     }
 
-    await prisma.milestone.delete({ where: { id: msId } });
+    const res = await prisma.milestone.deleteMany({
+      where: { id: msId, strategyId: id },
+    });
+    if (res.count === 0) {
+      return NextResponse.json({ error: "Milestone not found" }, { status: 404 });
+    }
 
     return NextResponse.json({ deleted: true });
   } catch (error) {

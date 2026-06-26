@@ -133,7 +133,15 @@ export default async function PublishedPage({ params, searchParams }: Props) {
       {jsonLd ? (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          // Escape HTML-significante tekens: JSON.stringify escaped `<`/`>`/`&` niet,
+          // dus AI-/user-content met `</script>` kan anders uit het <script>-element
+          // breken (stored XSS op de publieke pagina). Zie security-audit 2026-06-26 H2.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd)
+              .replace(/</g, "\\u003c")
+              .replace(/>/g, "\\u003e")
+              .replace(/&/g, "\\u0026")
+          }}
         />
       ) : null}
       <Render config={config} data={data} />

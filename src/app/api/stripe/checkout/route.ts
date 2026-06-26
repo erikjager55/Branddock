@@ -6,7 +6,8 @@
 // =============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, resolveWorkspaceId } from '@/lib/auth-server';
+import { resolveWorkspaceId } from '@/lib/auth-server';
+import { requireOrgRole } from '@/lib/auth/require-role';
 import { isBillingEnabled } from '@/lib/stripe/feature-flags';
 import { createCheckoutSession } from '@/lib/stripe/checkout';
 import type { PlanTier } from '@/types/billing';
@@ -15,10 +16,9 @@ const VALID_TIERS: PlanTier[] = ['PRO', 'AGENCY', 'ENTERPRISE'];
 const VALID_CYCLES = ['monthly', 'yearly'] as const;
 
 export async function POST(request: NextRequest) {
-  const session = await requireAuth();
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // H4: starting a paid checkout is owner/admin-only (was any member/viewer).
+  const role = await requireOrgRole();
+  if (role instanceof NextResponse) return role;
 
   if (!isBillingEnabled()) {
     return NextResponse.json(

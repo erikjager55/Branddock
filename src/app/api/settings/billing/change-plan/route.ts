@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveWorkspaceId } from "@/lib/auth-server";
+import { requireOrgRole } from "@/lib/auth/require-role";
 
 const changePlanSchema = z.object({
   planId: z.string().min(1, "planId is required"),
@@ -14,10 +15,9 @@ const changePlanSchema = z.object({
 // =============================================================
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // H4: changing the plan is owner/admin-only (was any member/viewer).
+    const role = await requireOrgRole();
+    if (role instanceof NextResponse) return role;
 
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {

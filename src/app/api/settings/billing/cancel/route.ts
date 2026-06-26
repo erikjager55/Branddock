@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveWorkspaceId } from "@/lib/auth-server";
+import { requireOrgRole } from "@/lib/auth/require-role";
 
 // =============================================================
 // POST /api/settings/billing/cancel
@@ -8,10 +9,9 @@ import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
 // =============================================================
 export async function POST() {
   try {
-    const session = await getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // H4: cancelling a subscription is owner/admin-only (was any member/viewer).
+    const role = await requireOrgRole();
+    if (role instanceof NextResponse) return role;
 
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {

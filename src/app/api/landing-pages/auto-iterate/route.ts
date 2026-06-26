@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildAiErrorResponseInit } from '@/lib/ai/error-handler';
+import { withAi } from '@/lib/ai/middleware';
 import {
   evaluatePageQuality,
   evaluatePageQualityViaFVAL,
@@ -56,6 +57,11 @@ CRITICAL OUTPUT RULES:
 - Only modify human-readable text fields (headline, sub, label, quote, etc.).`;
 
 export async function POST(request: NextRequest) {
+  // H6: was fully unauthenticated → ongeauth. billable LLM-abuse/DoS. Gate behind
+  // auth + per-workspace rate-limit (security-audit 2026-06-26).
+  const auth = await withAi(request, { skipBrandContext: true });
+  if (auth instanceof Response) return auth;
+
   let body: RequestBody;
   try {
     body = (await request.json()) as RequestBody;

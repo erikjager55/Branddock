@@ -6,15 +6,15 @@
 // =============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, resolveWorkspaceId } from '@/lib/auth-server';
+import { resolveWorkspaceId } from '@/lib/auth-server';
+import { requireOrgRole } from '@/lib/auth/require-role';
 import { isBillingEnabled } from '@/lib/stripe/feature-flags';
 import { createPortalSession } from '@/lib/stripe/checkout';
 
 export async function POST(request: NextRequest) {
-  const session = await requireAuth();
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // H4: the billing portal (manage payment methods / cancel) is owner/admin-only.
+  const role = await requireOrgRole();
+  if (role instanceof NextResponse) return role;
 
   if (!isBillingEnabled()) {
     return NextResponse.json(

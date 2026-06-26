@@ -37,6 +37,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
+    // Scope to the strategy via the parent objective so a caller cannot mutate
+    // another tenant's key-result by id. H8 (security-audit 2026-06-26).
+    const owned = await prisma.keyResult.findFirst({
+      where: { id: krId, objective: { strategyId: id } },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: "Key result not found" }, { status: 404 });
+    }
+
     const keyResult = await prisma.keyResult.update({
       where: { id: krId },
       data: parsed.data,
@@ -69,7 +79,12 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Strategy not found" }, { status: 404 });
     }
 
-    await prisma.keyResult.delete({ where: { id: krId } });
+    const res = await prisma.keyResult.deleteMany({
+      where: { id: krId, objective: { strategyId: id } },
+    });
+    if (res.count === 0) {
+      return NextResponse.json({ error: "Key result not found" }, { status: 404 });
+    }
 
     return NextResponse.json({ deleted: true });
   } catch (error) {
