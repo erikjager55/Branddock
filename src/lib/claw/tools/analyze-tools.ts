@@ -399,7 +399,8 @@ export const navigateTools: ClawToolDefinition[] = [
       const p = params as { assetId: string };
       return {
         action: 'navigate',
-        section: 'brand-asset-ai-exploration',
+        // Matches the App.tsx switch-case (was reversed → navigation never fired).
+        section: 'ai-exploration-brand-asset',
         entityId: p.assetId,
         message: 'Opening AI Exploration for this asset',
       };
