@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 348. Security — MEDIUM/LOW-cluster: RBAC-gaten + prototype-pollution + crypto/header hardening
+
+Sluitstuk van de pre-launch security-audit (na #345/#346/#347). **RBAC**: invite-routes valideren `role` tegen een enum en laten alléén een owner een `owner` inviten — beide live routes gepatcht (`/api/organization/invite` + de échte UI-route `/api/settings/team/invite`, die `role: z.string()` verbatim opsloeg → admin→owner-escalatie via de accept-route; gevonden in review-ronde 1). `/api/workspace/export` en Claw `confirm` achter `requireWorkspaceRole` (viewer kon de hele workspace + interviewee-PII exfiltreren, resp. muteren via de agent). **Prototype-pollution**: `deepSet` weigert `__proto__`/`constructor`/`prototype`-segmenten (raakt het LLM-gevoede `update_asset_framework`-pad). **Hardening**: CSP-header (`frame-ancestors`/`object-src`/`base-uri`/`form-action`) in `proxy.ts`, GCM `authTagLength` op beide `createDecipheriv`, en `timingSafeEqual` op het webhook-Bearer-secret. Ge-finalized via 2-ronde 2-subagent review-loop; ronde-2 "CRITICAL" (native Better Auth `invite-member`) bleek een geverifieerde false-positive (library-guard crud-invites.mjs:123 blokkeert admin→owner al). Smoke `security-medium.ts` 7/7, tsc 0, lint 0, build groen. Restscope (L4/L6/L9 + Zod-sweep) gedocumenteerd.
+
+- Task: [tasks/done/security-medium-cluster.md](../tasks/done/security-medium-cluster.md)
+- ADR: -
+- Spec: [docs/audits/2026-06-26-security-audit.md](audits/2026-06-26-security-audit.md)
+- Commit: eba365a1 (PR #61)
+
 ### 347. Security — billing-integriteit: server-side purchase-prijs + plan-entitlement (H3 + M5)
 
 Opvolg op #345/#346. **H3**: de one-time-purchase-route leidde de prijs uit een client-`amount` af (→ €0,50 voor een €99-bundle, of `amount:0` voor een gratis tool-unlock). `createPaymentIntent` accepteert geen prijs meer; nieuwe `resolveItemPrice()` haalt 'm server-side uit `ResearchBundle.price` (catalogus) resp. `Workshop.totalPrice` (workspace-scoped); onbekend/cross-workspace/null → fail-closed reject. **M5**: plan-entitlement werd alleen in de UI afgedwongen (`enforceFeature` had 0 call-sites). Nieuwe `enforcePlanLimit(ws, feature)`-helper (402 bij over-limiet, no-op zolang `BILLING_ENABLED=false`) gewired op de 4 hoofd-create-routes (personas/products/campaigns/knowledge-resources). Ge-finalized via 2-subagent review-loop (0 CRITICAL/0 WARNING round 1); smoke `plan-enforcement.ts` 6/6, tsc 0, lint 0, build groen. Restscope (overige create-paden, org/usage-limieten, TOCTOU-hard-cap, dormant-route + live workshop/research-purchase-routes) gedocumenteerd vóór billing-livegang.

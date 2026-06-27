@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
+import { requireWorkspaceRole } from '@/lib/auth/require-role';
 
 /**
  * GET /api/workspace/export — Full workspace data export as JSON.
@@ -8,15 +8,11 @@ import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
  */
 export async function GET() {
   try {
-    const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: 'No workspace found' }, { status: 404 });
-    }
+    // M2: a full workspace export bundles all brand-DNA + interviewee PII —
+    // owner/admin-only (was any member/viewer). Security-audit 2026-06-26.
+    const ctx = await requireWorkspaceRole();
+    if (ctx instanceof NextResponse) return ctx;
+    const { workspaceId } = ctx;
 
     const w = { workspaceId };
 
