@@ -44,7 +44,7 @@ Restscope van H1 (na #349). Sluit élk resterend server-side fetch-pad dat nog o
 - Task: [tasks/security-residual-hardening.md](../tasks/security-residual-hardening.md) (SSRF-blok afgevinkt; L4/L6/L9 + Zod-sweep blijven open)
 - ADR: -
 - Spec: [docs/audits/2026-06-26-security-audit.md](audits/2026-06-26-security-audit.md)
-- Commit: <hash> (PR #TBD)
+- Commit: ba0ff9b5 (PR #64)
 
 ### 349. Security — SSRF: safeFetch per-hop redirect-revalidatie in alle scrapers (H1 punt 1)
 
