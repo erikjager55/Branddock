@@ -70,6 +70,7 @@ async function main() {
   const realFetch = globalThis.fetch;
   const fetched: string[] = [];
   const seenAuth: Array<{ url: string; auth: string | null }> = [];
+  const seenReq: Array<{ url: string; method: string; hasBody: boolean }> = [];
   function mockResponse(status: number, location: string | null, type = "default"): Response {
     return {
       type,
@@ -83,6 +84,7 @@ async function main() {
       const u = typeof input === "string" ? input : input.toString();
       fetched.push(u);
       seenAuth.push({ url: u, auth: new Headers(reqInit?.headers).get("authorization") });
+      seenReq.push({ url: u, method: (reqInit?.method ?? "GET").toUpperCase(), hasBody: reqInit?.body != null });
       return Promise.resolve(script(u));
     }) as unknown as typeof fetch;
   }
@@ -142,6 +144,26 @@ async function main() {
     try { await safeFetch("http://8.8.8.8/", { headers: { Authorization: "Bearer secret" } }); } catch { /* ignore */ }
     ok("safeFetch keeps Authorization across same-origin redirect",
       seenAuth.length === 2 && seenAuth.every((s) => s.auth === "Bearer secret"));
+
+    // 7. a 303 re-issues the next hop as a bodyless GET (POST→GET downgrade).
+    fetched.length = 0; seenReq.length = 0;
+    installFetch((u) =>
+      u === "http://8.8.8.8/" ? mockResponse(303, "http://8.8.8.8/result") : mockResponse(200, null),
+    );
+    try { await safeFetch("http://8.8.8.8/", { method: "POST", body: "payload" }); } catch { /* ignore */ }
+    ok("safeFetch keeps POST+body on the original request",
+      seenReq[0]?.method === "POST" && seenReq[0]?.hasBody === true);
+    ok("safeFetch downgrades 303 to a bodyless GET",
+      seenReq[1]?.method === "GET" && seenReq[1]?.hasBody === false);
+
+    // 8. a 307 preserves method + body across the redirect.
+    fetched.length = 0; seenReq.length = 0;
+    installFetch((u) =>
+      u === "http://8.8.8.8/" ? mockResponse(307, "http://8.8.8.8/again") : mockResponse(200, null),
+    );
+    try { await safeFetch("http://8.8.8.8/", { method: "POST", body: "payload" }); } catch { /* ignore */ }
+    ok("safeFetch preserves POST+body across a 307",
+      seenReq.length === 2 && seenReq.every((r) => r.method === "POST" && r.hasBody === true));
   } finally {
     globalThis.fetch = realFetch;
   }

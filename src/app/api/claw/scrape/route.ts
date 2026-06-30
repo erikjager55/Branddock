@@ -2,10 +2,15 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { getServerSession } from '@/lib/auth-server';
 import { scrapeProductUrl } from '@/lib/products/url-scraper';
+import { checkGenericRateLimit } from '@/lib/ai/rate-limiter';
 
 const bodySchema = z.object({
   url: z.string().url().max(2048),
 });
+
+// Each call makes an outbound scrape fetch — cap per user (DoS / SSRF-probe).
+const SCRAPE_MAX_PER_WINDOW = 20;
+const SCRAPE_WINDOW_MS = 60_000;
 
 /**
  * POST /api/claw/scrape — Scrape a URL and return extracted text.
@@ -14,6 +19,14 @@ const bodySchema = z.object({
 export async function POST(req: NextRequest) {
   const session = await getServerSession();
   if (!session) return new Response('Unauthorized', { status: 401 });
+
+  const rate = await checkGenericRateLimit(`claw-scrape:${session.user.id}`, SCRAPE_MAX_PER_WINDOW, SCRAPE_WINDOW_MS);
+  if (!rate.allowed) {
+    return Response.json(
+      { error: 'Rate limit exceeded' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((rate.resetAt.getTime() - Date.now()) / 1000)) } },
+    );
+  }
 
   const body = await req.json();
   const parsed = bodySchema.safeParse(body);

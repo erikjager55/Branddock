@@ -8,7 +8,7 @@
 // that stream chunked without Content-Length.
 // =============================================================
 
-import { assertSafeRedirect } from '@/lib/utils/ssrf';
+import { safeFetch } from '@/lib/utils/ssrf';
 
 export const AI_IMAGE_SIZE_CAP = 25 * 1024 * 1024; // 25 MB
 export const AI_VIDEO_SIZE_CAP = 500 * 1024 * 1024; // 500 MB
@@ -32,10 +32,11 @@ export async function fetchWithSizeLimit(
   maxBytes: number,
   init?: RequestInit,
 ): Promise<Buffer> {
-  const response = await fetch(url, init);
-  // SSRF: re-validate the post-redirect target so a follow'd redirect to a
-  // private/internal host (or DNS-rebind) is rejected. H1 / security-review.
-  await assertSafeRedirect(url, response.url);
+  // safeFetch validates the entry URL AND every redirect hop before connecting
+  // (the old `fetch` + post-hoc `assertSafeRedirect` left the entry URL itself
+  // unvalidated and let a redirect fire against an internal host first). Matters
+  // most for the user-supplied URL path (media/import-url). H1 / security-review.
+  const response = await safeFetch(url, init);
   if (!response.ok) {
     throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
   }

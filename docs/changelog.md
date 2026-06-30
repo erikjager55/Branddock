@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 350. Security — SSRF-convergentie: laatste raw-fetch-paden → safeFetch + rate-limit + byte-cap
+
+Restscope van H1 (na #349). Sluit élk resterend server-side fetch-pad dat nog op het oude patroon zat (`fetch` + post-hoc `assertSafeRedirect`, soms zonder entry-validatie). `fetchWithSizeLimit` (`security/fetch-with-limit.ts`, 16 AI-artifact-callers) loopt nu via `safeFetch`; daarnaast in code-review nog 3 raw-fetch-routes ontdekt en geconverteerd: `media/import-url` (entry-probe), `media/stock/import` (user-URL die **geen enkele** SSRF-validatie had) en `export/proxy-image` (allowlisted). Het dode `assertSafeRedirect` is verwijderd. `safeFetch` kreeg fetch-spec-conforme method-handling (303 + 301/302-op-non-GET → bodyless GET; 307/308 behoudt method+body). Drie ongelimiteerde scrape-routes (`website-scanner`/`claw/scrape`/`briefing-sources/parse-url`) kregen `checkGenericRateLimit` (429 + Retry-After). `products/url-scraper` leest de body nu via `readBodyWithCap` (10MB stream-cap, OOM-defense). Ge-finalized via 3-ronde 2-subagent review (eindoordeel ready-to-merge, 0 CRITICAL/0 WARNING; charset-"regressie" weerlegd als false-positive — `Response.text()` is spec-matig óók UTF-8-only). Smoke `ssrf-guard.ts` 65/65, tsc 0, lint 0, build groen (echte node_modules + prisma + env in de worktree). H1 is hiermee volledig afgehecht.
+
+- Task: [tasks/security-residual-hardening.md](../tasks/security-residual-hardening.md) (SSRF-blok afgevinkt; L4/L6/L9 + Zod-sweep blijven open)
+- ADR: -
+- Spec: [docs/audits/2026-06-26-security-audit.md](audits/2026-06-26-security-audit.md)
+- Commit: ba0ff9b5 (PR #64)
+
 ### 349. Security — SSRF: safeFetch per-hop redirect-revalidatie in alle scrapers (H1 punt 1)
 
 Sluitstuk van H1 (na de kern-hardening in `6f0875e4`). De scrapers volgden redirects met `redirect:'follow'` + een post-hoc `assertSafeRedirect`: het redirect-*request* vuurde nog vóór validatie tegen de interne target (blind-SSRF-venster op de redirect-hop). Nieuwe `safeFetch()` in `ssrf.ts` forceert `redirect:'manual'` en revalideert élke hop met `assertSafeUrl` (scheme + DNS-resolve-en-verifieer) vóór de connectie, plus credential-header-stripping (Authorization/Cookie) zodra een redirect de origin verlaat. Gewired op alle 7 scraper-fetches (products/url-scraper x2, brandstyle/url-scraper HTML+CSS, logo-color-extractor, multi-page-scraper, competitors/fetch-policy, media/import-scraped-image); redundante pre/post-checks verwijderd. Ge-finalized via 2-subagent review (beide ready-to-merge; reviewer-WARNING over cross-origin credential-leak meteen meegnomen) in een geïsoleerde git-worktree, omdat een parallelle i18n-sessie de hoofd-working-tree bezet hield. Smoke `ssrf-guard.ts` 62/62 (+8 safeFetch-tests: redirect→IMDS geblokkeerd vóór connectie, public-redirect gevolgd, opaque fail-closed, loop-cap, credential-strip cross/same-origin), tsc 0, lint 0, build groen. Restscope (`fetch-with-limit.ts`-conversie, rate-limit/byte-cap, 307/308-body) → `security-residual-hardening`.

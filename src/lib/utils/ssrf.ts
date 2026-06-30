@@ -13,11 +13,12 @@
 //                            the async `assertSafeUrl` for fetch entry points.
 //   - `assertSafeUrl`      — ASYNC: scheme-allowlist + literal check + DNS-resolve-
 //                            and-verify of every A/AAAA record (closes DNS-rebind).
-//   - `assertSafeRedirect` — ASYNC: re-runs the full check on a redirect target.
+//   - `safeFetch`          — ASYNC: SSRF-safe `fetch` drop-in — manual redirect loop
+//                            that re-validates every hop before connecting (prefer
+//                            this over a raw fetch + post-hoc check).
 //
-// IMPORTANT: `assertSafeUrl`/`assertSafeRedirect` are async — every caller MUST
-// `await` them, otherwise the validation is fire-and-forget and the fetch is
-// unprotected.
+// IMPORTANT: `assertSafeUrl`/`safeFetch` are async — every caller MUST `await`
+// them, otherwise the validation is fire-and-forget and the fetch is unprotected.
 // =============================================================
 
 import { lookup } from "dns/promises";
@@ -143,16 +144,6 @@ export async function assertSafeUrl(url: string): Promise<void> {
   }
 }
 
-/**
- * Re-validate a redirect target (Location / response.url) with the full guard.
- * ASYNC — callers MUST await. Only the "private/internal" + scheme/DNS errors
- * propagate; a malformed redirect URL is ignored (the fetch itself will fail).
- */
-export async function assertSafeRedirect(originalUrl: string, responseUrl: string): Promise<void> {
-  if (!responseUrl || responseUrl === originalUrl) return;
-  await assertSafeUrl(responseUrl);
-}
-
 /** Max redirect hops `safeFetch` will follow before failing closed. */
 const SAFE_FETCH_MAX_REDIRECTS = 5;
 
@@ -174,17 +165,24 @@ const CREDENTIAL_HEADERS = ["authorization", "cookie", "proxy-authorization"];
  * Throws on: unsafe URL/redirect target, opaque redirect (Location unreadable),
  * a 3xx without Location, or exceeding `maxRedirects`.
  *
- * Pass-through `init` is forwarded except `redirect` (always `'manual'`) and the
- * credential-header stripping above. ASYNC — callers MUST await.
+ * Pass-through `init` is forwarded except `redirect` (always `'manual'`), the
+ * credential-header stripping above, and the method downgrade below. ASYNC —
+ * callers MUST await.
+ *
+ * Method/body across redirects follows the fetch spec: a 303 (and a 301/302 on a
+ * non-GET/HEAD method) re-issues the next hop as a bodyless GET; 307/308 preserve
+ * the original method + body. All current callers are GET, so this is latent.
  */
 export async function safeFetch(
   url: string,
   init: RequestInit & { maxRedirects?: number } = {},
 ): Promise<Response> {
-  const { maxRedirects = SAFE_FETCH_MAX_REDIRECTS, headers, ...rest } = init;
+  const { maxRedirects = SAFE_FETCH_MAX_REDIRECTS, headers, method, body, ...rest } = init;
   const headerBag = new Headers(headers);
   const originalOrigin = new URL(url).origin;
   let currentUrl = url;
+  let currentMethod = method;
+  let currentBody = body;
   for (let hop = 0; hop <= maxRedirects; hop++) {
     await assertSafeUrl(currentUrl);
     // Once a redirect leaves the original origin, drop credential headers so a
@@ -192,7 +190,13 @@ export async function safeFetch(
     if (new URL(currentUrl).origin !== originalOrigin) {
       for (const h of CREDENTIAL_HEADERS) headerBag.delete(h);
     }
-    const response = await fetch(currentUrl, { ...rest, headers: headerBag, redirect: "manual" });
+    const response = await fetch(currentUrl, {
+      ...rest,
+      method: currentMethod,
+      body: currentBody,
+      headers: headerBag,
+      redirect: "manual",
+    });
     // Some runtimes return an opaque redirect (status 0, Location unreadable)
     // instead of a raw 3xx — fail closed rather than silently follow it.
     if (response.type === "opaqueredirect") {
@@ -203,6 +207,15 @@ export async function safeFetch(
       // A 3xx without Location can't be followed — hand it back to the caller
       // (its `!response.ok` branch will handle it).
       if (!location) return response;
+      // 303, and 301/302 on a non-GET/HEAD method, re-issue as a bodyless GET
+      // (matches the fetch spec); 307/308 keep the method + body.
+      const m = (currentMethod ?? "GET").toUpperCase();
+      if (response.status === 303 || ((response.status === 301 || response.status === 302) && m !== "GET" && m !== "HEAD")) {
+        currentMethod = "GET";
+        currentBody = undefined;
+        headerBag.delete("content-type");
+        headerBag.delete("content-length");
+      }
       currentUrl = new URL(location, currentUrl).toString();
       continue;
     }
