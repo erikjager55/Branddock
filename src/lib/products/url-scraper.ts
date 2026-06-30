@@ -3,7 +3,11 @@
 // =============================================================
 
 import * as cheerio from 'cheerio';
-import { safeFetch } from '@/lib/utils/ssrf';
+import { safeFetch, readBodyWithCap } from '@/lib/utils/ssrf';
+
+// Streaming byte-cap: abort a response once it exceeds this, so a malicious
+// multi-GB target can't OOM the server before the (char-based) cheerio cap runs.
+const HTML_BYTE_CAP = 10 * 1024 * 1024; // 10 MB
 import {
   isTrackingPixel,
   resolveImageUrl,
@@ -202,7 +206,7 @@ export async function scrapeProductUrl(url: string): Promise<ScrapedProductData>
     throw new Error('URL does not return HTML content');
   }
 
-  const html = await response.text();
+  const html = await readBodyWithCap(response, HTML_BYTE_CAP);
   const $ = cheerio.load(html);
 
   // Extract metadata
@@ -268,7 +272,7 @@ export async function fetchAndParse(url: string): Promise<{
     throw new Error('URL does not return HTML content');
   }
 
-  let html = await response.text();
+  let html = await readBodyWithCap(response, HTML_BYTE_CAP);
 
   // Cap HTML size to prevent cheerio from choking on huge pages (>500KB)
   const MAX_HTML_SIZE = 500_000;
