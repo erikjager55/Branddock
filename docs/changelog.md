@@ -37,6 +37,15 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 349. Security — SSRF: safeFetch per-hop redirect-revalidatie in alle scrapers (H1 punt 1)
+
+Sluitstuk van H1 (na de kern-hardening in `6f0875e4`). De scrapers volgden redirects met `redirect:'follow'` + een post-hoc `assertSafeRedirect`: het redirect-*request* vuurde nog vóór validatie tegen de interne target (blind-SSRF-venster op de redirect-hop). Nieuwe `safeFetch()` in `ssrf.ts` forceert `redirect:'manual'` en revalideert élke hop met `assertSafeUrl` (scheme + DNS-resolve-en-verifieer) vóór de connectie, plus credential-header-stripping (Authorization/Cookie) zodra een redirect de origin verlaat. Gewired op alle 7 scraper-fetches (products/url-scraper x2, brandstyle/url-scraper HTML+CSS, logo-color-extractor, multi-page-scraper, competitors/fetch-policy, media/import-scraped-image); redundante pre/post-checks verwijderd. Ge-finalized via 2-subagent review (beide ready-to-merge; reviewer-WARNING over cross-origin credential-leak meteen meegnomen) in een geïsoleerde git-worktree, omdat een parallelle i18n-sessie de hoofd-working-tree bezet hield. Smoke `ssrf-guard.ts` 62/62 (+8 safeFetch-tests: redirect→IMDS geblokkeerd vóór connectie, public-redirect gevolgd, opaque fail-closed, loop-cap, credential-strip cross/same-origin), tsc 0, lint 0, build groen. Restscope (`fetch-with-limit.ts`-conversie, rate-limit/byte-cap, 307/308-body) → `security-residual-hardening`.
+
+- Task: [tasks/done/security-h1-ssrf-guard.md](../tasks/done/security-h1-ssrf-guard.md)
+- ADR: -
+- Spec: [docs/audits/2026-06-26-security-audit.md](audits/2026-06-26-security-audit.md)
+- Commit: <hash> (PR #TBD)
+
 ### 348. Security — MEDIUM/LOW-cluster: RBAC-gaten + prototype-pollution + crypto/header hardening
 
 Sluitstuk van de pre-launch security-audit (na #345/#346/#347). **RBAC**: invite-routes valideren `role` tegen een enum en laten alléén een owner een `owner` inviten — beide live routes gepatcht (`/api/organization/invite` + de échte UI-route `/api/settings/team/invite`, die `role: z.string()` verbatim opsloeg → admin→owner-escalatie via de accept-route; gevonden in review-ronde 1). `/api/workspace/export` en Claw `confirm` achter `requireWorkspaceRole` (viewer kon de hele workspace + interviewee-PII exfiltreren, resp. muteren via de agent). **Prototype-pollution**: `deepSet` weigert `__proto__`/`constructor`/`prototype`-segmenten (raakt het LLM-gevoede `update_asset_framework`-pad). **Hardening**: CSP-header (`frame-ancestors`/`object-src`/`base-uri`/`form-action`) in `proxy.ts`, GCM `authTagLength` op beide `createDecipheriv`, en `timingSafeEqual` op het webhook-Bearer-secret. Ge-finalized via 2-ronde 2-subagent review-loop; ronde-2 "CRITICAL" (native Better Auth `invite-member`) bleek een geverifieerde false-positive (library-guard crud-invites.mjs:123 blokkeert admin→owner al). Smoke `security-medium.ts` 7/7, tsc 0, lint 0, build groen. Restscope (L4/L6/L9 + Zod-sweep) gedocumenteerd.

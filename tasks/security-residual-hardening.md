@@ -29,6 +29,12 @@ Cluster van losse, grotendeels chirurgische edits — zelfde patronen als #348 (
 - [ ] **L9** — `ad-tokens/encryption`: version-prefix + rotatie-pad; convergeer op het versioned `token-crypto`-contract (één crypto-helper-shape voor alle encrypted tokens i.p.v. twee divergerende implementaties).
 - [ ] **Zod-coverage-sweep** — mutatie-routes (POST/PATCH/DELETE) zonder body-validatie (~48% bij de audit). Minstens de niet-param-only routes een `safeParse`-schema geven. Inventariseer eerst, fix dan in batches.
 
+**SSRF-convergentie (uit H1-task `security-h1-ssrf-guard`, #349)**
+- [ ] **`fetch-with-limit.ts` → `safeFetch`** — `src/lib/security/fetch-with-limit.ts` gebruikt nog het oude patroon (default-follow + post-hoc `assertSafeRedirect`) én valideert de entry-URL niet eens met `assertSafeUrl`. Migreren naar `safeFetch`; ~16 call-sites (o.a. `media/import-url`, `media/stock/import`). Laatste server-side fetch-pad met het oude patroon.
+- [ ] **Rate-limit + byte-cap** — `website-scanner`/`claw/scrape`/`briefing-sources/parse-url` (nu 0).
+- [ ] **`safeFetch` 307/308** — method+body-resend afhandelen (303→GET-downgrade) vóórdat een POST-caller door `safeFetch` gaat (nu latent: alle callers zijn GET).
+- [ ] **`image-scraper` + `knowledge-research/search`** — overweeg upgrade van sync `isPrivateHostname` naar `assertSafeUrl`/`safeFetch` (lager risico; geen DNS-resolve nu).
+
 **MINORs (finalize-review #348)**
 - [ ] **CSP-bron consolideren** — CSP staat nu zowel in `src/proxy.ts` als `next.config.ts` (waarden komen overeen, browser enforce't de intersectie). Eén bron-of-truth kiezen om een toekomstige drift-trap te voorkomen. Overweeg meteen een nonce-based `script-src` (de #348-CSP liet die bewust weg om Next-inline-scripts niet te breken).
 - [ ] **Dubbele workspace-resolutie** — `src/app/api/claw/confirm/route.ts` roept `resolveWorkspaceId()` + `getServerSession()` aan én opnieuw intern via `requireWorkspaceRole()`. Gebruik de `workspaceId` uit het `requireWorkspaceRole`-resultaat en laat de losse calls vervallen (2-3 minder DB/session-roundtrips per request).

@@ -69,6 +69,7 @@ async function main() {
   // private/metadata host is rejected BEFORE that host is ever connected to.
   const realFetch = globalThis.fetch;
   const fetched: string[] = [];
+  const seenAuth: Array<{ url: string; auth: string | null }> = [];
   function mockResponse(status: number, location: string | null, type = "default"): Response {
     return {
       type,
@@ -78,9 +79,10 @@ async function main() {
     } as unknown as Response;
   }
   function installFetch(script: (url: string) => Response) {
-    globalThis.fetch = ((input: string | URL | Request) => {
+    globalThis.fetch = ((input: string | URL | Request, reqInit?: RequestInit) => {
       const u = typeof input === "string" ? input : input.toString();
       fetched.push(u);
+      seenAuth.push({ url: u, auth: new Headers(reqInit?.headers).get("authorization") });
       return Promise.resolve(script(u));
     }) as unknown as typeof fetch;
   }
@@ -120,6 +122,26 @@ async function main() {
     let tooMany = false;
     try { await safeFetch("http://8.8.8.8/", { maxRedirects: 3 }); } catch { tooMany = true; }
     ok("safeFetch throws on too many redirects", tooMany);
+
+    // 5. credential headers are stripped once a redirect leaves the original origin.
+    fetched.length = 0; seenAuth.length = 0;
+    installFetch((u) =>
+      u === "http://8.8.8.8/" ? mockResponse(302, "http://1.1.1.1/final") : mockResponse(200, null),
+    );
+    try { await safeFetch("http://8.8.8.8/", { headers: { Authorization: "Bearer secret" } }); } catch { /* ignore */ }
+    ok("safeFetch keeps Authorization on the original origin",
+      seenAuth.find((s) => s.url === "http://8.8.8.8/")?.auth === "Bearer secret");
+    ok("safeFetch strips Authorization on cross-origin redirect",
+      !seenAuth.find((s) => s.url === "http://1.1.1.1/final")?.auth);
+
+    // 6. same-origin redirect keeps the credential header.
+    fetched.length = 0; seenAuth.length = 0;
+    installFetch((u) =>
+      u === "http://8.8.8.8/" ? mockResponse(302, "http://8.8.8.8/next") : mockResponse(200, null),
+    );
+    try { await safeFetch("http://8.8.8.8/", { headers: { Authorization: "Bearer secret" } }); } catch { /* ignore */ }
+    ok("safeFetch keeps Authorization across same-origin redirect",
+      seenAuth.length === 2 && seenAuth.every((s) => s.auth === "Bearer secret"));
   } finally {
     globalThis.fetch = realFetch;
   }
