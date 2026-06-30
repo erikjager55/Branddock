@@ -79,6 +79,37 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // UI-i18n migration guard (ADR 2026-06-28-multilingual-i18n-and-multi-market-content):
+  // op files die al naar de i18next-runtime zijn gemigreerd, verbied NIEUWE
+  // hardcoded user-facing strings — die moeten via t(). De scope is een
+  // allowlist die meegroeit naarmate meer chrome-oppervlakken zijn gemigreerd.
+  // NB: ESLint flat-config doet last-wins per rule-key, dus dit blok vervangt
+  // het NL-denylist-blok hierboven op overlappende files. De JSXText-selector is
+  // bewust een SUPERSET (vangt álle latin tekst, incl. NL) zodat de Nederlandse-
+  // tekst-dekking behouden blijft — versoepel deze regel niet zonder de NL-guard
+  // expliciet terug te brengen op deze files.
+  {
+    files: [
+      "src/features/settings/components/appearance/**/*.tsx",
+      "src/components/TopNavigationBar.tsx",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "JSXText[value=/[A-Za-z]{3,}/]",
+          message:
+            "Hardcoded UI text in an i18n-migrated file. Use t('namespace:key') from react-i18next instead.",
+        },
+        {
+          selector:
+            "JSXAttribute[name.name=/^(aria-label|placeholder|title|alt)$/] > Literal[value=/[A-Za-z]{3,}/]",
+          message:
+            "Hardcoded text in a UI attribute in an i18n-migrated file. Use t() instead.",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

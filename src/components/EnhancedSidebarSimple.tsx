@@ -14,6 +14,7 @@ import { SIDEBAR_NAV, RESEARCH_HUB_ENABLED } from '../lib/constants/design-token
 const isNavItemEnabled = (key: string) => RESEARCH_HUB_ENABLED || key !== 'research';
 import { ResearchMethodType } from '../types/brand-asset';
 import { preloadModule } from '../lib/lazy-imports';
+import { useTranslation } from 'react-i18next';
 
 interface EnhancedSidebarSimpleProps {
   activeSection: string;
@@ -38,6 +39,7 @@ export function EnhancedSidebarSimple({
   const allNavItems = useMemo(() => {
     return SIDEBAR_NAV.sections.flatMap(s => s.items).filter(item => isNavItemEnabled(item.key));
   }, []);
+  const { t } = useTranslation('navigation');
 
   if (collapsed) {
     return (
@@ -162,7 +164,7 @@ export function EnhancedSidebarSimple({
           onMouseEnter={() => preloadModule('settings-account')}
         >
           <Settings className={`h-4 w-4 flex-shrink-0 ${activeSection.startsWith('settings-') ? 'text-emerald-600' : 'text-gray-400'}`} />
-          <span className="flex-1 text-left">Settings</span>
+          <span className="flex-1 text-left">{t('sidebar.settings')}</span>
         </button>
         <button
           className={`w-full flex items-center gap-3 h-9 px-3 rounded-md text-sm transition-colors ${
@@ -173,7 +175,7 @@ export function EnhancedSidebarSimple({
           onClick={() => setActiveSection('help')}
         >
           <HelpCircle className={`h-4 w-4 flex-shrink-0 ${activeSection === 'help' ? 'text-emerald-600' : 'text-gray-400'}`} />
-          <span className="flex-1 text-left">Help & Support</span>
+          <span className="flex-1 text-left">{t('sidebar.helpSupport')}</span>
         </button>
       </div>
     </div>

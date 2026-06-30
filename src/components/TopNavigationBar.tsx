@@ -9,6 +9,7 @@ import { useShellStore } from '../stores/useShellStore';
 import { useClawStore } from '../stores/useClawStore';
 import { HelpIndicator } from './HelpTooltip';
 import { OrganizationSwitcher } from './auth/OrganizationSwitcher';
+import { useTranslation } from 'react-i18next';
 
 interface TopNavigationBarProps {
   breadcrumbs?: BreadcrumbItem[];
@@ -24,6 +25,7 @@ export function TopNavigationBar({
   const { data: countData } = useNotificationCount();
   const unreadCount = countData?.count ?? 0;
   const { openSearch, openNotifications } = useShellStore();
+  const { t } = useTranslation('navigation');
 
   return (
     <div data-testid="top-nav" className="sticky top-0 z-30 w-full border-b border-gray-200 bg-white/95 backdrop-blur shadow-sm">
@@ -52,7 +54,7 @@ export function TopNavigationBar({
               className="gap-1.5 hidden sm:flex"
             >
               <MessageSquarePlus className="h-3.5 w-3.5 text-teal-600" />
-              <span className="hidden md:inline">Quick Content</span>
+              <span className="hidden md:inline">{t('topnav.quickContent')}</span>
             </Button>
           )}
 
@@ -71,7 +73,7 @@ export function TopNavigationBar({
             className="gap-1.5 hidden sm:flex"
           >
             <Sparkles className="h-3.5 w-3.5 text-teal-500" />
-            <span className="hidden md:inline">Brand Assistant</span>
+            <span className="hidden md:inline">{t('topnav.brandAssistant')}</span>
           </Button>
 
           {/* Global Search */}
@@ -83,7 +85,7 @@ export function TopNavigationBar({
             className="gap-2 hidden sm:flex"
           >
             <Search className="h-4 w-4" />
-            <span className="hidden md:inline">Search</span>
+            <span className="hidden md:inline">{t('topnav.search')}</span>
             <ShortcutHint keys={[getModifierKey(), 'K']} />
           </Button>
 
@@ -98,7 +100,7 @@ export function TopNavigationBar({
             variant="ghost"
             size="sm"
             className="h-9 w-9 p-0 relative"
-            title={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
+            title={unreadCount > 0 ? t('topnav.notificationsUnread', { count: unreadCount }) : t('topnav.notifications')}
             onClick={() => openNotifications()}
           >
             <Bell className="h-4 w-4" />

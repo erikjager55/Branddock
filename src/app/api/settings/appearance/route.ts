@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
+import { SHIPPED_LOCALES, resolveUiLocale } from "@/lib/ui-i18n/config";
 
 const APPEARANCE_DEFAULTS = {
   theme: "SYSTEM" as const,
@@ -41,7 +42,7 @@ export async function GET() {
       appearance: {
         theme: pref.theme,
         accentColor: pref.accentColor,
-        language: pref.language,
+        language: resolveUiLocale(pref.language),
         fontSize: pref.fontSize,
         sidebarPosition: pref.sidebarPosition,
         compactMode: pref.compactMode,
@@ -62,7 +63,7 @@ const patchSchema = z.object({
   accentColor: z
     .enum(["BLUE", "PURPLE", "GREEN", "ORANGE", "PINK", "TEAL"])
     .optional(),
-  language: z.string().optional(),
+  language: z.enum(SHIPPED_LOCALES).optional(),
   fontSize: z.enum(["SMALL", "MEDIUM", "LARGE"]).optional(),
   sidebarPosition: z.enum(["LEFT", "RIGHT"]).optional(),
   compactMode: z.boolean().optional(),
@@ -106,7 +107,7 @@ export async function PATCH(request: NextRequest) {
       appearance: {
         theme: pref.theme,
         accentColor: pref.accentColor,
-        language: pref.language,
+        language: resolveUiLocale(pref.language),
         fontSize: pref.fontSize,
         sidebarPosition: pref.sidebarPosition,
         compactMode: pref.compactMode,
