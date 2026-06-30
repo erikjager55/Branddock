@@ -4,7 +4,7 @@ import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { getStorageProvider } from "@/lib/storage";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
-import { assertSafeUrl, assertSafeRedirect } from "@/lib/utils/ssrf";
+import { assertSafeUrl, safeFetch } from "@/lib/utils/ssrf";
 import { fetchWithSizeLimit, ResponseTooLargeError } from "@/lib/security/fetch-with-limit";
 import { generateMediaSlug, detectMediaType } from "@/features/media-library/utils/media-utils";
 
@@ -74,15 +74,17 @@ export async function POST(request: NextRequest) {
     const timeout = setTimeout(() => controller.abort(), 30000);
 
     // Fetch headers first to read content-type before downloading bytes.
+    // safeFetch validates the entry URL + every redirect hop before connecting
+    // (closes the redirect/DNS-rebind window the old default-follow left open). H1.
     let response: Response;
     try {
-      response = await fetch(url, {
+      response = await safeFetch(url, {
         signal: controller.signal,
         headers: {
           "User-Agent": "Branddock-MediaImporter/1.0",
         },
       });
-    } catch (fetchError) {
+    } catch {
       clearTimeout(timeout);
       return NextResponse.json(
         { error: "Failed to fetch URL content" },
@@ -90,17 +92,6 @@ export async function POST(request: NextRequest) {
       );
     } finally {
       clearTimeout(timeout);
-    }
-
-    // Re-validate after redirects (the fetch followed them) — closes the
-    // redirect/DNS-rebind path. H1.
-    try {
-      await assertSafeRedirect(url, response.url);
-    } catch {
-      return NextResponse.json(
-        { error: "URL redirected to a private/internal address" },
-        { status: 400 }
-      );
     }
 
     if (!response.ok) {

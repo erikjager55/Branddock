@@ -13,11 +13,12 @@
 //                            the async `assertSafeUrl` for fetch entry points.
 //   - `assertSafeUrl`      — ASYNC: scheme-allowlist + literal check + DNS-resolve-
 //                            and-verify of every A/AAAA record (closes DNS-rebind).
-//   - `assertSafeRedirect` — ASYNC: re-runs the full check on a redirect target.
+//   - `safeFetch`          — ASYNC: SSRF-safe `fetch` drop-in — manual redirect loop
+//                            that re-validates every hop before connecting (prefer
+//                            this over a raw fetch + post-hoc check).
 //
-// IMPORTANT: `assertSafeUrl`/`assertSafeRedirect` are async — every caller MUST
-// `await` them, otherwise the validation is fire-and-forget and the fetch is
-// unprotected.
+// IMPORTANT: `assertSafeUrl`/`safeFetch` are async — every caller MUST `await`
+// them, otherwise the validation is fire-and-forget and the fetch is unprotected.
 // =============================================================
 
 import { lookup } from "dns/promises";
@@ -141,16 +142,6 @@ export async function assertSafeUrl(url: string): Promise<void> {
       throw new Error("URLs pointing to private or internal networks are not allowed");
     }
   }
-}
-
-/**
- * Re-validate a redirect target (Location / response.url) with the full guard.
- * ASYNC — callers MUST await. Only the "private/internal" + scheme/DNS errors
- * propagate; a malformed redirect URL is ignored (the fetch itself will fail).
- */
-export async function assertSafeRedirect(originalUrl: string, responseUrl: string): Promise<void> {
-  if (!responseUrl || responseUrl === originalUrl) return;
-  await assertSafeUrl(responseUrl);
 }
 
 /** Max redirect hops `safeFetch` will follow before failing closed. */

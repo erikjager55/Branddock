@@ -4,16 +4,16 @@
 
 import * as cheerio from 'cheerio';
 import { safeFetch, readBodyWithCap } from '@/lib/utils/ssrf';
-
-// Streaming byte-cap: abort a response once it exceeds this, so a malicious
-// multi-GB target can't OOM the server before the (char-based) cheerio cap runs.
-const HTML_BYTE_CAP = 10 * 1024 * 1024; // 10 MB
 import {
   isTrackingPixel,
   resolveImageUrl,
   bestFromSrcset,
   addImageSafe,
 } from '@/lib/utils/image-scraper';
+
+// Streaming byte-cap: abort a response once it exceeds this, so a malicious
+// multi-GB target can't OOM the server before the (char-based) cheerio cap runs.
+const HTML_BYTE_CAP = 10 * 1024 * 1024; // 10 MB
 
 export interface ScrapedImage {
   url: string;
