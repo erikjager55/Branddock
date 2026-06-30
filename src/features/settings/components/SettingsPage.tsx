@@ -7,6 +7,7 @@ import { SettingsSubNav } from './SettingsSubNav';
 import { AccountTab } from './account/AccountTab';
 import { TeamTab } from './team/TeamTab';
 import { WorkspacesTab } from './workspaces/WorkspacesTab';
+import { AppearanceTab } from './appearance/AppearanceTab';
 import { BillingTab } from './billing/BillingTab';
 import { IntegrationsTab } from './integrations/IntegrationsTab';
 import { RulesTab } from './brand-voice/RulesTab';
@@ -67,11 +68,7 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
           </div>
         );
       case 'appearance':
-        return (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-            Appearance settings coming soon
-          </div>
-        );
+        return <AppearanceTab />;
       case 'integrations':
         return <IntegrationsTab />;
       case 'brand-rules':

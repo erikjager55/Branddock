@@ -5,23 +5,24 @@ import type { LucideIcon } from 'lucide-react';
 import { useSettingsStore, type SettingsTab } from '@/stores/useSettingsStore';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
 import { useChatFeedbackTriage } from '@/hooks/use-chat-feedback';
+import { useTranslation } from 'react-i18next';
 
 interface NavItem {
   id: SettingsTab;
-  label: string;
+  tKey: string;
   icon: LucideIcon;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'account', label: 'Account', icon: User },
-  { id: 'team', label: 'Team', icon: Users },
-  { id: 'workspaces', label: 'Workspaces', icon: Briefcase },
-  { id: 'billing', label: 'Billing', icon: CreditCard },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'appearance', label: 'Appearance', icon: Palette },
-  { id: 'integrations', label: 'Integrations', icon: Plug },
-  { id: 'brand-rules', label: 'Brand Rules', icon: FileText },
-  { id: 'validation', label: 'Validation', icon: ShieldCheck },
+  { id: 'account', tKey: 'settings.account', icon: User },
+  { id: 'team', tKey: 'settings.team', icon: Users },
+  { id: 'workspaces', tKey: 'settings.workspaces', icon: Briefcase },
+  { id: 'billing', tKey: 'settings.billing', icon: CreditCard },
+  { id: 'notifications', tKey: 'settings.notifications', icon: Bell },
+  { id: 'appearance', tKey: 'settings.appearance', icon: Palette },
+  { id: 'integrations', tKey: 'settings.integrations', icon: Plug },
+  { id: 'brand-rules', tKey: 'settings.brandRules', icon: FileText },
+  { id: 'validation', tKey: 'settings.validation', icon: ShieldCheck },
 ];
 
 export function SettingsSubNav() {
@@ -30,6 +31,7 @@ export function SettingsSubNav() {
   const { data: isDeveloper } = useDeveloperAccess();
   const { data: feedbackList } = useChatFeedbackTriage(isDeveloper === true);
   const newFeedbackCount = (feedbackList ?? []).filter((f) => f.status === 'new').length;
+  const { t } = useTranslation('navigation');
 
   return (
     <div data-testid="settings-subnav" className="w-[200px] flex-shrink-0 border-r border-gray-200 p-4 space-y-1">
@@ -49,7 +51,7 @@ export function SettingsSubNav() {
             }`}
           >
             <Icon className="w-4 h-4" />
-            {item.label}
+            {t(item.tKey)}
           </button>
         );
       })}

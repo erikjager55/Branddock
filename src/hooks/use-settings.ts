@@ -400,10 +400,11 @@ export function useConnectNotificationChannel() {
 
 // ─── Appearance Hooks ───────────────────────────────────────
 
-export function useAppearance() {
+export function useAppearance(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: settingsKeys.appearance(),
     queryFn: fetchAppearance,
+    enabled: options?.enabled ?? true,
   });
 }
 

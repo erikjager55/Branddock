@@ -5,7 +5,7 @@ fase: pre-launch
 priority: now
 effort: 2-3 weken (foundation ~1 wk + chrome-extractie + selector)
 owner: claude-code
-status: open
+status: in-progress
 created: 2026-06-28
 completed: -
 related-adr: docs/adr/2026-06-28-multilingual-i18n-and-multi-market-content.md
@@ -79,3 +79,9 @@ Zet een client-side i18next-runtime op (provider in `src/app/page.tsx` wrappend 
 - Runtime-keuze (i18next) en de twee-assen-scheiding zijn vastgelegd in de ADR. De `t()`/provider-grens bewust wisselbaar houden.
 - Auto-detect uit `navigator.language` is een eenmalige seed (nooit ongoing override).
 - Optie-set van deze selector = de set geshipte UI-bundles, los van de content-talenlijst.
+
+# Status 2026-06-30 — increment 1 geland (branch `feat/i18n-ui-foundation`)
+
+**✅ Gedaan**: i18next-runtime (`src/lib/ui-i18n/`), provider in `layout.tsx` (server-seed via cookie → `initialLocale`, `useState`-lazy-instance, geen hydration-flash), `LocaleReconciler` (DB-pref na login), **Display-language**-selector (`AppearanceTab`, vervangt placeholder), zod `z.enum(SHIPPED_LOCALES)` + read-time-normalisatie, getypeerde keys, en↔nl chrome live vertaald (SettingsSubNav 9 tabs + TopNav + sidebar Settings/Help), scoped ESLint-guard (bewezen), separation-smoke 3/3, dode `AppearanceSettingsPage.tsx` verwijderd. tsc 0 / lint 0 / build groen. Ge-finalized via 2-ronde 2-subagent review-loop (0 CRITICAL; 4 WARNING totaal gefixt). Changelog #349.
+
+**⏳ Resterend (status blijft `in-progress`)**: data-driven `SIDEBAR_NAV`-labels (gedeelde constant), `AuthPage`, per-pagina `PageHeader`-titels, `format.ts` + ~171 `toLocale*`-sites, feature-namespace-extractie, de AI-vertaalpipeline (`[[i18n-ai-translation-pipeline]]`). MINOR-polish uit de review: `tKey`-union-typing, expliciete query-error-state, `doneRef` cross-user-switch-edge.

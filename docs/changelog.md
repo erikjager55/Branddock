@@ -37,6 +37,21 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-06
 
+### 349. Meertaligheid Fase 1 — i18next UI-runtime + Display-language selector (per gebruiker)
+
+Eerste increment van het meertaligheid-programma (ADR 2026-06-28): een client-side **i18next**-runtime voor de UI-taal die de gebruiker *leest*, strikt gescheiden van de content-locale (de taal waarin de AI *schrijft*). De provider wordt in `layout.tsx` gemount — de server leest de `branddock-ui-locale`-cookie via `next/headers cookies()` en geeft `initialLocale` door aan een client-`I18nProvider` (één instance per request via `useState`-lazy-init, geen singleton-bleed), zodat `<html lang>` en de eerste paint geen hydration-flash geven. Een nieuwe **Display-language**-selector (`AppearanceTab`, vervangt de "coming soon"-placeholder) schrijft de bestaande per-user `AppearancePreference.language` + cookie + `i18n.changeLanguage`; `LocaleReconciler` reconcilieert na login naar de DB-pref. App-chrome live vertaald (en↔nl): de 9 settings-tab-labels, TopNav (Quick Content / Brand Assistant / Search / Notifications) en de sidebar (Settings / Help & Support). Getypeerde keys (`react-i18next.d.ts`, geen `any`), zod `/api/settings/appearance` verstrakt naar `z.enum(SHIPPED_LOCALES)` + read-time-normalisatie, en de verweesde `AppearanceSettingsPage.tsx` verwijderd. Een **scoped ESLint-guard** verbiedt nieuwe hardcoded strings in gemigreerde files (allowlist die meegroeit), en een separation-smoke bewijst dat `src/lib/ai/**` de UI-locale-laag nooit aanraakt.
+
+**Finalize review-loop** — 2 ronden 2-subagent parallel review: ronde 1 → 0 CRITICAL, 3 WARNING gefixt (React 19 ref-during-render → `useState`-lazy-init; enum-divergentie → dode orphan verwijderd; loading-state); ronde 2 → 0 CRITICAL, 1 WARNING gefixt (read-time-locale-normalisatie in de GET-route). MINORs (tKey-union-typing, query-error-state, doneRef cross-user-edge) gedocumenteerd als follow-up.
+
+**Quality gates**: tsc 0 errors, lint 0 errors (incl. de nieuwe guard, bewezen via probe), separation-smoke 3/3, build groen.
+
+**Bewust uitgesteld** (increment 1 van een meervoudige task): de data-driven `SIDEBAR_NAV`-labels, `AuthPage`, per-pagina `PageHeader`-titels, `format.ts` + de ~171 `toLocale*`-datum/getal-sites, de feature-namespace-extractie, en de automatische AI-vertaalpipeline (nl-chrome is hand-geseed om de live-switch te bewijzen).
+
+- Task: [tasks/i18n-ui-foundation.md](../tasks/i18n-ui-foundation.md) (in-progress — increment 1)
+- ADR: [adr/2026-06-28-multilingual-i18n-and-multi-market-content.md](adr/2026-06-28-multilingual-i18n-and-multi-market-content.md)
+- Spec: -
+- Commit: PENDING
+
 ### 348. Security — MEDIUM/LOW-cluster: RBAC-gaten + prototype-pollution + crypto/header hardening
 
 Sluitstuk van de pre-launch security-audit (na #345/#346/#347). **RBAC**: invite-routes valideren `role` tegen een enum en laten alléén een owner een `owner` inviten — beide live routes gepatcht (`/api/organization/invite` + de échte UI-route `/api/settings/team/invite`, die `role: z.string()` verbatim opsloeg → admin→owner-escalatie via de accept-route; gevonden in review-ronde 1). `/api/workspace/export` en Claw `confirm` achter `requireWorkspaceRole` (viewer kon de hele workspace + interviewee-PII exfiltreren, resp. muteren via de agent). **Prototype-pollution**: `deepSet` weigert `__proto__`/`constructor`/`prototype`-segmenten (raakt het LLM-gevoede `update_asset_framework`-pad). **Hardening**: CSP-header (`frame-ancestors`/`object-src`/`base-uri`/`form-action`) in `proxy.ts`, GCM `authTagLength` op beide `createDecipheriv`, en `timingSafeEqual` op het webhook-Bearer-secret. Ge-finalized via 2-ronde 2-subagent review-loop; ronde-2 "CRITICAL" (native Better Auth `invite-member`) bleek een geverifieerde false-positive (library-guard crud-invites.mjs:123 blokkeert admin→owner al). Smoke `security-medium.ts` 7/7, tsc 0, lint 0, build groen. Restscope (L4/L6/L9 + Zod-sweep) gedocumenteerd.
