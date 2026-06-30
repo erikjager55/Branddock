@@ -1,10 +1,10 @@
 ---
 id: 2026-05-08-locale-routing-brand-voice
 title: Per-brand locale-routing via BrandVoiceguide.contentLocale voor heuristiek-pakket-selectie
-status: accepted
+status: superseded
 date: 2026-05-08
 supersedes: -
-superseded-by: -
+superseded-by: 2026-06-28-multilingual-i18n-and-multi-market-content
 ---
 
 # Context
