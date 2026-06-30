@@ -6,7 +6,7 @@
 
 import * as cheerio from 'cheerio';
 import type { AnyNode } from 'domhandler';
-import { assertSafeUrl, assertSafeRedirect } from '@/lib/utils/ssrf';
+import { safeFetch } from '@/lib/utils/ssrf';
 import {
   isTrackingPixel,
   resolveImageUrl,
@@ -189,16 +189,14 @@ function rankStylesheets(links: Array<{ href: string; id: string }>): string[] {
  * - Body text content for tone analysis
  */
 export async function scrapeUrl(url: string): Promise<ScrapedData> {
-  // SSRF protection: block private IPs + DNS-rebind
-  await assertSafeUrl(url);
-
-  // Fetch HTML with retry on timeout/network errors (max 2 attempts)
+  // Fetch HTML with retry on timeout/network errors (max 2 attempts).
+  // safeFetch validates the URL + every redirect hop (block private/DNS-rebind, H1).
   let response: Response | null = null;
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      response = await fetch(url, {
+      response = await safeFetch(url, {
         headers: {
           'User-Agent': CHROME_USER_AGENT,
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -211,7 +209,6 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
           'Cache-Control': 'no-cache',
         },
         signal: AbortSignal.timeout(30000),
-        redirect: 'follow',
       });
       lastError = null;
       break;
@@ -234,9 +231,6 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
         : `Failed to fetch URL: ${msg}`,
     );
   }
-
-  // Check for SSRF after redirect
-  await assertSafeRedirect(url, response.url);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
@@ -290,13 +284,11 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
         const cssUrl = cssHref.startsWith('http')
           ? cssHref
           : new URL(cssHref, baseUrl).toString();
-        // SSRF protection on linked stylesheet URLs
-        await assertSafeUrl(cssUrl);
-        const cssResponse = await fetch(cssUrl, {
+        // SSRF protection on linked stylesheet URLs (incl. per-hop redirect, H1)
+        const cssResponse = await safeFetch(cssUrl, {
           headers: { 'User-Agent': CHROME_USER_AGENT },
           signal: AbortSignal.timeout(8000),
         });
-        await assertSafeRedirect(cssUrl, cssResponse.url); // post-redirect (H1)
         if (cssResponse.ok) return await cssResponse.text();
       } catch {
         // Skip failed CSS fetches (including SSRF blocks, timeouts)

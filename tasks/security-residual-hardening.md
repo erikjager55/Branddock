@@ -29,6 +29,13 @@ Cluster van losse, grotendeels chirurgische edits — zelfde patronen als #348 (
 - [ ] **L9** — `ad-tokens/encryption`: version-prefix + rotatie-pad; convergeer op het versioned `token-crypto`-contract (één crypto-helper-shape voor alle encrypted tokens i.p.v. twee divergerende implementaties).
 - [ ] **Zod-coverage-sweep** — mutatie-routes (POST/PATCH/DELETE) zonder body-validatie (~48% bij de audit). Minstens de niet-param-only routes een `safeParse`-schema geven. Inventariseer eerst, fix dan in batches.
 
+**SSRF-convergentie (uit H1-task `security-h1-ssrf-guard`) — AFGEROND in #350**
+- [x] **`fetch-with-limit.ts` → `safeFetch`** — gemigreerd (16 callers, signature ongewijzigd). Plus de 3 resterende raw-fetch-paden ontdekt in review en óók geconverteerd: `media/import-url` (entry-probe), `media/stock/import` (user-URL, had géén SSRF-validatie), `export/proxy-image` (allowlisted). `assertSafeRedirect` is nu dood en verwijderd. Geen oude-patroon-fetch meer in `src/app`/`src/lib`.
+- [x] **Rate-limit** — `checkGenericRateLimit` (429 + Retry-After) op `website-scanner` (10/min/workspace), `claw/scrape` (20/min/user), `briefing-sources/parse-url` (20/min/workspace).
+- [x] **byte-cap** — `products/url-scraper` leest de body via `readBodyWithCap` (10MB stream-cap, OOM-defense) i.p.v. `.text()`.
+- [x] **`safeFetch` 307/308** — 303 (+301/302 op non-GET) → bodyless GET-downgrade; 307/308 behoudt method+body (fetch-spec).
+- [ ] **`image-scraper` + `knowledge-research/search`** — overweeg upgrade van sync `isPrivateHostname` naar `assertSafeUrl`/`safeFetch` (lager risico; geen DNS-resolve nu). _(blijft open)_
+
 **MINORs (finalize-review #348)**
 - [ ] **CSP-bron consolideren** — CSP staat nu zowel in `src/proxy.ts` als `next.config.ts` (waarden komen overeen, browser enforce't de intersectie). Eén bron-of-truth kiezen om een toekomstige drift-trap te voorkomen. Overweeg meteen een nonce-based `script-src` (de #348-CSP liet die bewust weg om Next-inline-scripts niet te breken).
 - [ ] **Dubbele workspace-resolutie** — `src/app/api/claw/confirm/route.ts` roept `resolveWorkspaceId()` + `getServerSession()` aan én opnieuw intern via `requireWorkspaceRole()`. Gebruik de `workspaceId` uit het `requireWorkspaceRole`-resultaat en laat de losse calls vervallen (2-3 minder DB/session-roundtrips per request).

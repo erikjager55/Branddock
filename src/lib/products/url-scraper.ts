@@ -3,13 +3,17 @@
 // =============================================================
 
 import * as cheerio from 'cheerio';
-import { assertSafeUrl, assertSafeRedirect } from '@/lib/utils/ssrf';
+import { safeFetch, readBodyWithCap } from '@/lib/utils/ssrf';
 import {
   isTrackingPixel,
   resolveImageUrl,
   bestFromSrcset,
   addImageSafe,
 } from '@/lib/utils/image-scraper';
+
+// Streaming byte-cap: abort a response once it exceeds this, so a malicious
+// multi-GB target can't OOM the server before the (char-based) cheerio cap runs.
+const HTML_BYTE_CAP = 10 * 1024 * 1024; // 10 MB
 
 export interface ScrapedImage {
   url: string;
@@ -187,17 +191,11 @@ function findProductImages(
  * Scrape a URL and extract product-relevant text content + images.
  */
 export async function scrapeProductUrl(url: string): Promise<ScrapedProductData> {
-  // SSRF: block private IPs + DNS-rebind (H1).
-  await assertSafeUrl(url);
-
-  const response = await fetch(url, {
+  // SSRF: block private IPs + DNS-rebind + per-hop redirect re-validation (H1).
+  const response = await safeFetch(url, {
     headers: BROWSER_HEADERS,
     signal: AbortSignal.timeout(15000),
-    redirect: 'follow',
   });
-
-  // Check for SSRF after redirect — fetch may have followed a redirect to a private IP
-  await assertSafeRedirect(url, response.url);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
@@ -208,7 +206,7 @@ export async function scrapeProductUrl(url: string): Promise<ScrapedProductData>
     throw new Error('URL does not return HTML content');
   }
 
-  const html = await response.text();
+  const html = await readBodyWithCap(response, HTML_BYTE_CAP);
   const $ = cheerio.load(html);
 
   // Extract metadata
@@ -259,17 +257,11 @@ export async function fetchAndParse(url: string): Promise<{
   title: string | null;
   description: string | null;
 }> {
-  // SSRF: block private IPs + DNS-rebind (H1).
-  await assertSafeUrl(url);
-
-  const response = await fetch(url, {
+  // SSRF: block private IPs + DNS-rebind + per-hop redirect re-validation (H1).
+  const response = await safeFetch(url, {
     headers: BROWSER_HEADERS,
     signal: AbortSignal.timeout(15000),
-    redirect: 'follow',
   });
-
-  // Check for SSRF after redirect (H1).
-  await assertSafeRedirect(url, response.url);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
@@ -280,7 +272,7 @@ export async function fetchAndParse(url: string): Promise<{
     throw new Error('URL does not return HTML content');
   }
 
-  let html = await response.text();
+  let html = await readBodyWithCap(response, HTML_BYTE_CAP);
 
   // Cap HTML size to prevent cheerio from choking on huge pages (>500KB)
   const MAX_HTML_SIZE = 500_000;

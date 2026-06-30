@@ -23,7 +23,7 @@
 // =============================================================
 
 import sharp from 'sharp';
-import { assertSafeUrl, assertSafeRedirect } from '@/lib/utils/ssrf';
+import { safeFetch } from '@/lib/utils/ssrf';
 
 // ─── Types ────────────────────────────────────────────
 
@@ -72,25 +72,13 @@ export async function extractLogoColors(logoUrl: string): Promise<LogoColor[]> {
   // Skip non-fetchable placeholders emitted by findLogoUrls (e.g. '[SVG logo found in HTML]').
   if (!/^https?:\/\//i.test(logoUrl)) return [];
 
-  try {
-    await assertSafeUrl(logoUrl);
-  } catch {
-    return [];
-  }
-
+  // safeFetch validates the URL + every redirect hop (block private/DNS-rebind, H1).
   let response: Response;
   try {
-    response = await fetch(logoUrl, {
+    response = await safeFetch(logoUrl, {
       headers: { 'User-Agent': CHROME_USER_AGENT, Accept: 'image/*,*/*;q=0.8' },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      redirect: 'follow',
     });
-  } catch {
-    return [];
-  }
-
-  try {
-    await assertSafeRedirect(logoUrl, response.url);
   } catch {
     return [];
   }

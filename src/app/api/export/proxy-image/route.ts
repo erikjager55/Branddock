@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
-import { assertSafeUrl, assertSafeRedirect } from "@/lib/utils/ssrf";
+import { assertSafeUrl, safeFetch } from "@/lib/utils/ssrf";
 
 // =============================================================
 // GET /api/export/proxy-image?url=xxx
@@ -14,7 +14,7 @@ import { assertSafeUrl, assertSafeRedirect } from "@/lib/utils/ssrf";
 // - URL must be whitelisted against the current workspace
 //   (BrandStyleguide logo variations, Persona avatars,
 //   Product images, Competitor logos)
-// - SSRF protection via assertSafeUrl + assertSafeRedirect
+// - SSRF protection via assertSafeUrl + safeFetch (per-hop redirect validation)
 // - 10MB size cap
 // - Only image/* content types returned
 // =============================================================
@@ -98,8 +98,8 @@ export async function GET(request: NextRequest) {
 
     let response: Response;
     try {
-      response = await fetch(targetUrl, {
-        redirect: "follow",
+      // safeFetch validates targetUrl + every redirect hop before connecting (SSRF, H1).
+      response = await safeFetch(targetUrl, {
         signal: controller.signal,
       });
     } finally {
@@ -111,13 +111,6 @@ export async function GET(request: NextRequest) {
         { error: `Upstream returned ${response.status}` },
         { status: 502 },
       );
-    }
-
-    // SSRF redirect check
-    try {
-      await assertSafeRedirect(targetUrl, response.url);
-    } catch {
-      return NextResponse.json({ error: "Redirected to unsafe URL" }, { status: 400 });
     }
 
     // Content-Type must be image/*

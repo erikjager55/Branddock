@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
 import { startScanPipeline } from '@/lib/website-scanner/scanner-pipeline';
+import { checkGenericRateLimit } from '@/lib/ai/rate-limiter';
+
+// Each scan triggers a full outbound fetch pipeline — cap per workspace so an
+// account can't hammer the scanner (DoS / SSRF-probe amplification).
+const SCAN_MAX_PER_WINDOW = 10;
+const SCAN_WINDOW_MS = 60_000;
 
 /**
  * POST /api/website-scanner — Start a new website scan.
@@ -17,6 +23,14 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rate = await checkGenericRateLimit(`website-scan:${workspaceId}`, SCAN_MAX_PER_WINDOW, SCAN_WINDOW_MS);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please wait before starting another scan.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rate.resetAt.getTime() - Date.now()) / 1000)) } },
+      );
     }
 
     const userId = session.user.id;

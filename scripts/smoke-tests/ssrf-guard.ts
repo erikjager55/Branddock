@@ -4,7 +4,7 @@
 //
 //   npx tsx scripts/smoke-tests/ssrf-guard.ts
 
-import { isPrivateIp, isPrivateHostname, assertSafeUrl } from "@/lib/utils/ssrf";
+import { isPrivateIp, isPrivateHostname, assertSafeUrl, safeFetch } from "@/lib/utils/ssrf";
 
 let pass = 0;
 let fail = 0;
@@ -61,6 +61,111 @@ async function main() {
   // Allow: public IP literals (no DNS needed → deterministic offline).
   for (const u of ["http://8.8.8.8/", "https://1.1.1.1/"]) {
     ok(`assertSafeUrl allows ${u}`, await allows(u));
+  }
+
+  // ── safeFetch: per-hop redirect re-validation (H1 punt 1) ──────
+  // Scripted fetch so it's deterministic + offline. Only IP literals are used
+  // as entry points (no DNS). The security property under test: a redirect to a
+  // private/metadata host is rejected BEFORE that host is ever connected to.
+  const realFetch = globalThis.fetch;
+  const fetched: string[] = [];
+  const seenAuth: Array<{ url: string; auth: string | null }> = [];
+  const seenReq: Array<{ url: string; method: string; hasBody: boolean }> = [];
+  function mockResponse(status: number, location: string | null, type = "default"): Response {
+    return {
+      type,
+      status,
+      ok: status >= 200 && status < 300,
+      headers: { get: (k: string) => (k.toLowerCase() === "location" ? location : null) },
+    } as unknown as Response;
+  }
+  function installFetch(script: (url: string) => Response) {
+    globalThis.fetch = ((input: string | URL | Request, reqInit?: RequestInit) => {
+      const u = typeof input === "string" ? input : input.toString();
+      fetched.push(u);
+      seenAuth.push({ url: u, auth: new Headers(reqInit?.headers).get("authorization") });
+      seenReq.push({ url: u, method: (reqInit?.method ?? "GET").toUpperCase(), hasBody: reqInit?.body != null });
+      return Promise.resolve(script(u));
+    }) as unknown as typeof fetch;
+  }
+  try {
+    // 1. redirect → IMDS is blocked, and the private host is NEVER fetched.
+    fetched.length = 0;
+    installFetch((u) =>
+      u === "http://8.8.8.8/"
+        ? mockResponse(302, "http://169.254.169.254/latest/meta-data/")
+        : mockResponse(200, null),
+    );
+    let blocked = false;
+    try { await safeFetch("http://8.8.8.8/"); } catch { blocked = true; }
+    ok("safeFetch blocks redirect → IMDS", blocked);
+    ok("safeFetch never connects to the private redirect target",
+      !fetched.some((u) => u.includes("169.254.169.254")));
+
+    // 2. redirect → public host is followed to the final 200.
+    fetched.length = 0;
+    installFetch((u) =>
+      u === "http://1.1.1.1/" ? mockResponse(301, "http://8.8.8.8/final") : mockResponse(200, null),
+    );
+    let followed = false;
+    try { followed = (await safeFetch("http://1.1.1.1/")).status === 200; } catch { followed = false; }
+    ok("safeFetch follows redirect → public host", followed);
+
+    // 3. opaque redirect (Location unreadable) fails closed.
+    fetched.length = 0;
+    installFetch(() => mockResponse(0, null, "opaqueredirect"));
+    let opaque = false;
+    try { await safeFetch("http://8.8.8.8/"); } catch { opaque = true; }
+    ok("safeFetch fails closed on opaque redirect", opaque);
+
+    // 4. an endless redirect loop throws (no infinite hang).
+    fetched.length = 0;
+    installFetch(() => mockResponse(302, "http://8.8.8.8/next"));
+    let tooMany = false;
+    try { await safeFetch("http://8.8.8.8/", { maxRedirects: 3 }); } catch { tooMany = true; }
+    ok("safeFetch throws on too many redirects", tooMany);
+
+    // 5. credential headers are stripped once a redirect leaves the original origin.
+    fetched.length = 0; seenAuth.length = 0;
+    installFetch((u) =>
+      u === "http://8.8.8.8/" ? mockResponse(302, "http://1.1.1.1/final") : mockResponse(200, null),
+    );
+    try { await safeFetch("http://8.8.8.8/", { headers: { Authorization: "Bearer secret" } }); } catch { /* ignore */ }
+    ok("safeFetch keeps Authorization on the original origin",
+      seenAuth.find((s) => s.url === "http://8.8.8.8/")?.auth === "Bearer secret");
+    ok("safeFetch strips Authorization on cross-origin redirect",
+      !seenAuth.find((s) => s.url === "http://1.1.1.1/final")?.auth);
+
+    // 6. same-origin redirect keeps the credential header.
+    fetched.length = 0; seenAuth.length = 0;
+    installFetch((u) =>
+      u === "http://8.8.8.8/" ? mockResponse(302, "http://8.8.8.8/next") : mockResponse(200, null),
+    );
+    try { await safeFetch("http://8.8.8.8/", { headers: { Authorization: "Bearer secret" } }); } catch { /* ignore */ }
+    ok("safeFetch keeps Authorization across same-origin redirect",
+      seenAuth.length === 2 && seenAuth.every((s) => s.auth === "Bearer secret"));
+
+    // 7. a 303 re-issues the next hop as a bodyless GET (POST→GET downgrade).
+    fetched.length = 0; seenReq.length = 0;
+    installFetch((u) =>
+      u === "http://8.8.8.8/" ? mockResponse(303, "http://8.8.8.8/result") : mockResponse(200, null),
+    );
+    try { await safeFetch("http://8.8.8.8/", { method: "POST", body: "payload" }); } catch { /* ignore */ }
+    ok("safeFetch keeps POST+body on the original request",
+      seenReq[0]?.method === "POST" && seenReq[0]?.hasBody === true);
+    ok("safeFetch downgrades 303 to a bodyless GET",
+      seenReq[1]?.method === "GET" && seenReq[1]?.hasBody === false);
+
+    // 8. a 307 preserves method + body across the redirect.
+    fetched.length = 0; seenReq.length = 0;
+    installFetch((u) =>
+      u === "http://8.8.8.8/" ? mockResponse(307, "http://8.8.8.8/again") : mockResponse(200, null),
+    );
+    try { await safeFetch("http://8.8.8.8/", { method: "POST", body: "payload" }); } catch { /* ignore */ }
+    ok("safeFetch preserves POST+body across a 307",
+      seenReq.length === 2 && seenReq.every((r) => r.method === "POST" && r.hasBody === true));
+  } finally {
+    globalThis.fetch = realFetch;
   }
 
   console.log(`\nSSRF-guard: ${pass} passed, ${fail} failed`);

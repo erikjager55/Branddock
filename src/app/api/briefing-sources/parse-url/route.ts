@@ -17,8 +17,13 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { fetchAndParse } from '@/lib/products/url-scraper';
+import { checkGenericRateLimit } from '@/lib/ai/rate-limiter';
 
 export const maxDuration = 30;
+
+// Each call makes an outbound fetch — cap per workspace (DoS / SSRF-probe).
+const PARSE_MAX_PER_WINDOW = 20;
+const PARSE_WINDOW_MS = 60_000;
 
 const bodySchema = z.object({
   url: z.string().url().max(2048),
@@ -32,6 +37,14 @@ export async function POST(request: Request) {
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rate = await checkGenericRateLimit(`briefing-parse:${workspaceId}`, PARSE_MAX_PER_WINDOW, PARSE_WINDOW_MS);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please wait a moment.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rate.resetAt.getTime() - Date.now()) / 1000)) } },
+      );
     }
 
     const raw = await request.json();

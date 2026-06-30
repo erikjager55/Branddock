@@ -9,7 +9,7 @@
 // singleton AI-clients.
 // =============================================================
 import { createHash } from "node:crypto";
-import { assertSafeUrl, assertSafeRedirect } from "@/lib/utils/ssrf";
+import { safeFetch } from "@/lib/utils/ssrf";
 import type { FetchFn } from "./types";
 
 /** Eerlijke, Branddock-identificerende UA (geen Chrome-spoof — robots-compliant). */
@@ -84,14 +84,12 @@ async function rawFetch(
   opts?: { signal?: AbortSignal; timeoutMs?: number },
 ): Promise<Response | null> {
   try {
-    await assertSafeUrl(url);
     await throttleHost(new URL(url).host);
-    const res = await fetch(url, {
+    // safeFetch validates the URL + every redirect hop (block private/DNS-rebind, H1).
+    const res = await safeFetch(url, {
       headers: { "User-Agent": USER_AGENT, Accept: "*/*" },
-      redirect: "follow",
       signal: combinedSignal(opts?.signal, opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS),
     });
-    await assertSafeRedirect(url, res.url);
     return res.ok ? res : null;
   } catch {
     return null;
