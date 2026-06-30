@@ -22,7 +22,7 @@ import * as cheerio from 'cheerio';
 import { scrapeUrl, type ScrapedData, type CssVariable, type ColorFrequency } from './url-scraper';
 import { discoverInternalLinks } from '@/lib/products/url-scraper';
 import { classifyAndPrioritize } from '@/lib/website-scanner/page-classifier';
-import { assertSafeUrl, assertSafeRedirect } from '@/lib/utils/ssrf';
+import { safeFetch } from '@/lib/utils/ssrf';
 
 export function isMultiPageEnabled(): boolean {
   return process.env.BRANDSTYLE_MULTI_PAGE === '1';
@@ -115,16 +115,14 @@ async function discoverInternalLinksFromHomepage(
   _homepage: ScrapedData,
 ): Promise<string[]> {
   try {
-    await assertSafeUrl(url); // SSRF guard on the re-fetch (H1)
-    const res = await fetch(url, {
+    // safeFetch validates the URL + every redirect hop (block private/DNS-rebind, H1).
+    const res = await safeFetch(url, {
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
       },
       signal: AbortSignal.timeout(10_000),
-      redirect: 'follow',
     });
-    await assertSafeRedirect(url, res.url); // re-validate post-redirect (H1)
     if (!res.ok) return [];
     const html = await res.text();
     const $ = cheerio.load(html);
