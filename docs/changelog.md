@@ -50,7 +50,7 @@ Eerste increment van het meertaligheid-programma (ADR 2026-06-28): een client-si
 - Task: [tasks/i18n-ui-foundation.md](../tasks/i18n-ui-foundation.md) (in-progress — increment 1)
 - ADR: [adr/2026-06-28-multilingual-i18n-and-multi-market-content.md](adr/2026-06-28-multilingual-i18n-and-multi-market-content.md)
 - Spec: -
-- Commit: PENDING
+- Commit: `6dff2424`
 
 ### 348. Security — MEDIUM/LOW-cluster: RBAC-gaten + prototype-pollution + crypto/header hardening
 
