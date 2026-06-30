@@ -153,6 +153,64 @@ export async function assertSafeRedirect(originalUrl: string, responseUrl: strin
   await assertSafeUrl(responseUrl);
 }
 
+/** Max redirect hops `safeFetch` will follow before failing closed. */
+const SAFE_FETCH_MAX_REDIRECTS = 5;
+
+/** Credential headers that must NOT cross an origin boundary on a redirect. */
+const CREDENTIAL_HEADERS = ["authorization", "cookie", "proxy-authorization"];
+
+/**
+ * SSRF-safe drop-in for `fetch`. Validates EVERY hop instead of post-hoc:
+ * forces `redirect: 'manual'` and re-runs {@link assertSafeUrl} before each
+ * request, so a redirect to a private/metadata host is rejected BEFORE the
+ * connection is made (plain `redirect: 'follow'` + a trailing check still lets
+ * the redirect request fire against the internal target — a blind-SSRF window).
+ *
+ * Credential headers (Authorization/Cookie/Proxy-Authorization) are stripped as
+ * soon as a redirect leaves the original origin — mirrors the fetch spec, so a
+ * caller's auth token can't leak to a redirect-controlled third-party host.
+ *
+ * Returns the first non-redirect `Response` (body untouched, caller reads it).
+ * Throws on: unsafe URL/redirect target, opaque redirect (Location unreadable),
+ * a 3xx without Location, or exceeding `maxRedirects`.
+ *
+ * Pass-through `init` is forwarded except `redirect` (always `'manual'`) and the
+ * credential-header stripping above. ASYNC — callers MUST await.
+ */
+export async function safeFetch(
+  url: string,
+  init: RequestInit & { maxRedirects?: number } = {},
+): Promise<Response> {
+  const { maxRedirects = SAFE_FETCH_MAX_REDIRECTS, headers, ...rest } = init;
+  const headerBag = new Headers(headers);
+  const originalOrigin = new URL(url).origin;
+  let currentUrl = url;
+  for (let hop = 0; hop <= maxRedirects; hop++) {
+    await assertSafeUrl(currentUrl);
+    // Once a redirect leaves the original origin, drop credential headers so a
+    // caller's Authorization/Cookie can't be forwarded to a third-party host.
+    if (new URL(currentUrl).origin !== originalOrigin) {
+      for (const h of CREDENTIAL_HEADERS) headerBag.delete(h);
+    }
+    const response = await fetch(currentUrl, { ...rest, headers: headerBag, redirect: "manual" });
+    // Some runtimes return an opaque redirect (status 0, Location unreadable)
+    // instead of a raw 3xx — fail closed rather than silently follow it.
+    if (response.type === "opaqueredirect") {
+      throw new Error("safeFetch: opaque redirect (Location header not readable in this runtime)");
+    }
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      // A 3xx without Location can't be followed — hand it back to the caller
+      // (its `!response.ok` branch will handle it).
+      if (!location) return response;
+      currentUrl = new URL(location, currentUrl).toString();
+      continue;
+    }
+    return response;
+  }
+  throw new Error(`safeFetch: too many redirects (>${maxRedirects})`);
+}
+
 /**
  * Stream a response body and abort when the cumulative byte-count exceeds `byteCap`.
  * Defense against OOM from a malicious/huge target. Returns the decoded text.

@@ -5,9 +5,9 @@ fase: pre-launch
 priority: next
 effort: 1-2 dagen
 owner: claude-code
-status: in-progress
+status: done
 created: 2026-06-26
-completed: -
+completed: 2026-06-30
 related-adr: -
 related-spec: docs/audits/2026-06-26-security-audit.md
 worktree: -
@@ -60,6 +60,17 @@ Unit-test `assertSafeUrl`/`isPrivateHostname` tegen de payload-set uit de audit 
 - Rate-limit + streaming byte-cap op `website-scanner`/`claw/scrape`/`briefing-sources/parse-url` (nu 0).
 - `image-scraper` + `knowledge-research/search` blijven bewust op de sync `isPrivateHostname` (krijgen de F1-hardening automatisch; geen DNS-resolve — lager risico predicate/redirect-check).
 
+# Status 2026-06-30 (punt 1 afgerond — H1 DONE, branch `fix/security-h1-safefetch-redirects`)
+
+**✅ Punt 1 — per-hop redirect-revalidatie**: nieuwe `safeFetch()` in `ssrf.ts` forceert `redirect:'manual'` + revalideert élke hop met `assertSafeUrl` vóór de connectie (sluit het blind-SSRF-venster dat `redirect:'follow'` + post-hoc `assertSafeRedirect` openliet). Gewired op alle 7 scraper-fetches: products/url-scraper (x2), brandstyle/url-scraper (HTML + CSS), logo-color-extractor, multi-page-scraper, competitors/fetch-policy, media/import-scraped-image. Plus credential-header-stripping (Authorization/Cookie) op cross-origin redirects (review-finding, defense-in-depth voor toekomstige callers). Smoke `ssrf-guard.ts` 62/62; tsc 0, lint 0, build groen (op `7cf50617`). Ge-finalized via 2-subagent review (beide ready-to-merge).
+
+**⏳ Resterend residu → verplaatst naar [[security-residual-hardening]]**:
+- `src/lib/security/fetch-with-limit.ts` — zelfde oude patroon (default-follow + post-hoc) én geen entry-`assertSafeUrl`; logische volgende `safeFetch`-conversie (review-finding reviewer B). 16 call-sites.
+- Rate-limit + byte-cap op `website-scanner`/`claw/scrape`/`briefing-sources/parse-url` (nu 0).
+- `image-scraper` + `knowledge-research/search` bewust op sync `isPrivateHostname` (lager risico).
+- `safeFetch` 307/308 method+body-resend (latent; alle huidige callers zijn GET).
+
 # Notes
 
 - Bron: security-audit 2026-06-26 §SSRF (F1-F7). `external-content-ingest.ts` was de referentie; is nu DRY'd op de gedeelde guard.
+- Punt 1 (`safeFetch`) afgerond 2026-06-30 in geïsoleerde worktree (parallelle i18n-sessie hield de hoofd-working-tree bezet).
