@@ -64,7 +64,7 @@ Pilot-start projectie: **+9-11 weken** (content-test verbeterplan Optie B Full g
 
 1. **Track C activeren — `vercel-deployment`** (3d) — worktree `branddock-launch` staat **current op main** (ge-synct 2026-06-26), dus direct startklaar. Hard launch-blocker. Ontgrendelt `pilot-onboarding-better-brands` (2d) én `Phase C Vercel Cron` van Track B.
 
-2. **content-items-test-coverage Ronde 1 — 8 representanten** (~1d, `in-progress`) — blog-post / linkedin-post / search-ad / newsletter / landing-page / explainer-video / one-pager / press-release. STOP-GATE is genomen (effie-fix gemerged), kan hervatten. Effie-fix mee-verifiëren via DOM grep `/effie/gi` per representant op Strategy-step.
+2. **content-items-test-coverage — Ronde 1 varianten** (~2-3d, `in-progress`) — representanten AFGEROND 2026-07-01 (6/8 passed op Napking, 0 bugs; newsletter + press-release geskipt want `hidden:true` in de picker). Effie-fix runtime-herbevestigd (grep=null). Volgende: 45 varianten. Werk op worktree `branddock-content-ronde1` (branch `fix/content-items-ronde1` vanaf main). ⚠️ Los aandachtspunt uit de sweep: newsletter + de hele **Email-categorie** + press-release zijn uit de Add-Content-picker — bij de varianten-ronde checken of dat bewust (deprecated) is of een regressie.
 
 3. **Track B Phase C** (5-7d, in `branddock-brandclaw` worktree) — Vercel Cron weekly + per-workspace concurrency-cap + cost-budget alerts naar PostHog (>$10/ws/maand) + BB pilot smoke met productie-data. **Wacht op vercel-deployment** voor de Cron-config + productie-smoke.
 
