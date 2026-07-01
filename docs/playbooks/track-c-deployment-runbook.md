@@ -12,7 +12,7 @@ Master-document voor pre-launch go-live. Code-side prep is grotendeels gedaan (z
 2. Verify pgvector extension: `CREATE EXTENSION IF NOT EXISTS vector;` in Neon SQL editor.
 3. Connection-string kopieren (Pooled mode aanbevolen voor Vercel serverless).
 4. Lokaal: `DATABASE_URL=<neon-url> npx prisma db push` voor schema-push.
-5. HNSW indexen aanmaken (zie `prisma/CLAUDE.md` voor raw SQL).
+5. Vector-indexen aanmaken (HNSW cosine, idempotent): `DATABASE_URL="<neon-url>" npx tsx scripts/prod/create-vector-indexes.ts` — `prisma db push` maakt deze NIET aan (Prisma beheert het `Unsupported(vector)`-type niet).
 6. Seed niet nodig — pilot draait op user-creëerde data.
 
 ## Fase 2 — Vercel project
