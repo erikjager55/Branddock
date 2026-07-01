@@ -31,11 +31,15 @@ const envSchema = z.object({
   SENTRY_PROJECT: z.string().optional(),
 
   // R2 / object storage (productie uploads)
+  // Canonieke namen matchen de storage-code (src/lib/storage/r2-storage.ts):
+  // R2_BUCKET_NAME + optionele R2_PUBLIC_URL (volledige CDN-base-URL). De oude
+  // R2_BUCKET / R2_PUBLIC_DOMAIN werden door de code NOOIT gelezen → uploads
+  // gingen stil naar de default-bucket zonder public URL.
   R2_ACCOUNT_ID: z.string().optional(),
   R2_ACCESS_KEY_ID: z.string().optional(),
   R2_SECRET_ACCESS_KEY: z.string().optional(),
-  R2_BUCKET: z.string().optional(),
-  R2_PUBLIC_DOMAIN: z.string().optional(),
+  R2_BUCKET_NAME: z.string().optional(),
+  R2_PUBLIC_URL: z.string().url().optional(),
 
   // Optional silent — enrichment and integrations
   ARENA_API_TOKEN: z.string().optional(),

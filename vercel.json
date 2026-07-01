@@ -38,7 +38,7 @@
       "maxDuration": 120
     },
     "src/app/api/campaigns/[id]/bulk-generate/route.ts": {
-      "maxDuration": 300
+      "maxDuration": 600
     },
     "src/app/api/cron/run-jobs/route.ts": {
       "maxDuration": 300

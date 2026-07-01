@@ -44,8 +44,8 @@ Master-document voor pre-launch go-live. Code-side prep is grotendeels gedaan (z
    - `R2_ACCOUNT_ID`
    - `R2_ACCESS_KEY_ID`
    - `R2_SECRET_ACCESS_KEY`
-   - `R2_BUCKET=branddock-uploads`
-   - `R2_PUBLIC_DOMAIN=assets.branddock.com`
+   - `R2_BUCKET_NAME=branddock-uploads`  (code leest `R2_BUCKET_NAME`, NIET `R2_BUCKET`)
+   - `R2_PUBLIC_URL=https://assets.branddock.com`  (volledige URL, NIET los domein `R2_PUBLIC_DOMAIN`)
 5. Test upload via in-app brand-asset image upload na deploy.
 
 ## Fase 4 — Stripe live-mode

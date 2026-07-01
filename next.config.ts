@@ -1,7 +1,18 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
-const r2PublicDomain = process.env.R2_PUBLIC_DOMAIN || 'assets.branddock.com';
+// next/image staat alleen expliciete hostnames toe. De storage-code serveert
+// R2-objecten vanaf R2_PUBLIC_URL (volledige CDN-base-URL, r2-storage.ts) — pak
+// daar de hostname uit i.p.v. een los R2_PUBLIC_DOMAIN dat de code niet leest.
+const r2PublicDomain = (() => {
+  const raw = process.env.R2_PUBLIC_URL;
+  if (!raw) return 'assets.branddock.com';
+  try {
+    return new URL(raw.includes('://') ? raw : `https://${raw}`).hostname;
+  } catch {
+    return raw;
+  }
+})();
 const isProd = process.env.NODE_ENV === 'production';
 
 // ─── Content-Security-Policy ────────────────────────────────
