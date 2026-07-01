@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useCallback, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { updateComponentContent } from '../../../api/canvas.api';
@@ -36,6 +37,7 @@ interface WebPageLayoutProps {
  * from mediumConfigValues in the canvas store.
  */
 export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLayoutProps) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
   const heroImage = useCanvasStore((s) => s.heroImage);
@@ -98,9 +100,9 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
       generate({ instruction: 'Regenerate content applying the updated medium configuration settings.' });
     }
 
-    store.setStepSummary(store.activeStep, { label: 'Web page configured' });
+    store.setStepSummary(store.activeStep, { label: t('webPage.configured') });
     onAdvance();
-  }, [onAdvance, deliverableId, hasExistingContent, generate]);
+  }, [onAdvance, deliverableId, hasExistingContent, generate, t]);
 
   // Separate title / meta from body entries
   const titleEntry = textEntries.find((e) => e.group.toLowerCase() === 'title');
@@ -138,7 +140,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
             ) : (
               <div className="w-full aspect-[4/3] flex flex-col items-center justify-center gap-2 text-gray-400">
                 <ImagePlus className="h-6 w-6" />
-                <span className="text-xs font-medium">Add image</span>
+                <span className="text-xs font-medium">{t('webPage.addImage')}</span>
               </div>
             )}
           </button>
@@ -153,7 +155,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
             <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
               <Play className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xs text-gray-300">Video hero placeholder</span>
+            <span className="text-xs text-gray-300">{t('webPage.videoHeroPlaceholder')}</span>
           </div>
         </div>
       );
@@ -166,7 +168,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
             style={{ background: 'linear-gradient(135deg, #0d9488 0%, #6366f1 50%, #ec4899 100%)' }}
           >
             <Sparkles className="h-8 w-8 text-white/80" />
-            <span className="text-xs text-white/70 font-medium">Animated hero</span>
+            <span className="text-xs text-white/70 font-medium">{t('webPage.animatedHero')}</span>
           </div>
         </div>
       );
@@ -186,7 +188,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
           ) : (
             <div className="w-full aspect-[16/9] flex flex-col items-center justify-center gap-2 text-gray-400">
               <ImagePlus className="h-8 w-8" />
-              <span className="text-sm font-medium">Click to add a hero image</span>
+              <span className="text-sm font-medium">{t('webPage.addHeroImage')}</span>
             </div>
           )}
         </button>
@@ -203,13 +205,13 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
       case 'form':
         return (
           <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-            <p className="text-sm font-medium text-gray-700 mb-2">Stay updated</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">{t('webPage.cta.stayUpdated')}</p>
             <div className="flex gap-2">
               <div className="flex-1 h-9 rounded-md border border-gray-300 bg-white px-3 flex items-center">
                 <Mail className="h-3.5 w-3.5 text-gray-400 mr-2" />
-                <span className="text-xs text-gray-400">you@example.com</span>
+                <span className="text-xs text-gray-400">{t('webPage.cta.emailPlaceholder')}</span>
               </div>
-              <div className={`${base} bg-teal-600 text-white`}>Sign up</div>
+              <div className={`${base} bg-teal-600 text-white`}>{t('webPage.cta.signUp')}</div>
             </div>
           </div>
         );
@@ -217,7 +219,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
         return (
           <div className="text-center">
             <div className={`${base} bg-teal-600 text-white`}>
-              <Calendar className="h-4 w-4" /> Book a Demo
+              <Calendar className="h-4 w-4" /> {t('webPage.cta.bookDemo')}
             </div>
           </div>
         );
@@ -225,7 +227,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
         return (
           <div className="text-center">
             <div className={`${base} bg-teal-600 text-white`}>
-              <Download className="h-4 w-4" /> Download
+              <Download className="h-4 w-4" /> {t('webPage.cta.download')}
             </div>
           </div>
         );
@@ -233,7 +235,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
         return (
           <div className="text-center">
             <div className={`${base} bg-teal-600 text-white`}>
-              Get Started <ArrowRight className="h-4 w-4" />
+              {t('webPage.cta.getStarted')} <ArrowRight className="h-4 w-4" />
             </div>
           </div>
         );
@@ -246,7 +248,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
     if (textEntries.length === 0) {
       return (
         <p className="text-sm text-gray-400 text-center py-8">
-          Generate content in Step 2 to see the article preview here
+          {t('webPage.generatePrompt')}
         </p>
       );
     }
@@ -288,7 +290,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
           <div>{articleContent}</div>
           <aside className="space-y-4 pt-1">
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <p className="text-xs font-semibold text-gray-600 uppercase mb-2">In this article</p>
+              <p className="text-xs font-semibold text-gray-600 uppercase mb-2">{t('webPage.inThisArticle')}</p>
               {bodyEntries.slice(0, 5).map((entry, i) => (
                 <p key={entry.group} className="text-xs text-teal-700 py-1 border-b border-gray-100 last:border-0">
                   {i + 1}. {entry.group.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase())}
@@ -296,7 +298,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
               ))}
             </div>
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <p className="text-xs font-semibold text-gray-600 uppercase mb-2">Related</p>
+              <p className="text-xs font-semibold text-gray-600 uppercase mb-2">{t('webPage.related')}</p>
               <div className="space-y-2">
                 <div className="h-3 w-4/5 rounded bg-gray-200" />
                 <div className="h-3 w-3/5 rounded bg-gray-200" />
@@ -361,10 +363,10 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
       {/* Full-width article preview (inline-editable per section) */}
       <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
-          <span className="text-xs font-semibold text-gray-600">Article Preview</span>
+          <span className="text-xs font-semibold text-gray-600">{t('webPage.articlePreview')}</span>
           {textEntries.length > 0 && (
             <span className="text-xs text-emerald-600 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3" /> Reflects Step 2 selection
+              <CheckCircle2 className="h-3 w-3" /> {t('reflectsSelection')}
             </span>
           )}
         </div>
@@ -385,10 +387,13 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
           <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5 text-amber-600" />
           <div>
             <p className="font-medium">
-              Brand fidelity {fidelityCompositeScore ?? '?'}/100 — below your threshold ({fidelityThreshold ?? 75})
+              {t('fidelity.belowThreshold', {
+                score: fidelityCompositeScore ?? '?',
+                threshold: fidelityThreshold ?? 75,
+              })}
             </p>
             <p className="mt-0.5 text-amber-800">
-              You can still continue, but consider regenerating from Step 2 with feedback to lift the score before publishing.
+              {t('fidelity.belowThresholdHint')}
             </p>
           </div>
         </div>
@@ -407,7 +412,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
           }
         >
           {belowThreshold ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-          {belowThreshold ? 'Continue anyway' : 'Confirm & Continue'}
+          {belowThreshold ? t('confirm.continueAnyway') : t('confirm.confirmContinue')}
         </button>
       </div>
     </div>
@@ -436,6 +441,7 @@ interface EditableArticleSectionProps {
  * semantics of ContentSectionsEditor so the preview is the single source of truth.
  */
 function EditableArticleSection({ entry, deliverableId, render }: EditableArticleSectionProps) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const { group, content, componentId, variantIndex } = entry;
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(content);
@@ -499,7 +505,7 @@ function EditableArticleSection({ entry, deliverableId, render }: EditableArticl
             disabled={isSaving}
             className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
           >
-            <Check className="h-3.5 w-3.5" /> Save
+            <Check className="h-3.5 w-3.5" /> {t('article.save')}
           </button>
           <button
             type="button"
@@ -507,7 +513,7 @@ function EditableArticleSection({ entry, deliverableId, render }: EditableArticl
             disabled={isSaving}
             className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 disabled:opacity-50"
           >
-            <X className="h-3.5 w-3.5" /> Cancel
+            <X className="h-3.5 w-3.5" /> {t('article.cancel')}
           </button>
         </div>
         <textarea
@@ -534,9 +540,9 @@ function EditableArticleSection({ entry, deliverableId, render }: EditableArticl
         type="button"
         onClick={handleStartEdit}
         className="absolute -top-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[11px] font-medium text-gray-600 hover:text-gray-900 px-2 py-1 rounded-md bg-white shadow-sm border border-gray-200 z-10"
-        aria-label={`Edit ${group}`}
+        aria-label={t('article.editAria', { group })}
       >
-        <Pencil className="h-3 w-3" /> Edit
+        <Pencil className="h-3 w-3" /> {t('article.edit')}
       </button>
       {render(content)}
     </div>

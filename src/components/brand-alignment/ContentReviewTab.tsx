@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FileSearch, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/shared";
 import {
@@ -23,6 +24,7 @@ type SourceMode = "paste" | "url";
  * Bij success: GET /[reviewLogId] voor findings, render via ContentReviewResult.
  */
 export function ContentReviewTab() {
+  const { t } = useTranslation('brand-alignment');
   const [mode, setMode] = useState<SourceMode>("paste");
   const [pasteContent, setPasteContent] = useState("");
   const [urlValue, setUrlValue] = useState("");
@@ -154,9 +156,9 @@ export function ContentReviewTab() {
       <header className="flex items-center gap-3">
         <FileSearch className="w-6 h-6 text-emerald-600" />
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Content review</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('contentReview.title')}</h2>
           <p className="text-sm text-gray-500">
-            Paste a text or URL for F-VAL fidelity scoring with findings.
+            {t('contentReview.subtitle')}
           </p>
         </div>
       </header>
@@ -186,7 +188,7 @@ export function ContentReviewTab() {
           />
           <div className="flex justify-end">
             <Button variant="secondary" size="sm" onClick={handleReset}>
-              New review
+              {t('contentReview.newReview')}
             </Button>
           </div>
         </>
@@ -222,6 +224,7 @@ function InputCard({
   onSubmit,
   submitError,
 }: InputCardProps) {
+  const { t } = useTranslation('brand-alignment');
   // Counter toont getrimde lengte (zelfde basis als canSubmit) — anders
   // ziet user "55 / 50000" groen terwijl submit met 50 chars naar server
   // gaat. Edge case: whitespace-only edits aan de boundary (50→52 spaties
@@ -248,7 +251,7 @@ function InputCard({
               : "text-gray-500 hover:text-gray-800"
           }`}
         >
-          Paste text
+          {t('contentReview.pasteTab')}
         </button>
         <button
           type="button"
@@ -260,7 +263,7 @@ function InputCard({
               : "text-gray-500 hover:text-gray-800"
           }`}
         >
-          URL
+          {t('contentReview.urlTab')}
         </button>
       </div>
 
@@ -269,16 +272,16 @@ function InputCard({
           <textarea
             value={pasteContent}
             onChange={(e) => onPasteChange(e.target.value)}
-            placeholder={`Paste content here (min ${PASTE_MIN_CHARS} chars)...`}
+            placeholder={t('contentReview.pastePlaceholder', { min: PASTE_MIN_CHARS })}
             rows={10}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             disabled={isSubmitting}
           />
           <div className="mt-1 flex justify-between text-xs">
             <span className={tooShort || tooLong ? "text-amber-600" : "text-gray-400"}>
-              {pasteLen.toLocaleString()} / {PASTE_MAX_CHARS.toLocaleString()} chars
-              {tooShort && ` — minimum ${PASTE_MIN_CHARS}`}
-              {tooLong && " — too long"}
+              {pasteLen.toLocaleString()} / {PASTE_MAX_CHARS.toLocaleString()} {t('contentReview.charsUnit')}
+              {tooShort && t('contentReview.charMin', { min: PASTE_MIN_CHARS })}
+              {tooLong && t('contentReview.charTooLong')}
             </span>
           </div>
         </div>
@@ -288,12 +291,12 @@ function InputCard({
             type="url"
             value={urlValue}
             onChange={(e) => onUrlChange(e.target.value)}
-            placeholder="https://example.com/blog-post"
+            placeholder={t('contentReview.urlPlaceholder')}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             disabled={isSubmitting}
           />
           <p className="mt-1 text-xs text-gray-400">
-            Public URL only — private IPs and non-http(s) schemes are rejected server-side.
+            {t('contentReview.urlNote')}
           </p>
         </div>
       )}
@@ -316,7 +319,7 @@ function InputCard({
           disabled={!canSubmit || isSubmitting}
           icon={isSubmitting ? Loader2 : FileSearch}
         >
-          {isSubmitting ? "Reviewing..." : "Review content"}
+          {isSubmitting ? t('contentReview.reviewing') : t('contentReview.reviewContent')}
         </Button>
       </div>
     </div>

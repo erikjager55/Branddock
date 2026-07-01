@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2 } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { STUDIO } from '@/lib/constants/design-tokens';
@@ -31,6 +32,7 @@ interface PuckLayoutWrapperProps {
  * WebPageLayout instead via GenericConfigPanel's content-type check.
  */
 export function PuckLayoutWrapper({ children: _children, onAdvance, deliverableId }: PuckLayoutWrapperProps) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const contextStack = useCanvasStore((s) => s.contextStack);
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
@@ -71,9 +73,9 @@ export function PuckLayoutWrapper({ children: _children, onAdvance, deliverableI
         // Non-blocking
       }
     }
-    store.setStepSummary(store.activeStep, { label: 'Web-page builder configured' });
+    store.setStepSummary(store.activeStep, { label: t('builder.configured') });
     onAdvance();
-  }, [onAdvance, deliverableId]);
+  }, [onAdvance, deliverableId, t]);
 
   return (
     <div className="space-y-6">
@@ -83,9 +85,9 @@ export function PuckLayoutWrapper({ children: _children, onAdvance, deliverableI
       <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-2.5 text-sm text-emerald-900 flex items-center gap-2">
         <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
         <div>
-          <p className="font-medium">Web page builder active</p>
+          <p className="font-medium">{t('builder.active')}</p>
           <p className="text-xs text-emerald-800 mt-0.5">
-            Live preview with brand tokens from your BrandStyleguide. Use &lsquo;Edit layout&rsquo; to reorder components, or the page actions for page-level AI improvements.
+            {t('builder.activeHint')}
           </p>
         </div>
       </div>
@@ -109,7 +111,7 @@ export function PuckLayoutWrapper({ children: _children, onAdvance, deliverableI
           className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium shadow-sm ${STUDIO.generateButton}`}
         >
           <CheckCircle2 className="h-4 w-4" />
-          Confirm & Continue
+          {t('confirm.confirmContinue')}
         </button>
       </div>
     </div>

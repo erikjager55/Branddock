@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -37,14 +38,15 @@ export function UpgradePrompt({
   onClose,
   inline = false
 }: UpgradePromptProps) {
+  const { t } = useTranslation('commercial');
   const { currentTier, getTierInfo } = useProductTier();
   const tierInfo = getTierInfo(requiredTier);
   const currentTierInfo = getTierInfo(currentTier);
 
   const certaintyComparison = {
-    'decision-scan': { level: 1, label: 'Basic', icon: Shield },
-    'strategic-control': { level: 2, label: 'Control', icon: TrendingUp },
-    'advisory-services': { level: 3, label: 'Confidence', icon: CheckCircle }
+    'decision-scan': { level: 1, label: t('upgrade.levels.basic'), icon: Shield },
+    'strategic-control': { level: 2, label: t('upgrade.levels.control'), icon: TrendingUp },
+    'advisory-services': { level: 3, label: t('upgrade.levels.confidence'), icon: CheckCircle }
   };
 
   const current = certaintyComparison[currentTier];
@@ -63,11 +65,11 @@ export function UpgradePrompt({
             
             <div className="flex items-center gap-3 mb-4">
               <Badge variant="outline" className={currentTierInfo.color.badge}>
-                Your level: {current.label}
+                {t('upgrade.inline.yourLevel', { level: current.label })}
               </Badge>
               <ArrowRight className="h-4 w-4 text-muted-foreground" />
               <Badge variant="outline" className={tierInfo.color.badge}>
-                Required: {required.label}
+                {t('upgrade.inline.required', { level: required.label })}
               </Badge>
             </div>
 
@@ -76,7 +78,7 @@ export function UpgradePrompt({
               className="gap-2"
               onClick={onUpgrade}
             >
-              Upgrade to {tierInfo.name}
+              {t('upgrade.inline.upgradeTo', { name: tierInfo.name })}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
@@ -95,9 +97,9 @@ export function UpgradePrompt({
                 <Lock className={`h-6 w-6 ${tierInfo.color.text}`} />
               </div>
               <div>
-                <CardTitle className="mb-2">Upgrade for Higher Decision Certainty</CardTitle>
+                <CardTitle className="mb-2">{t('upgrade.modal.title')}</CardTitle>
                 <CardDescription>
-                  This feature requires {tierInfo.certaintyLevel} level
+                  {t('upgrade.modal.requires', { level: tierInfo.certaintyLevel })}
                 </CardDescription>
               </div>
             </div>
@@ -122,7 +124,7 @@ export function UpgradePrompt({
 
           {/* Certainty Level Progression */}
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-4">Levels of Decision Certainty</p>
+            <p className="text-sm font-medium text-muted-foreground mb-4">{t('upgrade.modal.levelsTitle')}</p>
             <div className="space-y-3">
               {/* Current Level */}
               <div className={`p-4 rounded-lg border-2 ${currentTierInfo.color.bg} border-current`}>
@@ -136,7 +138,7 @@ export function UpgradePrompt({
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-semibold">{currentTierInfo.certaintyLevel}</p>
                       <Badge variant="outline" className={currentTierInfo.color.badge}>
-                        Your current level
+                        {t('upgrade.modal.yourCurrentLevel')}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -163,7 +165,7 @@ export function UpgradePrompt({
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-semibold">{tierInfo.certaintyLevel}</p>
                       <Badge variant="outline" className={tierInfo.color.badge}>
-                        Required level
+                        {t('upgrade.modal.requiredLevel')}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -178,7 +180,7 @@ export function UpgradePrompt({
           {/* What You Get */}
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-3">
-              With {tierInfo.name} you get:
+              {t('upgrade.modal.withYouGet', { name: tierInfo.name })}
             </p>
             <div className="grid gap-2">
               {tierInfo.features.slice(0, 4).map((feature, index) => (
@@ -192,7 +194,7 @@ export function UpgradePrompt({
 
           {/* Pricing */}
           <div className="p-4 rounded-lg bg-muted/50 border text-center">
-            <p className="text-sm text-muted-foreground mb-1">Investment</p>
+            <p className="text-sm text-muted-foreground mb-1">{t('upgrade.modal.investment')}</p>
             <div className="flex items-baseline justify-center gap-2">
               <p className="text-3xl font-bold">{tierInfo.price}</p>
               {tierInfo.billingCycle && (
@@ -205,7 +207,7 @@ export function UpgradePrompt({
           <div className="flex gap-3">
             {onClose && (
               <Button variant="outline" onClick={onClose} className="flex-1">
-                Back
+                {t('upgrade.modal.back')}
               </Button>
             )}
             <Button onClick={onUpgrade} className="flex-1 gap-2">

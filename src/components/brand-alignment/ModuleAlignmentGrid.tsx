@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ModuleScoreData } from '@/types/brand-alignment';
 import { SkeletonCard } from '@/components/shared';
 import { TYPOGRAPHY } from '@/lib/constants/design-tokens';
@@ -19,9 +20,10 @@ export function ModuleAlignmentGrid({
   isLoading,
   onNavigate,
 }: ModuleAlignmentGridProps) {
+  const { t } = useTranslation('brand-alignment');
   return (
     <div data-testid="module-alignment-grid" className="mb-8">
-      <h2 className={`${TYPOGRAPHY.sectionHeading} mb-4`}>Module Scores</h2>
+      <h2 className={`${TYPOGRAPHY.sectionHeading} mb-4`}>{t('moduleGrid.heading')}</h2>
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

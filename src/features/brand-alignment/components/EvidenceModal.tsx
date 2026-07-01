@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { X, FileSearch } from "lucide-react";
 import type { StrategyObservationResponse } from "../api/brandclaw-observations.api";
 
@@ -17,6 +18,7 @@ interface EvidenceModalProps {
  * agent als evidence gebruikte).
  */
 export function EvidenceModal({ observation, onClose }: EvidenceModalProps) {
+  const { t } = useTranslation('brand-alignment');
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -40,13 +42,13 @@ export function EvidenceModal({ observation, onClose }: EvidenceModalProps) {
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2">
             <FileSearch className="w-4 h-4 text-gray-700" />
-            <h2 className="text-sm font-semibold text-gray-900">Evidence-trail</h2>
+            <h2 className="text-sm font-semibold text-gray-900">{t('evidence.title')}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-900 transition-colors"
-            aria-label="Close"
+            aria-label={t('evidence.close')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -54,27 +56,27 @@ export function EvidenceModal({ observation, onClose }: EvidenceModalProps) {
 
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-semibold text-gray-500 mb-1">Summary</p>
+            <p className="text-xs font-semibold text-gray-500 mb-1">{t('evidence.summary')}</p>
             <p className="text-sm text-gray-900">{observation.summary}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="p-2 bg-gray-50 rounded">
-              <p className="font-semibold text-gray-500">Agent version</p>
+              <p className="font-semibold text-gray-500">{t('evidence.agentVersion')}</p>
               <p className="text-gray-800 font-mono text-[11px]">{observation.agentVersion}</p>
             </div>
             <div className="p-2 bg-gray-50 rounded">
-              <p className="font-semibold text-gray-500">Prompt version</p>
+              <p className="font-semibold text-gray-500">{t('evidence.promptVersion')}</p>
               <p className="text-gray-800 font-mono text-[11px]">{observation.promptVersion}</p>
             </div>
           </div>
 
           <div>
             <p className="text-xs font-semibold text-gray-500 mb-1">
-              DataSnapshot evidence ({snapshotIds.length})
+              {t('evidence.snapshotEvidence', { count: snapshotIds.length })}
             </p>
             {snapshotIds.length === 0 ? (
-              <p className="text-xs text-gray-400 italic">No snapshot evidence linked.</p>
+              <p className="text-xs text-gray-400 italic">{t('evidence.noSnapshot')}</p>
             ) : (
               <ul className="space-y-1 text-xs">
                 {snapshotIds.map((id) => (
@@ -88,15 +90,14 @@ export function EvidenceModal({ observation, onClose }: EvidenceModalProps) {
               </ul>
             )}
             <p className="text-[11px] text-gray-500 italic mt-2">
-              Phase B uitbreiding: klik op een snapshot-id om de gepersisteerde DataSnapshot.payload
-              JSON in te zien (alignment-scan / fidelity-score / review-log content op snapshot-moment).
+              {t('evidence.phaseBNote')}
             </p>
           </div>
 
           {toolCalls.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-gray-500 mb-1">
-                Tool-calls referenced ({toolCalls.length})
+                {t('evidence.toolCallsReferenced', { count: toolCalls.length })}
               </p>
               <ul className="space-y-1 text-xs">
                 {toolCalls.map((tc, i) => (

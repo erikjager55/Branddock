@@ -274,6 +274,7 @@ const ns = {
     belowThresholdScores_other: '{{count}} below-threshold internal scores',
     noBelowThreshold: 'No below-threshold scores',
     passRateTrend: 'Pass-rate trend (7d)',
+    trendStable: 'stable',
     reviewsCount_one: '{{count}} review',
     reviewsCount_other: '{{count}} reviews',
     inSevenDays: 'in 7 days',
@@ -282,6 +283,7 @@ const ns = {
     noFindings: 'No findings.',
     recentReviews: 'Recent reviews',
     noReviews: 'No reviews.',
+    feedbackLoop: 'Feedback-loop',
     sourceLabels: {
       paste: 'Paste',
       url: 'URL',

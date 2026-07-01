@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Layers,
   Target,
@@ -58,6 +59,7 @@ interface ModuleScoreCardProps {
 // ─── Component ──────────────────────────────────────────────
 
 export function ModuleScoreCard({ module, onNavigate }: ModuleScoreCardProps) {
+  const { t } = useTranslation('brand-alignment');
   const config = MODULE_CONFIG[module.moduleName];
   if (!config) return null;
 
@@ -78,7 +80,7 @@ export function ModuleScoreCard({ module, onNavigate }: ModuleScoreCardProps) {
         <span className={`text-2xl font-bold ${getScoreColor(module.score)}`}>
           {module.score}%
         </span>
-        <span className={TYPOGRAPHY.caption}>alignment</span>
+        <span className={TYPOGRAPHY.caption}>{t('moduleCard.alignment')}</span>
       </div>
 
       {/* Progress bar */}
@@ -88,22 +90,22 @@ export function ModuleScoreCard({ module, onNavigate }: ModuleScoreCardProps) {
       <div className="flex items-center gap-3 text-xs text-gray-500">
         <span className="flex items-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          {module.alignedCount} aligned
+          {t('moduleCard.alignedCount', { count: module.alignedCount })}
         </span>
         <span className="flex items-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-          {module.reviewCount} review
+          {t('moduleCard.reviewCount', { count: module.reviewCount })}
         </span>
         <span className="flex items-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-          {module.misalignedCount} issues
+          {t('moduleCard.issuesCount', { count: module.misalignedCount })}
         </span>
       </div>
 
       {/* Last checked */}
       {module.lastCheckedAt && (
         <div className="text-xs text-gray-400">
-          Last checked: {formatRelativeTime(module.lastCheckedAt)}
+          {t('moduleCard.lastChecked', { time: formatRelativeTime(module.lastCheckedAt) })}
         </div>
       )}
 
@@ -120,7 +122,7 @@ export function ModuleScoreCard({ module, onNavigate }: ModuleScoreCardProps) {
           }
         }}
       >
-        View &rarr;
+        {t('moduleCard.view')}
       </div>
     </Card>
   );

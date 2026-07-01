@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { resolvePreviewComponent } from '../previews/preview-map';
@@ -79,6 +80,7 @@ interface Step2ContentVariantsProps {
  * variant (A or B) rather than mixing individual components.
  */
 export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentVariantsProps) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
@@ -185,7 +187,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
         setVisualGenerationStatus('idle');
       } catch (err) {
         const e = interpretAiError(err);
-        setVisualGenerationStatus('error', e.message || 'Failed to generate visual');
+        setVisualGenerationStatus('error', e.message || t('step2.visual.failedToGenerate'));
         if (e.unavailable) notifyAiError(err);
       }
     },
@@ -196,6 +198,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
       setSceneHeroImage,
       promoteToHero,
       setVisualGenerationStatus,
+      t,
     ],
   );
 
@@ -295,10 +298,12 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
 
   const handleAdvance = useCallback(() => {
     const store = useCanvasStore.getState();
-    const label = `Variant ${String.fromCharCode(65 + selectedVariantIndex)} selected`;
+    const label = t('step2.variantSelectedSummary', {
+      letter: String.fromCharCode(65 + selectedVariantIndex),
+    });
     store.setStepSummary(store.activeStep, { label });
     onAdvance();
-  }, [onAdvance, selectedVariantIndex]);
+  }, [onAdvance, selectedVariantIndex, t]);
 
   const PreviewComponent = previewEntry.component;
   const VARIANT_LABELS = ['A', 'B', 'C', 'D'];
@@ -346,7 +351,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
       <div className="text-center py-8">
         <Sparkles className="h-8 w-8 text-gray-300 mx-auto mb-3" />
         <p className="text-sm text-gray-500">
-          Content will appear here after generation starts in step 1.
+          {t('step2.empty')}
         </p>
       </div>
     );
@@ -362,11 +367,13 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-teal-900">
               {regeneratingGroups.size > 0
-                ? `Regenerating ${Array.from(regeneratingGroups).map((g) => g.replace(/_/g, ' ')).join(', ')}...`
-                : 'Generating content...'}
+                ? t('step2.regeneratingGroups', {
+                    groups: Array.from(regeneratingGroups).map((g) => g.replace(/_/g, ' ')).join(', '),
+                  })
+                : t('step2.generatingContent')}
             </p>
             <p className="text-xs text-teal-700">
-              Applying your feedback — this can take 10–30 seconds.
+              {t('step2.applyingFeedback')}
             </p>
           </div>
           <button
@@ -374,7 +381,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
             onClick={abort}
             className="flex-shrink-0 text-xs font-medium text-teal-700 hover:text-teal-900 underline"
           >
-            Stop
+            {t('common.stop')}
           </button>
         </div>
       )}
@@ -383,7 +390,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
       {isGenerating && !hasVariants && (
         <div className="flex items-center gap-2 text-sm text-primary">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Generating variants...
+          {t('step2.generatingVariants')}
         </div>
       )}
 
@@ -421,7 +428,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm pointer-events-none">
                   <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-teal-600 text-white shadow-lg">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm font-semibold">Regenerating...</span>
+                    <span className="text-sm font-semibold">{t('common.regenerating')}</span>
                   </div>
                 </div>
               )}
@@ -431,7 +438,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
                 isSelected ? 'bg-teal-50 text-teal-700' : 'bg-gray-50 text-gray-600'
               }`}>
                 <div className="flex items-center gap-2">
-                  <span>Variant {VARIANT_LABELS[idx] ?? idx + 1}</span>
+                  <span>{t('step2.variantLabel', { label: VARIANT_LABELS[idx] ?? idx + 1 })}</span>
                   {/* Ad Quality badge — only for ad content-types with
                       validators registered (currently search-ad). Auto-
                       triggers fire-and-forget POST on first render. */}
@@ -445,7 +452,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
                   )}
                 </div>
                 {isSelected && (
-                  <Badge variant="success" size="sm">Selected</Badge>
+                  <Badge variant="success" size="sm">{t('common.selected')}</Badge>
                 )}
               </div>
 
@@ -527,7 +534,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
             className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
           >
             <ArrowRight className="h-4 w-4" />
-            {hasSceneGroups ? 'Confirm Script & Configure Video' : 'Confirm & Continue'}
+            {hasSceneGroups ? t('step2.confirmScript') : t('step2.confirmContinue')}
           </button>
         </div>
       )}
@@ -537,10 +544,11 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
 
 // ─── Scene Breakdown (video types only) ───────────────────────
 
-const SCENE_CONFIG: { id: SceneId; label: string; icon: typeof Film; borderColor: string; bgColor: string; textColor: string }[] = [
-  { id: 'hook', label: 'Hook', icon: Film, borderColor: '#f59e0b', bgColor: '#fffbeb', textColor: '#92400e' },
-  { id: 'body', label: 'Body', icon: MessageSquare, borderColor: '#3b82f6', bgColor: '#eff6ff', textColor: '#1e40af' },
-  { id: 'cta', label: 'CTA', icon: MousePointerClick, borderColor: '#10b981', bgColor: '#ecfdf5', textColor: '#065f46' },
+// Labels live in the i18n catalog (step2.scenes.<id>), resolved at render.
+const SCENE_CONFIG: { id: SceneId; icon: typeof Film; borderColor: string; bgColor: string; textColor: string }[] = [
+  { id: 'hook', icon: Film, borderColor: '#f59e0b', bgColor: '#fffbeb', textColor: '#92400e' },
+  { id: 'body', icon: MessageSquare, borderColor: '#3b82f6', bgColor: '#eff6ff', textColor: '#1e40af' },
+  { id: 'cta', icon: MousePointerClick, borderColor: '#10b981', bgColor: '#ecfdf5', textColor: '#065f46' },
 ];
 
 /**
@@ -693,12 +701,13 @@ function SceneBreakdown({
    *  error display to only the scene that triggered the call. */
   generatingScope: SceneId | 'workspace' | null;
 }) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const hasSceneGroups = variantGroups.has('hook') || variantGroups.has('body') || variantGroups.has('cta');
   if (!hasSceneGroups) return null;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <h4 className="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wider">Scene Breakdown</h4>
+      <h4 className="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wider">{t('step2.sceneBreakdown')}</h4>
       <div className="space-y-2">
         {SCENE_CONFIG.map((config) => {
           const variants = variantGroups.get(config.id);
@@ -743,14 +752,15 @@ function SceneBreakdownCard({
   visualStatus,
   visualError,
 }: {
-  config: { id: SceneId; label: string; icon: typeof Film; borderColor: string; bgColor: string; textColor: string };
+  config: { id: SceneId; icon: typeof Film; borderColor: string; bgColor: string; textColor: string };
   scriptText: string;
   deliverableId: string;
   onGenerateScene: (sceneId: SceneId) => void;
   visualStatus: 'idle' | 'generating' | 'error';
   visualError: string | null;
 }) {
-  const { id, label, icon: Icon, borderColor, bgColor, textColor } = config;
+  const { t } = useTranslation('campaigns-canvas-accordion');
+  const { id, icon: Icon, borderColor, bgColor, textColor } = config;
   const segments = React.useMemo(() => parseSceneSegments(scriptText), [scriptText]);
 
   const override = useCanvasStore((s) => s.sceneOverrides[id]);
@@ -779,7 +789,7 @@ function SceneBreakdownCard({
       </div>
       <div className="min-w-0 flex-1">
         <span className="text-[11px] font-semibold uppercase tracking-wider block mb-2" style={{ color: textColor }}>
-          {label}
+          {t(`step2.scenes.${id}`)}
         </span>
         {/* 2026-05-19 herzien: segments inline geïntegreerd binnen
             de scene-card (was eerder genest in aparte mini-panels
@@ -814,14 +824,14 @@ function SceneBreakdownCard({
                     className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider flex-shrink-0 mt-[3px]"
                     style={{ backgroundColor: 'rgba(0,0,0,0.05)', color: textColor }}
                   >
-                    Visual
+                    {t('step2.sceneCard.visual')}
                   </span>
                   {isEditable ? (
                     <EditableInlineText
                       value={effective}
                       onSave={(next) => setOverride(id, { visualText: next })}
                       italic
-                      placeholder="Describe the on-screen action / camera"
+                      placeholder={t('step2.sceneCard.visualPlaceholder')}
                     />
                   ) : (
                     <span className="italic">{effective}</span>
@@ -838,14 +848,14 @@ function SceneBreakdownCard({
                     className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider flex-shrink-0 mt-[3px]"
                     style={{ backgroundColor: 'rgba(0,0,0,0.05)', color: textColor }}
                   >
-                    B-roll
+                    {t('step2.sceneCard.broll')}
                   </span>
                   {isEditable ? (
                     <EditableInlineText
                       value={effective}
                       onSave={(next) => setOverride(id, { bRollText: next })}
                       italic
-                      placeholder="Motion direction for video gen — camera pan, intercut, dolly, etc."
+                      placeholder={t('step2.sceneCard.brollPlaceholder')}
                     />
                   ) : (
                     <span className="italic">{effective}</span>
@@ -862,13 +872,13 @@ function SceneBreakdownCard({
                     className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider flex-shrink-0 mt-[3px]"
                     style={{ backgroundColor: 'rgba(0,0,0,0.05)', color: textColor }}
                   >
-                    Caption
+                    {t('step2.sceneCard.caption')}
                   </span>
                   {isEditable ? (
                     <EditableInlineText
                       value={effective}
                       onSave={(next) => setOverride(id, { captionText: next })}
-                      placeholder="Burned-in caption — max ~32 characters per line"
+                      placeholder={t('step2.sceneCard.captionPlaceholder')}
                     />
                   ) : (
                     <span>{effective}</span>
@@ -914,6 +924,7 @@ function EditableInlineText({
   italic?: boolean;
   placeholder?: string;
 }) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState(value);
 
@@ -951,9 +962,9 @@ function EditableInlineText({
       type="button"
       onClick={enterEdit}
       className={`flex-1 min-w-0 text-left ${italic ? 'italic' : ''} cursor-text hover:bg-white/60 rounded px-0.5 -mx-0.5 transition-colors`}
-      title="Click to edit (Cmd/Ctrl+Enter to save, Esc to cancel)"
+      title={t('step2.editable.editTitle')}
     >
-      {value || <span className="text-gray-400">{placeholder ?? 'Click to fill in'}</span>}
+      {value || <span className="text-gray-400">{placeholder ?? t('step2.editable.clickToFill')}</span>}
     </button>
   );
 }
@@ -986,6 +997,7 @@ function VariantSelector({
   onSelect: (idx: number) => void;
   angleLabels: Array<string | null>;
 }) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const VARIANT_LETTERS = ['A', 'B', 'C', 'D'];
   if (count <= 0) return null;
 
@@ -994,7 +1006,7 @@ function VariantSelector({
       {Array.from({ length: count }).map((_, idx) => {
         const isSelected = idx === selectedIndex;
         const letter = VARIANT_LETTERS[idx] ?? String(idx + 1);
-        const label = angleLabels[idx] ?? `Variant ${letter}`;
+        const label = angleLabels[idx] ?? t('step2.variantLabel', { label: letter });
         return (
           <button
             key={idx}
@@ -1040,6 +1052,7 @@ function VariantSelector({
 }
 
 function GeneratingIndicator({ contentType }: { contentType: string | null }) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const { label: estimatedLabel } = getEstimatedDuration(contentType ?? '');
   const [elapsed, setElapsed] = React.useState(0);
 
@@ -1060,12 +1073,12 @@ function GeneratingIndicator({ contentType }: { contentType: string | null }) {
         <Loader2 className="h-8 w-8 text-primary animate-spin" />
       </div>
       <div className="text-center">
-        <p className="text-base font-semibold text-gray-800">Generating content variants</p>
+        <p className="text-base font-semibold text-gray-800">{t('step2.generating.title')}</p>
         <p className="text-sm text-gray-500 mt-1">
-          Creating 2 unique variants based on your strategy and briefing...
+          {t('step2.generating.subtitle')}
         </p>
         <p className="text-xs text-gray-400 mt-2">
-          Estimated: {estimatedLabel} · Elapsed: {formatElapsed(elapsed)}
+          {t('step2.generating.estimate', { estimated: estimatedLabel, elapsed: formatElapsed(elapsed) })}
         </p>
       </div>
     </div>
@@ -1109,6 +1122,7 @@ interface VisualVariantsBlockProps {
  * unified FeedbackBar's Visual dropdown option below this block.
  */
 function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, sceneId }: VisualVariantsBlockProps) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const workspaceImageVariants = useCanvasStore((s) => s.imageVariants);
   const sceneImageVariantsAll = useCanvasStore((s) => s.sceneImageVariants);
@@ -1207,7 +1221,7 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <ImageIcon className="h-4 w-4" style={{ color: '#7c3aed' }} />
-          <span className="text-sm font-medium text-gray-700">Visual</span>
+          <span className="text-sm font-medium text-gray-700">{t('step2.visual.title')}</span>
           {visualBrief.styleDirection && (
             <Badge variant="default" size="sm">
               {visualBrief.styleDirection.replace(/-/g, ' ')}
@@ -1218,14 +1232,14 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
 
       {/* F35: source-tab-strip — switch tussen 8 image-sources inline */}
       <div className="flex flex-wrap gap-1.5 border-b border-gray-200 pb-3 mb-3">
-        {IMAGE_SOURCE_TABS.map((t) => {
-          const Icon = t.icon;
-          const active = source === t.value;
+        {IMAGE_SOURCE_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const active = source === tab.value;
           return (
             <button
-              key={t.value}
+              key={tab.value}
               type="button"
-              onClick={() => handleSourceTabClick(t.value)}
+              onClick={() => handleSourceTabClick(tab.value)}
               className={
                 active
                   ? 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary text-white text-[11px] font-medium'
@@ -1233,7 +1247,7 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
               }
             >
               <Icon className="h-3 w-3" />
-              {t.label}
+              {tab.label}
             </button>
           );
         })}
@@ -1253,7 +1267,7 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
                 {
                   index: 0,
                   url,
-                  prompt: selection.alt ?? 'Reused from library',
+                  prompt: selection.alt ?? t('step2.visual.reusedFromLibrary'),
                   isSelected: true,
                   aspectRatio: undefined,
                 },
@@ -1267,8 +1281,8 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
           />
           <p className="text-xs text-gray-500">
             {visualBrief.styleDirection
-              ? `Generate 2 image variants in ${visualBrief.styleDirection.replace(/-/g, ' ')} style using the brand visual identity.`
-              : 'Generate 2 image variants using the brand visual identity. Pick a style chip in Step 1 for sharper composition rules.'}
+              ? t('step2.visual.generateHintWithStyle', { style: visualBrief.styleDirection.replace(/-/g, ' ') })
+              : t('step2.visual.generateHint')}
           </p>
           <button
             type="button"
@@ -1276,7 +1290,7 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
             className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
           >
             <Sparkles className="h-4 w-4" />
-            Generate visual
+            {t('step2.visual.generateVisual')}
           </button>
         </div>
       )}
@@ -1324,7 +1338,7 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
       {/* NONE source — geen visual; subtiele uitleg. */}
       {source === 'none' && (
         <div className="text-xs text-gray-500 px-2 py-3 italic">
-          No visual for this content item.
+          {t('step2.visual.noVisual')}
         </div>
       )}
 
@@ -1332,7 +1346,7 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
       {source === 'generate' && isGenerating && (
         <div className="flex items-center justify-center py-8 gap-3 text-sm text-gray-600">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Generating 2 image variants — this takes 15-30 seconds...</span>
+          <span>{t('step2.visual.generatingImages')}</span>
         </div>
       )}
 
@@ -1341,7 +1355,7 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
         <div className="flex items-start gap-2 rounded-md bg-red-50 border border-red-200 p-3 text-xs text-red-800">
           <X className="h-4 w-4 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-medium">Image generation failed</p>
+            <p className="font-medium">{t('step2.visual.generationFailed')}</p>
             <p className="mt-0.5">{errorMessage}</p>
           </div>
         </div>
@@ -1403,11 +1417,11 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
                       e.stopPropagation();
                       setEditingImage({ url: img.url, variantIndex: idx });
                     }}
-                    title="Edit with text instruction (Nano Banana)"
+                    title={t('step2.visual.editTitle')}
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-600/90 hover:bg-purple-700 text-white text-[10px] font-medium shadow-sm transition-colors"
                   >
                     <Sparkles className="h-2.5 w-2.5" />
-                    Edit
+                    {t('common.edit')}
                   </button>
                 </div>
                 {/* Pattern D image-quality-chain: Improve-button voor refine
@@ -1435,7 +1449,7 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
                 onClick={() => setShowLibraryPicker(true)}
                 className="text-xs text-teal-700 hover:text-teal-800 font-medium"
               >
-                Pick different assets →
+                {t('step2.visual.pickDifferent')}
               </button>
             </div>
           )}
@@ -1446,7 +1460,7 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
                 onClick={() => setShowComposePicker(true)}
                 className="text-xs text-teal-700 hover:text-teal-800 font-medium"
               >
-                Re-compose →
+                {t('step2.visual.recompose')}
               </button>
             </div>
           )}
@@ -1457,7 +1471,7 @@ function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage, 
                 onClick={() => setShowTrainedPicker(true)}
                 className="text-xs text-teal-700 hover:text-teal-800 font-medium"
               >
-                Regenerate with trained style →
+                {t('step2.visual.regenerateTrained')}
               </button>
             </div>
           )}
@@ -1499,6 +1513,7 @@ function InlineUrlUploadStockTab({
   setHeroImage: (h: { url: string; mediaAssetId: string | null; alt?: string }) => void;
   seedQuery?: string;
 }) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const [TabComponent, setTabComponent] = React.useState<React.ComponentType<{
     onSelected: (sel: { url: string; mediaAssetId: string | null; alt?: string }) => void;
     initialQuery?: string;
@@ -1546,7 +1561,7 @@ function InlineUrlUploadStockTab({
   if (!TabComponent) {
     return (
       <div className="flex items-center justify-center py-6 text-xs text-gray-500">
-        Loading {source} tab…
+        {t('step2.visual.loadingTab', { source })}
       </div>
     );
   }

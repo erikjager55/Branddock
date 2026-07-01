@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { Puck, Render, type Data } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
@@ -61,6 +62,7 @@ export function PuckPageBuilder({
   previewContent,
   isGenerating,
 }: PlatformPreviewProps) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const contextStack = useCanvasStore((s) => s.contextStack);
   const deliverableId = useCanvasStore((s) => s.deliverableId);
   const { data: isDeveloper } = useDeveloperAccess();
@@ -335,7 +337,7 @@ export function PuckPageBuilder({
 
   const handleAutoIterate = useCallback(async () => {
     if (pageLocked) {
-      setPageError('Pagina is vergrendeld — ontgrendel eerst om AI-iteraties toe te staan.');
+      setPageError(t('pageErrors.lockedForAi'));
       return;
     }
     setPageError(null);
@@ -371,18 +373,22 @@ export function PuckPageBuilder({
         setPageError(
           ('error' in json && json.error)
             ? json.error
-            : 'Auto-iterate kon geen geldig voorstel genereren — de AI-respons was niet verwerkbaar. Probeer opnieuw.',
+            : t('pageErrors.invalidProposal'),
         );
         return;
       }
       if (json.status === 'skipped') {
-        setPageError(`Page passeert al de kwaliteitsdrempel (${json.score}/${json.threshold})`);
+        setPageError(t('pageErrors.alreadyPasses', { score: json.score, threshold: json.threshold }));
         return;
       }
       if (json.status === 'no_improvement') {
         const sign = json.delta === 0 ? '±0' : `${json.delta}`;
         setPageError(
-          `Auto-iterate vond geen verbetering (huidig ${json.score} → voorstel ${json.scoreProjected}, Δ${sign}). De huidige page-tekst blijft het beste voorstel.`,
+          t('pageErrors.noImprovement', {
+            score: json.score,
+            projected: json.scoreProjected,
+            sign,
+          }),
         );
         return;
       }
@@ -391,9 +397,7 @@ export function PuckPageBuilder({
         return;
       }
       if (json.status !== 'proposal' || !json.proposedPuckData?.content?.length) {
-        setPageError(
-          'Auto-iterate leverde geen bruikbaar voorstel op. Probeer opnieuw.',
-        );
+        setPageError(t('pageErrors.noUsableProposal'));
         return;
       }
       setPagePending({
@@ -415,17 +419,15 @@ export function PuckPageBuilder({
       // AbortError = timeout (4 min cap). Geef expliciete feedback i.p.v.
       // 'auto-iterate failed' wat als generic ai-error overkomt.
       if (err instanceof Error && err.name === 'AbortError') {
-        setPageError(
-          'Auto-iterate timeout (3 min). Mogelijk is Anthropic overbelast — probeer over 1-2 minuten opnieuw.',
-        );
+        setPageError(t('pageErrors.timeout'));
       } else {
-        setPageError(err instanceof Error ? err.message : 'auto-iterate failed');
+        setPageError(err instanceof Error ? err.message : t('pageErrors.autoIterateFailed'));
       }
     } finally {
       clearTimeout(timeoutId);
       setPageBusy(null);
     }
-  }, [puckData, contextStack, deliverableId, pageLocked]);
+  }, [puckData, contextStack, deliverableId, pageLocked, t]);
 
   /** Fase D — fidelity-check: vergelijk LP-hero side-by-side met bron-
    *  website hero-screenshot. Geeft een verdict (excellent/good/fair/poor)
@@ -442,7 +444,7 @@ export function PuckPageBuilder({
       );
       const json = await res.json();
       if (!res.ok) {
-        setPageError(json.error ?? `Fidelity-check faalde (HTTP ${res.status})`);
+        setPageError(json.error ?? t('pageErrors.fidelityFailedHttp', { status: res.status }));
         return;
       }
       setFidelityResult({
@@ -452,11 +454,11 @@ export function PuckPageBuilder({
         mismatches: json.mismatches ?? [],
       });
     } catch (err) {
-      setPageError(err instanceof Error ? err.message : 'fidelity-check failed');
+      setPageError(err instanceof Error ? err.message : t('pageErrors.fidelityFailed'));
     } finally {
       setPageBusy(null);
     }
-  }, [deliverableId]);
+  }, [deliverableId, t]);
 
   const handlePageAccept = useCallback(
     (merged: SpikeData) => {
@@ -478,7 +480,7 @@ export function PuckPageBuilder({
     return (
       <div className="flex flex-col items-center justify-center h-[480px] rounded-lg border border-dashed border-gray-200 bg-gray-50 text-sm text-gray-500 gap-2">
         <Loader2 className="h-5 w-5 animate-spin" />
-        <span>{isGenerating ? 'Variant wordt gegenereerd…' : 'Pagina wordt opgebouwd…'}</span>
+        <span>{isGenerating ? t('pageBuilder.generatingVariant') : t('pageBuilder.buildingPage')}</span>
       </div>
     );
   }
@@ -491,13 +493,13 @@ export function PuckPageBuilder({
         {isHealingHero ? (
           <span className="text-xs text-gray-500 mr-2 flex items-center gap-1.5">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Header-beeld wordt gegenereerd…
+            {t('pageBuilder.generatingHeader')}
           </span>
         ) : null}
         {pageBusy === 'auto-iterate' ? (
           <span className="text-xs text-gray-500 mr-2 flex items-center gap-1.5">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Auto-iterate loopt (~60-90s) — Anthropic genereert verbetering…
+            {t('pageBuilder.autoIterateRunning')}
           </span>
         ) : null}
         {pageError ? (
@@ -505,28 +507,28 @@ export function PuckPageBuilder({
         ) : null}
         <ActionButton
           icon={pageBusy === 'auto-iterate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-          label="Auto-iterate"
+          label={t('pageBuilder.autoIterate')}
           onClick={handleAutoIterate}
           disabled={pageBusy !== null || pageLocked}
           title={pageLocked
-            ? 'Pagina is vergrendeld — ontgrendel om AI-iteraties toe te staan'
-            : 'Verbeter automatisch wanneer de paginakwaliteit onder de drempel zit'}
+            ? t('pageBuilder.autoIterateLockedTitle')
+            : t('pageBuilder.autoIterateTitle')}
         />
         <ActionButton
           icon={pageBusy === 'fidelity-check' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanEye className="h-4 w-4" />}
-          label="Brand-fit check"
+          label={t('pageBuilder.brandFitCheck')}
           onClick={handleFidelityCheck}
           disabled={pageBusy !== null}
-          title="Vergelijk deze LP-hero side-by-side met de geanalyseerde bron-website"
+          title={t('pageBuilder.brandFitTitle')}
         />
         <ActionButton
           icon={<Layout className="h-4 w-4" />}
-          label="Edit layout"
+          label={t('pageBuilder.editLayout')}
           onClick={() => setEditorOpen(true)}
           disabled={pageLocked}
           title={pageLocked
-            ? 'Page is locked — unlock to edit the layout'
-            : 'Open layout editor — reorder, add or remove components'}
+            ? t('pageBuilder.editLayoutLockedTitle')
+            : t('pageBuilder.editLayoutTitle')}
         />
         <LockToggle
           locked={pageLocked}
@@ -548,14 +550,17 @@ export function PuckPageBuilder({
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="font-semibold">
-                Brand-fit met bron: {fidelityResult.score}/100 — {fidelityResult.verdict}
+                {t('pageBuilder.brandFitResult', {
+                  score: fidelityResult.score,
+                  verdict: fidelityResult.verdict,
+                })}
               </span>
             </div>
             <button
               type="button"
               onClick={() => setFidelityResult(null)}
               className="opacity-60 hover:opacity-100"
-              aria-label="Sluit"
+              aria-label={t('pageBuilder.closeAria')}
             >
               <X className="h-4 w-4" />
             </button>
@@ -677,6 +682,7 @@ function LockToggle({
   locked: boolean;
   onToggle: () => void;
 }) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   return (
     <div className="inline-flex items-center gap-2">
       <button
@@ -684,8 +690,8 @@ function LockToggle({
         onClick={onToggle}
         role="switch"
         aria-checked={locked}
-        aria-label={locked ? 'Pagina is vergrendeld — klik om te ontgrendelen' : 'Pagina is ontgrendeld — klik om te vergrendelen'}
-        title={locked ? 'Vergrendeld — klik om te ontgrendelen' : 'Ontgrendeld — klik om te vergrendelen'}
+        aria-label={locked ? t('pageBuilder.lockedAria') : t('pageBuilder.unlockedAria')}
+        title={locked ? t('pageBuilder.lockedToggleTitle') : t('pageBuilder.unlockedToggleTitle')}
         className={`relative inline-flex h-8 w-14 items-center rounded-full shadow-inner transition-colors duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
           locked
             ? 'bg-amber-500 focus-visible:ring-amber-400'
@@ -700,7 +706,7 @@ function LockToggle({
         </span>
       </button>
       <span className={`text-sm font-medium ${locked ? 'text-amber-700' : 'text-emerald-700'}`}>
-        {locked ? 'Vergrendeld' : 'Ontgrendeld'}
+        {locked ? t('pageBuilder.locked') : t('pageBuilder.unlocked')}
       </span>
     </div>
   );
@@ -740,6 +746,7 @@ function FullscreenEditorModal({
   onChange: (data: SpikeData) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -815,19 +822,19 @@ function FullscreenEditorModal({
       <div className="flex items-center justify-between border-b border-gray-200 bg-white px-5 py-3 shadow-sm">
         <div className="flex items-center gap-2">
           <Layout className="h-4 w-4 text-gray-600" />
-          <span className="text-sm font-semibold text-gray-900">Layout editor</span>
+          <span className="text-sm font-semibold text-gray-900">{t('pageBuilder.layoutEditor')}</span>
           <span className="ml-2 text-xs text-gray-500">
-            Drag components · reorder · ESC or &lsquo;Close editor&rsquo; to return
+            {t('pageBuilder.dragHint')}
           </span>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close — back to preview"
+          aria-label={t('pageBuilder.closeEditorAria')}
           className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 transition-opacity"
         >
           <X className="h-4 w-4" />
-          Close editor
+          {t('pageBuilder.closeEditor')}
         </button>
       </div>
       <div className="bd-puck-editor-fit" style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>

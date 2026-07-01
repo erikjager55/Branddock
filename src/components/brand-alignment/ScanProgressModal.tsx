@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Modal, ProgressBar } from '@/components/shared';
 import { useScanProgress } from '@/contexts/BrandAlignmentContext';
@@ -7,18 +8,18 @@ import type { ScanStatus } from '@/types/brand-alignment';
 
 // ─── Step descriptions ──────────────────────────────────────
 
-const SCAN_STEPS = [
-  'Analysing Brand Foundation...',
-  'Checking Business Strategy alignment...',
-  'Verifying Brandstyle consistency...',
-  'Scanning Personas data...',
-  'Reviewing Products & Services...',
-  'Cross-referencing Market Insights...',
-  'Generating alignment report...',
-];
+const SCAN_STEP_KEYS = [
+  'scanSteps.foundation',
+  'scanSteps.strategy',
+  'scanSteps.brandstyle',
+  'scanSteps.personas',
+  'scanSteps.products',
+  'scanSteps.market',
+  'scanSteps.report',
+] as const;
 
 function getStepIndex(progress: number): number {
-  return Math.min(Math.floor((progress / 100) * SCAN_STEPS.length), SCAN_STEPS.length - 1);
+  return Math.min(Math.floor((progress / 100) * SCAN_STEP_KEYS.length), SCAN_STEP_KEYS.length - 1);
 }
 
 function statusIcon(status: ScanStatus | undefined) {
@@ -27,21 +28,23 @@ function statusIcon(status: ScanStatus | undefined) {
   return <Loader2 className="w-5 h-5 text-primary-500 animate-spin" />;
 }
 
-function modalTitle(status: ScanStatus | undefined): string {
-  if (status === 'COMPLETED') return 'Scan Complete';
-  if (status === 'FAILED') return 'Scan Failed';
-  return 'Running Alignment Scan';
-}
-
-function modalSubtitle(status: ScanStatus | undefined): string {
-  if (status === 'COMPLETED') return 'Your brand alignment report is ready.';
-  if (status === 'FAILED') return 'Something went wrong. Please try again.';
-  return 'Checking consistency across all brand modules...';
-}
-
 // ─── Component ──────────────────────────────────────────────
 
 export function ScanProgressModal() {
+  const { t } = useTranslation('brand-alignment');
+
+  function modalTitle(status: ScanStatus | undefined): string {
+    if (status === 'COMPLETED') return t('scanProgress.completeTitle');
+    if (status === 'FAILED') return t('scanProgress.failedTitle');
+    return t('scanProgress.runningTitle');
+  }
+
+  function modalSubtitle(status: ScanStatus | undefined): string {
+    if (status === 'COMPLETED') return t('scanProgress.completeSubtitle');
+    if (status === 'FAILED') return t('scanProgress.failedSubtitle');
+    return t('scanProgress.runningSubtitle');
+  }
+
   const activeScanId = useBrandAlignmentStore((s) => s.activeScanId);
   const isScanning = useBrandAlignmentStore((s) => s.isScanning);
   const setIsScanning = useBrandAlignmentStore((s) => s.setIsScanning);
@@ -84,7 +87,7 @@ export function ScanProgressModal() {
         {/* Progress bar */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-gray-500">Progress</span>
+            <span className="text-xs text-gray-500">{t('scanProgress.progress')}</span>
             <span className="text-xs font-medium text-gray-700">{progress}%</span>
           </div>
           <ProgressBar
@@ -98,13 +101,13 @@ export function ScanProgressModal() {
         {!isDone && (
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" />
-            {SCAN_STEPS[stepIndex]}
+            {t(SCAN_STEP_KEYS[stepIndex])}
           </div>
         )}
 
         {/* Module steps checklist */}
         <div className="space-y-1.5">
-          {SCAN_STEPS.map((step, i) => (
+          {SCAN_STEP_KEYS.map((stepKey, i) => (
             <div
               key={i}
               className={`flex items-center gap-2 text-xs ${
@@ -124,7 +127,7 @@ export function ScanProgressModal() {
               ) : (
                 <div className="w-3.5 h-3.5 rounded-full border border-gray-200 flex-shrink-0" />
               )}
-              {step}
+              {t(stepKey)}
             </div>
           ))}
         </div>

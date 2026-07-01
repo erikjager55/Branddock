@@ -1,16 +1,17 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { ConfigSection } from './ConfigSection';
 
 const DURATIONS = ['15s', '30s', '60s'] as const;
 const ASPECT_RATIOS = [
-  { value: '9:16', label: '9:16 (Vertical)' },
-  { value: '16:9', label: '16:9 (Landscape)' },
-  { value: '1:1', label: '1:1 (Square)' },
-  { value: '4:5', label: '4:5 (Portrait)' },
-];
+  { value: '9:16', labelKey: 'videoSpecs.ratio.vertical' },
+  { value: '16:9', labelKey: 'videoSpecs.ratio.landscape' },
+  { value: '1:1', labelKey: 'videoSpecs.ratio.square' },
+  { value: '4:5', labelKey: 'videoSpecs.ratio.portrait' },
+] as const;
 const QUALITIES = [
   { value: '720p', label: '720p' },
   { value: '1080p', label: '1080p' },
@@ -19,6 +20,7 @@ const QUALITIES = [
 
 /** Video specifications: duration, aspect ratio, quality */
 export function VideoSpecifications() {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const configValues = useCanvasStore((s) => s.mediumConfigValues);
   const setConfigValue = useCanvasStore((s) => s.setMediumConfigValue);
 
@@ -27,11 +29,11 @@ export function VideoSpecifications() {
   const quality = (configValues.quality as string) ?? '1080p';
 
   return (
-    <ConfigSection title="Video Specifications">
+    <ConfigSection title={t('videoSpecs.title')}>
       {/* Duration */}
       <div>
-        <span className="text-sm font-medium text-gray-700">Duration</span>
-        <div className="grid grid-cols-3 gap-2 mt-1.5" role="group" aria-label="Duration">
+        <span className="text-sm font-medium text-gray-700">{t('videoSpecs.duration')}</span>
+        <div className="grid grid-cols-3 gap-2 mt-1.5" role="group" aria-label={t('videoSpecs.duration')}>
           {DURATIONS.map((d) => (
             <button
               key={d}
@@ -52,7 +54,7 @@ export function VideoSpecifications() {
 
       {/* Aspect Ratio */}
       <div>
-        <label htmlFor="video-aspect-ratio" className="text-sm font-medium text-gray-700">Aspect Ratio</label>
+        <label htmlFor="video-aspect-ratio" className="text-sm font-medium text-gray-700">{t('videoSpecs.aspectRatio')}</label>
         <select
           id="video-aspect-ratio"
           value={aspectRatio}
@@ -61,7 +63,7 @@ export function VideoSpecifications() {
         >
           {ASPECT_RATIOS.map((ar) => (
             <option key={ar.value} value={ar.value}>
-              {ar.label}
+              {t(ar.labelKey)}
             </option>
           ))}
         </select>
@@ -69,7 +71,7 @@ export function VideoSpecifications() {
 
       {/* Quality */}
       <div>
-        <label htmlFor="video-quality" className="text-sm font-medium text-gray-700">Quality</label>
+        <label htmlFor="video-quality" className="text-sm font-medium text-gray-700">{t('videoSpecs.quality')}</label>
         <select
           id="video-quality"
           value={quality}

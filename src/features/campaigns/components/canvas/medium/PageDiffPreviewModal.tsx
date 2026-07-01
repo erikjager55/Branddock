@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Render, type Config, type Data } from '@puckeditor/core';
 import { X, Check, AlertTriangle, ArrowRight } from 'lucide-react';
 import type { SpikePuckProps } from './puck-config';
@@ -47,6 +48,7 @@ export function PageDiffPreviewModal({
   onAccept,
   onReject,
 }: Props) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const changedIds = useMemo(
     () => diffComponentIds(current as DiffMergeData, proposed as DiffMergeData),
     [current, proposed],
@@ -79,7 +81,7 @@ export function PageDiffPreviewModal({
     });
   };
 
-  const sourceLabel = source === 'auto-iterate' ? 'Auto-iterate' : 'Strict-rewrite';
+  const sourceLabel = source === 'auto-iterate' ? t('pageDiff.source.autoIterate') : t('pageDiff.source.strictRewrite');
   const acceptedCount = acceptedIds.size;
   const scoreDelta = scoreProjected - scoreBefore;
   const scoreImproves = scoreDelta > 0;
@@ -123,14 +125,18 @@ export function PageDiffPreviewModal({
         >
           <div>
             <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: '#0f172a' }}>
-              {sourceLabel} — pagina-voorstel
+              {t('pageDiff.title', { source: sourceLabel })}
             </h2>
             <p style={{ fontSize: 13, margin: '4px 0 0', color: '#64748b' }}>
-              {changedIds.length} van {current.content.length} componenten gewijzigd, {acceptedCount} geaccepteerd
+              {t('pageDiff.summary', {
+                changed: changedIds.length,
+                total: current.content.length,
+                accepted: acceptedCount,
+              })}
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <ScoreBadge score={scoreBefore} threshold={threshold} label="Huidig" />
+            <ScoreBadge score={scoreBefore} threshold={threshold} label={t('pageDiff.current')} />
             <ArrowRight size={16} color="#94a3b8" />
             <ScoreBadge
               score={scoreProjected}
@@ -141,7 +147,7 @@ export function PageDiffPreviewModal({
             <button
               type="button"
               onClick={onReject}
-              aria-label="Close"
+              aria-label={t('pageDiff.close')}
               className="inline-flex items-center justify-center rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
             >
               <X size={20} />
@@ -164,7 +170,7 @@ export function PageDiffPreviewModal({
             }}
           >
             <AlertTriangle size={16} />
-            Grote wijziging — &gt;70% van de page wordt aangepast. Review zorgvuldig.
+            {t('pageDiff.largeChangeWarning')}
           </div>
         ) : null}
 
@@ -181,7 +187,7 @@ export function PageDiffPreviewModal({
           }}
         >
           <span style={{ fontSize: 12, color: '#475569', fontWeight: 600, marginRight: 8 }}>
-            Componenten:
+            {t('pageDiff.components')}
           </span>
           {current.content.map((item) => {
             const id = (item.props as { id?: string }).id;
@@ -196,7 +202,7 @@ export function PageDiffPreviewModal({
                 type="button"
                 onClick={() => isChanged && !isLocked && toggleId(id)}
                 disabled={!isChanged || isLocked}
-                title={isLocked ? 'Locked — not changed' : isChanged ? 'Toggle accept' : 'No change'}
+                title={isLocked ? t('pageDiff.lockedTitle') : isChanged ? t('pageDiff.toggleAccept') : t('pageDiff.noChange')}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -243,8 +249,8 @@ export function PageDiffPreviewModal({
             overflow: 'auto',
           }}
         >
-          <PreviewPane label="Huidig" data={current} config={config} accent="#475569" />
-          <PreviewPane label="Voorgesteld" data={proposed} config={config} accent="#0891b2" />
+          <PreviewPane label={t('pageDiff.current')} data={current} config={config} accent="#475569" />
+          <PreviewPane label={t('pageDiff.proposed')} data={proposed} config={config} accent="#0891b2" />
         </div>
 
         {/* Footer */}
@@ -264,14 +270,14 @@ export function PageDiffPreviewModal({
               onClick={() => setAcceptedIds(new Set(changedIds))}
               className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
             >
-              Select all
+              {t('pageDiff.selectAll')}
             </button>
             <button
               type="button"
               onClick={() => setAcceptedIds(new Set())}
               className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
             >
-              Deselecteer alle
+              {t('pageDiff.deselectAll')}
             </button>
           </div>
           <div className="flex gap-2">
@@ -280,7 +286,7 @@ export function PageDiffPreviewModal({
               onClick={onReject}
               className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"
             >
-              Afwijzen
+              {t('pageDiff.reject')}
             </button>
             <button
               type="button"
@@ -290,8 +296,8 @@ export function PageDiffPreviewModal({
             >
               <Check className="h-4 w-4" />
               {acceptedCount === current.content.length
-                ? 'Alle accepteren'
-                : `${acceptedCount} accepteren`}
+                ? t('pageDiff.acceptAll')
+                : t('pageDiff.acceptCount', { count: acceptedCount })}
             </button>
           </div>
         </div>
@@ -311,6 +317,7 @@ function PreviewPane({
   config: Config<SpikePuckProps>;
   accent: string;
 }) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   return (
     <div style={{ background: '#ffffff', padding: 16, overflow: 'auto' }}>
       <div
@@ -331,7 +338,7 @@ function PreviewPane({
           if (!hasContent) {
             return (
               <div style={{ padding: 24, color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>
-                (Geen preview-data beschikbaar)
+                {t('pageDiff.noPreviewData')}
               </div>
             );
           }

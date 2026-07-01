@@ -1,16 +1,17 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, Loader2, Circle, XCircle, Globe, FileSearch, Brain, Layers, Palette, AlertTriangle } from 'lucide-react';
 import { useWebsiteScannerStore } from '../stores/useWebsiteScannerStore';
 import { useScanProgress, useCancelScan } from '../hooks';
 
 const PHASES = [
-  { key: 'CRAWLING', label: 'Scanning website', icon: Globe, description: 'Discovering and crawling pages' },
-  { key: 'EXTRACTING', label: 'Extracting information', icon: FileSearch, description: 'Analyzing page content with AI' },
-  { key: 'ANALYZING', label: 'AI analysis', icon: Brain, description: 'Strategic analysis across 4 knowledge areas' },
-  { key: 'MAPPING', label: 'Mapping to your brand', icon: Layers, description: 'Converting to brand data structures' },
-  { key: 'STYLING', label: 'Analyzing brand style', icon: Palette, description: 'Colors, typography & tone of voice' },
+  { key: 'CRAWLING', icon: Globe },
+  { key: 'EXTRACTING', icon: FileSearch },
+  { key: 'ANALYZING', icon: Brain },
+  { key: 'MAPPING', icon: Layers },
+  { key: 'STYLING', icon: Palette },
 ] as const;
 
 type PhaseKey = typeof PHASES[number]['key'];
@@ -28,6 +29,7 @@ function getPhaseState(currentStatus: string, phaseKey: PhaseKey): 'done' | 'act
 }
 
 export function ScanProgressView() {
+  const { t } = useTranslation('website-scanner');
   const { jobId, setViewState } = useWebsiteScannerStore();
   const { data: progress } = useScanProgress(jobId);
   const cancelMutation = useCancelScan();
@@ -52,7 +54,7 @@ export function ScanProgressView() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-700">
-            {isFailed ? 'Scan Failed' : isCancelled ? 'Scan Cancelled' : 'Scanning...'}
+            {isFailed ? t('progress.failed') : isCancelled ? t('progress.cancelled') : t('progress.scanning')}
           </span>
           <span className="text-sm text-gray-500">{progress?.progress ?? 0}%</span>
         </div>
@@ -86,27 +88,27 @@ export function ScanProgressView() {
                 <div className="flex items-center gap-2">
                   <Icon className={`h-4 w-4 ${state === 'pending' ? 'text-gray-400' : 'text-gray-600'}`} />
                   <span className={`text-sm font-medium ${state === 'pending' ? 'text-gray-400' : 'text-gray-900'}`}>
-                    {phase.label}
+                    {t(`phases.${phase.key}.label`)}
                   </span>
                 </div>
                 <p className={`text-xs mt-0.5 ${state === 'pending' ? 'text-gray-300' : 'text-gray-500'}`}>
-                  {phase.description}
+                  {t(`phases.${phase.key}.description`)}
                 </p>
 
                 {/* Phase-specific details */}
                 {state === 'active' && phase.key === 'CRAWLING' && progress && (
                   <div className="mt-2 text-xs text-primary-700">
-                    {progress.pagesCrawled}/{progress.pagesDiscovered} pages crawled
+                    {t('progress.pagesCrawled', { crawled: progress.pagesCrawled, discovered: progress.pagesDiscovered })}
                     {progress.currentPage && (
                       <span className="block text-gray-500 truncate mt-0.5">
-                        Currently: {progress.currentPage}
+                        {t('progress.currently', { page: progress.currentPage })}
                       </span>
                     )}
                   </div>
                 )}
                 {state === 'active' && phase.key === 'ANALYZING' && progress && (
                   <div className="mt-2 text-xs text-primary-700">
-                    {progress.categoriesDone}/{progress.categoriesTotal} areas analyzed
+                    {t('progress.areasAnalyzed', { done: progress.categoriesDone, total: progress.categoriesTotal })}
                     {progress.currentCategory && (
                       <span className="block text-gray-500 mt-0.5">{progress.currentCategory}</span>
                     )}
@@ -120,7 +122,7 @@ export function ScanProgressView() {
                 {phase.key === 'STYLING' && progress?.brandstyleError && state === 'done' && (
                   <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600">
                     <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span>Completed with warning: {progress.brandstyleError}</span>
+                    <span>{t('progress.completedWithWarning', { error: progress.brandstyleError })}</span>
                   </div>
                 )}
               </div>
@@ -135,7 +137,7 @@ export function ScanProgressView() {
           <div className="flex items-center gap-2 mb-2">
             <XCircle className="h-4 w-4 text-red-500" />
             <span className="text-sm font-medium text-red-700">
-              {isFailed ? 'Scan encountered errors' : 'Scan was cancelled'}
+              {isFailed ? t('progress.errorsTitle') : t('progress.cancelledTitle')}
             </span>
           </div>
           {progress.errors.map((err, i) => (
@@ -152,7 +154,7 @@ export function ScanProgressView() {
             disabled={cancelMutation.isPending}
             className="px-4 py-2 border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
           >
-            Cancel Scan
+            {t('progress.cancel')}
           </button>
         )}
         {(isFailed || isCancelled) && (
@@ -161,7 +163,7 @@ export function ScanProgressView() {
             className="px-4 py-2 text-sm font-medium text-white rounded-lg"
             style={{ backgroundColor: '#0D9488' }}
           >
-            Try Again
+            {t('progress.tryAgain')}
           </button>
         )}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { MediumConfigLayout } from './MediumConfigLayout';
 import { VideoSpecifications } from './VideoSpecifications';
@@ -15,6 +16,7 @@ interface VideoConfigPanelProps {
 
 /** Video medium config — 3 sections: Specs, Style & Audio, Scene Video Builder */
 export function VideoConfigPanel({ onAdvance, deliverableId }: VideoConfigPanelProps) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   // Initialize video defaults on mount, removing stale keys from previous categories
   useEffect(() => {
     const current = useCanvasStore.getState().mediumConfigValues;
@@ -59,14 +61,14 @@ export function VideoConfigPanel({ onAdvance, deliverableId }: VideoConfigPanelP
     if (needsUpdate) {
       useCanvasStore.getState().setMediumConfigValues(cleaned);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  
 
   return (
     <MediumConfigLayout onAdvance={onAdvance} deliverableId={deliverableId}>
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">Video Configuration</h3>
+        <h3 className="text-lg font-semibold text-gray-800">{t('videoConfig.title')}</h3>
         <p className="text-sm text-gray-500 mt-1">
-          Set specifications and style, then generate video per scene below.
+          {t('videoConfig.subtitle')}
         </p>
       </div>
 

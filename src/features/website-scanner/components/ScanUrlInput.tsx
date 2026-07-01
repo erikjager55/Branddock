@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Globe, ArrowRight, AlertCircle } from 'lucide-react';
 import { useWebsiteScannerStore } from '../stores/useWebsiteScannerStore';
 import { useStartScan } from '../hooks';
@@ -15,6 +16,7 @@ function isValidUrl(str: string): boolean {
 }
 
 export function ScanUrlInput() {
+  const { t } = useTranslation('website-scanner');
   const { url, setUrl, setJobId, setViewState } = useWebsiteScannerStore();
   const startScan = useStartScan();
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +27,7 @@ export function ScanUrlInput() {
 
     const normalized = url.startsWith('http') ? url : `https://${url}`;
     if (!isValidUrl(normalized)) {
-      setError('Please enter a valid website URL');
+      setError(t('urlInput.errorInvalidUrl'));
       return;
     }
 
@@ -34,7 +36,7 @@ export function ScanUrlInput() {
       setJobId(result.id);
       setViewState('scanning');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start scan');
+      setError(err instanceof Error ? err.message : t('urlInput.errorStartFailed'));
     }
   };
 
@@ -45,10 +47,10 @@ export function ScanUrlInput() {
           <Globe className="h-7 w-7 text-primary" />
         </div>
         <h2 className="text-lg font-semibold text-gray-900 mb-1">
-          Enter your website URL
+          {t('urlInput.title')}
         </h2>
         <p className="text-sm text-gray-500 max-w-md mx-auto">
-          We&apos;ll scan your website and automatically extract brand information, products, audience insights, and more.
+          {t('urlInput.subtitle')}
         </p>
       </div>
 
@@ -59,7 +61,7 @@ export function ScanUrlInput() {
             type="text"
             value={url}
             onChange={(e) => { setUrl(e.target.value); setError(null); }}
-            placeholder="www.your-company.com"
+            placeholder={t('urlInput.placeholder')}
             className={`w-full pl-10 pr-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${
               error ? 'border-red-300' : 'border-gray-200'
             }`}
@@ -86,11 +88,11 @@ export function ScanUrlInput() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              Starting scan...
+              {t('urlInput.starting')}
             </>
           ) : (
             <>
-              Start Scan
+              {t('urlInput.start')}
               <ArrowRight className="h-4 w-4" />
             </>
           )}
@@ -100,12 +102,17 @@ export function ScanUrlInput() {
       {/* What we scan */}
       <div className="mt-8 pt-6 border-t border-gray-100">
         <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3 text-center">
-          What we extract
+          {t('urlInput.extractHeading')}
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {['Brand Identity', 'Products & Services', 'Target Audience', 'Competitive Signals'].map((item) => (
-            <div key={item} className="text-center p-3 rounded-lg bg-gray-50">
-              <span className="text-xs text-gray-600">{item}</span>
+          {[
+            { id: 'brandIdentity', label: t('urlInput.extract.brandIdentity') },
+            { id: 'productsServices', label: t('urlInput.extract.productsServices') },
+            { id: 'targetAudience', label: t('urlInput.extract.targetAudience') },
+            { id: 'competitiveSignals', label: t('urlInput.extract.competitiveSignals') },
+          ].map((item) => (
+            <div key={item.id} className="text-center p-3 rounded-lg bg-gray-50">
+              <span className="text-xs text-gray-600">{item.label}</span>
             </div>
           ))}
         </div>

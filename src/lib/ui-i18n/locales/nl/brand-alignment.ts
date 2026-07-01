@@ -274,6 +274,7 @@ const ns = {
     belowThresholdScores_other: '{{count}} interne scores onder drempel',
     noBelowThreshold: 'Geen scores onder drempel',
     passRateTrend: 'Slagingspercentage-trend (7d)',
+    trendStable: 'stabiel',
     reviewsCount_one: '{{count}} review',
     reviewsCount_other: '{{count}} reviews',
     inSevenDays: 'in 7 dagen',
@@ -282,6 +283,7 @@ const ns = {
     noFindings: 'Geen findings.',
     recentReviews: 'Recente reviews',
     noReviews: 'Geen reviews.',
+    feedbackLoop: 'Feedback-loop',
     sourceLabels: {
       paste: 'Plakken',
       url: 'URL',

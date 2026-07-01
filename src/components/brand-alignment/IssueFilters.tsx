@@ -1,23 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { RotateCcw } from 'lucide-react';
 import { Select, Button } from '@/components/shared';
 import { useBrandAlignmentStore } from '@/stores/useBrandAlignmentStore';
 import { MODULE_CONFIG } from '@/lib/alignment/module-config';
 import type { IssueSeverity, IssueStatus, AlignmentModule } from '@/types/brand-alignment';
-
-// ─── Filter option constants ────────────────────────────────
-
-const STATUS_OPTIONS = [
-  { value: 'OPEN', label: 'Open' },
-  { value: 'DISMISSED', label: 'Dismissed' },
-  { value: 'FIXED', label: 'Fixed' },
-];
-
-const SEVERITY_OPTIONS = [
-  { value: 'CRITICAL', label: 'Critical' },
-  { value: 'WARNING', label: 'Warning' },
-  { value: 'SUGGESTION', label: 'Suggestion' },
-];
 
 const MODULE_OPTIONS = (Object.keys(MODULE_CONFIG) as AlignmentModule[]).map((key) => ({
   value: key,
@@ -27,6 +14,20 @@ const MODULE_OPTIONS = (Object.keys(MODULE_CONFIG) as AlignmentModule[]).map((ke
 // ─── Component ──────────────────────────────────────────────
 
 export function IssueFilters() {
+  const { t } = useTranslation('brand-alignment');
+
+  const STATUS_OPTIONS = [
+    { value: 'OPEN', label: t('filters.statusOpen') },
+    { value: 'DISMISSED', label: t('filters.statusDismissed') },
+    { value: 'FIXED', label: t('filters.statusFixed') },
+  ];
+
+  const SEVERITY_OPTIONS = [
+    { value: 'CRITICAL', label: t('filters.severityCritical') },
+    { value: 'WARNING', label: t('filters.severityWarning') },
+    { value: 'SUGGESTION', label: t('filters.severitySuggestion') },
+  ];
+
   const severityFilter = useBrandAlignmentStore((s) => s.severityFilter);
   const statusFilter = useBrandAlignmentStore((s) => s.statusFilter);
   const moduleFilter = useBrandAlignmentStore((s) => s.moduleFilter);
@@ -44,7 +45,7 @@ export function IssueFilters() {
         value={statusFilter ?? null}
         onChange={(v) => setStatusFilter(v ? (v as IssueStatus) : null)}
         options={STATUS_OPTIONS}
-        placeholder="All Issues"
+        placeholder={t('filters.allIssues')}
         className="w-auto"
       />
 
@@ -52,7 +53,7 @@ export function IssueFilters() {
         value={moduleFilter ?? null}
         onChange={(v) => setModuleFilter(v || null)}
         options={MODULE_OPTIONS}
-        placeholder="All Modules"
+        placeholder={t('filters.allModules')}
         className="w-auto"
       />
 
@@ -60,13 +61,13 @@ export function IssueFilters() {
         value={severityFilter ?? null}
         onChange={(v) => setSeverityFilter(v ? (v as IssueSeverity) : null)}
         options={SEVERITY_OPTIONS}
-        placeholder="All Severity"
+        placeholder={t('filters.allSeverity')}
         className="w-auto"
       />
 
       {hasFilters && (
         <Button variant="ghost" size="sm" icon={RotateCcw} onClick={resetFilters}>
-          Reset
+          {t('filters.reset')}
         </Button>
       )}
     </div>

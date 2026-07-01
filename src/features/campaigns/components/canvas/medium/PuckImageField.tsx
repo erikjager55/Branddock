@@ -1,6 +1,7 @@
 'use client';
 
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { ImageIcon, Loader2, Sparkles, FolderOpen, Globe, Trash2 } from 'lucide-react';
 import { Modal } from '@/components/shared';
@@ -27,7 +28,7 @@ const makeLazyImageSourcePanel = () =>
  * te vangen zijn.
  */
 class PickerErrorBoundary extends React.Component<
-  { onRetry: () => void; children: React.ReactNode },
+  { onRetry: () => void; children: React.ReactNode; t: (key: string) => string },
   { hasError: boolean }
 > {
   state = { hasError: false };
@@ -45,7 +46,7 @@ class PickerErrorBoundary extends React.Component<
       return (
         <div className="flex flex-col items-center gap-3 py-10 text-center">
           <p className="text-sm text-gray-600">
-            The image picker could not be loaded.
+            {this.props.t('imageField.pickerLoadError')}
           </p>
           <button
             type="button"
@@ -55,7 +56,7 @@ class PickerErrorBoundary extends React.Component<
             }}
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
           >
-            Opnieuw proberen
+            {this.props.t('imageField.retry')}
           </button>
         </div>
       );
@@ -112,6 +113,7 @@ export function PuckImageField({
   /** Puck's field-render readOnly-arg: toon alleen de preview, geen acties. */
   readOnly?: boolean;
 }) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const [pickerOpen, setPickerOpen] = useState(false);
   const [LazyPanel, setLazyPanel] = useState(() => makeLazyImageSourcePanel());
   const deliverableId = useCanvasStore((s) => s.deliverableId);
@@ -162,11 +164,11 @@ export function PuckImageField({
   // uit de generate-routes vs media-library-uploads vs externe URLs).
   const sourceBadge = !hasValue ? null
     : /feature-visual-|canvas-visual-|canvas-refined-/.test(value as string)
-      ? { label: 'AI-gegenereerd', Icon: Sparkles }
+      ? { label: t('imageField.badge.aiGenerated'), Icon: Sparkles }
     : (value as string).startsWith('/uploads/')
-      ? { label: 'Media library', Icon: FolderOpen }
+      ? { label: t('imageField.badge.mediaLibrary'), Icon: FolderOpen }
     : /^https?:\/\//.test(value as string)
-      ? { label: 'Extern', Icon: Globe }
+      ? { label: t('imageField.badge.external'), Icon: Globe }
     : null;
 
   const handleSelected = (selection: InsertImageSelection) => {
@@ -188,7 +190,7 @@ export function PuckImageField({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={value as string}
-            alt={label ?? 'Gekozen afbeelding'}
+            alt={label ?? t('imageField.chosenImageAlt')}
             onError={() => setBrokenUrl(value as string)}
             className="aspect-video w-full rounded-md border border-gray-200 object-cover"
           />
@@ -203,7 +205,7 @@ export function PuckImageField({
         <div className="flex aspect-video w-full items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50">
           <span className="inline-flex items-center gap-1.5 text-xs text-gray-400">
             <ImageIcon className="h-4 w-4" />
-            {hasValue ? 'Afbeelding niet laadbaar' : 'Geen afbeelding'}
+            {hasValue ? t('imageField.notLoadable') : t('imageField.noImage')}
           </span>
         </div>
       )}
@@ -214,21 +216,34 @@ export function PuckImageField({
             type="button"
             ref={triggerRef}
             onClick={openPicker}
-            aria-label={`${hasValue ? 'Vervang' : 'Kies'} afbeelding${label ? ` — ${label}` : ''}`}
+            aria-label={
+              label
+                ? t('imageField.withLabel', {
+                    action: hasValue ? t('imageField.replace') : t('imageField.choose'),
+                    label,
+                  })
+                : hasValue
+                  ? t('imageField.replace')
+                  : t('imageField.choose')
+            }
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
           >
             <ImageIcon className="h-3.5 w-3.5" />
-            {hasValue ? 'Vervang afbeelding' : 'Kies afbeelding'}
+            {hasValue ? t('imageField.replace') : t('imageField.choose')}
           </button>
           {allowClear && hasValue ? (
             <button
               type="button"
               onClick={() => onChange(CLEAR_IMAGE_SENTINEL)}
-              aria-label={`Remove image${label ? ` — ${label}` : ''}`}
+              aria-label={
+                label
+                  ? t('imageField.withLabel', { action: t('imageField.removeAria'), label })
+                  : t('imageField.removeAria')
+              }
               className="inline-flex items-center gap-1.5 rounded-md bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Remove
+              {t('imageField.remove')}
             </button>
           ) : null}
         </div>
@@ -243,8 +258,8 @@ export function PuckImageField({
             <Modal
               isOpen
               onClose={() => setPickerOpen(false)}
-              title="Choose image"
-              subtitle="Select, search or generate an image from your media library"
+              title={t('imageField.modalTitle')}
+              subtitle={t('imageField.modalSubtitle')}
               size="xl"
               zIndex={2147483647}
               // Nooit body-attrs muteren terwijl de Puck-editor gemount is:
@@ -252,12 +267,12 @@ export function PuckImageField({
               // 2026-06-10). Body is hier toch niet de scroller.
               lockBodyScroll={false}
             >
-              <PickerErrorBoundary onRetry={() => setLazyPanel(() => makeLazyImageSourcePanel())}>
+              <PickerErrorBoundary t={t} onRetry={() => setLazyPanel(() => makeLazyImageSourcePanel())}>
                 <Suspense
                   fallback={
                     <div role="status" className="flex items-center justify-center py-12">
                       <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                      <span className="sr-only">Loading image picker…</span>
+                      <span className="sr-only">{t('imageField.loadingPicker')}</span>
                     </div>
                   }
                 >

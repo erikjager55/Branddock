@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { useVoiceBaseline1Pager } from '../hooks/use-voice-baseline-1pager';
 import type { VoiceAttribute, VoiceBaseline1Pager as VoiceBaseline1PagerData } from '@/lib/brand-fidelity/voice-baseline-1pager';
@@ -18,6 +19,7 @@ import type { VoiceAttribute, VoiceBaseline1Pager as VoiceBaseline1PagerData } f
  * page is wired into App.tsx).
  */
 export function VoiceBaseline1Pager() {
+  const { t } = useTranslation('brand-alignment');
   const { data, isLoading, isError } = useVoiceBaseline1Pager();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -53,9 +55,9 @@ export function VoiceBaseline1Pager() {
         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-900">Brand Voice Baseline</span>
+          <span className="text-sm font-semibold text-gray-900">{t('voiceBaseline.title')}</span>
           <span className="text-xs text-gray-500">
-            (as F-VAL + Strategy Analyst read the baseline)
+            {t('voiceBaseline.subtitle')}
           </span>
         </div>
         {collapsed ? (
@@ -69,9 +71,9 @@ export function VoiceBaseline1Pager() {
         <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Section 1: Tone-attributes */}
           <Section
-            title="Tone-attributes"
+            title={t('voiceBaseline.toneAttributes')}
             empty={data.attributes.length === 0}
-            emptyHint={`${data.derivedFromCount.attributesAvailable}/4 axes defined`}
+            emptyHint={t('voiceBaseline.axesDefined', { count: data.derivedFromCount.attributesAvailable })}
           >
             <div className="space-y-2">
               {data.attributes.map((attr) => (
@@ -81,15 +83,15 @@ export function VoiceBaseline1Pager() {
           </Section>
 
           {/* Section 2: Preferred + avoid termen */}
-          <Section title="Terms" empty={false}>
+          <Section title={t('voiceBaseline.terms')} empty={false}>
             <div className="space-y-3">
               <TermGroup
-                label="Preferred (top 10)"
+                label={t('voiceBaseline.preferredTop10')}
                 terms={data.preferredTermsTop10}
                 tone="positive"
               />
               <TermGroup
-                label="Avoid (top 10)"
+                label={t('voiceBaseline.avoidTop10')}
                 terms={data.avoidTermsTop10}
                 tone="negative"
               />
@@ -98,9 +100,9 @@ export function VoiceBaseline1Pager() {
 
           {/* Section 3: Style rules */}
           <Section
-            title="Style rules"
+            title={t('voiceBaseline.styleRules')}
             empty={data.styleRules.length === 0}
-            emptyHint="Complete BV anti-patterns"
+            emptyHint={t('voiceBaseline.completeAntiPatterns')}
           >
             <ol className="space-y-1.5 text-sm text-gray-700 list-decimal list-inside">
               {data.styleRules.map((rule, i) => (
@@ -127,6 +129,7 @@ function Section({
   emptyHint?: string;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation('brand-alignment');
   return (
     <div>
       <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
@@ -134,7 +137,7 @@ function Section({
       </h3>
       {empty ? (
         <p className="text-sm text-gray-400 italic">
-          Not yet defined
+          {t('voiceBaseline.notYetDefined')}
           {emptyHint ? ` (${emptyHint})` : ''}
         </p>
       ) : (
@@ -174,11 +177,12 @@ function TermGroup({
   terms: string[];
   tone: 'positive' | 'negative';
 }) {
+  const { t } = useTranslation('brand-alignment');
   if (terms.length === 0) {
     return (
       <div>
         <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
-        <p className="text-sm text-gray-400 italic">Not yet defined</p>
+        <p className="text-sm text-gray-400 italic">{t('voiceBaseline.notYetDefined')}</p>
       </div>
     );
   }
@@ -204,15 +208,14 @@ function TermGroup({
 }
 
 function EmptyVoiceBaseline() {
+  const { t } = useTranslation('brand-alignment');
   return (
     <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 mb-6 flex items-start gap-3">
       <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
       <div className="text-sm">
-        <p className="font-semibold text-amber-900 mb-1">Voice baseline not yet defined</p>
+        <p className="font-semibold text-amber-900 mb-1">{t('voiceBaseline.emptyTitle')}</p>
         <p className="text-amber-800">
-          The F-VAL judge and Strategy Analyst (upcoming) need the Brand Voiceguide
-          as a baseline. Complete the Voice DNA + Vocabulary + Anti-patterns
-          sections to see the framework here.
+          {t('voiceBaseline.emptyBody')}
         </p>
       </div>
     </div>
