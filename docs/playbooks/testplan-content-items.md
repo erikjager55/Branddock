@@ -150,7 +150,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R newsletter** | Hero banner + section dividers (HTML) | ☐ | ☐ | ☐ | |
+| **R newsletter** | Hero banner + section dividers (HTML) | ☐ | ☐ | ☐ | **HIDDEN 2026-07-01** — `hidden:true` + categorie uit picker (`deliverable-types.ts:691,1115`). SKIP: niet bereikbaar via normale flow. Zie bug-log §5. |
 | welcome-sequence | Hero per email + branded footer | ☐ | ☐ | ☐ | |
 | promotional-email | Hero + product-cards (HTML) | ☐ | ☐ | ☐ | |
 | nurture-sequence | Hero per email | ☐ | ☐ | ☐ | |
@@ -220,7 +220,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R press-release** | Document layout (HTML/PDF) | ☐ | ☐ | ☐ | |
+| **R press-release** | Document layout (HTML/PDF) | ☐ | ☐ | ☐ | **HIDDEN 2026-07-01** — `hidden:true` (`deliverable-types.ts:998`). SKIP: niet in Add-Content-modal. Zie bug-log §5. |
 | media-pitch | Geen asset (email/tekst) | ☐ | ☐ | ☐ | |
 | internal-comms | Header banner + formatted body | ☐ | ☐ | ☐ | |
 | career-page | Page layout met team foto slot | ☐ | ☐ | ☐ | |
@@ -398,15 +398,39 @@ Uit onderzoek — te verifiëren in de test-ronde, niet als aanname behandelen:
 
 ### Round 1 — Representanten
 
+**Pre-flight audit 2026-07-01** — code-niveau, vóór de handmatige sweep (Napking-workspace). 3 parallelle prompt-path audits + 2 DB-geverifieerde precondities. Doel: shared-pipeline-bugs voorspellen + false-positives voorkomen, zodat de sweep sneller loopt.
+
+**Precondities (geverifieerd groen):**
+- Napking `Workspace.contentLanguage = nl` + `BrandVoiceguide.contentLocale = nl-NL` → de NL taal-directive wórdt geïnjecteerd (`brand-voice-directive.ts:132-150`). Wholesale-Engelse output uitgesloten; rest-risico = Engelse sectielabels/few-shot-bleed (P2).
+- `google/search-ad` MediumEnrichment-rij is geseed → search-ad crasht niet met "No component template resolved" (heeft geen fallback-template).
+
+**Bereikbaarheid — 2 representanten GEBLOKKEERD (beslissing: SKIP + loggen):**
+- `[newsletter]` REACHABILITY P1 — `hidden:true` (`deliverable-types.ts:691`) + hele "Email & Automation"-categorie uit de Add-Content-picker (`:1115`). Niet aanmaakbaar via normale flow. **Beslissing 2026-07-01: skip, niet un-hiden.** Email-representant blijft ongetest tot categorie bewust heractiveerd.
+- `[press-release]` REACHABILITY P1 — `hidden:true` (`deliverable-types.ts:998`). Niet in Add-Content-modal. **Beslissing 2026-07-01: skip.** PR/Comms-representant ongetest.
+
+**Sweep-scope Ronde 1 = 6 zichtbare types:** search-ad · landing-page · explainer-video · one-pager · linkedin-post · blog-post (Napking-hertest optioneel).
+
+**Per-type watch-list — te verifiëren tijdens sweep:**
+- `[search-ad]` — (P2) char-limits 30/90 worden NIET afgedwongen, alleen gesignaleerd → check dat de ad-quality-indicator groen is. (P2) Engelse Title-Case headlines uit few-shot; taal-check slaat velden <30 chars over → lees elke headline. NIET-FLAG: SERP-preview toont bewust `napking.com` lowercase (chrome).
+- `[landing-page]` — (P1) SEO-keyword-pad laat `[QUOTE:]`/`[CASE STUDY:]`/`[internal link:]` markers staan (cleanup carve-out `seo-prompts.ts:355`) → **grootste eyeball**. (P2) persona-leak op SEO-pad (guardrail ontbreekt in seo-prompts). (P2) hardcoded Engelse CTA-knoppen in `WebPageLayout.renderCta`. (P2) 8-staps SEO-pijplijn (tot 300s/32K per stap) kan mid-run hangen → lege output. NIET-FLAG: edit/preview duplicate-tekst is gefixt (m.u.v. magazine pull-quote + title+body-H1-overlap).
+- `[explainer-video]` — (P2) output = sectie-outline met timestamps/`[VISUAL]`/`(VOICEOVER)`, GEEN hook/body/cta scene-cards. (P2) export: geen SRT (nergens geïmplementeerd), geen PDF (platform≠web) → alleen Copy/MD/HTML. NIET-FLAG: knop toont "Confirm & Continue" (niet "Configure Video") = correct; flip = regressie.
+- `[one-pager]` — (P2) output = markdown-bullets, geen HTML/PDF one-pager; geen PDF-knop (platform sales≠web). (P2) SOLUTION moet outcomes lezen, geen feature-dump. Structureel schoon: placeholder-prijzen (triple-guarded), merknaam, CTA (48-char cap).
+- `[linkedin-post]` — flow niet eerder afgerond. Effie-fix runtime-verify: Strategy-step console `document.body.innerText.match(/effie/gi)` → moet `null`. Volledige 6-staps flow doorlopen.
+- `[blog-post]` — PASSED 2026-05-18 op LINFI-workspace. Napking-hertest optioneel voor NL-baseline + effie DOM-grep.
+
+**Cross-cutting (alle types):** SSE-abort stopt de server-generatie NIET (geen `request.signal`-listener) → weg-navigeren mid-run kan stuck spinner / stale-of-lege state / race met tweede generate geven. Preview-chrome is vaak hardcoded Engels (email "Hi {{firstName}}", generic-preview labels "DATELINE LEAD") → chrome ≠ content, niet flaggen.
+
+**Sweep-resultaten** (invullen tijdens handmatig testen — format `[type] [stap] severity: beschrijving → verwachte fix`):
+
 ```
-[blog-post] [...]
-[linkedin-post] [...]
 [search-ad] [...]
-[newsletter] [...]
 [landing-page] [...]
 [explainer-video] [...]
 [one-pager] [...]
-[press-release] [...]
+[linkedin-post] [...]
+[blog-post] [...]
+[newsletter] SKIPPED — hidden (zie boven)
+[press-release] SKIPPED — hidden (zie boven)
 ```
 
 ### Round 1 — Long-Form categorie-sweep (2026-05-18)
