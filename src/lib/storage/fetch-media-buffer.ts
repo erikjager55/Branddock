@@ -16,6 +16,12 @@ import path from "node:path";
  */
 export async function fetchMediaAsBuffer(url: string, label = "media"): Promise<Buffer> {
   if (url.startsWith("/")) {
+    // Relatieve /uploads-paden bestaan alleen bij LocalStorageProvider (dev).
+    // Op serverless persisteert die disk niet → een relatieve URL in prod is een
+    // bug (R2 hoort absolute URLs te geven). Fail-closed i.p.v. dode disk-read.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(`Kan ${label} niet lezen: relatief pad "${url}" in productie (R2 niet geconfigureerd?)`);
+    }
     const filePath = path.join("public", url.replace(/^\//, ""));
     return readFile(filePath);
   }

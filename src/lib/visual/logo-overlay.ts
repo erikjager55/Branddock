@@ -157,6 +157,10 @@ async function fetchAsBuffer(url: string, label: string): Promise<Buffer> {
   // can't resolve those without a base host, so we read straight from disk
   // — matches the path-resolution used by LocalStorageProvider.delete.
   if (url.startsWith('/')) {
+    // Zie fetch-media-buffer: relatief pad = local-dev; in prod fail-closed.
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(`Failed to fetch ${label}: relatief pad "${url}" in productie (R2 niet geconfigureerd?)`);
+    }
     const filePath = path.join('public', url.replace(/^\//, ''));
     return readFile(filePath);
   }

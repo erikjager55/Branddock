@@ -11,9 +11,18 @@ let _provider: StorageProvider | null = null;
 
 export function getStorageProvider(): StorageProvider {
   if (!_provider) {
-    _provider = isR2Configured()
-      ? new R2StorageProvider()
-      : new LocalStorageProvider();
+    if (isR2Configured()) {
+      _provider = new R2StorageProvider();
+    } else if (process.env.NODE_ENV === 'production') {
+      // Serverless (Vercel) heeft geen persistente fs → LocalStorageProvider
+      // schrijft naar ephemeral/read-only disk. Fail-closed in prod zodat
+      // uploads luid falen i.p.v. stil te verdwijnen.
+      throw new Error(
+        'R2 object storage is niet geconfigureerd in productie. Zet R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY.',
+      );
+    } else {
+      _provider = new LocalStorageProvider();
+    }
   }
   return _provider;
 }
