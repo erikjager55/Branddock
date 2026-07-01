@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { withAiRateLimit } from "@/lib/ai/middleware";
-import { analyzeUrl } from "@/lib/brandstyle/analysis-engine";
+import { dispatchJob } from "@/lib/agents/jobs/dispatch";
 
 const analyzeUrlSchema = z.object({
   url: z.string().url("Invalid URL"),
@@ -55,11 +55,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Start real analysis as fire-and-forget background task
-    // The analysis engine updates DB status progressively;
-    // frontend polls GET /api/brandstyle/analyze/status/[jobId]
-    analyzeUrl(styleguide.id, parsed.data.url).catch((err) => {
-      console.error("[analyze/url background] unhandled:", err);
+    // Serverless-safe: op de AgentJob-queue i.p.v. fire-and-forget (dat wordt op
+    // Vercel gekild na de response). De analyse-engine schrijft analysisStatus
+    // progressief naar de DB; frontend blijft GET /analyze/status/[jobId] pollen.
+    // maxAttempts:1 — analyse is duur (AI-calls) + de route is destructief; bij
+    // falen landt de engine op ERROR en laat de user opnieuw triggeren.
+    await dispatchJob({
+      type: "BRANDSTYLE_ANALYZE_URL",
+      payload: { styleguideId: styleguide.id, url: parsed.data.url },
+      workspaceId,
+      priority: 50,
+      maxAttempts: 1,
+      idempotencyKey: `brandstyle-analyze:${styleguide.id}`,
+      triggeredBy: "user",
     });
 
     return NextResponse.json({ jobId: styleguide.analysisJobId }, { status: 201 });

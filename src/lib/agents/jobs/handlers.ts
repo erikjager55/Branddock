@@ -63,3 +63,32 @@ registerHandler('BRANDSTYLE_SNAPSHOT_CLEANUP', async (job) => {
   });
   return result as unknown as Record<string, unknown>;
 });
+
+// ─── Serverless-hardening: onboarding-pipelines op de queue (A1) ──────────
+// Deze pipelines waren fire-and-forget in de route → op Vercel gekild na de
+// response. De engine schrijft progress zelf naar de DB (brandStyleguide.
+// analysisStatus), dus het client-polling-contract blijft ongewijzigd.
+
+registerHandler('BRANDSTYLE_ANALYZE_URL', async (job) => {
+  const { styleguideId, url } = (job.payload ?? {}) as { styleguideId?: string; url?: string };
+  if (!styleguideId || !url) throw new Error('BRANDSTYLE_ANALYZE_URL: styleguideId + url vereist');
+  const { analyzeUrl } = await import('@/lib/brandstyle/analysis-engine');
+  await analyzeUrl(styleguideId, url);
+  return { styleguideId };
+});
+
+registerHandler('BRANDSTYLE_ANALYZE_PDF', async (job) => {
+  const { styleguideId, fileUrl, fileName } = (job.payload ?? {}) as {
+    styleguideId?: string;
+    fileUrl?: string;
+    fileName?: string;
+  };
+  if (!styleguideId || !fileUrl || !fileName) {
+    throw new Error('BRANDSTYLE_ANALYZE_PDF: styleguideId + fileUrl + fileName vereist');
+  }
+  const { fetchMediaAsBuffer } = await import('@/lib/storage/fetch-media-buffer');
+  const { analyzePdf } = await import('@/lib/brandstyle/analysis-engine');
+  const buffer = await fetchMediaAsBuffer(fileUrl, 'brandstyle-pdf');
+  await analyzePdf(styleguideId, buffer, fileName);
+  return { styleguideId };
+});
