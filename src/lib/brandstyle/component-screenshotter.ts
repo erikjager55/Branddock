@@ -27,6 +27,7 @@ import type {
   ExtractedComponentStyles,
 } from "./component-extractor";
 import { getStorageProvider } from "@/lib/storage";
+import { launchHeadlessBrowser } from "@/lib/browser/launch";
 import {
   extractBulkComputedStyles,
   mergeBulkComputedStyles,
@@ -317,18 +318,9 @@ export async function extractComponentsFromPages(
   workspaceId: string,
 ): Promise<ComponentScrapeResult> {
   if (urls.length === 0) return { components: [], bulkStyles: null };
-  let chromium: typeof import("playwright").chromium;
-  try {
-    ({ chromium } = await import("playwright"));
-  } catch (err) {
-    throw new Error(
-      `Component screenshots unavailable: playwright not installed (${err instanceof Error ? err.message : String(err)})`,
-    );
-  }
-
   const deadline = Date.now() + TIMEOUT_MS;
   const storage = getStorageProvider();
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchHeadlessBrowser();
 
   // Cross-page dedup: seen hashes per type. A primary CTA rendered
   // with the same size+bg on multiple pages collapses to one entry.

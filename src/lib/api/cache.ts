@@ -4,6 +4,14 @@ import { NextResponse } from 'next/server';
 // Uses globalThis to ensure a single shared Map across all Next.js
 // route handler module instances (Turbopack may load modules multiple
 // times, causing separate Map instances if declared at module scope).
+//
+// SERVERLESS (Vercel) — bewust per-instance (A5, besluit 2026-07-01): deze
+// cache is NIET gedeeld over lambda-instances. Gevolg: lagere hit-rate + tot
+// ~TTL (30-60s) cross-instance staleness na een mutatie (invalidateCache bust
+// alleen de lokale instance). Acceptabele degradatie voor de pilot. Een echt
+// gedeelde cache vereist Redis, maar deze API is synchroon en Redis async →
+// dat vergt de hele API async + ~162 consumers awaiten. Geparkeerd als aparte
+// post-pilot task (zie plan Fase 2 A5).
 
 interface CacheEntry {
   data: unknown;
