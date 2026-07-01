@@ -414,6 +414,12 @@ Uit onderzoek — te verifiëren in de test-ronde, niet als aanname behandelen:
 
 **Realiteit picker-scope (2026-07-01):** van de 55 code-type-definities zijn er **31 hidden**; slechts **24 zichtbaar** in 4 categorieën (Long-Form 8, Social Media 5, Advertising & Paid 6, Website 5). De 53-type-matrix in §4 is grotendeels achterhaald. De echte **Ronde 1 varianten-scope = de resterende ~16 zichtbare types** (buiten de al-geteste representanten + de Long-Form-sweep).
 
+**Varianten reachability — hard-geverifieerd 2026-07-01** (via `CONTENT_TYPE_TO_MEDIUM` `canvas-context.ts:260` × geseede `MediumEnrichment`-rijen × `FALLBACK_BY_CONTENT_TYPE`): **alle 16 zichtbare varianten resolven** → geen "No component template resolved" hard-throw te verwachten. Wél 3 structuur-leen-gevallen (content-kwaliteit-watch, geen crash):
+- `product-page` → `web/landing-page` medium zónder eigen fallback → genereert met de **generieke landing-page-structuur** (geen product-hero/feature-grid groups).
+- `social-ad` → leent `linkedin/ad`-structuur (heet nochtans "Meta/LinkedIn/TikTok").
+- `linkedin-article` → leent `linkedin/organic-post` (zelfde als linkedin-post) terwijl de prompt long-form AUTHORITY ARTICLE is → mogelijke structuur-mismatch.
+- faq-page/comparison-page/microsite krijgen wél type-specifieke groups via `FALLBACK_FIRST_TYPES` → schoon.
+
 **Per-type watch-list — te verifiëren tijdens sweep:**
 - `[search-ad]` — (P2) char-limits 30/90 worden NIET afgedwongen, alleen gesignaleerd → check dat de ad-quality-indicator groen is. (P2) Engelse Title-Case headlines uit few-shot; taal-check slaat velden <30 chars over → lees elke headline. NIET-FLAG: SERP-preview toont bewust `napking.com` lowercase (chrome).
 - `[landing-page]` — (P1) SEO-keyword-pad laat `[QUOTE:]`/`[CASE STUDY:]`/`[internal link:]` markers staan (cleanup carve-out `seo-prompts.ts:355`) → **grootste eyeball**. (P2) persona-leak op SEO-pad (guardrail ontbreekt in seo-prompts). (P2) hardcoded Engelse CTA-knoppen in `WebPageLayout.renderCta`. (P2) 8-staps SEO-pijplijn (tot 300s/32K per stap) kan mid-run hangen → lege output. NIET-FLAG: edit/preview duplicate-tekst is gefixt (m.u.v. magazine pull-quote + title+body-H1-overlap).
