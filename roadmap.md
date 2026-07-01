@@ -86,7 +86,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 
 | ID | Titel | Effort | Sprint | Status |
 |---|---|---|---|---|
-| `content-items-test-coverage` | Handmatige testplan 53 types (representanten + Ronde 1 + Ronde 2). Playbook: `docs/playbooks/testplan-content-items.md`. Levert baseline-data voor golden-sets. | 1d representanten + 2-3d full | #4 (representanten) + parallel met #5.B | open |
+| `content-items-test-coverage` | Handmatige testplan 53 types (representanten + Ronde 1 + Ronde 2). Playbook: `docs/playbooks/testplan-content-items.md`. Levert baseline-data voor golden-sets. Ronde 1 ✅ COMPLEET 2026-07-01 (24 zichtbare types: 23 passed, 1 bug ebook, 0 nieuwe bugs). Representanten 4/8 + varianten 16/16; 31/55 code-types hidden (4 categorieën bewust uit picker). Ronde 2 gated op asset-generator-integratie. | 1d representanten + 2-3d full | #4-6 | in-progress (Ronde 1 done, Ronde 2 gated) |
 | `pre-launch-browser-smoke-batch` | Δ-1 Surface C + claw-page-awareness + locale-picker browser-smoke. VB Compose/Trained deferred post-vercel. | ~1-2u | #4 (3/5 done) | partial |
 | `code-debt-pre-launch-cleanup` | Persist-TODOs + cleanup + suggest-visual-briefing error-UX. Verspreid. | ~6d | #4-7 fill-in | 2/12 done |
 | `compose-pipeline-gemini-migration` | FAL Flux → Gemini Image (nano-banana) compose-route migratie. | ~1d | #5.B fill-in | ✅ done 2026-05-12 |
@@ -131,7 +131,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 2. ✅ Cron-infra ADR (~2u) — Vercel Cron continueren (`docs/adr/2026-05-12-cron-infra.md`)
 3. ✅ Code-debt 2/12 quick wins + close-out cluster A/B/C (#257, 2026-05-17)
 4. ✅ STOP-GATE genomen 2026-05-17: P2 [shared-pipeline] Effie-rubric leak gefixt (#258 `e849a1ed`) + auto-iterate variant-clobber + long-form shrinkage fix (#259 `cdd0e074`)
-5. ⏳ testplan-content-items Ronde 1 — 8 representanten (~1d) — **kan hervatten**, effie-fix mee-verifiëren via DOM grep tijdens normale sweep
+5. ✅ testplan-content-items Ronde 1 COMPLEET — 2026-07-01, 24 zichtbare types (23 passed, 1 bug ebook, 0 nieuwe bugs). Representanten 4/8 + varianten 16/16. 31/55 code-types hidden (4 categorieën bewust uit picker). Ronde 2 gated op asset-generator-integratie.
 
 **Sprint #5 — Bugfix + Foundation start** (Track A klaar, Track B Phase A+B gemerged 2026-05-18)
 - Track A: ✅ 5A foundation + ✅ 5B goldens + ✅ 6A wiring-gates + ✅ 6B partial + ✅ compose-Gemini + ✅ claw-page-awareness vervolg. **Open**: 6B wiring/dashboard finish + bugfix-cluster uit Ronde 1 + full 53-types Ronde 1.
