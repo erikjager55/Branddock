@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/shared';
 
 interface WizardStep2Props {
@@ -21,6 +22,7 @@ export function WizardStep2Timeline({
   onEndDateChange,
   onFocusAreasChange,
 }: WizardStep2Props) {
+  const { t } = useTranslation('business-strategy');
   const [inputValue, setInputValue] = useState('');
 
   const handleAddFocusArea = () => {
@@ -50,13 +52,13 @@ export function WizardStep2Timeline({
       {/* Dates */}
       <div className="grid grid-cols-2 gap-4">
         <Input
-          label="Start Date"
+          label={t('wizard.startDate')}
           type="date"
           value={startDate}
           onChange={(e) => onStartDateChange(e.target.value)}
         />
         <Input
-          label="End Date"
+          label={t('wizard.endDate')}
           type="date"
           value={endDate}
           onChange={(e) => onEndDateChange(e.target.value)}
@@ -66,10 +68,10 @@ export function WizardStep2Timeline({
       {/* Focus Areas as tag chips */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Focus Areas
+          {t('wizard.focusAreas')}
         </label>
         <p className="text-xs text-gray-500 mb-2">
-          Add the key areas this strategy will focus on
+          {t('wizard.focusAreasHelp')}
         </p>
 
         {/* Tag chips */}
@@ -99,7 +101,7 @@ export function WizardStep2Timeline({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="e.g. Revenue Growth, Customer Acquisition..."
+            placeholder={t('wizard.focusAreaPlaceholder')}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           />
           <button
@@ -109,7 +111,7 @@ export function WizardStep2Timeline({
             className="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Add
+            {t('actions.add')}
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ImagePlus, Pencil, Trash2 } from "lucide-react";
 import { Button, Badge, EmptyState } from "@/components/shared";
 import { Select } from "@/components/shared";
@@ -25,6 +26,7 @@ export function ProductImagesSection({
   isLocked = false,
   onAddImage,
 }: ProductImagesSectionProps) {
+  const { t } = useTranslation("products");
   const updateImage = useUpdateProductImage(productId);
   const deleteImage = useDeleteProductImage(productId);
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
@@ -37,11 +39,11 @@ export function ProductImagesSection({
   };
 
   const handleDelete = (imageId: string) => {
-    if (!window.confirm("Delete this image? This cannot be undone.")) return;
+    if (!window.confirm(t("images.confirmDelete"))) return;
     setDeleteError(null);
     deleteImage.mutate(imageId, {
       onError: (err) => {
-        const message = err instanceof Error ? err.message : "Failed to delete image";
+        const message = err instanceof Error ? err.message : t("images.deleteFailed");
         setDeleteError(message);
       },
     });
@@ -53,7 +55,7 @@ export function ProductImagesSection({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-gray-900">
-            Product Images
+            {t("images.title")}
           </h2>
           {images.length > 0 && (
             <Badge variant="default">{images.length}</Badge>
@@ -66,7 +68,7 @@ export function ProductImagesSection({
             icon={ImagePlus}
             onClick={onAddImage}
           >
-            Add Image
+            {t("actions.addImage")}
           </Button>
         )}
       </div>
@@ -82,9 +84,9 @@ export function ProductImagesSection({
       {images.length === 0 ? (
         <EmptyState
           icon={ImagePlus}
-          title="No images yet"
-          description="Add product images to showcase your product visually"
-          action={isLocked ? undefined : { label: "Add Image", onClick: onAddImage }}
+          title={t("images.empty.title")}
+          description={t("images.empty.description")}
+          action={isLocked ? undefined : { label: t("actions.addImage"), onClick: onAddImage }}
         />
       ) : (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -97,7 +99,7 @@ export function ProductImagesSection({
               <div className="relative" style={{ aspectRatio: "4/3" }}>
                 <img
                   src={image.url}
-                  alt={image.altText ?? "Product image"}
+                  alt={image.altText ?? t("images.imageAlt")}
                   className="h-full w-full object-cover"
                   loading="lazy"
                 />
@@ -109,7 +111,7 @@ export function ProductImagesSection({
                   }`}>
                     {isEditing && (
                       <button
-                        aria-label="Edit image category"
+                        aria-label={t("images.editCategory")}
                         onClick={() =>
                           setEditingImageId(
                             editingImageId === image.id ? null : image.id,
@@ -121,7 +123,7 @@ export function ProductImagesSection({
                       </button>
                     )}
                     <button
-                      aria-label="Delete image"
+                      aria-label={t("images.deleteImage")}
                       onClick={() => handleDelete(image.id)}
                       className="rounded-full bg-white p-2 text-red-600 shadow-sm hover:bg-red-50 transition-colors"
                     >
@@ -141,7 +143,7 @@ export function ProductImagesSection({
                       setEditingImageId(null);
                     }}
                     options={IMAGE_CATEGORY_SELECT_OPTIONS}
-                    placeholder="Category..."
+                    placeholder={t("fields.categoryShort")}
                   />
                 ) : (
                   <Badge variant="default">

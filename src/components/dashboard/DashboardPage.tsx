@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { PageShell, PageHeader } from '@/components/ui/layout';
 import { useSession } from '@/lib/auth-client';
 import { DecisionReadiness } from './DecisionReadiness';
@@ -10,11 +11,11 @@ import { RecentActivity } from './RecentActivity';
 import { OnboardingWizard } from './OnboardingWizard';
 import { QuickStartWidget } from './QuickStartWidget';
 
-function getGreeting(): string {
+function getGreetingKey(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return 'greeting.morning';
+  if (hour < 18) return 'greeting.afternoon';
+  return 'greeting.evening';
 }
 
 function getFormattedDate(): string {
@@ -31,6 +32,7 @@ interface DashboardPageProps {
 }
 
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
+  const { t } = useTranslation('dashboard');
   const { data: session } = useSession();
   const firstName = session?.user?.name?.split(' ')[0] || '';
 
@@ -41,14 +43,14 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
       <PageShell>
         <PageHeader
           moduleKey="dashboard"
-          title="Dashboard"
-          subtitle="Your brand at a glance"
+          title={t('page.title')}
+          subtitle={t('page.subtitle')}
         />
 
         {/* Greeting */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">
-            {getGreeting()}{firstName ? `, ${firstName}` : ''}
+            {t(getGreetingKey())}{firstName ? `, ${firstName}` : ''}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">{getFormattedDate()}</p>
         </div>

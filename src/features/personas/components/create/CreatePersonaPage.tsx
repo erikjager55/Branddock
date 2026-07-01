@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/ui/layout";
 import { useCreatePersona } from "../../hooks";
 
@@ -15,6 +16,7 @@ interface CreatePersonaPageProps {
  * The detail page in edit mode serves as the actual editor.
  */
 export function CreatePersonaPage({ onBack, onCreated }: CreatePersonaPageProps) {
+  const { t } = useTranslation('personas');
   const createMutation = useCreatePersona();
   const hasTriggered = useRef(false);
   const onCreatedRef = useRef(onCreated);
@@ -44,7 +46,7 @@ export function CreatePersonaPage({ onBack, onCreated }: CreatePersonaPageProps)
     <PageShell maxWidth="5xl">
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <Loader2 className="h-8 w-8 text-primary-500 animate-spin" />
-        <p className="text-sm text-gray-500">Creating persona...</p>
+        <p className="text-sm text-gray-500">{t('create.creating')}</p>
       </div>
     </PageShell>
   );

@@ -1,30 +1,31 @@
 'use client';
 
 import { Lightbulb, MessageCircle, Trash2, Download } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { ChatInsight } from '../../types/persona-chat.types';
 import { usePersonaChatStore } from '../../stores/usePersonaChatStore';
 
 // ─── Insight type config ──────────────────────────────────
 
 const INSIGHT_TYPE_CONFIG: Record<string, {
-  label: string;
+  labelKey: string;
   color: string;
   bg: string;
   pdfColor: [number, number, number];
 }> = {
-  pain_point:  { label: 'Pain Point',  color: '#dc2626', bg: '#fef2f2', pdfColor: [220, 38, 38] },
-  opportunity: { label: 'Opportunity', color: '#16a34a', bg: '#f0fdf4', pdfColor: [22, 163, 74] },
-  preference:  { label: 'Preference',  color: '#2563eb', bg: '#eff6ff', pdfColor: [37, 99, 235] },
-  behavior:    { label: 'Behavior',    color: '#9333ea', bg: '#faf5ff', pdfColor: [147, 51, 234] },
-  need:        { label: 'Need',        color: '#ea580c', bg: '#fff7ed', pdfColor: [234, 88, 12] },
-  objection:   { label: 'Objection',   color: '#dc2626', bg: '#fef2f2', pdfColor: [220, 38, 38] },
-  motivation:  { label: 'Motivation',  color: '#ca8a04', bg: '#fefce8', pdfColor: [202, 138, 4] },
+  pain_point:  { labelKey: 'insights.types.pain_point',  color: '#dc2626', bg: '#fef2f2', pdfColor: [220, 38, 38] },
+  opportunity: { labelKey: 'insights.types.opportunity', color: '#16a34a', bg: '#f0fdf4', pdfColor: [22, 163, 74] },
+  preference:  { labelKey: 'insights.types.preference',  color: '#2563eb', bg: '#eff6ff', pdfColor: [37, 99, 235] },
+  behavior:    { labelKey: 'insights.types.behavior',    color: '#9333ea', bg: '#faf5ff', pdfColor: [147, 51, 234] },
+  need:        { labelKey: 'insights.types.need',        color: '#ea580c', bg: '#fff7ed', pdfColor: [234, 88, 12] },
+  objection:   { labelKey: 'insights.types.objection',   color: '#dc2626', bg: '#fef2f2', pdfColor: [220, 38, 38] },
+  motivation:  { labelKey: 'insights.types.motivation',  color: '#ca8a04', bg: '#fefce8', pdfColor: [202, 138, 4] },
 };
 
-const SEVERITY_CONFIG: Record<string, { label: string; variant: 'danger' | 'warning' | 'default' }> = {
-  high:   { label: 'High', variant: 'danger' },
-  medium: { label: 'Medium', variant: 'warning' },
-  low:    { label: 'Low', variant: 'default' },
+const SEVERITY_CONFIG: Record<string, { labelKey: string; variant: 'danger' | 'warning' | 'default' }> = {
+  high:   { labelKey: 'insights.severity.high', variant: 'danger' },
+  medium: { labelKey: 'insights.severity.medium', variant: 'warning' },
+  low:    { labelKey: 'insights.severity.low', variant: 'default' },
 };
 
 // ─── Component ────────────────────────────────────────────
@@ -42,6 +43,7 @@ export function PersonaChatInsightsTab({
   sessionId,
   personaName,
 }: PersonaChatInsightsTabProps) {
+  const { t } = useTranslation('personas');
   const setActiveTab = usePersonaChatStore((s) => s.setActiveTab);
 
   const insightList = insights;
@@ -88,14 +90,14 @@ export function PersonaChatInsightsTab({
     // Title
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Persona Insights — ${personaName}`, margin, y);
+    doc.text(t('insights.pdf.title', { name: personaName }), margin, y);
     y += 10;
 
     // Subtitle
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(120, 120, 120);
-    doc.text(`${insightList.length} insight${insightList.length !== 1 ? 's' : ''} · Exported ${new Date().toLocaleDateString('en-US')}`, margin, y);
+    doc.text(t('insights.pdf.subtitle', { count: insightList.length, date: new Date().toLocaleDateString('en-US') }), margin, y);
     y += 12;
 
     // Separator line
@@ -107,8 +109,8 @@ export function PersonaChatInsightsTab({
     insightList.forEach((insight, index) => {
       const typeConfig = INSIGHT_TYPE_CONFIG[insight.type] || INSIGHT_TYPE_CONFIG.behavior;
       const severityLabel = insight.severity
-        ? (SEVERITY_CONFIG[insight.severity]?.label || 'Medium')
-        : 'Medium';
+        ? t(SEVERITY_CONFIG[insight.severity]?.labelKey ?? 'insights.severity.medium')
+        : t('insights.severity.medium');
 
       checkPageBreak(40);
 
@@ -118,11 +120,12 @@ export function PersonaChatInsightsTab({
       doc.setTextColor(150, 150, 150);
       doc.text(`#${index + 1}`, margin, y);
 
+      const typeLabel = t(typeConfig.labelKey);
       doc.setTextColor(typeConfig.pdfColor[0], typeConfig.pdfColor[1], typeConfig.pdfColor[2]);
-      doc.text(typeConfig.label, margin + 10, y);
+      doc.text(typeLabel, margin + 10, y);
 
       doc.setTextColor(150, 150, 150);
-      doc.text(`· ${severityLabel}`, margin + 10 + doc.getTextWidth(typeConfig.label) + 3, y);
+      doc.text(`· ${severityLabel}`, margin + 10 + doc.getTextWidth(typeLabel) + 3, y);
       y += 6;
 
       // Title
@@ -156,7 +159,11 @@ export function PersonaChatInsightsTab({
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(180, 180, 180);
       doc.text(
-        `Branddock · Page ${i} of ${totalPages}`,
+        t('insights.pdf.footer', {
+          brand: t('brand.name', { ns: 'common' }),
+          page: i,
+          total: totalPages,
+        }),
         pageWidth / 2,
         doc.internal.pageSize.getHeight() - 10,
         { align: 'center' }
@@ -171,10 +178,10 @@ export function PersonaChatInsightsTab({
       <div className="flex flex-col items-center justify-center flex-1 py-12">
         <Lightbulb className="w-10 h-10 text-gray-300 mb-3" />
         <p className="text-sm text-gray-500 text-center">
-          Click the lightbulb icon on any assistant message to extract an insight
+          {t('insights.emptyTitle')}
         </p>
         <p className="text-xs text-gray-400 text-center mt-1">
-          Insights will appear here as you chat with {personaName.split(' ')[0]}
+          {t('insights.emptyHint', { name: personaName.split(' ')[0] })}
         </p>
       </div>
     );
@@ -187,7 +194,7 @@ export function PersonaChatInsightsTab({
         <div className="flex items-center gap-2">
           <Lightbulb className="w-4 h-4 text-amber-500" />
           <h3 className="text-sm font-semibold text-gray-900">
-            Insights ({insightList.length})
+            {t('insights.headerCount', { count: insightList.length })}
           </h3>
         </div>
         <button
@@ -195,7 +202,7 @@ export function PersonaChatInsightsTab({
           className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
         >
           <Download className="w-3 h-3" />
-          Export PDF
+          {t('insights.exportPdf')}
         </button>
       </div>
 
@@ -224,7 +231,7 @@ export function PersonaChatInsightsTab({
                     style={{ backgroundColor: typeConfig.color }}
                   />
                   <span className="text-xs font-semibold" style={{ color: typeConfig.color }}>
-                    {typeConfig.label}
+                    {t(typeConfig.labelKey)}
                   </span>
                 </div>
                 {severityConfig && (
@@ -236,7 +243,7 @@ export function PersonaChatInsightsTab({
                         : '#6b7280'
                     }}
                   >
-                    {severityConfig.label}
+                    {t(severityConfig.labelKey)}
                   </span>
                 )}
               </div>
@@ -255,7 +262,7 @@ export function PersonaChatInsightsTab({
                     className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-primary transition-colors"
                   >
                     <MessageCircle className="w-3 h-3" />
-                    View in chat
+                    {t('insights.viewInChat')}
                   </button>
                 )}
                 <button
@@ -263,7 +270,7 @@ export function PersonaChatInsightsTab({
                   className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors"
                 >
                   <Trash2 className="w-3 h-3" />
-                  Delete
+                  {t('actions.delete')}
                 </button>
               </div>
             </div>

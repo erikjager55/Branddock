@@ -1,6 +1,7 @@
 'use client';
 
 import { Check, Lightbulb, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { OptimizedImage } from '@/components/shared';
 import type { ChatMessage } from '../../types/persona-chat.types';
 import type { PersonaWithMeta } from '../../types/persona.types';
@@ -27,6 +28,7 @@ export function PersonaChatBubble({
   isGeneratingInsight,
   hasInsight,
 }: PersonaChatBubbleProps) {
+  const { t } = useTranslation('personas');
   const isUser = message.role === 'USER';
 
   const initials = persona.name
@@ -97,10 +99,10 @@ export function PersonaChatBubble({
               }`}
               title={
                 hasInsight
-                  ? 'Insight saved'
+                  ? t('chat.insightSaved')
                   : isGeneratingInsight
-                    ? 'Generating insight...'
-                    : 'Extract insight'
+                    ? t('chat.generatingInsight')
+                    : t('chat.extractInsight')
               }
             >
               {isGeneratingInsight ? (

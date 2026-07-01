@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Swords, Plus, Target, ArrowRightLeft, BarChart3, Sparkles, Loader2, ExternalLink } from "lucide-react";
 import { EmptyState, SkeletonCard, StatCard, Button, Badge, Card } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
@@ -19,6 +20,7 @@ export function CompetitorsOverviewPage({
   onNavigateToAnalyzer,
   onNavigateToDetail,
 }: CompetitorsOverviewPageProps) {
+  const { t } = useTranslation("competitors");
   const { data, isLoading } = useCompetitors();
   const discover = useDiscoverCompetitors();
   const createCompetitor = useCreateCompetitor();
@@ -60,8 +62,8 @@ export function CompetitorsOverviewPage({
       <div className="space-y-6">
         <PageHeader
           moduleKey="competitors"
-          title="Competitor Analysis"
-          subtitle="Track and analyze your competitive landscape"
+          title={t("overview.title")}
+          subtitle={t("overview.subtitle")}
           actions={
             <div className="flex items-center gap-2">
               <Button
@@ -71,11 +73,11 @@ export function CompetitorsOverviewPage({
                 className="gap-2"
               >
                 {discover.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {discover.isPending ? "Discovering..." : "Discover Competitors"}
+                {discover.isPending ? t("overview.discovering") : t("overview.discoverCompetitors")}
               </Button>
               <Button onClick={onNavigateToAnalyzer} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Add Competitor
+                {t("overview.addCompetitor")}
               </Button>
             </div>
           }
@@ -87,15 +89,15 @@ export function CompetitorsOverviewPage({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-teal-600" />
-                <h3 className="text-sm font-semibold text-gray-900">Discovered Competitors</h3>
-                <Badge variant="teal">{discoveries.length} found</Badge>
+                <h3 className="text-sm font-semibold text-gray-900">{t("overview.discoveredCompetitors")}</h3>
+                <Badge variant="teal">{t("overview.foundCount", { count: discoveries.length })}</Badge>
               </div>
               <button
                 type="button"
                 onClick={() => setDiscoveries(null)}
                 className="text-xs text-gray-400 hover:text-gray-600"
               >
-                Dismiss
+                {t("overview.dismiss")}
               </button>
             </div>
             <div className="space-y-3">
@@ -126,7 +128,7 @@ export function CompetitorsOverviewPage({
                     onClick={() => handleAddDiscovered(c)}
                     disabled={addingUrl === c.websiteUrl}
                   >
-                    {addingUrl === c.websiteUrl ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
+                    {addingUrl === c.websiteUrl ? <Loader2 className="h-3 w-3 animate-spin" /> : t("actions.add")}
                   </Button>
                 </div>
               ))}
@@ -137,7 +139,7 @@ export function CompetitorsOverviewPage({
         {/* Discovery error */}
         {discover.isError && (
           <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-            {discover.error instanceof Error ? discover.error.message : 'Failed to discover competitors'}
+            {discover.error instanceof Error ? discover.error.message : t("overview.discoverError")}
           </div>
         )}
 
@@ -147,10 +149,10 @@ export function CompetitorsOverviewPage({
         {/* Stats */}
         {stats && (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <StatCard label="Total" value={stats.total} icon={Swords} />
-            <StatCard label="Direct" value={stats.direct} icon={Target} />
-            <StatCard label="Indirect" value={stats.indirect} icon={ArrowRightLeft} />
-            <StatCard label="Avg Score" value={stats.avgScore} icon={BarChart3} />
+            <StatCard label={t("overview.stats.total")} value={stats.total} icon={Swords} />
+            <StatCard label={t("overview.stats.direct")} value={stats.direct} icon={Target} />
+            <StatCard label={t("overview.stats.indirect")} value={stats.indirect} icon={ArrowRightLeft} />
+            <StatCard label={t("overview.stats.avgScore")} value={stats.avgScore} icon={BarChart3} />
           </div>
         )}
 
@@ -164,10 +166,10 @@ export function CompetitorsOverviewPage({
         ) : !data?.competitors?.length ? (
           <EmptyState
             icon={Swords}
-            title="No competitors yet"
-            description="Add your first competitor or use AI to discover relevant competitors in your market."
+            title={t("overview.empty.title")}
+            description={t("overview.empty.description")}
             action={{
-              label: "Discover with AI",
+              label: t("overview.empty.action"),
               onClick: handleDiscover,
             }}
           />

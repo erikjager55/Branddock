@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Radio, Megaphone, Wrench, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 
 interface ChannelsToolsSectionProps {
@@ -11,6 +12,7 @@ interface ChannelsToolsSectionProps {
 }
 
 export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsToolsSectionProps) {
+  const { t } = useTranslation('personas');
   const [channelDraft, setChannelDraft] = useState('');
   const [toolDraft, setToolDraft] = useState('');
 
@@ -49,8 +51,8 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
             <Radio className="w-5 h-5 text-indigo-600" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Channels & Tools</h2>
-            <p className="text-sm text-gray-500">Where to reach this persona and what they use</p>
+            <h2 className="text-base font-semibold text-gray-900">{t('channels.title')}</h2>
+            <p className="text-sm text-gray-500">{t('channels.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -61,7 +63,7 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
             <div className="flex items-center gap-1.5 mb-3">
               <Megaphone className="w-4 h-4 text-indigo-500" />
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Preferred Channels
+                {t('channels.preferredChannels')}
               </p>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -83,12 +85,12 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
                   value={channelDraft}
                   onChange={(e) => setChannelDraft(e.target.value)}
                   onKeyDown={(e) => handleKeyDown(e, 'preferredChannels', channelDraft, setChannelDraft)}
-                  placeholder="Type + Enter"
+                  placeholder={t('channels.tagPlaceholder')}
                   className="px-2.5 py-1 text-xs border border-dashed border-gray-300 rounded-full bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-28"
                 />
               )}
             </div>
-            <p className="text-xs text-gray-400 mt-2">{channels.length} channels</p>
+            <p className="text-xs text-gray-400 mt-2">{t('channels.channelsCount', { count: channels.length })}</p>
           </div>
 
           {/* Tech Stack */}
@@ -96,7 +98,7 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
             <div className="flex items-center gap-1.5 mb-3">
               <Wrench className="w-4 h-4 text-slate-500" />
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tech Stack & Tools
+                {t('channels.techStack')}
               </p>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -118,12 +120,12 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
                   value={toolDraft}
                   onChange={(e) => setToolDraft(e.target.value)}
                   onKeyDown={(e) => handleKeyDown(e, 'techStack', toolDraft, setToolDraft)}
-                  placeholder="Type + Enter"
+                  placeholder={t('channels.tagPlaceholder')}
                   className="px-2.5 py-1 text-xs border border-dashed border-gray-300 rounded-full bg-white focus:ring-2 focus:ring-slate-500 focus:border-slate-500 w-28"
                 />
               )}
             </div>
-            <p className="text-xs text-gray-400 mt-2">{tools.length} tools</p>
+            <p className="text-xs text-gray-400 mt-2">{t('channels.toolsCount', { count: tools.length })}</p>
           </div>
         </div>
 
@@ -132,12 +134,12 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
         <div className="flex items-center gap-4 text-xs text-gray-500">
           <span className="inline-flex items-center gap-1">
             <Megaphone className="w-3.5 h-3.5 text-gray-400" />
-            {channels.length} channels
+            {t('channels.channelsCount', { count: channels.length })}
           </span>
           <span>&middot;</span>
           <span className="inline-flex items-center gap-1">
             <Wrench className="w-3.5 h-3.5 text-gray-400" />
-            {tools.length} tools
+            {t('channels.toolsCount', { count: tools.length })}
           </span>
         </div>
       </div>

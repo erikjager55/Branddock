@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, X } from "lucide-react";
 
 interface UseCasesSectionProps {
@@ -14,6 +15,7 @@ export function UseCasesSection({
   isEditing,
   onChange,
 }: UseCasesSectionProps) {
+  const { t } = useTranslation("products");
   const [newItem, setNewItem] = useState("");
 
   const handleAdd = () => {
@@ -37,7 +39,7 @@ export function UseCasesSection({
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-gray-900 mb-3">Use Cases</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">{t("useCases.title")}</h3>
 
       {isEditing ? (
         <div className="space-y-2">
@@ -61,7 +63,7 @@ export function UseCasesSection({
               value={newItem}
               onChange={(e) => setNewItem(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Add a use case..."
+              placeholder={t("useCases.addPlaceholder")}
               className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-primary"
             />
             <button
@@ -70,7 +72,7 @@ export function UseCasesSection({
               className="flex items-center gap-1 text-sm text-primary hover:text-primary/80 disabled:text-gray-300 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
-              Add
+              {t("actions.add")}
             </button>
           </div>
         </div>
@@ -83,7 +85,7 @@ export function UseCasesSection({
           ))}
         </div>
       ) : (
-        <p className="text-sm text-gray-400">No use cases added yet</p>
+        <p className="text-sm text-gray-400">{t("useCases.empty")}</p>
       )}
     </div>
   );

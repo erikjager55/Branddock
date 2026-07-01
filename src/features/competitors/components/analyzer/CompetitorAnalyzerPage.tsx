@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Globe, Pencil } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageShell } from "@/components/ui/layout";
@@ -15,9 +16,9 @@ import { AnalyzingCompetitorModal } from "./AnalyzingCompetitorModal";
 
 type TabId = "url" | "manual";
 
-const TABS: { id: TabId; icon: LucideIcon; label: string }[] = [
-  { id: "url", icon: Globe, label: "Website URL" },
-  { id: "manual", icon: Pencil, label: "Manual Entry" },
+const TABS: { id: TabId; icon: LucideIcon; labelKey: string }[] = [
+  { id: "url", icon: Globe, labelKey: "analyzer.tabUrl" },
+  { id: "manual", icon: Pencil, labelKey: "analyzer.tabManual" },
 ];
 
 // ─── Component ────────────────────────────────────────────
@@ -32,6 +33,7 @@ export function CompetitorAnalyzerPage({
   onBack,
   onNavigateToDetail,
 }: CompetitorAnalyzerPageProps) {
+  const { t } = useTranslation("competitors");
   const {
     isProcessingModalOpen,
     analyzeResultData,
@@ -81,13 +83,13 @@ export function CompetitorAnalyzerPage({
         })
         .catch((err: unknown) => {
           closeProcessingModal();
-          const message = err instanceof Error ? err.message : "Failed to save competitor";
+          const message = err instanceof Error ? err.message : t("analyzer.saveError");
           setCreateError(message);
         });
     } else {
       closeProcessingModal();
     }
-  }, [createCompetitor, closeProcessingModal, onNavigateToDetail]);
+  }, [createCompetitor, closeProcessingModal, onNavigateToDetail, t]);
 
   const handleModalCancel = useCallback(() => {
     closeProcessingModal();
@@ -103,14 +105,14 @@ export function CompetitorAnalyzerPage({
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Competitors
+          {t("actions.backToCompetitors")}
         </button>
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Add Competitor</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t("analyzer.title")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Import competitor information from a URL or enter details manually
+            {t("analyzer.subtitle")}
           </p>
         </div>
 
@@ -131,7 +133,7 @@ export function CompetitorAnalyzerPage({
                 }`}
               >
                 <Icon className="h-4 w-4" />
-                {tab.label}
+                {t(tab.labelKey)}
               </button>
             );
           })}

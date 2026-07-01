@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, X } from "lucide-react";
 
 interface BenefitsSectionProps {
@@ -14,6 +15,7 @@ export function BenefitsSection({
   isEditing,
   onChange,
 }: BenefitsSectionProps) {
+  const { t } = useTranslation("products");
   const [newItem, setNewItem] = useState("");
 
   const handleAdd = () => {
@@ -37,7 +39,7 @@ export function BenefitsSection({
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-gray-900 mb-3">Benefits</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">{t("benefits.title")}</h3>
 
       {isEditing ? (
         <div className="space-y-2">
@@ -61,7 +63,7 @@ export function BenefitsSection({
               value={newItem}
               onChange={(e) => setNewItem(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Add a benefit..."
+              placeholder={t("benefits.addPlaceholder")}
               className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-primary"
             />
             <button
@@ -70,7 +72,7 @@ export function BenefitsSection({
               className="flex items-center gap-1 text-sm text-primary hover:text-primary/80 disabled:text-gray-300 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
-              Add
+              {t("actions.add")}
             </button>
           </div>
         </div>
@@ -86,7 +88,7 @@ export function BenefitsSection({
           ))}
         </div>
       ) : (
-        <p className="text-sm text-gray-400">No benefits added yet</p>
+        <p className="text-sm text-gray-400">{t("benefits.empty")}</p>
       )}
     </div>
   );

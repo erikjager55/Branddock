@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { MessageSquare } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 
 interface QuoteBioSectionProps {
@@ -11,6 +12,7 @@ interface QuoteBioSectionProps {
 }
 
 export function QuoteBioSection({ persona, isEditing, onUpdate }: QuoteBioSectionProps) {
+  const { t } = useTranslation('personas');
   const [quoteDraft, setQuoteDraft] = useState(persona.quote ?? '');
   const [bioDraft, setBioDraft] = useState(persona.bio ?? '');
 
@@ -27,8 +29,8 @@ export function QuoteBioSection({ persona, isEditing, onUpdate }: QuoteBioSectio
           <MessageSquare className="w-5 h-5 text-emerald-600" />
         </div>
         <div>
-          <h2 className="text-base font-semibold text-gray-900">Quote & Bio</h2>
-          <p className="text-sm text-gray-500">A voice and narrative for this persona</p>
+          <h2 className="text-base font-semibold text-gray-900">{t('quoteBio.title')}</h2>
+          <p className="text-sm text-gray-500">{t('quoteBio.subtitle')}</p>
         </div>
       </div>
 
@@ -36,7 +38,7 @@ export function QuoteBioSection({ persona, isEditing, onUpdate }: QuoteBioSectio
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-              Quote
+              {t('quoteBio.quoteLabel')}
             </label>
             <textarea
               value={quoteDraft}
@@ -46,7 +48,7 @@ export function QuoteBioSection({ persona, isEditing, onUpdate }: QuoteBioSectio
                   onUpdate({ quote: quoteDraft || null });
                 }
               }}
-              placeholder="A direct quote that captures this persona's mindset..."
+              placeholder={t('quoteBio.quotePlaceholder')}
               rows={2}
               maxLength={500}
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-y"
@@ -54,7 +56,7 @@ export function QuoteBioSection({ persona, isEditing, onUpdate }: QuoteBioSectio
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-              Bio
+              {t('quoteBio.bioLabel')}
             </label>
             <textarea
               value={bioDraft}
@@ -64,7 +66,7 @@ export function QuoteBioSection({ persona, isEditing, onUpdate }: QuoteBioSectio
                   onUpdate({ bio: bioDraft || null });
                 }
               }}
-              placeholder="A short narrative description (2-3 sentences)..."
+              placeholder={t('quoteBio.bioPlaceholder')}
               rows={3}
               maxLength={1000}
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-y"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Target, Plus, X } from "lucide-react";
 import { Input } from "@/components/shared";
 import type { CompetitorDetail } from "../../types/competitor.types";
@@ -27,6 +28,7 @@ export function PositioningSection({
   editDifferentiators,
   setEditDifferentiators,
 }: PositioningSectionProps) {
+  const { t } = useTranslation("competitors");
   const [newDifferentiator, setNewDifferentiator] = useState("");
 
   const addDifferentiator = () => {
@@ -46,31 +48,31 @@ export function PositioningSection({
       <div className="rounded-lg border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Target className="h-4 w-4 text-gray-500" />
-          Positioning
+          {t("positioning.title")}
         </h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Value Proposition</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("positioning.valueProposition")}</label>
             <textarea
               value={editValueProposition}
               onChange={(e) => setEditValueProposition(e.target.value)}
               rows={2}
-              placeholder="What unique value do they offer?"
+              placeholder={t("positioning.valuePropositionPlaceholder")}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Target Audience</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("positioning.targetAudience")}</label>
             <textarea
               value={editTargetAudience}
               onChange={(e) => setEditTargetAudience(e.target.value)}
               rows={2}
-              placeholder="Who are they targeting?"
+              placeholder={t("positioning.targetAudiencePlaceholder")}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Differentiators</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("positioning.differentiators")}</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {editDifferentiators.map((d, idx) => (
                 <span key={idx} className="flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">
@@ -83,7 +85,7 @@ export function PositioningSection({
             </div>
             <div className="flex gap-2">
               <Input
-                placeholder="Add differentiator..."
+                placeholder={t("positioning.addDifferentiator")}
                 value={newDifferentiator}
                 onChange={(e) => setNewDifferentiator(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDifferentiator(); } }}
@@ -104,28 +106,28 @@ export function PositioningSection({
     <div className="rounded-lg border border-gray-200 bg-white p-5">
       <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <Target className="h-4 w-4 text-gray-500" />
-        Positioning
+        {t("positioning.title")}
       </h3>
 
       {!hasContent ? (
-        <p className="text-sm text-gray-400 italic">No positioning data available yet.</p>
+        <p className="text-sm text-gray-400 italic">{t("positioning.empty")}</p>
       ) : (
         <div className="space-y-4">
           {competitor.valueProposition && (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">Value Proposition</p>
+              <p className="text-xs font-medium text-gray-500 mb-1">{t("positioning.valueProposition")}</p>
               <p className="text-sm text-gray-700">{competitor.valueProposition}</p>
             </div>
           )}
           {competitor.targetAudience && (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">Target Audience</p>
+              <p className="text-xs font-medium text-gray-500 mb-1">{t("positioning.targetAudience")}</p>
               <p className="text-sm text-gray-700">{competitor.targetAudience}</p>
             </div>
           )}
           {competitor.differentiators.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-2">Differentiators</p>
+              <p className="text-xs font-medium text-gray-500 mb-2">{t("positioning.differentiators")}</p>
               <div className="flex flex-wrap gap-2">
                 {competitor.differentiators.map((d, idx) => (
                   <span key={idx} className="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700">

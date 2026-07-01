@@ -18,6 +18,7 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import type { PersonaInsightsData, FieldSuggestion } from '../../types/persona-analysis.types';
 import type { UpdatePersonaBody } from '../../types/persona.types';
 import { FieldSuggestionCard } from './FieldSuggestionCard';
@@ -43,20 +44,21 @@ export function PersonaAnalysisComplete({
   onBack,
   onUpdatePersona,
 }: PersonaAnalysisCompleteProps) {
+  const { t } = useTranslation('personas');
   const totalDimensions = insightsData.dimensions.length;
   const findings = insightsData.findings ?? insightsData.dimensions.map((d) => ({
     title: d.title,
     description: d.summary,
   }));
   const recommendations = insightsData.recommendations ?? [
-    `Integrate ${personaName}'s profile into communication assets`,
-    'Develop persona-specific customer journeys',
-    'Create content that makes value tangible',
-    'Build thought leadership around customer challenges',
-    'Translate values into behaviors and decision criteria',
+    t('complete.defaultRecommendations.integrate', { name: personaName }),
+    t('complete.defaultRecommendations.journeys'),
+    t('complete.defaultRecommendations.content'),
+    t('complete.defaultRecommendations.thoughtLeadership'),
+    t('complete.defaultRecommendations.values'),
   ];
   const executiveSummary = insightsData.executiveSummary
-    ?? `The AI analysis of ${personaName} has analyzed ${totalDimensions} strategic dimensions and provides insights for brand positioning and communication.`;
+    ?? t('complete.executiveSummaryDefault', { name: personaName, count: totalDimensions });
 
   // ─── Field Suggestions State ─────────────────────────────
   const [suggestions, setSuggestions] = useState<FieldSuggestion[]>(
@@ -112,7 +114,7 @@ export function PersonaAnalysisComplete({
         update[s.field] = s.suggestedValue;
       }
       await onUpdatePersona(update as UpdatePersonaBody);
-      toast.success(`${toApply.length} field${toApply.length > 1 ? 's' : ''} updated on persona`);
+      toast.success(t('complete.fieldsUpdated', { count: toApply.length }));
       // Mark all applied as accepted (visual confirmation)
       setSuggestions((prev) =>
         prev.map((s) =>
@@ -123,11 +125,11 @@ export function PersonaAnalysisComplete({
       );
       onBack();
     } catch {
-      toast.error('Failed to update persona');
+      toast.error(t('complete.updateFailed'));
     } finally {
       setIsApplying(false);
     }
-  }, [suggestions, onUpdatePersona, onBack]);
+  }, [suggestions, onUpdatePersona, onBack, t]);
 
   return (
     <div className="space-y-6">
@@ -137,7 +139,7 @@ export function PersonaAnalysisComplete({
         className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Persona
+        {t('complete.backToPersona')}
       </button>
 
       {/* Success Header */}
@@ -147,32 +149,34 @@ export function PersonaAnalysisComplete({
             <CheckCircle className="h-6 w-6 text-emerald-600" />
           </div>
           <div className="flex-1">
-            <h2 className="text-xl font-semibold text-gray-900">AI Persona Analysis Complete</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('complete.title')}</h2>
             <p className="text-sm text-gray-500 mt-1">
-              Your persona has been successfully analyzed across {totalDimensions} key dimensions.
+              {t('complete.subtitle', { count: totalDimensions })}
             </p>
             <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
               <span className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" />
-                Completed: {new Date(insightsData.completedAt).toLocaleDateString('en-GB', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
+                {t('complete.completedOn', {
+                  date: new Date(insightsData.completedAt).toLocaleDateString('en-GB', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  }),
                 })}
               </span>
             </div>
             <div className="flex items-center gap-2 mt-4">
               <button className="inline-flex items-center gap-1.5 border border-gray-200 bg-white rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
                 <Lock className="h-3.5 w-3.5" />
-                Unlocked
+                {t('complete.unlocked')}
               </button>
               <button className="inline-flex items-center gap-1.5 border border-gray-200 bg-white rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
                 <Download className="h-3.5 w-3.5" />
-                PDF download
+                {t('complete.pdfDownload')}
               </button>
               <button className="inline-flex items-center gap-1.5 border border-gray-200 bg-white rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
                 <Table2 className="h-3.5 w-3.5" />
-                Download raw data
+                {t('complete.downloadRawData')}
               </button>
             </div>
           </div>
@@ -185,8 +189,8 @@ export function PersonaAnalysisComplete({
           <Bot className="h-4 w-4 text-white" />
         </div>
         <div>
-          <h3 className="text-base font-semibold text-gray-900">AI Generated Report</h3>
-          <p className="text-xs text-gray-500">Based on {totalDimensions} answered questions</p>
+          <h3 className="text-base font-semibold text-gray-900">{t('complete.reportTitle')}</h3>
+          <p className="text-xs text-gray-500">{t('complete.basedOnQuestions', { count: totalDimensions })}</p>
         </div>
       </div>
 
@@ -194,7 +198,7 @@ export function PersonaAnalysisComplete({
       <div className="border border-gray-200 bg-white rounded-xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="h-5 w-5 text-primary-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Executive Summary</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('complete.executiveSummary')}</h3>
         </div>
         <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
           {executiveSummary}
@@ -205,7 +209,7 @@ export function PersonaAnalysisComplete({
       <div className="border border-gray-200 bg-white rounded-xl p-6">
         <div className="flex items-center gap-2 mb-6">
           <CheckCircle className="h-5 w-5 text-emerald-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Key Findings</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('complete.keyFindings')}</h3>
         </div>
         <div className="space-y-3">
           {findings.map((finding, i) => {
@@ -230,7 +234,7 @@ export function PersonaAnalysisComplete({
       <div className="border border-gray-200 bg-white rounded-xl p-6">
         <div className="flex items-center gap-2 mb-6">
           <TrendingUp className="h-5 w-5 text-primary-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Strategic Recommendations</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('complete.recommendationsTitle')}</h3>
         </div>
         <div className="space-y-4">
           {recommendations.map((rec, i) => (
@@ -250,10 +254,10 @@ export function PersonaAnalysisComplete({
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-amber-500" />
-              <h3 className="text-lg font-semibold text-gray-900">Suggested Updates for Persona</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('complete.suggestedUpdates')}</h3>
               {pendingCount > 0 && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                  {pendingCount} pending
+                  {t('complete.pendingCount', { count: pendingCount })}
                 </span>
               )}
             </div>
@@ -262,13 +266,12 @@ export function PersonaAnalysisComplete({
                 onClick={handleAcceptAll}
                 className="text-xs font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
               >
-                Accept all
+                {t('complete.acceptAll')}
               </button>
             )}
           </div>
           <p className="text-sm text-gray-500 mb-4">
-            Based on the analysis, we suggest the following updates to the persona profile.
-            Accept, edit, or reject per field.
+            {t('complete.suggestionsDescription')}
           </p>
           <div className="space-y-3">
             {suggestions.map((suggestion) => (
@@ -291,7 +294,7 @@ export function PersonaAnalysisComplete({
           className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Return to Persona
+          {t('complete.returnToPersona')}
         </button>
         {hasApplicable && onUpdatePersona ? (
           <button
@@ -301,8 +304,8 @@ export function PersonaAnalysisComplete({
           >
             <CheckCircle className="h-4 w-4" />
             {isApplying
-              ? 'Applying...'
-              : `Apply ${acceptedCount} Change${acceptedCount > 1 ? 's' : ''} & Done`}
+              ? t('complete.applying')
+              : t('complete.applyChanges', { count: acceptedCount })}
           </button>
         ) : (
           <button
@@ -310,7 +313,7 @@ export function PersonaAnalysisComplete({
             className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors"
           >
             <CheckCircle className="h-4 w-4" />
-            Done
+            {t('complete.done')}
           </button>
         )}
       </div>

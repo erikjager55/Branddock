@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Users, Plus, X } from "lucide-react";
 import { EmptyState, Button, OptimizedImage } from "@/components/shared";
 
@@ -16,6 +17,7 @@ export function TargetAudienceSection({
   onRemove,
   isLocked = false,
 }: TargetAudienceSectionProps) {
+  const { t } = useTranslation("products");
   const getInitials = (name: string) =>
     name
       .split(" ")
@@ -30,7 +32,7 @@ export function TargetAudienceSection({
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-gray-500" />
           <h3 className="text-sm font-semibold text-gray-900">
-            Target Audience
+            {t("targetAudience.title")}
           </h3>
         </div>
         {personas.length > 0 && !isLocked && (
@@ -40,7 +42,7 @@ export function TargetAudienceSection({
             icon={Plus}
             onClick={onAdd}
           >
-            Add Persona
+            {t("actions.addPersona")}
           </Button>
         )}
       </div>
@@ -77,10 +79,10 @@ export function TargetAudienceSection({
       ) : (
         <EmptyState
           icon={Users}
-          title="No personas linked yet"
-          description="Link personas to understand who this product serves."
+          title={t("targetAudience.empty.title")}
+          description={t("targetAudience.empty.description")}
           action={isLocked ? undefined : {
-            label: "+ Add Persona",
+            label: t("targetAudience.empty.action"),
             onClick: onAdd,
           }}
         />

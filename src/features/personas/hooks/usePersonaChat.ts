@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { ChatMessage, ChatInsight } from '../types/persona-chat.types';
 import type { ContextItem } from '../stores/usePersonaChatStore';
@@ -60,6 +61,7 @@ export function usePersonaChat(
   personaId: string,
   isOpen: boolean,
 ): UsePersonaChatReturn {
+  const { t } = useTranslation('personas');
   // ─── Session state ────────────────────────────────────────
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -297,14 +299,14 @@ export function usePersonaChat(
 
       try {
         await generateInsightMutation.mutateAsync(messageId);
-        toast.success('Insight saved!');
+        toast.success(t('chat.insightSavedToast'));
       } catch (err) {
         notifyAiError(err);
       } finally {
         setGeneratingInsightForMessageId(null);
       }
     },
-    [generatingInsightForMessageId, generateInsightMutation],
+    [generatingInsightForMessageId, generateInsightMutation, t],
   );
 
   const handleDeleteInsight = useCallback(

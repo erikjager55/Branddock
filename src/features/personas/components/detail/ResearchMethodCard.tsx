@@ -1,6 +1,7 @@
 'use client';
 
 import { Bot, MessageCircle, ClipboardList, Smartphone, CheckCircle2, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { LucideIcon } from 'lucide-react';
 import { ProgressBar } from '@/components/shared';
 import type { ResearchMethodSummary } from '../../types/persona.types';
@@ -31,6 +32,7 @@ interface ResearchMethodCardProps {
 }
 
 export function ResearchMethodCard({ config, method, onStart }: ResearchMethodCardProps) {
+  const { t } = useTranslation('personas');
   const Icon = ICON_MAP[config.icon] ?? Bot;
   const isValidated = method.status === 'VALIDATED' || method.status === 'COMPLETED';
   const isAvailable = method.status === 'AVAILABLE';
@@ -52,17 +54,17 @@ export function ResearchMethodCard({ config, method, onStart }: ResearchMethodCa
           {isValidated && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
               <CheckCircle2 className="w-3 h-3" />
-              VALIDATED
+              {t('badge.validated')}
             </span>
           )}
           {isAvailable && (
             <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium text-gray-500 border border-gray-300">
-              AVAILABLE
+              {t('badge.available')}
             </span>
           )}
           {isInProgress && (
             <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-200">
-              IN PROGRESS
+              {t('badge.inProgress')}
             </span>
           )}
         </div>
@@ -70,16 +72,16 @@ export function ResearchMethodCard({ config, method, onStart }: ResearchMethodCa
         <div className="flex items-center gap-2">
           {isValidated && (
             <button className="text-sm text-emerald-600 font-medium hover:underline">
-              View Results
+              {t('badge.viewResults')}
             </button>
           )}
           {config.isFree && isAvailable && (
             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
-              FREE
+              {t('badge.free')}
             </span>
           )}
           {config.isPaid && config.priceLabel && isAvailable && (
-            <span className="text-sm text-emerald-600 font-medium">{config.priceLabel}</span>
+            <span className="text-sm text-emerald-600 font-medium">{t(`method.${config.method}.priceLabel`)}</span>
           )}
           {isAvailable && (
             <button
@@ -101,15 +103,15 @@ export function ResearchMethodCard({ config, method, onStart }: ResearchMethodCa
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium text-gray-900">{config.label}</h3>
+          <h3 className="text-sm font-medium text-gray-900">{t(`method.${config.method}.label`)}</h3>
           <p className={`text-sm mt-0.5 ${isValidated ? 'text-emerald-600' : 'text-muted-foreground'}`}>
-            {config.description}
+            {t(`method.${config.method}.description`)}
           </p>
 
           {isInProgress && (
             <div className="space-y-1 mt-2">
               <ProgressBar value={method.progress} color="emerald" size="sm" />
-              <p className="text-xs text-muted-foreground">{method.progress}% complete</p>
+              <p className="text-xs text-muted-foreground">{t('research.percentComplete', { percent: method.progress })}</p>
             </div>
           )}
         </div>

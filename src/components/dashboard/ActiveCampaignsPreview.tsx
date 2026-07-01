@@ -1,5 +1,6 @@
 import React from 'react';
 import { Megaphone, ArrowRight, Plus, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCampaignsPreview, dashboardKeys } from '../../hooks/use-dashboard';
 import { Badge, ProgressBar, Skeleton } from '../shared';
@@ -9,6 +10,7 @@ interface ActiveCampaignsPreviewProps {
 }
 
 export function ActiveCampaignsPreview({ onNavigate }: ActiveCampaignsPreviewProps) {
+  const { t } = useTranslation('dashboard');
   const { data, isLoading, isError } = useCampaignsPreview();
   const queryClient = useQueryClient();
 
@@ -31,13 +33,13 @@ export function ActiveCampaignsPreview({ onNavigate }: ActiveCampaignsPreviewPro
       <div className="bg-white rounded-lg border border-red-200 p-5">
         <div className="flex items-center gap-2 text-red-600 mb-2">
           <AlertTriangle className="h-4 w-4" />
-          <span className="text-sm font-medium">Failed to load campaigns</span>
+          <span className="text-sm font-medium">{t('campaigns.loadError')}</span>
         </div>
         <button
           onClick={() => queryClient.invalidateQueries({ queryKey: dashboardKeys.campaigns })}
           className="text-sm text-red-600 hover:text-red-700 underline"
         >
-          Retry
+          {t('common.retry')}
         </button>
       </div>
     );
@@ -48,13 +50,13 @@ export function ActiveCampaignsPreview({ onNavigate }: ActiveCampaignsPreviewPro
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Megaphone className="h-4 w-4 text-gray-400" />
-          <h3 className="text-sm font-semibold text-gray-900">Active Campaigns</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t('campaigns.title')}</h3>
         </div>
         <button
           onClick={() => onNavigate('active-campaigns')}
           className="text-xs text-emerald-600 hover:text-emerald-700 font-medium inline-flex items-center gap-1"
         >
-          View All
+          {t('campaigns.viewAll')}
           <ArrowRight className="h-3 w-3" />
         </button>
       </div>
@@ -87,7 +89,7 @@ export function ActiveCampaignsPreview({ onNavigate }: ActiveCampaignsPreviewPro
           ))}
         </div>
       ) : (
-        <p className="text-sm text-gray-500 py-4 text-center">No active campaigns yet</p>
+        <p className="text-sm text-gray-500 py-4 text-center">{t('campaigns.empty')}</p>
       )}
 
       <button
@@ -95,7 +97,7 @@ export function ActiveCampaignsPreview({ onNavigate }: ActiveCampaignsPreviewPro
         className="mt-4 w-full flex items-center justify-center gap-2 py-2 border border-emerald-200 text-emerald-600 text-sm font-medium rounded-lg hover:bg-emerald-50 transition-colors"
       >
         <Plus className="h-4 w-4" />
-        Start New Campaign
+        {t('campaigns.startNew')}
       </button>
     </div>
   );

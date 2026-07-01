@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { EmptyState, SkeletonCard, Button } from '@/components/shared';
 import { PageShell, PageHeader } from '@/components/ui/layout';
@@ -19,6 +20,7 @@ interface BusinessStrategyPageProps {
 }
 
 export function BusinessStrategyPage({ onNavigateToDetail, onNavigate }: BusinessStrategyPageProps) {
+  const { t } = useTranslation('business-strategy');
   const { data: strategiesData, isLoading: strategiesLoading } = useStrategies();
   const { data: statsData, isLoading: statsLoading } = useStrategyStats();
   const {
@@ -90,12 +92,12 @@ export function BusinessStrategyPage({ onNavigateToDetail, onNavigate }: Busines
     <PageShell>
       <PageHeader
         moduleKey="business-strategy"
-        title="Business Strategy"
-        subtitle="Define and track your strategic goals"
+        title={t('page.title')}
+        subtitle={t('page.subtitle')}
         actions={
           <Button data-testid="add-strategy-button" onClick={() => setCreateModalOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
-            Add Strategy
+            {t('page.addStrategy')}
           </Button>
         }
       />
@@ -121,18 +123,18 @@ export function BusinessStrategyPage({ onNavigateToDetail, onNavigate }: Busines
         strategies.length === 0 ? (
           <EmptyState
             icon={Target}
-            title="No strategies yet"
-            description="Create your first business strategy to define and track your goals."
+            title={t('page.emptyTitle')}
+            description={t('page.emptyDescription')}
             action={{
-              label: 'Create Strategy',
+              label: t('actions.createStrategy'),
               onClick: () => setCreateModalOpen(true),
             }}
           />
         ) : (
           <EmptyState
             icon={Target}
-            title="No matching strategies"
-            description="Try adjusting your filters to find what you're looking for."
+            title={t('page.noMatchTitle')}
+            description={t('page.noMatchDescription')}
           />
         )
       ) : (

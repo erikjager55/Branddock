@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ChevronRight,
   Globe,
@@ -76,6 +77,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onClick }: ProductCardProps) {
+  const { t } = useTranslation("products");
   const [imageError, setImageError] = useState(false);
   const iconName =
     CATEGORY_ICONS[product.category ?? ""] ?? CATEGORY_ICONS["default"];
@@ -161,7 +163,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             ))}
             {remainingCount > 0 && (
               <span className="text-xs text-gray-400">
-                +{remainingCount} more
+                {t("card.more", { remaining: remainingCount })}
               </span>
             )}
           </div>

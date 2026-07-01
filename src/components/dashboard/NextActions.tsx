@@ -11,6 +11,7 @@ import {
   Megaphone,
   Circle,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRecommendedActions, dashboardKeys } from '../../hooks/use-dashboard';
 import { Skeleton } from '../shared';
@@ -62,6 +63,7 @@ interface NextActionsProps {
 }
 
 export function NextActions({ onNavigate }: NextActionsProps) {
+  const { t } = useTranslation('dashboard');
   const { data, isLoading, isError } = useRecommendedActions();
   const queryClient = useQueryClient();
 
@@ -85,13 +87,13 @@ export function NextActions({ onNavigate }: NextActionsProps) {
       <div className="bg-white rounded-lg border border-red-200 p-5">
         <div className="flex items-center gap-2 text-red-600 mb-2">
           <AlertTriangle className="h-4 w-4" />
-          <span className="text-sm font-medium">Failed to load recommendations</span>
+          <span className="text-sm font-medium">{t('nextActions.loadError')}</span>
         </div>
         <button
           onClick={() => queryClient.invalidateQueries({ queryKey: dashboardKeys.recommended })}
           className="text-sm text-red-600 hover:text-red-700 underline"
         >
-          Retry
+          {t('common.retry')}
         </button>
       </div>
     );
@@ -101,7 +103,7 @@ export function NextActions({ onNavigate }: NextActionsProps) {
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-gray-900 mb-3">Recommended Next Steps</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('nextActions.title')}</h3>
       <div className="space-y-3">
         {data.map((action) => {
           const Icon = getIcon(action.icon);

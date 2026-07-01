@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Plus, Trash2, Check, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { MILESTONE_COLORS } from '../../constants/strategy-types';
 import { useUpdateMilestone, useDeleteMilestone } from '../../hooks';
@@ -19,12 +20,6 @@ const NEXT_STATUS: Record<MilestoneStatus, MilestoneStatus> = {
   FUTURE: 'UPCOMING',
 };
 
-const STATUS_LABEL: Record<MilestoneStatus, string> = {
-  DONE: 'Done',
-  UPCOMING: 'Upcoming',
-  FUTURE: 'Future',
-};
-
 function MilestoneItemWithHooks({
   milestone,
   strategyId,
@@ -32,6 +27,7 @@ function MilestoneItemWithHooks({
   milestone: MilestoneItem;
   strategyId: string;
 }) {
+  const { t } = useTranslation('business-strategy');
   const updateMilestone = useUpdateMilestone(strategyId, milestone.id);
   const deleteMilestone = useDeleteMilestone(strategyId, milestone.id);
   const [hoveredId, setHoveredId] = useState(false);
@@ -56,7 +52,7 @@ function MilestoneItemWithHooks({
   };
 
   const handleDelete = () => {
-    if (confirm(`Delete milestone "${milestone.title}"?`)) {
+    if (confirm(t('confirm.deleteMilestone', { title: milestone.title }))) {
       deleteMilestone.mutate(undefined);
     }
   };
@@ -74,7 +70,10 @@ function MilestoneItemWithHooks({
         className={`w-4 h-4 rounded-full border-2 border-white shadow-sm z-10 transition-transform hover:scale-125 ${
           MILESTONE_COLORS[milestone.status]
         } ${milestone.status === 'FUTURE' ? 'ring-2 ring-gray-300 bg-white' : ''}`}
-        title={`Click to toggle (${STATUS_LABEL[milestone.status]} \u2192 ${STATUS_LABEL[NEXT_STATUS[milestone.status]]})`}
+        title={t('milestone.toggleTitle', {
+          from: t(`milestone.status.${milestone.status}`),
+          to: t(`milestone.status.${NEXT_STATUS[milestone.status]}`),
+        })}
       />
 
       {/* Title (inline edit or display) */}
@@ -106,7 +105,7 @@ function MilestoneItemWithHooks({
           type="button"
           onClick={() => { setEditTitle(milestone.title); setIsEditing(true); }}
           className="text-xs text-gray-600 mt-2 max-w-[80px] truncate text-center hover:text-gray-900 cursor-text"
-          title="Click to edit title"
+          title={t('milestone.editTitle')}
         >
           {milestone.title}
         </button>
@@ -119,7 +118,7 @@ function MilestoneItemWithHooks({
         className={`mt-1 p-0.5 text-gray-400 hover:text-red-500 rounded transition-opacity ${
           hoveredId ? 'opacity-100' : 'opacity-0'
         }`}
-        title="Delete milestone"
+        title={t('milestone.delete')}
       >
         <Trash2 className="w-3 h-3" />
       </button>
@@ -136,7 +135,7 @@ function MilestoneItemWithHooks({
             })}
           </p>
           <p className="text-gray-400 mt-0.5 text-[10px]">
-            {STATUS_LABEL[milestone.status]} &middot; Click dot to toggle
+            {t(`milestone.status.${milestone.status}`)} &middot; {t('milestone.clickToToggle')}
           </p>
           {milestone.description && (
             <p className="text-gray-400 mt-1">{milestone.description}</p>
@@ -149,6 +148,7 @@ function MilestoneItemWithHooks({
 }
 
 export function MilestoneTimeline({ milestones, strategyId, onAdd }: MilestoneTimelineProps) {
+  const { t } = useTranslation('business-strategy');
   // Collect unique quarters and sort them
   const quarters = Array.from(new Set(milestones.map((m) => m.quarter))).sort();
 
@@ -162,14 +162,14 @@ export function MilestoneTimeline({ milestones, strategyId, onAdd }: MilestoneTi
   return (
     <div className="p-6 bg-white border border-gray-200 rounded-lg">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Milestones</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{t('milestone.sectionTitle')}</h2>
         <Button variant="ghost" size="sm" onClick={onAdd}>
-          <Plus className="w-4 h-4 mr-1" /> Add Milestone
+          <Plus className="w-4 h-4 mr-1" /> {t('milestone.add')}
         </Button>
       </div>
 
       {milestones.length === 0 ? (
-        <p className="text-sm text-gray-400 italic">No milestones defined yet</p>
+        <p className="text-sm text-gray-400 italic">{t('milestone.empty')}</p>
       ) : (
         <div className="overflow-x-auto">
           <div className="min-w-[500px]">

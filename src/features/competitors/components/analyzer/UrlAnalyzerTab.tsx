@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Globe, Building2, Target, Swords, BarChart3 } from "lucide-react";
 import { Button, Input } from "@/components/shared";
 import { normaliseUserUrl, INVALID_URL_MESSAGE } from "@/lib/utils/normalise-url";
@@ -10,6 +11,7 @@ import type { AnalyzeJobResponse } from "../../types/competitor.types";
 
 /** URL analyzer tab for competitor analysis */
 export function UrlAnalyzerTab() {
+  const { t } = useTranslation("competitors");
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const analyzeUrl = useAnalyzeCompetitorUrl();
@@ -35,7 +37,7 @@ export function UrlAnalyzerTab() {
       onError: (err) => {
         useCompetitorsStore.getState().closeProcessingModal();
         setError(
-          err instanceof Error ? err.message : "Failed to analyze URL. Please try again.",
+          err instanceof Error ? err.message : t("url.analyzeError"),
         );
       },
     });
@@ -45,8 +47,8 @@ export function UrlAnalyzerTab() {
     <div className="space-y-6">
       <div className="space-y-4">
         <Input
-          label="Competitor website URL"
-          placeholder="https://competitor.com"
+          label={t("url.label")}
+          placeholder={t("url.placeholder")}
           icon={Globe}
           value={url}
           onChange={(e) => {
@@ -65,21 +67,21 @@ export function UrlAnalyzerTab() {
           onClick={handleSubmit}
           isLoading={analyzeUrl.isPending}
         >
-          Analyze Competitor
+          {t("url.analyzeButton")}
         </Button>
       </div>
 
       {/* What we extract grid */}
       <div className="rounded-lg border border-gray-200 bg-gray-50 p-5">
         <h3 className="text-sm font-medium text-gray-900 mb-4">
-          What we extract from competitor websites
+          {t("url.whatWeExtract")}
         </h3>
         <div className="grid grid-cols-2 gap-4">
           {[
-            { icon: Building2, label: "Company info", desc: "Name, tagline, founding year, headquarters" },
-            { icon: Target, label: "Positioning", desc: "Value proposition, target audience, differentiators" },
-            { icon: Swords, label: "Strengths & weaknesses", desc: "SWOT analysis, competitive advantages" },
-            { icon: BarChart3, label: "Competitive score", desc: "AI-scored threat level from 0-100" },
+            { icon: Building2, label: t("url.extract.companyInfoLabel"), desc: t("url.extract.companyInfoDesc") },
+            { icon: Target, label: t("url.extract.positioningLabel"), desc: t("url.extract.positioningDesc") },
+            { icon: Swords, label: t("url.extract.strengthsWeaknessesLabel"), desc: t("url.extract.strengthsWeaknessesDesc") },
+            { icon: BarChart3, label: t("url.extract.competitiveScoreLabel"), desc: t("url.extract.competitiveScoreDesc") },
           ].map((item) => (
             <div key={item.label} className="flex gap-3">
               <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-red-100">

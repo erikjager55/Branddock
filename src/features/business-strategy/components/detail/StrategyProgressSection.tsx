@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/shared';
 import { useProgressHistory } from '../../hooks';
 import { SparklineChart } from './SparklineChart';
@@ -10,6 +11,7 @@ interface StrategyProgressSectionProps {
 }
 
 export function StrategyProgressSection({ strategy }: StrategyProgressSectionProps) {
+  const { t } = useTranslation('business-strategy');
   const objectives = strategy.objectives ?? [];
   const total = objectives.length;
   const onTrack = objectives.filter((o) => o.status === 'ON_TRACK').length;
@@ -59,13 +61,13 @@ export function StrategyProgressSection({ strategy }: StrategyProgressSectionPro
         <div className="flex items-center gap-4 flex-shrink-0">
           <div className="text-center">
             <p className="text-lg font-semibold text-gray-900">{total}</p>
-            <p className="text-xs text-gray-500">Total</p>
+            <p className="text-xs text-gray-500">{t('progress.total')}</p>
           </div>
           <div className="text-center">
-            <Badge variant="success" size="sm">{onTrack} On Track</Badge>
+            <Badge variant="success" size="sm">{t('progress.onTrackCount', { count: onTrack })}</Badge>
           </div>
           <div className="text-center">
-            <Badge variant="danger" size="sm">{atRisk} At Risk</Badge>
+            <Badge variant="danger" size="sm">{t('progress.atRiskCount', { count: atRisk })}</Badge>
           </div>
         </div>
       </div>

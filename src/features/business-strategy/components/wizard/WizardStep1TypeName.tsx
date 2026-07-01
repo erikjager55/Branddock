@@ -10,6 +10,7 @@ import {
   FileText,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/shared';
 import type { StrategyType, InitialObjective } from '../../types/business-strategy.types';
 import { STRATEGY_TEMPLATES } from '../../constants/strategy-templates';
@@ -17,15 +18,13 @@ import { STRATEGY_TEMPLATES } from '../../constants/strategy-templates';
 const STRATEGY_TYPE_OPTIONS: {
   key: StrategyType;
   icon: LucideIcon;
-  label: string;
-  description: string;
 }[] = [
-  { key: 'GROWTH', icon: TrendingUp, label: 'Growth', description: 'Scale revenue and market share' },
-  { key: 'MARKET_ENTRY', icon: Globe, label: 'Market Entry', description: 'Enter new markets or segments' },
-  { key: 'PRODUCT_LAUNCH', icon: Rocket, label: 'Product Launch', description: 'Launch new products or features' },
-  { key: 'BRAND_BUILDING', icon: Award, label: 'Brand Building', description: 'Build brand awareness and authority' },
-  { key: 'OPERATIONAL_EXCELLENCE', icon: Settings, label: 'Operational Excellence', description: 'Improve efficiency and processes' },
-  { key: 'CUSTOM', icon: Puzzle, label: 'Custom', description: 'Define your own strategy type' },
+  { key: 'GROWTH', icon: TrendingUp },
+  { key: 'MARKET_ENTRY', icon: Globe },
+  { key: 'PRODUCT_LAUNCH', icon: Rocket },
+  { key: 'BRAND_BUILDING', icon: Award },
+  { key: 'OPERATIONAL_EXCELLENCE', icon: Settings },
+  { key: 'CUSTOM', icon: Puzzle },
 ];
 
 interface WizardStep1Props {
@@ -54,6 +53,7 @@ export function WizardStep1TypeName({
   onTypeChange,
   onApplyTemplate,
 }: WizardStep1Props) {
+  const { t } = useTranslation('business-strategy');
   return (
     <div className="space-y-5">
       {/* Start from template */}
@@ -61,7 +61,7 @@ export function WizardStep1TypeName({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <FileText className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-            Start from Template
+            {t('wizard.startFromTemplate')}
           </label>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {STRATEGY_TEMPLATES.map((tmpl) => (
@@ -80,8 +80,8 @@ export function WizardStep1TypeName({
                 }
                 className="flex-shrink-0 px-3 py-2 border border-gray-200 rounded-lg text-xs text-gray-700 hover:border-emerald-300 hover:bg-emerald-50 transition-colors text-left"
               >
-                <span className="font-medium block">{tmpl.label}</span>
-                <span className="text-gray-500 block mt-0.5">{tmpl.description}</span>
+                <span className="font-medium block">{t(`templates.${tmpl.id}.label`)}</span>
+                <span className="text-gray-500 block mt-0.5">{t(`templates.${tmpl.id}.description`)}</span>
               </button>
             ))}
           </div>
@@ -91,7 +91,7 @@ export function WizardStep1TypeName({
       {/* Strategy Type — 2x3 grid */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Strategy Type
+          {t('wizard.strategyType')}
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {STRATEGY_TYPE_OPTIONS.map((opt) => {
@@ -118,10 +118,10 @@ export function WizardStep1TypeName({
                     isSelected ? 'text-emerald-700' : 'text-gray-700'
                   }`}
                 >
-                  {opt.label}
+                  {t(`types.${opt.key}.label`)}
                 </span>
                 <span className="text-[10px] text-gray-500 leading-tight">
-                  {opt.description}
+                  {t(`types.${opt.key}.description`)}
                 </span>
               </button>
             );
@@ -131,24 +131,24 @@ export function WizardStep1TypeName({
 
       {/* Name */}
       <Input
-        label="Strategy Name"
+        label={t('wizard.strategyName')}
         data-testid="strategy-name-input"
         value={name}
         onChange={(e) => onNameChange(e.target.value)}
-        placeholder="e.g. Q1 Growth Strategy"
+        placeholder={t('wizard.strategyNamePlaceholder')}
         maxLength={200}
       />
 
       {/* Description */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Description
+          {t('wizard.description')}
         </label>
         <textarea
           data-testid="strategy-description-input"
           value={description}
           onChange={(e) => onDescriptionChange(e.target.value)}
-          placeholder="Describe the goals and scope of this strategy..."
+          placeholder={t('wizard.descriptionPlaceholder')}
           rows={3}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
         />

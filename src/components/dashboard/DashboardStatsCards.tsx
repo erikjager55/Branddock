@@ -8,6 +8,7 @@ import {
   Swords,
   AlertTriangle,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDashboardStats, dashboardKeys } from '../../hooks/use-dashboard';
 import { SkeletonCard } from '../shared';
@@ -42,6 +43,7 @@ interface DashboardStatsCardsProps {
 }
 
 export function DashboardStatsCards({ onNavigate }: DashboardStatsCardsProps) {
+  const { t } = useTranslation('dashboard');
   const { data, isLoading, isError } = useDashboardStats();
   const queryClient = useQueryClient();
 
@@ -60,13 +62,13 @@ export function DashboardStatsCards({ onNavigate }: DashboardStatsCardsProps) {
       <div className="bg-white rounded-lg border border-red-200 p-4">
         <div className="flex items-center gap-2 text-red-600 mb-2">
           <AlertTriangle className="h-4 w-4" />
-          <span className="text-sm font-medium">Failed to load stats</span>
+          <span className="text-sm font-medium">{t('stats.loadError')}</span>
         </div>
         <button
           onClick={() => queryClient.invalidateQueries({ queryKey: dashboardKeys.stats })}
           className="text-sm text-red-600 hover:text-red-700 underline"
         >
-          Retry
+          {t('common.retry')}
         </button>
       </div>
     );
@@ -78,7 +80,7 @@ export function DashboardStatsCards({ onNavigate }: DashboardStatsCardsProps) {
     {
       icon: Package,
       value: `${data.brandAssets.ready}/${data.brandAssets.total}`,
-      label: 'Brand Assets',
+      label: t('stats.brandAssets'),
       bgColor: 'bg-emerald-50',
       iconColor: 'text-emerald-600',
       section: 'brand',
@@ -86,7 +88,7 @@ export function DashboardStatsCards({ onNavigate }: DashboardStatsCardsProps) {
     {
       icon: Users,
       value: data.personas,
-      label: 'Personas',
+      label: t('stats.personas'),
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-600',
       section: 'personas',
@@ -94,7 +96,7 @@ export function DashboardStatsCards({ onNavigate }: DashboardStatsCardsProps) {
     {
       icon: Layers,
       value: data.products,
-      label: 'Products',
+      label: t('stats.products'),
       bgColor: 'bg-purple-50',
       iconColor: 'text-purple-600',
       section: 'products',
@@ -102,7 +104,7 @@ export function DashboardStatsCards({ onNavigate }: DashboardStatsCardsProps) {
     {
       icon: Megaphone,
       value: data.campaigns,
-      label: 'Active Campaigns',
+      label: t('stats.activeCampaigns'),
       bgColor: 'bg-orange-50',
       iconColor: 'text-orange-600',
       section: 'active-campaigns',
@@ -110,7 +112,7 @@ export function DashboardStatsCards({ onNavigate }: DashboardStatsCardsProps) {
     {
       icon: TrendingUp,
       value: data.trends,
-      label: 'Activated Trends',
+      label: t('stats.activatedTrends'),
       bgColor: 'bg-primary-50',
       iconColor: 'text-primary',
       section: 'trends',
@@ -118,7 +120,7 @@ export function DashboardStatsCards({ onNavigate }: DashboardStatsCardsProps) {
     {
       icon: Swords,
       value: data.competitors,
-      label: 'Competitors',
+      label: t('stats.competitors'),
       bgColor: 'bg-red-50',
       iconColor: 'text-red-600',
       section: 'competitors',
