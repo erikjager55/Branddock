@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bot, Plus } from 'lucide-react';
 import { Button, SearchInput, EmptyState } from '@/components/shared';
 import { ConfigCard } from './ConfigCard';
@@ -10,13 +11,12 @@ import type { ExplorationConfigData } from '@/lib/ai/exploration/config.types';
 
 interface ItemTypeTab {
   key: string;
-  label: string;
 }
 
 const ITEM_TYPE_TABS: ItemTypeTab[] = [
-  { key: 'brand_asset', label: 'Brand Assets' },
-  { key: 'persona', label: 'Personas' },
-  { key: 'product', label: 'Products' },
+  { key: 'brand_asset' },
+  { key: 'persona' },
+  { key: 'product' },
 ];
 
 // ─── Props ──────────────────────────────────────────────────
@@ -38,6 +38,7 @@ export function ConfigListView({
   onDeleteConfig,
   onDuplicateConfig,
 }: ConfigListViewProps) {
+  const { t } = useTranslation('settings-admin');
   const [activeTab, setActiveTab] = useState('brand_asset');
   const [search, setSearch] = useState('');
 
@@ -69,13 +70,13 @@ export function ConfigListView({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">AI Exploration Configuration</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('list.title')}</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Configure prompts, dimensions, AI model and context per item type
+            {t('list.subtitle')}
           </p>
         </div>
         <Button variant="primary" size="md" icon={Plus} onClick={onCreateConfig}>
-          New Configuration
+          {t('list.newConfig')}
         </Button>
       </div>
 
@@ -95,7 +96,7 @@ export function ConfigListView({
                     : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent'
                 }`}
               >
-                {tab.label}
+                {t(`itemTypes.${tab.key}`)}
                 <span className={`text-[10px] font-semibold rounded-full px-1.5 py-0.5 ${
                   isActive ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-500'
                 }`}>
@@ -111,7 +112,7 @@ export function ConfigListView({
       <SearchInput
         value={search}
         onChange={setSearch}
-        placeholder="Search by label or subtype..."
+        placeholder={t('list.searchPlaceholder')}
         className="max-w-sm"
       />
 
@@ -119,16 +120,16 @@ export function ConfigListView({
       {filteredConfigs.length === 0 ? (
         <EmptyState
           icon={Bot}
-          title={search ? 'No results' : 'No configurations'}
+          title={search ? t('list.noResults') : t('list.noConfigs')}
           description={
             search
-              ? `No configurations found for "${search}"`
-              : `There are no AI Exploration configurations for ${ITEM_TYPE_TABS.find((t) => t.key === activeTab)?.label ?? activeTab} yet. The system uses default settings.`
+              ? t('list.noResultsDescription', { query: search })
+              : t('list.emptyDescription', { itemType: t(`itemTypes.${activeTab}`) })
           }
           action={
             !search
               ? {
-                  label: 'New Configuration',
+                  label: t('list.newConfig'),
                   onClick: onCreateConfig,
                 }
               : undefined

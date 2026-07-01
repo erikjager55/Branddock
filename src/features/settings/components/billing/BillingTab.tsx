@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useBillingPlan } from '@/hooks/use-billing';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { BillingBanner, UpgradeModal } from '@/components/billing';
@@ -10,6 +11,7 @@ import { PaymentMethodsCard } from './PaymentMethodsCard';
 import { InvoiceHistoryCard } from './InvoiceHistoryCard';
 
 export function BillingTab() {
+  const { t } = useTranslation('settings-billing');
   const billing = useBillingPlan();
   const isUpgradeModalOpen = useSettingsStore((s) => s.isUpgradeModalOpen);
   const setIsUpgradeModalOpen = useSettingsStore((s) => s.setIsUpgradeModalOpen);
@@ -17,9 +19,9 @@ export function BillingTab() {
   return (
     <div data-testid="billing-tab" className="max-w-4xl space-y-6 p-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">Billing & Subscription</h2>
+        <h2 className="text-xl font-semibold text-gray-900">{t('header.title')}</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Manage your plan, usage, and payment details
+          {t('header.subtitle')}
         </p>
       </div>
 

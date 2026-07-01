@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Cpu, CheckCircle2, Loader2, Image } from "lucide-react";
 import { StatCard } from "@/components/shared";
 import type { ConsistentModelStats } from "../types/consistent-model.types";
@@ -11,6 +12,7 @@ interface ModelStatsCardsProps {
 
 /** 4 stat cards for model overview */
 export function ModelStatsCards({ stats, isLoading }: ModelStatsCardsProps) {
+  const { t } = useTranslation("consistent-models");
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -24,22 +26,22 @@ export function ModelStatsCards({ stats, isLoading }: ModelStatsCardsProps) {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       <StatCard
-        label="Total Models"
+        label={t("stats.total")}
         value={stats?.total ?? 0}
         icon={Cpu}
       />
       <StatCard
-        label="Ready"
+        label={t("stats.ready")}
         value={stats?.ready ?? 0}
         icon={CheckCircle2}
       />
       <StatCard
-        label="Training"
+        label={t("stats.training")}
         value={stats?.training ?? 0}
         icon={Loader2}
       />
       <StatCard
-        label="Generations"
+        label={t("stats.generations")}
         value={stats?.totalGenerations ?? 0}
         icon={Image}
       />

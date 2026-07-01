@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { TOTAL_WORKSHOP_STEPS } from '../../constants/workshop-steps';
@@ -27,6 +28,7 @@ export function ResponseCapture({
   onPrevious,
   onNext,
 }: ResponseCaptureProps) {
+  const { t } = useTranslation('workshop');
   const [response, setResponse] = useState(initialResponse);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export function ResponseCapture({
       <textarea
         value={response}
         onChange={(e) => setResponse(e.target.value)}
-        placeholder="Capture the team's response here..."
+        placeholder={t('session.response.placeholder')}
         className="flex-1 w-full min-h-[120px] p-4 border border-gray-200 rounded-lg text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
       />
 
@@ -65,7 +67,7 @@ export function ResponseCapture({
           onClick={onPrevious}
           disabled={currentStep <= 1}
         >
-          Previous
+          {t('common.previous')}
         </Button>
 
         <Button
@@ -77,7 +79,9 @@ export function ResponseCapture({
           isLoading={isSaving}
           disabled={!response.trim()}
         >
-          {currentStep < TOTAL_WORKSHOP_STEPS ? 'Save & Next' : 'Save'}
+          {currentStep < TOTAL_WORKSHOP_STEPS
+            ? t('session.response.saveNext')
+            : t('session.response.save')}
         </Button>
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Upload, ImagePlus, AlertCircle } from "lucide-react";
 import { Button } from "@/components/shared";
 import { TRAINING_DEFAULTS } from "../../constants/model-constants";
@@ -22,6 +23,7 @@ export function ReferenceImageUploader({
   currentCount,
   maxCount,
 }: ReferenceImageUploaderProps) {
+  const { t } = useTranslation("consistent-models");
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,20 +38,18 @@ export function ReferenceImageUploader({
 
       for (const file of files) {
         if (!ACCEPTED_TYPES.includes(file.type)) {
-          errors.push(`${file.name}: unsupported format (use JPEG, PNG, or WebP)`);
+          errors.push(t("uploader.unsupportedFormat", { file: file.name }));
           continue;
         }
         if (file.size > MAX_FILE_SIZE) {
-          errors.push(`${file.name}: exceeds 10MB limit`);
+          errors.push(t("uploader.tooLarge", { file: file.name }));
           continue;
         }
         valid.push(file);
       }
 
       if (valid.length > remaining) {
-        errors.push(
-          `Only ${remaining} more image${remaining !== 1 ? "s" : ""} can be added`,
-        );
+        errors.push(t("uploader.onlyMore", { count: remaining }));
         valid.splice(remaining);
       }
 
@@ -59,7 +59,7 @@ export function ReferenceImageUploader({
 
       return valid;
     },
-    [remaining],
+    [remaining, t],
   );
 
   const handleFiles = useCallback(
@@ -95,7 +95,7 @@ export function ReferenceImageUploader({
   if (remaining <= 0) {
     return (
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-700">
-        Maximum of {maxCount} reference images reached
+        {t("uploader.maxReached", { count: maxCount })}
       </div>
     );
   }
@@ -125,19 +125,19 @@ export function ReferenceImageUploader({
         {isUploading ? (
           <div className="flex flex-col items-center gap-2">
             <Upload className="h-8 w-8 animate-bounce text-teal-500" />
-            <p className="text-sm font-medium text-teal-700">Uploading...</p>
+            <p className="text-sm font-medium text-teal-700">{t("uploader.uploading")}</p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
             <ImagePlus className="h-8 w-8 text-gray-400" />
             <p className="text-sm font-medium text-gray-700">
-              Drop images here or click to browse
+              {t("uploader.dropHere")}
             </p>
             <p className="text-xs text-gray-400">
-              JPEG, PNG, or WebP. Min 512x512px. Max 10MB each.
+              {t("uploader.formatHint")}
             </p>
             <p className="text-xs text-gray-400">
-              {remaining} more image{remaining !== 1 ? "s" : ""} can be added
+              {t("uploader.remaining", { count: remaining })}
             </p>
           </div>
         )}

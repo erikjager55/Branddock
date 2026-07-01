@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { Sparkles } from 'lucide-react';
 import { AIReportSection } from './AIReportSection';
@@ -23,16 +24,16 @@ export function OverviewTab({
   onGenerateReport,
   isGenerating,
 }: OverviewTabProps) {
+  const { t } = useTranslation('workshop');
   if (!reportGenerated) {
     return (
       <div data-testid="overview-tab" className="text-center py-12">
         <Sparkles className="w-10 h-10 text-gray-300 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Generate AI Report
+          {t('results.overview.generateTitle')}
         </h3>
         <p className="text-sm text-gray-500 mb-4 max-w-md mx-auto">
-          Analyze workshop responses and generate an executive summary with key
-          findings and recommendations.
+          {t('results.overview.generateDesc')}
         </p>
         <Button
           data-testid="generate-report-button"
@@ -41,7 +42,7 @@ export function OverviewTab({
           onClick={onGenerateReport}
           isLoading={isGenerating}
         >
-          Generate Report
+          {t('results.overview.generateButton')}
         </Button>
       </div>
     );

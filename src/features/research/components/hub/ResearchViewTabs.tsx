@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Globe, BarChart2, Calendar } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────
@@ -14,18 +15,20 @@ interface ResearchViewTabsProps {
 
 // ─── Tab config ──────────────────────────────────────────────
 
-const TABS: { key: ViewTab; label: string; icon: React.ElementType }[] = [
-  { key: "overview", label: "Overview", icon: Globe },
-  { key: "category", label: "By Category", icon: BarChart2 },
-  { key: "timeline", label: "Timeline", icon: Calendar },
+const TABS: { key: ViewTab; icon: React.ElementType }[] = [
+  { key: "overview", icon: Globe },
+  { key: "category", icon: BarChart2 },
+  { key: "timeline", icon: Calendar },
 ];
 
 // ─── Component ───────────────────────────────────────────────
 
 export function ResearchViewTabs({ activeTab, onTabChange }: ResearchViewTabsProps) {
+  const { t } = useTranslation("research");
+
   return (
     <div className="bg-gray-100 rounded-lg p-1 flex gap-1 w-fit">
-      {TABS.map(({ key, label, icon: Icon }) => {
+      {TABS.map(({ key, icon: Icon }) => {
         const isActive = activeTab === key;
         return (
           <button
@@ -38,7 +41,7 @@ export function ResearchViewTabs({ activeTab, onTabChange }: ResearchViewTabsPro
             }`}
           >
             <Icon className="w-4 h-4" />
-            {label}
+            {t(`viewTabs.${key}`)}
           </button>
         );
       })}

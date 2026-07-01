@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Check, User, Building2 } from 'lucide-react';
 import { Button, Modal } from '@/components/shared';
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,6 +26,7 @@ interface SocialProfileSelectorProps {
  * becomes a separate PublishChannel record.
  */
 export function SocialProfileSelector({ platform, sessionId, onClose }: SocialProfileSelectorProps) {
+  const { t } = useTranslation('settings-misc');
   const qc = useQueryClient();
   const [profiles, setProfiles] = useState<SocialProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ export function SocialProfileSelector({ platform, sessionId, onClose }: SocialPr
 
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          throw new Error(data.error ?? `Failed to fetch profiles (${res.status})`);
+          throw new Error(data.error ?? t('socialProfiles.fetchFailed', { status: res.status }));
         }
 
         const data = await res.json();
@@ -52,14 +54,14 @@ export function SocialProfileSelector({ platform, sessionId, onClose }: SocialPr
         // Auto-select all profiles
         setSelectedIds(new Set((data.profiles ?? []).map((p: SocialProfile) => p.profileId)));
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load profiles');
+        setError(err instanceof Error ? err.message : t('socialProfiles.loadError'));
       } finally {
         setLoading(false);
       }
     }
 
     fetchProfiles();
-  }, [platform, sessionId]);
+  }, [platform, sessionId, t]);
 
   const toggleProfile = (profileId: string) => {
     setSelectedIds((prev) => {
@@ -94,13 +96,13 @@ export function SocialProfileSelector({ platform, sessionId, onClose }: SocialPr
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? 'Failed to connect profiles');
+        throw new Error(data.error ?? t('socialProfiles.connectFailed'));
       }
 
       qc.invalidateQueries({ queryKey: channelKeys.all });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Connection failed');
+      setError(err instanceof Error ? err.message : t('socialProfiles.connectionFailed'));
     } finally {
       setSaving(false);
     }
@@ -109,12 +111,12 @@ export function SocialProfileSelector({ platform, sessionId, onClose }: SocialPr
   const platformLabel = platform.charAt(0).toUpperCase() + platform.slice(1);
 
   return (
-    <Modal isOpen onClose={onClose} title={`Connect ${platformLabel} Profiles`} size="md">
+    <Modal isOpen onClose={onClose} title={t('socialProfiles.connectModalTitle', { platform: platformLabel })} size="md">
       <div className="space-y-4">
         {loading && (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="ml-2 text-sm text-gray-500">Loading profiles...</span>
+            <span className="ml-2 text-sm text-gray-500">{t('socialProfiles.loadingProfiles')}</span>
           </div>
         )}
 
@@ -126,9 +128,9 @@ export function SocialProfileSelector({ platform, sessionId, onClose }: SocialPr
 
         {!loading && !error && profiles.length === 0 && (
           <div className="text-center py-8">
-            <p className="text-sm text-gray-500">No profiles found for this account.</p>
+            <p className="text-sm text-gray-500">{t('socialProfiles.noProfilesTitle')}</p>
             <p className="text-xs text-gray-400 mt-1">
-              Make sure your account has the required permissions.
+              {t('socialProfiles.noProfilesHint')}
             </p>
           </div>
         )}
@@ -136,7 +138,7 @@ export function SocialProfileSelector({ platform, sessionId, onClose }: SocialPr
         {!loading && profiles.length > 0 && (
           <>
             <p className="text-sm text-gray-600">
-              Select the profiles you want to publish to. Each profile will be added as a separate connection.
+              {t('socialProfiles.selectPrompt')}
             </p>
 
             <div className="space-y-2">
@@ -174,7 +176,7 @@ export function SocialProfileSelector({ platform, sessionId, onClose }: SocialPr
                         {profile.profileName}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {isPage ? 'Company / Business Page' : 'Personal Profile'}
+                        {isPage ? t('socialProfiles.companyPage') : t('socialProfiles.personalProfile')}
                       </p>
                     </div>
 
@@ -194,13 +196,13 @@ export function SocialProfileSelector({ platform, sessionId, onClose }: SocialPr
         )}
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" onClick={onClose}>{t('socialProfiles.cancel')}</Button>
           <Button
             onClick={handleConnect}
             disabled={selectedIds.size === 0 || saving}
             isLoading={saving}
           >
-            Connect {selectedIds.size > 0 ? `${selectedIds.size} profile${selectedIds.size > 1 ? 's' : ''}` : ''}
+            {t('socialProfiles.connect')} {selectedIds.size > 0 ? t('socialProfiles.profileCount', { count: selectedIds.size }) : ''}
           </Button>
         </div>
       </div>

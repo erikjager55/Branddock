@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Building2, MessageSquare, ClipboardList, Bot } from "lucide-react";
 import { Skeleton } from "@/components/shared";
 import type { MethodStatusResponse } from "../../types/research.types";
@@ -28,6 +29,8 @@ export function ValidationMethodsStatus({
   methods,
   isLoading,
 }: ValidationMethodsStatusProps) {
+  const { t } = useTranslation("research");
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -54,13 +57,13 @@ export function ValidationMethodsStatus({
             <div className="flex items-center gap-2 mb-3">
               <Icon className={`w-5 h-5 ${config.color}`} />
               <span className="text-sm font-medium text-gray-900">
-                {config.label}
+                {t(`methodStatus.methods.${config.type}`)}
               </span>
             </div>
             <div className="flex items-center gap-3 text-xs text-gray-500">
-              <span>{methodData?.active ?? 0} Active</span>
-              <span>{methodData?.done ?? 0} Done</span>
-              <span>{methodData?.unlocked ?? 0} Unlocked</span>
+              <span>{methodData?.active ?? 0} {t("methodStatus.active")}</span>
+              <span>{methodData?.done ?? 0} {t("methodStatus.done")}</span>
+              <span>{methodData?.unlocked ?? 0} {t("methodStatus.unlocked")}</span>
             </div>
           </div>
         );

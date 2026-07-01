@@ -2,6 +2,7 @@
 
 import React, { useRef, useCallback, useState, useEffect, useMemo } from 'react';
 import { Send, Paperclip, FileText, Link, Type, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useClawStore } from '@/stores/useClawStore';
 import { useFormFillStore } from '@/stores/useFormFillStore';
 import { ContextSelectorModal } from './ContextSelectorModal';
@@ -19,6 +20,7 @@ import {
 } from '@/lib/claw/slash-commands';
 
 export function InputBar() {
+  const { t } = useTranslation('claw');
   const {
     inputText,
     setInputText,
@@ -336,21 +338,14 @@ export function InputBar() {
 
             let userText: string;
             if (isCreditError) {
-              userText =
-                '**Anthropic API credits are exhausted.** The AI assistant can\'t respond until credits are topped up. ' +
-                'Go to [console.anthropic.com](https://console.anthropic.com/settings/billing) → Plans & Billing to add credits. ' +
-                'Other AI flows (OpenAI / Gemini) keep working — only Anthropic calls fail until you top up.';
+              userText = t('input.errors.credits');
             } else if (isRateLimit) {
-              userText =
-                '**Quick pause.** The AI assistant received too many requests in a short time. ' +
-                'Wait 30 seconds and try again. If this keeps happening, raise the rate limit on the API account.';
+              userText = t('input.errors.rateLimit');
             } else if (isAuth) {
-              userText =
-                '**API key invalid.** Check `ANTHROPIC_API_KEY` in the environment config. ' +
-                'The AI assistant stays unavailable until that\'s fixed.';
+              userText = t('input.errors.auth');
             } else {
-              const detail = raw.length > 0 ? raw.slice(0, 200) : 'unknown error';
-              userText = `**AI assistant error**\n\n${detail}\n\nTry again. If the error persists, check the server logs.`;
+              const detail = raw.length > 0 ? raw.slice(0, 200) : t('input.errors.unknown');
+              userText = t('input.errors.generic', { detail });
             }
 
             addMessage({
@@ -376,7 +371,7 @@ export function InputBar() {
     currentPage, activeEntity, wizardSnapshot, messages,
     addMessage, setInputText, setIsStreaming, appendStreamingText, finalizeStreaming,
     setPendingMutation, resetStreamingText, openBugReportForm,
-    openFeatureRequestForm, openFeedbackForm, setActivityStatus,
+    openFeatureRequestForm, openFeedbackForm, setActivityStatus, t,
   ]);
 
   const applySlashCommand = useCallback(
@@ -425,19 +420,19 @@ export function InputBar() {
   };
 
   const handleAddText = () => {
-    const text = window.prompt('Paste text to include as context:');
+    const text = window.prompt(t('input.pasteTextPrompt'));
     if (!text?.trim()) return;
     const att: ClawAttachment = {
       id: crypto.randomUUID(),
       type: 'text',
-      label: 'Pasted text',
+      label: t('input.pastedTextLabel'),
       content: text.trim(),
     };
     addAttachment(att);
   };
 
   const handleAddUrl = async () => {
-    const url = window.prompt('Enter URL to scrape:');
+    const url = window.prompt(t('input.enterUrlPrompt'));
     if (!url?.trim()) return;
 
     // Placeholder while scraping
@@ -445,7 +440,7 @@ export function InputBar() {
     const placeholder: ClawAttachment = {
       id,
       type: 'url',
-      label: `Scraping ${url.trim()}...`,
+      label: t('input.scrapingUrl', { url: url.trim() }),
       content: '',
       sourceUrl: url.trim(),
     };
@@ -487,7 +482,7 @@ export function InputBar() {
       addAttachment({
         id,
         type: 'file',
-        label: `Parsing ${file.name}...`,
+        label: t('input.parsingFile', { name: file.name }),
         content: '',
         fileMeta: { name: file.name, size: file.size, mimeType: file.type },
       });
@@ -533,7 +528,7 @@ export function InputBar() {
                     <button
                       onClick={() => removeAttachment(att.id)}
                       className="w-5 h-5 rounded-md flex items-center justify-center text-teal-500 hover:text-teal-700 hover:bg-teal-100 transition-colors"
-                      aria-label={`Remove ${att.label}`}
+                      aria-label={t('input.removeAttachment', { label: att.label })}
                     >
                       <X size={12} />
                     </button>
@@ -560,7 +555,7 @@ export function InputBar() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask anything about your brand, personas, campaigns..."
+              placeholder={t('input.placeholder')}
               rows={1}
               className="block w-full resize-none rounded-t-2xl border-0 bg-transparent px-4 pt-3 pb-1 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0 disabled:opacity-60 leading-6"
               style={{ maxHeight: 240, minHeight: 44 }}
@@ -570,19 +565,19 @@ export function InputBar() {
             {/* Action row inside the card */}
             <div className="flex items-center justify-between gap-2 px-2 pb-2 pt-0">
               <div className="flex items-center gap-0.5">
-                <ActionButton icon={Paperclip} label="Context" onClick={() => setShowContextModal(true)} />
-                <ActionButton icon={Type} label="Text" onClick={handleAddText} />
-                <ActionButton icon={FileText} label="File" onClick={handleAddFile} />
-                <ActionButton icon={Link} label="URL" onClick={handleAddUrl} />
+                <ActionButton icon={Paperclip} label={t('input.contextAction')} onClick={() => setShowContextModal(true)} />
+                <ActionButton icon={Type} label={t('input.textAction')} onClick={handleAddText} />
+                <ActionButton icon={FileText} label={t('input.fileAction')} onClick={handleAddFile} />
+                <ActionButton icon={Link} label={t('input.urlAction')} onClick={handleAddUrl} />
               </div>
 
               <button
                 onClick={() => handleSend()}
                 disabled={!inputText.trim() || isStreaming}
                 className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl bg-teal-600 text-white text-sm font-semibold shadow-sm hover:bg-teal-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none disabled:cursor-not-allowed transition-colors flex-shrink-0"
-                aria-label="Send message"
+                aria-label={t('input.sendAria')}
               >
-                <span>Send</span>
+                <span>{t('input.send')}</span>
                 <Send size={14} />
               </button>
             </div>
@@ -595,11 +590,11 @@ export function InputBar() {
               className="inline-flex items-center gap-1 hover:text-teal-700 transition-colors"
             >
               <span>
-                {contextSelection.modules.length} {contextSelection.modules.length === 1 ? 'source' : 'sources'} in context
+                {t('input.sourcesInContext', { count: contextSelection.modules.length })}
               </span>
-              <span className="text-teal-600 underline">Edit</span>
+              <span className="text-teal-600 underline">{t('input.editContext')}</span>
             </button>
-            <span className="text-gray-300">Enter to send · Shift + Enter for new line</span>
+            <span className="text-gray-300">{t('input.keyboardHint')}</span>
           </div>
         </div>
       </div>

@@ -1,35 +1,37 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/shared';
 import { EXPLORATION_AI_MODELS } from '@/lib/ai/exploration/config.types';
 
 // ─── Constants ──────────────────────────────────────────────
+// Labels/descriptions are resolved via i18n (`subTypes.*` / `contextSources.*`).
 
-const SUB_TYPE_OPTIONS: Record<string, Array<{ value: string; label: string }>> = {
+const SUB_TYPE_OPTIONS: Record<string, string[]> = {
   brand_asset: [
-    { value: 'purpose-statement', label: 'Purpose Statement' },
-    { value: 'golden-circle', label: 'Golden Circle' },
-    { value: 'brand-essence', label: 'Brand Essence' },
-    { value: 'brand-promise', label: 'Brand Promise' },
-    { value: 'mission-statement', label: 'Mission & Vision' },
-    { value: 'brand-archetype', label: 'Brand Archetype' },
-    { value: 'transformative-goals', label: 'Transformative Goals' },
-    { value: 'brand-personality', label: 'Brand Personality' },
-    { value: 'brand-story', label: 'Brand Story' },
-    { value: 'brandhouse-values', label: 'Brandhouse Values' },
-    { value: 'social-relevancy', label: 'Social Relevancy' },
+    'purpose-statement',
+    'golden-circle',
+    'brand-essence',
+    'brand-promise',
+    'mission-statement',
+    'brand-archetype',
+    'transformative-goals',
+    'brand-personality',
+    'brand-story',
+    'brandhouse-values',
+    'social-relevancy',
   ],
   persona: [],
   product: [],
 };
 
-const AVAILABLE_CONTEXT_SOURCES = [
-  { key: 'brand_asset', label: 'Brand Assets', description: 'Content and framework data from brand assets' },
-  { key: 'product', label: 'Products & Services', description: 'Product descriptions and features' },
-  { key: 'persona', label: 'Personas', description: 'Persona profiles and demographics' },
-  { key: 'detected_trend', label: 'Trend Radar', description: 'Activated trends and market insights' },
-  { key: 'knowledge_resource', label: 'Knowledge Library', description: 'Knowledge sources and articles' },
-  { key: 'brandstyle', label: 'Brand Style', description: 'Brand style and visual identity' },
+const AVAILABLE_CONTEXT_SOURCE_KEYS = [
+  'brand_asset',
+  'product',
+  'persona',
+  'detected_trend',
+  'knowledge_resource',
+  'brandstyle',
 ];
 
 // ─── Props ──────────────────────────────────────────────────
@@ -77,6 +79,7 @@ export function GeneralTab({
   onContextSourcesChange,
   onIsActiveChange,
 }: GeneralTabProps) {
+  const { t } = useTranslation('settings-admin');
   const subTypeOptions = SUB_TYPE_OPTIONS[itemType] ?? [];
   const hasSubTypes = subTypeOptions.length > 0;
   const filteredModels = EXPLORATION_AI_MODELS.filter((m) => m.provider === provider);
@@ -100,15 +103,15 @@ export function GeneralTab({
       {/* ─── Targeting ────────────────────────────────── */}
       <Card padding="none">
         <div className="px-5 pt-4 pb-1">
-          <h3 className="text-sm font-semibold text-gray-800">Targeting</h3>
+          <h3 className="text-sm font-semibold text-gray-800">{t('general.targetingTitle')}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Define which item type and subtype this configuration applies to
+            {t('general.targetingSubtitle')}
           </p>
         </div>
         <div className="px-5 py-4">
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Item Type</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('general.itemTypeLabel')}</label>
               <select
                 value={itemType}
                 onChange={(e) => {
@@ -117,14 +120,14 @@ export function GeneralTab({
                 }}
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
               >
-                <option value="persona">Persona</option>
-                <option value="brand_asset">Brand Asset</option>
-                <option value="product">Product</option>
+                <option value="persona">{t('general.itemTypeSelect.persona')}</option>
+                <option value="brand_asset">{t('general.itemTypeSelect.brand_asset')}</option>
+                <option value="product">{t('general.itemTypeSelect.product')}</option>
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Sub Type <span className="text-gray-400">(optional)</span>
+                {t('general.subTypeLabel')} <span className="text-gray-400">{t('general.optional')}</span>
               </label>
               {hasSubTypes ? (
                 <select
@@ -132,23 +135,23 @@ export function GeneralTab({
                   onChange={(e) => onItemSubTypeChange(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                 >
-                  <option value="">-- Base configuration --</option>
-                  {subTypeOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  <option value="">{t('general.baseConfiguration')}</option>
+                  {subTypeOptions.map((value) => (
+                    <option key={value} value={value}>{t(`subTypes.${value}`)}</option>
                   ))}
                 </select>
               ) : (
                 <div className="px-3 py-2 text-sm text-gray-400 border border-gray-200 rounded-lg bg-gray-50">
-                  No sub types for {itemType}
+                  {t('general.noSubTypes', { itemType })}
                 </div>
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Label</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('general.labelLabel')}</label>
               <input
                 value={label}
                 onChange={(e) => onLabelChange(e.target.value)}
-                placeholder="Display name"
+                placeholder={t('general.labelPlaceholder')}
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
@@ -167,8 +170,8 @@ export function GeneralTab({
               <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isActive ? 'translate-x-4' : ''}`} />
             </div>
             <div>
-              <span className="text-sm text-gray-700 font-medium">Active</span>
-              <p className="text-xs text-gray-400">When disabled, the default configuration will be used</p>
+              <span className="text-sm text-gray-700 font-medium">{t('general.activeLabel')}</span>
+              <p className="text-xs text-gray-400">{t('general.activeHelp')}</p>
             </div>
           </label>
         </div>
@@ -177,27 +180,27 @@ export function GeneralTab({
       {/* ─── AI Model ─────────────────────────────────── */}
       <Card padding="none">
         <div className="px-5 pt-4 pb-1">
-          <h3 className="text-sm font-semibold text-gray-800">AI Model & Parameters</h3>
+          <h3 className="text-sm font-semibold text-gray-800">{t('general.modelTitle')}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Choose the AI provider, model and creative settings
+            {t('general.modelSubtitle')}
           </p>
         </div>
         <div className="px-5 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Provider</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('general.providerLabel')}</label>
               <select
                 value={provider}
                 onChange={(e) => handleProviderChange(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
               >
-                <option value="anthropic">Anthropic</option>
-                <option value="openai">OpenAI</option>
-                <option value="google">Google (Gemini)</option>
+                <option value="anthropic">{t('general.providerAnthropic')}</option>
+                <option value="openai">{t('general.providerOpenai')}</option>
+                <option value="google">{t('general.providerGoogle')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Model</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('general.modelLabel')}</label>
               <select
                 value={model}
                 onChange={(e) => onModelChange(e.target.value)}
@@ -212,7 +215,7 @@ export function GeneralTab({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Temperature: <span className="text-primary font-semibold">{temperature.toFixed(1)}</span>
+                {t('general.temperatureLabel')} <span className="text-primary font-semibold">{temperature.toFixed(1)}</span>
               </label>
               <input
                 type="range"
@@ -224,12 +227,12 @@ export function GeneralTab({
                 className="w-full accent-primary"
               />
               <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-                <span>Precise (0)</span>
-                <span>Creative (1)</span>
+                <span>{t('general.precise')}</span>
+                <span>{t('general.creative')}</span>
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Max Tokens</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">{t('general.maxTokensLabel')}</label>
               <input
                 type="number"
                 value={maxTokens}
@@ -250,31 +253,31 @@ export function GeneralTab({
       {/* ─── Context Sources ──────────────────────────── */}
       <Card padding="none">
         <div className="px-5 pt-4 pb-1">
-          <h3 className="text-sm font-semibold text-gray-800">Context Sources</h3>
+          <h3 className="text-sm font-semibold text-gray-800">{t('general.contextTitle')}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Select which workspace data is automatically provided as context to the AI
+            {t('general.contextSubtitle')}
           </p>
         </div>
         <div className="px-5 py-4">
           <div className="grid grid-cols-2 gap-3">
-            {AVAILABLE_CONTEXT_SOURCES.map((source) => (
+            {AVAILABLE_CONTEXT_SOURCE_KEYS.map((key) => (
               <label
-                key={source.key}
+                key={key}
                 className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer border transition-colors ${
-                  contextSources.includes(source.key)
+                  contextSources.includes(key)
                     ? 'border-primary-200 bg-primary-50/50'
                     : 'border-gray-100 hover:border-gray-200'
                 }`}
               >
                 <input
                   type="checkbox"
-                  checked={contextSources.includes(source.key)}
-                  onChange={() => toggleContextSource(source.key)}
+                  checked={contextSources.includes(key)}
+                  onChange={() => toggleContextSource(key)}
                   className="rounded border-gray-300 text-primary focus:ring-primary-500 mt-0.5"
                 />
                 <div>
-                  <span className="text-xs font-medium text-gray-700">{source.label}</span>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{source.description}</p>
+                  <span className="text-xs font-medium text-gray-700">{t(`contextSources.${key}.label`)}</span>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{t(`contextSources.${key}.description`)}</p>
                 </div>
               </label>
             ))}

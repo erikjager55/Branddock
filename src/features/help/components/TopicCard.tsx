@@ -9,6 +9,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { HelpCategoryItem } from '@/types/help';
 
 // ─── Icon map ─────────────────────────────────────────────
@@ -28,6 +29,7 @@ interface TopicCardProps {
 }
 
 export function TopicCard({ category, onClick }: TopicCardProps) {
+  const { t } = useTranslation('help');
   const Icon = ICON_MAP[category.icon] ?? HelpCircle;
 
   return (
@@ -59,7 +61,7 @@ export function TopicCard({ category, onClick }: TopicCardProps) {
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold text-gray-900">{category.name}</h3>
         <p className="text-sm text-gray-500">
-          {category.articleCount} articles
+          {t('topics.articleCount', { count: category.articleCount })}
         </p>
       </div>
 

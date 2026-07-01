@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageCircle, X } from 'lucide-react';
 import { useHelpStore } from '@/stores/useHelpStore';
 
 export function FloatingChatWidget() {
+  const { t } = useTranslation('help');
   const isChatOpen = useHelpStore((s) => s.isChatOpen);
   const openChat = useHelpStore((s) => s.openChat);
   const closeChat = useHelpStore((s) => s.closeChat);
@@ -23,7 +25,7 @@ export function FloatingChatWidget() {
         <div className="flex items-center justify-between px-4 py-3 bg-emerald-500 text-white">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-4 h-4" />
-            <span className="text-sm font-medium">Support Chat</span>
+            <span className="text-sm font-medium">{t('chat.title')}</span>
           </div>
           <button
             type="button"
@@ -38,10 +40,8 @@ export function FloatingChatWidget() {
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center">
             <MessageCircle className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm font-medium text-gray-500">Chat coming soon</p>
-            <p className="text-xs text-gray-400 mt-1">
-              We&apos;re working on live chat support.
-            </p>
+            <p className="text-sm font-medium text-gray-500">{t('chat.comingSoon')}</p>
+            <p className="text-xs text-gray-400 mt-1">{t('chat.comingSoonDetail')}</p>
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@ export function FloatingChatWidget() {
         className={`w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-600 shadow-lg flex items-center justify-center transition-all duration-200 ${
           isChatOpen ? 'scale-95' : 'scale-100'
         }`}
-        aria-label={isChatOpen ? 'Close chat' : 'Open chat'}
+        aria-label={isChatOpen ? t('chat.close') : t('chat.open')}
       >
         {isChatOpen ? (
           <X className="w-6 h-6 text-white" />

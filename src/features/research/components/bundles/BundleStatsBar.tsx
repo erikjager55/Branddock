@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Calendar, FileText, FlaskConical, DollarSign } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────
@@ -20,13 +21,14 @@ export function BundleStatsBar({
   methodCount,
   savings,
 }: BundleStatsBarProps) {
+  const { t } = useTranslation("research");
   const stats = [
-    { icon: Calendar, label: "Timeline", value: timeline || "Flexible" },
-    { icon: FileText, label: "Assets", value: `${assetCount} included` },
-    { icon: FlaskConical, label: "Methods", value: `${methodCount} methods` },
+    { icon: Calendar, label: t("bundleStats.timeline"), value: timeline || t("bundleStats.flexible") },
+    { icon: FileText, label: t("bundleStats.assets"), value: t("bundleStats.included", { count: assetCount }) },
+    { icon: FlaskConical, label: t("bundleStats.methods"), value: t("bundleStats.methodsCount", { count: methodCount }) },
     {
       icon: DollarSign,
-      label: "Savings",
+      label: t("bundleStats.savings"),
       value: savings > 0 ? `$${savings.toLocaleString()}` : "--",
     },
   ];

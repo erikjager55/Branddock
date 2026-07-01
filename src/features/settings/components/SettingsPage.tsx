@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore, type SettingsTab } from '@/stores/useSettingsStore';
 import { PageShell, PageHeader } from '@/components/ui/layout';
 import { SettingsSubNav } from './SettingsSubNav';
@@ -29,6 +30,7 @@ interface SettingsPageProps {
 }
 
 export function SettingsPage({ initialTab }: SettingsPageProps) {
+  const { t } = useTranslation('settings-misc');
   const activeTab = useSettingsStore((s) => s.activeTab);
   const setActiveTab = useSettingsStore((s) => s.setActiveTab);
   const { data: isDeveloper } = useDeveloperAccess();
@@ -64,7 +66,7 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
       case 'notifications':
         return (
           <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-            Notification settings coming soon
+            {t('notifications.comingSoon')}
           </div>
         );
       case 'appearance':
@@ -100,8 +102,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
     <PageShell noPadding>
       <PageHeader
         moduleKey="settings"
-        title="Settings"
-        subtitle="Manage your account, team, billing and preferences"
+        title={t('page.title')}
+        subtitle={t('page.subtitle')}
       />
       <div data-testid="settings-page" className="flex h-full">
         <SettingsSubNav />

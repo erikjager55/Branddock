@@ -1,6 +1,7 @@
 'use client';
 
 import { Clock, Star } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { ResourceWithMeta } from '../types/knowledge-library.types';
 import { ResourceTypeIcon } from './shared/ResourceTypeIcon';
 import { RESOURCE_TYPE_ICONS } from '../constants/library-constants';
@@ -10,11 +11,12 @@ interface FeaturedResourcesCarouselProps {
 }
 
 export function FeaturedResourcesCarousel({ resources }: FeaturedResourcesCarouselProps) {
+  const { t } = useTranslation('knowledge-library');
   if (resources.length === 0) return null;
 
   return (
     <div className="mb-6" data-testid="featured-carousel">
-      <h3 className="text-sm font-semibold text-gray-900 mb-3">Featured Resources</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('featured.title')}</h3>
       <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
         {resources.map((r) => (
           <div
@@ -48,7 +50,7 @@ export function FeaturedResourcesCarousel({ resources }: FeaturedResourcesCarous
                   </span>
                 )}
                 <span className="text-xs text-gray-400">
-                  {RESOURCE_TYPE_ICONS[r.type]?.label ?? r.type}
+                  {RESOURCE_TYPE_ICONS[r.type] ? t(`types.${r.type}`) : r.type}
                 </span>
               </div>
             </div>

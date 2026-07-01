@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Mic2, RefreshCcw, AlertCircle, Globe, Sparkles, Loader2, CheckCircle, Eye, Lightbulb } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/shared";
 import { AiContentBanner } from "../AiContentBanner";
 import { EditableStringList } from "@/features/brandstyle/components/EditableStringList";
@@ -19,18 +20,19 @@ function parseGuidelinePrefix(text: string): { prefix: "observed" | "recommended
 
 /** Visual badge for OBSERVED/RECOMMENDED guidelines */
 function GuidelineBadge({ type }: { type: "observed" | "recommended" }) {
+  const { t } = useTranslation("brandvoice");
   if (type === "observed") {
     return (
       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-blue-50 text-blue-600 flex-shrink-0">
         <Eye className="w-3 h-3" />
-        Observed
+        {t("voiceDna.guidelineBadge.observed")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-600 flex-shrink-0">
       <Lightbulb className="w-3 h-3" />
-      Recommended
+      {t("voiceDna.guidelineBadge.recommended")}
     </span>
   );
 }
@@ -51,24 +53,24 @@ const CONFIDENCE_BADGE: Record<"high" | "medium" | "low", string> = {
   low: "bg-gray-100 text-gray-600 border-gray-200",
 };
 
-const ACTIVE_SOURCE_LABEL: Record<
+const ACTIVE_SOURCE_LABEL_KEY: Record<
   "voiceguide" | "workspace-default" | "fallback",
   string
 > = {
-  voiceguide: "voiceguide override",
-  "workspace-default": "workspace default",
-  fallback: "fallback",
+  voiceguide: "voiceDna.activeSource.voiceguide",
+  "workspace-default": "voiceDna.activeSource.workspaceDefault",
+  fallback: "voiceDna.activeSource.fallback",
 };
 
 interface VoiceDnaSectionProps {
   voiceguide: BrandVoiceguide;
 }
 
-const TONE_AXES: { key: ToneAxis; left: string; right: string }[] = [
-  { key: "formalCasual", left: "Formal", right: "Casual" },
-  { key: "seriousFunny", left: "Serious", right: "Funny" },
-  { key: "respectfulIrreverent", left: "Respectful", right: "Irreverent" },
-  { key: "matterOfFactEnthusiastic", left: "Matter-of-fact", right: "Enthusiastic" },
+const TONE_AXES: { key: ToneAxis; leftKey: string; rightKey: string }[] = [
+  { key: "formalCasual", leftKey: "voiceDna.tone.formalLeft", rightKey: "voiceDna.tone.formalRight" },
+  { key: "seriousFunny", leftKey: "voiceDna.tone.seriousLeft", rightKey: "voiceDna.tone.seriousRight" },
+  { key: "respectfulIrreverent", leftKey: "voiceDna.tone.respectfulLeft", rightKey: "voiceDna.tone.respectfulRight" },
+  { key: "matterOfFactEnthusiastic", leftKey: "voiceDna.tone.matterLeft", rightKey: "voiceDna.tone.matterRight" },
 ];
 
 const DEFAULT_TONE: ToneDimensions = {
@@ -79,6 +81,7 @@ const DEFAULT_TONE: ToneDimensions = {
 };
 
 export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
+  const { t } = useTranslation("brandvoice");
   const update = useUpdateVoiceguide();
   const recompute = useRecomputeCentroid();
   const suggested = useSuggestedLocale();
@@ -113,7 +116,7 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
     try {
       await recompute.mutateAsync();
     } catch (e) {
-      setRecomputeError(e instanceof Error ? e.message : "Recompute failed");
+      setRecomputeError(e instanceof Error ? e.message : t("voiceDna.centroid.recomputeError"));
     }
   };
 
@@ -128,17 +131,16 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-center gap-2 mb-3">
           <Mic2 className="w-4 h-4 text-teal-600" />
-          <h3 className="text-sm font-semibold text-gray-900">Voice description</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t("voiceDna.description.title")}</h3>
         </div>
         <p className="text-xs text-gray-500 mb-3">
-          One paragraph that captures how the brand sounds. Used as the top-of-prompt
-          voice instruction in every AI generation.
+          {t("voiceDna.description.help")}
         </p>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={5}
-          placeholder="We sound like a knowledgeable friend — warm, direct, and curious. Never academic, never salesy."
+          placeholder={t("voiceDna.description.placeholder")}
           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary-300"
         />
       </div>
@@ -147,12 +149,10 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-center gap-2 mb-3">
           <Globe className="w-4 h-4 text-teal-600" />
-          <h3 className="text-sm font-semibold text-gray-900">Content locale</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t("voiceDna.locale.title")}</h3>
         </div>
         <p className="text-xs text-gray-500 mb-3">
-          Determines which F-VAL heuristic pack is used for cliché detection and
-          which language instruction the AI receives during content generation.
-          Leave empty to follow the workspace default.
+          {t("voiceDna.locale.help")}
         </p>
 
         {/* Currently-active status: toont welke locale F-VAL momenteel
@@ -160,12 +160,12 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
             wanneer resolver-call faalde (UI is eerlijk over onbekende state). */}
         {suggested.data?.activeLocale && suggested.data.activeSource && (
           <div className="mb-2 flex items-center gap-2 text-xs">
-            <span className="text-gray-500">Currently active:</span>
+            <span className="text-gray-500">{t("voiceDna.locale.currentlyActive")}</span>
             <span className="font-medium text-gray-900">
               {suggested.data.activeLocale}
             </span>
             <span className="px-1.5 py-0.5 rounded text-[10px] font-medium border bg-gray-50 text-gray-600 border-gray-200">
-              {ACTIVE_SOURCE_LABEL[suggested.data.activeSource]}
+              {t(ACTIVE_SOURCE_LABEL_KEY[suggested.data.activeSource])}
             </span>
           </div>
         )}
@@ -174,20 +174,20 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
             blijft wanneer de resolver-call (nog) niet beschikbaar is. */}
         {(voiceguide.contentLocale ?? null) !== contentLocale && (
           <div className="mb-2 text-xs text-amber-700 italic">
-            Unsaved change — click Save to apply.
+            {t("voiceDna.locale.unsaved")}
           </div>
         )}
 
         <select
           id="content-locale-select"
-          aria-label="Content locale — choose which language the F-VAL heuristic pack uses"
+          aria-label={t("voiceDna.locale.selectAriaLabel")}
           value={contentLocale ?? ""}
           onChange={(e) =>
             setContentLocale((e.target.value as ContentLocale | "") || null)
           }
           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
         >
-          <option value="">— Workspace default —</option>
+          <option value="">{t("voiceDna.locale.workspaceDefaultOption")}</option>
           {LOCALE_OPTIONS.map((opt) => (
             <option key={opt.code} value={opt.code}>
               {opt.label}
@@ -202,14 +202,14 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
             return (
               <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Detecting based on brand content...
+                {t("voiceDna.locale.detecting")}
               </div>
             );
           }
           if (suggested.isError) {
             return (
               <p className="mt-3 text-xs text-amber-700 italic">
-                Auto-detection temporarily unavailable.
+                {t("voiceDna.locale.detectionUnavailable")}
               </p>
             );
           }
@@ -217,14 +217,14 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
           if (!data?.locale) {
             return (
               <p className="mt-3 text-xs text-gray-400 italic">
-                No language signal detected — add writing samples or brand assets.
+                {t("voiceDna.locale.noSignal")}
               </p>
             );
           }
           return (
             <div className="mt-3 flex items-center gap-2 text-xs flex-wrap">
               <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="text-gray-600">Auto-detected:</span>
+              <span className="text-gray-600">{t("voiceDna.locale.autoDetected")}</span>
               <span className="font-medium text-gray-800">{data.locale}</span>
               <span
                 className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${CONFIDENCE_BADGE[data.confidence]}`}
@@ -232,7 +232,10 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
                 {data.confidence}
               </span>
               <span className="text-gray-400">
-                · {data.sourceCount} sources, {data.totalChars.toLocaleString()} chars
+                {t("voiceDna.locale.sources", {
+                  count: data.sourceCount,
+                  chars: data.totalChars.toLocaleString(),
+                })}
               </span>
             </div>
           );
@@ -241,18 +244,17 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
 
       {/* 4-axis tone sliders */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-sm font-semibold text-gray-900 mb-1">Tone of voice</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-1">{t("voiceDna.tone.title")}</h3>
         <p className="text-xs text-gray-500 mb-4">
-          Nielsen Norman Group 4-axis baseline. Each slider runs 1-7 with 4 = neutral.
-          Channel-specific adjustments live in the Channel Tones tab.
+          {t("voiceDna.tone.help")}
         </p>
         <div className="space-y-5">
-          {TONE_AXES.map(({ key, left, right }) => (
+          {TONE_AXES.map(({ key, leftKey, rightKey }) => (
             <div key={key}>
               <div className="flex justify-between text-xs text-gray-600 mb-1">
-                <span>{left}</span>
+                <span>{t(leftKey)}</span>
                 <span className="font-mono text-gray-400">{tone[key]}</span>
-                <span>{right}</span>
+                <span>{t(rightKey)}</span>
               </div>
               <input
                 type="range"
@@ -273,11 +275,11 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
       {/* Content Guidelines — verhuisd uit Brandstyle (ADR 2026-05-15) */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <EditableStringList
-          title="Content guidelines"
+          title={t("voiceDna.contentGuidelines.title")}
           items={voiceguide.contentGuidelines}
           canEdit={true}
           isSaving={update.isPending}
-          placeholder="Add a content guideline..."
+          placeholder={t("voiceDna.contentGuidelines.placeholder")}
           onSave={(items) => update.mutate({ contentGuidelines: items })}
         >
           {(items) =>
@@ -299,7 +301,7 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
                 })}
               </ol>
             ) : (
-              <p className="text-sm text-gray-400">No content guidelines yet.</p>
+              <p className="text-sm text-gray-400">{t("voiceDna.contentGuidelines.empty")}</p>
             )
           }
         </EditableStringList>
@@ -308,11 +310,11 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
       {/* Writing Guidelines — verhuisd uit Brandstyle (ADR 2026-05-15) */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <EditableStringList
-          title="Writing guidelines"
+          title={t("voiceDna.writingGuidelines.title")}
           items={voiceguide.writingGuidelines}
           canEdit={true}
           isSaving={update.isPending}
-          placeholder="Add a writing guideline..."
+          placeholder={t("voiceDna.writingGuidelines.placeholder")}
           onSave={(items) => update.mutate({ writingGuidelines: items })}
         >
           {(items) =>
@@ -332,7 +334,7 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
                 })}
               </ul>
             ) : (
-              <p className="text-sm text-gray-400">No writing guidelines yet.</p>
+              <p className="text-sm text-gray-400">{t("voiceDna.writingGuidelines.empty")}</p>
             )
           }
         </EditableStringList>
@@ -342,19 +344,23 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">Voice centroid</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">{t("voiceDna.centroid.title")}</h3>
             <p className="text-xs text-gray-500 max-w-md">
-              An OpenAI text-embedding-3-small vector averaged across your writing samples.
-              Used by Pillar 1 of the F-VAL fidelity scorer to detect off-voice content.
+              {t("voiceDna.centroid.help")}
             </p>
             {voiceguide.centroidComputedAt ? (
               <p className="text-xs text-gray-700 mt-2">
-                Computed from <strong>{voiceguide.writingSamples.length}</strong> samples on{" "}
-                {new Date(voiceguide.centroidComputedAt).toLocaleString()}
+                <Trans
+                  i18nKey="voiceDna.centroid.computed"
+                  ns="brandvoice"
+                  count={voiceguide.writingSamples.length}
+                  values={{ date: new Date(voiceguide.centroidComputedAt).toLocaleString() }}
+                  components={{ b: <strong /> }}
+                />
               </p>
             ) : (
               <p className="text-xs text-amber-700 mt-2">
-                Not yet computed. Add writing samples (References tab) and run recompute.
+                {t("voiceDna.centroid.notComputed")}
               </p>
             )}
           </div>
@@ -366,7 +372,7 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
             disabled={voiceguide.writingSamples.length === 0}
           >
             <RefreshCcw className="w-3.5 h-3.5 mr-1.5" />
-            Recompute
+            {t("voiceDna.centroid.recompute")}
           </Button>
         </div>
         {recomputeError && (
@@ -381,7 +387,7 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
       {dirty && (
         <div className="sticky bottom-4 flex justify-end">
           <Button variant="primary" size="md" onClick={handleSave} isLoading={update.isPending}>
-            Save Voice DNA
+            {t("voiceDna.save")}
           </Button>
         </div>
       )}

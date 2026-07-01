@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Lightbulb,
@@ -40,15 +41,6 @@ const IMPACT_COLORS: Record<string, string> = {
 const STATUS_FILTERS = ['all', 'open', 'planned', 'in_progress', 'shipped', 'declined'] as const;
 const STATUS_OPTIONS = ['open', 'planned', 'in_progress', 'shipped', 'declined'] as const;
 
-const STATUS_LABELS: Record<string, string> = {
-  all: 'All',
-  open: 'Open',
-  planned: 'Planned',
-  in_progress: 'In Progress',
-  shipped: 'Shipped',
-  declined: 'Declined',
-};
-
 const STATUS_BADGE: Record<string, string> = {
   open: 'bg-gray-100 text-gray-600',
   planned: 'bg-indigo-100 text-indigo-700',
@@ -60,6 +52,7 @@ const STATUS_BADGE: Record<string, string> = {
 // ─── Component ──────────────────────────────────────────────
 
 export function FeatureTriageTab() {
+  const { t } = useTranslation('settings-misc');
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -116,9 +109,9 @@ export function FeatureTriageTab() {
             <Lightbulb size={18} className="text-emerald-700" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Feature Triage</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('featureTriage.heading')}</h2>
             <p className="text-sm text-gray-500">
-              {openCount} open {openCount === 1 ? 'request' : 'requests'}
+              {t('featureTriage.openRequests', { count: openCount })}
             </p>
           </div>
         </div>
@@ -138,7 +131,7 @@ export function FeatureTriageTab() {
               }`}
               style={isActive ? { backgroundColor: '#1f2937' } : undefined}
             >
-              {STATUS_LABELS[f]}
+              {t(`featureTriage.status.${f}`)}
               {f !== 'all' && (
                 <span className="ml-1 opacity-60">
                   ({features.filter((x) => x.status === f).length})
@@ -153,14 +146,16 @@ export function FeatureTriageTab() {
       {isLoading && (
         <div className="py-12 text-center text-sm text-gray-400">
           <Loader2 size={20} className="animate-spin mx-auto mb-2" />
-          Loading feature requests...
+          {t('featureTriage.loading')}
         </div>
       )}
 
       {/* Empty */}
       {!isLoading && filtered.length === 0 && (
         <div className="py-12 text-center text-sm text-gray-400">
-          No feature requests {statusFilter !== 'all' ? `with status "${STATUS_LABELS[statusFilter]}"` : 'yet'}.
+          {statusFilter !== 'all'
+            ? t('featureTriage.emptyFiltered', { status: t(`featureTriage.status.${statusFilter}`) })
+            : t('featureTriage.emptyAll')}
         </div>
       )}
 
@@ -205,7 +200,7 @@ export function FeatureTriageTab() {
                       STATUS_BADGE[feature.status] ?? 'bg-gray-100 text-gray-600'
                     }`}
                   >
-                    {STATUS_LABELS[feature.status] ?? feature.status}
+                    {t(`featureTriage.status.${feature.status}`)}
                   </span>
                 </button>
 
@@ -214,7 +209,7 @@ export function FeatureTriageTab() {
                   <div className="px-4 pb-4 pt-0 space-y-4 border-t border-gray-100">
                     {/* Description */}
                     <div className="mt-4">
-                      <p className="text-xs font-medium text-gray-500 mb-1">Description</p>
+                      <p className="text-xs font-medium text-gray-500 mb-1">{t('featureTriage.description')}</p>
                       <p className="text-sm text-gray-700 whitespace-pre-wrap">
                         {feature.description}
                       </p>
@@ -223,7 +218,7 @@ export function FeatureTriageTab() {
                     {/* Reference link */}
                     {feature.screenshot && (
                       <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">Reference</p>
+                        <p className="text-xs font-medium text-gray-500 mb-1">{t('featureTriage.reference')}</p>
                         <a
                           href={feature.screenshot}
                           target="_blank"
@@ -237,7 +232,7 @@ export function FeatureTriageTab() {
 
                     {/* Status transitions */}
                     <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1.5">Status</p>
+                      <p className="text-xs font-medium text-gray-500 mb-1.5">{t('featureTriage.statusHeading')}</p>
                       <div className="flex flex-wrap gap-2">
                         {STATUS_OPTIONS.map((s) => {
                           const isCurrent = feature.status === s;
@@ -255,7 +250,7 @@ export function FeatureTriageTab() {
                                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                               }`}
                             >
-                              {STATUS_LABELS[s]}
+                              {t(`featureTriage.status.${s}`)}
                             </button>
                           );
                         })}
@@ -264,13 +259,13 @@ export function FeatureTriageTab() {
 
                     {/* Triage notes */}
                     <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Triage notes</p>
+                      <p className="text-xs font-medium text-gray-500 mb-1">{t('featureTriage.triageNotes')}</p>
                       <textarea
                         value={noteValue}
                         onChange={(e) =>
                           setNoteDrafts((prev) => ({ ...prev, [feature.id]: e.target.value }))
                         }
-                        placeholder="Internal notes for the team..."
+                        placeholder={t('featureTriage.notesPlaceholder')}
                         rows={2}
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-emerald-400"
                       />
@@ -284,19 +279,19 @@ export function FeatureTriageTab() {
                           style={{ backgroundColor: '#059669' }}
                         >
                           <Check size={12} />
-                          Save notes
+                          {t('featureTriage.saveNotes')}
                         </button>
                       )}
                     </div>
 
                     {/* Metadata */}
                     <div className="flex flex-wrap items-center gap-4 text-[11px] text-gray-400">
-                      <span>Requested by {feature.user?.name ?? feature.user?.email}</span>
-                      <span>Page: {feature.page}</span>
-                      {feature.workspace && <span>Workspace: {feature.workspace.name}</span>}
+                      <span>{t('featureTriage.requestedBy', { name: feature.user?.name ?? feature.user?.email })}</span>
+                      <span>{t('featureTriage.page', { page: feature.page })}</span>
+                      {feature.workspace && <span>{t('featureTriage.workspace', { name: feature.workspace.name })}</span>}
                       <span>{new Date(feature.createdAt).toLocaleString()}</span>
                       {feature.resolvedBy && (
-                        <span>Closed by {feature.resolvedBy.name ?? feature.resolvedBy.email}</span>
+                        <span>{t('featureTriage.closedBy', { name: feature.resolvedBy.name ?? feature.resolvedBy.email })}</span>
                       )}
                     </div>
                   </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { Activity, Clock, AlertCircle, DollarSign, BarChart3 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/shared';
 import { usePromptDashboard } from '@/features/settings/hooks/use-prompt-registry';
 
@@ -14,11 +15,12 @@ import { usePromptDashboard } from '@/features/settings/hooks/use-prompt-registr
  * Mounted at the top of PromptRegistryTab.
  */
 export function PromptUsageDashboard() {
+  const { t } = useTranslation('settings-misc');
   const { data, isLoading, error } = usePromptDashboard();
 
   if (isLoading) {
     return (
-      <div className="text-sm text-gray-400 px-2 py-3">Loading dashboard…</div>
+      <div className="text-sm text-gray-400 px-2 py-3">{t('promptDashboard.loading')}</div>
     );
   }
 
@@ -26,7 +28,7 @@ export function PromptUsageDashboard() {
     return (
       <div className="flex items-center gap-2 px-2 py-3 text-sm text-red-600">
         <AlertCircle className="h-4 w-4" />
-        Dashboard load failed: {error instanceof Error ? error.message : 'Unknown error'}
+        {t('promptDashboard.loadFailed', { message: error instanceof Error ? error.message : t('prompts.unknownError') })}
       </div>
     );
   }
@@ -41,35 +43,34 @@ export function PromptUsageDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile
           icon={<Activity className="h-4 w-4 text-teal-600" />}
-          label="Calls (24h)"
+          label={t('promptDashboard.kpi.calls24h')}
           value={totals.calls24h.toLocaleString()}
-          sub={`${totals.calls7d.toLocaleString()} last 7d`}
+          sub={t('promptDashboard.kpi.calls24hSub', { count: totals.calls7d.toLocaleString() })}
         />
         <KpiTile
           icon={<BarChart3 className="h-4 w-4 text-blue-600" />}
-          label="Calls (30d)"
+          label={t('promptDashboard.kpi.calls30d')}
           value={totals.calls30d.toLocaleString()}
-          sub={`${totals.callsAllTime.toLocaleString()} all-time`}
+          sub={t('promptDashboard.kpi.calls30dSub', { count: totals.callsAllTime.toLocaleString() })}
         />
         <KpiTile
           icon={<DollarSign className="h-4 w-4 text-emerald-600" />}
-          label="Cost (24h)"
+          label={t('promptDashboard.kpi.cost24h')}
           value={`$${totals.cost24h.toFixed(2)}`}
-          sub={`$${totals.cost7d.toFixed(2)} last 7d`}
+          sub={t('promptDashboard.kpi.cost24hSub', { cost: totals.cost7d.toFixed(2) })}
         />
         <KpiTile
           icon={<DollarSign className="h-4 w-4 text-amber-600" />}
-          label="Cost (30d)"
+          label={t('promptDashboard.kpi.cost30d')}
           value={`$${totals.cost30d.toFixed(2)}`}
-          sub="estimated, not authoritative"
+          sub={t('promptDashboard.kpi.cost30dSub')}
         />
       </div>
 
       {totals.calls30d === 0 && (
         <Card>
           <div className="px-4 py-6 text-center text-sm text-gray-500">
-            No AI calls tracked in the last 30 days. The dashboard fills in
-            once routes with opt-in tracking start running.
+            {t('promptDashboard.empty')}
           </div>
         </Card>
       )}
@@ -79,7 +80,7 @@ export function PromptUsageDashboard() {
           {/* ── Providers ──────────────────────────────────── */}
           <Card>
             <Card.Header>
-              <h4 className="text-sm font-medium text-gray-900">Providers (last 30 days)</h4>
+              <h4 className="text-sm font-medium text-gray-900">{t('promptDashboard.providers')}</h4>
             </Card.Header>
             <Card.Body>
               <div className="space-y-2">
@@ -94,7 +95,7 @@ export function PromptUsageDashboard() {
                       <span className="font-medium text-gray-900 capitalize w-32">{p.provider}</span>
                       <span className="text-gray-700 w-20 text-right tabular-nums">{p.callCount}</span>
                       <span className={`text-xs w-16 text-right tabular-nums ${failureColor}`}>
-                        {p.failureRate.toFixed(1)}% fail
+                        {t('promptDashboard.failRate', { rate: p.failureRate.toFixed(1) })}
                       </span>
                       <span className="text-xs text-gray-500 w-20 text-right tabular-nums">
                         <Clock className="inline h-3 w-3 mr-0.5" />
@@ -112,7 +113,7 @@ export function PromptUsageDashboard() {
           {models.length > 0 && (
             <Card>
               <Card.Header>
-                <h4 className="text-sm font-medium text-gray-900">Top models</h4>
+                <h4 className="text-sm font-medium text-gray-900">{t('promptDashboard.topModels')}</h4>
               </Card.Header>
               <Card.Body>
                 <div className="space-y-1">
@@ -136,11 +137,11 @@ export function PromptUsageDashboard() {
           <div className="grid md:grid-cols-2 gap-3">
             <Card>
               <Card.Header>
-                <h4 className="text-sm font-medium text-gray-900">Top by call count</h4>
+                <h4 className="text-sm font-medium text-gray-900">{t('promptDashboard.topByCalls')}</h4>
               </Card.Header>
               <Card.Body>
                 {topByCalls.length === 0 ? (
-                  <div className="text-xs text-gray-500 py-2">No calls yet.</div>
+                  <div className="text-xs text-gray-500 py-2">{t('promptDashboard.noCallsYet')}</div>
                 ) : (
                   <div className="space-y-1">
                     {topByCalls.map((s) => (
@@ -154,12 +155,12 @@ export function PromptUsageDashboard() {
               <Card.Header>
                 <h4 className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
                   <AlertCircle className="h-4 w-4 text-red-500" />
-                  Top by errors
+                  {t('promptDashboard.topByErrors')}
                 </h4>
               </Card.Header>
               <Card.Body>
                 {topByErrors.length === 0 ? (
-                  <div className="text-xs text-emerald-600 py-2">No errors recorded ✓</div>
+                  <div className="text-xs text-emerald-600 py-2">{t('promptDashboard.noErrors')}</div>
                 ) : (
                   <div className="space-y-1">
                     {topByErrors.map((s) => (
@@ -204,6 +205,7 @@ interface SourceRowProps {
 }
 
 function SourceRow({ stat, mode }: SourceRowProps) {
+  const { t } = useTranslation('settings-misc');
   const errorRate = stat.callCount > 0 ? (stat.errorCount / stat.callCount) * 100 : 0;
   return (
     <div className="flex items-center justify-between text-xs py-1 border-b border-gray-100 last:border-0">
@@ -213,13 +215,13 @@ function SourceRow({ stat, mode }: SourceRowProps) {
       <div className="flex items-center gap-3 text-gray-600">
         {mode === 'calls' ? (
           <>
-            <span className="tabular-nums">{stat.callCount} calls</span>
+            <span className="tabular-nums">{t('promptDashboard.source.calls', { count: stat.callCount })}</span>
             <span className="tabular-nums w-16 text-right">${stat.costUsd.toFixed(3)}</span>
           </>
         ) : (
           <>
             <span className="tabular-nums text-red-600">
-              {stat.errorCount} errors ({errorRate.toFixed(1)}%)
+              {t('promptDashboard.source.errors', { count: stat.errorCount, rate: errorRate.toFixed(1) })}
             </span>
             <span className="tabular-nums w-16 text-right">${stat.costUsd.toFixed(3)}</span>
           </>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Badge, Button, EmptyState } from "@/components/shared";
 import { FlaskConical } from "lucide-react";
 import type { ActiveResearchItem } from "../../types/research.types";
@@ -28,14 +29,16 @@ function formatRelativeTime(dateStr: string): string {
 // ─── Component ───────────────────────────────────────────────
 
 export function ActiveResearchSection({ items }: ActiveResearchSectionProps) {
+  const { t } = useTranslation("research");
+
   if (!Array.isArray(items) || items.length === 0) {
     return (
       <div>
-        <h3 className="text-lg font-semibold mb-4">Active Research</h3>
+        <h3 className="text-lg font-semibold mb-4">{t("activeResearch.heading")}</h3>
         <EmptyState
           icon={FlaskConical}
-          title="No active research"
-          description="Start a research plan to begin validating your brand strategy."
+          title={t("activeResearch.empty.title")}
+          description={t("activeResearch.empty.description")}
         />
       </div>
     );
@@ -44,7 +47,7 @@ export function ActiveResearchSection({ items }: ActiveResearchSectionProps) {
   return (
     <div data-testid="active-research">
       <div className="flex items-center gap-2 mb-4">
-        <h3 className="text-lg font-semibold">Active Research</h3>
+        <h3 className="text-lg font-semibold">{t("activeResearch.heading")}</h3>
         <Badge variant="info">{items.length}</Badge>
       </div>
 
@@ -67,7 +70,7 @@ export function ActiveResearchSection({ items }: ActiveResearchSectionProps) {
                   size="sm"
                   onClick={() => alert('Navigate to study detail')}
                 >
-                  Resume
+                  {t("activeResearch.resume")}
                 </Button>
               </div>
             </div>

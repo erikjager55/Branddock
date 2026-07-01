@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useUpdateMemberRole, useRemoveMember } from '@/hooks/use-settings';
 import { OptimizedImage } from '@/components/shared';
 import { RoleBadge } from './RoleBadge';
@@ -12,6 +13,7 @@ interface TeamMemberRowProps {
 }
 
 export function TeamMemberRow({ member }: TeamMemberRowProps) {
+  const { t } = useTranslation('settings-team');
   const [menuOpen, setMenuOpen] = useState(false);
   const [roleSubmenuOpen, setRoleSubmenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -96,7 +98,7 @@ export function TeamMemberRow({ member }: TeamMemberRowProps) {
             }`}
           />
           <span className="text-sm text-gray-600">
-            {member.isActive ? 'Active' : 'Inactive'}
+            {member.isActive ? t('memberRow.active') : t('memberRow.inactive')}
           </span>
         </div>
       </td>
@@ -128,7 +130,7 @@ export function TeamMemberRow({ member }: TeamMemberRowProps) {
                     onClick={() => setRoleSubmenuOpen(!roleSubmenuOpen)}
                     className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
                   >
-                    Change Role
+                    {t('memberRow.changeRole')}
                     <span className="text-gray-400 text-xs">&#9654;</span>
                   </button>
 
@@ -157,7 +159,7 @@ export function TeamMemberRow({ member }: TeamMemberRowProps) {
                   onClick={handleRemove}
                   className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                 >
-                  Remove
+                  {t('memberRow.remove')}
                 </button>
               </div>
             )}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, Circle } from 'lucide-react';
 import { ParticipantsGrid } from './ParticipantsGrid';
 import { AgendaTimeline } from './AgendaTimeline';
@@ -20,6 +21,7 @@ export function WorkshopDetailsTab({
   participants,
   agendaItems,
 }: WorkshopDetailsTabProps) {
+  const { t } = useTranslation('workshop');
   const safeObjectives = Array.isArray(objectives) ? objectives : [];
   const safeParticipants = Array.isArray(participants) ? participants : [];
   const safeAgendaItems = Array.isArray(agendaItems) ? agendaItems : [];
@@ -29,7 +31,7 @@ export function WorkshopDetailsTab({
       {safeObjectives.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            Objectives
+            {t('results.details.objectives')}
           </h3>
           <div className="space-y-2">
             {safeObjectives.map((obj) => (

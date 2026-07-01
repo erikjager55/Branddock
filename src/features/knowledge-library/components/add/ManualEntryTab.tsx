@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { useKnowledgeLibraryStore } from '@/stores/useKnowledgeLibraryStore';
 import { useCreateResource } from '../../hooks';
@@ -14,6 +15,7 @@ interface ManualEntryTabProps {
 }
 
 export function ManualEntryTab({ onClose }: ManualEntryTabProps) {
+  const { t } = useTranslation('knowledge-library');
   const store = useKnowledgeLibraryStore();
   const createResource = useCreateResource();
 
@@ -70,36 +72,36 @@ export function ManualEntryTab({ onClose }: ManualEntryTabProps) {
 
       {/* Required fields */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('manual.titleLabel')}</label>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           data-testid="resource-title-input"
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-          placeholder="Resource title"
+          placeholder={t('manual.titlePlaceholder')}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Author *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('manual.authorLabel')}</label>
           <input
             type="text"
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-            placeholder="Author name"
+            placeholder={t('manual.authorPlaceholder')}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('manual.categoryLabel')}</label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
           >
-            <option value="">Select category</option>
+            <option value="">{t('manual.selectCategory')}</option>
             {RESOURCE_CATEGORIES.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -108,61 +110,61 @@ export function ManualEntryTab({ onClose }: ManualEntryTabProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('manual.urlLabel')}</label>
         <input
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-          placeholder="https://..."
+          placeholder={t('manual.urlPlaceholder')}
         />
       </div>
 
       {/* Optional fields */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('manual.descriptionLabel')}</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-          placeholder="Brief description..."
+          placeholder={t('manual.descriptionPlaceholder')}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty Level</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('manual.difficultyLabel')}</label>
           <select
             value={difficultyLevel}
             onChange={(e) => setDifficultyLevel(e.target.value as DifficultyLevel)}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
           >
-            <option value="BEGINNER">Beginner</option>
-            <option value="INTERMEDIATE">Intermediate</option>
-            <option value="ADVANCED">Advanced</option>
+            <option value="BEGINNER">{t('manual.difficultyBeginner')}</option>
+            <option value="INTERMEDIATE">{t('manual.difficultyIntermediate')}</option>
+            <option value="ADVANCED">{t('manual.difficultyAdvanced')}</option>
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Est. Duration</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('manual.durationLabel')}</label>
           <input
             type="text"
             value={estimatedDuration}
             onChange={(e) => setEstimatedDuration(e.target.value)}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-            placeholder="e.g. 2 hours"
+            placeholder={t('manual.durationPlaceholder')}
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Tags (comma-separated)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('manual.tagsLabel')}</label>
         <input
           type="text"
           value={tags}
           onChange={(e) => setTags(e.target.value)}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-          placeholder="e.g. Brand, Strategy, Research"
+          placeholder={t('manual.tagsPlaceholder')}
         />
       </div>
 
@@ -172,23 +174,23 @@ export function ManualEntryTab({ onClose }: ManualEntryTabProps) {
       {store.selectedResourceType === 'BOOK' && (
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ISBN</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('manual.isbnLabel')}</label>
             <input
               type="text"
               value={isbn}
               onChange={(e) => setIsbn(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-              placeholder="978-..."
+              placeholder={t('manual.isbnPlaceholder')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Page Count</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('manual.pageCountLabel')}</label>
             <input
               type="number"
               value={pageCount}
               onChange={(e) => setPageCount(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-              placeholder="240"
+              placeholder={t('manual.pageCountPlaceholder')}
             />
           </div>
         </div>
@@ -202,7 +204,7 @@ export function ManualEntryTab({ onClose }: ManualEntryTabProps) {
           className="w-full"
           data-testid="save-resource-button"
         >
-          Save Resource
+          {t('manual.save')}
         </Button>
       </div>
     </div>

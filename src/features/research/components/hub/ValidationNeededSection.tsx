@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CheckCircle, ClipboardList } from "lucide-react";
 import { Badge, Button, EmptyState } from "@/components/shared";
 import type { PendingValidationItem } from "../../types/research.types";
@@ -15,6 +16,7 @@ interface ValidationNeededSectionProps {
 // ─── Component ───────────────────────────────────────────────
 
 export function ValidationNeededSection({ items }: ValidationNeededSectionProps) {
+  const { t } = useTranslation("research");
   const validate = useValidateMethod();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +27,7 @@ export function ValidationNeededSection({ items }: ValidationNeededSectionProps)
     validate.mutate(itemId, {
       onSuccess: () => setPendingId(null),
       onError: (err) => {
-        setError(err instanceof Error ? err.message : "Failed to validate");
+        setError(err instanceof Error ? err.message : t("validationNeeded.validateError"));
         setPendingId(null);
       },
     });
@@ -34,11 +36,11 @@ export function ValidationNeededSection({ items }: ValidationNeededSectionProps)
   if (!Array.isArray(items) || items.length === 0) {
     return (
       <div>
-        <h3 className="text-lg font-semibold mb-4">Validation Needed</h3>
+        <h3 className="text-lg font-semibold mb-4">{t("validationNeeded.heading")}</h3>
         <EmptyState
           icon={ClipboardList}
-          title="No pending validations"
-          description="All your brand assets are up to date."
+          title={t("validationNeeded.empty.title")}
+          description={t("validationNeeded.empty.description")}
         />
       </div>
     );
@@ -46,7 +48,7 @@ export function ValidationNeededSection({ items }: ValidationNeededSectionProps)
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-4">Validation Needed</h3>
+      <h3 className="text-lg font-semibold mb-4">{t("validationNeeded.heading")}</h3>
 
       {error && (
         <p className="mb-3 text-sm text-red-600" role="alert">{error}</p>
@@ -66,7 +68,7 @@ export function ValidationNeededSection({ items }: ValidationNeededSectionProps)
               </div>
 
               <div className="flex items-center gap-3">
-                <Badge variant="warning">Ready For Validation</Badge>
+                <Badge variant="warning">{t("validationNeeded.readyBadge")}</Badge>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -75,7 +77,7 @@ export function ValidationNeededSection({ items }: ValidationNeededSectionProps)
                   isLoading={isPending}
                   disabled={validate.isPending}
                 >
-                  Validate
+                  {t("validationNeeded.validate")}
                 </Button>
               </div>
             </div>

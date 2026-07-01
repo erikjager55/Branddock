@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useHelpCategories } from '@/hooks/use-help';
 import { SkeletonCard } from '@/components/shared';
 import { TopicCard } from './TopicCard';
@@ -64,13 +65,18 @@ const FALLBACK_CATEGORIES: HelpCategoryItem[] = [
 ];
 
 export function BrowseByTopic() {
+  const { t } = useTranslation('help');
   const { data: categories, isLoading } = useHelpCategories();
 
-  const items = categories && categories.length > 0 ? categories : FALLBACK_CATEGORIES;
+  const fallbackItems = FALLBACK_CATEGORIES.map((category) => ({
+    ...category,
+    name: t(`topics.fallback.${category.slug}`),
+  }));
+  const items = categories && categories.length > 0 ? categories : fallbackItems;
 
   return (
     <section>
-      <h2 className="text-xl font-bold text-gray-900 mb-4">Browse by Topic</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-4">{t('topics.title')}</h2>
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

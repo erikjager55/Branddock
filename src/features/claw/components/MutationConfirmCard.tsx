@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { Check, X, Pencil, Wrench } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { useClawStore } from '@/stores/useClawStore';
 import { useFormFillStore, type FormFillAssignment } from '@/stores/useFormFillStore';
 import { useCampaignWizardStore } from '@/features/campaigns/stores/useCampaignWizardStore';
@@ -74,6 +75,7 @@ function applyWizardUpdate(updates: Record<string, unknown>): number {
 }
 
 export function MutationConfirmCard() {
+  const { t } = useTranslation('claw');
   const { pendingMutation, setPendingMutation, activeConversationId, addMessage, requestNavigation } = useClawStore();
   const queryClient = useQueryClient();
   // Subscribe to registered form-fill fields so the proposal preview can
@@ -115,7 +117,7 @@ export function MutationConfirmCard() {
         if (innerResult?.clientAction === 'wizard_update' && innerResult.updates) {
           const applied = applyWizardUpdate(innerResult.updates as Record<string, unknown>);
           if (applied > 0) {
-            toast.success(`Filled ${applied} wizard field${applied === 1 ? '' : 's'}`);
+            toast.success(t('toast.filledWizardFields', { count: applied }));
           }
         } else if (innerResult?.clientAction === 'form_fill' && Array.isArray(innerResult.assignments)) {
           // Generic form-fill — route to the page's registered setters via
@@ -132,11 +134,11 @@ export function MutationConfirmCard() {
           );
           const { applied, missing } = useFormFillStore.getState().applyFill(assignments);
           if (applied.length > 0) {
-            toast.success(`Filled ${applied.length} field${applied.length === 1 ? '' : 's'}`);
+            toast.success(t('toast.filledFields', { count: applied.length }));
           }
           if (missing.length > 0) {
             toast.warning(
-              `Couldn't fill ${missing.length} field${missing.length === 1 ? '' : 's'}: ${missing.join(', ')}`,
+              t('toast.couldNotFillFields', { count: missing.length, fields: missing.join(', ') }),
             );
           }
         }
@@ -221,7 +223,7 @@ export function MutationConfirmCard() {
           useCampaignStore.getState().setSelectedDeliverableId(affected.entityId);
           requestNavigation({ section: 'content-canvas' });
           if (affected.entityName) {
-            toast.success(`Opening Canvas for "${affected.entityName}"`);
+            toast.success(t('toast.openingCanvas', { name: affected.entityName }));
           }
         } else if (
           affected.isNew &&
@@ -234,21 +236,21 @@ export function MutationConfirmCard() {
           useContentLibraryStore.getState().setFilter('campaigns', [affected.entityId]);
           requestNavigation({ section: 'content-library' });
           if (affected.entityName) {
-            toast.success(`Opening campaign "${affected.entityName}"`);
+            toast.success(t('toast.openingCampaign', { name: affected.entityName }));
           }
         } else if (affected.isNew && affected.entityId && affected.entityName) {
           // Other create-tools keep the toast-click pattern.
           const section = DETAIL_SECTION_FOR_ENTITY[affected.entityType];
           const label = affected.entityName;
           if (section) {
-            toast.success(`Created "${label}"`, {
+            toast.success(t('toast.created', { name: label }), {
               action: {
-                label: 'View →',
+                label: t('toast.view'),
                 onClick: () => requestNavigation({ section, entityId: affected.entityId! }),
               },
             });
           } else {
-            toast.success(`Created "${label}"`);
+            toast.success(t('toast.created', { name: label }));
           }
         }
       }
@@ -258,8 +260,8 @@ export function MutationConfirmCard() {
         id: crypto.randomUUID(),
         role: 'assistant',
         content: approved
-          ? `Done — ${pendingMutation.description.toLowerCase()}.`
-          : 'Change skipped.',
+          ? t('mutation.doneMessage', { description: pendingMutation.description.toLowerCase() })
+          : t('mutation.changeSkipped'),
         toolResults: data.result ? [data.result] : undefined,
         createdAt: new Date().toISOString(),
       };
@@ -274,7 +276,7 @@ export function MutationConfirmCard() {
       setIsEditing(false);
       setEditedValues({});
     }
-  }, [pendingMutation, activeConversationId, editedValues, isSubmitting, setPendingMutation, addMessage, queryClient, requestNavigation]);
+  }, [pendingMutation, activeConversationId, editedValues, isSubmitting, setPendingMutation, addMessage, queryClient, requestNavigation, t]);
 
   if (!pendingMutation) return null;
   // UX-fix 2026-05-13: queue-indicator wanneer parallel proposals wachten
@@ -286,10 +288,10 @@ export function MutationConfirmCard() {
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-amber-200/60">
           <Wrench size={14} className="text-amber-600 flex-shrink-0" />
-          <span className="text-sm font-semibold text-amber-900">Proposed Change</span>
+          <span className="text-sm font-semibold text-amber-900">{t('mutation.proposedChange')}</span>
           {queueRemaining > 0 && (
             <span className="text-[10px] font-medium text-amber-700 bg-amber-200/60 px-1.5 py-0.5 rounded-full">
-              +{queueRemaining} {queueRemaining === 1 ? 'meer wijziging' : 'meer wijzigingen'} hierna
+              {t('mutation.moreChangesAfter', { count: queueRemaining })}
             </span>
           )}
           {pendingMutation.entityName && (
@@ -342,8 +344,8 @@ export function MutationConfirmCard() {
          *  (user must manually save afterwards). */}
         <div className="px-4 py-2 border-t border-amber-200/40 bg-amber-50/20 text-xs text-amber-700">
           {pendingMutation.toolName === 'fill_form_fields' || pendingMutation.toolName === 'update_campaign_wizard'
-            ? 'This will update the form fields on this page. Save manually to persist.'
-            : 'This will update the data and create a version snapshot.'}
+            ? t('mutation.updateFormFields')
+            : t('mutation.updateData')}
         </div>
 
         {/* Actions — primary Apply on the right, secondary Edit next to it, tertiary Skip on the left */}
@@ -354,7 +356,7 @@ export function MutationConfirmCard() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <X size={14} />
-            Skip
+            {t('mutation.skip')}
           </button>
 
           <div className="flex-1" />
@@ -369,7 +371,7 @@ export function MutationConfirmCard() {
             }`}
           >
             <Pencil size={14} />
-            {isEditing ? 'Editing' : 'Edit'}
+            {isEditing ? t('mutation.editing') : t('mutation.edit')}
           </button>
 
           <button
@@ -378,7 +380,7 @@ export function MutationConfirmCard() {
             className="inline-flex items-center gap-1.5 h-10 px-5 rounded-lg bg-teal-600 text-white text-sm font-semibold shadow-sm hover:bg-teal-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none disabled:cursor-not-allowed transition-colors"
           >
             <Check size={15} strokeWidth={2.5} />
-            {isSubmitting ? 'Applying…' : (isEditing ? 'Apply with edits' : 'Apply change')}
+            {isSubmitting ? t('mutation.applying') : (isEditing ? t('mutation.applyWithEdits') : t('mutation.applyChange'))}
           </button>
         </div>
       </div>

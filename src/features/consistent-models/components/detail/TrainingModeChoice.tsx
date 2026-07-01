@@ -1,20 +1,22 @@
 "use client";
 
 import { Upload, Sparkles, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useConsistentModelStore } from "../../stores/useConsistentModelStore";
 
 /** Choice screen between training with own images or AI-generated (synthetic) images */
 export function TrainingModeChoice() {
+  const { t } = useTranslation("consistent-models");
   const { setTrainingMode } = useConsistentModelStore();
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-8">
       <div className="mx-auto max-w-2xl text-center">
         <h2 className="text-lg font-semibold text-gray-900">
-          How would you like to train this model?
+          {t("trainingChoice.title")}
         </h2>
         <p className="mt-2 text-sm text-gray-500">
-          Choose how you want to provide reference images for training.
+          {t("trainingChoice.subtitle")}
         </p>
 
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -29,14 +31,14 @@ export function TrainingModeChoice() {
             </div>
             <div className="text-center">
               <h3 className="text-sm font-semibold text-gray-900">
-                Train with own images
+                {t("trainingChoice.ownTitle")}
               </h3>
               <p className="mt-1.5 text-xs text-gray-500">
-                Upload your own photos or images to train the model on your specific subject.
+                {t("trainingChoice.ownDescription")}
               </p>
             </div>
             <div className="mt-auto flex items-center gap-1 text-xs font-medium text-teal-600 opacity-0 transition-opacity group-hover:opacity-100">
-              Get started <ArrowRight className="h-3 w-3" />
+              {t("trainingChoice.getStarted")} <ArrowRight className="h-3 w-3" />
             </div>
           </button>
 
@@ -51,14 +53,14 @@ export function TrainingModeChoice() {
             </div>
             <div className="text-center">
               <h3 className="text-sm font-semibold text-gray-900">
-                Train with synthetic images
+                {t("trainingChoice.syntheticTitle")}
               </h3>
               <p className="mt-1.5 text-xs text-gray-500">
-                Let AI generate reference images based on your brand context and style.
+                {t("trainingChoice.syntheticDescription")}
               </p>
             </div>
             <div className="mt-auto flex items-center gap-1 text-xs font-medium text-teal-600 opacity-0 transition-opacity group-hover:opacity-100">
-              Get started <ArrowRight className="h-3 w-3" />
+              {t("trainingChoice.getStarted")} <ArrowRight className="h-3 w-3" />
             </div>
           </button>
         </div>

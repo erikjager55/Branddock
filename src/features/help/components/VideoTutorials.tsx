@@ -1,15 +1,17 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useVideoTutorials } from '@/hooks/use-help';
 import { SkeletonCard } from '@/components/shared';
 import { VideoTutorialCard } from './VideoTutorialCard';
 
 export function VideoTutorials() {
+  const { t } = useTranslation('help');
   const { data: videos, isLoading } = useVideoTutorials();
 
   return (
     <section>
-      <h2 className="text-xl font-bold text-gray-900 mb-4">Video Tutorials</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-4">{t('videos.title')}</h2>
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -29,7 +31,7 @@ export function VideoTutorials() {
         </div>
       ) : (
         <p className="text-sm text-gray-500 text-center py-8">
-          No video tutorials available yet.
+          {t('videos.empty')}
         </p>
       )}
     </section>

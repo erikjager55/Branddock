@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import { Bot, User, Wrench, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useClawStore } from '@/stores/useClawStore';
 import { MutationConfirmCard } from './MutationConfirmCard';
 import { BugReportForm } from './BugReportForm';
@@ -111,7 +112,8 @@ export function ChatArea() {
 
 /** Live activity indicator shown between "user sent message" and "answer text arrives". */
 function ActivityIndicator({ label }: { label: string | null }) {
-  const text = label ?? 'Aan het nadenken';
+  const { t } = useTranslation('claw');
+  const text = label ?? t('chat.thinking');
   return (
     <div className="flex gap-3">
       <div className="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -151,15 +153,46 @@ function EmptyState({
   activeEntity: { type: string; id: string; name: string } | null;
   wizardSnapshot: { name: string; fields: Array<{ isEmpty: boolean }> } | null;
 }) {
+  const { t } = useTranslation('claw');
   const defaultActions: ClawQuickAction[] = quickActions.length > 0 ? quickActions : [
-    { label: 'Assess my brand foundation', prompt: 'Beoordeel mijn brand foundation — welke assets zijn goed ingevuld en waar is werk nodig?' },
-    { label: 'Compare my personas', prompt: 'Vergelijk mijn personas op consistentie met mijn brand personality en archetype.' },
-    { label: 'Suggest campaign strategy', prompt: 'Stel een campagnestrategie voor op basis van mijn huidige merk-data en trends.' },
-    { label: 'What needs attention?', prompt: 'Wat heeft het meest urgent aandacht nodig in mijn workspace?' },
+    { label: t('chat.defaultActions.assessLabel'), prompt: t('chat.defaultActions.assessPrompt') },
+    { label: t('chat.defaultActions.compareLabel'), prompt: t('chat.defaultActions.comparePrompt') },
+    { label: t('chat.defaultActions.strategyLabel'), prompt: t('chat.defaultActions.strategyPrompt') },
+    { label: t('chat.defaultActions.attentionLabel'), prompt: t('chat.defaultActions.attentionPrompt') },
   ];
 
   // Proactive greeting: pick the best signal we have for context
-  const greeting = resolveGreeting(activeEntity, wizardSnapshot);
+  const greeting = ((): { title: string; subtitle: string } => {
+    // Wizard in progress — highest signal
+    if (wizardSnapshot) {
+      const emptyCount = wizardSnapshot.fields.filter((f) => f.isEmpty).length;
+      if (emptyCount >= 3) {
+        return {
+          title: t('chat.greeting.wizardNeedHelpTitle', { name: wizardSnapshot.name }),
+          subtitle: t('chat.greeting.wizardNeedHelpSubtitle', { count: emptyCount }),
+        };
+      }
+      return {
+        title: t('chat.greeting.wizardWorkingTitle', { name: wizardSnapshot.name }),
+        subtitle: t('chat.greeting.wizardWorkingSubtitle'),
+      };
+    }
+
+    // Detail page — I know which entity is active
+    if (activeEntity) {
+      const kindLabel = t(`chat.entity.${activeEntity.type}`, { defaultValue: activeEntity.type });
+      return {
+        title: t('chat.greeting.entityTitle', { name: activeEntity.name }),
+        subtitle: t('chat.greeting.entitySubtitle', { kind: kindLabel }),
+      };
+    }
+
+    // Workspace default
+    return {
+      title: t('assistantName'),
+      subtitle: t('chat.greeting.defaultSubtitle'),
+    };
+  })();
 
   return (
     <div className="flex flex-col items-center justify-center py-20">
@@ -185,50 +218,8 @@ function EmptyState({
   );
 }
 
-const ENTITY_TYPE_LABELS: Record<string, string> = {
-  brand_asset: 'brand asset',
-  persona: 'persona',
-  product: 'product',
-  competitor: 'competitor',
-};
-
-/** Decide title + subtitle for the EmptyState based on available context. */
-function resolveGreeting(
-  activeEntity: { type: string; name: string } | null,
-  wizardSnapshot: { name: string; fields: Array<{ isEmpty: boolean }> } | null,
-): { title: string; subtitle: string } {
-  // Wizard in progress — highest signal
-  if (wizardSnapshot) {
-    const emptyCount = wizardSnapshot.fields.filter((f) => f.isEmpty).length;
-    if (emptyCount >= 3) {
-      return {
-        title: `Need help with your ${wizardSnapshot.name}?`,
-        subtitle: `I can see ${emptyCount} empty fields. I can fill them in for you — you just confirm.`,
-      };
-    }
-    return {
-      title: `Working on your ${wizardSnapshot.name}`,
-      subtitle: 'Ask me to refine any field, or I can review what you have so far.',
-    };
-  }
-
-  // Detail page — I know which entity is active
-  if (activeEntity) {
-    const kindLabel = ENTITY_TYPE_LABELS[activeEntity.type] ?? activeEntity.type;
-    return {
-      title: `About ${activeEntity.name}`,
-      subtitle: `I'm watching this ${kindLabel}. Ask me to fill empty fields, strengthen what's there, or compare it to the rest of your brand.`,
-    };
-  }
-
-  // Workspace default
-  return {
-    title: 'Brand Assistant',
-    subtitle: 'Your AI brand strategist. Ask questions, get advice, or let me update your brand data.',
-  };
-}
-
 function MessageBubble({ message }: { message: ClawMessage }) {
+  const { t } = useTranslation('claw');
   const isUser = message.role === 'user';
 
   return (
@@ -287,8 +278,8 @@ function MessageBubble({ message }: { message: ClawMessage }) {
               </div>
               <div className="truncate">
                 {tr.isError
-                  ? String((tr.result as Record<string, unknown>)?.error ?? 'Error')
-                  : 'Data retrieved successfully'}
+                  ? String((tr.result as Record<string, unknown>)?.error ?? t('chat.error'))
+                  : t('chat.dataRetrieved')}
               </div>
             </div>
           );

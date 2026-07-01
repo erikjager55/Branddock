@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/shared/Modal';
 import { Button } from '@/components/shared/Button';
 import { useClawStore } from '@/stores/useClawStore';
@@ -19,26 +20,12 @@ const DRILLABLE_MODULES: ContextModule[] = [
   'brand_assets', 'personas', 'products', 'competitors', 'strategies', 'campaigns', 'observations',
 ];
 
-const MODULE_LABELS: Record<ContextModule, { label: string; description: string }> = {
-  brand_assets: { label: 'Brand Assets', description: 'All 12 brand foundation assets with framework data' },
-  brandstyle: { label: 'Brandstyle', description: 'Colors, typography, tone of voice, visual language' },
-  personas: { label: 'Personas', description: 'Target audience profiles with demographics and psychographics' },
-  products: { label: 'Products & Services', description: 'Product catalog with features and pricing' },
-  competitors: { label: 'Competitors', description: 'Competitor analysis with positioning and scores' },
-  trends: { label: 'Trends', description: 'Detected market trends and relevance scores' },
-  strategies: { label: 'Business Strategies', description: 'OKR strategies with objectives and progress' },
-  campaigns: { label: 'Campaigns', description: 'Active campaigns with strategy and deliverables' },
-  alignment: { label: 'Brand Alignment', description: 'Consistency issues between brand elements' },
-  knowledge: { label: 'Knowledge Library', description: 'Articles, case studies, and resources' },
-  dashboard: { label: 'Dashboard Stats', description: 'Workspace health metrics and readiness' },
-  observations: { label: 'Brand Observations', description: 'AI-generated brand signals from Brandclaw analysis (drift, fidelity, alignment)' },
-};
-
 function estimateContextTokens(moduleCount: number): number {
   return 400 + moduleCount * 800;
 }
 
 export function ContextSelectorModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation('claw');
   const { contextSelection, toggleModule, setContextSelection } = useClawStore();
   const [entities, setEntities] = useState<EntityMap>({});
   const [expandedModule, setExpandedModule] = useState<ContextModule | null>(null);
@@ -79,23 +66,25 @@ export function ContextSelectorModal({ onClose }: { onClose: () => void }) {
     <Modal
       isOpen={true}
       onClose={onClose}
-      title="Context Sources"
-      subtitle="Select which brand data the assistant can access"
+      title={t('context.title')}
+      subtitle={t('context.subtitle')}
       size="sm"
       footer={
         <div className="flex items-center justify-between w-full">
           <span className="text-xs text-gray-400">
-            ~{estimatedTokens.toLocaleString()} tokens ({selectedCount} sources)
+            {t('context.tokensSummary', {
+              tokens: estimatedTokens.toLocaleString(),
+              sources: selectedCount,
+            })}
           </span>
           <Button variant="primary" size="sm" onClick={onClose}>
-            Done
+            {t('context.done')}
           </Button>
         </div>
       }
     >
       <div className="space-y-0.5">
         {ALL_CONTEXT_MODULES.map((mod) => {
-          const info = MODULE_LABELS[mod];
           const isSelected = contextSelection.modules.includes(mod);
           const drillable = isDrillable(mod);
           const isExpanded = expandedModule === mod;
@@ -120,14 +109,14 @@ export function ContextSelectorModal({ onClose }: { onClose: () => void }) {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-900">
-                    {info.label}
+                    {t(`context.modules.${mod}.label`)}
                     {entityCount !== null && (
                       <span className="ml-1.5 text-xs text-teal-600 font-normal">
-                        ({entityCount} selected)
+                        {t('context.selectedCount', { n: entityCount })}
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-500">{info.description}</div>
+                  <div className="text-xs text-gray-500">{t(`context.modules.${mod}.description`)}</div>
                 </div>
 
                 {drillable && isSelected && entityList.length > 0 && (
@@ -148,7 +137,7 @@ export function ContextSelectorModal({ onClose }: { onClose: () => void }) {
               {isExpanded && isSelected && entityList.length > 0 && (
                 <div className="ml-10 mb-2 max-h-48 overflow-y-auto space-y-0.5">
                   <div className="text-xs text-gray-400 px-2 py-1">
-                    No selection = all included
+                    {t('context.allIncluded')}
                   </div>
                   {entityList.map((entity) => {
                     const selectedIds = contextSelection.entityIds?.[mod] ?? [];

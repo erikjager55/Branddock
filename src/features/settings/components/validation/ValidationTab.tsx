@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ShieldCheck, RotateCcw, Loader2, Search } from 'lucide-react';
 
@@ -52,6 +53,7 @@ async function resetThreshold(contentTypeId: string) {
 // ─── Component ──────────────────────────────────────────────
 
 export function ValidationTab() {
+  const { t } = useTranslation('settings-misc');
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const { data, isLoading, error } = useQuery({
@@ -100,7 +102,7 @@ export function ValidationTab() {
   if (error || !data) {
     return (
       <div className="flex items-center justify-center h-full text-red-500 text-sm">
-        Failed to load thresholds
+        {t('validation.loadError')}
       </div>
     );
   }
@@ -110,10 +112,9 @@ export function ValidationTab() {
       <div className="flex items-start gap-3">
         <ShieldCheck className="w-6 h-6 text-primary mt-1" />
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Validation Thresholds</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('validation.heading')}</h2>
           <p className="text-sm text-gray-600 mt-1">
-            A fidelity threshold (0-100) per content type. Anything below this score
-            triggers auto-iterate (max 2 attempts). Default {data.defaultThreshold}.
+            {t('validation.description', { default: data.defaultThreshold })}
           </p>
         </div>
       </div>
@@ -123,7 +124,7 @@ export function ValidationTab() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by type or category..."
+          placeholder={t('validation.searchPlaceholder')}
           className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
       </div>
@@ -157,7 +158,7 @@ export function ValidationTab() {
 
       {filteredTypes.length === 0 && (
         <div className="text-center text-gray-400 text-sm py-8">
-          No types match &quot;{search}&quot;
+          {t('validation.noMatch', { search })}
         </div>
       )}
     </div>
@@ -175,6 +176,7 @@ interface ThresholdRowProps {
 }
 
 function ThresholdRow({ type, defaultThreshold, onUpdate, onReset, isMutating }: ThresholdRowProps) {
+  const { t } = useTranslation('settings-misc');
   const [localValue, setLocalValue] = useState(type.threshold);
 
   const handleBlur = () => {
@@ -186,7 +188,7 @@ function ThresholdRow({ type, defaultThreshold, onUpdate, onReset, isMutating }:
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-gray-900 truncate">{type.label}</div>
         {type.isCustomized && (
-          <div className="text-[11px] text-emerald-700 mt-0.5">Customized (default {defaultThreshold})</div>
+          <div className="text-[11px] text-emerald-700 mt-0.5">{t('validation.customized', { default: defaultThreshold })}</div>
         )}
       </div>
       <div className="flex items-center gap-2 w-64">
@@ -208,7 +210,7 @@ function ThresholdRow({ type, defaultThreshold, onUpdate, onReset, isMutating }:
       <button
         onClick={onReset}
         disabled={!type.isCustomized || isMutating}
-        title={type.isCustomized ? 'Reset to default' : 'Already default'}
+        title={type.isCustomized ? t('validation.resetToDefault') : t('validation.alreadyDefault')}
         className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
       >
         {isMutating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}

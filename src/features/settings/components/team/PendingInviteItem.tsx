@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useResendInvite, useCancelInvite } from '@/hooks/use-settings';
 import { RoleBadge } from './RoleBadge';
 import { Button } from '@/components/shared';
@@ -11,6 +12,7 @@ interface PendingInviteItemProps {
 }
 
 export function PendingInviteItem({ invite }: PendingInviteItemProps) {
+  const { t } = useTranslation('settings-team');
   const resendInvite = useResendInvite();
   const cancelInvite = useCancelInvite();
 
@@ -36,7 +38,7 @@ export function PendingInviteItem({ invite }: PendingInviteItemProps) {
           <p className="text-sm font-medium text-gray-900 truncate">{invite.email}</p>
           <div className="flex items-center gap-2 mt-0.5">
             <RoleBadge role={invite.role} />
-            <span className="text-xs text-gray-400">Sent {sentDate}</span>
+            <span className="text-xs text-gray-400">{t('pending.sent', { date: sentDate })}</span>
           </div>
         </div>
       </div>
@@ -45,7 +47,7 @@ export function PendingInviteItem({ invite }: PendingInviteItemProps) {
         <div className="flex items-center gap-1 text-xs text-gray-500">
           <Clock className="w-3.5 h-3.5" />
           <span>
-            {daysLeft > 0 ? `Expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` : 'Expired'}
+            {daysLeft > 0 ? t('pending.expiresIn', { count: daysLeft }) : t('pending.expired')}
           </span>
         </div>
 
@@ -55,7 +57,7 @@ export function PendingInviteItem({ invite }: PendingInviteItemProps) {
           onClick={() => resendInvite.mutate(invite.id)}
           isLoading={resendInvite.isPending}
         >
-          Resend
+          {t('pending.resend')}
         </Button>
 
         <Button
@@ -65,7 +67,7 @@ export function PendingInviteItem({ invite }: PendingInviteItemProps) {
           isLoading={cancelInvite.isPending}
           className="text-red-600 hover:text-red-700 hover:bg-red-50"
         >
-          Cancel
+          {t('pending.cancel')}
         </Button>
       </div>
     </div>

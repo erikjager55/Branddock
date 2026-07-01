@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Clock, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/components/ui/utils';
 import type { WorkshopAgendaItem } from '../../types/workshop.types';
@@ -10,6 +11,7 @@ interface AgendaTimelineProps {
 }
 
 export function AgendaTimeline({ agendaItems }: AgendaTimelineProps) {
+  const { t } = useTranslation('workshop');
   const safeAgendaItems = Array.isArray(agendaItems) ? agendaItems : [];
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -19,7 +21,7 @@ export function AgendaTimeline({ agendaItems }: AgendaTimelineProps) {
     <div>
       <div className="flex items-center gap-2 mb-3">
         <Clock className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold text-gray-900">Agenda</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t('results.agenda.title')}</h3>
       </div>
       <div className="space-y-2">
         {safeAgendaItems.map((item) => {

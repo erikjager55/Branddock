@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { BookText, Clock, ExternalLink } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { ResourceWithMeta } from '../types/knowledge-library.types';
 import { ResourceTypeIcon } from './shared/ResourceTypeIcon';
 import { FavoriteButton } from './shared/FavoriteButton';
@@ -21,6 +22,7 @@ export function ResourceCardGrid({
   onArchive,
   onDelete,
 }: ResourceCardGridProps) {
+  const { t } = useTranslation('knowledge-library');
   const [openReportId, setOpenReportId] = useState<string | null>(null);
 
   return (
@@ -80,7 +82,7 @@ export function ResourceCardGrid({
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-1.5 w-full py-2 text-sm font-medium text-green-600 border border-green-200 rounded-lg hover:bg-green-50 transition-colors"
               >
-                Open Resource
+                {t('card.openResource')}
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             ) : r.type === 'RESEARCH' ? (
@@ -90,12 +92,12 @@ export function ResourceCardGrid({
                 data-testid="read-report-button"
                 className="flex items-center justify-center gap-1.5 w-full py-2 text-sm font-medium text-green-600 border border-green-200 rounded-lg hover:bg-green-50 transition-colors"
               >
-                Read report
+                {t('card.readReport')}
                 <BookText className="h-3.5 w-3.5" />
               </button>
             ) : (
               <span className="flex items-center justify-center gap-1.5 w-full py-2 text-sm font-medium text-gray-400 border border-gray-100 rounded-lg cursor-default">
-                No URL
+                {t('card.noUrl')}
               </span>
             )}
           </div>

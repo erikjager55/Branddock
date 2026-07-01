@@ -1,6 +1,7 @@
 'use client';
 
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useInterviews, useCreateInterview, useDeleteInterview } from '../hooks/useInterviews';
 import { useInterviewStore } from '../stores/useInterviewStore';
 import { PageShell, PageHeader } from '@/components/ui/layout';
@@ -15,6 +16,7 @@ interface InterviewsPageProps {
 }
 
 export function InterviewsPage({ assetId, onBack }: InterviewsPageProps) {
+  const { t } = useTranslation('interviews');
   const { data, isLoading } = useInterviews(assetId);
   const createInterview = useCreateInterview(assetId);
   const deleteInterview = useDeleteInterview(assetId);
@@ -60,12 +62,12 @@ export function InterviewsPage({ assetId, onBack }: InterviewsPageProps) {
     <PageShell>
       <PageHeader
         moduleKey="brand-foundation"
-        title="Interviews"
-        subtitle="Conduct structured interviews with stakeholders"
+        title={t('page.title')}
+        subtitle={t('page.subtitle')}
         actions={
           <Button onClick={handleAdd} className="gap-2">
             <Plus className="h-4 w-4" />
-            Add Interview
+            {t('page.addInterview')}
           </Button>
         }
       />
@@ -80,7 +82,7 @@ export function InterviewsPage({ assetId, onBack }: InterviewsPageProps) {
         </div>
       ) : interviews.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-sm">No interviews yet. Add your first interview to get started.</p>
+          <p className="text-gray-500 text-sm">{t('page.empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import { useWorkshopDetail } from '../../hooks/useWorkshopDetail';
@@ -27,6 +28,7 @@ export function WorkshopSessionPage({
   onBack,
   onComplete,
 }: WorkshopSessionPageProps) {
+  const { t } = useTranslation('workshop');
   const { data, isLoading } = useWorkshopDetail(workshopId);
   const startMutation = useStartWorkshop(workshopId);
   const updateStepMutation = useUpdateStepResponse(workshopId);
@@ -139,7 +141,7 @@ export function WorkshopSessionPage({
     return (
       <PageShell>
       <div className="text-center py-12 text-gray-500">
-        Workshop not found.
+        {t('common.notFound')}
       </div>
       </PageShell>
     );

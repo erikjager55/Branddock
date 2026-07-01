@@ -1,15 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Select } from '@/components/shared';
 import type { Interview } from '../../types/interview.types';
 
-const DURATION_OPTIONS = [
-  { value: '30', label: '30 minutes' },
-  { value: '45', label: '45 minutes' },
-  { value: '60', label: '60 minutes' },
-  { value: '90', label: '90 minutes' },
-];
+const DURATION_VALUES = ['30', '45', '60', '90'] as const;
 
 interface ScheduleStepProps {
   interview: Interview;
@@ -18,6 +14,11 @@ interface ScheduleStepProps {
 }
 
 export function ScheduleStep({ interview, onSave, isSaving }: ScheduleStepProps) {
+  const { t } = useTranslation('interviews');
+  const durationOptions = DURATION_VALUES.map((value) => ({
+    value,
+    label: t('schedule.durationOption', { count: Number(value) }),
+  }));
   const [date, setDate] = useState(
     interview.scheduledDate
       ? new Date(interview.scheduledDate).toISOString().split('T')[0]
@@ -38,35 +39,35 @@ export function ScheduleStep({ interview, onSave, isSaving }: ScheduleStepProps)
 
   return (
     <div className="max-w-xl">
-      <h2 className="text-lg font-semibold text-gray-900 mb-1">Schedule Interview</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('schedule.title')}</h2>
       <p className="text-sm text-gray-500 mb-6">
-        Set the date, time, and duration for this interview.
+        {t('schedule.subtitle')}
       </p>
 
       <div className="space-y-4">
         <Input
-          label="Date"
+          label={t('schedule.dateLabel')}
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
         <Input
-          label="Time"
+          label={t('schedule.timeLabel')}
           type="time"
           value={time}
           onChange={(e) => setTime(e.target.value)}
         />
         <Select
-          label="Duration"
+          label={t('schedule.durationLabel')}
           value={duration}
           onChange={(val) => setDuration(val ?? '60')}
-          options={DURATION_OPTIONS}
+          options={durationOptions}
         />
       </div>
 
       <div className="mt-6">
         <Button variant="cta" size="md" onClick={handleSave} isLoading={isSaving}>
-          Save Schedule
+          {t('schedule.save')}
         </Button>
       </div>
     </div>

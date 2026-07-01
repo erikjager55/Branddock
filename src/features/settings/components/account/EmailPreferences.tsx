@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useEmailPreferences, useUpdateEmailPreferences } from '@/hooks/use-settings';
 import { Card, Skeleton } from '@/components/shared';
 import type { UpdateEmailPreferencesRequest, EmailPreferencesData } from '@/types/settings';
@@ -37,34 +38,15 @@ function ToggleRow({ label, description, checked, onChange }: ToggleRowProps) {
   );
 }
 
-const TOGGLE_CONFIG: Array<{
-  key: keyof Pick<EmailPreferencesData, 'productUpdates' | 'researchNotifications' | 'teamActivity' | 'marketing'>;
-  label: string;
-  description: string;
-}> = [
-  {
-    key: 'productUpdates',
-    label: 'Product Updates',
-    description: 'Receive emails about new features and product improvements.',
-  },
-  {
-    key: 'researchNotifications',
-    label: 'Research Notifications',
-    description: 'Get notified when research results are ready or need attention.',
-  },
-  {
-    key: 'teamActivity',
-    label: 'Team Activity',
-    description: 'Stay updated on team member actions and collaboration events.',
-  },
-  {
-    key: 'marketing',
-    label: 'Marketing',
-    description: 'Receive tips, best practices, and promotional content.',
-  },
-];
+const TOGGLE_KEYS: ReadonlyArray<
+  keyof Pick<
+    EmailPreferencesData,
+    'productUpdates' | 'researchNotifications' | 'teamActivity' | 'marketing'
+  >
+> = ['productUpdates', 'researchNotifications', 'teamActivity', 'marketing'];
 
 export function EmailPreferences() {
+  const { t } = useTranslation('settings-account');
   const { data, isLoading } = useEmailPreferences();
   const updatePrefs = useUpdateEmailPreferences();
 
@@ -92,16 +74,16 @@ export function EmailPreferences() {
 
   return (
     <Card>
-      <h3 className="text-base font-semibold text-gray-900 mb-2">Email Preferences</h3>
+      <h3 className="text-base font-semibold text-gray-900 mb-2">{t('email.title')}</h3>
 
       <div className="divide-y divide-gray-100">
-        {TOGGLE_CONFIG.map((toggle) => (
+        {TOGGLE_KEYS.map((key) => (
           <ToggleRow
-            key={toggle.key}
-            label={toggle.label}
-            description={toggle.description}
-            checked={preferences[toggle.key]}
-            onChange={(val) => handleToggle(toggle.key, val)}
+            key={key}
+            label={t(`email.toggles.${key}.label`)}
+            description={t(`email.toggles.${key}.description`)}
+            checked={preferences[key]}
+            onChange={(val) => handleToggle(key, val)}
           />
         ))}
       </div>

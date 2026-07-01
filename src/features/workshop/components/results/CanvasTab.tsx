@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { Lock, Unlock, Pencil } from 'lucide-react';
 import { CanvasFrameworkRenderer } from './CanvasFrameworkRenderer';
@@ -19,11 +20,12 @@ export function CanvasTab({
   onToggleLock,
   onToggleEdit,
 }: CanvasTabProps) {
+  const { t } = useTranslation('workshop');
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">
-          Golden Circle Framework
+          {t('results.canvasTab.title')}
         </h3>
         <div className="flex items-center gap-2">
           <Button
@@ -32,7 +34,7 @@ export function CanvasTab({
             icon={canvasLocked ? Lock : Unlock}
             onClick={onToggleLock}
           >
-            {canvasLocked ? 'Locked' : 'Unlocked'}
+            {canvasLocked ? t('results.canvasTab.locked') : t('results.canvasTab.unlocked')}
           </Button>
           {!canvasLocked && (
             <Button
@@ -41,7 +43,7 @@ export function CanvasTab({
               icon={Pencil}
               onClick={onToggleEdit}
             >
-              {isEditing ? 'Done' : 'Edit'}
+              {isEditing ? t('results.canvasTab.done') : t('results.canvasTab.edit')}
             </Button>
           )}
         </div>

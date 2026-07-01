@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useTeamMembers } from '@/hooks/use-settings';
 import { TeamMemberRow } from './TeamMemberRow';
 import { Skeleton, EmptyState } from '@/components/shared';
 import { Users } from 'lucide-react';
 
 export function TeamMembersTable() {
+  const { t } = useTranslation('settings-team');
   const { data, isLoading } = useTeamMembers();
 
   if (isLoading) {
@@ -38,8 +40,8 @@ export function TeamMembersTable() {
       <div className="bg-white border border-gray-200 rounded-lg p-8">
         <EmptyState
           icon={Users}
-          title="No team members"
-          description="Invite team members to start collaborating on your brand strategy."
+          title={t('membersTable.empty.title')}
+          description={t('membersTable.empty.description')}
         />
       </div>
     );
@@ -49,7 +51,7 @@ export function TeamMembersTable() {
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
       <div className="px-5 py-3 border-b border-gray-100">
         <h3 className="text-sm font-semibold text-gray-900">
-          Team Members ({members.length})
+          {t('membersTable.title', { total: members.length })}
         </h3>
       </div>
 
@@ -58,19 +60,19 @@ export function TeamMembersTable() {
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
               <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2.5 px-4">
-                Member
+                {t('membersTable.columns.member')}
               </th>
               <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2.5 px-4">
-                Role
+                {t('membersTable.columns.role')}
               </th>
               <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2.5 px-4">
-                Status
+                {t('membersTable.columns.status')}
               </th>
               <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2.5 px-4">
-                Joined
+                {t('membersTable.columns.joined')}
               </th>
               <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2.5 px-4 w-12">
-                Actions
+                {t('membersTable.columns.actions')}
               </th>
             </tr>
           </thead>

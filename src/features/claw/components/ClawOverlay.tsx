@@ -2,12 +2,14 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { X, PanelLeftClose, PanelLeftOpen, Download, Maximize2, Minimize2, RefreshCw, History } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useClawStore } from '@/stores/useClawStore';
 import { ChatArea } from './ChatArea';
 import { InputBar } from './InputBar';
 import { ConversationSidebar } from './ConversationSidebar';
 
 export function ClawOverlay() {
+  const { t } = useTranslation('claw');
   const {
     isOpen,
     viewMode,
@@ -70,7 +72,8 @@ export function ClawOverlay() {
 
     const markdown = messages
       .map((m) => {
-        const role = m.role === 'user' ? '**You**' : '**Brand Assistant**';
+        const role =
+          m.role === 'user' ? `**${t('overlay.exportYou')}**` : `**${t('assistantName')}**`;
         return `${role}\n\n${m.content}\n`;
       })
       .join('\n---\n\n');
@@ -82,7 +85,7 @@ export function ClawOverlay() {
     a.download = `chat-conversation-${new Date().toISOString().slice(0, 10)}.md`;
     a.click();
     URL.revokeObjectURL(url);
-  }, []);
+  }, [t]);
 
   if (!isOpen) return null;
 
@@ -111,7 +114,7 @@ export function ClawOverlay() {
               <button
                 onClick={toggleSidebar}
                 className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
-                aria-label={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+                aria-label={isSidebarOpen ? t('overlay.hideSidebar') : t('overlay.showSidebar')}
               >
                 {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
               </button>
@@ -123,8 +126,8 @@ export function ClawOverlay() {
                 className={`p-1.5 rounded-md transition-colors ${
                   isHistoryPopoverOpen ? 'bg-teal-50 text-teal-700' : 'hover:bg-gray-100 text-gray-500'
                 }`}
-                aria-label="Conversation history"
-                title="Conversation history"
+                aria-label={t('overlay.conversationHistory')}
+                title={t('overlay.conversationHistory')}
               >
                 <History size={18} />
               </button>
@@ -132,11 +135,12 @@ export function ClawOverlay() {
 
             <div className="ml-2 flex flex-col min-w-0">
               <h1 className="text-sm font-semibold text-gray-900 leading-tight">
-                Brand Assistant
+                {t('assistantName')}
               </h1>
               {watchingLabel && (
                 <span className="text-[11px] text-gray-500 leading-tight truncate" title={watchingLabel}>
-                  Watching: <span className="text-teal-700 font-medium">{watchingLabel}</span>
+                  {t('overlay.watching')}{' '}
+                  <span className="text-teal-700 font-medium">{watchingLabel}</span>
                 </span>
               )}
             </div>
@@ -147,8 +151,8 @@ export function ClawOverlay() {
             <button
               onClick={startNewConversation}
               className="flex items-center justify-center w-9 h-9 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-700 transition-colors mr-1"
-              aria-label="Start new conversation"
-              title="New conversation"
+              aria-label={t('overlay.newConversationAria')}
+              title={t('overlay.newConversationTitle')}
             >
               <RefreshCw size={16} strokeWidth={2} />
             </button>
@@ -157,7 +161,7 @@ export function ClawOverlay() {
               <button
                 onClick={handleExport}
                 className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
-                aria-label="Export conversation"
+                aria-label={t('overlay.exportConversation')}
               >
                 <Download size={18} />
               </button>
@@ -166,7 +170,7 @@ export function ClawOverlay() {
             <button
               onClick={toggleViewMode}
               className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
-              aria-label={isPanel ? 'Expand to full screen' : 'Collapse to panel'}
+              aria-label={isPanel ? t('overlay.expandFullScreen') : t('overlay.collapseToPanel')}
             >
               {isPanel ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
             </button>
@@ -174,7 +178,7 @@ export function ClawOverlay() {
             <button
               onClick={closeClaw}
               className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
-              aria-label="Close"
+              aria-label={t('overlay.close')}
             >
               <X size={18} />
             </button>
@@ -196,11 +200,11 @@ export function ClawOverlay() {
               />
               <div className="absolute left-2 top-2 bottom-2 w-72 bg-gray-50 border border-gray-200 rounded-xl shadow-xl z-20 overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-white">
-                  <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">History</span>
+                  <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">{t('overlay.history')}</span>
                   <button
                     onClick={closeHistoryPopover}
                     className="p-1 rounded-md hover:bg-gray-100 text-gray-500"
-                    aria-label="Close history"
+                    aria-label={t('overlay.closeHistory')}
                   >
                     <X size={14} />
                   </button>

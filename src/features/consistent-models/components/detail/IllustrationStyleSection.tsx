@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Sparkles, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/shared";
 import { StyleProfileCard } from "./StyleProfileCard";
@@ -16,6 +17,7 @@ interface IllustrationStyleSectionProps {
 export function IllustrationStyleSection({
   model,
 }: IllustrationStyleSectionProps) {
+  const { t } = useTranslation("consistent-models");
   const profile = model.styleProfile as IllustrationStyleProfile | null;
   const isAnalyzing = model.styleAnalysisStatus === "ANALYZING";
   const analysisFailed = model.styleAnalysisStatus === "FAILED";
@@ -43,7 +45,7 @@ export function IllustrationStyleSection({
       <div className="rounded-lg border border-gray-200 bg-white p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-gray-900">
-            AI Style Analysis
+            {t("illustration.title")}
           </h3>
           {profile && (
             <span className="text-xs text-gray-500">
@@ -54,15 +56,14 @@ export function IllustrationStyleSection({
 
         {!hasImages && (
           <p className="text-sm text-gray-500">
-            Upload reference illustrations first, then analyze the style automatically.
+            {t("illustration.noImages")}
           </p>
         )}
 
         {hasImages && !profile && !isAnalyzing && !analyzeStyle.isPending && !analysisFailed && (
           <div className="space-y-3">
             <p className="text-sm text-gray-600">
-              Analyze your {model.referenceImages.length} reference image{model.referenceImages.length !== 1 ? "s" : ""} to
-              automatically detect the illustration style — colors, lines, shading, shapes, and more.
+              {t("illustration.analyzeIntro", { count: model.referenceImages.length })}
             </p>
             <Button
               variant="primary"
@@ -71,7 +72,7 @@ export function IllustrationStyleSection({
               disabled={!hasImages}
             >
               <Sparkles className="h-4 w-4 mr-1.5" />
-              Analyze Illustration Style
+              {t("illustration.analyzeButton")}
             </Button>
           </div>
         )}
@@ -83,10 +84,10 @@ export function IllustrationStyleSection({
                 <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    Analyzing illustration style...
+                    {t("illustration.analyzing")}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Extracting colors, line weights, shading, and composition from {model.referenceImages.length} images
+                    {t("illustration.analyzingSubtitle", { count: model.referenceImages.length })}
                   </p>
                 </div>
               </>
@@ -95,7 +96,7 @@ export function IllustrationStyleSection({
                 <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-amber-700">
-                    A previous analysis may have timed out or failed without completing.
+                    {t("illustration.staleWarning")}
                   </p>
                   <Button
                     variant="ghost"
@@ -104,7 +105,7 @@ export function IllustrationStyleSection({
                     className="mt-2"
                   >
                     <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                    Retry Analysis
+                    {t("illustration.retry")}
                   </Button>
                 </div>
               </div>
@@ -117,7 +118,7 @@ export function IllustrationStyleSection({
             <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm text-red-700">
-                Style analysis failed. {analyzeStyle.error?.message ?? "Please try again."}
+                {t("illustration.analysisFailed")} {analyzeStyle.error?.message ?? t("illustration.tryAgain")}
               </p>
               <Button
                 variant="ghost"
@@ -126,7 +127,7 @@ export function IllustrationStyleSection({
                 className="mt-2"
               >
                 <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                Retry Analysis
+                {t("illustration.retry")}
               </Button>
             </div>
           </div>
@@ -136,7 +137,7 @@ export function IllustrationStyleSection({
           <div className="flex items-start gap-3 rounded-md bg-red-50 p-3 mt-3">
             <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-red-700">
-              {analyzeStyle.error?.message ?? "Analysis failed"}
+              {analyzeStyle.error?.message ?? t("illustration.analysisFailedShort")}
             </p>
           </div>
         )}
@@ -154,7 +155,7 @@ export function IllustrationStyleSection({
               disabled={analyzeStyle.isPending}
             >
               <RefreshCw className="h-3.5 w-3.5 mr-1" />
-              Re-analyze
+              {t("illustration.reanalyze")}
             </Button>
           </div>
         </div>

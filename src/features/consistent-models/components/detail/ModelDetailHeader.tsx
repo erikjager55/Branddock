@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Pencil, Check, X, Eye } from "lucide-react";
 import { Button } from "@/components/shared";
 import { ModelTypeBadge } from "../shared/ModelTypeBadge";
@@ -25,6 +26,7 @@ export function ModelDetailHeader({
   onViewShowcase,
   isUpdating,
 }: ModelDetailHeaderProps) {
+  const { t } = useTranslation("consistent-models");
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(model.name);
 
@@ -49,7 +51,7 @@ export function ModelDetailHeader({
         className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to AI Models
+        {t("header.backToModels")}
       </button>
 
       <div className="flex items-start justify-between gap-4">
@@ -115,7 +117,7 @@ export function ModelDetailHeader({
             className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
           >
             <Eye className="h-4 w-4" />
-            View Showcase
+            {t("header.viewShowcase")}
           </button>
         )}
       </div>

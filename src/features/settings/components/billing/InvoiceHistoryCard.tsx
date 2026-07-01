@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Download, FileText } from 'lucide-react';
 import { Card, Badge } from '@/components/shared';
 import { useBillingPlan } from '@/hooks/use-billing';
 import { useInvoices, useDownloadInvoice } from '@/hooks/use-settings';
 
 export function InvoiceHistoryCard() {
+  const { t } = useTranslation('settings-billing');
   const billing = useBillingPlan();
   const { data: invoicesData, isLoading } = useInvoices();
   const downloadMutation = useDownloadInvoice();
@@ -18,7 +20,7 @@ export function InvoiceHistoryCard() {
   return (
     <Card padding="none">
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-900">Billing History</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{t('invoices.title')}</h3>
       </div>
       {isLoading ? (
         <div className="p-5 space-y-3">
@@ -29,16 +31,16 @@ export function InvoiceHistoryCard() {
       ) : invoices.length === 0 ? (
         <div className="p-8 text-center">
           <FileText className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">No invoices yet</p>
+          <p className="text-sm text-gray-500">{t('invoices.empty')}</p>
         </div>
       ) : (
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 text-left text-gray-500">
-              <th className="px-5 py-3 font-medium">Invoice</th>
-              <th className="px-5 py-3 font-medium">Date</th>
-              <th className="px-5 py-3 font-medium">Amount</th>
-              <th className="px-5 py-3 font-medium">Status</th>
+              <th className="px-5 py-3 font-medium">{t('invoices.columns.invoice')}</th>
+              <th className="px-5 py-3 font-medium">{t('invoices.columns.date')}</th>
+              <th className="px-5 py-3 font-medium">{t('invoices.columns.amount')}</th>
+              <th className="px-5 py-3 font-medium">{t('invoices.columns.status')}</th>
               <th className="px-5 py-3 font-medium text-right" />
             </tr>
           </thead>

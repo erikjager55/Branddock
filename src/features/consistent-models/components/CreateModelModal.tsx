@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal, Button, Input, Select } from "@/components/shared";
 import { TYPE_CONFIG, MODEL_TYPE_OPTIONS, TRAINABLE_TYPES, ILLUSTRATION_STYLE_OPTIONS } from "../constants/model-constants";
 import { useCreateModel } from "../hooks";
@@ -20,6 +21,7 @@ export function CreateModelModal({
   initialType,
   onCreated,
 }: CreateModelModalProps) {
+  const { t } = useTranslation("consistent-models");
   const [name, setName] = useState("");
   const [type, setType] = useState<ConsistentModelType>(initialType ?? "PERSON");
   const [description, setDescription] = useState("");
@@ -89,21 +91,21 @@ export function CreateModelModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Create AI Model" size="md">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t("create.title")} size="md">
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Name */}
         <Input
-          label="Model Name"
+          label={t("create.nameLabel")}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Brand Ambassador, Product Line"
+          placeholder={t("create.namePlaceholder")}
           required
         />
 
         {/* Type selector */}
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700">
-            Model Type
+            {t("create.typeLabel")}
           </label>
           <div className="grid grid-cols-2 gap-3">
             {MODEL_TYPE_OPTIONS.map((opt) => {
@@ -138,12 +140,12 @@ export function CreateModelModal({
         {/* Description */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-gray-700">
-            Description <span className="font-normal text-gray-400">(optional)</span>
+            {t("create.descriptionLabel")} <span className="font-normal text-gray-400">{t("create.optional")}</span>
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="What will this model be used for?"
+            placeholder={t("create.descriptionPlaceholder")}
             rows={3}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
           />
@@ -153,19 +155,19 @@ export function CreateModelModal({
         {!isTrainable && (
           <>
             <Input
-              label="Style Guide Name"
+              label={t("create.styleGuideNameLabel")}
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
-              placeholder="e.g. Corporate Photography Style"
+              placeholder={t("create.styleGuideNamePlaceholder")}
             />
             <div>
               <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                Style Guide Description
+                {t("create.styleGuideDescriptionLabel")}
               </label>
               <textarea
                 value={modelDescription}
                 onChange={(e) => setModelDescription(e.target.value)}
-                placeholder="Describe this style guide..."
+                placeholder={t("create.styleGuideDescriptionPlaceholder")}
                 rows={3}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
               />
@@ -174,43 +176,43 @@ export function CreateModelModal({
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <Select
-                    label="Illustration Style"
+                    label={t("create.illustrationStyleLabel")}
                     options={[...ILLUSTRATION_STYLE_OPTIONS.illustrationStyle]}
                     value={illustrationStyle}
                     onChange={setIllustrationStyle}
-                    placeholder="Select style..."
+                    placeholder={t("create.illustrationStylePlaceholder")}
                     allowClear
                   />
                   <Select
-                    label="Color Approach"
+                    label={t("create.colorApproachLabel")}
                     options={[...ILLUSTRATION_STYLE_OPTIONS.colorApproach]}
                     value={colorApproach}
                     onChange={setColorApproach}
-                    placeholder="Select color..."
+                    placeholder={t("create.colorApproachPlaceholder")}
                     allowClear
                   />
                   <Select
-                    label="Line Quality"
+                    label={t("create.lineQualityLabel")}
                     options={[...ILLUSTRATION_STYLE_OPTIONS.lineQuality]}
                     value={lineQuality}
                     onChange={setLineQuality}
-                    placeholder="Select line quality..."
+                    placeholder={t("create.lineQualityPlaceholder")}
                     allowClear
                   />
                   <Select
-                    label="Detail Level"
+                    label={t("create.detailLevelLabel")}
                     options={[...ILLUSTRATION_STYLE_OPTIONS.detailLevel]}
                     value={detailLevel}
                     onChange={setDetailLevel}
-                    placeholder="Select detail..."
+                    placeholder={t("create.detailLevelPlaceholder")}
                     allowClear
                   />
                 </div>
                 <Input
-                  label="Mood / Atmosphere"
+                  label={t("create.moodLabel")}
                   value={mood}
                   onChange={(e) => setMood(e.target.value)}
-                  placeholder="e.g. Playful, Corporate, Dreamy..."
+                  placeholder={t("create.moodPlaceholder")}
                 />
               </div>
             )}
@@ -220,7 +222,7 @@ export function CreateModelModal({
         {/* Actions */}
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="secondary" onClick={handleClose} type="button">
-            Cancel
+            {t("create.cancel")}
           </Button>
           <Button
             variant="primary"
@@ -228,7 +230,7 @@ export function CreateModelModal({
             isLoading={createModel.isPending}
             disabled={!name.trim()}
           >
-            Create Model
+            {t("create.submit")}
           </Button>
         </div>
       </form>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Chrome, MessageSquare, Monitor, Smartphone } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useConnectAccount, useDisconnectAccount } from '@/hooks/use-settings';
@@ -32,6 +33,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 };
 
 export function ConnectedAccountItem({ account }: ConnectedAccountItemProps) {
+  const { t } = useTranslation('settings-account');
   const connectAccount = useConnectAccount();
   const disconnectAccount = useDisconnectAccount();
 
@@ -63,7 +65,7 @@ export function ConnectedAccountItem({ account }: ConnectedAccountItemProps) {
 
       <div className="flex items-center gap-3">
         {isConnected && (
-          <Badge variant="success" size="sm">Connected</Badge>
+          <Badge variant="success" size="sm">{t('connectedAccounts.connected')}</Badge>
         )}
         {isConnected ? (
           <Button
@@ -72,7 +74,7 @@ export function ConnectedAccountItem({ account }: ConnectedAccountItemProps) {
             onClick={handleDisconnect}
             isLoading={disconnectAccount.isPending}
           >
-            Disconnect
+            {t('connectedAccounts.disconnect')}
           </Button>
         ) : (
           <Button
@@ -81,7 +83,7 @@ export function ConnectedAccountItem({ account }: ConnectedAccountItemProps) {
             onClick={handleConnect}
             isLoading={connectAccount.isPending}
           >
-            Connect
+            {t('connectedAccounts.connect')}
           </Button>
         )}
       </div>

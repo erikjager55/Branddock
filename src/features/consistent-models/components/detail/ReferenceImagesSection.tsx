@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Trash2, Maximize2, ImageOff } from "lucide-react";
 import { Card, Badge } from "@/components/shared";
 import { ReferenceImageUploader } from "./ReferenceImageUploader";
@@ -28,6 +29,7 @@ export function ReferenceImagesSection({
   isUploading,
   isDeleting,
 }: ReferenceImagesSectionProps) {
+  const { t } = useTranslation("consistent-models");
   const count = images.length;
   const minRequired = MIN_IMAGES_BY_TYPE[modelType];
   const maxAllowed = TRAINING_DEFAULTS.maxReferenceImages;
@@ -39,7 +41,7 @@ export function ReferenceImagesSection({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-gray-900">
-            Reference Images
+            {t("referenceImages.heading")}
           </h2>
           <Badge variant={count >= minRequired ? "success" : "warning"} size="sm">
             {count} / {maxAllowed}
@@ -47,7 +49,7 @@ export function ReferenceImagesSection({
         </div>
         {count < minRequired && (
           <span className="text-xs text-amber-600">
-            Min {minRequired} images required for training
+            {t("referenceImages.minRequired", { count: minRequired })}
           </span>
         )}
       </div>
@@ -87,13 +89,13 @@ export function ReferenceImagesSection({
             type="button"
             onClick={() => setLightboxUrl(null)}
             className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
-            aria-label="Close"
+            aria-label={t("referenceImages.close")}
           >
             ✕
           </button>
           <img
             src={lightboxUrl}
-            alt="Enlarged preview"
+            alt={t("referenceImages.enlargedAlt")}
             className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
             onClick={(e) => e.stopPropagation()}
           />
@@ -120,6 +122,7 @@ function ReferenceImageCard({
   isDeleting: boolean;
   updateCaption: ReturnType<typeof useUpdateReferenceCaption>;
 }) {
+  const { t } = useTranslation("consistent-models");
   const [caption, setCaption] = useState(image.caption ?? "");
   const [saved, setSaved] = useState(true);
   const [imageFailed, setImageFailed] = useState(false);
@@ -163,7 +166,7 @@ function ReferenceImageCard({
             onClick={() => onDelete(image.id)}
             disabled={isDeleting}
             className="rounded-full bg-red-500 p-1.5 text-white hover:bg-red-600 transition-colors"
-            title="Remove image"
+            title={t("referenceImages.removeImage")}
           >
             <Trash2 className="h-3 w-3" />
           </button>
@@ -174,7 +177,7 @@ function ReferenceImageCard({
           type="button"
           onClick={() => onEnlarge(image.storageUrl)}
           className="absolute left-2 top-2 z-10 rounded-md bg-black/60 p-1.5 text-white hover:bg-black/80 transition-colors"
-          aria-label="Enlarge image"
+          aria-label={t("referenceImages.enlargeImage")}
         >
           <Maximize2 className="h-4 w-4" />
         </button>
@@ -200,12 +203,12 @@ function ReferenceImageCard({
           value={caption}
           onChange={(e) => { setCaption(e.target.value); setSaved(false); }}
           onBlur={handleBlur}
-          placeholder="Notes for training (e.g. 'good lighting, correct logo placement')"
+          placeholder={t("referenceImages.captionPlaceholder")}
           rows={2}
           className="w-full rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 resize-none"
         />
         {!saved && (
-          <span className="text-[10px] text-gray-400">Saving...</span>
+          <span className="text-[10px] text-gray-400">{t("referenceImages.saving")}</span>
         )}
       </div>
     </div>

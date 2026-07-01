@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Button, Badge } from '@/components/shared';
 import { Video, Star, StarOff, CheckCircle, Timer } from 'lucide-react';
 import { cn } from '@/components/ui/utils';
@@ -29,6 +30,7 @@ export function WorkshopToolbar({
   onComplete,
   isCompleting,
 }: WorkshopToolbarProps) {
+  const { t } = useTranslation('workshop');
   const isBookmarked = bookmarkStep === currentStep;
 
   return (
@@ -36,12 +38,12 @@ export function WorkshopToolbar({
       <div className="flex items-center gap-3">
         <button className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary transition-colors">
           <Video className="w-4 h-4" />
-          Video Guide
+          {t('session.toolbar.videoGuide')}
         </button>
 
         {hasFacilitator && (
           <Badge variant="info" className="bg-purple-50 text-purple-700">
-            {facilitatorName || 'Facilitator'}
+            {facilitatorName || t('common.facilitator')}
           </Badge>
         )}
       </div>
@@ -88,7 +90,7 @@ export function WorkshopToolbar({
           onClick={onComplete}
           isLoading={isCompleting}
         >
-          Complete
+          {t('session.toolbar.complete')}
         </Button>
       </div>
     </div>

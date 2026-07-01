@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useUploadFile } from '../../hooks';
 import { UPLOAD_FORMATS } from '../../constants/library-constants';
 
@@ -10,6 +11,7 @@ interface FileUploadTabProps {
 }
 
 export function FileUploadTab({ onClose }: FileUploadTabProps) {
+  const { t } = useTranslation('knowledge-library');
   const uploadFile = useUploadFile();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -48,7 +50,7 @@ export function FileUploadTab({ onClose }: FileUploadTabProps) {
           <Upload className="h-6 w-6 text-green-600" />
         </div>
         <p className="text-sm font-medium text-gray-700 mb-1">
-          {uploadFile.isPending ? 'Uploading...' : 'Click to upload or drag and drop'}
+          {uploadFile.isPending ? t('fileUpload.uploading') : t('fileUpload.dropHint')}
         </p>
 
         <div className="flex flex-wrap gap-1.5 mt-3 justify-center">
@@ -63,7 +65,7 @@ export function FileUploadTab({ onClose }: FileUploadTabProps) {
         </div>
 
         <p className="text-xs text-gray-400 mt-3">
-          Maximum file size: 50MB
+          {t('fileUpload.maxSize')}
         </p>
 
         <input

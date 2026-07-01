@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Star, CheckCircle } from 'lucide-react';
 import { useSubmitRating } from '@/hooks/use-help';
 import { Button } from '@/components/shared';
 
 export function PlatformRating() {
+  const { t } = useTranslation('help');
   const [hoveredStar, setHoveredStar] = useState(0);
   const [selectedRating, setSelectedRating] = useState(0);
   const [feedback, setFeedback] = useState('');
@@ -33,13 +35,13 @@ export function PlatformRating() {
     return (
       <section>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Rate Your Experience
+          {t('rating.title')}
         </h2>
         <div className="flex flex-col items-center py-6 text-center">
           <CheckCircle className="w-8 h-8 text-emerald-500 mb-2" />
-          <p className="text-sm font-medium text-gray-900">Thank you for your feedback!</p>
+          <p className="text-sm font-medium text-gray-900">{t('rating.thanks')}</p>
           <p className="text-sm text-gray-500 mt-1">
-            You rated us {selectedRating} out of 5 stars.
+            {t('rating.result', { rating: selectedRating })}
           </p>
         </div>
       </section>
@@ -49,7 +51,7 @@ export function PlatformRating() {
   return (
     <section>
       <h2 className="text-lg font-semibold text-gray-900 mb-4">
-        Rate Your Experience
+        {t('rating.title')}
       </h2>
 
       {/* Stars */}
@@ -83,7 +85,7 @@ export function PlatformRating() {
           <textarea
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
-            placeholder="Tell us more about your experience (optional)..."
+            placeholder={t('rating.placeholder')}
             rows={3}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-shadow resize-none"
           />
@@ -93,7 +95,7 @@ export function PlatformRating() {
             onClick={handleSubmit}
             isLoading={submitRating.isPending}
           >
-            Submit
+            {t('rating.submit')}
           </Button>
         </div>
       )}

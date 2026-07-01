@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -16,6 +17,7 @@ export function WorkshopNavigation({
   hasPrevious,
   hasNext,
 }: WorkshopNavigationProps) {
+  const { t } = useTranslation('workshop');
   return (
     <div className="flex items-center gap-2">
       <Button
@@ -25,7 +27,7 @@ export function WorkshopNavigation({
         onClick={onPrevious}
         disabled={!hasPrevious}
       >
-        Previous
+        {t('common.previous')}
       </Button>
       <Button
         variant="secondary"
@@ -35,7 +37,7 @@ export function WorkshopNavigation({
         onClick={onNext}
         disabled={!hasNext}
       >
-        Next
+        {t('common.next')}
       </Button>
     </div>
   );

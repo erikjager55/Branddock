@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import { QuantityStepper } from "./QuantityStepper";
 
@@ -29,6 +30,7 @@ export function MethodCard({
   quantity,
   onQuantityChange,
 }: MethodCardProps) {
+  const { t } = useTranslation("research");
   const maxQty = type === "WORKSHOP" ? 5 : 100;
 
   return (
@@ -38,7 +40,7 @@ export function MethodCard({
         <div className="flex items-center gap-2 mb-1">
           <span className="font-medium text-gray-900">{name}</span>
           <span className="text-sm font-semibold text-green-600">
-            {price === 0 ? "FREE" : `$${price}/${unit}`}
+            {price === 0 ? t("methodCard.free") : `$${price}/${unit}`}
           </span>
         </div>
         <p className="text-sm text-gray-600 mb-2">{description}</p>

@@ -2,28 +2,30 @@
 
 import { Check, Minus, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, Button, Badge } from '@/components/shared';
 import { useBillingPlan } from '@/hooks/use-billing';
 import { PLAN_CONFIGS, ALL_TIERS, formatLimit } from '@/lib/constants/plan-limits';
 import { cn } from '@/lib/constants/design-tokens';
 import type { PlanTier, FeatureKey } from '@/types/billing';
 
-const COMPARISON_ROWS: { label: string; key: FeatureKey }[] = [
-  { label: 'Workspaces', key: 'WORKSPACES' },
-  { label: 'Team Members', key: 'TEAM_MEMBERS' },
-  { label: 'AI Tokens / month', key: 'AI_TOKENS' },
-  { label: 'Personas', key: 'PERSONAS' },
-  { label: 'Campaigns', key: 'CAMPAIGNS' },
-  { label: 'Brand Assets', key: 'BRAND_ASSETS' },
-  { label: 'Products', key: 'PRODUCTS' },
-  { label: 'Market Insights', key: 'MARKET_INSIGHTS' },
-  { label: 'Knowledge Resources', key: 'KNOWLEDGE_RESOURCES' },
-];
-
 export function PlanComparisonTable() {
+  const { t } = useTranslation('settings-billing');
   const billing = useBillingPlan();
   const [cycle, setCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [loadingTier, setLoadingTier] = useState<PlanTier | null>(null);
+
+  const COMPARISON_ROWS: { label: string; key: FeatureKey }[] = [
+    { label: t('comparison.rows.workspaces'), key: 'WORKSPACES' },
+    { label: t('comparison.rows.teamMembers'), key: 'TEAM_MEMBERS' },
+    { label: t('comparison.rows.aiTokens'), key: 'AI_TOKENS' },
+    { label: t('comparison.rows.personas'), key: 'PERSONAS' },
+    { label: t('comparison.rows.campaigns'), key: 'CAMPAIGNS' },
+    { label: t('comparison.rows.brandAssets'), key: 'BRAND_ASSETS' },
+    { label: t('comparison.rows.products'), key: 'PRODUCTS' },
+    { label: t('comparison.rows.marketInsights'), key: 'MARKET_INSIGHTS' },
+    { label: t('comparison.rows.knowledgeResources'), key: 'KNOWLEDGE_RESOURCES' },
+  ];
 
   const handleUpgrade = async (tier: PlanTier) => {
     if (billing.isFreeBeta || tier === 'FREE') return;
@@ -38,7 +40,7 @@ export function PlanComparisonTable() {
   return (
     <Card padding="lg">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-sm font-semibold text-gray-900">Compare Plans</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{t('comparison.title')}</h3>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCycle('monthly')}
@@ -49,7 +51,7 @@ export function PlanComparisonTable() {
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
             )}
           >
-            Monthly
+            {t('comparison.monthly')}
           </button>
           <button
             onClick={() => setCycle('yearly')}
@@ -60,7 +62,7 @@ export function PlanComparisonTable() {
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
             )}
           >
-            Yearly
+            {t('comparison.yearly')}
             <span
               className={cn(
                 'text-[9px] px-1 py-0.5 rounded-full font-semibold',
@@ -80,7 +82,7 @@ export function PlanComparisonTable() {
           <thead>
             <tr className="border-b border-gray-200">
               <th className="text-left py-3 pr-4 text-xs font-medium text-gray-500 w-[180px]">
-                Feature
+                {t('comparison.feature')}
               </th>
               {ALL_TIERS.map((tier) => {
                 const config = PLAN_CONFIGS[tier];
@@ -98,7 +100,7 @@ export function PlanComparisonTable() {
                         </span>
                         {tier === 'PRO' && (
                           <Badge variant="teal" size="sm" icon={Sparkles}>
-                            Popular
+                            {t('comparison.popular')}
                           </Badge>
                         )}
                       </div>
@@ -107,11 +109,11 @@ export function PlanComparisonTable() {
                           &euro;{price}
                         </span>
                         <span className="text-xs text-gray-500">
-                          /{cycle === 'monthly' ? 'mo' : 'yr'}
+                          /{cycle === 'monthly' ? t('comparison.perMonthShort') : t('comparison.perYearShort')}
                         </span>
                       </div>
                       {isCurrent && (
-                        <Badge variant="success" size="sm">Current</Badge>
+                        <Badge variant="success" size="sm">{t('common.current')}</Badge>
                       )}
                     </div>
                   </th>
@@ -144,7 +146,7 @@ export function PlanComparisonTable() {
 
             {/* Support row */}
             <tr className="border-b border-gray-50">
-              <td className="py-2.5 pr-4 text-xs text-gray-600">Support</td>
+              <td className="py-2.5 pr-4 text-xs text-gray-600">{t('comparison.support')}</td>
               {ALL_TIERS.map((tier) => {
                 const level = PLAN_CONFIGS[tier].supportLevel;
                 const isCurrent = tier === billing.plan.tier && !billing.isFreeBeta;
@@ -164,14 +166,14 @@ export function PlanComparisonTable() {
 
             {/* Export row */}
             <tr className="border-b border-gray-50">
-              <td className="py-2.5 pr-4 text-xs text-gray-600">Export</td>
+              <td className="py-2.5 pr-4 text-xs text-gray-600">{t('comparison.export.label')}</td>
               {ALL_TIERS.map((tier) => {
                 const formats = PLAN_CONFIGS[tier].limits.EXPORT_FORMATS;
                 const isCurrent = tier === billing.plan.tier && !billing.isFreeBeta;
                 const label = formats === 0 ? <Minus className="h-3.5 w-3.5 text-gray-300 mx-auto" />
                   : formats === 1 ? 'PDF'
                   : formats === 2 ? 'PDF + DOCX'
-                  : 'All formats';
+                  : t('comparison.export.all');
 
                 return (
                   <td
@@ -200,11 +202,11 @@ export function PlanComparisonTable() {
                   <td key={tier} className="pt-4 px-2">
                     {isCurrent ? (
                       <Button variant="secondary" size="sm" fullWidth disabled>
-                        Current
+                        {t('common.current')}
                       </Button>
                     ) : tier === 'FREE' || billing.isFreeBeta ? (
                       <Button variant="secondary" size="sm" fullWidth disabled>
-                        {tier === 'FREE' ? 'Free' : 'Beta'}
+                        {tier === 'FREE' ? t('comparison.free') : t('comparison.beta')}
                       </Button>
                     ) : (
                       <Button
@@ -218,11 +220,11 @@ export function PlanComparisonTable() {
                         {isLoading ? (
                           <>
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            Loading...
+                            {t('common.loading')}
                           </>
                         ) : (
                           <>
-                            Upgrade
+                            {t('common.upgrade')}
                             <ArrowRight className="h-3.5 w-3.5" />
                           </>
                         )}

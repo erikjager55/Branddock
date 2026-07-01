@@ -2,17 +2,19 @@
 
 import React, { useRef, useState } from 'react';
 import { Bug, X, AlertCircle, Upload, ImageIcon, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useClawStore } from '@/stores/useClawStore';
 import type { BugSeverity } from '@/stores/useClawStore';
 
-const SEVERITIES: { value: BugSeverity; label: string; color: string }[] = [
-  { value: 'low', label: 'Low', color: 'bg-blue-100 text-blue-700 ring-blue-200' },
-  { value: 'medium', label: 'Medium', color: 'bg-amber-100 text-amber-700 ring-amber-200' },
-  { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-700 ring-orange-200' },
-  { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-700 ring-red-200' },
+const SEVERITIES: { value: BugSeverity; color: string }[] = [
+  { value: 'low', color: 'bg-blue-100 text-blue-700 ring-blue-200' },
+  { value: 'medium', color: 'bg-amber-100 text-amber-700 ring-amber-200' },
+  { value: 'high', color: 'bg-orange-100 text-orange-700 ring-orange-200' },
+  { value: 'critical', color: 'bg-red-100 text-red-700 ring-red-200' },
 ];
 
 export function BugReportForm() {
+  const { t } = useTranslation('claw');
   const { bugReportForm, updateBugReportForm, closeBugReportForm, addMessage } = useClawStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -23,7 +25,7 @@ export function BugReportForm() {
 
   const handleSubmit = async () => {
     if (!bugReportForm.description.trim()) {
-      setError('Description is required');
+      setError(t('bug.descriptionRequired'));
       return;
     }
 
@@ -48,13 +50,16 @@ export function BugReportForm() {
       addMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `Bug report submitted for **${bugReportForm.page}** (${bugReportForm.severity}).`,
+        content: t('bug.submitted', {
+          page: bugReportForm.page,
+          severity: bugReportForm.severity,
+        }),
         createdAt: new Date().toISOString(),
       });
 
       closeBugReportForm();
     } catch {
-      setError('Failed to submit. Please try again.');
+      setError(t('bug.submitFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -68,7 +73,7 @@ export function BugReportForm() {
           <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center">
             <Bug size={14} className="text-amber-700" />
           </div>
-          <h3 className="text-sm font-semibold text-gray-900">Report a Bug</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t('bug.title')}</h3>
         </div>
         <button
           onClick={closeBugReportForm}
@@ -80,7 +85,7 @@ export function BugReportForm() {
 
       {/* Page */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Page / Section</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{t('bug.pageLabel')}</label>
         <input
           type="text"
           value={bugReportForm.page}
@@ -91,7 +96,7 @@ export function BugReportForm() {
 
       {/* Severity */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1.5">Severity</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('bug.severityLabel')}</label>
         <div className="flex gap-2">
           {SEVERITIES.map((s) => (
             <button
@@ -103,7 +108,7 @@ export function BugReportForm() {
                   : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
               }`}
             >
-              {s.label}
+              {t(`bug.severities.${s.value}`)}
             </button>
           ))}
         </div>
@@ -111,11 +116,11 @@ export function BugReportForm() {
 
       {/* Description */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{t('bug.descriptionLabel')}</label>
         <textarea
           value={bugReportForm.description}
           onChange={(e) => updateBugReportForm({ description: e.target.value })}
-          placeholder="What happened? What did you expect?"
+          placeholder={t('bug.descriptionPlaceholder')}
           rows={4}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-amber-400"
         />
@@ -123,14 +128,14 @@ export function BugReportForm() {
 
       {/* Screenshot */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Screenshot (optional)</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{t('bug.screenshotLabel')}</label>
 
         {/* Preview */}
         {bugReportForm.screenshot && (
           <div className="mb-2 relative group">
             <img
               src={bugReportForm.screenshot}
-              alt="Screenshot preview"
+              alt={t('bug.screenshotAlt')}
               className="w-full max-h-48 object-contain rounded-lg border border-gray-200 bg-white"
             />
             <button
@@ -152,13 +157,13 @@ export function BugReportForm() {
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-gray-300 text-xs text-gray-500 hover:border-amber-400 hover:text-amber-600 transition-colors disabled:opacity-40"
             >
               {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-              {isUploading ? 'Uploading...' : 'Upload image'}
+              {isUploading ? t('bug.uploading') : t('bug.uploadImage')}
             </button>
             <input
               type="text"
               value=""
               onChange={(e) => updateBugReportForm({ screenshot: e.target.value })}
-              placeholder="or paste a URL..."
+              placeholder={t('bug.urlPlaceholder')}
               className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
             />
           </div>
@@ -184,12 +189,12 @@ export function BugReportForm() {
               });
               if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                throw new Error(data.error || 'Upload failed');
+                throw new Error(data.error || t('bug.uploadFailed'));
               }
               const data = await res.json();
               updateBugReportForm({ screenshot: data.url });
             } catch (err) {
-              setError(err instanceof Error ? err.message : 'Upload failed');
+              setError(err instanceof Error ? err.message : t('bug.uploadFailed'));
             } finally {
               setIsUploading(false);
               // Reset file input so the same file can be selected again
@@ -230,13 +235,13 @@ export function BugReportForm() {
             }
           }}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit Bug Report'}
+          {isSubmitting ? t('bug.submitting') : t('bug.submit')}
         </button>
         <button
           onClick={closeBugReportForm}
           className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
         >
-          Cancel
+          {t('bug.cancel')}
         </button>
       </div>
     </div>

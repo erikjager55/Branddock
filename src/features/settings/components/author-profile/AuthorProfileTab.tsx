@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { IdCard, Plus, Trash2, Check, Loader2 } from 'lucide-react';
 import type { AuthorProfile } from '@/lib/landing-pages/author-profile';
@@ -82,6 +83,7 @@ function isValidUrl(value: string): boolean {
  * JSON-LD voedt. Een lege naam wist het profiel op de server.
  */
 export function AuthorProfileTab() {
+  const { t } = useTranslation('settings-misc');
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: authorProfileKeys.all,
@@ -133,7 +135,7 @@ export function AuthorProfileTab() {
     return (
       <div className="p-8 flex items-center justify-center text-gray-400">
         <Loader2 className="w-5 h-5 animate-spin mr-2" />
-        Loading author profile...
+        {t('authorProfile.loading')}
       </div>
     );
   }
@@ -141,7 +143,7 @@ export function AuthorProfileTab() {
   if (error || !data) {
     return (
       <div className="p-8 text-red-500 text-sm">
-        Failed to load author profile. Please try again.
+        {t('authorProfile.loadError')}
       </div>
     );
   }
@@ -158,11 +160,10 @@ export function AuthorProfileTab() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <IdCard className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-gray-900">Author profile</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('authorProfile.heading')}</h2>
         </div>
         <p className="text-sm text-gray-500">
-          Feeds the Person + sameAs node in BlogPosting JSON-LD on published GEO articles — a
-          strong E-E-A-T signal. Leave the name empty to remove the author entirely.
+          {t('authorProfile.description')}
         </p>
       </div>
 
@@ -170,33 +171,33 @@ export function AuthorProfileTab() {
         {/* Naam */}
         <div>
           <label htmlFor="author-name" className="block text-sm font-medium text-gray-900 mb-1.5">
-            Name
+            {t('authorProfile.nameLabel')}
           </label>
           <input
             id="author-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Jane Doe"
+            placeholder={t('authorProfile.namePlaceholder')}
             maxLength={120}
             className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Empty name clears the profile and removes the author from structured data.
+            {t('authorProfile.nameHelp')}
           </p>
         </div>
 
         {/* Functietitel */}
         <div>
           <label htmlFor="author-job-title" className="block text-sm font-medium text-gray-900 mb-1.5">
-            Job title <span className="text-gray-400 font-normal">(optional)</span>
+            {t('authorProfile.jobTitleLabel')} <span className="text-gray-400 font-normal">{t('authorProfile.optional')}</span>
           </label>
           <input
             id="author-job-title"
             type="text"
             value={jobTitle}
             onChange={(e) => setJobTitle(e.target.value)}
-            placeholder="e.g. Head of Content"
+            placeholder={t('authorProfile.jobTitlePlaceholder')}
             maxLength={120}
             className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           />
@@ -205,10 +206,10 @@ export function AuthorProfileTab() {
         {/* sameAs-URLs */}
         <div>
           <span className="block text-sm font-medium text-gray-900 mb-1.5">
-            Identity URLs <span className="text-gray-400 font-normal">(optional, max 10)</span>
+            {t('authorProfile.identityUrlsLabel')} <span className="text-gray-400 font-normal">{t('authorProfile.optionalMax10')}</span>
           </span>
           <p className="text-xs text-gray-500 mb-3">
-            Verifiable profiles such as LinkedIn or a personal site. Only http(s) URLs are kept.
+            {t('authorProfile.identityUrlsHelp')}
           </p>
           <div className="space-y-2">
             {sameAs.map((url, index) => {
@@ -219,7 +220,7 @@ export function AuthorProfileTab() {
                     type="url"
                     value={url}
                     onChange={(e) => updateUrl(index, e.target.value)}
-                    placeholder="https://www.linkedin.com/in/..."
+                    placeholder={t('authorProfile.urlPlaceholder')}
                     className={`flex-1 text-sm border rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 ${
                       invalid
                         ? 'border-red-300 focus:ring-red-200 focus:border-red-400'
@@ -229,7 +230,7 @@ export function AuthorProfileTab() {
                   <button
                     type="button"
                     onClick={() => removeUrl(index)}
-                    title="Remove URL"
+                    title={t('authorProfile.removeUrl')}
                     className="p-2 text-gray-400 hover:text-red-500 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -245,12 +246,12 @@ export function AuthorProfileTab() {
               className="mt-2 flex items-center gap-2 text-sm font-medium text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Add URL
+              {t('authorProfile.addUrl')}
             </button>
           )}
           {hasInvalidUrl && (
             <p className="text-xs text-red-500 mt-2">
-              One or more URLs are not valid http(s) addresses.
+              {t('authorProfile.invalidUrls')}
             </p>
           )}
         </div>
@@ -264,22 +265,22 @@ export function AuthorProfileTab() {
             className="inline-flex items-center gap-2 text-sm font-medium bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {mutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-            Save
+            {t('authorProfile.save')}
           </button>
           {wouldAccidentallyWipe && (
             <span className="text-sm text-amber-600">
-              Enter a name, or clear the other fields to remove the profile.
+              {t('authorProfile.wouldWipe')}
             </span>
           )}
           {saved && (
             <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600">
               <Check className="w-4 h-4" />
-              Saved
+              {t('authorProfile.saved')}
             </span>
           )}
           {mutation.isError && (
             <span className="text-sm text-red-500">
-              {mutation.error instanceof Error ? mutation.error.message : 'Saving failed.'}
+              {mutation.error instanceof Error ? mutation.error.message : t('authorProfile.savingFailed')}
             </span>
           )}
         </div>

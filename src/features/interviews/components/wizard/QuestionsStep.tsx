@@ -2,15 +2,8 @@
 
 import { Badge, Button } from '@/components/shared';
 import { Plus, BookOpen, Trash2, GripVertical } from 'lucide-react';
-import type { Interview, InterviewQuestion, QuestionType } from '../../types/interview.types';
-
-const TYPE_LABELS: Record<QuestionType, string> = {
-  OPEN: 'Open',
-  MULTIPLE_CHOICE: 'Multiple Choice',
-  MULTI_SELECT: 'Multi Select',
-  RATING_SCALE: 'Rating',
-  RANKING: 'Ranking',
-};
+import { useTranslation } from 'react-i18next';
+import type { Interview, InterviewQuestion } from '../../types/interview.types';
 
 interface QuestionsStepProps {
   interview: Interview;
@@ -25,11 +18,12 @@ export function QuestionsStep({
   onOpenTemplates,
   onDeleteQuestion,
 }: QuestionsStepProps) {
+  const { t } = useTranslation('interviews');
   const questions = interview.questions ?? [];
 
   // Group questions by linked asset
   const grouped = questions.reduce<Record<string, InterviewQuestion[]>>((acc, q) => {
-    const key = q.linkedAsset?.name ?? 'General';
+    const key = q.linkedAsset?.name ?? t('generalCategory');
     if (!acc[key]) acc[key] = [];
     acc[key].push(q);
     return acc;
@@ -39,9 +33,9 @@ export function QuestionsStep({
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Interview Questions</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('questions.title')}</h2>
           <p className="text-sm text-gray-500">
-            {questions.length} question{questions.length !== 1 ? 's' : ''} added
+            {t('questions.countAdded', { count: questions.length })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -51,7 +45,7 @@ export function QuestionsStep({
             icon={BookOpen}
             onClick={onOpenTemplates}
           >
-            Import from Templates
+            {t('questions.importTemplates')}
           </Button>
           <Button
             variant="cta"
@@ -59,7 +53,7 @@ export function QuestionsStep({
             icon={Plus}
             onClick={onAddQuestion}
           >
-            Add Question
+            {t('questions.addQuestion')}
           </Button>
         </div>
       </div>
@@ -67,14 +61,14 @@ export function QuestionsStep({
       {questions.length === 0 ? (
         <div className="text-center py-12 border border-dashed border-gray-300 rounded-lg">
           <p className="text-gray-500 text-sm mb-3">
-            No questions added yet. Add questions manually or import from templates.
+            {t('questions.emptyText')}
           </p>
           <div className="flex items-center gap-2 justify-center">
             <Button variant="secondary" size="sm" icon={BookOpen} onClick={onOpenTemplates}>
-              Browse Templates
+              {t('questions.browseTemplates')}
             </Button>
             <Button variant="cta" size="sm" icon={Plus} onClick={onAddQuestion}>
-              Add Question
+              {t('questions.addQuestion')}
             </Button>
           </div>
         </div>
@@ -97,10 +91,10 @@ export function QuestionsStep({
                       <p className="text-sm text-gray-900">{q.questionText}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="default" size="sm">
-                          {TYPE_LABELS[q.questionType]}
+                          {t(`typeLabelShort.${q.questionType}`)}
                         </Badge>
                         {q.isFromTemplate && (
-                          <span className="text-xs text-gray-400">From template</span>
+                          <span className="text-xs text-gray-400">{t('questions.fromTemplate')}</span>
                         )}
                       </div>
                     </div>

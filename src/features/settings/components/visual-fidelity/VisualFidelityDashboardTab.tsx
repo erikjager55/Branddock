@@ -1,6 +1,7 @@
 'use client';
 
 import { Image as ImageIcon, ShieldCheck, AlertTriangle, AlertCircle, Palette } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Card, EmptyState } from '@/components/shared';
 import { useVisualFidelityDashboard } from '@/features/settings/hooks/use-visual-fidelity';
 
@@ -17,12 +18,13 @@ const ZONE_HEX = {
  * Settings → Developer → Visual Fidelity.
  */
 export function VisualFidelityDashboardTab() {
+  const { t } = useTranslation('settings-misc');
   const { data, isLoading, error } = useVisualFidelityDashboard();
 
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-        Loading dashboard…
+        {t('visualFidelity.loading')}
       </div>
     );
   }
@@ -32,8 +34,8 @@ export function VisualFidelityDashboardTab() {
       <div className="flex-1 flex items-center justify-center">
         <EmptyState
           icon={AlertCircle}
-          title="Failed to load dashboard"
-          description={error instanceof Error ? error.message : 'Unknown error'}
+          title={t('visualFidelity.loadFailedTitle')}
+          description={error instanceof Error ? error.message : t('visualFidelity.unknownError')}
         />
       </div>
     );
@@ -47,10 +49,9 @@ export function VisualFidelityDashboardTab() {
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
       <header className="px-8 pt-6 pb-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">Visual Fidelity</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{t('visualFidelity.heading')}</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Workspace-wide G8 brand-coherence trends across all generated images.
-          30-day window. Color alignment + AI judge composite per image.
+          {t('visualFidelity.description')}
         </p>
       </header>
 
@@ -59,36 +60,34 @@ export function VisualFidelityDashboardTab() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiTile
             icon={<ImageIcon className="h-4 w-4 text-teal-600" />}
-            label="Scored (24h)"
+            label={t('visualFidelity.kpi.scored24h')}
             value={totals.count24h.toLocaleString()}
-            sub={`${totals.count7d.toLocaleString()} last 7d`}
+            sub={t('visualFidelity.kpi.scored24hSub', { count: totals.count7d.toLocaleString() })}
           />
           <KpiTile
             icon={<ImageIcon className="h-4 w-4 text-blue-600" />}
-            label="Scored (30d)"
+            label={t('visualFidelity.kpi.scored30d')}
             value={totals.count30d.toLocaleString()}
-            sub={`${totals.countAllTime.toLocaleString()} all-time`}
+            sub={t('visualFidelity.kpi.scored30dSub', { count: totals.countAllTime.toLocaleString() })}
           />
           <KpiTile
             icon={<ShieldCheck className="h-4 w-4 text-emerald-600" />}
-            label="Avg composite (30d)"
+            label={t('visualFidelity.kpi.avgComposite')}
             value={totals.avg30d.toFixed(1)}
-            sub={`24h: ${totals.avg24h.toFixed(1)} · 7d: ${totals.avg7d.toFixed(1)}`}
+            sub={t('visualFidelity.kpi.avgCompositeSub', { h24: totals.avg24h.toFixed(1), d7: totals.avg7d.toFixed(1) })}
           />
           <KpiTile
             icon={<Palette className="h-4 w-4 text-violet-600" />}
-            label="Avg color match"
+            label={t('visualFidelity.kpi.avgColorMatch')}
             value={averageColorAlignment.toFixed(1)}
-            sub="0–100 ΔE-derived"
+            sub={t('visualFidelity.kpi.avgColorMatchSub')}
           />
         </div>
 
         {totals.count30d === 0 ? (
           <Card>
             <div className="px-4 py-6 text-center text-sm text-gray-500">
-              No images scored in the last 30 days. Once canvas-generated
-              images flow through the G8 pipeline (Phase 2 wire-in), the
-              dashboard fills in automatically.
+              {t('visualFidelity.empty')}
             </div>
           </Card>
         ) : (
@@ -97,7 +96,7 @@ export function VisualFidelityDashboardTab() {
             <Card>
               <Card.Header>
                 <h4 className="text-sm font-medium text-gray-900">
-                  Threshold-met rate (composite ≥ 70)
+                  {t('visualFidelity.thresholdRate')}
                 </h4>
               </Card.Header>
               <Card.Body>
@@ -113,7 +112,7 @@ export function VisualFidelityDashboardTab() {
             <Card>
               <Card.Header>
                 <h4 className="text-sm font-medium text-gray-900">
-                  Score distribution (30d)
+                  {t('visualFidelity.scoreDistribution')}
                 </h4>
               </Card.Header>
               <Card.Body>
@@ -126,19 +125,19 @@ export function VisualFidelityDashboardTab() {
                 <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
                   <DistLegend
                     color={ZONE_HEX.good}
-                    label="On-brand (≥70)"
+                    label={t('visualFidelity.dist.onBrand')}
                     count={distribution.good}
                     total={totalDist}
                   />
                   <DistLegend
                     color={ZONE_HEX.warn}
-                    label="Off-target (50–69)"
+                    label={t('visualFidelity.dist.offTarget')}
                     count={distribution.warn}
                     total={totalDist}
                   />
                   <DistLegend
                     color={ZONE_HEX.bad}
-                    label="Off-brand (<50)"
+                    label={t('visualFidelity.dist.offBrand')}
                     count={distribution.bad}
                     total={totalDist}
                   />
@@ -151,7 +150,7 @@ export function VisualFidelityDashboardTab() {
               <Card>
                 <Card.Header>
                   <h4 className="text-sm font-medium text-gray-900">
-                    AI judge dimensions — flagged-rate ranking
+                    {t('visualFidelity.judgeDimensions')}
                   </h4>
                 </Card.Header>
                 <Card.Body>
@@ -165,7 +164,7 @@ export function VisualFidelityDashboardTab() {
                           {d.key.replace(/-/g, ' ')}
                         </span>
                         <span className="text-gray-700 tabular-nums w-20 text-right">
-                          avg {d.averageScore.toFixed(1)}
+                          {t('visualFidelity.dimensions.avg', { score: d.averageScore.toFixed(1) })}
                         </span>
                         <span
                           className="text-xs tabular-nums w-28 text-right"
@@ -178,7 +177,7 @@ export function VisualFidelityDashboardTab() {
                                   : ZONE_HEX.good,
                           }}
                         >
-                          {d.flaggedCount} flagged ({d.flaggedRate.toFixed(1)}%)
+                          {t('visualFidelity.dimensions.flagged', { count: d.flaggedCount, rate: d.flaggedRate.toFixed(1) })}
                         </span>
                         <span className="text-xs text-gray-400 w-20 text-right">
                           n={d.sampleSize}
@@ -196,7 +195,7 @@ export function VisualFidelityDashboardTab() {
                 <Card.Header>
                   <h4 className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
                     <AlertTriangle className="h-4 w-4 text-red-500" />
-                    Lowest-scoring images (30d)
+                    {t('visualFidelity.lowestScoring')}
                   </h4>
                 </Card.Header>
                 <Card.Body>
@@ -267,6 +266,7 @@ interface RatePillProps {
 }
 
 function RatePill({ label, rate, count }: RatePillProps) {
+  const { t } = useTranslation('settings-misc');
   const color = rate >= 70 ? ZONE_HEX.good : rate >= 50 ? ZONE_HEX.warn : ZONE_HEX.bad;
   return (
     <div className="flex flex-col items-center">
@@ -274,7 +274,7 @@ function RatePill({ label, rate, count }: RatePillProps) {
         {rate.toFixed(0)}%
       </div>
       <div className="text-xs text-gray-500">
-        {label} · {count} scored
+        {label} · {t('visualFidelity.rate.scored', { count })}
       </div>
     </div>
   );

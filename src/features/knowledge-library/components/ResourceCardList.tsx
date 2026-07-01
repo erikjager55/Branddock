@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { BookText, Clock, ExternalLink } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { ResourceWithMeta } from '../types/knowledge-library.types';
 import { ResourceTypeIcon } from './shared/ResourceTypeIcon';
 import { FavoriteButton } from './shared/FavoriteButton';
@@ -21,6 +22,7 @@ export function ResourceCardList({
   onArchive,
   onDelete,
 }: ResourceCardListProps) {
+  const { t } = useTranslation('knowledge-library');
   const [openReportId, setOpenReportId] = useState<string | null>(null);
 
   return (
@@ -67,7 +69,7 @@ export function ResourceCardList({
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700"
               >
-                Open <ExternalLink className="h-3.5 w-3.5" />
+                {t('card.open')} <ExternalLink className="h-3.5 w-3.5" />
               </a>
             ) : r.type === 'RESEARCH' ? (
               <button
@@ -76,10 +78,10 @@ export function ResourceCardList({
                 data-testid="read-report-button"
                 className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700"
               >
-                Read report <BookText className="h-3.5 w-3.5" />
+                {t('card.readReport')} <BookText className="h-3.5 w-3.5" />
               </button>
             ) : (
-              <span className="text-sm text-gray-400">No URL</span>
+              <span className="text-sm text-gray-400">{t('card.noUrl')}</span>
             )}
             <FavoriteButton
               isFavorite={r.isFavorite}

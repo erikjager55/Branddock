@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/components/ui/utils';
 import {
   BarChart3,
@@ -11,12 +12,12 @@ import {
 
 type ResultsTab = 'overview' | 'canvas' | 'workshop' | 'notes' | 'gallery';
 
-const TABS: { id: ResultsTab; label: string; icon: React.ElementType }[] = [
-  { id: 'overview', label: 'Overview', icon: BarChart3 },
-  { id: 'canvas', label: 'Canvas', icon: LayoutGrid },
-  { id: 'workshop', label: 'Workshop', icon: Presentation },
-  { id: 'notes', label: 'Notes', icon: StickyNote },
-  { id: 'gallery', label: 'Gallery', icon: Image },
+const TABS: { id: ResultsTab; labelKey: string; icon: React.ElementType }[] = [
+  { id: 'overview', labelKey: 'results.tabs.overview', icon: BarChart3 },
+  { id: 'canvas', labelKey: 'results.tabs.canvas', icon: LayoutGrid },
+  { id: 'workshop', labelKey: 'results.tabs.workshop', icon: Presentation },
+  { id: 'notes', labelKey: 'results.tabs.notes', icon: StickyNote },
+  { id: 'gallery', labelKey: 'results.tabs.gallery', icon: Image },
 ];
 
 interface ResultsTabsProps {
@@ -25,9 +26,10 @@ interface ResultsTabsProps {
 }
 
 export function ResultsTabs({ activeTab, onTabChange }: ResultsTabsProps) {
+  const { t } = useTranslation('workshop');
   return (
     <div data-testid="results-tabs" className="flex items-center gap-1 border-b border-gray-200 mb-6">
-      {TABS.map(({ id, label, icon: Icon }) => (
+      {TABS.map(({ id, labelKey, icon: Icon }) => (
         <button
           key={id}
           data-testid={`results-tab-${id}`}
@@ -40,7 +42,7 @@ export function ResultsTabs({ activeTab, onTabChange }: ResultsTabsProps) {
           )}
         >
           <Icon className="w-4 h-4" />
-          {label}
+          {t(labelKey)}
         </button>
       ))}
     </div>

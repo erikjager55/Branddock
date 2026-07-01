@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Download, Clock, Maximize2, ShieldCheck, ImageOff } from "lucide-react";
 import type { GeneratedImageWithMeta } from "../../types/consistent-model.types";
 
@@ -12,6 +13,7 @@ interface GenerationResultCardProps {
 export function GenerationResultCard({
   generation,
 }: GenerationResultCardProps) {
+  const { t } = useTranslation("consistent-models");
   const [isExpanded, setIsExpanded] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const previewUrl = generation.thumbnailUrl ?? generation.storageUrl;
@@ -35,8 +37,10 @@ export function GenerationResultCard({
             }`}
             title={
               generation.styleValidationDetails?.deviations?.length
-                ? `Deviations: ${(generation.styleValidationDetails.deviations as string[]).join('; ')}`
-                : "Style match score"
+                ? t("result.deviations", {
+                    list: (generation.styleValidationDetails.deviations as string[]).join('; '),
+                  })
+                : t("result.styleMatchScore")
             }
           >
             <ShieldCheck className="h-3 w-3" />
@@ -67,7 +71,7 @@ export function GenerationResultCard({
               type="button"
               onClick={() => setIsExpanded(true)}
               className="rounded-full bg-black/50 p-1.5 text-white hover:bg-black/70"
-              title="View full size"
+              title={t("result.viewFullSize")}
             >
               <Maximize2 className="h-3.5 w-3.5" />
             </button>
@@ -75,7 +79,7 @@ export function GenerationResultCard({
               href={generation.storageUrl}
               download
               className="rounded-full bg-black/50 p-1.5 text-white hover:bg-black/70"
-              title="Download"
+              title={t("result.download")}
             >
               <Download className="h-3.5 w-3.5" />
             </a>

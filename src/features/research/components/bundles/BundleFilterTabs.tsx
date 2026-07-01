@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { SearchInput } from "@/components/shared";
 
 // ─── Types ───────────────────────────────────────────────────
@@ -20,9 +21,10 @@ export function BundleFilterTabs({
   onFilterChange,
   onSearchChange,
 }: BundleFilterTabsProps) {
+  const { t } = useTranslation("research");
   const tabs: { key: "all" | "recommended"; label: string }[] = [
-    { key: "all", label: "All Bundles" },
-    { key: "recommended", label: "Recommended" },
+    { key: "all", label: t("bundleFilter.all") },
+    { key: "recommended", label: t("bundleFilter.recommended") },
   ];
 
   return (
@@ -46,7 +48,7 @@ export function BundleFilterTabs({
       <SearchInput
         value={search}
         onChange={onSearchChange}
-        placeholder="Search bundles..."
+        placeholder={t("bundleFilter.searchPlaceholder")}
         className="w-64"
       />
     </div>

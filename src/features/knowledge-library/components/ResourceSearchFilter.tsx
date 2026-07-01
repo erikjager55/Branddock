@@ -1,15 +1,11 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { SearchInput, Select } from '@/components/shared';
 import { useKnowledgeLibraryStore } from '@/stores/useKnowledgeLibraryStore';
 import { ViewToggle } from './ViewToggle';
 import { RESOURCE_TYPE_ICONS, RESOURCE_CATEGORIES } from '../constants/library-constants';
 import type { ResourceType } from '../types/knowledge-library.types';
-
-const TYPE_OPTIONS = Object.entries(RESOURCE_TYPE_ICONS).map(([value, config]) => ({
-  value,
-  label: config.label,
-}));
 
 const CATEGORY_OPTIONS = RESOURCE_CATEGORIES.map((c) => ({
   value: c,
@@ -17,7 +13,13 @@ const CATEGORY_OPTIONS = RESOURCE_CATEGORIES.map((c) => ({
 }));
 
 export function ResourceSearchFilter() {
+  const { t } = useTranslation('knowledge-library');
   const store = useKnowledgeLibraryStore();
+
+  const typeOptions = Object.keys(RESOURCE_TYPE_ICONS).map((value) => ({
+    value,
+    label: t(`types.${value}`),
+  }));
 
   return (
     <div className="flex items-center gap-3 flex-wrap mb-4" data-testid="resource-filters">
@@ -25,7 +27,7 @@ export function ResourceSearchFilter() {
         <SearchInput
           value={store.searchQuery}
           onChange={store.setSearchQuery}
-          placeholder="Search resources..."
+          placeholder={t('filters.searchPlaceholder')}
         />
       </div>
 
@@ -33,8 +35,8 @@ export function ResourceSearchFilter() {
         <Select
           value={store.typeFilter ?? ''}
           onChange={(val) => store.setTypeFilter((val || null) as ResourceType | null)}
-          options={TYPE_OPTIONS}
-          placeholder="All Types"
+          options={typeOptions}
+          placeholder={t('filters.allTypes')}
           allowClear
         />
       </div>
@@ -44,7 +46,7 @@ export function ResourceSearchFilter() {
           value={store.categoryFilter ?? ''}
           onChange={(val) => store.setCategoryFilter(val || null)}
           options={CATEGORY_OPTIONS}
-          placeholder="All Categories"
+          placeholder={t('filters.allCategories')}
           allowClear
         />
       </div>

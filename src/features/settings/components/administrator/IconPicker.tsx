@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Compass, Heart, Leaf, Globe, Target, Shield, Lightbulb, Star,
   Users, Sparkles, Rocket, TrendingUp, Eye, Layers, Fingerprint,
@@ -32,6 +33,7 @@ interface IconPickerProps {
 // ─── Component ──────────────────────────────────────────────
 
 export function IconPicker({ value, onChange }: IconPickerProps) {
+  const { t } = useTranslation('settings-admin');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -57,12 +59,12 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
         className="flex items-center gap-2 px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:border-gray-300 transition-colors bg-white w-full"
       >
         <SelectedIcon className="w-4 h-4 text-primary" />
-        <span className="text-gray-700 truncate">{value || 'Choose icon'}</span>
+        <span className="text-gray-700 truncate">{value || t('iconPicker.choose')}</span>
       </button>
 
       {isOpen && (
         <div className="absolute z-20 top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-[280px]">
-          <p className="text-[10px] text-gray-400 mb-2 font-medium uppercase tracking-wider">Select icon</p>
+          <p className="text-[10px] text-gray-400 mb-2 font-medium uppercase tracking-wider">{t('iconPicker.select')}</p>
           <div className="grid grid-cols-6 gap-1">
             {ICON_NAMES.map((name) => {
               const Icon = ICON_MAP[name];

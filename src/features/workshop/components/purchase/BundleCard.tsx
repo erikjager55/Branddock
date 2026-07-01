@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
 import { Badge, Card } from "@/components/shared";
 import type { WorkshopBundle } from "../../types/workshop.types";
@@ -17,6 +18,7 @@ interface BundleCardProps {
 }
 
 export function BundleCard({ bundle, isSelected, onSelect }: BundleCardProps) {
+  const { t } = useTranslation("workshop");
   const badgeConfig = bundle.badge ? BADGE_VARIANTS[bundle.badge] : null;
 
   return (
@@ -76,7 +78,7 @@ export function BundleCard({ bundle, isSelected, onSelect }: BundleCardProps) {
                     &euro;{bundle.basePrice.toLocaleString()}
                   </span>
                   <Badge variant="success" size="sm">
-                    Save &euro;{bundle.discount}
+                    {t("purchase.bundle.save", { amount: bundle.discount })}
                   </Badge>
                 </>
               )}

@@ -2,19 +2,20 @@
 
 import { Mic2, BookOpenText, Hash, Quote } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { VoiceguideTab } from "../stores/useVoiceguideStore";
 
 interface Tab {
   id: VoiceguideTab;
-  label: string;
+  labelKey: string;
   icon: LucideIcon;
 }
 
 const TABS: Tab[] = [
-  { id: "voice-dna", label: "Voice DNA", icon: Mic2 },
-  { id: "vocabulary", label: "Vocabulary", icon: Hash },
-  { id: "channel-tones", label: "Channel Tones", icon: BookOpenText },
-  { id: "references", label: "References", icon: Quote },
+  { id: "voice-dna", labelKey: "tabs.voiceDna", icon: Mic2 },
+  { id: "vocabulary", labelKey: "tabs.vocabulary", icon: Hash },
+  { id: "channel-tones", labelKey: "tabs.channelTones", icon: BookOpenText },
+  { id: "references", labelKey: "tabs.references", icon: Quote },
 ];
 
 interface VoiceguideTabNavProps {
@@ -23,6 +24,7 @@ interface VoiceguideTabNavProps {
 }
 
 export function VoiceguideTabNav({ activeTab, onTabChange }: VoiceguideTabNavProps) {
+  const { t } = useTranslation("brandvoice");
   return (
     <div className="border-b border-gray-200 mb-6">
       <nav className="flex gap-6">
@@ -39,7 +41,7 @@ export function VoiceguideTabNav({ activeTab, onTabChange }: VoiceguideTabNavPro
               }`}
             >
               <tab.icon className="w-4 h-4" />
-              {tab.label}
+              {t(tab.labelKey)}
             </button>
           );
         })}
