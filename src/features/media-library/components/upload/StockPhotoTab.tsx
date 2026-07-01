@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Search, Loader2, AlertCircle, Download, User, ImageIcon, Settings } from 'lucide-react';
 import { useStockSearch, useImportStockPhoto } from '../../hooks';
 import { StockSearchError } from '../../api/media.api';
@@ -17,6 +18,7 @@ const SIZE_OPTIONS: StockSize[] = ['small', 'medium', 'large', 'original'];
  */
 export function StockPhotoTab() {
   const { t } = useTranslation('media-library');
+  const { formatNumber } = useFormat();
   const [searchInput, setSearchInput] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -199,7 +201,7 @@ export function StockPhotoTab() {
             <>
               {/* Results count */}
               <p className="text-xs text-gray-500">
-                {t('upload.stock.resultsCount', { total: totalResults.toLocaleString() })}
+                {t('upload.stock.resultsCount', { total: formatNumber(totalResults) })}
               </p>
 
               {/* Photo grid — rows of 3 with inline import panel after selected row */}

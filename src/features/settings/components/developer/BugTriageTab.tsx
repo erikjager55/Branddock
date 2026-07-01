@@ -16,6 +16,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { MarkdownContent } from '@/features/claw/components/MarkdownContent';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ const AI_STATUS_INDICATOR: Record<string, { icon: React.ReactNode; label: string
 
 export function BugTriageTab() {
   const { t } = useTranslation('settings-misc');
+  const { formatDate } = useFormat();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -284,7 +286,7 @@ export function BugTriageTab() {
                     <div className="flex items-center gap-4 text-[11px] text-gray-400">
                       <span>{t('bugTriage.reportedBy', { name: bug.user?.name ?? bug.user?.email })}</span>
                       {bug.workspace && <span>{t('bugTriage.workspace', { name: bug.workspace.name })}</span>}
-                      <span>{new Date(bug.createdAt).toLocaleString()}</span>
+                      <span>{formatDate(new Date(bug.createdAt), { dateStyle: 'medium', timeStyle: 'short' })}</span>
                       {bug.resolvedBy && (
                         <span>{t('bugTriage.resolvedBy', { name: bug.resolvedBy.name ?? bug.resolvedBy.email })}</span>
                       )}

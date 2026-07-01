@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -123,6 +124,7 @@ export function QuestionnaireManager({
   onReturnToHub
 }: QuestionnaireManagerProps) {
   const { t } = useTranslation('canvases');
+  const { formatDate: formatDateLocale } = useFormat();
   const [viewStatus, setViewStatus] = useState<'in-progress' | 'approved'>('in-progress');
   const [selectedQuestionnaireId, setSelectedQuestionnaireId] = useState<string | null>(null);
   const [editMode, setEditMode] = useState<string | null>(null);
@@ -266,7 +268,7 @@ export function QuestionnaireManager({
 
   const formatDate = (date?: Date) => {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString();
+    return formatDateLocale(date);
   };
 
   // Calculate workflow steps for each questionnaire

@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { X, ImageIcon, Heart, Sparkles, FolderPlus, Package } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
@@ -21,6 +22,7 @@ interface AiImageDetailPanelProps {
 /** Inline detail panel shown when an AI-generated image is selected. */
 export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImageDetailPanelProps) {
   const { t } = useTranslation('media-library');
+  const { formatDate } = useFormat();
   const { data: image, isLoading, isError } = useAiImageDetail(imageId);
   const updateImage = useUpdateAiImage(imageId);
   const mutate = updateImage.mutate;
@@ -80,7 +82,7 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
               )}
             </div>
             <p className="text-xs text-gray-500">
-              {t('detail.createdPrefix')} {new Date(image.createdAt).toLocaleDateString('en-US', {
+              {t('detail.createdPrefix')} {formatDate(image.createdAt, {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',

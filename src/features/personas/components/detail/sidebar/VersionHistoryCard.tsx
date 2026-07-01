@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Clock, User, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { useVersionHistory } from '@/hooks/useVersionHistory';
 import { useRestorePersonaVersion } from '../../../hooks';
 
@@ -14,6 +15,7 @@ interface VersionHistoryCardProps {
 
 export function VersionHistoryCard({ personaId, isLocked }: VersionHistoryCardProps) {
   const { t } = useTranslation('personas');
+  const { formatDate } = useFormat();
   const { data: versions, isLoading } = useVersionHistory('PERSONA', personaId);
   const restoreMutation = useRestorePersonaVersion(personaId);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -86,7 +88,7 @@ export function VersionHistoryCard({ personaId, isLocked }: VersionHistoryCardPr
                   <span>{v.createdBy?.name ?? t('versions.unknownUser')}</span>
                   <span>·</span>
                   <span>
-                    {new Date(v.createdAt).toLocaleDateString('en-US', {
+                    {formatDate(v.createdAt, {
                       day: 'numeric',
                       month: 'short',
                       hour: '2-digit',

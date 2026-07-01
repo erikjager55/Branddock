@@ -5,6 +5,7 @@ import { useResendInvite, useCancelInvite } from '@/hooks/use-settings';
 import { RoleBadge } from './RoleBadge';
 import { Button } from '@/components/shared';
 import { Mail, Clock } from 'lucide-react';
+import { useFormat } from '@/lib/ui-i18n/format';
 import type { PendingInvite } from '@/types/settings';
 
 interface PendingInviteItemProps {
@@ -13,6 +14,7 @@ interface PendingInviteItemProps {
 
 export function PendingInviteItem({ invite }: PendingInviteItemProps) {
   const { t } = useTranslation('settings-team');
+  const { formatDate } = useFormat();
   const resendInvite = useResendInvite();
   const cancelInvite = useCancelInvite();
 
@@ -22,7 +24,7 @@ export function PendingInviteItem({ invite }: PendingInviteItemProps) {
   const diffMs = expiresAt.getTime() - now.getTime();
   const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 
-  const sentDate = new Date(invite.createdAt).toLocaleDateString('en-US', {
+  const sentDate = formatDate(new Date(invite.createdAt), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

@@ -4,6 +4,7 @@ import { Activity, Clock, AlertCircle, DollarSign, BarChart3 } from 'lucide-reac
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/shared';
 import { usePromptDashboard } from '@/features/settings/hooks/use-prompt-registry';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 /**
  * Aggregate dashboard above the prompt-registry list.
@@ -16,6 +17,7 @@ import { usePromptDashboard } from '@/features/settings/hooks/use-prompt-registr
  */
 export function PromptUsageDashboard() {
   const { t } = useTranslation('settings-misc');
+  const { formatNumber } = useFormat();
   const { data, isLoading, error } = usePromptDashboard();
 
   if (isLoading) {
@@ -44,14 +46,14 @@ export function PromptUsageDashboard() {
         <KpiTile
           icon={<Activity className="h-4 w-4 text-teal-600" />}
           label={t('promptDashboard.kpi.calls24h')}
-          value={totals.calls24h.toLocaleString()}
-          sub={t('promptDashboard.kpi.calls24hSub', { count: totals.calls7d.toLocaleString() })}
+          value={formatNumber(totals.calls24h)}
+          sub={t('promptDashboard.kpi.calls24hSub', { count: formatNumber(totals.calls7d) })}
         />
         <KpiTile
           icon={<BarChart3 className="h-4 w-4 text-blue-600" />}
           label={t('promptDashboard.kpi.calls30d')}
-          value={totals.calls30d.toLocaleString()}
-          sub={t('promptDashboard.kpi.calls30dSub', { count: totals.callsAllTime.toLocaleString() })}
+          value={formatNumber(totals.calls30d)}
+          sub={t('promptDashboard.kpi.calls30dSub', { count: formatNumber(totals.callsAllTime) })}
         />
         <KpiTile
           icon={<DollarSign className="h-4 w-4 text-emerald-600" />}

@@ -2,6 +2,7 @@
 
 import { Lightbulb, MessageCircle, Trash2, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import type { ChatInsight } from '../../types/persona-chat.types';
 import { usePersonaChatStore } from '../../stores/usePersonaChatStore';
 
@@ -44,6 +45,7 @@ export function PersonaChatInsightsTab({
   personaName,
 }: PersonaChatInsightsTabProps) {
   const { t } = useTranslation('personas');
+  const { formatDate } = useFormat();
   const setActiveTab = usePersonaChatStore((s) => s.setActiveTab);
 
   const insightList = insights;
@@ -97,7 +99,7 @@ export function PersonaChatInsightsTab({
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(120, 120, 120);
-    doc.text(t('insights.pdf.subtitle', { count: insightList.length, date: new Date().toLocaleDateString('en-US') }), margin, y);
+    doc.text(t('insights.pdf.subtitle', { count: insightList.length, date: formatDate(new Date()) }), margin, y);
     y += 12;
 
     // Separator line

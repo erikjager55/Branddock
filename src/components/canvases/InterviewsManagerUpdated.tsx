@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -116,6 +117,7 @@ interface InterviewsManagerProps {
 
 export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, researchPlanConfig, onNavigateToAsset, onReturnToHub }: InterviewsManagerProps) {
   const { t } = useTranslation('canvases');
+  const { formatDate: formatDateLocale } = useFormat();
   const [viewStatus, setViewStatus] = useState<'in-progress' | 'approved'>('in-progress');
   const [selectedInterviewId, setSelectedInterviewId] = useState<string | null>(null);
   const [editMode, setEditMode] = useState<string | null>(null);
@@ -288,8 +290,7 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
   // Helper functions
   const formatDate = (date: Date | undefined) => {
     if (!date) return '';
-    const d = new Date(date);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return formatDateLocale(date, { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const getLockReasonLabel = (reason?: string) => {

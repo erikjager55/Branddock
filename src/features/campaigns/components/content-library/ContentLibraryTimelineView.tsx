@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { GanttChartSquare, EyeOff, Eye, CalendarClock, Search, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import {
   useContentLibraryStore,
   type TimelineGroupBy,
@@ -229,6 +230,7 @@ export function ContentLibraryTimelineView({
   duplicatingIds,
 }: ContentLibraryTimelineViewProps) {
   const { t } = useTranslation("campaigns-content-library");
+  const { formatDate } = useFormat();
   const groupBy = useContentLibraryStore((s) => s.timelineGroupBy);
   const setGroupBy = useContentLibraryStore((s) => s.setTimelineGroupBy);
   const zoom = useContentLibraryStore((s) => s.timelineZoom);
@@ -1347,7 +1349,7 @@ export function ContentLibraryTimelineView({
                   whiteSpace: "nowrap",
                 }}
               >
-                {hoverDate.date.toLocaleDateString(undefined, {
+                {formatDate(hoverDate.date, {
                   weekday: "short",
                   month: "short",
                   day: "numeric",

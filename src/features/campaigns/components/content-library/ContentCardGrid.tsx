@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { ExternalLink, Heart, CalendarDays, Trash2, Copy } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { Button } from "@/components/shared";
 import { deriveTrafficLight, TRAFFIC_LIGHT, getPhaseConfig, InlineRenameField } from "../shared/calendar-cards";
 import { formatContentType } from "../../lib/format-content-type";
@@ -27,17 +28,6 @@ interface ContentCardGridProps {
   duplicatingIds?: Set<string>;
 }
 
-// ─── Helpers ──────────────────────────────────────────────
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 // ─── Component ────────────────────────────────────────────
 
 export function ContentCardGrid({
@@ -50,6 +40,7 @@ export function ContentCardGrid({
   duplicatingIds,
 }: ContentCardGridProps) {
   const { t } = useTranslation("campaigns-content-library");
+  const { formatDate } = useFormat();
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; campaignId: string; title: string } | null>(null);
 
   // Precomputed once per render — the "Schedule same as last" action
@@ -204,7 +195,11 @@ export function ContentCardGrid({
                   {item.scheduledPublishDate && (
                     <span className="flex items-center gap-1 text-teal-600">
                       <CalendarDays className="w-3 h-3" />
-                      {formatDate(item.scheduledPublishDate)}
+                      {formatDate(item.scheduledPublishDate, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
                     </span>
                   )}
                 </div>

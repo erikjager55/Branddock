@@ -4,6 +4,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/shared";
+import { useFormat } from "@/lib/ui-i18n/format";
 import type { ResearchBundleSummary } from "../../types/research.types";
 import { BundleBadge } from "./BundleBadge";
 
@@ -19,6 +20,7 @@ interface BundleCardProps {
 
 export function BundleCard({ bundle, onSelect, onLearnMore }: BundleCardProps) {
   const { t } = useTranslation("research");
+  const { formatCurrency } = useFormat();
 
   return (
     <div data-testid="bundle-card" className="bg-white rounded-xl border p-6 hover:shadow-md transition-shadow flex flex-col">
@@ -73,12 +75,12 @@ export function BundleCard({ bundle, onSelect, onLearnMore }: BundleCardProps) {
       {/* Price row */}
       <div className="flex items-baseline gap-2 mb-4">
         <span className="text-xl font-bold text-green-600">
-          ${bundle.price.toLocaleString()}
+          {formatCurrency(bundle.price, "USD")}
         </span>
         {bundle.originalPrice && bundle.originalPrice > bundle.price && (
           <>
             <span className="text-sm line-through text-gray-400">
-              ${bundle.originalPrice.toLocaleString()}
+              {formatCurrency(bundle.originalPrice, "USD")}
             </span>
             {bundle.discount && <BundleBadge type="save" discount={bundle.discount} />}
           </>

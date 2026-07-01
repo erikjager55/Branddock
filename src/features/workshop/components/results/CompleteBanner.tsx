@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Badge, Button } from '@/components/shared';
 import {
   CheckCircle,
@@ -22,8 +23,9 @@ interface CompleteBannerProps {
 
 export function CompleteBanner({ workshop, brandAssetName, onExportRaw }: CompleteBannerProps) {
   const { t } = useTranslation('workshop');
+  const { formatDate } = useFormat();
   const completedDate = workshop.completedAt
-    ? new Date(workshop.completedAt).toLocaleDateString('en-US', {
+    ? formatDate(workshop.completedAt, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',

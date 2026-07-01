@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import type { PersonaInsightsData, FieldSuggestion } from '../../types/persona-analysis.types';
 import type { UpdatePersonaBody } from '../../types/persona.types';
 import { FieldSuggestionCard } from './FieldSuggestionCard';
@@ -45,6 +46,7 @@ export function PersonaAnalysisComplete({
   onUpdatePersona,
 }: PersonaAnalysisCompleteProps) {
   const { t } = useTranslation('personas');
+  const { formatDate } = useFormat();
   const totalDimensions = insightsData.dimensions.length;
   const findings = insightsData.findings ?? insightsData.dimensions.map((d) => ({
     title: d.title,
@@ -157,7 +159,7 @@ export function PersonaAnalysisComplete({
               <span className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" />
                 {t('complete.completedOn', {
-                  date: new Date(insightsData.completedAt).toLocaleDateString('en-GB', {
+                  date: formatDate(insightsData.completedAt, {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',

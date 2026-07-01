@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Copy, ChevronDown, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Button } from '@/components/shared';
 import { getDeliverableTypeById } from '../../lib/deliverable-types';
 import type { DeliverableResponse } from '@/types/campaign';
@@ -45,6 +46,7 @@ export function RepeatSplitButton({
   onRepeat,
 }: RepeatSplitButtonProps) {
   const { t } = useTranslation('campaigns-content-library');
+  const { formatDate } = useFormat();
   const [menuOpen, setMenuOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -171,7 +173,7 @@ export function RepeatSplitButton({
                   <Copy className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                   <span className="flex-1 truncate">{typeName}</span>
                   <span className="text-[10px] text-gray-400 flex-shrink-0">
-                    {new Date(deliverable.updatedAt).toLocaleDateString()}
+                    {formatDate(deliverable.updatedAt)}
                   </span>
                 </button>
               </li>

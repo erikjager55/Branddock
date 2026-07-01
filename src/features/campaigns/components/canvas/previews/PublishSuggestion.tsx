@@ -3,6 +3,7 @@
 import React from 'react';
 import type { PublishSuggestionData } from '../../../types/canvas.types';
 import { Calendar, Info } from 'lucide-react';
+import { useFormat, type UiFormatters } from '@/lib/ui-i18n/format';
 
 interface PublishSuggestionProps {
   suggestion: PublishSuggestionData | null;
@@ -11,6 +12,7 @@ interface PublishSuggestionProps {
 
 /** Publish date suggestion card populated from SSE publish_suggestion event */
 export function PublishSuggestion({ suggestion, isGenerating }: PublishSuggestionProps) {
+  const { formatDate } = useFormat();
   if (isGenerating) {
     return (
       <div className="space-y-2">
@@ -27,7 +29,7 @@ export function PublishSuggestion({ suggestion, isGenerating }: PublishSuggestio
 
   if (!suggestion) return null;
 
-  const formattedDate = formatSuggestedDate(suggestion.suggestedDate);
+  const formattedDate = formatSuggestedDate(suggestion.suggestedDate, formatDate);
 
   return (
     <div className="space-y-2">
@@ -56,11 +58,11 @@ export function PublishSuggestion({ suggestion, isGenerating }: PublishSuggestio
   );
 }
 
-function formatSuggestedDate(dateStr: string): string {
+function formatSuggestedDate(dateStr: string, formatDate: UiFormatters['formatDate']): string {
   try {
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return dateStr;
-    return date.toLocaleDateString('en-US', {
+    return formatDate(date, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',

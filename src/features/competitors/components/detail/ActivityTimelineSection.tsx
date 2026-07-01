@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { formatDistanceToNow } from "date-fns";
+import { useFormat } from "@/lib/ui-i18n/format";
 import {
   Activity,
   AlertTriangle,
@@ -248,6 +248,7 @@ interface SnapshotGroupProps {
 
 function SnapshotGroup({ group, onAcknowledge, ackPending }: SnapshotGroupProps) {
   const { t } = useTranslation("competitors");
+  const { formatRelative } = useFormat();
   const showHeader = group.snapshotId !== null && group.items.length > 1;
   const [collapsed, setCollapsed] = useState(false);
   const items = !showHeader || !collapsed ? group.items : [];
@@ -263,7 +264,7 @@ function SnapshotGroup({ group, onAcknowledge, ackPending }: SnapshotGroupProps)
           >
             {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             <span>
-              {t("activity.snapshot")} · {safeRelativeTime(group.detectedAt)} · {t("activity.eventCount", { count: group.items.length })}
+              {t("activity.snapshot")} · {safeRelativeTime(formatRelative, group.detectedAt)} · {t("activity.eventCount", { count: group.items.length })}
             </span>
           </button>
         </li>
@@ -290,6 +291,7 @@ interface ActivityRowProps {
 
 function ActivityRow({ item, onAcknowledge, ackPending }: ActivityRowProps) {
   const { t } = useTranslation("competitors");
+  const { formatRelative } = useFormat();
   const [expanded, setExpanded] = useState(false);
   const isAcked = item.acknowledgedAt !== null;
 
@@ -309,7 +311,7 @@ function ActivityRow({ item, onAcknowledge, ackPending }: ActivityRowProps) {
               {METHOD_LABEL[item.detectionMethod] ?? item.detectionMethod}
             </span>
             <span className="text-xs text-gray-400">·</span>
-            <span className="text-xs text-gray-500">{safeRelativeTime(item.detectedAt)}</span>
+            <span className="text-xs text-gray-500">{safeRelativeTime(formatRelative, item.detectedAt)}</span>
           </div>
           <p className="text-sm text-gray-700">{item.summary}</p>
           <button
@@ -540,9 +542,12 @@ function asString(v: unknown): string | null {
   return String(v);
 }
 
-function safeRelativeTime(iso: string): string {
+function safeRelativeTime(
+  formatRelative: (value: Date | string | number) => string,
+  iso: string,
+): string {
   try {
-    return formatDistanceToNow(new Date(iso), { addSuffix: true });
+    return formatRelative(iso);
   } catch {
     return iso;
   }

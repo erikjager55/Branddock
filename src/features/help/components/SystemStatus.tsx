@@ -3,6 +3,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSystemStatus } from '@/hooks/use-help';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Skeleton } from '@/components/shared';
 
 const statusConfig = {
@@ -19,6 +20,7 @@ const serviceStatusConfig = {
 
 export function SystemStatus() {
   const { t } = useTranslation('help');
+  const { formatDate } = useFormat();
   const { data: status, isLoading } = useSystemStatus();
 
   if (isLoading) {
@@ -75,7 +77,7 @@ export function SystemStatus() {
       {/* Updated timestamp */}
       <p className="text-xs text-gray-400 mt-3">
         {t('systemStatus.updated', {
-          date: new Date(status.updatedAt).toLocaleString(),
+          date: formatDate(new Date(status.updatedAt), { dateStyle: 'medium', timeStyle: 'short' }),
         })}
       </p>
     </section>

@@ -20,10 +20,11 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Client } from '../../types/white-label';
-import { formatDistanceToNow } from 'date-fns';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 export function ClientManagementPage() {
   const { t } = useTranslation('white-label');
+  const { formatRelative } = useFormat();
   const { clients, addClient, updateClient, removeClient } = useWhiteLabel();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -162,7 +163,7 @@ export function ClientManagementPage() {
                 {client.lastActivity && (
                   <div className="text-xs text-muted-foreground flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    {t('clients.card.lastActive')} {formatDistanceToNow(new Date(client.lastActivity), { addSuffix: true })}
+                    {t('clients.card.lastActive')} {formatRelative(new Date(client.lastActivity))}
                   </div>
                 )}
               </CardContent>

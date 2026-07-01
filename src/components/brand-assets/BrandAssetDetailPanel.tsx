@@ -13,6 +13,7 @@
 
 import React from 'react';
 import { Lock, Unlock, Pencil, Calendar, FileText } from 'lucide-react';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Modal } from '@/components/shared/Modal';
 import { Button } from '@/components/shared/Button';
 import { AssetStatusBadge } from './AssetStatusBadge';
@@ -32,20 +33,6 @@ export interface BrandAssetDetailPanelProps {
   onEdit?: (asset: BrandAssetWithMeta) => void;
   /** Called when the lock/unlock button is clicked */
   onToggleLock?: (asset: BrandAssetWithMeta) => void;
-}
-
-// ─── Helpers ─────────────────────────────────────────────
-
-function formatDate(dateStr: string): string {
-  try {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  } catch {
-    return '';
-  }
 }
 
 // ─── Section component ──────────────────────────────────
@@ -79,6 +66,8 @@ export function BrandAssetDetailPanel({
   onEdit,
   onToggleLock,
 }: BrandAssetDetailPanelProps) {
+  const { formatDate } = useFormat();
+
   if (!asset) return null;
 
   const footer = (
@@ -119,7 +108,11 @@ export function BrandAssetDetailPanel({
       isOpen={isOpen}
       onClose={onClose}
       title={asset.name}
-      subtitle={`${asset.slug} — Last updated ${formatDate(asset.updatedAt)}`}
+      subtitle={`${asset.slug} — Last updated ${formatDate(asset.updatedAt, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })}`}
       size="xl"
       footer={footer}
     >
@@ -169,7 +162,11 @@ export function BrandAssetDetailPanel({
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="flex items-center gap-2 text-gray-500">
               <Calendar className="w-4 h-4 flex-shrink-0" />
-              <span>Updated {formatDate(asset.updatedAt)}</span>
+              <span>Updated {formatDate(asset.updatedAt, {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-500">
               <FileText className="w-4 h-4 flex-shrink-0" />

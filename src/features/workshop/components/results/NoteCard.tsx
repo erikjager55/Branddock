@@ -1,6 +1,7 @@
 'use client';
 
 import { User } from 'lucide-react';
+import { useFormat } from '@/lib/ui-i18n/format';
 import type { WorkshopNote } from '../../types/workshop.types';
 
 interface NoteCardProps {
@@ -8,7 +9,8 @@ interface NoteCardProps {
 }
 
 export function NoteCard({ note }: NoteCardProps) {
-  const timeAgo = new Date(note.createdAt).toLocaleDateString('en-US', {
+  const { formatDate } = useFormat();
+  const timeAgo = formatDate(note.createdAt, {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',

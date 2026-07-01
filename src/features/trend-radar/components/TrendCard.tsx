@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Lock, TrendingUp, TrendingDown, Minus, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Card, Badge, ProgressBar } from '@/components/shared';
 import {
   CATEGORY_COLORS,
@@ -26,6 +27,7 @@ const DIRECTION_ICONS: Record<string, React.ComponentType<{ className?: string }
 /** Trend card following BrandAssetCard / PersonaCard pattern */
 export function TrendCard({ trend, onClick }: TrendCardProps) {
   const { t } = useTranslation('trend-radar');
+  const { formatDate } = useFormat();
   const [imageError, setImageError] = useState(false);
   const categoryConfig = CATEGORY_COLORS[trend.category];
   const impactConfig = IMPACT_COLORS[trend.impactLevel];
@@ -122,7 +124,7 @@ export function TrendCard({ trend, onClick }: TrendCardProps) {
             <span className="text-[10px] font-medium text-gray-400">{t('card.dismissed')}</span>
           )}
           <span className="text-[10px] text-gray-400">
-            {new Date(trend.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            {formatDate(new Date(trend.createdAt), { month: 'short', day: 'numeric' })}
           </span>
         </div>
       </div>

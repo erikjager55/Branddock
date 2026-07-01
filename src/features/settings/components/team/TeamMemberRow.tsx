@@ -6,6 +6,7 @@ import { useUpdateMemberRole, useRemoveMember } from '@/hooks/use-settings';
 import { OptimizedImage } from '@/components/shared';
 import { RoleBadge } from './RoleBadge';
 import { MoreHorizontal } from 'lucide-react';
+import { useFormat } from '@/lib/ui-i18n/format';
 import type { TeamMemberItem } from '@/types/settings';
 
 interface TeamMemberRowProps {
@@ -14,6 +15,7 @@ interface TeamMemberRowProps {
 
 export function TeamMemberRow({ member }: TeamMemberRowProps) {
   const { t } = useTranslation('settings-team');
+  const { formatDate } = useFormat();
   const [menuOpen, setMenuOpen] = useState(false);
   const [roleSubmenuOpen, setRoleSubmenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -54,7 +56,7 @@ export function TeamMemberRow({ member }: TeamMemberRowProps) {
     .toUpperCase()
     .slice(0, 2);
 
-  const formattedDate = new Date(member.joinedAt).toLocaleDateString('en-US', {
+  const formattedDate = formatDate(new Date(member.joinedAt), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

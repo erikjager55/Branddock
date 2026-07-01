@@ -19,6 +19,7 @@ import {
   Button,
 } from '@/components/shared';
 import { PageShell, PageHeader } from '@/components/ui/layout';
+import { useFormat, type UiFormatters } from '@/lib/ui-i18n/format';
 import {
   useBrandAlignment,
   useAlignmentModules,
@@ -52,7 +53,7 @@ import { BrandclawObservationsTab } from '@/features/brand-alignment/components/
 
 // ─── Relative time helper ───────────────────────────────────
 
-function formatLastScan(dateStr: string): string {
+function formatLastScan(dateStr: string, formatDate: UiFormatters['formatDate']): string {
   const now = new Date();
   const date = new Date(dateStr);
   const diffMs = now.getTime() - date.getTime();
@@ -62,7 +63,7 @@ function formatLastScan(dateStr: string): string {
   if (diffHours < 1) return 'Less than an hour ago';
   if (diffHours < 24) return `${diffHours} hours ago`;
   if (diffDays < 7) return `${diffDays} days ago`;
-  return date.toLocaleDateString('en-US', {
+  return formatDate(date, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -73,6 +74,7 @@ function formatLastScan(dateStr: string): string {
 
 export function BrandAlignmentPage() {
   const { t } = useTranslation('brand-alignment');
+  const { formatDate } = useFormat();
   const { setActiveSection } = useUIState();
 
   // Context hooks — server data
@@ -111,7 +113,7 @@ export function BrandAlignmentPage() {
   const hasScan = overview?.hasScan ?? false;
 
   const lastScanned = scan?.completedAt
-    ? formatLastScan(scan.completedAt)
+    ? formatLastScan(scan.completedAt, formatDate)
     : null;
 
   // Handlers

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { ChevronDown, ChevronRight, CheckCircle2, Pencil } from "lucide-react";
 import { Button } from "@/components/shared";
 import { useSnapshotDiff, useUpdateSnapshotNotes } from "../hooks/useSnapshots";
@@ -26,13 +27,14 @@ export function SnapshotTimelineRow({
   previousSnapshotId,
 }: Props) {
   const { t } = useTranslation("brandstyle");
+  const { formatDate } = useFormat();
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [draftNotes, setDraftNotes] = useState(snapshot.notes ?? '');
   const updateNotes = useUpdateSnapshotNotes();
 
   const diffQuery = useSnapshotDiff(previousSnapshotId, snapshot.id);
 
-  const formattedDate = new Date(snapshot.capturedAt).toLocaleString('en-US', {
+  const formattedDate = formatDate(new Date(snapshot.capturedAt), {
     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 

@@ -18,6 +18,7 @@ import {
 import { usePublishChannels } from '@/features/settings/hooks/use-publish-channels';
 import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
 import { STUDIO } from '@/lib/constants/design-tokens';
+import { useFormat, type UiFormatters } from '@/lib/ui-i18n/format';
 import { PublishGate } from '../PublishGate';
 import { GeoOptimizationPanel } from '../GeoOptimizationPanel';
 import { VersionHistorySidebar } from '../VersionHistorySidebar';
@@ -48,6 +49,7 @@ interface Step4TimelineProps {
 
 export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   const { t } = useTranslation('campaigns-canvas-accordion');
+  const { formatDate } = useFormat();
   const queryClient = useQueryClient();
   const contextStack = useCanvasStore((s) => s.contextStack);
   const variantGroups = useCanvasStore((s) => s.variantGroups);
@@ -601,7 +603,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           publishedVia: data.publishedVia ?? null,
         });
         if (data.approvalStatus === 'SCHEDULED') {
-          const dateStr = formatDateDisplay(store.scheduledDate ?? '');
+          const dateStr = formatDateDisplay(store.scheduledDate ?? '', formatDate);
           store.setStepSummary('planner', {
             label: store.scheduledTime
               ? t('step4.summary.scheduledAt', { date: dateStr, time: store.scheduledTime })
@@ -646,7 +648,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [deliverableId, queryClient, t]);
+  }, [deliverableId, queryClient, t, formatDate]);
 
   const isPublished = approvalStatus === 'PUBLISHED';
   const isScheduled = approvalStatus === 'SCHEDULED';
@@ -691,7 +693,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
               </p>
               {scheduledDate && (
                 <p className={`text-xs mt-0.5 ${isScheduled ? 'text-blue-600' : 'text-emerald-600'}`}>
-                  {formatDateDisplay(scheduledDate)}{scheduledTime ? ` ${t('step4.schedule.atTime', { time: scheduledTime })}` : ''}
+                  {formatDateDisplay(scheduledDate, formatDate)}{scheduledTime ? ` ${t('step4.schedule.atTime', { time: scheduledTime })}` : ''}
                 </p>
               )}
               {!publishedVia && (isPublished || isScheduled) && (
@@ -877,7 +879,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
               : (hasFutureDate ? t('step4.publish.schedule') : t('step4.publish.publishNow'));
         const primaryAction: 'schedule' | 'publish-now' = hasFutureDate ? 'schedule' : 'publish-now';
         const formattedSchedule = scheduledDate
-          ? `${formatDateDisplay(scheduledDate)}${scheduledTime ? ` ${t('step4.schedule.atTime', { time: scheduledTime })}` : ''}`
+          ? `${formatDateDisplay(scheduledDate, formatDate)}${scheduledTime ? ` ${t('step4.schedule.atTime', { time: scheduledTime })}` : ''}`
           : null;
 
         return (
@@ -1203,11 +1205,11 @@ function Badge({ platform, label }: { platform: string | null; label: string }) 
   );
 }
 
-function formatDateDisplay(dateStr: string): string {
+function formatDateDisplay(dateStr: string, formatDate: UiFormatters['formatDate']): string {
   try {
     const date = new Date(dateStr + 'T00:00:00');
     if (isNaN(date.getTime())) return dateStr;
-    return date.toLocaleDateString('en-US', {
+    return formatDate(date, {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
   } catch {

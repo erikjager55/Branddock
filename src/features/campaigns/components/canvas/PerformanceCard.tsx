@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BarChart3, TrendingUp, Eye, MousePointer } from 'lucide-react';
 import { EmptyState } from '@/components/shared';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 interface PerformanceCardProps {
   publishedAt: string | null;
@@ -12,6 +13,7 @@ interface PerformanceCardProps {
 /** Placeholder card for published deliverable performance — Fase F will add real analytics */
 export function PerformanceCard({ publishedAt }: PerformanceCardProps) {
   const { t } = useTranslation('campaigns-canvas');
+  const { formatDate } = useFormat();
   if (!publishedAt) return null;
 
   return (
@@ -24,7 +26,7 @@ export function PerformanceCard({ publishedAt }: PerformanceCardProps) {
           <BarChart3 className="h-4 w-4 text-primary" />
           <span className="font-medium">{t('performance.published')}</span>
           <span className="text-gray-400 ml-auto text-xs">
-            {new Date(publishedAt).toLocaleDateString('en-US', {
+            {formatDate(publishedAt, {
               month: 'short',
               day: 'numeric',
               year: 'numeric',

@@ -7,6 +7,7 @@ import { SimpleMarkdown } from './SimpleMarkdown';
 import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
 import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 import { Bookmark, Share2, ChevronRight } from 'lucide-react';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 const HANDLED_GROUPS = [
   'headline', 'subheadline',
@@ -33,6 +34,7 @@ export function NativeAdPreview({ isGenerating, heroImage, onAddImage, brandName
   const brandIntegration = useEditableEntry('brand-integration');
   const closing = useEditableEntry('closing');
   const disclosurePosition = useEditableEntry('disclosure-position');
+  const { formatDate } = useFormat();
 
   const name = brandName ?? 'Brand Name';
   const selectedImage = imageVariants.find((img) => img.isSelected);
@@ -79,7 +81,7 @@ export function NativeAdPreview({ isGenerating, heroImage, onAddImage, brandName
         <div className="h-8 w-8 rounded-full bg-gray-300" />
         <div>
           <p className="font-semibold text-gray-700">Editorial Staff</p>
-          <p>Sponsored content · {new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          <p>Sponsored content · {formatDate(new Date(), { day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
       </div>
 

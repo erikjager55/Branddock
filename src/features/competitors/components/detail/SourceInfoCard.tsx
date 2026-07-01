@@ -3,6 +3,7 @@
 import { useTranslation } from "react-i18next";
 import { Globe, Clock, Info } from "lucide-react";
 import { Badge } from "@/components/shared";
+import { useFormat } from "@/lib/ui-i18n/format";
 import type { CompetitorDetail } from "../../types/competitor.types";
 
 interface SourceInfoCardProps {
@@ -12,9 +13,10 @@ interface SourceInfoCardProps {
 /** Source information sidebar card */
 export function SourceInfoCard({ competitor }: SourceInfoCardProps) {
   const { t } = useTranslation("competitors");
+  const { formatDate } = useFormat();
   const sourceLabel = competitor.source === "WEBSITE_URL" ? t("source.websiteUrl") : t("source.manual");
   const lastScraped = competitor.lastScrapedAt
-    ? new Date(competitor.lastScrapedAt).toLocaleDateString("en-US", {
+    ? formatDate(competitor.lastScrapedAt, {
         year: "numeric",
         month: "short",
         day: "numeric",

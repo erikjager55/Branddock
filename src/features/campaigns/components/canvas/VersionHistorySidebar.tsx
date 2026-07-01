@@ -9,6 +9,7 @@ import {
 } from '../../hooks/content-versions.hooks';
 import type { ContentVersionListItem } from '../../api/content-versions.api';
 import { Button } from '@/components/shared';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 interface VersionHistorySidebarProps {
   deliverableId: string;
@@ -92,11 +93,11 @@ function VersionRow({
   disabled: boolean;
 }) {
   const { t } = useTranslation('campaigns-canvas');
+  const { formatDate } = useFormat();
   const isAi = version.createdBy === 'AI';
   const Icon = isAi ? Sparkles : User;
   const iconColor = isAi ? 'text-emerald-600' : 'text-blue-600';
-  const date = new Date(version.createdAt);
-  const dateLabel = date.toLocaleString('en-US', {
+  const dateLabel = formatDate(version.createdAt, {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',

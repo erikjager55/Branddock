@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { ExternalLink, Heart, CalendarDays, Trash2, Copy, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { Badge } from "@/components/shared";
 import { deriveTrafficLight, TRAFFIC_LIGHT, getPhaseConfig, InlineRenameField } from "../shared/calendar-cards";
 import { formatContentType } from "../../lib/format-content-type";
@@ -76,16 +77,6 @@ interface ContentCardListProps {
   duplicatingIds?: Set<string>;
 }
 
-// ─── Helpers ──────────────────────────────────────────────
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 // ─── Component ────────────────────────────────────────────
 
 export function ContentCardList({
@@ -98,6 +89,7 @@ export function ContentCardList({
   duplicatingIds,
 }: ContentCardListProps) {
   const { t } = useTranslation("campaigns-content-library");
+  const { formatDate } = useFormat();
   const sort = useContentLibraryStore((s) => s.sort);
   const setSort = useContentLibraryStore((s) => s.setSort);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; campaignId: string; title: string } | null>(null);
@@ -237,7 +229,10 @@ export function ContentCardList({
               {item.scheduledPublishDate ? (
                 <span className="inline-flex items-center gap-1 text-xs text-teal-600">
                   <CalendarDays className="w-3 h-3" />
-                  {formatDate(item.scheduledPublishDate)}
+                  {formatDate(item.scheduledPublishDate, {
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </span>
               ) : (
                 <span className="text-xs text-gray-400">—</span>

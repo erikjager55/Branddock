@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { FileSearch, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/shared";
 import {
@@ -225,6 +226,7 @@ function InputCard({
   submitError,
 }: InputCardProps) {
   const { t } = useTranslation('brand-alignment');
+  const { formatNumber } = useFormat();
   // Counter toont getrimde lengte (zelfde basis als canSubmit) — anders
   // ziet user "55 / 50000" groen terwijl submit met 50 chars naar server
   // gaat. Edge case: whitespace-only edits aan de boundary (50→52 spaties
@@ -279,7 +281,7 @@ function InputCard({
           />
           <div className="mt-1 flex justify-between text-xs">
             <span className={tooShort || tooLong ? "text-amber-600" : "text-gray-400"}>
-              {pasteLen.toLocaleString()} / {PASTE_MAX_CHARS.toLocaleString()} {t('contentReview.charsUnit')}
+              {formatNumber(pasteLen)} / {formatNumber(PASTE_MAX_CHARS)} {t('contentReview.charsUnit')}
               {tooShort && t('contentReview.charMin', { min: PASTE_MIN_CHARS })}
               {tooLong && t('contentReview.charTooLong')}
             </span>

@@ -24,6 +24,7 @@ import {
   type FeedbackItem,
   type FeedbackAiStatus,
 } from '@/hooks/use-chat-feedback';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -62,6 +63,7 @@ const AI_STATUS_INDICATOR: Record<FeedbackAiStatus, { icon: React.ReactNode; lab
 
 export function FeedbackTriageTab() {
   const { t } = useTranslation('settings-misc');
+  const { formatDate } = useFormat();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>('all');
   const [sentimentFilter, setSentimentFilter] = useState<FeedbackItem['sentiment'] | 'all'>('all');
@@ -266,7 +268,7 @@ export function FeedbackTriageTab() {
                         {t(`feedbackTriage.aiStatus.${e.aiStatus}`)}
                       </span>
                       <span className="text-xs text-gray-400 whitespace-nowrap">
-                        {new Date(e.createdAt).toLocaleDateString('en-US', {
+                        {formatDate(new Date(e.createdAt), {
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
@@ -339,7 +341,7 @@ export function FeedbackTriageTab() {
                         {t('feedbackTriage.statusPrefix')} <span className="font-medium capitalize">{e.status}</span>
                         {' · '}
                         {e.reviewedBy.name || e.reviewedBy.email}
-                        {e.reviewedAt && ` · ${new Date(e.reviewedAt).toLocaleString('en-US')}`}
+                        {e.reviewedAt && ` · ${formatDate(new Date(e.reviewedAt), { dateStyle: 'medium', timeStyle: 'short' })}`}
                       </div>
                     )}
 

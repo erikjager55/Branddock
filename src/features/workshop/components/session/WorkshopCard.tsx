@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Badge } from '@/components/shared';
 import { Calendar, Clock, User, Layers } from 'lucide-react';
 import type { Workshop } from '../../types/workshop.types';
@@ -12,8 +13,9 @@ interface WorkshopCardProps {
 
 export function WorkshopCard({ workshop, onStart }: WorkshopCardProps) {
   const { t } = useTranslation('workshop');
+  const { formatDate } = useFormat();
   const scheduledDate = workshop.scheduledDate
-    ? new Date(workshop.scheduledDate).toLocaleDateString('en-US', {
+    ? formatDate(workshop.scheduledDate, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',

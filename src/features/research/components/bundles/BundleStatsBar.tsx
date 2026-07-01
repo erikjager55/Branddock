@@ -3,6 +3,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Calendar, FileText, FlaskConical, DollarSign } from "lucide-react";
+import { useFormat } from "@/lib/ui-i18n/format";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -22,6 +23,7 @@ export function BundleStatsBar({
   savings,
 }: BundleStatsBarProps) {
   const { t } = useTranslation("research");
+  const { formatCurrency } = useFormat();
   const stats = [
     { icon: Calendar, label: t("bundleStats.timeline"), value: timeline || t("bundleStats.flexible") },
     { icon: FileText, label: t("bundleStats.assets"), value: t("bundleStats.included", { count: assetCount }) },
@@ -29,7 +31,7 @@ export function BundleStatsBar({
     {
       icon: DollarSign,
       label: t("bundleStats.savings"),
-      value: savings > 0 ? `$${savings.toLocaleString()}` : "--",
+      value: savings > 0 ? formatCurrency(savings, "USD") : "--",
     },
   ];
 

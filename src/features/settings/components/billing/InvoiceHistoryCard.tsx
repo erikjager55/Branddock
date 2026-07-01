@@ -5,9 +5,11 @@ import { Download, FileText } from 'lucide-react';
 import { Card, Badge } from '@/components/shared';
 import { useBillingPlan } from '@/hooks/use-billing';
 import { useInvoices, useDownloadInvoice } from '@/hooks/use-settings';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 export function InvoiceHistoryCard() {
   const { t } = useTranslation('settings-billing');
+  const { formatDate } = useFormat();
   const billing = useBillingPlan();
   const { data: invoicesData, isLoading } = useInvoices();
   const downloadMutation = useDownloadInvoice();
@@ -54,7 +56,7 @@ export function InvoiceHistoryCard() {
                   {inv.invoiceNumber}
                 </td>
                 <td className="px-5 py-3 text-gray-600">
-                  {new Date(inv.issuedAt).toLocaleDateString()}
+                  {formatDate(new Date(inv.issuedAt))}
                 </td>
                 <td className="px-5 py-3 text-gray-900 font-medium tabular-nums">
                   &euro;{(inv.amount / 100).toFixed(2)}

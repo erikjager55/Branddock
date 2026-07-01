@@ -4,6 +4,7 @@ import { Image as ImageIcon, ShieldCheck, AlertTriangle, AlertCircle, Palette } 
 import { useTranslation } from 'react-i18next';
 import { Card, EmptyState } from '@/components/shared';
 import { useVisualFidelityDashboard } from '@/features/settings/hooks/use-visual-fidelity';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 const ZONE_HEX = {
   good: '#10b981',
@@ -19,6 +20,7 @@ const ZONE_HEX = {
  */
 export function VisualFidelityDashboardTab() {
   const { t } = useTranslation('settings-misc');
+  const { formatNumber, formatDate } = useFormat();
   const { data, isLoading, error } = useVisualFidelityDashboard();
 
   if (isLoading) {
@@ -61,14 +63,14 @@ export function VisualFidelityDashboardTab() {
           <KpiTile
             icon={<ImageIcon className="h-4 w-4 text-teal-600" />}
             label={t('visualFidelity.kpi.scored24h')}
-            value={totals.count24h.toLocaleString()}
-            sub={t('visualFidelity.kpi.scored24hSub', { count: totals.count7d.toLocaleString() })}
+            value={formatNumber(totals.count24h)}
+            sub={t('visualFidelity.kpi.scored24hSub', { count: formatNumber(totals.count7d) })}
           />
           <KpiTile
             icon={<ImageIcon className="h-4 w-4 text-blue-600" />}
             label={t('visualFidelity.kpi.scored30d')}
-            value={totals.count30d.toLocaleString()}
-            sub={t('visualFidelity.kpi.scored30dSub', { count: totals.countAllTime.toLocaleString() })}
+            value={formatNumber(totals.count30d)}
+            sub={t('visualFidelity.kpi.scored30dSub', { count: formatNumber(totals.countAllTime) })}
           />
           <KpiTile
             icon={<ShieldCheck className="h-4 w-4 text-emerald-600" />}
@@ -221,7 +223,7 @@ export function VisualFidelityDashboardTab() {
                             </div>
                           </div>
                           <p className="text-[10px] text-gray-500 truncate">
-                            {new Date(s.scoredAt).toLocaleDateString()}
+                            {formatDate(new Date(s.scoredAt))}
                           </p>
                         </div>
                       );

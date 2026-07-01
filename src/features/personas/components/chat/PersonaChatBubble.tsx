@@ -2,6 +2,7 @@
 
 import { Check, Lightbulb, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { OptimizedImage } from '@/components/shared';
 import type { ChatMessage } from '../../types/persona-chat.types';
 import type { PersonaWithMeta } from '../../types/persona.types';
@@ -15,11 +16,6 @@ interface PersonaChatBubbleProps {
   hasInsight?: boolean;
 }
 
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-}
-
 export function PersonaChatBubble({
   message,
   persona,
@@ -29,6 +25,7 @@ export function PersonaChatBubble({
   hasInsight,
 }: PersonaChatBubbleProps) {
   const { t } = useTranslation('personas');
+  const { formatDate } = useFormat();
   const isUser = message.role === 'USER';
 
   const initials = persona.name
@@ -38,7 +35,11 @@ export function PersonaChatBubble({
     .toUpperCase()
     .slice(0, 2);
 
-  const timestamp = formatTime(message.createdAt);
+  const timestamp = formatDate(message.createdAt, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 
   if (isUser) {
     return (

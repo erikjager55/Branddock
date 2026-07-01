@@ -9,6 +9,7 @@ import {
   usePromptDetail,
 } from '@/features/settings/hooks/use-prompt-registry';
 import type { PromptRegistryEntry, PromptVersionDetail } from '@/features/settings/api/prompt-registry.api';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { PromptUsageDashboard } from './PromptUsageDashboard';
 
 type TabView = 'dashboard' | 'registry';
@@ -216,6 +217,7 @@ function PromptDetail({ identifier }: { identifier: string }) {
 
 function VersionCard({ version, index }: { version: PromptVersionDetail; index: number }) {
   const { t } = useTranslation('settings-misc');
+  const { formatDate } = useFormat();
   const [expanded, setExpanded] = useState(index === 0);
   const errorRate =
     version.callCount > 0
@@ -245,7 +247,7 @@ function VersionCard({ version, index }: { version: PromptVersionDetail; index: 
                 </span>
               )}
               <span className="text-xs text-gray-500">
-                {new Date(version.firstSeenAt).toLocaleDateString()}
+                {formatDate(new Date(version.firstSeenAt))}
               </span>
             </div>
             <div className="text-xs text-gray-600 font-mono break-all">

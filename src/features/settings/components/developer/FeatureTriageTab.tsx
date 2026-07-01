@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Check,
 } from 'lucide-react';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -53,6 +54,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 export function FeatureTriageTab() {
   const { t } = useTranslation('settings-misc');
+  const { formatDate } = useFormat();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -289,7 +291,7 @@ export function FeatureTriageTab() {
                       <span>{t('featureTriage.requestedBy', { name: feature.user?.name ?? feature.user?.email })}</span>
                       <span>{t('featureTriage.page', { page: feature.page })}</span>
                       {feature.workspace && <span>{t('featureTriage.workspace', { name: feature.workspace.name })}</span>}
-                      <span>{new Date(feature.createdAt).toLocaleString()}</span>
+                      <span>{formatDate(new Date(feature.createdAt), { dateStyle: 'medium', timeStyle: 'short' })}</span>
                       {feature.resolvedBy && (
                         <span>{t('featureTriage.closedBy', { name: feature.resolvedBy.name ?? feature.resolvedBy.email })}</span>
                       )}

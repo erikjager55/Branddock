@@ -1,8 +1,8 @@
 import React from 'react';
 import { Package, Users, Megaphone, Swords, Clock, AlertTriangle, Circle } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { useRecentActivity, dashboardKeys } from '../../hooks/use-dashboard';
 import { Skeleton } from '../shared';
 import type { ActivityItem } from '../../types/dashboard';
@@ -18,6 +18,7 @@ const FALLBACK_CONFIG = { icon: Circle, color: 'text-gray-400' };
 
 export function RecentActivity() {
   const { t } = useTranslation('dashboard');
+  const { formatRelative } = useFormat();
   const { data, isLoading, isError } = useRecentActivity();
   const queryClient = useQueryClient();
 
@@ -75,7 +76,7 @@ export function RecentActivity() {
               <div className="flex-1 min-w-0">
                 <div className="text-sm text-gray-900 truncate">{item.title}</div>
                 <div className="text-xs text-gray-400">
-                  {formatDistanceToNow(new Date(item.updatedAt), { addSuffix: true })}
+                  {formatRelative(new Date(item.updatedAt))}
                 </div>
               </div>
             </div>

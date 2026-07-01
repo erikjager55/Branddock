@@ -19,6 +19,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { OptimizedImage } from "@/components/shared";
 import type { PersonaWithMeta, PersonaResearchMethodType } from "../types/persona.types";
 import type { LucideIcon } from "lucide-react";
@@ -69,6 +70,7 @@ const RIGHT_FIELDS = ["location", "education", "familyStatus"];
 
 export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
   const { t } = useTranslation('personas');
+  const { formatDate } = useFormat();
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
 
   const initials = persona.name
@@ -312,7 +314,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
       {persona.updatedAt && (
         <p className="text-xs text-gray-400">
           {t('card.lastUpdated', {
-            date: new Date(persona.updatedAt).toLocaleDateString("en-GB", {
+            date: formatDate(persona.updatedAt, {
               day: "numeric",
               month: "short",
               year: "numeric",

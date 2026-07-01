@@ -4,12 +4,14 @@ import { ClipboardCheck, Loader2, XCircle } from 'lucide-react';
 import { Button, EmptyState } from '@/components/shared';
 import { useBrandAudit, useStartBrandAudit } from '@/contexts/BrandAlignmentContext';
 import { useUIState } from '@/contexts/UIStateContext';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { AuditScoreOverview } from './AuditScoreOverview';
 import { AuditAssetTable } from './AuditAssetTable';
 import { AuditImprovementList } from './AuditImprovementList';
 
 export function BrandAuditView() {
   const { t } = useTranslation('brand-alignment');
+  const { formatDate } = useFormat();
   const { setActiveSection, setSelectedAssetId } = useUIState();
   const { data, isLoading, error } = useBrandAudit();
   const startAudit = useStartBrandAudit();
@@ -24,16 +26,6 @@ export function BrandAuditView() {
   function handleNavigateToAsset(assetId: string) {
     setSelectedAssetId(assetId);
     setActiveSection('brand-asset-detail');
-  }
-
-  function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   }
 
   // Loading
@@ -78,7 +70,13 @@ export function BrandAuditView() {
       {/* Header with last audit date + re-run button */}
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-500">
-          {t('auditView.lastAudit', { date: formatDate(audit.createdAt) })}
+          {t('auditView.lastAudit', { date: formatDate(audit.createdAt, {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }) })}
         </p>
         <Button
           variant="secondary"

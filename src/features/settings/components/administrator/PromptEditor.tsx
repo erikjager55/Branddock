@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RotateCcw } from 'lucide-react';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -42,6 +43,7 @@ export function PromptEditor({
   maxLength = 20000,
 }: PromptEditorProps) {
   const { t } = useTranslation('settings-admin');
+  const { formatNumber } = useFormat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const selectionRef = useRef({ start: 0, end: 0 });
 
@@ -134,7 +136,7 @@ export function PromptEditor({
       {/* Footer with character count */}
       <div className="px-4 py-1.5 border-t border-gray-100 bg-gray-50 flex justify-end">
         <span className={`text-[10px] ${value.length > maxLength * 0.9 ? 'text-amber-500' : 'text-gray-400'}`}>
-          {value.length.toLocaleString()} / {maxLength.toLocaleString()}
+          {formatNumber(value.length)} / {formatNumber(maxLength)}
         </span>
       </div>
     </div>

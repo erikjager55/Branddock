@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -39,6 +40,7 @@ interface WorkshopReportProps {
 
 export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) {
   const { t } = useTranslation('canvases');
+  const { formatDate } = useFormat();
   const [activeTab, setActiveTab] = useState('overview');
   
   // Executive Summary state
@@ -122,12 +124,12 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
         id: Date.now().toString(),
         author: 'Current User',
         content: newNote,
-        timestamp: new Date().toLocaleString('en-US', { 
-          year: 'numeric', 
-          month: '2-digit', 
-          day: '2-digit', 
-          hour: '2-digit', 
-          minute: '2-digit' 
+        timestamp: formatDate(new Date(), {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
         }).replace(',', '')
       };
       setNotes([...notes, note]);

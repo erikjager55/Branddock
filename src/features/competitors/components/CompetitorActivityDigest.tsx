@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Activity, AlertTriangle, Building2 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 import { Badge, Card, Skeleton } from "@/components/shared";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { useCompetitorActivitySummary } from "../hooks/use-competitor-activities";
 import { useCompetitorsStore } from "../stores/useCompetitorsStore";
 import {
@@ -28,6 +28,7 @@ const SEVERITY_VARIANT: Record<ActivitySeverity, BadgeVariant> = {
  *  competitors per window. Return null indien geen events in window. */
 export function CompetitorActivityDigest({ onNavigateToDetail }: CompetitorActivityDigestProps) {
   const { t } = useTranslation("competitors");
+  const { formatRelative } = useFormat();
   const [window, setWindow] = useState<"7d" | "30d">("7d");
   const { data, isLoading, isError } = useCompetitorActivitySummary(window);
 
@@ -126,7 +127,7 @@ export function CompetitorActivityDigest({ onNavigateToDetail }: CompetitorActiv
                     </p>
                   </div>
                   <span className="text-xs text-gray-400 flex-shrink-0">
-                    {safeRelativeTime(event.detectedAt)}
+                    {safeRelativeTime(formatRelative, event.detectedAt)}
                   </span>
                 </button>
               </li>
@@ -223,9 +224,12 @@ function Logo({ url, alt, size = 8 }: LogoProps) {
   );
 }
 
-function safeRelativeTime(iso: string): string {
+function safeRelativeTime(
+  formatRelative: (value: Date | string | number) => string,
+  iso: string,
+): string {
   try {
-    return formatDistanceToNow(new Date(iso), { addSuffix: true });
+    return formatRelative(iso);
   } catch {
     return iso;
   }

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import {
   Brain,
   Loader2,
@@ -65,6 +66,7 @@ function compareObservations(
  */
 export function BrandclawObservationsTab() {
   const { t } = useTranslation('brand-alignment');
+  const { formatDate } = useFormat();
   const [severityFilter, setSeverityFilter] = React.useState<ObservationSeverity | "all">("all");
   const [dimensionFilter, setDimensionFilter] = React.useState<string>("");
   const [includeDismissed, setIncludeDismissed] = React.useState(false);
@@ -117,7 +119,7 @@ export function BrandclawObservationsTab() {
             </p>
             {lastRun && (
               <p className="text-[11px] text-gray-400 mt-1 font-mono">
-                {t('brandclaw.lastRun')} {new Date(lastRun.createdAt).toLocaleString("nl-NL", {
+                {t('brandclaw.lastRun')} {formatDate(lastRun.createdAt, {
                   day: "numeric",
                   month: "short",
                   hour: "2-digit",

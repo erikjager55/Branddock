@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -46,6 +47,7 @@ const CONFIDENCE_STYLES: Record<ObservationConfidence, { bg: string; text: strin
  */
 export function ObservationCard({ observation, onOpenEvidence }: ObservationCardProps) {
   const { t } = useTranslation('brand-alignment');
+  const { formatDate } = useFormat();
   const patch = usePatchObservation();
   const [dismissReason, setDismissReason] = React.useState("");
   const [showDismissInput, setShowDismissInput] = React.useState(false);
@@ -123,7 +125,7 @@ export function ObservationCard({ observation, onOpenEvidence }: ObservationCard
             </button>
           )}
           <span className="text-gray-400">
-            {new Date(observation.createdAt).toLocaleString("nl-NL", {
+            {formatDate(observation.createdAt, {
               day: "numeric",
               month: "short",
               hour: "2-digit",

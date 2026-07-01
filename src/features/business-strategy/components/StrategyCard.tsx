@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Badge } from '@/components/shared';
 import { CardLockIndicator } from '@/components/lock';
 import { STRATEGY_STATUS_COLORS } from '../constants/strategy-types';
@@ -49,6 +50,7 @@ interface StrategyCardProps {
 
 export function StrategyCard({ strategy, onClick }: StrategyCardProps) {
   const { t } = useTranslation('business-strategy');
+  const { formatDate } = useFormat();
   const iconName = TYPE_ICON[strategy.type];
   const Icon = ICON_MAP[iconName] ?? Puzzle;
   const statusColors = STRATEGY_STATUS_COLORS[strategy.status];
@@ -94,11 +96,11 @@ export function StrategyCard({ strategy, onClick }: StrategyCardProps) {
           <Calendar className="w-3.5 h-3.5 text-gray-400" />
           <span>
             {strategy.startDate
-              ? new Date(strategy.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+              ? formatDate(strategy.startDate, { month: 'short', year: 'numeric' })
               : '...'}
             {' \u2013 '}
             {strategy.endDate
-              ? new Date(strategy.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+              ? formatDate(strategy.endDate, { month: 'short', year: 'numeric' })
               : '...'}
           </span>
         </div>

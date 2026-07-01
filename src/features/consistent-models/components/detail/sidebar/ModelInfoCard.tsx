@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { Calendar, Cpu, Hash, Sparkles } from "lucide-react";
 import { Card } from "@/components/shared";
 import { ModelTypeBadge } from "../../shared/ModelTypeBadge";
@@ -16,7 +17,8 @@ interface ModelInfoCardProps {
 /** Sidebar card with model metadata */
 export function ModelInfoCard({ model }: ModelInfoCardProps) {
   const { t } = useTranslation("consistent-models");
-  const createdDate = new Date(model.createdAt).toLocaleDateString("en-US", {
+  const { formatDate } = useFormat();
+  const createdDate = formatDate(new Date(model.createdAt), {
     year: "numeric",
     month: "short",
     day: "numeric",

@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Zap, Check, CalendarPlus, CalendarDays, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { useApproveDeliverable, useUpdateDeliverableSchedule } from '../../hooks';
 import {
   nextBusinessDay10am,
@@ -36,6 +37,7 @@ export function QuickPublishMenu({
   variant = 'button',
 }: QuickPublishMenuProps) {
   const { t } = useTranslation('campaigns-content-library');
+  const { formatDate } = useFormat();
   const [open, setOpen] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -179,7 +181,7 @@ export function QuickPublishMenu({
                   <CalendarDays className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   <span className="flex-1">{t('quickPublish.sameAsLast')}</span>
                   <span className="text-[10px] text-gray-400 flex-shrink-0">
-                    {sameAsLastDate.toLocaleDateString()}
+                    {formatDate(sameAsLastDate)}
                   </span>
                 </button>
               )}

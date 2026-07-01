@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import type { Interview, InterviewStatus } from '../types/interview.types';
 import { exportInterviewPdf } from '../utils/exportInterviewPdf';
 import { exportInterviewJson } from '../utils/exportInterviewJson';
@@ -42,11 +43,12 @@ export function InterviewCard({
   onDelete,
 }: InterviewCardProps) {
   const { t } = useTranslation('interviews');
+  const { formatDate } = useFormat();
   const [menuOpen, setMenuOpen] = useState(false);
   const statusVariant = STATUS_VARIANT[interview.status];
 
   const scheduledDate = interview.scheduledDate
-    ? new Date(interview.scheduledDate).toLocaleDateString('en-US', {
+    ? formatDate(new Date(interview.scheduledDate), {
         month: 'short',
         day: 'numeric',
       })

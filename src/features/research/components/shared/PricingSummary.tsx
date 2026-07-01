@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { PricingBreakdownRow } from "./PricingBreakdownRow";
 
 // ─── Types ───────────────────────────────────────────────────
@@ -22,6 +23,7 @@ interface PricingSummaryProps {
 
 export function PricingSummary({ methods }: PricingSummaryProps) {
   const { t } = useTranslation("research");
+  const { formatCurrency } = useFormat();
   const activeMethodsList = methods.filter((m) => m.quantity > 0);
   const total = activeMethodsList.reduce((sum, m) => sum + m.subtotal, 0);
 
@@ -47,7 +49,7 @@ export function PricingSummary({ methods }: PricingSummaryProps) {
 
       <div data-testid="sidebar-total" className="flex justify-between font-semibold text-green-600">
         <span>{t("pricing.total")}</span>
-        <span>${total.toLocaleString()}</span>
+        <span>{formatCurrency(total, "USD")}</span>
       </div>
     </div>
   );

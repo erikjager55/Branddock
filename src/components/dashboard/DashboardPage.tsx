@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageShell, PageHeader } from '@/components/ui/layout';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { useSession } from '@/lib/auth-client';
 import { DecisionReadiness } from './DecisionReadiness';
 import { DashboardStatsCards } from './DashboardStatsCards';
@@ -18,21 +19,13 @@ function getGreetingKey(): string {
   return 'greeting.evening';
 }
 
-function getFormattedDate(): string {
-  return new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
 interface DashboardPageProps {
   onNavigate: (section: string) => void;
 }
 
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
   const { t } = useTranslation('dashboard');
+  const { formatDate } = useFormat();
   const { data: session } = useSession();
   const firstName = session?.user?.name?.split(' ')[0] || '';
 
@@ -52,7 +45,14 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
           <h1 className="text-2xl font-bold text-gray-900">
             {t(getGreetingKey())}{firstName ? `, ${firstName}` : ''}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{getFormattedDate()}</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {formatDate(new Date(), {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </p>
         </div>
 
         {/* Decision Readiness (hero card) */}

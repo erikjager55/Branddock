@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Plus, Trash2, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Button } from '@/components/shared';
 import { MILESTONE_COLORS } from '../../constants/strategy-types';
 import { useUpdateMilestone, useDeleteMilestone } from '../../hooks';
@@ -28,6 +29,7 @@ function MilestoneItemWithHooks({
   strategyId: string;
 }) {
   const { t } = useTranslation('business-strategy');
+  const { formatDate } = useFormat();
   const updateMilestone = useUpdateMilestone(strategyId, milestone.id);
   const deleteMilestone = useDeleteMilestone(strategyId, milestone.id);
   const [hoveredId, setHoveredId] = useState(false);
@@ -128,7 +130,7 @@ function MilestoneItemWithHooks({
         <div className="absolute bottom-full mb-2 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-20 w-48">
           <p className="font-medium">{milestone.title}</p>
           <p className="text-gray-300 mt-0.5">
-            {new Date(milestone.date).toLocaleDateString('en-US', {
+            {formatDate(milestone.date, {
               month: 'short',
               day: 'numeric',
               year: 'numeric',

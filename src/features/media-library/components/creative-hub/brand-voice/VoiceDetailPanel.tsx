@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { X, Mic, Star, Wand2, AlertCircle } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
 import { useBrandVoiceDetail, useUpdateBrandVoice, useGenerateSample } from '@/features/media-library/hooks';
@@ -21,6 +22,7 @@ interface VoiceDetailPanelProps {
 /** Inline detail panel shown when a brand voice is selected. */
 export function VoiceDetailPanel({ voiceId, onClose }: VoiceDetailPanelProps) {
   const { t } = useTranslation('media-library');
+  const { formatDate } = useFormat();
   const { data: voice, isLoading } = useBrandVoiceDetail(voiceId);
   const updateVoice = useUpdateBrandVoice(voiceId);
   const generateSample = useGenerateSample(voiceId);
@@ -79,7 +81,7 @@ export function VoiceDetailPanel({ voiceId, onClose }: VoiceDetailPanelProps) {
               )}
             </div>
             <p className="text-xs text-gray-500">
-              {t('detail.createdPrefix')} {new Date(typedVoice.createdAt).toLocaleDateString('en-US', {
+              {t('detail.createdPrefix')} {formatDate(typedVoice.createdAt, {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',

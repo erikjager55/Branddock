@@ -2,6 +2,7 @@
 
 import { Zap, ZapOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Card } from '@/components/shared';
 import type { DetectedTrendWithMeta } from '../../types/trend-radar.types';
 
@@ -13,8 +14,9 @@ interface TrendActivationCardProps {
 
 export function TrendActivationCard({ trend, onToggle, disabled }: TrendActivationCardProps) {
   const { t } = useTranslation('trend-radar');
+  const { formatDate } = useFormat();
   const activatedDate = trend.activatedAt
-    ? new Date(trend.activatedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+    ? formatDate(new Date(trend.activatedAt), { day: 'numeric', month: 'long', year: 'numeric' })
     : null;
 
   return (

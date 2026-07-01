@@ -4,6 +4,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, CheckCircle, FileText, FlaskConical } from "lucide-react";
 import { Button, Skeleton } from "@/components/shared";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { PageShell } from "@/components/ui/layout";
 import { useBundleDetail, useSelectBundle } from "../../hooks";
 import { BundleBadge } from "./BundleBadge";
@@ -26,6 +27,7 @@ export function BundleDetailPage({
   onNavigate,
 }: BundleDetailPageProps) {
   const { t } = useTranslation("research");
+  const { formatCurrency, formatNumber } = useFormat();
   const { data, isLoading } = useBundleDetail(bundleId);
   const selectBundle = useSelectBundle();
 
@@ -96,16 +98,16 @@ export function BundleDetailPage({
           {/* Price row */}
           <div className="flex items-baseline gap-3 mb-4">
             <span className="text-3xl font-bold text-primary">
-              ${bundle.price.toLocaleString()}
+              {formatCurrency(bundle.price, "USD")}
             </span>
             {bundle.originalPrice && bundle.originalPrice > bundle.price && (
               <span className="text-lg line-through text-gray-400">
-                ${bundle.originalPrice.toLocaleString()}
+                {formatCurrency(bundle.originalPrice, "USD")}
               </span>
             )}
             {savings > 0 && (
               <span className="bg-primary/15 text-primary text-sm font-medium px-2 py-0.5 rounded-full">
-                {t("bundleDetail.save", { amount: savings.toLocaleString() })}
+                {t("bundleDetail.save", { amount: formatNumber(savings) })}
               </span>
             )}
           </div>

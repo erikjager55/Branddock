@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { Card, ProgressBar } from "@/components/shared";
 import { useTrainingStatus } from "../../../hooks";
@@ -14,6 +15,7 @@ interface TrainingStatusCardProps {
 /** Sidebar card with live training progress */
 export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
   const { t } = useTranslation("consistent-models");
+  const { formatDate } = useFormat();
   const isTraining = model.status === "TRAINING" || model.status === "UPLOADING";
   const isFailed = model.status === "TRAINING_FAILED";
   const isReady = model.status === "READY";
@@ -40,9 +42,9 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
 
   if (model.status === "DRAFT") return null;
 
-  const formatDate = (dateStr: string | null) => {
+  const formatTimestamp = (dateStr: string | null) => {
     if (!dateStr) return "—";
-    return new Date(dateStr).toLocaleString("en-US", {
+    return formatDate(new Date(dateStr), {
       month: "short",
       day: "numeric",
       hour: "2-digit",
@@ -118,7 +120,7 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
               <span className="text-gray-500">{t("trainingStatus.started")}</span>
               <span className="flex items-center gap-1 text-gray-700">
                 <Clock className="h-3.5 w-3.5" />
-                {formatDate(model.trainingStartedAt)}
+                {formatTimestamp(model.trainingStartedAt)}
               </span>
             </div>
           )}
@@ -126,7 +128,7 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
             <div className="flex items-center justify-between">
               <span className="text-gray-500">{t("trainingStatus.completed")}</span>
               <span className="text-gray-700">
-                {formatDate(model.trainingCompletedAt)}
+                {formatTimestamp(model.trainingCompletedAt)}
               </span>
             </div>
           )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Heart, Trash2, Image, FileText, Video, Music } from 'lucide-react';
 import { MEDIA_TYPE_ICONS, MEDIA_CATEGORY_CONFIG, formatFileSize } from '../constants/media-constants';
 import type { MediaAssetWithMeta } from '../types/media.types';
@@ -21,19 +22,10 @@ const FALLBACK_ICONS: Record<string, typeof Image> = {
   AUDIO: Music,
 };
 
-/** Format a date string into a human-readable short date. */
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
 /** Table-style list view of media assets. */
 export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaCardListProps) {
   const { t } = useTranslation('media-library');
+  const { formatDate } = useFormat();
   return (
     <div>
       {/* Header row */}
@@ -108,7 +100,11 @@ export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaC
 
             {/* Date */}
             <div className="col-span-2">
-              <span className="text-sm text-gray-500">{formatDate(asset.createdAt)}</span>
+              <span className="text-sm text-gray-500">{formatDate(asset.createdAt, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}</span>
             </div>
 
             {/* Actions */}

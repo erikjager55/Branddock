@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/shared/Modal';
 import { Button } from '@/components/shared/Button';
 import { useClawStore } from '@/stores/useClawStore';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { ALL_CONTEXT_MODULES, type ContextModule } from '@/lib/claw/claw.types';
 
 interface EntityOption {
@@ -26,6 +27,7 @@ function estimateContextTokens(moduleCount: number): number {
 
 export function ContextSelectorModal({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation('claw');
+  const { formatNumber } = useFormat();
   const { contextSelection, toggleModule, setContextSelection } = useClawStore();
   const [entities, setEntities] = useState<EntityMap>({});
   const [expandedModule, setExpandedModule] = useState<ContextModule | null>(null);
@@ -73,7 +75,7 @@ export function ContextSelectorModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between w-full">
           <span className="text-xs text-gray-400">
             {t('context.tokensSummary', {
-              tokens: estimatedTokens.toLocaleString(),
+              tokens: formatNumber(estimatedTokens),
               sources: selectedCount,
             })}
           </span>

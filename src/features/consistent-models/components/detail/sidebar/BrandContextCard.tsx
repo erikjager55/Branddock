@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Card, Button } from "@/components/shared";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { useRefreshBrandContext } from "../../../hooks";
 import type { ConsistentModelDetail, ModelBrandContext } from "../../../types/consistent-model.types";
 
@@ -27,6 +28,7 @@ interface BrandContextCardProps {
 /** Sidebar card showing the brand context snapshot used for AI generation */
 export function BrandContextCard({ model }: BrandContextCardProps) {
   const { t } = useTranslation("consistent-models");
+  const { formatDate } = useFormat();
   const [isExpanded, setIsExpanded] = useState(false);
   const refreshContext = useRefreshBrandContext(model.id);
 
@@ -53,7 +55,7 @@ export function BrandContextCard({ model }: BrandContextCardProps) {
     );
   }
 
-  const resolvedDate = new Date(ctx.resolvedAt).toLocaleDateString("en-US", {
+  const resolvedDate = formatDate(new Date(ctx.resolvedAt), {
     year: "numeric",
     month: "short",
     day: "numeric",

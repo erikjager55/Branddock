@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/shared";
 import { AiContentBanner } from "../AiContentBanner";
 import { useUpdateVoiceguide, useRecomputeCentroid } from "../../hooks";
+import { useFormat } from "@/lib/ui-i18n/format";
 import type { BrandVoiceguide } from "../../types/voiceguide.types";
 
 interface ReferencesSectionProps {
@@ -17,6 +18,7 @@ const RECOMMENDED_MAX = 10;
 
 export function ReferencesSection({ voiceguide }: ReferencesSectionProps) {
   const { t } = useTranslation("brandvoice");
+  const { formatDate } = useFormat();
   const update = useUpdateVoiceguide();
   const recompute = useRecomputeCentroid();
   const [draft, setDraft] = useState("");
@@ -160,7 +162,7 @@ export function ReferencesSection({ voiceguide }: ReferencesSectionProps) {
             <p className="text-xs text-gray-500">
               {voiceguide.centroidComputedAt
                 ? t("references.centroid.lastComputed", {
-                    date: new Date(voiceguide.centroidComputedAt).toLocaleString(),
+                    date: formatDate(new Date(voiceguide.centroidComputedAt), { dateStyle: "medium", timeStyle: "short" }),
                   })
                 : t("references.centroid.notComputed")}
             </p>

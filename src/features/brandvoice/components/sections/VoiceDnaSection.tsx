@@ -8,6 +8,7 @@ import { AiContentBanner } from "../AiContentBanner";
 import { EditableStringList } from "@/features/brandstyle/components/EditableStringList";
 import { useUpdateVoiceguide, useRecomputeCentroid } from "../../hooks";
 import { useSuggestedLocale } from "@/hooks/useSuggestedLocale";
+import { useFormat } from "@/lib/ui-i18n/format";
 import type { BrandVoiceguide, ToneAxis, ToneDimensions } from "../../types/voiceguide.types";
 
 /** Parse "OBSERVED:" or "RECOMMENDED:" prefix from a guideline string (verhuisd uit Brandstyle ToneOfVoiceSection, ADR 2026-05-15). */
@@ -82,6 +83,7 @@ const DEFAULT_TONE: ToneDimensions = {
 
 export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
   const { t } = useTranslation("brandvoice");
+  const { formatNumber, formatDate } = useFormat();
   const update = useUpdateVoiceguide();
   const recompute = useRecomputeCentroid();
   const suggested = useSuggestedLocale();
@@ -234,7 +236,7 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
               <span className="text-gray-400">
                 {t("voiceDna.locale.sources", {
                   count: data.sourceCount,
-                  chars: data.totalChars.toLocaleString(),
+                  chars: formatNumber(data.totalChars),
                 })}
               </span>
             </div>
@@ -354,7 +356,7 @@ export function VoiceDnaSection({ voiceguide }: VoiceDnaSectionProps) {
                   i18nKey="voiceDna.centroid.computed"
                   ns="brandvoice"
                   count={voiceguide.writingSamples.length}
-                  values={{ date: new Date(voiceguide.centroidComputedAt).toLocaleString() }}
+                  values={{ date: formatDate(new Date(voiceguide.centroidComputedAt), { dateStyle: "medium", timeStyle: "short" }) }}
                   components={{ b: <strong /> }}
                 />
               </p>

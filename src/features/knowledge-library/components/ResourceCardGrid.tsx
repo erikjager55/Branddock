@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { BookText, Clock, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import type { ResourceWithMeta } from '../types/knowledge-library.types';
 import { ResourceTypeIcon } from './shared/ResourceTypeIcon';
 import { FavoriteButton } from './shared/FavoriteButton';
@@ -23,6 +24,7 @@ export function ResourceCardGrid({
   onDelete,
 }: ResourceCardGridProps) {
   const { t } = useTranslation('knowledge-library');
+  const { formatDate } = useFormat();
   const [openReportId, setOpenReportId] = useState<string | null>(null);
 
   return (
@@ -71,7 +73,7 @@ export function ResourceCardGrid({
                 </span>
               )}
               <span className="text-xs text-gray-400">
-                {new Date(r.createdAt).toLocaleDateString()}
+                {formatDate(new Date(r.createdAt))}
               </span>
             </div>
 

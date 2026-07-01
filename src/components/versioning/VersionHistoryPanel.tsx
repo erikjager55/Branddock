@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
 import {
   X,
   RotateCcw,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { VersionedResourceType, VersionChangeType } from '@prisma/client';
 import { useVersionHistory, useRestoreVersion } from '@/hooks/useVersionHistory';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 interface VersionHistoryPanelProps {
   resourceType: VersionedResourceType;
@@ -40,6 +40,7 @@ export function VersionHistoryPanel({
   onClose,
   onRestore,
 }: VersionHistoryPanelProps) {
+  const { formatRelative } = useFormat();
   const { data: versions, isLoading } = useVersionHistory(resourceType, resourceId);
   const restoreMutation = useRestoreVersion(resourceType, resourceId);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -128,9 +129,7 @@ export function VersionHistoryPanel({
                         </p>
                         <div className="mt-1 flex items-center gap-2 text-[11px] text-gray-400">
                           <span>
-                            {formatDistanceToNow(new Date(v.createdAt), {
-                              addSuffix: true,
-                            })}
+                            {formatRelative(new Date(v.createdAt))}
                           </span>
                           {v.createdBy?.name && (
                             <>

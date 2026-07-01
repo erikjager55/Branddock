@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { Modal, Skeleton } from "@/components/shared";
 import { useSnapshotDiff } from "../hooks/useSnapshots";
 import { SnapshotDiffPanel } from "./SnapshotDiffPanel";
@@ -63,6 +64,7 @@ function SnapshotPicker({
   onChange: (id: string) => void;
   snapshots: SnapshotSummary[];
 }) {
+  const { formatDate } = useFormat();
   return (
     <div>
       <label className="block text-xs font-medium text-gray-700 mb-1">{label}</label>
@@ -72,7 +74,7 @@ function SnapshotPicker({
         className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
       >
         {snapshots.map((s) => {
-          const date = new Date(s.capturedAt).toLocaleString('en-US', {
+          const date = formatDate(new Date(s.capturedAt), {
             year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
           });
           const labelText = s.notes ? `${date} — ${s.notes}` : date;

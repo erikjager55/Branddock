@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import {
   X,
   Heart,
@@ -114,6 +115,7 @@ export function MediaDetailPanel({
   onDelete,
 }: MediaDetailPanelProps) {
   const { t } = useTranslation('media-library');
+  const { formatDate } = useFormat();
   const { data, isLoading } = useMediaAssetDetail(assetId ?? '');
   const updateAsset = useUpdateMediaAsset(assetId ?? '');
   const openAddToCollection = useMediaLibraryStore((s) => s.openAddToCollection);
@@ -200,10 +202,11 @@ export function MediaDetailPanel({
                     )}
                     <MetadataItem
                       label={t('meta.created')}
-                      value={new Date(asset.createdAt).toLocaleDateString(
-                        'en-US',
-                        { year: 'numeric', month: 'short', day: 'numeric' }
-                      )}
+                      value={formatDate(asset.createdAt, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
                     />
                   </div>
                 </div>

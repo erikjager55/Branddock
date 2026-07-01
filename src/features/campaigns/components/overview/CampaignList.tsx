@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { EmptyState, ProgressBar } from "@/components/shared";
 import { CalendarDays, Megaphone } from "lucide-react";
 import { CampaignOverflowMenu } from "./CampaignOverflowMenu";
@@ -18,13 +19,6 @@ interface CampaignListProps {
   onDelete: (id: string) => void;
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export function CampaignList({
   campaigns,
   isLoading,
@@ -33,6 +27,7 @@ export function CampaignList({
   onDelete,
 }: CampaignListProps) {
   const { t } = useTranslation("campaigns-overview");
+  const { formatDate } = useFormat();
   const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
@@ -156,7 +151,7 @@ export function CampaignList({
               {campaign.startDate ? (
                 <span className="inline-flex items-center gap-1 text-xs text-teal-600">
                   <CalendarDays className="w-3 h-3" />
-                  {formatDate(campaign.startDate)}
+                  {formatDate(campaign.startDate, { month: "short", day: "numeric" })}
                 </span>
               ) : (
                 <span className="text-xs text-gray-400">—</span>

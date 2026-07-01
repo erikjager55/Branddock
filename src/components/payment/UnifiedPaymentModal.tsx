@@ -8,6 +8,7 @@ import { CreditCard, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 type PaymentStep = 'profile' | 'method-selection' | 'card-details' | 'processing' | 'success' | 'error';
 
@@ -30,6 +31,7 @@ export function UnifiedPaymentModal({
   description,
   actionLabel = 'Pay',
 }: UnifiedPaymentModalProps) {
+  const { formatCurrency } = useFormat();
   const [step, setStep] = useState<PaymentStep>('profile');
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodType>('card');
   const [profileVariant, setProfileVariant] = useState<ProfileVariant>('empty');
@@ -222,7 +224,7 @@ export function UnifiedPaymentModal({
               {amount > 0 && (
                 <div className="flex items-center justify-between p-4 bg-muted rounded-lg mb-6">
                   <span className="font-medium">Total Amount</span>
-                  <span className="text-2xl font-bold">${amount.toLocaleString()}</span>
+                  <span className="text-2xl font-bold">{formatCurrency(amount, 'USD')}</span>
                 </div>
               )}
 
@@ -232,7 +234,7 @@ export function UnifiedPaymentModal({
                 </Button>
                 {amount > 0 ? (
                   <Button onClick={handlePayWithSavedMethod} className="flex-1 bg-primary">
-                    {actionLabel} ${amount.toLocaleString()}
+                    {actionLabel} {formatCurrency(amount, 'USD')}
                   </Button>
                 ) : (
                   <Button onClick={handleAddNewMethod} className="flex-1 bg-primary">
@@ -299,7 +301,7 @@ export function UnifiedPaymentModal({
             >
               <DialogHeader className="mb-6">
                 <DialogTitle>Enter Card Details</DialogTitle>
-                <DialogDescription>Total: ${amount.toLocaleString()}</DialogDescription>
+                <DialogDescription>Total: {formatCurrency(amount, 'USD')}</DialogDescription>
               </DialogHeader>
 
               <form onSubmit={handleCardSubmit} className="space-y-4">
@@ -416,7 +418,7 @@ export function UnifiedPaymentModal({
                     Back
                   </Button>
                   <Button type="submit" className="flex-1 bg-primary">
-                    {actionLabel} ${amount.toLocaleString()}
+                    {actionLabel} {formatCurrency(amount, 'USD')}
                   </Button>
                 </div>
               </form>

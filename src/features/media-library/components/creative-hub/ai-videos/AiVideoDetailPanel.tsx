@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { X, Video, Heart, Download, FolderPlus, Check } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
@@ -19,6 +20,7 @@ interface AiVideoDetailPanelProps {
 /** Inline detail panel shown when an AI-generated video is selected. */
 export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps) {
   const { t } = useTranslation('media-library');
+  const { formatDate } = useFormat();
   const { data: video, isLoading, isError } = useAiVideoDetail(videoId);
   const updateVideo = useUpdateAiVideo(videoId);
   const sendToLibrary = useSendAiVideoToLibrary();
@@ -75,7 +77,7 @@ export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps
               )}
             </div>
             <p className="text-xs text-gray-500">
-              {t('detail.createdPrefix')} {new Date(video.createdAt).toLocaleDateString('en-US', {
+              {t('detail.createdPrefix')} {formatDate(video.createdAt, {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',

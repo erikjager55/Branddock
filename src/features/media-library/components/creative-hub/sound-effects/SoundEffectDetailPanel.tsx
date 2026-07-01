@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { X, Music2, Star, Wand2 } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
@@ -30,6 +31,7 @@ interface SoundEffectDetailPanelProps {
 /** Inline detail panel shown when a sound effect is selected. */
 export function SoundEffectDetailPanel({ effectId, onClose }: SoundEffectDetailPanelProps) {
   const { t } = useTranslation('media-library');
+  const { formatDate } = useFormat();
   const { data: effect, isLoading, isError } = useSoundEffectDetail(effectId);
   const updateSoundEffect = useUpdateSoundEffect(effectId);
   const mutate = updateSoundEffect.mutate;
@@ -84,7 +86,7 @@ export function SoundEffectDetailPanel({ effectId, onClose }: SoundEffectDetailP
               )}
             </div>
             <p className="text-xs text-gray-500">
-              {t('detail.createdPrefix')} {new Date(effect.createdAt).toLocaleDateString('en-US', {
+              {t('detail.createdPrefix')} {formatDate(effect.createdAt, {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',

@@ -2,6 +2,7 @@
 
 import { useTranslation } from "react-i18next";
 import { ShoppingCart, Eye, Info } from "lucide-react";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { Button, Card } from "@/components/shared";
 
 interface LineItem {
@@ -27,6 +28,7 @@ export function PurchaseSummary({
   onPreviewImpact,
 }: PurchaseSummaryProps) {
   const { t } = useTranslation("workshop");
+  const { formatCurrency } = useFormat();
   return (
     <div data-testid="purchase-summary" className="sticky top-6">
       <Card padding="none">
@@ -39,7 +41,7 @@ export function PurchaseSummary({
               <div key={i} className="flex justify-between text-sm">
                 <span className="text-gray-600">{item.label}</span>
                 <span className="text-gray-900 font-medium">
-                  &euro;{item.amount.toLocaleString()}
+                  {formatCurrency(item.amount, "EUR")}
                 </span>
               </div>
             ))}
@@ -48,7 +50,7 @@ export function PurchaseSummary({
               <div className="flex justify-between">
                 <span className="font-semibold text-gray-900">{t("purchase.summary.total")}</span>
                 <span className="text-xl font-bold text-gray-900">
-                  &euro;{totalPrice.toLocaleString()}
+                  {formatCurrency(totalPrice, "EUR")}
                 </span>
               </div>
             </div>

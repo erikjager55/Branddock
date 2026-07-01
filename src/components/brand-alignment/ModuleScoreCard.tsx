@@ -14,6 +14,7 @@ import { Card, ProgressBar } from '@/components/shared';
 import { MODULE_CONFIG } from '@/lib/alignment/module-config';
 import { getScoreColor } from '@/lib/alignment/score-calculator';
 import { TYPOGRAPHY } from '@/lib/constants/design-tokens';
+import { useFormat, type UiFormatters } from '@/lib/ui-i18n/format';
 
 // ─── Icon mapping from config string → Lucide component ────
 
@@ -36,7 +37,7 @@ function scoreBarColor(score: number): 'emerald' | 'amber' | 'red' {
 
 // ─── Relative time helper ───────────────────────────────────
 
-function formatRelativeTime(dateStr: string): string {
+function formatRelativeTime(dateStr: string, formatDate: UiFormatters['formatDate']): string {
   const now = new Date();
   const date = new Date(dateStr);
   const diffMs = now.getTime() - date.getTime();
@@ -46,7 +47,7 @@ function formatRelativeTime(dateStr: string): string {
   if (diffHours < 1) return 'Just now';
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return formatDate(date, { month: 'short', day: 'numeric' });
 }
 
 // ─── Types ──────────────────────────────────────────────────
@@ -60,6 +61,7 @@ interface ModuleScoreCardProps {
 
 export function ModuleScoreCard({ module, onNavigate }: ModuleScoreCardProps) {
   const { t } = useTranslation('brand-alignment');
+  const { formatDate } = useFormat();
   const config = MODULE_CONFIG[module.moduleName];
   if (!config) return null;
 
@@ -105,7 +107,7 @@ export function ModuleScoreCard({ module, onNavigate }: ModuleScoreCardProps) {
       {/* Last checked */}
       {module.lastCheckedAt && (
         <div className="text-xs text-gray-400">
-          {t('moduleCard.lastChecked', { time: formatRelativeTime(module.lastCheckedAt) })}
+          {t('moduleCard.lastChecked', { time: formatRelativeTime(module.lastCheckedAt, formatDate) })}
         </div>
       )}
 

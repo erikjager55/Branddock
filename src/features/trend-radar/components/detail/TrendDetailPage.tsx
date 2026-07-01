@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Badge, Card, Select } from '@/components/shared';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTrendDetail, useUpdateTrend, useDeleteTrend, useActivateTrend, useDismissTrend, trendRadarKeys } from '../../hooks';
 import { useTrendRadarStore } from '../../stores/useTrendRadarStore';
@@ -75,6 +76,7 @@ const TIMEFRAME_OPTIONS = [
 /** Trend detail page with hero header, edit mode, and lock/unlock */
 export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
   const queryClient = useQueryClient();
+  const { formatDate } = useFormat();
   const { selectedTrendId, isEditing, setIsEditing } = useTrendRadarStore();
   const { data: trend, isLoading } = useTrendDetail(selectedTrendId);
   const updateMutation = useUpdateTrend();
@@ -359,7 +361,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                 {sourceConfig.label}
               </span>
               <span>
-                {new Date(trend.createdAt).toLocaleDateString('en-US', {
+                {formatDate(new Date(trend.createdAt), {
                   day: 'numeric',
                   month: 'long',
                   year: 'numeric',
@@ -808,7 +810,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">Detected</span>
                   <span className="text-xs text-gray-600">
-                    {new Date(trend.createdAt).toLocaleDateString('en-US', {
+                    {formatDate(new Date(trend.createdAt), {
                       day: 'numeric',
                       month: 'long',
                       year: 'numeric',

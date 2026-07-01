@@ -19,6 +19,7 @@ import {
   type RecentReview,
 } from "@/hooks/useAlignmentInsights";
 import { useWorkspace } from "@/hooks/use-workspace";
+import { useFormat, type UiFormatters } from "@/lib/ui-i18n/format";
 import { SparklineChart } from "@/features/business-strategy/components/detail/SparklineChart";
 import { FeedbackLoopPanels } from "./FeedbackLoopPanels";
 
@@ -356,6 +357,7 @@ function RecentReviewsCard({ reviews }: { reviews: RecentReview[] }) {
 
 function RecentReviewRow({ review }: { review: RecentReview }) {
   const { t } = useTranslation('brand-alignment');
+  const { formatDate } = useFormat();
   const score = review.compositeScore;
   const scoreColor = review.thresholdMet
     ? "text-emerald-700"
@@ -377,13 +379,13 @@ function RecentReviewRow({ review }: { review: RecentReview }) {
         {t('findings', { count: review.findingsCount })}
       </div>
       <div className="text-[11px] text-gray-400 tabular-nums">
-        {formatRelative(review.scoredAt)}
+        {formatRelative(review.scoredAt, formatDate)}
       </div>
     </div>
   );
 }
 
-function formatRelative(iso: string): string {
+function formatRelative(iso: string, formatDate: UiFormatters['formatDate']): string {
   const ts = new Date(iso).getTime();
   const diffMs = Date.now() - ts;
   const minutes = Math.floor(diffMs / 60_000);
@@ -392,7 +394,7 @@ function formatRelative(iso: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString("en-US", {
+  return formatDate(iso, {
     day: "numeric",
     month: "short",
   });

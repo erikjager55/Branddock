@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Mail, Send, CheckCircle2, Eye, MousePointerClick, AlertTriangle, AlertOctagon } from 'lucide-react';
 import { useCampaignSendStatus } from '../../hooks/campaign-send.hooks';
 import type { LucideIcon } from 'lucide-react';
@@ -55,6 +56,7 @@ const STATUS_TONE: Record<string, string> = {
 
 export function CampaignSendStats({ campaignId, deliverableId }: CampaignSendStatsProps) {
   const { t } = useTranslation('campaigns-canvas');
+  const { formatDate } = useFormat();
   const { data: send, isLoading } = useCampaignSendStatus(campaignId, deliverableId);
 
   if (isLoading) {
@@ -83,7 +85,7 @@ export function CampaignSendStats({ campaignId, deliverableId }: CampaignSendSta
         <div className="text-xs text-gray-500">
           {startedAt && (
             <>
-              {t('sendStats.sentAt', { time: startedAt.toLocaleString() })}
+              {t('sendStats.sentAt', { time: formatDate(startedAt, { dateStyle: 'short', timeStyle: 'short' }) })}
               {completedAt && completedAt.getTime() !== startedAt.getTime() && (
                 <>
                   {t('sendStats.took', { seconds: Math.max(1, Math.round((completedAt.getTime() - startedAt.getTime()) / 1000)) })}
