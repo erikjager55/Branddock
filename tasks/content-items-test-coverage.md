@@ -11,7 +11,7 @@ started: 2026-05-13
 completed: -
 related-adr: -
 related-spec: docs/playbooks/testplan-content-items.md
-worktree: -
+worktree: branddock-content-ronde1 (fix/content-items-ronde1)
 ---
 
 # Probleem
@@ -34,7 +34,7 @@ Het testplan is een playbook (documentatie) maar geen task-file. Daardoor stond 
 
 # Acceptatiecriteria
 
-- [ ] Ronde 1 representanten: 8/8 types gecheckt, bug-log gepopuleerd
+- [x] Ronde 1 representanten: 6/8 passed + 2/8 hidden-skipped (newsletter/press-release), bug-log gepopuleerd — 2026-07-01, 0 bugs
 - [ ] Ronde 1 varianten: 45/45 types gecheckt
 - [ ] Summary-tabel (sectie 6) ingevuld: per categorie tested/passed/bugs
 - [ ] Alle P1+P2 bugs gefixt of expliciet als post-launch gedeferd met rationale
@@ -91,3 +91,5 @@ Het playbook IS het smoke-test plan. Per type:
 **STOP-GATE eind sprint #4**: na 8 representanten een bug-log review. Bepaalt sprint #5 bugfix-scope + of varianten parallel kunnen of bugfix-eerst nodig is.
 
 **2026-05-17 — Tussentijdse STOP-GATE genomen**: P2 [shared-pipeline] effie-waardig leak gefixt (commit `e849a1ed`). Defense-in-depth (prompt-guard + output-sanitizer) toegepast in `campaign-strategy.ts` / `campaign-strategy-agents.ts` / `strategy-chain.ts` / `creative-angles.ts` / `quick-concept/route.ts` + nieuwe utility `src/lib/ai/sanitize-strategy-output.ts` (30/30 smoke-test groen). Verificatie loopt mee met de reguliere Ronde 1 sweep — per representant DOM grep `document.body.innerText.match(/effie/gi)` → moet `null` zijn op de Strategy-step rationale-veld. Als bij een type alsnog "effie" verschijnt: leak-vector niet afgevangen, log in bug-log met type + UI-locatie + voorbeeld-text. Zie `gotchas.md` 2026-05-17 (internal-rubric leak) + bug-log entry sectie 5 voor details.
+
+**2026-07-01 — Ronde 1 representanten AFGEROND**: pre-flight audit (3 parallelle prompt-path audits + 2 DB-geverifieerde precondities) → handmatige sweep op Napking. **6/8 passed, 0 bugs**: search-ad, landing-page, explainer-video, one-pager, linkedin-post, blog-post. Effie-fix runtime-herbevestigd (grep = null op linkedin-post Strategy). Landing-page P1 (SEO-bracket-survival) niet opgetreden. **2/8 geskipt** want `hidden:true` in de picker: newsletter (`deliverable-types.ts:691` + Email-categorie `:1115`) + press-release (`:998`) — bewuste beslissing, niet un-hidden. Werk op worktree `fix/content-items-ronde1` (branch vanaf main; i18n-werk in hoofdworktree onaangeroerd). **Nog open**: Ronde 1 varianten (45 types) + Ronde 2 generator-evaluatie → status blijft `in-progress`. Openstaand aandachtspunt voor varianten: de 2 hidden types + de hele Email-categorie zijn uit de picker — check bij de varianten-sweep of dat bewust (deprecated) is of een regressie.

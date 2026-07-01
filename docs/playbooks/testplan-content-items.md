@@ -104,7 +104,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R linkedin-post** | Inline image met text overlay | ☐ | ☐ | ☐ | Single text-blob. Anti-pattern #91 verbiedt al hook-repeat. H3 fidelity-fix raakt auto. Step-1-skip-bug bij inheritance gefixt 2026-05-19 (commit 478bae78). |
+| **R linkedin-post** | Inline image met text overlay | ☑ | ☑ | ☐ | **PASSED 2026-07-01** (Napking) — volledige 6-staps flow; effie-grep op Strategy-step = null. Single text-blob. Anti-pattern #91 verbiedt al hook-repeat. H3 fidelity-fix raakt auto. Step-1-skip-bug bij inheritance gefixt 2026-05-19 (commit 478bae78). |
 | ~~linkedin-article~~ | Verplaatst → Long-Form (2026-05-19) | — | — | — | Categorie was inconsistent: prompt is long-form (1000-2000w), maar listing stond bij Social Media. Zie Long-Form sectie. |
 | linkedin-carousel | 5-10 slide set (gedesigned) | ☐ | ☐ | ☐ | Pre-emptive paraphrase-guard 2026-05-19: anti-pattern + completeness check tegen duplicate slide-headings (mild risk uit ebook H1 lesson, kleinere schaal — 7-10 slides × 15-30w). H2 asset-pipeline post-launch — slide-designs zijn handmatig in Step 3. |
 | linkedin-ad | Ad creative met CTA | ☐ | ☐ | ☐ | Single ad-copy. H3 fidelity-fix raakt auto. |
@@ -131,7 +131,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R search-ad** | Geen asset (text-only) | ☐ | ☐ | ☐ | |
+| **R search-ad** | Geen asset (text-only) | ☑ | ☑ | ☐ | **PASSED 2026-07-01** (Napking) — ad-quality-indicator groen, headlines NL, geen "No component template"-crash (seed ok). |
 | social-ad | Ad creative met headline | ☐ | ☐ | ☐ | |
 | display-ad | Banner (meerdere sizes) | ☐ | ☐ | ☐ | |
 | retargeting-ad | Ad creative met context-cue | ☐ | ☐ | ☐ | |
@@ -168,7 +168,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R landing-page** | Volledige page layout (HTML) | ☐ | ☐ | ☐ | |
+| **R landing-page** | Volledige page layout (HTML) | ☑ | ☑ | ☐ | **PASSED 2026-07-01** (Napking) — SEO-flow schoon: geen `[QUOTE:]`/`[internal link:]` brackets in eindoutput (de P1), geen persona-leak. |
 | product-page | Product hero + feature sections | ☐ | ☐ | ☐ | |
 | faq-page | Layout zonder beelden (HTML) | ☐ | ☐ | ☐ | |
 | comparison-page | Comparison table layout | ☐ | ☐ | ☐ | |
@@ -186,7 +186,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R explainer-video** | Storyboard frames + thumbnail | ☐ | ☐ | ☐ | |
+| **R explainer-video** | Storyboard frames + thumbnail | ☑ | ☑ | ☐ | **PASSED 2026-07-01** (Napking) — sectie-outline + timestamps/`[VISUAL]`/`(VOICEOVER)`; "Confirm & Continue"-knop correct (geen Configure-Video). |
 | testimonial-video | Thumbnail met quote overlay | ☐ | ☐ | ☐ | |
 | promo-video | Thumbnail + scene storyboards | ☐ | ☐ | ☐ | |
 | webinar-outline | Title card + agenda visualisatie | ☐ | ☐ | ☐ | |
@@ -204,7 +204,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R one-pager** | 1-page PDF layout (HTML) | ☐ | ☐ | ☐ | |
+| **R one-pager** | 1-page PDF layout (HTML) | ☑ | ☑ | ☐ | **PASSED 2026-07-01** (Napking) — markdown-bullets, geen placeholder-prijzen, SOLUTION als outcomes. |
 | sales-deck | Multi-slide deck (HTML/PPTX) | ☐ | ☐ | ☐ | |
 | proposal-template | Document layout met placeholders | ☐ | ☐ | ☐ | |
 | product-description | Product image + feature grid | ☐ | ☐ | ☐ | |
@@ -423,12 +423,12 @@ Uit onderzoek — te verifiëren in de test-ronde, niet als aanname behandelen:
 **Sweep-resultaten** (invullen tijdens handmatig testen — format `[type] [stap] severity: beschrijving → verwachte fix`):
 
 ```
-[search-ad] [...]
-[landing-page] [...]
-[explainer-video] [...]
-[one-pager] [...]
-[linkedin-post] [...]
-[blog-post] [...]
+[search-ad] PASSED 2026-07-01 (Napking) — ad-quality-indicator groen, headlines NL, geen crash (seed ok)
+[landing-page] PASSED 2026-07-01 (Napking) — SEO-flow schoon: geen [QUOTE:]/[internal link:] brackets in eindoutput, geen persona-leak
+[explainer-video] PASSED 2026-07-01 (Napking) — sectie-outline + timestamps, "Confirm & Continue"-knop correct
+[one-pager] PASSED 2026-07-01 (Napking) — markdown-bullets, geen placeholder-prijzen
+[linkedin-post] PASSED 2026-07-01 (Napking) — volledige 6-staps flow, effie-grep op Strategy = null
+[blog-post] PASSED 2026-07-01 (Napking) — herbevestigd (eerder LINFI 2026-05-18)
 [newsletter] SKIPPED — hidden (zie boven)
 [press-release] SKIPPED — hidden (zie boven)
 ```
@@ -496,6 +496,8 @@ Uit onderzoek — te verifiëren in de test-ronde, niet als aanname behandelen:
 ---
 
 ## 6 · Summary na afronding
+
+**Ronde 1 — representanten (bijgewerkt 2026-07-01):** 6/8 getest + passed (search-ad, landing-page, explainer-video, one-pager, linkedin-post, blog-post) · 2/8 geskipt want `hidden:true` (newsletter, press-release). **0 bugs.** Long-Form categorie-sweep (2026-05-18) staat los: 4/5 passed, ebook fail (apart verbeterplan). De 53-type-tabel hieronder is voor de varianten-sweep (Ronde 1 varianten + Ronde 2), nog niet gestart.
 
 | Categorie | Tested | Passed | Bugs | % Passed |
 |---|---|---|---|---|
