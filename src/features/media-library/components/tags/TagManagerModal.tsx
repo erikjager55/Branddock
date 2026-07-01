@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tag, Plus, Pencil, Trash2, X, Check } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Modal } from '@/components/shared';
@@ -22,6 +23,7 @@ const PRESET_COLORS = [
 
 /** Full CRUD modal for managing media tags. */
 export function TagManagerModal() {
+  const { t } = useTranslation('media-library');
   const isOpen = useMediaLibraryStore((s) => s.isTagManagerModalOpen);
   const setOpen = useMediaLibraryStore((s) => s.setTagManagerModalOpen);
 
@@ -96,14 +98,14 @@ export function TagManagerModal() {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Manage Tags"
-      subtitle="Create, edit, and delete tags for your media assets"
+      title={t('tags.manage')}
+      subtitle={t('tags.manageModal.subtitle')}
       size="md"
     >
       <div className="space-y-5">
         {/* Add new tag form */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-700">Add new tag</label>
+          <label className="text-sm font-medium text-gray-700">{t('tags.addNew')}</label>
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -112,7 +114,7 @@ export function TagManagerModal() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleCreate();
               }}
-              placeholder="Tag name..."
+              placeholder={t('tags.namePlaceholder')}
               className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               maxLength={40}
             />
@@ -123,7 +125,7 @@ export function TagManagerModal() {
               style={{ backgroundColor: '#0d9488' }}
             >
               <Plus className="w-4 h-4" />
-              Add
+              {t('actions.add')}
             </button>
           </div>
           <ColorPicker
@@ -137,7 +139,7 @@ export function TagManagerModal() {
         {/* Tag list */}
         <div className="space-y-1">
           <label className="text-sm font-medium text-gray-700">
-            Existing tags ({tags?.length ?? 0})
+            {t('tags.existing', { count: tags?.length ?? 0 })}
           </label>
 
           {isLoading ? (
@@ -149,7 +151,7 @@ export function TagManagerModal() {
           ) : !tags || tags.length === 0 ? (
             <div className="py-6 text-center">
               <Tag className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">No tags created yet</p>
+              <p className="text-sm text-gray-400">{t('tags.noneCreated')}</p>
             </div>
           ) : (
             <ul className="space-y-1 pt-1 max-h-64 overflow-y-auto">
@@ -175,14 +177,14 @@ export function TagManagerModal() {
                           onClick={saveEdit}
                           disabled={!editName.trim() || updateMutation.isPending}
                           className="p-1.5 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors disabled:opacity-50"
-                          aria-label="Save"
+                          aria-label={t('actions.save')}
                         >
                           <Check className="w-4 h-4" />
                         </button>
                         <button
                           onClick={cancelEdit}
                           className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors"
-                          aria-label="Cancel"
+                          aria-label={t('actions.cancel')}
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -193,7 +195,7 @@ export function TagManagerModal() {
                     /* Delete confirmation */
                     <div className="flex items-center justify-between p-2 bg-red-50 rounded-lg">
                       <span className="text-sm text-red-700">
-                        Delete &ldquo;{tag.name}&rdquo;? ({tag._count.assets} assets)
+                        {t('tags.deleteConfirm', { name: tag.name, count: tag._count.assets })}
                       </span>
                       <div className="flex items-center gap-2">
                         <button
@@ -202,14 +204,14 @@ export function TagManagerModal() {
                           className="px-3 py-1.5 text-xs font-medium rounded-lg disabled:opacity-50 transition-colors"
                           style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
                         >
-                          Delete
+                          {t('actions.delete')}
                         </button>
                         <button
                           onClick={() => setDeleteConfirmId(null)}
                           className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
                           style={{ color: '#374151', backgroundColor: '#ffffff', borderColor: '#d1d5db' }}
                         >
-                          Cancel
+                          {t('actions.cancel')}
                         </button>
                       </div>
                     </div>
@@ -223,21 +225,21 @@ export function TagManagerModal() {
                         />
                         <span className="text-sm text-gray-900 truncate">{tag.name}</span>
                         <span className="text-xs text-gray-400 flex-shrink-0">
-                          {tag._count.assets} {tag._count.assets === 1 ? 'asset' : 'assets'}
+                          {t('assetCount', { count: tag._count.assets })}
                         </span>
                       </div>
                       <div className="flex items-center gap-0.5">
                         <button
                           onClick={() => startEdit(tag)}
                           className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                          aria-label={`Edit ${tag.name}`}
+                          aria-label={t('actions.editNamed', { name: tag.name })}
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setDeleteConfirmId(tag.id)}
                           className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          aria-label={`Delete ${tag.name}`}
+                          aria-label={t('actions.deleteNamed', { name: tag.name })}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -262,6 +264,7 @@ function ColorPicker({
   selected: string;
   onChange: (color: string) => void;
 }) {
+  const { t } = useTranslation('media-library');
   return (
     <div className="flex items-center gap-2">
       {PRESET_COLORS.map((color) => (
@@ -273,7 +276,7 @@ function ColorPicker({
             selected === color ? 'ring-2 ring-offset-1 ring-teal-500 scale-110' : 'hover:scale-110'
           }`}
           style={{ backgroundColor: color }}
-          aria-label={`Select color ${color}`}
+          aria-label={t('tags.selectColorAria', { color })}
         >
           {selected === color && <Check className="w-3 h-3 text-white" />}
         </button>

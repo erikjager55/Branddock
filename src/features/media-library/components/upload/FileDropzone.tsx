@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UploadCloud, X, FileIcon, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useUploadMedia } from '../../hooks';
 import { useMediaLibraryStore } from '../../stores/useMediaLibraryStore';
@@ -29,6 +30,7 @@ interface FileEntry {
  * Validates file type and size before uploading via useUploadMedia.
  */
 export function FileDropzone() {
+  const { t } = useTranslation('media-library');
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<FileEntry[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -40,19 +42,27 @@ export function FileDropzone() {
   const validateFile = useCallback(
     (file: File): string | null => {
       if (!ALL_ACCEPTED_MIMES.includes(file.type)) {
-        return `"${file.name}" has an unsupported file type (${file.type || 'unknown'}).`;
+        return t('upload.dropzone.unsupportedType', {
+          name: file.name,
+          type: file.type || t('upload.dropzone.unknownType'),
+        });
       }
 
       const mediaType: MediaType = getMediaTypeFromMime(file.type);
       const maxSize = MAX_FILE_SIZES[mediaType];
 
       if (file.size > maxSize) {
-        return `"${file.name}" exceeds the ${formatFileSize(maxSize)} limit for ${mediaType.toLowerCase()} files (${formatFileSize(file.size)}).`;
+        return t('upload.dropzone.tooLarge', {
+          name: file.name,
+          limit: formatFileSize(maxSize),
+          type: mediaType.toLowerCase(),
+          size: formatFileSize(file.size),
+        });
       }
 
       return null;
     },
-    []
+    [t]
   );
 
   const processFiles = useCallback(
@@ -99,7 +109,7 @@ export function FileDropzone() {
           })
           .catch((err) => {
             const message =
-              err instanceof Error ? err.message : 'Upload failed';
+              err instanceof Error ? err.message : t('upload.dropzone.uploadFailed');
             setSelectedFiles((prev) =>
               prev.map((f) =>
                 f.file === entry.file
@@ -110,7 +120,7 @@ export function FileDropzone() {
           });
       }
     },
-    [validateFile, uploadMedia]
+    [validateFile, uploadMedia, t]
   );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -188,17 +198,17 @@ export function FileDropzone() {
         />
 
         <p className="mt-3 text-sm font-medium text-gray-700">
-          Drag & drop files here
+          {t('upload.dropzone.title')}
         </p>
 
-        <p className="mt-1 text-xs text-gray-500">or</p>
+        <p className="mt-1 text-xs text-gray-500">{t('upload.dropzone.or')}</p>
 
         <button
           type="button"
           onClick={handleBrowseClick}
           className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 transition-colors"
         >
-          Browse Files
+          {t('upload.dropzone.browse')}
         </button>
 
         <input
@@ -211,10 +221,12 @@ export function FileDropzone() {
         />
 
         <p className="mt-4 text-xs text-gray-400">
-          Images up to {formatFileSize(MAX_FILE_SIZES.IMAGE)} | Videos up to{' '}
-          {formatFileSize(MAX_FILE_SIZES.VIDEO)} | Audio up to{' '}
-          {formatFileSize(MAX_FILE_SIZES.AUDIO)} | Documents up to{' '}
-          {formatFileSize(MAX_FILE_SIZES.DOCUMENT)}
+          {t('upload.dropzone.limits', {
+            image: formatFileSize(MAX_FILE_SIZES.IMAGE),
+            video: formatFileSize(MAX_FILE_SIZES.VIDEO),
+            audio: formatFileSize(MAX_FILE_SIZES.AUDIO),
+            document: formatFileSize(MAX_FILE_SIZES.DOCUMENT),
+          })}
         </p>
       </div>
 
@@ -230,7 +242,7 @@ export function FileDropzone() {
       {selectedFiles.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium text-gray-700">
-            Files ({selectedFiles.length})
+            {t('upload.dropzone.filesCount', { count: selectedFiles.length })}
           </p>
           <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
             {selectedFiles.map((entry, idx) => (
@@ -259,7 +271,7 @@ export function FileDropzone() {
                     className="text-xs text-red-500 max-w-[160px] truncate"
                     title={entry.error}
                   >
-                    {entry.error ?? 'Failed'}
+                    {entry.error ?? t('upload.dropzone.failed')}
                   </span>
                 )}
 
@@ -267,7 +279,7 @@ export function FileDropzone() {
                   type="button"
                   onClick={() => handleRemoveFile(entry.file)}
                   className="p-0.5 text-gray-400 hover:text-gray-600"
-                  aria-label={`Remove ${entry.file.name}`}
+                  aria-label={t('actions.removeNamed', { name: entry.file.name })}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -285,7 +297,7 @@ export function FileDropzone() {
             onClick={() => setUploadModalOpen(false)}
             className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 transition-colors"
           >
-            Done
+            {t('actions.done')}
           </button>
         </div>
       )}

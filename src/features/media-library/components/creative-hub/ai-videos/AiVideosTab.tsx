@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Video, AlertTriangle, Heart } from 'lucide-react';
 import { Button, EmptyState, SkeletonCard } from '@/components/shared';
 import { useAiVideos, useDeleteAiVideo, useUpdateAiVideo, useSendAiVideoToLibrary } from '@/features/media-library/hooks';
@@ -40,6 +41,7 @@ function AiVideoCardWithActions({
 
 /** Tab component displaying a grid of AI-generated videos. */
 export function AiVideosTab() {
+  const { t } = useTranslation('media-library');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const { data, isLoading, isError } = useAiVideos(showFavoritesOnly || undefined);
   const deleteAiVideo = useDeleteAiVideo();
@@ -49,7 +51,7 @@ export function AiVideosTab() {
   const videos: GeneratedVideoWithMeta[] = data ?? [];
 
   const handleDelete = (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this video?')) return;
+    if (!window.confirm(t('aiVideos.confirmDelete'))) return;
     deleteAiVideo.mutate(id, {
       onSuccess: () => {
         setSelectedVideoId((prev) => (prev === id ? null : prev));
@@ -62,9 +64,9 @@ export function AiVideosTab() {
       {/* Header row */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">AI Videos</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('aiVideos.title')}</h3>
           <p className="text-sm text-gray-500 mt-0.5">
-            Generate short concept videos with AI — text-to-video and image-to-video.
+            {t('aiVideos.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -78,14 +80,14 @@ export function AiVideosTab() {
             }`}
           >
             <Heart className={`w-3.5 h-3.5 ${showFavoritesOnly ? 'fill-red-500' : ''}`} />
-            Favorites
+            {t('actions.favorites')}
           </button>
           <Button
             icon={Video}
             onClick={() => setIsGenerateModalOpen(true)}
             data-testid="generate-video-button"
           >
-            Generate Video
+            {t('aiVideos.generate')}
           </Button>
         </div>
       </div>
@@ -95,10 +97,10 @@ export function AiVideosTab() {
         <div data-testid="error-message" className="text-center py-16">
           <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-3" />
           <h3 className="text-sm font-medium text-gray-900 mb-1">
-            Something went wrong
+            {t('errors.somethingWrong')}
           </h3>
           <p className="text-xs text-gray-500">
-            Failed to load AI videos. Please try again later.
+            {t('aiVideos.loadError')}
           </p>
         </div>
       ) : isLoading ? (
@@ -113,17 +115,17 @@ export function AiVideosTab() {
       ) : videos.length === 0 ? (
         <EmptyState
           icon={Video}
-          title={showFavoritesOnly ? 'No favorite videos yet' : 'No AI videos yet'}
+          title={showFavoritesOnly ? t('aiVideos.empty.favoritesTitle') : t('aiVideos.empty.title')}
           description={
             showFavoritesOnly
-              ? 'Mark videos as favorites to see them here.'
-              : 'Generate your first AI video from text or an image.'
+              ? t('aiVideos.empty.favoritesDescription')
+              : t('aiVideos.empty.description')
           }
           action={
             showFavoritesOnly
               ? undefined
               : {
-                  label: 'Generate Video',
+                  label: t('aiVideos.generate'),
                   onClick: () => setIsGenerateModalOpen(true),
                 }
           }
@@ -145,14 +147,14 @@ export function AiVideosTab() {
       {deleteAiVideo.isError && (
         <div className="flex items-center gap-2 mt-2" role="alert">
           <p className="text-xs text-red-500">
-            Failed to delete video. Please try again.
+            {t('aiVideos.deleteError')}
           </p>
           <button
             type="button"
             onClick={() => deleteAiVideo.reset()}
             className="text-xs text-gray-400 hover:text-gray-600 underline"
           >
-            Dismiss
+            {t('actions.dismiss')}
           </button>
         </div>
       )}

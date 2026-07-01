@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Sparkles,
   AlertCircle,
@@ -19,60 +20,16 @@ import type { PipelineStepConfig } from "./PipelineProgressView";
 import { BriefingReviewView } from "./BriefingReviewView";
 import { StrategyFoundationReviewView } from "./StrategyFoundationReviewView";
 
-// ─── 9-Phase Pipeline Step Configs ──────────────────────
+// ─── 9-Phase Pipeline Step Config keys (translated in-component) ──
 
-const PHASE_VALIDATE_STEPS: PipelineStepConfig[] = [
-  {
-    step: 1,
-    name: "Gathering Context",
-    label: "Gathering brand context...",
-    description: "Loading brand assets, personas, and product data for briefing evaluation.",
-  },
-  {
-    step: 2,
-    name: "Analyzing Briefing",
-    label: "Analyzing briefing completeness...",
-    description: "AI evaluates briefing completeness, strategic clarity, and identifies gaps.",
-  },
-  {
-    step: 3,
-    name: "Scoring Results",
-    label: "Scoring results...",
-    description: "Calculating validation score and identifying improvement areas.",
-  },
-];
-
-const PHASE_FOUNDATION_STEPS: PipelineStepConfig[] = [
-  {
-    step: 1,
-    name: "Gathering Context",
-    label: "Gathering brand & audience context...",
-    description: "Loading brand assets, personas, products, competitors, trends, and styleguide data.",
-  },
-  {
-    step: 2,
-    name: "Enriching Strategy",
-    label: "Enriching with marketing frameworks...",
-    description: "Applying behavioral science, persuasion principles, and external research sources.",
-  },
-  {
-    step: 3,
-    name: "Deep Analysis",
-    label: "Building behavioral analysis...",
-    description: "AI constructs behavioral science-driven strategy foundation with deep thinking.",
-  },
-  {
-    step: 4,
-    name: "Finalizing Foundation",
-    label: "Synthesizing foundation insights...",
-    description: "Validating results and packaging enrichment context for creative phases.",
-  },
-];
+const PHASE_VALIDATE_STEP_KEYS = ["gatheringContext", "analyzingBriefing", "scoringResults"] as const;
+const PHASE_FOUNDATION_STEP_KEYS = ["gatheringContext", "enrichingStrategy", "deepAnalysis", "finalizingFoundation"] as const;
 
 
 // ─── Component ────────────────────────────────────────────
 
 export function StrategyStep() {
+  const { t } = useTranslation("campaigns-wizard");
   const campaignName = useCampaignWizardStore((s) => s.name);
   const campaignDescription = useCampaignWizardStore((s) => s.description);
   const campaignGoalType = useCampaignWizardStore((s) => s.campaignGoalType);
@@ -103,6 +60,25 @@ export function StrategyStep() {
   const briefingSources = useCampaignWizardStore((s) => s.briefingSources);
 
   const [phaseError, setPhaseError] = useState<string | null>(null);
+
+  const validateStepConfigs = useMemo<PipelineStepConfig[]>(
+    () => PHASE_VALIDATE_STEP_KEYS.map((key, i) => ({
+      step: i + 1,
+      name: t(`strategyStep.validateSteps.${key}.name`),
+      label: t(`strategyStep.validateSteps.${key}.label`),
+      description: t(`strategyStep.validateSteps.${key}.description`),
+    })),
+    [t],
+  );
+  const foundationStepConfigs = useMemo<PipelineStepConfig[]>(
+    () => PHASE_FOUNDATION_STEP_KEYS.map((key, i) => ({
+      step: i + 1,
+      name: t(`strategyStep.foundationSteps.${key}.name`),
+      label: t(`strategyStep.foundationSteps.${key}.label`),
+      description: t(`strategyStep.foundationSteps.${key}.description`),
+    })),
+    [t],
+  );
 
   const { data: knowledgeData } = useWizardKnowledge();
 
@@ -195,7 +171,7 @@ export function StrategyStep() {
     store.setIsGenerating(true);
     store.setStrategyPhase("validating_briefing");
 
-    for (const step of PHASE_VALIDATE_STEPS) {
+    for (const step of validateStepConfigs) {
       store.updateStepStatus({ step: step.step, name: step.name, status: "pending", label: step.label });
     }
 
@@ -225,7 +201,7 @@ export function StrategyStep() {
 
         if (data.type === "error") {
           const s = useCampaignWizardStore.getState();
-          s.setPipelineError((data.error as string) || "Briefing validation failed");
+          s.setPipelineError((data.error as string) || t("strategyStep.errorBriefingValidation"));
           s.setIsGenerating(false);
           s.setStrategyPhase("idle");
           return;
@@ -251,7 +227,7 @@ export function StrategyStep() {
       },
     );
     abortRef.current = { abort };
-  }, [strategicIntent, selectedContextIds, wizardContext, pipelineConfig]);
+  }, [strategicIntent, selectedContextIds, wizardContext, pipelineConfig, validateStepConfigs, t]);
 
   // Auto-start strategy generation when step 3 is reached
   // In content mode, selectedContentType replaces campaignGoalType as the trigger
@@ -274,7 +250,7 @@ export function StrategyStep() {
     store.setIsGenerating(true);
     store.setStrategyPhase("building_foundation");
 
-    for (const step of PHASE_FOUNDATION_STEPS) {
+    for (const step of foundationStepConfigs) {
       store.updateStepStatus({ step: step.step, name: step.name, status: "pending", label: step.label });
     }
 
@@ -325,7 +301,7 @@ export function StrategyStep() {
           s.setPipelineError(null);
           s.setIsGenerating(false);
           s.setStrategyPhase("review_briefing");
-          setPhaseError("Foundation building failed. Please try again.");
+          setPhaseError(t("strategyStep.errorFoundation"));
           return;
         }
 
@@ -346,11 +322,11 @@ export function StrategyStep() {
         s.setPipelineError(null);
         s.setIsGenerating(false);
         s.setStrategyPhase("review_briefing");
-        setPhaseError("Foundation building failed due to a network error. Please try again.");
+        setPhaseError(t("strategyStep.errorFoundationNetwork"));
       },
     );
     abortRef.current = { abort };
-  }, [strategicIntent, selectedContextIds, wizardContext, pipelineConfig]);
+  }, [strategicIntent, selectedContextIds, wizardContext, pipelineConfig, foundationStepConfigs, t]);
 
   // ─── Edit Briefing Manually ─────────────────────────
 
@@ -581,8 +557,8 @@ export function StrategyStep() {
     }));
     return (
       <PipelineProgressView
-        title="Building Deployment Plan"
-        estimatedDuration="1–2 minutes"
+        title={t("strategyStep.deployTitle")}
+        estimatedDuration={t("durations.min1to2")}
         steps={deployStepConfigs}
         pipelineSteps={deployPipelineSteps}
       />
@@ -596,7 +572,7 @@ export function StrategyStep() {
         <div className="w-12 h-12 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-3">
           <Sparkles className="w-6 h-6 text-gray-400 animate-pulse" />
         </div>
-        <p className="text-sm text-gray-500">Starting strategy generation...</p>
+        <p className="text-sm text-gray-500">{t("strategyStep.startingGeneration")}</p>
       </div>
     );
   }
@@ -608,10 +584,10 @@ export function StrategyStep() {
         <div className="w-16 h-16 mx-auto rounded-full bg-red-50 flex items-center justify-center mb-4">
           <AlertCircle className="w-8 h-8 text-red-500" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Generation Failed</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">{t("strategyStep.generationFailed")}</h3>
         <p className="text-sm text-red-600 mb-6 max-w-sm mx-auto">{pipelineError}</p>
         <Button variant="cta" size="lg" icon={Sparkles} onClick={handleRestart}>
-          Try Again
+          {t("actions.tryAgain")}
         </Button>
       </div>
     );
@@ -621,9 +597,9 @@ export function StrategyStep() {
   if (strategyPhase === "validating_briefing" && isGenerating) {
     return (
       <PipelineProgressView
-        title="Validating Campaign Briefing"
-        estimatedDuration="15–30 seconds"
-        steps={PHASE_VALIDATE_STEPS}
+        title={t("strategyStep.validatingTitle")}
+        estimatedDuration={t("durations.sec15to30")}
+        steps={validateStepConfigs}
         pipelineSteps={pipelineSteps}
       />
     );
@@ -663,9 +639,9 @@ export function StrategyStep() {
   if (strategyPhase === "building_foundation" && isGenerating) {
     return (
       <PipelineProgressView
-        title="Building Strategy Foundation"
-        estimatedDuration="2–4 minutes"
-        steps={PHASE_FOUNDATION_STEPS}
+        title={t("strategyStep.foundationTitle")}
+        estimatedDuration={t("durations.min2to4")}
+        steps={foundationStepConfigs}
         pipelineSteps={pipelineSteps}
         enrichmentStatus={enrichmentStatus}
         enrichmentBlockCount={enrichmentBlockCount}
@@ -694,13 +670,13 @@ export function StrategyStep() {
         <AlertCircle className="w-8 h-8 text-amber-500" />
       </div>
       <h3 className="text-lg font-semibold text-gray-900 mb-2">
-        Something went wrong
+        {t("strategyStep.somethingWrong")}
       </h3>
       <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
-        The strategy step encountered an unexpected state. Please restart the generation.
+        {t("strategyStep.unexpectedState")}
       </p>
       <Button variant="cta" size="lg" icon={Sparkles} onClick={handleRestart}>
-        Start Over
+        {t("strategyStep.startOver")}
       </Button>
     </div>
   );

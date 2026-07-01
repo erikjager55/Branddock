@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal, Skeleton } from "@/components/shared";
 import { useSnapshotDiff } from "../hooks/useSnapshots";
 import { SnapshotDiffPanel } from "./SnapshotDiffPanel";
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function CompareSnapshotsModal({ snapshots, onClose }: Props) {
+  const { t } = useTranslation("brandstyle");
   // Default: latest vs second-latest
   const [fromId, setFromId] = useState<string>(snapshots[1]?.id ?? '');
   const [toId, setToId] = useState<string>(snapshots[0]?.id ?? '');
@@ -19,17 +21,17 @@ export function CompareSnapshotsModal({ snapshots, onClose }: Props) {
   const diff = useSnapshotDiff(fromId, toId);
 
   return (
-    <Modal isOpen={true} onClose={onClose} title="Compare snapshots" size="lg">
+    <Modal isOpen={true} onClose={onClose} title={t("history.compareTitle")} size="lg">
       <div className="space-y-5">
         <div className="grid grid-cols-2 gap-3">
           <SnapshotPicker
-            label="From"
+            label={t("history.from")}
             value={fromId}
             onChange={setFromId}
             snapshots={snapshots}
           />
           <SnapshotPicker
-            label="To"
+            label={t("history.to")}
             value={toId}
             onChange={setToId}
             snapshots={snapshots}
@@ -37,13 +39,13 @@ export function CompareSnapshotsModal({ snapshots, onClose }: Props) {
         </div>
 
         {fromId === toId ? (
-          <p className="text-sm text-gray-500">Pick two different snapshots to see the diff.</p>
+          <p className="text-sm text-gray-500">{t("history.pickTwo")}</p>
         ) : diff.isLoading ? (
           <Skeleton className="h-48 w-full" />
         ) : diff.data ? (
           <SnapshotDiffPanel diff={diff.data.diff} summary={diff.data.summary} />
         ) : (
-          <p className="text-sm text-gray-600">Failed to load diff.</p>
+          <p className="text-sm text-gray-600">{t("history.diffError")}</p>
         )}
       </div>
     </Modal>

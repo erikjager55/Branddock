@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { GanttChartSquare, EyeOff, Eye, CalendarClock, Search, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   useContentLibraryStore,
   type TimelineGroupBy,
@@ -169,27 +171,31 @@ function resolveItemDate(item: ContentLibraryItem): string | null {
 }
 
 /** Extract the group key + label for an item given the active Group-By. */
-function extractGroupValue(item: ContentLibraryItem, groupBy: TimelineGroupBy): {
+function extractGroupValue(
+  item: ContentLibraryItem,
+  groupBy: TimelineGroupBy,
+  t: TFunction,
+): {
   key: string;
   label: string;
 } {
   if (groupBy === "phase") {
     const phase = (item.phase ?? "").trim();
-    if (!phase) return { key: UNGROUPED_KEY, label: "No phase" };
+    if (!phase) return { key: UNGROUPED_KEY, label: t("timeline.groupValue.noPhase") };
     return { key: phase, label: phase };
   }
   if (groupBy === "campaign") {
     return {
       key: item.campaignId,
-      label: item.campaignName || "Untitled campaign",
+      label: item.campaignName || t("timeline.groupValue.untitledCampaign"),
     };
   }
   if (groupBy === "channel") {
     const channel = item.type ?? "";
-    if (!channel) return { key: UNGROUPED_KEY, label: "No channel" };
+    if (!channel) return { key: UNGROUPED_KEY, label: t("timeline.groupValue.noChannel") };
     return { key: channel.toLowerCase(), label: channel };
   }
-  return { key: "__all__", label: "All content" };
+  return { key: "__all__", label: t("timeline.groupValue.allContent") };
 }
 
 function buildScheduledISOForBeat(
@@ -222,6 +228,7 @@ export function ContentLibraryTimelineView({
   onDuplicateItem,
   duplicatingIds,
 }: ContentLibraryTimelineViewProps) {
+  const { t } = useTranslation("campaigns-content-library");
   const groupBy = useContentLibraryStore((s) => s.timelineGroupBy);
   const setGroupBy = useContentLibraryStore((s) => s.setTimelineGroupBy);
   const zoom = useContentLibraryStore((s) => s.timelineZoom);
@@ -280,12 +287,12 @@ export function ContentLibraryTimelineView({
   // per campaign and don't cluster meaningfully across campaigns.
   const groupByOptions = useMemo(() => {
     const opts: Array<{ value: TimelineGroupBy; label: string }> = [];
-    if (campaignId) opts.push({ value: "phase", label: "Journey Phase" });
-    if (!campaignId) opts.push({ value: "campaign", label: "Campaign" });
-    opts.push({ value: "channel", label: "Content Type" });
-    opts.push({ value: "none", label: "No grouping" });
+    if (campaignId) opts.push({ value: "phase", label: t("timeline.groupBy.phase") });
+    if (!campaignId) opts.push({ value: "campaign", label: t("timeline.groupBy.campaign") });
+    opts.push({ value: "channel", label: t("timeline.groupBy.channel") });
+    opts.push({ value: "none", label: t("timeline.groupBy.none") });
     return opts;
-  }, [campaignId]);
+  }, [campaignId, t]);
 
   // ─── Beats (unit columns: day / week / month) ───────────────────
   const { beats, todayBeatIndex } = useMemo(
@@ -389,7 +396,7 @@ export function ContentLibraryTimelineView({
     const unscheduled: ContentLibraryItem[] = [];
 
     for (const item of items) {
-      const { key, label } = extractGroupValue(item, groupBy);
+      const { key, label } = extractGroupValue(item, groupBy, t);
       if (!laneMap.has(key)) {
         laneMap.set(key, {
           key,
@@ -439,7 +446,7 @@ export function ContentLibraryTimelineView({
 
     // If everything is empty, still show one placeholder lane.
     if (laneList.length === 0) {
-      laneList.push({ key: "__empty__", label: "No scheduled items yet" });
+      laneList.push({ key: "__empty__", label: t("timeline.groupValue.noScheduled") });
     }
 
     return {
@@ -448,7 +455,7 @@ export function ContentLibraryTimelineView({
       unscheduled,
       hiddenLaneCount: totalLaneCount - laneList.length,
     };
-  }, [items, groupBy, beats, hideEmptyLanes]);
+  }, [items, groupBy, beats, hideEmptyLanes, t]);
 
   // ─── Drag state ────────────────────────────────────────────────────
   const [dragOver, setDragOver] = useState<{ laneKey: string; beatIndex: number } | null>(null);
@@ -456,7 +463,7 @@ export function ContentLibraryTimelineView({
 
   const handleDragStart = useCallback(
     (e: DragEvent<HTMLDivElement>, item: ContentLibraryItem) => {
-      const { key: currentGroupValue } = extractGroupValue(item, groupBy);
+      const { key: currentGroupValue } = extractGroupValue(item, groupBy, t);
       const payload: DragPayload = {
         deliverableId: item.id,
         campaignId: item.campaignId,
@@ -473,7 +480,7 @@ export function ContentLibraryTimelineView({
       e.dataTransfer.effectAllowed = "move";
       setIsDragging(true);
     },
-    [groupBy],
+    [groupBy, t],
   );
 
   const handleDragEnd = useCallback(() => {
@@ -685,16 +692,16 @@ export function ContentLibraryTimelineView({
       <div className="flex items-center justify-between gap-3 px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50">
         <div className="flex items-center gap-2 flex-wrap">
           <GanttChartSquare className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium text-gray-600">Timeline</span>
+          <span className="text-sm font-medium text-gray-600">{t("timeline.title")}</span>
           <span className="mx-1 text-gray-300">·</span>
-          <span className="text-xs text-gray-500">Group by</span>
+          <span className="text-xs text-gray-500">{t("timeline.groupByLabel")}</span>
           <select
             ref={groupSelectRef}
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value as TimelineGroupBy)}
             className="text-xs rounded-md border border-gray-300 bg-white py-1 px-2 focus:outline-none focus:ring-2 focus:ring-primary-400"
             style={{ minWidth: 160 }}
-            aria-label="Group timeline by"
+            aria-label={t("timeline.groupByAria")}
           >
             {groupByOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -714,7 +721,7 @@ export function ContentLibraryTimelineView({
                 type="button"
                 onClick={() => setZoom(z)}
                 aria-pressed={zoom === z}
-                title={`${z[0].toUpperCase() + z.slice(1)} zoom (${z[0].toUpperCase()})`}
+                title={t("timeline.zoomTitle", { label: t(`timeline.zoom.${z}`), key: z[0].toUpperCase() })}
                 className={`inline-flex items-center gap-1 text-xs font-medium rounded transition-colors ${
                   zoom === z
                     ? "bg-gray-100 text-gray-900"
@@ -722,9 +729,7 @@ export function ContentLibraryTimelineView({
                 }`}
                 style={{ padding: "3px 8px" }}
               >
-                {z === "day" && "Day"}
-                {z === "week" && "Week"}
-                {z === "month" && "Month"}
+                {t(`timeline.zoom.${z}`)}
               </button>
             ))}
           </div>
@@ -734,12 +739,12 @@ export function ContentLibraryTimelineView({
             <button
               type="button"
               onClick={scrollToToday}
-              title="Jump to today (T)"
+              title={t("timeline.jumpToday")}
               className="inline-flex items-center gap-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors ml-1"
               style={{ padding: "4px 10px" }}
             >
               <CalendarClock className="h-3 w-3" />
-              Today
+              {t("timeline.today")}
             </button>
           )}
 
@@ -748,10 +753,10 @@ export function ContentLibraryTimelineView({
               type="button"
               onClick={() => setHideEmptyLanes(false)}
               className="text-xs text-gray-500 hover:text-gray-700 inline-flex items-center gap-1 ml-2"
-              title="Show empty lanes (H)"
+              title={t("timeline.showEmptyTitle")}
             >
               <Eye className="h-3 w-3" />
-              Show {hiddenLaneCount} empty
+              {t("timeline.showEmpty", { n: hiddenLaneCount })}
             </button>
           )}
           {!hideEmptyLanes && (
@@ -759,10 +764,10 @@ export function ContentLibraryTimelineView({
               type="button"
               onClick={() => setHideEmptyLanes(true)}
               className="text-xs text-gray-500 hover:text-gray-700 inline-flex items-center gap-1 ml-2"
-              title="Hide lanes with no scheduled items (H)"
+              title={t("timeline.hideEmptyTitle")}
             >
               <EyeOff className="h-3 w-3" />
-              Hide empty
+              {t("timeline.hideEmpty")}
             </button>
           )}
         </div>
@@ -772,31 +777,31 @@ export function ContentLibraryTimelineView({
               type="button"
               onClick={handleAcceptAllSuggestions}
               disabled={updateSchedule.isPending}
-              title="Commit all AI-suggested dates as scheduled"
+              title={t("timeline.acceptAllTitle")}
               className="inline-flex items-center gap-1 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-md transition-colors disabled:opacity-50"
               style={{ padding: "4px 10px" }}
             >
               <Sparkles className="h-3 w-3" />
-              Accept {suggestedCount} suggestion{suggestedCount === 1 ? "" : "s"}
+              {t("timeline.acceptSuggestions", { count: suggestedCount })}
             </button>
           )}
           <div className="text-xs text-gray-400 flex items-center gap-2 flex-wrap">
-            <span>{beats.length} weeks</span>
+            <span>{t("timeline.weeks", { n: beats.length })}</span>
             <span>·</span>
-            <span title="User-committed dates">{committedCount} scheduled</span>
+            <span title={t("timeline.committedTitle")}>{t("timeline.committedScheduled", { n: committedCount })}</span>
             {suggestedCount > 0 && (
               <>
                 <span>·</span>
                 <span
-                  title="AI-suggested dates (not yet accepted)"
+                  title={t("timeline.suggestedTitle")}
                   className="text-teal-600"
                 >
-                  {suggestedCount} suggested
+                  {t("timeline.suggested", { n: suggestedCount })}
                 </span>
               </>
             )}
             <span>·</span>
-            <span>{unscheduled.length} unscheduled</span>
+            <span>{t("timeline.unscheduled", { n: unscheduled.length })}</span>
           </div>
         </div>
       </div>
@@ -808,7 +813,7 @@ export function ContentLibraryTimelineView({
           <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-semibold text-gray-700 uppercase tracking-wide">
-                Unscheduled
+                {t("timeline.unscheduledHeading")}
                 {unscheduledSearch ? (
                   <span className="ml-1 text-gray-500">
                     ({filteredUnscheduled.length}/{unscheduled.length})
@@ -833,13 +838,13 @@ export function ContentLibraryTimelineView({
                     setUnscheduledSearch(e.target.value);
                     setUnscheduledPage(0);
                   }}
-                  placeholder="Filter unscheduled..."
+                  placeholder={t("timeline.filterPlaceholder")}
                   className="text-[11px] bg-white border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-400"
                   style={{ padding: "5px 10px 5px 30px", width: "100%" }}
                 />
               </div>
               <span className="text-[11px] text-gray-500">
-                Drag onto a week or use the date picker
+                {t("timeline.dragWeekHint")}
               </span>
               {showUnscheduledPagination && (
                 <div className="flex items-center gap-1 ml-1">
@@ -849,7 +854,7 @@ export function ContentLibraryTimelineView({
                     onClick={() => setUnscheduledPage((p) => Math.max(0, p - 1))}
                     className="px-1.5 py-0.5 rounded text-[11px] font-medium border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
-                    Prev
+                    {t("common.prev")}
                   </button>
                   <span className="text-[11px] text-gray-600 tabular-nums">
                     {safeUnscheduledPage + 1}/{totalUnscheduledPages}
@@ -864,7 +869,7 @@ export function ContentLibraryTimelineView({
                     }
                     className="px-1.5 py-0.5 rounded text-[11px] font-medium border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
-                    Next
+                    {t("common.next")}
                   </button>
                 </div>
               )}
@@ -920,7 +925,7 @@ export function ContentLibraryTimelineView({
             })}
             {unscheduledPageItems.length === 0 && unscheduledSearch && (
               <div className="col-span-full text-xs text-gray-400 italic px-2 py-3">
-                No matches for &ldquo;{unscheduledSearch}&rdquo;.
+                {t("timeline.noMatches", { query: unscheduledSearch })}
               </div>
             )}
           </div>
@@ -1048,7 +1053,7 @@ export function ContentLibraryTimelineView({
                 zIndex: 3,
               }}
             >
-              {groupByLabelForSelect(groupBy)}
+              {groupByLabelForSelect(groupBy, t)}
             </div>
             {beats.map((beat) => {
               // Count items in this column (across all lanes) for tooltip.
@@ -1064,9 +1069,7 @@ export function ContentLibraryTimelineView({
               return (
                 <div
                   key={beat.index}
-                  title={`${beat.longLabel}\n${beatItemCount} ${
-                    beatItemCount === 1 ? "item" : "items"
-                  }`}
+                  title={t("timeline.beatTitle", { label: beat.longLabel, count: beatItemCount })}
                   onMouseEnter={() => setHoveredBeatIndex(beat.index)}
                   onMouseLeave={() => setHoveredBeatIndex((i) => (i === beat.index ? null : i))}
                   style={{
@@ -1233,7 +1236,7 @@ export function ContentLibraryTimelineView({
                             }}
                             title={
                               suggested
-                                ? "AI-suggested date — drag to reschedule or click Accept to commit"
+                                ? t("timeline.suggestedCardTitle")
                                 : undefined
                             }
                           >
@@ -1281,8 +1284,8 @@ export function ContentLibraryTimelineView({
                           style={{ padding: "2px 4px" }}
                         >
                           {expanded
-                            ? "Show less"
-                            : `+${cellItems.length - CELL_MAX_ITEMS} more`}
+                            ? t("common.showLess")
+                            : t("common.more", { n: cellItems.length - CELL_MAX_ITEMS })}
                         </button>
                       )}
                     </div>
@@ -1363,16 +1366,16 @@ export function ContentLibraryTimelineView({
   );
 }
 
-function groupByLabelForSelect(groupBy: TimelineGroupBy): string {
+function groupByLabelForSelect(groupBy: TimelineGroupBy, t: TFunction): string {
   switch (groupBy) {
     case "phase":
-      return "Journey Phase";
+      return t("timeline.groupBy.phase");
     case "campaign":
-      return "Campaign";
+      return t("timeline.groupBy.campaign");
     case "channel":
-      return "Content Type";
+      return t("timeline.groupBy.channel");
     case "none":
-      return "All content";
+      return t("timeline.groupValue.allContent");
   }
 }
 

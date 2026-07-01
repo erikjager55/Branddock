@@ -1,25 +1,27 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { ArrowRight, FileEdit, Archive } from "lucide-react";
 import { Button } from "@/components/shared";
 import type { DraftSummary, DraftType } from "../../types/campaign-wizard.types";
 
-// Step labels per wizard mode. Campaign = 6 steps, Content = 5 steps.
+// Step keys per wizard mode. Campaign = 6 steps, Content = 5 steps.
 // The backend stores `type` on each draft so the row can label its step
 // correctly. When `type` is missing (legacy payloads) we fall back to the
-// campaign labels, which is a safe default for mixed lists.
-const CAMPAIGN_STEP_LABELS = [
-  "Setup",
-  "Knowledge",
-  "Strategy",
-  "Concept",
-  "Deliverables",
-  "Review",
-];
-const CONTENT_STEP_LABELS = ["Setup", "Knowledge", "Strategy", "Concept", "Content"];
+// campaign labels, which is a safe default for mixed lists. Keys map to
+// `steps.*` in the campaigns-overview catalog.
+const CAMPAIGN_STEP_KEYS = [
+  "setup",
+  "knowledge",
+  "strategy",
+  "concept",
+  "deliverables",
+  "review",
+] as const;
+const CONTENT_STEP_KEYS = ["setup", "knowledge", "strategy", "concept", "content"] as const;
 
-function stepLabelsForType(type: DraftType | undefined): string[] {
-  return type === "CONTENT" ? CONTENT_STEP_LABELS : CAMPAIGN_STEP_LABELS;
+function stepKeysForType(type: DraftType | undefined): readonly string[] {
+  return type === "CONTENT" ? CONTENT_STEP_KEYS : CAMPAIGN_STEP_KEYS;
 }
 
 function formatRelativeTime(iso: string | null): string {
@@ -61,15 +63,16 @@ export function DraftCampaignsList({
   onArchive,
   busyDraftId,
 }: DraftCampaignsListProps) {
+  const { t } = useTranslation("campaigns-overview");
   if (drafts.length === 0) return null;
 
   return (
     <div className="rounded-lg border border-primary/20 bg-primary/5 overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-primary/10">
         <FileEdit className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-medium text-gray-900">Drafts in progress</h3>
+        <h3 className="text-sm font-medium text-gray-900">{t("draft.heading")}</h3>
         <span className="text-xs text-gray-500">
-          {drafts.length} of {limit}
+          {t("draft.countOf", { count: drafts.length, limit })}
         </span>
       </div>
       <ul className="divide-y divide-primary/10">
@@ -95,8 +98,12 @@ interface DraftRowProps {
 }
 
 function DraftRow({ draft, onResume, onArchive, isBusy }: DraftRowProps) {
-  const labels = stepLabelsForType(draft.type);
-  const stepLabel = labels[draft.wizardStep - 1] ?? `Step ${draft.wizardStep}`;
+  const { t } = useTranslation("campaigns-overview");
+  const stepKeys = stepKeysForType(draft.type);
+  const stepKey = stepKeys[draft.wizardStep - 1];
+  const stepLabel = stepKey
+    ? t(`steps.${stepKey}`)
+    : t("draft.stepFallback", { step: draft.wizardStep });
   const savedTime = formatRelativeTime(draft.wizardLastSavedAt);
 
   return (
@@ -108,7 +115,12 @@ function DraftRow({ draft, onResume, onArchive, isBusy }: DraftRowProps) {
         <div className="min-w-0">
           <p className="text-sm font-medium text-gray-900 truncate">{draft.name}</p>
           <p className="text-xs text-muted-foreground">
-            Step {draft.wizardStep} of {labels.length} ({stepLabel}) · saved {savedTime}
+            {t("draft.stepProgress", {
+              step: draft.wizardStep,
+              total: stepKeys.length,
+              label: stepLabel,
+              time: savedTime,
+            })}
           </p>
         </div>
       </div>
@@ -118,10 +130,10 @@ function DraftRow({ draft, onResume, onArchive, isBusy }: DraftRowProps) {
           onClick={() => onArchive(draft.id)}
           disabled={isBusy}
           className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Move to archive — can be restored later"
+          title={t("draft.archiveTooltip")}
         >
           <Archive className="h-3.5 w-3.5" />
-          Archive
+          {t("draft.archive")}
         </button>
         <Button
           size="sm"
@@ -130,7 +142,7 @@ function DraftRow({ draft, onResume, onArchive, isBusy }: DraftRowProps) {
           isLoading={isBusy}
           className="gap-1.5"
         >
-          Continue
+          {t("draft.continue")}
           <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       </div>

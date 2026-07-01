@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Mic, Star, Wand2, AlertCircle } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
 import { useBrandVoiceDetail, useUpdateBrandVoice, useGenerateSample } from '@/features/media-library/hooks';
@@ -19,6 +20,7 @@ interface VoiceDetailPanelProps {
 
 /** Inline detail panel shown when a brand voice is selected. */
 export function VoiceDetailPanel({ voiceId, onClose }: VoiceDetailPanelProps) {
+  const { t } = useTranslation('media-library');
   const { data: voice, isLoading } = useBrandVoiceDetail(voiceId);
   const updateVoice = useUpdateBrandVoice(voiceId);
   const generateSample = useGenerateSample(voiceId);
@@ -37,9 +39,9 @@ export function VoiceDetailPanel({ voiceId, onClose }: VoiceDetailPanelProps) {
     setGenerateError(null);
     generateSample.mutate(sampleText.trim(), {
       onSuccess: () => setSampleText(''),
-      onError: (err) => setGenerateError(err instanceof Error ? err.message : 'Failed to generate sample'),
+      onError: (err) => setGenerateError(err instanceof Error ? err.message : t('brandVoice.detail.generateError')),
     });
-  }, [sampleText, generateSample]);
+  }, [sampleText, generateSample, t]);
 
   if (isLoading) {
     return (
@@ -72,12 +74,12 @@ export function VoiceDetailPanel({ voiceId, onClose }: VoiceDetailPanelProps) {
               <h3 className="text-base font-semibold text-gray-900">{typedVoice.name}</h3>
               {typedVoice.isDefault && (
                 <Badge variant="teal" size="sm" icon={Star}>
-                  Default
+                  {t('badges.default')}
                 </Badge>
               )}
             </div>
             <p className="text-xs text-gray-500">
-              Created {new Date(typedVoice.createdAt).toLocaleDateString('en-US', {
+              {t('detail.createdPrefix')} {new Date(typedVoice.createdAt).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
@@ -85,7 +87,7 @@ export function VoiceDetailPanel({ voiceId, onClose }: VoiceDetailPanelProps) {
             </p>
           </div>
         </div>
-        <Button variant="ghost" onClick={onClose} aria-label="Close detail panel">
+        <Button variant="ghost" onClick={onClose} aria-label={t('actions.closeDetail')}>
           <X className="w-4 h-4" />
         </Button>
       </div>
@@ -96,31 +98,31 @@ export function VoiceDetailPanel({ voiceId, onClose }: VoiceDetailPanelProps) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {typedVoice.voiceGender && (
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Gender</span>
+              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('brandVoice.detail.gender')}</span>
               <span className="text-sm text-gray-900">{typedVoice.voiceGender}</span>
             </div>
           )}
           {typedVoice.voiceAge && (
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Age</span>
+              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('brandVoice.detail.age')}</span>
               <span className="text-sm text-gray-900">{typedVoice.voiceAge}</span>
             </div>
           )}
           {typedVoice.voiceTone && (
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Tone</span>
+              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('brandVoice.detail.tone')}</span>
               <span className="text-sm text-gray-900">{typedVoice.voiceTone}</span>
             </div>
           )}
           {typedVoice.voiceAccent && (
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Accent</span>
+              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('brandVoice.detail.accent')}</span>
               <span className="text-sm text-gray-900">{typedVoice.voiceAccent}</span>
             </div>
           )}
           {typedVoice.speakingPace && (
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Pace</span>
+              <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">{t('brandVoice.detail.pace')}</span>
               <span className="text-sm text-gray-900">{typedVoice.speakingPace}</span>
             </div>
           )}
@@ -129,7 +131,7 @@ export function VoiceDetailPanel({ voiceId, onClose }: VoiceDetailPanelProps) {
         {/* Voice prompt */}
         {typedVoice.voicePrompt && (
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-1">Voice Prompt</span>
+            <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-1">{t('brandVoice.detail.voicePrompt')}</span>
             <p className="text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2 whitespace-pre-wrap">
               {typedVoice.voicePrompt}
             </p>
@@ -139,7 +141,7 @@ export function VoiceDetailPanel({ voiceId, onClose }: VoiceDetailPanelProps) {
         {/* Audio preview */}
         <div>
           <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-1">
-            Sample Audio
+            {t('brandVoice.detail.sampleAudio')}
           </span>
           <VoicePreviewPlayer
             audioUrl={typedVoice.sampleAudioUrl}
@@ -150,12 +152,12 @@ export function VoiceDetailPanel({ voiceId, onClose }: VoiceDetailPanelProps) {
         {/* Generate Sample */}
         <div>
           <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-1">
-            Generate Sample
+            {t('brandVoice.detail.generateSample')}
           </span>
           <textarea
             value={sampleText}
             onChange={(e) => setSampleText(e.target.value)}
-            placeholder="Enter text to generate audio sample..."
+            placeholder={t('brandVoice.detail.samplePlaceholder')}
             maxLength={500}
             rows={3}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-y"
@@ -170,12 +172,12 @@ export function VoiceDetailPanel({ voiceId, onClose }: VoiceDetailPanelProps) {
               isLoading={generateSample.isPending}
             >
               <Wand2 className="w-3.5 h-3.5 mr-1.5" />
-              Generate Sample
+              {t('brandVoice.detail.generateSample')}
             </Button>
           </div>
           {!typedVoice.ttsVoiceId && (
             <p className="mt-1.5 text-xs text-gray-500">
-              Select a TTS voice below to enable sample generation.
+              {t('brandVoice.detail.selectVoiceHint')}
             </p>
           )}
           {generateError && (
@@ -188,7 +190,7 @@ export function VoiceDetailPanel({ voiceId, onClose }: VoiceDetailPanelProps) {
                   onClick={handleGenerateSample}
                   className="text-xs text-red-600 underline mt-1"
                 >
-                  Try again
+                  {t('actions.tryAgain')}
                 </button>
               </div>
             </div>

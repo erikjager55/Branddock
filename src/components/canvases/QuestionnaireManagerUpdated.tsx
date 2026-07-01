@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -121,6 +122,7 @@ export function QuestionnaireManager({
   onNavigateToAsset,
   onReturnToHub
 }: QuestionnaireManagerProps) {
+  const { t } = useTranslation('canvases');
   const [viewStatus, setViewStatus] = useState<'in-progress' | 'approved'>('in-progress');
   const [selectedQuestionnaireId, setSelectedQuestionnaireId] = useState<string | null>(null);
   const [editMode, setEditMode] = useState<string | null>(null);
@@ -259,7 +261,7 @@ export function QuestionnaireManager({
 
   const copyLink = (url: string) => {
     navigator.clipboard.writeText(url);
-    alert('Link copied to clipboard!');
+    alert(t('questionnaireManager.linkCopied'));
   };
 
   const formatDate = (date?: Date) => {
@@ -272,29 +274,29 @@ export function QuestionnaireManager({
     return [
       {
         step: 1,
-        title: 'Design Questionnaire',
-        description: 'Build questions and link them to brand assets',
+        title: t('questionnaireManager.steps.designTitle'),
+        description: t('questionnaireManager.steps.designDesc'),
         isCompleted: questionnaire.linkGenerated,
         isCurrent: questionnaire.status === 'setup'
       },
       {
         step: 2,
-        title: 'Setup Recipients',
-        description: 'Configure recipient details and distribution',
+        title: t('questionnaireManager.steps.recipientsTitle'),
+        description: t('questionnaireManager.steps.recipientsDesc'),
         isCompleted: questionnaire.linkSent,
         isCurrent: questionnaire.status === 'link-generated'
       },
       {
         step: 3,
-        title: 'Send & Track',
-        description: 'Distribute questionnaire and monitor responses',
+        title: t('questionnaireManager.steps.trackTitle'),
+        description: t('questionnaireManager.steps.trackDesc'),
         isCompleted: questionnaire.responsesReceived,
         isCurrent: questionnaire.status === 'link-sent'
       },
       {
         step: 4,
-        title: 'Analyze Results',
-        description: 'Review insights and export findings',
+        title: t('questionnaireManager.steps.analyzeTitle'),
+        description: t('questionnaireManager.steps.analyzeDesc'),
         isCompleted: questionnaire.status === 'analyzed',
         isCurrent: questionnaire.status === 'responses-received'
       }
@@ -312,17 +314,17 @@ export function QuestionnaireManager({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'setup':
-        return <Badge variant="secondary" className="bg-gray-100 text-gray-700">Setup</Badge>;
+        return <Badge variant="secondary" className="bg-gray-100 text-gray-700">{t('questionnaireManager.status.setup')}</Badge>;
       case 'link-generated':
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-700">Link Ready</Badge>;
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-700">{t('questionnaireManager.status.linkReady')}</Badge>;
       case 'link-sent':
-        return <Badge variant="secondary" className="bg-purple-100 text-purple-700">Sent</Badge>;
+        return <Badge variant="secondary" className="bg-purple-100 text-purple-700">{t('questionnaireManager.status.sent')}</Badge>;
       case 'responses-received':
-        return <Badge variant="secondary" className="bg-green-100 text-green-700">Responses In</Badge>;
+        return <Badge variant="secondary" className="bg-green-100 text-green-700">{t('questionnaireManager.status.responsesIn')}</Badge>;
       case 'analyzed':
-        return <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">Completed</Badge>;
+        return <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">{t('questionnaireManager.status.completed')}</Badge>;
       default:
-        return <Badge variant="secondary">Unknown</Badge>;
+        return <Badge variant="secondary">{t('questionnaireManager.status.unknown')}</Badge>;
     }
   };
 
@@ -331,9 +333,9 @@ export function QuestionnaireManager({
       {/* Header with Status Dropdown */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-semibold mb-2">Brand Questionnaire Manager</h2>
+          <h2 className="text-2xl font-semibold mb-2">{t('questionnaireManager.title')}</h2>
           <p className="text-muted-foreground">
-            Collect brand insights through structured questionnaires
+            {t('questionnaireManager.subtitle')}
           </p>
         </div>
 
@@ -344,12 +346,12 @@ export function QuestionnaireManager({
                 {viewStatus === 'in-progress' ? (
                   <>
                     <Play className="h-4 w-4 text-blue-600" />
-                    In Progress
+                    {t('status.inProgress')}
                   </>
                 ) : (
                   <>
                     <CheckCircle className="h-4 w-4 text-green-600" />
-                    Approved
+                    {t('status.approved')}
                   </>
                 )}
                 <ChevronDown className="h-4 w-4 opacity-50" />
@@ -361,15 +363,15 @@ export function QuestionnaireManager({
                 className="cursor-pointer py-3"
               >
                 <Play className="h-4 w-4 mr-2 text-blue-600" />
-                <span>In Progress</span>
+                <span>{t('status.inProgress')}</span>
                 {viewStatus === 'in-progress' && <Check className="h-4 w-4 ml-auto" />}
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => setViewStatus('approved')}
                 className="cursor-pointer py-3"
               >
                 <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                <span>Approved</span>
+                <span>{t('status.approved')}</span>
                 {viewStatus === 'approved' && <Check className="h-4 w-4 ml-auto" />}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -389,33 +391,33 @@ export function QuestionnaireManager({
                     <div className="text-2xl font-semibold">
                       {inProgressQuestionnaires.length}/{numberOfQuestionnaires}
                     </div>
-                    <div className="text-sm text-muted-foreground">Active Questionnaires</div>
+                    <div className="text-sm text-muted-foreground">{t('questionnaireManager.activeQuestionnaires')}</div>
                   </div>
                   <Separator orientation="vertical" className="h-12" />
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-gray-400"></div>
                       <span className="text-sm text-muted-foreground">
-                        {questionnaires.filter(q => q.status === 'setup').length} Setup
+                        {t('questionnaireManager.setupCount', { count: questionnaires.filter(q => q.status === 'setup').length })}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                       <span className="text-sm text-muted-foreground">
-                        {questionnaires.filter(q => q.status === 'link-generated' || q.status === 'link-sent').length} Pending
+                        {t('questionnaireManager.pendingCount', { count: questionnaires.filter(q => q.status === 'link-generated' || q.status === 'link-sent').length })}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-green-500"></div>
                       <span className="text-sm text-muted-foreground">
-                        {questionnaires.filter(q => q.status === 'responses-received').length} Received
+                        {t('questionnaireManager.receivedCount', { count: questionnaires.filter(q => q.status === 'responses-received').length })}
                       </span>
                     </div>
                   </div>
                 </div>
                 <Button onClick={addNewQuestionnaire}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Questionnaire
+                  {t('questionnaireManager.addQuestionnaire')}
                 </Button>
               </div>
             </CardContent>
@@ -445,13 +447,13 @@ export function QuestionnaireManager({
                           </div>
                           <div className="space-y-1">
                             <p className="text-sm text-muted-foreground">
-                              {questionnaire.recipient || 'No recipient set'} 
+                              {questionnaire.recipient || t('questionnaireManager.noRecipient')}
                               {questionnaire.role && ` • ${questionnaire.role}`}
                             </p>
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Target className="h-3 w-3" />
-                                {questionnaire.selectedAssets.length} assets selected
+                                {t('common.assetsSelected', { count: questionnaire.selectedAssets.length })}
                               </span>
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
@@ -471,11 +473,11 @@ export function QuestionnaireManager({
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => setSelectedQuestionnaireId(isExpanded ? null : questionnaire.id)}>
                             <Eye className="h-4 w-4 mr-2" />
-                            {isExpanded ? 'Collapse' : 'Expand'} Workflow
+                            {isExpanded ? t('questionnaireManager.collapseWorkflow') : t('questionnaireManager.expandWorkflow')}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => deleteQuestionnaire(questionnaire.id)}>
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            {t('actions.delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -484,8 +486,8 @@ export function QuestionnaireManager({
                     {/* Progress Bar */}
                     <div className="mb-4">
                       <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="text-muted-foreground">Progress</span>
-                        <span className="font-semibold">{completedSteps}/{totalSteps} steps</span>
+                        <span className="text-muted-foreground">{t('common.progress')}</span>
+                        <span className="font-semibold">{t('questionnaireManager.stepsProgress', { completed: completedSteps, total: totalSteps })}</span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-2">
                         <div 
@@ -505,7 +507,7 @@ export function QuestionnaireManager({
                         >
                           <span className="flex items-center gap-2">
                             <Lightbulb className="h-4 w-4" />
-                            View Questionnaire Workflow
+                            {t('questionnaireManager.viewWorkflow')}
                           </span>
                           {isExpanded ? (
                             <ChevronDown className="h-4 w-4" />
@@ -546,13 +548,13 @@ export function QuestionnaireManager({
               <Card className="border-dashed">
                 <CardContent className="py-12 text-center">
                   <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                  <h3 className="font-semibold mb-2">No Active Questionnaires</h3>
+                  <h3 className="font-semibold mb-2">{t('questionnaireManager.noActive')}</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Create your first questionnaire to start collecting brand insights
+                    {t('questionnaireManager.noActiveHint')}
                   </p>
                   <Button onClick={addNewQuestionnaire}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Questionnaire
+                    {t('questionnaireManager.addQuestionnaire')}
                   </Button>
                 </CardContent>
               </Card>
@@ -568,17 +570,17 @@ export function QuestionnaireManager({
             <CardHeader>
               <CardTitle className="flex items-center">
                 <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                Completed Questionnaires
+                {t('questionnaireManager.completedTitle')}
               </CardTitle>
               <CardDescription>
-                Review finalized questionnaire results and insights
+                {t('questionnaireManager.completedDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {completedQuestionnaires.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-                  <p className="text-muted-foreground">No completed questionnaires yet</p>
+                  <p className="text-muted-foreground">{t('questionnaireManager.noCompleted')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -594,7 +596,7 @@ export function QuestionnaireManager({
                           </div>
                           <Button size="sm">
                             <Download className="h-3 w-3 mr-1" />
-                            Export
+                            {t('actions.export')}
                           </Button>
                         </div>
                       </CardContent>

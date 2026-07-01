@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Zap, Check, CalendarPlus, CalendarDays, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useApproveDeliverable, useUpdateDeliverableSchedule } from '../../hooks';
 import {
   nextBusinessDay10am,
@@ -34,6 +35,7 @@ export function QuickPublishMenu({
   sameAsLastDate,
   variant = 'button',
 }: QuickPublishMenuProps) {
+  const { t } = useTranslation('campaigns-content-library');
   const [open, setOpen] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -125,7 +127,7 @@ export function QuickPublishMenu({
         }}
         disabled={isLoading}
         className={triggerClassName}
-        title="Quick publish"
+        title={t('quickPublish.trigger')}
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -134,7 +136,7 @@ export function QuickPublishMenu({
         ) : (
           <Zap className="w-3.5 h-3.5" />
         )}
-        {variant === 'button' && <span>Quick publish</span>}
+        {variant === 'button' && <span>{t('quickPublish.trigger')}</span>}
       </button>
 
       {open && (
@@ -154,7 +156,7 @@ export function QuickPublishMenu({
                 className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
               >
                 <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                <span>Approve now</span>
+                <span>{t('quickPublish.approveNow')}</span>
               </button>
               <button
                 type="button"
@@ -164,7 +166,7 @@ export function QuickPublishMenu({
                 className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 border-t border-gray-100 disabled:opacity-50"
               >
                 <CalendarPlus className="w-4 h-4 text-teal-500 flex-shrink-0" />
-                <span>Approve + Schedule…</span>
+                <span>{t('quickPublish.approveSchedule')}</span>
               </button>
               {sameAsLastDate && (
                 <button
@@ -175,7 +177,7 @@ export function QuickPublishMenu({
                   className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 border-t border-gray-100 disabled:opacity-50"
                 >
                   <CalendarDays className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className="flex-1">Schedule same as last</span>
+                  <span className="flex-1">{t('quickPublish.sameAsLast')}</span>
                   <span className="text-[10px] text-gray-400 flex-shrink-0">
                     {sameAsLastDate.toLocaleDateString()}
                   </span>
@@ -184,7 +186,7 @@ export function QuickPublishMenu({
             </>
           ) : (
             <div className="p-3 space-y-2">
-              <div className="text-xs font-medium text-gray-600">Schedule publish</div>
+              <div className="text-xs font-medium text-gray-600">{t('quickPublish.schedulePublish')}</div>
               <div className="flex gap-2">
                 <input
                   type="date"
@@ -206,7 +208,7 @@ export function QuickPublishMenu({
                   disabled={isLoading}
                   className="flex-1 text-xs px-2 py-1.5 rounded hover:bg-gray-50 text-gray-600 disabled:opacity-50"
                 >
-                  Back
+                  {t('quickPublish.back')}
                 </button>
                 <button
                   type="button"
@@ -215,7 +217,7 @@ export function QuickPublishMenu({
                   className="flex-1 inline-flex items-center justify-center gap-1 text-xs px-2 py-1.5 rounded bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50"
                 >
                   {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                  Approve + Schedule
+                  {t('quickPublish.approveScheduleShort')}
                 </button>
               </div>
             </div>

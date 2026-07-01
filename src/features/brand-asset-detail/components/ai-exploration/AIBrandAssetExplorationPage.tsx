@@ -7,6 +7,7 @@
 'use client';
 
 import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { AIExplorationPage } from '@/components/ai-exploration';
 import type { ResumeSessionData } from '@/components/ai-exploration';
 import type { BackendDimension } from '@/components/ai-exploration/types';
@@ -52,6 +53,7 @@ interface AIBrandAssetExplorationPageProps {
 }
 
 export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExplorationPageProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const { data: asset } = useAssetDetail(assetId);
   const queryClient = useQueryClient();
 
@@ -98,9 +100,9 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
         itemType: 'brand_asset',
         itemId: assetId,
         itemName: asset.name,
-        pageTitle: 'AI Brand Asset Exploration',
-        pageDescription: 'Answer questions to validate and strengthen this brand asset',
-        backLabel: 'Back to Brand Asset',
+        pageTitle: t('aiExploration.pageTitle'),
+        pageDescription: t('aiExploration.pageDescription'),
+        backLabel: t('aiExploration.backLabel'),
         onBack,
         dimensions: getDimensionsForSlug(asset.slug ?? '', asset.frameworkType ?? ''),
         fieldMapping: [], // Dynamic — backend generates field mapping from actual frameworkData

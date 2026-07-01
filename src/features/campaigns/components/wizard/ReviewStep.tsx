@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Settings,
   Database,
@@ -31,6 +32,7 @@ function ReviewSection({
   onEdit: () => void;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation("campaigns-wizard");
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
@@ -43,7 +45,7 @@ function ReviewSection({
           onClick={onEdit}
           className="text-xs text-primary hover:text-primary-700 font-medium"
         >
-          Edit
+          {t("actions.edit")}
         </button>
       </div>
       <div className="px-4 py-3">{children}</div>
@@ -54,6 +56,7 @@ function ReviewSection({
 // ─── Component ────────────────────────────────────────────
 
 export function ReviewStep() {
+  const { t } = useTranslation("campaigns-wizard");
   const name = useCampaignWizardStore((s) => s.name);
   const description = useCampaignWizardStore((s) => s.description);
   const campaignGoalType = useCampaignWizardStore((s) => s.campaignGoalType);
@@ -87,20 +90,20 @@ export function ReviewStep() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* 1. Campaign Setup */}
         <ReviewSection
-          title="Campaign Setup"
+          title={t("reviewStep.sections.setup")}
           icon={Settings}
           step={1}
           onEdit={() => setCurrentStep(1)}
         >
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">Name</span>
+              <span className="text-xs text-gray-500">{t("reviewStep.name")}</span>
               <span className="text-sm font-medium text-gray-900">{name}</span>
             </div>
             {description && (
               <div className="flex items-start justify-between gap-4">
                 <span className="text-xs text-gray-500 flex-shrink-0">
-                  Description
+                  {t("reviewStep.description")}
                 </span>
                 <span className="text-sm text-gray-700 text-right">
                   {description}
@@ -108,7 +111,7 @@ export function ReviewStep() {
               </div>
             )}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">Goal</span>
+              <span className="text-xs text-gray-500">{t("reviewStep.goal")}</span>
               <Badge variant="teal" size="sm">
                 {campaignGoalType
                   ? GOAL_LABELS[campaignGoalType] || campaignGoalType
@@ -117,9 +120,9 @@ export function ReviewStep() {
             </div>
             {(startDate || endDate) && (
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Dates</span>
+                <span className="text-xs text-gray-500">{t("reviewStep.dates")}</span>
                 <span className="text-sm text-gray-700">
-                  {startDate || "TBD"} &mdash; {endDate || "TBD"}
+                  {startDate || t("reviewStep.tbd")} &mdash; {endDate || t("reviewStep.tbd")}
                 </span>
               </div>
             )}
@@ -128,7 +131,7 @@ export function ReviewStep() {
 
         {/* 2. Knowledge Assets */}
         <ReviewSection
-          title="Knowledge Assets"
+          title={t("reviewStep.sections.knowledge")}
           icon={Database}
           step={2}
           onEdit={() => setCurrentStep(2)}
@@ -138,14 +141,14 @@ export function ReviewStep() {
               <span className="font-semibold text-gray-900">
                 {selectedKnowledgeIds.length}
               </span>{" "}
-              {selectedKnowledgeIds.length === 1 ? "asset" : "assets"} selected
+              {t("reviewStep.assetsSelected", { count: selectedKnowledgeIds.length })}
             </span>
           </div>
         </ReviewSection>
 
         {/* 3. Strategy */}
         <ReviewSection
-          title="Strategy"
+          title={t("reviewStep.sections.strategy")}
           icon={Lightbulb}
           step={3}
           onEdit={() => setCurrentStep(3)}
@@ -153,7 +156,7 @@ export function ReviewStep() {
           {blueprintResult ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-500">Confidence</span>
+                <span className="text-xs text-gray-500">{t("reviewStep.confidence")}</span>
                 {blueprintResult.confidence > 0 ? (
                   <div className="flex-1 max-w-[200px]">
                     <ProgressBar
@@ -170,39 +173,39 @@ export function ReviewStep() {
                     />
                   </div>
                 ) : (
-                  <span className="text-xs text-muted-foreground italic">Calculated on launch</span>
+                  <span className="text-xs text-muted-foreground italic">{t("reviewStep.calculatedOnLaunch")}</span>
                 )}
               </div>
               <div>
-                <span className="text-xs text-gray-500">Theme</span>
+                <span className="text-xs text-gray-500">{t("reviewStep.theme")}</span>
                 <p className="text-sm font-medium text-gray-900 mt-0.5">
                   {blueprintResult.strategy.campaignTheme}
                 </p>
               </div>
               <div>
-                <span className="text-xs text-gray-500">Positioning</span>
+                <span className="text-xs text-gray-500">{t("reviewStep.positioning")}</span>
                 <p className="text-sm text-gray-700 mt-0.5 line-clamp-2">
                   {blueprintResult.strategy.positioningStatement}
                 </p>
               </div>
               <div className="flex items-center gap-4 text-xs text-gray-500">
-                <span>{blueprintResult.architecture.journeyPhases.length} journey phases</span>
-                <span>{blueprintResult.channelPlan.channels.length} channels</span>
+                <span>{t("reviewStep.journeyPhases", { count: blueprintResult.architecture.journeyPhases.length })}</span>
+                <span>{t("reviewStep.channels", { count: blueprintResult.channelPlan.channels.length })}</span>
                 {(blueprintResult.variantAScore > 0 || blueprintResult.variantBScore > 0 || blueprintResult.variantCScore > 0) && (
-                  <span>Variant scores: A: {(blueprintResult.variantAScore ?? 0).toFixed(1)} / B: {(blueprintResult.variantBScore ?? 0).toFixed(1)} / C: {(blueprintResult.variantCScore ?? 0).toFixed(1)}</span>
+                  <span>{t("reviewStep.variantScores", { a: (blueprintResult.variantAScore ?? 0).toFixed(1), b: (blueprintResult.variantBScore ?? 0).toFixed(1), c: (blueprintResult.variantCScore ?? 0).toFixed(1) })}</span>
                 )}
               </div>
             </div>
           ) : (
             <p className="text-sm text-gray-400 italic">
-              No strategy generated yet
+              {t("reviewStep.noStrategy")}
             </p>
           )}
         </ReviewSection>
 
         {/* 4. Concept */}
         <ReviewSection
-          title="Creative Concept"
+          title={t("reviewStep.sections.concept")}
           icon={Palette}
           step={4}
           onEdit={() => setCurrentStep(4)}
@@ -211,7 +214,7 @@ export function ReviewStep() {
             <div className="space-y-2">
               {blueprintResult.strategy.creativePlatform && (
                 <div>
-                  <span className="text-xs text-gray-500">Creative Platform</span>
+                  <span className="text-xs text-gray-500">{t("reviewStep.creativePlatform")}</span>
                   <p className="text-sm font-medium text-gray-900 mt-0.5">
                     {blueprintResult.strategy.creativePlatform}
                   </p>
@@ -219,7 +222,7 @@ export function ReviewStep() {
               )}
               {blueprintResult.strategy.memorableDevice && (
                 <div>
-                  <span className="text-xs text-gray-500">Memorable Device</span>
+                  <span className="text-xs text-gray-500">{t("reviewStep.memorableDevice")}</span>
                   <p className="text-sm text-gray-700 mt-0.5 line-clamp-2">
                     {blueprintResult.strategy.memorableDevice}
                   </p>
@@ -227,7 +230,7 @@ export function ReviewStep() {
               )}
               {blueprintResult.strategy.effieRationale && (
                 <div>
-                  <span className="text-xs text-gray-500">Award Potential</span>
+                  <span className="text-xs text-gray-500">{t("reviewStep.awardPotential")}</span>
                   <p className="text-sm text-gray-700 mt-0.5 line-clamp-2">
                     {blueprintResult.strategy.effieRationale}
                   </p>
@@ -235,20 +238,20 @@ export function ReviewStep() {
               )}
               {!blueprintResult.strategy.creativePlatform && !blueprintResult.strategy.memorableDevice && (
                 <p className="text-sm text-gray-400 italic">
-                  Concept details will be available after elaboration
+                  {t("reviewStep.conceptAfterElaboration")}
                 </p>
               )}
             </div>
           ) : (
             <p className="text-sm text-gray-400 italic">
-              No creative concept yet
+              {t("reviewStep.noConcept")}
             </p>
           )}
         </ReviewSection>
 
         {/* 5. Deliverables */}
         <ReviewSection
-          title="Deliverables"
+          title={t("reviewStep.sections.deliverables")}
           icon={Package}
           step={5}
           onEdit={() => setCurrentStep(5)}
@@ -265,15 +268,15 @@ export function ReviewStep() {
                 </div>
               ))}
               <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-xs text-gray-500">Total</span>
+                <span className="text-xs text-gray-500">{t("reviewStep.total")}</span>
                 <span className="text-sm font-semibold text-gray-900">
-                  {totalDeliverables} deliverables
+                  {t("reviewStep.deliverablesTotal", { count: totalDeliverables })}
                 </span>
               </div>
             </div>
           ) : (
             <p className="text-sm text-gray-400 italic">
-              No deliverables selected
+              {t("reviewStep.noDeliverables")}
             </p>
           )}
         </ReviewSection>
@@ -286,7 +289,7 @@ export function ReviewStep() {
           <div className="flex items-center gap-2">
             <Save className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-semibold text-gray-900">
-              Save as Template
+              {t("reviewStep.saveAsTemplate")}
             </span>
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -297,15 +300,15 @@ export function ReviewStep() {
               className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary-500"
             />
             <span className="text-sm text-gray-700">
-              Save this campaign configuration as a reusable template
+              {t("reviewStep.saveTemplateDescription")}
             </span>
           </label>
           {saveAsTemplate && (
             <Input
-              label="Template Name"
+              label={t("reviewStep.templateName")}
               value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
-              placeholder="e.g., Quarterly Brand Campaign"
+              placeholder={t("reviewStep.templatePlaceholder")}
             />
           )}
         </div>
@@ -316,15 +319,15 @@ export function ReviewStep() {
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-gray-500" />
               <span className="text-sm font-semibold text-gray-900">
-                Estimated Timeline
+                {t("reviewStep.estimatedTimeline")}
               </span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Clock className="w-4 h-4 text-primary-500" />
               <span className="text-gray-700">
-                Estimated completion in{" "}
+                {t("reviewStep.estimatedCompletion")}{" "}
                 <span className="font-semibold text-gray-900">
-                  {timeline.estimatedDays} days
+                  {t("reviewStep.daysCount", { count: timeline.estimatedDays })}
                 </span>
               </span>
             </div>
@@ -337,7 +340,7 @@ export function ReviewStep() {
                   >
                     <span className="text-gray-600">{phase.phase}</span>
                     <span className="text-gray-900 font-medium">
-                      {phase.days} {phase.days === 1 ? "day" : "days"}
+                      {t("reviewStep.daysCount", { count: phase.days })}
                     </span>
                   </div>
                 ))}

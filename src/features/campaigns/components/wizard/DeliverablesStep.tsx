@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   FileText,
   Newspaper,
@@ -114,6 +115,7 @@ function getIcon(iconName: string): LucideIcon {
 // ─── Component ────────────────────────────────────────────
 
 export function DeliverablesStep() {
+  const { t } = useTranslation("campaigns-wizard");
   const selectedDeliverables = useCampaignWizardStore(
     (s) => s.selectedDeliverables,
   );
@@ -171,10 +173,10 @@ export function DeliverablesStep() {
           <Sparkles className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-emerald-800">
-              Strategy recommends {totalRecommended} deliverable{totalRecommended !== 1 ? "s" : ""}
+              {t("deliverables.strategyRecommends", { count: totalRecommended })}
             </p>
             <p className="text-xs text-emerald-600 mt-0.5">
-              {mustHaveCount} must-have, {totalRecommended - mustHaveCount} optional — auto-selected based on your campaign blueprint
+              {t("deliverables.recommendationBreakdown", { mustHave: mustHaveCount, optional: totalRecommended - mustHaveCount })}
             </p>
           </div>
         </div>
@@ -281,7 +283,7 @@ export function DeliverablesStep() {
                 {/* Quantity stepper (only when selected) */}
                 {isSelected && (
                   <div className="flex items-center gap-3 pt-2 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-                    <span className="text-xs text-gray-500">Quantity:</span>
+                    <span className="text-xs text-gray-500">{t("deliverables.quantity")}</span>
                     <div className="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
                       <button
                         type="button"
@@ -326,10 +328,10 @@ export function DeliverablesStep() {
         <Package className="w-4 h-4 text-gray-400" />
         <span className="text-sm text-gray-600">
           <span className="font-semibold text-gray-900">{totalSelected}</span>{" "}
-          {totalSelected === 1 ? "deliverable" : "deliverables"} selected
+          {t("deliverables.selectedLabel", { count: totalSelected })}
           {recommendedTypeIds.size > 0 && (
             <span className="text-gray-400 ml-1">
-              ({recommendedTypeIds.size} from AI strategy)
+              {t("deliverables.fromAiStrategy", { count: recommendedTypeIds.size })}
             </span>
           )}
         </span>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, ImageIcon, Loader2 } from 'lucide-react';
 import { useMediaAssets } from '@/features/media-library/hooks';
 import type { InsertImageTabProps } from './types';
@@ -11,6 +12,7 @@ import type { MediaAssetWithMeta } from '@/features/media-library/types/media.ty
  * and pick one for the canvas. No upload here; this is select-from-existing.
  */
 export function LibraryTab({ onSelected }: InsertImageTabProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const [search, setSearch] = useState('');
   const { data, isLoading } = useMediaAssets({
     mediaType: 'IMAGE',
@@ -29,7 +31,7 @@ export function LibraryTab({ onSelected }: InsertImageTabProps) {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search media library..."
+          placeholder={t('libraryTab.searchPlaceholder')}
           className="block w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder:text-gray-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-colors"
         />
       </div>
@@ -46,10 +48,10 @@ export function LibraryTab({ onSelected }: InsertImageTabProps) {
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <ImageIcon className="h-10 w-10 text-gray-300" />
           <p className="mt-3 text-sm text-gray-500">
-            {search ? `No images match "${search}"` : 'No images in your media library yet'}
+            {search ? t('libraryTab.noMatch', { query: search }) : t('libraryTab.empty')}
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Use Upload, Import URL, Stock Photos, or Generate Image to add one
+            {t('libraryTab.emptyHint')}
           </p>
         </div>
       )}
@@ -69,7 +71,7 @@ export function LibraryTab({ onSelected }: InsertImageTabProps) {
                 })
               }
               className="group relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-teal-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
-              title={asset.name ?? 'Untitled image'}
+              title={asset.name ?? t('libraryTab.untitled')}
             >
               <img
                 src={asset.thumbnailUrl ?? asset.fileUrl}

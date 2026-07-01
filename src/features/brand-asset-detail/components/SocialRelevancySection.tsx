@@ -26,6 +26,7 @@ import {
 } from '../constants/social-relevancy-constants';
 import type { PillarConfig } from '../constants/social-relevancy-constants';
 import { ProofPointsGuidanceBanner } from './shared/ProofPointsGuidanceBanner';
+import { useTranslation } from 'react-i18next';
 
 // ─── Props ──────────────────────────────────────────────────
 
@@ -88,6 +89,7 @@ function ScoreBar({ score, onChange, isEditing, color }: {
   isEditing: boolean;
   color: string;
 }) {
+  const { t } = useTranslation('brand-asset-detail');
   const colorMap: Record<string, { active: string; hover: string }> = {
     emerald: { active: 'bg-emerald-500', hover: 'hover:bg-emerald-200' },
     rose: { active: 'bg-rose-500', hover: 'hover:bg-rose-200' },
@@ -111,7 +113,7 @@ function ScoreBar({ score, onChange, isEditing, color }: {
                 ? `bg-gray-100 text-gray-400 ${colors.hover}`
                 : 'bg-gray-100 text-gray-300'
           } ${isEditing ? 'cursor-pointer' : 'cursor-default'}`}
-          aria-label={`Score ${n}`}
+          aria-label={t('socialRelevancy.scoreAria', { n })}
         >
           {n}
         </button>
@@ -153,6 +155,7 @@ function PillarScoreSummary({ score, maxScore, color }: {
 // ─── Grand Total Display ────────────────────────────────────
 
 function GrandTotalBar({ data }: { data: SocialRelevancyFrameworkData }) {
+  const { t } = useTranslation('brand-asset-detail');
   const scores = PILLAR_CONFIGS.map(p => ({
     label: p.label,
     color: p.color,
@@ -179,7 +182,7 @@ function GrandTotalBar({ data }: { data: SocialRelevancyFrameworkData }) {
   return (
     <div className={`rounded-xl border ${borderColor[threshold.color] ?? 'border-gray-200'} bg-white p-4`}>
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-gray-900">Social Relevancy Score</h4>
+        <h4 className="text-sm font-semibold text-gray-900">{t('socialRelevancy.grandTotal.title')}</h4>
         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${badgeColor[threshold.color] ?? ''}`}>
           {threshold.label}
         </span>
@@ -203,7 +206,7 @@ function GrandTotalBar({ data }: { data: SocialRelevancyFrameworkData }) {
           );
         })}
         <div className="text-center">
-          <p className="text-xs text-gray-500 mb-1">Total</p>
+          <p className="text-xs text-gray-500 mb-1">{t('socialRelevancy.grandTotal.total')}</p>
           <p className={`text-lg font-bold ${badgeColor[threshold.color]?.split(' ')[1] ?? 'text-gray-700'}`}>
             {total}<span className="text-sm font-normal text-gray-400">/45</span>
           </p>
@@ -224,6 +227,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
   placeholder: string;
   emptyText: string;
 }) {
+  const { t } = useTranslation('brand-asset-detail');
   if (!isEditing) {
     if (items.filter(Boolean).length === 0) {
       return <p className="text-sm italic text-gray-400">{emptyText}</p>;
@@ -257,7 +261,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
         </div>
       ))}
       <button type="button" onClick={onAdd} className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium">
-        <Plus className="h-4 w-4" /> Add item
+        <Plus className="h-4 w-4" /> {t('shared.addItem')}
       </button>
     </div>
   );
@@ -272,6 +276,7 @@ function TagInput({ tags, isEditing, onAdd, onRemove, placeholder }: {
   onRemove: (index: number) => void;
   placeholder: string;
 }) {
+  const { t } = useTranslation('brand-asset-detail');
   const [input, setInput] = useState('');
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -296,7 +301,7 @@ function TagInput({ tags, isEditing, onAdd, onRemove, placeholder }: {
           </span>
         ) : null)}
         {tags.filter(Boolean).length === 0 && !isEditing && (
-          <p className="text-sm italic text-gray-400">No items yet</p>
+          <p className="text-sm italic text-gray-400">{t('shared.noItemsYet')}</p>
         )}
       </div>
       {isEditing && (
@@ -357,6 +362,7 @@ function CardHeader({ icon: Icon, color, title, subtitle, summary, isExpanded, o
 
 /** Social Relevancy canvas with 6 cards based on Triple Bottom Line / B Corp / Brand Activism. */
 export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRelevancySectionProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const [draft, setDraft] = useState<SocialRelevancyFrameworkData>(() => normalize(data));
   const [expandedCard, setExpandedCard] = useState<number | null>(1);
   const [showReference, setShowReference] = useState(false);
@@ -444,8 +450,8 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
         <CardHeader
           icon={Sparkles}
           color="teal"
-          title="Social Impact Foundation"
-          subtitle="Why does this brand care about social impact?"
+          title={t('socialRelevancy.foundation.title')}
+          subtitle={t('socialRelevancy.foundation.subtitle')}
           isExpanded={expandedCard === 1}
           onToggle={() => toggleCard(1)}
           summary={draft.impactStatement ? (
@@ -457,40 +463,40 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
           <div className="mt-4 space-y-4 pl-12">
             {/* Impact Statement */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Impact Statement</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('socialRelevancy.foundation.impactStatementLabel')}</label>
               {isEditing ? (
                 <textarea
                   value={draft.impactStatement}
                   onChange={(e) => handleChange('impactStatement', e.target.value)}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                   rows={2}
-                  placeholder="One powerful sentence: why does this brand care about social impact?"
+                  placeholder={t('socialRelevancy.foundation.impactStatementPlaceholder')}
                 />
               ) : (
-                <p className="text-sm text-gray-700">{draft.impactStatement || <span className="italic text-gray-400">Not yet defined</span>}</p>
+                <p className="text-sm text-gray-700">{draft.impactStatement || <span className="italic text-gray-400">{t('shared.notYetDefined')}</span>}</p>
               )}
             </div>
 
             {/* Impact Narrative */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Impact Narrative</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('socialRelevancy.foundation.impactNarrativeLabel')}</label>
               {isEditing ? (
                 <textarea
                   value={draft.impactNarrative}
                   onChange={(e) => handleChange('impactNarrative', e.target.value)}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                   rows={4}
-                  placeholder="The backstory: what was the trigger, founding moment, or evolution that led to this commitment?"
+                  placeholder={t('socialRelevancy.foundation.impactNarrativePlaceholder')}
                 />
               ) : (
-                <p className="text-sm text-gray-700">{draft.impactNarrative || <span className="italic text-gray-400">Not yet defined</span>}</p>
+                <p className="text-sm text-gray-700">{draft.impactNarrative || <span className="italic text-gray-400">{t('shared.notYetDefined')}</span>}</p>
               )}
             </div>
 
             {/* Activism Level */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Brand Activism Level <span className="text-gray-400 font-normal">(Kotler & Sarkar)</span>
+                {t('socialRelevancy.foundation.activismLabel')} <span className="text-gray-400 font-normal">{t('socialRelevancy.foundation.activismHint')}</span>
               </label>
               {isEditing ? (
                 <div className="grid grid-cols-2 gap-2">
@@ -522,7 +528,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                       </span>
                     </div>
                   ) : (
-                    <p className="text-sm italic text-gray-400">Not yet selected</p>
+                    <p className="text-sm italic text-gray-400">{t('socialRelevancy.foundation.activismEmpty')}</p>
                   )}
                 </div>
               )}
@@ -536,7 +542,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                 className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700"
               >
                 <Info className="h-3.5 w-3.5" />
-                <span>{showReference ? 'Hide' : 'Show'} Reference Frameworks</span>
+                <span>{showReference ? t('socialRelevancy.foundation.referenceHide') : t('socialRelevancy.foundation.referenceShow')}</span>
                 <ChevronDown className={`h-3 w-3 transition-transform ${showReference ? 'rotate-180' : ''}`} />
               </button>
               {showReference && (
@@ -597,7 +603,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
 
                     {/* Score */}
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 w-14 flex-shrink-0">Score:</span>
+                      <span className="text-xs text-gray-500 w-14 flex-shrink-0">{t('socialRelevancy.pillar.scoreLabel')}</span>
                       <ScoreBar
                         score={stmt.score}
                         onChange={(score) => handleStatementChange(pillarConfig.key, stmtIdx, 'score', score)}
@@ -608,45 +614,45 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
 
                     {/* Evidence */}
                     <div>
-                      <label className="block text-xs text-gray-500 mb-0.5">Evidence</label>
+                      <label className="block text-xs text-gray-500 mb-0.5">{t('socialRelevancy.pillar.evidenceLabel')}</label>
                       {isEditing ? (
                         <textarea
                           value={stmt.evidence}
                           onChange={(e) => handleStatementChange(pillarConfig.key, stmtIdx, 'evidence', e.target.value)}
                           className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                           rows={2}
-                          placeholder="Concrete evidence supporting this score..."
+                          placeholder={t('socialRelevancy.pillar.evidencePlaceholder')}
                         />
                       ) : (
-                        <p className="text-sm text-gray-600">{stmt.evidence || <span className="italic text-gray-400">No evidence provided</span>}</p>
+                        <p className="text-sm text-gray-600">{stmt.evidence || <span className="italic text-gray-400">{t('socialRelevancy.pillar.noEvidence')}</span>}</p>
                       )}
                     </div>
 
                     {/* Target & Timeline (inline) */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs text-gray-500 mb-0.5">Improvement target</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">{t('socialRelevancy.pillar.targetLabel')}</label>
                         {isEditing ? (
                           <input
                             type="text"
                             value={stmt.target}
                             onChange={(e) => handleStatementChange(pillarConfig.key, stmtIdx, 'target', e.target.value)}
                             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
-                            placeholder="Specific goal..."
+                            placeholder={t('socialRelevancy.pillar.targetPlaceholder')}
                           />
                         ) : (
                           <p className="text-sm text-gray-600">{stmt.target || <span className="italic text-gray-400">—</span>}</p>
                         )}
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-500 mb-0.5">Timeline</label>
+                        <label className="block text-xs text-gray-500 mb-0.5">{t('socialRelevancy.pillar.timelineLabel')}</label>
                         {isEditing ? (
                           <input
                             type="text"
                             value={stmt.timeline}
                             onChange={(e) => handleStatementChange(pillarConfig.key, stmtIdx, 'timeline', e.target.value)}
                             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
-                            placeholder="e.g. Q4 2026"
+                            placeholder={t('socialRelevancy.pillar.timelinePlaceholder')}
                           />
                         ) : (
                           <p className="text-sm text-gray-600">{stmt.timeline || <span className="italic text-gray-400">—</span>}</p>
@@ -660,17 +666,17 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
 
                 {/* Pillar Reflection */}
                 <div className="border-t border-gray-100 pt-3">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Pillar Reflection</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t('socialRelevancy.pillar.reflectionLabel')}</label>
                   {isEditing ? (
                     <textarea
                       value={pillarData.pillarReflection}
                       onChange={(e) => handlePillarReflection(pillarConfig.key, e.target.value)}
                       className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                       rows={2}
-                      placeholder={`Free reflection on your ${pillarConfig.label.toLowerCase()} impact as a whole...`}
+                      placeholder={t('socialRelevancy.pillar.reflectionPlaceholder', { pillar: pillarConfig.label.toLowerCase() })}
                     />
                   ) : (
-                    <p className="text-sm text-gray-600">{pillarData.pillarReflection || <span className="italic text-gray-400">No reflection yet</span>}</p>
+                    <p className="text-sm text-gray-600">{pillarData.pillarReflection || <span className="italic text-gray-400">{t('socialRelevancy.pillar.noReflection')}</span>}</p>
                   )}
                 </div>
 
@@ -690,14 +696,14 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
         <CardHeader
           icon={ShieldCheck}
           color="amber"
-          title="Authenticity & Evidence"
-          subtitle="Are the claims credible?"
+          title={t('socialRelevancy.authenticity.title')}
+          subtitle={t('socialRelevancy.authenticity.subtitle')}
           isExpanded={expandedCard === 5}
           onToggle={() => toggleCard(5)}
           summary={(() => {
             const avg = calculateAuthenticityAverage(draft.authenticityScores);
             return avg > 0 ? (
-              <span className="text-xs text-gray-500">Authenticity score: {avg}%</span>
+              <span className="text-xs text-gray-500">{t('socialRelevancy.authenticity.scoreSummary', { score: avg })}</span>
             ) : undefined;
           })()}
         />
@@ -706,7 +712,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
           <div className="mt-4 space-y-4 pl-12">
             {/* Walk-the-talk assessment (6 criteria) */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-2">Walk-the-Talk Assessment</label>
+              <label className="block text-xs font-medium text-gray-600 mb-2">{t('socialRelevancy.authenticity.walkTheTalk')}</label>
               <div className="space-y-3">
                 {AUTHENTICITY_CRITERIA.map((criterion) => (
                   <div key={criterion.key} className="flex items-center justify-between gap-4">
@@ -730,7 +736,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                 if (avg === 0) return null;
                 return (
                   <div className="mt-3 flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Overall authenticity:</span>
+                    <span className="text-xs text-gray-500">{t('socialRelevancy.authenticity.overall')}</span>
                     <span className="text-sm font-semibold text-amber-600">{avg}%</span>
                   </div>
                 );
@@ -740,35 +746,35 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
             {/* Proof Points */}
             <ProofPointsGuidanceBanner assetType="social-relevancy" />
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Proof Points</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('socialRelevancy.authenticity.proofLabel')}</label>
               <StringListEditor
                 items={draft.proofPoints}
                 isEditing={isEditing}
                 onAdd={() => addListItem('proofPoints')}
                 onUpdate={(i, v) => updateListItem('proofPoints', i, v)}
                 onRemove={(i) => removeListItem('proofPoints', i)}
-                placeholder="Add a concrete proof point..."
-                emptyText="No proof points yet"
+                placeholder={t('socialRelevancy.authenticity.proofPlaceholder')}
+                emptyText={t('socialRelevancy.authenticity.proofEmpty')}
               />
             </div>
 
             {/* Certifications */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Certifications</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('socialRelevancy.authenticity.certLabel')}</label>
               <TagInput
                 tags={draft.certifications}
                 isEditing={isEditing}
                 onAdd={(tag) => addTag('certifications', tag)}
                 onRemove={(i) => removeTag('certifications', i)}
-                placeholder="Type certification and press Enter (e.g. B Corp, ISO 14001)"
+                placeholder={t('socialRelevancy.authenticity.certPlaceholder')}
               />
             </div>
 
             {/* Anti-Greenwashing Statement */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Anti-Greenwashing Statement
-                <span className="text-gray-400 font-normal ml-1">(honest acknowledgment of shortcomings)</span>
+                {t('socialRelevancy.authenticity.antiGreenLabel')}
+                <span className="text-gray-400 font-normal ml-1">{t('socialRelevancy.authenticity.antiGreenHint')}</span>
               </label>
               {isEditing ? (
                 <textarea
@@ -776,10 +782,10 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                   onChange={(e) => handleChange('antiGreenwashingStatement', e.target.value)}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                   rows={3}
-                  placeholder="Where does the brand fall short? What are you honest about?"
+                  placeholder={t('socialRelevancy.authenticity.antiGreenPlaceholder')}
                 />
               ) : (
-                <p className="text-sm text-gray-700">{draft.antiGreenwashingStatement || <span className="italic text-gray-400">Not yet defined</span>}</p>
+                <p className="text-sm text-gray-700">{draft.antiGreenwashingStatement || <span className="italic text-gray-400">{t('shared.notYetDefined')}</span>}</p>
               )}
             </div>
           </div>
@@ -791,8 +797,8 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
         <CardHeader
           icon={Megaphone}
           color="violet"
-          title="Activation & Communication"
-          subtitle="How is impact communicated and anchored?"
+          title={t('socialRelevancy.activation.title')}
+          subtitle={t('socialRelevancy.activation.subtitle')}
           isExpanded={expandedCard === 6}
           onToggle={() => toggleCard(6)}
           summary={draft.sdgAlignment.length > 0 ? (
@@ -814,13 +820,13 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
             {/* SDG cross-reference */}
             <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
               <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-blue-700">For how your transformative goals map to SDGs, see Transformative Goals.</p>
+              <p className="text-xs text-blue-700">{t('socialRelevancy.activation.sdgCrossRef')}</p>
             </div>
 
             {/* SDG Alignment */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                UN Sustainable Development Goals <span className="text-gray-400 font-normal">(max 3 recommended)</span>
+                {t('socialRelevancy.activation.sdgLabel')} <span className="text-gray-400 font-normal">{t('socialRelevancy.activation.sdgHint')}</span>
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
                 {UN_SDGS.map((sdg) => {
@@ -848,62 +854,62 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
               {draft.sdgAlignment.length > 3 && (
                 <p className="mt-1 text-xs text-amber-600 flex items-center gap-1">
                   <Award className="h-3 w-3" />
-                  Consider focusing on max 3 SDGs for clearer impact (SDG Compass)
+                  {t('socialRelevancy.activation.sdgWarning')}
                 </p>
               )}
             </div>
 
             {/* Communication Principles */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Communication Principles</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('socialRelevancy.activation.commLabel')}</label>
               <StringListEditor
                 items={draft.communicationPrinciples}
                 isEditing={isEditing}
                 onAdd={() => addListItem('communicationPrinciples')}
                 onUpdate={(i, v) => updateListItem('communicationPrinciples', i, v)}
                 onRemove={(i) => removeListItem('communicationPrinciples', i)}
-                placeholder="Add a communication principle..."
-                emptyText="No communication principles defined"
+                placeholder={t('socialRelevancy.activation.commPlaceholder')}
+                emptyText={t('socialRelevancy.activation.commEmpty')}
               />
             </div>
 
             {/* Key Stakeholders */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Key Stakeholders</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('socialRelevancy.activation.stakeholdersLabel')}</label>
               <TagInput
                 tags={draft.keyStakeholders}
                 isEditing={isEditing}
                 onAdd={(tag) => addTag('keyStakeholders', tag)}
                 onRemove={(i) => removeTag('keyStakeholders', i)}
-                placeholder="Type stakeholder and press Enter"
+                placeholder={t('socialRelevancy.activation.stakeholdersPlaceholder')}
               />
             </div>
 
             {/* Activation Channels */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Activation Channels</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('socialRelevancy.activation.channelsLabel')}</label>
               <TagInput
                 tags={draft.activationChannels}
                 isEditing={isEditing}
                 onAdd={(tag) => addTag('activationChannels', tag)}
                 onRemove={(i) => removeTag('activationChannels', i)}
-                placeholder="Type channel and press Enter"
+                placeholder={t('socialRelevancy.activation.channelsPlaceholder')}
               />
             </div>
 
             {/* Annual Commitment */}
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Annual Commitment</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('socialRelevancy.activation.annualLabel')}</label>
               {isEditing ? (
                 <textarea
                   value={draft.annualCommitment}
                   onChange={(e) => handleChange('annualCommitment', e.target.value)}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                   rows={2}
-                  placeholder="Concrete, measurable commitment for this year..."
+                  placeholder={t('socialRelevancy.activation.annualPlaceholder')}
                 />
               ) : (
-                <p className="text-sm text-gray-700">{draft.annualCommitment || <span className="italic text-gray-400">Not yet defined</span>}</p>
+                <p className="text-sm text-gray-700">{draft.annualCommitment || <span className="italic text-gray-400">{t('shared.notYetDefined')}</span>}</p>
               )}
             </div>
           </div>

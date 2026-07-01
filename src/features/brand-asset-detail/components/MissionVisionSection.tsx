@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Compass, Users, Eye, Mountain, Target, CheckCircle, Plus, X, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { MissionVisionFrameworkData } from '../types/framework.types';
 import {
   TIME_HORIZON_OPTIONS,
@@ -62,6 +63,7 @@ function normalize(raw: MissionVisionFrameworkData | null): MissionVisionFramewo
 
 /** Mission & Vision canvas with 5 sections based on Collins & Porras / Drucker. */
 export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisionSectionProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const [draft, setDraft] = useState<MissionVisionFrameworkData>(() => normalize(data));
   const [showMissionExamples, setShowMissionExamples] = useState(false);
   const [showVisionExamples, setShowVisionExamples] = useState(false);
@@ -101,8 +103,8 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
             <Compass className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Mission Statement</h2>
-            <p className="text-sm text-gray-500">Why your organization exists and what it does</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('missionVision.mission.title')}</h2>
+            <p className="text-sm text-gray-500">{t('missionVision.mission.subtitle')}</p>
           </div>
         </div>
 
@@ -110,26 +112,26 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Mission Statement
+                {t('missionVision.mission.label')}
               </label>
               <textarea
                 value={draft.missionStatement}
                 onChange={(e) => handleChange('missionStatement', e.target.value)}
                 className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
                 rows={3}
-                placeholder="Your full mission statement (1-3 sentences)..."
+                placeholder={t('missionVision.mission.placeholder')}
               />
             </div>
             <div>
               <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                One-Liner
+                {t('missionVision.mission.oneLinerLabel')}
               </label>
               <input
                 type="text"
                 value={draft.missionOneLiner}
                 onChange={(e) => handleChange('missionOneLiner', e.target.value)}
                 className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
-                placeholder="Fits on a T-shirt..."
+                placeholder={t('missionVision.mission.oneLinerPlaceholder')}
               />
             </div>
           </div>
@@ -145,13 +147,13 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
             )}
           </div>
         ) : (
-          <p className="text-sm italic text-gray-400">Define your mission...</p>
+          <p className="text-sm italic text-gray-400">{t('missionVision.mission.empty')}</p>
         )}
 
         {/* Helper text */}
         <div className="mt-3 bg-primary-50/30 border border-primary-100 rounded-xl p-3">
           <p className="text-xs text-primary italic">
-            &ldquo;Peter Drucker: A mission must fit on a T-shirt.&rdquo;
+            {t('missionVision.mission.druckerQuote')}
           </p>
         </div>
 
@@ -163,7 +165,7 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
             className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
           >
             {showMissionExamples ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            Mission Examples
+            {t('missionVision.mission.examplesToggle')}
           </button>
           {showMissionExamples && (
             <div className="mt-2 bg-gray-50 border border-gray-100 rounded-xl p-4">
@@ -188,40 +190,40 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
             <Users className="h-5 w-5 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Mission Components</h2>
-            <p className="text-sm text-gray-500">The building blocks: for whom, what, and how differently</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('missionVision.components.title')}</h2>
+            <p className="text-sm text-gray-500">{t('missionVision.components.subtitle')}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <FieldBlock
-            label="For Whom"
-            description="Who do you serve?"
+            label={t('missionVision.components.forWhom.label')}
+            description={t('missionVision.components.forWhom.description')}
             value={isEditing ? draft.forWhom : d.forWhom}
             isEditing={isEditing}
             onChange={(v) => handleChange('forWhom', v)}
-            placeholder="Describe your primary audience..."
+            placeholder={t('missionVision.components.forWhom.placeholder')}
           />
           <FieldBlock
-            label="What We Do"
-            description="What do you do?"
+            label={t('missionVision.components.whatWeDo.label')}
+            description={t('missionVision.components.whatWeDo.description')}
             value={isEditing ? draft.whatWeDo : d.whatWeDo}
             isEditing={isEditing}
             onChange={(v) => handleChange('whatWeDo', v)}
-            placeholder="Describe your core activity..."
+            placeholder={t('missionVision.components.whatWeDo.placeholder')}
           />
           <FieldBlock
-            label="How We Do It"
-            description="How do you do it differently?"
+            label={t('missionVision.components.howWeDoIt.label')}
+            description={t('missionVision.components.howWeDoIt.description')}
             value={isEditing ? draft.howWeDoIt : d.howWeDoIt}
             isEditing={isEditing}
             onChange={(v) => handleChange('howWeDoIt', v)}
-            placeholder="Describe your unique approach..."
+            placeholder={t('missionVision.components.howWeDoIt.placeholder')}
           />
         </div>
 
         <div className="mt-4 bg-blue-50/30 border border-blue-100 rounded-xl p-3">
-          <p className="text-xs text-blue-600">A strong mission answers three questions: For whom? What? How differently?</p>
+          <p className="text-xs text-blue-600">{t('missionVision.components.hint')}</p>
         </div>
       </div>
 
@@ -232,8 +234,8 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
             <Eye className="h-5 w-5 text-violet-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Vision Statement</h2>
-            <p className="text-sm text-gray-500">The destination: where you are working toward</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('missionVision.vision.title')}</h2>
+            <p className="text-sm text-gray-500">{t('missionVision.vision.subtitle')}</p>
           </div>
         </div>
 
@@ -242,26 +244,26 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
             <>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Vision Statement
+                  {t('missionVision.vision.label')}
                 </label>
                 <textarea
                   value={draft.visionStatement}
                   onChange={(e) => handleChange('visionStatement', e.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
                   rows={3}
-                  placeholder="Your aspirational future state (1-3 sentences)..."
+                  placeholder={t('missionVision.vision.placeholder')}
                 />
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Time Horizon
+                  {t('missionVision.vision.timeHorizonLabel')}
                 </label>
                 <select
                   value={draft.timeHorizon}
                   onChange={(e) => handleChange('timeHorizon', e.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                 >
-                  <option value="">Select a time horizon...</option>
+                  <option value="">{t('missionVision.vision.timeHorizonSelect')}</option>
                   {TIME_HORIZON_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label} — {opt.description}
@@ -271,14 +273,14 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Bold Aspiration (BHAG)
+                  {t('missionVision.vision.bhagLabel')}
                 </label>
                 <textarea
                   value={draft.boldAspiration}
                   onChange={(e) => handleChange('boldAspiration', e.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
                   rows={2}
-                  placeholder="Big Hairy Audacious Goal (Collins & Porras)..."
+                  placeholder={t('missionVision.vision.bhagPlaceholder')}
                 />
               </div>
             </>
@@ -289,11 +291,11 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
                   <p className="text-sm text-gray-700 leading-relaxed">{d.visionStatement}</p>
                 </div>
               ) : (
-                <p className="text-sm italic text-gray-400">Define your vision...</p>
+                <p className="text-sm italic text-gray-400">{t('missionVision.vision.empty')}</p>
               )}
               {d.timeHorizon && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gray-500 uppercase">Time Horizon:</span>
+                  <span className="text-xs font-medium text-gray-500 uppercase">{t('missionVision.vision.timeHorizonView')}</span>
                   <span className="inline-flex items-center rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-700">
                     {d.timeHorizon}
                   </span>
@@ -301,7 +303,7 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
               )}
               {d.boldAspiration && (
                 <div className="border-l-4 border-amber-300 pl-4 py-1">
-                  <p className="text-xs font-medium text-gray-500 uppercase mb-1">BHAG</p>
+                  <p className="text-xs font-medium text-gray-500 uppercase mb-1">{t('missionVision.vision.bhagView')}</p>
                   <p className="text-sm text-gray-700 leading-relaxed italic">{d.boldAspiration}</p>
                 </div>
               )}
@@ -317,7 +319,7 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
             className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
           >
             {showVisionExamples ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            Vision Examples
+            {t('missionVision.vision.examplesToggle')}
           </button>
           {showVisionExamples && (
             <div className="mt-2 bg-gray-50 border border-gray-100 rounded-xl p-4">
@@ -342,26 +344,26 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
             <Mountain className="h-5 w-5 text-amber-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Envisioned Future</h2>
-            <p className="text-sm text-gray-500">Collins & Porras: a vivid description of success</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('missionVision.future.title')}</h2>
+            <p className="text-sm text-gray-500">{t('missionVision.future.subtitle')}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <FieldBlock
-            label="Desired Future State"
-            description="A vivid description of what success looks like"
+            label={t('missionVision.future.desiredLabel')}
+            description={t('missionVision.future.desiredDescription')}
             value={isEditing ? draft.desiredFutureState : d.desiredFutureState}
             isEditing={isEditing}
             onChange={(v) => handleChange('desiredFutureState', v)}
-            placeholder="Paint a vivid picture of the future when your organization has fully succeeded..."
+            placeholder={t('missionVision.future.desiredPlaceholder')}
           />
 
           {/* Success Indicators (string list) */}
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Success Indicators</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{t('missionVision.future.indicatorsLabel')}</p>
             <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-3 mb-3">
-              <p className="text-xs text-amber-600">Concrete, measurable signals that your vision is becoming reality</p>
+              <p className="text-xs text-amber-600">{t('missionVision.future.indicatorsHint')}</p>
             </div>
             <StringListEditor
               items={isEditing ? draft.successIndicators : d.successIndicators}
@@ -369,18 +371,18 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
               onAdd={addIndicator}
               onUpdate={updateIndicator}
               onRemove={removeIndicator}
-              placeholder="Add a success indicator..."
-              emptyText="No success indicators defined yet"
+              placeholder={t('missionVision.future.indicatorsPlaceholder')}
+              emptyText={t('missionVision.future.indicatorsEmpty')}
             />
           </div>
 
           <FieldBlock
-            label="Stakeholder Benefit"
-            description="Who benefits and how?"
+            label={t('missionVision.future.stakeholderLabel')}
+            description={t('missionVision.future.stakeholderDescription')}
             value={isEditing ? draft.stakeholderBenefit : d.stakeholderBenefit}
             isEditing={isEditing}
             onChange={(v) => handleChange('stakeholderBenefit', v)}
-            placeholder="Describe who benefits from your vision and how..."
+            placeholder={t('missionVision.future.stakeholderPlaceholder')}
           />
         </div>
       </div>
@@ -392,35 +394,35 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
             <Target className="h-5 w-5 text-gray-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Impact & Alignment</h2>
-            <p className="text-sm text-gray-500">The bridge between today and tomorrow</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('missionVision.impact.title')}</h2>
+            <p className="text-sm text-gray-500">{t('missionVision.impact.subtitle')}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <FieldBlock
-            label="Impact Goal"
-            description="Measurable impact today"
+            label={t('missionVision.impact.goalLabel')}
+            description={t('missionVision.impact.goalDescription')}
             value={isEditing ? draft.impactGoal : d.impactGoal}
             isEditing={isEditing}
             onChange={(v) => handleChange('impactGoal', v)}
-            placeholder="What measurable impact are you making right now?"
+            placeholder={t('missionVision.impact.goalPlaceholder')}
           />
           <FieldBlock
-            label="Values Alignment"
-            description="How mission/vision reinforce core values"
+            label={t('missionVision.impact.valuesLabel')}
+            description={t('missionVision.impact.valuesDescription')}
             value={isEditing ? draft.valuesAlignment : d.valuesAlignment}
             isEditing={isEditing}
             onChange={(v) => handleChange('valuesAlignment', v)}
-            placeholder="How do your mission and vision reinforce your core values?"
+            placeholder={t('missionVision.impact.valuesPlaceholder')}
           />
           <FieldBlock
-            label="Mission-Vision Tension"
-            description="Creative tension between present and future"
+            label={t('missionVision.impact.tensionLabel')}
+            description={t('missionVision.impact.tensionDescription')}
             value={isEditing ? draft.missionVisionTension : d.missionVisionTension}
             isEditing={isEditing}
             onChange={(v) => handleChange('missionVisionTension', v)}
-            placeholder="What is the creative tension between what you do today and where you are going?"
+            placeholder={t('missionVision.impact.tensionPlaceholder')}
           />
         </div>
       </div>
@@ -474,6 +476,7 @@ interface StringListEditorProps {
 }
 
 function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeholder, emptyText }: StringListEditorProps) {
+  const { t } = useTranslation('brand-asset-detail');
   if (!isEditing) {
     if (items.length === 0) {
       return <p className="text-sm italic text-gray-400">{emptyText}</p>;
@@ -516,7 +519,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
         className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium"
       >
         <Plus className="h-4 w-4" />
-        Add indicator
+        {t('missionVision.addIndicator')}
       </button>
     </div>
   );

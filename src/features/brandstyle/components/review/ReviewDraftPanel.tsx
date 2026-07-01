@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ThumbsUp, ThumbsDown, ImagePlus, Loader2, X } from "lucide-react";
 import { Button } from "@/components/shared";
 import type { ReviewStatus, StyleguideReviewData } from "../../types/brandstyle.types";
@@ -27,6 +28,7 @@ interface ReviewDraftPanelProps {
 }
 
 export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: ReviewDraftPanelProps) {
+  const { t } = useTranslation("brandstyle");
   const contextClosed = useContext(ReviewClosedContext);
   // All hooks MUST run before any early return — `closed`/`contextClosed`
   // gate is applied at the JSX level below.
@@ -86,7 +88,7 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
             setShowFeedback(false);
             scrollToProgress();
           },
-          onError: (err) => setError(err instanceof Error ? err.message : "Failed to update"),
+          onError: (err) => setError(err instanceof Error ? err.message : t("review.failedUpdate")),
         },
       );
       return;
@@ -108,7 +110,7 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
       },
       {
         onSuccess: () => scrollToProgress(),
-        onError: (err) => setError(err instanceof Error ? err.message : "Failed to update"),
+        onError: (err) => setError(err instanceof Error ? err.message : t("review.failedUpdate")),
       },
     );
   };
@@ -123,7 +125,7 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
   const handleFile = (file: File | null) => {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      setError("Image too large. Max 5MB.");
+      setError(t("review.imageTooLarge"));
       return;
     }
     setError(null);
@@ -131,12 +133,12 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
       { section, file },
       {
         onSuccess: (res) => setRefImage(res.url),
-        onError: (err) => setError(err instanceof Error ? err.message : "Upload failed"),
+        onError: (err) => setError(err instanceof Error ? err.message : t("review.uploadFailed")),
       },
     );
   };
 
-  const headline = label ?? "Review this section";
+  const headline = label ?? t("review.reviewThisSection");
   const isBusy = updateMut.isPending || uploadMut.isPending;
 
   return (
@@ -172,7 +174,7 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
               aria-pressed={status === "APPROVED"}
             >
               <ThumbsUp className="h-3.5 w-3.5" />
-              Looks good
+              {t("review.looksGood")}
             </button>
             <button
               type="button"
@@ -186,7 +188,7 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
               aria-pressed={status === "NEEDS_WORK"}
             >
               <ThumbsDown className="h-3.5 w-3.5" />
-              {status === "NEEDS_WORK" ? "Edit feedback" : "Needs work"}
+              {status === "NEEDS_WORK" ? t("review.editFeedback") : t("review.needsWork")}
             </button>
           </div>
         )}
@@ -204,14 +206,13 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={current.referenceImageUrl}
-              alt="Reference"
+              alt={t("review.referenceAlt")}
               className="max-h-40 rounded border border-red-200"
             />
           )}
           <div className="pt-2 border-t border-red-100 flex items-center justify-between gap-3 flex-wrap">
             <p className="text-[11px] text-gray-500 leading-snug">
-              Feedback is saved with this section and included when you re-run the AI analysis
-              or export the styleguide.
+              {t("review.feedbackSavedHint")}
             </p>
             {canEdit && (
               <button
@@ -221,7 +222,7 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded hover:bg-emerald-100 transition-colors disabled:opacity-50 flex-shrink-0"
               >
                 <ThumbsUp className="h-3 w-3" />
-                Mark as approved
+                {t("review.markApproved")}
               </button>
             )}
           </div>
@@ -233,8 +234,7 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
       {!showFeedback && status === "NEEDS_WORK" && !current?.feedback && !current?.referenceImageUrl && canEdit && (
         <div className="bg-red-50/50 border border-red-100 rounded-md p-3 flex items-center justify-between gap-3 flex-wrap">
           <p className="text-xs text-red-700 flex-1 min-w-0">
-            Marked as needs work. Click <strong>Edit feedback</strong> above to describe what
-            should change — the note is reused when regenerating the section.
+            {t("review.needsWorkNudgePrefix")} <strong>{t("review.editFeedback")}</strong> {t("review.needsWorkNudgeSuffix")}
           </p>
           <button
             type="button"
@@ -254,7 +254,7 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
           <textarea
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
-            placeholder="Describe what you'd prefer…"
+            placeholder={t("review.feedbackPlaceholder")}
             rows={3}
             className="w-full text-sm px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y"
           />
@@ -266,7 +266,7 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
               ) : (
                 <ImagePlus className="h-4 w-4" />
               )}
-              {refImage ? "Replace reference" : "Add reference image"}
+              {refImage ? t("review.replaceReference") : t("review.addReference")}
               <input
                 type="file"
                 accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
@@ -276,7 +276,7 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
             </label>
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={cancelNeedsWork} disabled={isBusy}>
-                Cancel
+                {t("actions.cancel")}
               </Button>
               <Button
                 variant="primary"
@@ -284,7 +284,7 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
                 onClick={submitNeedsWork}
                 isLoading={updateMut.isPending}
               >
-                Submit
+                {t("review.submit")}
               </Button>
             </div>
           </div>
@@ -294,14 +294,14 @@ export function ReviewDraftPanel({ section, reviews, canEdit, label, closed }: R
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={refImage}
-                alt="Reference preview"
+                alt={t("review.referencePreviewAlt")}
                 className="max-h-32 rounded border border-gray-200"
               />
               <button
                 type="button"
                 onClick={() => setRefImage(null)}
                 className="absolute -top-1.5 -right-1.5 p-0.5 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50"
-                aria-label="Remove reference image"
+                aria-label={t("review.removeReferenceAria")}
               >
                 <X className="h-3 w-3 text-gray-500" />
               </button>

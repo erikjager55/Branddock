@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, Sparkles, X, AlertCircle, Cpu } from 'lucide-react';
 import { useConsistentModels } from '@/features/consistent-models/hooks';
@@ -28,6 +29,7 @@ interface TrainedStylePickerProps {
  * endpoint (which reads them server-side).
  */
 export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, target }: TrainedStylePickerProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const setVisualBriefField = useCanvasStore((s) => s.setVisualBriefField);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
@@ -84,7 +86,7 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
       // De source-persist IS de gate-garantie: faalt 'ie, dan zou generate met
       // een stale source 400'en met een misleidende melding. Surface 'm direct.
       if (!flushResp.ok) {
-        throw new Error(`Could not save the Visual Brief (HTTP ${flushResp.status}) — please try again.`);
+        throw new Error(t('trainedStyle.errSaveBrief', { status: flushResp.status }));
       }
 
       const result = await generateCanvasVisualTrained(deliverableId, target ? { target } : undefined);
@@ -127,7 +129,7 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
       }
       onGenerated?.();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to generate trained-style visual';
+      const message = err instanceof Error ? err.message : t('trainedStyle.errGenerate');
       setError(message);
     } finally {
       setSubmitting(false);
@@ -138,7 +140,7 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
     return (
       <div className="flex items-center justify-center py-8 gap-2 text-sm text-gray-500">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading trained models...
+        {t('trainedStyle.loadingModels')}
       </div>
     );
   }
@@ -149,10 +151,9 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
         <div className="rounded-full bg-gray-100 p-3">
           <Cpu className="h-5 w-5 text-gray-400" />
         </div>
-        <p className="text-sm text-gray-600 font-medium">No trained models available</p>
+        <p className="text-sm text-gray-600 font-medium">{t('trainedStyle.noModels')}</p>
         <p className="text-xs text-gray-500 max-w-xs">
-          Train a Consistent AI Model in the AI Trainer first, then return here to generate
-          on-brand visuals using your trained style.
+          {t('trainedStyle.noModelsHint')}
         </p>
         {onCancel && (
           <button
@@ -160,7 +161,7 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
             onClick={onCancel}
             className="mt-2 px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900"
           >
-            Back
+            {t('actions.back')}
           </button>
         )}
       </div>
@@ -172,7 +173,7 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
       {/* Model dropdown */}
       <div className="space-y-1.5">
         <label htmlFor="trained-model-select" className="block text-xs font-medium text-gray-700">
-          Trained model
+          {t('trainedStyle.modelLabel')}
         </label>
         <select
           id="trained-model-select"
@@ -196,7 +197,7 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <label htmlFor="trained-strength" className="block text-xs font-medium text-gray-700">
-            Style strength
+            {t('trainedStyle.strengthLabel')}
           </label>
           <span className="text-xs font-mono text-gray-600">{strength}%</span>
         </div>
@@ -212,9 +213,7 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
           className="w-full accent-teal-600 disabled:opacity-50"
         />
         <p className="text-[11px] text-gray-500">
-          Lower = more freedom for the model to interpret. Higher = locks tighter to the trained
-          subject. <span className="font-medium">100%</span> is the recommended default for
-          on-brand consistency.
+          {t('trainedStyle.strengthHintPrefix')} <span className="font-medium">100%</span> {t('trainedStyle.strengthHintSuffix')}
         </p>
       </div>
 
@@ -235,7 +234,7 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
             disabled={submitting}
             className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50"
           >
-            Cancel
+            {t('actions.cancel')}
           </button>
         )}
         <button
@@ -247,12 +246,12 @@ export function TrainedStylePicker({ deliverableId, onCancel, onGenerated, targe
           {submitting ? (
             <>
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Generating...
+              {t('trainedStyle.generating')}
             </>
           ) : (
             <>
               <Sparkles className="h-3.5 w-3.5" />
-              Generate visual
+              {t('trainedStyle.generateVisual')}
             </>
           )}
         </button>

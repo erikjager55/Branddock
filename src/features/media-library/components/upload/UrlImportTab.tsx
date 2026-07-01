@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Link as LinkIcon,
   AlertCircle,
@@ -21,6 +22,7 @@ import type { MediaCategory, ImportUrlBody } from '../../types/media.types';
  * options" section. Auto-closes the modal shortly after a successful import.
  */
 export function UrlImportTab() {
+  const { t } = useTranslation('media-library');
   const [url, setUrl] = useState('');
   const [name, setName] = useState('');
   const [category, setCategory] = useState<MediaCategory | ''>('');
@@ -43,7 +45,7 @@ export function UrlImportTab() {
 
       importFromUrl.mutate(body, {
         onSuccess: () => {
-          setSuccessMessage('Imported successfully!');
+          setSuccessMessage(t('upload.url.success'));
           setUrl('');
           setName('');
           setCategory('');
@@ -52,7 +54,7 @@ export function UrlImportTab() {
         },
       });
     },
-    [url, name, category, importFromUrl, setUploadModalOpen],
+    [url, name, category, importFromUrl, setUploadModalOpen, t],
   );
 
   const handleKeyDown = useCallback(
@@ -72,7 +74,7 @@ export function UrlImportTab() {
       {/* ── Primary input row: URL + Import button (always visible) ── */}
       <div>
         <label htmlFor="import-url" className="block text-sm font-medium text-gray-700 mb-1.5">
-          Paste a URL
+          {t('upload.url.label')}
         </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -86,7 +88,7 @@ export function UrlImportTab() {
                 setSuccessMessage(null);
               }}
               onKeyDown={handleKeyDown}
-              placeholder="https://example.com/image.jpg"
+              placeholder={t('upload.url.placeholder')}
               autoFocus
               className="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-3 text-sm placeholder:text-gray-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-colors"
             />
@@ -99,18 +101,18 @@ export function UrlImportTab() {
             {importFromUrl.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Importing...
+                {t('actions.importing')}
               </>
             ) : (
               <>
                 <Download className="h-4 w-4" />
-                Import
+                {t('upload.url.import')}
               </>
             )}
           </button>
         </div>
         <p className="mt-1.5 text-xs text-gray-500">
-          Direct links to images, videos, audio, or documents.
+          {t('upload.url.hint')}
         </p>
       </div>
 
@@ -121,7 +123,7 @@ export function UrlImportTab() {
           onClick={() => setShowAdvanced((v) => !v)}
           className="flex w-full items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 transition-colors rounded-lg"
         >
-          <span className="text-sm font-medium text-gray-700">Advanced options</span>
+          <span className="text-sm font-medium text-gray-700">{t('upload.url.advanced')}</span>
           {showAdvanced ? (
             <ChevronUp className="h-4 w-4 text-gray-400" />
           ) : (
@@ -133,21 +135,21 @@ export function UrlImportTab() {
           <div className="border-t border-gray-200 p-4 space-y-3">
             <div>
               <label htmlFor="import-name" className="block text-xs font-medium text-gray-700 mb-1">
-                Name <span className="text-gray-400 font-normal">(optional)</span>
+                {t('fields.name')} <span className="text-gray-400 font-normal">{t('fields.optional')}</span>
               </label>
               <input
                 id="import-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="My imported media"
+                placeholder={t('upload.url.namePlaceholder')}
                 className="block w-full rounded-md border border-gray-300 bg-white py-1.5 px-3 text-sm placeholder:text-gray-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-colors"
               />
             </div>
 
             <div>
               <label htmlFor="import-category" className="block text-xs font-medium text-gray-700 mb-1">
-                Category <span className="text-gray-400 font-normal">(optional)</span>
+                {t('fields.category')} <span className="text-gray-400 font-normal">{t('fields.optional')}</span>
               </label>
               <select
                 id="import-category"
@@ -155,7 +157,7 @@ export function UrlImportTab() {
                 onChange={(e) => setCategory(e.target.value as MediaCategory | '')}
                 className="block w-full rounded-md border border-gray-300 bg-white py-1.5 px-3 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-colors"
               >
-                <option value="">Select a category...</option>
+                <option value="">{t('fields.selectCategory')}</option>
                 {Object.entries(MEDIA_CATEGORY_CONFIG).map(([key, config]) => (
                   <option key={key} value={key}>
                     {config.label}
@@ -174,7 +176,7 @@ export function UrlImportTab() {
           <p className="text-sm text-red-700">
             {importFromUrl.error instanceof Error
               ? importFromUrl.error.message
-              : 'Failed to import from URL. Please check the URL and try again.'}
+              : t('upload.url.error')}
           </p>
         </div>
       )}

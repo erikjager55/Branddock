@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, ShieldCheck, AlertTriangle, ImageOff } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 
@@ -52,6 +53,7 @@ export function VisualFidelityBadge({
   variant = 'compact',
   onOpenDetail,
 }: VisualFidelityBadgeProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const score = useCanvasStore((s) =>
     componentId ? s.visualFidelityScores.get(componentId) : undefined,
   );
@@ -68,7 +70,7 @@ export function VisualFidelityBadge({
     body = (
       <>
         <Loader2 className="h-3 w-3 animate-spin" />
-        Scoring…
+        {t('visualFidelity.scoring')}
       </>
     );
     bg = 'rgba(255,255,255,0.85)';
@@ -76,18 +78,22 @@ export function VisualFidelityBadge({
     body = (
       <>
         <ImageOff className="h-3 w-3" />
-        Score n/a
+        {t('visualFidelity.scoreNa')}
       </>
     );
     bg = 'rgba(255,255,255,0.85)';
     fg = '#6b7280';
-    title = score.errorMessage ?? 'Visual fidelity score unavailable';
+    title = score.errorMessage ?? t('visualFidelity.unavailable');
   } else if (score.compositeScore !== null) {
     const composite = Math.round(score.compositeScore);
     const zone = zoneFor(composite);
     const Icon = zone === 'good' ? ShieldCheck : AlertTriangle;
     const label =
-      zone === 'good' ? 'On-brand' : zone === 'warn' ? 'Off-target' : 'Off-brand';
+      zone === 'good'
+        ? t('visualFidelity.onBrand')
+        : zone === 'warn'
+          ? t('visualFidelity.offTarget')
+          : t('visualFidelity.offBrand');
     // Pattern F UI exposure: signal off-brand swatches direct in badge.
     // Score-pill blijft de hoofdmetric; off-brand-count komt als kleine
     // secundaire pill ernaast — alleen wanneer ≥1 unmatched color gevonden.
@@ -100,7 +106,7 @@ export function VisualFidelityBadge({
         {offBrandCount > 0 && (
           <span
             className="ml-0.5 inline-flex items-center gap-0.5 px-1 py-[1px] rounded-full text-[9px] font-medium bg-red-50 text-red-700 border border-red-200"
-            title={`${offBrandCount} off-brand color${offBrandCount > 1 ? 's' : ''} detected`}
+            title={t('visualFidelity.offBrandTooltip', { count: offBrandCount })}
           >
             ●{offBrandCount}
           </span>
@@ -110,12 +116,12 @@ export function VisualFidelityBadge({
     fg = ZONE_HEX[zone];
     borderColor = ZONE_HEX[zone];
     title = score.judgeSkipped
-      ? `${composite}/100 — color match only (AI judge unavailable). Click for breakdown.`
-      : `${composite}/100 visual fidelity${
-          score.thresholdMet ? '' : ' — below threshold 70'
+      ? t('visualFidelity.titleColorOnly', { score: composite })
+      : `${t('visualFidelity.titleBase', { score: composite })}${
+          score.thresholdMet ? '' : t('visualFidelity.belowThreshold')
         }${
-          offBrandCount > 0 ? ` — ${offBrandCount} off-brand color${offBrandCount > 1 ? 's' : ''}` : ''
-        }. Click for breakdown.`;
+          offBrandCount > 0 ? t('visualFidelity.offBrandSuffix', { count: offBrandCount }) : ''
+        }${t('visualFidelity.clickForBreakdown')}`;
   } else {
     return null;
   }

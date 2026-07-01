@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Palette,
   Pencil,
@@ -52,6 +53,7 @@ export function StyleguideHeader({
   onNewAnalysis,
   onOpenOnboardingWizard,
 }: StyleguideHeaderProps) {
+  const { t } = useTranslation("brandstyle");
   // Brand-kit export progress
   const [kitProgress, setKitProgress] = useState<BrandKitPdfProgress | null>(null);
   const [kitError, setKitError] = useState<string | null>(null);
@@ -63,15 +65,15 @@ export function StyleguideHeader({
 
   const handleExportBrandKit = useCallback(async () => {
     setKitError(null);
-    setKitProgress({ stage: "fetching", message: "Starting export…" });
+    setKitProgress({ stage: "fetching", message: t("header.export.starting") });
     try {
       await exportBrandKitPdf((progress) => setKitProgress(progress));
       setTimeout(() => setKitProgress(null), 2000);
     } catch (error) {
-      setKitError(error instanceof Error ? error.message : "Export failed");
+      setKitError(error instanceof Error ? error.message : t("header.export.exportFailed"));
       setKitProgress(null);
     }
-  }, []);
+  }, [t]);
 
   // Review progress summary for the metadata bar.
   // Gebruik getApplicableReviewSections (zelfde bron als ReviewSummaryHeader)
@@ -119,7 +121,7 @@ export function StyleguideHeader({
           <div className="flex-1 min-w-0">
             {/* Title + status pills */}
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-900">Brand Styleguide</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{t("header.title")}</h1>
               <LockStatusPill
                 isLocked={isLocked}
                 lockedBy={lockedBy}
@@ -130,7 +132,7 @@ export function StyleguideHeader({
 
             {/* Description (canonical: base + text-gray-500) */}
             <p className="text-base text-gray-500 mt-0.5">
-              Your visual identity guidelines
+              {t("header.subtitle")}
             </p>
 
             {/* Metadata bar — styleguide-specific facts + review progress */}
@@ -139,7 +141,7 @@ export function StyleguideHeader({
                 <span className="font-medium text-gray-700">
                   {progressSummary.approved}/{progressSummary.total}
                 </span>
-                <span className="text-gray-500">sections approved</span>
+                <span className="text-gray-500">{t("header.sectionsApproved")}</span>
               </span>
               <DataQualityBadge
                 uncertain={dataQuality.needsAttention.length}
@@ -147,7 +149,7 @@ export function StyleguideHeader({
               />
               {lastAnalyzedLabel && <span>{lastAnalyzedLabel}</span>}
               {styleguide.createdBy.name && (
-                <span>Created by {styleguide.createdBy.name}</span>
+                <span>{t("header.createdBy", { name: styleguide.createdBy.name })}</span>
               )}
               {styleguide.sourceUrl && (
                 <a
@@ -172,14 +174,14 @@ export function StyleguideHeader({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-opacity hover:opacity-90"
                 >
                   <Save className="h-4 w-4" />
-                  Save
+                  {t("actions.save")}
                 </button>
                 <button
                   onClick={() => onEditToggle(false)}
                   className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   <X className="h-3.5 w-3.5" />
-                  Cancel
+                  {t("actions.cancel")}
                 </button>
               </>
             ) : (
@@ -190,7 +192,7 @@ export function StyleguideHeader({
                 onClick={() => onEditToggle(true)}
                 disabled={isLocked}
               >
-                Edit
+                {t("actions.edit")}
               </Button>
             )}
 
@@ -202,7 +204,7 @@ export function StyleguideHeader({
               icon={Sparkles}
               onClick={onOpenOnboardingWizard}
             >
-              Onboarding
+              {t("header.onboarding")}
             </Button>
 
             <Button
@@ -212,7 +214,7 @@ export function StyleguideHeader({
               onClick={onNewAnalysis}
               disabled={isLocked}
             >
-              New analysis
+              {t("header.newAnalysis")}
             </Button>
 
             <ExportMenu
@@ -235,12 +237,12 @@ export function StyleguideHeader({
       {/* Brand-kit export feedback (below card, inline) */}
       {kitError && (
         <p className="mt-2 text-xs text-red-600" role="alert">
-          Brand kit export failed: {kitError}
+          {t("header.export.kitFailed", { error: kitError })}
         </p>
       )}
       {kitProgress?.stage === "complete" && (
         <p className="mt-2 text-xs text-emerald-700">
-          Brand book PDF exported — check your Downloads folder.
+          {t("header.export.kitDone")}
         </p>
       )}
     </div>
@@ -255,25 +257,26 @@ export function StyleguideHeader({
  * N waarden vragen om bevestiging in de wizard / tabs.
  */
 function DataQualityBadge({ uncertain, total }: { uncertain: number; total: number }) {
+  const { t } = useTranslation("brandstyle");
   if (uncertain === 0) {
     return (
       <span
         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700"
-        title={`All ${total} core tokens were confidently derived from the source site.`}
+        title={t("header.dataQualityOkTitle", { total })}
       >
         <ShieldCheck className="h-3 w-3" />
-        <span className="font-medium">Data quality OK</span>
+        <span className="font-medium">{t("header.dataQualityOk")}</span>
       </span>
     );
   }
   return (
     <span
       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-amber-200 bg-amber-50 text-amber-700"
-      title={`We could not determine ${uncertain} of ${total} core tokens with confidence — confirm them in the Onboarding wizard or the Colors/Typography tabs.`}
+      title={t("header.dataQualityUncertainTitle", { uncertain, total })}
     >
       <ShieldAlert className="h-3 w-3" />
       <span className="font-medium">{uncertain}</span>
-      <span>uncertain</span>
+      <span>{t("header.dataQualityUncertain")}</span>
     </span>
   );
 }
@@ -281,18 +284,19 @@ function DataQualityBadge({ uncertain, total }: { uncertain: number; total: numb
 // ─── Published status pill ─────────────────────────────────
 
 function PublishStatusPill({ published }: { published: boolean }) {
+  const { t } = useTranslation("brandstyle");
   if (published) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
         <CheckCircle2 className="h-3 w-3" />
-        Published
+        {t("header.published")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-gray-100 text-gray-600 border border-gray-200">
       <Circle className="h-3 w-3" />
-      Draft
+      {t("header.draft")}
     </span>
   );
 }
@@ -307,6 +311,7 @@ interface ExportMenuProps {
 }
 
 function ExportMenu({ onExportPdf, onExportBrandKit, isExportingKit, kitMessage }: ExportMenuProps) {
+  const { t } = useTranslation("brandstyle");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -333,7 +338,7 @@ function ExportMenu({ onExportPdf, onExportBrandKit, isExportingKit, kitMessage 
         ) : (
           <Download className="h-4 w-4" />
         )}
-        {isExportingKit ? (kitMessage ?? "Exporting…") : "Export"}
+        {isExportingKit ? (kitMessage ?? t("header.export.exporting")) : t("header.export.button")}
         <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
       </button>
 
@@ -353,8 +358,8 @@ function ExportMenu({ onExportPdf, onExportBrandKit, isExportingKit, kitMessage 
           >
             <FileText className="h-4 w-4 mt-0.5 text-gray-500 flex-shrink-0" />
             <div className="text-left min-w-0 flex-1">
-              <div className="font-medium whitespace-nowrap">Styleguide PDF</div>
-              <div className="text-[11px] text-gray-500">All sections in one document</div>
+              <div className="font-medium whitespace-nowrap">{t("header.export.styleguidePdf")}</div>
+              <div className="text-[11px] text-gray-500">{t("header.export.styleguidePdfDesc")}</div>
             </div>
           </button>
           <button
@@ -369,9 +374,9 @@ function ExportMenu({ onExportPdf, onExportBrandKit, isExportingKit, kitMessage 
           >
             <Sparkles className="h-4 w-4 mt-0.5 text-gray-500 flex-shrink-0" />
             <div className="text-left min-w-0 flex-1">
-              <div className="font-medium whitespace-nowrap">Brand kit for Claude Design</div>
+              <div className="font-medium whitespace-nowrap">{t("header.export.brandKit")}</div>
               <div className="text-[11px] text-gray-500">
-                ZIP with assets + tokens, ready to upload
+                {t("header.export.brandKitDesc")}
               </div>
             </div>
           </button>
@@ -379,7 +384,7 @@ function ExportMenu({ onExportPdf, onExportBrandKit, isExportingKit, kitMessage 
           {/* ── Design System exports (DESIGN.md / DTCG / Tailwind / ...) ── */}
           <div className="my-1 border-t border-gray-100" />
           <div className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider font-semibold text-gray-400">
-            Design system
+            {t("header.export.designSystem")}
           </div>
           {EXPORT_FORMATS.map((format) => (
             <DesignSystemExportLink
@@ -401,6 +406,7 @@ function DesignSystemExportLink({
   format: ExportFormat;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation("brandstyle");
   const disabled = format.status === 'soon';
   return (
     <a
@@ -421,7 +427,7 @@ function DesignSystemExportLink({
           {format.label}
           {disabled && (
             <span className="text-[9px] font-medium text-gray-500 bg-gray-100 px-1 py-0.5 rounded">
-              Soon
+              {t("header.export.soon")}
             </span>
           )}
         </div>

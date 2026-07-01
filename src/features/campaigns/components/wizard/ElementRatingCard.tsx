@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 
@@ -28,6 +29,7 @@ export function ElementRatingCard({
   highlighted = false,
   highlightBg = "bg-gray-50",
 }: ElementRatingCardProps) {
+  const { t } = useTranslation("campaigns-wizard");
   const entry = useCampaignWizardStore((s) => s.strategyRatings[ratingKey]);
   const setRating = useCampaignWizardStore((s) => s.setStrategyRating);
   const setComment = useCampaignWizardStore((s) => s.setStrategyRatingComment);
@@ -57,7 +59,7 @@ export function ElementRatingCard({
           aria-hidden
           className="inline-block w-2 h-2 rounded-full flex-shrink-0"
           style={{ backgroundColor: isRated ? "#10b981" : "#fbbf24" }}
-          title={isRated ? "Rated" : "Not yet rated"}
+          title={isRated ? t("ratingCard.rated") : t("ratingCard.notRated")}
         />
         {Icon && <Icon className="w-3.5 h-3.5 text-gray-400" />}
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -73,7 +75,7 @@ export function ElementRatingCard({
                 ? "bg-emerald-100 border-emerald-300 text-emerald-600"
                 : "bg-gray-50 border-gray-200 text-gray-400 hover:text-emerald-500 hover:border-emerald-200"
             }`}
-            title="Approve"
+            title={t("ratingCard.approve")}
           >
             <ThumbsUp className="w-4 h-4" />
           </button>
@@ -86,7 +88,7 @@ export function ElementRatingCard({
                 ? "bg-red-100 border-red-300 text-red-500"
                 : "bg-gray-50 border-gray-200 text-gray-400 hover:text-red-400 hover:border-red-200"
             }`}
-            title="Needs change"
+            title={t("ratingCard.needsChange")}
           >
             <ThumbsDown className="w-4 h-4" />
           </button>
@@ -100,7 +102,7 @@ export function ElementRatingCard({
                   ? "bg-blue-50 border-blue-200 text-blue-500"
                   : "bg-gray-50 border-gray-200 text-gray-400 hover:text-blue-500 hover:border-blue-200"
               }`}
-              title={showComment ? "Hide comment" : "Add comment"}
+              title={showComment ? t("ratingCard.hideComment") : t("ratingCard.addComment")}
             >
               <MessageSquare className="w-4 h-4" />
             </button>
@@ -124,8 +126,8 @@ export function ElementRatingCard({
           onChange={(e) => setComment(ratingKey, e.target.value)}
           placeholder={
             rating === "down"
-              ? "What should change and why?"
-              : "Optional: any notes for the AI..."
+              ? t("ratingCard.commentPlaceholderDown")
+              : t("ratingCard.commentPlaceholderUp")
           }
           className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           rows={2}

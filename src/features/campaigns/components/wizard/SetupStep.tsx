@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { TrendingUp, Zap, Scale, MessageCircle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Input } from "@/components/shared";
@@ -16,37 +17,18 @@ import { BriefingSourcesField } from "./BriefingSourcesField";
 
 const STRATEGIC_INTENTS: {
   type: StrategicIntent;
-  label: string;
   ratio: string;
-  description: string;
   icon: LucideIcon;
 }[] = [
-  {
-    type: "brand_building",
-    label: "Brand Building",
-    ratio: "60/40",
-    description: "Build long-term brand equity and awareness",
-    icon: TrendingUp,
-  },
-  {
-    type: "sales_activation",
-    label: "Sales Activation",
-    ratio: "40/60",
-    description: "Drive short-term conversions and leads",
-    icon: Zap,
-  },
-  {
-    type: "hybrid",
-    label: "Hybrid",
-    ratio: "50/50",
-    description: "Balance brand building with direct response",
-    icon: Scale,
-  },
+  { type: "brand_building", ratio: "60/40", icon: TrendingUp },
+  { type: "sales_activation", ratio: "40/60", icon: Zap },
+  { type: "hybrid", ratio: "50/50", icon: Scale },
 ];
 
 // ─── Component ────────────────────────────────────────────
 
 export function SetupStep() {
+  const { t } = useTranslation("campaigns-wizard");
   const name = useCampaignWizardStore((s) => s.name);
   const setName = useCampaignWizardStore((s) => s.setName);
   const description = useCampaignWizardStore((s) => s.description);
@@ -85,22 +67,22 @@ export function SetupStep() {
     <div className="space-y-6">
       {/* Campaign name */}
       <Input
-        label="Campaign Name"
+        label={t("setup.nameLabel")}
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="e.g., Q2 Brand Awareness Campaign"
+        placeholder={t("setup.namePlaceholder")}
         required
       />
 
       {/* Description */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Description
+          {t("setup.descriptionLabel")}
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe the purpose and goals of this campaign..."
+          placeholder={t("setup.descriptionPlaceholder")}
           rows={3}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
         />
@@ -111,19 +93,19 @@ export function SetupStep() {
         <div className="flex items-center gap-2 mb-1">
           <MessageCircle className="h-4 w-4 text-primary" />
           <label className="text-sm font-medium text-gray-700">
-            Campaign Briefing
+            {t("setup.briefing.title")}
           </label>
-          <span className="text-xs text-muted-foreground">(optional — improves strategy quality)</span>
+          <span className="text-xs text-muted-foreground">{t("setup.briefing.optional")}</span>
         </div>
 
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
-            Why now? What&apos;s the occasion?
+            {t("setup.briefing.occasionLabel")}
           </label>
           <textarea
             value={briefingOccasion}
             onChange={(e) => setBriefingOccasion(e.target.value)}
-            placeholder="e.g., Product launch in Q2, seasonal peak, competitor move, anniversary..."
+            placeholder={t("setup.briefing.occasionPlaceholder")}
             rows={4}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-y bg-white"
           />
@@ -131,12 +113,12 @@ export function SetupStep() {
 
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
-            What should your audience Think, Feel, and Do?
+            {t("setup.briefing.audienceLabel")}
           </label>
           <textarea
             value={briefingAudienceObjective}
             onChange={(e) => setBriefingAudienceObjective(e.target.value)}
-            placeholder="e.g., Think: 'This brand understands my challenges.' Feel: trust and excitement. Do: sign up for a demo."
+            placeholder={t("setup.briefing.audiencePlaceholder")}
             rows={4}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-y bg-white"
           />
@@ -144,12 +126,12 @@ export function SetupStep() {
 
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
-            Core message — the single most important takeaway
+            {t("setup.briefing.coreMessageLabel")}
           </label>
           <textarea
             value={briefingCoreMessage}
             onChange={(e) => setBriefingCoreMessage(e.target.value)}
-            placeholder="e.g., 'We make brand strategy accessible to every business, not just enterprises.'"
+            placeholder={t("setup.briefing.coreMessagePlaceholder")}
             rows={4}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-y bg-white"
           />
@@ -157,12 +139,12 @@ export function SetupStep() {
 
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
-            Desired tone or creative direction
+            {t("setup.briefing.toneLabel")}
           </label>
           <textarea
             value={briefingTonePreference}
             onChange={(e) => setBriefingTonePreference(e.target.value)}
-            placeholder="e.g., Professional but approachable, data-driven, bold and disruptive, warm and empathetic..."
+            placeholder={t("setup.briefing.tonePlaceholder")}
             rows={4}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-y bg-white"
           />
@@ -170,12 +152,12 @@ export function SetupStep() {
 
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
-            Constraints or mandatories
+            {t("setup.briefing.constraintsLabel")}
           </label>
           <textarea
             value={briefingConstraints}
             onChange={(e) => setBriefingConstraints(e.target.value)}
-            placeholder="e.g., Must mention sustainability, avoid competitor comparisons, budget max €5000, no paid social..."
+            placeholder={t("setup.briefing.constraintsPlaceholder")}
             rows={4}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-y bg-white"
           />
@@ -202,10 +184,10 @@ export function SetupStep() {
       {!isContentMode && <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
           <span className="text-red-500 mr-0.5">*</span>
-          Campaign Type
+          {t("setup.campaignTypeLabel")}
         </label>
         <p className="text-xs text-muted-foreground mb-3">
-          Determines the creative approach and deliverable focus. Based on Binet & Field IPA effectiveness research.
+          {t("setup.campaignTypeHelp")}
         </p>
         <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
           {CAMPAIGN_TYPES.map(({ id, label, description: desc, icon, creativeApproach }) => {
@@ -225,7 +207,7 @@ export function SetupStep() {
                     </span>
                     {isRecommended && (
                       <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-50 text-emerald-700">
-                        recommended
+                        {t("setup.recommended")}
                       </span>
                     )}
                   </span>
@@ -239,23 +221,23 @@ export function SetupStep() {
       {/* Strategic Intent — 3-column cards */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Strategic Intent
+          {t("setup.strategicIntentLabel")}
         </label>
         <p className="text-xs text-muted-foreground mb-3">
-          How should the campaign balance long-term brand building vs. short-term activation? (Binet & Field IPA data)
+          {t("setup.strategicIntentHelp")}
         </p>
         <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
-          {STRATEGIC_INTENTS.map(({ type, label, ratio, description: desc, icon }) => (
+          {STRATEGIC_INTENTS.map(({ type, ratio, icon }) => (
             <SelectionCard
               key={type}
               icon={icon}
-              title={label}
-              subtitle={desc}
+              title={t(`setup.intent.${type}.title`)}
+              subtitle={t(`setup.intent.${type}.subtitle`)}
               selected={strategicIntent === type}
               onSelect={() => setStrategicIntent(type)}
               badges={
                 <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
-                  {ratio} brand/activation
+                  {t("setup.brandActivationRatio", { ratio })}
                 </span>
               }
             />
@@ -267,7 +249,7 @@ export function SetupStep() {
       {!isContentMode && <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
           <span className="text-red-500 mr-0.5">*</span>
-          Campaign Goal
+          {t("setup.campaignGoalLabel")}
         </label>
         <div className="space-y-5">
           {GOAL_CATEGORIES.map((category) => (
@@ -306,11 +288,11 @@ export function SetupStep() {
             className="mt-0.5 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
           />
           <div>
-            <span className="text-sm font-medium text-gray-700">Skip Creative Concept</span>
+            <span className="text-sm font-medium text-gray-700">{t("setup.skipConcept.label")}</span>
             <p className="text-xs text-gray-500 mt-0.5">
               {isContentMode
-                ? 'Go directly from strategy to content generation. Recommended for SEO / informative content (blog, whitepaper, article) where insight mining and creative debate are overkill. Saves 3–5 minutes.'
-                : 'Go directly from strategy to deliverables. The AI translates your strategy into a core message for your target audience, without creative concept development (insight mining, concept generation, debate).'}
+                ? t("setup.skipConcept.contentHelp")
+                : t("setup.skipConcept.campaignHelp")}
             </p>
           </div>
         </label>
@@ -321,12 +303,12 @@ export function SetupStep() {
         if (isContentMode) return null;
         const tb = campaignGoalType ? getTimeBinding(campaignGoalType) : 'hybrid';
         if (tb === 'always-on') return null;
-        const dateLabel = tb === 'time-bound' ? '(required)' : '(optional)';
+        const dateLabel = tb === 'time-bound' ? t("setup.dateRequired") : t("setup.dateOptional");
         return (
           <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Start Date <span className="text-xs text-gray-400 font-normal">{dateLabel}</span>
+                {t("setup.startDateLabel")} <span className="text-xs text-gray-400 font-normal">{dateLabel}</span>
               </label>
               <input
                 type="date"
@@ -337,7 +319,7 @@ export function SetupStep() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                End Date <span className="text-xs text-gray-400 font-normal">{dateLabel}</span>
+                {t("setup.endDateLabel")} <span className="text-xs text-gray-400 font-normal">{dateLabel}</span>
               </label>
               <input
                 type="date"
@@ -367,6 +349,7 @@ function ContentTypeSelector({
   selectedTypeId: string | null;
   onSelect: (typeId: string) => void;
 }) {
+  const { t } = useTranslation("campaigns-wizard");
   const [activeCategory, setActiveCategory] = useState<string>(DELIVERABLE_CATEGORIES[0]);
 
   const types = getDeliverablesByCategory(activeCategory);
@@ -375,10 +358,10 @@ function ContentTypeSelector({
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-3">
         <span className="text-red-500 mr-0.5">*</span>
-        Content Type
+        {t("setup.contentTypeLabel")}
       </label>
       <p className="text-xs text-muted-foreground mb-3">
-        Select the type of content you want to create.
+        {t("setup.contentTypeHelp")}
       </p>
 
       {/* Category tabs */}

@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Card } from "@/components/shared";
 import type { BrandStyleguide } from "../types/brandstyle.types";
 import { useUpdateSection } from "../hooks/useBrandstyleHooks";
@@ -15,6 +16,7 @@ interface BrandAssetsSectionProps {
 }
 
 export function BrandAssetsSection({ styleguide, canEdit }: BrandAssetsSectionProps) {
+  const { t } = useTranslation("brandstyle");
   // useCustomFonts is verhuisd naar TypographySection — daar wonen nu alle
   // font-UI elementen, dus de font-face injection moet ook daar plaatsvinden.
   // Deze section bevat alleen nog logo-content + logo guidelines/don'ts.
@@ -31,18 +33,18 @@ export function BrandAssetsSection({ styleguide, canEdit }: BrandAssetsSectionPr
             section="brand-assets-logos"
             reviews={reviews}
             canEdit={canEdit}
-            label="Review logos"
+            label={t("logos.reviewLogos")}
           />
         }
       />
 
       <Card>
         <EditableStringList
-          title="Logo Usage Guidelines"
+          title={t("logos.guidelinesTitle")}
           items={styleguide.logoGuidelines}
           canEdit={canEdit}
           isSaving={updateLogo.isPending}
-          placeholder="Add a guideline..."
+          placeholder={t("logos.guidelinesPlaceholder")}
           onSave={(items) => updateLogo.mutate({ logoGuidelines: items })}
         >
           {(items) =>
@@ -56,7 +58,7 @@ export function BrandAssetsSection({ styleguide, canEdit }: BrandAssetsSectionPr
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-400">No usage guidelines yet.</p>
+              <p className="text-sm text-gray-400">{t("logos.guidelinesEmpty")}</p>
             )
           }
         </EditableStringList>
@@ -64,11 +66,11 @@ export function BrandAssetsSection({ styleguide, canEdit }: BrandAssetsSectionPr
 
       <Card>
         <EditableStringList
-          title="Logo Don'ts"
+          title={t("logos.dontsTitle")}
           items={styleguide.logoDonts}
           canEdit={canEdit}
           isSaving={updateLogo.isPending}
-          placeholder="Add a don't..."
+          placeholder={t("logos.dontsPlaceholder")}
           onSave={(items) => updateLogo.mutate({ logoDonts: items })}
         >
           {(items) =>
@@ -85,7 +87,7 @@ export function BrandAssetsSection({ styleguide, canEdit }: BrandAssetsSectionPr
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400">No don&apos;ts defined yet.</p>
+              <p className="text-sm text-gray-400">{t("common.noDontsYet")}</p>
             )
           }
         </EditableStringList>

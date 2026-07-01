@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { EmptyState } from "@/components/shared";
 import { Megaphone } from "lucide-react";
 import { StrategicCampaignCard } from "./StrategicCampaignCard";
@@ -22,6 +23,7 @@ export function CampaignGrid({
   onArchive,
   onDelete,
 }: CampaignGridProps) {
+  const { t } = useTranslation("campaigns-overview");
   const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
 
   if (isLoading) {
@@ -38,8 +40,8 @@ export function CampaignGrid({
     return (
       <EmptyState
         icon={Megaphone}
-        title="No campaigns found"
-        description="Create your first campaign or quick content to get started."
+        title={t("empty.title")}
+        description={t("empty.description")}
       />
     );
   }

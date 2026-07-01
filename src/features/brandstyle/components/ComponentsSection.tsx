@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Card } from "@/components/shared";
 import type { BrandStyleguide, ComponentTypeKey, StyleguideComponentData } from "../types/brandstyle.types";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
@@ -11,12 +12,12 @@ import { parseSemanticTokens } from "../utils/semantic-tokens";
 
 const VARIANT_ORDER = ['button-primary', 'button-secondary', 'button-tertiary', 'button-ghost', 'button-other'];
 
-const VARIANT_LABELS: Record<string, string> = {
-  'button-primary': 'Primary',
-  'button-secondary': 'Secondary',
-  'button-tertiary': 'Tertiary',
-  'button-ghost': 'Ghost',
-  'button-other': 'Other',
+const VARIANT_KEYS: Record<string, string> = {
+  'button-primary': 'primary',
+  'button-secondary': 'secondary',
+  'button-tertiary': 'tertiary',
+  'button-ghost': 'ghost',
+  'button-other': 'other',
 };
 
 interface ComponentsSectionProps {
@@ -26,7 +27,6 @@ interface ComponentsSectionProps {
 
 const TYPE_TABS: {
   id: ComponentTypeKey;
-  label: string;
   reviewSection:
     | "components-buttons"
     | "components-form-inputs"
@@ -36,16 +36,17 @@ const TYPE_TABS: {
     | "components-top-navigation"
     | "components-quote-blocks";
 }[] = [
-  { id: "BUTTON", label: "Buttons", reviewSection: "components-buttons" },
-  { id: "FORM_INPUT", label: "Form inputs", reviewSection: "components-form-inputs" },
-  { id: "STATUS_CHIP", label: "Status chips", reviewSection: "components-status-chips" },
-  { id: "PRODUCT_CARD", label: "Product cards", reviewSection: "components-product-cards" },
-  { id: "FEATURE_ICON", label: "Feature icons", reviewSection: "components-feature-icons" },
-  { id: "TOP_NAVIGATION", label: "Top navigation", reviewSection: "components-top-navigation" },
-  { id: "QUOTE_BLOCK", label: "Quote blocks", reviewSection: "components-quote-blocks" },
+  { id: "BUTTON", reviewSection: "components-buttons" },
+  { id: "FORM_INPUT", reviewSection: "components-form-inputs" },
+  { id: "STATUS_CHIP", reviewSection: "components-status-chips" },
+  { id: "PRODUCT_CARD", reviewSection: "components-product-cards" },
+  { id: "FEATURE_ICON", reviewSection: "components-feature-icons" },
+  { id: "TOP_NAVIGATION", reviewSection: "components-top-navigation" },
+  { id: "QUOTE_BLOCK", reviewSection: "components-quote-blocks" },
 ];
 
 export function ComponentsSection({ styleguide, canEdit }: ComponentsSectionProps) {
+  const { t } = useTranslation("brandstyle");
   const activeType = useBrandstyleStore((s) => s.activeComponentType);
   const setActiveType = useBrandstyleStore((s) => s.setActiveComponentType);
   const all = styleguide.components ?? [];
@@ -80,37 +81,35 @@ export function ComponentsSection({ styleguide, canEdit }: ComponentsSectionProp
     <div data-testid="components-section" className="space-y-6">
       <Card>
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-900">Components</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t("components.title")}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Component samples extracted from the analyzed website. Tokens (padding, radius,
-            colors, typography) are pulled from matching CSS rules — re-run analysis to
-            refresh.
+            {t("components.subtitle")}
           </p>
         </div>
 
         {/* Sub-tabs */}
         <div className="border-b border-gray-200 mb-5">
           <nav className="flex gap-1 overflow-x-auto">
-            {countByType.map((t) => {
-              const active = activeType === t.id;
+            {countByType.map((tab) => {
+              const active = activeType === tab.id;
               return (
                 <button
-                  key={t.id}
+                  key={tab.id}
                   type="button"
-                  onClick={() => setActiveType(t.id)}
+                  onClick={() => setActiveType(tab.id)}
                   className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
                     active
                       ? "border-primary-500 text-primary"
                       : "border-transparent text-gray-500 hover:text-gray-700"
                   }`}
                 >
-                  {t.label}
+                  {t(`components.types.${tab.id}`)}
                   <span
                     className={`inline-flex items-center justify-center min-w-[18px] h-4 px-1.5 text-[10px] font-semibold rounded-full ${
                       active ? "bg-primary-100 text-primary" : "bg-gray-100 text-gray-500"
                     }`}
                   >
-                    {t.count}
+                    {tab.count}
                   </span>
                 </button>
               );
@@ -130,13 +129,10 @@ export function ComponentsSection({ styleguide, canEdit }: ComponentsSectionProp
         {visible.length === 0 ? (
           <div className="py-8 text-center text-sm text-gray-400 space-y-1">
             <div className="font-medium text-gray-500">
-              No {currentTab.label.toLowerCase()} detected on the analyzed pages.
+              {t("components.emptyTitle", { type: t(`components.types.${currentTab.id}`).toLowerCase() })}
             </div>
             <div className="text-xs">
-              The scanner checks ~5 pages including subpages. If your site has
-              these elements on other pages (e.g. /testimonials, /products), add
-              that URL and re-run the analysis. Otherwise the brand simply
-              doesn&apos;t use this component type — that&apos;s a valid result.
+              {t("components.emptyBody")}
             </div>
           </div>
         ) : buttonGroups ? (
@@ -147,12 +143,12 @@ export function ComponentsSection({ styleguide, canEdit }: ComponentsSectionProp
                 <div key={variant}>
                   <div className="flex items-center gap-2 mb-3">
                     <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                      {VARIANT_LABELS[variant] ?? variant}
+                      {VARIANT_KEYS[variant] ? t(`components.variants.${VARIANT_KEYS[variant]}`) : variant}
                     </h4>
                     <code className="font-mono text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">
                       {variant}
                     </code>
-                    <span className="text-xs text-gray-400">· {items.length} sample{items.length === 1 ? '' : 's'}</span>
+                    <span className="text-xs text-gray-400">{t("components.sampleCount", { count: items.length })}</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {items.map((component) => (
@@ -185,7 +181,7 @@ export function ComponentsSection({ styleguide, canEdit }: ComponentsSectionProp
           section={currentTab.reviewSection}
           reviews={reviews}
           canEdit={canEdit}
-          label={`Review ${currentTab.label.toLowerCase()}`}
+          label={t("components.reviewLabel", { type: t(`components.types.${currentTab.id}`).toLowerCase() })}
         />
       </Card>
     </div>

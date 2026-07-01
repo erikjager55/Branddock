@@ -21,6 +21,7 @@
 // =============================================================
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Wand2,
   Library,
@@ -104,6 +105,7 @@ export function ImageSourcePanel({
   target,
   sources,
 }: ImageSourcePanelProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const isModal = variant === 'modal';
   const visibleTabs = sources
     ? IMAGE_SOURCE_TABS.filter((t) => sources.includes(t.value))
@@ -124,14 +126,14 @@ export function ImageSourcePanel({
       </div>
       {/* Tab-strip — sources horizontal (optioneel gefilterd via `sources`) */}
       <div className="flex flex-wrap gap-1.5 border-b border-gray-200 pb-3 mb-4">
-        {visibleTabs.map((t) => {
-          const Icon = t.icon;
-          const active = effectiveSource === t.value;
+        {visibleTabs.map((tab) => {
+          const Icon = tab.icon;
+          const active = effectiveSource === tab.value;
           return (
             <button
-              key={t.value}
+              key={tab.value}
               type="button"
-              onClick={() => onSourceChange(t.value)}
+              onClick={() => onSourceChange(tab.value)}
               className={
                 active
                   ? 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-white text-xs font-medium'
@@ -139,7 +141,7 @@ export function ImageSourcePanel({
               }
             >
               <Icon className="h-3.5 w-3.5" />
-              {t.label}
+              {t(`imageSource.tab.${tab.value}`)}
             </button>
           );
         })}
@@ -173,6 +175,7 @@ function SourceContent({
   onCancel?: () => void;
   target?: 'hero';
 }) {
+  const { t } = useTranslation('campaigns-canvas');
   // F35 Stap 4: smart-default seeds uit visualBrief — briefingText voedt
   // search-input voor Stock + prompt-textarea voor Generate.
   const visualBrief = useCanvasStore((s) => s.visualBrief);
@@ -185,7 +188,7 @@ function SourceContent({
   // Modal-mode tabs use the existing onSelected callbacks
   if (isModal) {
     if (!onSelected) {
-      return <div className="text-xs text-gray-500">No selection handler wired.</div>;
+      return <div className="text-xs text-gray-500">{t('imageSource.noHandler')}</div>;
     }
     switch (source) {
       case 'smart-search':
@@ -211,8 +214,7 @@ function SourceContent({
         // Hint user om Step 2 te gebruiken (embedded variant).
         return (
           <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-            <strong>{source === 'compose' ? 'Compose' : 'Trained style'}</strong> is only available
-            in Step 2 (Content Variants). Switch to that view to generate.
+            <strong>{source === 'compose' ? t('imageSource.composeLabel') : t('imageSource.trainedLabel')}</strong> {t('imageSource.onlyStep2')}
           </div>
         );
       case 'photography-request':
@@ -220,7 +222,7 @@ function SourceContent({
       case 'none':
         return (
           <div className="text-xs text-gray-500 px-2 py-3">
-            No visual for this content item. Switch sources above to add one.
+            {t('imageSource.noneModal')}
           </div>
         );
     }
@@ -230,14 +232,14 @@ function SourceContent({
   // multi-select + grid-flow voor generate. onSelected wordt niet gebruikt;
   // sub-components muteren canvas-store direct.
   if (!deliverableId) {
-    return <div className="text-xs text-gray-500">No deliverable loaded.</div>;
+    return <div className="text-xs text-gray-500">{t('imageSource.noDeliverable')}</div>;
   }
   switch (source) {
     case 'smart-search':
       return onSelected ? (
         <SmartSearchTab onSelected={onSelected} initialQuery={seedQuery} />
       ) : (
-        <div className="text-xs text-gray-500">Smart search via Step 3 (Medium).</div>
+        <div className="text-xs text-gray-500">{t('imageSource.smartSearchStep3')}</div>
       );
     case 'generate':
       // Generate-flow zit nog in VisualVariantsBlock (button → orchestrator
@@ -245,7 +247,7 @@ function SourceContent({
       // component naar GenerateImageTab. Voor nu: placeholder met instructie.
       return (
         <div className="text-xs text-gray-600 px-2 py-3">
-          The generate flow is wired into the Step 2 main panel. Click the Generate button there.
+          {t('imageSource.generateHint')}
         </div>
       );
     case 'library':
@@ -266,19 +268,19 @@ function SourceContent({
       return onSelected ? (
         <UploadTab onSelected={onSelected} />
       ) : (
-        <div className="text-xs text-gray-500">Upload via Step 3 (Medium).</div>
+        <div className="text-xs text-gray-500">{t('imageSource.uploadStep3')}</div>
       );
     case 'url':
       return onSelected ? (
         <UrlImportTab onSelected={onSelected} />
       ) : (
-        <div className="text-xs text-gray-500">URL import via Step 3 (Medium).</div>
+        <div className="text-xs text-gray-500">{t('imageSource.urlStep3')}</div>
       );
     case 'stock':
       return onSelected ? (
         <StockPhotosTab onSelected={onSelected} initialQuery={seedQuery} />
       ) : (
-        <div className="text-xs text-gray-500">Stock photos via Step 3 (Medium).</div>
+        <div className="text-xs text-gray-500">{t('imageSource.stockStep3')}</div>
       );
     case 'compose':
       return (
@@ -303,7 +305,7 @@ function SourceContent({
     case 'none':
       return (
         <div className="text-xs text-gray-500 px-2 py-3">
-          No visual for this content item.
+          {t('imageSource.noneEmbedded')}
         </div>
       );
   }

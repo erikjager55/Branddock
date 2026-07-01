@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, Loader2, AlertCircle, ExternalLink, Library, Image as ImageIcon } from 'lucide-react';
 import { useImportStockPhoto } from '@/features/media-library/hooks';
 import type { InsertImageTabProps } from './types';
@@ -33,17 +34,13 @@ interface UnifiedSearchResult {
   attribution: { name: string; url: string } | null;
 }
 
-const SOURCE_LABEL: Record<UnifiedSearchResult['source'], string> = {
-  library: 'Library',
-  pexels: 'Pexels',
-};
-
 const SOURCE_ACCENT: Record<UnifiedSearchResult['source'], string> = {
   library: 'bg-emerald-600',
   pexels: 'bg-indigo-600',
 };
 
 export function SmartSearchTab({ onSelected, initialQuery }: InsertImageTabProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const [searchInput, setSearchInput] = useState(initialQuery ?? '');
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery ?? '');
   const [results, setResults] = useState<UnifiedSearchResult[]>([]);
@@ -78,7 +75,7 @@ export function SmartSearchTab({ onSelected, initialQuery }: InsertImageTabProps
       `/api/media/unified-search?q=${encodeURIComponent(debouncedQuery)}&limit=12`,
     )
       .then((res) =>
-        res.ok ? res.json() : { results: [], error: `Search failed (${res.status})` },
+        res.ok ? res.json() : { results: [], error: t('smartSearch.errSearchStatus', { status: res.status }) },
       )
       .then((data: { results?: UnifiedSearchResult[]; error?: string }) => {
         if (cancelled) return;
@@ -88,14 +85,14 @@ export function SmartSearchTab({ onSelected, initialQuery }: InsertImageTabProps
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Search failed');
+        setError(err instanceof Error ? err.message : t('smartSearch.errSearch'));
         setResults([]);
         setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [debouncedQuery]);
+  }, [debouncedQuery, t]);
 
   async function handleResultClick(result: UnifiedSearchResult) {
     setError(null);
@@ -129,7 +126,7 @@ export function SmartSearchTab({ onSelected, initialQuery }: InsertImageTabProps
           alt: result.alt ?? undefined,
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Pexels import failed');
+        setError(err instanceof Error ? err.message : t('smartSearch.errPexelsImport'));
       } finally {
         setImportingId(null);
       }
@@ -145,7 +142,7 @@ export function SmartSearchTab({ onSelected, initialQuery }: InsertImageTabProps
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Zoek beelden in library + Pexels…"
+          placeholder={t('smartSearch.searchPlaceholder')}
           className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
         />
       </div>
@@ -160,8 +157,7 @@ export function SmartSearchTab({ onSelected, initialQuery }: InsertImageTabProps
       {/* Results grid */}
       {debouncedQuery.length < 3 ? (
         <p className="text-xs text-gray-400 italic px-1">
-          Type 3+ characters to search. Library results appear first
-          (semantic match on aiDescription), then Pexels stock.
+          {t('smartSearch.typeHint')}
         </p>
       ) : loading ? (
         <div className="flex items-center justify-center py-12 text-gray-500">
@@ -169,7 +165,7 @@ export function SmartSearchTab({ onSelected, initialQuery }: InsertImageTabProps
         </div>
       ) : results.length === 0 ? (
         <p className="text-xs text-gray-400 italic px-1">
-          No results found for &ldquo;{debouncedQuery}&rdquo;.
+          {t('smartSearch.noResults', { query: debouncedQuery })}
         </p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -202,7 +198,7 @@ export function SmartSearchTab({ onSelected, initialQuery }: InsertImageTabProps
                   className={`absolute top-1 left-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${SOURCE_ACCENT[r.source]}`}
                 >
                   <SourceIcon className="w-2.5 h-2.5" />
-                  {SOURCE_LABEL[r.source]}
+                  {t(`smartSearch.source.${r.source}`)}
                 </span>
                 {/* Similarity (library only) top-right */}
                 {r.similarity !== null && (

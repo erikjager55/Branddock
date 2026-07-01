@@ -2,28 +2,28 @@
 
 import { Image as ImageIcon, Palette, Type, Ruler, Blocks, Camera, Layers, Code2, Clock } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { StyleguideTab } from "../types/brandstyle.types";
 
 interface Tab {
   id: StyleguideTab;
-  label: string;
   icon: LucideIcon;
 }
 
 const TABS: Tab[] = [
   // Tab-id 'brand_assets' blijft voor DB/route-compat; label hernoemd naar
   // 'Logos' sinds fonts verhuisd zijn naar Typography (consolidatie 2026-05-27).
-  { id: "brand_assets", label: "Logos", icon: ImageIcon },
-  { id: "colors", label: "Colors", icon: Palette },
-  { id: "typography", label: "Typography", icon: Type },
-  { id: "spacing", label: "Spacing", icon: Ruler },
-  { id: "components", label: "Components", icon: Blocks },
+  { id: "brand_assets", icon: ImageIcon },
+  { id: "colors", icon: Palette },
+  { id: "typography", icon: Type },
+  { id: "spacing", icon: Ruler },
+  { id: "components", icon: Blocks },
   // tone_of_voice tab verwijderd — guidelines + do/don't examples leven nu in
   // Brand Voice (Voice DNA + Vocabulary tabs), zie ADR 2026-05-15.
-  { id: "imagery", label: "Imagery", icon: Camera },
-  { id: "visual_system", label: "Visual System", icon: Layers },
-  { id: "design_system", label: "Design System", icon: Code2 },
-  { id: "history", label: "History", icon: Clock },
+  { id: "imagery", icon: Camera },
+  { id: "visual_system", icon: Layers },
+  { id: "design_system", icon: Code2 },
+  { id: "history", icon: Clock },
 ];
 
 interface StyleguideTabNavProps {
@@ -32,6 +32,7 @@ interface StyleguideTabNavProps {
 }
 
 export function StyleguideTabNav({ activeTab, onTabChange }: StyleguideTabNavProps) {
+  const { t } = useTranslation("brandstyle");
   return (
     <div data-testid="styleguide-tabs" className="border-b border-gray-200 mb-6">
       <nav className="flex gap-6">
@@ -49,7 +50,7 @@ export function StyleguideTabNav({ activeTab, onTabChange }: StyleguideTabNavPro
               }`}
             >
               <tab.icon className="w-4 h-4" />
-              {tab.label}
+              {t(`tabNav.${tab.id}`)}
             </button>
           );
         })}

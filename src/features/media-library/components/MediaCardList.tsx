@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Heart, Trash2, Image, FileText, Video, Music } from 'lucide-react';
 import { MEDIA_TYPE_ICONS, MEDIA_CATEGORY_CONFIG, formatFileSize } from '../constants/media-constants';
 import type { MediaAssetWithMeta } from '../types/media.types';
@@ -32,16 +33,17 @@ function formatDate(dateStr: string): string {
 
 /** Table-style list view of media assets. */
 export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaCardListProps) {
+  const { t } = useTranslation('media-library');
   return (
     <div>
       {/* Header row */}
       <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-gray-500 uppercase border-b">
-        <div className="col-span-4">Name</div>
-        <div className="col-span-2">Type</div>
-        <div className="col-span-2">Category</div>
-        <div className="col-span-1">Size</div>
-        <div className="col-span-2">Date</div>
-        <div className="col-span-1">Actions</div>
+        <div className="col-span-4">{t('list.name')}</div>
+        <div className="col-span-2">{t('list.type')}</div>
+        <div className="col-span-2">{t('list.category')}</div>
+        <div className="col-span-1">{t('list.size')}</div>
+        <div className="col-span-2">{t('list.date')}</div>
+        <div className="col-span-1">{t('list.actions')}</div>
       </div>
 
       {/* Asset rows */}
@@ -118,7 +120,7 @@ export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaC
                   onFavorite(asset.id);
                 }}
                 className="p-1 rounded hover:bg-gray-100 transition-colors"
-                aria-label={asset.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                aria-label={asset.isFavorite ? t('actions.removeFavorite') : t('actions.addFavorite')}
               >
                 <Heart
                   className={`w-4 h-4 ${
@@ -133,7 +135,7 @@ export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaC
                   onDelete(asset.id);
                 }}
                 className="p-1 rounded hover:bg-gray-100 transition-colors"
-                aria-label="Delete asset"
+                aria-label={t('actions.deleteAsset')}
               >
                 <Trash2 className="w-4 h-4 text-gray-400" />
               </button>

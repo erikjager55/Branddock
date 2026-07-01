@@ -11,6 +11,7 @@
 // =============================================================
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Wand2, Loader2, X } from 'lucide-react';
 import { Modal } from '@/components/shared';
 
@@ -41,6 +42,7 @@ export function ImageEditModal({
   exampleInstructions = DEFAULT_EXAMPLES,
   onEdited,
 }: ImageEditModalProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const [instruction, setInstruction] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,53 +69,53 @@ export function ImageEditModal({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error ?? `Edit failed (${res.status})`);
+        throw new Error(body?.error ?? t('imageEdit.errFailedStatus', { status: res.status }));
       }
       const data = (await res.json()) as { editedImageUrl: string };
       onEdited(data.editedImageUrl);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Edit failed');
+      setError(err instanceof Error ? err.message : t('imageEdit.errFailed'));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edit image with an instruction" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('imageEdit.title')} size="md">
       <div className="space-y-4">
         {imageUrl && (
           <div className="relative rounded-lg overflow-hidden border border-gray-200">
-            <img src={imageUrl} alt="To edit" className="w-full aspect-video object-cover" />
+            <img src={imageUrl} alt={t('imageEdit.altToEdit')} className="w-full aspect-video object-cover" />
             <div className="absolute top-2 left-2 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2 py-1 text-[11px] font-medium text-purple-700 shadow-sm">
               <Wand2 className="h-3 w-3" />
-              Powered by Nano Banana Pro
+              {t('imageEdit.poweredBy')}
             </div>
           </div>
         )}
 
         <div>
           <label htmlFor="edit-instruction" className="block text-xs font-medium text-gray-700 mb-1.5">
-            What do you want to change?
+            {t('imageEdit.question')}
           </label>
           <textarea
             id="edit-instruction"
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
-            placeholder='e.g. "blur the background so the person stands out more" or "change the wall to warm brown wood"'
+            placeholder={t('imageEdit.placeholder')}
             rows={3}
             className="w-full text-sm px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 resize-y"
             disabled={busy}
           />
           <p className="mt-1 text-[11px] text-gray-500">
-            Use concrete, local instructions. Works best for specific tweaks, not full redraws.
+            {t('imageEdit.hint')}
           </p>
         </div>
 
         {exampleInstructions.length > 0 && (
           <div>
             <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-              Examples
+              {t('imageEdit.examples')}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {exampleInstructions.map((ex) => (
@@ -139,7 +141,7 @@ export function ImageEditModal({
         )}
 
         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-          <span className="text-[11px] text-gray-500">~$0.02 per edit</span>
+          <span className="text-[11px] text-gray-500">{t('imageEdit.cost')}</span>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -147,7 +149,7 @@ export function ImageEditModal({
               disabled={busy}
               className="text-xs font-medium px-3 py-1.5 rounded-md text-gray-700 hover:bg-gray-100 disabled:opacity-50"
             >
-              Cancel
+              {t('actions.cancel')}
             </button>
             <button
               type="button"
@@ -158,12 +160,12 @@ export function ImageEditModal({
               {busy ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Editing...
+                  {t('imageEdit.editing')}
                 </>
               ) : (
                 <>
                   <Wand2 className="h-3.5 w-3.5" />
-                  Apply
+                  {t('actions.apply')}
                 </>
               )}
             </button>

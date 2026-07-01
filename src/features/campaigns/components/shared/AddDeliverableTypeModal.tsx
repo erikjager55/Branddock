@@ -8,6 +8,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal, Button } from "@/components/shared";
 import { DELIVERABLE_TYPES, DELIVERABLE_CATEGORIES } from "../../lib/deliverable-types";
 import { BrandAssistantCTA } from "../../../claw/components/BrandAssistantCTA";
@@ -25,6 +26,7 @@ export function AddDeliverableTypeModal({
   campaignId,
   onCreated,
 }: AddDeliverableTypeModalProps) {
+  const { t } = useTranslation('campaigns-core');
   const [contentType, setContentType] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,24 +66,24 @@ export function AddDeliverableTypeModal({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to create");
+        throw new Error(data.error || t('errors.failedToCreate'));
       }
 
       const deliverable = await res.json();
       resetAndClose();
       onCreated?.(deliverable.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t('errors.somethingWentWrong'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [contentType, campaignId, isSubmitting, resetAndClose, onCreated]);
+  }, [contentType, campaignId, isSubmitting, resetAndClose, onCreated, t]);
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={resetAndClose}
-      title="Add Content"
+      title={t('addContent.title')}
       size="md"
       footer={
         <div className="flex justify-end gap-3">
@@ -90,10 +92,10 @@ export function AddDeliverableTypeModal({
             onClick={resetAndClose}
             className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
           >
-            Cancel
+            {t('actions.cancel')}
           </button>
           <Button onClick={handleCreate} disabled={!contentType || isSubmitting} isLoading={isSubmitting}>
-            Create & Open Canvas
+            {t('addContent.createAndOpenCanvas')}
           </Button>
         </div>
       }
@@ -115,7 +117,7 @@ export function AddDeliverableTypeModal({
               !categoryFilter ? "ring-1 ring-teal-300" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            All
+            {t('addContent.categoryAll')}
           </button>
           {DELIVERABLE_CATEGORIES.map((cat) => (
             <button

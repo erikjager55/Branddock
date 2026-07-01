@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { ExternalLink, Heart, CalendarDays, Trash2, Copy } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/shared";
 import { deriveTrafficLight, TRAFFIC_LIGHT, getPhaseConfig, InlineRenameField } from "../shared/calendar-cards";
 import { formatContentType } from "../../lib/format-content-type";
@@ -48,6 +49,7 @@ export function ContentCardGrid({
   onDuplicate,
   duplicatingIds,
 }: ContentCardGridProps) {
+  const { t } = useTranslation("campaigns-content-library");
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; campaignId: string; title: string } | null>(null);
 
   // Precomputed once per render — the "Schedule same as last" action
@@ -106,7 +108,7 @@ export function ContentCardGrid({
                         onToggleFavorite(item.id);
                       }}
                       className="p-1 rounded hover:bg-gray-100 transition-colors"
-                      title="Toggle favorite"
+                      title={t("card.toggleFavorite")}
                     >
                       <Heart
                         className={`w-4 h-4 ${
@@ -122,7 +124,7 @@ export function ContentCardGrid({
                         onClick={(e) => { e.stopPropagation(); onDuplicate(item.id, item.campaignId); }}
                         disabled={duplicatingIds?.has(item.id)}
                         className="p-1 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
-                        title="Duplicate"
+                        title={t("card.duplicate")}
                       >
                         <Copy className="w-4 h-4 text-gray-400 hover:text-gray-700" />
                       </button>
@@ -132,7 +134,7 @@ export function ContentCardGrid({
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: item.id, campaignId: item.campaignId, title: item.title }); }}
                         className="p-1 rounded hover:bg-red-50 transition-colors"
-                        title="Delete"
+                        title={t("card.delete")}
                       >
                         <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500" />
                       </button>
@@ -145,7 +147,7 @@ export function ContentCardGrid({
                     die anders min-w-0 + line-clamp ontwijken. */}
                 {onRename ? (
                   <InlineRenameField
-                    placeholder={`Untitled ${formatContentType(item.type)}`}
+                    placeholder={t("card.untitledPlaceholder", { type: formatContentType(item.type) })}
                     currentValue={item.title.toLowerCase() === item.type.toLowerCase() ? undefined : item.title}
                     className="text-sm font-semibold text-gray-900 line-clamp-2 break-words"
                     onRename={(t) => onRename(item.id, item.campaignId, t)}
@@ -225,7 +227,7 @@ export function ContentCardGrid({
                   fullWidth
                   className="!bg-white !text-gray-900 !border-gray-900 hover:!bg-gray-50"
                 >
-                  Open in Canvas
+                  {t("card.openInCanvas")}
                 </Button>
                 {item.hasContent && !item.isPublishReady && (
                   <QuickPublishMenu

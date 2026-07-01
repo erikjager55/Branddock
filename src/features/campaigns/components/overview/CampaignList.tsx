@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { EmptyState, ProgressBar } from "@/components/shared";
 import { CalendarDays, Megaphone } from "lucide-react";
 import { CampaignOverflowMenu } from "./CampaignOverflowMenu";
@@ -31,6 +32,7 @@ export function CampaignList({
   onArchive,
   onDelete,
 }: CampaignListProps) {
+  const { t } = useTranslation("campaigns-overview");
   const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
@@ -48,8 +50,8 @@ export function CampaignList({
     return (
       <EmptyState
         icon={Megaphone}
-        title="No campaigns found"
-        description="Create your first campaign or quick content to get started."
+        title={t("empty.title")}
+        description={t("empty.description")}
       />
     );
   }
@@ -73,12 +75,12 @@ export function CampaignList({
         }}
       >
         <div />
-        <div>Campaign</div>
-        <div>Type</div>
-        <div>Readiness</div>
-        <div>Progress</div>
-        <div>Content</div>
-        <div>Scheduled</div>
+        <div>{t("list.columns.campaign")}</div>
+        <div>{t("list.columns.type")}</div>
+        <div>{t("list.columns.readiness")}</div>
+        <div>{t("list.columns.progress")}</div>
+        <div>{t("list.columns.content")}</div>
+        <div>{t("list.columns.scheduled")}</div>
         <div />
       </div>
 

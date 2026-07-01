@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, Loader2, AlertCircle, Download, User, ImageIcon, Settings } from 'lucide-react';
 import { useStockSearch, useImportStockPhoto } from '../../hooks';
 import { StockSearchError } from '../../api/media.api';
@@ -8,18 +9,14 @@ import type { StockPhotoResult, ImportStockBody } from '../../types/media.types'
 
 type StockSize = 'small' | 'medium' | 'large' | 'original';
 
-const SIZE_OPTIONS: { value: StockSize; label: string }[] = [
-  { value: 'small', label: 'Small' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'large', label: 'Large' },
-  { value: 'original', label: 'Original' },
-];
+const SIZE_OPTIONS: StockSize[] = ['small', 'medium', 'large', 'original'];
 
 /**
  * Stock photo search interface using Pexels.
  * Search with debounce, grid results, size selection, and import.
  */
 export function StockPhotoTab() {
+  const { t } = useTranslation('media-library');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -121,7 +118,7 @@ export function StockPhotoTab() {
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search Pexels stock photos..."
+          placeholder={t('upload.stock.searchPlaceholder')}
           className="block w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder:text-gray-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-colors"
         />
       </div>
@@ -131,10 +128,10 @@ export function StockPhotoTab() {
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <ImageIcon className="h-10 w-10 text-gray-300" />
           <p className="mt-3 text-sm text-gray-500">
-            Search for free stock photos from Pexels
+            {t('upload.stock.emptyTitle')}
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Enter a search term above to get started
+            {t('upload.stock.emptyHint')}
           </p>
         </div>
       )}
@@ -143,7 +140,7 @@ export function StockPhotoTab() {
       {debouncedQuery && isLoading && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-teal-500" />
-          <span className="ml-2 text-sm text-gray-500">Searching...</span>
+          <span className="ml-2 text-sm text-gray-500">{t('upload.stock.searching')}</span>
         </div>
       )}
 
@@ -154,7 +151,7 @@ export function StockPhotoTab() {
             <Settings className="h-6 w-6 text-amber-600" />
           </div>
           <p className="mt-3 text-sm font-medium text-gray-900">
-            Stock photo service is not configured
+            {t('upload.stock.notConfiguredTitle')}
           </p>
           <p className="mt-1 max-w-sm text-xs text-gray-500">
             Add a <code className="rounded bg-gray-100 px-1 py-0.5 text-[11px] font-mono text-gray-700">PEXELS_API_KEY</code>{' '}
@@ -180,7 +177,7 @@ export function StockPhotoTab() {
           <p className="text-sm text-red-700">
             {searchError instanceof Error
               ? searchError.message
-              : 'Failed to search stock photos. Please try again.'}
+              : t('upload.stock.searchError')}
           </p>
         </div>
       )}
@@ -192,17 +189,17 @@ export function StockPhotoTab() {
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <ImageIcon className="h-10 w-10 text-gray-300" />
               <p className="mt-3 text-sm text-gray-500">
-                No photos found for "{debouncedQuery}"
+                {t('upload.stock.noResults', { query: debouncedQuery })}
               </p>
               <p className="mt-1 text-xs text-gray-400">
-                Try a different search term
+                {t('upload.stock.noResultsHint')}
               </p>
             </div>
           ) : (
             <>
               {/* Results count */}
               <p className="text-xs text-gray-500">
-                {totalResults.toLocaleString()} results
+                {t('upload.stock.resultsCount', { total: totalResults.toLocaleString() })}
               </p>
 
               {/* Photo grid — rows of 3 with inline import panel after selected row */}
@@ -228,7 +225,7 @@ export function StockPhotoTab() {
                             >
                               <img
                                 src={photo.src.medium}
-                                alt={photo.alt || `Photo by ${photo.photographer}`}
+                                alt={photo.alt || t('upload.stock.photoByAlt', { name: photo.photographer })}
                                 className="h-full w-full object-cover"
                                 loading="lazy"
                               />
@@ -249,7 +246,7 @@ export function StockPhotoTab() {
                           <div className="flex items-center gap-3">
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-gray-900 truncate">
-                                {selectedInRow.alt || 'Untitled'}
+                                {selectedInRow.alt || t('upload.stock.untitled')}
                               </p>
                               <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
                                 <span className="flex items-center gap-1">
@@ -262,20 +259,20 @@ export function StockPhotoTab() {
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-700">Size:</span>
-                            {SIZE_OPTIONS.map((option) => (
+                            <span className="text-xs font-medium text-gray-700">{t('upload.stock.sizeLabel')}</span>
+                            {SIZE_OPTIONS.map((size) => (
                               <button
-                                key={option.value}
+                                key={size}
                                 type="button"
-                                onClick={() => setSelectedSize(option.value)}
+                                onClick={() => setSelectedSize(size)}
                                 className="rounded-md px-2.5 py-1 text-xs font-medium transition-colors border"
                                 style={
-                                  selectedSize === option.value
+                                  selectedSize === size
                                     ? { backgroundColor: '#0d9488', color: '#fff', borderColor: '#0d9488' }
                                     : { backgroundColor: '#fff', color: '#374151', borderColor: '#d1d5db' }
                                 }
                               >
-                                {option.label}
+                                {t(`upload.stock.sizes.${size}`)}
                               </button>
                             ))}
                           </div>
@@ -290,12 +287,12 @@ export function StockPhotoTab() {
                             {importStockPhoto.isPending ? (
                               <>
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                Importing...
+                                {t('actions.importing')}
                               </>
                             ) : (
                               <>
                                 <Download className="h-4 w-4" />
-                                Import Photo
+                                {t('upload.stock.importPhoto')}
                               </>
                             )}
                           </button>
@@ -306,7 +303,7 @@ export function StockPhotoTab() {
                               <p className="text-xs text-red-700">
                                 {importStockPhoto.error instanceof Error
                                   ? importStockPhoto.error.message
-                                  : 'Failed to import photo. Please try again.'}
+                                  : t('upload.stock.importError')}
                               </p>
                             </div>
                           )}
@@ -325,16 +322,16 @@ export function StockPhotoTab() {
                   disabled={page <= 1}
                   className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Previous
+                  {t('pagination.previous')}
                 </button>
-                <span className="text-xs text-gray-500">Page {page}</span>
+                <span className="text-xs text-gray-500">{t('pagination.page', { page })}</span>
                 <button
                   type="button"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={!hasNextPage}
                   className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Next
+                  {t('pagination.next')}
                 </button>
               </div>
             </>

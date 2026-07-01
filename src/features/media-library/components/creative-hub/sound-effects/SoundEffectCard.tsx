@@ -1,21 +1,12 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Music2, Star, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
 import type { SoundEffectWithMeta } from '@/features/media-library/types/media.types';
 import { VoicePreviewPlayer } from '../brand-voice/VoicePreviewPlayer';
-
-// ─── Constants ──────────────────────────────────────────────
-
-const SOUND_TYPE_LABELS: Record<string, string> = {
-  SFX: 'SFX',
-  JINGLE: 'Jingle',
-  SOUND_LOGO: 'Sound Logo',
-  AMBIENT: 'Ambient',
-  MUSIC: 'Music',
-};
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -41,6 +32,7 @@ export const SoundEffectCard = React.memo(function SoundEffectCard({
   onClick,
   onDelete,
 }: SoundEffectCardProps) {
+  const { t } = useTranslation('media-library');
   return (
     <div
       className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer group"
@@ -75,7 +67,7 @@ export const SoundEffectCard = React.memo(function SoundEffectCard({
         {effect.isDefault && (
           <div className="absolute top-2 right-2">
             <Badge variant="info" size="sm" icon={Star}>
-              Default
+              {t('badges.default')}
             </Badge>
           </div>
         )}
@@ -88,7 +80,7 @@ export const SoundEffectCard = React.memo(function SoundEffectCard({
             onDelete(effect.id);
           }}
           className="absolute top-2 left-2 p-1 rounded-md bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
-          aria-label={`Delete ${effect.name}`}
+          aria-label={t('actions.deleteNamed', { name: effect.name })}
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -104,15 +96,15 @@ export const SoundEffectCard = React.memo(function SoundEffectCard({
         {/* Badge row */}
         <div className="flex flex-wrap gap-1">
           <Badge variant="default" size="sm">
-            {SOUND_TYPE_LABELS[effect.soundType] ?? effect.soundType}
+            {t(`soundTypes.${effect.soundType}`, { defaultValue: effect.soundType })}
           </Badge>
           {effect.source === 'AI_GENERATED' ? (
             <Badge variant="info" size="sm">
-              AI Generated
+              {t('badges.aiGenerated')}
             </Badge>
           ) : (
             <Badge variant="teal" size="sm">
-              Upload
+              {t('badges.upload')}
             </Badge>
           )}
           {(() => {
@@ -131,7 +123,7 @@ export const SoundEffectCard = React.memo(function SoundEffectCard({
         </p>
 
         {/* Audio preview player */}
-        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+        { }
         <div onClick={(e) => e.stopPropagation()}>
           <VoicePreviewPlayer audioUrl={effect.fileUrl} voiceName={effect.name} />
         </div>

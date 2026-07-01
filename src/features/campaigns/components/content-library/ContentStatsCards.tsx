@@ -2,6 +2,7 @@
 
 import React from "react";
 import { FileText, CheckCircle, Clock, Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { StatCard, Skeleton } from "@/components/shared";
 import type { ContentLibraryStatsResponse } from "../../types/content-library.types";
 
@@ -15,6 +16,7 @@ interface ContentStatsCardsProps {
 // ─── Component ────────────────────────────────────────────
 
 export function ContentStatsCards({ stats, isLoading }: ContentStatsCardsProps) {
+  const { t } = useTranslation("campaigns-content-library");
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -30,25 +32,25 @@ export function ContentStatsCards({ stats, isLoading }: ContentStatsCardsProps) 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <StatCard
-        label="Total Content"
+        label={t("stats.totalContent")}
         value={s.totalContent}
         icon={FileText}
         className="border-l-4 border-l-blue-500"
       />
       <StatCard
-        label="Complete"
+        label={t("stats.complete")}
         value={s.complete}
         icon={CheckCircle}
         className="border-l-4 border-l-green-500"
       />
       <StatCard
-        label="In Progress"
+        label={t("stats.inProgress")}
         value={s.inProgress}
         icon={Clock}
         className="border-l-4 border-l-purple-500"
       />
       <StatCard
-        label="Avg Quality"
+        label={t("stats.avgQuality")}
         value={s.avgQuality > 0 ? `${s.avgQuality}/100` : "--"}
         icon={Star}
         className="border-l-4 border-l-gray-400"

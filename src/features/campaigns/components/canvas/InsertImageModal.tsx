@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCanvasStore } from '../../stores/useCanvasStore';
@@ -19,6 +20,7 @@ import type { InsertImageSelection } from './insert-image/types';
  * en heroImage persistence afhandelt.
  */
 export function InsertImageModal() {
+  const { t } = useTranslation('campaigns-canvas');
   const isOpen = useCanvasStore((s) => s.insertImageModalOpen);
   const setOpen = useCanvasStore((s) => s.setInsertImageModalOpen);
   const setHeroImage = useCanvasStore((s) => s.setHeroImage);
@@ -72,7 +74,7 @@ export function InsertImageModal() {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={() => setOpen(false)} title="Insert Image" size="lg">
+    <Modal isOpen={isOpen} onClose={() => setOpen(false)} title={t('insertImage.title')} size="lg">
       <ImageSourcePanel
         deliverableId={deliverableId}
         source={activeSource}

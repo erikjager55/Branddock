@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, ShieldCheck, AlertTriangle, ImageOff, Palette, Eye, Info } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import { getDimensionLabel } from '@/lib/brand-fidelity/visual-dimension-labels';
@@ -10,9 +11,9 @@ import type {
 } from '../../api/canvas.api';
 
 const ZONE = {
-  good: { hex: '#10b981', label: 'On-brand' },
-  warn: { hex: '#f59e0b', label: 'Off-target' },
-  bad: { hex: '#ef4444', label: 'Off-brand' },
+  good: { hex: '#10b981', labelKey: 'visualFidelity.onBrand' },
+  warn: { hex: '#f59e0b', labelKey: 'visualFidelity.offTarget' },
+  bad: { hex: '#ef4444', labelKey: 'visualFidelity.offBrand' },
 } as const;
 
 const QUALITY_HEX: Record<string, string> = {
@@ -53,6 +54,7 @@ export function VisualFidelityDetail({
   imageUrl,
   onClose,
 }: VisualFidelityDetailProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const score = useCanvasStore((s) => s.visualFidelityScores.get(componentId));
 
   React.useEffect(() => {
@@ -95,12 +97,12 @@ export function VisualFidelityDetail({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               {score.stage === 'computing' ? (
-                <span className="text-sm text-gray-500">Scoring…</span>
+                <span className="text-sm text-gray-500">{t('visualFidelity.scoring')}</span>
               ) : score.stage === 'skipped' ? (
                 <>
                   <ImageOff className="h-4 w-4 text-gray-400" />
                   <span className="text-sm text-gray-500">
-                    Score unavailable
+                    {t('visualFidelityDetail.scoreUnavailable')}
                   </span>
                 </>
               ) : (
@@ -121,15 +123,15 @@ export function VisualFidelityDetail({
                     className="text-sm font-medium ml-2"
                     style={{ color: zone.hex }}
                   >
-                    {zone.label}
+                    {t(zone.labelKey)}
                   </span>
                 </>
               )}
             </div>
             <p className="text-xs text-gray-500">
               {score.judgeSkipped
-                ? 'Composite based on color alignment only — AI judge unavailable.'
-                : `Composite of color alignment (40%) + AI judge (60%). Threshold for publishable: 70.`}
+                ? t('visualFidelityDetail.compositeColorOnly')
+                : t('visualFidelityDetail.compositeFormula')}
             </p>
             {score.errorMessage && (
               <p className="text-xs text-red-600 mt-1">
@@ -141,7 +143,7 @@ export function VisualFidelityDetail({
             type="button"
             onClick={onClose}
             className="p-1 rounded hover:bg-gray-100 text-gray-500 flex-shrink-0"
-            aria-label="Close"
+            aria-label={t('actions.close')}
           >
             <X className="h-5 w-5" />
           </button>
@@ -151,7 +153,7 @@ export function VisualFidelityDetail({
         <div className="p-5 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5 mb-3">
             <Palette className="h-4 w-4 text-gray-600" />
-            Color alignment
+            {t('visualFidelityDetail.colorAlignment')}
             {colorAlignment && (
               <span className="text-xs text-gray-500 font-normal">
                 — {colorAlignment.score}/100
@@ -162,7 +164,7 @@ export function VisualFidelityDetail({
             <ColorAlignmentTable detail={colorAlignment} />
           ) : (
             <p className="text-xs text-gray-500">
-              Color match data unavailable on this score.
+              {t('visualFidelityDetail.colorUnavailable')}
             </p>
           )}
         </div>
@@ -171,7 +173,7 @@ export function VisualFidelityDetail({
         <div className="p-5">
           <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5 mb-3">
             <Eye className="h-4 w-4 text-gray-600" />
-            AI judge dimensions
+            {t('visualFidelityDetail.judgeDimensions')}
             {judge && (
               <span className="text-xs text-gray-500 font-normal">
                 — {judge.composite}/100
@@ -182,12 +184,11 @@ export function VisualFidelityDetail({
             <JudgeDimensions detail={judge} />
           ) : judgeSkipped ? (
             <p className="text-xs text-gray-500">
-              AI judge was skipped for this score (no API key or call failure).
-              Composite reflects color alignment alone.
+              {t('visualFidelityDetail.judgeSkippedBody')}
             </p>
           ) : (
             <p className="text-xs text-gray-500">
-              AI judge data unavailable on this score.
+              {t('visualFidelityDetail.judgeUnavailable')}
             </p>
           )}
         </div>
@@ -201,6 +202,7 @@ interface ColorAlignmentTableProps {
 }
 
 function ColorAlignmentTable({ detail }: ColorAlignmentTableProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const ordered = [...detail.matches].sort(
     (a, b) => b.generatedPopulation - a.generatedPopulation,
   );
@@ -209,8 +211,7 @@ function ColorAlignmentTable({ detail }: ColorAlignmentTableProps) {
     <div className="space-y-3">
       <div>
         <p className="text-xs text-gray-500 mb-2">
-          Top {Math.min(ordered.length, 6)} swatches in image, matched to nearest
-          brand color via ΔE in Lab space.
+          {t('visualFidelityDetail.swatchesIntro', { count: Math.min(ordered.length, 6) })}
         </p>
         <div className="space-y-1.5">
           {ordered.slice(0, 6).map((m, i) => (
@@ -242,7 +243,7 @@ function ColorAlignmentTable({ detail }: ColorAlignmentTableProps) {
                   </span>
                 </>
               ) : (
-                <span className="text-gray-400 italic">no match</span>
+                <span className="text-gray-400 italic">{t('visualFidelityDetail.noMatch')}</span>
               )}
               <span
                 className="text-[11px] font-medium ml-auto px-2 py-0.5 rounded"
@@ -261,7 +262,7 @@ function ColorAlignmentTable({ detail }: ColorAlignmentTableProps) {
       {detail.matchedBrandHexes.length > 0 && (
         <div>
           <p className="text-[11px] text-gray-500 mb-1">
-            Brand colors detected ({detail.matchedBrandHexes.length}):
+            {t('visualFidelityDetail.brandColorsDetected', { count: detail.matchedBrandHexes.length })}
           </p>
           <div className="flex flex-wrap gap-1">
             {detail.matchedBrandHexes.map((hex) => (
@@ -283,7 +284,7 @@ function ColorAlignmentTable({ detail }: ColorAlignmentTableProps) {
       {detail.unmatchedColors.length > 0 && (
         <div>
           <p className="text-[11px] text-gray-500 mb-1">
-            Off-brand swatches ({detail.unmatchedColors.length}):
+            {t('visualFidelityDetail.offBrandSwatches', { count: detail.unmatchedColors.length })}
           </p>
           <div className="flex flex-wrap gap-1">
             {detail.unmatchedColors.slice(0, 8).map((c, i) => (
@@ -311,6 +312,7 @@ interface JudgeDimensionsProps {
 }
 
 function JudgeDimensions({ detail }: JudgeDimensionsProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const entries = Object.entries(detail.dimensions);
   return (
     <div className="space-y-2">
@@ -326,14 +328,14 @@ function JudgeDimensions({ detail }: JudgeDimensionsProps) {
                 <span
                   className="text-gray-400 hover:text-gray-600 cursor-help"
                   title={labelInfo.description}
-                  aria-label={`Uitleg: ${labelInfo.description}`}
+                  aria-label={t('visualFidelityDetail.explanationAria', { description: labelInfo.description })}
                 >
                   <Info className="w-3 h-3" />
                 </span>
               </span>
               {flagged && (
                 <span className="text-[10px] text-red-600 font-medium uppercase">
-                  flagged
+                  {t('visualFidelityDetail.flagged')}
                 </span>
               )}
               <span

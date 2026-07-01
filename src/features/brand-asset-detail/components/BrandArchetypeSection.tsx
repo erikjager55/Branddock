@@ -5,6 +5,7 @@ import {
   Crown, Heart, Megaphone, Globe,
   Plus, X, Info, Check, ChevronDown,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { BrandArchetypeFrameworkData } from '../types/framework.types';
 import {
   ARCHETYPES, POSITIONING_OPTIONS,
@@ -83,6 +84,7 @@ function hasAutoFillContent(d: BrandArchetypeFrameworkData): boolean {
 }
 
 export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchetypeSectionProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const [draft, setDraft] = useState<BrandArchetypeFrameworkData>(() => normalize(data));
   const [showArchetypeInfo, setShowArchetypeInfo] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -158,8 +160,8 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
             <Crown className="h-5 w-5 text-amber-600" />
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-bold text-gray-900">Brand Archetype</h2>
-            <p className="text-sm text-gray-500">Your brand&apos;s narrative identity based on the 12 Jungian archetypes</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandArchetype.selection.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandArchetype.selection.subtitle')}</p>
           </div>
           <button
             type="button"
@@ -167,7 +169,7 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
             className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
           >
             <Info className="h-3.5 w-3.5" />
-            {showArchetypeInfo ? 'Hide guide' : 'What are archetypes?'}
+            {showArchetypeInfo ? t('brandArchetype.selection.hideGuide') : t('brandArchetype.selection.whatAre')}
           </button>
         </div>
 
@@ -203,13 +205,13 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
         {/* Sub-archetype selector (only in edit mode with primary selected) */}
         {isEditing && subOptions.length > 0 && (
           <div className="mt-4">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Sub-archetype Variant</label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">{t('brandArchetype.selection.subLabel')}</label>
             <select
               value={draft.subArchetype ?? ''}
               onChange={(e) => handleChange('subArchetype', e.target.value)}
               className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
             >
-              <option value="">Select variant...</option>
+              <option value="">{t('brandArchetype.selection.subSelect')}</option>
               {subOptions.map((sub) => (
                 <option key={sub} value={sub}>{sub}</option>
               ))}
@@ -221,7 +223,7 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
         {!isEditing && d.subArchetype && (
           <div className="mt-3">
             <span className="inline-flex items-center text-xs bg-gray-100 text-gray-600 rounded-full px-3 py-1">
-              Variant: {d.subArchetype}
+              {t('brandArchetype.selection.variant', { variant: d.subArchetype })}
             </span>
           </div>
         )}
@@ -241,10 +243,9 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
           <div className="flex items-start gap-3">
             <Info className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-gray-700">Select an archetype to unlock your brand profile</p>
+              <p className="text-sm font-medium text-gray-700">{t('brandArchetype.callout.title')}</p>
               <p className="text-sm text-gray-500 mt-1">
-                Choose an archetype above to see your brand profile. Each archetype comes with pre-filled
-                psychology and positioning data that you can customize.
+                {t('brandArchetype.callout.body')}
               </p>
             </div>
           </div>
@@ -266,8 +267,8 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
             <Heart className="h-5 w-5 text-rose-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-gray-900">Core Psychology</h2>
-            <p className="text-sm text-gray-500">The fundamental desires, fears, and strategies of your archetype</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandArchetype.psychology.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandArchetype.psychology.subtitle')}</p>
           </div>
           <ChevronDown className={`h-4 w-4 text-gray-400 mt-1 flex-shrink-0 transition-transform ${expandedCard === 2 ? 'rotate-180' : ''}`} />
         </button>
@@ -288,52 +289,52 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
         {expandedCard === 2 && (
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
             <TextCard
-              label="Core Desire"
-              description="The fundamental human need your brand fulfills"
+              label={t('brandArchetype.psychology.coreDesire.label')}
+              description={t('brandArchetype.psychology.coreDesire.description')}
               value={isEditing ? draft.coreDesire : d.coreDesire}
               isEditing={isEditing}
               onChange={(v) => handleChange('coreDesire', v)}
-              placeholder="What deep human desire does your brand fulfill?"
+              placeholder={t('brandArchetype.psychology.coreDesire.placeholder')}
             />
             <TextCard
-              label="Core Fear"
-              description="What your brand stands against and protects from"
+              label={t('brandArchetype.psychology.coreFear.label')}
+              description={t('brandArchetype.psychology.coreFear.description')}
               value={isEditing ? draft.coreFear : d.coreFear}
               isEditing={isEditing}
               onChange={(v) => handleChange('coreFear', v)}
-              placeholder="What fear does your brand help people overcome?"
+              placeholder={t('brandArchetype.psychology.coreFear.placeholder')}
             />
             <TextCard
-              label="Brand Goal"
-              description="The ultimate aim from this archetype's perspective"
+              label={t('brandArchetype.psychology.brandGoal.label')}
+              description={t('brandArchetype.psychology.brandGoal.description')}
               value={isEditing ? draft.brandGoal : d.brandGoal}
               isEditing={isEditing}
               onChange={(v) => handleChange('brandGoal', v)}
-              placeholder="What is your brand's ultimate goal?"
+              placeholder={t('brandArchetype.psychology.brandGoal.placeholder')}
             />
             <TextCard
-              label="Strategy"
-              description="How your brand achieves its goal"
+              label={t('brandArchetype.psychology.strategy.label')}
+              description={t('brandArchetype.psychology.strategy.description')}
               value={isEditing ? draft.strategy : d.strategy}
               isEditing={isEditing}
               onChange={(v) => handleChange('strategy', v)}
-              placeholder="How does your brand reach its goal?"
+              placeholder={t('brandArchetype.psychology.strategy.placeholder')}
             />
             <TextCard
-              label="Gift / Talent"
-              description="The unique gift your brand brings to the world"
+              label={t('brandArchetype.psychology.giftTalent.label')}
+              description={t('brandArchetype.psychology.giftTalent.description')}
               value={isEditing ? draft.giftTalent : d.giftTalent}
               isEditing={isEditing}
               onChange={(v) => handleChange('giftTalent', v)}
-              placeholder="What unique talent does your brand offer?"
+              placeholder={t('brandArchetype.psychology.giftTalent.placeholder')}
             />
             <TextCard
-              label="Shadow / Weakness"
-              description="The pitfall when the archetype is overdone"
+              label={t('brandArchetype.psychology.shadowWeakness.label')}
+              description={t('brandArchetype.psychology.shadowWeakness.description')}
               value={isEditing ? draft.shadowWeakness : d.shadowWeakness}
               isEditing={isEditing}
               onChange={(v) => handleChange('shadowWeakness', v)}
-              placeholder="What risks exist when your brand personality is pushed too far?"
+              placeholder={t('brandArchetype.psychology.shadowWeakness.placeholder')}
               variant="warning"
             />
           </div>
@@ -360,8 +361,8 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
             <Megaphone className="h-5 w-5 text-emerald-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-gray-900">Archetype in Action</h2>
-            <p className="text-sm text-gray-500">How the archetype drives marketing, CX, content, and storytelling</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandArchetype.action.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandArchetype.action.subtitle')}</p>
           </div>
           <ChevronDown className={`h-4 w-4 text-gray-400 mt-1 flex-shrink-0 transition-transform ${expandedCard === 3 ? 'rotate-180' : ''}`} />
         </button>
@@ -372,43 +373,43 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
           const fields = [src.marketingExpression, src.customerExperience, src.contentStrategy, src.storytellingApproach];
           const defined = fields.filter(Boolean).length;
           return (
-            <p className="mt-3 text-xs text-gray-500">{defined} of 4 fields defined</p>
+            <p className="mt-3 text-xs text-gray-500">{t('brandArchetype.action.fieldsDefined', { count: defined })}</p>
           );
         })()}
 
         {expandedCard === 3 && (
           <div className="mt-5 space-y-4">
             <TextCard
-              label="Marketing Expression"
-              description="How the archetype manifests in campaigns and advertising"
+              label={t('brandArchetype.action.marketingExpression.label')}
+              description={t('brandArchetype.action.marketingExpression.description')}
               value={isEditing ? draft.marketingExpression : d.marketingExpression}
               isEditing={isEditing}
               onChange={(v) => handleChange('marketingExpression', v)}
-              placeholder="How does the archetype show in your marketing?"
+              placeholder={t('brandArchetype.action.marketingExpression.placeholder')}
             />
             <TextCard
-              label="Customer Experience"
-              description="How the archetype shapes customer interactions"
+              label={t('brandArchetype.action.customerExperience.label')}
+              description={t('brandArchetype.action.customerExperience.description')}
               value={isEditing ? draft.customerExperience : d.customerExperience}
               isEditing={isEditing}
               onChange={(v) => handleChange('customerExperience', v)}
-              placeholder="How does the archetype influence customer experience?"
+              placeholder={t('brandArchetype.action.customerExperience.placeholder')}
             />
             <TextCard
-              label="Content Strategy"
-              description="What types of content this archetype creates"
+              label={t('brandArchetype.action.contentStrategy.label')}
+              description={t('brandArchetype.action.contentStrategy.description')}
               value={isEditing ? draft.contentStrategy : d.contentStrategy}
               isEditing={isEditing}
               onChange={(v) => handleChange('contentStrategy', v)}
-              placeholder="What content fits your archetype?"
+              placeholder={t('brandArchetype.action.contentStrategy.placeholder')}
             />
             <TextCard
-              label="Storytelling Approach"
-              description="The narrative role and recurring themes"
+              label={t('brandArchetype.action.storytellingApproach.label')}
+              description={t('brandArchetype.action.storytellingApproach.description')}
               value={isEditing ? draft.storytellingApproach : d.storytellingApproach}
               isEditing={isEditing}
               onChange={(v) => handleChange('storytellingApproach', v)}
-              placeholder="How does your archetype shape the stories you tell?"
+              placeholder={t('brandArchetype.action.storytellingApproach.placeholder')}
             />
           </div>
         )}
@@ -426,8 +427,8 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
             <Globe className="h-5 w-5 text-gray-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-gray-900">Reference & Positioning</h2>
-            <p className="text-sm text-gray-500">Competitive landscape and brand examples sharing your archetype</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('brandArchetype.reference.title')}</h2>
+            <p className="text-sm text-gray-500">{t('brandArchetype.reference.subtitle')}</p>
           </div>
           <ChevronDown className={`h-4 w-4 text-gray-400 mt-1 flex-shrink-0 transition-transform ${expandedCard === 4 ? 'rotate-180' : ''}`} />
         </button>
@@ -453,27 +454,27 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
           <div className="mt-5 space-y-4">
             {/* Brand Examples */}
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Brand Examples</label>
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">{t('brandArchetype.reference.examplesLabel')}</label>
               <TagEditor
                 items={isEditing ? draft.brandExamples : d.brandExamples}
                 isEditing={isEditing}
                 onAdd={(v) => handleChange('brandExamples', [...draft.brandExamples, v])}
                 onRemove={(i) => handleChange('brandExamples', draft.brandExamples.filter((_, idx) => idx !== i))}
-                placeholder="Add a reference brand..."
-                emptyText="No reference brands added"
+                placeholder={t('brandArchetype.reference.examplesPlaceholder')}
+                emptyText={t('brandArchetype.reference.examplesEmpty')}
               />
             </div>
 
             {/* Positioning Approach */}
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Positioning Approach</label>
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">{t('brandArchetype.reference.positioningLabel')}</label>
               {isEditing ? (
                 <select
                   value={draft.positioningApproach ?? ''}
                   onChange={(e) => handleChange('positioningApproach', e.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                 >
-                  <option value="">Select approach...</option>
+                  <option value="">{t('brandArchetype.reference.positioningSelect')}</option>
                   {POSITIONING_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label} — {opt.description}</option>
                   ))}
@@ -491,18 +492,18 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
                   })()}
                 </div>
               ) : (
-                <p className="mt-1 text-sm italic text-gray-400">Select a positioning approach...</p>
+                <p className="mt-1 text-sm italic text-gray-400">{t('brandArchetype.reference.positioningEmpty')}</p>
               )}
             </div>
 
             {/* Competitive Landscape */}
             <TextCard
-              label="Competitive Landscape"
-              description="Which archetypes do your competitors use and how do you differentiate?"
+              label={t('brandArchetype.reference.competitiveLabel')}
+              description={t('brandArchetype.reference.competitiveDescription')}
               value={isEditing ? draft.competitiveLandscape : d.competitiveLandscape}
               isEditing={isEditing}
               onChange={(v) => handleChange('competitiveLandscape', v)}
-              placeholder="Describe your competitors' archetype positions..."
+              placeholder={t('brandArchetype.reference.competitivePlaceholder')}
             />
           </div>
         )}
@@ -517,16 +518,15 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
           setShowConfirmDialog(false);
           setPendingArchetypeId(null);
         }}
-        title="Switch Archetype?"
+        title={t('brandArchetype.modal.title')}
         size="sm"
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            Changing archetype will update all fields with new reference data.
-            Any custom edits will be overwritten.
+            {t('brandArchetype.modal.body1')}
           </p>
           <p className="text-sm text-gray-500">
-            The Archetype in Action field and Competitive Landscape will be preserved as they are brand-specific.
+            {t('brandArchetype.modal.body2')}
           </p>
           <div className="flex justify-end gap-3 pt-2">
             <button
@@ -537,14 +537,14 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
               }}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              {t('brandArchetype.modal.cancel')}
             </button>
             <button
               type="button"
               onClick={confirmArchetypeChange}
               className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:opacity-90 transition-colors"
             >
-              Switch & Update Fields
+              {t('brandArchetype.modal.confirm')}
             </button>
           </div>
         </div>

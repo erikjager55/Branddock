@@ -9,6 +9,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Plus, HelpCircle, Sparkles, Loader2 } from 'lucide-react';
 import { Select } from '@/components/shared';
 import {
@@ -137,6 +138,7 @@ function ProductSelectField({
   onChange: (value: string) => void;
   placeholder?: string;
 }) {
+  const { t } = useTranslation('campaigns-core');
   const [products, setProducts] = useState<ProductOption[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -155,19 +157,19 @@ function ProductSelectField({
       })
       .catch((err: unknown) => {
         if (!active) return;
-        setError(err instanceof Error ? err.message : 'Failed to load');
+        setError(err instanceof Error ? err.message : t('productSelect.loadFailedShort'));
         setProducts([]);
       });
     return () => {
       active = false;
     };
-  }, []);
+  }, [t]);
 
   if (products === null && !error) {
     return (
       <div className="flex items-center gap-2 text-sm text-gray-400 border border-gray-200 rounded-lg px-3 py-1.5">
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        Loading products…
+        {t('productSelect.loading')}
       </div>
     );
   }
@@ -175,7 +177,7 @@ function ProductSelectField({
   if (error) {
     return (
       <p className="text-xs text-red-600 border border-red-200 bg-red-50 rounded-lg px-3 py-1.5">
-        Failed to load products ({error}). Refresh the page to try again.
+        {t('productSelect.loadFailed', { error })}
       </p>
     );
   }
@@ -183,7 +185,7 @@ function ProductSelectField({
   if (products && products.length === 0) {
     return (
       <p className="text-xs text-amber-700 border border-amber-200 bg-amber-50 rounded-lg px-3 py-1.5">
-        No products in this workspace yet. Add one first in the Products section — a product page is always linked to a product.
+        {t('productSelect.empty')}
       </p>
     );
   }
@@ -196,7 +198,7 @@ function ProductSelectField({
         value: p.id,
         label: p.category ? `${p.name} · ${p.category}` : p.name,
       }))}
-      placeholder={placeholder ?? 'Choose a product…'}
+      placeholder={placeholder ?? t('productSelect.choosePlaceholder')}
       allowClear
     />
   );
@@ -217,6 +219,7 @@ function FieldRenderer({
   isAiDerived: boolean;
   compact: boolean;
 }) {
+  const { t } = useTranslation('campaigns-core');
   const labelContent = (
     <div className="flex items-center gap-1.5 mb-1">
       <label className="text-sm font-medium text-gray-700">
@@ -319,7 +322,7 @@ function FieldRenderer({
             options={(field.options ?? []).map((o) =>
               typeof o === 'string' ? { value: o, label: o } : o,
             )}
-            placeholder={`Select ${field.label.toLowerCase()}…`}
+            placeholder={t('field.selectPlaceholder', { field: field.label.toLowerCase() })}
             allowClear
           />
         </div>

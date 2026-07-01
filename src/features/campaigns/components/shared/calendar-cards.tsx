@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type DragEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { Calendar as CalendarIcon, ExternalLink, Heart, Trash2, Copy } from "lucide-react";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
 import { formatContentType } from "../../lib/format-content-type";
@@ -203,6 +204,7 @@ export function InlineRenameField({
   className?: string;
   onRename: (newTitle: string) => void;
 }) {
+  const { t } = useTranslation('campaigns-core');
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
 
@@ -248,7 +250,7 @@ export function InlineRenameField({
         type="button"
         onClick={(e) => { e.stopPropagation(); handleStartEdit(); }}
         className={`${BASE_VIEW_CLASSES} ${typography}`}
-        title="Click to rename"
+        title={t('card.rename.tooltip')}
       >
         {currentValue}
       </button>
@@ -261,7 +263,7 @@ export function InlineRenameField({
       type="button"
       onClick={(e) => { e.stopPropagation(); handleStartEdit(); }}
       className={`${BASE_VIEW_CLASSES} italic text-gray-400 hover:text-gray-600 ${typography.replace(/text-gray-\d+/g, "")}`}
-      title="Click to add a title"
+      title={t('card.rename.addTitleTooltip')}
     >
       {placeholder}
     </button>
@@ -297,6 +299,7 @@ export function CalendarCard({
   isSelected,
   onToggleSelected,
 }: CalendarCardProps) {
+  const { t } = useTranslation('campaigns-core');
   const phaseConfig = getPhaseConfig(phase);
   const { light, label: lightLabel } = deriveTrafficLight(
     isPublishReady,
@@ -381,7 +384,7 @@ export function CalendarCard({
                 onToggleFavorite();
               }}
               className="p-0.5 rounded hover:bg-white/60 flex-shrink-0"
-              aria-label={isFavorite ? "Remove favorite" : "Mark favorite"}
+              aria-label={isFavorite ? t('card.favorite.remove') : t('card.favorite.add')}
             >
               <Heart
                 className={`w-3 h-3 ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"}`}
@@ -393,7 +396,7 @@ export function CalendarCard({
         {/* Row 2: Title — inline editable when untitled */}
         {title.toLowerCase() === typeLabel.toLowerCase() && onRename ? (
           <InlineRenameField
-            placeholder={`Untitled ${formatContentType(typeLabel)}`}
+            placeholder={t('card.untitled', { type: formatContentType(typeLabel) })}
             onRename={onRename}
           />
         ) : (
@@ -477,10 +480,10 @@ export function CalendarCard({
                     dateInputRef.current?.showPicker?.();
                   }}
                   className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/80 hover:bg-white border border-gray-200"
-                  title="Pick a date"
+                  title={t('card.actions.pickDate')}
                 >
                   <CalendarIcon className="w-2.5 h-2.5" />
-                  Date
+                  {t('card.actions.date')}
                 </button>
                 <input
                   ref={dateInputRef}
@@ -500,7 +503,7 @@ export function CalendarCard({
                 onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
                 disabled={isDuplicating}
                 className="p-0.5 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
-                title="Duplicate"
+                title={t('card.actions.duplicate')}
               >
                 <Copy className="w-2.5 h-2.5 text-gray-400 hover:text-gray-700" />
               </button>
@@ -510,7 +513,7 @@ export function CalendarCard({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setShowDeleteModal(true); }}
                 className="p-0.5 rounded hover:bg-red-50 transition-colors"
-                title="Delete"
+                title={t('card.actions.delete')}
               >
                 <Trash2 className="w-2.5 h-2.5 text-gray-400 hover:text-red-500" />
               </button>
@@ -523,10 +526,10 @@ export function CalendarCard({
                   onClick();
                 }}
                 className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/80 hover:bg-white border border-gray-200 ml-auto"
-                title="Open"
+                title={t('card.actions.open')}
               >
                 <ExternalLink className="w-2.5 h-2.5" />
-                Open
+                {t('card.actions.open')}
               </button>
             )}
           </div>

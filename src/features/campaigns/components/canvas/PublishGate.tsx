@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, AlertTriangle, ShieldOff, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/shared';
 import {
@@ -15,7 +16,7 @@ import {
 } from '@/hooks/useInternalFindings';
 import { useUIState } from '@/contexts/UIStateContext';
 import { useBrandAlignmentStore } from '@/stores/useBrandAlignmentStore';
-import type { BrandReviewSeverity, FindingCategory } from '@prisma/client';
+import type { BrandReviewSeverity } from '@prisma/client';
 
 interface PublishGateProps {
   deliverableId: string;
@@ -44,6 +45,7 @@ export function PublishGate({
   isPublishing,
   publishedVia,
 }: PublishGateProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const { data, isLoading } = useContentReadiness(deliverableId);
   const overrideMutation = usePublishWithOverride(deliverableId);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
@@ -73,13 +75,19 @@ export function PublishGate({
     return (
       <div className="flex items-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-        <span className="text-sm text-gray-500">Readiness check…</span>
+        <span className="text-sm text-gray-500">{t('publishGate.readinessCheck')}</span>
       </div>
     );
   }
 
   const blocked = !data.canPublish;
   const noScoreYet = data.reason === 'no-score' || data.reason === 'no-version';
+  const blockedTitle = data.latestScore
+    ? t('publishGate.blockedTooltipScore', {
+        score: Math.round(data.latestScore.compositeScore),
+        threshold: data.latestScore.threshold,
+      })
+    : t('publishGate.blockedTooltipGeneric');
 
   return (
     <>
@@ -88,8 +96,8 @@ export function PublishGate({
           <ReadinessBadge readiness={data} />
           {blocked ? (
             <div className="flex items-center gap-2">
-              <Button variant="primary" size="sm" disabled title={blockedTooltip(data)}>
-                Publish
+              <Button variant="primary" size="sm" disabled title={blockedTitle}>
+                {t('publishGate.publish')}
               </Button>
               <Button
                 variant="secondary"
@@ -103,7 +111,7 @@ export function PublishGate({
                   setShowOverrideModal(true);
                 }}
               >
-                Override…
+                {t('publishGate.override')}
               </Button>
             </div>
           ) : (
@@ -111,12 +119,12 @@ export function PublishGate({
               {isPublishing ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Publishing…
+                  {t('publishGate.publishing')}
                 </>
               ) : noScoreYet ? (
-                'Publish without score'
+                t('publishGate.publishWithoutScore')
               ) : (
-                'Publish'
+                t('publishGate.publish')
               )}
             </Button>
           )}
@@ -176,18 +184,10 @@ const SEVERITY_PILL: Record<BrandReviewSeverity, string> = {
   LOW: 'bg-gray-100 text-gray-700 border-gray-200',
 };
 
-const FINDING_CATEGORY_LABEL: Record<FindingCategory, string> = {
-  VOICE: 'Voice',
-  TERMINOLOGY: 'Terminology',
-  CLAIMS: 'Claims',
-  STYLE: 'Style',
-  BUSINESS: 'Business',
-  AI_TELL: 'AI tell',
-};
-
 const TOP_FINDINGS_LIMIT = 3;
 
 function FindingsBlock({ fidelityScoreId }: { fidelityScoreId: string }) {
+  const { t } = useTranslation('campaigns-canvas');
   const { data, isLoading, isError } = useInternalFindings(fidelityScoreId);
   const [expanded, setExpanded] = useState(true);
 
@@ -196,7 +196,7 @@ function FindingsBlock({ fidelityScoreId }: { fidelityScoreId: string }) {
     return (
       <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500 inline-flex items-center gap-2">
         <Loader2 className="h-3 w-3 animate-spin" />
-        Loading findings…
+        {t('publishGate.loadingFindings')}
       </div>
     );
   }
@@ -220,6 +220,7 @@ function FindingsBlockContent({
   expanded: boolean;
   setExpanded: (v: boolean) => void;
 }) {
+  const { t } = useTranslation('campaigns-canvas');
   const top = data.findings.slice(0, TOP_FINDINGS_LIMIT);
   const remaining = data.findingsCount - top.length;
 
@@ -251,15 +252,14 @@ function FindingsBlockContent({
         )}
         <AlertTriangle className="h-3.5 w-3.5" />
         <span>
-          {data.findingsCount} finding{data.findingsCount === 1 ? '' : 's'} — fix
-          these to raise the score
+          {t('publishGate.findingsSummary', { count: data.findingsCount })}
         </span>
       </button>
 
       {expanded && (
         <div className="px-3 pb-3 pt-1 space-y-2 border-t border-amber-200/70">
           <div className="text-[10px] uppercase tracking-wide text-amber-700/70 font-medium">
-            Top {top.length} of {data.findingsCount}
+            {t('publishGate.topOf', { shown: top.length, total: data.findingsCount })}
           </div>
           {top.map((f) => (
             <div key={f.id} className="flex gap-2 items-start text-xs">
@@ -271,7 +271,7 @@ function FindingsBlockContent({
               <div className="flex-1 min-w-0">
                 <div className="text-gray-800 break-words">
                   <span className="text-gray-500">
-                    {FINDING_CATEGORY_LABEL[f.category]}:
+                    {t(`publishGate.findingCategory.${f.category}`)}:
                   </span>{' '}
                   {f.description}
                 </div>
@@ -290,7 +290,7 @@ function FindingsBlockContent({
                 onClick={handleViewAll}
                 className="text-amber-800 hover:text-amber-900 hover:underline"
               >
-                + {remaining} more — see all in Brand Alignment → Content Review
+                {t('publishGate.seeAllMore', { count: remaining })}
               </button>
             </div>
           )}
@@ -301,12 +301,13 @@ function FindingsBlockContent({
 }
 
 function ReadinessBadge({ readiness }: { readiness: ContentReadiness }) {
+  const { t } = useTranslation('campaigns-canvas');
   if (readiness.canPublish && readiness.reason === 'ready') {
     const score = Math.round(readiness.latestScore?.compositeScore ?? 0);
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs">
         <CheckCircle2 className="h-3 w-3" />
-        Score {score}
+        {t('publishGate.scoreBadge', { score })}
       </span>
     );
   }
@@ -314,7 +315,7 @@ function ReadinessBadge({ readiness }: { readiness: ContentReadiness }) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs">
         <AlertTriangle className="h-3 w-3" />
-        Not scored yet
+        {t('publishGate.notScored')}
       </span>
     );
   }
@@ -323,18 +324,9 @@ function ReadinessBadge({ readiness }: { readiness: ContentReadiness }) {
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-xs">
       <ShieldOff className="h-3 w-3" />
-      Score {score} / threshold {threshold}
+      {t('publishGate.scoreThreshold', { score, threshold })}
     </span>
   );
-}
-
-function blockedTooltip(readiness: ContentReadiness): string {
-  if (readiness.latestScore) {
-    const score = Math.round(readiness.latestScore.compositeScore);
-    const threshold = readiness.latestScore.threshold;
-    return `Fidelity score ${score} is below the threshold ${threshold}. Override possible with a reason.`;
-  }
-  return 'Publish blocked by the QA gate.';
 }
 
 function OverrideModal({
@@ -350,6 +342,7 @@ function OverrideModal({
   onConfirm: (reason: string) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation('campaigns-canvas');
   const [reason, setReason] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const isValid = reason.trim().length >= 10;
@@ -384,23 +377,24 @@ function OverrideModal({
           <ShieldOff className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
           <div>
             <h2 id="override-modal-title" className="text-base font-semibold text-gray-900">
-              Override publish gate
+              {t('publishGate.overrideTitle')}
             </h2>
             <p className="text-sm text-gray-600 mt-1">
               {score !== undefined && threshold !== undefined ? (
                 <>
-                  Fidelity score is <strong>{Math.round(score)}</strong>, below the threshold{' '}
-                  <strong>{threshold}</strong>.
+                  {t('publishGate.overrideDescPrefix')} <strong>{Math.round(score)}</strong>
+                  {t('publishGate.overrideDescMid')} <strong>{threshold}</strong>
+                  {t('publishGate.overrideDescSuffix')}
                 </>
               ) : (
-                'The QA gate is blocking publish on this content.'
+                t('publishGate.overrideDescGeneric')
               )}
             </p>
           </div>
         </div>
 
         <label htmlFor="override-reason" className="block text-sm font-medium text-gray-700 mb-1">
-          Why are you publishing anyway? (required, min. 10 characters)
+          {t('publishGate.reasonLabel')}
         </label>
         <textarea
           id="override-reason"
@@ -409,23 +403,23 @@ function OverrideModal({
           onChange={(e) => setReason(e.target.value)}
           rows={3}
           maxLength={500}
-          placeholder="e.g. 'Client explicitly approved — the scoring tooling is too strict here'"
+          placeholder={t('publishGate.reasonPlaceholder')}
           className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           disabled={isPending}
         />
         <p className="text-xs text-gray-500 mt-1">
-          Stored in the audit trail (LearningEvent + reason prefix).
+          {t('publishGate.auditNote')}
         </p>
 
         {publishedVia && (
           <p className="text-xs text-gray-500 mt-3">
-            Distribution via: <code className="text-gray-700">{publishedVia}</code>
+            {t('publishGate.distributionVia')} <code className="text-gray-700">{publishedVia}</code>
           </p>
         )}
 
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="secondary" size="sm" onClick={onCancel} disabled={isPending}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
           <Button
             variant="primary"
@@ -436,10 +430,10 @@ function OverrideModal({
             {isPending ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                Override…
+                {t('publishGate.override')}
               </>
             ) : (
-              'Confirm override'
+              t('publishGate.confirmOverride')
             )}
           </Button>
         </div>

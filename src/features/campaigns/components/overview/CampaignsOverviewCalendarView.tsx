@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft,
@@ -24,34 +25,26 @@ import { campaignKeys } from "@/features/campaigns/hooks";
 
 const STATUS_STYLES: Record<
   string,
-  { bg: string; border: string; text: string; dot: string; label: string }
+  { bg: string; border: string; text: string; dot: string }
 > = {
   ACTIVE: {
     bg: "#f0fdfa",
     border: "#5eead4",
     text: "#0f766e",
     dot: "#14b8a6",
-    label: "Active",
   },
   COMPLETED: {
     bg: "#f0fdf4",
     border: "#86efac",
     text: "#166534",
     dot: "#10b981",
-    label: "Completed",
   },
   ARCHIVED: {
     bg: "#f9fafb",
     border: "#d1d5db",
     text: "#6b7280",
     dot: "#9ca3af",
-    label: "Archived",
   },
-};
-
-const TYPE_LABEL: Record<string, string> = {
-  STRATEGIC: "Strategic",
-  QUICK: "Quick",
 };
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -169,6 +162,7 @@ export function CampaignsOverviewCalendarView({
   campaigns,
   onSelectCampaign,
 }: CampaignsOverviewCalendarViewProps) {
+  const { t } = useTranslation("campaigns-overview");
   // ─── Filter campaigns with valid date range ──────────────────
   const { datedBars, undatedCampaigns } = useMemo(() => {
     const bars: Omit<CampaignBar, "row">[] = [];
@@ -383,7 +377,7 @@ export function CampaignsOverviewCalendarView({
             type="button"
             onClick={handlePrev}
             className="p-1.5 rounded border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors"
-            aria-label="Previous month"
+            aria-label={t("calendar.prevMonth")}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -394,7 +388,7 @@ export function CampaignsOverviewCalendarView({
             type="button"
             onClick={handleNext}
             className="p-1.5 rounded border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors"
-            aria-label="Next month"
+            aria-label={t("calendar.nextMonth")}
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -403,13 +397,13 @@ export function CampaignsOverviewCalendarView({
             onClick={handleToday}
             className="ml-2 px-3 py-1 text-xs font-medium border border-gray-200 rounded hover:bg-gray-50 text-gray-700 transition-colors"
           >
-            Today
+            {t("calendar.today")}
           </button>
         </div>
         <div className="flex items-center gap-3 text-xs flex-wrap">
           <span className="inline-flex items-center gap-1 text-gray-600">
             <CalendarIcon className="w-3.5 h-3.5" />
-            {visibleCount} campaign{visibleCount !== 1 ? "s" : ""} this view
+            {t("calendar.campaignsThisView", { count: visibleCount })}
           </span>
           {undatedCount > 0 && (
             <button
@@ -417,7 +411,9 @@ export function CampaignsOverviewCalendarView({
               onClick={() => setShowUndated((v) => !v)}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-amber-800 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors"
             >
-              {showUndated ? "Hide" : "Show"} undated ({undatedCount})
+              {showUndated
+                ? t("calendar.hideUndated", { count: undatedCount })
+                : t("calendar.showUndated", { count: undatedCount })}
             </button>
           )}
           {/* Status legend */}
@@ -428,7 +424,7 @@ export function CampaignsOverviewCalendarView({
                   className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: style.dot }}
                 />
-                {style.label}
+                {t(`status.${key.toLowerCase()}`)}
               </span>
             ))}
           </div>
@@ -562,7 +558,13 @@ export function CampaignsOverviewCalendarView({
                       borderBottomRightRadius: seg.continuesRight ? 0 : undefined,
                       opacity: isThisDragging ? 0.4 : 1,
                     }}
-                    title={`${seg.bar.campaign.title} — ${TYPE_LABEL[seg.bar.campaign.type] ?? seg.bar.campaign.type}, ${totalDays} day${totalDays !== 1 ? "s" : ""} (drag to reschedule, drag edges to resize)`}
+                    title={t("calendar.barTooltip", {
+                      count: totalDays,
+                      title: seg.bar.campaign.title,
+                      type: t(`type.${seg.bar.campaign.type.toLowerCase()}`, {
+                        defaultValue: seg.bar.campaign.type,
+                      }),
+                    })}
                   >
                     {/* Left resize handle — only shown on the start segment */}
                     {isStartSegment && (
@@ -575,7 +577,7 @@ export function CampaignsOverviewCalendarView({
                         onClick={(e) => e.stopPropagation()}
                         className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity"
                         style={{ backgroundColor: style.dot }}
-                        title="Drag to change start date"
+                        title={t("calendar.dragStartDate")}
                       />
                     )}
 
@@ -605,7 +607,7 @@ export function CampaignsOverviewCalendarView({
                         onClick={(e) => e.stopPropagation()}
                         className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity"
                         style={{ backgroundColor: style.dot }}
-                        title="Drag to change end date"
+                        title={t("calendar.dragEndDate")}
                       />
                     )}
                   </div>
@@ -622,12 +624,12 @@ export function CampaignsOverviewCalendarView({
         <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold text-amber-900 uppercase tracking-wide">
-              Undated campaigns
+              {t("calendar.undatedHeading")}
             </span>
             <span className="text-[11px] text-amber-700">
               {datedBars.length === 0
-                ? "No campaigns have a start date yet — open one to schedule"
-                : "These campaigns have no start date — open one to schedule"}
+                ? t("calendar.undatedHelpNone")
+                : t("calendar.undatedHelpSome")}
             </span>
           </div>
           <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
@@ -641,7 +643,11 @@ export function CampaignsOverviewCalendarView({
                     onSelectCampaign && onSelectCampaign(c.id)
                   }
                   className="flex items-center gap-2 px-3 py-2 rounded-md bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm text-left text-[12px] transition-all overflow-hidden"
-                  title={`${c.title} — ${TYPE_LABEL[c.type] ?? c.type}, ${style.label}`}
+                  title={t("calendar.undatedTooltip", {
+                    title: c.title,
+                    type: t(`type.${c.type.toLowerCase()}`, { defaultValue: c.type }),
+                    status: t(`status.${c.status.toLowerCase()}`),
+                  })}
                 >
                   <span
                     className="w-2 h-2 rounded-full flex-shrink-0"
@@ -652,7 +658,7 @@ export function CampaignsOverviewCalendarView({
                     {c.title}
                   </span>
                   <span className="text-[10px] text-gray-500 flex-shrink-0">
-                    {style.label}
+                    {t(`status.${c.status.toLowerCase()}`)}
                   </span>
                 </button>
               );
@@ -664,9 +670,7 @@ export function CampaignsOverviewCalendarView({
       {/* Helper note */}
       <p className="text-[11px] text-gray-500 flex items-center gap-1.5">
         <Info className="w-3 h-3" />
-        Click a bar to open the campaign. Drag a bar to reschedule (preserves
-        duration). Hover the bar edges and drag the colored handles to resize
-        the start or end date.
+        {t("calendar.helperNote")}
       </p>
     </div>
   );

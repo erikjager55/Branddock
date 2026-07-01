@@ -3,6 +3,7 @@
 import React from "react";
 import * as LucideIcons from "lucide-react";
 import { Pencil, Save, X, HelpCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/shared";
 import { VersionPill } from "@/components/versioning/VersionPill";
 import { LockShield, LockStatusPill } from "@/components/lock";
@@ -34,17 +35,6 @@ const CATEGORY_ICONS: Record<string, string> = {
   CULTURE: 'Users',
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  PURPOSE: 'Purpose',
-  FOUNDATION: 'Foundation',
-  STRATEGY: 'Strategy',
-  COMMUNICATION: 'Communication',
-  PERSONALITY: 'Personality',
-  CORE: 'Core',
-  NARRATIVE: 'Narrative',
-  CULTURE: 'Culture',
-};
-
 function getIcon(iconName: string): React.ComponentType<{ className?: string }> {
   return (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[iconName] || LucideIcons.FileText;
 }
@@ -68,10 +58,11 @@ export function AssetDetailHeader({
   onCancelEdit,
   onVersionRestore,
 }: AssetDetailHeaderProps) {
+  const { t } = useTranslation("brand-asset-detail");
   const gradient = CATEGORY_GRADIENTS[asset.category] ?? 'from-gray-500 to-gray-600';
   const iconName = CATEGORY_ICONS[asset.category] ?? 'FileText';
   const CategoryIcon = getIcon(iconName);
-  const categoryLabel = CATEGORY_LABELS[asset.category] ?? asset.category;
+  const categoryLabel = t(`header.categories.${asset.category}`, { defaultValue: asset.category });
 
   return (
     <div data-testid="asset-detail-header" className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
@@ -111,19 +102,19 @@ export function AssetDetailHeader({
               <PopoverTrigger asChild>
                 <button className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors border border-gray-200">
                   <HelpCircle className="h-3 w-3" />
-                  What is {asset.name}?
+                  {t('header.whatIs', { name: asset.name })}
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-80 text-sm" align="start">
                 <div className="space-y-2">
-                  <p className="font-semibold">What is {asset.name}?</p>
+                  <p className="font-semibold">{t('header.whatIs', { name: asset.name })}</p>
                   <p className="text-gray-500 leading-relaxed">
-                    {asset.description || `${asset.name} is a ${categoryLabel.toLowerCase()} brand asset that defines a key element of your brand identity.`}
+                    {asset.description || t('header.fallbackDescription', { name: asset.name, category: categoryLabel.toLowerCase() })}
                   </p>
                   <div className="pt-2 border-t border-gray-200 space-y-1.5 text-xs text-gray-500">
-                    <p><span className="font-medium text-gray-900">Category:</span> {categoryLabel}</p>
-                    <p><span className="font-medium text-gray-900">Research:</span> AI Exploration available for strategic analysis</p>
-                    <p><span className="font-medium text-gray-900">Version Controlled:</span> Full history of changes with lock/unlock protection</p>
+                    <p><span className="font-medium text-gray-900">{t('header.categoryLabel')}</span> {categoryLabel}</p>
+                    <p><span className="font-medium text-gray-900">{t('header.researchLabel')}</span> {t('header.researchValue')}</p>
+                    <p><span className="font-medium text-gray-900">{t('header.versionLabel')}</span> {t('header.versionValue')}</p>
                   </div>
                 </div>
               </PopoverContent>
@@ -141,14 +132,14 @@ export function AssetDetailHeader({
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-opacity hover:opacity-90"
               >
                 <Save className="h-4 w-4" />
-                Save
+                {t('header.save')}
               </button>
               <button
                 onClick={onCancelEdit}
                 className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <X className="h-3.5 w-3.5" />
-                Cancel
+                {t('header.cancel')}
               </button>
             </>
           ) : (
@@ -159,7 +150,7 @@ export function AssetDetailHeader({
               onClick={onEditToggle}
               disabled={!lockState.canEdit}
             >
-              Edit
+              {t('header.edit')}
             </Button>
           )}
 

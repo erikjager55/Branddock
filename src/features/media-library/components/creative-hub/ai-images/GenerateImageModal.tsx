@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Wand2, Cpu, ChevronRight, Check, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { Modal, Button, Input, ImageProviderGrid, BrandContextTagsEditor, StyleGuidelinesEditor } from '@/components/shared';
 import { useGenerateAiImage, useWorkspaceBrandContext } from '@/features/media-library/hooks';
@@ -13,13 +14,7 @@ import type { GeneratedImageWithMeta } from '@/features/media-library/types/medi
 
 // ─── Constants ──────────────────────────────────────────────
 
-const ASPECT_RATIOS = [
-  { value: '1:1', label: '1:1 (Square)' },
-  { value: '16:9', label: '16:9 (Landscape)' },
-  { value: '9:16', label: '9:16 (Portrait)' },
-  { value: '3:4', label: '3:4' },
-  { value: '4:3', label: '4:3' },
-];
+const ASPECT_RATIOS = ['1:1', '16:9', '9:16', '3:4', '4:3'];
 
 const USAGE_OPTIONS: { value: FalUsageCategory; label: string }[] = (
   Object.entries(FAL_USAGE_LABELS) as [FalUsageCategory, { label: string; description: string }][]
@@ -68,6 +63,7 @@ export function GenerateImageModal({
   onGenerated,
   onOpenOptimize,
 }: GenerateImageModalProps) {
+  const { t } = useTranslation('media-library');
   const generateImage = useGenerateAiImage();
   const { data: brandContext, isLoading: isBrandContextLoading } = useWorkspaceBrandContext();
 
@@ -239,13 +235,13 @@ export function GenerateImageModal({
     (mode !== 'trained' || selectedModelIds.length > 0);
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Generate AI Image" size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('aiImages.generateModal.title')} size="lg">
       <div className="space-y-5">
 
         {/* ── Step 1: Choose mode (trained model or generate) ── */}
         {mode === 'choose' && (
           <div className="space-y-3">
-            <p className="text-sm text-gray-600">What would you like to do?</p>
+            <p className="text-sm text-gray-600">{t('aiImages.generateModal.question')}</p>
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
               {hasTrainedModels && (
                 <button
@@ -255,9 +251,9 @@ export function GenerateImageModal({
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <Cpu className="w-5 h-5 text-teal-600" />
-                    <span className="font-semibold text-gray-900">Use Trained Model</span>
+                    <span className="font-semibold text-gray-900">{t('aiImages.generateModal.useTrainedModel')}</span>
                   </div>
-                  <p className="text-sm text-gray-500">Generate with your fine-tuned brand model for consistent output.</p>
+                  <p className="text-sm text-gray-500">{t('aiImages.generateModal.trainedDescription')}</p>
                 </button>
               )}
               <button
@@ -267,9 +263,9 @@ export function GenerateImageModal({
               >
                 <div className="flex items-center gap-2 mb-1">
                   <Wand2 className="w-5 h-5 text-purple-600" />
-                  <span className="font-semibold text-gray-900">Generate Image</span>
+                  <span className="font-semibold text-gray-900">{t('aiImages.generate')}</span>
                 </div>
-                <p className="text-sm text-gray-500">Pick a fal.ai model, tune brand context, and generate.</p>
+                <p className="text-sm text-gray-500">{t('aiImages.generateModal.generateDescription')}</p>
               </button>
               {onOpenOptimize && (
                 <button
@@ -279,9 +275,9 @@ export function GenerateImageModal({
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <SlidersHorizontal className="w-5 h-5 text-amber-600" />
-                    <span className="font-semibold text-gray-900">Optimize Image</span>
+                    <span className="font-semibold text-gray-900">{t('aiImages.optimize')}</span>
                   </div>
-                  <p className="text-sm text-gray-500">Edit, upscale, enhance, or remove backgrounds from an existing image.</p>
+                  <p className="text-sm text-gray-500">{t('aiImages.generateModal.optimizeDescription')}</p>
                 </button>
               )}
             </div>
@@ -298,14 +294,14 @@ export function GenerateImageModal({
                 className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <ChevronRight className="w-3 h-3 rotate-180" />
-                Back
+                {t('actions.back')}
               </button>
             )}
 
             {trainedModels.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select models {trainedModels.length > 1 && <span className="text-gray-400 font-normal">(select up to 3 to combine)</span>}
+                  {t('aiImages.generateModal.selectModels')} {trainedModels.length > 1 && <span className="text-gray-400 font-normal">{t('aiImages.generateModal.selectUpTo3')}</span>}
                 </label>
                 <div className="space-y-2">
                   {trainedModels.map((m) => {
@@ -363,23 +359,23 @@ export function GenerateImageModal({
               className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
             >
               <ChevronRight className="w-3 h-3 rotate-180" />
-              Back
+              {t('actions.back')}
             </button>
 
             {/* ── Name + Prompt (top of the form) ── */}
             <Input
-              label="Name"
+              label={t('fields.name')}
               value={name}
               onChange={(e) => setName(e.target.value.slice(0, 200))}
-              placeholder="e.g. Brand hero image"
+              placeholder={t('aiImages.generateModal.namePlaceholder')}
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Prompt</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('meta.prompt')}</label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value.slice(0, 1000))}
-                placeholder="Describe the image you want to generate..."
+                placeholder={t('aiImages.generateModal.promptPlaceholder')}
                 rows={3}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
               />
@@ -390,10 +386,10 @@ export function GenerateImageModal({
             <div className="rounded-lg border border-gray-200 bg-white p-5">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-500" />
-                <h3 className="text-sm font-semibold text-gray-900">AI Image Provider</h3>
+                <h3 className="text-sm font-semibold text-gray-900">{t('aiImages.generateModal.providerTitle')}</h3>
               </div>
               <p className="mt-1 text-sm text-gray-500">
-                Pick a category to narrow the list, then choose a model.
+                {t('aiImages.generateModal.providerHint')}
               </p>
 
               {/* Filter pills — always visible */}
@@ -407,7 +403,7 @@ export function GenerateImageModal({
                       : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  All providers
+                  {t('aiImages.generateModal.allProviders')}
                 </button>
                 {USAGE_OPTIONS.map((opt) => (
                   <button
@@ -446,11 +442,10 @@ export function GenerateImageModal({
                 />
                 <div className="flex-1">
                   <span className="block text-sm font-semibold text-gray-900">
-                    Apply brand guidelines
+                    {t('aiImages.generateModal.applyBrandGuidelines')}
                   </span>
                   <p className="mt-0.5 text-xs text-gray-500">
-                    Automatically inject your photography direction, design language, and brand
-                    personality from Brand Foundation into the prompt.
+                    {t('aiImages.generateModal.applyBrandHelp')}
                   </p>
                 </div>
               </label>
@@ -480,21 +475,21 @@ export function GenerateImageModal({
         {mode === 'trained' && (
           <>
             <Input
-              label="Name"
+              label={t('fields.name')}
               value={name}
               onChange={(e) => setName(e.target.value.slice(0, 200))}
-              placeholder="e.g. Brand hero image"
+              placeholder={t('aiImages.generateModal.namePlaceholder')}
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Prompt</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('meta.prompt')}</label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value.slice(0, 1000))}
                 placeholder={
                   selectedModel
-                    ? `Describe what you want to generate with ${selectedModel.name}...`
-                    : 'Describe the image you want to generate...'
+                    ? t('aiImages.generateModal.promptPlaceholderTrained', { name: selectedModel.name })
+                    : t('aiImages.generateModal.promptPlaceholder')
                 }
                 rows={3}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
@@ -509,14 +504,14 @@ export function GenerateImageModal({
           <>
             {/* Aspect ratio */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Aspect Ratio</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('meta.aspectRatio')}</label>
               <select
                 value={aspectRatio}
                 onChange={(e) => setAspectRatio(e.target.value)}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               >
                 {ASPECT_RATIOS.map((ar) => (
-                  <option key={ar.value} value={ar.value}>{ar.label}</option>
+                  <option key={ar} value={ar}>{t(`aspectRatios.${ar.replace(':', '_')}`)}</option>
                 ))}
               </select>
             </div>
@@ -525,7 +520,7 @@ export function GenerateImageModal({
             {generateImage.isError && (
               <div className="rounded-lg bg-red-50 border border-red-200 p-3" role="alert">
                 <p className="text-sm text-red-700">
-                  {(generateImage.error as Error)?.message || 'Failed to generate image. Please try again.'}
+                  {(generateImage.error as Error)?.message || t('aiImages.generateModal.error')}
                 </p>
               </div>
             )}
@@ -533,7 +528,7 @@ export function GenerateImageModal({
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="secondary" onClick={handleClose} disabled={generateImage.isPending}>
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button
                 icon={Wand2}
@@ -541,7 +536,7 @@ export function GenerateImageModal({
                 disabled={!isValid || generateImage.isPending}
                 isLoading={generateImage.isPending}
               >
-                {generateImage.isPending ? 'Generating...' : 'Generate Image'}
+                {generateImage.isPending ? t('actions.generating') : t('aiImages.generate')}
               </Button>
             </div>
           </>

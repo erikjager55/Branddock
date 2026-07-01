@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { MediaAssetWithMeta } from '../types/media.types';
 import { MEDIA_TYPE_ICONS } from '../constants/media-constants';
 import { formatFileSize } from '../constants/media-constants';
@@ -16,11 +17,12 @@ interface FeaturedMediaCarouselProps {
 
 /** Horizontally scrollable carousel of featured media assets */
 export function FeaturedMediaCarousel({ assets }: FeaturedMediaCarouselProps) {
+  const { t } = useTranslation('media-library');
   if (assets.length === 0) return null;
 
   return (
     <div className="mb-6" data-testid="featured-media-carousel">
-      <h3 className="text-sm font-semibold text-gray-900 mb-3">Featured Media</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('featured.title')}</h3>
       <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
         {assets.map((asset) => {
           const typeConfig = MEDIA_TYPE_ICONS[asset.mediaType];

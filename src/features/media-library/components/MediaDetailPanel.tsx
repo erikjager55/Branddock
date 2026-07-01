@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   Heart,
@@ -112,6 +113,7 @@ export function MediaDetailPanel({
   onFavorite,
   onDelete,
 }: MediaDetailPanelProps) {
+  const { t } = useTranslation('media-library');
   const { data, isLoading } = useMediaAssetDetail(assetId ?? '');
   const updateAsset = useUpdateMediaAsset(assetId ?? '');
   const openAddToCollection = useMediaLibraryStore((s) => s.openAddToCollection);
@@ -148,13 +150,13 @@ export function MediaDetailPanel({
                 {isLoading ? (
                   <Skeleton className="rounded" width={180} height={20} />
                 ) : (
-                  asset?.name ?? 'Media Asset'
+                  asset?.name ?? t('detail.fallbackName')
                 )}
               </h2>
               <button
                 onClick={onClose}
                 className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700 flex-shrink-0"
-                aria-label="Close panel"
+                aria-label={t('actions.closePanel')}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -173,31 +175,31 @@ export function MediaDetailPanel({
                 <div className="px-4 pb-4">
                   <div className="grid grid-cols-2 gap-3">
                     <MetadataItem
-                      label="Type"
+                      label={t('meta.type')}
                       value={MEDIA_TYPE_ICONS[asset.mediaType].label}
                     />
                     <MetadataItem
-                      label="Category"
+                      label={t('meta.category')}
                       value={MEDIA_CATEGORY_CONFIG[asset.category].label}
                     />
                     <MetadataItem
-                      label="File Size"
+                      label={t('meta.fileSize')}
                       value={formatFileSize(asset.fileSize)}
                     />
                     {asset.width != null && asset.height != null && (
                       <MetadataItem
-                        label="Dimensions"
+                        label={t('meta.dimensions')}
                         value={`${asset.width} x ${asset.height}`}
                       />
                     )}
                     {asset.duration != null && (
                       <MetadataItem
-                        label="Duration"
+                        label={t('meta.duration')}
                         value={formatDuration(asset.duration)}
                       />
                     )}
                     <MetadataItem
-                      label="Created"
+                      label={t('meta.created')}
                       value={new Date(asset.createdAt).toLocaleDateString(
                         'en-US',
                         { year: 'numeric', month: 'short', day: 'numeric' }
@@ -208,7 +210,7 @@ export function MediaDetailPanel({
 
                 {/* Tags */}
                 <div className="px-4 pb-4">
-                  <p className="text-xs text-gray-500 mb-2">Tags</p>
+                  <p className="text-xs text-gray-500 mb-2">{t('detail.tags')}</p>
                   <TagInput
                     selectedTagIds={asset.tags.map((t) => t.mediaTag.id)}
                     onChange={handleTagsChange}
@@ -218,14 +220,14 @@ export function MediaDetailPanel({
                 {/* Collections */}
                 <div className="px-4 pb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-gray-500">Collections</p>
+                    <p className="text-xs text-gray-500">{t('detail.collections')}</p>
                     <button
                       type="button"
                       onClick={() => openAddToCollection(asset.id)}
                       className="inline-flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium"
                     >
                       <FolderPlus className="w-3.5 h-3.5" />
-                      Add
+                      {t('actions.add')}
                     </button>
                   </div>
                   {asset.collections.length > 0 ? (
@@ -241,7 +243,7 @@ export function MediaDetailPanel({
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-400">No collections yet</p>
+                    <p className="text-xs text-gray-400">{t('detail.noCollections')}</p>
                   )}
                 </div>
 
@@ -256,7 +258,7 @@ export function MediaDetailPanel({
                     className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     <Download className="w-4 h-4" />
-                    Download
+                    {t('actions.download')}
                   </button>
                   <div className="flex gap-2">
                     <button
@@ -272,14 +274,14 @@ export function MediaDetailPanel({
                           asset.isFavorite ? 'fill-red-500' : ''
                         }`}
                       />
-                      {asset.isFavorite ? 'Favorited' : 'Favorite'}
+                      {asset.isFavorite ? t('actions.favorited') : t('actions.favorite')}
                     </button>
                     <button
                       onClick={() => onDelete(asset.id)}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50"
                     >
                       <Trash2 className="w-4 h-4" />
-                      Delete
+                      {t('actions.delete')}
                     </button>
                   </div>
                 </div>

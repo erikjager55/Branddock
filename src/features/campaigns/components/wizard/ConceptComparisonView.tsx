@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, X, Crown, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import type { CreativeConcept, PersonaValidationResult, StickinessScore, CampaignLineTests } from '@/lib/campaigns/strategy-blueprint.types';
@@ -85,6 +86,7 @@ export default function ConceptComparisonView({
   onRegenerate,
   isRegenerating,
 }: ConceptComparisonViewProps) {
+  const { t } = useTranslation('campaigns-wizard');
   const scores = useMemo(
     () => concepts.map((c, i) => computeComparisonScore(c, i, personaValidation)),
     [concepts, personaValidation],
@@ -114,8 +116,8 @@ export default function ConceptComparisonView({
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-900">Compare Creative Concepts</h3>
-        <p className="text-sm text-gray-500 mt-1">Review all three concepts side by side. The recommended concept is highlighted.</p>
+        <h3 className="text-lg font-semibold text-gray-900">{t('conceptComparison.title')}</h3>
+        <p className="text-sm text-gray-500 mt-1">{t('conceptComparison.subtitle')}</p>
       </div>
 
       {/* 3-column comparison grid */}
@@ -142,13 +144,13 @@ export default function ConceptComparisonView({
               {/* Header */}
               <div className="flex items-center justify-between mb-3">
                 <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${headerColors[color]}`}>
-                  Concept {labels[i]}
+                  {t('conceptComparison.conceptLabel', { label: labels[i] })}
                 </span>
                 <div className="flex items-center gap-1.5">
                   {isBest && (
                     <Badge variant="success" className="text-[10px]">
                       <Crown className="h-3 w-3 mr-0.5" />
-                      Recommended
+                      {t('conceptComparison.recommended')}
                     </Badge>
                   )}
                   <span className="text-sm font-bold text-gray-700">{score.toFixed(1)}</span>
@@ -170,27 +172,27 @@ export default function ConceptComparisonView({
               {/* Stickiness Scores */}
               {ss && (
                 <div className="space-y-1 mb-3">
-                  <h5 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">SUCCESs Score ({ss.total}/10)</h5>
-                  <ScoreBar label="Simple" value={ss.simple} />
-                  <ScoreBar label="Unexpected" value={ss.unexpected} />
-                  <ScoreBar label="Concrete" value={ss.concrete} />
-                  <ScoreBar label="Credible" value={ss.credible} />
-                  <ScoreBar label="Emotional" value={ss.emotional} />
-                  <ScoreBar label="Story" value={ss.story} />
+                  <h5 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{t('conceptComparison.successScore', { total: ss.total })}</h5>
+                  <ScoreBar label={t('successAttributes.simple')} value={ss.simple} />
+                  <ScoreBar label={t('successAttributes.unexpected')} value={ss.unexpected} />
+                  <ScoreBar label={t('successAttributes.concrete')} value={ss.concrete} />
+                  <ScoreBar label={t('successAttributes.credible')} value={ss.credible} />
+                  <ScoreBar label={t('successAttributes.emotional')} value={ss.emotional} />
+                  <ScoreBar label={t('successAttributes.story')} value={ss.story} />
                 </div>
               )}
 
               {/* Campaign Line Tests */}
               {tests && (
                 <div className="space-y-1 mb-3">
-                  <h5 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Campaign Line Tests</h5>
+                  <h5 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{t('conceptComparison.campaignLineTests')}</h5>
                   <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
-                    <TestResult label="Bar Test" value={tests.barTest} />
-                    <TestResult label="T-Shirt Test" value={tests.tShirtTest} />
-                    <TestResult label="Parody Test" value={tests.parodyTest} />
-                    <TestResult label="10-Year Test" value={tests.tenYearTest} />
-                    <TestResult label="Cat. Escape" value={tests.categoryEscapeTest} />
-                    <TestResult label="Opposite Test" value={tests.oppositeTest} />
+                    <TestResult label={t('conceptComparison.tests.bar')} value={tests.barTest} />
+                    <TestResult label={t('conceptComparison.tests.tShirt')} value={tests.tShirtTest} />
+                    <TestResult label={t('conceptComparison.tests.parody')} value={tests.parodyTest} />
+                    <TestResult label={t('conceptComparison.tests.tenYear')} value={tests.tenYearTest} />
+                    <TestResult label={t('conceptComparison.tests.catEscape')} value={tests.categoryEscapeTest} />
+                    <TestResult label={t('conceptComparison.tests.opposite')} value={tests.oppositeTest} />
                   </div>
                 </div>
               )}
@@ -218,17 +220,17 @@ export default function ConceptComparisonView({
       {personaValidation && personaValidation.length > 0 && (
         <div className="rounded-xl border border-gray-200 overflow-hidden">
           <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-            <h5 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Persona Scores</h5>
+            <h5 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">{t('conceptComparison.personaScores')}</h5>
           </div>
           <div className="p-4">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-500">
-                  <th className="text-left pb-2 font-medium">Persona</th>
+                  <th className="text-left pb-2 font-medium">{t('conceptComparison.persona')}</th>
                   {labels.slice(0, concepts.length).map(l => (
-                    <th key={l} className="text-center pb-2 font-medium w-20">Hook {l}</th>
+                    <th key={l} className="text-center pb-2 font-medium w-20">{t('conceptComparison.hook', { label: l })}</th>
                   ))}
-                  <th className="text-center pb-2 font-medium w-20">Preferred</th>
+                  <th className="text-center pb-2 font-medium w-20">{t('conceptComparison.preferred')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -242,7 +244,7 @@ export default function ConceptComparisonView({
                   const maxScore = Math.max(...hookScores.filter((s): s is number => typeof s === 'number'));
                   return (
                     <tr key={pi}>
-                      <td className="py-2 text-gray-700 font-medium">{pv.personaName ?? `Persona ${pi + 1}`}</td>
+                      <td className="py-2 text-gray-700 font-medium">{pv.personaName ?? t('conceptComparison.personaFallback', { n: pi + 1 })}</td>
                       {hookScores.map((score, si) => (
                         <td key={si} className="py-2 text-center">
                           <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold ${
@@ -279,7 +281,7 @@ export default function ConceptComparisonView({
             onClick={onRegenerate}
             disabled={isRegenerating}
           >
-            {isRegenerating ? "Regenerating..." : "None of these \u2014 regenerate with different templates"}
+            {isRegenerating ? t('actions.regenerating') : t('actions.regenerateDifferentTemplates')}
           </button>
         </div>
       )}

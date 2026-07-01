@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight, CheckCircle2, Pencil } from "lucide-react";
 import { Button } from "@/components/shared";
 import { useSnapshotDiff, useUpdateSnapshotNotes } from "../hooks/useSnapshots";
@@ -24,6 +25,7 @@ export function SnapshotTimelineRow({
   onToggleExpand,
   previousSnapshotId,
 }: Props) {
+  const { t } = useTranslation("brandstyle");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [draftNotes, setDraftNotes] = useState(snapshot.notes ?? '');
   const updateNotes = useUpdateSnapshotNotes();
@@ -61,26 +63,26 @@ export function SnapshotTimelineRow({
                 <span className="text-sm font-semibold text-gray-900">{formattedDate}</span>
                 {isLatest && (
                   <span className="inline-flex items-center text-[10px] font-medium text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">
-                    Latest
+                    {t("history.latest")}
                   </span>
                 )}
                 <span className="text-[10px] text-gray-400 font-mono">
                   {snapshot.tokensHash.slice(0, 8)}
                 </span>
-                <span className="text-[10px] text-gray-400">via {snapshot.triggerSource}</span>
+                <span className="text-[10px] text-gray-400">{t("history.via", { source: snapshot.triggerSource })}</span>
                 {snapshot.triggeredBy?.name && (
-                  <span className="text-[10px] text-gray-500">by {snapshot.triggeredBy.name}</span>
+                  <span className="text-[10px] text-gray-500">{t("history.by", { name: snapshot.triggeredBy.name })}</span>
                 )}
               </div>
               {snapshot.changeSummary ? (
                 <p className="text-sm text-gray-700 mt-1">
-                  <span className="font-medium">{snapshot.changeCount} change{snapshot.changeCount === 1 ? '' : 's'}</span>
+                  <span className="font-medium">{t("history.changeCount", { count: snapshot.changeCount })}</span>
                   <span className="text-gray-500"> · {snapshot.changeSummary}</span>
                 </p>
               ) : isOldest ? (
-                <p className="text-xs text-gray-500 mt-1">Initial snapshot</p>
+                <p className="text-xs text-gray-500 mt-1">{t("history.initialSnapshot")}</p>
               ) : (
-                <p className="text-xs text-gray-500 mt-1 italic">No significant changes</p>
+                <p className="text-xs text-gray-500 mt-1 italic">{t("history.noChanges")}</p>
               )}
             </div>
 
@@ -93,12 +95,12 @@ export function SnapshotTimelineRow({
               {expanded ? (
                 <>
                   <ChevronDown className="w-3 h-3" />
-                  Hide details
+                  {t("history.hideDetails")}
                 </>
               ) : (
                 <>
                   <ChevronRight className="w-3 h-3" />
-                  {previousSnapshotId ? 'Show details' : 'Initial'}
+                  {previousSnapshotId ? t("history.showDetails") : t("history.initial")}
                 </>
               )}
             </button>
@@ -112,13 +114,13 @@ export function SnapshotTimelineRow({
                   type="text"
                   value={draftNotes}
                   onChange={(e) => setDraftNotes(e.target.value)}
-                  placeholder="Add a label (e.g. 'Pre-rebrand')"
+                  placeholder={t("history.labelPlaceholder")}
                   className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   maxLength={200}
                   autoFocus
                 />
                 <Button variant="primary" size="sm" onClick={handleSaveNotes} disabled={updateNotes.isPending}>
-                  Save
+                  {t("actions.save")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -128,7 +130,7 @@ export function SnapshotTimelineRow({
                     setDraftNotes(snapshot.notes ?? '');
                   }}
                 >
-                  Cancel
+                  {t("actions.cancel")}
                 </Button>
               </div>
             ) : snapshot.notes ? (
@@ -148,7 +150,7 @@ export function SnapshotTimelineRow({
                 className="text-[11px] text-gray-400 hover:text-teal-700 flex items-center gap-1"
               >
                 <Pencil className="w-3 h-3" />
-                Add label
+                {t("history.addLabel")}
               </button>
             )}
           </div>
@@ -157,11 +159,11 @@ export function SnapshotTimelineRow({
           {expanded && previousSnapshotId && (
             <div className="mt-4">
               {diffQuery.isLoading ? (
-                <p className="text-xs text-gray-400">Loading diff…</p>
+                <p className="text-xs text-gray-400">{t("history.loadingDiff")}</p>
               ) : diffQuery.data ? (
                 <SnapshotDiffPanel diff={diffQuery.data.diff} summary={diffQuery.data.summary} />
               ) : (
-                <p className="text-xs text-gray-400">Failed to load diff.</p>
+                <p className="text-xs text-gray-400">{t("history.diffError")}</p>
               )}
             </div>
           )}

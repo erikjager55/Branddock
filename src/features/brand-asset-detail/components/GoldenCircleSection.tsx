@@ -5,6 +5,7 @@ import {
   Target, Heart, Package, ArrowRight,
   CheckCircle, AlertTriangle, HelpCircle,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { GoldenCircleFrameworkData, GoldenCircleSection as GoldenCircleSectionData } from '../types/framework.types';
 
 // ─── Types ──────────────────────────────────────────────────
@@ -139,6 +140,7 @@ interface GoldenCircleSectionProps {
  * with a detail/edit panel and coherence indicator.
  */
 export function GoldenCircleSection({ data, isEditing, onUpdate }: GoldenCircleSectionProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const [draft, setDraft] = useState<GoldenCircleFrameworkData>(() => normalize(data));
   const [selectedRing, setSelectedRing] = useState<RingKey>('why');
 
@@ -177,7 +179,7 @@ export function GoldenCircleSection({ data, isEditing, onUpdate }: GoldenCircleS
             viewBox="0 0 320 330"
             className="w-64 h-64 md:w-72 md:h-72"
             role="img"
-            aria-label="Golden Circle: WHY (innermost), HOW (middle), WHAT (outermost ring)"
+            aria-label={t('goldenCircle.ariaLabel')}
           >
             {/* WHAT — outer ring */}
             <circle
@@ -249,7 +251,7 @@ export function GoldenCircleSection({ data, isEditing, onUpdate }: GoldenCircleS
               style={{ fill: '#9ca3af' }}
               className="text-[9px]"
             >
-              Start With Why
+              {t('goldenCircle.startWithWhy')}
             </text>
           </svg>
 
@@ -279,14 +281,14 @@ export function GoldenCircleSection({ data, isEditing, onUpdate }: GoldenCircleS
       <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${coherence.bgColor}`}>
         <CoherenceIcon className={`w-4 h-4 ${coherence.color}`} />
         <span className={`text-sm font-medium ${coherence.color}`}>
-          {coherence.label}
+          {t(`goldenCircle.coherence.${coherence.level}`)}
         </span>
         <span className="text-xs text-gray-500">
           {coherence.level === 'strong'
-            ? 'WHY, HOW and WHAT are fully filled in and aligned with each other.'
+            ? t('goldenCircle.coherence.strongDetail')
             : coherence.level === 'partial'
-              ? 'Not all rings are fully filled in. Complete all three for a strong Golden Circle.'
-              : 'The Golden Circle is still mostly empty. Start with your WHY.'}
+              ? t('goldenCircle.coherence.partialDetail')
+              : t('goldenCircle.coherence.weakDetail')}
         </span>
       </div>
     </div>
@@ -308,6 +310,7 @@ function RingPanel({
   onStatementChange: (value: string) => void;
   onDetailsChange: (value: string) => void;
 }) {
+  const { t } = useTranslation('brand-asset-detail');
   const Icon = ring.icon;
   const statement = section?.statement?.trim();
 
@@ -318,44 +321,44 @@ function RingPanel({
         <span className={`text-xs font-bold uppercase tracking-wider ${ring.accent}`}>
           {ring.label}
         </span>
-        <span className="text-xs text-gray-500">{ring.subtitle}</span>
+        <span className="text-xs text-gray-500">{t(`goldenCircle.rings.${ring.key}.subtitle`)}</span>
       </div>
       <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
         <HelpCircle className="w-3 h-3" />
-        {ring.helperText}
+        {t(`goldenCircle.rings.${ring.key}.helper`)}
       </p>
 
       {isEditing ? (
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              Statement
+              {t('goldenCircle.panel.statement')}
             </label>
             <textarea
               value={section.statement}
               onChange={(e) => onStatementChange(e.target.value)}
               rows={2}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder={`Enter your ${ring.label} statement...`}
+              placeholder={t('goldenCircle.panel.statementPlaceholder', { ring: ring.label })}
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              Details
+              {t('goldenCircle.panel.details')}
             </label>
             <textarea
               value={section.details}
               onChange={(e) => onDetailsChange(e.target.value)}
               rows={3}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder={`Elaborate on your ${ring.label}...`}
+              placeholder={t('goldenCircle.panel.detailsPlaceholder', { ring: ring.label })}
             />
           </div>
         </div>
       ) : (
         <>
           {!statement ? (
-            <p className="text-sm text-gray-400 italic">Not yet filled in</p>
+            <p className="text-sm text-gray-400 italic">{t('goldenCircle.panel.notFilled')}</p>
           ) : (
             <>
               <p className="font-medium text-gray-900">{statement}</p>

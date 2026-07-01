@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Clock, GitCompare, RefreshCw } from "lucide-react";
 import { Card, Button, Skeleton, EmptyState } from "@/components/shared";
 import { useSnapshots } from "../hooks/useSnapshots";
@@ -15,6 +16,7 @@ interface HistorySectionProps {
 }
 
 export function HistorySection({ styleguide, onReanalyze, isReanalyzing }: HistorySectionProps) {
+  const { t } = useTranslation("brandstyle");
   const { data, isLoading, isError } = useSnapshots();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [compareOpen, setCompareOpen] = useState(false);
@@ -27,10 +29,9 @@ export function HistorySection({ styleguide, onReanalyze, isReanalyzing }: Histo
         <div className="flex items-start gap-3">
           <Clock className="h-5 w-5 text-teal-600 mt-0.5" />
           <div>
-            <h3 className="text-base font-semibold text-gray-900">History</h3>
+            <h3 className="text-base font-semibold text-gray-900">{t("history.title")}</h3>
             <p className="text-sm text-gray-500 mt-0.5">
-              Each analyzer run produces a snapshot. Compare versions to see how the
-              brand evolved over time — color shifts, font swaps, new components.
+              {t("history.subtitle")}
             </p>
           </div>
         </div>
@@ -38,13 +39,13 @@ export function HistorySection({ styleguide, onReanalyze, isReanalyzing }: Histo
           {snapshots.length >= 2 && (
             <Button variant="secondary" size="sm" onClick={() => setCompareOpen(true)}>
               <GitCompare className="w-3.5 h-3.5 mr-1.5" />
-              Compare
+              {t("history.compare")}
             </Button>
           )}
           {styleguide.sourceUrl && (
             <Button variant="primary" size="sm" onClick={onReanalyze} disabled={isReanalyzing}>
               <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isReanalyzing ? 'animate-spin' : ''}`} />
-              Re-analyze
+              {t("history.reanalyze")}
             </Button>
           )}
         </div>
@@ -59,18 +60,18 @@ export function HistorySection({ styleguide, onReanalyze, isReanalyzing }: Histo
       ) : isError ? (
         <Card>
           <p className="text-sm text-gray-600">
-            Could not load snapshot history. Try refreshing.
+            {t("history.loadError")}
           </p>
         </Card>
       ) : snapshots.length === 0 ? (
         <EmptyState
           icon={Clock}
-          title="No history yet"
-          description="Snapshots are created automatically each time the analyzer runs. Re-analyze the source to capture the first snapshot."
+          title={t("history.emptyTitle")}
+          description={t("history.emptyDescription")}
           action={
             styleguide.sourceUrl
               ? {
-                  label: 'Re-analyze now',
+                  label: t("history.emptyAction"),
                   onClick: onReanalyze,
                 }
               : undefined

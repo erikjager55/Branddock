@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FolderOpen, AlertCircle } from 'lucide-react';
 import { Modal, Button } from '@/components/shared';
 import { useCreateCollection } from '../../hooks/index';
@@ -21,6 +22,7 @@ const PRESET_COLORS = [
 
 /** Modal form for creating a new media collection. */
 export function CreateCollectionModal() {
+  const { t } = useTranslation('media-library');
   const isOpen = useMediaLibraryStore((s) => s.isCreateCollectionModalOpen);
   const setOpen = useMediaLibraryStore((s) => s.setCreateCollectionModalOpen);
 
@@ -61,8 +63,8 @@ export function CreateCollectionModal() {
         onError: (err) => {
           setErrorMessage(
             err instanceof Error && err.message.includes('already exists')
-              ? 'A collection with this name already exists.'
-              : 'Failed to create collection. Please try again.',
+              ? t('collections.createModal.errorExists')
+              : t('collections.createModal.errorGeneric'),
           );
         },
       },
@@ -75,14 +77,14 @@ export function CreateCollectionModal() {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Create Collection"
-      subtitle="Organize your media assets into collections."
+      title={t('collections.createModal.title')}
+      subtitle={t('collections.createModal.subtitle')}
       size="sm"
       zIndex={60}
       footer={
         <div className="flex items-center justify-end gap-3">
           <Button variant="secondary" size="md" onClick={handleClose}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
           <Button
             variant="primary"
@@ -92,7 +94,7 @@ export function CreateCollectionModal() {
             disabled={!canSubmit}
             isLoading={createCollection.isPending}
           >
-            Create Collection
+            {t('collections.createCollection')}
           </Button>
         </div>
       }
@@ -109,14 +111,14 @@ export function CreateCollectionModal() {
         {/* Name */}
         <div>
           <label htmlFor="collection-name" className="block text-sm font-medium text-gray-700 mb-1">
-            Name <span className="text-red-500">*</span>
+            {t('fields.name')} <span className="text-red-500">*</span>
           </label>
           <input
             id="collection-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Product Photos, Brand Assets..."
+            placeholder={t('collections.createModal.namePlaceholder')}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             maxLength={100}
             autoFocus
@@ -126,13 +128,13 @@ export function CreateCollectionModal() {
         {/* Description */}
         <div>
           <label htmlFor="collection-description" className="block text-sm font-medium text-gray-700 mb-1">
-            Description
+            {t('fields.description')}
           </label>
           <textarea
             id="collection-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional description for this collection..."
+            placeholder={t('collections.createModal.descriptionPlaceholder')}
             rows={3}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
             maxLength={500}
@@ -142,7 +144,7 @@ export function CreateCollectionModal() {
         {/* Color Picker */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Color
+            {t('fields.color')}
           </label>
           <div className="flex items-center gap-2">
             {PRESET_COLORS.map((color) => (

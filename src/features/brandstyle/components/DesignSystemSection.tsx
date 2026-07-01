@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Code2,
   Copy,
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function DesignSystemSection({ styleguide }: Props) {
+  const { t } = useTranslation("brandstyle");
   const { data: model, isLoading, isError, refetch, isFetching } = useDesignSystemModel();
 
   return (
@@ -43,8 +45,7 @@ export function DesignSystemSection({ styleguide }: Props) {
       ) : isError || !model ? (
         <Card>
           <p className="text-sm text-gray-600">
-            Could not build the design-system model. The styleguide may not yet have
-            semantic tokens resolved — re-run the analyzer to populate.
+            {t("designSystem.modelError")}
           </p>
         </Card>
       ) : (
@@ -73,15 +74,15 @@ function Header({
   onRefresh: () => void;
   isRefreshing: boolean;
 }) {
+  const { t } = useTranslation("brandstyle");
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="flex items-start gap-3">
         <Code2 className="h-5 w-5 text-teal-600 mt-0.5" />
         <div>
-          <h3 className="text-base font-semibold text-gray-900">Design System Output</h3>
+          <h3 className="text-base font-semibold text-gray-900">{t("designSystem.title")}</h3>
           <p className="text-sm text-gray-500 mt-0.5">
-            Portable, AI-agent-ready export of this brand's semantic tokens.
-            Powers DESIGN.md, DTCG, Tailwind, shadcn and more.
+            {t("designSystem.subtitle")}
           </p>
         </div>
       </div>
@@ -93,7 +94,7 @@ function Header({
         )}
         <Button variant="secondary" size="sm" onClick={onRefresh} disabled={isRefreshing}>
           <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-          Refresh
+          {t("actions.refresh")}
         </Button>
       </div>
     </div>
@@ -113,13 +114,14 @@ interface DesignSystemSummary {
 }
 
 function OverviewGrid({ model }: { model: DesignSystemSummary }) {
+  const { t } = useTranslation("brandstyle");
   const cards = [
-    { key: 'colors', label: 'Colors', icon: Palette, count: Object.keys(model.colors).length, unit: 'roles' },
-    { key: 'typography', label: 'Typography', icon: Type, count: Object.keys(model.typography).length, unit: 'roles' },
-    { key: 'rounded', label: 'Rounded', icon: Square, count: Object.keys(model.rounded).length, unit: 'levels' },
-    { key: 'spacing', label: 'Spacing', icon: Ruler, count: Object.keys(model.spacing).length, unit: 'levels' },
-    { key: 'elevation', label: 'Elevation', icon: Layers, count: Object.keys(model.elevation).length, unit: 'levels' },
-    { key: 'components', label: 'Components', icon: Blocks, count: Object.keys(model.components).length, unit: 'variants' },
+    { key: 'colors', icon: Palette, count: Object.keys(model.colors).length, unit: 'roles' },
+    { key: 'typography', icon: Type, count: Object.keys(model.typography).length, unit: 'roles' },
+    { key: 'rounded', icon: Square, count: Object.keys(model.rounded).length, unit: 'levels' },
+    { key: 'spacing', icon: Ruler, count: Object.keys(model.spacing).length, unit: 'levels' },
+    { key: 'elevation', icon: Layers, count: Object.keys(model.elevation).length, unit: 'levels' },
+    { key: 'components', icon: Blocks, count: Object.keys(model.components).length, unit: 'variants' },
   ];
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -128,9 +130,9 @@ function OverviewGrid({ model }: { model: DesignSystemSummary }) {
           <div className="flex items-start gap-2">
             <c.icon className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">{c.label}</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">{t(`designSystem.overview.${c.key}`)}</p>
               <p className="text-2xl font-semibold text-gray-900">{c.count}</p>
-              <p className="text-[11px] text-gray-400">{c.unit}</p>
+              <p className="text-[11px] text-gray-400">{t(`designSystem.overview.${c.unit}`)}</p>
             </div>
           </div>
         </Card>
@@ -142,6 +144,7 @@ function OverviewGrid({ model }: { model: DesignSystemSummary }) {
 // ─── Linter panel ─────────────────────────────────────
 
 function LinterPanel() {
+  const { t } = useTranslation("brandstyle");
   const { data, isLoading, isError } = useDesignSystemLint();
   const setActiveTab = useBrandstyleStore((s) => s.setActiveTab);
 
@@ -160,9 +163,9 @@ function LinterPanel() {
     <Card>
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Linter</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t("designSystem.linter.title")}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Checks inspired by @google/design.md: WCAG contrast, required roles, broken token refs.
+            {t("designSystem.linter.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -175,7 +178,7 @@ function LinterPanel() {
       {passed && findings.length === 0 ? (
         <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 p-3 rounded">
           <CheckCircle2 className="w-4 h-4" />
-          All linter checks pass — ready to ship.
+          {t("designSystem.linter.pass")}
         </div>
       ) : (
         <ul className="space-y-2">
@@ -216,6 +219,7 @@ function FindingRow({
   finding: LintFinding;
   onNavigate: (tab: LintFinding['source']['tab']) => void;
 }) {
+  const { t } = useTranslation("brandstyle");
   const Icon = finding.severity === 'error' ? XCircle : finding.severity === 'warning' ? AlertTriangle : Info;
   const color =
     finding.severity === 'error' ? 'text-red-600' : finding.severity === 'warning' ? 'text-amber-600' : 'text-blue-600';
@@ -232,7 +236,7 @@ function FindingRow({
             onClick={() => onNavigate(finding.source.tab)}
             className="text-[11px] text-teal-700 hover:underline"
           >
-            → Go to {finding.source.tab.replace('_', ' ')} tab
+            {t("designSystem.linter.goToTab", { tab: finding.source.tab.replace('_', ' ') })}
           </button>
         </div>
       </div>
@@ -243,15 +247,15 @@ function FindingRow({
 // ─── Export panel ─────────────────────────────────────
 
 function ExportPanel() {
+  const { t } = useTranslation("brandstyle");
   return (
     <Card>
       <div className="flex items-start gap-3 mb-4">
         <Download className="h-5 w-5 text-gray-400 mt-0.5" />
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Exports</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t("designSystem.exports.title")}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Download in the format of your target tool. All formats share the same
-            underlying tokens — pick what your agent reads.
+            {t("designSystem.exports.subtitle")}
           </p>
         </div>
       </div>
@@ -266,6 +270,7 @@ function ExportPanel() {
 }
 
 function ExportFormatRow({ format }: { format: typeof EXPORT_FORMATS[number] }) {
+  const { t } = useTranslation("brandstyle");
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
   const disabled = format.status === 'soon';
 
@@ -303,13 +308,13 @@ function ExportFormatRow({ format }: { format: typeof EXPORT_FORMATS[number] }) 
             <p className="text-sm font-semibold text-gray-900">{format.label}</p>
             {disabled && (
               <span className="text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                Coming soon
+                {t("designSystem.exports.comingSoon")}
               </span>
             )}
           </div>
           <p className="text-xs text-gray-500 mt-0.5">{format.description}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">
-            Consumers: {format.consumers.join(' · ')}
+            {t("designSystem.exports.consumers", { list: format.consumers.join(' · ') })}
           </p>
         </div>
       </div>
@@ -317,7 +322,7 @@ function ExportFormatRow({ format }: { format: typeof EXPORT_FORMATS[number] }) 
       <div className="flex gap-2 mt-2">
         <Button variant="secondary" size="sm" onClick={handleDownload} disabled={disabled}>
           <Download className="w-3.5 h-3.5 mr-1.5" />
-          Download
+          {t("actions.download")}
         </Button>
         <Button variant="ghost" size="sm" onClick={handleCopy} disabled={disabled}>
           {copyState === 'copied' ? (
@@ -325,7 +330,7 @@ function ExportFormatRow({ format }: { format: typeof EXPORT_FORMATS[number] }) 
           ) : (
             <Copy className="w-3.5 h-3.5 mr-1.5" />
           )}
-          {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Failed' : 'Copy'}
+          {copyState === 'copied' ? t("actions.copied") : copyState === 'error' ? t("actions.failed") : t("actions.copy")}
         </Button>
       </div>
     </div>
@@ -335,6 +340,7 @@ function ExportFormatRow({ format }: { format: typeof EXPORT_FORMATS[number] }) 
 // ─── Resolver info ────────────────────────────────────
 
 function ResolverInfo({ styleguide }: { styleguide: BrandStyleguide }) {
+  const { t } = useTranslation("brandstyle");
   const [open, setOpen] = useState(false);
   const tokens = (styleguide.semanticTokens as { diagnostics?: { wcagWarnings?: unknown[]; unresolvedRoles?: string[] } } | null) ?? null;
   const warnings = (tokens?.diagnostics?.wcagWarnings ?? []) as Array<{ role: string; message: string }>;
@@ -350,9 +356,9 @@ function ResolverInfo({ styleguide }: { styleguide: BrandStyleguide }) {
         className="w-full flex items-center justify-between"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-900">Resolver diagnostics</span>
+          <span className="text-sm font-semibold text-gray-900">{t("designSystem.resolver.title")}</span>
           <span className="text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-            {warnings.length + unresolved.length} issue{warnings.length + unresolved.length === 1 ? '' : 's'}
+            {t("designSystem.resolver.issueCount", { count: warnings.length + unresolved.length })}
           </span>
         </div>
         <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -361,13 +367,13 @@ function ResolverInfo({ styleguide }: { styleguide: BrandStyleguide }) {
         <div className="mt-3 space-y-2 text-xs text-gray-700">
           {unresolved.length > 0 && (
             <p>
-              <span className="font-semibold text-amber-700">Unresolved required roles:</span>{' '}
+              <span className="font-semibold text-amber-700">{t("designSystem.resolver.unresolved")}</span>{' '}
               {unresolved.join(', ')}
             </p>
           )}
           {warnings.map((w, i) => (
             <p key={i}>
-              <span className="font-semibold text-amber-700">WCAG:</span> <code>{w.role}</code> — {w.message}
+              <span className="font-semibold text-amber-700">{t("designSystem.resolver.wcag")}</span> <code>{w.role}</code> — {w.message}
             </p>
           ))}
         </div>

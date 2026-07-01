@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Wand2, Sparkles, Loader2 } from 'lucide-react';
 import { useConsistentModels } from '@/features/consistent-models/hooks';
 import { GenerateImageModal } from '@/features/media-library/components/creative-hub/ai-images/GenerateImageModal';
@@ -21,6 +22,7 @@ import type { InsertImageTabProps } from './types';
  * same trained-model selector. No code duplication.
  */
 export function GenerateImageTab({ onSelected, initialPrompt }: InsertImageTabProps) {
+  const { t } = useTranslation('campaigns-canvas');
   // F35 Stap 4 (audit 2026-05-13): initialPrompt accepteren maar nog niet
   // door-propageren naar GenerateImageModal (vereist API-aanpassing op
   // shared AI-Studio surface). Wel als button-tooltip getoond zodat user
@@ -91,18 +93,16 @@ export function GenerateImageTab({ onSelected, initialPrompt }: InsertImageTabPr
         <Wand2 className="h-7 w-7 text-purple-600" />
       </div>
       <h3 className="text-base font-semibold text-gray-900 mb-1">
-        Generate AI Image
+        {t('generateImage.title')}
       </h3>
       <p className="max-w-sm text-sm text-gray-500 mb-5">
-        Use a fine-tuned brand model for consistent output, or pick a fal.ai
-        provider with brand context tags. The result is auto-saved to your
-        Media Library.
+        {t('generateImage.description')}
       </p>
 
       {modelsLoading ? (
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading trained models…
+          {t('generateImage.loadingModels')}
         </div>
       ) : (
         <button
@@ -114,12 +114,12 @@ export function GenerateImageTab({ onSelected, initialPrompt }: InsertImageTabPr
           {isLinking ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Saving to library...
+              {t('generateImage.saving')}
             </>
           ) : (
             <>
               <Sparkles className="h-4 w-4" />
-              Open generator
+              {t('generateImage.openGenerator')}
             </>
           )}
         </button>

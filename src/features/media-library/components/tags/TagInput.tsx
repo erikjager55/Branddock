@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tag, X, Plus, Check } from 'lucide-react';
 import { useMediaTags, useCreateMediaTag } from '../../hooks/index';
 import type { MediaTagWithCount } from '../../types/media.types';
@@ -12,6 +13,7 @@ interface TagInputProps {
 
 /** Reusable autocomplete tag input with selected pills and dropdown. */
 export function TagInput({ selectedTagIds, onChange }: TagInputProps) {
+  const { t } = useTranslation('media-library');
   const { data: tags } = useMediaTags();
   const createTag = useCreateMediaTag();
 
@@ -120,7 +122,7 @@ export function TagInput({ selectedTagIds, onChange }: TagInputProps) {
           }}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder={selectedTags.length === 0 ? 'Search or create tags...' : ''}
+          placeholder={selectedTags.length === 0 ? t('tags.searchPlaceholder') : ''}
           className="flex-1 min-w-[80px] border-0 p-0 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0 bg-transparent"
         />
         {selectedTags.length === 0 && !isOpen && (
@@ -148,7 +150,7 @@ export function TagInput({ selectedTagIds, onChange }: TagInputProps) {
             >
               <Plus className="w-4 h-4 text-teal-600" />
               <span className="text-teal-600 font-medium">
-                Create &ldquo;{query.trim()}&rdquo;
+                {t('tags.createOption', { query: query.trim() })}
               </span>
             </button>
           )}
@@ -166,6 +168,7 @@ function SelectedPill({
   tag: MediaTagWithCount;
   onRemove: () => void;
 }) {
+  const { t } = useTranslation('media-library');
   return (
     <span className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
       {tag.color && (
@@ -182,7 +185,7 @@ function SelectedPill({
           onRemove();
         }}
         className="p-0.5 rounded-full hover:bg-gray-200 transition-colors"
-        aria-label={`Remove ${tag.name}`}
+        aria-label={t('actions.removeNamed', { name: tag.name })}
       >
         <X className="w-3 h-3" />
       </button>

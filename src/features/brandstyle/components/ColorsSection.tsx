@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Pencil, Plus, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
@@ -13,14 +14,6 @@ import type { BrandStyleguide, StyleguideColor } from "../types/brandstyle.types
 import type { ColorPairing } from "@/lib/brandstyle/color-pairings";
 
 const CATEGORY_OPTIONS: StyleguideColor["category"][] = ["PRIMARY", "SECONDARY", "ACCENT", "NEUTRAL", "SEMANTIC"];
-
-const CATEGORY_DESCRIPTIONS: Record<StyleguideColor["category"], string> = {
-  PRIMARY: "The dominant brand color — used to signal the brand at a glance",
-  SECONDARY: "Supporting brand colors — pair with primary for variety and depth",
-  ACCENT: "High-contrast highlights — calls-to-action, badges, attention",
-  NEUTRAL: "Text, surfaces, structure — the connective tissue of the system",
-  SEMANTIC: "Status feedback — info, success, warning, danger",
-};
 
 const CATEGORY_ORDER: StyleguideColor["category"][] = ["PRIMARY", "SECONDARY", "ACCENT", "NEUTRAL", "SEMANTIC"];
 
@@ -203,6 +196,7 @@ function SystemColorRow({
   onOpen: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation("brandstyle");
   return (
     <div className="group flex items-center gap-4 py-3 first:pt-0 last:pb-0">
       <button
@@ -211,7 +205,7 @@ function SystemColorRow({
         disabled={isEditing}
         className="flex-shrink-0 w-12 h-12 rounded-md border border-gray-200 hover:ring-2 hover:ring-primary/40 transition-all"
         style={{ backgroundColor: color.hex }}
-        aria-label={`View ${color.name}`}
+        aria-label={t("colors.viewColorAria", { name: color.name })}
       />
 
       <div className="flex-1 min-w-0">
@@ -231,7 +225,7 @@ function SystemColorRow({
           onClick={onDelete}
           disabled={isDeleting}
           className="flex-shrink-0 p-1.5 rounded text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
-          title="Remove color"
+          title={t("colors.removeColor")}
         >
           {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
         </button>
@@ -252,6 +246,7 @@ function InContextPreview({
   secondaries: StyleguideColor[];
   neutrals: StyleguideColor[];
 }) {
+  const { t } = useTranslation("brandstyle");
   const primary = primaries[0];
   const secondary = secondaries[0] ?? primaries[1] ?? null;
   // Pick the darkest neutral that passes WCAG AA against white. Computed
@@ -263,7 +258,7 @@ function InContextPreview({
   if (!primary) {
     return (
       <p className="text-sm text-gray-400 italic">
-        Define a PRIMARY color to see how the palette combines on a real page.
+        {t("colors.inContext.emptyPrimary")}
       </p>
     );
   }
@@ -278,15 +273,18 @@ function InContextPreview({
   // output previously produced dashes.
   const facts = [
     {
-      label: "Body text on white",
+      label: t("colors.inContext.factBodyOnWhite"),
       ratio: darkNeutral ? contrastRatio(darkNeutral.hex, "#FFFFFF") : null,
     },
     {
-      label: `${primary.name} on white`,
+      label: t("colors.inContext.factColorOnWhite", { color: primary.name }),
       ratio: contrastRatio(primary.hex, "#FFFFFF"),
     },
     {
-      label: `${primaryFg === "#FFFFFF" ? "White" : "Black"} on ${primary.name}`,
+      label: t("colors.inContext.factFgOnColor", {
+        fg: t(primaryFg === "#FFFFFF" ? "colors.inContext.white" : "colors.inContext.black"),
+        color: primary.name,
+      }),
       ratio: contrastRatio(primary.hex, primaryFg),
     },
   ];
@@ -300,17 +298,17 @@ function InContextPreview({
       >
         <p className="text-xs font-semibold uppercase tracking-wider opacity-50 mb-2">{brandName}</p>
         <h2 className="text-2xl font-semibold leading-tight">
-          A {brandName} headline on a clean surface.
+          {t("colors.inContext.headline", { brand: brandName })}
         </h2>
         <p className="mt-3 max-w-xl text-sm opacity-75 leading-relaxed">
-          Body copy renders against neutral structure — the brand color enters at moments of action.
+          {t("colors.inContext.bodyCopy")}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <span
             className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium"
             style={{ backgroundColor: primary.hex, color: primaryFg }}
           >
-            Primary action
+            {t("colors.inContext.primaryAction")}
           </span>
           {secondary && (
             <span
@@ -321,11 +319,11 @@ function InContextPreview({
                 borderColor: secondary.hex,
               }}
             >
-              Secondary
+              {t("colors.inContext.secondary")}
             </span>
           )}
           <span className="text-sm font-medium" style={{ color: primary.hex }}>
-            Inline link →
+            {t("colors.inContext.inlineLink")}
           </span>
         </div>
       </div>
@@ -337,17 +335,17 @@ function InContextPreview({
       >
         <p className="text-xs font-semibold uppercase tracking-wider opacity-75 mb-2">{brandName}</p>
         <h3 className="text-xl font-semibold leading-tight">
-          Reverse composition on the primary color.
+          {t("colors.inContext.reverseHeadline")}
         </h3>
         <p className="mt-2 max-w-xl text-sm opacity-90 leading-relaxed">
-          Pair {primary.name.toLowerCase()} with high-contrast typography for hero moments and full-bleed sections.
+          {t("colors.inContext.reverseBody", { color: primary.name.toLowerCase() })}
         </p>
         <div className="mt-4">
           <span
             className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium"
             style={{ backgroundColor: lightSurface, color: darkText }}
           >
-            Light CTA
+            {t("colors.inContext.lightCta")}
           </span>
         </div>
       </div>
@@ -355,7 +353,7 @@ function InContextPreview({
       {/* Contrast facts strip */}
       <div className="border-t border-gray-100 pt-4">
         <p className="text-[10px] font-semibold tracking-wider text-gray-500 uppercase mb-3">
-          Contrast checks
+          {t("colors.inContext.contrastChecks")}
         </p>
         <ul className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
           {facts.map((f, i) => {
@@ -388,6 +386,7 @@ function AddColorForm({
   onCancel: () => void;
   isAdding: boolean;
 }) {
+  const { t } = useTranslation("brandstyle");
   const [name, setName] = useState("");
   const [hex, setHex] = useState("#");
   const [category, setCategory] = useState<StyleguideColor["category"]>("PRIMARY");
@@ -403,21 +402,21 @@ function AddColorForm({
     <div className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end">
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Name</label>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">{t("colors.addForm.name")}</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Ocean Blue"
+            placeholder={t("colors.addForm.namePlaceholder")}
             className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Hex</label>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">{t("colors.addForm.hex")}</label>
           <div className="flex items-center gap-2">
             <input
               value={hex}
               onChange={(e) => setHex(e.target.value)}
-              placeholder="#2563EB"
+              placeholder={t("colors.addForm.hexPlaceholder")}
               maxLength={7}
               className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
@@ -429,7 +428,7 @@ function AddColorForm({
           </div>
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Category</label>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">{t("colors.addForm.category")}</label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as StyleguideColor["category"])}
@@ -444,10 +443,10 @@ function AddColorForm({
         </div>
         <div className="flex gap-2">
           <Button variant="primary" size="sm" onClick={handleSubmit} isLoading={isAdding}>
-            Add
+            {t("actions.add")}
           </Button>
           <Button variant="secondary" size="sm" onClick={onCancel}>
-            Cancel
+            {t("actions.cancel")}
           </Button>
         </div>
       </div>
@@ -465,6 +464,7 @@ const WCAG_BADGE: Record<string, string> = {
 };
 
 function ColorPairingsPanel({ pairings }: { pairings: ColorPairing[] }) {
+  const { t } = useTranslation("brandstyle");
   // Element-level guard: colorPairings is een rauwe Json-kolom; legacy/handmatig
   // gemuteerde of drift-records mogen niet blind renderen ("undefined:1").
   const valid = (pairings ?? []).filter(
@@ -480,8 +480,8 @@ function ColorPairingsPanel({ pairings }: { pairings: ColorPairing[] }) {
   return (
     <Card>
       <div className="flex items-center justify-between gap-3 mb-5">
-        <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Color combinations</h3>
-        <p className="text-xs text-gray-400">WCAG-verified combinations from the palette</p>
+        <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">{t("colors.pairingsTitle")}</h3>
+        <p className="text-xs text-gray-400">{t("colors.pairingsSubtitle")}</p>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {valid.map((p, i) => (
@@ -510,6 +510,7 @@ function ColorPairingsPanel({ pairings }: { pairings: ColorPairing[] }) {
 // ─── Main component ───────────────────────────────────
 
 export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
+  const { t } = useTranslation("brandstyle");
   const { openColorModal } = useBrandstyleStore();
   const updateColors = useUpdateSection("colors");
   const addColorMutation = useAddColor();
@@ -539,7 +540,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
     setColorError(null);
     addColorMutation.mutate(data, {
       onSuccess: () => setShowAddColorForm(false),
-      onError: (err) => setColorError(err instanceof Error ? err.message : "Could not add color"),
+      onError: (err) => setColorError(err instanceof Error ? err.message : t("colors.errors.addColor")),
     });
   };
 
@@ -547,7 +548,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
     setColorError(null);
     setDeletingColorId(colorId);
     deleteColorMutation.mutate(colorId, {
-      onError: (err) => setColorError(err instanceof Error ? err.message : "Could not delete color"),
+      onError: (err) => setColorError(err instanceof Error ? err.message : t("colors.errors.deleteColor")),
       onSettled: () => setDeletingColorId(null),
     });
   };
@@ -576,8 +577,8 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
       {primaries.length > 0 && (
         <Card>
           <div className="flex items-center justify-between gap-3 mb-5">
-            <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Hero Palette</h3>
-            <p className="text-xs text-gray-400">The colors that define the brand</p>
+            <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">{t("colors.heroPaletteTitle")}</h3>
+            <p className="text-xs text-gray-400">{t("colors.heroPaletteSubtitle")}</p>
           </div>
           <div className={`grid ${heroGridCols} gap-6`}>
             {primaries.map((c) => (
@@ -593,12 +594,12 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
       {/* ── Block 2: Color System ───────────────────────── */}
       <Card>
         <div className="flex items-center justify-between gap-3 mb-5">
-          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Color System</h3>
+          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">{t("colors.systemTitle")}</h3>
           {canEdit && (
             <button
               onClick={() => setIsEditingColors((v) => !v)}
               className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0"
-              title={isEditingColors ? "Done editing" : "Edit colors"}
+              title={isEditingColors ? t("colors.doneEditing") : t("colors.editColors")}
             >
               {isEditingColors ? <X className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
             </button>
@@ -630,7 +631,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
                 <p className="text-[11px] font-semibold tracking-wider text-gray-500 uppercase mb-1">
                   {cat}
                 </p>
-                <p className="text-xs text-gray-400 mb-4">{CATEGORY_DESCRIPTIONS[cat]}</p>
+                <p className="text-xs text-gray-400 mb-4">{t(`colors.categoryDescriptions.${cat}`)}</p>
                 <div className="divide-y divide-gray-100">
                   {colors.map((color) => (
                     <SystemColorRow
@@ -651,7 +652,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
                     section="colors-brand"
                     reviews={styleguide.reviews ?? []}
                     canEdit={canEdit}
-                    label="Review brand colors"
+                    label={t("colors.review.brand")}
                   />
                 )}
                 {showNeutralReview && (
@@ -659,7 +660,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
                     section="colors-neutrals"
                     reviews={styleguide.reviews ?? []}
                     canEdit={canEdit}
-                    label="Review neutrals"
+                    label={t("colors.review.neutrals")}
                   />
                 )}
               </div>
@@ -683,7 +684,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
                 className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                Add color
+                {t("colors.addColor")}
               </button>
             )}
           </div>
@@ -701,7 +702,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
               className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Add colors manually
+              {t("colors.addManually")}
             </button>
           </div>
         )}
@@ -710,8 +711,8 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
       {/* ── Block 3: In Context (collapsed) ──────────────── */}
       {primaries.length > 0 && (
         <CollapsibleCard
-          title="In Context"
-          subtitle={`How ${brandName}'s colors combine on a real page`}
+          title={t("colors.inContext.cardTitle")}
+          subtitle={t("colors.inContext.cardSubtitle", { brand: brandName })}
         >
           <InContextPreview
             brandName={brandName}
@@ -724,10 +725,10 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
 
       {/* ── Block 4: Don'ts (collapsed) ──────────────────── */}
       <CollapsibleCard
-        title="Don'ts"
+        title={t("colors.donts.title")}
         subtitle={
           styleguide.colorDonts.length > 0
-            ? `${styleguide.colorDonts.length} rule${styleguide.colorDonts.length === 1 ? "" : "s"}`
+            ? t("colors.donts.ruleCount", { count: styleguide.colorDonts.length })
             : undefined
         }
       >
@@ -736,7 +737,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
           items={styleguide.colorDonts}
           canEdit={canEdit}
           isSaving={updateColors.isPending}
-          placeholder="Add a color don't..."
+          placeholder={t("colors.donts.placeholder")}
           onSave={(items) => updateColors.mutate({ colorDonts: items })}
         >
           {(items) =>
@@ -750,7 +751,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400">No color don&apos;ts defined yet.</p>
+              <p className="text-sm text-gray-400">{t("colors.donts.empty")}</p>
             )
           }
         </EditableStringList>
@@ -776,12 +777,7 @@ interface SemanticColorsData {
   danger?: SemanticTint;
 }
 
-const SEMANTIC_LABELS: Record<keyof SemanticColorsData, { label: string; description: string }> = {
-  info: { label: "Info", description: "Informational notices, neutral messaging" },
-  success: { label: "Success", description: "Confirmations, positive feedback" },
-  warning: { label: "Warning", description: "Caution, attention required" },
-  danger: { label: "Danger", description: "Errors, destructive actions" },
-};
+const SEMANTIC_KEYS: (keyof SemanticColorsData)[] = ["info", "success", "warning", "danger"];
 
 function SemanticTintsPanel({
   styleguide,
@@ -790,6 +786,7 @@ function SemanticTintsPanel({
   styleguide: BrandStyleguide;
   canEdit: boolean;
 }) {
+  const { t } = useTranslation("brandstyle");
   const semantic: SemanticColorsData =
     (styleguide as unknown as { semanticColors?: SemanticColorsData }).semanticColors ?? {};
 
@@ -806,17 +803,16 @@ function SemanticTintsPanel({
     return (
       <Card>
         <div className="mb-3">
-          <h3 className="text-sm font-semibold text-gray-900">Semantic Tints</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t("colors.semantic.title")}</h3>
           <p className="text-xs text-gray-400 mt-1">
-            Info / success / warning / danger tints — not yet detected. Analyze a site with
-            status UI to populate, or add manually via Color System.
+            {t("colors.semantic.emptyDescription")}
           </p>
         </div>
         <ReviewDraftPanel
           section="colors-semantic"
           reviews={styleguide.reviews ?? []}
           canEdit={canEdit}
-          label="Review semantic tints"
+          label={t("colors.review.semantic")}
         />
       </Card>
     );
@@ -825,20 +821,20 @@ function SemanticTintsPanel({
   return (
     <Card>
       <div className="mb-4">
-        <h3 className="text-sm font-semibold text-gray-900">Semantic Tints</h3>
-        <p className="text-xs text-gray-400 mt-1">Status colors for info, success, warning, and danger messaging</p>
+        <h3 className="text-sm font-semibold text-gray-900">{t("colors.semantic.title")}</h3>
+        <p className="text-xs text-gray-400 mt-1">{t("colors.semantic.description")}</p>
       </div>
 
       {hasAnyTint && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(Object.keys(SEMANTIC_LABELS) as (keyof SemanticColorsData)[]).map((key) => {
+          {SEMANTIC_KEYS.map((key) => {
             const tint = semantic[key];
             if (!tint || (!tint.light && !tint.base && !tint.dark)) return null;
-            const meta = SEMANTIC_LABELS[key];
+            const label = t(`colors.semantic.labels.${key}`);
             return (
               <div key={key} className="border border-gray-100 rounded-md p-3">
-                <p className="text-xs font-semibold text-gray-700">{meta.label}</p>
-                <p className="text-[11px] text-gray-400 mb-2">{meta.description}</p>
+                <p className="text-xs font-semibold text-gray-700">{label}</p>
+                <p className="text-[11px] text-gray-400 mb-2">{t(`colors.semantic.labels.${key}Desc`)}</p>
                 <div className="flex gap-1.5">
                   {(["light", "base", "dark"] as const).map((variant) =>
                     tint[variant] ? (
@@ -846,7 +842,7 @@ function SemanticTintsPanel({
                         <div
                           className="h-10 rounded border border-gray-200"
                           style={{ backgroundColor: tint[variant] }}
-                          title={`${meta.label} ${variant}: ${tint[variant]}`}
+                          title={`${label} ${variant}: ${tint[variant]}`}
                         />
                         <p className="text-[10px] text-gray-500 mt-1 font-mono">
                           {tint[variant]}
@@ -865,7 +861,7 @@ function SemanticTintsPanel({
         section="colors-semantic"
         reviews={styleguide.reviews ?? []}
         canEdit={canEdit}
-        label="Review semantic tints"
+        label={t("colors.review.semantic")}
       />
     </Card>
   );

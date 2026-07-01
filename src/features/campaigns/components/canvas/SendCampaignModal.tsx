@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Mail, Send, AlertCircle, Users } from 'lucide-react';
 import { Modal, Button } from '@/components/shared';
 import { useSendCampaign } from '../../hooks/campaign-send.hooks';
@@ -45,6 +46,7 @@ export function SendCampaignModal({
   deliverableId,
   defaultSubject,
 }: SendCampaignModalProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const [recipientsRaw, setRecipientsRaw] = useState('');
   const [subject, setSubject] = useState(defaultSubject);
   const [confirm, setConfirm] = useState(false);
@@ -80,19 +82,17 @@ export function SendCampaignModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="md" title="Send Email Campaign">
+    <Modal isOpen={isOpen} onClose={handleClose} size="md" title={t('sendCampaign.title')}>
       <div className="space-y-5">
         <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
           <Mail className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-900">
-            Recipients receive the approved email via Emailit. Each send goes to the
-            sending domain configured in the environment; tracking + bounces flow
-            back through the webhook.
+            {t('sendCampaign.intro')}
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-900 mb-1">Subject</label>
+          <label className="block text-sm font-medium text-gray-900 mb-1">{t('sendCampaign.subject')}</label>
           <input
             type="text"
             value={subject}
@@ -104,10 +104,10 @@ export function SendCampaignModal({
 
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-1">
-            Recipients
+            {t('sendCampaign.recipients')}
           </label>
           <p className="text-xs text-gray-500 mb-2">
-            Paste addresses separated by commas, spaces, or newlines. Max {MAX_RECIPIENTS} per send.
+            {t('sendCampaign.recipientsHint', { max: MAX_RECIPIENTS })}
           </p>
           <textarea
             value={recipientsRaw}
@@ -116,24 +116,24 @@ export function SendCampaignModal({
               setConfirm(false);
             }}
             rows={6}
-            placeholder="alice@example.com, bob@example.com&#10;carol@example.com"
+            placeholder={t('sendCampaign.recipientsPlaceholder')}
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500 resize-y"
           />
           <div className="mt-2 flex items-center gap-4 text-xs">
             <span className="inline-flex items-center gap-1 text-gray-600">
               <Users className="h-3.5 w-3.5" />
-              {valid.length} valid
+              {t('sendCampaign.valid', { count: valid.length })}
             </span>
             {invalid.length > 0 && (
               <span className="inline-flex items-center gap-1 text-amber-600">
                 <AlertCircle className="h-3.5 w-3.5" />
-                {invalid.length} invalid (skipped)
+                {t('sendCampaign.invalid', { count: invalid.length })}
               </span>
             )}
             {overLimit && (
               <span className="inline-flex items-center gap-1 text-red-600">
                 <AlertCircle className="h-3.5 w-3.5" />
-                Over {MAX_RECIPIENTS} limit
+                {t('sendCampaign.overLimit', { max: MAX_RECIPIENTS })}
               </span>
             )}
           </div>
@@ -148,13 +148,13 @@ export function SendCampaignModal({
 
         {confirm && canSend && (
           <div className="p-3 rounded-lg bg-amber-50 border border-amber-300 text-sm text-amber-900">
-            You are about to send this email to <strong>{valid.length}</strong> recipient{valid.length === 1 ? '' : 's'}. Click Send again to confirm.
+            {t('sendCampaign.confirmPrefix')} <strong>{valid.length}</strong> {t('sendCampaign.confirmSuffix', { count: valid.length })}
           </div>
         )}
 
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200">
           <Button variant="secondary" onClick={handleClose} disabled={sendMutation.isPending}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
           <Button
             variant="primary"
@@ -164,10 +164,10 @@ export function SendCampaignModal({
             isLoading={sendMutation.isPending}
           >
             {sendMutation.isPending
-              ? 'Sending…'
+              ? t('sendCampaign.sending')
               : confirm
-                ? `Confirm send to ${valid.length}`
-                : `Send to ${valid.length}`}
+                ? t('sendCampaign.confirmSend', { count: valid.length })
+                : t('sendCampaign.sendTo', { count: valid.length })}
           </Button>
         </div>
       </div>

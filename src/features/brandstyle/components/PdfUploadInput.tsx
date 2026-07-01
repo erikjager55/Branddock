@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Upload, FileText, X } from "lucide-react";
 import { Button, Card } from "@/components/shared";
 import { useAnalyzePdf } from "../hooks/useBrandstyleHooks";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 
 export function PdfUploadInput() {
+  const { t } = useTranslation("brandstyle");
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -17,11 +19,11 @@ export function PdfUploadInput() {
   const handleFile = (f: File) => {
     setError(null);
     if (!f.name.endsWith(".pdf")) {
-      setError("Only PDF files are accepted");
+      setError(t("pdfInput.errorNotPdf"));
       return;
     }
     if (f.size > 20 * 1024 * 1024) {
-      setError("File size must be under 20MB");
+      setError(t("pdfInput.errorTooLarge"));
       return;
     }
     setFile(f);
@@ -41,7 +43,7 @@ export function PdfUploadInput() {
         startAnalysis(data.jobId);
       },
       onError: () => {
-        setError("Failed to start analysis. Please try again.");
+        setError(t("errors.startAnalysis"));
       },
     });
   };
@@ -51,7 +53,7 @@ export function PdfUploadInput() {
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
           <FileText className="w-4 h-4" />
-          Upload brand guidelines PDF
+          {t("pdfInput.label")}
         </div>
 
         {!file ? (
@@ -72,9 +74,9 @@ export function PdfUploadInput() {
           >
             <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
             <p className="text-sm text-gray-600 mb-1">
-              Drag and drop your PDF here, or click to browse
+              {t("pdfInput.dropText")}
             </p>
-            <p className="text-xs text-gray-400">PDF files up to 20MB</p>
+            <p className="text-xs text-gray-400">{t("pdfInput.dropHint")}</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -115,7 +117,7 @@ export function PdfUploadInput() {
             onClick={handleAnalyze}
             isLoading={analyzePdf.isPending}
           >
-            Analyze PDF
+            {t("pdfInput.analyzeButton")}
           </Button>
         )}
       </div>

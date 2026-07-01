@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -66,6 +67,7 @@ export function CanvasWorkshopApproved({
   onBack,
   onSwitchToInProgress
 }: CanvasWorkshopApprovedProps) {
+  const { t } = useTranslation('canvases');
   const [isReportLocked, setIsReportLocked] = useState(true);
   const [currentWorkshopIndex, setCurrentWorkshopIndex] = useState(0);
 
@@ -107,7 +109,7 @@ export function CanvasWorkshopApproved({
       <div className="space-y-6">
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No completed workshops found</p>
+            <p className="text-muted-foreground">{t('approved.noWorkshops')}</p>
           </CardContent>
         </Card>
       </div>
@@ -126,12 +128,12 @@ export function CanvasWorkshopApproved({
             className="gap-2"
           >
             <ChevronLeft className="h-4 w-4" />
-            Previous Workshop
+            {t('approved.previousWorkshop')}
           </Button>
 
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
-              Workshop {currentWorkshopIndex + 1} of {workshops.length}
+              {t('approved.workshopOf', { current: currentWorkshopIndex + 1, total: workshops.length })}
             </p>
             <p className="font-medium text-lg mt-1">{currentResults.name}</p>
           </div>
@@ -142,7 +144,7 @@ export function CanvasWorkshopApproved({
             disabled={currentWorkshopIndex === workshops.length - 1}
             className="gap-2"
           >
-            Next Workshop
+            {t('approved.nextWorkshop')}
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -157,20 +159,20 @@ export function CanvasWorkshopApproved({
             </div>
             <div className="flex-1">
               <h3 className="text-xl font-semibold text-[#1F2937] dark:text-green-400 mb-2">
-                Workshop Complete
+                {t('approved.workshopComplete')}
               </h3>
               <p className="text-slate-700 dark:text-green-300 mb-4 leading-relaxed">
-                Your workshop results have been successfully captured from {currentResults.participantCount} participants across a {currentResults.sessionDuration} session.
+                {t('approved.resultsCaptured', { count: currentResults.participantCount, duration: currentResults.sessionDuration })}
               </p>
               <div className="flex items-center gap-3 flex-wrap text-sm text-slate-600 dark:text-green-300">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  <span>Completed: {currentResults.completedDate}</span>
+                  <span>{t('common.completedDate', { date: currentResults.completedDate })}</span>
                 </div>
                 <span className="text-slate-400">•</span>
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  <span>{currentResults.participantCount} participants</span>
+                  <span>{t('approved.participantsCount', { count: currentResults.participantCount })}</span>
                 </div>
                 <span className="text-slate-400">•</span>
                 <div className="flex items-center gap-2">
@@ -181,7 +183,7 @@ export function CanvasWorkshopApproved({
                   <>
                     <span className="text-slate-400">•</span>
                     <div className="flex items-center gap-2">
-                      <span>Facilitator: {currentWorkshop.facilitatorName}</span>
+                      <span>{t('approved.facilitator', { name: currentWorkshop.facilitatorName })}</span>
                     </div>
                   </>
                 )}
@@ -202,22 +204,22 @@ export function CanvasWorkshopApproved({
               {isReportLocked ? (
                 <>
                   <Lock className="h-4 w-4 mr-2" />
-                  Locked
+                  {t('status.locked')}
                 </>
               ) : (
                 <>
                   <Unlock className="h-4 w-4 mr-2" />
-                  Unlocked
+                  {t('status.unlocked')}
                 </>
               )}
             </Button>
             <Button variant="outline" className="hover:border-[#1FD1B2] hover:text-[#1FD1B2] transition-colors bg-white/80 dark:bg-slate-900/80">
               <Download className="h-4 w-4 mr-2" />
-              PDF download
+              {t('approved.pdfDownload')}
             </Button>
             <Button variant="outline" className="hover:border-[#1FD1B2] hover:text-[#1FD1B2] transition-colors bg-white/80 dark:bg-slate-900/80">
               <Table className="h-4 w-4 mr-2" />
-              Download raw data
+              {t('approved.downloadRawData')}
             </Button>
           </div>
         </CardContent>
@@ -237,7 +239,7 @@ export function CanvasWorkshopApproved({
           size="lg"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Return to In Progress
+          {t('approved.returnToInProgress')}
         </Button>
         <Button 
           size="lg" 
@@ -245,7 +247,7 @@ export function CanvasWorkshopApproved({
           className="bg-[#1FD1B2] hover:bg-[#1FD1B2]/90 text-white shadow-sm"
         >
           <CheckCircle className="h-4 w-4 mr-2" />
-          Done
+          {t('actions.done')}
         </Button>
       </div>
     </div>

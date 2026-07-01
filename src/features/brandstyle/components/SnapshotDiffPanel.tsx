@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Palette, Type, Square, Ruler, Layers, Blocks, Sparkles } from "lucide-react";
 import type { SnapshotDiff } from "@/lib/brandstyle/snapshots/snapshot-diff";
 
@@ -10,13 +11,14 @@ interface Props {
 }
 
 export function SnapshotDiffPanel({ diff, summary }: Props) {
+  const { t } = useTranslation("brandstyle");
   const [showCosmetic, setShowCosmetic] = useState(false);
   const cosmeticCount = diff.colors.filter((c) => c.cosmetic).length;
 
   const sections = [
     {
       key: 'colors',
-      label: 'Colors',
+      label: t('diff.sections.colors'),
       icon: Palette,
       items: diff.colors
         .filter((c) => showCosmetic || !c.cosmetic)
@@ -27,15 +29,15 @@ export function SnapshotDiffPanel({ diff, summary }: Props) {
     },
     {
       key: 'typography',
-      label: 'Typography',
+      label: t('diff.sections.typography'),
       icon: Type,
-      items: diff.typography.map((t) => (
-        <li key={t.role} className="flex items-baseline gap-2 text-xs">
-          <code className="font-mono text-gray-500">{t.role}</code>
+      items: diff.typography.map((ty) => (
+        <li key={ty.role} className="flex items-baseline gap-2 text-xs">
+          <code className="font-mono text-gray-500">{ty.role}</code>
           <span className="text-gray-700">
-            {!t.from ? `added: ${t.to?.fontFamily} ${t.to?.fontSize}` :
-             !t.to ? `removed (was ${t.from.fontFamily})` :
-             t.fields.map((f) => `${f}: ${t.from![f] ?? '—'} → ${t.to![f] ?? '—'}`).join(', ')}
+            {!ty.from ? `added: ${ty.to?.fontFamily} ${ty.to?.fontSize}` :
+             !ty.to ? `removed (was ${ty.from.fontFamily})` :
+             ty.fields.map((f) => `${f}: ${ty.from![f] ?? '—'} → ${ty.to![f] ?? '—'}`).join(', ')}
           </span>
         </li>
       )),
@@ -43,7 +45,7 @@ export function SnapshotDiffPanel({ diff, summary }: Props) {
     },
     {
       key: 'rounded',
-      label: 'Rounded',
+      label: t('diff.sections.rounded'),
       icon: Square,
       items: diff.rounded.map((r) => (
         <li key={r.key} className="flex items-baseline gap-2 text-xs">
@@ -55,7 +57,7 @@ export function SnapshotDiffPanel({ diff, summary }: Props) {
     },
     {
       key: 'spacing',
-      label: 'Spacing',
+      label: t('diff.sections.spacing'),
       icon: Ruler,
       items: diff.spacing.map((s) => (
         <li key={s.key} className="flex items-baseline gap-2 text-xs">
@@ -67,13 +69,13 @@ export function SnapshotDiffPanel({ diff, summary }: Props) {
     },
     {
       key: 'elevation',
-      label: 'Elevation',
+      label: t('diff.sections.elevation'),
       icon: Layers,
       items: diff.elevation.map((e) => (
         <li key={e.level} className="flex items-baseline gap-2 text-xs">
           <code className="font-mono text-gray-500">elevation.{e.level}</code>
           <span className="text-gray-700 truncate">
-            {!e.from ? 'added' : !e.to ? 'removed' : 'changed'}
+            {!e.from ? t('diff.added') : !e.to ? t('diff.removed') : t('diff.changed')}
           </span>
         </li>
       )),
@@ -81,13 +83,13 @@ export function SnapshotDiffPanel({ diff, summary }: Props) {
     },
     {
       key: 'components',
-      label: 'Components',
+      label: t('diff.sections.components'),
       icon: Blocks,
       items: diff.components.map((c) => (
         <li key={c.variant} className="flex items-baseline gap-2 text-xs">
           <code className="font-mono text-gray-500">{c.variant}</code>
           <span className="text-gray-700">
-            {!c.from ? 'added' : !c.to ? 'removed' : 'props changed'}
+            {!c.from ? t('diff.added') : !c.to ? t('diff.removed') : t('diff.propsChanged')}
           </span>
         </li>
       )),
@@ -104,14 +106,14 @@ export function SnapshotDiffPanel({ diff, summary }: Props) {
   if (diff.isTrivial && !showCosmetic) {
     return (
       <div className="rounded border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600 flex items-center justify-between">
-        <span>No significant changes — only metadata or cosmetic adjustments.</span>
+        <span>{t('diff.trivial')}</span>
         {cosmeticCount > 0 && (
           <button
             type="button"
             onClick={() => setShowCosmetic(true)}
             className="text-teal-700 hover:underline"
           >
-            Show {cosmeticCount} cosmetic
+            {t('diff.showCosmetic', { count: cosmeticCount })}
           </button>
         )}
       </div>
@@ -122,7 +124,7 @@ export function SnapshotDiffPanel({ diff, summary }: Props) {
     <div className="space-y-4">
       {summary.length > 0 && (
         <div className="rounded border border-teal-100 bg-teal-50/50 p-3">
-          <p className="text-xs font-medium text-teal-900 mb-1.5">Summary</p>
+          <p className="text-xs font-medium text-teal-900 mb-1.5">{t('diff.summary')}</p>
           <ul className="space-y-1 text-xs text-gray-800">
             {summary.map((s, i) => (
               <li key={i}>• {s}</li>
@@ -146,16 +148,16 @@ export function SnapshotDiffPanel({ diff, summary }: Props) {
           <div className="rounded border border-gray-200 p-3">
             <div className="flex items-center gap-1.5 mb-2">
               <Sparkles className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-xs font-semibold text-gray-700">Brand Foundation</span>
+              <span className="text-xs font-semibold text-gray-700">{t('diff.brandFoundation')}</span>
             </div>
             <ul className="space-y-1 text-xs text-gray-700">
-              {bf.assetsAdded.length > 0 && <li>+ {bf.assetsAdded.length} brand assets</li>}
-              {bf.assetsRemoved.length > 0 && <li>− {bf.assetsRemoved.length} brand assets</li>}
-              {bf.assetsChanged.length > 0 && <li>~ {bf.assetsChanged.length} brand assets updated</li>}
-              {bf.personasAdded.length > 0 && <li>+ {bf.personasAdded.length} personas</li>}
-              {bf.personasRemoved.length > 0 && <li>− {bf.personasRemoved.length} personas</li>}
-              {bf.competitorsAdded.length > 0 && <li>+ {bf.competitorsAdded.length} competitors</li>}
-              {bf.competitorsRemoved.length > 0 && <li>− {bf.competitorsRemoved.length} competitors</li>}
+              {bf.assetsAdded.length > 0 && <li>{t('diff.bf.assetsAdded', { count: bf.assetsAdded.length })}</li>}
+              {bf.assetsRemoved.length > 0 && <li>{t('diff.bf.assetsRemoved', { count: bf.assetsRemoved.length })}</li>}
+              {bf.assetsChanged.length > 0 && <li>{t('diff.bf.assetsChanged', { count: bf.assetsChanged.length })}</li>}
+              {bf.personasAdded.length > 0 && <li>{t('diff.bf.personasAdded', { count: bf.personasAdded.length })}</li>}
+              {bf.personasRemoved.length > 0 && <li>{t('diff.bf.personasRemoved', { count: bf.personasRemoved.length })}</li>}
+              {bf.competitorsAdded.length > 0 && <li>{t('diff.bf.competitorsAdded', { count: bf.competitorsAdded.length })}</li>}
+              {bf.competitorsRemoved.length > 0 && <li>{t('diff.bf.competitorsRemoved', { count: bf.competitorsRemoved.length })}</li>}
             </ul>
           </div>
         )}
@@ -167,7 +169,7 @@ export function SnapshotDiffPanel({ diff, summary }: Props) {
           onClick={() => setShowCosmetic((v) => !v)}
           className="text-xs text-teal-700 hover:underline"
         >
-          {showCosmetic ? 'Hide' : 'Show'} {cosmeticCount} cosmetic color change{cosmeticCount === 1 ? '' : 's'}
+          {showCosmetic ? t('diff.hideLabel') : t('diff.showLabel')} {t('diff.cosmeticColorChanges', { count: cosmeticCount })}
         </button>
       )}
     </div>

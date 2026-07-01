@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -32,6 +33,7 @@ export function CanvasWorkspaceShared({
   onBlockEdit,
   onBlockRegenerate
 }: CanvasWorkspaceSharedProps) {
+  const { t } = useTranslation('canvases');
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {blocks.map((block) => {
@@ -62,7 +64,7 @@ export function CanvasWorkspaceShared({
                 {readOnly ? (
                   <Badge variant="outline" className="text-xs font-medium bg-muted/50">
                     <Lock className="h-3 w-3 mr-1" />
-                    Locked
+                    {t('status.locked')}
                   </Badge>
                 ) : (
                   <div className="flex items-center gap-1">
@@ -72,7 +74,7 @@ export function CanvasWorkspaceShared({
                         size="sm"
                         className="h-8 w-8 p-0 rounded-lg hover:bg-primary/10 hover:text-primary"
                         onClick={() => onBlockRegenerate(block.id)}
-                        title="Regenerate with AI"
+                        title={t('workspaceShared.regenerateTooltip')}
                       >
                         <Sparkles className="h-3.5 w-3.5" />
                       </Button>
@@ -82,7 +84,7 @@ export function CanvasWorkspaceShared({
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0 rounded-lg hover:bg-primary/10 hover:text-primary"
-                        title="Edit content"
+                        title={t('workspaceShared.editTooltip')}
                       >
                         <Edit3 className="h-3.5 w-3.5" />
                       </Button>
@@ -94,14 +96,14 @@ export function CanvasWorkspaceShared({
               {readOnly ? (
                 <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed min-h-[120px] p-3 bg-background/50 rounded-lg border">
                   {block.content || (
-                    <span className="italic text-muted-foreground/60">No content available</span>
+                    <span className="italic text-muted-foreground/60">{t('workspaceShared.noContent')}</span>
                   )}
                 </div>
               ) : (
                 <Textarea
                   value={block.content}
                   onChange={(e) => onBlockEdit?.(block.id, e.target.value)}
-                  placeholder={`Define your ${block.title.toLowerCase()}...`}
+                  placeholder={t('workspaceShared.blockPlaceholder', { title: block.title.toLowerCase() })}
                   className="min-h-[140px] text-sm resize-none border-2 focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               )}

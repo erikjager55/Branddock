@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Zap } from "lucide-react";
 import { AddContentModal } from "../shared/AddContentModal";
 import { PageShell, PageHeader } from "@/components/ui/layout";
@@ -38,6 +39,7 @@ export function ActiveCampaignsPage({
   onNavigateToContentWizard,
   onResumeWizard,
 }: ActiveCampaignsPageProps) {
+  const { t } = useTranslation("campaigns-overview");
   // Reset persisted wizard state if it belongs to a different workspace.
   // Defense-in-depth alongside clearAllStorage on workspace switch.
   useEnsureWizardWorkspace();
@@ -132,17 +134,17 @@ export function ActiveCampaignsPage({
     <PageShell>
       <PageHeader
         moduleKey="campaigns"
-        title="Campaigns"
-        subtitle="Plan, create, and manage your campaigns"
+        title={t("page.title")}
+        subtitle={t("page.subtitle")}
         actions={
           <div className="flex items-center gap-3">
             <Button data-testid="create-content-button" variant="secondary" onClick={() => setShowAddContentModal(true)} className="gap-2">
               <Zap className="h-4 w-4" />
-              Create Content
+              {t("actions.createContent")}
             </Button>
             <Button data-testid="new-campaign-button" onClick={handleNewCampaignClick} className="gap-2">
               <Plus className="h-4 w-4" />
-              New Campaign
+              {t("actions.newCampaign")}
               {draftCount > 0 && (
                 <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1.5 text-xs font-semibold">
                   {draftCount}

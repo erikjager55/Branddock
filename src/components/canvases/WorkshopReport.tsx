@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -37,6 +38,7 @@ interface WorkshopReportProps {
 }
 
 export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) {
+  const { t } = useTranslation('canvases');
   const [activeTab, setActiveTab] = useState('overview');
   
   // Executive Summary state
@@ -169,11 +171,11 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="canvas">Canvas</TabsTrigger>
-          <TabsTrigger value="workshop">Workshop</TabsTrigger>
-          <TabsTrigger value="notes">Notes</TabsTrigger>
-          <TabsTrigger value="gallery">Gallery</TabsTrigger>
+          <TabsTrigger value="overview">{t('report.tabs.overview')}</TabsTrigger>
+          <TabsTrigger value="canvas">{t('report.tabs.canvas')}</TabsTrigger>
+          <TabsTrigger value="workshop">{t('report.tabs.workshop')}</TabsTrigger>
+          <TabsTrigger value="notes">{t('report.tabs.notes')}</TabsTrigger>
+          <TabsTrigger value="gallery">{t('report.tabs.gallery')}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab - AI Generated Report */}
@@ -186,8 +188,8 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                   <FileText className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <CardTitle>AI Generated Report</CardTitle>
-                  <CardDescription>Based on workshop outcomes and participant input</CardDescription>
+                  <CardTitle>{t('report.aiReport')}</CardTitle>
+                  <CardDescription>{t('report.aiReportDesc')}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -199,7 +201,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                     <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                       <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <h3 className="font-semibold text-lg">Executive Summary</h3>
+                    <h3 className="font-semibold text-lg">{t('report.executiveSummary')}</h3>
                   </div>
                   {!isLocked && !editingSummary && (
                     <Button
@@ -211,7 +213,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                       size="sm"
                     >
                       <Edit2 className="h-4 w-4 mr-2" />
-                      Edit
+                      {t('actions.edit')}
                     </Button>
                   )}
                 </div>
@@ -229,7 +231,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                         size="sm"
                       >
                         <X className="h-4 w-4 mr-2" />
-                        Cancel
+                        {t('actions.cancel')}
                       </Button>
                       <Button
                         onClick={() => {
@@ -240,7 +242,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                         className="bg-[#1FD1B2] hover:bg-[#1AB89C]"
                       >
                         <Save className="h-4 w-4 mr-2" />
-                        Save
+                        {t('actions.save')}
                       </Button>
                     </div>
                   </div>
@@ -259,7 +261,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                   <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                     <Lightbulb className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <h3 className="font-semibold text-lg">Key Findings</h3>
+                  <h3 className="font-semibold text-lg">{t('report.keyFindings')}</h3>
                 </div>
                 <div className="grid gap-4">
                   {insights.map((insight, index) => (
@@ -278,7 +280,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                               size="sm"
                             >
                               <X className="h-4 w-4 mr-2" />
-                              Cancel
+                              {t('actions.cancel')}
                             </Button>
                             <Button
                               onClick={() => {
@@ -291,7 +293,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                               className="bg-[#1FD1B2] hover:bg-[#1AB89C]"
                             >
                               <Save className="h-4 w-4 mr-2" />
-                              Save
+                              {t('actions.save')}
                             </Button>
                             <Button
                               onClick={() => {
@@ -302,7 +304,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                               variant="destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
+                              {t('actions.delete')}
                             </Button>
                           </div>
                         </div>
@@ -325,7 +327,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                               className="mt-2"
                             >
                               <Edit2 className="h-4 w-4 mr-2" />
-                              Edit
+                              {t('actions.edit')}
                             </Button>
                           )}
                         </div>
@@ -339,7 +341,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                       size="sm"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Insight
+                      {t('report.addInsight')}
                     </Button>
                   )}
                 </div>
@@ -353,7 +355,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                   <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                     <TrendingUp className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <h3 className="font-semibold text-lg">Strategic Recommendations</h3>
+                  <h3 className="font-semibold text-lg">{t('report.strategicRecommendations')}</h3>
                 </div>
                 <div className="space-y-3">
                   {nextSteps.map((step, index) => (
@@ -371,7 +373,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                               size="sm"
                             >
                               <X className="h-4 w-4 mr-2" />
-                              Cancel
+                              {t('actions.cancel')}
                             </Button>
                             <Button
                               onClick={() => {
@@ -384,7 +386,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                               className="bg-[#1FD1B2] hover:bg-[#1AB89C]"
                             >
                               <Save className="h-4 w-4 mr-2" />
-                              Save
+                              {t('actions.save')}
                             </Button>
                             <Button
                               onClick={() => {
@@ -395,7 +397,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                               variant="destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
+                              {t('actions.delete')}
                             </Button>
                           </div>
                         </div>
@@ -416,7 +418,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                               className="mt-2"
                             >
                               <Edit2 className="h-4 w-4 mr-2" />
-                              Edit
+                              {t('actions.edit')}
                             </Button>
                           )}
                         </div>
@@ -430,7 +432,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                       size="sm"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Recommendation
+                      {t('report.addRecommendation')}
                     </Button>
                   )}
                 </div>
@@ -443,9 +445,9 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
         <TabsContent value="canvas" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Workshop-Generated Golden Circle</CardTitle>
+              <CardTitle>{t('report.workshopGoldenCircle')}</CardTitle>
               <CardDescription>
-                The final framework created collaboratively by all participants. {isLocked ? 'Unlock to edit the canvas.' : 'Fill in or edit the canvas below.'}
+                {t('report.canvasDesc')} {isLocked ? t('report.canvasDescLocked') : t('report.canvasDescUnlocked')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -476,7 +478,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="h-5 w-5 text-blue-500" />
-                  Workshop Objectives
+                  {t('report.workshopObjectives')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -495,7 +497,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                             size="sm"
                           >
                             <X className="h-4 w-4 mr-2" />
-                            Cancel
+                            {t('actions.cancel')}
                           </Button>
                           <Button
                             onClick={() => {
@@ -508,7 +510,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                             className="bg-[#1FD1B2] hover:bg-[#1AB89C]"
                           >
                             <Save className="h-4 w-4 mr-2" />
-                            Save
+                            {t('actions.save')}
                           </Button>
                           <Button
                             onClick={() => {
@@ -519,7 +521,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                             variant="destructive"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            {t('actions.delete')}
                           </Button>
                         </div>
                       </div>
@@ -540,7 +542,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                             className="mt-2"
                           >
                             <Edit2 className="h-4 w-4 mr-2" />
-                            Edit
+                            {t('actions.edit')}
                           </Button>
                         )}
                       </div>
@@ -555,7 +557,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                     className="mt-2"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Objective
+                    {t('report.addObjective')}
                   </Button>
                 )}
               </CardContent>
@@ -566,7 +568,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-purple-500" />
-                  Participants ({participants.length})
+                  {t('report.participantsCount', { count: participants.length })}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -576,12 +578,12 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                       {editingParticipant === index ? (
                         <div className="space-y-2">
                           <Input
-                            placeholder="Name"
+                            placeholder={t('report.namePlaceholder')}
                             value={tempParticipantName}
                             onChange={(e) => setTempParticipantName(e.target.value)}
                           />
                           <Input
-                            placeholder="Role"
+                            placeholder={t('report.rolePlaceholder')}
                             value={tempParticipantRole}
                             onChange={(e) => setTempParticipantRole(e.target.value)}
                           />
@@ -642,7 +644,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                               className="mt-1 w-full"
                             >
                               <Edit2 className="h-4 w-4 mr-2" />
-                              Edit
+                              {t('actions.edit')}
                             </Button>
                           )}
                         </div>
@@ -658,7 +660,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                     className="mt-3 w-full"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Participant
+                    {t('report.addParticipant')}
                   </Button>
                 )}
               </CardContent>
@@ -670,9 +672,9 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-orange-500" />
-                Workshop Agenda
+                {t('report.workshopAgenda')}
               </CardTitle>
-              <CardDescription>Complete timeline of activities and exercises</CardDescription>
+              <CardDescription>{t('report.agendaDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <Accordion type="single" collapsible className="w-full">
@@ -689,7 +691,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="pl-4 pt-2 text-sm text-muted-foreground">
-                        Activity details and notes will appear here during the workshop.
+                        {t('report.activityDetails')}
                       </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -705,10 +707,10 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <StickyNote className="h-5 w-5 text-yellow-500" />
-                Participant Notes & Insights
+                {t('report.notesTitle')}
               </CardTitle>
               <CardDescription>
-                Capture and share insights, observations, and suggestions from workshop participants
+                {t('report.notesDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -718,17 +720,17 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                   <div className="space-y-3 p-4 bg-muted/30 rounded-lg border-2 border-dashed">
                     <div className="flex items-center gap-2">
                       <Plus className="h-5 w-5 text-primary" />
-                      <h4 className="font-medium">Add New Note</h4>
+                      <h4 className="font-medium">{t('report.addNewNote')}</h4>
                     </div>
                     <Textarea
-                      placeholder="Share your insights, observations, or suggestions..."
+                      placeholder={t('report.notePlaceholder')}
                       value={newNote}
                       onChange={(e) => setNewNote(e.target.value)}
                       className="min-h-[100px]"
                     />
                     <Button onClick={addNote} disabled={!newNote.trim()}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Note
+                      {t('report.addNote')}
                     </Button>
                   </div>
 
@@ -738,7 +740,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
 
               {/* Existing Notes */}
               <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground">All Notes ({notes.length})</h4>
+                <h4 className="font-medium text-sm text-muted-foreground">{t('report.allNotesCount', { count: notes.length })}</h4>
                 {notes.map((note) => (
                   <Card key={note.id} className="bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
                     <CardContent className="p-4">
@@ -781,9 +783,9 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ImageIcon className="h-5 w-5 text-purple-500" />
-                Workshop Gallery
+                {t('report.gallery')}
               </CardTitle>
-              <CardDescription>Photos captured during the session</CardDescription>
+              <CardDescription>{t('report.galleryDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
@@ -791,7 +793,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                   <div key={index} className="relative aspect-video rounded-lg overflow-hidden group cursor-pointer">
                     <ImageWithFallback
                       src={image}
-                      alt={`Workshop photo ${index + 1}`}
+                      alt={t('report.photoAlt', { number: index + 1 })}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />

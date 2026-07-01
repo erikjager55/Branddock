@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, ImageIcon, Loader2, AlertCircle, Settings } from 'lucide-react';
 import { useStockSearch, useImportStockPhoto } from '@/features/media-library/hooks';
 import { StockSearchError } from '@/features/media-library/api/media.api';
@@ -12,6 +13,7 @@ import type { InsertImageTabProps } from './types';
  * (medium size by default) and forward the URL/id to the parent modal.
  */
 export function StockPhotosTab({ onSelected, initialQuery }: InsertImageTabProps) {
+  const { t } = useTranslation('campaigns-canvas');
   // F35: initialQuery seedt search-input vanuit visualBrief.briefingText.
   const [searchInput, setSearchInput] = useState(initialQuery ?? '');
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery ?? '');
@@ -63,7 +65,7 @@ export function StockPhotosTab({ onSelected, initialQuery }: InsertImageTabProps
         alt: asset.name ?? undefined,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Import failed');
+      setError(err instanceof Error ? err.message : t('stockTab.errImport'));
     } finally {
       setImportingId(null);
     }
@@ -77,7 +79,7 @@ export function StockPhotosTab({ onSelected, initialQuery }: InsertImageTabProps
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search Pexels stock photos..."
+          placeholder={t('stockTab.searchPlaceholder')}
           className="block w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder:text-gray-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-colors"
         />
       </div>
@@ -87,7 +89,7 @@ export function StockPhotosTab({ onSelected, initialQuery }: InsertImageTabProps
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <ImageIcon className="h-10 w-10 text-gray-300" />
           <p className="mt-3 text-sm text-gray-500">
-            Search Pexels for free stock photos
+            {t('stockTab.searchPrompt')}
           </p>
         </div>
       )}
@@ -104,10 +106,12 @@ export function StockPhotosTab({ onSelected, initialQuery }: InsertImageTabProps
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Settings className="h-8 w-8 text-amber-500 mb-2" />
           <p className="text-sm font-medium text-gray-900">
-            Pexels is not configured
+            {t('stockTab.notConfigured')}
           </p>
           <p className="mt-1 max-w-sm text-xs text-gray-500">
-            Add <code className="rounded bg-gray-100 px-1 font-mono">PEXELS_API_KEY</code> to enable stock photo search.
+            {t('stockTab.notConfiguredHintPrefix')}{' '}
+            <code className="rounded bg-gray-100 px-1 font-mono">PEXELS_API_KEY</code>{' '}
+            {t('stockTab.notConfiguredHintSuffix')}
           </p>
         </div>
       )}
@@ -117,7 +121,7 @@ export function StockPhotosTab({ onSelected, initialQuery }: InsertImageTabProps
         <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3" role="alert">
           <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
           <p className="text-sm text-red-700">
-            {error ?? (searchError instanceof Error ? searchError.message : 'Search failed')}
+            {error ?? (searchError instanceof Error ? searchError.message : t('stockTab.errSearch'))}
           </p>
         </div>
       )}
@@ -154,7 +158,7 @@ export function StockPhotosTab({ onSelected, initialQuery }: InsertImageTabProps
       {debouncedQuery && !isLoading && !isError && photos.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <ImageIcon className="h-10 w-10 text-gray-300" />
-          <p className="mt-3 text-sm text-gray-500">No photos found for &quot;{debouncedQuery}&quot;</p>
+          <p className="mt-3 text-sm text-gray-500">{t('stockTab.noResults', { query: debouncedQuery })}</p>
         </div>
       )}
     </div>

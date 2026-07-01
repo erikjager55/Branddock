@@ -13,6 +13,8 @@
  * specifiek typed heeft (Prisma Json).
  */
 
+import { useTranslation } from "react-i18next";
+
 interface ScrapedButtonStyle {
   selector?: string;
   role?: "primary" | "secondary" | "ghost" | "unknown";
@@ -31,13 +33,6 @@ interface ScrapedButtonStyle {
   hoverColor?: string | null;
   hoverTransform?: string | null;
 }
-
-const ROLE_LABELS: Record<string, string> = {
-  primary: "Primary (scraped)",
-  secondary: "Secondary (scraped)",
-  ghost: "Ghost / link (scraped)",
-  unknown: "Other (scraped)",
-};
 
 const ROLE_ORDER = ["primary", "secondary", "ghost", "unknown"];
 
@@ -120,6 +115,7 @@ function StyleProperties({ b }: { b: ScrapedButtonStyle }) {
 }
 
 export function ScrapedButtonProfilePreview({ buttonProfile }: { buttonProfile: unknown }) {
+  const { t } = useTranslation("brandstyle");
   if (!Array.isArray(buttonProfile) || buttonProfile.length === 0) {
     return null;
   }
@@ -137,11 +133,10 @@ export function ScrapedButtonProfilePreview({ buttonProfile }: { buttonProfile: 
       <div className="mb-3 flex items-baseline justify-between">
         <div>
           <h4 className="text-xs font-semibold text-gray-800 uppercase tracking-wide">
-            Scraped button-profile (v4)
+            {t("components.buttonProfile.title")}
           </h4>
           <p className="text-[11px] text-gray-500 mt-0.5">
-            Geaggregeerde styling per rol uit {totalSamples} button-samples — wat de
-            renderer daadwerkelijk consumeert in landing-page generation.
+            {t("components.buttonProfile.subtitle", { count: totalSamples })}
           </p>
         </div>
       </div>
@@ -156,11 +151,11 @@ export function ScrapedButtonProfilePreview({ buttonProfile }: { buttonProfile: 
             >
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-semibold text-teal-700 uppercase tracking-wider">
-                  {ROLE_LABELS[role] ?? role}
+                  {t(`components.buttonProfile.roles.${role}`)}
                 </span>
                 {pill ? (
                   <span className="text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-                    pill-shape
+                    {t("components.buttonProfile.pillShape")}
                   </span>
                 ) : null}
               </div>
@@ -170,10 +165,10 @@ export function ScrapedButtonProfilePreview({ buttonProfile }: { buttonProfile: 
                       dus tonen we de STYLING zonder een verzonnen CTA te suggereren
                       (Fase 6 brand-fidelity — gefabriceerde tekst was misleidend). */}
                   {b.role === "primary"
-                    ? "Primary button"
+                    ? t("components.buttonProfile.primaryButton")
                     : b.role === "secondary"
-                      ? "Secondary button"
-                      : "Button"}
+                      ? t("components.buttonProfile.secondaryButton")
+                      : t("components.buttonProfile.button")}
                 </button>
               </div>
               <StyleProperties b={b} />
