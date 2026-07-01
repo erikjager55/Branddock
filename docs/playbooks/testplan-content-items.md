@@ -186,7 +186,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R explainer-video** | Storyboard frames + thumbnail | ☑ | ☑ | ☐ | **PASSED 2026-07-01** (Napking) — sectie-outline + timestamps/`[VISUAL]`/`(VOICEOVER)`; "Confirm & Continue"-knop correct (geen Configure-Video). |
+| **R explainer-video** | Storyboard frames + thumbnail | ☐ | ☐ | ☐ | **HIDDEN 2026-07-01** — hele categorie "Video & Audio" bewust uit picker (2026-05-19, `deliverable-types.ts`). SKIP: niet aanmaakbaar via picker. Eerdere PASSED ingetrokken (correctie). Zie bug-log §5. |
 | testimonial-video | Thumbnail met quote overlay | ☐ | ☐ | ☐ | |
 | promo-video | Thumbnail + scene storyboards | ☐ | ☐ | ☐ | |
 | webinar-outline | Title card + agenda visualisatie | ☐ | ☐ | ☐ | |
@@ -204,7 +204,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R one-pager** | 1-page PDF layout (HTML) | ☑ | ☑ | ☐ | **PASSED 2026-07-01** (Napking) — markdown-bullets, geen placeholder-prijzen, SOLUTION als outcomes. |
+| **R one-pager** | 1-page PDF layout (HTML) | ☐ | ☐ | ☐ | **HIDDEN 2026-07-01** — hele categorie "Sales Enablement" bewust uit picker (2026-06-16, `deliverable-types.ts`). SKIP: niet aanmaakbaar via picker. Eerdere PASSED ingetrokken (correctie). Zie bug-log §5. |
 | sales-deck | Multi-slide deck (HTML/PPTX) | ☐ | ☐ | ☐ | |
 | proposal-template | Document layout met placeholders | ☐ | ☐ | ☐ | |
 | product-description | Product image + feature grid | ☐ | ☐ | ☐ | |
@@ -404,17 +404,21 @@ Uit onderzoek — te verifiëren in de test-ronde, niet als aanname behandelen:
 - Napking `Workspace.contentLanguage = nl` + `BrandVoiceguide.contentLocale = nl-NL` → de NL taal-directive wórdt geïnjecteerd (`brand-voice-directive.ts:132-150`). Wholesale-Engelse output uitgesloten; rest-risico = Engelse sectielabels/few-shot-bleed (P2).
 - `google/search-ad` MediumEnrichment-rij is geseed → search-ad crasht niet met "No component template resolved" (heeft geen fallback-template).
 
-**Bereikbaarheid — 2 representanten GEBLOKKEERD (beslissing: SKIP + loggen):**
-- `[newsletter]` REACHABILITY P1 — `hidden:true` (`deliverable-types.ts:691`) + hele "Email & Automation"-categorie uit de Add-Content-picker (`:1115`). Niet aanmaakbaar via normale flow. **Beslissing 2026-07-01: skip, niet un-hiden.** Email-representant blijft ongetest tot categorie bewust heractiveerd.
-- `[press-release]` REACHABILITY P1 — `hidden:true` (`deliverable-types.ts:998`). Niet in Add-Content-modal. **Beslissing 2026-07-01: skip.** PR/Comms-representant ongetest.
+**Bereikbaarheid — 4 van 8 representanten GEBLOKKEERD (bewuste hiding, beslissing: SKIP + loggen):** 4 hele categorieën zijn bewust uit de Add-Content-picker gehaald (Email & Automation 2026-06-16, Video & Audio 2026-05-19, Sales Enablement 2026-06-16, PR/HR/Comms 2026-06-16 — zie comment-blok `deliverable-types.ts:~1115-1132`). Van de 8 representanten vallen er 4 in die categorieën:
+- `[newsletter]` (Email) — `hidden:true` (`deliverable-types.ts:691`) + categorie uit picker. SKIP.
+- `[press-release]` (PR/HR) — `hidden:true` (`:998`). SKIP.
+- `[explainer-video]` (Video & Audio) — `hidden:true`; hele categorie uit picker (2026-05-19). SKIP. **Correctie 2026-07-01**: eerder abusievelijk als PASSED gelogd — type is niet via de picker bereikbaar; per user niet echt getest.
+- `[one-pager]` (Sales Enablement) — `hidden:true`; hele categorie uit picker (2026-06-16). SKIP. **Correctie 2026-07-01** (zelfde reden).
 
-**Sweep-scope Ronde 1 = 6 zichtbare types:** search-ad · landing-page · explainer-video · one-pager · linkedin-post · blog-post (Napking-hertest optioneel).
+**Sweep-scope Ronde 1 representanten = 4 zichtbare types:** search-ad · landing-page · linkedin-post · blog-post.
+
+**Realiteit picker-scope (2026-07-01):** van de 55 code-type-definities zijn er **31 hidden**; slechts **24 zichtbaar** in 4 categorieën (Long-Form 8, Social Media 5, Advertising & Paid 6, Website 5). De 53-type-matrix in §4 is grotendeels achterhaald. De echte **Ronde 1 varianten-scope = de resterende ~16 zichtbare types** (buiten de al-geteste representanten + de Long-Form-sweep).
 
 **Per-type watch-list — te verifiëren tijdens sweep:**
 - `[search-ad]` — (P2) char-limits 30/90 worden NIET afgedwongen, alleen gesignaleerd → check dat de ad-quality-indicator groen is. (P2) Engelse Title-Case headlines uit few-shot; taal-check slaat velden <30 chars over → lees elke headline. NIET-FLAG: SERP-preview toont bewust `napking.com` lowercase (chrome).
 - `[landing-page]` — (P1) SEO-keyword-pad laat `[QUOTE:]`/`[CASE STUDY:]`/`[internal link:]` markers staan (cleanup carve-out `seo-prompts.ts:355`) → **grootste eyeball**. (P2) persona-leak op SEO-pad (guardrail ontbreekt in seo-prompts). (P2) hardcoded Engelse CTA-knoppen in `WebPageLayout.renderCta`. (P2) 8-staps SEO-pijplijn (tot 300s/32K per stap) kan mid-run hangen → lege output. NIET-FLAG: edit/preview duplicate-tekst is gefixt (m.u.v. magazine pull-quote + title+body-H1-overlap).
-- `[explainer-video]` — (P2) output = sectie-outline met timestamps/`[VISUAL]`/`(VOICEOVER)`, GEEN hook/body/cta scene-cards. (P2) export: geen SRT (nergens geïmplementeerd), geen PDF (platform≠web) → alleen Copy/MD/HTML. NIET-FLAG: knop toont "Confirm & Continue" (niet "Configure Video") = correct; flip = regressie.
-- `[one-pager]` — (P2) output = markdown-bullets, geen HTML/PDF one-pager; geen PDF-knop (platform sales≠web). (P2) SOLUTION moet outcomes lezen, geen feature-dump. Structureel schoon: placeholder-prijzen (triple-guarded), merknaam, CTA (48-char cap).
+- `[explainer-video]` **(HIDDEN — niet getest, audit-referentie)** — (P2) output = sectie-outline met timestamps/`[VISUAL]`/`(VOICEOVER)`, GEEN hook/body/cta scene-cards. (P2) export: geen SRT (nergens geïmplementeerd), geen PDF (platform≠web) → alleen Copy/MD/HTML. NIET-FLAG: knop toont "Confirm & Continue" (niet "Configure Video") = correct; flip = regressie.
+- `[one-pager]` **(HIDDEN — niet getest, audit-referentie)** — (P2) output = markdown-bullets, geen HTML/PDF one-pager; geen PDF-knop (platform sales≠web). (P2) SOLUTION moet outcomes lezen, geen feature-dump. Structureel schoon: placeholder-prijzen (triple-guarded), merknaam, CTA (48-char cap).
 - `[linkedin-post]` — flow niet eerder afgerond. Effie-fix runtime-verify: Strategy-step console `document.body.innerText.match(/effie/gi)` → moet `null`. Volledige 6-staps flow doorlopen.
 - `[blog-post]` — PASSED 2026-05-18 op LINFI-workspace. Napking-hertest optioneel voor NL-baseline + effie DOM-grep.
 
@@ -425,8 +429,8 @@ Uit onderzoek — te verifiëren in de test-ronde, niet als aanname behandelen:
 ```
 [search-ad] PASSED 2026-07-01 (Napking) — ad-quality-indicator groen, headlines NL, geen crash (seed ok)
 [landing-page] PASSED 2026-07-01 (Napking) — SEO-flow schoon: geen [QUOTE:]/[internal link:] brackets in eindoutput, geen persona-leak
-[explainer-video] PASSED 2026-07-01 (Napking) — sectie-outline + timestamps, "Confirm & Continue"-knop correct
-[one-pager] PASSED 2026-07-01 (Napking) — markdown-bullets, geen placeholder-prijzen
+[explainer-video] SKIPPED — hidden (categorie Video & Audio bewust uit picker; eerdere PASSED ingetrokken)
+[one-pager] SKIPPED — hidden (categorie Sales Enablement bewust uit picker; eerdere PASSED ingetrokken)
 [linkedin-post] PASSED 2026-07-01 (Napking) — volledige 6-staps flow, effie-grep op Strategy = null
 [blog-post] PASSED 2026-07-01 (Napking) — herbevestigd (eerder LINFI 2026-05-18)
 [newsletter] SKIPPED — hidden (zie boven)
@@ -497,7 +501,7 @@ Uit onderzoek — te verifiëren in de test-ronde, niet als aanname behandelen:
 
 ## 6 · Summary na afronding
 
-**Ronde 1 — representanten (bijgewerkt 2026-07-01):** 6/8 getest + passed (search-ad, landing-page, explainer-video, one-pager, linkedin-post, blog-post) · 2/8 geskipt want `hidden:true` (newsletter, press-release). **0 bugs.** Long-Form categorie-sweep (2026-05-18) staat los: 4/5 passed, ebook fail (apart verbeterplan). De 53-type-tabel hieronder is voor de varianten-sweep (Ronde 1 varianten + Ronde 2), nog niet gestart.
+**Ronde 1 — representanten (bijgewerkt 2026-07-01):** **4/8 passed** via picker (search-ad, landing-page, linkedin-post, blog-post) · **4/8 hidden-skip** (newsletter, press-release, explainer-video, one-pager — hun categorieën zijn bewust uit de picker). **0 bugs.** ⚠️ Realiteit: van de 55 code-types zijn er **31 hidden** — slechts **24 zichtbaar** in 4 categorieën (Long-Form, Social Media, Advertising & Paid, Website). De 53-type-tabel hieronder is grotendeels achterhaald; de echte **Ronde 1 varianten-scope = de ~16 resterende zichtbare types**. Long-Form categorie-sweep (2026-05-18) staat los: 4/5 passed, ebook fail (apart verbeterplan).
 
 | Categorie | Tested | Passed | Bugs | % Passed |
 |---|---|---|---|---|
