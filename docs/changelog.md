@@ -35,6 +35,19 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ---
 
+## 2026-07
+
+### 352. Meertaligheid Fase 1 follow-ups — chrome afgemaakt + feature-extractie (4 waves) + toLocale-sweep
+
+Vervolg op #351: de UI is nu grotendeels meertalig (en↔nl). **Chrome afgemaakt**: `SIDEBAR_NAV` item/section-labels render-edge via `t()`, `AuthPage` → `common:auth`, en `src/lib/ui-i18n/format.ts` (`useFormat()` — `Intl` + date-fns gebonden aan `i18n.language`). **Runtime**: lazy feature-namespaces via `i18next-resources-to-backend` (chrome blijft statisch). **Feature-extractie in 4 AI-gedreven Workflow-waves** (~35 namespaces; de extractie-agents genereerden en+nl direct): dashboard, campaigns (canvas/wizard/content-library/overview/core + canvas-medium/accordion/page), brandstyle, brand-asset-detail, media-library, business-strategy, competitors, personas, products, trend-radar, settings (account/team/billing/admin/misc), consistent-models, workshop, research, help, knowledge-library, claw, brandvoice, interviews, brand-alignment, website-scanner, commercial, white-label. Tot slot een **toLocale-sweep** (~130 datum/getal-sites → `useFormat`). Elke wave per-commit gate-groen (tsc 0 / lint 0 / separation-smoke 3/3 / build groen).
+
+Bewust Engels gelaten (gedocumenteerd, geen bug): `puck-config.tsx` (server-safe, `useTranslation` zou de `/p/[slug]`-SSR breken — de renderToStaticMarkup-gotcha), `canvas/previews/*` (social-platform mock-chrome, ambigu), losse top-level `src/components/*.tsx`, `ai-studio`/`ai-trainer`-shells, `.ts` lib/services-formattering + `.toFixed`-bedragen. De ESLint-guard-allowlist is bewust niet verbreed (migrated files houden opzettelijk-gelaten enum/data-strings; verbreden zou false-positives geven).
+
+- Task: [tasks/i18n-ui-foundation.md](../tasks/i18n-ui-foundation.md) (in-progress — follow-ups)
+- ADR: [adr/2026-06-28-multilingual-i18n-and-multi-market-content.md](adr/2026-06-28-multilingual-i18n-and-multi-market-content.md)
+- Spec: -
+- Commit: 96938871 + 23e5ad38 + 9b6ced14 + 81420d63 + 2c944ca3 + a4491867 + 34cf8111
+
 ## 2026-06
 
 ### 351. Meertaligheid Fase 1 — i18next UI-runtime + Display-language selector (per gebruiker)
