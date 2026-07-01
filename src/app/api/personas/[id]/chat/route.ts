@@ -15,6 +15,10 @@ import { resolveFeatureModel } from "@/lib/ai/feature-models.server";
 //   1. Session creation: body has `mode` (no `message`)  → returns sessionId + greeting
 //   2. Streaming chat:   body has `message`               → returns SSE stream
 // ──────────────────────────────────────────────────────────────
+// Serverless: SSE-stream kan lang lopen; expliciete duur voorkomt truncatie op
+// de korte platform-default. Fluid Compute-ceiling is 800s.
+export const maxDuration = 300;
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

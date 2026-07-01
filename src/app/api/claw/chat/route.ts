@@ -103,6 +103,10 @@ const requestSchema = z.object({
 
 // ─── POST /api/claw/chat ───────────────────────────────────
 
+// Serverless: SSE-stream kan lang lopen; expliciete duur voorkomt truncatie op
+// de korte platform-default. Fluid Compute-ceiling is 800s.
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession();
   if (!session) return new Response('Unauthorized', { status: 401 });
