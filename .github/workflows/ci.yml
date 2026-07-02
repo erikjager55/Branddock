@@ -33,3 +33,58 @@ jobs:
           DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
           BETTER_AUTH_SECRET: "ci-build-secret-not-real"
           BETTER_AUTH_URL: "http://localhost:3000"
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # pgvector-image: het schema heeft vector-kolommen, dus `prisma db push`
+        # (in e2e/global-setup.ts) vereist de vector-extension.
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: branddock_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Naam moet "_test" bevatten (e2e/global-setup.ts safety-guard).
+      E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/branddock_test
+      SEED_CONFIRM: "yes"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx prisma generate
+
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Enable pgvector extension
+        run: PGPASSWORD=postgres psql -h localhost -U postgres -d branddock_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+      # global-setup doet prisma db push + seed; de webServer boot `npm run dev`
+      # op poort 3001 met de test-DB. De critical-flow raakt GEEN echte AI (checkt
+      # alleen dat de AI-Exploration-knop zichtbaar is) → geen AI-keys nodig.
+      - name: Run critical-flow e2e
+        run: npm run test:e2e -- --grep "Critical Flow"
+        env:
+          CI: "true"
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
