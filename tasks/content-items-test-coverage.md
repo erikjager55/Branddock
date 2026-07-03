@@ -11,7 +11,7 @@ started: 2026-05-13
 completed: -
 related-adr: -
 related-spec: docs/playbooks/testplan-content-items.md
-worktree: -
+worktree: branddock-content-ronde1 (fix/content-items-ronde1)
 ---
 
 # Probleem
@@ -34,9 +34,9 @@ Het testplan is een playbook (documentatie) maar geen task-file. Daardoor stond 
 
 # Acceptatiecriteria
 
-- [ ] Ronde 1 representanten: 8/8 types gecheckt, bug-log gepopuleerd
-- [ ] Ronde 1 varianten: 45/45 types gecheckt
-- [ ] Summary-tabel (sectie 6) ingevuld: per categorie tested/passed/bugs
+- [x] Ronde 1 representanten: 4/8 passed via picker (blog-post/linkedin-post/search-ad/landing-page) + 4/8 hidden-skip (newsletter/press-release/explainer-video/one-pager), bug-log gepopuleerd — 2026-07-01, 0 bugs
+- [x] Ronde 1 varianten: 16/16 zichtbare varianten passed op Napking (2026-07-01), 0 bugs — reachability vooraf hard-geverifieerd
+- [x] Summary-tabel (sectie 6) ingevuld: 24/24 zichtbaar getest, 23 passed, 1 bug (ebook) — 2026-07-01
 - [ ] Alle P1+P2 bugs gefixt of expliciet als post-launch gedeferd met rationale
 - [ ] `gotchas.md` bijgewerkt met nieuwe lessen die uit testen kwamen
 - [ ] Ronde 2 generator-evaluatie matrix ingevuld (kan later na asset-generator integratie)
@@ -91,3 +91,7 @@ Het playbook IS het smoke-test plan. Per type:
 **STOP-GATE eind sprint #4**: na 8 representanten een bug-log review. Bepaalt sprint #5 bugfix-scope + of varianten parallel kunnen of bugfix-eerst nodig is.
 
 **2026-05-17 — Tussentijdse STOP-GATE genomen**: P2 [shared-pipeline] effie-waardig leak gefixt (commit `e849a1ed`). Defense-in-depth (prompt-guard + output-sanitizer) toegepast in `campaign-strategy.ts` / `campaign-strategy-agents.ts` / `strategy-chain.ts` / `creative-angles.ts` / `quick-concept/route.ts` + nieuwe utility `src/lib/ai/sanitize-strategy-output.ts` (30/30 smoke-test groen). Verificatie loopt mee met de reguliere Ronde 1 sweep — per representant DOM grep `document.body.innerText.match(/effie/gi)` → moet `null` zijn op de Strategy-step rationale-veld. Als bij een type alsnog "effie" verschijnt: leak-vector niet afgevangen, log in bug-log met type + UI-locatie + voorbeeld-text. Zie `gotchas.md` 2026-05-17 (internal-rubric leak) + bug-log entry sectie 5 voor details.
+
+**2026-07-01 — Ronde 1 representanten AFGEROND (gecorrigeerd)**: pre-flight audit (3 parallelle prompt-path audits + 2 DB-geverifieerde precondities) → handmatige sweep op Napking. **4/8 passed via picker, 0 bugs**: blog-post, linkedin-post, search-ad, landing-page. Effie-fix runtime-herbevestigd (grep=null op linkedin-post Strategy); landing-page SEO-bracket-P1 niet opgetreden. **4/8 hidden-skip** — hun categorieën zijn **bewust** uit de Add-Content-picker gehaald (per user bevestigd 2026-07-01): newsletter (Email & Automation), press-release (PR/HR/Comms), explainer-video (Video & Audio), one-pager (Sales Enablement). Correctie: explainer-video + one-pager stonden eerst abusievelijk als PASSED (audit-miss: agent-3 zag de hidden-flag niet + niet echt via picker getest) — ingetrokken. **Picker-realiteit**: 31 van 55 code-type-definities zijn hidden; slechts 24 zichtbaar in 4 categorieën (Long-Form 8, Social Media 5, Advertising & Paid 6, Website 5). De 53-type-testplan-matrix (§4) is grotendeels achterhaald. **Nog open**: Ronde 1 varianten = de **~16 resterende zichtbare types** (NIET 45) + Ronde 2 → status blijft `in-progress`. Werk op worktree `branddock-content-ronde1` / branch `fix/content-items-ronde1` (vanaf main; i18n-werk in hoofdworktree onaangeroerd, draait in aparte sessie).
+
+**2026-07-01 — Ronde 1 varianten AFGEROND → RONDE 1 COMPLEET**: 16/16 zichtbare varianten passed op Napking, 0 bugs. Reachability vooraf hard-geverifieerd (alle 16 resolven via `CONTENT_TYPE_TO_MEDIUM` × seed/fallback). 3 structuur-leen-observaties (product-page/social-ad/linkedin-article renderen met geleende component-structuur) = content-kwaliteit-nit voor post-launch, geen blocker. **Totaal Ronde 1: 24/24 zichtbare types getest, 23 passed, 1 bug (ebook — apart verbeterplan).** Enige resterende acceptance = **Ronde 2 generator-evaluatie**, die **gated is op asset-generator-integratie** (aparte/toekomstige task) → status blijft `in-progress` maar de pre-launch content-test-coverage is functioneel klaar. Kandidaat voor task-finalize met Ronde 2 expliciet deferred.

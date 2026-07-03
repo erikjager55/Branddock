@@ -87,9 +87,9 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 | whitepaper | Cover + page headers (PDF) | ☑ | ☑ | ☐ | 2026-05-18 LINFI — text-content passed. Asset-patroon "Cover + page headers" = zelfde post-launch gap als ebook (zie testplan §4 asset-pipeline disclaimer). WHITEPAPER_SYSTEM prompt-structureel NIET kwetsbaar voor ebook's H1/H7/H4-H6 (Finding 1/2/3 namen zijn by-design semi-static, structure is uniform — geen progressive-shortening curve). H3 fidelity-runner fix toegepast 2026-05-18 raakt whitepaper Strategy-pillar score ook positief. |
 | case-study | Cover + stats visualisatie | ☑ | ☑ | ☐ | 2026-05-18 LINFI |
 | ebook | Cover + chapter dividers | ☑ | ☐ | ☑ | 2026-05-18 LINFI — 5 issues; zie bug-log sectie 5 + `tasks/_drafts/idea-ebook-quality-verbeterplan.md` |
-| article | Hero image | ☐ | ☐ | ☐ | Pre-emptive prompt-guard 2026-05-19: ARTICLE_SYSTEM 2× Deep-dive H2 sections uniqueness rule + completeness check toegevoegd (medium paraphrase-drift risk, kleinere schaal dan ebook). H7/H4-H6 NIET applicable (journalistic genre, uniforme word-counts, geen lead-magnet). H3 fidelity-fix raakt auto. |
-| thought-leadership | Hero met quote overlay | ☐ | ☐ | ☐ | Pre-emptive analyse 2026-05-19: THOUGHT_LEADERSHIP_SYSTEM structureel schoon — 3 H2's zijn by-design distinct narrative-beats, 1000-2000w heeft ruim 16K-call headroom, "The call" is al provocation-CTA. Geen prompt-changes nodig. H3 fidelity-fix raakt auto. |
-| linkedin-article | Hero image | ☐ | ☐ | ☐ | Verplaatst van Social Media naar Long-Form 2026-05-19: prompt is AUTHORITY ARTICLE (1000-2000w long-form structuur), `qualityCriteria: LONG_FORM_DEFAULTS`, input-field categorie `'long-form'`. Erft preventieve guards van article/thought-leadership pad. H3 fidelity-fix raakt auto. |
+| article | Hero image | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking). Pre-emptive prompt-guard 2026-05-19: ARTICLE_SYSTEM 2× Deep-dive H2 sections uniqueness rule + completeness check toegevoegd (medium paraphrase-drift risk, kleinere schaal dan ebook). H7/H4-H6 NIET applicable (journalistic genre, uniforme word-counts, geen lead-magnet). H3 fidelity-fix raakt auto. |
+| thought-leadership | Hero met quote overlay | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking). Pre-emptive analyse 2026-05-19: THOUGHT_LEADERSHIP_SYSTEM structureel schoon — 3 H2's zijn by-design distinct narrative-beats, 1000-2000w heeft ruim 16K-call headroom, "The call" is al provocation-CTA. Geen prompt-changes nodig. H3 fidelity-fix raakt auto. |
+| linkedin-article | Hero image | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking; let op: leent organic-post-structuur terwijl prompt long-form is — zie §5 structuur-leen). Verplaatst van Social Media naar Long-Form 2026-05-19: prompt is AUTHORITY ARTICLE (1000-2000w long-form structuur), `qualityCriteria: LONG_FORM_DEFAULTS`, input-field categorie `'long-form'`. Erft preventieve guards van article/thought-leadership pad. H3 fidelity-fix raakt auto. |
 
 **Category-specific checks**
 - SEO pipeline loopt (8 stappen zichtbaar in progress view)
@@ -104,17 +104,17 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R linkedin-post** | Inline image met text overlay | ☐ | ☐ | ☐ | Single text-blob. Anti-pattern #91 verbiedt al hook-repeat. H3 fidelity-fix raakt auto. Step-1-skip-bug bij inheritance gefixt 2026-05-19 (commit 478bae78). |
+| **R linkedin-post** | Inline image met text overlay | ☑ | ☑ | ☐ | **PASSED 2026-07-01** (Napking) — volledige 6-staps flow; effie-grep op Strategy-step = null. Single text-blob. Anti-pattern #91 verbiedt al hook-repeat. H3 fidelity-fix raakt auto. Step-1-skip-bug bij inheritance gefixt 2026-05-19 (commit 478bae78). |
 | ~~linkedin-article~~ | Verplaatst → Long-Form (2026-05-19) | — | — | — | Categorie was inconsistent: prompt is long-form (1000-2000w), maar listing stond bij Social Media. Zie Long-Form sectie. |
 | linkedin-carousel | 5-10 slide set (gedesigned) | ☐ | ☐ | ☐ | Pre-emptive paraphrase-guard 2026-05-19: anti-pattern + completeness check tegen duplicate slide-headings (mild risk uit ebook H1 lesson, kleinere schaal — 7-10 slides × 15-30w). H2 asset-pipeline post-launch — slide-designs zijn handmatig in Step 3. |
-| linkedin-ad | Ad creative met CTA | ☐ | ☐ | ☐ | Single ad-copy. H3 fidelity-fix raakt auto. |
+| linkedin-ad | Ad creative met CTA | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking). Single ad-copy. H3 fidelity-fix raakt auto. |
 | linkedin-newsletter | Header + hero | ☐ | ☐ | ☐ | Single text. H3 fidelity-fix raakt auto. |
 | linkedin-video | Thumbnail + script storyboard | ☐ | ☐ | ☐ | Hook/Body/CTA beats — by-design distinct. H3 fidelity-fix raakt auto. |
 | linkedin-event | Event banner | ☐ | ☐ | ☐ | Single text. H3 fidelity-fix raakt auto. |
-| linkedin-poll | Geen asset (text-only) | ☐ | ☐ | ☐ | 2-4 options met explicit "meaningfully different positions" guard (anti-pattern #521 al aanwezig). H3 fidelity-fix raakt auto. |
-| instagram-post | Square image met caption styling | ☐ | ☐ | ☐ | Single text-blob. H3 fidelity-fix raakt auto. |
-| twitter-thread | Optionele image per tweet | ☐ | ☐ | ☐ | Pre-emptive paraphrase-guard 2026-05-19: anti-pattern + completeness check tegen overlappende numbered-pattern concepten (mild risk uit ebook H1 lesson). H3 fidelity-fix raakt auto. |
-| facebook-post | Inline image | ☐ | ☐ | ☐ | Single text-blob. H3 fidelity-fix raakt auto. |
+| linkedin-poll | Geen asset (text-only) | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking). 2-4 options met explicit "meaningfully different positions" guard (anti-pattern #521 al aanwezig). H3 fidelity-fix raakt auto. |
+| instagram-post | Square image met caption styling | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking). Single text-blob. H3 fidelity-fix raakt auto. |
+| twitter-thread | Optionele image per tweet | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking). Pre-emptive paraphrase-guard 2026-05-19: anti-pattern + completeness check tegen overlappende numbered-pattern concepten (mild risk uit ebook H1 lesson). H3 fidelity-fix raakt auto. |
+| facebook-post | Inline image | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking). Single text-blob. H3 fidelity-fix raakt auto. |
 | tiktok-script | Storyboard frames | ☐ | ☐ | ☐ | Hook/Setup/Body/Payoff/CTA — by-design distinct beats. H3 fidelity-fix raakt auto. |
 | social-carousel | Multi-slide gedesigned | ☐ | ☐ | ☐ | Pre-emptive paraphrase-guard 2026-05-19: idem als linkedin-carousel. H2 asset-pipeline post-launch. |
 
@@ -131,12 +131,13 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R search-ad** | Geen asset (text-only) | ☐ | ☐ | ☐ | |
-| social-ad | Ad creative met headline | ☐ | ☐ | ☐ | |
-| display-ad | Banner (meerdere sizes) | ☐ | ☐ | ☐ | |
+| **R search-ad** | Geen asset (text-only) | ☑ | ☑ | ☐ | **PASSED 2026-07-01** (Napking) — ad-quality-indicator groen, headlines NL, geen "No component template"-crash (seed ok). |
+| social-ad | Ad creative met headline | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking; leent linkedin/ad-structuur — zie §5 structuur-leen). |
+| display-ad | Banner (meerdere sizes) | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking). |
 | retargeting-ad | Ad creative met context-cue | ☐ | ☐ | ☐ | |
 | video-ad | Thumbnail + storyboard | ☐ | ☐ | ☐ | |
-| native-ad | In-feed image + headline | ☐ | ☐ | ☐ | |
+| native-ad | In-feed image + headline | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking). |
+| facebook-ad | Ad creative (Meta) | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking) — ontbrak in deze matrix; toegevoegd. Zichtbaar type, seed `facebook/ad`. |
 
 **Category-specific checks**
 - Headlines + descriptions binnen character limits (Google Ads: 30/90)
@@ -150,7 +151,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R newsletter** | Hero banner + section dividers (HTML) | ☐ | ☐ | ☐ | |
+| **R newsletter** | Hero banner + section dividers (HTML) | ☐ | ☐ | ☐ | **HIDDEN 2026-07-01** — `hidden:true` + categorie uit picker (`deliverable-types.ts:691,1115`). SKIP: niet bereikbaar via normale flow. Zie bug-log §5. |
 | welcome-sequence | Hero per email + branded footer | ☐ | ☐ | ☐ | |
 | promotional-email | Hero + product-cards (HTML) | ☐ | ☐ | ☐ | |
 | nurture-sequence | Hero per email | ☐ | ☐ | ☐ | |
@@ -168,11 +169,11 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R landing-page** | Volledige page layout (HTML) | ☐ | ☐ | ☐ | |
-| product-page | Product hero + feature sections | ☐ | ☐ | ☐ | |
-| faq-page | Layout zonder beelden (HTML) | ☐ | ☐ | ☐ | |
-| comparison-page | Comparison table layout | ☐ | ☐ | ☐ | |
-| microsite | Multi-section landing page | ☐ | ☐ | ☐ | |
+| **R landing-page** | Volledige page layout (HTML) | ☑ | ☑ | ☐ | **PASSED 2026-07-01** (Napking) — SEO-flow schoon: geen `[QUOTE:]`/`[internal link:]` brackets in eindoutput (de P1), geen persona-leak. |
+| product-page | Product hero + feature sections | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking; leent generieke landing-page-structuur, geen product-hero/feature-grid — zie §5 structuur-leen). |
+| faq-page | Layout zonder beelden (HTML) | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking). |
+| comparison-page | Comparison table layout | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking). |
+| microsite | Multi-section landing page | ☑ | ☑ | ☐ | **✓ PASSED 2026-07-01** (Napking). |
 
 **Category-specific checks**
 - SEO keyword input → pipeline runt → keyword zichtbaar in H1, meta, body
@@ -186,7 +187,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R explainer-video** | Storyboard frames + thumbnail | ☐ | ☐ | ☐ | |
+| **R explainer-video** | Storyboard frames + thumbnail | ☐ | ☐ | ☐ | **HIDDEN 2026-07-01** — hele categorie "Video & Audio" bewust uit picker (2026-05-19, `deliverable-types.ts`). SKIP: niet aanmaakbaar via picker. Eerdere PASSED ingetrokken (correctie). Zie bug-log §5. |
 | testimonial-video | Thumbnail met quote overlay | ☐ | ☐ | ☐ | |
 | promo-video | Thumbnail + scene storyboards | ☐ | ☐ | ☐ | |
 | webinar-outline | Title card + agenda visualisatie | ☐ | ☐ | ☐ | |
@@ -204,7 +205,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R one-pager** | 1-page PDF layout (HTML) | ☐ | ☐ | ☐ | |
+| **R one-pager** | 1-page PDF layout (HTML) | ☐ | ☐ | ☐ | **HIDDEN 2026-07-01** — hele categorie "Sales Enablement" bewust uit picker (2026-06-16, `deliverable-types.ts`). SKIP: niet aanmaakbaar via picker. Eerdere PASSED ingetrokken (correctie). Zie bug-log §5. |
 | sales-deck | Multi-slide deck (HTML/PPTX) | ☐ | ☐ | ☐ | |
 | proposal-template | Document layout met placeholders | ☐ | ☐ | ☐ | |
 | product-description | Product image + feature grid | ☐ | ☐ | ☐ | |
@@ -220,7 +221,7 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 | Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
 |---|---|---|---|---|---|
-| **R press-release** | Document layout (HTML/PDF) | ☐ | ☐ | ☐ | |
+| **R press-release** | Document layout (HTML/PDF) | ☐ | ☐ | ☐ | **HIDDEN 2026-07-01** — `hidden:true` (`deliverable-types.ts:998`). SKIP: niet in Add-Content-modal. Zie bug-log §5. |
 | media-pitch | Geen asset (email/tekst) | ☐ | ☐ | ☐ | |
 | internal-comms | Header banner + formatted body | ☐ | ☐ | ☐ | |
 | career-page | Page layout met team foto slot | ☐ | ☐ | ☐ | |
@@ -398,15 +399,64 @@ Uit onderzoek — te verifiëren in de test-ronde, niet als aanname behandelen:
 
 ### Round 1 — Representanten
 
+**Pre-flight audit 2026-07-01** — code-niveau, vóór de handmatige sweep (Napking-workspace). 3 parallelle prompt-path audits + 2 DB-geverifieerde precondities. Doel: shared-pipeline-bugs voorspellen + false-positives voorkomen, zodat de sweep sneller loopt.
+
+**Precondities (geverifieerd groen):**
+- Napking `Workspace.contentLanguage = nl` + `BrandVoiceguide.contentLocale = nl-NL` → de NL taal-directive wórdt geïnjecteerd (`brand-voice-directive.ts:132-150`). Wholesale-Engelse output uitgesloten; rest-risico = Engelse sectielabels/few-shot-bleed (P2).
+- `google/search-ad` MediumEnrichment-rij is geseed → search-ad crasht niet met "No component template resolved" (heeft geen fallback-template).
+
+**Bereikbaarheid — 4 van 8 representanten GEBLOKKEERD (bewuste hiding, beslissing: SKIP + loggen):** 4 hele categorieën zijn bewust uit de Add-Content-picker gehaald (Email & Automation 2026-06-16, Video & Audio 2026-05-19, Sales Enablement 2026-06-16, PR/HR/Comms 2026-06-16 — zie comment-blok `deliverable-types.ts:~1115-1132`). Van de 8 representanten vallen er 4 in die categorieën:
+- `[newsletter]` (Email) — `hidden:true` (`deliverable-types.ts:691`) + categorie uit picker. SKIP.
+- `[press-release]` (PR/HR) — `hidden:true` (`:998`). SKIP.
+- `[explainer-video]` (Video & Audio) — `hidden:true`; hele categorie uit picker (2026-05-19). SKIP. **Correctie 2026-07-01**: eerder abusievelijk als PASSED gelogd — type is niet via de picker bereikbaar; per user niet echt getest.
+- `[one-pager]` (Sales Enablement) — `hidden:true`; hele categorie uit picker (2026-06-16). SKIP. **Correctie 2026-07-01** (zelfde reden).
+
+**Sweep-scope Ronde 1 representanten = 4 zichtbare types:** search-ad · landing-page · linkedin-post · blog-post.
+
+**Realiteit picker-scope (2026-07-01):** van de 55 code-type-definities zijn er **31 hidden**; slechts **24 zichtbaar** in 4 categorieën (Long-Form 8, Social Media 5, Advertising & Paid 6, Website 5). De 53-type-matrix in §4 is grotendeels achterhaald. De echte **Ronde 1 varianten-scope = de resterende ~16 zichtbare types** (buiten de al-geteste representanten + de Long-Form-sweep).
+
+**Varianten reachability — hard-geverifieerd 2026-07-01** (via `CONTENT_TYPE_TO_MEDIUM` `canvas-context.ts:260` × geseede `MediumEnrichment`-rijen × `FALLBACK_BY_CONTENT_TYPE`): **alle 16 zichtbare varianten resolven** → geen "No component template resolved" hard-throw te verwachten. Wél 3 structuur-leen-gevallen (content-kwaliteit-watch, geen crash):
+- `product-page` → `web/landing-page` medium zónder eigen fallback → genereert met de **generieke landing-page-structuur** (geen product-hero/feature-grid groups).
+- `social-ad` → leent `linkedin/ad`-structuur (heet nochtans "Meta/LinkedIn/TikTok").
+- `linkedin-article` → leent `linkedin/organic-post` (zelfde als linkedin-post) terwijl de prompt long-form AUTHORITY ARTICLE is → mogelijke structuur-mismatch.
+- faq-page/comparison-page/microsite krijgen wél type-specifieke groups via `FALLBACK_FIRST_TYPES` → schoon.
+
+**Per-type watch-list — te verifiëren tijdens sweep:**
+- `[search-ad]` — (P2) char-limits 30/90 worden NIET afgedwongen, alleen gesignaleerd → check dat de ad-quality-indicator groen is. (P2) Engelse Title-Case headlines uit few-shot; taal-check slaat velden <30 chars over → lees elke headline. NIET-FLAG: SERP-preview toont bewust `napking.com` lowercase (chrome).
+- `[landing-page]` — (P1) SEO-keyword-pad laat `[QUOTE:]`/`[CASE STUDY:]`/`[internal link:]` markers staan (cleanup carve-out `seo-prompts.ts:355`) → **grootste eyeball**. (P2) persona-leak op SEO-pad (guardrail ontbreekt in seo-prompts). (P2) hardcoded Engelse CTA-knoppen in `WebPageLayout.renderCta`. (P2) 8-staps SEO-pijplijn (tot 300s/32K per stap) kan mid-run hangen → lege output. NIET-FLAG: edit/preview duplicate-tekst is gefixt (m.u.v. magazine pull-quote + title+body-H1-overlap).
+- `[explainer-video]` **(HIDDEN — niet getest, audit-referentie)** — (P2) output = sectie-outline met timestamps/`[VISUAL]`/`(VOICEOVER)`, GEEN hook/body/cta scene-cards. (P2) export: geen SRT (nergens geïmplementeerd), geen PDF (platform≠web) → alleen Copy/MD/HTML. NIET-FLAG: knop toont "Confirm & Continue" (niet "Configure Video") = correct; flip = regressie.
+- `[one-pager]` **(HIDDEN — niet getest, audit-referentie)** — (P2) output = markdown-bullets, geen HTML/PDF one-pager; geen PDF-knop (platform sales≠web). (P2) SOLUTION moet outcomes lezen, geen feature-dump. Structureel schoon: placeholder-prijzen (triple-guarded), merknaam, CTA (48-char cap).
+- `[linkedin-post]` — flow niet eerder afgerond. Effie-fix runtime-verify: Strategy-step console `document.body.innerText.match(/effie/gi)` → moet `null`. Volledige 6-staps flow doorlopen.
+- `[blog-post]` — PASSED 2026-05-18 op LINFI-workspace. Napking-hertest optioneel voor NL-baseline + effie DOM-grep.
+
+**Cross-cutting (alle types):** SSE-abort stopt de server-generatie NIET (geen `request.signal`-listener) → weg-navigeren mid-run kan stuck spinner / stale-of-lege state / race met tweede generate geven. Preview-chrome is vaak hardcoded Engels (email "Hi {{firstName}}", generic-preview labels "DATELINE LEAD") → chrome ≠ content, niet flaggen.
+
+**Sweep-resultaten** (invullen tijdens handmatig testen — format `[type] [stap] severity: beschrijving → verwachte fix`):
+
 ```
-[blog-post] [...]
-[linkedin-post] [...]
-[search-ad] [...]
-[newsletter] [...]
-[landing-page] [...]
-[explainer-video] [...]
-[one-pager] [...]
-[press-release] [...]
+[search-ad] PASSED 2026-07-01 (Napking) — ad-quality-indicator groen, headlines NL, geen crash (seed ok)
+[landing-page] PASSED 2026-07-01 (Napking) — SEO-flow schoon: geen [QUOTE:]/[internal link:] brackets in eindoutput, geen persona-leak
+[explainer-video] SKIPPED — hidden (categorie Video & Audio bewust uit picker; eerdere PASSED ingetrokken)
+[one-pager] SKIPPED — hidden (categorie Sales Enablement bewust uit picker; eerdere PASSED ingetrokken)
+[linkedin-post] PASSED 2026-07-01 (Napking) — volledige 6-staps flow, effie-grep op Strategy = null
+[blog-post] PASSED 2026-07-01 (Napking) — herbevestigd (eerder LINFI 2026-05-18)
+[newsletter] SKIPPED — hidden (zie boven)
+[press-release] SKIPPED — hidden (zie boven)
+```
+
+### Round 1 — Varianten sweep (2026-07-01)
+
+> Napking-workspace. Alle 16 zichtbare varianten (buiten de 4 al-geteste representanten + de Long-Form-sweep). Reachability vooraf hard-geverifieerd (16/16 resolven). **Resultaat: 16/16 PASSED, 0 bugs.**
+
+```
+[Long-Form]   article, thought-leadership, linkedin-article — PASSED
+[Social]      linkedin-poll, instagram-post, twitter-thread, facebook-post — PASSED
+[Advertising] linkedin-ad, facebook-ad, social-ad, display-ad, native-ad — PASSED
+[Website]     product-page, faq-page, comparison-page, microsite — PASSED
+[structuur-leen — content-kwaliteit-nit, geen blocker, post-launch]:
+  product-page → generieke landing-page-structuur (geen product-hero/feature-grid)
+  social-ad → linkedin/ad-structuur
+  linkedin-article → linkedin/organic-post-structuur terwijl prompt long-form is
 ```
 
 ### Round 1 — Long-Form categorie-sweep (2026-05-18)
@@ -473,17 +523,21 @@ Uit onderzoek — te verifiëren in de test-ronde, niet als aanname behandelen:
 
 ## 6 · Summary na afronding
 
+**Ronde 1 — representanten (bijgewerkt 2026-07-01):** **4/8 passed** via picker (search-ad, landing-page, linkedin-post, blog-post) · **4/8 hidden-skip** (newsletter, press-release, explainer-video, one-pager — hun categorieën zijn bewust uit de picker). **0 bugs.** ⚠️ Realiteit: van de 55 code-types zijn er **31 hidden** — slechts **24 zichtbaar** in 4 categorieën (Long-Form, Social Media, Advertising & Paid, Website). De 53-type-tabel hieronder is grotendeels achterhaald; de echte **Ronde 1 varianten-scope = de ~16 resterende zichtbare types**. Long-Form categorie-sweep (2026-05-18) staat los: 4/5 passed, ebook fail (apart verbeterplan).
+
+> Herkaderd naar picker-realiteit (24 zichtbaar / 31 hidden). Alleen zichtbare types tellen mee voor pre-launch coverage.
+
 | Categorie | Tested | Passed | Bugs | % Passed |
 |---|---|---|---|---|
-| Long-Form Content | / 7 | / 7 | | % |
-| Social Media | / 13 | / 13 | | % |
-| Advertising & Paid | / 6 | / 6 | | % |
-| Email & Automation | / 5 | / 5 | | % |
-| Website & Landing Pages | / 5 | / 5 | | % |
-| Video & Audio | / 5 | / 5 | | % |
-| Sales Enablement | / 4 | / 4 | | % |
-| PR, HR & Comms | / 8 | / 8 | | % |
-| **Totaal** | **/ 53** | **/ 53** | | **%** |
+| Long-Form Content | 8 / 8 zichtbaar | 7 | 1 (ebook) | 88% |
+| Social Media | 5 / 5 zichtbaar | 5 | 0 | 100% |
+| Advertising & Paid | 6 / 6 zichtbaar | 6 | 0 | 100% |
+| Website & Landing Pages | 5 / 5 zichtbaar | 5 | 0 | 100% |
+| Email & Automation | hidden (uit picker) | — | — | — |
+| Video & Audio | hidden (uit picker) | — | — | — |
+| Sales Enablement | hidden (uit picker) | — | — | — |
+| PR, HR & Comms | hidden (uit picker) | — | — | — |
+| **Totaal zichtbaar** | **24 / 24** | **23** | **1** | **96%** |
 
 ## 7 · Follow-up
 
