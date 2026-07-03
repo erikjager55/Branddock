@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Heart, Play } from 'lucide-react';
 import type { MediaAssetWithMeta } from '../types/media.types';
 import {
@@ -24,6 +25,7 @@ export const MediaAssetCard = React.memo(function MediaAssetCard({
   onClick,
   onFavorite,
 }: MediaAssetCardProps) {
+  const { t } = useTranslation('media-registry');
   const typeConfig = MEDIA_TYPE_ICONS[asset.mediaType];
   const categoryConfig = MEDIA_CATEGORY_CONFIG[asset.category];
   const TypeIcon = typeConfig.icon;
@@ -100,7 +102,7 @@ export const MediaAssetCard = React.memo(function MediaAssetCard({
           className={`absolute top-3 left-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-white/80 backdrop-blur-sm ${typeConfig.color}`}
         >
           <TypeIcon className="w-3 h-3" />
-          {typeConfig.label}
+          {t(`type.${asset.mediaType}`, { defaultValue: typeConfig.label })}
         </span>
 
         {/* Duration overlay - bottom right (for video/audio) */}
@@ -117,7 +119,7 @@ export const MediaAssetCard = React.memo(function MediaAssetCard({
           {asset.name}
         </p>
         <p className="text-xs text-gray-500 mb-2">
-          {categoryConfig.label}
+          {t(`category.${asset.category}`, { defaultValue: categoryConfig.label })}
         </p>
         <div className="flex items-center justify-between text-xs text-gray-400">
           <span>{formatFileSize(asset.fileSize)}</span>

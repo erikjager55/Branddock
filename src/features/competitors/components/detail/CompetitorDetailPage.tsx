@@ -39,7 +39,7 @@ export function CompetitorDetailPage({
   onBack,
   onNavigate,
 }: CompetitorDetailPageProps) {
-  const { t } = useTranslation("competitors");
+  const { t } = useTranslation(["competitors", "trends-personas-registry"]);
   const { data: competitor, isLoading } = useCompetitorDetail(competitorId);
   const updateCompetitor = useUpdateCompetitor(competitorId);
   const deleteCompetitor = useDeleteCompetitor(competitorId);
@@ -222,8 +222,8 @@ export function CompetitorDetailPage({
                 <h1 className="text-2xl font-bold text-gray-900">
                   {isEditing ? editName : competitor.name}
                 </h1>
-                {tierConfig && <Badge variant={tierConfig.variant}>{tierConfig.label}</Badge>}
-                {statusConfig && <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>}
+                {tierConfig && <Badge variant={tierConfig.variant}>{t(`trends-personas-registry:competitorTier.${competitor.tier}`, { defaultValue: tierConfig.label })}</Badge>}
+                {statusConfig && <Badge variant={statusConfig.variant}>{t(`trends-personas-registry:competitorStatus.${competitor.status}`, { defaultValue: statusConfig.label })}</Badge>}
               </div>
               {competitor.tagline && !isEditing && (
                 <p className="text-sm text-gray-500 mt-0.5">{competitor.tagline}</p>
@@ -295,7 +295,7 @@ export function CompetitorDetailPage({
                     label={t("detail.tierLabel")}
                     value={editTier}
                     onChange={(v) => setEditTier(v ?? "DIRECT")}
-                    options={TIER_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
+                    options={TIER_OPTIONS.map((opt) => ({ value: opt.value, label: t(`trends-personas-registry:competitorTier.${opt.value}`, { defaultValue: opt.label }) }))}
                   />
                 </div>
               )}

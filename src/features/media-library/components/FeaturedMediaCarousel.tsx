@@ -17,7 +17,7 @@ interface FeaturedMediaCarouselProps {
 
 /** Horizontally scrollable carousel of featured media assets */
 export function FeaturedMediaCarousel({ assets }: FeaturedMediaCarouselProps) {
-  const { t } = useTranslation('media-library');
+  const { t } = useTranslation(['media-library', 'media-registry']);
   if (assets.length === 0) return null;
 
   return (
@@ -60,7 +60,7 @@ export function FeaturedMediaCarousel({ assets }: FeaturedMediaCarouselProps) {
                     className={`inline-flex items-center gap-1 font-medium ${typeConfig.color}`}
                   >
                     <TypeIcon className="h-3 w-3" />
-                    {typeConfig.label}
+                    {t(`media-registry:type.${asset.mediaType}`, { defaultValue: typeConfig.label })}
                   </span>
                   <span>{formatFileSize(asset.fileSize)}</span>
                 </div>

@@ -15,6 +15,7 @@ import { getQuickActions } from '@/lib/claw/quick-actions';
 import type { ClawMessage, ClawQuickAction } from '@/lib/claw/claw.types';
 
 export function ChatArea() {
+  const { t } = useTranslation();
   const {
     messages, streamingText, isStreaming, setInputText, pendingMutation,
     bugReportForm, featureRequestForm, feedbackForm, quickContentForm, activityStatus,
@@ -34,8 +35,8 @@ export function ChatArea() {
       hasWizardSnapshot: !!wizardSnapshot,
       wizardEmptyFieldCount: emptyCount,
       wizardName: wizardSnapshot?.name,
-    });
-  }, [currentPage, activeEntity, wizardSnapshot]);
+    }, t);
+  }, [currentPage, activeEntity, wizardSnapshot, t]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll on new messages

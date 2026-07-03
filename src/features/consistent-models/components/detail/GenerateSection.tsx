@@ -32,7 +32,7 @@ export function GenerateSection({
   onGenerate,
   isGenerating,
 }: GenerateSectionProps) {
-  const { t } = useTranslation("consistent-models");
+  const { t } = useTranslation(["consistent-models", "consistent-models-registry"]);
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -98,7 +98,7 @@ export function GenerateSection({
                         : "border-gray-200 text-gray-600 hover:border-gray-300"
                     }`}
                   >
-                    {p.label}
+                    {t(`consistent-models-registry:preset.${key}`, { defaultValue: p.label })}
                   </button>
                 ),
               )}

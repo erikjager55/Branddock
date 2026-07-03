@@ -50,7 +50,7 @@ export function QuickContentCard({ campaign, onClick, onDelete }: QuickContentCa
       {contentType && (
         <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-3">
           {ContentIcon && <ContentIcon className="h-3.5 w-3.5" />}
-          <span>{contentType.name}</span>
+          <span>{t(`claw-content-registry:contentTypes.${contentType.id}`, { defaultValue: contentType.name })}</span>
           {campaign.contentCategory && (
             <span className="text-gray-300">|</span>
           )}

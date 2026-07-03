@@ -19,7 +19,7 @@ export function AnalyzingCompetitorModal({
   onCancel,
   isApiComplete = false,
 }: AnalyzingCompetitorModalProps) {
-  const { t } = useTranslation("competitors");
+  const { t } = useTranslation(["competitors", "trends-personas-registry"]);
   const [currentStep, setCurrentStep] = useState(0);
   const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
@@ -91,7 +91,7 @@ export function AnalyzingCompetitorModal({
                     idx <= currentStep ? "text-gray-700" : "text-gray-400"
                   }`}
                 >
-                  {stepLabel}
+                  {t(`trends-personas-registry:competitorAnalyzeStep.step${idx}`, { defaultValue: stepLabel })}
                 </span>
               </div>
             );

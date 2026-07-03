@@ -38,7 +38,7 @@ export function GenerateReferencesSection({
   model,
   modelId,
 }: GenerateReferencesSectionProps) {
-  const { t } = useTranslation("consistent-models");
+  const { t } = useTranslation(["consistent-models", "consistent-models-registry"]);
   const generateRefs = useGenerateReferenceImages(modelId);
   const curateRefs = useCurateReferences(modelId);
   const { nextWizardStep } = useConsistentModelStore();
@@ -240,7 +240,13 @@ export function GenerateReferencesSection({
           </p>
 
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {typeFields.map((field) => (
+            {typeFields.map((field) => {
+              const fieldKey = `consistent-models-registry:field.${model.type}.${field.key}`;
+              const fieldLabel = t(`${fieldKey}.label`, { defaultValue: field.label });
+              const fieldPlaceholder = t(`${fieldKey}.placeholder`, {
+                defaultValue: field.placeholder,
+              });
+              return (
               <div
                 key={field.key}
                 className={
@@ -248,7 +254,7 @@ export function GenerateReferencesSection({
                 }
               >
                 <label className="mb-1.5 block text-xs font-medium text-gray-700">
-                  {field.label}
+                  {fieldLabel}
                 </label>
                 {field.type === "select" && field.options ? (
                   <select
@@ -258,10 +264,10 @@ export function GenerateReferencesSection({
                     }
                     className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
                   >
-                    <option value="">{field.placeholder}</option>
+                    <option value="">{fieldPlaceholder}</option>
                     {field.options.map((opt) => (
                       <option key={opt.value} value={opt.value}>
-                        {opt.label}
+                        {t(`${fieldKey}.options.${opt.value}`, { defaultValue: opt.label })}
                       </option>
                     ))}
                   </select>
@@ -271,7 +277,7 @@ export function GenerateReferencesSection({
                     onChange={(e) =>
                       handleTypeFieldChange(field.key, e.target.value)
                     }
-                    placeholder={field.placeholder}
+                    placeholder={fieldPlaceholder}
                     rows={2}
                     className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 resize-none"
                   />
@@ -282,12 +288,13 @@ export function GenerateReferencesSection({
                     onChange={(e) =>
                       handleTypeFieldChange(field.key, e.target.value)
                     }
-                    placeholder={field.placeholder}
+                    placeholder={fieldPlaceholder}
                     className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
                   />
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

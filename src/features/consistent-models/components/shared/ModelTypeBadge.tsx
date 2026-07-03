@@ -1,6 +1,7 @@
 "use client";
 
 import { User, Package, Palette, Box, Brush, Camera, Pencil, Mic, Volume2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { TYPE_CONFIG } from "../../constants/model-constants";
 import type { ConsistentModelType } from "../../types/consistent-model.types";
 
@@ -23,6 +24,7 @@ interface ModelTypeBadgeProps {
 
 /** Type badge with icon and colored background */
 export function ModelTypeBadge({ type, size = "sm" }: ModelTypeBadgeProps) {
+  const { t } = useTranslation("consistent-models-registry");
   const config = TYPE_CONFIG[type];
   const Icon = TYPE_ICONS[type];
   const isSmall = size === "sm";
@@ -38,7 +40,7 @@ export function ModelTypeBadge({ type, size = "sm" }: ModelTypeBadgeProps) {
       }`}
     >
       <Icon className={isSmall ? "h-3 w-3" : "h-3.5 w-3.5"} />
-      {config.label}
+      {t(`type.${type}.label`, { defaultValue: config.label })}
     </span>
   );
 }

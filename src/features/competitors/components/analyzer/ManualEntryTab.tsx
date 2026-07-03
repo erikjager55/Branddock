@@ -13,7 +13,7 @@ interface ManualEntryTabProps {
 
 /** Manual entry form for adding a competitor */
 export function ManualEntryTab({ onBack, onNavigateToDetail }: ManualEntryTabProps) {
-  const { t } = useTranslation("competitors");
+  const { t } = useTranslation(["competitors", "trends-personas-registry"]);
   const createCompetitor = useCreateCompetitor();
   const [name, setName] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
@@ -67,7 +67,7 @@ export function ManualEntryTab({ onBack, onNavigateToDetail }: ManualEntryTabPro
         label={t("manual.tierLabel")}
         value={tier}
         onChange={(v) => setTier(v ?? "DIRECT")}
-        options={TIER_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
+        options={TIER_OPTIONS.map((opt) => ({ value: opt.value, label: t(`trends-personas-registry:competitorTier.${opt.value}`, { defaultValue: opt.label }) }))}
       />
 
       <div>

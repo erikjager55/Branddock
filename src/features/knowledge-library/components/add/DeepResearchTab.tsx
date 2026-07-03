@@ -485,7 +485,7 @@ function ReportFields({
         >
           {RESOURCE_CATEGORIES.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {t(`claw-content-registry:categories.${c}`, { defaultValue: c })}
             </option>
           ))}
         </select>

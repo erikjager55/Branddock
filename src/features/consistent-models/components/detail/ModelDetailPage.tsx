@@ -52,6 +52,15 @@ interface ModelDetailPageProps {
   onNavigateToStudio?: () => void;
 }
 
+/** Maps the raw English WIZARD_STEPS_* label to its i18n slug key. */
+const WIZARD_STEP_I18N_KEYS: Record<string, string> = {
+  Upload: "upload",
+  "Training & Showcase": "trainingShowcase",
+  "Generate References": "generateReferences",
+  "Upload & Curate": "uploadCurate",
+  "AI Style Analysis": "aiStyleAnalysis",
+};
+
 /** Detail page orchestrator — 2-column layout (8/4 split) with wizard stepper */
 export function ModelDetailPage({
   modelId,
@@ -59,7 +68,7 @@ export function ModelDetailPage({
   onViewShowcase,
   onNavigateToStudio,
 }: ModelDetailPageProps) {
-  const { t } = useTranslation("consistent-models");
+  const { t } = useTranslation(["consistent-models", "consistent-models-registry"]);
   const { data: model, isLoading } = useConsistentModelDetail(modelId);
   const { data: generationsData } = useGenerations(modelId);
   const updateModel = useUpdateModel(modelId);
@@ -525,7 +534,11 @@ export function ModelDetailPage({
       {stepLabels.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <ModelWizardStepper
-            labels={stepLabels}
+            labels={stepLabels.map((label) =>
+              t(`consistent-models-registry:wizardStep.${WIZARD_STEP_I18N_KEYS[label] ?? label}`, {
+                defaultValue: label,
+              }),
+            )}
             currentStep={wizardStep}
             onStepClick={setWizardStep}
           />

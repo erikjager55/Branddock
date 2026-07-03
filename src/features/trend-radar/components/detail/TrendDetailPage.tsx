@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   Trash2,
@@ -76,6 +77,7 @@ const TIMEFRAME_OPTIONS = [
 /** Trend detail page with hero header, edit mode, and lock/unlock */
 export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation(['trend-radar', 'trends-personas-registry']);
   const { formatDate } = useFormat();
   const { selectedTrendId, isEditing, setIsEditing } = useTrendRadarStore();
   const { data: trend, isLoading } = useTrendDetail(selectedTrendId);
@@ -282,7 +284,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
           ) : (
             <div className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center ${categoryConfig.bg}`}>
               <span className={`text-2xl md:text-3xl font-bold ${categoryConfig.text}`}>
-                {categoryConfig.label.charAt(0)}
+                {t(`trends-personas-registry:category.${trend.category}`, { defaultValue: categoryConfig.label }).charAt(0)}
               </span>
             </div>
           )}
@@ -335,20 +337,20 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
               ) : (
                 <>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded ${categoryConfig.bg} ${categoryConfig.text}`}>
-                    {categoryConfig.label}
+                    {t(`trends-personas-registry:category.${trend.category}`, { defaultValue: categoryConfig.label })}
                   </span>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded ${impactConfig.bg} ${impactConfig.text}`}>
-                    {impactConfig.label} Impact
+                    {t(`trends-personas-registry:impact.${trend.impactLevel}`, { defaultValue: impactConfig.label })} Impact
                   </span>
                   <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-                    {SCOPE_LABELS[trend.scope]}
+                    {t(`trends-personas-registry:scope.${trend.scope}`, { defaultValue: SCOPE_LABELS[trend.scope] })}
                   </span>
                   <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-                    {TIMEFRAME_LABELS[trend.timeframe].label}
+                    {t(`trends-personas-registry:timeframe.${trend.timeframe}`, { defaultValue: TIMEFRAME_LABELS[trend.timeframe].label })}
                   </span>
                   {directionConfig && (
                     <span className={`text-xs font-medium ${directionConfig.color}`}>
-                      {directionConfig.label}
+                      {t(`trends-personas-registry:direction.${trend.direction}`, { defaultValue: directionConfig.label })}
                     </span>
                   )}
                 </>
@@ -358,7 +360,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
             {/* Detection metadata */}
             <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
               <span className={`font-medium px-1.5 py-0.5 rounded ${sourceConfig.color}`}>
-                {sourceConfig.label}
+                {t(`trends-personas-registry:detectionSource.${trend.detectionSource}`, { defaultValue: sourceConfig.label })}
               </span>
               <span>
                 {formatDate(new Date(trend.createdAt), {
@@ -790,7 +792,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">Detection</span>
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${sourceConfig.color}`}>
-                    {sourceConfig.label}
+                    {t(`trends-personas-registry:detectionSource.${trend.detectionSource}`, { defaultValue: sourceConfig.label })}
                   </span>
                 </div>
                 {trend.evidenceCount > 0 && (

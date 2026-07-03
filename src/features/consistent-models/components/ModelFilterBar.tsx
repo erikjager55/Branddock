@@ -34,7 +34,13 @@ export function ModelFilterBar({
   statusFilter,
   onStatusFilterChange,
 }: ModelFilterBarProps) {
-  const { t } = useTranslation("consistent-models");
+  const { t } = useTranslation(["consistent-models", "consistent-models-registry"]);
+  const statusOptions = STATUS_FILTER_OPTIONS.map((o) => ({
+    value: o.value,
+    label: t(`consistent-models-registry:statusFilter.${o.value === "" ? "all" : o.value}`, {
+      defaultValue: o.label,
+    }),
+  }));
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -48,7 +54,7 @@ export function ModelFilterBar({
         <Select
           value={statusFilter || null}
           onChange={(v) => onStatusFilterChange(v ?? "")}
-          options={STATUS_FILTER_OPTIONS}
+          options={statusOptions}
         />
       </div>
 
@@ -78,7 +84,7 @@ export function ModelFilterBar({
                   : { backgroundColor: opt.bgHex, color: opt.colorHex }
               }
             >
-              {opt.label}
+              {t(`consistent-models-registry:type.${opt.value}.label`, { defaultValue: opt.label })}
             </button>
           );
         })}

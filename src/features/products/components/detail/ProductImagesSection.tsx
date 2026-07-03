@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ImagePlus, Pencil, Trash2 } from "lucide-react";
 import { Button, Badge, EmptyState } from "@/components/shared";
@@ -26,11 +26,20 @@ export function ProductImagesSection({
   isLocked = false,
   onAddImage,
 }: ProductImagesSectionProps) {
-  const { t } = useTranslation("products");
+  const { t } = useTranslation(["products", "products-registry"]);
   const updateImage = useUpdateProductImage(productId);
   const deleteImage = useDeleteProductImage(productId);
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const imageCategoryOptions = useMemo(
+    () =>
+      IMAGE_CATEGORY_SELECT_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: t(`products-registry:imageCategory.${opt.value}`, { defaultValue: opt.label }),
+      })),
+    [t],
+  );
 
   const handleCategoryChange = (imageId: string, category: string | null) => {
     if (!category) return;
@@ -142,14 +151,18 @@ export function ProductImagesSection({
                       handleCategoryChange(image.id, val);
                       setEditingImageId(null);
                     }}
-                    options={IMAGE_CATEGORY_SELECT_OPTIONS}
+                    options={imageCategoryOptions}
                     placeholder={t("fields.categoryShort")}
                   />
                 ) : (
                   <Badge variant="default">
-                    {IMAGE_CATEGORY_OPTIONS.find(
-                      (c) => c.value === image.category,
-                    )?.label ?? image.category}
+                    {image.category
+                      ? t(`products-registry:imageCategory.${image.category}`, {
+                          defaultValue:
+                            IMAGE_CATEGORY_OPTIONS.find((c) => c.value === image.category)
+                              ?.label ?? image.category,
+                        })
+                      : image.category}
                   </Badge>
                 )}
               </div>

@@ -8,25 +8,25 @@ import { MEDIA_TYPE_ICONS, MEDIA_CATEGORY_CONFIG, SORT_OPTIONS } from '../consta
 import type { MediaViewMode } from '../constants/media-constants';
 import type { MediaType, MediaCategory } from '../types/media.types';
 
-const TYPE_OPTIONS = Object.entries(MEDIA_TYPE_ICONS).map(([value, config]) => ({
-  value,
-  label: config.label,
-}));
-
-const CATEGORY_OPTIONS = Object.entries(MEDIA_CATEGORY_CONFIG).map(([value, config]) => ({
-  value,
-  label: config.label,
-}));
-
-const SORT_OPTIONS_LIST = SORT_OPTIONS.map((opt) => ({
-  value: opt.value,
-  label: opt.label,
-}));
-
 /** Search and filter bar for the Media Library. */
 export function MediaSearchFilter() {
-  const { t } = useTranslation('media-library');
+  const { t } = useTranslation(['media-library', 'media-registry']);
   const store = useMediaLibraryStore();
+
+  const typeOptions = Object.entries(MEDIA_TYPE_ICONS).map(([value, config]) => ({
+    value,
+    label: t(`media-registry:type.${value}`, { defaultValue: config.label }),
+  }));
+
+  const categoryOptions = Object.entries(MEDIA_CATEGORY_CONFIG).map(([value, config]) => ({
+    value,
+    label: t(`media-registry:category.${value}`, { defaultValue: config.label }),
+  }));
+
+  const sortOptions = SORT_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: t(`media-registry:sort.${opt.value.replace(':', '.')}`, { defaultValue: opt.label }),
+  }));
 
   return (
     <div className="flex items-center gap-3 flex-wrap mb-4" data-testid="media-filters">
@@ -42,7 +42,7 @@ export function MediaSearchFilter() {
         <Select
           value={store.mediaTypeFilter ?? ''}
           onChange={(val) => store.setMediaTypeFilter((val || null) as MediaType | null)}
-          options={TYPE_OPTIONS}
+          options={typeOptions}
           placeholder={t('filters.allTypes')}
           allowClear
         />
@@ -52,7 +52,7 @@ export function MediaSearchFilter() {
         <Select
           value={store.categoryFilter ?? ''}
           onChange={(val) => store.setCategoryFilter((val || null) as MediaCategory | null)}
-          options={CATEGORY_OPTIONS}
+          options={categoryOptions}
           placeholder={t('filters.allCategories')}
           allowClear
         />
@@ -68,7 +68,7 @@ export function MediaSearchFilter() {
               store.setSortOrder(order as 'asc' | 'desc');
             }
           }}
-          options={SORT_OPTIONS_LIST}
+          options={sortOptions}
           placeholder={t('filters.sortBy')}
         />
       </div>

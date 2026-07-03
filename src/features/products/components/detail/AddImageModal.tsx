@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ImagePlus, Link, Upload, X } from "lucide-react";
 import { Modal, Button, Input } from "@/components/shared";
@@ -26,8 +26,17 @@ export function AddImageModal({
   onClose,
   productId,
 }: AddImageModalProps) {
-  const { t } = useTranslation("products");
+  const { t } = useTranslation(["products", "products-registry"]);
   const [activeTab, setActiveTab] = useState<TabId>("url");
+
+  const imageCategoryOptions = useMemo(
+    () =>
+      IMAGE_CATEGORY_SELECT_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: t(`products-registry:imageCategory.${opt.value}`, { defaultValue: opt.label }),
+      })),
+    [t],
+  );
 
   // URL tab state
   const [url, setUrl] = useState("");
@@ -235,7 +244,7 @@ export function AddImageModal({
             label={t("fields.category")}
             value={category}
             onChange={setCategory}
-            options={IMAGE_CATEGORY_SELECT_OPTIONS}
+            options={imageCategoryOptions}
             placeholder={t("fields.selectCategory")}
           />
 
@@ -338,7 +347,7 @@ export function AddImageModal({
             label={t("fields.category")}
             value={uploadCategory}
             onChange={setUploadCategory}
-            options={IMAGE_CATEGORY_SELECT_OPTIONS}
+            options={imageCategoryOptions}
             placeholder={t("fields.selectCategory")}
           />
 
