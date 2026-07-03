@@ -27,7 +27,8 @@ export function StrategicCampaignCard({ campaign, onClick, onArchive, onDelete }
     ? Math.round((campaign.completedDeliverableCount / campaign.deliverableCount) * 100)
     : 0;
 
-  const { light, label: lightLabel } = deriveCampaignTrafficLight(campaign);
+  const { light, label: lightLabel, key: lightKey, progress: lightProgress } = deriveCampaignTrafficLight(campaign);
+  const lightText = t(`campaigns-cards:trafficLight.${lightKey}`, { progress: lightProgress, defaultValue: lightLabel });
   const tl = TRAFFIC_LIGHT[light];
 
   return (
@@ -52,7 +53,7 @@ export function StrategicCampaignCard({ campaign, onClick, onArchive, onDelete }
       <div
         className="w-1.5 flex-shrink-0"
         style={{ backgroundColor: tl.stripe }}
-        aria-label={lightLabel}
+        aria-label={lightText}
       />
 
       <div className="flex-1 p-5">
@@ -66,7 +67,7 @@ export function StrategicCampaignCard({ campaign, onClick, onArchive, onDelete }
               style={{ backgroundColor: `${tl.stripe}18`, color: tl.text }}
             >
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tl.dot }} />
-              {lightLabel}
+              {lightText}
             </span>
           </div>
           <div className="flex items-center gap-1">

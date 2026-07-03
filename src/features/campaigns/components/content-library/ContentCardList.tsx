@@ -126,12 +126,16 @@ export function ContentCardList({
 
       {/* Rows */}
       {items.map((item) => {
-        const { light, label: lightLabel } = deriveTrafficLight(
+        const { light, label: lightLabel, key: lightKey, overdue: lightOverdue } = deriveTrafficLight(
           item.isPublishReady,
           item.status,
           item.publishedAt ? "published" : item.scheduledPublishDate ? "scheduled" : "unscheduled",
           item.hasContent,
         );
+        const statusBase = t(`campaigns-cards:contentStatus.${lightKey}`, { defaultValue: lightLabel });
+        const statusLabel = lightOverdue
+          ? `${statusBase} · ${t("campaigns-cards:overdue", { defaultValue: "overdue" })}`
+          : statusBase;
         const tl = TRAFFIC_LIGHT[light];
 
         return (
@@ -148,7 +152,7 @@ export function ContentCardList({
             <div
               className="w-1.5 h-full rounded-full self-stretch"
               style={{ backgroundColor: tl.stripe }}
-              title={lightLabel}
+              title={statusLabel}
             />
 
             {/* Title + favorite */}
@@ -197,13 +201,13 @@ export function ContentCardList({
               <span
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
                 style={{ backgroundColor: `${tl.stripe}18`, color: tl.text }}
-                title={item.readinessHint ?? lightLabel}
+                title={item.readinessHint ?? statusLabel}
               >
                 <span
                   className="w-1.5 h-1.5 rounded-full"
                   style={{ backgroundColor: tl.dot }}
                 />
-                {lightLabel}
+                {statusLabel}
               </span>
             </div>
 

@@ -51,12 +51,25 @@ export { TRAFFIC_LIGHT };
  * RED: nothing done yet (not started, no content)
  * AMBER: everything in between (in progress, needs review, pipeline incomplete, overdue)
  */
+export type ContentTrafficLightKey =
+  | "published"
+  | "scheduled"
+  | "ready"
+  | "notStarted"
+  | "needsReview"
+  | "inProgress";
+
 export function deriveTrafficLight(
   isPublishReady?: boolean,
   workflowStatus?: string,
   state?: string,
   hasContent?: boolean,
-): { light: TrafficLight; label: string } {
+): {
+  light: TrafficLight;
+  label: string;
+  key: ContentTrafficLightKey;
+  overdue: boolean;
+} {
   // Match user mental model: an item is "in progress" as soon as *any*
   // forward movement happened — scheduled on the calendar, content
   // generated, or status moved past NOT_STARTED. Workflow status alone
@@ -66,13 +79,15 @@ export function deriveTrafficLight(
   // Overdue is a label modifier (date passed + not published) — it never
   // changes the bucket, otherwise "In progress" filter would hide
   // overdue-in-progress items.
-  if (state === "published") return { light: "green", label: "Published" };
+  if (state === "published")
+    return { light: "green", label: "Published", key: "published", overdue: false };
   // Approved-and-scheduled: green pill with "Scheduled" label so the user can
   // distinguish queued items from "ready but not yet timed" ones at a glance.
   if (isPublishReady === true && state === "scheduled") {
-    return { light: "green", label: "Scheduled" };
+    return { light: "green", label: "Scheduled", key: "scheduled", overdue: false };
   }
-  if (isPublishReady === true) return { light: "green", label: "Ready" };
+  if (isPublishReady === true)
+    return { light: "green", label: "Ready", key: "ready", overdue: false };
 
   const isOverdue = state === "overdue";
   const isScheduled = state === "scheduled" || state === "overdue";
@@ -85,14 +100,19 @@ export function deriveTrafficLight(
   if (!hasAnyProgress) {
     return {
       light: "red",
-      label: isOverdue ? "Not started · overdue" : "Not started",
+      label: "Not started",
+      key: "notStarted",
+      overdue: isOverdue,
     };
   }
 
-  let label =
-    workflowStatus === "COMPLETED" ? "Needs review" : "In progress";
-  if (isOverdue) label += " · overdue";
-  return { light: "amber", label };
+  const needsReview = workflowStatus === "COMPLETED";
+  return {
+    light: "amber",
+    label: needsReview ? "Needs review" : "In progress",
+    key: needsReview ? "needsReview" : "inProgress",
+    overdue: isOverdue,
+  };
 }
 
 // ─── Phase pill ─────────────────────────────────────────────────
@@ -301,12 +321,16 @@ export function CalendarCard({
 }: CalendarCardProps) {
   const { t } = useTranslation('campaigns-core');
   const phaseConfig = getPhaseConfig(phase);
-  const { light, label: lightLabel } = deriveTrafficLight(
+  const { light, label: lightLabel, key: lightKey, overdue: lightOverdue } = deriveTrafficLight(
     isPublishReady,
     workflowStatus,
     state,
     hasContent,
   );
+  const statusBase = t(`campaigns-cards:contentStatus.${lightKey}`, { defaultValue: lightLabel });
+  const statusLabel = lightOverdue
+    ? `${statusBase} · ${t('campaigns-cards:overdue', { defaultValue: 'overdue' })}`
+    : statusBase;
   const tl = TRAFFIC_LIGHT[light];
 
   const [isDragging, setIsDragging] = useState(false);
@@ -351,7 +375,7 @@ export function CalendarCard({
         color: "#374151",
         opacity: isDragging ? 0.4 : 1,
       }}
-      title={`${title} — ${lightLabel}${readinessHint ? ` (${readinessHint})` : ""}`}
+      title={`${title} — ${statusLabel}${readinessHint ? ` (${readinessHint})` : ""}`}
     >
       {/* Traffic light left stripe */}
       <div
@@ -430,7 +454,7 @@ export function CalendarCard({
               className="w-1.5 h-1.5 rounded-full"
               style={{ backgroundColor: tl.dot }}
             />
-            {lightLabel}
+            {statusLabel}
           </span>
 
           {qualityScore !== null && qualityScore !== undefined && (

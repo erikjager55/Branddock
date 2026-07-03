@@ -84,7 +84,8 @@ export function CampaignList({
         const progress = campaign.deliverableCount > 0
           ? Math.round((campaign.completedDeliverableCount / campaign.deliverableCount) * 100)
           : 0;
-        const { light, label: lightLabel } = deriveCampaignTrafficLight(campaign);
+        const { light, label: lightLabel, key: lightKey, progress: lightProgress } = deriveCampaignTrafficLight(campaign);
+        const lightText = t(`campaigns-cards:trafficLight.${lightKey}`, { progress: lightProgress, defaultValue: lightLabel });
         const tl = TRAFFIC_LIGHT[light];
 
         return (
@@ -127,7 +128,7 @@ export function CampaignList({
                 style={{ backgroundColor: `${tl.stripe}18`, color: tl.text }}
               >
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tl.dot }} />
-                {lightLabel}
+                {lightText}
               </span>
             </div>
 
