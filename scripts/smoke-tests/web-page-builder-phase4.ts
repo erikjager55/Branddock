@@ -96,13 +96,13 @@ function makeMockPrisma() {
           publishedAt: new Date(),
         };
       },
-      findUnique: async (args: {
-        where: { workspaceId_slug: { workspaceId: string; slug: string } };
+      findFirst: async (args: {
+        where: { workspaceId: string; slug: string };
       }): Promise<{ puckData: unknown; status: string } | null> => {
-        if (args.where.workspaceId_slug.slug === 'published-page') {
+        if (args.where.slug === 'published-page') {
           return { puckData: { root: { props: {} }, content: [] }, status: 'PUBLISHED' };
         }
-        if (args.where.workspaceId_slug.slug === 'draft-page') {
+        if (args.where.slug === 'draft-page') {
           return { puckData: { root: { props: {} }, content: [] }, status: 'DRAFT' };
         }
         return null;
@@ -126,6 +126,7 @@ async function testPublishLandingPage(): Promise<void> {
     workspaceId: 'ws-1',
     deliverableId: 'd-1',
     slug: 'my-launch',
+    locale: 'en-GB',
     puckData: { root: { props: {} }, content: [] },
   });
 
@@ -134,9 +135,9 @@ async function testPublishLandingPage(): Promise<void> {
   assert('returns publishedAt', result.publishedAt instanceof Date);
   assert('called upsert once', upsertCalls.length === 1);
   assert(
-    'upsert uses compound workspace+slug key',
+    'upsert uses compound workspace+locale+slug key',
     JSON.stringify(upsertCalls[0]?.where) ===
-      JSON.stringify({ workspaceId_slug: { workspaceId: 'ws-1', slug: 'my-launch' } }),
+      JSON.stringify({ workspaceId_locale_slug: { workspaceId: 'ws-1', locale: 'en-GB', slug: 'my-launch' } }),
   );
   assert(
     'upsert.create sets status=PUBLISHED',
@@ -154,6 +155,7 @@ async function testPublishLandingPage(): Promise<void> {
       workspaceId: 'ws-1',
       deliverableId: 'd-1',
       slug: 'Invalid Slug!',
+      locale: 'en-GB',
       puckData: {},
     });
   } catch (err) {

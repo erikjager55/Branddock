@@ -18,13 +18,16 @@ import type { Prisma } from '@prisma/client';
 interface LandingPageClient {
   landingPage: {
     upsert: (args: {
-      where: { workspaceId_slug: { workspaceId: string; slug: string } };
+      where: { workspaceId_locale_slug: { workspaceId: string; locale: string; slug: string } };
       update: Record<string, unknown>;
       create: Record<string, unknown>;
       select: Record<string, boolean>;
     }) => Promise<{ id: string; slug: string; status: string; publishedAt: Date | null }>;
-    findUnique: (args: {
-      where: { workspaceId_slug: { workspaceId: string; slug: string } };
+    // Content-locale foundation: read by (workspaceId, slug) is locale-agnostisch
+    // (single page per slug vandaag; locale-routing is LATER). Compound-unique
+    // [workspaceId, locale, slug] wordt alleen bij publish-upsert gebruikt.
+    findFirst: (args: {
+      where: { workspaceId: string; slug: string };
       select: Record<string, boolean>;
     }) => Promise<{ puckData: unknown; status: string } | null>;
   };
@@ -43,6 +46,8 @@ export interface PublishPageInput {
   workspaceId: string;
   deliverableId: string;
   slug: string;
+  /** BCP-47 content-locale (default-profiel-resolutie); part of the compound unique. */
+  locale: string;
   puckData: Prisma.InputJsonValue;
 }
 
@@ -90,8 +95,9 @@ export async function publishLandingPage(
   const publishedAt = new Date();
   const record = await prisma.landingPage.upsert({
     where: {
-      workspaceId_slug: {
+      workspaceId_locale_slug: {
         workspaceId: input.workspaceId,
+        locale: input.locale,
         slug: input.slug,
       },
     },
@@ -105,6 +111,7 @@ export async function publishLandingPage(
       workspaceId: input.workspaceId,
       deliverableId: input.deliverableId,
       slug: input.slug,
+      locale: input.locale,
       puckData: input.puckData,
       status: 'PUBLISHED',
       publishedAt,
@@ -136,12 +143,10 @@ export async function resolvePublishedPage(
   });
   if (!workspace) return null;
 
-  const page = await prisma.landingPage.findUnique({
+  const page = await prisma.landingPage.findFirst({
     where: {
-      workspaceId_slug: {
-        workspaceId: workspace.id,
-        slug: pageSlug,
-      },
+      workspaceId: workspace.id,
+      slug: pageSlug,
     },
     select: { puckData: true, status: true },
   });

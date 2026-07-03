@@ -50,8 +50,8 @@ const loadPublishedPageSeo = cache(
     });
     if (!workspace) return null;
 
-    const page = await prisma.landingPage.findUnique({
-      where: { workspaceId_slug: { workspaceId: workspace.id, slug } },
+    const page = await prisma.landingPage.findFirst({
+      where: { workspaceId: workspace.id, slug },
       select: { status: true, deliverableId: true },
     });
     if (!page || page.status !== 'PUBLISHED') return null;
@@ -106,8 +106,8 @@ export default async function PublishedPage({ params, searchParams }: Props) {
     notFound();
   }
 
-  const deliverableContext = await prisma.landingPage.findUnique({
-    where: { workspaceId_slug: { workspaceId: resolved.workspaceId, slug } },
+  const deliverableContext = await prisma.landingPage.findFirst({
+    where: { workspaceId: resolved.workspaceId, slug },
     select: { deliverableId: true },
   });
   if (!deliverableContext) {

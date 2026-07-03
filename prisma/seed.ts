@@ -249,6 +249,21 @@ async function main() {
     },
   });
 
+  // Content-locale foundation — Brand + default-profiel (anders breekt het
+  // locale-aware default-pad in getBrandContext bij reseed/E2E).
+  {
+    const brand = await prisma.brand.upsert({
+      where: { workspaceId: workspace.id },
+      create: { workspaceId: workspace.id },
+      update: {},
+    });
+    await prisma.brandLocaleProfile.upsert({
+      where: { workspaceId_locale: { workspaceId: workspace.id, locale: "nl-NL" } },
+      create: { brandId: brand.id, workspaceId: workspace.id, locale: "nl-NL", isDefault: true },
+      update: { isDefault: true },
+    });
+  }
+
   // User — upsert to preserve existing session
   const user = await prisma.user.upsert({
     where: { id: DEMO_USER_ID },
@@ -327,6 +342,20 @@ async function main() {
       organizationId: directOrg.id,
     },
   });
+
+  // Content-locale foundation — Brand + default-profiel (zie demo hierboven).
+  {
+    const brand = await prisma.brand.upsert({
+      where: { workspaceId: directWorkspace.id },
+      create: { workspaceId: directWorkspace.id },
+      update: {},
+    });
+    await prisma.brandLocaleProfile.upsert({
+      where: { workspaceId_locale: { workspaceId: directWorkspace.id, locale: "en-GB" } },
+      create: { brandId: brand.id, workspaceId: directWorkspace.id, locale: "en-GB", isDefault: true },
+      update: { isDefault: true },
+    });
+  }
 
   const directUser = await prisma.user.create({
     data: {

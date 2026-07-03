@@ -288,11 +288,15 @@ model Workspace {
   // Brand Voiceguide (parallel aan brandStyleguide — verbale identity)
   brandVoiceguide BrandVoiceguide?
 
+  // Content-locale foundation (Approach C, ADR 2026-06-28) — multi-markt-anker.
+  brand          Brand?
+  localeProfiles BrandLocaleProfile[]
+
   // Brandclaw — immutable point-in-time inputs voor Strategy Analyst observations
   // (ADR 2026-05-08-brandclaw-agent-architectuur).
-  dataSnapshots            DataSnapshot[]
-  strategyObservations     StrategyObservation[]
-  strategyObservationRuns  StrategyObservationRun[]
+  dataSnapshots           DataSnapshot[]
+  strategyObservations    StrategyObservation[]
+  strategyObservationRuns StrategyObservationRun[]
 
   // Per-type fidelity thresholds (content-test #6.B)
   contentTypeThresholds WorkspaceContentTypeThreshold[]
@@ -301,6 +305,52 @@ model Workspace {
   connectedAdAccounts ConnectedAdAccount[]
 
   @@index([organizationId])
+}
+
+/// Merk-entiteit (1:1 met Workspace) — anker voor de multi-markt-laag (Approach C,
+/// ADR 2026-06-28). Vandaag puur een container; markt-specifieke deltas leven op
+/// BrandLocaleProfile. Additief + niet-brekend: het default-pad gebruikt het
+/// isDefault-profiel en reproduceert de huidige single-locale-resolutie byte-identiek.
+model Brand {
+  id          String    @id @default(cuid())
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  localeProfiles BrandLocaleProfile[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Eén rij per markt/locale binnen een Brand. `isDefault` markeert het profiel dat
+/// het huidige single-locale-gedrag reproduceert. `voiceOverrides`/`localizedAssets`
+/// zijn gereserveerde JSON-delta-overlays (vorm gereserveerd in de ADR; NOG NIET
+/// geconsumeerd door prompts — dat is Fase 4 transcreatie).
+model BrandLocaleProfile {
+  id          String    @id @default(cuid())
+  brandId     String
+  brand       Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// IETF BCP-47, bv. "nl-NL", "en-GB". Aligned met SUPPORTED_LOCALES in locale-resolver.
+  locale    String
+  isDefault Boolean @default(false)
+
+  /// Gereserveerde markt-delta-overlays (Fase 4 — nog niet geconsumeerd).
+  voiceOverrides  Json?
+  localizedAssets Json?
+
+  deliverables Deliverable[]
+  personas     Persona[]
+  landingPages LandingPage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, locale])
+  @@index([workspaceId])
+  @@index([brandId])
 }
 
 model User {
@@ -390,13 +440,13 @@ model User {
   consistentModelGenerations ConsistentModelGeneration[] @relation("CreatedConsistentModelGenerations")
 
   // Claw AI Assistant
-  clawConversations    ClawConversation[]
-  bugReports           BugReport[]
-  resolvedBugReports   BugReport[]        @relation("BugResolver")
+  clawConversations      ClawConversation[]
+  bugReports             BugReport[]
+  resolvedBugReports     BugReport[]        @relation("BugResolver")
   featureReports         FeatureReport[]
-  resolvedFeatureReports FeatureReport[]  @relation("FeatureResolver")
-  chatFeedback         ChatFeedback[]
-  reviewedChatFeedback ChatFeedback[]     @relation("ChatFeedbackReviewer")
+  resolvedFeatureReports FeatureReport[]    @relation("FeatureResolver")
+  chatFeedback           ChatFeedback[]
+  reviewedChatFeedback   ChatFeedback[]     @relation("ChatFeedbackReviewer")
 
   // Brandstyle v2 (Fase 0)
   uploadedFonts      StyleguideFont[]     @relation("FontUploader")
@@ -417,8 +467,8 @@ model User {
   contentReviewLogs ContentReviewLog[]
 
   // Fase B — Ad publishing
-  connectedAdAccounts ConnectedAdAccount[] @relation("ConnectedAdAccountConnector")
-  publishedAdCampaigns AdCampaign[]        @relation("AdCampaignPublisher")
+  connectedAdAccounts  ConnectedAdAccount[] @relation("ConnectedAdAccountConnector")
+  publishedAdCampaigns AdCampaign[]         @relation("AdCampaignPublisher")
 
   @@index([workspaceId])
 }
@@ -1121,6 +1171,10 @@ model Deliverable {
   components         DeliverableComponent[]
   campaignSends      CampaignSend[]
 
+  // Content-locale foundation — nullable markt-dimensie (default-pad = null).
+  localeProfileId String?
+  localeProfile   BrandLocaleProfile? @relation(fields: [localeProfileId], references: [id], onDelete: SetNull)
+
   // Cat 2 — Continuous Learning Loop FK (leerlus-werkstroom sessie 2)
   // Plain String FK without Prisma relation declaration to avoid 10 back-references on AICallTrace.
   // App-code lookup: prisma.aICallTrace.findUnique({ where: { id: deliverable.primaryCallTraceId } })
@@ -1694,57 +1748,73 @@ model BrandStyleguide {
   // Layout-style (Sprint 3 brand-styling-consistency-plan §3c) — bepaalt
   // visuele dichtheid / witruimte / component-variant in PUCK-render.
   // Auto-detected door brandstyle-scraper, user kan overriden in onboarding.
-  layoutStyle        LayoutStyle      @default(COMMERCIAL)
+  layoutStyle LayoutStyle @default(COMMERCIAL)
 
   // V2-2 lazy-inference gate: false betekent dat de waarde nog de schema-
   // default is en herinferreerd mag worden door ensureLayoutStyle. True =
   // expliciet inferred-en-gepersist of door user gezet → niet overschrijven.
   // Zonder deze flag kan ensure niet onderscheiden tussen "user heeft
   // COMMERCIAL gekozen" en "schema-default COMMERCIAL nooit veranderd".
-  layoutStyleInferred Boolean         @default(false)
+  layoutStyleInferred Boolean @default(false)
 
   // Verbeterplan Fase B — rendering-profiles uit scraper (alle Json?,
   // nullable additive). Renderer leest deze velden voor brand-specifieke
   // button/spacing/elevation/motion-styling i.p.v. archetype-defaults.
-  /** ScrapedButtonStyle[] — primary/secondary/ghost button-samples. */
-  buttonProfile       Json?
-  /** SpacingProfile — section/card/button/input padding-samples + typical. */
-  spacingProfile      Json?
-  /** ElevationProfile — box-shadow categorisatie + dominant. */
-  elevationProfile    Json?
-  /** RadiusProfile — border-radius typical per context. */
-  radiusProfile       Json?
-  /** MotionProfile — transition+animation duration + dominant easing. */
-  motionProfile       Json?
-  /** ScrapedTypographyByRole — display/heading/body/label/button styles. */
-  typographyProfile   Json?
+  /**
+   * /** ScrapedButtonStyle[] — primary/secondary/ghost button-samples.
+   */
+  buttonProfile     Json?
+  /**
+   * SpacingProfile — section/card/button/input padding-samples + typical.
+   */
+  spacingProfile    Json?
+  /**
+   * ElevationProfile — box-shadow categorisatie + dominant.
+   */
+  elevationProfile  Json?
+  /**
+   * RadiusProfile — border-radius typical per context.
+   */
+  radiusProfile     Json?
+  /**
+   * MotionProfile — transition+animation duration + dominant easing.
+   */
+  motionProfile     Json?
+  /**
+   * ScrapedTypographyByRole — display/heading/body/label/button styles.
+   */
+  typographyProfile Json?
 
   // Verbeterplan #5 — per-veld override-flags. False = scraper mag
   // overschrijven bij re-scrape; True = user-set OR expliciet
   // re-scrape-protected. Voor toekomstige brand-onboarding UI.
-  buttonProfileOverride       Boolean @default(false)
-  spacingProfileOverride      Boolean @default(false)
-  elevationProfileOverride    Boolean @default(false)
-  radiusProfileOverride       Boolean @default(false)
-  motionProfileOverride       Boolean @default(false)
-  typographyProfileOverride   Boolean @default(false)
-  /** Eén-zin design-philosophy uit AI-analyse (Fase E3 verbeterplan).
-   *  "Beschrijf wat dit merk visueel anders maakt — wat MOET behouden bij
-   *  rendering". Wordt als brand-context aan content-generation gegeven. */
-  designPhilosophy    String? @db.Text
+  buttonProfileOverride     Boolean @default(false)
+  spacingProfileOverride    Boolean @default(false)
+  elevationProfileOverride  Boolean @default(false)
+  radiusProfileOverride     Boolean @default(false)
+  motionProfileOverride     Boolean @default(false)
+  typographyProfileOverride Boolean @default(false)
+  /**
+   * Eén-zin design-philosophy uit AI-analyse (Fase E3 verbeterplan).
+   * "Beschrijf wat dit merk visueel anders maakt — wat MOET behouden bij
+   * rendering". Wordt als brand-context aan content-generation gegeven.
+   */
+  designPhilosophy          String? @db.Text
 
-  /** DTS-plan C7 — fixture-samples per content-type (real headlines / CTAs
-   *  uit gescrapede bodyText). Puck defaultProps gebruikt deze voor Step 2
-   *  preview i.p.v. lorem-ipsum. Shape: { headlines?: string[],
-   *  ctaLabels?: string[], featureTitles?: string[], testimonialQuotes?: string[] } */
-  fixtureSamples      Json?
+  /**
+   * DTS-plan C7 — fixture-samples per content-type (real headlines / CTAs
+   * uit gescrapede bodyText). Puck defaultProps gebruikt deze voor Step 2
+   * preview i.p.v. lorem-ipsum. Shape: { headlines?: string[],
+   * ctaLabels?: string[], featureTitles?: string[], testimonialQuotes?: string[] }
+   */
+  fixtureSamples Json?
 
   // Pad C Sub-Sprint B — Jung's brand-archetype. AI-classified uit
   // BrandAssetVersion content. Null = nog niet geclassificeerd; renderer
   // valt terug op layoutStyle-only beslissingen.
   archetype           BrandArchetype?
-  archetypeConfidence String?  // "high" | "medium" | "low"
-  archetypeReasoning  String?  @db.Text  // 1-2 zinnen waarom de classifier dit koos
+  archetypeConfidence String? // "high" | "medium" | "low"
+  archetypeReasoning  String?         @db.Text // 1-2 zinnen waarom de classifier dit koos
 
   // Logo (logoVariations JSON vervangen door StyleguideLogo relatie — Fase 0)
   logos          StyleguideLogo[]
@@ -2105,11 +2175,11 @@ enum StyleguideStatus {
 // Maps naar concrete design-system primitives (spacing/typography/radius/
 // imageStrategy/sectionAlternation) in src/lib/landing-pages/design-system.ts.
 enum LayoutStyle {
-  MINIMAL       // Stripe, Linear, Dinesen, LINFI, Zwarthout — sparse, premium, serif-display
-  EDITORIAL     // Apple product, Tesla — magazine-style, sophisticated, mixed-media
-  COMMERCIAL    // Coolblue, Bol.com, HubSpot — conversion-focused, dense info-grid
-  EXPERIENTIAL  // Patagonia, Tony's Chocolonely — story-driven, immersive
-  PLAYFUL       // Notion marketing, MailerLite — colorful, illustration-heavy
+  MINIMAL // Stripe, Linear, Dinesen, LINFI, Zwarthout — sparse, premium, serif-display
+  EDITORIAL // Apple product, Tesla — magazine-style, sophisticated, mixed-media
+  COMMERCIAL // Coolblue, Bol.com, HubSpot — conversion-focused, dense info-grid
+  EXPERIENTIAL // Patagonia, Tony's Chocolonely — story-driven, immersive
+  PLAYFUL // Notion marketing, MailerLite — colorful, illustration-heavy
 }
 
 // Pad C Sub-Sprint B — Jung's 12 Brand Archetypes (industriestandaard
@@ -2118,18 +2188,18 @@ enum LayoutStyle {
 // micro-copy-tone, etc. AI-classified uit BrandAssetVersion content;
 // cached op styleguide; user kan overrulen via onboarding-UI.
 enum BrandArchetype {
-  INNOCENT       // Coca-Cola, Dove — purity, optimism, simplicity
-  EXPLORER       // Patagonia, Jeep — freedom, adventure, individuality
-  SAGE           // Google, BBC, McKinsey — wisdom, knowledge, expertise
-  HERO           // Nike, BMW — courage, mastery, achievement
-  OUTLAW         // Harley-Davidson, Virgin — rebellion, revolution, disruption
-  MAGICIAN       // Disney, Apple — transformation, vision, mystery
-  REGULAR_GUY    // IKEA, eBay — belonging, down-to-earth, accessibility
-  LOVER          // Chanel, Häagen-Dazs — passion, intimacy, sensuality
-  JESTER         // Old Spice, M&Ms — joy, humor, lightheartedness
-  CARETAKER      // Johnson & Johnson, Volvo — service, protection, nurture
-  CREATOR        // Lego, Adobe — innovation, imagination, self-expression
-  RULER          // Mercedes, Rolex, LINFI — control, leadership, premium quality
+  INNOCENT // Coca-Cola, Dove — purity, optimism, simplicity
+  EXPLORER // Patagonia, Jeep — freedom, adventure, individuality
+  SAGE // Google, BBC, McKinsey — wisdom, knowledge, expertise
+  HERO // Nike, BMW — courage, mastery, achievement
+  OUTLAW // Harley-Davidson, Virgin — rebellion, revolution, disruption
+  MAGICIAN // Disney, Apple — transformation, vision, mystery
+  REGULAR_GUY // IKEA, eBay — belonging, down-to-earth, accessibility
+  LOVER // Chanel, Häagen-Dazs — passion, intimacy, sensuality
+  JESTER // Old Spice, M&Ms — joy, humor, lightheartedness
+  CARETAKER // Johnson & Johnson, Volvo — service, protection, nurture
+  CREATOR // Lego, Adobe — innovation, imagination, self-expression
+  RULER // Mercedes, Rolex, LINFI — control, leadership, premium quality
 }
 
 enum StyleguideSource {
@@ -2217,8 +2287,13 @@ model Persona {
   aiAnalysisSessions AIPersonaAnalysisSession[]
   chatSessions       PersonaChatSession[]
   linkedProducts     ProductPersona[]
-  createdAt          DateTime                   @default(now())
-  updatedAt          DateTime                   @updatedAt
+
+  // Content-locale foundation — nullable markt-dimensie (default-pad = null).
+  localeProfileId String?
+  localeProfile   BrandLocaleProfile? @relation(fields: [localeProfileId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([workspaceId])
   @@index([workspaceId, createdAt])
@@ -2748,7 +2823,7 @@ model KnowledgeResource {
   // Full extracted text body (PDF/text uploads parsed via unpdf, or pasted
   // text). Surfaced into AI prompts via the context registry (knowledge_resource
   // serializer, 'fulltext' hint). Null for link-only resources.
-  content         String? @db.Text
+  content String? @db.Text
 
   // Legacy fields (backward compat)
   difficulty      String? // beginner, intermediate, advanced
@@ -4374,11 +4449,11 @@ model MediaAsset {
   // via raw SQL (zelfde patroon als BrandVoiceguide.centroidEmbedding).
   // Gebruikt voor reuse-detection in Canvas Step 2: similar assets in
   // library worden voorgesteld vóór een nieuwe image-generation start.
-  embedding         Unsupported("vector(1536)")?
+  embedding           Unsupported("vector(1536)")?
   embeddingComputedAt DateTime?
-  source         MediaSource   @default(UPLOAD)
-  sourceUrl      String?
-  attribution    String? // Pexels/Unsplash credits
+  source              MediaSource                  @default(UPLOAD)
+  sourceUrl           String?
+  attribution         String? // Pexels/Unsplash credits
 
   workspaceId  String
   workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -5429,7 +5504,7 @@ model AdCampaign {
   externalAdId       String? // Meta ad-id, LinkedIn creative-id, Google ad-id
 
   status           String // "draft" | "publishing" | "active" | "paused" | "rejected" | "failed"
-  statusMessage    String? @db.Text // platform reason bij rejected/failed
+  statusMessage    String?   @db.Text // platform reason bij rejected/failed
   lastStatusSyncAt DateTime? // bumped door status-sync job, NULL bij eerste publish
 
   publishedAt       DateTime?
@@ -5766,6 +5841,7 @@ model FidelityConfig {
   /**
    * /**
    * /**
+   * /**
    * /** Pijler 1 — style scoring op bestaande BrandPersonality data
    */
   styleWeight Float @default(0.35)
@@ -5780,6 +5856,7 @@ model FidelityConfig {
 
   // ─── Pijler 2 rubric weights (6 dimensies, sum 1.0) ───
   /**
+   * /**
    * /**
    * /**
    * /** Shape: { strategicAnchoring: 0.20, audienceFit: 0.15, brandRecognition: 0.15,
@@ -5797,6 +5874,7 @@ model FidelityConfig {
 
   // ─── Per content-type opt-outs ───
   /**
+   * /**
    * /**
    * /**
    * /** Lege array = fidelity scoring actief voor alle types
@@ -5834,6 +5912,7 @@ model BrandVoiceguide {
 
   // ─── Voice DNA ──────────────────────────────
   /**
+   * /**
    * Vrije-tekst beschrijving van de merkstem. Migreert uit BrandPersonality.brandVoiceDescription.
    */
   voiceDescription String? @db.Text
@@ -5856,18 +5935,23 @@ model BrandVoiceguide {
    */
   writingGuidelines String[]
 
-  /** DTS-plan C1 — vocabulary-rails: woorden/zinnen die het merk wel/niet gebruikt.
-   *  Variant-generator system-prompt injecteert deze als brand-voice discipline. */
+  /**
+   * DTS-plan C1 — vocabulary-rails: woorden/zinnen die het merk wel/niet gebruikt.
+   * Variant-generator system-prompt injecteert deze als brand-voice discipline.
+   */
   vocabularyDo   String[] @default([])
   vocabularyDont String[] @default([])
 
-  /** DTS-plan C2 — voice-sample: 40-80 word paragraph in eigen brand-voice
-   *  (uit gescrapede bodyText door AI Phase 3). Variant-generator gebruikt
-   *  als few-shot example "match this rhythm". */
+  /**
+   * DTS-plan C2 — voice-sample: 40-80 word paragraph in eigen brand-voice
+   * (uit gescrapede bodyText door AI Phase 3). Variant-generator gebruikt
+   * als few-shot example "match this rhythm".
+   */
   voiceSample String? @db.Text
 
   // ─── References ─────────────────────────────
   /**
+   * /**
    * Gecureerde writing-samples (5-10 typisch). Bron voor centroid-embedding.
    * Migreert van BrandPersonality.writingSample (1×) naar array.
    */
@@ -5875,6 +5959,7 @@ model BrandVoiceguide {
 
   // ─── Vocabulary ─────────────────────────────
   /**
+   * /**
    * Single-word level — woorden die het merk gebruikt.
    */
   wordsWeUse   String[]
@@ -5885,6 +5970,7 @@ model BrandVoiceguide {
 
   // ─── Channel-Tones ──────────────────────────
   /**
+   * /**
    * Per-kanaal tone-overrides bovenop globale toneDimensions.
    * Shape: { website: { formalCasual, ... }, socialMedia: {...}, email: {...}, ads: {...}, video: {...} }
    */
@@ -5892,6 +5978,7 @@ model BrandVoiceguide {
 
   // ─── Anti-Patterns ──────────────────────────
   /**
+   * /**
    * Multi-word phrases die het merk vermijdt (uitbreiding op wordsWeAvoid).
    */
   antiPatterns String[]
@@ -5904,6 +5991,7 @@ model BrandVoiceguide {
 
   // ─── Embedding centroid (Pijler 1 fidelity) ─────
   /**
+   * /**
    * OpenAI text-embedding-3-small van geconcateneerde writingSamples. Beheerd via raw SQL.
    */
   centroidEmbedding  Unsupported("vector(1536)")?
@@ -5911,6 +5999,7 @@ model BrandVoiceguide {
 
   // ─── Locale (ADR-3 — per-brand routing voor heuristiek-pakketten) ─────
   /**
+   * /**
    * IETF BCP 47 locale-tag: `nl-NL` / `nl-BE` / `en-GB` / `de-DE` (v1).
    * Wanneer null: `getHeuristicsForBrand()` resolver valt terug op
    * `Workspace.contentLanguage` mapped naar default-locale (en→en-GB,
@@ -5941,6 +6030,7 @@ model BrandVoiceguide {
 
   // ─── Metadata ────────────────────────────────
   /**
+   * /**
    * "manual" | "extracted" (van BrandPersonality migratie) | "analyzer" (door tekst-scanner)
    */
   source      String    @default("manual")
@@ -5966,10 +6056,14 @@ model WorkspaceContentTypeThreshold {
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  /** Matches DeliverableTypeDefinition.id (zie src/features/campaigns/lib/deliverable-types.ts). */
+  /**
+   * Matches DeliverableTypeDefinition.id (zie src/features/campaigns/lib/deliverable-types.ts).
+   */
   contentTypeId String
 
-  /** Composite F-VAL threshold 0-100. Default 65. */
+  /**
+   * Composite F-VAL threshold 0-100. Default 65.
+   */
   threshold Int @default(65)
 
   createdAt DateTime @default(now())
@@ -5994,7 +6088,7 @@ model WorkspaceContentTypeThreshold {
 // =============================================================
 
 model DataSnapshot {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -6039,7 +6133,7 @@ enum ObservationConfidence {
 }
 
 model StrategyObservation {
-  id          String @id @default(cuid())
+  id          String    @id @default(cuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -6084,13 +6178,13 @@ model StrategyObservation {
 }
 
 model StrategyObservationRun {
-  id          String @id @default(cuid())
+  id          String    @id @default(cuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   /// 'manual' / 'scheduled' / 'event_driven'. Plain TEXT zodat nieuwe
   /// triggers (bv. 'webhook') zonder migration kunnen worden toegevoegd.
-  triggerType String
+  triggerType   String
   /// User-id voor manual-runs, cron-name voor scheduled, event-id voor
   /// event-driven. NULL bij autonomous startup-runs.
   triggerSource String?
@@ -6125,7 +6219,7 @@ model StrategyObservationRun {
  * voor publieke artefacten).
  */
 model LandingPage {
-  id            String      @id @default(cuid())
+  id            String     @id @default(cuid())
   workspaceId   String
   deliverableId String
   /// URL-slug binnen workspace-subdomain — `<slug>` in `<workspace>.branddock.app/<slug>`.
@@ -6134,15 +6228,20 @@ model LandingPage {
   /// (Puck core types). Niet gemuteerd na publish — verdere edits leven op
   /// de bron-deliverable.settings.puckData totdat user opnieuw publisht.
   puckData      Json
-  status        PageStatus  @default(DRAFT)
+  status        PageStatus @default(DRAFT)
   publishedAt   DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
-  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  deliverable Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  /// Content-locale foundation — BCP-47 locale van deze pagina (default-profiel bij backfill).
+  locale          String  @default("en-GB")
+  localeProfileId String?
 
-  @@unique([workspaceId, slug])
+  workspace     Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deliverable   Deliverable         @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  localeProfile BrandLocaleProfile? @relation(fields: [localeProfileId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, locale, slug])
   @@index([workspaceId, status])
   @@index([deliverableId])
 }
