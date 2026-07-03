@@ -200,7 +200,7 @@ export function DeliverablesStep() {
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {category}
+              {t(`campaigns-content-types:categories.${category}`, { defaultValue: category })}
               {categoryCount > 0 && (
                 <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-primary text-white">
                   {categoryCount}
@@ -248,14 +248,14 @@ export function DeliverablesStep() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <h4 className="text-sm font-semibold text-gray-900">
-                        {item.name}
+                        {t(`campaigns-content-types:types.${item.id}`, { defaultValue: item.name })}
                       </h4>
                       {isRecommended && (
                         <Sparkles className="w-3 h-3 text-amber-500 flex-shrink-0" />
                       )}
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {item.description}
+                      {t(`campaigns-content-types:types.${item.id}Desc`, { defaultValue: item.description })}
                     </p>
                   </div>
                   <input

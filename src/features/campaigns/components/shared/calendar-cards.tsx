@@ -374,7 +374,7 @@ export function CalendarCard({
             />
           )}
           <span className="truncate flex-1 text-[9px] text-gray-500">
-            {campaignName ?? formatContentType(typeLabel)}
+            {campaignName ?? t(`campaigns-content-types:types.${typeLabel}`, { defaultValue: formatContentType(typeLabel) })}
           </span>
           {isFavorite !== undefined && onToggleFavorite && (
             <button
@@ -396,7 +396,7 @@ export function CalendarCard({
         {/* Row 2: Title — inline editable when untitled */}
         {title.toLowerCase() === typeLabel.toLowerCase() && onRename ? (
           <InlineRenameField
-            placeholder={t('card.untitled', { type: formatContentType(typeLabel) })}
+            placeholder={t('card.untitled', { type: t(`campaigns-content-types:types.${typeLabel}`, { defaultValue: formatContentType(typeLabel) }) })}
             onRename={onRename}
           />
         ) : (
