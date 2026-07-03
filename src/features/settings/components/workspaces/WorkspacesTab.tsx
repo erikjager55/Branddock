@@ -9,7 +9,20 @@ interface WorkspaceItem {
   name: string;
   slug: string;
   createdAt: string;
+  contentLanguage: string;
 }
+
+// Content-taal-opties — endoniemen (getoond in eigen taal, niet vertaald).
+// Los van de Display-language (per gebruiker, in Settings → Appearance).
+const CONTENT_LANGUAGES: { code: string; label: string }[] = [
+  { code: 'en', label: 'English' },
+  { code: 'nl', label: 'Nederlands' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'fr', label: 'Français' },
+  { code: 'es', label: 'Español' },
+  { code: 'pt', label: 'Português' },
+  { code: 'it', label: 'Italiano' },
+];
 
 export function WorkspacesTab() {
   const { t } = useTranslation('settings-misc');
@@ -19,7 +32,9 @@ export function WorkspacesTab() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newLang, setNewLang] = useState('en');
   const [isCreating, setIsCreating] = useState(false);
+  const [savingLangId, setSavingLangId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadWorkspaces = useCallback(async () => {
@@ -86,7 +101,7 @@ export function WorkspacesTab() {
       const res = await fetch('/api/workspaces', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim() }),
+        body: JSON.stringify({ name: newName.trim(), contentLanguage: newLang }),
       });
 
       if (!res.ok) {
@@ -96,12 +111,38 @@ export function WorkspacesTab() {
       }
 
       setNewName('');
+      setNewLang('en');
       setShowCreate(false);
       await loadWorkspaces();
     } catch {
       setError(t('workspaces.createFailed'));
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleLanguageChange = async (ws: WorkspaceItem, contentLanguage: string) => {
+    if (contentLanguage === ws.contentLanguage) return;
+    setSavingLangId(ws.id);
+    setError(null);
+    // Optimistic — herstel via reload bij fout.
+    setWorkspaces((prev) => prev.map((w) => (w.id === ws.id ? { ...w, contentLanguage } : w)));
+    try {
+      const res = await fetch('/api/workspaces', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspaceId: ws.id, contentLanguage }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? t('workspaces.updateFailed', { defaultValue: 'Could not update the workspace' }));
+        await loadWorkspaces();
+      }
+    } catch {
+      setError(t('workspaces.updateFailed', { defaultValue: 'Could not update the workspace' }));
+      await loadWorkspaces();
+    } finally {
+      setSavingLangId(null);
     }
   };
 
@@ -119,6 +160,12 @@ export function WorkspacesTab() {
         <h2 className="text-lg font-semibold">{t('workspaces.heading')}</h2>
         <p className="text-sm text-gray-500 mt-1">
           {t('workspaces.description')}
+        </p>
+        <p className="text-xs text-gray-400 mt-1">
+          {t('workspaces.contentLanguageHelp', {
+            defaultValue:
+              'Content language is the language the AI writes in for a workspace — separate from your Display language (Settings → Appearance).',
+          })}
         </p>
       </div>
 
@@ -156,6 +203,21 @@ export function WorkspacesTab() {
               autoFocus
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
             />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="ws-lang-new" className="text-sm font-medium text-gray-700">
+              {t('workspaces.contentLanguageLabel', { defaultValue: 'Content language' })}
+            </label>
+            <select
+              id="ws-lang-new"
+              value={newLang}
+              onChange={(e) => setNewLang(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+            >
+              {CONTENT_LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>{l.label}</option>
+              ))}
+            </select>
           </div>
           <button
             type="submit"
@@ -198,22 +260,41 @@ export function WorkspacesTab() {
               </div>
             </div>
 
-            <button
-              className="rounded-lg p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:hover:text-gray-400 disabled:hover:bg-transparent transition-colors"
-              disabled={deletingId === ws.id || workspaces.length <= 1}
-              onClick={() => handleDelete(ws)}
-              title={
-                workspaces.length <= 1
-                  ? t('workspaces.cannotDeleteLast')
-                  : t('workspaces.deleteTooltip', { name: ws.name })
-              }
-            >
-              {deletingId === ws.id ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4" />
-              )}
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label htmlFor={`ws-lang-${ws.id}`} className="text-xs text-gray-500 whitespace-nowrap">
+                  {t('workspaces.contentLanguageLabel', { defaultValue: 'Content language' })}
+                </label>
+                <select
+                  id={`ws-lang-${ws.id}`}
+                  value={ws.contentLanguage}
+                  disabled={savingLangId === ws.id}
+                  onChange={(e) => handleLanguageChange(ws, e.target.value)}
+                  className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none disabled:opacity-50"
+                >
+                  {CONTENT_LANGUAGES.map((l) => (
+                    <option key={l.code} value={l.code}>{l.label}</option>
+                  ))}
+                </select>
+                {savingLangId === ws.id && <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />}
+              </div>
+              <button
+                className="rounded-lg p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:hover:text-gray-400 disabled:hover:bg-transparent transition-colors"
+                disabled={deletingId === ws.id || workspaces.length <= 1}
+                onClick={() => handleDelete(ws)}
+                title={
+                  workspaces.length <= 1
+                    ? t('workspaces.cannotDeleteLast')
+                    : t('workspaces.deleteTooltip', { name: ws.name })
+                }
+              >
+                {deletingId === ws.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
         ))}
       </div>
