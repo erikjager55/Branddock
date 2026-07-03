@@ -22,7 +22,7 @@ import type { MediaCategory, ImportUrlBody } from '../../types/media.types';
  * options" section. Auto-closes the modal shortly after a successful import.
  */
 export function UrlImportTab() {
-  const { t } = useTranslation('media-library');
+  const { t } = useTranslation(['media-library', 'media-registry']);
   const [url, setUrl] = useState('');
   const [name, setName] = useState('');
   const [category, setCategory] = useState<MediaCategory | ''>('');
@@ -160,7 +160,7 @@ export function UrlImportTab() {
                 <option value="">{t('fields.selectCategory')}</option>
                 {Object.entries(MEDIA_CATEGORY_CONFIG).map(([key, config]) => (
                   <option key={key} value={key}>
-                    {config.label}
+                    {t(`media-registry:category.${key}`, { defaultValue: config.label })}
                   </option>
                 ))}
               </select>

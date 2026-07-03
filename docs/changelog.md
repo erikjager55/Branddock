@@ -37,6 +37,23 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 353. Meertaligheid remediation — data-gedreven registries + gemiste clusters (5 waves)
+
+Na #352 bleek bij het switchen naar nl nog veel Engels. Een multi-agent audit vond twee structurele oorzaken die de JSXText-extractie van #352 niet kón raken: **(A) data-gedreven constant-registries** (namen/titels uit `src/*/lib/*` + `src/lib/` + `src/config/`, gerenderd via `{item.name}`) en **(B) gemiste `src/components/*`-clusters** (de extractie-waves liepen op `src/features/*`). Opgelost met het **render-edge-patroon** (constant blijft en-bron + stabiele key; render via `t('ns:key', { defaultValue })`) + migratie van de gemiste clusters, in 5 waves:
+- **Wave 1** — campagne-generator-registries: stepper (`wizard-steps`), campagnedoelen (`goal-types`), pipeline-config, `content-type-inputs` (726 keys), deliverable/content-item-namen.
+- **Wave 2** — hele Brand Foundation-pagina (`src/components/brand-foundation` + `brand-assets` + `asset-content`) + `canonical-brand-assets` op stabiele slug (vertaalde namen vloeien nooit naar de DB terug).
+- **Wave 3** — gedeelde AI-exploration-chat (dekt brand-asset + persona) + 17 merk-DNA-registry-groepen (234 keys).
+- **Wave 4** — resterende live-pagina's (StrategicResearchPlanner, TeamManagement, ResearchDashboard, NewStrategyPage, ResearchValidationPage) + shared/lock/billing/versioning/impact-primitieven + brandstyle review-sections + auth-chrome.
+- **Wave 5** — long-tail-registries met **liveness-verificatie** vooraf: products/media/consistent-models/trends-personas/claw-content render-edged (~328 keys); research-bundles/strategy-tools/business-strategy correct geskipt (DB-backed/dood/enum).
+
+Bewust Engels (geverifieerd, geen bug): AI-gegenereerde/user-editable merk-content, AI-prompt-strings, enum/icon/Tailwind-class/MIME-identifiers, `.toFixed`-bedragen, dode/demo-code, PDF-export (aparte track). Runtime browser-smoke: cookie `branddock-ui-locale=nl` → loginscherm + `<html lang>` volledig Nederlands. Elke wave per-commit gate-groen (tsc 0 / lint 0 / separation-smoke 3/3 / build groen).
+
+- Task: [tasks/i18n-ui-foundation.md](../tasks/i18n-ui-foundation.md)
+- ADR: [adr/2026-06-28-multilingual-i18n-and-multi-market-content.md](adr/2026-06-28-multilingual-i18n-and-multi-market-content.md)
+- Spec: -
+- PR: #70 (waves 1-4, gemerged) + Wave 5 (`feat/i18n-wave5-longtail`)
+- Commit: 4fd49c44 + 9889d73b + 239ab790 + f082554e + 1259d798 (via #70) · 0cd3d4c4 (wave 5)
+
 ### 352. Meertaligheid Fase 1 follow-ups — chrome afgemaakt + feature-extractie (4 waves) + toLocale-sweep
 
 Vervolg op #351: de UI is nu grotendeels meertalig (en↔nl). **Chrome afgemaakt**: `SIDEBAR_NAV` item/section-labels render-edge via `t()`, `AuthPage` → `common:auth`, en `src/lib/ui-i18n/format.ts` (`useFormat()` — `Intl` + date-fns gebonden aan `i18n.language`). **Runtime**: lazy feature-namespaces via `i18next-resources-to-backend` (chrome blijft statisch). **Feature-extractie in 4 AI-gedreven Workflow-waves** (~35 namespaces; de extractie-agents genereerden en+nl direct): dashboard, campaigns (canvas/wizard/content-library/overview/core + canvas-medium/accordion/page), brandstyle, brand-asset-detail, media-library, business-strategy, competitors, personas, products, trend-radar, settings (account/team/billing/admin/misc), consistent-models, workshop, research, help, knowledge-library, claw, brandvoice, interviews, brand-alignment, website-scanner, commercial, white-label. Tot slot een **toLocale-sweep** (~130 datum/getal-sites → `useFormat`). Elke wave per-commit gate-groen (tsc 0 / lint 0 / separation-smoke 3/3 / build groen).

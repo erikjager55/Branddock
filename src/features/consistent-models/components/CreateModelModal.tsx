@@ -21,7 +21,7 @@ export function CreateModelModal({
   initialType,
   onCreated,
 }: CreateModelModalProps) {
-  const { t } = useTranslation("consistent-models");
+  const { t } = useTranslation(["consistent-models", "consistent-models-registry"]);
   const [name, setName] = useState("");
   const [type, setType] = useState<ConsistentModelType>(initialType ?? "PERSON");
   const [description, setDescription] = useState("");
@@ -128,9 +128,13 @@ export function CreateModelModal({
                     style={isSelected ? { color: config.colorHex } : undefined}
                     className={`text-sm font-medium ${isSelected ? "" : "text-gray-900"}`}
                   >
-                    {config.label}
+                    {t(`consistent-models-registry:type.${opt.value}.label`, { defaultValue: config.label })}
                   </div>
-                  <div className="mt-0.5 text-xs text-gray-500">{config.description}</div>
+                  <div className="mt-0.5 text-xs text-gray-500">
+                    {t(`consistent-models-registry:type.${opt.value}.description`, {
+                      defaultValue: config.description,
+                    })}
+                  </div>
                 </button>
               );
             })}

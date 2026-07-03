@@ -26,7 +26,7 @@ const DIRECTION_ICONS: Record<string, React.ComponentType<{ className?: string }
 
 /** Trend card following BrandAssetCard / PersonaCard pattern */
 export function TrendCard({ trend, onClick }: TrendCardProps) {
-  const { t } = useTranslation('trend-radar');
+  const { t } = useTranslation(['trend-radar', 'trends-personas-registry']);
   const { formatDate } = useFormat();
   const [imageError, setImageError] = useState(false);
   const categoryConfig = CATEGORY_COLORS[trend.category];
@@ -68,7 +68,7 @@ export function TrendCard({ trend, onClick }: TrendCardProps) {
           ) : (
             <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${categoryConfig.bg}`}>
               <span className={`text-base font-bold ${categoryConfig.text}`}>
-                {categoryConfig.label.charAt(0)}
+                {t(`trends-personas-registry:category.${trend.category}`, { defaultValue: categoryConfig.label }).charAt(0)}
               </span>
             </div>
           )}
@@ -92,7 +92,7 @@ export function TrendCard({ trend, onClick }: TrendCardProps) {
         {/* Badges row */}
         <div className="flex items-center gap-1.5 flex-wrap mt-3">
           <Badge variant={trend.impactLevel === 'HIGH' || trend.impactLevel === 'CRITICAL' ? 'warning' : 'default'}>
-            {t('card.impact', { level: impactConfig.label })}
+            {t('card.impact', { level: t(`trends-personas-registry:impact.${trend.impactLevel}`, { defaultValue: impactConfig.label }) })}
           </Badge>
           {DirectionIcon && (
             <div className="flex items-center gap-1">
@@ -108,10 +108,10 @@ export function TrendCard({ trend, onClick }: TrendCardProps) {
       <div className="border-t border-gray-100 px-5 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${categoryConfig.bg} ${categoryConfig.text}`}>
-            {categoryConfig.label}
+            {t(`trends-personas-registry:category.${trend.category}`, { defaultValue: categoryConfig.label })}
           </span>
           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${sourceConfig.color}`}>
-            {sourceConfig.label}
+            {t(`trends-personas-registry:detectionSource.${trend.detectionSource}`, { defaultValue: sourceConfig.label })}
           </span>
         </div>
         <div className="flex items-center gap-2">

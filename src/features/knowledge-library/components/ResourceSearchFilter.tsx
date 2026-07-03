@@ -7,11 +7,6 @@ import { ViewToggle } from './ViewToggle';
 import { RESOURCE_TYPE_ICONS, RESOURCE_CATEGORIES } from '../constants/library-constants';
 import type { ResourceType } from '../types/knowledge-library.types';
 
-const CATEGORY_OPTIONS = RESOURCE_CATEGORIES.map((c) => ({
-  value: c,
-  label: c,
-}));
-
 export function ResourceSearchFilter() {
   const { t } = useTranslation('knowledge-library');
   const store = useKnowledgeLibraryStore();
@@ -19,6 +14,11 @@ export function ResourceSearchFilter() {
   const typeOptions = Object.keys(RESOURCE_TYPE_ICONS).map((value) => ({
     value,
     label: t(`types.${value}`),
+  }));
+
+  const categoryOptions = RESOURCE_CATEGORIES.map((c) => ({
+    value: c,
+    label: t(`claw-content-registry:categories.${c}`, { defaultValue: c }),
   }));
 
   return (
@@ -45,7 +45,7 @@ export function ResourceSearchFilter() {
         <Select
           value={store.categoryFilter ?? ''}
           onChange={(val) => store.setCategoryFilter(val || null)}
-          options={CATEGORY_OPTIONS}
+          options={categoryOptions}
           placeholder={t('filters.allCategories')}
           allowClear
         />

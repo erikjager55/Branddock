@@ -9,7 +9,7 @@ import { CATEGORY_COLORS, IMPACT_COLORS, SCOPE_LABELS, TIMEFRAME_LABELS } from '
 import type { InsightCategory, InsightScope, ImpactLevel, InsightTimeframe } from '../types/trend-radar.types';
 
 export function AddManualTrendModal() {
-  const { t } = useTranslation('trend-radar');
+  const { t } = useTranslation(['trend-radar', 'trends-personas-registry']);
   const { isAddManualTrendModalOpen, closeAddManualTrendModal } = useTrendRadarStore();
   const createMutation = useCreateManualTrend();
 
@@ -64,22 +64,22 @@ export function AddManualTrendModal() {
 
   const categoryOptions = Object.entries(CATEGORY_COLORS).map(([value, config]) => ({
     value,
-    label: config.label,
+    label: t(`trends-personas-registry:category.${value}`, { defaultValue: config.label }),
   }));
 
   const scopeOptions = Object.entries(SCOPE_LABELS).map(([value, label]) => ({
     value,
-    label,
+    label: t(`trends-personas-registry:scope.${value}`, { defaultValue: label }),
   }));
 
   const impactOptions = Object.entries(IMPACT_COLORS).map(([value, config]) => ({
     value,
-    label: config.label,
+    label: t(`trends-personas-registry:impact.${value}`, { defaultValue: config.label }),
   }));
 
   const timeframeOptions = Object.entries(TIMEFRAME_LABELS).map(([value, config]) => ({
     value,
-    label: config.label,
+    label: t(`trends-personas-registry:timeframe.${value}`, { defaultValue: config.label }),
   }));
 
   return (

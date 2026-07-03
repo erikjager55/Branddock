@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input } from "@/components/shared";
 import { Select } from "@/components/shared";
 import { useCreateProduct } from "../../hooks";
-import { CATEGORY_OPTIONS, CATEGORY_GROUPS } from "../../constants/product-constants";
+import { CATEGORY_GROUPS } from "../../constants/product-constants";
+import { categoryGroupKey } from "../../constants/category-i18n";
 
 // ─── Component ────────────────────────────────────────────
 
@@ -18,7 +19,20 @@ export function ManualEntryTab({
   onBack,
   onNavigateToDetail,
 }: ManualEntryTabProps) {
-  const { t } = useTranslation("products");
+  const { t } = useTranslation(["products", "products-registry"]);
+  const categoryGroups = useMemo(
+    () =>
+      CATEGORY_GROUPS.map((group) => ({
+        label: t(`products-registry:categoryGroup.${categoryGroupKey(group.label)}`, {
+          defaultValue: group.label,
+        }),
+        options: group.options.map((opt) => ({
+          value: opt.value,
+          label: t(`products-registry:category.${opt.value}`, { defaultValue: opt.label }),
+        })),
+      })),
+    [t],
+  );
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -117,8 +131,7 @@ export function ManualEntryTab({
         label={t("fields.category")}
         value={category}
         onChange={setCategory}
-        options={CATEGORY_OPTIONS}
-        groups={CATEGORY_GROUPS}
+        groups={categoryGroups}
         placeholder={t("fields.selectCategoryLong")}
       />
 

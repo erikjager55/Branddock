@@ -76,7 +76,7 @@ const PHASE_ORDER: ResearchPhase[] = [
 ];
 
 export function ResearchProgressModal() {
-  const { t } = useTranslation('trend-radar');
+  const { t } = useTranslation(['trend-radar', 'trends-personas-registry']);
   const { isResearchProgressModalOpen, closeResearchProgressModal, researchJobId } = useTrendRadarStore();
   const { data: progress } = useResearchProgress(isResearchProgressModalOpen ? researchJobId : null);
   const cancelMutation = useCancelResearch();
@@ -369,7 +369,7 @@ export function ResearchProgressModal() {
 
                           {/* Category */}
                           {catConfig && (
-                            <span>{catConfig.label}</span>
+                            <span>{t(`trends-personas-registry:category.${trend.category}`, { defaultValue: catConfig.label })}</span>
                           )}
 
                           {/* Impact */}
@@ -379,7 +379,7 @@ export function ResearchProgressModal() {
                                 : trend.impactLevel === 'HIGH' ? 'text-amber-500 font-medium'
                                 : ''
                             }>
-                              {impactConfig.label}
+                              {t(`trends-personas-registry:impact.${trend.impactLevel}`, { defaultValue: impactConfig.label })}
                             </span>
                           )}
 

@@ -103,7 +103,7 @@ export function ManualEntryTab({ onClose }: ManualEntryTabProps) {
           >
             <option value="">{t('manual.selectCategory')}</option>
             {RESOURCE_CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>{t(`claw-content-registry:categories.${c}`, { defaultValue: c })}</option>
             ))}
           </select>
         </div>

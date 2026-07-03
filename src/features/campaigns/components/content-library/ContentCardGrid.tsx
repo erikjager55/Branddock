@@ -58,12 +58,16 @@ export function ContentCardGrid({
     )}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {items.map((item) => {
-        const { light, label: lightLabel } = deriveTrafficLight(
+        const { light, label: lightLabel, key: lightKey, overdue: lightOverdue } = deriveTrafficLight(
           item.isPublishReady,
           item.status,
           item.publishedAt ? "published" : item.scheduledPublishDate ? "scheduled" : "unscheduled",
           item.hasContent,
         );
+        const statusBase = t(`campaigns-cards:contentStatus.${lightKey}`, { defaultValue: lightLabel });
+        const statusLabel = lightOverdue
+          ? `${statusBase} · ${t("campaigns-cards:overdue", { defaultValue: "overdue" })}`
+          : statusBase;
         const tl = TRAFFIC_LIGHT[light];
 
         return (
@@ -76,7 +80,7 @@ export function ContentCardGrid({
             <div
               className="w-1.5 flex-shrink-0"
               style={{ backgroundColor: tl.stripe }}
-              aria-label={lightLabel}
+              aria-label={statusLabel}
             />
 
             {/* min-w-0 hier kritiek: zonder dit verhindert de default
@@ -176,7 +180,7 @@ export function ContentCardGrid({
                       className="w-1.5 h-1.5 rounded-full"
                       style={{ backgroundColor: tl.dot }}
                     />
-                    {lightLabel}
+                    {statusLabel}
                   </span>
                   {item.qualityScore !== null && (
                     <QualityScoreBadge score={item.qualityScore} size="sm" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { Building2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/shared";
 import { CardLockIndicator } from "@/components/lock";
 import { TIER_BADGES, getScoreColor, getScoreLabel } from "../constants/competitor-constants";
@@ -11,12 +12,22 @@ interface CompetitorCardProps {
   onClick: () => void;
 }
 
+/** Bridge getScoreLabel()'s English return value to a stable i18n key. */
+const SCORE_LABEL_KEYS: Record<string, string> = {
+  "Not scored": "notScored",
+  "High threat": "highThreat",
+  Moderate: "moderate",
+  "Low threat": "lowThreat",
+};
+
 /** Competitor card for overview grid */
 export function CompetitorCard({ competitor, onClick }: CompetitorCardProps) {
+  const { t } = useTranslation("trends-personas-registry");
   const tierConfig = TIER_BADGES[competitor.tier];
   const visibleDifferentiators = competitor.differentiators.slice(0, 3);
   const remainingCount = Math.max(0, competitor.differentiators.length - 3);
   const hasScore = competitor.competitiveScore != null;
+  const scoreLabel = getScoreLabel(competitor.competitiveScore ?? null);
 
   return (
     <div
@@ -53,7 +64,7 @@ export function CompetitorCard({ competitor, onClick }: CompetitorCardProps) {
             </h3>
             {tierConfig && (
               <Badge variant={tierConfig.variant} className="flex-shrink-0">
-                {tierConfig.label}
+                {t(`trends-personas-registry:competitorTier.${competitor.tier}`, { defaultValue: tierConfig.label })}
               </Badge>
             )}
           </div>
@@ -82,7 +93,7 @@ export function CompetitorCard({ competitor, onClick }: CompetitorCardProps) {
             <span className={`inline-flex items-center gap-1 text-xs font-semibold ${getScoreColor(competitor.competitiveScore!)}`}>
               {competitor.competitiveScore}/100
               <span className="font-normal text-gray-400">
-                {getScoreLabel(competitor.competitiveScore!)}
+                {t(`trends-personas-registry:competitorScore.${SCORE_LABEL_KEYS[scoreLabel] ?? "notScored"}`, { defaultValue: scoreLabel })}
               </span>
             </span>
           )}

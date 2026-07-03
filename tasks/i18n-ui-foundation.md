@@ -93,3 +93,17 @@ Zet een client-side i18next-runtime op (provider in `src/app/page.tsx` wrappend 
 **Bewust uitgesloten / gedocumenteerd** (blijven Engels, geen bug): `puck-config.tsx` (server-safe — hook breekt de `/p/[slug]`-SSR), `canvas/previews/*` (social-mock-chrome, ambigu), losse top-level `src/components/*.tsx`, `ai-studio`/`ai-trainer`-shells, `.ts` lib/services-formattering, `.toFixed`-bedragen.
 
 **⏳ Resterend**: ESLint-guard-allowlist bewust NIET verbreed (migrated files houden opzettelijk-gelaten enum/data-strings → guard zou false-positives geven; blijft scoped op appearance+TopNav — nieuwe files toevoegen zodra volledig clean) · de aparte AI-vertaalpipeline (`[[i18n-ai-translation-pipeline]]`, voor onderhoud/regeneratie op schaal) · `task-finalize` (review-loop + status→done) door user te triggeren · handmatige browser-smoke (nl↔en over de hoofdschermen).
+
+# Status 2026-07-03 — REMEDIATION (waves 1-5) — changelog #353
+
+Na een user-melding ("veel nog Engels") vond een multi-agent audit twee structurele oorzaken die de JSXText-extractie niet kón raken: **data-gedreven constant-registries** (render via `{item.name}`) en **gemiste `src/components/*`-clusters** (waves liepen op `src/features/*`). Opgelost met het **render-edge-patroon** (constant blijft en-bron + stabiele key; `t('ns:key', {defaultValue})`) in 5 waves:
+
+- **Wave 1** — campagne-registries (stepper/goal-types/pipeline-config/content-type-inputs-726/deliverables). `4fd49c44`+`9889d73b`
+- **Wave 2** — Brand Foundation (component-migratie `src/components/brand-foundation`+`brand-assets`+`asset-content` + `canonical-brand-assets` op slug). `239ab790`
+- **Wave 3** — gedeelde AI-exploration-chat + 17 merk-DNA-registry-groepen (234 keys). `f082554e`
+- **Wave 4** — resterende live-pagina's + shared/lock/billing/versioning/impact + brandstyle review-sections + auth-chrome. `1259d798`
+- **Wave 5** — long-tail met **liveness-verificatie**: products/media/consistent-models/trends-personas/claw-content (~328 keys); research-bundles/strategy-tools/business-strategy geskipt (DB-backed/dood/enum). `0cd3d4c4`
+
+Waves 1-4 gemerged via **PR #70** (op `main`). Wave 5 op branch `feat/i18n-wave5-longtail` (PR openstaand). **Browser-smoke geslaagd** (login nl↔en + `<html lang>`, geautomatiseerd via Playwright). Elke wave per-commit gate-groen (tsc 0 / lint 0 / smoke 3/3 / build groen).
+
+**Verify-then-skip (gedocumenteerd, níet vertaald)**: dode 0-import files (PurchaseModal, BundleDetailsPage, settings/*-duplicaten, StyleGuideViewer, e.a.), demo-routes (ValidationMethodDemo, TransformativeGoalsDashboard), `MODULE_META` dead export, en de PDF-export-utils (aparte track). Plus AI-gegenereerde/user-editable merk-content + AI-prompt-strings (bewust merk-content, geen chrome).

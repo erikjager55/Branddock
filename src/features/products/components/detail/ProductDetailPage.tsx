@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Edit3, Save, X, ExternalLink, Download, Trash2 } from "lucide-react";
 import { Button, SkeletonCard, Select } from "@/components/shared";
@@ -17,6 +17,7 @@ import {
   CATEGORY_OPTIONS,
   CATEGORY_GROUPS,
 } from "../../constants/product-constants";
+import { categoryGroupKey } from "../../constants/category-i18n";
 import { DescriptionCard } from "./DescriptionCard";
 import { PricingModelCard } from "./PricingModelCard";
 import { FeaturesSpecsSection } from "./FeaturesSpecsSection";
@@ -38,7 +39,20 @@ export function ProductDetailPage({
   onBack,
   onNavigate,
 }: ProductDetailPageProps) {
-  const { t } = useTranslation("products");
+  const { t } = useTranslation(["products", "products-registry"]);
+  const categoryGroups = useMemo(
+    () =>
+      CATEGORY_GROUPS.map((group) => ({
+        label: t(`products-registry:categoryGroup.${categoryGroupKey(group.label)}`, {
+          defaultValue: group.label,
+        }),
+        options: group.options.map((opt) => ({
+          value: opt.value,
+          label: t(`products-registry:category.${opt.value}`, { defaultValue: opt.label }),
+        })),
+      })),
+    [t],
+  );
   const { data: product, isLoading } = useProductDetail(productId);
   const { data: personasData } = useProductPersonas(productId);
   const unlinkPersona = useUnlinkPersona(productId);
@@ -223,8 +237,10 @@ export function ProductDetailPage({
 
   const linkedPersonaIds = personas.map((p) => p.id);
 
-  const sourceBadge = SOURCE_BADGES[product.source] ?? SOURCE_BADGES["MANUAL"];
-  const statusBadge = STATUS_BADGES[product.status] ?? STATUS_BADGES["DRAFT"];
+  const sourceKey = SOURCE_BADGES[product.source] ? product.source : "MANUAL";
+  const statusKey = STATUS_BADGES[product.status] ? product.status : "DRAFT";
+  const sourceBadge = SOURCE_BADGES[sourceKey];
+  const statusBadge = STATUS_BADGES[statusKey];
 
   const handleRemovePersona = (personaId: string) => {
     unlinkPersona.mutate(personaId);
@@ -280,24 +296,27 @@ export function ProductDetailPage({
                 <Select
                   value={editCategory}
                   onChange={setEditCategory}
-                  options={CATEGORY_OPTIONS}
-                  groups={CATEGORY_GROUPS}
+                  groups={categoryGroups}
                   placeholder={t("fields.categoryShort")}
                 />
               ) : product.category ? (
                 <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                  {CATEGORY_OPTIONS.find((o) => o.value === product.category)?.label ?? product.category}
+                  {t(`products-registry:category.${product.category}`, {
+                    defaultValue:
+                      CATEGORY_OPTIONS.find((o) => o.value === product.category)?.label ??
+                      product.category,
+                  })}
                 </span>
               ) : null}
               <span
                 className={`inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium ${sourceBadge.color}`}
               >
-                {sourceBadge.label}
+                {t(`products-registry:source.${sourceKey}`, { defaultValue: sourceBadge.label })}
               </span>
               <span
                 className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}
               >
-                {statusBadge.label}
+                {t(`products-registry:status.${statusKey}`, { defaultValue: statusBadge.label })}
               </span>
               <VersionPill
                 resourceType="PRODUCT"

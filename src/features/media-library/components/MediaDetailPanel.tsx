@@ -114,7 +114,7 @@ export function MediaDetailPanel({
   onFavorite,
   onDelete,
 }: MediaDetailPanelProps) {
-  const { t } = useTranslation('media-library');
+  const { t } = useTranslation(['media-library', 'media-registry']);
   const { formatDate } = useFormat();
   const { data, isLoading } = useMediaAssetDetail(assetId ?? '');
   const updateAsset = useUpdateMediaAsset(assetId ?? '');
@@ -178,11 +178,15 @@ export function MediaDetailPanel({
                   <div className="grid grid-cols-2 gap-3">
                     <MetadataItem
                       label={t('meta.type')}
-                      value={MEDIA_TYPE_ICONS[asset.mediaType].label}
+                      value={t(`media-registry:type.${asset.mediaType}`, {
+                        defaultValue: MEDIA_TYPE_ICONS[asset.mediaType].label,
+                      })}
                     />
                     <MetadataItem
                       label={t('meta.category')}
-                      value={MEDIA_CATEGORY_CONFIG[asset.category].label}
+                      value={t(`media-registry:category.${asset.category}`, {
+                        defaultValue: MEDIA_CATEGORY_CONFIG[asset.category].label,
+                      })}
                     />
                     <MetadataItem
                       label={t('meta.fileSize')}

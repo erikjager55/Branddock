@@ -24,7 +24,7 @@ const FALLBACK_ICONS: Record<string, typeof Image> = {
 
 /** Table-style list view of media assets. */
 export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaCardListProps) {
-  const { t } = useTranslation('media-library');
+  const { t } = useTranslation(['media-library', 'media-registry']);
   const { formatDate } = useFormat();
   return (
     <div>
@@ -84,13 +84,13 @@ export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaC
                 className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 ${typeConfig.color}`}
               >
                 <typeConfig.icon className="w-3 h-3" />
-                {typeConfig.label}
+                {t(`media-registry:type.${asset.mediaType}`, { defaultValue: typeConfig.label })}
               </span>
             </div>
 
             {/* Category */}
             <div className="col-span-2">
-              <span className="text-sm text-gray-600">{categoryConfig.label}</span>
+              <span className="text-sm text-gray-600">{t(`media-registry:category.${asset.category}`, { defaultValue: categoryConfig.label })}</span>
             </div>
 
             {/* Size */}
