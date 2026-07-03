@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -25,42 +26,43 @@ interface TierComparisonProps {
 }
 
 export function TierComparison({ onSelectTier, currentTier }: TierComparisonProps) {
+  const { t } = useTranslation('commercial');
   const tiers: ProductTier[] = ['decision-scan', 'strategic-control', 'advisory-services'];
 
   const comparisonFeatures = [
     {
-      category: 'Decision Certainty',
+      category: t('tiers.categories.decisionCertainty'),
       features: [
-        { name: 'Decision Status Insight', scan: true, control: true, advisory: true },
-        { name: 'Real-time Quality Monitoring', scan: false, control: true, advisory: true },
-        { name: 'Expert Validation', scan: false, control: false, advisory: true },
+        { name: t('tiers.features.decisionStatusInsight'), scan: true, control: true, advisory: true },
+        { name: t('tiers.features.qualityMonitoring'), scan: false, control: true, advisory: true },
+        { name: t('tiers.features.expertValidation'), scan: false, control: false, advisory: true },
       ]
     },
     {
-      category: 'Platform Functionality',
+      category: t('tiers.categories.platform'),
       features: [
-        { name: 'Decision Engine', scan: false, control: true, advisory: true },
-        { name: 'Campaign Generation', scan: 'limited', control: true, advisory: true },
-        { name: 'Research Planning', scan: false, control: true, advisory: true },
-        { name: 'Brand Asset Management', scan: false, control: true, advisory: true },
-        { name: 'Persona Development', scan: false, control: true, advisory: true },
+        { name: t('tiers.features.decisionEngine'), scan: false, control: true, advisory: true },
+        { name: t('tiers.features.campaignGeneration'), scan: 'limited', control: true, advisory: true },
+        { name: t('tiers.features.researchPlanning'), scan: false, control: true, advisory: true },
+        { name: t('tiers.features.brandAssetManagement'), scan: false, control: true, advisory: true },
+        { name: t('tiers.features.personaDevelopment'), scan: false, control: true, advisory: true },
       ]
     },
     {
-      category: 'Reporting & Communication',
+      category: t('tiers.categories.reporting'),
       features: [
-        { name: 'Stakeholder Views', scan: false, control: true, advisory: true },
-        { name: 'Professional Reports', scan: false, control: true, advisory: true },
-        { name: 'Executive Presentations', scan: false, control: false, advisory: true },
+        { name: t('tiers.features.stakeholderViews'), scan: false, control: true, advisory: true },
+        { name: t('tiers.features.professionalReports'), scan: false, control: true, advisory: true },
+        { name: t('tiers.features.executivePresentations'), scan: false, control: false, advisory: true },
       ]
     },
     {
-      category: 'Expert Support',
+      category: t('tiers.categories.expertSupport'),
       features: [
-        { name: 'Quarterly Strategic Reviews', scan: false, control: false, advisory: true },
-        { name: 'Guided Validations', scan: false, control: false, advisory: true },
-        { name: 'Dedicated Strategy Advisor', scan: false, control: false, advisory: true },
-        { name: 'Priority Support', scan: false, control: false, advisory: true },
+        { name: t('tiers.features.quarterlyReviews'), scan: false, control: false, advisory: true },
+        { name: t('tiers.features.guidedValidations'), scan: false, control: false, advisory: true },
+        { name: t('tiers.features.dedicatedAdvisor'), scan: false, control: false, advisory: true },
+        { name: t('tiers.features.prioritySupport'), scan: false, control: false, advisory: true },
       ]
     }
   ];
@@ -82,7 +84,7 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
     } else if (value === 'limited') {
       return (
         <div className="text-center">
-          <Badge variant="outline" className="text-xs">Limited</Badge>
+          <Badge variant="outline" className="text-xs">{t('tiers.limited')}</Badge>
         </div>
       );
     } else {
@@ -94,10 +96,9 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
     <div className="max-w-7xl mx-auto p-6 space-y-8">
       {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Choose Your Level of Decision Certainty</h1>
+        <h1 className="text-4xl font-bold mb-4">{t('tiers.heroTitle')}</h1>
         <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-          From quick insights to expert-validated strategy.
-          Each tier gives you a higher level of confidence in your decisions.
+          {t('tiers.heroSubtitle')}
         </p>
       </div>
 
@@ -123,7 +124,7 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
               {isRecommended && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                   <Badge className="bg-purple-600 text-white">
-                    Most Popular
+                    {t('tiers.mostPopular')}
                   </Badge>
                 </div>
               )}
@@ -137,7 +138,7 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
                 {/* Certainty Level */}
                 <div className={`p-3 rounded-lg ${tier.color.bg} border`}>
                   <p className="text-xs font-medium text-muted-foreground mb-1">
-                    Decision Certainty
+                    {t('tiers.certaintyLabel')}
                   </p>
                   <p className={`font-bold ${tier.color.text}`}>
                     {tier.certaintyLevel}
@@ -176,7 +177,7 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
                   disabled={isCurrentTier}
                 >
                   {isCurrentTier ? (
-                    'Your Current Tier'
+                    t('tiers.currentTier')
                   ) : (
                     <>
                       {tier.cta}
@@ -193,9 +194,9 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
       {/* Detailed Comparison Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Full Feature Comparison</CardTitle>
+          <CardTitle>{t('tiers.fullComparisonTitle')}</CardTitle>
           <CardDescription>
-            Detailed overview of all capabilities per tier
+            {t('tiers.fullComparisonSubtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -203,7 +204,7 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-4 px-4 font-semibold">Feature</th>
+                  <th className="text-left py-4 px-4 font-semibold">{t('tiers.featureColumn')}</th>
                   {tiers.map((tierId) => {
                     const tier = PRODUCT_TIERS[tierId];
                     return (
@@ -253,19 +254,17 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
       <Card className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border-2">
         <CardContent className="p-8 text-center">
           <h3 className="text-2xl font-bold mb-4">
-            Invest in Decision Certainty, Not in Features
+            {t('tiers.valuePropTitle')}
           </h3>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-6">
-            Each tier is designed for a specific level of strategic confidence.
-            Choose based on how much certainty you need in your decisions,
-            not based on a feature list.
+            {t('tiers.valuePropBody')}
           </p>
           <div className="flex gap-4 justify-center">
             <Button size="lg" onClick={() => onSelectTier?.('strategic-control')}>
-              Start met Strategic Control
+              {t('tiers.startControl')}
             </Button>
             <Button size="lg" variant="outline" onClick={() => onSelectTier?.('decision-scan')}>
-              Start with Free Scan
+              {t('tiers.startFreeScan')}
             </Button>
           </div>
         </CardContent>

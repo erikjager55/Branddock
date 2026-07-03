@@ -1,7 +1,9 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Globe, Clock, Info } from "lucide-react";
 import { Badge } from "@/components/shared";
+import { useFormat } from "@/lib/ui-i18n/format";
 import type { CompetitorDetail } from "../../types/competitor.types";
 
 interface SourceInfoCardProps {
@@ -10,9 +12,11 @@ interface SourceInfoCardProps {
 
 /** Source information sidebar card */
 export function SourceInfoCard({ competitor }: SourceInfoCardProps) {
-  const sourceLabel = competitor.source === "WEBSITE_URL" ? "Website URL" : "Manual";
+  const { t } = useTranslation("competitors");
+  const { formatDate } = useFormat();
+  const sourceLabel = competitor.source === "WEBSITE_URL" ? t("source.websiteUrl") : t("source.manual");
   const lastScraped = competitor.lastScrapedAt
-    ? new Date(competitor.lastScrapedAt).toLocaleDateString("en-US", {
+    ? formatDate(competitor.lastScrapedAt, {
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -25,7 +29,7 @@ export function SourceInfoCard({ competitor }: SourceInfoCardProps) {
     <div className="rounded-lg border border-gray-200 bg-white p-5">
       <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
         <Info className="h-4 w-4 text-gray-500" />
-        Source Info
+        {t("source.title")}
       </h3>
       <div className="space-y-3">
         {/* Website URL */}
@@ -45,7 +49,7 @@ export function SourceInfoCard({ competitor }: SourceInfoCardProps) {
 
         {/* Source badge */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">Source:</span>
+          <span className="text-xs text-gray-500">{t("source.sourceLabel")}</span>
           <Badge variant="default">{sourceLabel}</Badge>
         </div>
 
@@ -53,23 +57,23 @@ export function SourceInfoCard({ competitor }: SourceInfoCardProps) {
         {lastScraped && (
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <Clock className="h-3.5 w-3.5" />
-            Last analyzed: {lastScraped}
+            {t("source.lastAnalyzed", { date: lastScraped })}
           </div>
         )}
 
         {/* Online presence signals */}
         {(competitor.hasBlog !== null || competitor.hasCareersPage !== null) && (
           <div className="border-t border-gray-100 pt-3 mt-3">
-            <p className="text-xs font-medium text-gray-500 mb-2">Online Presence</p>
+            <p className="text-xs font-medium text-gray-500 mb-2">{t("source.onlinePresence")}</p>
             <div className="flex flex-wrap gap-2">
               {competitor.hasBlog !== null && (
                 <span className={`text-xs rounded-full px-2 py-0.5 ${competitor.hasBlog ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
-                  {competitor.hasBlog ? "Has blog" : "No blog"}
+                  {competitor.hasBlog ? t("source.hasBlog") : t("source.noBlog")}
                 </span>
               )}
               {competitor.hasCareersPage !== null && (
                 <span className={`text-xs rounded-full px-2 py-0.5 ${competitor.hasCareersPage ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
-                  {competitor.hasCareersPage ? "Has careers page" : "No careers page"}
+                  {competitor.hasCareersPage ? t("source.hasCareers") : t("source.noCareers")}
                 </span>
               )}
             </div>

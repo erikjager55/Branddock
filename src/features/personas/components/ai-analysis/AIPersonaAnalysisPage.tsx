@@ -7,6 +7,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { AIExplorationPage } from '@/components/ai-exploration';
 import type { ResumeSessionData } from '@/components/ai-exploration';
 import type { BackendDimension } from '@/components/ai-exploration/types';
@@ -22,6 +23,7 @@ interface AIPersonaAnalysisPageProps {
 }
 
 export function AIPersonaAnalysisPage({ personaId, onBack }: AIPersonaAnalysisPageProps) {
+  const { t } = useTranslation('personas');
   const { data: persona } = usePersonaDetail(personaId);
   const updatePersona = useUpdatePersona(personaId);
   const queryClient = useQueryClient();
@@ -69,9 +71,9 @@ export function AIPersonaAnalysisPage({ personaId, onBack }: AIPersonaAnalysisPa
         itemType: 'persona',
         itemId: personaId,
         itemName: persona.name,
-        pageTitle: 'AI Persona Analysis',
-        pageDescription: 'Answer questions to validate and enrich your persona',
-        backLabel: 'Back to Persona',
+        pageTitle: t('analysis.pageTitle'),
+        pageDescription: t('analysis.pageDescription'),
+        backLabel: t('analysis.backLabel'),
         onBack,
         dimensions: PERSONA_DIMENSIONS,
         fieldMapping: [], // Field mapping handled by backend persona-builder

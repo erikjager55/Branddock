@@ -1,6 +1,7 @@
 'use client';
 
 import { Zap, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 
 import { RepeatableListInput } from '../create/RepeatableListInput';
@@ -12,6 +13,7 @@ interface BehaviorsSectionProps {
 }
 
 export function BehaviorsSection({ persona, isEditing, onUpdate }: BehaviorsSectionProps) {
+  const { t } = useTranslation('personas');
   // Hide empty section in view mode
   if (persona.behaviors.length === 0 && !isEditing) return null;
 
@@ -23,8 +25,8 @@ export function BehaviorsSection({ persona, isEditing, onUpdate }: BehaviorsSect
             <Zap className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Behaviors</h2>
-            <p className="text-sm text-gray-500">Observable actions and patterns</p>
+            <h2 className="text-base font-semibold text-gray-900">{t('behaviors.title')}</h2>
+            <p className="text-sm text-gray-500">{t('behaviors.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -34,7 +36,7 @@ export function BehaviorsSection({ persona, isEditing, onUpdate }: BehaviorsSect
           <RepeatableListInput
             items={persona.behaviors}
             onChange={(items) => onUpdate({ behaviors: items })}
-            placeholder="Add a behavior..."
+            placeholder={t('behaviors.placeholder')}
           />
         ) : persona.behaviors.length > 0 ? (
           <div className="bg-purple-50/30 border border-purple-100 rounded-xl p-4">
@@ -53,7 +55,7 @@ export function BehaviorsSection({ persona, isEditing, onUpdate }: BehaviorsSect
       {/* Count footer */}
       <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-1.5 text-xs text-gray-500">
         <CheckCircle className="w-3.5 h-3.5 text-gray-400" />
-        <span>{persona.behaviors.length} items</span>
+        <span>{t('common.itemsCount', { count: persona.behaviors.length })}</span>
       </div>
     </section>
   );

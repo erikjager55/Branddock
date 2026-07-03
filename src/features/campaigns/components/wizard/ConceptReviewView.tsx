@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   Target,
@@ -94,6 +95,7 @@ export function ConceptReviewView({
   onRefine,
   errorMessage,
 }: ConceptReviewViewProps) {
+  const { t } = useTranslation("campaigns-wizard");
   const strategyRatings = useCampaignWizardStore((s) => s.strategyRatings);
   const conceptFeedback = useCampaignWizardStore((s) => s.conceptFeedback);
   const setConceptFeedback = useCampaignWizardStore((s) => s.setConceptFeedback);
@@ -115,20 +117,22 @@ export function ConceptReviewView({
       return;
     }
     if (unratedElements.length > 0) {
-      const visibleLabels = unratedElements.slice(0, 3).map((el) => el.label);
+      const visibleLabels = unratedElements
+        .slice(0, 3)
+        .map((el) => t(`conceptReview.elements.${el.field}`));
       const remaining = unratedElements.length - visibleLabels.length;
       const description =
         remaining > 0
-          ? `${visibleLabels.join(", ")} and ${remaining} more`
+          ? t("conceptReview.andMore", { labels: visibleLabels.join(", "), count: remaining })
           : visibleLabels.join(", ");
-      toast.warning("Rate every element first", { description });
+      toast.warning(t("conceptReview.rateEveryElement"), { description });
       const firstKey = unratedElements[0].key;
       const target = document.querySelector<HTMLElement>(
         `[data-rating-key="${firstKey}"]`,
       );
       target?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  }, [allRated, onApprove, unratedElements]);
+  }, [allRated, onApprove, unratedElements, t]);
 
   const handleApproveAll = useCallback(() => {
     let touched = 0;
@@ -139,21 +143,19 @@ export function ConceptReviewView({
       }
     });
     if (touched > 0) {
-      toast.success(`Marked ${touched} element${touched === 1 ? "" : "s"} as approved`);
+      toast.success(t("conceptReview.markedApproved", { count: touched }));
     }
-  }, [presentElements, strategyRatings, setStrategyRating]);
+  }, [presentElements, strategyRatings, setStrategyRating, t]);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Review Creative Concept
+          {t("conceptReview.title")}
         </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          Rate each element to guide the final synthesis. Use a quick thumbs-up
-          for everything you accept as-is, or thumbs-down with a note where you
-          want changes.
+          {t("conceptReview.subtitle")}
         </p>
       </div>
 
@@ -162,7 +164,7 @@ export function ConceptReviewView({
         <div className="flex items-center gap-2">
           <Target className="w-4 h-4 text-gray-400" />
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Strategic Rationale (approved)
+            {t("conceptReview.strategicRationale")}
           </span>
         </div>
 
@@ -178,29 +180,31 @@ export function ConceptReviewView({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
           {strategy.campaignTheme && (
             <div>
-              <p className="font-medium text-gray-500">Theme</p>
+              <p className="font-medium text-gray-500">{t("conceptReview.theme")}</p>
               <p className="text-gray-700">{strategy.campaignTheme}</p>
             </div>
           )}
           <div>
-            <p className="font-medium text-gray-500">Positioning</p>
+            <p className="font-medium text-gray-500">{t("conceptReview.positioning")}</p>
             <p className="text-gray-700 line-clamp-2">{strategy.positioningStatement}</p>
           </div>
           <div>
-            <p className="font-medium text-gray-500">Intent</p>
+            <p className="font-medium text-gray-500">{t("conceptReview.intent")}</p>
             <Badge variant="teal" className="mt-0.5">
               {strategy.strategicIntent === "brand_building"
-                ? "Brand Building"
+                ? t("setup.intent.brand_building.title")
                 : strategy.strategicIntent === "sales_activation"
-                  ? "Sales Activation"
-                  : "Hybrid"}
+                  ? t("setup.intent.sales_activation.title")
+                  : t("setup.intent.hybrid.title")}
             </Badge>
           </div>
         </div>
 
         <div className="text-xs text-gray-500">
-          {(architecture.journeyPhases ?? []).length} phases, {" "}
-          {(architecture.journeyPhases ?? []).reduce((sum, p) => sum + (p.touchpoints?.length ?? 0), 0)} touchpoints
+          {t("conceptReview.phasesTouchpoints", {
+            phases: (architecture.journeyPhases ?? []).length,
+            touchpoints: (architecture.journeyPhases ?? []).reduce((sum, p) => sum + (p.touchpoints?.length ?? 0), 0),
+          })}
         </div>
       </div>
 
@@ -209,10 +213,10 @@ export function ConceptReviewView({
         <div className="flex items-center gap-2">
           <Palette className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-semibold text-gray-900">
-            Creative Concept
+            {t("conceptReview.creativeConcept")}
           </span>
           <span className="text-xs text-muted-foreground">
-            Rate each element
+            {t("conceptReview.rateEach")}
           </span>
           {!allRated && presentElements.length > 0 && (
             <div className="ml-auto">
@@ -221,9 +225,9 @@ export function ConceptReviewView({
                 size="sm"
                 icon={CheckCheck}
                 onClick={handleApproveAll}
-                title="Mark every remaining element as approved"
+                title={t("conceptReview.markAllTooltip")}
               >
-                Mark all as approved
+                {t("conceptReview.markAllApproved")}
               </Button>
             </div>
           )}
@@ -232,7 +236,7 @@ export function ConceptReviewView({
         {presentElements.map((el) => (
           <ElementRatingCard
             key={el.key}
-            label={el.label}
+            label={t(`conceptReview.elements.${el.field}`)}
             value={String(strategy[el.field] ?? "")}
             ratingKey={el.key}
             icon={el.icon}
@@ -260,11 +264,11 @@ export function ConceptReviewView({
       >
         <summary className="cursor-pointer px-4 py-2.5 text-xs font-medium text-gray-600 hover:text-gray-900 select-none flex items-center gap-2">
           <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
-          Additional feedback
-          <span className="text-muted-foreground font-normal">(optional)</span>
+          {t("conceptReview.additionalFeedback")}
+          <span className="text-muted-foreground font-normal">{t("conceptReview.optional")}</span>
           {conceptFeedback && (
             <span className="ml-auto text-xs text-emerald-600">
-              {conceptFeedback.length} chars
+              {t("conceptReview.chars", { count: conceptFeedback.length })}
             </span>
           )}
         </summary>
@@ -272,7 +276,7 @@ export function ConceptReviewView({
           <textarea
             value={conceptFeedback}
             onChange={(e) => setConceptFeedback(e.target.value)}
-            placeholder="Any adjustments to the creative concept before finalizing..."
+            placeholder={t("conceptReview.feedbackPlaceholder")}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
           />
         </div>
@@ -292,8 +296,8 @@ export function ConceptReviewView({
             aria-live="polite"
           >
             {allRated
-              ? `All ${presentElements.length} elements rated — ready to approve`
-              : `${ratedCount} of ${presentElements.length} elements rated`}
+              ? t("conceptReview.allRated", { count: presentElements.length })
+              : t("conceptReview.ratedProgress", { rated: ratedCount, total: presentElements.length })}
           </p>
         )}
 
@@ -305,7 +309,7 @@ export function ConceptReviewView({
               icon={RefreshCw}
               onClick={onRefine}
             >
-              Refine Concept
+              {t("conceptReview.refineConcept")}
             </Button>
           )}
           <Button
@@ -314,7 +318,7 @@ export function ConceptReviewView({
             icon={CheckCircle2}
             onClick={handleApproveClick}
           >
-            Approve Concept
+            {t("conceptReview.approveConcept")}
           </Button>
         </div>
       </div>

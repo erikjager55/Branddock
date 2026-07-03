@@ -14,6 +14,7 @@ import {
   ChevronDown, CheckCircle, Plus,
   Sparkles,
 } from 'lucide-react';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { CardLockIndicator } from '@/components/lock';
 import * as LucideIcons from 'lucide-react';
 import { Card } from '@/components/shared/Card';
@@ -71,18 +72,6 @@ function getIcon(iconName: string): React.ComponentType<{ className?: string }> 
   return (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[iconName] || LucideIcons.FileText;
 }
 
-function formatDate(dateStr: string): string {
-  try {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  } catch {
-    return '';
-  }
-}
-
 // ─── Props ──────────────────────────────────────────────────
 
 export interface BrandAssetCardProps {
@@ -101,6 +90,7 @@ export function BrandAssetCard({
   className,
 }: BrandAssetCardProps) {
   const [methodsExpanded, setMethodsExpanded] = useState(false);
+  const { formatDate } = useFormat();
 
   const gradient = CATEGORY_GRADIENTS[asset.category] ?? 'from-gray-500 to-gray-600';
   const iconName = CATEGORY_ICONS[asset.category] ?? 'FileText';
@@ -256,7 +246,11 @@ export function BrandAssetCard({
       {/* Footer — last updated */}
       {asset.updatedAt && (
         <div className="px-6 py-3 border-t border-border text-xs text-muted-foreground">
-          Last updated: {formatDate(asset.updatedAt)}
+          Last updated: {formatDate(asset.updatedAt, {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          })}
         </div>
       )}
     </Card>

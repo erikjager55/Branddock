@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   Settings,
@@ -113,15 +114,14 @@ type TabKey = 'general' | 'dimensions' | 'prompts' | 'knowledge';
 
 interface TabConfig {
   key: TabKey;
-  label: string;
   icon: typeof Settings;
 }
 
 const TABS: TabConfig[] = [
-  { key: 'general', label: 'General', icon: Settings },
-  { key: 'dimensions', label: 'Dimensions', icon: MessageCircle },
-  { key: 'prompts', label: 'Prompts', icon: FileText },
-  { key: 'knowledge', label: 'Knowledge Sources', icon: BookOpen },
+  { key: 'general', icon: Settings },
+  { key: 'dimensions', icon: MessageCircle },
+  { key: 'prompts', icon: FileText },
+  { key: 'knowledge', icon: BookOpen },
 ];
 
 // ─── Props ──────────────────────────────────────────────────
@@ -143,6 +143,7 @@ export function ConfigDetailView({
   onDelete,
   onDuplicate,
 }: ConfigDetailViewProps) {
+  const { t } = useTranslation('settings-admin');
   const isNew = !initialData?.id || initialData.id.startsWith('new-');
 
   // ─── Tab state ─────────────────────────────────────────
@@ -207,26 +208,27 @@ export function ConfigDetailView({
     const invalidDimensions = new Set<number>();
 
     if (dimensions.length === 0) {
-      errors.push('Add at least 1 dimension');
+      errors.push(t('validation.minOneDimension'));
     } else {
       dimensions.forEach((dim, i) => {
         if (!dim.key?.trim() || !dim.title?.trim() || !dim.question?.trim()) {
           invalidDimensions.add(i);
-          errors.push(`Dimension ${i + 1}: key, title and question are required`);
+          errors.push(t('validation.dimensionRequired', { number: i + 1 }));
         }
       });
     }
 
     const hasPromptErrors = !systemPrompt.trim() || !feedbackPrompt.trim() || !reportPrompt.trim();
-    if (!systemPrompt.trim()) errors.push('System prompt is required');
-    if (!feedbackPrompt.trim()) errors.push('Feedback prompt is required');
-    if (!reportPrompt.trim()) errors.push('Report prompt is required');
+    if (!systemPrompt.trim()) errors.push(t('validation.systemPromptRequired'));
+    if (!feedbackPrompt.trim()) errors.push(t('validation.feedbackPromptRequired'));
+    if (!reportPrompt.trim()) errors.push(t('validation.reportPromptRequired'));
 
     setValidationErrors(invalidDimensions);
     setPromptErrors(hasPromptErrors);
 
     if (errors.length > 0) {
-      toast.error(`Validation failed: ${errors[0]}${errors.length > 1 ? ` (+${errors.length - 1} more)` : ''}`);
+      const moreSuffix = errors.length > 1 ? t('validation.moreSuffix', { count: errors.length - 1 }) : '';
+      toast.error(t('validation.failedPrefix', { message: `${errors[0]}${moreSuffix}` }));
       // Navigate to tab with first error
       if (invalidDimensions.size > 0 || dimensions.length === 0) {
         setActiveTab('dimensions');
@@ -262,7 +264,8 @@ export function ConfigDetailView({
         isActive,
       });
     } catch (err) {
-      toast.error(`Save failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      const message = err instanceof Error ? err.message : t('error.unknown');
+      toast.error(t('toast.saveFailed', { message }));
     } finally {
       setIsSaving(false);
     }
@@ -270,14 +273,14 @@ export function ConfigDetailView({
 
   // ─── Load defaults handlers ────────────────────────────
   const handleLoadDefaultDimensions = () => {
-    if (dimensions.length > 0 && !confirm('Current dimensions will be replaced. Continue?')) return;
+    if (dimensions.length > 0 && !confirm(t('confirm.replaceDimensions'))) return;
     setDimensions(getDefaultDimensionsForType(itemType, itemSubType || null));
     setValidationErrors(new Set());
   };
 
   const handleLoadDefaultPrompt = (type: 'system' | 'feedback' | 'report') => {
     const current = type === 'system' ? systemPrompt : type === 'feedback' ? feedbackPrompt : reportPrompt;
-    if (current.trim() && !confirm('Current prompt will be replaced. Continue?')) return;
+    if (current.trim() && !confirm(t('confirm.replacePrompt'))) return;
     switch (type) {
       case 'system': setSystemPrompt(DEFAULT_SYSTEM_PROMPT); break;
       case 'feedback': setFeedbackPrompt(DEFAULT_FEEDBACK_PROMPT); break;
@@ -298,17 +301,17 @@ export function ConfigDetailView({
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to overview
+            {t('detail.backToOverview')}
           </button>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold text-gray-900">{displayLabel}</h2>
               <Badge variant={isActive ? 'success' : 'default'} size="sm">
-                {isActive ? 'Active' : 'Inactive'}
+                {isActive ? t('status.active') : t('status.inactive')}
               </Badge>
               {isNew && (
-                <Badge variant="info" size="sm">New</Badge>
+                <Badge variant="info" size="sm">{t('status.new')}</Badge>
               )}
             </div>
             {!isNew && (
@@ -329,7 +332,7 @@ export function ConfigDetailView({
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       >
                         <Copy className="w-3.5 h-3.5" />
-                        Duplicate
+                        {t('actions.duplicate')}
                       </button>
                     )}
                     {onDelete && (
@@ -341,7 +344,7 @@ export function ConfigDetailView({
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
-                          Delete
+                          {t('actions.delete')}
                         </button>
                       </>
                     )}
@@ -371,7 +374,7 @@ export function ConfigDetailView({
                   }`}
                 >
                   <TabIcon className="w-4 h-4" />
-                  {tab.label}
+                  {t(`tabs.${tab.key}`)}
                   {hasError && (
                     <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />
                   )}
@@ -453,7 +456,7 @@ export function ConfigDetailView({
         <div className="flex items-center justify-between py-4 border-t border-gray-200 bg-white">
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-400">
-              {dimensions.length} dimensions configured
+              {t('detail.dimensionsConfigured', { count: dimensions.length })}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -463,10 +466,10 @@ export function ConfigDetailView({
               icon={Eye}
               onClick={() => setShowPreview(true)}
             >
-              Preview
+              {t('actions.preview')}
             </Button>
             <Button variant="secondary" size="md" onClick={onCancel}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button
               variant="primary"
@@ -474,7 +477,7 @@ export function ConfigDetailView({
               onClick={handleSave}
               isLoading={isSaving}
             >
-              Save
+              {t('actions.save')}
             </Button>
           </div>
         </div>

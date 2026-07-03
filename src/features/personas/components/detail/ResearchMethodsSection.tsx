@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import type { PersonaWithMeta } from '../../types/persona.types';
 import { ResearchMethodCard } from './ResearchMethodCard';
 import { PERSONA_RESEARCH_METHODS } from '../../constants/persona-research-methods';
@@ -10,6 +11,7 @@ interface ResearchMethodsSectionProps {
 }
 
 export function ResearchMethodsSection({ persona, onStartMethod }: ResearchMethodsSectionProps) {
+  const { t } = useTranslation('personas');
   const completedMethods = persona.researchMethods.filter(
     (m) => m.status === 'COMPLETED' || m.status === 'VALIDATED',
   ).length;
@@ -18,13 +20,13 @@ export function ResearchMethodsSection({ persona, onStartMethod }: ResearchMetho
     <section>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-base font-semibold text-gray-900">Research & Validation</h2>
+          <h2 className="text-base font-semibold text-gray-900">{t('research.sectionTitle')}</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Strengthen this persona through evidence-based research
+            {t('research.sectionSubtitle')}
           </p>
         </div>
         <span className="text-sm font-medium text-gray-600">
-          {completedMethods}/4 methods completed
+          {t('research.methodsCompleted', { completed: completedMethods })}
         </span>
       </div>
 

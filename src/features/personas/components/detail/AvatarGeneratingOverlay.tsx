@@ -6,8 +6,10 @@
  */
 
 import { Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function AvatarGeneratingOverlay() {
+  const { t } = useTranslation('personas');
   return (
     <div className="w-full h-full relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
       {/* Animated gradient sweep */}
@@ -54,7 +56,7 @@ export function AvatarGeneratingOverlay() {
           className="text-[8px] font-semibold uppercase tracking-widest text-primary-300/80"
           style={{ animation: 'avatarPulse 2.5s ease-in-out infinite' }}
         >
-          Generating
+          {t('avatar.generating')}
         </span>
       </div>
 

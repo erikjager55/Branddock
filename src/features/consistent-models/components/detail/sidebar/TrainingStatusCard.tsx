@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { Card, ProgressBar } from "@/components/shared";
 import { useTrainingStatus } from "../../../hooks";
@@ -12,6 +14,8 @@ interface TrainingStatusCardProps {
 
 /** Sidebar card with live training progress */
 export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
+  const { t } = useTranslation("consistent-models");
+  const { formatDate } = useFormat();
   const isTraining = model.status === "TRAINING" || model.status === "UPLOADING";
   const isFailed = model.status === "TRAINING_FAILED";
   const isReady = model.status === "READY";
@@ -38,9 +42,9 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
 
   if (model.status === "DRAFT") return null;
 
-  const formatDate = (dateStr: string | null) => {
+  const formatTimestamp = (dateStr: string | null) => {
     if (!dateStr) return "—";
-    return new Date(dateStr).toLocaleString("en-US", {
+    return formatDate(new Date(dateStr), {
       month: "short",
       day: "numeric",
       hour: "2-digit",
@@ -51,7 +55,7 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
   return (
     <Card className="p-4">
       <h3 className="mb-3 text-sm font-semibold text-gray-900">
-        Training Status
+        {t("trainingStatus.heading")}
       </h3>
       <div className="space-y-3">
         {/* Status indicator */}
@@ -60,7 +64,7 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
             <>
               <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
               <span className="text-sm font-medium text-amber-700">
-                Training in progress...
+                {t("shared.trainingInProgress")}
               </span>
             </>
           )}
@@ -68,7 +72,7 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
             <>
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
               <span className="text-sm font-medium text-emerald-700">
-                Training complete
+                {t("shared.trainingComplete")}
               </span>
             </>
           )}
@@ -76,7 +80,7 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
             <>
               <XCircle className="h-4 w-4 text-red-500" />
               <span className="text-sm font-medium text-red-700">
-                Training failed
+                {t("shared.trainingFailed")}
               </span>
             </>
           )}
@@ -94,10 +98,10 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
             <div className="mt-1.5 flex items-center justify-between text-xs text-gray-500">
               <span>
                 {inQueue
-                  ? "Waiting for GPU..."
+                  ? t("shared.waitingForGpu")
                   : progress != null
-                    ? `${progress}% complete`
-                    : "Starting..."}
+                    ? t("shared.percentComplete", { progress })
+                    : t("shared.starting")}
               </span>
               {elapsed && (
                 <span className="flex items-center gap-1">
@@ -113,18 +117,18 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
         <div className="space-y-2 text-sm">
           {model.trainingStartedAt && (
             <div className="flex items-center justify-between">
-              <span className="text-gray-500">Started</span>
+              <span className="text-gray-500">{t("trainingStatus.started")}</span>
               <span className="flex items-center gap-1 text-gray-700">
                 <Clock className="h-3.5 w-3.5" />
-                {formatDate(model.trainingStartedAt)}
+                {formatTimestamp(model.trainingStartedAt)}
               </span>
             </div>
           )}
           {model.trainingCompletedAt && (
             <div className="flex items-center justify-between">
-              <span className="text-gray-500">Completed</span>
+              <span className="text-gray-500">{t("trainingStatus.completed")}</span>
               <span className="text-gray-700">
-                {formatDate(model.trainingCompletedAt)}
+                {formatTimestamp(model.trainingCompletedAt)}
               </span>
             </div>
           )}
@@ -134,12 +138,12 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
         {model.trainingConfig && (
           <div className="space-y-1.5 border-t border-gray-100 pt-3">
             <span className="text-xs font-medium text-gray-500">
-              Configuration
+              {t("trainingStatus.configuration")}
             </span>
             <div className="flex flex-wrap gap-1.5">
               {model.trainingConfig.steps && (
                 <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
-                  {model.trainingConfig.steps} steps
+                  {t("trainingStatus.steps", { steps: model.trainingConfig.steps })}
                 </span>
               )}
               {model.trainingConfig.resolution && (

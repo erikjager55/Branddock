@@ -1,29 +1,28 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
-
-const DEFAULT_ITEMS = [
-  "Product features & specifications",
-  "Pricing model & tiers",
-  "Use cases & applications",
-  "Target audience signals",
-  "Product images & visuals",
-];
 
 interface WhatWeExtractGridProps {
   items?: string[];
 }
 
-export function WhatWeExtractGrid({
-  items = DEFAULT_ITEMS,
-}: WhatWeExtractGridProps) {
+export function WhatWeExtractGrid({ items }: WhatWeExtractGridProps) {
+  const { t } = useTranslation("products");
+  const resolvedItems = items ?? [
+    t("analyzer.whatWeExtract.items.features"),
+    t("analyzer.whatWeExtract.items.pricing"),
+    t("analyzer.whatWeExtract.items.useCases"),
+    t("analyzer.whatWeExtract.items.audience"),
+    t("analyzer.whatWeExtract.items.images"),
+  ];
   return (
     <div>
       <h3 className="text-sm font-medium text-gray-700 mb-3">
-        What we extract
+        {t("analyzer.whatWeExtract.title")}
       </h3>
       <div className="grid grid-cols-2 gap-3">
-        {items.map((item, idx) => (
+        {resolvedItems.map((item, idx) => (
           <div
             key={idx}
             className="flex items-center gap-2 rounded-lg bg-green-50 p-3"

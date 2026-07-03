@@ -1,14 +1,15 @@
 'use client';
 
 import { CheckCircle, User, Calendar, HelpCircle, Mic, FileCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const STEPS = [
-  { number: 1, label: 'Contact', icon: User },
-  { number: 2, label: 'Schedule', icon: Calendar },
-  { number: 3, label: 'Questions', icon: HelpCircle },
-  { number: 4, label: 'Conduct', icon: Mic },
-  { number: 5, label: 'Review', icon: FileCheck },
-];
+  { number: 1, labelKey: 'steps.contact', icon: User },
+  { number: 2, labelKey: 'steps.schedule', icon: Calendar },
+  { number: 3, labelKey: 'steps.questions', icon: HelpCircle },
+  { number: 4, labelKey: 'steps.conduct', icon: Mic },
+  { number: 5, labelKey: 'steps.review', icon: FileCheck },
+] as const;
 
 interface WizardStepperProps {
   currentStep: number;
@@ -17,6 +18,7 @@ interface WizardStepperProps {
 }
 
 export function WizardStepper({ currentStep, completedSteps, onStepClick }: WizardStepperProps) {
+  const { t } = useTranslation('interviews');
   return (
     <div className="flex items-center justify-between mb-8">
       {STEPS.map((step, index) => {
@@ -52,7 +54,7 @@ export function WizardStepper({ currentStep, completedSteps, onStepClick }: Wiza
                       : 'text-gray-500'
                 }`}
               >
-                {step.label}
+                {t(step.labelKey)}
               </span>
             </button>
             {index < STEPS.length - 1 && (

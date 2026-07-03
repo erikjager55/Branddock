@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Check, X, Pencil, Lightbulb, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { FieldSuggestion } from '../../types/persona-analysis.types';
 
 interface FieldSuggestionCardProps {
@@ -18,6 +19,7 @@ function formatValue(value: string | string[] | null): string {
 }
 
 export function FieldSuggestionCard({ suggestion, onAccept, onReject, onEdit }: FieldSuggestionCardProps) {
+  const { t } = useTranslation('personas');
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(
     Array.isArray(suggestion.suggestedValue)
@@ -73,7 +75,7 @@ export function FieldSuggestionCard({ suggestion, onAccept, onReject, onEdit }: 
             <span className="text-sm font-semibold text-gray-900">{suggestion.label}</span>
             {(isAccepted || isEdited) && (
               <span className="ml-2 text-xs text-emerald-600 font-medium">
-                {isEdited ? 'Edited' : 'Accepted'}
+                {isEdited ? t('suggestion.edited') : t('suggestion.accepted')}
               </span>
             )}
           </div>
@@ -85,23 +87,23 @@ export function FieldSuggestionCard({ suggestion, onAccept, onReject, onEdit }: 
             <button
               onClick={() => onAccept(suggestion.id)}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
-              title="Accept suggestion"
+              title={t('suggestion.acceptTitle')}
             >
               <Check className="h-3 w-3" />
-              Accept
+              {t('suggestion.accept')}
             </button>
             <button
               onClick={() => setIsEditing(true)}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
-              title="Edit suggestion"
+              title={t('suggestion.editTitle')}
             >
               <Pencil className="h-3 w-3" />
-              Edit
+              {t('actions.edit')}
             </button>
             <button
               onClick={() => onReject(suggestion.id)}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-colors"
-              title="Reject suggestion"
+              title={t('suggestion.rejectTitle')}
             >
               <X className="h-3 w-3" />
             </button>
@@ -116,14 +118,14 @@ export function FieldSuggestionCard({ suggestion, onAccept, onReject, onEdit }: 
       {!isEditing && (
         <div className="pl-9 flex items-start gap-2">
           <div className="flex-1 min-w-0">
-            <span className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Current</span>
+            <span className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">{t('suggestion.current')}</span>
             <p className="text-xs text-gray-500 mt-0.5 truncate" title={formatValue(suggestion.currentValue)}>
               {formatValue(suggestion.currentValue)}
             </p>
           </div>
           <ArrowRight className="h-3.5 w-3.5 text-gray-300 flex-shrink-0 mt-4" />
           <div className="flex-1 min-w-0">
-            <span className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Suggested</span>
+            <span className="text-[10px] uppercase tracking-wider text-gray-400 font-medium">{t('suggestion.suggested')}</span>
             <p className={`text-xs mt-0.5 ${isAccepted || isEdited ? 'text-emerald-700 font-medium' : 'text-gray-900'}`}>
               {formatValue(
                 isEdited
@@ -144,7 +146,7 @@ export function FieldSuggestionCard({ suggestion, onAccept, onReject, onEdit }: 
               onChange={(e) => setEditValue(e.target.value)}
               rows={3}
               className="w-full px-3 py-2 text-xs border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-              placeholder="One item per line"
+              placeholder={t('suggestion.oneItemPerLine')}
             />
           ) : (
             <input
@@ -159,13 +161,13 @@ export function FieldSuggestionCard({ suggestion, onAccept, onReject, onEdit }: 
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
             >
               <Check className="h-3 w-3" />
-              Save
+              {t('actions.save')}
             </button>
             <button
               onClick={handleCancelEdit}
               className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
             >
-              Cancel
+              {t('actions.cancel')}
             </button>
           </div>
         </div>

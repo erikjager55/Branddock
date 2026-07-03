@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Settings2, Search, Play, Pause, AlertCircle } from 'lucide-react';
 import { Input, Select } from '@/components/shared';
 import { useElevenLabsVoices } from '@/features/media-library/hooks';
@@ -34,6 +35,7 @@ function VoiceOption({
   isSelected: boolean;
   onSelect: (voiceId: string) => void;
 }) {
+  const { t } = useTranslation('media-library');
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
@@ -103,7 +105,7 @@ function VoiceOption({
             type="button"
             onClick={handlePreview}
             className="ml-2 flex-shrink-0 w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-            aria-label={isPlaying ? 'Stop preview' : 'Preview voice'}
+            aria-label={isPlaying ? t('brandVoice.tts.stopPreview') : t('brandVoice.tts.previewVoice')}
           >
             {isPlaying ? (
               <Pause className="w-3 h-3 text-gray-700" />
@@ -126,6 +128,7 @@ export const TtsSettingsPanel = React.memo(function TtsSettingsPanel({
   ttsSettings,
   onChange,
 }: TtsSettingsPanelProps) {
+  const { t } = useTranslation('media-library');
   const [settingsJson, setSettingsJson] = useState<string>(
     ttsSettings ? JSON.stringify(ttsSettings, null, 2) : '{}',
   );
@@ -162,10 +165,10 @@ export const TtsSettingsPanel = React.memo(function TtsSettingsPanel({
         setJsonError(null);
         onChange({ ttsSettings: parsed });
       } catch {
-        setJsonError('Invalid JSON format');
+        setJsonError(t('brandVoice.tts.invalidJson'));
       }
     },
-    [onChange],
+    [onChange, t],
   );
 
   const handleSelectVoice = useCallback(
@@ -183,22 +186,22 @@ export const TtsSettingsPanel = React.memo(function TtsSettingsPanel({
       {/* Header */}
       <div className="flex items-center gap-2">
         <Settings2 className="w-4 h-4 text-gray-500" />
-        <h4 className="text-sm font-medium text-gray-900">TTS Configuration</h4>
+        <h4 className="text-sm font-medium text-gray-900">{t('brandVoice.tts.title')}</h4>
       </div>
 
       {/* Provider selector */}
       <Select
-        label="Provider"
+        label={t('brandVoice.tts.provider')}
         value={ttsProvider}
         onChange={(value) => onChange({ ttsProvider: value ?? undefined })}
         options={PROVIDER_OPTIONS}
-        placeholder="Select TTS provider..."
+        placeholder={t('brandVoice.tts.selectProvider')}
       />
 
       {/* ElevenLabs voice selector */}
       {isElevenLabs && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Voice</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('brandVoice.tts.voice')}</label>
 
           {voicesError && voices.length === 0 && (
             <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-100 px-3 py-2 mb-2">
@@ -222,7 +225,7 @@ export const TtsSettingsPanel = React.memo(function TtsSettingsPanel({
                   type="text"
                   value={voiceSearch}
                   onChange={(e) => setVoiceSearch(e.target.value)}
-                  placeholder="Search voices..."
+                  placeholder={t('brandVoice.tts.searchVoices')}
                   className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
@@ -240,7 +243,7 @@ export const TtsSettingsPanel = React.memo(function TtsSettingsPanel({
                   ))
                 ) : (
                   <p className="text-xs text-gray-500 py-3 text-center">
-                    No voices match &quot;{voiceSearch}&quot;
+                    {t('brandVoice.tts.noVoicesMatch', { query: voiceSearch })}
                   </p>
                 )}
               </div>
@@ -250,8 +253,8 @@ export const TtsSettingsPanel = React.memo(function TtsSettingsPanel({
             <Input
               value={ttsVoiceId ?? ''}
               onChange={(e) => onChange({ ttsVoiceId: e.target.value || undefined })}
-              placeholder="e.g., EXAVITQu4vr4xnSDxMaL"
-              helperText="Enter your ElevenLabs voice ID manually"
+              placeholder={t('brandVoice.tts.voiceIdPlaceholder')}
+              helperText={t('brandVoice.tts.voiceIdHelp')}
             />
           )}
         </div>
@@ -260,18 +263,18 @@ export const TtsSettingsPanel = React.memo(function TtsSettingsPanel({
       {/* Manual Voice ID for non-ElevenLabs providers */}
       {!isElevenLabs && ttsProvider && (
         <Input
-          label="Voice ID"
+          label={t('brandVoice.tts.voiceId')}
           value={ttsVoiceId ?? ''}
           onChange={(e) => onChange({ ttsVoiceId: e.target.value || undefined })}
-          placeholder="e.g., alloy"
-          helperText="The voice identifier from your chosen provider"
+          placeholder={t('brandVoice.tts.voiceIdPlaceholderAlt')}
+          helperText={t('brandVoice.tts.voiceIdHelpAlt')}
         />
       )}
 
       {/* Settings JSON editor */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Advanced Settings
+          {t('brandVoice.tts.advancedSettings')}
         </label>
         <textarea
           value={settingsJson}
@@ -290,7 +293,7 @@ export const TtsSettingsPanel = React.memo(function TtsSettingsPanel({
         )}
         {!jsonError && (
           <p className="mt-1.5 text-xs text-gray-500">
-            Provider-specific settings in JSON format
+            {t('brandVoice.tts.settingsHelp')}
           </p>
         )}
       </div>

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/shared";
 
 // ─── Types ────────────────────────────────────────────────
@@ -23,6 +24,7 @@ export function ContentGroupHeader({
   isCollapsed: externalCollapsed,
   onToggle: externalToggle,
 }: ContentGroupHeaderProps) {
+  const { t } = useTranslation("campaigns-content-library");
   const [internalCollapsed, setInternalCollapsed] = useState(false);
 
   const isCollapsed = externalCollapsed ?? internalCollapsed;
@@ -49,11 +51,11 @@ export function ContentGroupHeader({
         variant={campaignType === "STRATEGIC" ? "teal" : "default"}
         size="sm"
       >
-        {campaignType === "STRATEGIC" ? "Strategic" : "Quick"}
+        {campaignType === "STRATEGIC" ? t("groupHeader.strategic") : t("groupHeader.quick")}
       </Badge>
 
       <span className="text-xs text-gray-500 ml-auto">
-        {itemCount} {itemCount === 1 ? "item" : "items"}
+        {t("groupHeader.item", { count: itemCount })}
       </span>
     </button>
   );

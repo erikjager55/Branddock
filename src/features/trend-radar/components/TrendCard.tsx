@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Lock, TrendingUp, TrendingDown, Minus, Zap } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Card, Badge, ProgressBar } from '@/components/shared';
 import {
   CATEGORY_COLORS,
@@ -24,6 +26,8 @@ const DIRECTION_ICONS: Record<string, React.ComponentType<{ className?: string }
 
 /** Trend card following BrandAssetCard / PersonaCard pattern */
 export function TrendCard({ trend, onClick }: TrendCardProps) {
+  const { t } = useTranslation('trend-radar');
+  const { formatDate } = useFormat();
   const [imageError, setImageError] = useState(false);
   const categoryConfig = CATEGORY_COLORS[trend.category];
   const impactConfig = IMPACT_COLORS[trend.impactLevel];
@@ -79,7 +83,7 @@ export function TrendCard({ trend, onClick }: TrendCardProps) {
         {/* Relevance bar */}
         <div className="mt-3">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-gray-400">Relevance</span>
+            <span className="text-[10px] text-gray-400">{t('card.relevance')}</span>
             <span className="text-[10px] font-semibold text-gray-600">{trend.relevanceScore}%</span>
           </div>
           <ProgressBar value={trend.relevanceScore} color={relevanceColor} size="sm" />
@@ -88,7 +92,7 @@ export function TrendCard({ trend, onClick }: TrendCardProps) {
         {/* Badges row */}
         <div className="flex items-center gap-1.5 flex-wrap mt-3">
           <Badge variant={trend.impactLevel === 'HIGH' || trend.impactLevel === 'CRITICAL' ? 'warning' : 'default'}>
-            {impactConfig.label} Impact
+            {t('card.impact', { level: impactConfig.label })}
           </Badge>
           {DirectionIcon && (
             <div className="flex items-center gap-1">
@@ -113,14 +117,14 @@ export function TrendCard({ trend, onClick }: TrendCardProps) {
         <div className="flex items-center gap-2">
           {trend.isActivated && (
             <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600">
-              <Zap className="w-3 h-3" /> Active
+              <Zap className="w-3 h-3" /> {t('card.active')}
             </span>
           )}
           {trend.isDismissed && (
-            <span className="text-[10px] font-medium text-gray-400">Dismissed</span>
+            <span className="text-[10px] font-medium text-gray-400">{t('card.dismissed')}</span>
           )}
           <span className="text-[10px] text-gray-400">
-            {new Date(trend.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            {formatDate(new Date(trend.createdAt), { month: 'short', day: 'numeric' })}
           </span>
         </div>
       </div>

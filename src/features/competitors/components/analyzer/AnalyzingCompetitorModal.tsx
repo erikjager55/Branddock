@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, CheckCircle, Circle } from "lucide-react";
 import { Button } from "@/components/shared";
 import { COMPETITOR_ANALYZE_STEPS } from "../../constants/competitor-constants";
@@ -18,6 +19,7 @@ export function AnalyzingCompetitorModal({
   onCancel,
   isApiComplete = false,
 }: AnalyzingCompetitorModalProps) {
+  const { t } = useTranslation("competitors");
   const [currentStep, setCurrentStep] = useState(0);
   const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
@@ -56,12 +58,12 @@ export function AnalyzingCompetitorModal({
 
         {/* Title */}
         <h2 className="text-lg font-semibold text-gray-900 mb-1">
-          {isWaitingForApi ? "Finalizing analysis..." : "Analyzing competitor..."}
+          {isWaitingForApi ? t("analyzing.finalizing") : t("analyzing.analyzing")}
         </h2>
         <p className="text-sm text-gray-500 mb-6">
           {isWaitingForApi
-            ? "Almost done, processing AI response"
-            : "This usually takes about 15 seconds"}
+            ? t("analyzing.almostDone")
+            : t("analyzing.usualTime")}
         </p>
 
         {/* Steps list */}
@@ -98,7 +100,7 @@ export function AnalyzingCompetitorModal({
 
         {/* Cancel button */}
         <Button variant="ghost" onClick={onCancel} fullWidth>
-          Cancel
+          {t("actions.cancel")}
         </Button>
       </div>
     </div>

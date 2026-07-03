@@ -1,6 +1,7 @@
 'use client';
 
 import { FileText } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { exportBrandAssetPdf } from '../../utils/exportBrandAssetPdf';
 import type { BrandAssetDetail } from '../../types/brand-asset-detail.types';
 
@@ -9,9 +10,10 @@ interface AssetQuickActionsCardProps {
 }
 
 export function AssetQuickActionsCard({ asset }: AssetQuickActionsCardProps) {
+  const { t } = useTranslation('brand-asset-detail');
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('quickActions.title')}</h3>
       <div className="space-y-1.5">
         <button
           onClick={() => exportBrandAssetPdf(asset)}
@@ -21,7 +23,7 @@ export function AssetQuickActionsCard({ asset }: AssetQuickActionsCardProps) {
             <FileText className="h-3.5 w-3.5 text-gray-600" />
           </div>
           <span className="text-xs font-medium text-gray-700">
-            Export PDF
+            {t('quickActions.exportPdf')}
           </span>
         </button>
       </div>

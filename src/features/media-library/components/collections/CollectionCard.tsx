@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FolderOpen } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import type { MediaCollectionWithMeta } from '../../types/media.types';
@@ -14,6 +15,7 @@ const DEFAULT_COLOR = '#6B7280';
 
 /** Card component for a single media collection. */
 export function CollectionCard({ collection, onClick }: CollectionCardProps) {
+  const { t } = useTranslation('media-library');
   const bgColor = collection.color ?? DEFAULT_COLOR;
   const [imgFailed, setImgFailed] = useState(false);
   const previewUrl = collection.previewAssetUrl;
@@ -71,7 +73,7 @@ export function CollectionCard({ collection, onClick }: CollectionCardProps) {
             {collection.name}
           </h3>
           <Badge variant="default" size="sm">
-            {collection._count.assets} {collection._count.assets === 1 ? 'asset' : 'assets'}
+            {t('assetCount', { count: collection._count.assets })}
           </Badge>
         </div>
 

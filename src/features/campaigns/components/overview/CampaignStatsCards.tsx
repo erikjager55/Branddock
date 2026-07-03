@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Megaphone, Zap, CheckCircle, FileText } from "lucide-react";
 import { StatCard } from "@/components/shared";
 import type { CampaignStatsResponse } from "@/types/campaign";
@@ -11,6 +12,7 @@ interface CampaignStatsCardsProps {
 }
 
 export function CampaignStatsCards({ stats, isLoading }: CampaignStatsCardsProps) {
+  const { t } = useTranslation("campaigns-overview");
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -26,25 +28,25 @@ export function CampaignStatsCards({ stats, isLoading }: CampaignStatsCardsProps
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <StatCard
-        label="Active Campaigns"
+        label={t("stats.activeCampaigns")}
         value={s.active}
         icon={Megaphone}
         className="border-l-4 border-l-blue-500"
       />
       <StatCard
-        label="Quick Content"
+        label={t("stats.quickContent")}
         value={s.quick}
         icon={Zap}
         className="border-l-4 border-l-purple-500"
       />
       <StatCard
-        label="Completed"
+        label={t("stats.completed")}
         value={s.completed}
         icon={CheckCircle}
         className="border-l-4 border-l-green-500"
       />
       <StatCard
-        label="Total Content"
+        label={t("stats.totalContent")}
         value={s.totalContent}
         icon={FileText}
         className="border-l-4 border-l-gray-400"

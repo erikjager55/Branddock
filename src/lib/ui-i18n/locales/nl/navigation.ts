@@ -1,4 +1,4 @@
-// Dutch UI strings — `navigation` namespace. Hand-seeded for Fase 1.
+// Dutch UI strings — `navigation` namespace.
 const navigation = {
   settings: {
     account: 'Account',
@@ -21,6 +21,33 @@ const navigation = {
   sidebar: {
     settings: 'Instellingen',
     helpSupport: 'Help & ondersteuning',
+    sections: {
+      WORKSPACE: 'Werkruimte',
+      CREATE: 'Aanmaken',
+      KNOWLEDGE: 'Kennis',
+      MEDIA: 'Media',
+      INSIGHTS: 'Inzichten',
+      VALIDATION: 'Validatie',
+    },
+    items: {
+      dashboard: 'Overzicht',
+      'active-campaigns': 'Campagnes',
+      'content-library': 'Content',
+      brand: 'Merkfundament',
+      brandstyle: 'Brandstyle',
+      brandvoice: 'Merkstem',
+      'business-strategy': 'Bedrijfsstrategie',
+      personas: "Persona's",
+      products: 'Producten & diensten',
+      competitors: 'Concurrenten',
+      'media-library': 'Mediabibliotheek',
+      'ai-trainer': 'AI-trainer',
+      'ai-studio': 'AI-studio',
+      trends: 'Trendradar',
+      knowledge: 'Kennisbibliotheek',
+      research: 'Onderzoekshub',
+      'brand-alignment': 'Merkconsistentie',
+    },
   },
 } as const;
 

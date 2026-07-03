@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Image, ImageIcon, Video, FileText } from 'lucide-react';
 import { StatCard } from '@/components/shared';
 import { SkeletonCard } from '@/components/shared';
@@ -21,6 +22,7 @@ interface MediaStatsCardsProps {
 
 /** Stats cards row showing 4 media library statistics */
 export function MediaStatsCards({ stats, isLoading }: MediaStatsCardsProps) {
+  const { t } = useTranslation('media-library');
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -34,22 +36,22 @@ export function MediaStatsCards({ stats, isLoading }: MediaStatsCardsProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <StatCard
-        label="Total Assets"
+        label={t('stats.totalAssets')}
         value={stats?.totalAssets ?? 0}
         icon={Image}
       />
       <StatCard
-        label="Images"
+        label={t('stats.images')}
         value={stats?.totalImages ?? 0}
         icon={ImageIcon}
       />
       <StatCard
-        label="Videos"
+        label={t('stats.videos')}
         value={stats?.totalVideos ?? 0}
         icon={Video}
       />
       <StatCard
-        label="Documents & Audio"
+        label={t('stats.documentsAudio')}
         value={(stats?.totalDocuments ?? 0) + (stats?.totalAudio ?? 0)}
         icon={FileText}
       />

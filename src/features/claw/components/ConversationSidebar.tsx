@@ -3,10 +3,12 @@
 import React, { useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import { Plus, MessageSquare, Trash2, Search, X, Pencil, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { useClawStore } from '@/stores/useClawStore';
 import type { ClawConversationMeta, ClawConversationFull } from '@/lib/claw/claw.types';
 
 export function ConversationSidebar() {
+  const { t } = useTranslation('claw');
   const {
     conversations,
     setConversations,
@@ -84,10 +86,10 @@ export function ConversationSidebar() {
     }, 5000);
     pendingDeleteTimers.current.set(id, timer);
 
-    toast(`Deleted "${removed.title ?? 'Untitled'}"`, {
+    toast(t('sidebar.deleted', { title: removed.title ?? t('sidebar.untitled') }), {
       duration: 5000,
       action: {
-        label: 'Undo',
+        label: t('sidebar.undo'),
         onClick: () => {
           const pending = pendingDeleteTimers.current.get(id);
           if (pending) {
@@ -99,7 +101,7 @@ export function ConversationSidebar() {
         },
       },
     });
-  }, [conversations, activeConversationId, setConversations, startNewConversation]);
+  }, [conversations, activeConversationId, setConversations, startNewConversation, t]);
 
   const startRename = useCallback((conv: ClawConversationMeta, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -133,16 +135,16 @@ export function ConversationSidebar() {
     } catch {
       // Rollback on error
       setConversations(conversations);
-      toast.error('Could not rename conversation');
+      toast.error(t('sidebar.renameFailed'));
     }
-  }, [renamingId, renameValue, conversations, setConversations, cancelRename]);
+  }, [renamingId, renameValue, conversations, setConversations, cancelRename, t]);
 
   // Filter then group
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return conversations;
-    return conversations.filter((c) => (c.title ?? 'Untitled').toLowerCase().includes(q));
-  }, [conversations, searchQuery]);
+    return conversations.filter((c) => (c.title ?? t('sidebar.untitled')).toLowerCase().includes(q));
+  }, [conversations, searchQuery, t]);
   const grouped = groupByDate(filtered);
 
   return (
@@ -154,7 +156,7 @@ export function ConversationSidebar() {
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-white hover:border-gray-300 transition-colors"
         >
           <Plus size={14} />
-          New conversation
+          {t('sidebar.newConversation')}
         </button>
         <div className="relative">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -162,14 +164,14 @@ export function ConversationSidebar() {
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search conversations…"
+            placeholder={t('sidebar.searchPlaceholder')}
             className="w-full pl-7 pr-7 py-1.5 rounded-lg border border-gray-200 bg-white text-xs text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-400 hover:text-gray-600"
-              aria-label="Clear search"
+              aria-label={t('sidebar.clearSearch')}
             >
               <X size={12} />
             </button>
@@ -179,10 +181,10 @@ export function ConversationSidebar() {
 
       {/* Conversation list */}
       <div className="flex-1 overflow-y-auto px-2 py-2">
-        {grouped.map(({ label, items }) => (
-          <div key={label} className="mb-3">
+        {grouped.map(({ id, items }) => (
+          <div key={id} className="mb-3">
             <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider">
-              {label}
+              {t(`sidebar.groups.${id}`)}
             </div>
             {items.map((conv) => {
               const isRenaming = renamingId === conv.id;
@@ -203,7 +205,7 @@ export function ConversationSidebar() {
                   <MessageSquare size={14} className="flex-shrink-0 text-gray-400" />
                   {isRenaming ? (
                     <input
-                      // eslint-disable-next-line jsx-a11y/no-autofocus
+                       
                       autoFocus
                       value={renameValue}
                       onChange={(e) => setRenameValue(e.target.value)}
@@ -217,15 +219,15 @@ export function ConversationSidebar() {
                       className="flex-1 min-w-0 px-1.5 py-0.5 rounded border border-teal-300 bg-white text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
                     />
                   ) : (
-                    <span className="flex-1 truncate" title={conv.title || 'Untitled'}>
-                      {conv.title || 'Untitled'}
+                    <span className="flex-1 truncate" title={conv.title || t('sidebar.untitled')}>
+                      {conv.title || t('sidebar.untitled')}
                     </span>
                   )}
                   {isRenaming ? (
                     <button
                       onClick={(e) => { e.stopPropagation(); commitRename(); }}
                       className="p-0.5 rounded text-teal-600 hover:text-teal-700"
-                      aria-label="Save rename"
+                      aria-label={t('sidebar.saveRename')}
                     >
                       <Check size={13} />
                     </button>
@@ -234,15 +236,15 @@ export function ConversationSidebar() {
                       <button
                         onClick={(e) => startRename(conv, e)}
                         className="p-0.5 rounded text-gray-400 hover:text-gray-700"
-                        aria-label="Rename"
-                        title="Rename (or double-click)"
+                        aria-label={t('sidebar.rename')}
+                        title={t('sidebar.renameTitle')}
                       >
                         <Pencil size={12} />
                       </button>
                       <button
                         onClick={(e) => handleDelete(conv.id, e)}
                         className="p-0.5 rounded text-gray-400 hover:text-red-500"
-                        aria-label="Delete"
+                        aria-label={t('sidebar.delete')}
                       >
                         <Trash2 size={12} />
                       </button>
@@ -256,12 +258,12 @@ export function ConversationSidebar() {
 
         {conversations.length === 0 && !searchQuery && (
           <div className="px-3 py-8 text-center text-xs text-gray-400">
-            No conversations yet
+            {t('sidebar.empty')}
           </div>
         )}
         {conversations.length > 0 && filtered.length === 0 && (
           <div className="px-3 py-8 text-center text-xs text-gray-400">
-            No matches for &quot;{searchQuery}&quot;
+            {t('sidebar.noMatches', { query: searchQuery })}
           </div>
         )}
       </div>
@@ -277,11 +279,11 @@ function groupByDate(conversations: ClawConversationMeta[]) {
   const yesterday = new Date(today.getTime() - 86400000);
   const weekAgo = new Date(today.getTime() - 7 * 86400000);
 
-  const groups: { label: string; items: ClawConversationMeta[] }[] = [
-    { label: 'Today', items: [] },
-    { label: 'Yesterday', items: [] },
-    { label: 'This Week', items: [] },
-    { label: 'Older', items: [] },
+  const groups: { id: 'today' | 'yesterday' | 'thisWeek' | 'older'; items: ClawConversationMeta[] }[] = [
+    { id: 'today', items: [] },
+    { id: 'yesterday', items: [] },
+    { id: 'thisWeek', items: [] },
+    { id: 'older', items: [] },
   ];
 
   for (const conv of conversations) {

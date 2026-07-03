@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/shared";
 
@@ -20,10 +21,12 @@ export function EditableStringList({
   onSave,
   canEdit,
   isSaving,
-  placeholder = "Add new item...",
+  placeholder,
   children,
   title,
 }: EditableStringListProps) {
+  const { t } = useTranslation("brandstyle");
+  const resolvedPlaceholder = placeholder ?? t("editableList.placeholder");
   const [isEditing, setIsEditing] = useState(false);
   const [editItems, setEditItems] = useState<string[]>([]);
   const [newItem, setNewItem] = useState("");
@@ -68,7 +71,7 @@ export function EditableStringList({
           <button
             onClick={startEdit}
             className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0"
-            title="Edit"
+            title={t("actions.edit")}
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
@@ -102,7 +105,7 @@ export function EditableStringList({
                   addItem();
                 }
               }}
-              placeholder={placeholder}
+              placeholder={resolvedPlaceholder}
               className="flex-1 text-sm px-3 py-1.5 border border-dashed border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <button
@@ -114,10 +117,10 @@ export function EditableStringList({
           </div>
           <div className="flex gap-2 pt-2">
             <Button variant="primary" size="sm" onClick={save} isLoading={isSaving}>
-              Save
+              {t("actions.save")}
             </Button>
             <Button variant="secondary" size="sm" onClick={cancel}>
-              Cancel
+              {t("actions.cancel")}
             </Button>
           </div>
         </div>

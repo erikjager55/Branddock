@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft } from 'lucide-react';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
@@ -27,6 +28,7 @@ export function WorkshopCompletePage({
   workshopId,
   onBack,
 }: WorkshopCompletePageProps) {
+  const { t } = useTranslation('workshop');
   const { data, isLoading } = useWorkshopDetail(workshopId);
   const reportQuery = useWorkshopReport(workshopId, true);
   const notesQuery = useWorkshopNotes(workshopId);
@@ -66,7 +68,7 @@ export function WorkshopCompletePage({
     return (
       <PageShell>
       <div className="text-center py-12 text-gray-500">
-        Workshop not found.
+        {t('common.notFound')}
       </div>
       </PageShell>
     );
@@ -82,7 +84,7 @@ export function WorkshopCompletePage({
         className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4 transition-colors"
       >
         <ChevronLeft className="w-4 h-4" />
-        Back to Asset
+        {t('common.backToAsset')}
       </button>
 
       <CompleteBanner workshop={workshop} onExportRaw={handleExportRaw} />

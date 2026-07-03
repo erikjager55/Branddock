@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Users, User } from 'lucide-react';
 import { OptimizedImage } from '@/components/shared';
 import type { WorkshopParticipant } from '../../types/workshop.types';
@@ -9,6 +10,7 @@ interface ParticipantsGridProps {
 }
 
 export function ParticipantsGrid({ participants }: ParticipantsGridProps) {
+  const { t } = useTranslation('workshop');
   const safeParticipants = Array.isArray(participants) ? participants : [];
   if (safeParticipants.length === 0) return null;
 
@@ -16,7 +18,7 @@ export function ParticipantsGrid({ participants }: ParticipantsGridProps) {
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-3">
         <Users className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold text-gray-900">Participants</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t('results.participants.title')}</h3>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {safeParticipants.map((p) => (

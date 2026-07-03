@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Palette } from "lucide-react";
 import { Button, Skeleton } from "@/components/shared";
 import { PageShell } from '@/components/ui/layout';
@@ -32,6 +33,7 @@ export function WorkshopPurchasePage({
   onNavigateBack,
   onPurchased,
 }: WorkshopPurchasePageProps) {
+  const { t } = useTranslation("workshop");
   const { brandAssets } = useBrandAssets();
   const { data: bundleData, isLoading } = useWorkshopBundles(assetId);
   const purchase = usePurchaseWorkshop(assetId);
@@ -54,17 +56,22 @@ export function WorkshopPurchasePage({
 
   if (store.selectionMode === "bundles" && selectedBundle) {
     lineItems.push({
-      label: `${selectedBundle.name} x${store.workshopCount}`,
+      label: t("purchase.lineItem.bundle", {
+        name: selectedBundle.name,
+        workshops: store.workshopCount,
+      }),
       amount: selectedBundle.finalPrice * store.workshopCount,
     });
   } else if (store.selectionMode === "individual") {
     lineItems.push({
-      label: `Workshop base x${store.workshopCount}`,
+      label: t("purchase.lineItem.workshopBase", { workshops: store.workshopCount }),
       amount: WORKSHOP_BASE_PRICE * store.workshopCount,
     });
     if (store.selectedAssetIds.length > 0) {
       lineItems.push({
-        label: `${store.selectedAssetIds.length} asset${store.selectedAssetIds.length > 1 ? "s" : ""} included`,
+        label: t("purchase.lineItem.assetsIncluded", {
+          count: store.selectedAssetIds.length,
+        }),
         amount: 0,
       });
     }
@@ -72,7 +79,7 @@ export function WorkshopPurchasePage({
 
   if (store.hasFacilitator) {
     lineItems.push({
-      label: `Facilitator x${store.workshopCount}`,
+      label: t("purchase.lineItem.facilitator", { workshops: store.workshopCount }),
       amount: FACILITATOR_PRICE * store.workshopCount,
     });
   }
@@ -142,7 +149,7 @@ export function WorkshopPurchasePage({
           className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Asset
+          {t("common.backToAsset")}
         </button>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -150,10 +157,10 @@ export function WorkshopPurchasePage({
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Purchase Canvas Workshop
+              {t("purchase.pageTitle")}
             </h1>
             <p className="text-sm text-gray-500">
-              Select a bundle or individual assets for your workshop
+              {t("purchase.pageSubtitle")}
             </p>
           </div>
         </div>
@@ -168,7 +175,7 @@ export function WorkshopPurchasePage({
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">
-                Select Assets
+                {t("purchase.selectAssets")}
               </h2>
               <AssetSelectionToggle
                 mode={store.selectionMode}

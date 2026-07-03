@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import type { AlignmentIssueData } from '@/types/brand-alignment';
 import { Badge, EmptyState } from '@/components/shared';
@@ -31,6 +32,7 @@ export function AlignmentIssuesSection({
   isDismissing,
   onNavigate,
 }: AlignmentIssuesSectionProps) {
+  const { t } = useTranslation('brand-alignment');
   const severityFilter = useBrandAlignmentStore((s) => s.severityFilter);
   const statusFilter = useBrandAlignmentStore((s) => s.statusFilter);
   const moduleFilter = useBrandAlignmentStore((s) => s.moduleFilter);
@@ -44,10 +46,10 @@ export function AlignmentIssuesSection({
       {/* Section header */}
       <div className="flex items-center gap-3 mb-4">
         <AlertTriangle className="w-5 h-5 text-red-500" />
-        <h2 className={TYPOGRAPHY.sectionHeading}>Alignment Issues</h2>
+        <h2 className={TYPOGRAPHY.sectionHeading}>{t('issues.heading')}</h2>
         {openIssuesCount > 0 && (
           <Badge variant="danger" size="sm">
-            {openIssuesCount} items need review
+            {t('issues.itemsNeedReview', { count: openIssuesCount })}
           </Badge>
         )}
       </div>
@@ -66,15 +68,15 @@ export function AlignmentIssuesSection({
         /* Empty state */
         <EmptyState
           icon={CheckCircle}
-          title={hasFilters ? 'No issues match filters' : 'No issues found'}
+          title={hasFilters ? t('issues.emptyFilteredTitle') : t('issues.emptyTitle')}
           description={
             hasFilters
-              ? 'Try adjusting your filters to see more issues.'
-              : 'Your brand assets are fully aligned!'
+              ? t('issues.emptyFilteredDescription')
+              : t('issues.emptyDescription')
           }
           action={
             hasFilters
-              ? { label: 'Reset Filters', onClick: resetFilters, variant: 'secondary' }
+              ? { label: t('issues.resetFilters'), onClick: resetFilters, variant: 'secondary' }
               : undefined
           }
         />

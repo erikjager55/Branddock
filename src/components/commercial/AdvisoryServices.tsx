@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -32,6 +33,7 @@ interface AdvisoryServicesProps {
 }
 
 export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strategic-control' }: AdvisoryServicesProps) {
+  const { t } = useTranslation('commercial');
   const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'validations' | 'support'>('overview');
   const tierInfo = PRODUCT_TIERS['advisory-services'];
 
@@ -39,27 +41,27 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
   const upcomingReviews = [
     {
       id: '1',
-      type: 'Quarterly Strategic Review',
-      date: 'January 15, 2025',
+      type: t('advisory.reviews.items.review1.type'),
+      date: t('advisory.reviews.items.review1.date'),
       time: '14:00 - 16:00',
       advisor: 'Sarah van den Berg',
       topics: [
-        'Q4 campaign performance analysis',
-        'Research coverage assessment',
-        'Q1 strategic priorities'
+        t('advisory.reviews.items.review1.topic1'),
+        t('advisory.reviews.items.review1.topic2'),
+        t('advisory.reviews.items.review1.topic3')
       ],
       status: 'scheduled' as const
     },
     {
       id: '2',
-      type: 'Brand Asset Deep Dive',
-      date: 'January 22, 2025',
+      type: t('advisory.reviews.items.review2.type'),
+      date: t('advisory.reviews.items.review2.date'),
       time: '10:00 - 11:30',
       advisor: 'Marcus de Vries',
       topics: [
-        'Core value proposition validation',
-        'Messaging consistency review',
-        'Competitive positioning update'
+        t('advisory.reviews.items.review2.topic1'),
+        t('advisory.reviews.items.review2.topic2'),
+        t('advisory.reviews.items.review2.topic3')
       ],
       status: 'pending' as const
     }
@@ -68,25 +70,25 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
   const guidedValidations = [
     {
       id: '1',
-      title: 'Persona Validation Program',
-      description: 'Expert-guided user research for top 3 persona segments',
-      duration: '4 weeks',
+      title: t('advisory.validations.items.validation1.title'),
+      description: t('advisory.validations.items.validation1.description'),
+      duration: t('advisory.validations.items.validation1.duration'),
       deliverables: [
-        '15+ user interviews',
-        'Persona profiles + validation report',
-        'Strategic recommendations'
+        t('advisory.validations.items.validation1.deliverable1'),
+        t('advisory.validations.items.validation1.deliverable2'),
+        t('advisory.validations.items.validation1.deliverable3')
       ],
       status: 'available' as const
     },
     {
       id: '2',
-      title: 'Brand Messaging Test',
-      description: 'Multi-channel messaging validation with A/B testing expertise',
-      duration: '3 weeks',
+      title: t('advisory.validations.items.validation2.title'),
+      description: t('advisory.validations.items.validation2.description'),
+      duration: t('advisory.validations.items.validation2.duration'),
       deliverables: [
-        'Test design + implementation',
-        'Statistical analysis',
-        'Optimization roadmap'
+        t('advisory.validations.items.validation2.deliverable1'),
+        t('advisory.validations.items.validation2.deliverable2'),
+        t('advisory.validations.items.validation2.deliverable3')
       ],
       status: 'in-progress' as const
     }
@@ -95,26 +97,26 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
   const supportServices = [
     {
       icon: MessageSquare,
-      title: 'Priority Chat Support',
-      description: 'Direct access to strategy advisors within 2 hours',
+      title: t('advisory.support.services.chat.title'),
+      description: t('advisory.support.services.chat.description'),
       included: true
     },
     {
       icon: Video,
-      title: 'On-Demand Video Calls',
-      description: 'Flexible expert consultations for urgent issues',
+      title: t('advisory.support.services.video.title'),
+      description: t('advisory.support.services.video.description'),
       included: true
     },
     {
       icon: FileText,
-      title: 'Custom Research Design',
-      description: 'Research design tailored to your specific strategic questions',
+      title: t('advisory.support.services.research.title'),
+      description: t('advisory.support.services.research.description'),
       included: true
     },
     {
       icon: Users,
-      title: 'Stakeholder Presentations',
-      description: 'Expert presentations for board and senior management',
+      title: t('advisory.support.services.stakeholder.title'),
+      description: t('advisory.support.services.stakeholder.description'),
       included: true
     }
   ];
@@ -135,14 +137,14 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
           <CardContent className="space-y-8">
             {/* Certainty Level */}
             <div className="text-center p-6 rounded-lg bg-muted/50 border">
-              <p className="text-sm font-medium text-muted-foreground mb-1">Decision Certainty Level</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">{t('advisory.upsell.certaintyLevel')}</p>
               <p className="text-2xl font-bold mb-2">{tierInfo.certaintyLevel}</p>
               <p className="text-sm text-muted-foreground">{tierInfo.certaintyDescription}</p>
             </div>
 
             {/* What's Included */}
             <div>
-              <h3 className="font-semibold mb-4 text-center">What you get:</h3>
+              <h3 className="font-semibold mb-4 text-center">{t('advisory.upsell.whatYouGet')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {tierInfo.features.map((feature, index) => (
                   <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-background border">
@@ -155,24 +157,22 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
 
             {/* Value Proposition */}
             <div className={`p-6 rounded-lg ${tierInfo.color.bg} border-2 border-current`}>
-              <h3 className="font-semibold mb-3">Maximum Decision Certainty with Expert Guidance</h3>
+              <h3 className="font-semibold mb-3">{t('advisory.upsell.valuePropTitle')}</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                For organizations making critical strategic decisions with significant impact.
-                Our Advisory & Services program combines the power of the Strategic Control platform
-                with hands-on expert guidance for maximum confidence in every decision.
+                {t('advisory.upsell.valuePropBody')}
               </p>
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="text-center p-3 rounded-lg bg-background/60">
                   <p className="text-2xl font-bold">95%+</p>
-                  <p className="text-xs text-muted-foreground mt-1">Decision Certainty</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('advisory.upsell.statCertaintyLabel')}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-background/60">
                   <p className="text-2xl font-bold">4x</p>
-                  <p className="text-xs text-muted-foreground mt-1">Faster Validation</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('advisory.upsell.statFasterLabel')}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-background/60">
                   <p className="text-2xl font-bold">24/7</p>
-                  <p className="text-xs text-muted-foreground mt-1">Expert Access</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('advisory.upsell.statAccessLabel')}</p>
                 </div>
               </div>
             </div>
@@ -180,9 +180,9 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
             {/* Pricing & CTA */}
             <div className="text-center space-y-4">
               <div className="p-4 rounded-lg bg-muted/50 border inline-block">
-                <p className="text-sm text-muted-foreground mb-1">Investment</p>
+                <p className="text-sm text-muted-foreground mb-1">{t('advisory.upsell.investment')}</p>
                 <p className="text-3xl font-bold">{tierInfo.price}</p>
-                <p className="text-sm text-muted-foreground mt-1">Based on your organization and needs</p>
+                <p className="text-sm text-muted-foreground mt-1">{t('advisory.upsell.pricingNote')}</p>
               </div>
               <div className="flex gap-3 max-w-md mx-auto">
                 <Button size="lg" className="flex-1 gap-2" onClick={onScheduleConsultation}>
@@ -203,9 +203,9 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Advisory & Services</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('advisory.header.title')}</h1>
           <p className="text-muted-foreground">
-            Expert guidance for maximum decision certainty
+            {t('advisory.header.subtitle')}
           </p>
         </div>
         <Badge className={tierInfo.color.badge} variant="outline">
@@ -219,19 +219,19 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview" className="gap-2">
             <Shield className="h-4 w-4" />
-            Overview
+            {t('advisory.tabs.overview')}
           </TabsTrigger>
           <TabsTrigger value="reviews" className="gap-2">
             <Calendar className="h-4 w-4" />
-            Reviews
+            {t('advisory.tabs.reviews')}
           </TabsTrigger>
           <TabsTrigger value="validations" className="gap-2">
             <Target className="h-4 w-4" />
-            Validations
+            {t('advisory.tabs.validations')}
           </TabsTrigger>
           <TabsTrigger value="support" className="gap-2">
             <MessageSquare className="h-4 w-4" />
-            Support
+            {t('advisory.tabs.support')}
           </TabsTrigger>
         </TabsList>
 
@@ -242,7 +242,7 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Active Advisor
+                  {t('advisory.overview.activeAdvisor')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -252,7 +252,7 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
                   </div>
                   <div>
                     <p className="font-semibold">Sarah van den Berg</p>
-                    <p className="text-sm text-muted-foreground">Senior Strategy Advisor</p>
+                    <p className="text-sm text-muted-foreground">{t('advisory.overview.advisorRole')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -261,24 +261,24 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Next Review
+                  {t('advisory.overview.nextReview')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold mb-1">15 jan</p>
-                <p className="text-sm text-muted-foreground">Quarterly Strategic Review</p>
+                <p className="text-2xl font-bold mb-1">{t('advisory.overview.nextReviewDate')}</p>
+                <p className="text-sm text-muted-foreground">{t('advisory.overview.nextReviewType')}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Response Time
+                  {t('advisory.overview.responseTime')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold mb-1">&lt; 2h</p>
-                <p className="text-sm text-muted-foreground">Priority support access</p>
+                <p className="text-sm text-muted-foreground">{t('advisory.overview.responseSupport')}</p>
               </CardContent>
             </Card>
           </div>
@@ -286,28 +286,28 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
           {/* Recent Activity */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Expert Interactions</CardTitle>
+              <CardTitle>{t('advisory.overview.recentTitle')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                   <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
                   <div className="flex-1">
-                    <p className="font-medium text-sm">Brand Messaging Review Completed</p>
+                    <p className="font-medium text-sm">{t('advisory.overview.activity1Title')}</p>
                     <p className="text-sm text-muted-foreground">
-                      Expert validation of core messaging - 3 optimizations recommended
+                      {t('advisory.overview.activity1Body')}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">2 days ago</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t('advisory.overview.activity1Time')}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                   <Lightbulb className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
                   <div className="flex-1">
-                    <p className="font-medium text-sm">Strategic Consultation: Q1 Campagne Planning</p>
+                    <p className="font-medium text-sm">{t('advisory.overview.activity2Title')}</p>
                     <p className="text-sm text-muted-foreground">
-                      1-on-1 session with Sarah - action plan defined
+                      {t('advisory.overview.activity2Body')}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">5 days ago</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t('advisory.overview.activity2Time')}</p>
                   </div>
                 </div>
               </div>
@@ -319,9 +319,9 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
         <TabsContent value="reviews" className="space-y-6 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Scheduled Strategic Reviews</CardTitle>
+              <CardTitle>{t('advisory.reviews.title')}</CardTitle>
               <CardDescription>
-                Quarterly reviews and deep-dive sessions with your strategy advisor
+                {t('advisory.reviews.description')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -342,15 +342,15 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
                       </div>
                     </div>
                     <Badge variant={review.status === 'scheduled' ? 'default' : 'outline'}>
-                      {review.status === 'scheduled' ? 'Scheduled' : 'Pending'}
+                      {review.status === 'scheduled' ? t('advisory.reviews.statusScheduled') : t('advisory.reviews.statusPending')}
                     </Badge>
                   </div>
                   <div className="mb-3">
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Advisor</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">{t('advisory.reviews.advisorLabel')}</p>
                     <p className="text-sm">{review.advisor}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Agenda Topics</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">{t('advisory.reviews.agendaLabel')}</p>
                     <div className="space-y-1">
                       {review.topics.map((topic, index) => (
                         <div key={index} className="flex items-start gap-2 text-sm">
@@ -363,10 +363,10 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
                   {review.status === 'scheduled' && (
                     <div className="mt-4 pt-4 border-t flex gap-2">
                       <Button variant="outline" size="sm">
-                        Reschedule
+                        {t('advisory.reviews.reschedule')}
                       </Button>
                       <Button size="sm">
-                        Join Meeting
+                        {t('advisory.reviews.joinMeeting')}
                       </Button>
                     </div>
                   )}
@@ -380,9 +380,9 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
         <TabsContent value="validations" className="space-y-6 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Guided Validation Programs</CardTitle>
+              <CardTitle>{t('advisory.validations.title')}</CardTitle>
               <CardDescription>
-                Expert support for critical research and validation projects
+                {t('advisory.validations.description')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -398,11 +398,11 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
                       </Badge>
                     </div>
                     <Badge variant={validation.status === 'in-progress' ? 'default' : 'outline'}>
-                      {validation.status === 'in-progress' ? 'In Progress' : 'Available'}
+                      {validation.status === 'in-progress' ? t('advisory.validations.statusInProgress') : t('advisory.validations.statusAvailable')}
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Deliverables</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">{t('advisory.validations.deliverablesLabel')}</p>
                     <div className="space-y-1">
                       {validation.deliverables.map((deliverable, index) => (
                         <div key={index} className="flex items-start gap-2 text-sm">
@@ -414,7 +414,7 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
                   </div>
                   {validation.status === 'available' && (
                     <Button className="w-full mt-4" variant="outline">
-                      Start Validation Program
+                      {t('advisory.validations.startProgram')}
                     </Button>
                   )}
                 </div>
@@ -439,11 +439,11 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
                         <h3 className="font-semibold mb-1">{service.title}</h3>
                         <p className="text-sm text-muted-foreground mb-3">{service.description}</p>
                         <Button size="sm" variant="outline">
-                          Use Service
+                          {t('advisory.support.useService')}
                         </Button>
                       </div>
                       <Badge variant="outline" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
-                        Included
+                        {t('advisory.support.included')}
                       </Badge>
                     </div>
                   </CardContent>

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SlashCommand } from '@/lib/claw/slash-commands';
 
 interface Props {
@@ -24,16 +25,17 @@ export function SlashCommandMenu({
   onHover,
   onSelect,
 }: Props) {
+  const { t } = useTranslation('claw');
   if (commands.length === 0) return null;
 
   return (
     <div
       role="listbox"
-      aria-label="Slash commands"
+      aria-label={t('slash.ariaLabel')}
       className="absolute bottom-full left-0 right-0 mb-2 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden z-20"
     >
       <div className="px-3 py-1.5 border-b border-gray-100 text-[10px] uppercase tracking-wide font-medium text-gray-400">
-        Commands
+        {t('slash.commands')}
       </div>
       <ul className="max-h-64 overflow-y-auto py-1">
         {commands.map((cmd, index) => {
@@ -81,9 +83,9 @@ export function SlashCommandMenu({
       </ul>
       <div className="px-3 py-1.5 border-t border-gray-100 text-[10px] text-gray-400">
         <span className="inline-flex items-center gap-2">
-          <span><kbd className="px-1 py-0.5 rounded bg-gray-100 font-mono text-[10px]">↑↓</kbd> navigate</span>
-          <span><kbd className="px-1 py-0.5 rounded bg-gray-100 font-mono text-[10px]">↵</kbd> select</span>
-          <span><kbd className="px-1 py-0.5 rounded bg-gray-100 font-mono text-[10px]">esc</kbd> dismiss</span>
+          <span><kbd className="px-1 py-0.5 rounded bg-gray-100 font-mono text-[10px]">↑↓</kbd> {t('slash.navigate')}</span>
+          <span><kbd className="px-1 py-0.5 rounded bg-gray-100 font-mono text-[10px]">↵</kbd> {t('slash.select')}</span>
+          <span><kbd className="px-1 py-0.5 rounded bg-gray-100 font-mono text-[10px]">esc</kbd> {t('slash.dismiss')}</span>
         </span>
       </div>
     </div>

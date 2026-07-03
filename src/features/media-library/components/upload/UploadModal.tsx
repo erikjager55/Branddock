@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { UploadCloud, Link as LinkIcon, Images } from 'lucide-react';
 import { Modal } from '@/components/shared';
 import { useMediaLibraryStore } from '../../stores/useMediaLibraryStore';
@@ -12,16 +13,17 @@ import StockPhotoTab from './StockPhotoTab';
 
 type UploadTab = 'upload' | 'import-url' | 'stock';
 
-const TABS: { id: UploadTab; label: string; icon: typeof UploadCloud }[] = [
-  { id: 'upload', label: 'Upload', icon: UploadCloud },
-  { id: 'import-url', label: 'Import URL', icon: LinkIcon },
-  { id: 'stock', label: 'Stock Photos', icon: Images },
+const TABS: { id: UploadTab; icon: typeof UploadCloud }[] = [
+  { id: 'upload', icon: UploadCloud },
+  { id: 'import-url', icon: LinkIcon },
+  { id: 'stock', icon: Images },
 ];
 
 // ─── Component ──────────────────────────────────────────────
 
 /** Modal with 3 tabs for adding media to the library. */
 export function UploadModal() {
+  const { t } = useTranslation('media-library');
   const isUploadModalOpen = useMediaLibraryStore((s) => s.isUploadModalOpen);
   const setUploadModalOpen = useMediaLibraryStore((s) => s.setUploadModalOpen);
   const activeUploadTab = useMediaLibraryStore((s) => s.activeUploadTab);
@@ -31,7 +33,7 @@ export function UploadModal() {
     <Modal
       isOpen={isUploadModalOpen}
       onClose={() => setUploadModalOpen(false)}
-      title="Add Media"
+      title={t('actions.addMedia')}
       size="lg"
     >
       {/* Underlined tab bar */}
@@ -51,7 +53,7 @@ export function UploadModal() {
               }`}
             >
               <Icon className="h-4 w-4" />
-              {tab.label}
+              {t(`upload.tabs.${tab.id}`)}
               {isActive && (
                 <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-teal-600" />
               )}

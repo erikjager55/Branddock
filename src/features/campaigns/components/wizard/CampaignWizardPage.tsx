@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, ArrowRight, Rocket } from "lucide-react";
 import { Button } from "@/components/shared";
 import { PageShell } from '@/components/ui/layout';
@@ -43,6 +44,7 @@ interface CampaignWizardPageProps {
 // ─── Component ────────────────────────────────────────────
 
 export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
+  const { t } = useTranslation("campaigns-wizard");
   // Reset wizard state if persisted localStorage belongs to a different workspace
   // (defense-in-depth alongside clearAllStorage on workspace switch).
   useEnsureWizardWorkspace();
@@ -233,18 +235,18 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
         className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Campaigns
+        {t("actions.backToCampaigns")}
       </button>
 
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
-          {isContentMode ? 'Create Content' : 'Create Strategic Campaign'}
+          {isContentMode ? t("page.createContent") : t("page.createCampaign")}
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           {isContentMode
-            ? 'Generate a single content piece with AI-powered strategy'
-            : 'Build a comprehensive campaign with AI-powered strategy'}
+            ? t("page.contentSubtitle")
+            : t("page.campaignSubtitle")}
         </p>
       </div>
 
@@ -273,7 +275,7 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
         <div>
           {currentStep > 1 && (
             <Button data-testid="wizard-back-button" variant="ghost" icon={ArrowLeft} onClick={prevStep}>
-              Back
+              {t("actions.back")}
             </Button>
           )}
         </div>
@@ -287,8 +289,8 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
           isLoading={launchCampaign.isPending}
         >
           {isLastStep
-            ? (isContentMode ? "Open in Canvas" : "Launch Campaign")
-            : "Continue"}
+            ? (isContentMode ? t("page.openInCanvas") : t("page.launchCampaign"))
+            : t("actions.continue")}
         </Button>
       </div>
 

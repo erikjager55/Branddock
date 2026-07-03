@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Plus, AlertCircle } from "lucide-react";
 import { Modal, Button } from "@/components/shared";
 import { DraftCampaignsList } from "./DraftCampaignsList";
@@ -35,29 +36,30 @@ export function DraftPickerModal({
   onStartNew,
   busyDraftId,
 }: DraftPickerModalProps) {
+  const { t } = useTranslation("campaigns-overview");
   const atLimit = drafts.length >= limit;
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={atLimit ? "Maximum drafts reached" : "Continue a draft or start new?"}
+      title={atLimit ? t("picker.titleAtLimit") : t("picker.title")}
       subtitle={
         atLimit
-          ? `You have ${limit} drafts in progress (the maximum). Resume or archive one before starting a new campaign.`
-          : `You have ${drafts.length} draft${drafts.length === 1 ? "" : "s"} in progress. Resume one or start a new campaign.`
+          ? t("picker.subtitleAtLimit", { limit })
+          : t("picker.subtitle", { count: drafts.length })
       }
       size="lg"
       footer={
         atLimit ? (
           <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            <span>Archived drafts can be restored from the archived campaigns view.</span>
+            <span>{t("picker.archivedNote")}</span>
           </div>
         ) : (
           <div className="flex items-center justify-end">
             <Button variant="primary" icon={Plus} onClick={onStartNew}>
-              Start new campaign
+              {t("picker.startNew")}
             </Button>
           </div>
         )

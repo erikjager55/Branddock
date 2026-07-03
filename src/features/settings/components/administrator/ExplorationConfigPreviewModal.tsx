@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   Bot,
@@ -66,6 +67,7 @@ export function ExplorationConfigPreviewModal({
   provider,
   model,
 }: ExplorationConfigPreviewModalProps) {
+  const { t } = useTranslation('settings-admin');
   const [mode, setMode] = useState<PreviewMode>('chat');
   const [activeDimension, setActiveDimension] = useState(0);
 
@@ -86,7 +88,7 @@ export function ExplorationConfigPreviewModal({
         >
           <div>
             <h3 className="text-sm font-semibold text-gray-900">
-              Exploration Preview
+              {t('preview.title')}
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
               {configLabel}
@@ -108,7 +110,7 @@ export function ExplorationConfigPreviewModal({
                 }}
               >
                 <MessageCircle className="w-3 h-3" />
-                Chat Flow
+                {t('preview.chatFlow')}
               </button>
               <button
                 onClick={() => setMode('overview')}
@@ -120,7 +122,7 @@ export function ExplorationConfigPreviewModal({
                 }}
               >
                 <LayoutGrid className="w-3 h-3" />
-                Overview
+                {t('preview.overview')}
               </button>
             </div>
             <button
@@ -138,7 +140,7 @@ export function ExplorationConfigPreviewModal({
           style={{ borderBottom: '1px solid #f3f4f6', backgroundColor: '#fafafa' }}
         >
           <div className="flex items-center justify-between text-[10px] text-gray-400 mb-2">
-            <span>Dimensions</span>
+            <span>{t('preview.dimensions')}</span>
             <span>
               {activeDimension + 1} / {dimensions.length}
             </span>
@@ -161,7 +163,7 @@ export function ExplorationConfigPreviewModal({
                         : '#e5e7eb',
                     opacity: isActive ? 1 : isPast ? 0.8 : 0.5,
                   }}
-                  title={dim.title || `Dimension ${i + 1}`}
+                  title={dim.title || t('preview.dimensionN', { number: i + 1 })}
                 />
               );
             })}
@@ -182,7 +184,7 @@ export function ExplorationConfigPreviewModal({
                   }}
                   title={dim.title}
                 >
-                  {dim.title || `Dim ${i + 1}`}
+                  {dim.title || t('preview.dimShort', { number: i + 1 })}
                 </button>
               );
             })}
@@ -222,10 +224,10 @@ export function ExplorationConfigPreviewModal({
                 color: '#1e40af',
               }}
             >
-              PREVIEW
+              {t('preview.badgePreview')}
             </span>
             <span className="text-[10px] text-gray-400">
-              {dimensions.length} dimensions &middot; {provider}/{model.split('-').slice(0, 2).join('-')}
+              {t('dimensionsCount', { count: dimensions.length })} &middot; {provider}/{model.split('-').slice(0, 2).join('-')}
             </span>
           </div>
           <button
@@ -233,7 +235,7 @@ export function ExplorationConfigPreviewModal({
             className="px-4 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 rounded-lg transition-colors"
             style={{ border: '1px solid #e5e7eb' }}
           >
-            Close Preview
+            {t('preview.closePreview')}
           </button>
         </div>
       </div>
@@ -252,10 +254,11 @@ function ChatFlowPreview({
   activeDimension: number;
   currentDim: PreviewDimension | undefined;
 }) {
+  const { t } = useTranslation('settings-admin');
   if (!currentDim) {
     return (
       <div className="p-8 text-center text-sm text-gray-400">
-        No dimensions configured yet.
+        {t('preview.noDimensions')}
       </div>
     );
   }
@@ -278,10 +281,10 @@ function ChatFlowPreview({
             style={{ backgroundColor: '#f9fafb', maxWidth: '85%' }}
           >
             <p className="text-sm text-gray-700">
-              Welcome! I&apos;ll guide you through{' '}
-              <strong>{dimensions.length} strategic dimensions</strong> to
-              explore and strengthen this asset. Let&apos;s begin with{' '}
-              <strong>{currentDim.title || 'the first question'}</strong>.
+              {t('preview.welcomePrefix')}
+              <strong>{t('preview.strategicDimensions', { count: dimensions.length })}</strong>
+              {t('preview.welcomeMiddle')}
+              <strong>{currentDim.title || t('preview.firstQuestion')}</strong>.
             </p>
           </div>
         </div>
@@ -300,7 +303,7 @@ function ChatFlowPreview({
           {activeDimension + 1}/{dimensions.length}
         </span>
         <span className="text-xs font-medium text-gray-700">
-          {currentDim.title || 'Untitled Dimension'}
+          {currentDim.title || t('preview.untitledDimension')}
         </span>
       </div>
 
@@ -321,7 +324,7 @@ function ChatFlowPreview({
           }}
         >
           <p className="text-sm text-gray-700">
-            {currentDim.question || 'No question configured for this dimension.'}
+            {currentDim.question || t('preview.noQuestionConfigured')}
           </p>
         </div>
       </div>
@@ -337,7 +340,7 @@ function ChatFlowPreview({
           }}
         >
           <p className="text-xs text-gray-400 italic">
-            User types their answer here...
+            {t('preview.userTypesAnswer')}
           </p>
         </div>
         <div
@@ -361,14 +364,14 @@ function ChatFlowPreview({
           style={{ backgroundColor: '#f9fafb', maxWidth: '85%' }}
         >
           <p className="text-xs text-gray-400 italic">
-            AI provides constructive feedback on the answer...
+            {t('preview.aiFeedback')}
           </p>
           {currentDim.followUpHint && (
             <p
               className="text-[10px] mt-2"
               style={{ color: '#9ca3af' }}
             >
-              Follow-up hint: {currentDim.followUpHint}
+              {t('preview.followUpHintLabel')} {currentDim.followUpHint}
             </p>
           )}
         </div>
@@ -380,8 +383,7 @@ function ChatFlowPreview({
           className="text-center text-[10px] py-2"
           style={{ color: '#9ca3af' }}
         >
-          Click dimension {activeDimension + 2} in the progress bar to preview
-          the next question
+          {t('preview.clickToPreview', { number: activeDimension + 2 })}
         </div>
       )}
       {activeDimension === dimensions.length - 1 && (
@@ -389,7 +391,7 @@ function ChatFlowPreview({
           className="text-center text-[10px] py-2 font-medium"
           style={{ color: '#0d9488' }}
         >
-          Final dimension — after this, the AI generates the exploration report
+          {t('preview.finalDimension')}
         </div>
       )}
     </div>
@@ -411,10 +413,11 @@ function OverviewPreview({
   provider: string;
   model: string;
 }) {
+  const { t } = useTranslation('settings-admin');
   if (dimensions.length === 0) {
     return (
       <div className="p-8 text-center text-sm text-gray-400">
-        No dimensions configured yet.
+        {t('preview.noDimensions')}
       </div>
     );
   }
@@ -428,25 +431,25 @@ function OverviewPreview({
       <div className="grid grid-cols-4 gap-3">
         <StatMini
           icon={<Hash className="w-3.5 h-3.5" />}
-          label="Dimensions"
+          label={t('preview.statDimensions')}
           value={String(dimensions.length)}
           color="#0d9488"
         />
         <StatMini
           icon={<MessageCircle className="w-3.5 h-3.5" />}
-          label="Questions"
+          label={t('preview.statQuestions')}
           value={`${hasQuestions}/${dimensions.length}`}
           color="#2563eb"
         />
         <StatMini
           icon={<Sparkles className="w-3.5 h-3.5" />}
-          label="Follow-ups"
+          label={t('preview.statFollowUps')}
           value={String(hasFollowUps)}
           color="#7c3aed"
         />
         <StatMini
           icon={<Clock className="w-3.5 h-3.5" />}
-          label="Est. time"
+          label={t('preview.statEstTime')}
           value={`${dimensions.length * 2}-${dimensions.length * 3}m`}
           color="#ea580c"
         />
@@ -467,7 +470,7 @@ function OverviewPreview({
       {/* Dimension Cards */}
       <div className="space-y-2">
         <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-          Exploration Dimensions
+          {t('preview.explorationDimensions')}
         </h4>
         {dimensions.map((dim, i) => {
           const color = getDimensionColor(i);
@@ -497,7 +500,7 @@ function OverviewPreview({
                       className="text-xs font-semibold"
                       style={{ color: color.text }}
                     >
-                      {dim.title || 'Untitled'}
+                      {dim.title || t('preview.untitled')}
                     </span>
                   </div>
                   <span className="text-[10px] font-mono text-gray-400">
@@ -507,7 +510,7 @@ function OverviewPreview({
                 <p className="text-xs text-gray-600 leading-relaxed">
                   {dim.question || (
                     <span className="text-gray-400 italic">
-                      No question configured
+                      {t('preview.noQuestionConfiguredShort')}
                     </span>
                   )}
                 </p>
@@ -516,7 +519,7 @@ function OverviewPreview({
                     className="text-[10px] mt-1.5"
                     style={{ color: '#9ca3af' }}
                   >
-                    Follow-up: {dim.followUpHint}
+                    {t('preview.followUpShort')} {dim.followUpHint}
                   </p>
                 )}
               </div>
@@ -534,13 +537,10 @@ function OverviewPreview({
           <Eye className="w-3.5 h-3.5 mt-0.5" style={{ color: '#0d9488' }} />
           <div>
             <p className="text-xs font-medium" style={{ color: '#0d9488' }}>
-              User Experience Flow
+              {t('preview.uxFlow')}
             </p>
             <p className="text-[11px] text-gray-600 mt-1 leading-relaxed">
-              Welcome message → {dimensions.length} dimension
-              {dimensions.length !== 1 ? 's' : ''} with AI questions →
-              User answers → AI feedback per dimension → Final exploration
-              report with insights and field suggestions.
+              {t('preview.flowSummary', { count: dimensions.length })}
             </p>
           </div>
         </div>

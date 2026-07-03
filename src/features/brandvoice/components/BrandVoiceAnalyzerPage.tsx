@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Wand2, Globe, AlignLeft, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { useStartVoiceAnalyze, useVoiceAnalysisStatus } from "../hooks";
@@ -14,6 +15,7 @@ interface BrandVoiceAnalyzerPageProps {
 }
 
 export function BrandVoiceAnalyzerPage({ onNavigateToGuide }: BrandVoiceAnalyzerPageProps) {
+  const { t } = useTranslation("brandvoice");
   const inputMode = useVoiceguideStore((s) => s.analyzerInputMode);
   const setInputMode = useVoiceguideStore((s) => s.setAnalyzerInputMode);
   const jobId = useVoiceguideStore((s) => s.analyzerJobId);
@@ -47,7 +49,7 @@ export function BrandVoiceAnalyzerPage({ onNavigateToGuide }: BrandVoiceAnalyzer
       const res = await start.mutateAsync(payload);
       setJobId(res.jobId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not start analyzer");
+      setError(e instanceof Error ? e.message : t("analyzer.startError"));
     }
   };
 
@@ -70,7 +72,7 @@ export function BrandVoiceAnalyzerPage({ onNavigateToGuide }: BrandVoiceAnalyzer
       <div className="mb-6 flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={onNavigateToGuide}>
           <ArrowLeft className="w-4 h-4 mr-1" />
-          Back to Brand Voice
+          {t("analyzer.back")}
         </Button>
       </div>
 
@@ -80,9 +82,9 @@ export function BrandVoiceAnalyzerPage({ onNavigateToGuide }: BrandVoiceAnalyzer
             <Wand2 className="w-5 h-5 text-teal-600" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Voice Analyzer</h1>
+            <h1 className="text-xl font-semibold text-gray-900">{t("analyzer.title")}</h1>
             <p className="text-sm text-gray-500">
-              Scrape long-form text and let Claude suggest tone, vocabulary, channel-tones and writing samples.
+              {t("analyzer.subtitle")}
             </p>
           </div>
         </div>
@@ -100,9 +102,9 @@ export function BrandVoiceAnalyzerPage({ onNavigateToGuide }: BrandVoiceAnalyzer
               }`}
             >
               <Globe className="w-4 h-4 text-teal-600 mb-1" />
-              <p className="text-sm font-semibold text-gray-900">Website URL</p>
+              <p className="text-sm font-semibold text-gray-900">{t("analyzer.mode.urlTitle")}</p>
               <p className="text-xs text-gray-500">
-                We'll crawl public pages and extract long-form content.
+                {t("analyzer.mode.urlDescription")}
               </p>
             </button>
             <button
@@ -114,9 +116,9 @@ export function BrandVoiceAnalyzerPage({ onNavigateToGuide }: BrandVoiceAnalyzer
               }`}
             >
               <AlignLeft className="w-4 h-4 text-teal-600 mb-1" />
-              <p className="text-sm font-semibold text-gray-900">Paste samples</p>
+              <p className="text-sm font-semibold text-gray-900">{t("analyzer.mode.pasteTitle")}</p>
               <p className="text-xs text-gray-500">
-                Paste 3+ snippets separated by blank lines.
+                {t("analyzer.mode.pasteDescription")}
               </p>
             </button>
           </div>
@@ -126,7 +128,7 @@ export function BrandVoiceAnalyzerPage({ onNavigateToGuide }: BrandVoiceAnalyzer
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com"
+              placeholder={t("analyzer.urlPlaceholder")}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
             />
           ) : (
@@ -134,7 +136,7 @@ export function BrandVoiceAnalyzerPage({ onNavigateToGuide }: BrandVoiceAnalyzer
               value={pasted}
               onChange={(e) => setPasted(e.target.value)}
               rows={10}
-              placeholder="Paste 3+ sample paragraphs separated by blank lines…"
+              placeholder={t("analyzer.pastePlaceholder")}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary-300"
             />
           )}
@@ -154,7 +156,7 @@ export function BrandVoiceAnalyzerPage({ onNavigateToGuide }: BrandVoiceAnalyzer
               disabled={inputMode === "url" ? !url.trim() : pasted.trim().length < 50}
             >
               <Wand2 className="w-4 h-4 mr-1.5" />
-              Start analysis
+              {t("analyzer.start")}
             </Button>
           </div>
         </div>
@@ -164,7 +166,7 @@ export function BrandVoiceAnalyzerPage({ onNavigateToGuide }: BrandVoiceAnalyzer
 
       {phase === "failed" && progress && (
         <div className="bg-rose-50 border border-rose-200 rounded-lg p-6">
-          <h3 className="text-sm font-semibold text-rose-900 mb-2">Analysis failed</h3>
+          <h3 className="text-sm font-semibold text-rose-900 mb-2">{t("analyzer.failedTitle")}</h3>
           <ul className="text-sm text-rose-700 list-disc pl-5 space-y-1">
             {progress.errors.map((e, i) => (
               <li key={i}>{e}</li>
@@ -172,7 +174,7 @@ export function BrandVoiceAnalyzerPage({ onNavigateToGuide }: BrandVoiceAnalyzer
           </ul>
           <div className="mt-4">
             <Button variant="secondary" size="sm" onClick={handleReset}>
-              Try again
+              {t("analyzer.tryAgain")}
             </Button>
           </div>
         </div>

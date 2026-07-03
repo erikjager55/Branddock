@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/shared";
 import type { ChannelPlanLayer } from "@/lib/campaigns/strategy-blueprint.types";
 
@@ -9,6 +10,7 @@ interface ChannelPlanSectionProps {
 
 /** Layer 3: Channel & Media Plan — channels with HHH roles, budget, timing */
 export function ChannelPlanSection({ channelPlan }: ChannelPlanSectionProps) {
+  const { t } = useTranslation('campaigns-core');
   const roleColors: Record<string, "success" | "info" | "default"> = {
     hero: "success",
     hub: "info",
@@ -16,9 +18,9 @@ export function ChannelPlanSection({ channelPlan }: ChannelPlanSectionProps) {
   };
 
   const budgetLabels: Record<string, string> = {
-    high: "High Budget",
-    medium: "Medium Budget",
-    low: "Low Budget",
+    high: t('channelPlan.budget.high'),
+    medium: t('channelPlan.budget.medium'),
+    low: t('channelPlan.budget.low'),
   };
 
   return (
@@ -26,7 +28,7 @@ export function ChannelPlanSection({ channelPlan }: ChannelPlanSectionProps) {
       {/* Timing Strategy */}
       {channelPlan.timingStrategy && (
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-xs font-medium text-blue-700 mb-1">Timing Strategy</p>
+          <p className="text-xs font-medium text-blue-700 mb-1">{t('channelPlan.timingStrategy')}</p>
           <p className="text-sm text-gray-800">{channelPlan.timingStrategy}</p>
         </div>
       )}
@@ -34,7 +36,7 @@ export function ChannelPlanSection({ channelPlan }: ChannelPlanSectionProps) {
       {/* Phase Durations */}
       {channelPlan.phaseDurations.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">Phase Durations</h4>
+          <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('channelPlan.phaseDurations')}</h4>
           <div className="flex gap-2 flex-wrap">
             {channelPlan.phaseDurations.map((pd) => (
               <div
@@ -43,7 +45,7 @@ export function ChannelPlanSection({ channelPlan }: ChannelPlanSectionProps) {
               >
                 <span className="font-medium text-gray-900 capitalize">{pd.phaseId}</span>
                 <span className="text-muted-foreground ml-1">
-                  {pd.suggestedWeeks} week{pd.suggestedWeeks !== 1 ? "s" : ""}
+                  {t('channelPlan.weeks', { count: pd.suggestedWeeks })}
                 </span>
               </div>
             ))}
@@ -54,7 +56,7 @@ export function ChannelPlanSection({ channelPlan }: ChannelPlanSectionProps) {
       {/* Channels */}
       <div>
         <h4 className="text-sm font-semibold text-gray-900 mb-3">
-          Channels ({channelPlan.channels.length})
+          {t('channelPlan.channelsHeading', { count: channelPlan.channels.length })}
         </h4>
         <div className="space-y-3">
           {channelPlan.channels
@@ -71,7 +73,7 @@ export function ChannelPlanSection({ channelPlan }: ChannelPlanSectionProps) {
                   </Badge>
                   <Badge variant="default">{budgetLabels[channel.budgetAllocation] ?? channel.budgetAllocation}</Badge>
                   <span className="text-xs text-muted-foreground ml-auto">
-                    Priority #{channel.priority}
+                    {t('channelPlan.priority', { priority: channel.priority })}
                   </span>
                 </div>
 
@@ -80,7 +82,7 @@ export function ChannelPlanSection({ channelPlan }: ChannelPlanSectionProps) {
                 {/* Target Personas */}
                 {channel.targetPersonas.length > 0 && (
                   <div className="mb-3">
-                    <p className="text-xs text-muted-foreground mb-1">Target Personas</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t('channelPlan.targetPersonas')}</p>
                     <div className="flex gap-1 flex-wrap">
                       {channel.targetPersonas.map((persona) => (
                         <Badge key={persona} variant="teal">{persona}</Badge>
@@ -92,7 +94,7 @@ export function ChannelPlanSection({ channelPlan }: ChannelPlanSectionProps) {
                 {/* Content Mix */}
                 {channel.contentMix.length > 0 && (
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Content Mix</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t('channelPlan.contentMix')}</p>
                     <div className="space-y-1">
                       {channel.contentMix.map((mix, i) => (
                         <div key={i} className="flex items-center gap-2 text-xs text-gray-600">

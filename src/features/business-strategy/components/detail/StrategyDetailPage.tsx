@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { ArrowLeft, Archive, Trash2, MoreHorizontal, Sparkles, FileDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Badge, Button, SkeletonCard, SkeletonText } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from '@/components/lock';
@@ -40,6 +41,7 @@ interface StrategyDetailPageProps {
 }
 
 export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetailPageProps) {
+  const { t } = useTranslation('business-strategy');
   const { data: strategy, isLoading, error } = useStrategyDetail(strategyId);
   const updateContext = useUpdateContext(strategyId);
   const archiveStrategy = useArchiveStrategy(strategyId);
@@ -57,7 +59,7 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
   const lock = useLockState({
     entityType: 'strategies',
     entityId: strategyId,
-    entityName: strategy?.name ?? 'Strategy',
+    entityName: strategy?.name ?? t('detail.entityFallback'),
     initialState: {
       isLocked: strategy?.isLocked ?? false,
       lockedAt: strategy?.lockedAt ?? null,
@@ -75,7 +77,7 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
 
   const handleDelete = () => {
     setShowHeaderMenu(false);
-    if (confirm('Are you sure you want to delete this strategy? This cannot be undone.')) {
+    if (confirm(t('confirm.deleteStrategy'))) {
       deleteStrategy.mutate(undefined, {
         onSuccess: () => onNavigateBack(),
       });
@@ -129,12 +131,12 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
     return (
       <PageShell maxWidth="5xl">
         <button onClick={onNavigateBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
-          <ArrowLeft className="w-4 h-4" /> Back to Strategies
+          <ArrowLeft className="w-4 h-4" /> {t('detail.backToStrategies')}
         </button>
         <div className="p-8 bg-white border border-gray-200 rounded-lg text-center">
-          <p className="text-gray-500">Strategy not found or failed to load.</p>
+          <p className="text-gray-500">{t('detail.notFound')}</p>
           <Button variant="secondary" size="sm" onClick={onNavigateBack} className="mt-4">
-            Go Back
+            {t('actions.goBack')}
           </Button>
         </div>
       </PageShell>
@@ -153,7 +155,7 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
           onClick={onNavigateBack}
           className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Strategies
+          <ArrowLeft className="w-4 h-4" /> {t('detail.backToStrategies')}
         </button>
 
         {/* Header */}
@@ -162,7 +164,7 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
             <h1 data-testid="strategy-detail-name" className="text-2xl font-bold text-gray-900">{strategy.name}</h1>
             <div className="flex items-center gap-2 mt-2">
               {typeInfo && (
-                <Badge variant="default" size="sm">{typeInfo.label}</Badge>
+                <Badge variant="default" size="sm">{t(`types.${strategy.type}.label`)}</Badge>
               )}
               <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${statusColors.bg} ${statusColors.text}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${statusColors.dot}`} />
@@ -188,7 +190,7 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 rounded-lg transition-colors"
             >
               <Sparkles className="w-4 h-4" />
-              AI Review
+              {t('detail.aiReview')}
             </button>
             <LockShield
               isLocked={lock.isLocked}
@@ -217,20 +219,20 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
                   }}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 >
-                  <FileDown className="w-4 h-4" /> Export PDF
+                  <FileDown className="w-4 h-4" /> {t('detail.exportPdf')}
                 </button>
                 <button
                   onClick={handleArchive}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 >
                   <Archive className="w-4 h-4" />
-                  {strategy.status === 'ARCHIVED' ? 'Unarchive' : 'Archive'}
+                  {strategy.status === 'ARCHIVED' ? t('detail.unarchive') : t('detail.archive')}
                 </button>
                 <button
                   onClick={handleDelete}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                 >
-                  <Trash2 className="w-4 h-4" /> Delete Strategy
+                  <Trash2 className="w-4 h-4" /> {t('detail.deleteStrategy')}
                 </button>
               </div>
             )}
@@ -269,7 +271,7 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
         <LockOverlay isLocked={lock.isLocked}>
         <div data-testid="objectives-section" className="p-6 bg-white border border-gray-200 rounded-lg">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Objectives</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('detail.objectives')}</h2>
             <Button
               data-testid="add-objective-button"
               variant="cta"
@@ -277,7 +279,7 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
               onClick={() => setAddObjectiveModalOpen(true)}
               disabled={!lock.canEdit}
             >
-              Add Objective
+              {t('objective.add')}
             </Button>
           </div>
 
@@ -301,7 +303,7 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 italic">No objectives defined yet</p>
+            <p className="text-sm text-gray-400 italic">{t('detail.noObjectives')}</p>
           )}
         </div>
         </LockOverlay>
@@ -379,6 +381,7 @@ function ObjectiveCardWithHooks({
   onRecalculate: () => void;
   onDragStart: (index: number, e: React.DragEvent) => void;
 }) {
+  const { t } = useTranslation('business-strategy');
   const updateKR = useUpdateKeyResult(strategyId, objective.id);
   const deleteObjective = useDeleteObjective(strategyId, objective.id);
 
@@ -390,7 +393,7 @@ function ObjectiveCardWithHooks({
   };
 
   const handleDelete = () => {
-    if (confirm(`Delete objective "${objective.title}"?`)) {
+    if (confirm(t('confirm.deleteObjective', { title: objective.title }))) {
       deleteObjective.mutate(undefined, { onSuccess: () => onRecalculate() });
     }
   };

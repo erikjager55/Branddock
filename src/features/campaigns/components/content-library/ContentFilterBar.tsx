@@ -1,24 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Calendar, LayoutGrid, List, ArrowUpDown, GanttChartSquare, FileText, Target } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { SearchInput, Button, Select } from "@/components/shared";
 import { useContentLibraryStore } from "../../stores/useContentLibraryStore";
 import type { ContentLibrarySort } from "../../types/content-library.types";
 
-const SORT_OPTIONS: { value: ContentLibrarySort; label: string }[] = [
-  { value: "-updatedAt", label: "Newest first" },
-  { value: "updatedAt", label: "Oldest first" },
-  { value: "-createdAt", label: "Recently created" },
-  { value: "title", label: "Name A→Z" },
-  { value: "-title", label: "Name Z→A" },
-  { value: "-qualityScore", label: "Highest quality" },
-  { value: "qualityScore", label: "Lowest quality" },
-  { value: "scheduledPublishDate", label: "Earliest scheduled" },
-  { value: "-scheduledPublishDate", label: "Latest scheduled" },
-];
-
 export function ContentFilterBar() {
+  const { t } = useTranslation("campaigns-content-library");
+  const SORT_OPTIONS = useMemo<{ value: ContentLibrarySort; label: string }[]>(
+    () => [
+      { value: "-updatedAt", label: t("filterBar.sort.newest") },
+      { value: "updatedAt", label: t("filterBar.sort.oldest") },
+      { value: "-createdAt", label: t("filterBar.sort.recentlyCreated") },
+      { value: "title", label: t("filterBar.sort.nameAsc") },
+      { value: "-title", label: t("filterBar.sort.nameDesc") },
+      { value: "-qualityScore", label: t("filterBar.sort.qualityHigh") },
+      { value: "qualityScore", label: t("filterBar.sort.qualityLow") },
+      { value: "scheduledPublishDate", label: t("filterBar.sort.scheduledEarliest") },
+      { value: "-scheduledPublishDate", label: t("filterBar.sort.scheduledLatest") },
+    ],
+    [t],
+  );
   const search = useContentLibraryStore((s) => s.search);
   const setSearch = useContentLibraryStore((s) => s.setSearch);
   const viewMode = useContentLibraryStore((s) => s.viewMode);
@@ -47,7 +51,7 @@ export function ContentFilterBar() {
             }`}
           >
             <FileText className="h-3.5 w-3.5" />
-            Content
+            {t("filterBar.content")}
           </button>
           <button
             type="button"
@@ -61,7 +65,7 @@ export function ContentFilterBar() {
             }`}
           >
             <Target className="h-3.5 w-3.5" />
-            Strategy
+            {t("filterBar.strategy")}
           </button>
         </div>
       )}
@@ -71,7 +75,7 @@ export function ContentFilterBar() {
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Search content..."
+          placeholder={t("filterBar.searchPlaceholder")}
         />
       </div>
 
@@ -115,7 +119,7 @@ export function ContentFilterBar() {
           icon={GanttChartSquare}
           onClick={() => setViewMode("timeline")}
           className="!p-1.5"
-          title="Timeline"
+          title={t("filterBar.timeline")}
         />
       </div>
     </div>

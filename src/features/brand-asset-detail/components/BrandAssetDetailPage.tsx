@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { useAssetDetail, useUpdateFramework } from "../hooks/useBrandAssetDetail";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
 import { useClawStore } from "@/stores/useClawStore";
@@ -127,6 +128,7 @@ export function BrandAssetDetailPage({
   onNavigateBack,
   onNavigateToAnalysis,
 }: BrandAssetDetailPageProps) {
+  const { t } = useTranslation("brand-asset-detail");
   const { data: asset, isLoading, error } = useAssetDetail(assetId);
   const isEditing = useBrandAssetDetailStore((s) => s.isEditing);
   const setIsEditing = useBrandAssetDetailStore((s) => s.setIsEditing);
@@ -265,7 +267,7 @@ export function BrandAssetDetailPage({
   if (!assetId) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-500">
-        No asset selected
+        {t("page.noAssetSelected")}
       </div>
     );
   }
@@ -287,14 +289,14 @@ export function BrandAssetDetailPage({
     return (
       <div data-testid="error-message" className="flex flex-col items-center justify-center h-64 text-gray-500 gap-2">
         <AlertTriangle className="w-8 h-8 text-amber-500" />
-        <p>{error?.message ?? "Asset not found"}</p>
+        <p>{error?.message ?? t("page.notFound")}</p>
       </div>
     );
   }
 
   const handleSave = () => {
     setIsEditing(false);
-    toast.success('Brand asset saved successfully');
+    toast.success(t('page.saved'));
   };
 
   const handleCancelEdit = () => {
@@ -310,7 +312,7 @@ export function BrandAssetDetailPage({
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Your Brand
+          {t("page.backToBrand")}
         </button>
 
         {/* Hero Header */}

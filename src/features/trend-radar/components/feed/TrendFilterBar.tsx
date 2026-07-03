@@ -1,6 +1,7 @@
 'use client';
 
 import { RotateCcw, Eye, EyeOff, Zap } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SearchInput, Select, Button } from '@/components/shared';
 import { useTrendRadarStore } from '../../stores/useTrendRadarStore';
 import type { InsightCategory, ImpactLevel, TrendDetectionSource } from '../../types/trend-radar.types';
@@ -27,6 +28,7 @@ const SOURCE_OPTIONS = [
 
 /** Filter bar with search, selects, dismissed toggle, and reset */
 export function TrendFilterBar() {
+  const { t } = useTranslation('trend-radar');
   const {
     searchQuery,
     categoryFilter,
@@ -51,28 +53,28 @@ export function TrendFilterBar() {
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="Search trends..."
+          placeholder={t('filters.searchPlaceholder')}
         />
       </div>
       <Select
         value={categoryFilter ?? ''}
         onChange={(v) => setCategoryFilter((v || undefined) as InsightCategory | undefined)}
         options={CATEGORY_OPTIONS}
-        placeholder="Category"
+        placeholder={t('filters.categoryPlaceholder')}
         allowClear
       />
       <Select
         value={impactFilter ?? ''}
         onChange={(v) => setImpactFilter((v || undefined) as ImpactLevel | undefined)}
         options={IMPACT_OPTIONS}
-        placeholder="Impact"
+        placeholder={t('filters.impactPlaceholder')}
         allowClear
       />
       <Select
         value={detectionSourceFilter ?? ''}
         onChange={(v) => setDetectionSourceFilter((v || undefined) as TrendDetectionSource | undefined)}
         options={SOURCE_OPTIONS}
-        placeholder="Source"
+        placeholder={t('filters.sourcePlaceholder')}
         allowClear
       />
       <button
@@ -83,10 +85,10 @@ export function TrendFilterBar() {
             ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
             : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
         }`}
-        title={showActivated ? 'Show all trends' : 'Show only activated trends'}
+        title={showActivated ? t('filters.activatedTooltipShowAll') : t('filters.activatedTooltipShowOnly')}
       >
         <Zap className="w-3.5 h-3.5" />
-        Activated
+        {t('filters.activated')}
       </button>
       <button
         type="button"
@@ -96,14 +98,14 @@ export function TrendFilterBar() {
             ? 'border-primary-300 bg-primary-50 text-primary-700'
             : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
         }`}
-        title={showDismissed ? 'Hide dismissed trends' : 'Show dismissed trends'}
+        title={showDismissed ? t('filters.dismissedTooltipHide') : t('filters.dismissedTooltipShow')}
       >
         {showDismissed ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-        Dismissed
+        {t('filters.dismissed')}
       </button>
       {hasFilters && (
         <Button variant="ghost" size="sm" icon={RotateCcw} onClick={resetFilters}>
-          Reset
+          {t('filters.reset')}
         </Button>
       )}
     </div>

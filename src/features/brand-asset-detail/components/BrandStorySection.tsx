@@ -5,6 +5,7 @@ import {
   BookOpen, Eye, Compass, Sparkles, MessageCircle, Award, FileText,
   Plus, X, ChevronDown, Info, Check,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { BrandStoryFrameworkData, AudienceAdaptations } from '../types/framework.types';
 import { ProofPointsGuidanceBanner } from './shared/ProofPointsGuidanceBanner';
 import {
@@ -169,6 +170,7 @@ function StringListEditor({
   placeholder: string;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation('brand-asset-detail');
   return (
     <div className="space-y-2">
       {items.map((item, i) => (
@@ -177,7 +179,7 @@ function StringListEditor({
             {i + 1}
           </span>
           {disabled ? (
-            <p className="text-sm text-gray-700 flex-1 py-1.5">{item || <span className="text-gray-400 italic">Not set</span>}</p>
+            <p className="text-sm text-gray-700 flex-1 py-1.5">{item || <span className="text-gray-400 italic">{t('shared.notSet')}</span>}</p>
           ) : (
             <input
               type="text"
@@ -201,7 +203,7 @@ function StringListEditor({
           className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary transition-colors"
         >
           <Plus className="h-3.5 w-3.5" />
-          Add item
+          {t('shared.addItem')}
         </button>
       )}
     </div>
@@ -212,63 +214,26 @@ function StringListEditor({
 
 interface CardConfig {
   number: number;
-  title: string;
-  subtitle: string;
   Icon: typeof BookOpen;
   colorBg: string;
   colorText: string;
 }
 
 const CARDS: CardConfig[] = [
-  { number: 1, title: 'Origin & Belief', subtitle: 'The foundation — why the brand exists', Icon: BookOpen, colorBg: 'bg-amber-50', colorText: 'text-amber-600' },
-  { number: 2, title: 'The World We See', subtitle: 'The tension — which problem does the brand solve?', Icon: Eye, colorBg: 'bg-rose-50', colorText: 'text-rose-600' },
-  { number: 3, title: 'The Brand as Guide', subtitle: 'The role — how the brand positions itself in the customer\'s story', Icon: Compass, colorBg: 'bg-primary-50', colorText: 'text-primary' },
-  { number: 4, title: 'Transformation & Resolution', subtitle: 'The promise — life after the brand', Icon: Sparkles, colorBg: 'bg-emerald-50', colorText: 'text-emerald-600' },
-  { number: 5, title: 'Narrative Toolkit', subtitle: 'The instruments — how the brand tells its story', Icon: MessageCircle, colorBg: 'bg-blue-50', colorText: 'text-blue-600' },
-  { number: 6, title: 'Evidence & Milestones', subtitle: 'The proof — why the story is credible', Icon: Award, colorBg: 'bg-indigo-50', colorText: 'text-indigo-600' },
-  { number: 7, title: 'Story Expressions', subtitle: 'The output — how the story is communicated', Icon: FileText, colorBg: 'bg-violet-50', colorText: 'text-violet-600' },
+  { number: 1, Icon: BookOpen, colorBg: 'bg-amber-50', colorText: 'text-amber-600' },
+  { number: 2, Icon: Eye, colorBg: 'bg-rose-50', colorText: 'text-rose-600' },
+  { number: 3, Icon: Compass, colorBg: 'bg-primary-50', colorText: 'text-primary' },
+  { number: 4, Icon: Sparkles, colorBg: 'bg-emerald-50', colorText: 'text-emerald-600' },
+  { number: 5, Icon: MessageCircle, colorBg: 'bg-blue-50', colorText: 'text-blue-600' },
+  { number: 6, Icon: Award, colorBg: 'bg-indigo-50', colorText: 'text-indigo-600' },
+  { number: 7, Icon: FileText, colorBg: 'bg-violet-50', colorText: 'text-violet-600' },
 ];
-
-// ─── Summary helpers for collapsed cards ────────────────────
-
-function getCardSummary(card: number, d: BrandStoryFrameworkData): string {
-  switch (card) {
-    case 1: {
-      const parts: string[] = [];
-      if (d.coreBeliefStatement) parts.push(d.coreBeliefStatement);
-      else if (d.originStory) parts.push(d.originStory.slice(0, 80) + (d.originStory.length > 80 ? '...' : ''));
-      return parts.join(' · ') || 'Not started';
-    }
-    case 2: {
-      const problems = [d.customerExternalProblem, d.customerInternalProblem, d.philosophicalProblem].filter(Boolean);
-      return problems.length > 0 ? `${problems.length}/3 problem layers defined` : 'Not started';
-    }
-    case 3:
-      return d.brandRole ? `Role: ${d.brandRole}` : 'Not started';
-    case 4:
-      return d.transformationPromise ? d.transformationPromise.slice(0, 80) + (d.transformationPromise.length > 80 ? '...' : '') : 'Not started';
-    case 5: {
-      const parts: string[] = [];
-      if (d.narrativeArc) parts.push(d.narrativeArc);
-      if (d.brandThemes.length > 0) parts.push(`${d.brandThemes.length} themes`);
-      if (d.keyNarrativeMessages.length > 0) parts.push(`${d.keyNarrativeMessages.length} messages`);
-      return parts.join(' · ') || 'Not started';
-    }
-    case 6: {
-      const total = d.proofPoints.length + d.valuesInAction.length + d.brandMilestones.length;
-      return total > 0 ? `${total} evidence items` : 'Not started';
-    }
-    case 7:
-      return d.elevatorPitch ? 'Elevator pitch defined' : 'Not started';
-    default:
-      return '';
-  }
-}
 
 // ─── Main component ─────────────────────────────────────────
 
 /** Brand Story canvas with 7 sections based on StoryBrand/Hero's Journey/ABT frameworks. */
 export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySectionProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const [draft, setDraft] = useState<BrandStoryFrameworkData>(() => normalize(data));
   const [expandedCard, setExpandedCard] = useState<number | null>(1);
   const [showFrameworkInfo, setShowFrameworkInfo] = useState(false);
@@ -278,6 +243,41 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
   }, [data]);
 
   const d = isEditing ? draft : normalize(data);
+
+  // ─── Summary for collapsed cards (closes over d + t) ──────
+  const getCardSummary = (card: number): string => {
+    const notStarted = t('brandStory.summary.notStarted');
+    switch (card) {
+      case 1: {
+        if (d.coreBeliefStatement) return d.coreBeliefStatement;
+        if (d.originStory) return d.originStory.slice(0, 80) + (d.originStory.length > 80 ? '...' : '');
+        return notStarted;
+      }
+      case 2: {
+        const problems = [d.customerExternalProblem, d.customerInternalProblem, d.philosophicalProblem].filter(Boolean);
+        return problems.length > 0 ? t('brandStory.summary.problemLayers', { count: problems.length }) : notStarted;
+      }
+      case 3:
+        return d.brandRole ? t('brandStory.summary.role', { role: d.brandRole }) : notStarted;
+      case 4:
+        return d.transformationPromise ? d.transformationPromise.slice(0, 80) + (d.transformationPromise.length > 80 ? '...' : '') : notStarted;
+      case 5: {
+        const parts: string[] = [];
+        if (d.narrativeArc) parts.push(d.narrativeArc);
+        if (d.brandThemes.length > 0) parts.push(t('brandStory.summary.themes', { count: d.brandThemes.length }));
+        if (d.keyNarrativeMessages.length > 0) parts.push(t('brandStory.summary.messages', { count: d.keyNarrativeMessages.length }));
+        return parts.join(' · ') || notStarted;
+      }
+      case 6: {
+        const total = d.proofPoints.length + d.valuesInAction.length + d.brandMilestones.length;
+        return total > 0 ? t('brandStory.summary.evidenceItems', { count: total }) : notStarted;
+      }
+      case 7:
+        return d.elevatorPitch ? t('brandStory.summary.elevatorDefined') : notStarted;
+      default:
+        return '';
+    }
+  };
 
   const handleChange = (field: keyof BrandStoryFrameworkData, value: unknown) => {
     const next = { ...draft, [field]: value };
@@ -331,7 +331,7 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
         />
       ) : (
         <p className="text-sm text-gray-700 whitespace-pre-wrap">
-          {value || <span className="text-gray-400 italic">Not set</span>}
+          {value || <span className="text-gray-400 italic">{t('shared.notSet')}</span>}
         </p>
       )}
     </div>
@@ -350,7 +350,7 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
         />
       ) : (
         <p className="text-sm text-gray-700">
-          {value || <span className="text-gray-400 italic">Not set</span>}
+          {value || <span className="text-gray-400 italic">{t('shared.notSet')}</span>}
         </p>
       )}
     </div>
@@ -358,7 +358,7 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
 
   const renderCardWrapper = (config: CardConfig, children: React.ReactNode) => {
     const isExpanded = expandedCard === config.number;
-    const summary = getCardSummary(config.number, d);
+    const summary = getCardSummary(config.number);
 
     return (
       <div key={config.number} className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
@@ -373,8 +373,8 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
             <config.Icon className={`h-5 w-5 ${config.colorText}`} />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-gray-900">{config.title}</h2>
-            <p className="text-sm text-gray-500">{config.subtitle}</p>
+            <h2 className="text-lg font-bold text-gray-900">{t(`brandStory.cards.c${config.number}.title`)}</h2>
+            <p className="text-sm text-gray-500">{t(`brandStory.cards.c${config.number}.subtitle`)}</p>
             {/* Collapsed summary */}
             {config.number > 1 && !isExpanded && (
               <p className="text-xs text-gray-400 mt-1 truncate">{summary}</p>
@@ -405,15 +405,15 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
           className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
         >
           <Info className="h-3.5 w-3.5" />
-          {showFrameworkInfo ? 'Hide storytelling guide' : 'Storytelling frameworks'}
+          {showFrameworkInfo ? t('brandStory.guide.hide') : t('brandStory.guide.show')}
         </button>
       </div>
 
       {showFrameworkInfo && (
         <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-5 text-sm space-y-4">
           <div>
-            <p className="font-semibold text-gray-800 mb-1">Core Principle</p>
-            <p className="text-gray-600">The customer is the hero, not the brand. The brand is the guide/mentor that helps the hero achieve transformation.</p>
+            <p className="font-semibold text-gray-800 mb-1">{t('brandStory.guide.corePrinciple')}</p>
+            <p className="text-gray-600">{t('brandStory.guide.corePrincipleBody')}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {STORYTELLING_FRAMEWORKS.map((fw) => (
@@ -437,23 +437,23 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
       {/* Card 1: Origin & Belief (always expanded) */}
       {renderCardWrapper(CARDS[0], (
         <>
-          {renderField('Origin Story', d.originStory, 'originStory', 'Tell the founding narrative — what moment, problem, or conviction brought this brand into being?', 4)}
-          {renderField('Founder Motivation', d.founderMotivation, 'founderMotivation', 'What personal drive pushed the founder(s) to start this? (Simmons\' "Why I Am Here")', 3)}
-          {renderInput('Core Belief Statement', d.coreBeliefStatement, 'coreBeliefStatement', 'The fundamental belief about the world this brand is built on')}
+          {renderField(t('brandStory.fields.originStory.label'), d.originStory, 'originStory', t('brandStory.fields.originStory.placeholder'), 4)}
+          {renderField(t('brandStory.fields.founderMotivation.label'), d.founderMotivation, 'founderMotivation', t('brandStory.fields.founderMotivation.placeholder'), 3)}
+          {renderInput(t('brandStory.fields.coreBelief.label'), d.coreBeliefStatement, 'coreBeliefStatement', t('brandStory.fields.coreBelief.placeholder'))}
         </>
       ))}
 
       {/* Card 2: The World We See — Context & Problem */}
       {renderCardWrapper(CARDS[1], (
         <>
-          {renderField('World Context', d.worldContext, 'worldContext', 'What external forces (political, economic, social, technological) make this brand relevant right now?', 3)}
+          {renderField(t('brandStory.fields.worldContext.label'), d.worldContext, 'worldContext', t('brandStory.fields.worldContext.placeholder'), 3)}
           <div className="space-y-4 p-4 bg-rose-50/30 rounded-xl border border-rose-100">
-            <p className="text-xs font-medium text-rose-600">StoryBrand Three-Layer Problem Framework</p>
-            {renderInput('External Problem', d.customerExternalProblem, 'customerExternalProblem', 'The visible, tangible problem your customer faces')}
-            {renderInput('Internal Problem', d.customerInternalProblem, 'customerInternalProblem', 'The emotional experience — frustration, doubt, fear, overwhelm')}
-            {renderInput('Philosophical Problem', d.philosophicalProblem, 'philosophicalProblem', 'Why this matters on a human or societal level — the bigger injustice')}
+            <p className="text-xs font-medium text-rose-600">{t('brandStory.fields.threeLayer')}</p>
+            {renderInput(t('brandStory.fields.externalProblem.label'), d.customerExternalProblem, 'customerExternalProblem', t('brandStory.fields.externalProblem.placeholder'))}
+            {renderInput(t('brandStory.fields.internalProblem.label'), d.customerInternalProblem, 'customerInternalProblem', t('brandStory.fields.internalProblem.placeholder'))}
+            {renderInput(t('brandStory.fields.philosophicalProblem.label'), d.philosophicalProblem, 'philosophicalProblem', t('brandStory.fields.philosophicalProblem.placeholder'))}
           </div>
-          {renderField('Stakes — Cost of Inaction', d.stakesCostOfInaction, 'stakesCostOfInaction', 'What happens if the problem is NOT solved? What are the consequences of doing nothing?', 3)}
+          {renderField(t('brandStory.fields.stakes.label'), d.stakesCostOfInaction, 'stakesCostOfInaction', t('brandStory.fields.stakes.placeholder'), 3)}
         </>
       ))}
 
@@ -461,7 +461,7 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
       {renderCardWrapper(CARDS[2], (
         <>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Brand Role</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('brandStory.fields.brandRoleLabel')}</label>
             {isEditing ? (
               <div className="grid grid-cols-2 gap-2">
                 {BRAND_ROLE_OPTIONS.map((role) => (
@@ -486,26 +486,26 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
               </p>
             )}
           </div>
-          {renderField('Empathy Statement', d.empathyStatement, 'empathyStatement', 'How does the brand show understanding for the customer\'s struggle?', 3)}
-          {renderField('Authority Credentials', d.authorityCredentials, 'authorityCredentials', 'What gives the brand credibility to help — track record, approach, certifications?', 3)}
+          {renderField(t('brandStory.fields.empathy.label'), d.empathyStatement, 'empathyStatement', t('brandStory.fields.empathy.placeholder'), 3)}
+          {renderField(t('brandStory.fields.authority.label'), d.authorityCredentials, 'authorityCredentials', t('brandStory.fields.authority.placeholder'), 3)}
         </>
       ))}
 
       {/* Card 4: Transformation & Resolution */}
       {renderCardWrapper(CARDS[3], (
         <>
-          {renderField('Transformation Promise', d.transformationPromise, 'transformationPromise', 'What specific change does the customer experience? Describe the before vs. after.', 4)}
-          {renderField('Customer Success Vision', d.customerSuccessVision, 'customerSuccessVision', 'Paint a vivid, sensory picture of the customer\'s life after transformation — the "new normal".', 4)}
+          {renderField(t('brandStory.fields.transformation.label'), d.transformationPromise, 'transformationPromise', t('brandStory.fields.transformation.placeholder'), 4)}
+          {renderField(t('brandStory.fields.successVision.label'), d.customerSuccessVision, 'customerSuccessVision', t('brandStory.fields.successVision.placeholder'), 4)}
         </>
       ))}
 
       {/* Card 5: Narrative Toolkit */}
       {renderCardWrapper(CARDS[4], (
         <>
-          {renderField('ABT Statement', d.abtStatement, 'abtStatement', '[Context] AND [setup]. BUT [problem/tension]. THEREFORE [brand\'s role and impact].', 4)}
+          {renderField(t('brandStory.fields.abt.label'), d.abtStatement, 'abtStatement', t('brandStory.fields.abt.placeholder'), 4)}
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Narrative Arc</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('brandStory.fields.narrativeArcLabel')}</label>
             {isEditing ? (
               <div className="space-y-2">
                 {NARRATIVE_ARC_TYPES.map((arc) => (
@@ -532,35 +532,35 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Brand Themes <span className="text-gray-400 font-normal">(2-4 thematic territories)</span></label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('brandStory.fields.themes.label')} <span className="text-gray-400 font-normal">{t('brandStory.fields.themes.hint')}</span></label>
             <TagEditor
               tags={d.brandThemes}
               onAdd={(tag) => addTag('brandThemes', tag)}
               onRemove={(i) => removeTag('brandThemes', i)}
-              placeholder="Add a theme and press Enter..."
+              placeholder={t('brandStory.fields.themes.placeholder')}
               disabled={!isEditing}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Emotional Territory <span className="text-gray-400 font-normal">(emotions the story evokes)</span></label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('brandStory.fields.emotional.label')} <span className="text-gray-400 font-normal">{t('brandStory.fields.emotional.hint')}</span></label>
             <TagEditor
               tags={d.emotionalTerritory}
               onAdd={(tag) => addTag('emotionalTerritory', tag)}
               onRemove={(i) => removeTag('emotionalTerritory', i)}
-              placeholder="Add an emotion and press Enter..."
+              placeholder={t('brandStory.fields.emotional.placeholder')}
               suggestions={EMOTIONAL_TERRITORY_SUGGESTIONS}
               disabled={!isEditing}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Key Narrative Messages <span className="text-gray-400 font-normal">(3-5 recurring messages)</span></label>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('brandStory.fields.keyMessages.label')} <span className="text-gray-400 font-normal">{t('brandStory.fields.keyMessages.hint')}</span></label>
             <TagEditor
               tags={d.keyNarrativeMessages}
               onAdd={(tag) => addTag('keyNarrativeMessages', tag)}
               onRemove={(i) => removeTag('keyNarrativeMessages', i)}
-              placeholder="Add a key message and press Enter..."
+              placeholder={t('brandStory.fields.keyMessages.placeholder')}
               disabled={!isEditing}
             />
           </div>
@@ -571,38 +571,38 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
       {renderCardWrapper(CARDS[5], (
         <>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-2">Proof Points <span className="text-gray-400 font-normal">(testimonials, data, awards)</span></label>
+            <label className="block text-xs font-medium text-gray-500 mb-2">{t('brandStory.fields.proofPoints.label')} <span className="text-gray-400 font-normal">{t('brandStory.fields.proofPoints.hint')}</span></label>
             <ProofPointsGuidanceBanner assetType="story" />
             <StringListEditor
               items={d.proofPoints}
               onAdd={() => addListItem('proofPoints')}
               onUpdate={(i, v) => updateListItem('proofPoints', i, v)}
               onRemove={(i) => removeListItem('proofPoints', i)}
-              placeholder="Add a proof point..."
+              placeholder={t('brandStory.fields.proofPoints.placeholder')}
               disabled={!isEditing}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-2">Values in Action <span className="text-gray-400 font-normal">(stories where values were demonstrated)</span></label>
+            <label className="block text-xs font-medium text-gray-500 mb-2">{t('brandStory.fields.valuesInAction.label')} <span className="text-gray-400 font-normal">{t('brandStory.fields.valuesInAction.hint')}</span></label>
             <StringListEditor
               items={d.valuesInAction}
               onAdd={() => addListItem('valuesInAction')}
               onUpdate={(i, v) => updateListItem('valuesInAction', i, v)}
               onRemove={(i) => removeListItem('valuesInAction', i)}
-              placeholder="Describe a moment where your values were proven through action..."
+              placeholder={t('brandStory.fields.valuesInAction.placeholder')}
               disabled={!isEditing}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-2">Brand Milestones <span className="text-gray-400 font-normal">(key moments in the brand journey)</span></label>
+            <label className="block text-xs font-medium text-gray-500 mb-2">{t('brandStory.fields.milestones.label')} <span className="text-gray-400 font-normal">{t('brandStory.fields.milestones.hint')}</span></label>
             <StringListEditor
               items={d.brandMilestones}
               onAdd={() => addListItem('brandMilestones')}
               onUpdate={(i, v) => updateListItem('brandMilestones', i, v)}
               onRemove={(i) => removeListItem('brandMilestones', i)}
-              placeholder="A milestone — launch, pivot, achievement, challenge overcome..."
+              placeholder={t('brandStory.fields.milestones.placeholder')}
               disabled={!isEditing}
             />
           </div>
@@ -612,12 +612,12 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
       {/* Card 7: Story Expressions */}
       {renderCardWrapper(CARDS[6], (
         <>
-          {renderField('Elevator Pitch', d.elevatorPitch, 'elevatorPitch', 'The 30-second version of your brand story — clear, memorable, action-oriented.', 4)}
-          {renderField('Brand Manifesto', d.manifestoText, 'manifestoText', 'The long-form, emotionally charged version — the brand manifesto that could inspire employees and customers alike.', 8)}
+          {renderField(t('brandStory.fields.elevator.label'), d.elevatorPitch, 'elevatorPitch', t('brandStory.fields.elevator.placeholder'), 4)}
+          {renderField(t('brandStory.fields.manifesto.label'), d.manifestoText, 'manifestoText', t('brandStory.fields.manifesto.placeholder'), 8)}
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-3">Audience Adaptations</label>
-            <p className="text-xs text-gray-400 mb-3">Notes on how the story adapts for different audiences</p>
+            <label className="block text-xs font-medium text-gray-500 mb-3">{t('brandStory.fields.audienceAdaptations.label')}</label>
+            <p className="text-xs text-gray-400 mb-3">{t('brandStory.fields.audienceAdaptations.hint')}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {(['customers', 'investors', 'employees', 'partners'] as const).map((audience) => (
                 <div key={audience}>
@@ -626,13 +626,13 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
                     <textarea
                       value={draft.audienceAdaptations[audience] || ''}
                       onChange={(e) => handleAdaptationChange(audience, e.target.value)}
-                      placeholder={`How the story resonates with ${audience}...`}
+                      placeholder={t('brandStory.fields.audienceAdaptations.placeholder', { audience })}
                       rows={3}
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                     />
                   ) : (
                     <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {d.audienceAdaptations[audience] || <span className="text-gray-400 italic">Not set</span>}
+                      {d.audienceAdaptations[audience] || <span className="text-gray-400 italic">{t('shared.notSet')}</span>}
                     </p>
                   )}
                 </div>

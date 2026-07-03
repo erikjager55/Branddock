@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/shared';
 import { Clock, Video } from 'lucide-react';
 import type { WorkshopStep } from '../../types/workshop.types';
@@ -9,10 +10,11 @@ interface StepContentProps {
 }
 
 export function StepContent({ step }: StepContentProps) {
+  const { t } = useTranslation('workshop');
   return (
     <div data-testid="step-content" className="space-y-4">
       <div className="flex items-center gap-3">
-        <Badge variant="success">Step {step.stepNumber}</Badge>
+        <Badge variant="success">{t('session.step.stepLabel', { number: step.stepNumber })}</Badge>
         <div className="flex items-center gap-1 text-sm text-gray-500">
           <Clock className="w-3.5 h-3.5" />
           {step.duration}
@@ -30,7 +32,7 @@ export function StepContent({ step }: StepContentProps) {
       <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-lg border border-gray-100">
         <Video className="w-5 h-5 text-gray-400 flex-shrink-0" />
         <span className="text-sm text-gray-500">
-          Video guide placeholder
+          {t('session.step.videoPlaceholder')}
         </span>
       </div>
     </div>

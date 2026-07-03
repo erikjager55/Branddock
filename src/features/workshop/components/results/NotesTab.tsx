@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { Plus, StickyNote } from 'lucide-react';
 import { NoteCard } from './NoteCard';
@@ -17,6 +18,7 @@ interface NotesTabProps {
 }
 
 export function NotesTab({ notes, onAddNote, isAdding }: NotesTabProps) {
+  const { t } = useTranslation('workshop');
   const safeNotes = Array.isArray(notes) ? notes : [];
   const [showForm, setShowForm] = useState(false);
   const [authorName, setAuthorName] = useState('');
@@ -42,7 +44,7 @@ export function NotesTab({ notes, onAddNote, isAdding }: NotesTabProps) {
         <div className="flex items-center gap-2">
           <StickyNote className="w-5 h-5 text-primary" />
           <h3 className="text-lg font-semibold text-gray-900">
-            Participant Notes
+            {t('results.notes.title')}
           </h3>
           <span className="text-sm text-gray-500">({safeNotes.length})</span>
         </div>
@@ -52,7 +54,7 @@ export function NotesTab({ notes, onAddNote, isAdding }: NotesTabProps) {
           icon={Plus}
           onClick={() => setShowForm(!showForm)}
         >
-          Add Note
+          {t('results.notes.add')}
         </Button>
       </div>
 
@@ -61,21 +63,21 @@ export function NotesTab({ notes, onAddNote, isAdding }: NotesTabProps) {
           <div className="grid grid-cols-2 gap-3">
             <input
               type="text"
-              placeholder="Your name"
+              placeholder={t('results.notes.namePlaceholder')}
               value={authorName}
               onChange={(e) => setAuthorName(e.target.value)}
               className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             <input
               type="text"
-              placeholder="Role (optional)"
+              placeholder={t('results.notes.rolePlaceholder')}
               value={authorRole}
               onChange={(e) => setAuthorRole(e.target.value)}
               className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
           <textarea
-            placeholder="Write your note..."
+            placeholder={t('results.notes.contentPlaceholder')}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -86,7 +88,7 @@ export function NotesTab({ notes, onAddNote, isAdding }: NotesTabProps) {
               size="sm"
               onClick={() => setShowForm(false)}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="cta"
@@ -95,7 +97,7 @@ export function NotesTab({ notes, onAddNote, isAdding }: NotesTabProps) {
               isLoading={isAdding}
               disabled={!authorName.trim() || !content.trim()}
             >
-              Save Note
+              {t('results.notes.save')}
             </Button>
           </div>
         </div>

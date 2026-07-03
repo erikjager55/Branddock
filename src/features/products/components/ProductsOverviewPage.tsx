@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Package, Plus } from "lucide-react";
 import { EmptyState, SkeletonCard, Button } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
@@ -17,18 +18,19 @@ export function ProductsOverviewPage({
   onNavigateToDetail,
   onNavigate,
 }: ProductsOverviewPageProps) {
+  const { t } = useTranslation("products");
   const { data, isLoading } = useProducts();
 
   return (
     <PageShell>
       <PageHeader
         moduleKey="products"
-        title="Products & Services"
-        subtitle="Manage your product portfolio"
+        title={t("overview.title")}
+        subtitle={t("overview.subtitle")}
         actions={
           <Button data-testid="add-product-button" onClick={onNavigateToAnalyzer} className="gap-2">
             <Plus className="h-4 w-4" />
-            Add Product
+            {t("overview.addProduct")}
           </Button>
         }
       />
@@ -43,10 +45,10 @@ export function ProductsOverviewPage({
       ) : !data?.products?.length ? (
         <EmptyState
           icon={Package}
-          title="No products yet"
-          description="Add your first product or service to start building your product catalog."
+          title={t("overview.empty.title")}
+          description={t("overview.empty.description")}
           action={{
-            label: "Add your first product",
+            label: t("overview.empty.action"),
             onClick: onNavigateToAnalyzer,
           }}
         />

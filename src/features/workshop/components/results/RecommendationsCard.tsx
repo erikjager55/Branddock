@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Target, CheckCircle, Circle } from 'lucide-react';
 
 interface RecommendationItem {
@@ -16,6 +17,7 @@ interface RecommendationsCardProps {
 export function RecommendationsCard({
   recommendations,
 }: RecommendationsCardProps) {
+  const { t } = useTranslation('workshop');
   const safeRecommendations = Array.isArray(recommendations) ? recommendations : [];
   if (safeRecommendations.length === 0) return null;
 
@@ -24,7 +26,7 @@ export function RecommendationsCard({
       <div className="flex items-center gap-2 mb-3">
         <Target className="w-5 h-5 text-emerald-600" />
         <h3 className="text-lg font-semibold text-gray-900">
-          Recommendations
+          {t('results.recommendations.title')}
         </h3>
       </div>
       <div className="space-y-3">

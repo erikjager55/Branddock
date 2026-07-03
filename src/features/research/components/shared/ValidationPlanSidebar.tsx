@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { X, Shield } from "lucide-react";
 import { Button } from "@/components/shared";
 import { PricingSummary } from "./PricingSummary";
@@ -44,6 +45,7 @@ export function ValidationPlanSidebar({
   onPurchase,
   onStartFree,
 }: ValidationPlanSidebarProps) {
+  const { t } = useTranslation("research");
   const activeMethods = selectedMethods.filter((m) => m.quantity > 0);
   const hasSelection = selectedAssets.length > 0 && activeMethods.length > 0;
 
@@ -51,19 +53,19 @@ export function ValidationPlanSidebar({
     <div data-testid="validation-sidebar" className="sticky top-6 bg-white rounded-lg border p-5 w-80">
       {/* Header */}
       <h3 className="font-semibold text-lg text-gray-900 mb-4">
-        Your Validation Plan
+        {t("sidebar.title")}
       </h3>
 
       {/* Assets section */}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-sm font-medium text-gray-700">Assets</span>
+          <span className="text-sm font-medium text-gray-700">{t("sidebar.assets")}</span>
           <span className="bg-green-100 text-green-700 text-xs px-2 rounded-full">
             {selectedAssets.length}
           </span>
         </div>
         {selectedAssets.length === 0 ? (
-          <p className="text-sm text-gray-400">No assets selected</p>
+          <p className="text-sm text-gray-400">{t("sidebar.noAssets")}</p>
         ) : (
           <div className="space-y-1.5">
             {selectedAssets.map((asset) => (
@@ -88,13 +90,13 @@ export function ValidationPlanSidebar({
       {/* Methods section */}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-sm font-medium text-gray-700">Methods</span>
+          <span className="text-sm font-medium text-gray-700">{t("sidebar.methods")}</span>
           <span className="bg-green-100 text-green-700 text-xs px-2 rounded-full">
             {activeMethods.length}
           </span>
         </div>
         {activeMethods.length === 0 ? (
-          <p className="text-sm text-gray-400">No methods selected</p>
+          <p className="text-sm text-gray-400">{t("sidebar.noMethods")}</p>
         ) : (
           <div className="space-y-1.5">
             {activeMethods.map((method) => (
@@ -138,7 +140,7 @@ export function ValidationPlanSidebar({
             disabled={!hasSelection}
             onClick={onPurchase}
           >
-            Purchase Plan &rarr;
+            {t("sidebar.purchase")}
           </Button>
         ) : (
           <Button
@@ -149,20 +151,20 @@ export function ValidationPlanSidebar({
             disabled={!hasSelection}
             onClick={onStartFree}
           >
-            Start Validation &rarr;
+            {t("sidebar.startFree")}
           </Button>
         )}
       </div>
 
       {/* Note */}
       <p className="text-xs text-gray-400 mt-2">
-        Free methods start immediately. Paid methods require payment.
+        {t("sidebar.note")}
       </p>
 
       {/* Trust */}
       <div className="flex items-center gap-1 text-xs text-gray-400 mt-3">
         <Shield className="w-3 h-3" />
-        100% Satisfaction Guarantee
+        {t("sidebar.guarantee")}
       </div>
     </div>
   );

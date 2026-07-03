@@ -1,6 +1,7 @@
 'use client';
 
 import { Radar, PenLine, Sparkles, FileDown, FileJson } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, Badge } from '@/components/shared';
 import { useTrendRadarStore } from '../stores/useTrendRadarStore';
 import { useTrends } from '../hooks';
@@ -18,6 +19,7 @@ interface TrendRadarPageProps {
 
 /** Trend Radar overview — header + filters + card grid */
 export function TrendRadarPage({ onNavigate }: TrendRadarPageProps) {
+  const { t } = useTranslation('trend-radar');
   const { openAddManualTrendModal, openResearchModal } = useTrendRadarStore();
   const { data } = useTrends();
   const totalCount = data?.total ?? 0;
@@ -37,13 +39,13 @@ export function TrendRadarPage({ onNavigate }: TrendRadarPageProps) {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-gray-900">Trend Radar</h1>
+              <h1 className="text-xl font-bold text-gray-900">{t('page.title')}</h1>
               {totalCount > 0 && (
                 <Badge variant="default">{totalCount}</Badge>
               )}
             </div>
             <p className="text-sm text-gray-500">
-              Discover and track market trends with AI research
+              {t('page.subtitle')}
             </p>
           </div>
         </div>
@@ -73,10 +75,10 @@ export function TrendRadarPage({ onNavigate }: TrendRadarPageProps) {
             </>
           )}
           <Button variant="secondary" size="sm" icon={PenLine} onClick={openAddManualTrendModal}>
-            Add Trend
+            {t('actions.addTrend')}
           </Button>
           <Button variant="primary" size="sm" icon={Sparkles} onClick={openResearchModal}>
-            AI Research
+            {t('actions.aiResearch')}
           </Button>
         </div>
       </div>

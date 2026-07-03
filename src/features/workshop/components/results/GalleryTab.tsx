@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Image } from 'lucide-react';
 import { EmptyState } from '@/components/shared';
 import type { WorkshopPhoto } from '../../types/workshop.types';
@@ -9,13 +10,14 @@ interface GalleryTabProps {
 }
 
 export function GalleryTab({ photos }: GalleryTabProps) {
+  const { t } = useTranslation('workshop');
   const safePhotos = Array.isArray(photos) ? photos : [];
   if (safePhotos.length === 0) {
     return (
       <EmptyState
         icon={Image}
-        title="No photos yet"
-        description="Photos from the workshop session will appear here."
+        title={t('results.gallery.emptyTitle')}
+        description={t('results.gallery.emptyDesc')}
       />
     );
   }

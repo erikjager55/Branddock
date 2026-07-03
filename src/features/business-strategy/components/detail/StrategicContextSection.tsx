@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Pencil, X, Check, Plus, Trash2, Eye, Lightbulb, ListChecks } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import type { StrategyDetailResponse, UpdateContextBody } from '../../types/business-strategy.types';
 
@@ -18,6 +19,7 @@ export function StrategicContextSection({
   onUpdate,
   isUpdating,
 }: StrategicContextSectionProps) {
+  const { t } = useTranslation('business-strategy');
   const [editingField, setEditingField] = useState<EditingField>(null);
   const [editValue, setEditValue] = useState('');
   const [editAssumptions, setEditAssumptions] = useState<string[]>([]);
@@ -42,13 +44,13 @@ export function StrategicContextSection({
 
   return (
     <div className="p-6 bg-white border border-gray-200 rounded-lg">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Strategic Context</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('context.title')}</h2>
 
       <div className="space-y-5">
         {/* Vision */}
         <ContextBlock
           icon={<Eye className="w-4 h-4 text-blue-500" />}
-          label="Vision"
+          label={t('context.vision')}
           value={strategy.vision}
           isEditing={editingField === 'vision'}
           onStartEdit={() => handleStartEdit('vision')}
@@ -70,7 +72,7 @@ export function StrategicContextSection({
         {/* Rationale */}
         <ContextBlock
           icon={<Lightbulb className="w-4 h-4 text-amber-500" />}
-          label="Rationale"
+          label={t('context.rationale')}
           value={strategy.rationale}
           isEditing={editingField === 'rationale'}
           onStartEdit={() => handleStartEdit('rationale')}
@@ -94,7 +96,7 @@ export function StrategicContextSection({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <ListChecks className="w-4 h-4 text-primary-500" />
-              <span className="text-sm font-medium text-gray-700">Key Assumptions</span>
+              <span className="text-sm font-medium text-gray-700">{t('context.keyAssumptions')}</span>
             </div>
             {editingField !== 'assumptions' && (
               <button
@@ -131,14 +133,14 @@ export function StrategicContextSection({
                 onClick={() => setEditAssumptions([...editAssumptions, ''])}
                 className="flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-700"
               >
-                <Plus className="w-3.5 h-3.5" /> Add assumption
+                <Plus className="w-3.5 h-3.5" /> {t('context.addAssumption')}
               </button>
               <div className="flex items-center gap-2 mt-2">
                 <Button variant="cta" size="sm" onClick={handleSave} isLoading={isUpdating}>
-                  Save
+                  {t('actions.save')}
                 </Button>
                 <Button variant="secondary" size="sm" onClick={handleCancel}>
-                  Cancel
+                  {t('actions.cancel')}
                 </Button>
               </div>
             </div>
@@ -152,7 +154,7 @@ export function StrategicContextSection({
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-400 italic">No assumptions defined</p>
+            <p className="text-sm text-gray-400 italic">{t('context.noAssumptions')}</p>
           )}
         </div>
       </div>
@@ -183,6 +185,7 @@ function ContextBlock({
   isSaving: boolean;
   children?: React.ReactNode;
 }) {
+  const { t } = useTranslation('business-strategy');
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
@@ -222,7 +225,7 @@ function ContextBlock({
       ) : value ? (
         <p className="text-sm text-gray-600">{value}</p>
       ) : (
-        <p className="text-sm text-gray-400 italic">Not defined yet</p>
+        <p className="text-sm text-gray-400 italic">{t('context.notDefined')}</p>
       )}
     </div>
   );

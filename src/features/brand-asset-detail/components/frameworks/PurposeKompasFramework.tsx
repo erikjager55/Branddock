@@ -1,27 +1,25 @@
 'use client';
 
 import { Heart, Leaf, Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Badge, Card } from '@/components/shared';
 import type { PurposeKompasFrameworkData, PurposeKompasPillar } from '../../types/framework.types';
 
 const PILLAR_CONFIG = {
   mens: {
-    label: 'People',
-    description: 'Healthy lifestyles, self-development and personal growth',
+    tKey: 'people',
     icon: Heart,
     color: 'text-rose-600',
     bgColor: 'bg-rose-50',
   },
   milieu: {
-    label: 'Environment',
-    description: 'Sustainability, CO₂ reduction and circular production',
+    tKey: 'environment',
     icon: Leaf,
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-50',
   },
   maatschappij: {
-    label: 'Society',
-    description: 'Fighting inequality, community and social impact',
+    tKey: 'society',
     icon: Globe,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
@@ -41,6 +39,7 @@ function PillarCard({
   pillarKey: keyof typeof PILLAR_CONFIG;
   pillar: PurposeKompasPillar;
 }) {
+  const { t } = useTranslation('brand-asset-detail');
   const config = PILLAR_CONFIG[pillarKey];
   const Icon = config.icon;
 
@@ -54,11 +53,11 @@ function PillarCard({
           <div className="flex-1 space-y-1.5">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">{config.label}</h4>
-                <p className="text-xs text-gray-400">{config.description}</p>
+                <h4 className="font-medium text-gray-900">{t(`purposeKompas.${config.tKey}.label`)}</h4>
+                <p className="text-xs text-gray-400">{t(`purposeKompas.${config.tKey}.description`)}</p>
               </div>
               <Badge variant={IMPACT_VARIANTS[pillar.impact] ?? 'default'}>
-                {pillar.impact} impact
+                {t('purposeKompas.impact', { level: pillar.impact })}
               </Badge>
             </div>
             <p className="text-sm text-gray-600">{pillar.description}</p>

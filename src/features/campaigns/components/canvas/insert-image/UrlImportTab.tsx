@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link as LinkIcon, Loader2, AlertCircle } from 'lucide-react';
 import { useImportFromUrl } from '@/features/media-library/hooks';
 import type { InsertImageTabProps } from './types';
@@ -11,6 +12,7 @@ import type { InsertImageTabProps } from './types';
  * On success: forwards to onSelected (modal closes + canvas store updates).
  */
 export function UrlImportTab({ onSelected }: InsertImageTabProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const [url, setUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
   const importMutation = useImportFromUrl();
@@ -19,7 +21,7 @@ export function UrlImportTab({ onSelected }: InsertImageTabProps) {
     setError(null);
     const trimmed = url.trim();
     if (!trimmed) {
-      setError('Please enter a URL');
+      setError(t('urlImport.errEmpty'));
       return;
     }
     try {
@@ -30,15 +32,14 @@ export function UrlImportTab({ onSelected }: InsertImageTabProps) {
         alt: response.asset.name ?? undefined,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Import failed');
+      setError(err instanceof Error ? err.message : t('urlImport.errFailed'));
     }
   };
 
   return (
     <div className="space-y-4">
       <div className="text-sm text-gray-600">
-        Paste an image URL from any public website. We&apos;ll download and save
-        it to your media library.
+        {t('urlImport.intro')}
       </div>
 
       <div className="relative">
@@ -48,7 +49,7 @@ export function UrlImportTab({ onSelected }: InsertImageTabProps) {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleImport()}
-          placeholder="https://example.com/image.jpg"
+          placeholder={t('urlImport.placeholder')}
           disabled={importMutation.isPending}
           className="block w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder:text-gray-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-colors disabled:opacity-50"
         />
@@ -70,10 +71,10 @@ export function UrlImportTab({ onSelected }: InsertImageTabProps) {
         {importMutation.isPending ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Importing...
+            {t('urlImport.importing')}
           </>
         ) : (
-          'Import image'
+          t('urlImport.importButton')
         )}
       </button>
     </div>

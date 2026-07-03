@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Layers, Clock, Zap, Target, Gauge } from "lucide-react";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import {
@@ -27,6 +28,7 @@ import {
  * becomes "Custom" but the UI stays put.
  */
 export function PipelineConfigCard() {
+  const { t } = useTranslation("campaigns-wizard");
   const wizardMode = useCampaignWizardStore((s) => s.wizardMode);
   const pipelineConfig = useCampaignWizardStore((s) => s.pipelineConfig);
   const setStrategyDepth = useCampaignWizardStore((s) => s.setStrategyDepth);
@@ -45,36 +47,36 @@ export function PipelineConfigCard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4 text-gray-500" />
-          <h3 className="text-sm font-medium text-gray-700">Pipeline Configuration</h3>
+          <h3 className="text-sm font-medium text-gray-700">{t("pipelineConfig.title")}</h3>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-gray-500">
           <Clock className="h-3.5 w-3.5" />
-          <span>Estimated: {estimatedLabel}</span>
+          <span>{t("pipelineConfig.estimated", { time: estimatedLabel })}</span>
         </div>
       </div>
 
       {/* Preset buttons */}
       <div>
-        <p className="text-xs text-muted-foreground mb-2">Quick presets</p>
+        <p className="text-xs text-muted-foreground mb-2">{t("pipelineConfig.quickPresets")}</p>
         <div className="grid grid-cols-3 gap-2">
           <PresetButton
             preset="quick"
-            label="Quick"
-            subtitle="~3-4 min"
+            label={t("pipelineConfig.presets.quick")}
+            subtitle={t("pipelineConfig.presets.quickTime")}
             isActive={activePreset === 'quick'}
             onClick={() => applyPipelinePreset('quick')}
           />
           <PresetButton
             preset="standard"
-            label="Standard"
-            subtitle="~6-9 min"
+            label={t("pipelineConfig.presets.standard")}
+            subtitle={t("pipelineConfig.presets.standardTime")}
             isActive={activePreset === 'standard'}
             onClick={() => applyPipelinePreset('standard')}
           />
           <PresetButton
             preset="award-grade"
-            label="Award Grade"
-            subtitle="~15-25 min"
+            label={t("pipelineConfig.presets.awardGrade")}
+            subtitle={t("pipelineConfig.presets.awardGradeTime")}
             isActive={activePreset === 'award-grade'}
             onClick={() => applyPipelinePreset('award-grade')}
           />
@@ -86,8 +88,8 @@ export function PipelineConfigCard() {
       {/* Individual parameters */}
       <SliderRow
         icon={<Target className="h-3.5 w-3.5 text-gray-500" />}
-        label="Strategy Depth"
-        helper="How much strategic homework before creative work"
+        label={t("pipelineConfig.strategyDepth")}
+        helper={t("pipelineConfig.strategyDepthHelper")}
         options={STRATEGY_DEPTH_OPTIONS}
         value={pipelineConfig.strategyDepth}
         onChange={(v) => setStrategyDepth(v as StrategyDepth)}
@@ -95,8 +97,8 @@ export function PipelineConfigCard() {
 
       <SliderRow
         icon={<Zap className="h-3.5 w-3.5 text-gray-500" />}
-        label="Creative Range"
-        helper="How many creative alternatives to explore"
+        label={t("pipelineConfig.creativeRange")}
+        helper={t("pipelineConfig.creativeRangeHelper")}
         options={CREATIVE_RANGE_OPTIONS}
         value={pipelineConfig.creativeRange}
         onChange={(v) => setCreativeRange(v as CreativeRange)}
@@ -104,8 +106,8 @@ export function PipelineConfigCard() {
 
       <SliderRow
         icon={<Gauge className="h-3.5 w-3.5 text-gray-500" />}
-        label="Model Rigor"
-        helper="Which model tier and how much extended thinking"
+        label={t("pipelineConfig.modelRigor")}
+        helper={t("pipelineConfig.modelRigorHelper")}
         options={MODEL_RIGOR_OPTIONS}
         value={pipelineConfig.modelRigor}
         onChange={(v) => setModelRigor(v as ModelRigor)}
@@ -114,12 +116,12 @@ export function PipelineConfigCard() {
       {/* Preset indicator */}
       <div className="pt-1 flex items-center justify-between text-xs">
         <span className="text-gray-500">
-          Preset: <span className="font-medium text-gray-700">
-            {activePreset === 'custom' ? 'Custom' : PRESET_LABELS[activePreset as Exclude<PipelinePreset, 'custom'>]}
+          {t("pipelineConfig.presetLabel")} <span className="font-medium text-gray-700">
+            {activePreset === 'custom' ? t("pipelineConfig.custom") : PRESET_LABELS[activePreset as Exclude<PipelinePreset, 'custom'>]}
           </span>
         </span>
         <span className="text-gray-400">
-          Content mode defaults to Quick · Campaign mode to Standard
+          {t("pipelineConfig.modeDefaults")}
         </span>
       </div>
     </div>

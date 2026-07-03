@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, FolderOpen } from 'lucide-react';
 import { Button, SearchInput, EmptyState, Skeleton } from '@/components/shared';
 import { useMediaCollections } from '../../hooks/index';
@@ -28,6 +29,7 @@ function CollectionCardSkeleton() {
 
 /** Panel that displays all media collections with search and create. */
 export function CollectionsPanel() {
+  const { t } = useTranslation('media-library');
   const { data: collections, isLoading } = useMediaCollections();
   const setCreateCollectionModalOpen = useMediaLibraryStore(
     (s) => s.setCreateCollectionModalOpen,
@@ -77,7 +79,7 @@ export function CollectionsPanel() {
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="Search collections..."
+          placeholder={t('collections.searchPlaceholder')}
           className="flex-1"
         />
         <Button
@@ -86,7 +88,7 @@ export function CollectionsPanel() {
           icon={Plus}
           onClick={() => setCreateCollectionModalOpen(true)}
         >
-          New Collection
+          {t('collections.newCollection')}
         </Button>
       </div>
 
@@ -94,16 +96,16 @@ export function CollectionsPanel() {
       {filtered.length === 0 ? (
         <EmptyState
           icon={FolderOpen}
-          title="No collections found"
+          title={t('collections.notFound.title')}
           description={
             searchQuery
-              ? 'Try adjusting your search query.'
-              : 'Create your first collection to organize your media assets.'
+              ? t('collections.notFound.searchHint')
+              : t('collections.notFound.description')
           }
           action={
             !searchQuery
               ? {
-                  label: 'Create Collection',
+                  label: t('collections.createCollection'),
                   onClick: () => setCreateCollectionModalOpen(true),
                 }
               : undefined

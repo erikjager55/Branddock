@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Zap } from "lucide-react";
 import { Badge } from "@/components/shared";
 import { CardLockIndicator } from "@/components/lock";
@@ -15,6 +16,7 @@ interface QuickContentCardProps {
 }
 
 export function QuickContentCard({ campaign, onClick, onDelete }: QuickContentCardProps) {
+  const { t } = useTranslation("campaigns-overview");
   const contentType = campaign.contentType ? getContentTypeById(campaign.contentType) : null;
   const ContentIcon = contentType?.icon;
 
@@ -29,10 +31,10 @@ export function QuickContentCard({ campaign, onClick, onDelete }: QuickContentCa
         <div className="flex items-center gap-2">
           <Badge variant="info" className="bg-purple-100 text-purple-700">
             <Zap className="h-3 w-3 mr-1" />
-            Quick
+            {t("quick.badge")}
           </Badge>
           {campaign.status === "COMPLETED" && (
-            <Badge variant="success">Done</Badge>
+            <Badge variant="success">{t("quick.done")}</Badge>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -61,7 +63,7 @@ export function QuickContentCard({ campaign, onClick, onDelete }: QuickContentCa
       {/* Quality Score */}
       {campaign.qualityScore != null && (
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-xs text-gray-500">Quality</span>
+          <span className="text-xs text-gray-500">{t("quick.quality")}</span>
           <div className="flex items-center gap-1">
             <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
               <div
@@ -82,7 +84,7 @@ export function QuickContentCard({ campaign, onClick, onDelete }: QuickContentCa
       {/* Footer */}
       <div className="mt-3 pt-3 border-t flex items-center justify-end">
         <span className="text-xs font-medium text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">
-          Open →
+          {t("quick.open")}
         </span>
       </div>
     </div>

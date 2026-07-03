@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Globe, FileText, Pencil } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageShell } from "@/components/ui/layout";
@@ -15,10 +16,10 @@ import { AnalyzingProductModal } from "./AnalyzingProductModal";
 
 type TabId = "url" | "pdf" | "manual";
 
-const TABS: { id: TabId; icon: LucideIcon; label: string }[] = [
-  { id: "url", icon: Globe, label: "Website URL" },
-  { id: "pdf", icon: FileText, label: "PDF Upload" },
-  { id: "manual", icon: Pencil, label: "Manual Entry" },
+const TABS: { id: TabId; icon: LucideIcon }[] = [
+  { id: "url", icon: Globe },
+  { id: "pdf", icon: FileText },
+  { id: "manual", icon: Pencil },
 ];
 
 // ─── Component ────────────────────────────────────────────
@@ -32,6 +33,7 @@ export function ProductAnalyzerPage({
   onBack,
   onNavigateToDetail,
 }: ProductAnalyzerPageProps) {
+  const { t } = useTranslation("products");
   const {
     activeAnalyzerTab,
     setActiveAnalyzerTab,
@@ -75,13 +77,13 @@ export function ProductAnalyzerPage({
         onNavigateToDetail(created.id);
       }).catch((err: unknown) => {
         setProcessingModalOpen(false);
-        const message = err instanceof Error ? err.message : "Failed to save product";
+        const message = err instanceof Error ? err.message : t("analyzer.saveFailed");
         setCreateError(message);
       });
     } else {
       setProcessingModalOpen(false);
     }
-  }, [createProduct, setProcessingModalOpen, onNavigateToDetail]);
+  }, [createProduct, setProcessingModalOpen, onNavigateToDetail, t]);
 
   const handleModalCancel = useCallback(() => {
     setProcessingModalOpen(false);
@@ -97,16 +99,16 @@ export function ProductAnalyzerPage({
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Products
+          {t("backToProducts")}
         </button>
 
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Add Product/Service
+            {t("analyzer.title")}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Import product information from a URL, PDF, or enter details manually
+            {t("analyzer.subtitle")}
           </p>
         </div>
 
@@ -127,7 +129,7 @@ export function ProductAnalyzerPage({
                 }`}
               >
                 <Icon className="h-4 w-4" />
-                {tab.label}
+                {t(`analyzer.tabs.${tab.id}`)}
               </button>
             );
           })}

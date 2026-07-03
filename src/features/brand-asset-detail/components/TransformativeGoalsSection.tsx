@@ -16,6 +16,7 @@ import type {
   BrandIntegration,
   GoalMilestone,
 } from '../types/framework.types';
+import { useTranslation } from 'react-i18next';
 import { UN_SDGS } from '../constants/social-relevancy-constants';
 
 // ─── Constants ──────────────────────────────────────────────
@@ -141,6 +142,7 @@ function getAuthenticityAvg(scores: AuthenticityScore): number {
 // ─── Component ──────────────────────────────────────────────
 
 export function TransformativeGoalsSection({ data, isEditing, onUpdate }: TransformativeGoalsSectionProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const [draft, setDraft] = useState<TransformativeGoalsFrameworkData>(() => normalize(data));
   const [expandedGoal, setExpandedGoal] = useState<number | null>(0);
 
@@ -247,33 +249,33 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
             <Rocket className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Massive Transformative Purpose</h2>
-            <p className="text-sm text-gray-500">The overarching ambition that drives everything your brand does</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('transformativeGoals.mtp.title')}</h2>
+            <p className="text-sm text-gray-500">{t('transformativeGoals.mtp.subtitle')}</p>
           </div>
         </div>
 
         {isEditing ? (
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">MTP Statement</label>
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">{t('transformativeGoals.mtp.statementLabel')}</label>
               <input
                 type="text"
                 value={draft.massiveTransformativePurpose}
                 onChange={(e) => handleField('massiveTransformativePurpose', e.target.value)}
                 className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
-                placeholder="e.g. Accelerate the world's transition to sustainable energy"
+                placeholder={t('transformativeGoals.mtp.statementPlaceholder')}
                 maxLength={150}
               />
-              <p className="text-xs text-gray-400 mt-1">{draft.massiveTransformativePurpose.length}/150 characters</p>
+              <p className="text-xs text-gray-400 mt-1">{t('transformativeGoals.mtp.characters', { count: draft.massiveTransformativePurpose.length })}</p>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Narrative</label>
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">{t('transformativeGoals.mtp.narrativeLabel')}</label>
               <textarea
                 value={draft.mtpNarrative}
                 onChange={(e) => handleField('mtpNarrative', e.target.value)}
                 className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
                 rows={3}
-                placeholder="Why this purpose matters, who it serves, and what world you're building..."
+                placeholder={t('transformativeGoals.mtp.narrativePlaceholder')}
               />
             </div>
           </div>
@@ -287,12 +289,12 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
             )}
           </div>
         ) : (
-          <p className="text-sm italic text-gray-400">Define your Massive Transformative Purpose...</p>
+          <p className="text-sm italic text-gray-400">{t('transformativeGoals.mtp.empty')}</p>
         )}
 
         {/* Examples */}
         <div className="mt-4 bg-gray-50 border border-gray-100 rounded-xl p-4">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">MTP Examples</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{t('transformativeGoals.mtp.examples')}</p>
           <div className="flex flex-wrap gap-2">
             {MTP_EXAMPLES.map((ex) => (
               <span key={ex.brand} className="inline-flex items-center gap-1.5 text-xs bg-white border border-gray-200 rounded-full px-3 py-1">
@@ -311,12 +313,12 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
             <Target className="h-5 w-5 text-amber-600" />
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-bold text-gray-900">Transformative Goals</h2>
-            <p className="text-sm text-gray-500">Concrete, measurable commitments that operationalize your MTP</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('transformativeGoals.goals.title')}</h2>
+            <p className="text-sm text-gray-500">{t('transformativeGoals.goals.subtitle')}</p>
           </div>
           {isEditing && draft.goals.length < 5 && (
             <button onClick={addGoal} className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium">
-              <Plus className="h-4 w-4" /> Add Goal
+              <Plus className="h-4 w-4" /> {t('transformativeGoals.goals.addGoal')}
             </button>
           )}
         </div>
@@ -349,8 +351,8 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
             <ShieldCheck className="h-5 w-5 text-violet-600" />
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-bold text-gray-900">Authenticity Assessment</h2>
-            <p className="text-sm text-gray-500">Evaluate how well your goals align with your brand (Collins + Ismail)</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('transformativeGoals.authenticity.title')}</h2>
+            <p className="text-sm text-gray-500">{t('transformativeGoals.authenticity.subtitle')}</p>
           </div>
           {authAvg > 0 && (
             <div className="flex items-center gap-2">
@@ -367,10 +369,10 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
             return (
               <div key={criterion.key} className="bg-gray-50/50 border border-gray-100 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-semibold text-gray-700">{criterion.label}</span>
+                  <span className="text-sm font-semibold text-gray-700">{t(`transformativeGoals.authenticity.criteria.${criterion.key}.label`)}</span>
                   {value > 0 && <span className="text-xs font-medium text-gray-500">{value}/5</span>}
                 </div>
-                <p className="text-xs text-gray-400 mb-2">{criterion.question}</p>
+                <p className="text-xs text-gray-400 mb-2">{t(`transformativeGoals.authenticity.criteria.${criterion.key}.question`)}</p>
                 {isEditing ? (
                   <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map((n) => (
@@ -412,8 +414,8 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
             <HandHeart className="h-5 w-5 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Stakeholder Impact</h2>
-            <p className="text-sm text-gray-500">Map how each stakeholder group contributes to and benefits from transformation</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('transformativeGoals.stakeholder.title')}</h2>
+            <p className="text-sm text-gray-500">{t('transformativeGoals.stakeholder.subtitle')}</p>
           </div>
         </div>
 
@@ -426,23 +428,23 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
               {isEditing ? (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-gray-500">Role</label>
+                    <label className="text-xs text-gray-500">{t('transformativeGoals.stakeholder.roleLabel')}</label>
                     <input
                       type="text"
                       value={si.role}
                       onChange={(e) => handleStakeholder(i, 'role', e.target.value)}
                       className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
-                      placeholder="e.g. Ambassadors & executors"
+                      placeholder={t('transformativeGoals.stakeholder.rolePlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500">Expected Impact</label>
+                    <label className="text-xs text-gray-500">{t('transformativeGoals.stakeholder.impactLabel')}</label>
                     <input
                       type="text"
                       value={si.expectedImpact}
                       onChange={(e) => handleStakeholder(i, 'expectedImpact', e.target.value)}
                       className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
-                      placeholder="e.g. Culture, motivation, retention"
+                      placeholder={t('transformativeGoals.stakeholder.impactPlaceholder')}
                     />
                   </div>
                 </div>
@@ -450,19 +452,19 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
                 <div className="flex items-start gap-4">
                   {si.role && (
                     <div className="flex-1">
-                      <p className="text-xs text-gray-500 mb-0.5">Role</p>
+                      <p className="text-xs text-gray-500 mb-0.5">{t('transformativeGoals.stakeholder.roleView')}</p>
                       <p className="text-sm text-gray-700">{si.role}</p>
                     </div>
                   )}
                   {si.expectedImpact && (
                     <div className="flex-1">
-                      <p className="text-xs text-gray-500 mb-0.5">Impact</p>
+                      <p className="text-xs text-gray-500 mb-0.5">{t('transformativeGoals.stakeholder.impactView')}</p>
                       <p className="text-sm text-gray-700">{si.expectedImpact}</p>
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-xs italic text-gray-400">Define role and expected impact...</p>
+                <p className="text-xs italic text-gray-400">{t('transformativeGoals.stakeholder.empty')}</p>
               )}
             </div>
           ))}
@@ -476,57 +478,57 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
             <Globe className="h-5 w-5 text-rose-600" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Brand Integration</h2>
-            <p className="text-sm text-gray-500">How transformative goals drive positioning, campaigns, and internal culture</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('transformativeGoals.integration.title')}</h2>
+            <p className="text-sm text-gray-500">{t('transformativeGoals.integration.subtitle')}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           {/* Positioning Link */}
           <FieldBlock
-            label="Positioning Link"
-            description="How do these goals strengthen your market positioning?"
+            label={t('transformativeGoals.integration.positioningLabel')}
+            description={t('transformativeGoals.integration.positioningDescription')}
             value={isEditing ? draft.brandIntegration.positioningLink : d.brandIntegration.positioningLink}
             isEditing={isEditing}
             onChange={(v) => handleIntegrationField('positioningLink', v)}
-            placeholder="Describe how goals reinforce positioning..."
+            placeholder={t('transformativeGoals.integration.positioningPlaceholder')}
           />
 
           {/* Internal Activation */}
           <FieldBlock
-            label="Internal Activation"
-            description="How do employees become ambassadors of transformation?"
+            label={t('transformativeGoals.integration.internalLabel')}
+            description={t('transformativeGoals.integration.internalDescription')}
             value={isEditing ? draft.brandIntegration.internalActivation : d.brandIntegration.internalActivation}
             isEditing={isEditing}
             onChange={(v) => handleIntegrationField('internalActivation', v)}
-            placeholder="Describe internal activation strategy..."
+            placeholder={t('transformativeGoals.integration.internalPlaceholder')}
           />
 
           {/* Communication Themes */}
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Communication Themes</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{t('transformativeGoals.integration.commThemesLabel')}</p>
             <StringListEditor
               items={isEditing ? draft.brandIntegration.communicationThemes : d.brandIntegration.communicationThemes}
               isEditing={isEditing}
               onAdd={() => addIntegrationListItem('communicationThemes')}
               onUpdate={(i, v) => updateIntegrationListItem('communicationThemes', i, v)}
               onRemove={(i) => removeIntegrationListItem('communicationThemes', i)}
-              placeholder="Add a communication theme..."
-              emptyText="No communication themes defined"
+              placeholder={t('transformativeGoals.integration.commThemesPlaceholder')}
+              emptyText={t('transformativeGoals.integration.commThemesEmpty')}
             />
           </div>
 
           {/* Campaign Directions */}
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Campaign Directions</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{t('transformativeGoals.integration.campaignLabel')}</p>
             <StringListEditor
               items={isEditing ? draft.brandIntegration.campaignDirections : d.brandIntegration.campaignDirections}
               isEditing={isEditing}
               onAdd={() => addIntegrationListItem('campaignDirections')}
               onUpdate={(i, v) => updateIntegrationListItem('campaignDirections', i, v)}
               onRemove={(i) => removeIntegrationListItem('campaignDirections', i)}
-              placeholder="Add a campaign direction..."
-              emptyText="No campaign directions defined"
+              placeholder={t('transformativeGoals.integration.campaignPlaceholder')}
+              emptyText={t('transformativeGoals.integration.campaignEmpty')}
             />
           </div>
         </div>
@@ -537,24 +539,20 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
         <div className="flex items-start gap-3 mb-3">
           <Sparkles className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-sm font-semibold text-gray-700">About Transformative Goals</h3>
+            <h3 className="text-sm font-semibold text-gray-700">{t('transformativeGoals.about.title')}</h3>
             <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-              Transformative Goals bridge the gap between brand purpose and actionable strategy.
-              Based on Jim Collins&apos; BHAG framework, Salim Ismail&apos;s Massive Transformative Purpose,
-              and Jim Stengel&apos;s Brand Ideal research. Brands with a clear transformative purpose grow
-              2-4x faster (Stengel 50 study), and 72% of consumers expect companies to drive positive
-              social and environmental outcomes (EY).
+              {t('transformativeGoals.about.body')}
             </p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 mt-3">
           <div className="bg-white rounded-lg p-3 border border-gray-100">
-            <p className="text-xs font-medium text-gray-600">Key Frameworks</p>
-            <p className="text-xs text-gray-400 mt-1">BHAG (Collins), MTP (Ismail), Brand Ideal (Stengel), Moonshot Thinking (Google X)</p>
+            <p className="text-xs font-medium text-gray-600">{t('transformativeGoals.about.frameworksLabel')}</p>
+            <p className="text-xs text-gray-400 mt-1">{t('transformativeGoals.about.frameworksValue')}</p>
           </div>
           <div className="bg-white rounded-lg p-3 border border-gray-100">
-            <p className="text-xs font-medium text-gray-600">Connection to Other Assets</p>
-            <p className="text-xs text-gray-400 mt-1">Purpose Statement (foundation), Mission/Vision (expression), Brand Values (alignment)</p>
+            <p className="text-xs font-medium text-gray-600">{t('transformativeGoals.about.connectionsLabel')}</p>
+            <p className="text-xs text-gray-400 mt-1">{t('transformativeGoals.about.connectionsValue')}</p>
           </div>
         </div>
       </div>
@@ -583,9 +581,10 @@ function GoalCard({
   goal, index, isEditing, isExpanded, onToggleExpand, onFieldChange,
   onRemove, canRemove, onMilestoneAdd, onMilestoneUpdate, onMilestoneRemove, onSdgToggle,
 }: GoalCardProps) {
+  const { t } = useTranslation('brand-asset-detail');
   const domain = getImpactDomainConfig(goal.impactDomain);
   const DomainIcon = domain.icon;
-  const horizon = TIMEFRAME_OPTIONS.find((t) => t.value === goal.timeframeHorizon);
+  const horizon = TIMEFRAME_OPTIONS.find((opt) => opt.value === goal.timeframeHorizon);
 
   return (
     <div className={`border rounded-xl transition-colors ${isExpanded ? 'border-gray-300 bg-white' : 'border-gray-100 bg-gray-50/50'}`}>
@@ -602,7 +601,7 @@ function GoalCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-gray-900 truncate">
-              {goal.title || `Goal ${index + 1}`}
+              {goal.title || t('transformativeGoals.goalCard.goalNumber', { number: index + 1 })}
             </span>
             {goal.timeframe && (
               <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full flex-shrink-0">
@@ -633,23 +632,23 @@ function GoalCard({
               {/* Title & Description */}
               <div className="grid grid-cols-1 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-500">Title</label>
+                  <label className="text-xs font-medium text-gray-500">{t('transformativeGoals.goalCard.titleLabel')}</label>
                   <input
                     type="text"
                     value={goal.title}
                     onChange={(e) => onFieldChange('title', e.target.value)}
                     className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
-                    placeholder="e.g. Zero Waste Production"
+                    placeholder={t('transformativeGoals.goalCard.titlePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500">Description</label>
+                  <label className="text-xs font-medium text-gray-500">{t('transformativeGoals.goalCard.descriptionLabel')}</label>
                   <textarea
                     value={goal.description}
                     onChange={(e) => onFieldChange('description', e.target.value)}
                     className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm resize-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                     rows={2}
-                    placeholder="What this goal entails..."
+                    placeholder={t('transformativeGoals.goalCard.descriptionPlaceholder')}
                   />
                 </div>
               </div>
@@ -657,45 +656,45 @@ function GoalCard({
               {/* Impact Domain & Timeframe */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-500">Impact Domain</label>
+                  <label className="text-xs font-medium text-gray-500">{t('transformativeGoals.goalCard.impactDomainLabel')}</label>
                   <div className="flex gap-2 mt-1">
-                    {IMPACT_DOMAINS.map((d) => {
-                      const Icon = d.icon;
+                    {IMPACT_DOMAINS.map((dom) => {
+                      const Icon = dom.icon;
                       return (
                         <button
-                          key={d.value}
+                          key={dom.value}
                           type="button"
-                          onClick={() => onFieldChange('impactDomain', d.value)}
+                          onClick={() => onFieldChange('impactDomain', dom.value)}
                           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                            goal.impactDomain === d.value
-                              ? `${d.bg} ${d.color} ring-1 ring-current`
+                            goal.impactDomain === dom.value
+                              ? `${dom.bg} ${dom.color} ring-1 ring-current`
                               : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                           }`}
                         >
                           <Icon className="h-3.5 w-3.5" />
-                          {d.label}
+                          {t(`transformativeGoals.domains.${dom.value}`)}
                         </button>
                       );
                     })}
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500">Timeframe</label>
+                  <label className="text-xs font-medium text-gray-500">{t('transformativeGoals.goalCard.timeframeLabel')}</label>
                   <div className="flex gap-2 mt-1">
                     <input
                       type="text"
                       value={goal.timeframe}
                       onChange={(e) => onFieldChange('timeframe', e.target.value)}
                       className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
-                      placeholder="2030"
+                      placeholder={t('transformativeGoals.goalCard.timeframeYearPlaceholder')}
                     />
                     <select
                       value={goal.timeframeHorizon}
                       onChange={(e) => onFieldChange('timeframeHorizon', e.target.value)}
                       className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                     >
-                      {TIMEFRAME_OPTIONS.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label} ({t.description})</option>
+                      {TIMEFRAME_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{t(`transformativeGoals.timeframes.${opt.value}.label`)} ({t(`transformativeGoals.timeframes.${opt.value}.description`)})</option>
                       ))}
                     </select>
                   </div>
@@ -704,31 +703,31 @@ function GoalCard({
 
               {/* Measurable Commitment */}
               <div>
-                <label className="text-xs font-medium text-gray-500">Measurable Commitment</label>
+                <label className="text-xs font-medium text-gray-500">{t('transformativeGoals.goalCard.commitmentLabel')}</label>
                 <input
                   type="text"
                   value={goal.measurableCommitment}
                   onChange={(e) => onFieldChange('measurableCommitment', e.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
-                  placeholder="e.g. 99% of waste recycled by 2030"
+                  placeholder={t('transformativeGoals.goalCard.commitmentPlaceholder')}
                 />
               </div>
 
               {/* Theory of Change */}
               <div>
-                <label className="text-xs font-medium text-gray-500">Theory of Change</label>
+                <label className="text-xs font-medium text-gray-500">{t('transformativeGoals.goalCard.theoryLabel')}</label>
                 <textarea
                   value={goal.theoryOfChange}
                   onChange={(e) => onFieldChange('theoryOfChange', e.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm resize-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                   rows={2}
-                  placeholder="How brand activity creates this impact..."
+                  placeholder={t('transformativeGoals.goalCard.theoryPlaceholder')}
                 />
               </div>
 
               {/* Progress */}
               <div>
-                <label className="text-xs font-medium text-gray-500">Current Progress ({goal.currentProgress}%)</label>
+                <label className="text-xs font-medium text-gray-500">{t('transformativeGoals.goalCard.progressLabel', { progress: goal.currentProgress })}</label>
                 <input
                   type="range"
                   min={0}
@@ -742,9 +741,9 @@ function GoalCard({
               {/* Milestones */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-medium text-gray-500">Milestones</label>
+                  <label className="text-xs font-medium text-gray-500">{t('transformativeGoals.goalCard.milestonesLabel')}</label>
                   <button type="button" onClick={onMilestoneAdd} className="flex items-center gap-1 text-xs text-primary hover:text-primary-700">
-                    <Plus className="h-3 w-3" /> Add
+                    <Plus className="h-3 w-3" /> {t('shared.add')}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -756,7 +755,7 @@ function GoalCard({
                         className={`flex-shrink-0 h-5 w-5 rounded border transition-colors ${
                           ms.achieved ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 hover:border-gray-400'
                         }`}
-                        aria-label={ms.achieved ? 'Mark milestone as not achieved' : 'Mark milestone as achieved'}
+                        aria-label={ms.achieved ? t('transformativeGoals.goalCard.markNotAchieved') : t('transformativeGoals.goalCard.markAchieved')}
                       >
                         {ms.achieved && <CheckCircle className="h-5 w-5" />}
                       </button>
@@ -771,7 +770,7 @@ function GoalCard({
                         value={ms.target}
                         onChange={(e) => onMilestoneUpdate(mi, 'target', e.target.value)}
                         className="flex-1 rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
-                        placeholder="Milestone target..."
+                        placeholder={t('transformativeGoals.goalCard.milestoneTargetPlaceholder')}
                       />
                       <button type="button" onClick={() => onMilestoneRemove(mi)} className="p-1 text-gray-400 hover:text-red-500">
                         <X className="h-3.5 w-3.5" />
@@ -783,11 +782,11 @@ function GoalCard({
 
               {/* SDG Alignment */}
               <div>
-                <label className="text-xs font-medium text-gray-500 mb-2 block">UN SDG Alignment</label>
+                <label className="text-xs font-medium text-gray-500 mb-2 block">{t('transformativeGoals.goalCard.sdgLabel')}</label>
                 {/* SDG cross-reference */}
                 <div className="flex items-start gap-2 p-2.5 bg-blue-50 border border-blue-100 rounded-lg mb-2">
                   <Info className="h-3.5 w-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-blue-700">SDG alignment here links goals to global impact. For evidence-backed SDG commitments, see Social Relevancy.</p>
+                  <p className="text-xs text-blue-700">{t('transformativeGoals.goalCard.sdgCrossRef')}</p>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {UN_SDGS.map((sdg) => {
@@ -815,7 +814,7 @@ function GoalCard({
               {/* Remove */}
               {canRemove && (
                 <button type="button" onClick={onRemove} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600">
-                  <X className="h-3.5 w-3.5" /> Remove this goal
+                  <X className="h-3.5 w-3.5" /> {t('transformativeGoals.goalCard.removeGoal')}
                 </button>
               )}
             </>
@@ -826,13 +825,13 @@ function GoalCard({
               <div className="grid grid-cols-2 gap-3">
                 {goal.measurableCommitment && (
                   <div className="bg-amber-50/50 border border-amber-100 rounded-lg p-3">
-                    <p className="text-xs font-medium text-amber-700 mb-1">Measurable Commitment</p>
+                    <p className="text-xs font-medium text-amber-700 mb-1">{t('transformativeGoals.goalCard.commitmentView')}</p>
                     <p className="text-sm text-gray-700">{goal.measurableCommitment}</p>
                   </div>
                 )}
                 {goal.theoryOfChange && (
                   <div className="bg-emerald-50/50 border border-emerald-100 rounded-lg p-3">
-                    <p className="text-xs font-medium text-emerald-700 mb-1">Theory of Change</p>
+                    <p className="text-xs font-medium text-emerald-700 mb-1">{t('transformativeGoals.goalCard.theoryView')}</p>
                     <p className="text-sm text-gray-700">{goal.theoryOfChange}</p>
                   </div>
                 )}
@@ -842,7 +841,7 @@ function GoalCard({
               {goal.currentProgress > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-500">Progress</span>
+                    <span className="text-xs text-gray-500">{t('transformativeGoals.goalCard.progressView')}</span>
                     <span className="text-xs font-medium text-gray-700">{goal.currentProgress}%</span>
                   </div>
                   <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -854,7 +853,7 @@ function GoalCard({
               {/* Milestones */}
               {goal.milestones.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-2">Milestones</p>
+                  <p className="text-xs font-medium text-gray-500 mb-2">{t('transformativeGoals.goalCard.milestonesView')}</p>
                   <div className="flex items-center gap-2 overflow-x-auto pb-1">
                     {[...goal.milestones].sort((a, b) => a.year - b.year).map((ms, mi) => (
                       <div key={mi} className="flex items-center gap-1.5 flex-shrink-0">
@@ -875,7 +874,7 @@ function GoalCard({
               {/* SDG Tags */}
               {goal.sdgAlignment.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">SDGs:</span>
+                  <span className="text-xs text-gray-500">{t('transformativeGoals.goalCard.sdgsView')}</span>
                   <div className="flex gap-1">
                     {[...goal.sdgAlignment].sort((a, b) => a - b).map((sdg) => {
                       const sdgInfo = UN_SDGS.find((s) => s.number === sdg);
@@ -886,7 +885,7 @@ function GoalCard({
                           style={{ backgroundColor: sdgInfo?.color ?? '#0d9488' }}
                           title={sdgInfo?.name}
                         >
-                          SDG {sdg}
+                          {t('transformativeGoals.goalCard.sdgTag', { number: sdg })}
                         </span>
                       );
                     })}
@@ -897,9 +896,9 @@ function GoalCard({
               {horizon && (
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <BarChart3 className="h-3.5 w-3.5" />
-                  {horizon.label} ({horizon.description})
+                  {t(`transformativeGoals.timeframes.${horizon.value}.label`)} ({t(`transformativeGoals.timeframes.${horizon.value}.description`)})
                   <span className="mx-1">·</span>
-                  {domain.label}
+                  {t(`transformativeGoals.domains.${domain.value}`)}
                 </div>
               )}
             </>
@@ -956,6 +955,7 @@ interface StringListEditorProps {
 }
 
 function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeholder, emptyText }: StringListEditorProps) {
+  const { t } = useTranslation('brand-asset-detail');
   if (!isEditing) {
     if (items.filter(Boolean).length === 0) {
       return <p className="text-sm italic text-gray-400">{emptyText}</p>;
@@ -989,7 +989,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
         </div>
       ))}
       <button type="button" onClick={onAdd} className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium">
-        <Plus className="h-4 w-4" /> Add item
+        <Plus className="h-4 w-4" /> {t('shared.addItem')}
       </button>
     </div>
   );

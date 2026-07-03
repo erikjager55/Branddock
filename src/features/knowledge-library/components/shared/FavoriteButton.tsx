@@ -1,6 +1,7 @@
 'use client';
 
 import { Heart } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface FavoriteButtonProps {
   isFavorite: boolean;
@@ -8,6 +9,7 @@ interface FavoriteButtonProps {
 }
 
 export function FavoriteButton({ isFavorite, onToggle }: FavoriteButtonProps) {
+  const { t } = useTranslation('knowledge-library');
   return (
     <button
       onClick={(e) => {
@@ -20,7 +22,7 @@ export function FavoriteButton({ isFavorite, onToggle }: FavoriteButtonProps) {
           ? 'text-red-500'
           : 'text-gray-300 hover:text-red-400'
       }`}
-      aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+      aria-label={isFavorite ? t('favorite.remove') : t('favorite.add')}
     >
       <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
     </button>

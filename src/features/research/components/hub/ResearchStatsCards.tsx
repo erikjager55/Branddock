@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Zap, CheckCircle, Clock, Lightbulb } from "lucide-react";
 import { Skeleton } from "@/components/shared";
 import type { ResearchStatsResponse } from "../../types/research.types";
@@ -25,6 +26,8 @@ interface ResearchStatsCardsProps {
 // ─── Component ───────────────────────────────────────────────
 
 export function ResearchStatsCards({ stats, isLoading }: ResearchStatsCardsProps) {
+  const { t } = useTranslation("research");
+
   if (isLoading || !stats) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -62,7 +65,7 @@ export function ResearchStatsCards({ stats, isLoading }: ResearchStatsCardsProps
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold">{value}</div>
-              <div className="text-sm text-gray-500">{config.label}</div>
+              <div className="text-sm text-gray-500">{t(`stats.${key}`)}</div>
             </div>
           </div>
         );

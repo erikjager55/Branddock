@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Trash2, Copy, Check, Image as ImageIcon } from "lucide-react";
 import type { StyleguideComponentData, ComponentTypeKey } from "../../types/brandstyle.types";
 import { useDeleteComponent } from "../../hooks/useBrandstyleHooks";
@@ -13,13 +15,14 @@ interface ComponentCardProps {
 }
 
 export function ComponentCard({ component, canEdit, variant }: ComponentCardProps) {
+  const { t } = useTranslation("brandstyle");
   const deleteMut = useDeleteComponent();
   const styles = component.extractedStyles ?? {};
   const [copied, setCopied] = useState<"css" | "tailwind" | null>(null);
   const [showOriginal, setShowOriginal] = useState(false);
 
   const handleDelete = () => {
-    if (window.confirm(`Remove "${component.label}"?`)) {
+    if (window.confirm(t("components.confirmRemove", { label: component.label }))) {
       deleteMut.mutate(component.id);
     }
   };
@@ -50,14 +53,14 @@ export function ComponentCard({ component, canEdit, variant }: ComponentCardProp
             {variant && (
               <span
                 className="inline-flex items-center font-mono text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded"
-                title="DESIGN.md component variant"
+                title={t("components.variantTitle")}
               >
                 {variant}
               </span>
             )}
             <p className="text-[11px] text-gray-400">
               {typeof component.confidence === "number"
-                ? `${Math.round(component.confidence * 100)}% confidence`
+                ? t("components.confidence", { pct: Math.round(component.confidence * 100) })
                 : "—"}
             </p>
           </div>
@@ -68,8 +71,8 @@ export function ComponentCard({ component, canEdit, variant }: ComponentCardProp
             onClick={handleDelete}
             disabled={deleteMut.isPending}
             className="p-1 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
-            aria-label="Remove component"
-            title="Remove"
+            aria-label={t("components.removeAria")}
+            title={t("components.removeTitle")}
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -85,6 +88,7 @@ export function ComponentCard({ component, canEdit, variant }: ComponentCardProp
         label={component.label}
         styles={styles}
         sampleText={sampleText}
+        t={t}
       />
 
       {/* Copy snippets */}
@@ -93,11 +97,11 @@ export function ComponentCard({ component, canEdit, variant }: ComponentCardProp
           type="button"
           onClick={() => copy(cssSnippet, "css")}
           className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors"
-          title="Copy CSS"
+          title={t("components.copyCss")}
         >
           {copied === "css" ? (
             <>
-              <Check className="h-3 w-3 text-emerald-600" /> Copied
+              <Check className="h-3 w-3 text-emerald-600" /> {t("actions.copied")}
             </>
           ) : (
             <>
@@ -109,11 +113,11 @@ export function ComponentCard({ component, canEdit, variant }: ComponentCardProp
           type="button"
           onClick={() => copy(tailwindSnippet, "tailwind")}
           className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors"
-          title="Copy best-effort Tailwind classes"
+          title={t("components.copyTailwind")}
         >
           {copied === "tailwind" ? (
             <>
-              <Check className="h-3 w-3 text-emerald-600" /> Copied
+              <Check className="h-3 w-3 text-emerald-600" /> {t("actions.copied")}
             </>
           ) : (
             <>
@@ -126,10 +130,10 @@ export function ComponentCard({ component, canEdit, variant }: ComponentCardProp
             type="button"
             onClick={() => setShowOriginal((v) => !v)}
             className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors ml-auto"
-            title="Show the original Playwright screenshot for reference"
+            title={t("components.originalTitle")}
           >
             <ImageIcon className="h-3 w-3" />
-            {showOriginal ? "Hide original" : "Original"}
+            {showOriginal ? t("components.hideOriginal") : t("components.original")}
           </button>
         )}
       </div>
@@ -138,7 +142,7 @@ export function ComponentCard({ component, canEdit, variant }: ComponentCardProp
       {showOriginal && component.screenshotUrl && (
         <div className="mt-2 p-3 bg-gray-50 border border-gray-100 rounded">
           <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-2">
-            Original on source site
+            {t("components.originalOnSite")}
           </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -171,11 +175,13 @@ function ComponentPreview({
   label,
   styles,
   sampleText,
+  t,
 }: {
   type: ComponentTypeKey;
   label: string;
   styles: Record<string, string | undefined>;
   sampleText: string | null;
+  t: TFunction<"brandstyle">;
 }) {
   // The extractor groups <input>, <textarea>, and <select> all under
   // FORM_INPUT. Infer the real sub-type from the Vision-refined label so
@@ -205,7 +211,7 @@ function ComponentPreview({
       return (
         <div className={containerClass}>
           <button type="button" style={style} className="cursor-default">
-            {sampleText ?? "Button"}
+            {sampleText ?? t("components.preview.button")}
           </button>
         </div>
       );
@@ -214,7 +220,7 @@ function ComponentPreview({
         return (
           <div className={containerClass}>
             <textarea
-              placeholder={sampleText ?? "Your message…"}
+              placeholder={sampleText ?? t("components.preview.message")}
               readOnly
               rows={4}
               style={{ ...style, display: "inline-block", width: "240px", resize: "none" }}
@@ -231,7 +237,7 @@ function ComponentPreview({
               style={{ ...style, display: "inline-block", width: "220px" }}
             >
               <option value="" disabled>
-                {sampleText ?? "Select an option"}
+                {sampleText ?? t("components.preview.selectOption")}
               </option>
             </select>
           </div>
@@ -241,7 +247,7 @@ function ComponentPreview({
         <div className={containerClass}>
           <input
             type="text"
-            placeholder={sampleText ?? "Sample input"}
+            placeholder={sampleText ?? t("components.preview.input")}
             readOnly
             style={{ ...style, display: "inline-block", width: "220px" }}
           />
@@ -251,7 +257,7 @@ function ComponentPreview({
       return (
         <div className={containerClass}>
           <span style={{ ...style, fontSize: styles.fontSize ?? "11px" }}>
-            {sampleText ?? "Status"}
+            {sampleText ?? t("components.preview.status")}
           </span>
         </div>
       );
@@ -267,7 +273,7 @@ function ComponentPreview({
               textAlign: "left",
             }}
           >
-            &quot;{sampleText ?? "A memorable customer quote that fits the brand voice."}&quot;
+            &quot;{sampleText ?? t("components.preview.quote")}&quot;
           </blockquote>
         </div>
       );
@@ -293,9 +299,9 @@ function ComponentPreview({
         <div className={containerClass + " w-full"}>
           <nav style={{ ...style, display: "flex", gap: "16px", alignItems: "center", width: "100%" }}>
             <span style={{ fontWeight: 600 }}>Brand</span>
-            <span>Home</span>
-            <span>About</span>
-            <span>Contact</span>
+            <span>{t("components.preview.navHome")}</span>
+            <span>{t("components.preview.navAbout")}</span>
+            <span>{t("components.preview.navContact")}</span>
           </nav>
         </div>
       );
@@ -312,7 +318,7 @@ function ComponentPreview({
             }}
           >
             <div style={{ fontWeight: 600, marginBottom: 4 }}>
-              {sampleText ?? "Product name"}
+              {sampleText ?? t("components.preview.productName")}
             </div>
             <div style={{ fontSize: "12px", opacity: 0.7 }}>€ 39,00</div>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, Upload, ArrowRight, Check, X } from "lucide-react";
 import type {
   BrandStyleguide,
@@ -78,6 +79,7 @@ function componentSectionToTypeKey(section: string): ComponentTypeKey | null {
 }
 
 export function ReviewSummaryHeader({ styleguide, canEdit }: ReviewSummaryHeaderProps) {
+  const { t } = useTranslation("brandstyle");
   const reviews = styleguide.reviews ?? [];
   const approvedSet = useMemo(
     () => new Set(reviews.filter((r) => r.status === "APPROVED").map((r) => r.section)),
@@ -120,9 +122,7 @@ export function ReviewSummaryHeader({ styleguide, canEdit }: ReviewSummaryHeader
   const finalizeMut = useFinalizeReview();
 
   const handleCloseReview = () => {
-    const confirmed = window.confirm(
-      "Close the review and clear all approval / needs-work flags? This cannot be undone.",
-    );
+    const confirmed = window.confirm(t("review.summary.closeConfirm"));
     if (!confirmed) return;
     finalizeMut.mutate();
   };
@@ -171,13 +171,13 @@ export function ReviewSummaryHeader({ styleguide, canEdit }: ReviewSummaryHeader
     <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-semibold text-gray-900">Review draft design system</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t("review.summary.title")}</h2>
           <p className="text-sm text-gray-500 mt-0.5">
             {reviewCount === 0
-              ? "Everything approved — styleguide is ready to publish."
+              ? t("review.summary.allApproved")
               : firstPending == null
-                ? `Every section reviewed. ${approved} approved · ${total - approved} flagged as needs work — publish to finalize.`
-                : `${approved} of ${total} sections approved.`}
+                ? t("review.summary.allReviewed", { approved, flagged: total - approved })
+                : t("review.summary.progress", { approved, total })}
           </p>
 
           {/* Progress bar — inline background-color so Tailwind 4 purge
@@ -201,7 +201,7 @@ export function ReviewSummaryHeader({ styleguide, canEdit }: ReviewSummaryHeader
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-white rounded-lg hover:opacity-90 transition-opacity"
               style={{ backgroundColor: "#0d9488" }}
             >
-              Continue review
+              {t("review.summary.continue")}
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           )}
@@ -210,8 +210,8 @@ export function ReviewSummaryHeader({ styleguide, canEdit }: ReviewSummaryHeader
               type="button"
               onClick={handleCloseReview}
               disabled={finalizeMut.isPending}
-              title="Close review — clears all approval / needs-work flags and hides this card"
-              aria-label="Close review"
+              title={t("review.summary.closeTitle")}
+              aria-label={t("review.summary.closeAria")}
               className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
             >
               <X className="h-4 w-4" />
@@ -227,10 +227,9 @@ export function ReviewSummaryHeader({ styleguide, canEdit }: ReviewSummaryHeader
             <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-amber-900">
               <span className="font-medium">
-                {missingFonts.length} commercial font{missingFonts.length === 1 ? "" : "s"} missing.
+                {t("review.summary.missingFonts", { count: missingFonts.length })}
               </span>{" "}
-              Upload the files for accurate previews, PDF exports and AI-generated content.
-              Open-source fonts are auto-loaded from Google Fonts.
+              {t("review.summary.missingFontsBody")}
             </p>
           </div>
           {canEdit && (
@@ -240,7 +239,7 @@ export function ReviewSummaryHeader({ styleguide, canEdit }: ReviewSummaryHeader
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-white border border-amber-300 rounded-md text-amber-900 hover:bg-amber-100 transition-colors flex-shrink-0"
             >
               <Upload className="h-3.5 w-3.5" />
-              Upload fonts
+              {t("review.summary.uploadFonts")}
             </button>
           )}
         </div>
@@ -270,12 +269,12 @@ export function ReviewSummaryHeader({ styleguide, canEdit }: ReviewSummaryHeader
               }`}
             >
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-gray-900 truncate">{group.label}</p>
+                <p className="text-xs font-semibold text-gray-900 truncate">{t(`tabNav.${group.tab}`)}</p>
                 <p className="text-[11px] text-gray-500 mt-0.5">
-                  {approvedInGroup}/{applicable.length} approved
+                  {t("review.summary.approvedCount", { approved: approvedInGroup, total: applicable.length })}
                   {hasNeedsWork && (
                     <span className="ml-1 text-red-600">
-                      · {needsWorkInGroup} needs work
+                      {t("review.summary.needsWorkCount", { count: needsWorkInGroup })}
                     </span>
                   )}
                 </p>
@@ -293,7 +292,7 @@ export function ReviewSummaryHeader({ styleguide, canEdit }: ReviewSummaryHeader
       {/* Inline "needs work" summary — subtle, only rendered when there are blockers */}
       {needsWorkSet.size > 0 && (
         <p className="text-xs text-red-700">
-          <span className="font-semibold">Needs work:</span>{" "}
+          <span className="font-semibold">{t("review.summary.needsWorkLabel")}</span>{" "}
           {Array.from(needsWorkSet)
             .map((s) => REVIEW_SECTION_LABELS[s as ReviewSectionKey] ?? s)
             .join(", ")}

@@ -1,6 +1,7 @@
 'use client';
 
 import { MessageCircle, Copy } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import type { PersonaWithMeta } from '../../types/persona.types';
 
@@ -17,6 +18,7 @@ export function PersonaActionBar({
   onDuplicate,
   isDuplicating,
 }: PersonaActionBarProps) {
+  const { t } = useTranslation('personas');
   return (
     <div data-testid="persona-action-bar" className="flex items-center gap-2 flex-wrap">
       <Button
@@ -27,7 +29,7 @@ export function PersonaActionBar({
         onClick={onDuplicate}
         disabled={isDuplicating}
       >
-        {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+        {isDuplicating ? t('actionBar.duplicating') : t('actionBar.duplicate')}
       </Button>
 
       <Button
@@ -37,7 +39,7 @@ export function PersonaActionBar({
         icon={MessageCircle}
         onClick={onChat}
       >
-        Chat with {persona.name.split(' ')[0]}
+        {t('card.chatWith', { name: persona.name.split(' ')[0] })}
       </Button>
     </div>
   );

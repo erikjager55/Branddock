@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Shield } from 'lucide-react';
 import { Modal, Button } from '@/components/shared';
 import { useScanProgress, useCancelScan } from '@/contexts/BrandAlignmentContext';
@@ -6,6 +7,7 @@ import { useBrandAlignmentStore } from '@/stores/useBrandAlignmentStore';
 import { ScanStepChecklist } from './ScanStepChecklist';
 
 export function AnalyzingScanModal() {
+  const { t } = useTranslation('brand-alignment');
   const activeScanId = useBrandAlignmentStore((s) => s.activeScanId);
   const isScanning = useBrandAlignmentStore((s) => s.isScanning);
   const setIsScanning = useBrandAlignmentStore((s) => s.setIsScanning);
@@ -62,16 +64,16 @@ export function AnalyzingScanModal() {
         </div>
 
         <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Analyzing Brand Alignment
+          {t('scanModal.title')}
         </h3>
         <p className="text-sm text-gray-500 mb-5">
-          Checking consistency across all modules
+          {t('scanModal.subtitle')}
         </p>
 
         {/* Progress bar */}
         <div className="w-full mb-5">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-gray-500">Progress</span>
+            <span className="text-xs text-gray-500">{t('scanModal.progress')}</span>
             <span className="text-xs font-medium text-gray-700">{progress}%</span>
           </div>
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -94,8 +96,7 @@ export function AnalyzingScanModal() {
 
         {/* Footer info */}
         <p className="text-xs text-gray-400 text-center mb-4">
-          Analyzing 18 knowledge items across 6 modules.
-          This may take up to 30 seconds.
+          {t('scanModal.footer')}
         </p>
 
         {/* Cancel button */}
@@ -107,7 +108,7 @@ export function AnalyzingScanModal() {
             disabled={cancelScan.isPending}
             isLoading={cancelScan.isPending}
           >
-            Cancel
+            {t('scanModal.cancel')}
           </Button>
         )}
       </div>

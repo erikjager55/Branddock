@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { FixOption } from '@/types/brand-alignment';
 
 interface FixOptionCardProps {
@@ -8,6 +9,7 @@ interface FixOptionCardProps {
 }
 
 export function FixOptionCard({ option, isSelected, onSelect }: FixOptionCardProps) {
+  const { t } = useTranslation('brand-alignment');
   return (
     <button
       type="button"
@@ -28,7 +30,7 @@ export function FixOptionCard({ option, isSelected, onSelect }: FixOptionCardPro
         />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 mb-1">
-            Option {option.key}: {option.title}
+            {t('fixOption.optionLabel', { key: option.key, title: option.title })}
           </p>
           <p className="text-sm text-gray-600 mb-2">{option.description}</p>
           {option.preview && (

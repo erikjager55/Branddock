@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sparkles } from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────────
@@ -10,11 +11,12 @@ interface IssueRecommendationProps {
 // ─── Component ──────────────────────────────────────────────
 
 export function IssueRecommendation({ recommendation }: IssueRecommendationProps) {
+  const { t } = useTranslation('brand-alignment');
   return (
     <div className="bg-green-50 rounded-lg p-3">
       <div className="flex items-center gap-1.5 mb-1">
         <Sparkles className="w-4 h-4 text-green-600" />
-        <span className="text-sm font-medium text-green-700">AI Recommendation</span>
+        <span className="text-sm font-medium text-green-700">{t('recommendation.aiRecommendation')}</span>
       </div>
       <p className="text-sm text-green-600">{recommendation}</p>
     </div>

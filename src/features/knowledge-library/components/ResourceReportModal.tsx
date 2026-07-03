@@ -2,6 +2,7 @@
 
 import ReactMarkdown from 'react-markdown';
 import { AlertTriangle, FileText, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Button } from '@/components/shared';
 import { markdownComponents } from '@/components/shared/markdownComponents';
 import { useResourceDetail } from '../hooks';
@@ -25,13 +26,14 @@ export function ResourceReportModal({
   isOpen,
   onClose,
 }: ResourceReportModalProps) {
+  const { t } = useTranslation('knowledge-library');
   const detail = useResourceDetail(isOpen ? resourceId : '');
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Research report"
+      title={t('report.title')}
       subtitle={detail.data?.title}
       size="xl"
       data-testid="resource-report-modal"
@@ -43,7 +45,7 @@ export function ResourceReportModal({
             message={
               detail.error instanceof Error
                 ? detail.error.message
-                : 'Unknown error'
+                : t('report.unknownError')
             }
             onRetry={() => detail.refetch()}
           />
@@ -65,35 +67,36 @@ export function ResourceReportModal({
 }
 
 function ReportLoading() {
+  const { t } = useTranslation('knowledge-library');
   return (
     <div className="flex items-center justify-center py-16 text-gray-500">
       <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-      <span>Loading report…</span>
+      <span>{t('report.loading')}</span>
     </div>
   );
 }
 
 function ReportError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useTranslation('knowledge-library');
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <AlertTriangle className="w-8 h-8 text-amber-500 mb-3" />
-      <p className="text-gray-900 font-medium mb-1">Could not load report</p>
+      <p className="text-gray-900 font-medium mb-1">{t('report.errorTitle')}</p>
       <p className="text-gray-500 mb-4 max-w-md">{message}</p>
       <Button variant="secondary" size="sm" icon={RefreshCw} onClick={onRetry}>
-        Retry
+        {t('report.retry')}
       </Button>
     </div>
   );
 }
 
 function ReportEmpty() {
+  const { t } = useTranslation('knowledge-library');
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <FileText className="w-8 h-8 text-gray-300 mb-3" />
-      <p className="text-gray-900 font-medium mb-1">No report content</p>
-      <p className="text-gray-500 max-w-md">
-        This resource doesn&apos;t have a stored report body.
-      </p>
+      <p className="text-gray-900 font-medium mb-1">{t('report.emptyTitle')}</p>
+      <p className="text-gray-500 max-w-md">{t('report.emptyDescription')}</p>
     </div>
   );
 }

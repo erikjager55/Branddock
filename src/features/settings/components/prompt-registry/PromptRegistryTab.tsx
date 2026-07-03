@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileCode, Activity, Clock, AlertCircle, BarChart3, List } from 'lucide-react';
 import { Card, Badge, EmptyState } from '@/components/shared';
 import {
@@ -8,6 +9,7 @@ import {
   usePromptDetail,
 } from '@/features/settings/hooks/use-prompt-registry';
 import type { PromptRegistryEntry, PromptVersionDetail } from '@/features/settings/api/prompt-registry.api';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { PromptUsageDashboard } from './PromptUsageDashboard';
 
 type TabView = 'dashboard' | 'registry';
@@ -25,6 +27,7 @@ type TabView = 'dashboard' | 'registry';
  * (zie beslissing 5: niveau A = read-only registry).
  */
 export function PromptRegistryTab() {
+  const { t } = useTranslation('settings-misc');
   const [view, setView] = useState<TabView>('dashboard');
   const [selectedIdentifier, setSelectedIdentifier] = useState<string | null>(null);
   const { data: prompts, isLoading, error } = usePromptRegistry();
@@ -34,10 +37,9 @@ export function PromptRegistryTab() {
       <header className="px-8 pt-6 pb-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">AI Prompts</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('prompts.heading')}</h2>
             <p className="text-sm text-gray-500 mt-1">
-              Read-only view of all AI prompt-templates in use. Dashboard shows
-              30-day aggregates; registry has version history per template.
+              {t('prompts.description')}
             </p>
           </div>
           <div className="flex items-center gap-1 bg-gray-100 rounded-md p-0.5">
@@ -51,7 +53,7 @@ export function PromptRegistryTab() {
               }`}
             >
               <BarChart3 className="h-3.5 w-3.5" />
-              Dashboard
+              {t('prompts.dashboard')}
             </button>
             <button
               type="button"
@@ -63,7 +65,7 @@ export function PromptRegistryTab() {
               }`}
             >
               <List className="h-3.5 w-3.5" />
-              Registry
+              {t('prompts.registry')}
             </button>
           </div>
         </div>
@@ -75,22 +77,22 @@ export function PromptRegistryTab() {
         </div>
       ) : isLoading ? (
         <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-          Loading prompt registry…
+          {t('prompts.loadingRegistry')}
         </div>
       ) : error ? (
         <div className="flex-1 flex items-center justify-center">
           <EmptyState
             icon={AlertCircle}
-            title="Failed to load prompts"
-            description={error instanceof Error ? error.message : 'Unknown error'}
+            title={t('prompts.loadFailedTitle')}
+            description={error instanceof Error ? error.message : t('prompts.unknownError')}
           />
         </div>
       ) : !prompts || prompts.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
           <EmptyState
             icon={FileCode}
-            title="No prompts tracked yet"
-            description="AI prompts appear here once tracking is wired into a route. Trigger any AI flow to see entries."
+            title={t('prompts.emptyTitle')}
+            description={t('prompts.emptyDescription')}
           />
         </div>
       ) : (
@@ -113,7 +115,7 @@ export function PromptRegistryTab() {
               <PromptDetail identifier={selectedIdentifier} />
             ) : (
               <div className="flex items-center justify-center h-full text-sm text-gray-400">
-                Select a prompt to see version history and payload preview.
+                {t('prompts.selectPrompt')}
               </div>
             )}
           </div>
@@ -134,6 +136,7 @@ function PromptListItem({
   isSelected: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation('settings-misc');
   const errorRate =
     prompt.callCount > 0
       ? Math.round((prompt.errorCount / prompt.callCount) * 100)
@@ -164,11 +167,11 @@ function PromptListItem({
       <div className="flex items-center gap-3 text-xs text-gray-600">
         <span className="flex items-center gap-1">
           <Activity className="w-3 h-3" />
-          {prompt.callCount} calls
+          {t('prompts.list.calls', { count: prompt.callCount })}
         </span>
-        <span>{prompt.uniqueVersions} versions</span>
+        <span>{t('prompts.list.versions', { count: prompt.uniqueVersions })}</span>
         {errorRate > 0 && (
-          <span className="text-red-600">{errorRate}% errors</span>
+          <span className="text-red-600">{t('prompts.list.errors', { rate: errorRate })}</span>
         )}
       </div>
     </button>
@@ -178,15 +181,16 @@ function PromptListItem({
 // ─────────────────────────────────────────────────────────────────────────
 
 function PromptDetail({ identifier }: { identifier: string }) {
+  const { t } = useTranslation('settings-misc');
   const { data: detail, isLoading, error } = usePromptDetail(identifier);
 
   if (isLoading) {
-    return <div className="text-sm text-gray-400">Loading detail…</div>;
+    return <div className="text-sm text-gray-400">{t('prompts.detail.loading')}</div>;
   }
   if (error || !detail) {
     return (
       <div className="text-sm text-red-600">
-        Failed to load detail: {error instanceof Error ? error.message : 'Unknown error'}
+        {t('prompts.detail.loadFailed', { message: error instanceof Error ? error.message : t('prompts.unknownError') })}
       </div>
     );
   }
@@ -198,7 +202,7 @@ function PromptDetail({ identifier }: { identifier: string }) {
           {detail.sourceIdentifier}
         </h3>
         <p className="text-xs text-gray-500 mt-1">
-          {detail.versionCount} unique version{detail.versionCount === 1 ? '' : 's'}
+          {t('prompts.detail.uniqueVersions', { count: detail.versionCount })}
         </p>
       </div>
 
@@ -212,6 +216,8 @@ function PromptDetail({ identifier }: { identifier: string }) {
 }
 
 function VersionCard({ version, index }: { version: PromptVersionDetail; index: number }) {
+  const { t } = useTranslation('settings-misc');
+  const { formatDate } = useFormat();
   const [expanded, setExpanded] = useState(index === 0);
   const errorRate =
     version.callCount > 0
@@ -227,7 +233,7 @@ function VersionCard({ version, index }: { version: PromptVersionDetail; index: 
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <Badge variant={index === 0 ? 'success' : 'default'}>
-                {index === 0 ? 'Current' : `v${version.callCount > 0 ? '' : 'unused-'}${version.contentHash.slice(0, 8)}`}
+                {index === 0 ? t('prompts.version.current') : `v${version.callCount > 0 ? '' : 'unused-'}${version.contentHash.slice(0, 8)}`}
               </Badge>
               {/* Semver badge — content-test #5.A foundation */}
               {version.promptVersion && (
@@ -241,7 +247,7 @@ function VersionCard({ version, index }: { version: PromptVersionDetail; index: 
                 </span>
               )}
               <span className="text-xs text-gray-500">
-                {new Date(version.firstSeenAt).toLocaleDateString()}
+                {formatDate(new Date(version.firstSeenAt))}
               </span>
             </div>
             <div className="text-xs text-gray-600 font-mono break-all">
@@ -253,30 +259,30 @@ function VersionCard({ version, index }: { version: PromptVersionDetail; index: 
             onClick={() => setExpanded((v) => !v)}
             className="text-xs text-primary hover:underline"
           >
-            {expanded ? 'Collapse' : 'Expand'}
+            {expanded ? t('prompts.version.collapse') : t('prompts.version.expand')}
           </button>
         </div>
       </Card.Header>
       <Card.Body>
         <div className="grid grid-cols-5 gap-4 text-xs mb-4">
-          <Stat label="Calls" value={version.callCount.toString()} icon={Activity} />
+          <Stat label={t('prompts.stat.calls')} value={version.callCount.toString()} icon={Activity} />
           <Stat
-            label="Avg latency"
+            label={t('prompts.stat.avgLatency')}
             value={`${version.avgLatencyMs}ms`}
             icon={Clock}
           />
           <Stat
-            label="Tokens (in/out)"
+            label={t('prompts.stat.tokens')}
             value={`${version.totalInputTokens}/${version.totalOutputTokens}`}
           />
           <Stat
-            label="Errors"
+            label={t('prompts.stat.errors')}
             value={errorRate > 0 ? `${errorRate}%` : '0'}
             highlight={errorRate > 0}
           />
           {/* Layer 1 property-eval pass-rate — content-test #5.A */}
           <Stat
-            label="Layer 1 pass"
+            label={t('prompts.stat.layer1Pass')}
             value={
               propEvalPassRate !== null
                 ? `${propEvalPassRate}% (${version.propertyEvalRunCount})`
@@ -287,7 +293,7 @@ function VersionCard({ version, index }: { version: PromptVersionDetail; index: 
         </div>
         {(version.propertyEvalTotalBlock > 0 || version.propertyEvalTotalWarn > 0) && (
           <div className="text-xs text-gray-600 mb-3 -mt-2">
-            Layer 1 totals: {version.propertyEvalTotalBlock} block · {version.propertyEvalTotalWarn} warn
+            {t('prompts.version.layer1Totals', { block: version.propertyEvalTotalBlock, warn: version.propertyEvalTotalWarn })}
           </div>
         )}
 
@@ -295,13 +301,13 @@ function VersionCard({ version, index }: { version: PromptVersionDetail; index: 
           <div className="space-y-3 pt-3 border-t border-gray-100">
             {version.model && (
               <div className="text-xs">
-                <span className="text-gray-500">Model:</span>{' '}
+                <span className="text-gray-500">{t('prompts.version.model')}</span>{' '}
                 <span className="font-mono text-gray-900">{version.model}</span>
               </div>
             )}
             {version.params != null && (
               <div className="text-xs">
-                <div className="text-gray-500 mb-1">Params:</div>
+                <div className="text-gray-500 mb-1">{t('prompts.version.params')}</div>
                 <pre className="bg-gray-50 p-2 rounded text-[11px] font-mono overflow-x-auto">
                   {JSON.stringify(version.params, null, 2)}
                 </pre>

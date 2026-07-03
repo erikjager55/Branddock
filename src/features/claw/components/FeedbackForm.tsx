@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useClawStore } from '@/stores/useClawStore';
 import type { FeedbackSentiment, FeedbackTag } from '@/stores/useClawStore';
 
@@ -19,13 +20,11 @@ import type { FeedbackSentiment, FeedbackTag } from '@/stores/useClawStore';
 // active state so the buttons render regardless of purge state.
 const SENTIMENTS: {
   value: FeedbackSentiment;
-  label: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   activeStyle: React.CSSProperties;
 }[] = [
   {
     value: 'positive',
-    label: 'Positive',
     icon: ThumbsUp,
     activeStyle: {
       backgroundColor: '#d1fae5', // emerald-100
@@ -35,7 +34,6 @@ const SENTIMENTS: {
   },
   {
     value: 'neutral',
-    label: 'Neutral',
     icon: Minus,
     activeStyle: {
       backgroundColor: '#e5e7eb', // gray-200
@@ -45,7 +43,6 @@ const SENTIMENTS: {
   },
   {
     value: 'negative',
-    label: 'Negative',
     icon: ThumbsDown,
     activeStyle: {
       backgroundColor: '#ffe4e6', // rose-100
@@ -65,18 +62,19 @@ const VIOLET = {
   primaryHover: '#6d28d9', // violet-700
 };
 
-const TAGS: { value: FeedbackTag; label: string }[] = [
-  { value: 'inaccurate', label: 'Inaccurate' },
-  { value: 'off-brand', label: 'Off-brand' },
-  { value: 'too-verbose', label: 'Too verbose' },
-  { value: 'too-generic', label: 'Too generic' },
-  { value: 'unhelpful', label: 'Unhelpful' },
-  { value: 'other', label: 'Other' },
+const TAGS: { value: FeedbackTag }[] = [
+  { value: 'inaccurate' },
+  { value: 'off-brand' },
+  { value: 'too-verbose' },
+  { value: 'too-generic' },
+  { value: 'unhelpful' },
+  { value: 'other' },
 ];
 
 const COLLAPSE_THRESHOLD = 300;
 
 export function FeedbackForm() {
+  const { t } = useTranslation('claw');
   const { feedbackForm, updateFeedbackForm, closeFeedbackForm, addMessage } =
     useClawStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,7 +101,7 @@ export function FeedbackForm() {
 
   const handleSubmit = async () => {
     if (!feedbackForm.comment.trim()) {
-      setError('Please share a short comment.');
+      setError(t('feedback.commentRequired'));
       return;
     }
 
@@ -126,7 +124,7 @@ export function FeedbackForm() {
       });
 
       if (!res.ok) {
-        let msg = `Request failed (${res.status})`;
+        let msg = t('feedback.requestFailed', { status: res.status });
         try {
           const data = await res.json();
           if (typeof data?.error === 'string') {
@@ -152,13 +150,13 @@ export function FeedbackForm() {
       addMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `Thanks — feedback logged (${feedbackForm.sentiment}). This helps us improve Branddock.`,
+        content: t('feedback.logged', { sentiment: feedbackForm.sentiment }),
         createdAt: new Date().toISOString(),
       });
 
       closeFeedbackForm();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit.');
+      setError(err instanceof Error ? err.message : t('feedback.submitFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -181,12 +179,12 @@ export function FeedbackForm() {
           >
             <MessageSquarePlus size={14} style={{ color: VIOLET.iconText }} />
           </div>
-          <h3 className="text-sm font-semibold text-gray-900">Share feedback</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t('feedback.title')}</h3>
         </div>
         <button
           onClick={closeFeedbackForm}
           className="p-1 rounded-md hover:bg-gray-100 text-gray-400"
-          aria-label="Close feedback form"
+          aria-label={t('feedback.close')}
           type="button"
         >
           <X size={16} />
@@ -219,7 +217,7 @@ export function FeedbackForm() {
                 className="text-[11px] uppercase tracking-wide font-medium mb-0.5"
                 style={{ color: VIOLET.subtle }}
               >
-                About this response
+                {t('feedback.aboutResponse')}
               </div>
               <p className="text-xs text-gray-700 whitespace-pre-wrap break-words">
                 {shownSnippet}
@@ -237,17 +235,17 @@ export function FeedbackForm() {
             className="text-[11px] uppercase tracking-wide font-medium mb-0.5"
             style={{ color: VIOLET.subtle }}
           >
-            General feedback
+            {t('feedback.generalFeedback')}
           </div>
           <p className="text-xs text-gray-500">
-            No assistant reply to anchor to — this will be logged as general feedback.
+            {t('feedback.noReply')}
           </p>
         </div>
       )}
 
       {/* Sentiment */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1.5">How did this response feel?</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('feedback.sentimentLabel')}</label>
         <div className="flex gap-2">
           {SENTIMENTS.map((s) => {
             const Icon = s.icon;
@@ -264,7 +262,7 @@ export function FeedbackForm() {
                 aria-pressed={isActive}
               >
                 <Icon size={13} />
-                {s.label}
+                {t(`feedback.sentiments.${s.value}`)}
               </button>
             );
           })}
@@ -274,23 +272,23 @@ export function FeedbackForm() {
       {/* Tags */}
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1.5">
-          What kind of issue? <span className="text-gray-400">(optional)</span>
+          {t('feedback.tagsLabel')} <span className="text-gray-400">{t('feedback.optional')}</span>
         </label>
         <div className="flex flex-wrap gap-2">
-          {TAGS.map((t) => {
-            const isActive = feedbackForm.tags.includes(t.value);
+          {TAGS.map((tag) => {
+            const isActive = feedbackForm.tags.includes(tag.value);
             return (
               <button
-                key={t.value}
+                key={tag.value}
                 type="button"
-                onClick={() => toggleTag(t.value)}
+                onClick={() => toggleTag(tag.value)}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   isActive ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
                 style={isActive ? { backgroundColor: VIOLET.primary } : undefined}
                 aria-pressed={isActive}
               >
-                {t.label}
+                {t(`feedback.tags.${tag.value}`)}
               </button>
             );
           })}
@@ -300,12 +298,12 @@ export function FeedbackForm() {
       {/* Comment */}
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">
-          What would have made this better?
+          {t('feedback.commentLabel')}
         </label>
         <textarea
           value={feedbackForm.comment}
           onChange={(e) => updateFeedbackForm({ comment: e.target.value })}
-          placeholder="Be specific — what worked, what didn't, what was missing..."
+          placeholder={t('feedback.commentPlaceholder')}
           rows={4}
           maxLength={5000}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2"
@@ -351,14 +349,14 @@ export function FeedbackForm() {
             }
           }}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit feedback'}
+          {isSubmitting ? t('feedback.submitting') : t('feedback.submit')}
         </button>
         <button
           type="button"
           onClick={closeFeedbackForm}
           className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
         >
-          Cancel
+          {t('feedback.cancel')}
         </button>
       </div>
     </div>

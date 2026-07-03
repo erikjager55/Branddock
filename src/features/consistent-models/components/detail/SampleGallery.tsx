@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Sparkles, ImageOff } from "lucide-react";
 
 interface SampleGalleryProps {
@@ -9,13 +10,14 @@ interface SampleGalleryProps {
 
 /** Gallery of AI-generated sample images from training */
 export function SampleGallery({ urls }: SampleGalleryProps) {
+  const { t } = useTranslation("consistent-models");
   if (urls.length === 0) return null;
 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1.5 text-sm text-gray-500">
         <Sparkles className="h-3.5 w-3.5" />
-        Training samples
+        {t("samples.heading")}
       </div>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
         {urls.map((url, i) => (
@@ -27,6 +29,7 @@ export function SampleGallery({ urls }: SampleGalleryProps) {
 }
 
 function SampleTile({ url, index }: { url: string; index: number }) {
+  const { t } = useTranslation("consistent-models");
   const [failed, setFailed] = useState(false);
   return (
     <div className="aspect-square overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
@@ -37,7 +40,7 @@ function SampleTile({ url, index }: { url: string; index: number }) {
       ) : (
         <img
           src={url}
-          alt={`Training sample ${index + 1}`}
+          alt={t("samples.alt", { index: index + 1 })}
           loading="lazy"
           className="h-full w-full object-cover"
           onError={() => setFailed(true)}

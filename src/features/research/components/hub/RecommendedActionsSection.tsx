@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Shield, Users, Target, ChevronRight, Compass, CheckCircle } from "lucide-react";
 import { EmptyState } from "@/components/shared";
 import type { RecommendedAction } from "../../types/research.types";
@@ -30,14 +31,16 @@ export function RecommendedActionsSection({
   actions,
   onNavigate,
 }: RecommendedActionsSectionProps) {
+  const { t } = useTranslation("research");
+
   if (!Array.isArray(actions) || actions.length === 0) {
     return (
       <div>
-        <h3 className="text-lg font-semibold mb-4">Recommended Actions</h3>
+        <h3 className="text-lg font-semibold mb-4">{t("recommendedActions.heading")}</h3>
         <EmptyState
           icon={Compass}
-          title="No recommendations"
-          description="Complete some research to receive personalized recommendations."
+          title={t("recommendedActions.empty.title")}
+          description={t("recommendedActions.empty.description")}
         />
       </div>
     );
@@ -45,7 +48,7 @@ export function RecommendedActionsSection({
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-4">Recommended Actions</h3>
+      <h3 className="text-lg font-semibold mb-4">{t("recommendedActions.heading")}</h3>
 
       <div className="space-y-3">
         {actions.map((action) => {

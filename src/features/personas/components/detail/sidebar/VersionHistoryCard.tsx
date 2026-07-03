@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { Clock, User, RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { useVersionHistory } from '@/hooks/useVersionHistory';
 import { useRestorePersonaVersion } from '../../../hooks';
 
@@ -12,6 +14,8 @@ interface VersionHistoryCardProps {
 }
 
 export function VersionHistoryCard({ personaId, isLocked }: VersionHistoryCardProps) {
+  const { t } = useTranslation('personas');
+  const { formatDate } = useFormat();
   const { data: versions, isLoading } = useVersionHistory('PERSONA', personaId);
   const restoreMutation = useRestorePersonaVersion(personaId);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -19,11 +23,11 @@ export function VersionHistoryCard({ personaId, isLocked }: VersionHistoryCardPr
   const handleRestore = (versionId: string, versionNumber: number) => {
     restoreMutation.mutate(versionId, {
       onSuccess: () => {
-        toast.success(`Restored to v${versionNumber}`);
+        toast.success(t('versions.restoredTo', { version: versionNumber }));
         setConfirmingId(null);
       },
       onError: (err) => {
-        toast.error(err instanceof Error ? err.message : 'Failed to restore version');
+        toast.error(err instanceof Error ? err.message : t('versions.restoreFailed'));
         setConfirmingId(null);
       },
     });
@@ -35,7 +39,7 @@ export function VersionHistoryCard({ personaId, isLocked }: VersionHistoryCardPr
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-3">
         <Clock className="w-4 h-4 text-gray-500" />
-        <h3 className="text-sm font-semibold text-gray-900">Version History</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{t('versions.title')}</h3>
         {total > 0 && (
           <span className="text-xs text-gray-400">({total})</span>
         )}
@@ -49,7 +53,7 @@ export function VersionHistoryCard({ personaId, isLocked }: VersionHistoryCardPr
         </div>
       ) : total === 0 ? (
         <p className="text-xs text-gray-400 py-2">
-          No versions yet. Versions are created automatically when you save changes.
+          {t('versions.empty')}
         </p>
       ) : (
         <div className="space-y-0">
@@ -77,14 +81,14 @@ export function VersionHistoryCard({ personaId, isLocked }: VersionHistoryCardPr
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-900 truncate">
-                  {v.changeNote ?? v.label ?? `Version ${v.version}`}
+                  {v.changeNote ?? v.label ?? t('versions.versionLabel', { version: v.version })}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-gray-400">
                   <User className="w-2.5 h-2.5" />
-                  <span>{v.createdBy?.name ?? 'Unknown'}</span>
+                  <span>{v.createdBy?.name ?? t('versions.unknownUser')}</span>
                   <span>·</span>
                   <span>
-                    {new Date(v.createdAt).toLocaleDateString('en-US', {
+                    {formatDate(v.createdAt, {
                       day: 'numeric',
                       month: 'short',
                       hour: '2-digit',
@@ -98,20 +102,20 @@ export function VersionHistoryCard({ personaId, isLocked }: VersionHistoryCardPr
                   <div className="mt-1.5">
                     {confirmingId === v.id ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-amber-600">Restore?</span>
+                        <span className="text-[10px] text-amber-600">{t('versions.restoreQuestion')}</span>
                         <button
                           onClick={() => handleRestore(v.id, v.version)}
                           disabled={restoreMutation.isPending}
                           style={{ backgroundColor: '#d97706', color: '#ffffff' }}
                           className="px-2 py-0.5 text-[10px] font-medium rounded transition-opacity hover:opacity-90"
                         >
-                          {restoreMutation.isPending ? '...' : 'Confirm'}
+                          {restoreMutation.isPending ? '...' : t('actions.confirm')}
                         </button>
                         <button
                           onClick={() => setConfirmingId(null)}
                           className="text-[10px] text-gray-400 hover:text-gray-600"
                         >
-                          Cancel
+                          {t('actions.cancel')}
                         </button>
                       </div>
                     ) : (
@@ -120,7 +124,7 @@ export function VersionHistoryCard({ personaId, isLocked }: VersionHistoryCardPr
                         className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-600 transition-colors"
                       >
                         <RotateCcw className="w-2.5 h-2.5" />
-                        Restore
+                        {t('versions.restore')}
                       </button>
                     )}
                   </div>
@@ -131,7 +135,7 @@ export function VersionHistoryCard({ personaId, isLocked }: VersionHistoryCardPr
 
           {total > 5 && (
             <p className="text-[10px] text-gray-400 pt-2 text-center">
-              +{total - 5} more versions
+              {t('versions.moreCount', { count: total - 5 })}
             </p>
           )}
         </div>

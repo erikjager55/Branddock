@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import {
   Brain,
   Loader2,
@@ -22,20 +24,20 @@ import type {
   StrategyObservationResponse,
 } from "../api/brandclaw-observations.api";
 
-const SEVERITY_OPTIONS: Array<{ value: ObservationSeverity | "all"; label: string }> = [
-  { value: "all", label: "All severities" },
-  { value: "HIGH", label: "High only" },
-  { value: "MEDIUM", label: "Medium+" },
-  { value: "LOW", label: "Low+" },
+const SEVERITY_OPTION_KEYS: Array<{ value: ObservationSeverity | "all"; labelKey: string }> = [
+  { value: "all", labelKey: "brandclaw.severityOptions.all" },
+  { value: "HIGH", labelKey: "brandclaw.severityOptions.HIGH" },
+  { value: "MEDIUM", labelKey: "brandclaw.severityOptions.MEDIUM" },
+  { value: "LOW", labelKey: "brandclaw.severityOptions.LOW" },
 ];
 
-const DIMENSION_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: "", label: "All dimensions" },
-  { value: "voice_drift", label: "Voice drift" },
-  { value: "fidelity_decline", label: "Fidelity decline" },
-  { value: "review_pattern", label: "Review pattern" },
-  { value: "alignment_gap", label: "Alignment gap" },
-  { value: "publish_quality_trend", label: "Publish quality trend" },
+const DIMENSION_OPTION_KEYS: Array<{ value: string; labelKey: string }> = [
+  { value: "", labelKey: "brandclaw.dimensionOptions.all" },
+  { value: "voice_drift", labelKey: "brandclaw.dimensionOptions.voice_drift" },
+  { value: "fidelity_decline", labelKey: "brandclaw.dimensionOptions.fidelity_decline" },
+  { value: "review_pattern", labelKey: "brandclaw.dimensionOptions.review_pattern" },
+  { value: "alignment_gap", labelKey: "brandclaw.dimensionOptions.alignment_gap" },
+  { value: "publish_quality_trend", labelKey: "brandclaw.dimensionOptions.publish_quality_trend" },
 ];
 
 type ViewMode = "grouped" | "flat";
@@ -63,6 +65,8 @@ function compareObservations(
  * zijn read-only suggesties met user-flags (Read/Acted/Dismissed).
  */
 export function BrandclawObservationsTab() {
+  const { t } = useTranslation('brand-alignment');
+  const { formatDate } = useFormat();
   const [severityFilter, setSeverityFilter] = React.useState<ObservationSeverity | "all">("all");
   const [dimensionFilter, setDimensionFilter] = React.useState<string>("");
   const [includeDismissed, setIncludeDismissed] = React.useState(false);
@@ -109,14 +113,13 @@ export function BrandclawObservationsTab() {
         <div className="flex items-start gap-2">
           <Brain className="w-5 h-5 text-violet-700 mt-0.5" />
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">Strategy Analyst</h2>
+            <h2 className="text-sm font-semibold text-gray-900">{t('brandclaw.title')}</h2>
             <p className="text-xs text-gray-500 leading-snug max-w-prose">
-              Brandclaw observations on alignment / fidelity / review / voice drift.
-              Read-only suggestions — no autonomy. You decide which ones to act on.
+              {t('brandclaw.subtitle')}
             </p>
             {lastRun && (
               <p className="text-[11px] text-gray-400 mt-1 font-mono">
-                Last run {new Date(lastRun.createdAt).toLocaleString("nl-NL", {
+                {t('brandclaw.lastRun')} {formatDate(lastRun.createdAt, {
                   day: "numeric",
                   month: "short",
                   hour: "2-digit",
@@ -141,12 +144,12 @@ export function BrandclawObservationsTab() {
           {runAnalyst.isPending ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Running…
+              {t('brandclaw.running')}
             </>
           ) : (
             <>
               <Play className="w-3.5 h-3.5" />
-              Run Analyst
+              {t('brandclaw.runAnalyst')}
             </>
           )}
         </button>
@@ -155,7 +158,7 @@ export function BrandclawObservationsTab() {
       {runAnalyst.isError && (
         <div className="flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-          <span>Analyst run failed: {runAnalyst.error.message}</span>
+          <span>{t('brandclaw.runFailed', { message: runAnalyst.error.message })}</span>
         </div>
       )}
 
@@ -167,9 +170,9 @@ export function BrandclawObservationsTab() {
           onChange={(e) => setDimensionFilter(e.target.value)}
           className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-primary-300"
         >
-          {DIMENSION_OPTIONS.map((opt) => (
+          {DIMENSION_OPTION_KEYS.map((opt) => (
             <option key={opt.value} value={opt.value}>
-              {opt.label}
+              {t(opt.labelKey)}
             </option>
           ))}
         </select>
@@ -178,9 +181,9 @@ export function BrandclawObservationsTab() {
           onChange={(e) => setSeverityFilter(e.target.value as ObservationSeverity | "all")}
           className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-primary-300"
         >
-          {SEVERITY_OPTIONS.map((opt) => (
+          {SEVERITY_OPTION_KEYS.map((opt) => (
             <option key={opt.value} value={opt.value}>
-              {opt.label}
+              {t(opt.labelKey)}
             </option>
           ))}
         </select>
@@ -191,7 +194,7 @@ export function BrandclawObservationsTab() {
             onChange={(e) => setIncludeDismissed(e.target.checked)}
             className="rounded border-gray-300"
           />
-          Include dismissed
+          {t('brandclaw.includeDismissed')}
         </label>
         <div className="ml-auto inline-flex items-center gap-2">
           <div className="inline-flex rounded-md border border-gray-300 overflow-hidden">
@@ -203,10 +206,10 @@ export function BrandclawObservationsTab() {
                   ? "bg-violet-50 text-violet-700"
                   : "bg-white text-gray-500 hover:text-gray-700"
               }`}
-              title="Group per dimension"
+              title={t('brandclaw.groupTooltip')}
             >
               <LayoutGrid className="w-3 h-3" />
-              Group
+              {t('brandclaw.group')}
             </button>
             <button
               type="button"
@@ -216,13 +219,13 @@ export function BrandclawObservationsTab() {
                   ? "bg-violet-50 text-violet-700"
                   : "bg-white text-gray-500 hover:text-gray-700"
               }`}
-              title="Sort by severity"
+              title={t('brandclaw.severityTooltip')}
             >
               <LayoutList className="w-3 h-3" />
-              Severity
+              {t('brandclaw.severity')}
             </button>
           </div>
-          <span className="text-gray-400">{observations.length} total</span>
+          <span className="text-gray-400">{t('brandclaw.total', { count: observations.length })}</span>
         </div>
       </div>
 
@@ -234,14 +237,14 @@ export function BrandclawObservationsTab() {
       ) : isError ? (
         <div className="flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-          <span>Failed to load observations: {error?.message ?? "unknown error"}</span>
+          <span>{t('brandclaw.loadError', { message: error?.message ?? t('brandclaw.unknownError') })}</span>
         </div>
       ) : observations.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-gray-500 gap-2">
           <Inbox className="w-8 h-8 text-gray-300" />
-          <p className="text-sm">No observations yet</p>
+          <p className="text-sm">{t('brandclaw.emptyTitle')}</p>
           <p className="text-xs text-gray-400">
-            Click &ldquo;Run Analyst&rdquo; at the top to start the first run.
+            {t('brandclaw.emptyBody')}
           </p>
         </div>
       ) : viewMode === "flat" ? (
@@ -259,7 +262,7 @@ export function BrandclawObservationsTab() {
           {grouped.map(([dimension, obsList]) => (
             <section key={dimension} className="space-y-2">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                {dimension.replace(/_/g, " ")} ({obsList.length})
+                {t(`observation.dimension.${dimension}`, { defaultValue: dimension.replace(/_/g, " ") })} ({obsList.length})
               </h3>
               <div className="space-y-2">
                 {obsList.map((obs) => (

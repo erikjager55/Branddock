@@ -10,6 +10,8 @@ import {
   Calendar,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Badge } from '@/components/shared';
 import { CardLockIndicator } from '@/components/lock';
 import { STRATEGY_STATUS_COLORS } from '../constants/strategy-types';
@@ -34,15 +36,6 @@ const TYPE_ICON: Record<StrategyType, string> = {
   CUSTOM: 'Puzzle',
 };
 
-const TYPE_LABEL: Record<StrategyType, string> = {
-  GROWTH: 'Growth',
-  MARKET_ENTRY: 'Market Entry',
-  PRODUCT_LAUNCH: 'Product Launch',
-  BRAND_BUILDING: 'Brand Building',
-  OPERATIONAL_EXCELLENCE: 'Operational Excellence',
-  CUSTOM: 'Custom',
-};
-
 const STATUS_BADGE_VARIANT: Record<StrategyStatus, 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
   ACTIVE: 'success',
   DRAFT: 'default',
@@ -56,6 +49,8 @@ interface StrategyCardProps {
 }
 
 export function StrategyCard({ strategy, onClick }: StrategyCardProps) {
+  const { t } = useTranslation('business-strategy');
+  const { formatDate } = useFormat();
   const iconName = TYPE_ICON[strategy.type];
   const Icon = ICON_MAP[iconName] ?? Puzzle;
   const statusColors = STRATEGY_STATUS_COLORS[strategy.status];
@@ -83,7 +78,7 @@ export function StrategyCard({ strategy, onClick }: StrategyCardProps) {
             <Icon className="w-4 h-4 text-emerald-600" />
           </div>
           <Badge variant="default" size="sm">
-            {TYPE_LABEL[strategy.type]}
+            {t(`types.${strategy.type}.label`)}
           </Badge>
         </div>
         <Badge variant={STATUS_BADGE_VARIANT[strategy.status]} size="sm" dot>
@@ -101,11 +96,11 @@ export function StrategyCard({ strategy, onClick }: StrategyCardProps) {
           <Calendar className="w-3.5 h-3.5 text-gray-400" />
           <span>
             {strategy.startDate
-              ? new Date(strategy.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+              ? formatDate(strategy.startDate, { month: 'short', year: 'numeric' })
               : '...'}
             {' \u2013 '}
             {strategy.endDate
-              ? new Date(strategy.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+              ? formatDate(strategy.endDate, { month: 'short', year: 'numeric' })
               : '...'}
           </span>
         </div>
@@ -114,7 +109,7 @@ export function StrategyCard({ strategy, onClick }: StrategyCardProps) {
       {/* Multi-segment progress bar */}
       <div className="mb-3">
         <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-          <span>Progress</span>
+          <span>{t('card.progress')}</span>
           <span className="font-medium text-gray-900">{Math.round(strategy.progressPercentage)}%</span>
         </div>
         <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden flex">
@@ -141,17 +136,17 @@ export function StrategyCard({ strategy, onClick }: StrategyCardProps) {
 
       {/* Stats row */}
       <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
-        <span>{total} objectives</span>
+        <span>{t('card.objectivesCount', { count: total })}</span>
         {onTrack > 0 && (
           <>
             <span className="text-gray-300">&middot;</span>
-            <span className="text-green-600">{onTrack} on track</span>
+            <span className="text-green-600">{t('card.onTrackCount', { count: onTrack })}</span>
           </>
         )}
         {atRisk > 0 && (
           <>
             <span className="text-gray-300">&middot;</span>
-            <span className="text-red-600">{atRisk} at risk</span>
+            <span className="text-red-600">{t('card.atRiskCount', { count: atRisk })}</span>
           </>
         )}
       </div>
@@ -166,7 +161,7 @@ export function StrategyCard({ strategy, onClick }: StrategyCardProps) {
           ))}
           {strategy.focusAreas.length > 3 && (
             <Badge variant="default" size="sm">
-              +{strategy.focusAreas.length - 3} more
+              {t('card.moreCount', { count: strategy.focusAreas.length - 3 })}
             </Badge>
           )}
         </div>

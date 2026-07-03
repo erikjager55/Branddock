@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useClawStore } from '@/stores/useClawStore';
@@ -17,6 +18,7 @@ import {
 import { usePublishChannels } from '@/features/settings/hooks/use-publish-channels';
 import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
 import { STUDIO } from '@/lib/constants/design-tokens';
+import { useFormat, type UiFormatters } from '@/lib/ui-i18n/format';
 import { PublishGate } from '../PublishGate';
 import { GeoOptimizationPanel } from '../GeoOptimizationPanel';
 import { VersionHistorySidebar } from '../VersionHistorySidebar';
@@ -46,6 +48,8 @@ interface Step4TimelineProps {
 }
 
 export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
+  const { formatDate } = useFormat();
   const queryClient = useQueryClient();
   const contextStack = useCanvasStore((s) => s.contextStack);
   const variantGroups = useCanvasStore((s) => s.variantGroups);
@@ -524,9 +528,13 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error('Publish failed');
+      if (!res.ok) throw new Error(t('step4.errors.publishFailed'));
       const data = await res.json();
-      setPublishSuccess(`${data.status === 'published' ? 'Published' : 'Scheduled'} to ${data.channelPlatform}`);
+      setPublishSuccess(
+        data.status === 'published'
+          ? t('step4.publishSuccess.publishedTo', { platform: data.channelPlatform })
+          : t('step4.publishSuccess.scheduledTo', { platform: data.channelPlatform }),
+      );
       store.setApprovalState({
         // Channel publish that's scheduled → SCHEDULED status (was APPROVED).
         // Aligns with the local publish flow: scheduled = queued, not yet live.
@@ -539,11 +547,11 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
       queryClient.invalidateQueries({ queryKey: contentLibraryKeys.all });
       queryClient.invalidateQueries({ queryKey: campaignKeys.all });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Publish failed');
+      setError(err instanceof Error ? err.message : t('step4.errors.publishFailed'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [deliverableId, queryClient]);
+  }, [deliverableId, queryClient, t]);
 
   // Approve, schedule for a future date, or publish immediately. The
   // schedule/publish branches both hit /publish — the route picks SCHEDULED
@@ -582,8 +590,8 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           body: JSON.stringify(body),
         });
         if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: 'Failed to publish' }));
-          throw new Error(err.error ?? 'Failed to publish');
+          const err = await res.json().catch(() => ({ error: t('step4.errors.failedToPublish') }));
+          throw new Error(err.error ?? t('step4.errors.failedToPublish'));
         }
         const data = await res.json();
 
@@ -595,11 +603,14 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           publishedVia: data.publishedVia ?? null,
         });
         if (data.approvalStatus === 'SCHEDULED') {
+          const dateStr = formatDateDisplay(store.scheduledDate ?? '', formatDate);
           store.setStepSummary('planner', {
-            label: `Scheduled: ${formatDateDisplay(store.scheduledDate ?? '')}${store.scheduledTime ? ` at ${store.scheduledTime}` : ''}`,
+            label: store.scheduledTime
+              ? t('step4.summary.scheduledAt', { date: dateStr, time: store.scheduledTime })
+              : t('step4.summary.scheduled', { date: dateStr }),
           });
         } else {
-          store.setStepSummary('planner', { label: 'Published' });
+          store.setStepSummary('planner', { label: t('step4.summary.published') });
         }
       } else {
         // action === 'approve' — Mark as Ready (no publish intent yet).
@@ -609,12 +620,12 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           body: JSON.stringify({ status: 'APPROVED' }),
         });
         if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: 'Failed to approve' }));
-          throw new Error(err.error ?? 'Failed to approve');
+          const err = await res.json().catch(() => ({ error: t('step4.errors.failedToApprove') }));
+          throw new Error(err.error ?? t('step4.errors.failedToApprove'));
         }
 
         store.setApprovalState({ approvalStatus: 'APPROVED' });
-        store.setStepSummary('planner', { label: 'Ready for publishing' });
+        store.setStepSummary('planner', { label: t('step4.summary.readyForPublishing') });
       }
 
       // Server cache is already invalidated by the route, but the TanStack
@@ -633,11 +644,11 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         useClawStore.getState().requestNavigation({ section: 'content-library' });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Action failed');
+      setError(err instanceof Error ? err.message : t('step4.errors.actionFailed'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [deliverableId, queryClient]);
+  }, [deliverableId, queryClient, t, formatDate]);
 
   const isPublished = approvalStatus === 'PUBLISHED';
   const isScheduled = approvalStatus === 'SCHEDULED';
@@ -660,8 +671,8 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
       {isReady && (() => {
         const distributionSuffix = (isPublished || isScheduled)
           ? (publishedVia
-              ? ` · via ${publishedVia.charAt(0).toUpperCase()}${publishedVia.slice(1)}`
-              : ' · manual distribution')
+              ? t('step4.status.viaSuffix', { channel: `${publishedVia.charAt(0).toUpperCase()}${publishedVia.slice(1)}` })
+              : t('step4.status.manualSuffix'))
           : '';
         return (
           <div className={`flex items-center gap-3 p-4 rounded-lg border ${
@@ -676,18 +687,18 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
             )}
             <div>
               <p className={`text-sm font-medium ${isScheduled ? 'text-blue-800' : 'text-emerald-800'}`}>
-                {isPublished ? `Content published${distributionSuffix}` :
-                 isScheduled ? `Scheduled for publication${distributionSuffix}` :
-                 'Content approved and ready'}
+                {isPublished ? `${t('step4.status.published')}${distributionSuffix}` :
+                 isScheduled ? `${t('step4.status.scheduled')}${distributionSuffix}` :
+                 t('step4.status.approvedReady')}
               </p>
               {scheduledDate && (
                 <p className={`text-xs mt-0.5 ${isScheduled ? 'text-blue-600' : 'text-emerald-600'}`}>
-                  {formatDateDisplay(scheduledDate)}{scheduledTime ? ` at ${scheduledTime}` : ''}
+                  {formatDateDisplay(scheduledDate, formatDate)}{scheduledTime ? ` ${t('step4.schedule.atTime', { time: scheduledTime })}` : ''}
                 </p>
               )}
               {!publishedVia && (isPublished || isScheduled) && (
                 <p className={`text-xs mt-0.5 ${isScheduled ? 'text-blue-600' : 'text-emerald-600'}`}>
-                  Distribute the content yourself, or connect a publishing channel to automate.
+                  {t('step4.status.distributeHint')}
                 </p>
               )}
             </div>
@@ -703,13 +714,13 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
-              <p className="text-sm font-medium text-gray-700">Publish-readiness</p>
+              <p className="text-sm font-medium text-gray-700">{t('step4.publishReadiness')}</p>
               <button
                 type="button"
                 onClick={() => setShowVersionHistory((s) => !s)}
                 className="text-xs text-gray-500 hover:text-gray-700 underline-offset-2 hover:underline"
               >
-                {showVersionHistory ? 'Hide versions' : 'Show versions'}
+                {showVersionHistory ? t('step4.hideVersions') : t('step4.showVersions')}
               </button>
             </div>
             <PublishGate
@@ -744,9 +755,9 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
       {isEmailDeliverable && campaignId && (isApproved || isScheduled) && (
         <div className="rounded-lg border border-gray-200 bg-white p-4 flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-900">Ready to send via Emailit</p>
+            <p className="text-sm font-medium text-gray-900">{t('step4.email.readyToSend')}</p>
             <p className="text-xs text-gray-500 mt-0.5">
-              Push the approved email to an inline recipient list. Stats flow back via the webhook.
+              {t('step4.email.pushHint')}
             </p>
           </div>
           <button
@@ -755,7 +766,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-teal-600 text-white hover:bg-teal-700 transition-colors"
           >
             <Send className="h-4 w-4" />
-            Send campaign
+            {t('step4.email.sendCampaign')}
           </button>
         </div>
       )}
@@ -771,7 +782,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           onClose={() => setShowSendCampaign(false)}
           campaignId={campaignId}
           deliverableId={deliverableId}
-          defaultSubject={previewContent.title?.content ?? 'Branddock email'}
+          defaultSubject={previewContent.title?.content ?? t('step4.email.defaultSubject')}
         />
       )}
 
@@ -791,7 +802,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
         >
           <div className="flex items-center gap-2">
-            <span>Content Review</span>
+            <span>{t('step4.contentReview')}</span>
             <Badge platform={platform} label={previewEntry.label} />
           </div>
           {showPreview ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
@@ -813,7 +824,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
 
       {/* ── Section 2: Publication Checklist ───────────────────── */}
       <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Publication Checklist</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('step4.checklist.title')}</h3>
         <div className="space-y-2">
           {checklistResults.map((item) => (
             <div key={item.id} className="flex items-center gap-2.5">
@@ -828,7 +839,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                 {item.label}
               </span>
               {!item.required && !item.passed && (
-                <span className="text-[10px] text-gray-400 ml-auto">optional</span>
+                <span className="text-[10px] text-gray-400 ml-auto">{t('step4.checklist.optional')}</span>
               )}
             </div>
           ))}
@@ -836,7 +847,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         {!requiredPassed && (
           <p className="text-xs text-amber-600 mt-3 flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" />
-            Some required items are still missing — you can publish anyway, but double-check first.
+            {t('step4.checklist.missingWarning')}
           </p>
         )}
       </div>
@@ -860,25 +871,25 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         //   - draft/approved, future date        → "Schedule"
         const hasFutureDate = !!scheduledDate;
         const primaryLabel = isSubmitting
-          ? (hasFutureDate ? 'Scheduling…' : 'Publishing…')
+          ? (hasFutureDate ? t('step4.publish.scheduling') : t('step4.publish.publishing'))
           : isPublished
-            ? (hasFutureDate ? 'Reschedule' : 'Update')
+            ? (hasFutureDate ? t('step4.publish.reschedule') : t('step4.publish.update'))
             : isScheduled
-              ? (hasFutureDate ? 'Update schedule' : 'Publish now')
-              : (hasFutureDate ? 'Schedule' : 'Publish now');
+              ? (hasFutureDate ? t('step4.publish.updateSchedule') : t('step4.publish.publishNow'))
+              : (hasFutureDate ? t('step4.publish.schedule') : t('step4.publish.publishNow'));
         const primaryAction: 'schedule' | 'publish-now' = hasFutureDate ? 'schedule' : 'publish-now';
         const formattedSchedule = scheduledDate
-          ? `${formatDateDisplay(scheduledDate)}${scheduledTime ? ` at ${scheduledTime}` : ''}`
+          ? `${formatDateDisplay(scheduledDate, formatDate)}${scheduledTime ? ` ${t('step4.schedule.atTime', { time: scheduledTime })}` : ''}`
           : null;
 
         return (
           <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-5">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-700">Finish &amp; Publish</h3>
+              <h3 className="text-sm font-semibold text-gray-700">{t('step4.finishPublish.title')}</h3>
               {isScheduled && formattedSchedule && (
                 <span className="inline-flex items-center gap-1 text-xs text-blue-700">
                   <Clock className="h-3 w-3" />
-                  Scheduled: {formattedSchedule}
+                  {t('step4.finishPublish.scheduledPrefix')} {formattedSchedule}
                 </span>
               )}
             </div>
@@ -888,9 +899,9 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm text-gray-700">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="font-medium">Publish:</span>
+                  <span className="font-medium">{t('step4.publish.label')}</span>
                   <span className={hasFutureDate ? 'text-blue-700 font-medium' : 'text-gray-600'}>
-                    {hasFutureDate ? formattedSchedule : 'Immediately'}
+                    {hasFutureDate ? formattedSchedule : t('step4.publish.immediately')}
                   </span>
                 </div>
                 <button
@@ -898,7 +909,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                   onClick={() => setShowSchedulePicker((v) => !v)}
                   className="text-xs font-medium text-primary hover:text-primary/80 underline-offset-2 hover:underline"
                 >
-                  {showSchedulePicker ? 'Done' : 'Edit'}
+                  {showSchedulePicker ? t('common.done') : t('common.edit')}
                 </button>
               </div>
 
@@ -913,7 +924,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                       <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-xs font-medium text-gray-800">
-                          Suggested: {timingSuggestion.day} at {timingSuggestion.time}
+                          {t('step4.schedule.suggested', { day: timingSuggestion.day, time: timingSuggestion.time })}
                         </p>
                         <p className="text-[11px] text-gray-500 mt-0.5">{timingSuggestion.reason}</p>
                       </div>
@@ -923,7 +934,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="schedule-date" className="block text-[11px] font-medium text-gray-600 mb-1">
-                        Date
+                        {t('step4.schedule.date')}
                       </label>
                       <input
                         id="schedule-date"
@@ -935,7 +946,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                     </div>
                     <div>
                       <label htmlFor="schedule-time" className="block text-[11px] font-medium text-gray-600 mb-1">
-                        Time
+                        {t('step4.schedule.time')}
                       </label>
                       <input
                         id="schedule-time"
@@ -956,7 +967,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                       }}
                       className="text-[11px] text-gray-500 hover:text-gray-700 underline underline-offset-2"
                     >
-                      Clear schedule (publish immediately)
+                      {t('step4.schedule.clear')}
                     </button>
                   )}
                 </>
@@ -991,9 +1002,9 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                 : 'flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-700 font-medium border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed';
 
               const publishTitle = publishGated
-                ? 'Connect a publishing channel in Settings → Integrations to enable Publish / Schedule.'
+                ? t('step4.publishTitle.gated')
                 : isPublished && !hasFutureDate
-                  ? 'Already published. Pick a date to reschedule.'
+                  ? t('step4.publishTitle.alreadyPublished')
                   : undefined;
 
               return (
@@ -1016,11 +1027,11 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                       setShowDownloadFormats(true);
                     }}
                     disabled={isSubmitting || isReady}
-                    title={isReady ? 'Already approved.' : undefined}
+                    title={isReady ? t('step4.readyTitle.alreadyApproved') : undefined}
                     className={readyClass}
                   >
                     <CheckCircle2 className="h-4 w-4" />
-                    {isApproved && !isScheduled && !isPublished ? 'Ready' : 'Mark as Ready'}
+                    {isApproved && !isScheduled && !isPublished ? t('step4.ready') : t('step4.markReady')}
                   </button>
                 </div>
               );
@@ -1033,12 +1044,12 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
             <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Distribute to platform
+                  {t('step4.distribute.title')}
                 </h4>
                 {publishedVia && (
                   <span className="text-xs text-emerald-700 inline-flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3" />
-                    Sent to {publishedVia}
+                    {t('step4.distribute.sentTo', { channel: publishedVia })}
                   </span>
                 )}
               </div>
@@ -1047,7 +1058,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                 <>
                   {hasMultipleChannels && (
                     <p className="text-xs text-gray-500">
-                      Select a channel below, then click <span className="font-medium">Send to platform</span>.
+                      {t('step4.distribute.selectPrefix')} <span className="font-medium">{t('step4.distribute.sendToPlatform')}</span>.
                     </p>
                   )}
                   <button
@@ -1060,14 +1071,13 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Send className="h-3.5 w-3.5" />
-                    Send to platform
+                    {t('step4.distribute.sendToPlatform')}
                   </button>
                 </>
               ) : (
                 <p className="text-xs text-gray-500 inline-flex items-center gap-2">
                   <Plug className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
-                  Connect a channel in Settings → Integrations to auto-distribute.
-                  Until then, you distribute the published content yourself.
+                  {t('step4.distribute.connectHint')}
                 </p>
               )}
             </div>
@@ -1078,7 +1088,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
                   <p className="text-xs font-medium text-emerald-800 mb-2 flex items-center gap-1.5">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    Marked as ready — download a copy if you like
+                    {t('step4.download.markedReady')}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {exportFormats.map((fmt) => {
@@ -1094,7 +1104,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-emerald-200 bg-white text-xs font-medium text-gray-700 hover:bg-emerald-100"
                         >
                           <Icon className="h-3.5 w-3.5" />
-                          {fmt.id === 'clipboard' && copied ? 'Copied!' : fmt.label}
+                          {fmt.id === 'clipboard' && copied ? t('common.copied') : fmt.label}
                         </button>
                       );
                     })}
@@ -1108,7 +1118,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
               {/* Channel selector — only shown when multiple active channels require a choice */}
               {hasMultipleChannels && (
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-gray-600">Select publishing channel</p>
+                  <p className="text-xs font-medium text-gray-600">{t('step4.selectChannel')}</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {activeChannels.map((ch) => {
                       const isSelected = selectedChannelId === ch.id;
@@ -1148,7 +1158,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
       {/* Export stays available after Publish too (download approved/published content) */}
       {isPublished && (
         <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Download</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('step4.download.title')}</h3>
           <div className="flex flex-wrap gap-2">
             {exportFormats.map((fmt) => {
               const Icon = ICON_MAP[fmt.icon] ?? FileText;
@@ -1195,11 +1205,11 @@ function Badge({ platform, label }: { platform: string | null; label: string }) 
   );
 }
 
-function formatDateDisplay(dateStr: string): string {
+function formatDateDisplay(dateStr: string, formatDate: UiFormatters['formatDate']): string {
   try {
     const date = new Date(dateStr + 'T00:00:00');
     if (isNaN(date.getTime())) return dateStr;
-    return date.toLocaleDateString('en-US', {
+    return formatDate(date, {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
   } catch {

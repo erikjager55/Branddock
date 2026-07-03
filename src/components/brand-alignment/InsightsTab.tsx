@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import {
   BarChart3,
   Loader2,
@@ -18,23 +19,9 @@ import {
   type RecentReview,
 } from "@/hooks/useAlignmentInsights";
 import { useWorkspace } from "@/hooks/use-workspace";
+import { useFormat, type UiFormatters } from "@/lib/ui-i18n/format";
 import { SparklineChart } from "@/features/business-strategy/components/detail/SparklineChart";
 import { FeedbackLoopPanels } from "./FeedbackLoopPanels";
-
-const FINDING_CATEGORY_LABELS: Record<string, string> = {
-  VOICE: "Voice",
-  TERMINOLOGY: "Terminology",
-  CLAIMS: "Claims",
-  STYLE: "Style",
-  BUSINESS: "Business",
-  AI_TELL: "AI tell",
-};
-
-const SOURCE_LABELS: Record<RecentReview["source"], string> = {
-  paste: "Paste",
-  url: "URL",
-  canvas: "Canvas",
-};
 
 const SOURCE_PILL: Record<RecentReview["source"], string> = {
   paste: "bg-blue-100 text-blue-700 border-blue-200",
@@ -48,6 +35,7 @@ const SOURCE_PILL: Record<RecentReview["source"], string> = {
  * recent reviews lijst. 30d window per workspace; geen org-overview.
  */
 export function InsightsTab() {
+  const { t } = useTranslation('brand-alignment');
   const { workspaceId, isLoading: wsLoading } = useWorkspace();
   // `isPending` (TanStack v5) is true zolang er geen data EN geen error is —
   // dekt zowel "query nog niet gestart (enabled flipte zojuist)" als
@@ -63,7 +51,7 @@ export function InsightsTab() {
     return (
       <div className="max-w-4xl mx-auto py-12 flex flex-col items-center text-gray-400">
         <Loader2 className="w-6 h-6 animate-spin mb-2" />
-        <span className="text-sm">Loading insights...</span>
+        <span className="text-sm">{t('insights.loading')}</span>
       </div>
     );
   }
@@ -82,11 +70,9 @@ export function InsightsTab() {
         >
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
           <div>
-            <div className="font-medium">Workspace context unavailable</div>
+            <div className="font-medium">{t('insights.wsUnavailableTitle')}</div>
             <div className="text-xs mt-0.5">
-              Insights are calculated per workspace, but no active workspace
-              could be found. Try signing in again or switch to a different
-              workspace via the header.
+              {t('insights.wsUnavailableBody')}
             </div>
           </div>
         </div>
@@ -103,9 +89,9 @@ export function InsightsTab() {
         >
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
           <div>
-            <div className="font-medium">Could not load insights</div>
+            <div className="font-medium">{t('insights.loadErrorTitle')}</div>
             <div className="text-xs mt-0.5">
-              {error instanceof Error ? error.message : "Unknown error"}
+              {error instanceof Error ? error.message : t('insights.unknownError')}
             </div>
           </div>
         </div>
@@ -126,12 +112,10 @@ export function InsightsTab() {
           <Sparkles size={24} className="text-emerald-700" />
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          No reviews in the past 30 days
+          {t('insights.emptyTitle')}
         </h3>
         <p className="text-sm text-gray-500 max-w-md">
-          Run a review via the <strong>Content Review</strong> tab, ask the
-          Brand Assistant for feedback, or generate content via Canvas —
-          insights appear here as soon as there is data.
+          {t('insights.emptyBodyPre')}<strong>{t('insights.emptyBodyStrong')}</strong>{t('insights.emptyBodyPost')}
         </p>
       </div>
     );
@@ -142,10 +126,9 @@ export function InsightsTab() {
       <header className="flex items-center gap-3">
         <BarChart3 className="w-6 h-6 text-emerald-600" />
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Insights</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('insights.title')}</h2>
           <p className="text-sm text-gray-500">
-            Aggregates over the past 30 days — external (paste/url) +
-            internal (canvas) combined, per workspace.
+            {t('insights.subtitle')}
           </p>
         </div>
       </header>
@@ -161,11 +144,7 @@ export function InsightsTab() {
         >
           <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           <div>
-            <span className="font-medium">Partial aggregation</span> —
-            there are more than 5000 reviews in 30 days; the percentages
-            shown are calculated over the 5000 most recent reviews. Older
-            records are not included, so both absolute counts and the 7d
-            trend may be underestimated for less recent days.
+            <span className="font-medium">{t('insights.partialTitle')}</span>{t('insights.partialBody')}
           </div>
         </div>
       )}
@@ -174,30 +153,30 @@ export function InsightsTab() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile
           icon={FileSearch}
-          label="Reviews 30d"
+          label={t('insights.reviews30d')}
           value={totals.totalReviews}
-          sub={`${totals.externalReviews} external · ${totals.internalReviews} internal`}
+          sub={t('insights.reviewsBreakdown', { external: totals.externalReviews, internal: totals.internalReviews })}
         />
         <KpiTile
           icon={CheckCircle2}
-          label="Threshold pass-rate"
+          label={t('insights.thresholdPassRate')}
           value={`${totals.thresholdPassRate}%`}
-          sub={`${totals.reviewsLast7d} reviews in last 7d`}
+          sub={t('insights.reviewsLast7d', { count: totals.reviewsLast7d })}
           accent={totals.thresholdPassRate >= 60 ? "good" : "warn"}
         />
         <KpiTile
           icon={AlertTriangle}
-          label="Findings 30d"
+          label={t('insights.findings30d')}
           value={totals.totalFindings}
           sub={
             totals.totalReviews > 0
-              ? `${(totals.totalFindings / totals.totalReviews).toFixed(1)} per review on average`
-              : "0 per review"
+              ? t('insights.perReviewAvg', { value: (totals.totalFindings / totals.totalReviews).toFixed(1) })
+              : t('insights.perReviewZero')
           }
         />
         <KpiTile
           icon={ShieldOff}
-          label="Below-threshold published"
+          label={t('insights.belowThresholdPublished')}
           value={
             totals.blockedCount > 0
               ? `${totals.blockedPublishedRate}%`
@@ -205,8 +184,8 @@ export function InsightsTab() {
           }
           sub={
             totals.blockedCount > 0
-              ? `${totals.blockedCount} below-threshold internal scores`
-              : "No below-threshold scores"
+              ? t('insights.belowThresholdScores', { count: totals.blockedCount })
+              : t('insights.noBelowThreshold')
           }
           accent={
             totals.blockedCount === 0
@@ -231,7 +210,7 @@ export function InsightsTab() {
       <div className="pt-4 mt-2 border-t border-gray-200">
         <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-gray-500" />
-          Feedback-loop
+          {t('insights.feedbackLoop')}
         </h3>
         <FeedbackLoopPanels />
       </div>
@@ -273,69 +252,76 @@ function KpiTile({ icon: Icon, label, value, sub, accent = "neutral" }: KpiTileP
 // ─── Pass Rate Trend Card ───────────────────────────
 
 function PassRateTrendCard({ data }: { data: PassRatePoint[] }) {
+  const { t } = useTranslation('brand-alignment');
   // Sparkline alleen tonen als er minstens één dag MET reviews is — anders is
   // de lijn vlak op 0 wat niet informatief is.
   const totalReviews = data.reduce((s, p) => s + p.reviewCount, 0);
   const series = data.map((p) => p.passRate);
-  const trendArrow = computeTrend(series);
+  const trend = computeTrend(series);
+  const trendLabel = trend
+    ? trend.stable
+      ? t('insights.trendStable')
+      : `${trend.delta > 0 ? "+" : ""}${trend.delta}pp`
+    : null;
 
   return (
     <div className="md:col-span-2 rounded-lg border border-gray-200 bg-white p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5 text-xs text-gray-500">
           <TrendingUp className="w-3.5 h-3.5" />
-          Pass-rate trend (7d)
+          {t('insights.passRateTrend')}
         </div>
-        {trendArrow && (
-          <span className={`text-xs ${trendArrow.color}`}>{trendArrow.label}</span>
+        {trend && trendLabel && (
+          <span className={`text-xs ${trend.color}`}>{trendLabel}</span>
         )}
       </div>
       {totalReviews > 0 ? (
         <div className="flex items-end justify-between gap-3">
           <SparklineChart data={series} width={240} height={48} color="#10b981" />
           <div className="text-[11px] text-gray-400 leading-tight text-right">
-            {totalReviews} reviews
+            {t('insights.reviewsCount', { count: totalReviews })}
             <br />
-            in 7 days
+            {t('insights.inSevenDays')}
           </div>
         </div>
       ) : (
         <div className="text-xs text-gray-400 italic py-3">
-          No reviews in the past 7 days.
+          {t('insights.noReviews7d')}
         </div>
       )}
     </div>
   );
 }
 
-function computeTrend(series: number[]): { label: string; color: string } | null {
+function computeTrend(series: number[]): { delta: number; color: string; stable: boolean } | null {
   if (series.length < 2) return null;
   const first = series[0];
   const last = series[series.length - 1];
   const delta = last - first;
-  if (delta > 5) return { label: `+${delta}pp`, color: "text-emerald-600" };
-  if (delta < -5) return { label: `${delta}pp`, color: "text-amber-600" };
-  return { label: "stable", color: "text-gray-500" };
+  if (delta > 5) return { delta, color: "text-emerald-600", stable: false };
+  if (delta < -5) return { delta, color: "text-amber-600", stable: false };
+  return { delta: 0, color: "text-gray-500", stable: true };
 }
 
 // ─── Top Categories Card ────────────────────────────
 
 function TopCategoriesCard({ data }: { data: CategoryCount[] }) {
+  const { t } = useTranslation('brand-alignment');
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-3">
       <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
         <AlertTriangle className="w-3.5 h-3.5" />
-        Top finding categories
+        {t('insights.topCategories')}
       </div>
       {data.length === 0 ? (
-        <div className="text-xs text-gray-400 italic">No findings.</div>
+        <div className="text-xs text-gray-400 italic">{t('insights.noFindings')}</div>
       ) : (
         <div className="space-y-1.5">
           {data.map((c, i) => (
             <div key={c.category} className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-1.5 text-gray-700">
                 <span className="text-gray-400 w-4">{i + 1}.</span>
-                {FINDING_CATEGORY_LABELS[c.category] ?? c.category}
+                {t(`categoryLabels.${c.category}`, { defaultValue: c.category })}
               </div>
               <span className="text-gray-500 tabular-nums">{c.count}</span>
             </div>
@@ -349,14 +335,15 @@ function TopCategoriesCard({ data }: { data: CategoryCount[] }) {
 // ─── Recent Reviews Card ────────────────────────────
 
 function RecentReviewsCard({ reviews }: { reviews: RecentReview[] }) {
+  const { t } = useTranslation('brand-alignment');
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-3">
       <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
         <ExternalLink className="w-3.5 h-3.5" />
-        Recent reviews
+        {t('insights.recentReviews')}
       </div>
       {reviews.length === 0 ? (
-        <div className="text-xs text-gray-400 italic">No reviews.</div>
+        <div className="text-xs text-gray-400 italic">{t('insights.noReviews')}</div>
       ) : (
         <div className="divide-y divide-gray-100">
           {reviews.map((r) => (
@@ -369,6 +356,8 @@ function RecentReviewsCard({ reviews }: { reviews: RecentReview[] }) {
 }
 
 function RecentReviewRow({ review }: { review: RecentReview }) {
+  const { t } = useTranslation('brand-alignment');
+  const { formatDate } = useFormat();
   const score = review.compositeScore;
   const scoreColor = review.thresholdMet
     ? "text-emerald-700"
@@ -384,19 +373,19 @@ function RecentReviewRow({ review }: { review: RecentReview }) {
       <span
         className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${SOURCE_PILL[review.source]}`}
       >
-        {SOURCE_LABELS[review.source]}
+        {t(`insights.sourceLabels.${review.source}`)}
       </span>
       <div className="flex-1 text-xs text-gray-500">
-        {review.findingsCount} finding{review.findingsCount === 1 ? "" : "s"}
+        {t('findings', { count: review.findingsCount })}
       </div>
       <div className="text-[11px] text-gray-400 tabular-nums">
-        {formatRelative(review.scoredAt)}
+        {formatRelative(review.scoredAt, formatDate)}
       </div>
     </div>
   );
 }
 
-function formatRelative(iso: string): string {
+function formatRelative(iso: string, formatDate: UiFormatters['formatDate']): string {
   const ts = new Date(iso).getTime();
   const diffMs = Date.now() - ts;
   const minutes = Math.floor(diffMs / 60_000);
@@ -405,7 +394,7 @@ function formatRelative(iso: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString("en-US", {
+  return formatDate(iso, {
     day: "numeric",
     month: "short",
   });

@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { usePendingInvites } from '@/hooks/use-settings';
 import { PendingInviteItem } from './PendingInviteItem';
 import { Skeleton } from '@/components/shared';
 import { UserPlus } from 'lucide-react';
 
 export function PendingInvites() {
+  const { t } = useTranslation('settings-team');
   const { data, isLoading } = usePendingInvites();
 
   if (isLoading) {
@@ -35,11 +37,11 @@ export function PendingInvites() {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-5">
         <div className="flex items-center gap-2 mb-3">
-          <h3 className="text-sm font-semibold text-gray-900">Pending Invitations</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t('pending.title')}</h3>
         </div>
         <div className="text-center py-4">
           <UserPlus className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">No pending invitations</p>
+          <p className="text-sm text-gray-500">{t('pending.empty')}</p>
         </div>
       </div>
     );
@@ -48,7 +50,7 @@ export function PendingInvites() {
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
       <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-gray-900">Pending Invitations</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{t('pending.title')}</h3>
         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
           {invites.length}
         </span>

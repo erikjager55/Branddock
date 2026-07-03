@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Search, Package, Loader2 } from "lucide-react";
 import { Modal, Button, Input } from "@/components/shared";
 import { useProducts } from "@/features/products/hooks";
@@ -20,6 +21,7 @@ export function ProductSelectorModal({
   competitorId,
   linkedProductIds,
 }: ProductSelectorModalProps) {
+  const { t } = useTranslation("competitors");
   const { data, isLoading, isError } = useProducts();
   const products = data?.products ?? [];
   const linkProduct = useLinkProduct(competitorId);
@@ -60,7 +62,7 @@ export function ProductSelectorModal({
       setSearchQuery("");
       onClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to link product";
+      const message = err instanceof Error ? err.message : t("productSelector.linkError");
       setLinkError(message);
     } finally {
       setIsLinking(false);
@@ -80,12 +82,12 @@ export function ProductSelectorModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Link Product"
-      subtitle="Select products to link to this competitor"
+      title={t("productSelector.title")}
+      subtitle={t("productSelector.subtitle")}
       footer={
         <div className="flex items-center justify-end gap-3">
           <Button variant="ghost" onClick={handleClose}>
-            Cancel
+            {t("actions.cancel")}
           </Button>
           <Button
             variant="cta"
@@ -93,7 +95,7 @@ export function ProductSelectorModal({
             disabled={selectedIds.length === 0}
             isLoading={isLinking}
           >
-            Link Selected ({selectedIds.length})
+            {t("productSelector.linkSelected", { count: selectedIds.length })}
           </Button>
         </div>
       }
@@ -101,7 +103,7 @@ export function ProductSelectorModal({
       {/* Search */}
       <div className="mb-4">
         <Input
-          placeholder="Search products..."
+          placeholder={t("productSelector.searchPlaceholder")}
           icon={Search}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -119,33 +121,33 @@ export function ProductSelectorModal({
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-8">
           <Loader2 className="mx-auto h-6 w-6 text-gray-400 animate-spin mb-2" />
-          <p className="text-sm text-gray-500">Loading products...</p>
+          <p className="text-sm text-gray-500">{t("productSelector.loading")}</p>
         </div>
       ) : isError ? (
         <div className="text-center py-8">
           <Package className="mx-auto h-8 w-8 text-red-300 mb-2" />
           <p className="text-sm text-red-600">
-            Could not load products. Please try again.
+            {t("productSelector.loadError")}
           </p>
         </div>
       ) : products.length === 0 ? (
         <div className="text-center py-8">
           <Package className="mx-auto h-8 w-8 text-gray-300 mb-2" />
           <p className="text-sm text-gray-500">
-            No products in this workspace yet.
+            {t("productSelector.noProducts")}
           </p>
         </div>
       ) : allLinked ? (
         <div className="text-center py-8">
           <Package className="mx-auto h-8 w-8 text-green-300 mb-2" />
           <p className="text-sm text-gray-500">
-            All products are already linked to this competitor.
+            {t("productSelector.allLinked")}
           </p>
         </div>
       ) : availableProducts.length === 0 ? (
         <div className="text-center py-8">
           <Search className="mx-auto h-8 w-8 text-gray-300 mb-2" />
-          <p className="text-sm text-gray-500">No products match your search.</p>
+          <p className="text-sm text-gray-500">{t("productSelector.noMatch")}</p>
         </div>
       ) : (
         <div className="space-y-1 max-h-64 overflow-y-auto">

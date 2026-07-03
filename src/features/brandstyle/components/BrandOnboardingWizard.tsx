@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Sparkles,
   X,
@@ -31,8 +32,8 @@ interface BrandOnboardingWizardProps {
   onJumpToTab: (tab: StyleguideTab) => void;
 }
 
-const STEP_LABELS = ["Welcome", "Colors", "Typography", "Done"] as const;
-const TOTAL_STEPS = STEP_LABELS.length;
+const STEP_KEYS = ["welcome", "colors", "typography", "done"] as const;
+const TOTAL_STEPS = STEP_KEYS.length;
 
 /**
  * Brand Onboarding Wizard — 4-stappen flow die user door scrape-resultaten
@@ -286,12 +287,13 @@ function UncertaintyPanel({
   onJump: () => void;
   jumpLabel: string;
 }) {
+  const { t } = useTranslation("brandstyle");
   if (items.length === 0) {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
         <ShieldCheck className="h-4 w-4 text-emerald-600 flex-shrink-0" />
         <p className="text-xs text-emerald-900">
-          Everything confidently derived from the source site — nothing to confirm.
+          {t("wizard.uncertainty.allGood")}
         </p>
       </div>
     );
@@ -301,14 +303,14 @@ function UncertaintyPanel({
       <div className="flex items-center gap-2">
         <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0" />
         <p className="text-xs font-semibold text-amber-900">
-          {items.length} value{items.length === 1 ? "" : "s"} to confirm
+          {t("wizard.uncertainty.toConfirm", { count: items.length })}
         </p>
       </div>
       <ul className="space-y-1">
         {items.map((it) => (
           <li key={it.path} className="text-xs text-amber-900 flex items-baseline gap-1.5">
             <span className="font-medium">{it.label}</span>
-            <span className="text-amber-700">— {it.origin.evidence ?? "uncertain"}</span>
+            <span className="text-amber-700">— {it.origin.evidence ?? t("wizard.uncertainty.uncertainFallback")}</span>
           </li>
         ))}
       </ul>
@@ -327,6 +329,7 @@ function UncertaintyPanel({
 // ─── Empty styleguide (geen scrape uitgevoerd) ──────────────
 
 function EmptyStyleguideState({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation("brandstyle");
   return (
     <div className="space-y-5 text-center py-6">
       <div className="flex justify-center">
@@ -336,16 +339,14 @@ function EmptyStyleguideState({ onClose }: { onClose: () => void }) {
       </div>
       <div>
         <h3 className="text-lg font-semibold text-gray-900">
-          No brand DNA found yet
+          {t("wizard.empty.title")}
         </h3>
         <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
-          This styleguide contains no colors, fonts or components. Run a new
-          analysis on your brand URL first — then this wizard will walk you
-          through the results.
+          {t("wizard.empty.body")}
         </p>
       </div>
       <Button variant="primary" size="sm" onClick={onClose}>
-        Close wizard
+        {t("wizard.closeWizard")}
       </Button>
     </div>
   );
@@ -360,6 +361,7 @@ interface WizardHeaderProps {
 }
 
 function WizardHeader({ onClose, stepIndex, isEmpty }: WizardHeaderProps) {
+  const { t } = useTranslation("brandstyle");
   return (
     <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100">
       <div className="flex items-center gap-2">
@@ -371,11 +373,15 @@ function WizardHeader({ onClose, stepIndex, isEmpty }: WizardHeaderProps) {
         </div>
         <div>
           <h2 id="onboarding-wizard-title" className="text-base font-semibold text-gray-900">
-            Brand Onboarding
+            {t("wizard.headerTitle")}
           </h2>
           {!isEmpty && (
             <p className="text-xs text-gray-500">
-              Step {stepIndex + 1} of {TOTAL_STEPS}: {STEP_LABELS[stepIndex]}
+              {t("wizard.stepIndicator", {
+                step: stepIndex + 1,
+                total: TOTAL_STEPS,
+                label: t(`wizard.stepLabels.${STEP_KEYS[stepIndex]}`),
+              })}
             </p>
           )}
         </div>
@@ -384,9 +390,9 @@ function WizardHeader({ onClose, stepIndex, isEmpty }: WizardHeaderProps) {
         {!isEmpty && (
           // Decoratief — header-tekst draagt de toegankelijke voortgangsstatus.
           <ol className="hidden sm:flex items-center gap-1.5" aria-hidden="true">
-            {STEP_LABELS.map((label, i) => (
+            {STEP_KEYS.map((key, i) => (
               <li
-                key={label}
+                key={key}
                 className={`h-1.5 rounded-full transition-all ${
                   i === stepIndex
                     ? "w-8 bg-purple-600"
@@ -402,7 +408,7 @@ function WizardHeader({ onClose, stepIndex, isEmpty }: WizardHeaderProps) {
           type="button"
           onClick={onClose}
           className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50"
-          aria-label="Close wizard"
+          aria-label={t("wizard.closeAria")}
         >
           <X className="h-4 w-4" />
         </button>
@@ -421,6 +427,7 @@ interface WizardFooterProps {
 }
 
 function WizardFooter({ stepIndex, onPrev, onNext, onClose }: WizardFooterProps) {
+  const { t } = useTranslation("brandstyle");
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === TOTAL_STEPS - 1;
   return (
@@ -432,15 +439,15 @@ function WizardFooter({ stepIndex, onPrev, onNext, onClose }: WizardFooterProps)
         onClick={onPrev}
         disabled={isFirst}
       >
-        Previous
+        {t("wizard.previous")}
       </Button>
       {isLast ? (
         <Button variant="primary" size="sm" onClick={onClose}>
-          Close wizard
+          {t("wizard.closeWizard")}
         </Button>
       ) : (
         <Button variant="primary" size="sm" icon={ChevronRight} iconPosition="right" onClick={onNext}>
-          Next
+          {t("wizard.next")}
         </Button>
       )}
     </div>
@@ -457,16 +464,15 @@ interface WelcomeStepProps {
 }
 
 function WelcomeStep({ styleguide, counts, attentionCount, okCount }: WelcomeStepProps) {
+  const { t } = useTranslation("brandstyle");
   return (
     <div className="space-y-5">
       <div>
         <h3 className="text-lg font-semibold text-gray-900">
-          Welcome to Brand Onboarding
+          {t("wizard.welcome.title")}
         </h3>
         <p className="text-sm text-gray-600 mt-1">
-          We analyzed your brand. In the next steps you walk through the colors,
-          typography and components we found — there you can confirm or override
-          each auto-detection before the brand style goes live in landing pages.
+          {t("wizard.welcome.body")}
         </p>
       </div>
 
@@ -474,18 +480,15 @@ function WelcomeStep({ styleguide, counts, attentionCount, okCount }: WelcomeSte
         <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
           <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0" />
           <p className="text-xs text-amber-900">
-            <span className="font-semibold">{attentionCount}</span> of{" "}
-            {attentionCount + okCount} core tokens we could not determine with
-            confidence — the next steps surface those first so you can quickly
-            confirm them.
+            <span className="font-semibold">{attentionCount}</span>{" "}
+            {t("wizard.welcome.attentionRest", { total: attentionCount + okCount })}
           </p>
         </div>
       ) : (
         <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
           <ShieldCheck className="h-4 w-4 text-emerald-600 flex-shrink-0" />
           <p className="text-xs text-emerald-900">
-            All {okCount} core tokens were confidently derived from the source
-            site — a quick confirmation suffices.
+            {t("wizard.welcome.allOk", { count: okCount })}
           </p>
         </div>
       )}
@@ -493,7 +496,7 @@ function WelcomeStep({ styleguide, counts, attentionCount, okCount }: WelcomeSte
       {styleguide.sourceUrl && (
         <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
           <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
-            Source
+            {t("wizard.welcome.source")}
           </p>
           <a
             href={styleguide.sourceUrl}
@@ -508,9 +511,9 @@ function WelcomeStep({ styleguide, counts, attentionCount, okCount }: WelcomeSte
       )}
 
       <div className="grid grid-cols-3 gap-3">
-        <SummaryTile icon={Palette} label="Colors" count={counts.colors} />
-        <SummaryTile icon={Type} label="Fonts" count={counts.fonts} />
-        <SummaryTile icon={Boxes} label="Components" count={counts.components} />
+        <SummaryTile icon={Palette} label={t("wizard.summary.colors")} count={counts.colors} />
+        <SummaryTile icon={Type} label={t("wizard.summary.fonts")} count={counts.fonts} />
+        <SummaryTile icon={Boxes} label={t("wizard.summary.components")} count={counts.components} />
       </div>
     </div>
   );
@@ -544,29 +547,27 @@ interface ColorsStepProps {
 }
 
 function ColorsStep({ topColors, total, uncertain, onJumpToColors }: ColorsStepProps) {
+  const { t } = useTranslation("brandstyle");
   return (
     <div className="space-y-5">
       <div>
         <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <Palette className="h-5 w-5 text-purple-600" />
-          Colors ({total})
+          {t("wizard.colors.title", { count: total })}
         </h3>
         <p className="text-sm text-gray-600 mt-1">
-          The analyzer detected {total} color{total === 1 ? "" : "s"} with
-          per-color usage tags (PRIMARY / SECONDARY / ACCENT / NEUTRAL /
-          SEMANTIC). Confirm what is uncertain first, then you can override any
-          tag in the Colors tab.
+          {t("wizard.colors.desc", { count: total })}
         </p>
       </div>
 
       <UncertaintyPanel
         items={uncertain}
         onJump={onJumpToColors}
-        jumpLabel="Fix in Colors tab"
+        jumpLabel={t("wizard.uncertainty.fixColors")}
       />
 
       {topColors.length === 0 ? (
-        <p className="text-sm text-gray-500 italic">No colors found.</p>
+        <p className="text-sm text-gray-500 italic">{t("wizard.colors.empty")}</p>
       ) : (
         <ul className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           {topColors.map((c) => (
@@ -587,8 +588,8 @@ function ColorsStep({ topColors, total, uncertain, onJumpToColors }: ColorsStepP
       )}
 
       <JumpToTabBanner
-        message="Is the classification correct? You can override per color via the tag toggles in the Colors tab."
-        ctaLabel="Edit in Colors tab"
+        message={t("wizard.colors.bannerMessage")}
+        ctaLabel={t("wizard.colors.bannerCta")}
         onJump={onJumpToColors}
       />
     </div>
@@ -612,34 +613,33 @@ function TypographyStep({
   uncertain,
   onJumpToTypography,
 }: TypographyStepProps) {
+  const { t } = useTranslation("brandstyle");
   return (
     <div className="space-y-5">
       <div>
         <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <Type className="h-5 w-5 text-purple-600" />
-          Typography ({total})
+          {t("wizard.typography.title", { count: total })}
         </h3>
         <p className="text-sm text-gray-600 mt-1">
-          The DISPLAY font is used for hero headlines, BODY for body text. The
-          analyzer matched these against Google Fonts / Adobe Fonts; override in
-          the Typography tab if you want a different choice.
+          {t("wizard.typography.desc")}
         </p>
       </div>
 
       <UncertaintyPanel
         items={uncertain}
         onJump={onJumpToTypography}
-        jumpLabel="Fix in Typography tab"
+        jumpLabel={t("wizard.uncertainty.fixTypography")}
       />
 
       <div className="space-y-3">
-        <FontPreview label="DISPLAY (Hero headlines)" font={displayFont} sample="Brand voice on display" />
-        <FontPreview label="BODY (Body text)" font={bodyFont} sample="This is how body text looks in your brand style." />
+        <FontPreview label={t("wizard.typography.displayLabel")} font={displayFont} sample={t("wizard.typography.displaySample")} />
+        <FontPreview label={t("wizard.typography.bodyLabel")} font={bodyFont} sample={t("wizard.typography.bodySample")} />
       </div>
 
       <JumpToTabBanner
-        message="Another font in mind? Switch in the Typography tab."
-        ctaLabel="Edit in Typography tab"
+        message={t("wizard.typography.bannerMessage")}
+        ctaLabel={t("wizard.typography.bannerCta")}
         onJump={onJumpToTypography}
       />
     </div>
@@ -655,13 +655,14 @@ function FontPreview({
   font: BrandStyleguide["fonts"][number] | null;
   sample: string;
 }) {
+  const { t } = useTranslation("brandstyle");
   if (!font) {
     return (
       <div className="rounded-lg border border-dashed border-gray-200 px-4 py-3">
         <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
           {label}
         </p>
-        <p className="text-sm text-gray-400 italic mt-1">Not detected</p>
+        <p className="text-sm text-gray-400 italic mt-1">{t("wizard.typography.notDetected")}</p>
       </div>
     );
   }
@@ -695,6 +696,7 @@ interface DoneStepProps {
 }
 
 function DoneStep({ counts, onClose, onJumpToComponents }: DoneStepProps) {
+  const { t } = useTranslation("brandstyle");
   return (
     <div className="space-y-5 text-center">
       <div className="flex justify-center">
@@ -704,22 +706,23 @@ function DoneStep({ counts, onClose, onJumpToComponents }: DoneStepProps) {
       </div>
       <div>
         <h3 className="text-lg font-semibold text-gray-900">
-          Brand style ready to use
+          {t("wizard.done.title")}
         </h3>
         <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
-          Your brand DNA ({counts.colors} colors, {counts.fonts} fonts,{" "}
-          {counts.components} components) is now used in landing-page generation,
-          content creation and F-VAL fidelity scoring. You can adjust any
-          override later via the Brand Styleguide tabs.
+          {t("wizard.done.body", {
+            colors: counts.colors,
+            fonts: counts.fonts,
+            components: counts.components,
+          })}
         </p>
       </div>
 
       <div className="flex items-center justify-center gap-2 pt-2">
         <Button variant="secondary" size="sm" onClick={onJumpToComponents}>
-          View components
+          {t("wizard.done.viewComponents")}
         </Button>
         <Button variant="primary" size="sm" onClick={onClose}>
-          Close wizard
+          {t("wizard.closeWizard")}
         </Button>
       </div>
     </div>

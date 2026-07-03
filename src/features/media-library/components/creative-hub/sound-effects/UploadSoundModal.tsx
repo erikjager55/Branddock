@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Button, Input, Select } from '@/components/shared';
 import { Upload, Music2 } from 'lucide-react';
 import { useUploadSoundEffect } from '@/features/media-library/hooks';
@@ -15,13 +16,7 @@ interface UploadSoundModalProps {
 
 // ─── Constants ──────────────────────────────────────────────
 
-const SOUND_TYPE_OPTIONS = [
-  { value: 'SFX', label: 'SFX' },
-  { value: 'JINGLE', label: 'Jingle' },
-  { value: 'SOUND_LOGO', label: 'Sound Logo' },
-  { value: 'AMBIENT', label: 'Ambient' },
-  { value: 'MUSIC', label: 'Music' },
-];
+const SOUND_TYPE_VALUES = ['SFX', 'JINGLE', 'SOUND_LOGO', 'AMBIENT', 'MUSIC'] as const;
 
 const ALLOWED_TYPES = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/aac', 'audio/mp4', 'audio/webm'];
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -30,6 +25,8 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 /** Modal for uploading a sound effect file. */
 export function UploadSoundModal({ isOpen, onClose }: UploadSoundModalProps) {
+  const { t } = useTranslation('media-library');
+  const soundTypeOptions = SOUND_TYPE_VALUES.map((v) => ({ value: v, label: t(`soundTypes.${v}`) }));
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState('');
   const [soundType, setSoundType] = useState<SoundType>('SFX');
@@ -56,16 +53,16 @@ export function UploadSoundModal({ isOpen, onClose }: UploadSoundModalProps) {
 
   const validateFile = useCallback((f: File): boolean => {
     if (!ALLOWED_TYPES.includes(f.type)) {
-      setFileError('Invalid file type. Allowed: mp3, wav, ogg, aac, mp4, webm');
+      setFileError(t('soundEffects.uploadModal.invalidType'));
       return false;
     }
     if (f.size > MAX_FILE_SIZE) {
-      setFileError('File too large. Maximum size is 50MB.');
+      setFileError(t('soundEffects.uploadModal.tooLarge'));
       return false;
     }
     setFileError(null);
     return true;
-  }, []);
+  }, [t]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,13 +100,13 @@ export function UploadSoundModal({ isOpen, onClose }: UploadSoundModalProps) {
 
       const trimmedName = name.trim();
       if (!trimmedName) {
-        setNameError('Name is required');
+        setNameError(t('soundEffects.nameRequired'));
         return;
       }
       setNameError(null);
 
       if (!file) {
-        setFileError('Please select an audio file');
+        setFileError(t('soundEffects.uploadModal.selectFile'));
         return;
       }
 
@@ -118,28 +115,28 @@ export function UploadSoundModal({ isOpen, onClose }: UploadSoundModalProps) {
         { onSuccess: () => handleClose() },
       );
     },
-    [file, name, soundType, uploadSoundEffect, handleClose],
+    [file, name, soundType, uploadSoundEffect, handleClose, t],
   );
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Upload Sound Effect"
-      subtitle="Upload an audio file to your sound effects library."
+      title={t('soundEffects.uploadModal.title')}
+      subtitle={t('soundEffects.uploadModal.subtitle')}
       size="md"
       data-testid="upload-sound-modal"
       footer={
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={handleClose} disabled={uploadSoundEffect.isPending}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
             isLoading={uploadSoundEffect.isPending}
             disabled={!file || !name.trim() || uploadSoundEffect.isPending}
           >
-            Upload
+            {t('soundEffects.uploadModal.upload')}
           </Button>
         </div>
       }
@@ -156,7 +153,7 @@ export function UploadSoundModal({ isOpen, onClose }: UploadSoundModalProps) {
           }`}
           role="button"
           tabIndex={0}
-          aria-label="Select audio file to upload"
+          aria-label={t('soundEffects.uploadModal.selectFileAria')}
           onClick={() => fileInputRef.current?.click()}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -186,10 +183,10 @@ export function UploadSoundModal({ isOpen, onClose }: UploadSoundModalProps) {
             <>
               <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
               <p className="text-sm text-gray-600">
-                Drop audio file here or <span className="text-purple-600 font-medium">browse</span>
+                {t('soundEffects.uploadModal.dropText')} <span className="text-purple-600 font-medium">{t('soundEffects.uploadModal.browse')}</span>
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                MP3, WAV, OGG, AAC, MP4, WebM — max 50MB
+                {t('soundEffects.uploadModal.formats')}
               </p>
             </>
           )}
@@ -200,13 +197,13 @@ export function UploadSoundModal({ isOpen, onClose }: UploadSoundModalProps) {
 
         {/* Name */}
         <Input
-          label="Name"
+          label={t('fields.name')}
           value={name}
           onChange={(e) => {
             setName(e.target.value);
             if (nameError) setNameError(null);
           }}
-          placeholder="e.g., Brand Jingle"
+          placeholder={t('soundEffects.uploadModal.namePlaceholder')}
           maxLength={200}
           error={nameError ?? undefined}
           required
@@ -214,16 +211,16 @@ export function UploadSoundModal({ isOpen, onClose }: UploadSoundModalProps) {
 
         {/* Sound Type */}
         <Select
-          label="Sound Type"
+          label={t('soundEffects.soundType')}
           value={soundType}
           onChange={(value) => setSoundType((value ?? 'SFX') as SoundType)}
-          options={SOUND_TYPE_OPTIONS}
+          options={soundTypeOptions}
         />
 
         {/* Mutation error */}
         {uploadSoundEffect.isError && (
           <p className="text-xs text-red-500" role="alert">
-            Failed to upload sound effect. Please try again.
+            {t('soundEffects.uploadModal.error')}
           </p>
         )}
       </form>

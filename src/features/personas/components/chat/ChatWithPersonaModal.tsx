@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { Sparkles, MessageCircle, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { OptimizedImage } from '@/components/shared';
 import type { PersonaWithMeta } from '../../types/persona.types';
 import { usePersonaChat } from '../../hooks/usePersonaChat';
@@ -17,6 +18,7 @@ interface ChatWithPersonaModalProps {
 }
 
 export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPersonaModalProps) {
+  const { t } = useTranslation('personas');
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const activeTab = usePersonaChatStore((s) => s.activeTab);
@@ -88,7 +90,7 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
           className="bg-white max-w-2xl w-full h-[90vh] max-h-[90vh] shadow-2xl rounded-2xl flex flex-col mx-4 my-[5vh]"
           role="dialog"
           aria-modal="true"
-          aria-label={`Chat with ${persona.name}`}
+          aria-label={t('chat.ariaChatWith', { name: persona.name })}
         >
           {/* Header */}
           <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 flex-shrink-0">
@@ -114,7 +116,7 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
               <button
                 onClick={onClose}
                 className="p-1.5 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
-                aria-label="Close"
+                aria-label={t('chat.close')}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -133,7 +135,7 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
               }`}
             >
               <MessageCircle className="w-4 h-4" />
-              Chat
+              {t('chat.tabChat')}
               {chat.messageCount > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 rounded-full leading-none">
                   {chat.messageCount}
@@ -150,7 +152,7 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
               }`}
             >
               <Sparkles className="w-4 h-4" />
-              Insights
+              {t('chat.tabInsights')}
             </button>
           </div>
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useRef } from "react";
 import { ArrowLeft, Megaphone, Zap, Plus, Download, Sparkles, Loader2, CheckCircle2, AlertCircle, Target, Share2, FileText, FileJson, Pencil, Check, X, Users, Wand2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Badge, Button, EmptyState } from "@/components/shared";
 import { LockShield, LockStatusPill, LockBanner, LockConfirmDialog } from "@/components/lock";
 import { useLockState } from "@/hooks/useLockState";
@@ -49,6 +50,7 @@ interface ContentLibraryCampaignModeProps {
 }
 
 export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filteredItems }: ContentLibraryCampaignModeProps) {
+  const { t } = useTranslation("campaigns-content-library");
   const toggleCampaignFilter = useContentLibraryStore((s) => s.toggleCampaignFilter);
   const campaignSubTab = useContentLibraryStore((s) => s.campaignSubTab);
   const { data: campaign, isLoading } = useCampaignDetail(campaignId);
@@ -83,7 +85,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
   const lock = useLockState({
     entityType: "campaigns",
     entityId: campaignId,
-    entityName: campaign?.title ?? "Campaign",
+    entityName: campaign?.title ?? t("campaignMode.campaignFallback"),
     initialState: {
       isLocked: campaign?.isLocked ?? false,
       lockedAt: campaign?.lockedAt ?? null,
@@ -232,9 +234,9 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
           onClick={handleBack}
           className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
         >
-          <ArrowLeft className="h-4 w-4" /> All content
+          <ArrowLeft className="h-4 w-4" /> {t("campaignMode.allContent")}
         </button>
-        <p className="text-gray-500 mt-2">Campaign not found.</p>
+        <p className="text-gray-500 mt-2">{t("campaignMode.notFound")}</p>
       </div>
     );
   }
@@ -249,7 +251,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
           onClick={handleBack}
           className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
         >
-          <ArrowLeft className="h-4 w-4" /> All content
+          <ArrowLeft className="h-4 w-4" /> {t("campaignMode.allContent")}
         </button>
 
         <div className="flex items-start justify-between gap-4">
@@ -257,11 +259,11 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
             <div className="flex items-center gap-2 mb-1">
               {isStrategic ? (
                 <Badge variant="success">
-                  <Megaphone className="h-3 w-3 mr-1" /> Strategic
+                  <Megaphone className="h-3 w-3 mr-1" /> {t("campaignMode.strategic")}
                 </Badge>
               ) : (
                 <Badge variant="info" className="bg-purple-100 text-purple-700">
-                  <Zap className="h-3 w-3 mr-1" /> Quick
+                  <Zap className="h-3 w-3 mr-1" /> {t("campaignMode.quick")}
                 </Badge>
               )}
               <Badge
@@ -294,7 +296,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
                     type="button"
                     onClick={handleSaveTitle}
                     className="p-1 text-teal-600 hover:text-teal-700"
-                    title="Save"
+                    title={t("campaignMode.save")}
                   >
                     <Check className="h-5 w-5" />
                   </button>
@@ -302,7 +304,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
                     type="button"
                     onClick={handleCancelEditTitle}
                     className="p-1 text-gray-400 hover:text-gray-600"
-                    title="Cancel"
+                    title={t("campaignMode.cancel")}
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -310,7 +312,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                  placeholder="Add a description..."
+                  placeholder={t("campaignMode.descriptionPlaceholder")}
                   rows={2}
                   className="text-sm text-gray-600 border border-gray-300 rounded-md px-2 py-1 outline-none focus:border-teal-500 resize-y"
                   maxLength={500}
@@ -347,7 +349,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
                 {personaNames.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1">
-                      <Users className="h-3 w-3" /> Personas
+                      <Users className="h-3 w-3" /> {t("campaignMode.personas")}
                     </span>
                     {personaNames.map((name) => (
                       <span
@@ -362,7 +364,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
                 {channelNames.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1">
-                      <Share2 className="h-3 w-3" /> Channels
+                      <Share2 className="h-3 w-3" /> {t("campaignMode.channels")}
                     </span>
                     {channelNames.map((name) => (
                       <span
@@ -391,7 +393,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
               onClick={() => setShowAddModal(true)}
               disabled={lock.isLocked}
             >
-              Add Deliverable
+              {t("campaignMode.addDeliverable")}
             </Button>
             <Button
               variant="secondary"
@@ -401,7 +403,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
               disabled={notStartedCount === 0 || bulkGenerate.isGenerating || lock.isLocked}
               isLoading={bulkGenerate.isGenerating}
             >
-              Generate Drafts ({notStartedCount})
+              {t("campaignMode.generateDrafts", { n: notStartedCount })}
             </Button>
             <LockShield
               isLocked={lock.isLocked}
@@ -434,11 +436,11 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700">
-              {bulkGenerate.isGenerating ? "Generating drafts..." : "Draft generation complete"}
+              {bulkGenerate.isGenerating ? t("campaignMode.generatingDrafts") : t("campaignMode.draftComplete")}
             </span>
             {bulkGenerate.result && (
               <span className="text-xs text-gray-500">
-                {bulkGenerate.result.generated} generated, {bulkGenerate.result.failed} failed
+                {t("campaignMode.generatedFailed", { generated: bulkGenerate.result.generated, failed: bulkGenerate.result.failed })}
               </span>
             )}
           </div>
@@ -467,22 +469,22 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
         <StatTile
           icon={<Target className="h-5 w-5 text-gray-400" />}
           value={stats.phaseCount}
-          label="Journey Phases"
+          label={t("campaignMode.journeyPhases")}
         />
         <StatTile
           icon={<Share2 className="h-5 w-5 text-gray-400" />}
           value={stats.touchpointCount}
-          label="Touchpoints"
+          label={t("campaignMode.touchpoints")}
         />
         <StatTile
           icon={<Share2 className="h-5 w-5 text-gray-400" />}
           value={stats.channelCount}
-          label="Channels"
+          label={t("campaignMode.channels")}
         />
         <StatTile
           icon={<FileText className="h-5 w-5 text-gray-400" />}
           value={stats.deliverableCount}
-          label="Deliverables"
+          label={t("campaignMode.deliverables")}
         />
       </div>
 
@@ -491,7 +493,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
         blueprint?.strategy ? (
           <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Campaign Strategy</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t("campaignMode.campaignStrategy")}</h3>
               <div className="flex items-center gap-2">
                 <Button
                   variant="secondary"
@@ -507,7 +509,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
                     })
                   }
                 >
-                  Export PDF
+                  {t("campaignMode.exportPdf")}
                 </Button>
                 <Button
                   variant="secondary"
@@ -523,7 +525,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
                     })
                   }
                 >
-                  Export JSON
+                  {t("campaignMode.exportJson")}
                 </Button>
                 <Button
                   variant="primary"
@@ -531,7 +533,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
                   icon={Sparkles}
                   onClick={() => setBriefModalOpen(true)}
                 >
-                  Generate brief
+                  {t("campaignMode.generateBrief")}
                 </Button>
                 <RegenerateSectionButton campaignId={campaignId} layer="strategy" />
               </div>
@@ -541,8 +543,8 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filtere
         ) : (
           <EmptyState
             icon={Target}
-            title="Strategy not available yet"
-            description="Generate a campaign strategy to see the strategic approach."
+            title={t("campaignMode.strategyEmptyTitle")}
+            description={t("campaignMode.strategyEmptyDescription")}
           />
         )
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { TrendingUp, Zap, Scale, Lightbulb } from "lucide-react";
 import { EmptyState } from "@/components/shared";
 import type { QuickInsight } from "../../types/research.types";
@@ -25,14 +26,16 @@ interface QuickInsightsSectionProps {
 // ─── Component ───────────────────────────────────────────────
 
 export function QuickInsightsSection({ insights }: QuickInsightsSectionProps) {
+  const { t } = useTranslation("research");
+
   if (!Array.isArray(insights) || insights.length === 0) {
     return (
       <div>
-        <h3 className="text-lg font-semibold mb-4">Quick Insights</h3>
+        <h3 className="text-lg font-semibold mb-4">{t("quickInsights.heading")}</h3>
         <EmptyState
           icon={Lightbulb}
-          title="No insights yet"
-          description="Insights will appear as you complete research studies."
+          title={t("quickInsights.empty.title")}
+          description={t("quickInsights.empty.description")}
         />
       </div>
     );
@@ -40,7 +43,7 @@ export function QuickInsightsSection({ insights }: QuickInsightsSectionProps) {
 
   return (
     <div data-testid="quick-insights">
-      <h3 className="text-lg font-semibold mb-4">Quick Insights</h3>
+      <h3 className="text-lg font-semibold mb-4">{t("quickInsights.heading")}</h3>
 
       <div className="space-y-3">
         {insights.map((insight) => {

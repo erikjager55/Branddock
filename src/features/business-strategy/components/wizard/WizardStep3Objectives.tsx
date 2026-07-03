@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input } from '@/components/shared';
 import type { InitialObjective } from '../../types/business-strategy.types';
 
@@ -11,6 +12,7 @@ interface WizardStep3Props {
 }
 
 export function WizardStep3Objectives({ objectives, onObjectivesChange }: WizardStep3Props) {
+  const { t } = useTranslation('business-strategy');
   const [krInputValues, setKrInputValues] = useState<Record<number, string>>({});
 
   const handleAddObjective = () => {
@@ -57,7 +59,7 @@ export function WizardStep3Objectives({ objectives, onObjectivesChange }: Wizard
     <div className="space-y-4">
       <div>
         <p className="text-sm text-gray-600">
-          Optionally define initial objectives for your strategy. You can always add more later.
+          {t('wizard.objectivesIntro')}
         </p>
       </div>
 
@@ -69,17 +71,17 @@ export function WizardStep3Objectives({ objectives, onObjectivesChange }: Wizard
           <div className="flex items-start gap-2">
             <div className="flex-1">
               <Input
-                label={`Objective ${objIdx + 1}`}
+                label={t('wizard.objectiveLabel', { number: objIdx + 1 })}
                 value={obj.title}
                 onChange={(e) => handleTitleChange(objIdx, e.target.value)}
-                placeholder="e.g. Increase monthly revenue by 20%"
+                placeholder={t('wizard.objectivePlaceholder')}
               />
             </div>
             <button
               type="button"
               onClick={() => handleRemoveObjective(objIdx)}
               className="mt-6 p-1.5 text-gray-400 hover:text-red-500 rounded transition-colors"
-              title="Remove objective"
+              title={t('wizard.removeObjective')}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -88,7 +90,7 @@ export function WizardStep3Objectives({ objectives, onObjectivesChange }: Wizard
           {/* Key Results */}
           {(obj.keyResults ?? []).length > 0 && (
             <div className="ml-4 space-y-1.5">
-              <span className="text-xs font-medium text-gray-500">Key Results</span>
+              <span className="text-xs font-medium text-gray-500">{t('wizard.keyResults')}</span>
               {(obj.keyResults ?? []).map((kr, krIdx) => (
                 <div key={krIdx} className="flex items-center gap-2">
                   <span className="text-sm text-gray-700 flex-1">{kr}</span>
@@ -117,7 +119,7 @@ export function WizardStep3Objectives({ objectives, onObjectivesChange }: Wizard
                   handleAddKeyResult(objIdx);
                 }
               }}
-              placeholder="Add a key result..."
+              placeholder={t('wizard.addKeyResultPlaceholder')}
               className="flex-1 px-2.5 py-1.5 border border-gray-200 rounded text-sm focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
             />
             <button
@@ -126,7 +128,7 @@ export function WizardStep3Objectives({ objectives, onObjectivesChange }: Wizard
               disabled={!(krInputValues[objIdx] ?? '').trim()}
               className="px-2.5 py-1.5 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 disabled:opacity-50 transition-colors"
             >
-              Add
+              {t('actions.add')}
             </button>
           </div>
         </div>
@@ -137,12 +139,12 @@ export function WizardStep3Objectives({ objectives, onObjectivesChange }: Wizard
         size="sm"
         onClick={handleAddObjective}
       >
-        <Plus className="w-4 h-4 mr-1" /> Add Objective
+        <Plus className="w-4 h-4 mr-1" /> {t('wizard.addObjective')}
       </Button>
 
       {objectives.length === 0 && (
         <p className="text-sm text-gray-400 italic text-center py-4">
-          No objectives yet — you can add them now or later from the strategy detail page.
+          {t('wizard.noObjectives')}
         </p>
       )}
     </div>

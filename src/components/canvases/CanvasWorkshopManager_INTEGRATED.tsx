@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -70,6 +71,7 @@ interface CanvasWorkshopManagerProps {
 }
 
 export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
+  const { t } = useTranslation('canvases');
   const [viewStatus, setViewStatus] = useState<'to-buy' | 'in-progress' | 'approved'>('in-progress');
   const [showDropdown, setShowDropdown] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -383,11 +385,11 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
   const getStatusLabel = () => {
     switch (viewStatus) {
       case 'to-buy':
-        return 'To Buy';
+        return t('status.toBuy');
       case 'in-progress':
-        return 'In Progress';
+        return t('status.inProgress');
       case 'approved':
-        return 'Approved';
+        return t('status.approved');
     }
   };
 
@@ -469,39 +471,39 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
       <div className="lg:col-span-2 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Canvas Workshop Package</CardTitle>
+            <CardTitle className="text-lg">{t('workshopManager.packageTitle')}</CardTitle>
             <CardDescription>
-              Interactive visual mapping session to explore brand concepts
+              {t('workshopManager.packageDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-4">
               <div className="p-4 bg-muted rounded-lg">
-                <h4 className="font-medium mb-2">What's Included:</h4>
+                <h4 className="font-medium mb-2">{t('common.whatsIncluded')}</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-start space-x-2">
                     <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Professional facilitation by brand strategy experts</span>
+                    <span>{t('workshopManager.included1')}</span>
                   </li>
                   <li className="flex items-start space-x-2">
                     <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Custom workshop materials and digital canvas templates</span>
+                    <span>{t('workshopManager.included2')}</span>
                   </li>
                   <li className="flex items-start space-x-2">
                     <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>In-person or virtual session options</span>
+                    <span>{t('workshopManager.included3')}</span>
                   </li>
                   <li className="flex items-start space-x-2">
                     <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Collaborative exercises and team alignment activities</span>
+                    <span>{t('workshopManager.included4')}</span>
                   </li>
                   <li className="flex items-start space-x-2">
                     <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Digital canvas outputs and documentation</span>
+                    <span>{t('workshopManager.included5')}</span>
                   </li>
                   <li className="flex items-start space-x-2">
                     <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Post-workshop summary and key insights report</span>
+                    <span>{t('workshopManager.included6')}</span>
                   </li>
                 </ul>
               </div>
@@ -509,18 +511,18 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
               <div className="grid grid-cols-3 gap-4">
                 <div className="p-4 border rounded-lg">
                   <Clock className="h-5 w-5 text-primary mb-2" />
-                  <p className="text-sm font-medium">Duration</p>
-                  <p className="text-xs text-muted-foreground">2-3 hours</p>
+                  <p className="text-sm font-medium">{t('common.duration')}</p>
+                  <p className="text-xs text-muted-foreground">{t('workshopManager.durationValue')}</p>
                 </div>
                 <div className="p-4 border rounded-lg">
                   <Users className="h-5 w-5 text-primary mb-2" />
-                  <p className="text-sm font-medium">Participants</p>
-                  <p className="text-xs text-muted-foreground">5-10 people</p>
+                  <p className="text-sm font-medium">{t('workshopManager.participants')}</p>
+                  <p className="text-xs text-muted-foreground">{t('workshopManager.participantsValue')}</p>
                 </div>
                 <div className="p-4 border rounded-lg">
                   <Video className="h-5 w-5 text-primary mb-2" />
-                  <p className="text-sm font-medium">Format</p>
-                  <p className="text-xs text-muted-foreground">In-person or virtual</p>
+                  <p className="text-sm font-medium">{t('workshopManager.format')}</p>
+                  <p className="text-xs text-muted-foreground">{t('workshopManager.formatValue')}</p>
                 </div>
               </div>
             </div>
@@ -534,10 +536,10 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
               <div>
                 <CardTitle className="text-lg flex items-center">
                   <Presentation className="h-4 w-4 mr-2 text-primary" />
-                  Select Brand Assets to Explore
+                  {t('workshopManager.selectAssets')}
                 </CardTitle>
                 <CardDescription>
-                  Each selected asset will receive workshop data and change status to 'Workshop Complete'
+                  {t('workshopManager.selectAssetsDesc')}
                 </CardDescription>
               </div>
             </div>
@@ -551,19 +553,19 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                 onClick={() => handleModeSwitch('bundle')}
               >
                 <Package className="h-4 w-4 mr-2" />
-                Pre-Selected Bundles
+                {t('workshopManager.preSelectedBundles')}
               </Button>
               <Button
                 variant={selectionMode === 'custom' ? 'default' : 'ghost'}
                 className="flex-1"
                 onClick={() => handleModeSwitch('custom')}
               >
-                Choose Individual Assets
+                {t('workshopManager.chooseIndividual')}
               </Button>
             </div>
             {selectionMode === 'custom' && savedCustomSelection.length > 0 && selectedAssets.length === 0 && (
               <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-100">
-                Your custom selection is saved—switch back to bundles anytime
+                {t('workshopManager.customSaved')}
               </div>
             )}
 
@@ -607,10 +609,10 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                         <div className="text-sm">
                           <span className="text-muted-foreground line-through">€{pkg.originalPrice}</span>
                           <span className="ml-2 font-bold text-primary">€{pricePerWorkshop}</span>
-                          <span className="text-xs text-muted-foreground ml-1">per workshop</span>
+                          <span className="text-xs text-muted-foreground ml-1">{t('workshopManager.perWorkshop')}</span>
                         </div>
                         <Badge variant="outline" className="bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
-                          Save €{pkg.savings}
+                          {t('workshopManager.saveAmount', { amount: pkg.savings })}
                         </Badge>
                       </div>
 
@@ -631,10 +633,10 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                       {workshopQuantity > 1 && (
                         <div className="p-2 bg-background rounded border border-dashed">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Total for {workshopQuantity} workshops:</span>
+                            <span className="text-muted-foreground">{t('workshopManager.totalForWorkshops', { count: workshopQuantity })}</span>
                             <div>
                               <span className="font-bold text-primary">€{totalPrice}</span>
-                              <span className="ml-2 text-green-600">(Save €{totalSavings})</span>
+                              <span className="ml-2 text-green-600">{t('workshopManager.saveInline', { amount: totalSavings })}</span>
                             </div>
                           </div>
                         </div>
@@ -647,7 +649,7 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                   <div className="flex items-start space-x-2">
                     <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-blue-900 dark:text-blue-100">
-                      Bundles include pre-selected assets at a discounted rate. Switch to "Custom Selection" to choose individual assets.
+                      {t('workshopManager.bundlesInfo')}
                     </p>
                   </div>
                 </div>
@@ -692,13 +694,13 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                 {selectedAssets.length > 0 && (
                   <div className="p-3 bg-muted rounded-lg">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{selectedAssets.length} asset{selectedAssets.length !== 1 ? 's' : ''} selected</span>
-                      <Button 
-                        variant="ghost" 
+                      <span className="text-muted-foreground">{t('common.assetsSelected', { count: selectedAssets.length })}</span>
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={() => setSelectedAssets([])}
                       >
-                        Clear selection
+                        {t('workshopManager.clearSelection')}
                       </Button>
                     </div>
                   </div>
@@ -711,11 +713,11 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
         {/* Quantity & Facilitator Options */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Workshop Options</CardTitle>
+            <CardTitle className="text-lg">{t('workshopManager.workshopOptions')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Number of Workshops</Label>
+              <Label>{t('workshopManager.numberOfWorkshops')}</Label>
               <div className="flex items-center space-x-4">
                 <Button
                   variant="outline"
@@ -739,9 +741,9 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
 
             <div className="flex items-start justify-between space-x-4">
               <div className="flex-1">
-                <Label className="font-medium">Add Professional Facilitator</Label>
+                <Label className="font-medium">{t('workshopManager.addFacilitator')}</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Expert guidance to maximize workshop outcomes
+                  {t('workshopManager.facilitatorDesc')}
                 </p>
               </div>
               <div className="flex items-center space-x-2">
@@ -763,32 +765,32 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
         <div className="sticky top-6 space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Purchase Summary</CardTitle>
+              <CardTitle className="text-lg">{t('workshopManager.purchaseSummary')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Workshop{workshopQuantity > 1 ? 's' : ''} ({workshopQuantity}x)</span>
+                  <span className="text-muted-foreground">{t('workshopManager.workshopLine', { count: workshopQuantity })}</span>
                   <span className="font-medium">€{baseWorkshopPrice * workshopQuantity}</span>
                 </div>
-                
+
                 {!selectedBundleData && selectedAssets.length > 0 && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Assets ({selectedAssets.length}x)</span>
+                    <span className="text-muted-foreground">{t('workshopManager.assetsLine', { count: selectedAssets.length })}</span>
                     <span className="font-medium">€{totalAssetPrice}</span>
                   </div>
                 )}
 
                 {selectedBundleData && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-green-600">Bundle Savings</span>
+                    <span className="text-green-600">{t('workshopManager.bundleSavings')}</span>
                     <span className="font-medium text-green-600">-€{bundleDiscount}</span>
                   </div>
                 )}
-                
+
                 {includeFacilitator && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Facilitator ({workshopQuantity}x)</span>
+                    <span className="text-muted-foreground">{t('workshopManager.facilitatorLine', { count: workshopQuantity })}</span>
                     <span className="font-medium">€{facilitatorTotal}</span>
                   </div>
                 )}
@@ -796,7 +798,7 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                 <Separator />
 
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">Total</span>
+                  <span className="font-medium">{t('workshopManager.total')}</span>
                   <span className="text-2xl font-bold">€{totalPrice}</span>
                 </div>
               </div>
@@ -808,7 +810,7 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                 disabled={selectedAssets.length === 0}
               >
                 <ShoppingCart className="h-4 w-4 mr-2" />
-                Purchase Workshop
+                {t('workshopManager.purchaseWorkshop')}
               </Button>
 
               <Button 
@@ -819,13 +821,13 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                 disabled={selectedAssets.length === 0}
               >
                 <Eye className="h-4 w-4 mr-2" />
-                Preview Dashboard Impact
+                {t('workshopManager.previewImpact')}
               </Button>
 
               {selectedAssets.length > 0 && (
                 <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <p className="text-xs text-blue-900 dark:text-blue-100">
-                    {selectedAssets.length} brand asset{selectedAssets.length !== 1 ? 's' : ''} will receive workshop data and update their status.
+                    {t('workshopManager.assetsWillReceive', { count: selectedAssets.length })}
                   </p>
                 </div>
               )}
@@ -848,15 +850,14 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                   <Calendar className="h-8 w-8 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-lg mb-2">No Workshops Scheduled</h3>
+                  <h3 className="font-medium text-lg mb-2">{t('workshopManager.noWorkshops')}</h3>
                   <p className="text-sm text-muted-foreground max-w-md">
-                    You've purchased {purchasedWorkshops} workshop{purchasedWorkshops !== 1 ? 's' : ''} but haven't scheduled any sessions yet. 
-                    Schedule your first workshop to get started.
+                    {t('workshopManager.noWorkshopsHint', { count: purchasedWorkshops })}
                   </p>
                 </div>
                 <Button onClick={() => setShowScheduleDialog(true)} className="mt-4">
                   <Plus className="h-4 w-4 mr-2" />
-                  Schedule First Workshop
+                  {t('workshopManager.scheduleFirst')}
                 </Button>
               </div>
             </CardContent>
@@ -1576,11 +1577,11 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
               <Presentation className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="font-bold text-xl">Canvas Workshop</h2>
+              <h2 className="font-bold text-xl">{t('workshopManager.headerTitle')}</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {viewStatus === 'to-buy' && 'Purchase and plan your workshop sessions'}
-                {viewStatus === 'in-progress' && 'Active workshop sessions in progress'}
-                {viewStatus === 'approved' && 'Completed and approved workshops'}
+                {viewStatus === 'to-buy' && t('workshopManager.headerToBuy')}
+                {viewStatus === 'in-progress' && t('workshopManager.headerInProgress')}
+                {viewStatus === 'approved' && t('workshopManager.headerApproved')}
               </p>
             </div>
           </div>
@@ -1600,17 +1601,17 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
               <DropdownMenuContent align="end" className="w-[220px]">
                 <DropdownMenuItem onClick={() => setViewStatus('to-buy')} className="cursor-pointer py-3">
                   <ShoppingCart className="h-4 w-4 mr-2 text-orange-600" />
-                  <span>To Buy</span>
+                  <span>{t('status.toBuy')}</span>
                   {viewStatus === 'to-buy' && <Check className="h-4 w-4 ml-auto" />}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setViewStatus('in-progress')} className="cursor-pointer py-3">
                   <Play className="h-4 w-4 mr-2 text-blue-600" />
-                  <span>In Progress</span>
+                  <span>{t('status.inProgress')}</span>
                   {viewStatus === 'in-progress' && <Check className="h-4 w-4 ml-auto" />}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setViewStatus('approved')} className="cursor-pointer py-3">
                   <Check className="h-4 w-4 mr-2 text-green-600" />
-                  <span>Approved</span>
+                  <span>{t('status.approved')}</span>
                   {viewStatus === 'approved' && <Check className="h-4 w-4 ml-auto" />}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -1627,14 +1628,14 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
       <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Schedule Workshop</DialogTitle>
+            <DialogTitle>{t('workshopManager.scheduleTitle')}</DialogTitle>
             <DialogDescription>
-              Add a new workshop session to your schedule
+              {t('workshopManager.scheduleDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date">{t('common.date')}</Label>
               <Input
                 id="date"
                 type="date"
@@ -1643,7 +1644,7 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="time">Time</Label>
+              <Label htmlFor="time">{t('common.time')}</Label>
               <Input
                 id="time"
                 type="time"
@@ -1652,12 +1653,12 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('common.description')}</Label>
               <Textarea
                 id="description"
                 value={newWorkshop.description}
                 onChange={(e) => setNewWorkshop({ ...newWorkshop, description: e.target.value })}
-                placeholder="e.g., Initial brand strategy workshop with leadership team"
+                placeholder={t('workshopManager.schedulePlaceholder')}
               />
             </div>
           </div>
@@ -1667,13 +1668,13 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
               variant="outline"
               onClick={() => setShowScheduleDialog(false)}
             >
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button
               type="button"
               onClick={handleScheduleWorkshop}
             >
-              Schedule
+              {t('workshopManager.schedule')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1683,9 +1684,9 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
       <Dialog open={showBundleConfirmation} onOpenChange={setShowBundleConfirmation}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Expand to Bundle Selection?</DialogTitle>
+            <DialogTitle>{t('workshopManager.expandTitle')}</DialogTitle>
             <DialogDescription>
-              You're about to expand your workshop scope
+              {t('workshopManager.expandDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1700,17 +1701,17 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                       <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
                         <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">
-                          This will update {bundle.assets.length} asset pages
+                          {t('workshopManager.willUpdatePages', { count: bundle.assets.length })}
                         </p>
                         <p className="text-xs text-amber-700 dark:text-amber-300">
-                          Selecting "{bundle.name}" will expand from {selectedAssets.length} asset{selectedAssets.length !== 1 ? 's' : ''} to {bundle.assets.length} assets
+                          {t('workshopManager.expandDetail', { name: bundle.name, from: selectedAssets.length, to: bundle.assets.length })}
                         </p>
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Assets included in {bundle.name}:</p>
+                    <p className="text-sm font-medium">{t('workshopManager.assetsIncluded', { name: bundle.name })}</p>
                     <div className="grid grid-cols-1 gap-2">
                       {bundle.assets.map((assetId) => {
                         const asset = availableAssets.find(a => a.id === assetId);
@@ -1724,7 +1725,7 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                             <span className="text-sm flex-1">{asset.name}</span>
                             {isNew && (
                               <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300 border-blue-200">
-                                New
+                                {t('workshopManager.newBadge')}
                               </Badge>
                             )}
                           </div>
@@ -1744,10 +1745,10 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                 setPendingBundle(null);
               }}
             >
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button onClick={confirmBundleSelection}>
-              Continue with Bundle
+              {t('workshopManager.continueBundle')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1757,15 +1758,15 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
       <Dialog open={showImpactPreview} onOpenChange={setShowImpactPreview}>
         <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Dashboard Impact Preview</DialogTitle>
+            <DialogTitle>{t('workshopManager.impactTitle')}</DialogTitle>
             <DialogDescription>
-              How your "Your Brand" dashboard will change after purchase
+              {t('workshopManager.impactDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-4">
               <div>
-                <p className="text-sm font-medium mb-3">Current State</p>
+                <p className="text-sm font-medium mb-3">{t('workshopManager.currentState')}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {availableAssets.slice(0, 6).map((asset) => {
                     const Icon = asset.icon;
@@ -1797,7 +1798,7 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
               </div>
 
               <div>
-                <p className="text-sm font-medium mb-3">After Purchase</p>
+                <p className="text-sm font-medium mb-3">{t('workshopManager.afterPurchase')}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {availableAssets.slice(0, 6).map((asset) => {
                     const Icon = asset.icon;
@@ -1820,7 +1821,7 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium truncate">{asset.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {willBeUpdated ? 'Workshop Complete' : <span className="capitalize">{asset.currentStatus}</span>}
+                              {willBeUpdated ? t('workshopManager.workshopComplete') : <span className="capitalize">{asset.currentStatus}</span>}
                             </p>
                           </div>
                           {willBeUpdated && (
@@ -1839,18 +1840,18 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                 <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1 space-y-2">
                   <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                    {selectedAssets.length} asset page{selectedAssets.length !== 1 ? 's' : ''} will be updated
+                    {t('workshopManager.pagesWillUpdate', { count: selectedAssets.length })}
                   </p>
                   <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
                     {selectedAssets.slice(0, 5).map((assetId) => {
                       const asset = availableAssets.find(a => a.id === assetId);
                       if (!asset) return null;
                       return (
-                        <li key={assetId}>• {asset.name} → Workshop Complete</li>
+                        <li key={assetId}>• {t('workshopManager.assetToComplete', { name: asset.name })}</li>
                       );
                     })}
                     {selectedAssets.length > 5 && (
-                      <li className="text-blue-600 dark:text-blue-400">+ {selectedAssets.length - 5} more</li>
+                      <li className="text-blue-600 dark:text-blue-400">{t('workshopManager.moreCount', { count: selectedAssets.length - 5 })}</li>
                     )}
                   </ul>
                 </div>
@@ -1859,7 +1860,7 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowImpactPreview(false)}>
-              Close Preview
+              {t('workshopManager.closePreview')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1869,9 +1870,9 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
       <Dialog open={showCompletionPreview} onOpenChange={setShowCompletionPreview}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Complete Workshop Session?</DialogTitle>
+            <DialogTitle>{t('workshopManager.completeTitle')}</DialogTitle>
             <DialogDescription>
-              Review what happens when you complete this workshop
+              {t('workshopManager.completeDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1884,35 +1885,35 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
               return (
                 <>
                   <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
-                    <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-3">What will happen:</h3>
+                    <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-3">{t('workshopManager.whatWillHappen')}</h3>
                     <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
                       <li className="flex items-start space-x-2">
                         <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                        <span>Your results will be saved and organized by asset</span>
+                        <span>{t('workshopManager.happen1')}</span>
                       </li>
                       <li className="flex items-start space-x-2">
                         <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                        <span>All{workshopAssets.length > 0 && ` ${workshopAssets.length}`} brand asset page{workshopAssets.length !== 1 ? 's' : ''} will be updated with workshop insights</span>
+                        <span>{t('workshopManager.happen2', { count: workshopAssets.length })}</span>
                       </li>
                       <li className="flex items-start space-x-2">
                         <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                        <span>A comprehensive workshop report will be generated</span>
+                        <span>{t('workshopManager.happen3')}</span>
                       </li>
                       <li className="flex items-start space-x-2">
                         <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                        <span>You can still edit results after completion</span>
+                        <span>{t('workshopManager.happen4')}</span>
                       </li>
                       {selectedWorkshop?.hasFacilitator && (
                         <li className="flex items-start space-x-2">
                           <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                          <span>Facilitator will receive a copy of all results for final review</span>
+                          <span>{t('workshopManager.happen5')}</span>
                         </li>
                       )}
                     </ul>
                   </div>
 
                   <div className="space-y-2">
-                    <h3 className="font-medium text-sm">Assets that will be updated:</h3>
+                    <h3 className="font-medium text-sm">{t('workshopManager.assetsWillUpdate')}</h3>
                     <div className="flex flex-wrap gap-2">
                       {workshopAssets.map((asset) => {
                         if (!asset) return null;
@@ -1934,7 +1935,7 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
               <div className="flex items-start space-x-2">
                 <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-amber-800 dark:text-amber-200">
-                  Make sure you've saved all your results before completing. You can always come back to edit later.
+                  {t('workshopManager.completeWarning')}
                 </p>
               </div>
             </div>
@@ -1944,7 +1945,7 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
               variant="outline"
               onClick={() => setShowCompletionPreview(false)}
             >
-              Go Back
+              {t('workshopManager.goBack')}
             </Button>
             <Button
               onClick={() => {
@@ -1952,7 +1953,7 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
                 setViewStatus('approved');
               }}
             >
-              Complete Workshop
+              {t('workshopManager.completeWorkshop')}
             </Button>
           </DialogFooter>
         </DialogContent>

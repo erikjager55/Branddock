@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import {
   Users,
   Brain,
@@ -38,6 +39,7 @@ function getBadgeVariant(pct: number): 'success' | 'warning' | 'danger' {
 }
 
 export function UsageOverviewCard() {
+  const { t } = useTranslation('settings-billing');
   const billing = useBillingPlan();
   const { data: usageData, isLoading: usageLoading } = useUsage();
   const usage = usageData?.usage;
@@ -45,13 +47,13 @@ export function UsageOverviewCard() {
   if (billing.isFreeBeta) {
     return (
       <Card padding="lg">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Usage Overview</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('usage.title')}</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'AI Tokens', icon: Brain, value: 'Unlimited' },
-            { label: 'Team Members', icon: Users, value: 'Unlimited' },
-            { label: 'Campaigns', icon: Megaphone, value: 'Unlimited' },
-            { label: 'Storage', icon: HardDrive, value: 'Unlimited' },
+            { label: t('usage.labels.aiTokens'), icon: Brain, value: t('common.unlimited') },
+            { label: t('usage.labels.teamMembers'), icon: Users, value: t('common.unlimited') },
+            { label: t('usage.labels.campaigns'), icon: Megaphone, value: t('common.unlimited') },
+            { label: t('usage.labels.storage'), icon: HardDrive, value: t('common.unlimited') },
           ].map((item) => (
             <div key={item.label} className="text-center p-3 bg-gray-50 rounded-lg">
               <item.icon className="h-5 w-5 text-gray-400 mx-auto mb-1.5" />
@@ -67,56 +69,56 @@ export function UsageOverviewCard() {
   const rows: UsageRow[] = [
     {
       key: 'TEAM_MEMBERS',
-      label: 'Team Members',
+      label: t('usage.labels.teamMembers'),
       icon: Users,
       used: usage?.seats?.used ?? 0,
       limit: billing.limits.TEAM_MEMBERS,
     },
     {
       key: 'AI_TOKENS',
-      label: 'AI Tokens',
+      label: t('usage.labels.aiTokens'),
       icon: Brain,
       used: billing.usage.aiTokens,
       limit: billing.usage.aiTokensLimit,
     },
     {
       key: 'PERSONAS',
-      label: 'Personas',
+      label: t('usage.labels.personas'),
       icon: Target,
       used: 0, // Would need persona count from context
       limit: billing.limits.PERSONAS,
     },
     {
       key: 'CAMPAIGNS',
-      label: 'Campaigns',
+      label: t('usage.labels.campaigns'),
       icon: Megaphone,
       used: 0,
       limit: billing.limits.CAMPAIGNS,
     },
     {
       key: 'BRAND_ASSETS',
-      label: 'Brand Assets',
+      label: t('usage.labels.brandAssets'),
       icon: Building2,
       used: 0,
       limit: billing.limits.BRAND_ASSETS,
     },
     {
       key: 'PRODUCTS',
-      label: 'Products',
+      label: t('usage.labels.products'),
       icon: Package,
       used: 0,
       limit: billing.limits.PRODUCTS,
     },
     {
       key: 'KNOWLEDGE_RESOURCES',
-      label: 'Knowledge',
+      label: t('usage.labels.knowledge'),
       icon: BookOpen,
       used: 0,
       limit: billing.limits.KNOWLEDGE_RESOURCES,
     },
     {
       key: 'STORAGE_MB',
-      label: 'Storage',
+      label: t('usage.labels.storage'),
       icon: HardDrive,
       used: usage?.storage?.usedGb ? Math.round(usage.storage.usedGb * 1024) : 0,
       limit: billing.limits.STORAGE_MB,
@@ -126,7 +128,7 @@ export function UsageOverviewCard() {
 
   return (
     <Card padding="lg">
-      <h3 className="text-sm font-semibold text-gray-900 mb-4">Usage Overview</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('usage.title')}</h3>
       {usageLoading ? (
         <div className="space-y-4">
           {[1, 2, 3, 4].map((i) => (
@@ -156,7 +158,7 @@ export function UsageOverviewCard() {
                     <span className="text-xs text-gray-500 tabular-nums">
                       {row.unit ? `${row.used}${row.unit}` : formatLimit(row.used)}
                       {' / '}
-                      {isUnlimited ? 'Unlimited' : row.unit ? `${row.limit}${row.unit}` : formatLimit(row.limit)}
+                      {isUnlimited ? t('common.unlimited') : row.unit ? `${row.limit}${row.unit}` : formatLimit(row.limit)}
                     </span>
                     {!isUnlimited && pct > 0 && (
                       <Badge variant={getBadgeVariant(pct)} size="sm">

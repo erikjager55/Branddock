@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, X, BookOpen, Info } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -70,6 +71,7 @@ interface KnowledgeTabProps {
 // ─── Component ──────────────────────────────────────────────
 
 export function KnowledgeTab({ configId }: KnowledgeTabProps) {
+  const { t } = useTranslation('settings-admin');
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -88,9 +90,9 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       setIsAdding(false);
-      toast.success('Knowledge source added');
+      toast.success(t('knowledge.toastAdded'));
     },
-    onError: () => toast.error('Failed to add knowledge source'),
+    onError: () => toast.error(t('knowledge.toastAddFailed')),
   });
 
   const updateMutation = useMutation({
@@ -99,18 +101,18 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       setEditingItemId(null);
-      toast.success('Knowledge source updated');
+      toast.success(t('knowledge.toastUpdated'));
     },
-    onError: () => toast.error('Failed to update knowledge source'),
+    onError: () => toast.error(t('knowledge.toastUpdateFailed')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (itemId: string) => deleteKnowledgeItem(configId!, itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
-      toast.success('Knowledge source deleted');
+      toast.success(t('knowledge.toastDeleted'));
     },
-    onError: () => toast.error('Failed to delete knowledge source'),
+    onError: () => toast.error(t('knowledge.toastDeleteFailed')),
   });
 
   const items = (data?.items ?? []) as KnowledgeItem[];
@@ -120,16 +122,16 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
     return (
       <div className="space-y-4">
         <div>
-          <h3 className="text-sm font-semibold text-gray-800">Knowledge Sources</h3>
+          <h3 className="text-sm font-semibold text-gray-800">{t('knowledge.title')}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Knowledge sources are provided as additional context to the AI during exploration sessions.
+            {t('knowledge.subtitleUnsaved')}
           </p>
         </div>
         <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
           <Info className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500 font-medium">Save the configuration first</p>
+          <p className="text-sm text-gray-500 font-medium">{t('knowledge.saveFirst')}</p>
           <p className="text-xs text-gray-400 mt-1">
-            You can add knowledge sources after saving the configuration.
+            {t('knowledge.saveFirstHelp')}
           </p>
         </div>
       </div>
@@ -142,16 +144,15 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-800">
-            Knowledge Sources ({items.length})
+            {t('knowledge.headingCount', { count: items.length })}
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            These knowledge sources are automatically provided as context to the AI during
-            exploration sessions. They are injected via the <code className="text-[10px] font-mono bg-gray-100 px-1 py-0.5 rounded">{'{{customKnowledge}}'}</code> variable in your prompts.
+            {t('knowledge.subtitlePart1')}<code className="text-[10px] font-mono bg-gray-100 px-1 py-0.5 rounded">{'{{customKnowledge}}'}</code>{t('knowledge.subtitlePart2')}
           </p>
         </div>
         {!isAdding && (
           <Button variant="primary" size="sm" icon={Plus} onClick={() => setIsAdding(true)}>
-            Add
+            {t('actions.add')}
           </Button>
         )}
       </div>
@@ -169,10 +170,10 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
       {!isLoading && items.length === 0 && !isAdding && (
         <EmptyState
           icon={BookOpen}
-          title="No knowledge sources yet"
-          description="Add context that the AI uses as additional information during exploration sessions of this type."
+          title={t('knowledge.emptyTitle')}
+          description={t('knowledge.emptyDescription')}
           action={{
-            label: 'Add first knowledge source',
+            label: t('knowledge.addFirst'),
             onClick: () => setIsAdding(true),
           }}
         />
@@ -193,10 +194,10 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5">Title</th>
-                <th className="text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5 w-32">Category</th>
-                <th className="text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5">Preview</th>
-                <th className="text-right text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5 w-20">Actions</th>
+                <th className="text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5">{t('knowledge.fieldTitle')}</th>
+                <th className="text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5 w-32">{t('knowledge.fieldCategory')}</th>
+                <th className="text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5">{t('knowledge.colPreview')}</th>
+                <th className="text-right text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5 w-20">{t('knowledge.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -234,18 +235,18 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
                         <button
                           onClick={() => setEditingItemId(item.id)}
                           className="p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
-                          title="Edit"
+                          title={t('actions.edit')}
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => {
-                            if (confirm('Are you sure you want to delete this knowledge source?')) {
+                            if (confirm(t('knowledge.confirmDelete'))) {
                               deleteMutation.mutate(item.id);
                             }
                           }}
                           className="p-1.5 text-gray-400 hover:text-red-500 rounded-md hover:bg-red-50 transition-colors"
-                          title="Delete"
+                          title={t('actions.delete')}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -275,6 +276,7 @@ function KnowledgeItemForm({
   onCancel: () => void;
   isSaving: boolean;
 }) {
+  const { t } = useTranslation('settings-admin');
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [content, setContent] = useState(initialData?.content ?? '');
   const [category, setCategory] = useState(initialData?.category ?? '');
@@ -289,7 +291,7 @@ function KnowledgeItemForm({
     <form onSubmit={handleSubmit} className="border border-primary-200 bg-primary-50/30 rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-gray-700">
-          {initialData ? 'Edit knowledge source' : 'New knowledge source'}
+          {initialData ? t('knowledge.formEditTitle') : t('knowledge.formNewTitle')}
         </span>
         <button type="button" onClick={onCancel} className="p-1 text-gray-400 hover:text-gray-600 rounded">
           <X className="w-4 h-4" />
@@ -298,24 +300,24 @@ function KnowledgeItemForm({
 
       <div className="grid grid-cols-[1fr_200px] gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Title</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1">{t('knowledge.fieldTitle')}</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="E.g. Market Research Q1 2026"
+            placeholder={t('knowledge.titlePlaceholder')}
             required
             className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1">{t('knowledge.fieldCategory')}</label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
           >
-            <option value="">No category</option>
+            <option value="">{t('knowledge.noCategory')}</option>
             {CATEGORIES.map((cat) => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
@@ -324,11 +326,11 @@ function KnowledgeItemForm({
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Content</label>
+        <label className="block text-xs font-medium text-gray-700 mb-1">{t('knowledge.contentLabel')}</label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="The information provided as context to the AI..."
+          placeholder={t('knowledge.contentPlaceholder')}
           required
           maxLength={10000}
           rows={8}
@@ -339,7 +341,7 @@ function KnowledgeItemForm({
 
       <div className="flex items-center justify-end gap-2 pt-1">
         <Button variant="secondary" size="sm" onClick={onCancel} type="button">
-          Cancel
+          {t('actions.cancel')}
         </Button>
         <Button
           variant="primary"
@@ -348,7 +350,7 @@ function KnowledgeItemForm({
           disabled={isSaving || !title.trim() || !content.trim()}
           isLoading={isSaving}
         >
-          Save
+          {t('actions.save')}
         </Button>
       </div>
     </form>

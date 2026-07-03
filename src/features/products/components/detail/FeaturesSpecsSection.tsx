@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, Plus, X } from "lucide-react";
 
 interface FeaturesSpecsSectionProps {
@@ -14,6 +15,7 @@ export function FeaturesSpecsSection({
   isEditing,
   onChange,
 }: FeaturesSpecsSectionProps) {
+  const { t } = useTranslation("products");
   const [newItem, setNewItem] = useState("");
 
   const handleAdd = () => {
@@ -38,7 +40,7 @@ export function FeaturesSpecsSection({
   return (
     <div>
       <h3 className="text-sm font-semibold text-gray-900 mb-3">
-        Features &amp; Specifications
+        {t("features.title")}
       </h3>
 
       {isEditing ? (
@@ -61,7 +63,7 @@ export function FeaturesSpecsSection({
               value={newItem}
               onChange={(e) => setNewItem(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Add a feature..."
+              placeholder={t("features.addPlaceholder")}
               className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-primary"
             />
             <button
@@ -70,7 +72,7 @@ export function FeaturesSpecsSection({
               className="flex items-center gap-1 text-sm text-primary hover:text-primary/80 disabled:text-gray-300 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
-              Add
+              {t("actions.add")}
             </button>
           </div>
         </div>
@@ -84,7 +86,7 @@ export function FeaturesSpecsSection({
           ))}
         </div>
       ) : (
-        <p className="text-sm text-gray-400">No features added yet</p>
+        <p className="text-sm text-gray-400">{t("features.empty")}</p>
       )}
     </div>
   );

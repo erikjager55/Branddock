@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { TrendingUp, Sparkles, RefreshCw, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 
 interface StrategicImplication {
@@ -39,6 +40,7 @@ export function StrategicImplicationsSection({
   onGenerate,
   isGenerating,
 }: StrategicImplicationsSectionProps) {
+  const { t } = useTranslation('personas');
   const [showConfirm, setShowConfirm] = useState(false);
   const [draft, setDraft] = useState(persona.strategicImplications ?? '');
 
@@ -64,8 +66,8 @@ export function StrategicImplicationsSection({
             <TrendingUp className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Strategic Implications</h2>
-            <p className="text-sm text-gray-500">How this persona impacts decisions</p>
+            <h2 className="text-base font-semibold text-gray-900">{t('strategic.title')}</h2>
+            <p className="text-sm text-gray-500">{t('strategic.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -74,20 +76,20 @@ export function StrategicImplicationsSection({
       {showConfirm && (
         <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between gap-4">
           <p className="text-sm text-amber-800">
-            Are you sure you want to regenerate strategic implications? This will overwrite the current implications.
+            {t('strategic.regenerateConfirm')}
           </p>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setShowConfirm(false)}
               className="text-sm text-gray-600 hover:text-gray-800 px-3 py-1.5 rounded-lg transition-colors"
             >
-              Cancel
+              {t('actions.cancel')}
             </button>
             <button
               onClick={handleRerun}
               className="text-sm text-white bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-lg transition-colors"
             >
-              Regenerate
+              {t('actions.regenerate')}
             </button>
           </div>
         </div>
@@ -98,8 +100,8 @@ export function StrategicImplicationsSection({
         {isGenerating && (
           <div className="bg-blue-50/30 border border-blue-100 rounded-xl p-6 text-center">
             <Loader2 className="w-6 h-6 text-blue-500 animate-spin mx-auto mb-3" />
-            <p className="text-sm font-medium">Generating strategic implications...</p>
-            <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
+            <p className="text-sm font-medium">{t('strategic.generating')}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('strategic.mayTakeSeconds')}</p>
           </div>
         )}
 
@@ -153,14 +155,14 @@ export function StrategicImplicationsSection({
         {!isGenerating && !hasContent && (
           <div className="bg-blue-50/50 border border-blue-200 rounded-xl p-6 text-center">
             <Sparkles className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">No strategic implications defined yet</p>
+            <p className="text-sm text-gray-500">{t('strategic.emptyText')}</p>
             <button
               onClick={onGenerate}
               disabled={isGenerating}
               className="mt-3 inline-flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4" />
-              Generate with AI
+              {t('strategic.generateWithAI')}
             </button>
           </div>
         )}
@@ -174,7 +176,7 @@ export function StrategicImplicationsSection({
             className="text-xs text-muted-foreground hover:text-emerald-600 flex items-center gap-1.5 transition-colors"
           >
             <RefreshCw className="w-3 h-3" />
-            Rerun Analysis
+            {t('strategic.rerunAnalysis')}
           </button>
         </div>
       )}

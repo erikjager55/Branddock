@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, Trash2, Upload, Type as TypeIcon, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/shared";
 import type { StyleguideFontData, FontRole } from "../../types/brandstyle.types";
@@ -18,14 +19,8 @@ interface FontCardProps {
   workspaceKitId?: string | null;
 }
 
-const ROLE_LABEL: Record<FontRole, string> = {
-  DISPLAY: "Display type",
-  UI: "UI type",
-  EYEBROW_META: "Eyebrow & meta",
-  BODY: "Body",
-};
-
 export function FontCard({ font, canEdit, onUploadClick, workspaceKitId }: FontCardProps) {
+  const { t } = useTranslation("brandstyle");
   const [imgError, setImgError] = useState(false);
   const deleteFontMut = useDeleteFont();
 
@@ -79,7 +74,7 @@ export function FontCard({ font, canEdit, onUploadClick, workspaceKitId }: FontC
   const handleReplace = () => onUploadClick(font.name, font.role);
   const handleDelete = () => {
     if (!canEdit) return;
-    const confirmed = window.confirm(`Delete "${font.name}"? This cannot be undone.`);
+    const confirmed = window.confirm(t("fonts.confirmDelete", { name: font.name }));
     if (confirmed) deleteFontMut.mutate(font.id);
   };
 
@@ -97,21 +92,21 @@ export function FontCard({ font, canEdit, onUploadClick, workspaceKitId }: FontC
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0 flex-1">
           <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">
-            {ROLE_LABEL[font.role]}
+            {t(`fonts.roles.${font.role}`)}
           </p>
           <p className="text-sm font-semibold text-gray-900 truncate">{font.name}</p>
           {font.weight && (
-            <p className="text-xs text-gray-500 mt-0.5">Weight: {font.weight}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{t("fonts.weightLabel", { weight: font.weight })}</p>
           )}
         </div>
         {isUploaded ? (
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-            Uploaded
+            {t("fonts.badge.uploaded")}
           </span>
         ) : isGoogleFonts ? (
           <span
             className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full"
-            title="Auto-loaded from the Google Fonts CDN — no upload needed"
+            title={t("fonts.badge.googleFontsTitle")}
           >
             Google Fonts
           </span>
@@ -120,8 +115,8 @@ export function FontCard({ font, canEdit, onUploadClick, workspaceKitId }: FontC
             className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full"
             title={
               hasWorkspaceKit
-                ? `Served via your Adobe Fonts kit (${effectiveKitId}) — preview uses the real file`
-                : "Served via Adobe Fonts on the source site — set a workspace kit for live preview"
+                ? t("fonts.badge.adobeKitTitle", { kitId: effectiveKitId })
+                : t("fonts.badge.adobeSourceTitle")
             }
           >
             <Sparkles className="h-3 w-3" />
@@ -130,7 +125,7 @@ export function FontCard({ font, canEdit, onUploadClick, workspaceKitId }: FontC
         ) : (
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
             <AlertTriangle className="h-3 w-3" />
-            {font.availability === "COMMERCIAL" ? "Commercial — upload" : "Missing file"}
+            {font.availability === "COMMERCIAL" ? t("fonts.badge.commercial") : t("fonts.badge.missingFile")}
           </span>
         )}
       </div>
@@ -140,10 +135,10 @@ export function FontCard({ font, canEdit, onUploadClick, workspaceKitId }: FontC
         {missing ? (
           <div className="flex flex-col items-center gap-1 text-amber-500">
             <TypeIcon className="h-5 w-5" />
-            <span className="text-xs">No preview available</span>
+            <span className="text-xs">{t("fonts.noPreview")}</span>
           </div>
         ) : imgError ? (
-          <span className="text-xs text-gray-400">Preview failed</span>
+          <span className="text-xs text-gray-400">{t("fonts.previewFailed")}</span>
         ) : (
           <span
             className="text-3xl text-gray-900"
@@ -160,8 +155,7 @@ export function FontCard({ font, canEdit, onUploadClick, workspaceKitId }: FontC
           we're rendering a metric-compatible Google Font stand-in. */}
       {substitute && !hasWorkspaceKit && (
         <p className="mt-2 text-[11px] text-gray-500 leading-snug">
-          Previewing with <span className="font-medium text-gray-700">{substitute.googleFont}</span> —
-          a metric substitute. {substitute.note} Upload the .woff2 or set a workspace Adobe Fonts kit for the real font.
+          {t("fonts.substituteCallout", { font: substitute.googleFont, note: substitute.note })}
         </p>
       )}
 
@@ -197,7 +191,7 @@ export function FontCard({ font, canEdit, onUploadClick, workspaceKitId }: FontC
             onClick={handleReplace}
             disabled={deleteFontMut.isPending}
           >
-            {missing ? "Upload" : "Replace"}
+            {missing ? t("actions.upload") : t("actions.replace")}
           </Button>
           {!missing && (
             <button
@@ -205,8 +199,8 @@ export function FontCard({ font, canEdit, onUploadClick, workspaceKitId }: FontC
               onClick={handleDelete}
               disabled={deleteFontMut.isPending}
               className="p-1.5 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
-              aria-label="Delete font"
-              title="Delete font"
+              aria-label={t("fonts.deleteAria")}
+              title={t("fonts.deleteTitle")}
             >
               <Trash2 className="h-4 w-4" />
             </button>

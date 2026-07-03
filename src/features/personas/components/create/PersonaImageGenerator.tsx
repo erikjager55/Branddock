@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, ImageIcon, Lightbulb } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button, Input } from "@/components/shared";
 
 interface PersonaImageGeneratorProps {
@@ -21,6 +22,7 @@ export function PersonaImageGenerator({
   demographics,
   onAvatarChange,
 }: PersonaImageGeneratorProps) {
+  const { t } = useTranslation('personas');
   const [manualUrl, setManualUrl] = useState("");
 
   const hasDemographics = demographics?.age || demographics?.gender || demographics?.occupation;
@@ -43,10 +45,10 @@ export function PersonaImageGenerator({
       <div>
         <div className="flex items-center gap-2">
           <ImageIcon className="w-5 h-5 text-muted-foreground" />
-          <h3 className="text-lg font-semibold text-gray-900">Persona Image</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('imageGenerator.title')}</h3>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Generate a realistic photo based on persona demographics
+          {t('imageGenerator.subtitle')}
         </p>
       </div>
 
@@ -55,14 +57,14 @@ export function PersonaImageGenerator({
         <div className="rounded-lg overflow-hidden aspect-square bg-gray-100">
           <img
             src={avatarUrl}
-            alt={name || "Persona"}
+            alt={name || t('imageGenerator.altFallback')}
             className="w-full h-full object-cover"
           />
         </div>
       ) : (
         <div className="bg-gray-100 rounded-lg aspect-square flex flex-col items-center justify-center gap-2">
           <ImageIcon className="w-10 h-10 text-gray-300" />
-          <span className="text-sm text-muted-foreground">No image generated yet</span>
+          <span className="text-sm text-muted-foreground">{t('imageGenerator.noImage')}</span>
         </div>
       )}
 
@@ -71,7 +73,7 @@ export function PersonaImageGenerator({
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
           <Lightbulb className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
           <p className="text-sm text-amber-800">
-            <span className="font-medium">Tip:</span> Add age, gender, or occupation for better results
+            <span className="font-medium">{t('imageGenerator.tipLabel')}</span> {t('imageGenerator.tipText')}
           </p>
         </div>
       )}
@@ -83,12 +85,12 @@ export function PersonaImageGenerator({
         fullWidth
         onClick={handleGenerate}
       >
-        Generate Image
+        {t('imageGenerator.generateImage')}
       </Button>
 
       {/* Manual URL */}
       <div className="space-y-2">
-        <p className="text-xs text-muted-foreground">Or enter a custom image URL</p>
+        <p className="text-xs text-muted-foreground">{t('imageGenerator.orCustomUrl')}</p>
         <div className="flex gap-2">
           <Input
             value={manualUrl}
@@ -102,7 +104,7 @@ export function PersonaImageGenerator({
             onClick={handleManualUrlSubmit}
             disabled={!manualUrl.trim()}
           >
-            Set
+            {t('imageGenerator.set')}
           </Button>
         </div>
       </div>

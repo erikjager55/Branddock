@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ExternalLink, ArrowRight } from 'lucide-react';
 import type { AlignmentIssueData } from '@/types/brand-alignment';
 import { Button } from '@/components/shared';
@@ -32,6 +33,7 @@ export function IssueCard({
   isDismissing,
   onNavigate,
 }: IssueCardProps) {
+  const { t } = useTranslation('brand-alignment');
   const sourceRoute = getEntitySection(issue.sourceItemType);
   const severity = SEVERITY_MAP[issue.severity] ?? 'suggestion';
 
@@ -53,7 +55,7 @@ export function IssueCard({
               icon={ExternalLink}
               onClick={() => onNavigate?.(sourceRoute)}
             >
-              View Source
+              {t('issueCard.viewSource')}
             </Button>
           )}
           {issue.status === 'OPEN' && (
@@ -63,7 +65,7 @@ export function IssueCard({
               onClick={() => onDismiss(issue.id)}
               disabled={isDismissing}
             >
-              Dismiss
+              {t('issueCard.dismiss')}
             </Button>
           )}
           <Button
@@ -73,7 +75,7 @@ export function IssueCard({
             iconPosition="right"
             onClick={() => onFix(issue.id)}
           >
-            Fix
+            {t('issueCard.fix')}
           </Button>
         </>
       }

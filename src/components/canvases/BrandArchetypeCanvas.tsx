@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -34,6 +35,7 @@ interface BrandArchetypeCanvasProps {
 }
 
 export function BrandArchetypeCanvas({ onRerender, onEdit, assetData, sessionData, isLocked = false }: BrandArchetypeCanvasProps) {
+  const { t } = useTranslation('canvases');
   const [isEditing, setIsEditing] = useState(false);
   
   // Use session data if available, otherwise fall back to default data
@@ -88,21 +90,21 @@ export function BrandArchetypeCanvas({ onRerender, onEdit, assetData, sessionDat
       <CardContent className="p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h3 className="text-xl font-semibold mb-2">Brand Archetype Canvas</h3>
-            <p className="text-muted-foreground">Your brand's personality and character</p>
+            <h3 className="text-xl font-semibold mb-2">{t('archetype.title')}</h3>
+            <p className="text-muted-foreground">{t('archetype.subtitle')}</p>
             {sessionData?.sources && (
               <p className="text-xs text-blue-600 mt-1">
-                Data from: {sessionData.sources.join(', ')}
+                {t('common.dataFrom', { sources: sessionData.sources.join(', ') })}
               </p>
             )}
           </div>
           <div className="flex items-center space-x-2">
             <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-              Completed
+              {t('status.completed')}
             </Badge>
             {sessionData && (
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                Session Data Applied
+                {t('status.sessionDataApplied')}
               </Badge>
             )}
           </div>
@@ -118,22 +120,22 @@ export function BrandArchetypeCanvas({ onRerender, onEdit, assetData, sessionDat
                   <Crown className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-purple-900 dark:text-purple-100">Primary Archetype</h4>
+                  <h4 className="text-lg font-semibold text-purple-900 dark:text-purple-100">{t('archetype.primary')}</h4>
                   <p className="text-sm text-purple-600 dark:text-purple-400">{editData.primaryArchetype.name}</p>
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{editData.primaryArchetype.match}%</div>
-                <div className="text-xs text-purple-600 dark:text-purple-400">Match</div>
+                <div className="text-xs text-purple-600 dark:text-purple-400">{t('archetype.match')}</div>
               </div>
             </div>
             
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <h5 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">Core Motivation</h5>
+                <h5 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">{t('archetype.coreMotivation')}</h5>
                 <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">{editData.primaryArchetype.motivation}</p>
-                
-                <h5 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">Key Traits</h5>
+
+                <h5 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">{t('archetype.keyTraits')}</h5>
                 <div className="flex flex-wrap gap-2">
                   {editData.primaryArchetype.traits.map((trait: string, index: number) => (
                     <Badge key={index} variant="secondary" className="bg-purple-100 text-purple-800">
@@ -146,7 +148,7 @@ export function BrandArchetypeCanvas({ onRerender, onEdit, assetData, sessionDat
               <div>
                 {editData.primaryArchetype.shadow && (
                   <>
-                    <h5 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">Shadow Side</h5>
+                    <h5 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">{t('archetype.shadowSide')}</h5>
                     <p className="text-sm text-gray-700 dark:text-gray-300">{editData.primaryArchetype.shadow}</p>
                   </>
                 )}
@@ -162,22 +164,22 @@ export function BrandArchetypeCanvas({ onRerender, onEdit, assetData, sessionDat
                   <Star className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Secondary Archetype</h4>
+                  <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100">{t('archetype.secondary')}</h4>
                   <p className="text-sm text-blue-600 dark:text-blue-400">{editData.secondaryArchetype.name}</p>
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{editData.secondaryArchetype.match}%</div>
-                <div className="text-xs text-blue-600 dark:text-blue-400">Match</div>
+                <div className="text-xs text-blue-600 dark:text-blue-400">{t('archetype.match')}</div>
               </div>
             </div>
             
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <h5 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Core Motivation</h5>
+                <h5 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">{t('archetype.coreMotivation')}</h5>
                 <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">{editData.secondaryArchetype.motivation}</p>
-                
-                <h5 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Key Traits</h5>
+
+                <h5 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">{t('archetype.keyTraits')}</h5>
                 <div className="flex flex-wrap gap-2">
                   {editData.secondaryArchetype.traits.map((trait: string, index: number) => (
                     <Badge key={index} variant="secondary" className="bg-blue-100 text-blue-800">
@@ -195,31 +197,31 @@ export function BrandArchetypeCanvas({ onRerender, onEdit, assetData, sessionDat
           <DialogTrigger asChild>
             <Button variant="outline" className="w-full" disabled={isLocked}>
               <Edit className="h-4 w-4 mr-2" />
-              {isLocked ? 'Locked - Cannot Edit' : 'Edit Brand Archetype'}
+              {isLocked ? t('status.lockedCannotEdit') : t('archetype.editButton')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
-              <DialogTitle>Edit Brand Archetype</DialogTitle>
+              <DialogTitle>{t('archetype.editTitle')}</DialogTitle>
               <DialogDescription>
-                Define your brand's personality through archetypal patterns
+                {t('archetype.editDescription')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
               <div>
-                <h4 className="font-semibold mb-4">Primary Archetype</h4>
+                <h4 className="font-semibold mb-4">{t('archetype.primary')}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Archetype Name</label>
+                    <label className="text-sm font-medium mb-2 block">{t('archetype.nameLabel')}</label>
                     <Textarea
                       value={editData.primaryArchetype.name}
                       onChange={(e) => setEditData({...editData, primaryArchetype: {...editData.primaryArchetype, name: e.target.value}})}
-                      placeholder="e.g., The Creator"
+                      placeholder={t('archetype.namePlaceholderPrimary')}
                       className="min-h-12"
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Match Percentage</label>
+                    <label className="text-sm font-medium mb-2 block">{t('archetype.matchLabel')}</label>
                     <Textarea
                       value={editData.primaryArchetype.match.toString()}
                       onChange={(e) => setEditData({...editData, primaryArchetype: {...editData.primaryArchetype, match: parseInt(e.target.value) || 0}})}
@@ -229,39 +231,39 @@ export function BrandArchetypeCanvas({ onRerender, onEdit, assetData, sessionDat
                   </div>
                 </div>
                 <div className="mt-4">
-                  <label className="text-sm font-medium mb-2 block">Core Motivation</label>
+                  <label className="text-sm font-medium mb-2 block">{t('archetype.coreMotivation')}</label>
                   <Textarea
                     value={editData.primaryArchetype.motivation}
                     onChange={(e) => setEditData({...editData, primaryArchetype: {...editData.primaryArchetype, motivation: e.target.value}})}
-                    placeholder="What drives this archetype?"
+                    placeholder={t('archetype.motivationPlaceholder')}
                     className="min-h-16"
                   />
                 </div>
                 <div className="mt-4">
-                  <label className="text-sm font-medium mb-2 block">Key Traits (comma-separated)</label>
+                  <label className="text-sm font-medium mb-2 block">{t('archetype.traitsLabel')}</label>
                   <Textarea
                     value={editData.primaryArchetype.traits.join(', ')}
-                    onChange={(e) => setEditData({...editData, primaryArchetype: {...editData.primaryArchetype, traits: e.target.value.split(',').map(t => t.trim()).filter(t => t)}})}
-                    placeholder="innovative, artistic, imaginative"
+                    onChange={(e) => setEditData({...editData, primaryArchetype: {...editData.primaryArchetype, traits: e.target.value.split(',').map(v => v.trim()).filter(v => v)}})}
+                    placeholder={t('archetype.traitsPlaceholderPrimary')}
                     className="min-h-16"
                   />
                 </div>
               </div>
               
               <div>
-                <h4 className="font-semibold mb-4">Secondary Archetype</h4>
+                <h4 className="font-semibold mb-4">{t('archetype.secondary')}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Archetype Name</label>
+                    <label className="text-sm font-medium mb-2 block">{t('archetype.nameLabel')}</label>
                     <Textarea
                       value={editData.secondaryArchetype.name}
                       onChange={(e) => setEditData({...editData, secondaryArchetype: {...editData.secondaryArchetype, name: e.target.value}})}
-                      placeholder="e.g., The Magician"
+                      placeholder={t('archetype.namePlaceholderSecondary')}
                       className="min-h-12"
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Match Percentage</label>
+                    <label className="text-sm font-medium mb-2 block">{t('archetype.matchLabel')}</label>
                     <Textarea
                       value={editData.secondaryArchetype.match.toString()}
                       onChange={(e) => setEditData({...editData, secondaryArchetype: {...editData.secondaryArchetype, match: parseInt(e.target.value) || 0}})}
@@ -271,20 +273,20 @@ export function BrandArchetypeCanvas({ onRerender, onEdit, assetData, sessionDat
                   </div>
                 </div>
                 <div className="mt-4">
-                  <label className="text-sm font-medium mb-2 block">Core Motivation</label>
+                  <label className="text-sm font-medium mb-2 block">{t('archetype.coreMotivation')}</label>
                   <Textarea
                     value={editData.secondaryArchetype.motivation}
                     onChange={(e) => setEditData({...editData, secondaryArchetype: {...editData.secondaryArchetype, motivation: e.target.value}})}
-                    placeholder="What drives this archetype?"
+                    placeholder={t('archetype.motivationPlaceholder')}
                     className="min-h-16"
                   />
                 </div>
                 <div className="mt-4">
-                  <label className="text-sm font-medium mb-2 block">Key Traits (comma-separated)</label>
+                  <label className="text-sm font-medium mb-2 block">{t('archetype.traitsLabel')}</label>
                   <Textarea
                     value={editData.secondaryArchetype.traits.join(', ')}
-                    onChange={(e) => setEditData({...editData, secondaryArchetype: {...editData.secondaryArchetype, traits: e.target.value.split(',').map(t => t.trim()).filter(t => t)}})}
-                    placeholder="visionary, transformational, charismatic"
+                    onChange={(e) => setEditData({...editData, secondaryArchetype: {...editData.secondaryArchetype, traits: e.target.value.split(',').map(v => v.trim()).filter(v => v)}})}
+                    placeholder={t('archetype.traitsPlaceholderSecondary')}
                     className="min-h-16"
                   />
                 </div>
@@ -293,11 +295,11 @@ export function BrandArchetypeCanvas({ onRerender, onEdit, assetData, sessionDat
             <div className="flex justify-end space-x-2 mt-6">
               <Button variant="outline" onClick={handleCancel}>
                 <X className="h-4 w-4 mr-2" />
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button onClick={handleSave}>
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                {t('actions.saveChanges')}
               </Button>
             </div>
           </DialogContent>

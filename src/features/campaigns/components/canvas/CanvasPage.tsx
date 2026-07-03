@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import { useCanvasComponents } from '../../hooks/canvas.hooks';
 import { HorizontalAccordion } from './accordion/HorizontalAccordion';
@@ -26,15 +27,15 @@ interface CanvasPageProps {
 }
 
 const STATUS_BADGE: Record<ApprovalStatus, {
-  label: string;
+  labelKey: string;
   variant: 'default' | 'info' | 'success' | 'warning' | 'danger';
 }> = {
-  DRAFT: { label: 'Draft', variant: 'default' },
-  IN_REVIEW: { label: 'In Review', variant: 'info' },
-  APPROVED: { label: 'Ready', variant: 'success' },
-  CHANGES_REQUESTED: { label: 'Changes Requested', variant: 'warning' },
-  SCHEDULED: { label: 'Scheduled', variant: 'info' },
-  PUBLISHED: { label: 'Published', variant: 'success' },
+  DRAFT: { labelKey: 'canvasPage.status.draft', variant: 'default' },
+  IN_REVIEW: { labelKey: 'canvasPage.status.inReview', variant: 'info' },
+  APPROVED: { labelKey: 'canvasPage.status.ready', variant: 'success' },
+  CHANGES_REQUESTED: { labelKey: 'canvasPage.status.changesRequested', variant: 'warning' },
+  SCHEDULED: { labelKey: 'canvasPage.status.scheduled', variant: 'info' },
+  PUBLISHED: { labelKey: 'canvasPage.status.published', variant: 'success' },
 };
 
 // Apply inherited settings from a previous deliverable to the current one.
@@ -101,6 +102,7 @@ async function applyInheritance(
 }
 
 export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPageProps) {
+  const { t } = useTranslation('campaigns-canvas-page');
   const globalStatus = useCanvasStore((s) => s.globalStatus);
   const globalErrorMessage = useCanvasStore((s) => s.globalErrorMessage);
   const globalUnavailable = useCanvasStore((s) => s.globalUnavailable);
@@ -702,14 +704,14 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           type="button"
           onClick={handleBack}
           className="p-1 rounded hover:bg-gray-100 text-gray-500"
-          aria-label="Back to campaign detail"
+          aria-label={t('canvasPage.header.backAria')}
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-lg font-semibold text-gray-900">Content Canvas</h1>
-        <Badge variant={statusConfig.variant} size="sm">{statusConfig.label}</Badge>
+        <h1 className="text-lg font-semibold text-gray-900">{t('canvasPage.header.title')}</h1>
+        <Badge variant={statusConfig.variant} size="sm">{t(statusConfig.labelKey)}</Badge>
         {globalStatus === 'generating' && (
-          <span className="text-sm text-primary animate-pulse">Generating...</span>
+          <span className="text-sm text-primary animate-pulse">{t('canvasPage.generation.generating')}</span>
         )}
         {globalStatus === 'complete' && (
           // Semantically connect generation-complete state to the fidelity
@@ -717,14 +719,14 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           // or needs review. "Complete" alone next to a below-threshold
           // fidelity-bar looked contradictory.
           fidelityStage === 'complete' && fidelityThresholdMet === false ? (
-            <span className="text-sm text-amber-600">Generation complete · fidelity below threshold</span>
+            <span className="text-sm text-amber-600">{t('canvasPage.generation.completeBelowThreshold')}</span>
           ) : (
-            <span className="text-sm text-emerald-600">Generation complete</span>
+            <span className="text-sm text-emerald-600">{t('canvasPage.generation.complete')}</span>
           )
         )}
         {globalStatus === 'error' && !globalUnavailable && (
           <span className="text-sm text-red-500" title={globalErrorMessage ?? undefined}>
-            {globalErrorMessage ?? 'Generation failed'}
+            {globalErrorMessage ?? t('canvasPage.generation.failed')}
           </span>
         )}
       </div>

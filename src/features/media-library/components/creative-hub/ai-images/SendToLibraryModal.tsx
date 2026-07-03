@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FolderPlus, Package, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { Modal, Button, Badge } from '@/components/shared';
 import { useSendAiImageToLibrary } from '@/features/media-library/hooks';
@@ -10,27 +11,27 @@ import type { ProductListResponse } from '@/features/products/types/product.type
 
 // ─── Constants ──────────────────────────────────────────────
 
-const MEDIA_CATEGORIES = [
-  { value: 'HERO_IMAGE', label: 'Hero Image' },
-  { value: 'ADVERTISEMENT', label: 'Advertisement' },
-  { value: 'SOCIAL_MEDIA', label: 'Social Media' },
-  { value: 'BANNER', label: 'Banner' },
-  { value: 'PRODUCT_PHOTO', label: 'Product Photo' },
-  { value: 'PHOTOGRAPHY', label: 'Photography' },
-  { value: 'ILLUSTRATION', label: 'Illustration' },
-  { value: 'LIFESTYLE', label: 'Lifestyle' },
-  { value: 'PRESENTATION', label: 'Presentation' },
-  { value: 'BACKGROUND', label: 'Background' },
-  { value: 'OTHER', label: 'Other' },
+const MEDIA_CATEGORY_VALUES = [
+  'HERO_IMAGE',
+  'ADVERTISEMENT',
+  'SOCIAL_MEDIA',
+  'BANNER',
+  'PRODUCT_PHOTO',
+  'PHOTOGRAPHY',
+  'ILLUSTRATION',
+  'LIFESTYLE',
+  'PRESENTATION',
+  'BACKGROUND',
+  'OTHER',
 ] as const;
 
-const PRODUCT_IMAGE_CATEGORIES = [
-  { value: 'HERO', label: 'Hero' },
-  { value: 'LIFESTYLE', label: 'Lifestyle' },
-  { value: 'DETAIL', label: 'Detail' },
-  { value: 'FEATURE', label: 'Feature' },
-  { value: 'MOCKUP', label: 'Mockup' },
-  { value: 'OTHER', label: 'Other' },
+const PRODUCT_IMAGE_CATEGORY_VALUES = [
+  'HERO',
+  'LIFESTYLE',
+  'DETAIL',
+  'FEATURE',
+  'MOCKUP',
+  'OTHER',
 ] as const;
 
 interface SendToLibraryModalProps {
@@ -40,6 +41,7 @@ interface SendToLibraryModalProps {
 }
 
 export function SendToLibraryModal({ isOpen, onClose, image }: SendToLibraryModalProps) {
+  const { t } = useTranslation('media-library');
   const sendToLibrary = useSendAiImageToLibrary();
   const { data: products } = useProducts();
 
@@ -78,7 +80,7 @@ export function SendToLibraryModal({ isOpen, onClose, image }: SendToLibraryModa
   const productList = (products as ProductListResponse | undefined)?.products ?? [];
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Save to Media Library" size="md">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('sendToLibrary.title')} size="md">
       <div className="space-y-4">
         {/* Image preview */}
         <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -93,23 +95,23 @@ export function SendToLibraryModal({ isOpen, onClose, image }: SendToLibraryModa
 
         {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('meta.category')}</label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           >
-            {MEDIA_CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>{c.label}</option>
+            {MEDIA_CATEGORY_VALUES.map((c) => (
+              <option key={c} value={c}>{t(`sendToLibrary.mediaCategories.${c}`)}</option>
             ))}
           </select>
         </div>
 
         {/* Auto-tags info */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Auto-tags</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('sendToLibrary.autoTags')}</label>
           <div className="flex flex-wrap gap-1.5">
-            <Badge variant="teal">AI Generated</Badge>
+            <Badge variant="teal">{t('badges.aiGenerated')}</Badge>
             <Badge variant="info">{image.provider === 'TRAINED_MODEL' ? 'Trained Model' : image.provider === 'IMAGEN' ? 'Imagen 4' : image.provider === 'DALLE' ? 'DALL-E 3' : image.provider}</Badge>
             {image.quality === 'hd' && <Badge>HD</Badge>}
             {image.style && <Badge>{image.style}</Badge>}
@@ -132,33 +134,33 @@ export function SendToLibraryModal({ isOpen, onClose, image }: SendToLibraryModa
             >
               {linkToProduct ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
               <Package className="w-4 h-4" />
-              Also link to a product
+              {t('sendToLibrary.linkToProduct')}
             </button>
 
             {linkToProduct && (
               <div className="mt-3 ml-6 space-y-3 pb-1">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Product</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t('sendToLibrary.product')}</label>
                   <select
                     value={selectedProductId}
                     onChange={(e) => setSelectedProductId(e.target.value)}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   >
-                    <option value="">Select a product...</option>
+                    <option value="">{t('sendToLibrary.selectProduct')}</option>
                     {productList.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Image category on product</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t('sendToLibrary.productImageCategory')}</label>
                   <select
                     value={productImageCategory}
                     onChange={(e) => setProductImageCategory(e.target.value)}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   >
-                    {PRODUCT_IMAGE_CATEGORIES.map((c) => (
-                      <option key={c.value} value={c.value}>{c.label}</option>
+                    {PRODUCT_IMAGE_CATEGORY_VALUES.map((c) => (
+                      <option key={c} value={c}>{t(`sendToLibrary.productCategories.${c}`)}</option>
                     ))}
                   </select>
                 </div>
@@ -171,7 +173,7 @@ export function SendToLibraryModal({ isOpen, onClose, image }: SendToLibraryModa
         {sendToLibrary.isError && (
           <div className="rounded-lg bg-red-50 border border-red-200 p-3" role="alert">
             <p className="text-sm text-red-700">
-              {(sendToLibrary.error as Error)?.message || 'Failed to save to library.'}
+              {(sendToLibrary.error as Error)?.message || t('sendToLibrary.error')}
             </p>
           </div>
         )}
@@ -179,7 +181,7 @@ export function SendToLibraryModal({ isOpen, onClose, image }: SendToLibraryModa
         {/* Actions */}
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={handleClose} disabled={sendToLibrary.isPending}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
           <Button
             icon={Check}
@@ -187,7 +189,7 @@ export function SendToLibraryModal({ isOpen, onClose, image }: SendToLibraryModa
             disabled={sendToLibrary.isPending}
             isLoading={sendToLibrary.isPending}
           >
-            {sendToLibrary.isPending ? 'Saving...' : 'Save to Library'}
+            {sendToLibrary.isPending ? t('actions.saving') : t('actions.saveToLibrary')}
           </Button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Wand2, Loader2 } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 
@@ -30,6 +31,7 @@ export function RefineImageButton({
   componentId,
   onRefined,
 }: RefineImageButtonProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const score = useCanvasStore((s) => s.visualFidelityScores.get(componentId));
   const [isRefining, setIsRefining] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -62,20 +64,20 @@ export function RefineImageButton({
         const code = body?.code;
         const message =
           code === 'max-iterations'
-            ? 'Reached the max of 2 refinements for this image.'
+            ? t('refineImage.errMaxIterations')
             : code === 'no-score'
-              ? 'Score not loaded yet — wait a moment and try again.'
+              ? t('refineImage.errNoScore')
               : code === 'missing-anchors'
-                ? 'No brand-style anchors found in workspace — add anchors in Brandstyle.'
+                ? t('refineImage.errMissingAnchors')
                 : code === 'policy'
-                  ? 'Refinement blocked by Gemini content policy.'
-                  : body?.error ?? `Refine failed (${res.status})`;
+                  ? t('refineImage.errPolicy')
+                  : body?.error ?? t('refineImage.errGeneric', { status: res.status });
         setError(message);
         return;
       }
       onRefined?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : t('refineImage.errUnknown'));
     } finally {
       setIsRefining(false);
     }
@@ -89,20 +91,20 @@ export function RefineImageButton({
         disabled={isRefining}
         title={
           error
-            ? `Refine error: ${error}`
-            : 'Refine this image based on the fidelity diagnosis (image-to-image refine via Gemini)'
+            ? t('refineImage.errorTitle', { error })
+            : t('refineImage.tooltip')
         }
         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600/90 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-[10px] font-medium shadow-sm transition-colors"
       >
         {isRefining ? (
           <>
             <Loader2 className="h-2.5 w-2.5 animate-spin" />
-            Refining…
+            {t('refineImage.refining')}
           </>
         ) : (
           <>
             <Wand2 className="h-2.5 w-2.5" />
-            Improve
+            {t('refineImage.improve')}
           </>
         )}
       </button>

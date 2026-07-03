@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { resolvePreviewComponent } from '../previews/preview-map';
@@ -29,6 +30,7 @@ interface MediumConfigLayoutProps {
  * the config blocks.
  */
 export function MediumConfigLayout({ children, onAdvance, deliverableId }: MediumConfigLayoutProps) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const contextStack = useCanvasStore((s) => s.contextStack);
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
@@ -134,9 +136,9 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
       generate({ instruction: 'Regenerate content applying the updated medium configuration settings.' });
     }
 
-    store.setStepSummary(store.activeStep, { label: `${previewEntry.label} configured` });
+    store.setStepSummary(store.activeStep, { label: t('preview.configured', { label: previewEntry.label }) });
     onAdvance();
-  }, [onAdvance, previewEntry.label, deliverableId, hasExistingContent, generate]);
+  }, [onAdvance, previewEntry.label, deliverableId, hasExistingContent, generate, t]);
 
   const PreviewComponent = previewEntry.component;
 
@@ -153,9 +155,9 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
       .slice(0, 6)
       .map(([key, val]) => ({
         key,
-        display: typeof val === 'boolean' ? (val ? 'Yes' : 'No') : String(val),
+        display: typeof val === 'boolean' ? (val ? t('badge.yes') : t('badge.no')) : String(val),
       }));
-  }, [mediumConfigValues]);
+  }, [mediumConfigValues, t]);
 
   // After the 9.0c content-styling migration, several categories
   // (long-form, sales, pr-hr, social-post) have no Step 3 config fields
@@ -172,8 +174,8 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-          No platform-specific configuration for this content type — review
-          the preview below and click <span className="font-medium">Confirm &amp; Continue</span>.
+          {t('layout.noConfig')}{' '}
+          <span className="font-medium">{t('confirm.confirmContinue')}</span>.
         </div>
       )}
 
@@ -185,10 +187,10 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
         <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-gray-50 border-b border-gray-200">
           <span className="text-xs font-semibold text-gray-600">
             {composedVideoUrl
-              ? 'Generated Video'
+              ? t('layout.generatedVideo')
               : generatedScenes.length > 0
-                ? `Scene Videos (${generatedScenes.length}/${sceneVideos.length})`
-                : `${previewEntry.label} Preview`}
+                ? t('layout.sceneVideosCount', { done: generatedScenes.length, total: sceneVideos.length })
+                : t('preview.labelSuffix', { label: previewEntry.label })}
           </span>
           <div className="flex items-center gap-3">
             {/* Variant indicator — READ-ONLY badge showing which variant is
@@ -204,18 +206,18 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
                   color: '#1e40af',
                   boxShadow: '0 0 0 1px #bfdbfe',
                 }}
-                title={`Showing Variant ${String.fromCharCode(65 + currentVariantIndex)} — change in step 2`}
+                title={t('layout.showingVariantTitle', { letter: String.fromCharCode(65 + currentVariantIndex) })}
               >
-                Variant {String.fromCharCode(65 + currentVariantIndex)}
+                {t('layout.variantLabel', { letter: String.fromCharCode(65 + currentVariantIndex) })}
               </span>
             )}
             {composedVideoUrl ? (
               <span className="text-xs text-emerald-600 flex items-center gap-1">
-                <Video className="h-3 w-3" /> Video ready
+                <Video className="h-3 w-3" /> {t('layout.videoReady')}
               </span>
             ) : textEntries.length > 0 ? (
               <span className="text-xs text-emerald-600 flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3" /> Reflects Step 2 selection
+                <CheckCircle2 className="h-3 w-3" /> {t('reflectsSelection')}
               </span>
             ) : null}
           </div>
@@ -241,15 +243,15 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
                   <div key={sceneId} className="rounded-lg overflow-hidden border border-gray-200 bg-black">
                     <div className="flex items-center justify-between px-3 py-1.5 bg-gray-900 text-white">
                       <span className="text-[11px] font-semibold uppercase tracking-wider">
-                        {sceneId}
+                        {t(`scene.${sceneId}`)}
                       </span>
                       {scene.status === 'generating' && (
                         <span className="text-[11px] flex items-center gap-1 text-gray-300">
-                          <Loader2 className="h-3 w-3 animate-spin" /> Generating…
+                          <Loader2 className="h-3 w-3 animate-spin" /> {t('status.generating')}
                         </span>
                       )}
                       {scene.status === 'error' && (
-                        <span className="text-[11px] text-red-400">Error</span>
+                        <span className="text-[11px] text-red-400">{t('status.error')}</span>
                       )}
                     </div>
                     {scene.videoUrl ? (
@@ -264,10 +266,10 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
                     ) : (
                       <div className="flex items-center justify-center bg-gray-100 text-xs text-gray-500 py-8">
                         {scene.status === 'generating'
-                          ? 'Generating scene clip…'
+                          ? t('status.generatingClip')
                           : scene.status === 'error'
-                            ? scene.error ?? 'Generation failed'
-                            : 'No clip yet'}
+                            ? scene.error ?? t('status.generationFailed')
+                            : t('status.noClip')}
                       </div>
                     )}
                   </div>
@@ -275,7 +277,9 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
               })}
               {generatedScenes.length === sceneVideos.length && (
                 <p className="text-[11px] text-gray-500 italic px-1">
-                  Click <strong>Render Final Video</strong> below to compose the scenes into one clip.
+                  {t('scene.renderHintBefore')}{' '}
+                  <strong>{t('scene.renderFinalVideo')}</strong>{' '}
+                  {t('scene.renderHintAfter')}
                 </p>
               )}
             </div>
@@ -321,10 +325,13 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
           <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5 text-amber-600" />
           <div>
             <p className="font-medium">
-              Brand fidelity {fidelityCompositeScore ?? '?'}/100 — below your threshold ({fidelityThreshold ?? 75})
+              {t('fidelity.belowThreshold', {
+                score: fidelityCompositeScore ?? '?',
+                threshold: fidelityThreshold ?? 75,
+              })}
             </p>
             <p className="mt-0.5 text-amber-800">
-              You can still continue, but consider regenerating from Step 2 with feedback to lift the score before publishing.
+              {t('fidelity.belowThresholdHint')}
             </p>
           </div>
         </div>
@@ -345,7 +352,7 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
           }
         >
           {belowThreshold ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-          {belowThreshold ? 'Continue anyway' : 'Confirm & Continue'}
+          {belowThreshold ? t('confirm.continueAnyway') : t('confirm.confirmContinue')}
         </button>
       </div>
     </div>

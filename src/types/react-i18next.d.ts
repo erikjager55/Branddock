@@ -1,15 +1,18 @@
-// Compile-time key safety for useTranslation()/t() — derives the typed
-// resource shape from the canonical English catalogs (no `any`).
+// i18next typing for the UI-i18n runtime.
+//
+// Loose (namespace -> string) typing: chrome (common/navigation) + all lazy
+// feature namespaces (campaigns, brandstyle, …) resolve through one index type,
+// so `useTranslation('<any-namespace>')` + `t('<any.key>')` return `string`
+// without per-namespace codegen. Per-key compile-time validation is traded for
+// scale; the regression safety net is the ESLint no-hardcoded-string guard +
+// the runtime en-fallback (a missing key renders the English source, never a
+// raw key).
 import 'react-i18next';
-import type enCommon from '@/lib/ui-i18n/locales/en/common';
-import type enNavigation from '@/lib/ui-i18n/locales/en/navigation';
 
 declare module 'react-i18next' {
   interface CustomTypeOptions {
     defaultNS: 'common';
-    resources: {
-      common: typeof enCommon;
-      navigation: typeof enNavigation;
-    };
+    returnNull: false;
+    resources: Record<string, Record<string, string>>;
   }
 }

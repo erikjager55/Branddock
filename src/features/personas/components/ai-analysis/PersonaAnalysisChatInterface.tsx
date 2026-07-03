@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { ArrowLeft, ArrowRight, Bot } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { AnalysisMessage } from '../../types/persona-analysis.types';
 
 const TOTAL_DIMENSIONS = 4;
@@ -27,6 +28,7 @@ export function PersonaAnalysisChatInterface({
   progress,
   answeredDimensions,
 }: PersonaAnalysisChatInterfaceProps) {
+  const { t } = useTranslation('personas');
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -98,7 +100,7 @@ export function PersonaAnalysisChatInterface({
         {/* Progress */}
         <div className="px-6 pt-4 pb-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-            <span className="font-medium">Progress</span>
+            <span className="font-medium">{t('analysis.progress')}</span>
             <span className="font-semibold text-primary">{progressPercent}%</span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -115,7 +117,7 @@ export function PersonaAnalysisChatInterface({
             value={currentInput}
             onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your answer here..."
+            placeholder={t('analysis.answerPlaceholder')}
             disabled={isAITyping || isSubmitting}
             rows={3}
             className="w-full p-4 rounded-xl border border-border bg-white dark:bg-gray-900 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none disabled:opacity-50"
@@ -129,14 +131,14 @@ export function PersonaAnalysisChatInterface({
             className="flex items-center gap-2 text-sm text-muted-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ArrowLeft className="h-4 w-4" />
-            Previous
+            {t('analysis.previous')}
           </button>
           <button
             onClick={onSubmit}
             disabled={!currentInput.trim() || isAITyping || isSubmitting}
             className="flex items-center gap-2 text-sm font-medium rounded-lg px-6 py-2 bg-gradient-to-r from-primary-500 to-emerald-500 hover:from-primary hover:to-emerald-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {isLastDimension ? 'Generate Report' : 'Next'}
+            {isLastDimension ? t('analysis.generateReport') : t('analysis.next')}
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>

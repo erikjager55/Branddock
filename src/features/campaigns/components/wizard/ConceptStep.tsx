@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Sparkles,
   AlertCircle,
@@ -34,32 +35,18 @@ import ConceptComparisonView from "./ConceptComparisonView";
 import { ConceptReviewView } from "./ConceptReviewView";
 import { compileStructuredFeedback } from "../../lib/compile-structured-feedback";
 
-// ─── Pipeline Step Configs per Concept Phase ──────────────
+// ─── Pipeline Step Config keys per Concept Phase (translated in-component) ──
 
-const ELABORATE_STEPS: PipelineStepConfig[] = [
-  {
-    step: 4,
-    name: "Journey Phases",
-    label: "Generating journey phases...",
-    description: "Designs the customer journey phases that guide the audience from awareness to action.",
-  },
-  {
-    step: 5,
-    name: "Channel Planner",
-    label: "Planning channel strategy...",
-    description: "Designs the media mix and channel deployment plan based on the approved strategy.",
-  },
-  {
-    step: 6,
-    name: "Asset Planner",
-    label: "Planning campaign assets...",
-    description: "Creates a detailed asset plan with deliverables, briefs, and production priorities.",
-  },
-];
+const ELABORATE_STEP_KEYS = [
+  { step: 4, key: "journeyPhases" },
+  { step: 5, key: "channelPlanner" },
+  { step: 6, key: "assetPlanner" },
+] as const;
 
 // ─── Component ────────────────────────────────────────────
 
 export function ConceptStep() {
+  const { t } = useTranslation("campaigns-wizard");
   const campaignName = useCampaignWizardStore((s) => s.name);
   const campaignDescription = useCampaignWizardStore((s) => s.description);
   const campaignGoalType = useCampaignWizardStore((s) => s.campaignGoalType);
@@ -103,6 +90,16 @@ export function ConceptStep() {
   const elaborateResult = useCampaignWizardStore((s) => s.elaborateResult);
   const setElaborateResult = useCampaignWizardStore((s) => s.setElaborateResult);
   const [phaseError, setPhaseError] = useState<string | null>(null);
+
+  const elaborateStepConfigs = useMemo<PipelineStepConfig[]>(
+    () => ELABORATE_STEP_KEYS.map(({ step, key }) => ({
+      step,
+      name: t(`conceptStep.elaborateSteps.${key}.name`),
+      label: t(`conceptStep.elaborateSteps.${key}.label`),
+      description: t(`conceptStep.elaborateSteps.${key}.description`),
+    })),
+    [t],
+  );
 
   const { data: knowledgeData } = useWizardKnowledge();
 
@@ -215,7 +212,7 @@ export function ConceptStep() {
           const s = useCampaignWizardStore.getState();
           s.setIsGenerating(false);
           s.setStrategyPhase("rationale_complete");
-          setPhaseError("Insight mining failed. Please try again.");
+          setPhaseError(t("conceptStep.errors.insightMining"));
           return;
         }
         if (data.step && data.name && data.status && data.label) {
@@ -226,11 +223,11 @@ export function ConceptStep() {
         if (generationIdRef.current !== currentGenId) return;
         useCampaignWizardStore.getState().setIsGenerating(false);
         useCampaignWizardStore.getState().setStrategyPhase("rationale_complete");
-        setPhaseError("Insight mining failed due to a network error.");
+        setPhaseError(t("conceptStep.errors.insightMiningNetwork"));
       },
     );
     abortRef.current = { abort };
-  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
+  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig, t]);
 
   // ─── Creative Pipeline: Quick Concept (single mode) ────
   //
@@ -287,7 +284,7 @@ export function ConceptStep() {
           const s = useCampaignWizardStore.getState();
           s.setIsGenerating(false);
           s.setStrategyPhase("rationale_complete");
-          setPhaseError((data.error as string) || "Quick concept generation failed. Please try again.");
+          setPhaseError((data.error as string) || t("conceptStep.errors.quickConcept"));
           return;
         }
         // Only accept step events tagged with type='step' so we don't
@@ -300,11 +297,11 @@ export function ConceptStep() {
         if (generationIdRef.current !== currentGenId) return;
         useCampaignWizardStore.getState().setIsGenerating(false);
         useCampaignWizardStore.getState().setStrategyPhase("rationale_complete");
-        setPhaseError("Quick concept generation failed due to a network error.");
+        setPhaseError(t("conceptStep.errors.quickConceptNetwork"));
       },
     );
     abortRef.current = { abort };
-  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
+  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig, t]);
 
   // ─── Creative Pipeline: Generate Concepts ─────────────
 
@@ -315,7 +312,7 @@ export function ConceptStep() {
       console.error("[ConceptStep] handleGenerateConcepts: no valid insight at index", idx, "insights count:", store.insights.length);
       store.setIsGenerating(false);
       store.setStrategyPhase("rationale_complete");
-      setPhaseError("No insight available. Please try again.");
+      setPhaseError(t("conceptStep.errors.noInsight"));
       return;
     }
     const selectedInsight = store.insights[idx];
@@ -355,7 +352,7 @@ export function ConceptStep() {
           s.setStrategyPhase("rationale_complete");
           const errorMsg = typeof data.error === 'string' ? data.error : 'Unknown error';
           console.error("[ConceptStep] Backend error:", errorMsg);
-          setPhaseError(`Concept generation failed: ${errorMsg}`);
+          setPhaseError(t("conceptStep.errors.conceptGeneration", { error: errorMsg }));
           return;
         }
         if (data.step && data.name && data.status && data.label) {
@@ -366,11 +363,11 @@ export function ConceptStep() {
         if (generationIdRef.current !== currentGenId) return;
         useCampaignWizardStore.getState().setIsGenerating(false);
         useCampaignWizardStore.getState().setStrategyPhase("rationale_complete");
-        setPhaseError("Concept generation failed due to a network error.");
+        setPhaseError(t("conceptStep.errors.conceptGenerationNetwork"));
       },
     );
     abortRef.current = { abort };
-  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
+  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig, t]);
 
   // Keep ref in sync for the insight→concept chain
   useEffect(() => {
@@ -413,7 +410,7 @@ export function ConceptStep() {
           const s = useCampaignWizardStore.getState();
           s.setIsGenerating(false);
           s.setStrategyPhase("review_concepts");
-          setPhaseError("Strategy build failed. Please try again.");
+          setPhaseError(t("conceptStep.errors.strategyBuild"));
           return;
         }
         if (data.step && data.name && data.status && data.label) {
@@ -424,11 +421,11 @@ export function ConceptStep() {
         if (generationIdRef.current !== currentGenId) return;
         useCampaignWizardStore.getState().setIsGenerating(false);
         useCampaignWizardStore.getState().setStrategyPhase("review_concepts");
-        setPhaseError("Strategy build failed due to a network error.");
+        setPhaseError(t("conceptStep.errors.strategyBuildNetwork"));
       },
     );
     abortRef.current = { abort };
-  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
+  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig, t]);
 
   // ─── Creative Pipeline: Debate (critiqued mode only) ────
   //
@@ -507,7 +504,7 @@ export function ConceptStep() {
     store.setIsGenerating(true);
     store.setStrategyPhase("generating_journey");
 
-    for (const step of ELABORATE_STEPS) {
+    for (const step of elaborateStepConfigs) {
       store.updateStepStatus({ step: step.step, name: step.name, status: "pending", label: step.label });
     }
 
@@ -579,7 +576,7 @@ export function ConceptStep() {
           s.setPipelineError(null);
           s.setIsGenerating(false);
           s.setStrategyPhase("review_final_strategy");
-          setPhaseError("Journey elaboration failed. Please try again.");
+          setPhaseError(t("conceptStep.errors.journeyElaboration"));
           return;
         }
 
@@ -600,11 +597,11 @@ export function ConceptStep() {
         s.setPipelineError(null);
         s.setIsGenerating(false);
         s.setStrategyPhase("review_final_strategy");
-        setPhaseError("Journey elaboration failed due to a network error. Please try again.");
+        setPhaseError(t("conceptStep.errors.journeyElaborationNetwork"));
       },
     );
     abortRef.current = { abort };
-  }, [strategicIntent, selectedContextIds, wizardContext, pipelineConfig]);
+  }, [strategicIntent, selectedContextIds, wizardContext, pipelineConfig, elaborateStepConfigs, t]);
 
   // Forward-ref to handleApprove — it's declared below handleConceptProceed
   // but content mode's dispatch path needs it. Same pattern as buildStrategyRef.
@@ -825,7 +822,7 @@ export function ConceptStep() {
           <Palette className="w-8 h-8 text-violet-500" />
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Develop Creative Concept
+          {t("conceptStep.developConcept")}
         </h3>
         {phaseError ? (
           <>
@@ -834,11 +831,11 @@ export function ConceptStep() {
               <p className="text-sm text-red-700">{phaseError}</p>
             </div>
             <Button variant="cta" size="lg" icon={Sparkles} onClick={() => { autoStartedRef.current = false; setPhaseError(null); handleMineInsights(); }}>
-              Try Again
+              {t("actions.tryAgain")}
             </Button>
           </>
         ) : (
-          <p className="text-sm text-gray-500 mt-2">Starting insight mining...</p>
+          <p className="text-sm text-gray-500 mt-2">{t("conceptStep.startingInsightMining")}</p>
         )}
       </div>
     );
@@ -850,9 +847,9 @@ export function ConceptStep() {
   if ((strategyPhase === "mining_insights" || strategyPhase === "review_insights") && isGenerating) {
     return (
       <PipelineProgressView
-        title="Finding the Best Insight"
-        estimatedDuration="30–60 seconds"
-        steps={[{ step: 1, name: "Insight Mining", label: "Mining insights and selecting the strongest one...", description: "Three AI models analyze your brand from different angles. The richest insight is auto-selected for concept generation." }]}
+        title={t("conceptStep.insightTitle")}
+        estimatedDuration={t("durations.sec30to60")}
+        steps={[{ step: 1, name: t("conceptStep.insightStepName"), label: t("conceptStep.insightStepLabel"), description: t("conceptStep.insightStepDescription") }]}
         pipelineSteps={pipelineSteps}
         enrichmentStatus={enrichmentStatus}
         enrichmentBlockCount={enrichmentBlockCount}
@@ -866,15 +863,15 @@ export function ConceptStep() {
     const isSingle = pipelineConfig.creativeRange === 'single';
     return (
       <PipelineProgressView
-        title={isSingle ? "Generating Quick Concept" : "Generating Creative Concepts"}
-        estimatedDuration={isSingle ? "15–30 seconds" : "45–90 seconds"}
+        title={isSingle ? t("conceptStep.quickConceptTitle") : t("conceptStep.conceptsTitle")}
+        estimatedDuration={isSingle ? t("durations.sec15to30") : t("durations.sec45to90")}
         steps={[{
           step: 1,
-          name: isSingle ? "Quick Concept" : "Creative Leap",
-          label: isSingle ? "Generating insight and concept..." : "Generating creative concepts...",
+          name: isSingle ? t("conceptStep.quickConceptStepName") : t("conceptStep.conceptStepName"),
+          label: isSingle ? t("conceptStep.quickConceptStepLabel") : t("conceptStep.conceptStepLabel"),
           description: isSingle
-            ? "Single Gemini Flash pass — produces an insight and a creative concept in one call."
-            : "Creating 3 distinctive campaign concepts using Goldenberg creativity templates and cross-domain bisociation.",
+            ? t("conceptStep.quickConceptStepDescription")
+            : t("conceptStep.conceptStepDescription"),
         }]}
         pipelineSteps={pipelineSteps}
       />
@@ -896,42 +893,42 @@ export function ConceptStep() {
             <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-violet-100 to-fuchsia-100 flex items-center justify-center mb-3">
               <Sparkles className="w-5 h-5 text-violet-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Your Creative Concept</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">{t("conceptStep.yourConcept")}</h3>
             <p className="text-sm text-muted-foreground">
-              Review the concept before we build your content. Click Continue to proceed, or regenerate if it doesn&apos;t fit.
+              {t("conceptStep.reviewConceptHint")}
             </p>
           </div>
 
           <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-emerald-50 p-6 space-y-4">
             <div>
-              <div className="text-xs uppercase tracking-wider text-primary-700 font-semibold mb-1">Campaign Line</div>
-              <div className="text-xl font-bold text-gray-900">{c.campaignLine || 'Untitled concept'}</div>
+              <div className="text-xs uppercase tracking-wider text-primary-700 font-semibold mb-1">{t("conceptStep.campaignLine")}</div>
+              <div className="text-xl font-bold text-gray-900">{c.campaignLine || t("conceptStep.untitledConcept")}</div>
             </div>
 
             {c.bigIdea && (
               <div>
-                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Big Idea</div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">{t("conceptStep.bigIdea")}</div>
                 <div className="text-sm text-gray-700">{c.bigIdea}</div>
               </div>
             )}
 
             {c.creativeTerritory && (
               <div>
-                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Creative Territory</div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">{t("conceptStep.creativeTerritory")}</div>
                 <div className="text-sm text-gray-700">{c.creativeTerritory}</div>
               </div>
             )}
 
             {c.memorableDevice && (
               <div>
-                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Memorable Device</div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">{t("conceptStep.memorableDevice")}</div>
                 <div className="text-sm text-gray-700">{c.memorableDevice}</div>
               </div>
             )}
 
             {c.visualWorld && (
               <div>
-                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Visual World</div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">{t("conceptStep.visualWorld")}</div>
                 <div className="text-sm text-gray-700">{c.visualWorld}</div>
               </div>
             )}
@@ -945,7 +942,7 @@ export function ConceptStep() {
               disabled={isGenerating}
               icon={Sparkles}
             >
-              Regenerate concept
+              {t("conceptStep.regenerateConcept")}
             </Button>
           </div>
         </div>
@@ -967,9 +964,9 @@ export function ConceptStep() {
   if (strategyPhase === "building_strategy" && isGenerating) {
     return (
       <PipelineProgressView
-        title="Building Concept-Driven Strategy"
-        estimatedDuration="30–90 seconds"
-        steps={[{ step: 1, name: "Strategy Build", label: "Building strategy around your concept...", description: "Applying marketing frameworks to make your creative concept strategically robust." }]}
+        title={t("conceptStep.buildStrategyTitle")}
+        estimatedDuration={t("durations.sec30to90")}
+        steps={[{ step: 1, name: t("conceptStep.buildStrategyStepName"), label: t("conceptStep.buildStrategyStepLabel"), description: t("conceptStep.buildStrategyStepDescription") }]}
         pipelineSteps={pipelineSteps}
       />
     );
@@ -997,9 +994,9 @@ export function ConceptStep() {
   if (strategyPhase === "generating_journey" && isGenerating) {
     return (
       <PipelineProgressView
-        title="Elaborating Campaign Journey"
-        estimatedDuration="1–2 minutes"
-        steps={ELABORATE_STEPS}
+        title={t("conceptStep.journeyTitle")}
+        estimatedDuration={t("durations.min1to2")}
+        steps={elaborateStepConfigs}
         pipelineSteps={pipelineSteps}
         enrichmentStatus={enrichmentStatus}
         enrichmentBlockCount={enrichmentBlockCount}
@@ -1014,12 +1011,12 @@ export function ConceptStep() {
       <div className="max-w-lg mx-auto text-center py-8">
         <div className="flex items-center justify-center gap-2 text-emerald-600 mb-2">
           <CheckCircle2 className="w-5 h-5" />
-          <span className="text-sm font-medium">Creative concept approved</span>
+          <span className="text-sm font-medium">{t("conceptStep.approved")}</span>
         </div>
         <p className="text-xs text-gray-500">
           {wizardMode === 'content'
-            ? 'Click Continue to generate your content.'
-            : 'Click Continue to select deliverables for your campaign.'}
+            ? t("conceptStep.approvedContentHint")
+            : t("conceptStep.approvedCampaignHint")}
         </p>
       </div>
     );
@@ -1032,10 +1029,10 @@ export function ConceptStep() {
         <AlertCircle className="w-8 h-8 text-amber-500" />
       </div>
       <h3 className="text-lg font-semibold text-gray-900 mb-2">
-        Something went wrong
+        {t("strategyStep.somethingWrong")}
       </h3>
       <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
-        The concept step encountered an unexpected state. Please go back to the Strategy step and try again.
+        {t("conceptStep.unexpectedState")}
       </p>
     </div>
   );

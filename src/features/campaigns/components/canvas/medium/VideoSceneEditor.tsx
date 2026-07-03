@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore, type SceneId, type SceneSourceMode, type SceneVideoConfig } from '../../../stores/useCanvasStore';
 import { useVideoGeneration } from '../../../hooks/useVideoGeneration';
 import { FAL_VIDEO_PROVIDERS } from '@/lib/integrations/fal/fal-video-providers';
@@ -21,10 +22,10 @@ const SCENE_META: Record<SceneId, { label: string; icon: typeof Film; color: str
   cta:  { label: 'CTA', icon: MousePointerClick, color: 'text-emerald-600', bgColor: 'bg-emerald-50', trackColor: '#10b981' },
 };
 
-const SOURCE_OPTIONS: { id: SceneSourceMode; label: string; icon: typeof Wand2 }[] = [
-  { id: 'text-to-video', label: 'AI Generate', icon: Wand2 },
-  { id: 'image-to-video', label: 'From Image', icon: ImageIcon },
-  { id: 'existing', label: 'Existing', icon: FileVideo },
+const SOURCE_OPTIONS: { id: SceneSourceMode; labelKey: string; icon: typeof Wand2 }[] = [
+  { id: 'text-to-video', labelKey: 'sourceMode.aiGenerate', icon: Wand2 },
+  { id: 'image-to-video', labelKey: 'sourceMode.fromImage', icon: ImageIcon },
+  { id: 'existing', labelKey: 'sourceMode.existing', icon: FileVideo },
 ];
 
 const SCENE_IDS: SceneId[] = ['hook', 'body', 'cta'];
@@ -32,6 +33,7 @@ const SCENE_IDS: SceneId[] = ['hook', 'body', 'cta'];
 // ─── Main Component ──────────────────────────────────────────
 
 export function VideoSceneEditor() {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const deliverableId = useCanvasStore((s) => s.deliverableId);
   const sceneVideos = useCanvasStore((s) => s.sceneVideos);
   const variantGroups = useCanvasStore((s) => s.variantGroups);
@@ -224,16 +226,16 @@ export function VideoSceneEditor() {
 
   if (!hasAnyScript) {
     return (
-      <ConfigSection title="Scene Video Builder">
+      <ConfigSection title={t('sceneEditor.title')}>
         <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
-          <p className="text-xs text-amber-700">No script variants available. Complete step 2 first.</p>
+          <p className="text-xs text-amber-700">{t('sceneEditor.noScript')}</p>
         </div>
       </ConfigSection>
     );
   }
 
   return (
-    <ConfigSection title="Scene Video Builder">
+    <ConfigSection title={t('sceneEditor.title')}>
       {/* ─── Timeline visualization + split sliders ─────── */}
       <div className="space-y-2 mb-4">
         <div className="relative h-7 rounded-lg overflow-hidden flex">
@@ -249,7 +251,7 @@ export function VideoSceneEditor() {
                 className="h-full flex items-center justify-center text-[11px] font-medium text-white transition-opacity"
                 style={{ width: `${pct}%`, backgroundColor: meta.trackColor, opacity: isReady ? 1 : 0.4 }}
               >
-                {meta.label} {dur}s {isReady ? '✓' : ''}
+                {t(`scene.${sceneId}`)} {dur}s {isReady ? '✓' : ''}
               </div>
             );
           })}
@@ -258,7 +260,7 @@ export function VideoSceneEditor() {
         {/* Compact split sliders */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-[10px] text-gray-500">Hook→Body at {split1}s</label>
+            <label className="text-[10px] text-gray-500">{t('sceneEditor.hookToBody', { seconds: split1 })}</label>
             <input
               type="range" min={1} max={split2 - 1} step={1} value={split1}
               onChange={(e) => setConfigValue('timelineSplit1', Number(e.target.value))}
@@ -266,7 +268,7 @@ export function VideoSceneEditor() {
             />
           </div>
           <div>
-            <label className="text-[10px] text-gray-500">Body→CTA at {split2}s</label>
+            <label className="text-[10px] text-gray-500">{t('sceneEditor.bodyToCta', { seconds: split2 })}</label>
             <input
               type="range" min={split1 + 1} max={totalDuration - 1} step={1} value={split2}
               onChange={(e) => setConfigValue('timelineSplit2', Number(e.target.value))}
@@ -278,7 +280,7 @@ export function VideoSceneEditor() {
 
       {/* ─── Provider selector (shared across scenes) ──── */}
       <div className="mb-4">
-        <span className="text-xs font-medium text-gray-700 mb-1.5 block">Video Model</span>
+        <span className="text-xs font-medium text-gray-700 mb-1.5 block">{t('sceneEditor.videoModel')}</span>
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {FAL_VIDEO_PROVIDERS.filter((p) => p.supportsTextToVideo).map((p) => {
             const isSelected = videoProviderConfig.provider === p.id;
@@ -332,9 +334,9 @@ export function VideoSceneEditor() {
             className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium disabled:opacity-50 ${STUDIO.generateButton}`}
           >
             {composedVideoStatus === 'composing' ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Composing...</>
+              <><Loader2 className="h-4 w-4 animate-spin" /> {t('sceneEditor.composing')}</>
             ) : (
-              <><Play className="h-4 w-4" /> Render Final Video</>
+              <><Play className="h-4 w-4" /> {t('scene.renderFinalVideo')}</>
             )}
           </button>
         </div>
@@ -361,6 +363,7 @@ function SceneCard({
   deliverableId: string | null;
   onGenerate: (sourceImageUrl?: string) => void;
 }) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const scene = useCanvasStore((s) => s.sceneVideos.find((sv) => sv.sceneId === sceneId)) as SceneVideoConfig;
   const updateScene = useCanvasStore((s) => s.updateScene);
 
@@ -415,10 +418,10 @@ function SceneCard({
           <div className={`p-1 rounded-md ${meta.bgColor} ${meta.color}`}>
             <Icon className="h-3.5 w-3.5" />
           </div>
-          <span className="text-sm font-semibold text-gray-800">{meta.label}</span>
+          <span className="text-sm font-semibold text-gray-800">{t(`scene.${sceneId}`)}</span>
           <span className="text-xs text-gray-400">{duration}s</span>
           {scene.status === 'complete' && (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#ecfdf5', color: '#059669' }}>Ready</span>
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#ecfdf5', color: '#059669' }}>{t('sceneEditor.ready')}</span>
           )}
           {isGenerating && (
             <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -454,11 +457,11 @@ function SceneCard({
                   onClick={() => updateScene(sceneId, { videoUrl: null, status: 'idle', prompt: null })}
                   className="inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-700"
                 >
-                  <RefreshCw className="h-3 w-3" /> Redo
+                  <RefreshCw className="h-3 w-3" /> {t('sceneEditor.redo')}
                 </button>
                 {scene.voiceoverUrl ? (
                   <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600">
-                    <Volume2 className="h-3 w-3" /> Voiceover
+                    <Volume2 className="h-3 w-3" /> {t('sceneEditor.voiceover')}
                   </span>
                 ) : (
                   <button
@@ -467,7 +470,7 @@ function SceneCard({
                     className="inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-700 disabled:opacity-50"
                   >
                     {voiceoverLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mic className="h-3 w-3" />}
-                    Voiceover
+                    {t('sceneEditor.voiceover')}
                   </button>
                 )}
               </div>
@@ -479,8 +482,8 @@ function SceneCard({
             <div className="rounded-lg bg-red-50 border border-red-200 p-2 flex items-start gap-2">
               <AlertCircle className="h-3.5 w-3.5 text-red-500 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-[11px] text-red-700">{scene.error || 'Failed'}</p>
-                <button onClick={() => onGenerate()} className="text-[11px] text-red-600 underline mt-0.5">Retry</button>
+                <p className="text-[11px] text-red-700">{scene.error || t('sceneEditor.failed')}</p>
+                <button onClick={() => onGenerate()} className="text-[11px] text-red-600 underline mt-0.5">{t('sceneEditor.retry')}</button>
               </div>
             </div>
           )}
@@ -504,7 +507,7 @@ function SceneCard({
                       style={isActive ? { backgroundColor: '#0d9488' } : undefined}
                     >
                       <SrcIcon className="h-3 w-3" />
-                      {opt.label}
+                      {t(opt.labelKey)}
                     </button>
                   );
                 })}
@@ -515,18 +518,18 @@ function SceneCard({
                 <div className="flex gap-1.5">
                   <input
                     type="url" value={imageUrlInput} onChange={(e) => setImageUrlInput(e.target.value)}
-                    placeholder="Image URL..." className="flex-1 rounded-lg border border-gray-200 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    placeholder={t('sceneEditor.imageUrlPlaceholder')} className="flex-1 rounded-lg border border-gray-200 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
                   <button onClick={() => { if (imageUrlInput) { updateScene(sceneId, { sourceUrl: imageUrlInput }); setImageUrlInput(''); } }}
                     disabled={!imageUrlInput} className="px-2 py-1 rounded-lg text-[11px] font-medium text-white disabled:opacity-50" style={{ backgroundColor: '#0d9488' }}>
-                    Set
+                    {t('sceneEditor.set')}
                   </button>
                 </div>
               )}
 
               {scene.sourceMode === 'image-to-video' && scene.sourceUrl && (
                 <div className="relative rounded-lg overflow-hidden border border-gray-200">
-                  <img src={scene.sourceUrl} alt="Source" className="w-full h-20 object-cover" />
+                  <img src={scene.sourceUrl} alt={t('sceneEditor.sourceAlt')} className="w-full h-20 object-cover" />
                   <button onClick={() => updateScene(sceneId, { sourceUrl: null })} className="absolute top-1 right-1 p-0.5 rounded-full bg-black/50 text-white">
                     <X className="h-3 w-3" />
                   </button>
@@ -538,11 +541,11 @@ function SceneCard({
                 <div className="flex gap-1.5">
                   <input
                     type="url" value={videoUrlInput} onChange={(e) => setVideoUrlInput(e.target.value)}
-                    placeholder="Video URL..." className="flex-1 rounded-lg border border-gray-200 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    placeholder={t('sceneEditor.videoUrlPlaceholder')} className="flex-1 rounded-lg border border-gray-200 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
                   <button onClick={() => { if (videoUrlInput) { updateScene(sceneId, { videoUrl: videoUrlInput, status: 'complete' }); setVideoUrlInput(''); } }}
                     disabled={!videoUrlInput} className="px-2 py-1 rounded-lg text-[11px] font-medium text-white disabled:opacity-50" style={{ backgroundColor: '#0d9488' }}>
-                    Use
+                    {t('sceneEditor.use')}
                   </button>
                 </div>
               )}
@@ -557,7 +560,7 @@ function SceneCard({
                   style={{ backgroundColor: '#0d9488' }}
                 >
                   <Play className="h-3 w-3" />
-                  Generate {meta.label} ({falDuration}s)
+                  {t('sceneEditor.generateScene', { label: t(`scene.${sceneId}`), seconds: falDuration })}
                 </button>
               )}
             </>
@@ -567,7 +570,7 @@ function SceneCard({
           {isGenerating && (
             <div className="flex items-center justify-center gap-2 py-3">
               <Loader2 className="h-4 w-4 animate-spin" style={{ color: '#0d9488' }} />
-              <span className="text-xs text-gray-600">Generating {meta.label.toLowerCase()}... {elapsed}s</span>
+              <span className="text-xs text-gray-600">{t('sceneEditor.generatingScene', { label: t(`scene.${sceneId}`).toLowerCase(), elapsed })}</span>
             </div>
           )}
         </div>

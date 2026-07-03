@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -29,6 +30,7 @@ import { ProductTier } from '../../types/product-tier';
 import { UnlockService } from '../../services/UnlockService';
 
 export function CommercialDemoPage() {
+  const { t } = useTranslation('commercial');
   const [activeTab, setActiveTab] = useState('overview');
   const [showDecisionScan, setShowDecisionScan] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -69,20 +71,20 @@ export function CommercialDemoPage() {
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Commercial Features Demo</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('demo.header.title')}</h1>
         <p className="text-muted-foreground">
-          Test all commercial functionality and product tiers
+          {t('demo.header.subtitle')}
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="tiers">Tiers</TabsTrigger>
-          <TabsTrigger value="scan">Decision Scan</TabsTrigger>
-          <TabsTrigger value="advisory">Advisory</TabsTrigger>
-          <TabsTrigger value="gating">Feature Gating</TabsTrigger>
-          <TabsTrigger value="unlock">Unlock Demo</TabsTrigger>
+          <TabsTrigger value="overview">{t('demo.tabs.overview')}</TabsTrigger>
+          <TabsTrigger value="tiers">{t('demo.tabs.tiers')}</TabsTrigger>
+          <TabsTrigger value="scan">{t('demo.tabs.scan')}</TabsTrigger>
+          <TabsTrigger value="advisory">{t('demo.tabs.advisory')}</TabsTrigger>
+          <TabsTrigger value="gating">{t('demo.tabs.gating')}</TabsTrigger>
+          <TabsTrigger value="unlock">{t('demo.tabs.unlock')}</TabsTrigger>
         </TabsList>
 
         {/* Overview */}
@@ -93,12 +95,12 @@ export function CommercialDemoPage() {
                 <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mb-3">
                   <Shield className="h-6 w-6 text-blue-700 dark:text-blue-400" />
                 </div>
-                <CardTitle>Decision Scan</CardTitle>
-                <CardDescription>Entry product - basic level</CardDescription>
+                <CardTitle>{t('demo.overview.scanTitle')}</CardTitle>
+                <CardDescription>{t('demo.overview.scanSubtitle')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button className="w-full" onClick={() => setShowDecisionScan(true)}>
-                  Start Demo Scan
+                  {t('demo.overview.startDemoScan')}
                 </Button>
               </CardContent>
             </Card>
@@ -108,8 +110,8 @@ export function CommercialDemoPage() {
                 <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center mb-3">
                   <Package className="h-6 w-6 text-purple-700 dark:text-purple-400" />
                 </div>
-                <CardTitle>Strategic Control</CardTitle>
-                <CardDescription>Core product - control level</CardDescription>
+                <CardTitle>{t('demo.overview.controlTitle')}</CardTitle>
+                <CardDescription>{t('demo.overview.controlSubtitle')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
@@ -117,9 +119,9 @@ export function CommercialDemoPage() {
                   onClick={() => handleUpgrade('strategic-control')}
                   disabled={currentTier === 'strategic-control' || currentTier === 'advisory-services'}
                 >
-                  {currentTier === 'strategic-control' || currentTier === 'advisory-services' 
-                    ? 'Active'
-                    : 'Upgrade'}
+                  {currentTier === 'strategic-control' || currentTier === 'advisory-services'
+                    ? t('demo.overview.active')
+                    : t('demo.overview.upgrade')}
                 </Button>
               </CardContent>
             </Card>
@@ -129,8 +131,8 @@ export function CommercialDemoPage() {
                 <div className="h-12 w-12 rounded-lg bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center mb-3">
                   <Star className="h-6 w-6 text-amber-700 dark:text-amber-400" />
                 </div>
-                <CardTitle>Advisory & Services</CardTitle>
-                <CardDescription>Premium - confidence level</CardDescription>
+                <CardTitle>{t('demo.overview.advisoryTitle')}</CardTitle>
+                <CardDescription>{t('demo.overview.advisorySubtitle')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
@@ -138,7 +140,7 @@ export function CommercialDemoPage() {
                   onClick={() => handleUpgrade('advisory-services')}
                   disabled={currentTier === 'advisory-services'}
                 >
-                  {currentTier === 'advisory-services' ? 'Active' : 'Upgrade'}
+                  {currentTier === 'advisory-services' ? t('demo.overview.active') : t('demo.overview.upgrade')}
                 </Button>
               </CardContent>
             </Card>
@@ -147,8 +149,8 @@ export function CommercialDemoPage() {
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Test various commercial flows</CardDescription>
+              <CardTitle>{t('demo.overview.quickActions')}</CardTitle>
+              <CardDescription>{t('demo.overview.quickActionsSubtitle')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <Button
@@ -157,7 +159,7 @@ export function CommercialDemoPage() {
                 onClick={() => setActiveTab('tiers')}
               >
                 <FileText className="h-4 w-4 mr-2" />
-                View Tier Comparison
+                {t('demo.overview.viewTierComparison')}
               </Button>
               <Button
                 variant="outline"
@@ -165,7 +167,7 @@ export function CommercialDemoPage() {
                 onClick={() => setShowUpgradePrompt(true)}
               >
                 <Zap className="h-4 w-4 mr-2" />
-                Test Upgrade Prompt
+                {t('demo.overview.testUpgradePrompt')}
               </Button>
               <Button
                 variant="outline"
@@ -173,7 +175,7 @@ export function CommercialDemoPage() {
                 onClick={() => setActiveTab('advisory')}
               >
                 <Users className="h-4 w-4 mr-2" />
-                View Advisory Dashboard
+                {t('demo.overview.viewAdvisoryDashboard')}
               </Button>
             </CardContent>
           </Card>
@@ -192,13 +194,12 @@ export function CommercialDemoPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <Shield className="h-16 w-16 mx-auto mb-4 text-blue-700 dark:text-blue-400" />
-              <h3 className="text-2xl font-bold mb-4">Decision Scan Flow</h3>
+              <h3 className="text-2xl font-bold mb-4">{t('demo.scan.title')}</h3>
               <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                A complete onboarding flow that ends in decision status, top 3 risks,
-                action plan, and example campaign.
+                {t('demo.scan.body')}
               </p>
               <Button size="lg" onClick={() => setShowDecisionScan(true)}>
-                Start Decision Scan Demo
+                {t('demo.scan.cta')}
               </Button>
             </CardContent>
           </Card>
@@ -216,18 +217,18 @@ export function CommercialDemoPage() {
         <TabsContent value="gating" className="space-y-6 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Feature Gating Examples</CardTitle>
+              <CardTitle>{t('demo.gating.title')}</CardTitle>
               <CardDescription>
-                Test how gated features are presented to users
+                {t('demo.gating.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Inline Prompt */}
               <div>
-                <p className="text-sm font-medium mb-3">Inline Upgrade Prompt</p>
+                <p className="text-sm font-medium mb-3">{t('demo.gating.inlineLabel')}</p>
                 <UpgradePrompt
-                  feature="Unlimited Campaign Generation"
-                  featureDescription="Generate as many campaigns as you want with full decision quality tracking"
+                  feature={t('demo.gating.inlineFeature')}
+                  featureDescription={t('demo.gating.inlineFeatureDescription')}
                   requiredTier="strategic-control"
                   onUpgrade={() => handleUpgrade('strategic-control')}
                   inline
@@ -236,18 +237,18 @@ export function CommercialDemoPage() {
 
               {/* Modal Trigger */}
               <div>
-                <p className="text-sm font-medium mb-3">Modal Upgrade Prompt</p>
+                <p className="text-sm font-medium mb-3">{t('demo.gating.modalLabel')}</p>
                 <Button onClick={() => setShowUpgradePrompt(true)}>
-                  Test Modal Prompt
+                  {t('demo.gating.testModal')}
                 </Button>
               </div>
 
               {/* Advisory Upsell */}
               <div>
-                <p className="text-sm font-medium mb-3">Advisory Services Upsell</p>
+                <p className="text-sm font-medium mb-3">{t('demo.gating.advisoryUpsellLabel')}</p>
                 <UpgradePrompt
-                  feature="Expert Strategic Reviews"
-                  featureDescription="Quarterly reviews with a dedicated strategy advisor for maximum decision certainty"
+                  feature={t('demo.gating.advisoryFeature')}
+                  featureDescription={t('demo.gating.advisoryFeatureDescription')}
                   requiredTier="advisory-services"
                   onUpgrade={() => handleUpgrade('advisory-services')}
                   inline
@@ -261,9 +262,9 @@ export function CommercialDemoPage() {
         <TabsContent value="unlock" className="space-y-6 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Brand Assets & Research Methods Unlock</CardTitle>
+              <CardTitle>{t('demo.unlock.title')}</CardTitle>
               <CardDescription>
-                Manage which brand assets and validation methods are available to users
+                {t('demo.unlock.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -274,9 +275,9 @@ export function CommercialDemoPage() {
                     <Unlock className="h-6 w-6 text-purple-700 dark:text-purple-400" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold mb-2">Initialize Demo State</h3>
+                    <h3 className="font-semibold mb-2">{t('demo.unlock.initTitle')}</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Unlock all 13 brand assets, but lock a selection of validation methods to demonstrate the unlock flow.
+                      {t('demo.unlock.initBody')}
                     </p>
                     <div className="flex gap-3">
                       <Button
@@ -287,7 +288,7 @@ export function CommercialDemoPage() {
                         className="gap-2"
                       >
                         <CheckCircle className="h-4 w-4" />
-                        Initialize Demo State
+                        {t('demo.unlock.initButton')}
                       </Button>
                       <Button
                         variant="outline"
@@ -298,7 +299,7 @@ export function CommercialDemoPage() {
                         className="gap-2"
                       >
                         <RotateCcw className="h-4 w-4" />
-                        Reset All
+                        {t('demo.unlock.resetButton')}
                       </Button>
                     </div>
                   </div>
@@ -311,7 +312,7 @@ export function CommercialDemoPage() {
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
                       <Unlock className="h-5 w-5 text-green-600" />
-                      Unlocked Assets
+                      {t('demo.unlock.unlockedAssets')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -323,7 +324,7 @@ export function CommercialDemoPage() {
                       ) : (
                         <p className="text-2xl font-bold text-muted-foreground">0</p>
                       )}
-                      <p className="text-sm text-muted-foreground">of 13 brand assets</p>
+                      <p className="text-sm text-muted-foreground">{t('demo.unlock.ofAssets')}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -332,7 +333,7 @@ export function CommercialDemoPage() {
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
                       <Lock className="h-5 w-5 text-amber-600" />
-                      Research Methods Status
+                      {t('demo.unlock.methodsStatus')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -341,7 +342,7 @@ export function CommercialDemoPage() {
                         const allAssets = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'];
                         const methods = ['ai-exploration', 'workshop', 'interviews', 'questionnaire'];
                         
-                        let totalMethods = allAssets.length * methods.length;
+                        const totalMethods = allAssets.length * methods.length;
                         let unlockedMethods = 0;
                         
                         allAssets.forEach(assetId => {
@@ -357,16 +358,16 @@ export function CommercialDemoPage() {
                         return (
                           <>
                             <div className="flex justify-between items-center">
-                              <span className="text-sm text-muted-foreground">Unlocked:</span>
+                              <span className="text-sm text-muted-foreground">{t('demo.unlock.unlockedLabel')}</span>
                               <span className="text-sm font-semibold text-green-600">{unlockedMethods}</span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-sm text-muted-foreground">Locked:</span>
+                              <span className="text-sm text-muted-foreground">{t('demo.unlock.lockedLabel')}</span>
                               <span className="text-sm font-semibold text-red-600">{lockedMethods}</span>
                             </div>
                             <div className="pt-2 border-t">
                               <div className="flex justify-between items-center">
-                                <span className="text-xs text-muted-foreground">Total methods:</span>
+                                <span className="text-xs text-muted-foreground">{t('demo.unlock.totalMethods')}</span>
                                 <span className="text-xs font-medium">{totalMethods}</span>
                               </div>
                             </div>
@@ -381,34 +382,34 @@ export function CommercialDemoPage() {
               {/* Detailed Per-Asset Status */}
               <Card className="border-2">
                 <CardHeader>
-                  <CardTitle className="text-base">Research Methods Status per Asset</CardTitle>
+                  <CardTitle className="text-base">{t('demo.unlock.perAssetTitle')}</CardTitle>
                   <CardDescription>
-                    Real-time overview of which methods are unlocked/locked per brand asset
+                    {t('demo.unlock.perAssetSubtitle')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {(() => {
                       const allAssets = [
-                        { id: '1', name: 'Golden Circle' },
-                        { id: '3', name: 'Mission & Vision' },
-                        { id: '4', name: 'Brand Archetype' },
-                        { id: '5', name: 'Core Values' },
-                        { id: '6', name: 'Transformative Goals' },
-                        { id: '7', name: 'Social Relevancy' },
-                        { id: '8', name: 'Brand Tone & Voice' },
-                        { id: '9', name: 'Brand Promise' },
-                        { id: '10', name: 'Brand Story' },
-                        { id: '11', name: 'Brand Essence' },
-                        { id: '12', name: 'Brand Personality' },
-                        { id: '13', name: 'Brand Positioning' }
+                        { id: '1', name: t('demo.unlock.assets.goldenCircle') },
+                        { id: '3', name: t('demo.unlock.assets.missionVision') },
+                        { id: '4', name: t('demo.unlock.assets.brandArchetype') },
+                        { id: '5', name: t('demo.unlock.assets.coreValues') },
+                        { id: '6', name: t('demo.unlock.assets.transformativeGoals') },
+                        { id: '7', name: t('demo.unlock.assets.socialRelevancy') },
+                        { id: '8', name: t('demo.unlock.assets.brandToneVoice') },
+                        { id: '9', name: t('demo.unlock.assets.brandPromise') },
+                        { id: '10', name: t('demo.unlock.assets.brandStory') },
+                        { id: '11', name: t('demo.unlock.assets.brandEssence') },
+                        { id: '12', name: t('demo.unlock.assets.brandPersonality') },
+                        { id: '13', name: t('demo.unlock.assets.brandPositioning') }
                       ];
 
                       const methods = [
-                        { id: 'ai-exploration', label: 'AI', color: 'blue' },
-                        { id: 'workshop', label: 'Workshop', color: 'purple' },
-                        { id: 'interviews', label: 'Interviews', color: 'indigo' },
-                        { id: 'questionnaire', label: 'Survey', color: 'pink' }
+                        { id: 'ai-exploration', label: t('demo.unlock.methods.ai'), color: 'blue' },
+                        { id: 'workshop', label: t('demo.unlock.methods.workshop'), color: 'purple' },
+                        { id: 'interviews', label: t('demo.unlock.methods.interviews'), color: 'indigo' },
+                        { id: 'questionnaire', label: t('demo.unlock.methods.survey'), color: 'pink' }
                       ];
 
                       return allAssets.map(asset => {
@@ -450,7 +451,7 @@ export function CommercialDemoPage() {
                                           ? `bg-${method.color}-100 dark:bg-${method.color}-950/30 text-${method.color}-700 dark:text-${method.color}-400 border border-${method.color}-300 dark:border-${method.color}-800`
                                           : 'bg-gray-100 dark:bg-gray-900 text-gray-400 border border-gray-200 dark:border-gray-800 line-through'
                                       }`}
-                                      title={`${method.label}: ${isUnlocked ? 'Unlocked' : 'Locked'}`}
+                                      title={`${method.label}: ${isUnlocked ? t('demo.unlock.methodUnlocked') : t('demo.unlock.methodLocked')}`}
                                     >
                                       {isUnlocked ? '✓' : '×'} {method.label}
                                     </div>
@@ -474,46 +475,46 @@ export function CommercialDemoPage() {
               <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                   <FileText className="h-4 w-4 text-blue-600" />
-                  Demo Scenario
+                  {t('demo.unlock.demoScenario')}
                 </h4>
                 <ol className="text-sm text-muted-foreground space-y-1 ml-5 list-decimal">
-                  <li>Click "Initialize Demo State" to unlock all brand assets</li>
-                  <li>Go to the "Your Brand" section in the sidebar</li>
-                  <li>Open a brand asset (e.g. "Golden Circle" or "Brand Archetype")</li>
-                  <li>Try to start a locked research method (Workshop or Interviews)</li>
-                  <li>You will now see the "Unlock" modal with pricing options</li>
-                  <li>After purchase, the method is unlocked and you can start it</li>
+                  <li>{t('demo.unlock.scenario1')}</li>
+                  <li>{t('demo.unlock.scenario2')}</li>
+                  <li>{t('demo.unlock.scenario3')}</li>
+                  <li>{t('demo.unlock.scenario4')}</li>
+                  <li>{t('demo.unlock.scenario5')}</li>
+                  <li>{t('demo.unlock.scenario6')}</li>
                 </ol>
               </div>
 
               {/* Method Lock Status */}
               <div>
-                <h4 className="font-semibold mb-3">Demo Lock Configuration</h4>
+                <h4 className="font-semibold mb-3">{t('demo.unlock.lockConfigTitle')}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200">
                     <p className="text-sm font-medium text-green-900 dark:text-green-100 mb-1">
                       ✅ AI Exploration
                     </p>
                     <p className="text-xs text-green-700 dark:text-green-300">
-                      Unlocked for all assets (free tier)
+                      {t('demo.unlock.configAiDescription')}
                     </p>
                   </div>
-                  
+
                   <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200">
                     <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">
                       🔒 Workshop & Interviews
                     </p>
                     <p className="text-xs text-amber-700 dark:text-amber-300">
-                      Locked for 6 assets (#1, #4, #6, #8, #9, #11)
+                      {t('demo.unlock.configWorkshopDescription')}
                     </p>
                   </div>
-                  
+
                   <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200">
                     <p className="text-sm font-medium text-red-900 dark:text-red-100 mb-1">
                       🔒 Strategic Survey
                     </p>
                     <p className="text-xs text-red-700 dark:text-red-300">
-                      Locked for 10 assets (only #2, #3, #13 unlocked)
+                      {t('demo.unlock.configSurveyDescription')}
                     </p>
                   </div>
                 </div>
@@ -526,8 +527,8 @@ export function CommercialDemoPage() {
       {/* Modal Upgrade Prompt */}
       {showUpgradePrompt && (
         <UpgradePrompt
-          feature="Advanced Research Planning"
-          featureDescription="Use the full research planning tools for structured validation of your strategic decisions"
+          feature={t('demo.gating.modalFeature')}
+          featureDescription={t('demo.gating.modalFeatureDescription')}
           requiredTier="strategic-control"
           onUpgrade={() => handleUpgrade('strategic-control')}
           onClose={() => setShowUpgradePrompt(false)}

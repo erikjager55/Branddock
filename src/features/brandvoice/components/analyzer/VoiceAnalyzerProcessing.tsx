@@ -2,6 +2,7 @@
 
 import { Loader2, Check, Globe, FileText, Sparkles, Wand2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type {
   VoiceAnalysisProgress,
   VoiceAnalysisStatus,
@@ -9,16 +10,16 @@ import type {
 
 interface Step {
   id: VoiceAnalysisStatus;
-  label: string;
+  labelKey: string;
   icon: LucideIcon;
 }
 
 const STEPS: Step[] = [
-  { id: "PENDING", label: "Queued", icon: Loader2 },
-  { id: "SCRAPING", label: "Collecting source text", icon: Globe },
-  { id: "EXTRACTING", label: "Preparing corpus", icon: FileText },
-  { id: "ANALYZING", label: "Claude analyzing voice", icon: Sparkles },
-  { id: "COMPLETED", label: "Ready", icon: Wand2 },
+  { id: "PENDING", labelKey: "analyzer.processing.steps.queued", icon: Loader2 },
+  { id: "SCRAPING", labelKey: "analyzer.processing.steps.collecting", icon: Globe },
+  { id: "EXTRACTING", labelKey: "analyzer.processing.steps.preparing", icon: FileText },
+  { id: "ANALYZING", labelKey: "analyzer.processing.steps.analyzing", icon: Sparkles },
+  { id: "COMPLETED", labelKey: "analyzer.processing.steps.ready", icon: Wand2 },
 ];
 
 const ORDER: VoiceAnalysisStatus[] = ["PENDING", "SCRAPING", "EXTRACTING", "ANALYZING", "COMPLETED"];
@@ -28,13 +29,14 @@ interface VoiceAnalyzerProcessingProps {
 }
 
 export function VoiceAnalyzerProcessing({ progress }: VoiceAnalyzerProcessingProps) {
+  const { t } = useTranslation("brandvoice");
   const currentIdx = ORDER.indexOf(progress.status);
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6">
-      <h3 className="text-sm font-semibold text-gray-900 mb-1">Analyzing brand voice</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-1">{t("analyzer.processing.title")}</h3>
       <p className="text-xs text-gray-500 mb-4">
-        Typically takes 30-90 seconds depending on site size.
+        {t("analyzer.processing.subtitle")}
       </p>
 
       <div className="w-full bg-gray-100 rounded-full h-2 mb-5 overflow-hidden">
@@ -49,6 +51,7 @@ export function VoiceAnalyzerProcessing({ progress }: VoiceAnalyzerProcessingPro
           const isDone = idx < currentIdx;
           const isCurrent = idx === currentIdx;
           const Icon = step.icon;
+          const label = t(step.labelKey);
           return (
             <li key={step.id} className="flex items-center gap-3">
               <div
@@ -77,9 +80,9 @@ export function VoiceAnalyzerProcessing({ progress }: VoiceAnalyzerProcessingPro
                       : "text-gray-400"
                 }`}
               >
-                {step.label}
+                {label}
               </span>
-              {isCurrent && progress.currentStep && progress.currentStep !== step.label && (
+              {isCurrent && progress.currentStep && progress.currentStep !== label && (
                 <span className="text-xs text-gray-400 ml-auto">{progress.currentStep}</span>
               )}
             </li>

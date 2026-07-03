@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useUIState } from "@/contexts/UIStateContext";
 import { useBrandAlignmentStore } from "@/stores/useBrandAlignmentStore";
 import { useClawStore } from "@/stores/useClawStore";
@@ -50,15 +51,6 @@ export interface ReviewErrorResult {
 
 export type ReviewCardData = ReviewSuccessResult | ReviewErrorResult;
 
-const CATEGORY_LABELS: Record<ReviewFinding["category"], string> = {
-  VOICE: "Voice",
-  TERMINOLOGY: "Terminology",
-  CLAIMS: "Claims",
-  STYLE: "Style",
-  BUSINESS: "Business",
-  AI_TELL: "AI tell",
-};
-
 const SEVERITY_COLORS: Record<ReviewFinding["severity"], string> = {
   HIGH: "bg-red-100 text-red-800 border-red-200",
   MEDIUM: "bg-amber-100 text-amber-800 border-amber-200",
@@ -73,6 +65,7 @@ export function ReviewFindingsCard({ data }: { data: ReviewCardData }) {
 }
 
 function ReviewSuccessCard({ data }: { data: ReviewSuccessResult }) {
+  const { t } = useTranslation("claw");
   const score = Math.round(data.compositeScore);
   const passed = data.thresholdMet;
   const scoreColor = passed
@@ -104,17 +97,17 @@ function ReviewSuccessCard({ data }: { data: ReviewSuccessResult }) {
             {passed ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="font-medium text-emerald-700">Threshold met</span>
+                <span className="font-medium text-emerald-700">{t("review.thresholdMet")}</span>
               </>
             ) : (
               <>
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                <span className="font-medium text-amber-700">Below threshold</span>
+                <span className="font-medium text-amber-700">{t("review.belowThreshold")}</span>
               </>
             )}
             <span className="text-gray-400">·</span>
             <span className="text-gray-600">
-              {data.findingsCount} finding{data.findingsCount === 1 ? "" : "s"}
+              {t("review.findingCount", { count: data.findingsCount })}
             </span>
           </div>
           {data.scorerVersion && (
@@ -129,7 +122,7 @@ function ReviewSuccessCard({ data }: { data: ReviewSuccessResult }) {
       {data.topFindings.length > 0 && (
         <div className="pt-2 space-y-1.5">
           <div className="text-[10px] uppercase tracking-wide text-gray-400 font-medium">
-            Top {data.topFindings.length} of {data.findingsCount}
+            {t("review.topOf", { shown: data.topFindings.length, total: data.findingsCount })}
           </div>
           {data.topFindings.map((f, i) => (
             <div key={i} className="flex gap-2 items-start text-xs">
@@ -140,7 +133,7 @@ function ReviewSuccessCard({ data }: { data: ReviewSuccessResult }) {
               </span>
               <div className="flex-1 min-w-0">
                 <div className="text-gray-800 break-words">
-                  <span className="text-gray-500">{CATEGORY_LABELS[f.category]}:</span>{" "}
+                  <span className="text-gray-500">{t(`review.categories.${f.category}`)}:</span>{" "}
                   {f.description}
                 </div>
                 {f.suggestion && (
@@ -164,7 +157,7 @@ function ReviewSuccessCard({ data }: { data: ReviewSuccessResult }) {
             onClick={handleViewAll}
             className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:text-emerald-800 hover:underline"
           >
-            View all {data.findingsCount} findings
+            {t("review.viewAll", { total: data.findingsCount })}
             <ExternalLink className="w-3 h-3" />
           </button>
         </div>
@@ -174,6 +167,7 @@ function ReviewSuccessCard({ data }: { data: ReviewSuccessResult }) {
 }
 
 function ReviewErrorCard({ error, code }: { error: string; code?: string }) {
+  const { t } = useTranslation("claw");
   return (
     <div
       role="status"
@@ -181,7 +175,7 @@ function ReviewErrorCard({ error, code }: { error: string; code?: string }) {
     >
       <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
-        <div className="font-medium">Could not review content</div>
+        <div className="font-medium">{t("review.couldNotReview")}</div>
         <div className="break-words">{error}</div>
         {code && <div className="text-[10px] mt-0.5 font-mono opacity-70">{code}</div>}
       </div>

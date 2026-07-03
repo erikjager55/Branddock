@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronUp } from 'lucide-react';
 import type { FeatureRequestItem } from '@/types/help';
 import { useVoteFeatureRequest } from '@/hooks/use-help';
@@ -9,17 +10,19 @@ interface FeatureRequestItemCardProps {
   item: FeatureRequestItem;
 }
 
-const statusBadgeConfig: Record<string, { bg: string; text: string; label: string }> = {
-  REQUESTED: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Requested' },
-  PLANNED: { bg: 'bg-blue-50', text: 'text-blue-700', label: 'Planned' },
-  IN_PROGRESS: { bg: 'bg-amber-50', text: 'text-amber-700', label: 'In Progress' },
-  COMPLETED: { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Completed' },
+const statusBadgeConfig: Record<string, { bg: string; text: string }> = {
+  REQUESTED: { bg: 'bg-gray-100', text: 'text-gray-700' },
+  PLANNED: { bg: 'bg-blue-50', text: 'text-blue-700' },
+  IN_PROGRESS: { bg: 'bg-amber-50', text: 'text-amber-700' },
+  COMPLETED: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
 };
 
 export function FeatureRequestItemCard({ item }: FeatureRequestItemCardProps) {
+  const { t } = useTranslation('help');
   const voteMutation = useVoteFeatureRequest();
 
-  const statusConfig = statusBadgeConfig[item.status] ?? statusBadgeConfig.REQUESTED;
+  const statusKey = item.status in statusBadgeConfig ? item.status : 'REQUESTED';
+  const statusConfig = statusBadgeConfig[statusKey];
 
   const handleVote = () => {
     voteMutation.mutate(item.id);
@@ -48,7 +51,7 @@ export function FeatureRequestItemCard({ item }: FeatureRequestItemCardProps) {
             <span
               className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${statusConfig.bg} ${statusConfig.text}`}
             >
-              {statusConfig.label}
+              {t(`featureRequests.status.${statusKey}`)}
             </span>
           </div>
 
@@ -60,7 +63,7 @@ export function FeatureRequestItemCard({ item }: FeatureRequestItemCardProps) {
               {item.submittedBy.avatarUrl ? (
                 <img
                   src={item.submittedBy.avatarUrl}
-                  alt={item.submittedBy.name ?? 'User'}
+                  alt={item.submittedBy.name ?? t('featureRequests.userAlt')}
                   className="w-4 h-4 rounded-full"
                 />
               ) : (
@@ -71,7 +74,7 @@ export function FeatureRequestItemCard({ item }: FeatureRequestItemCardProps) {
                 </div>
               )}
               <span className="text-xs text-gray-400">
-                {item.submittedBy.name ?? 'Anonymous'}
+                {item.submittedBy.name ?? t('featureRequests.anonymous')}
               </span>
             </div>
           )}

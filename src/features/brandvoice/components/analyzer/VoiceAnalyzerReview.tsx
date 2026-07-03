@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, X, Sparkles, ArrowRight, RefreshCcw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/shared";
 import { useUpdateVoiceguide } from "../../hooks";
 import type { VoiceAnalysisResult, ChannelKey } from "../../types/voiceguide.types";
@@ -21,6 +22,7 @@ interface SectionToggleProps {
 }
 
 function SectionToggle({ label, enabled, onToggle, rationale, children }: SectionToggleProps) {
+  const { t } = useTranslation("brandvoice");
   return (
     <div className={`bg-white border-2 rounded-lg p-4 ${enabled ? "border-teal-300" : "border-gray-200"}`}>
       <div className="flex items-start justify-between mb-2">
@@ -38,11 +40,11 @@ function SectionToggle({ label, enabled, onToggle, rationale, children }: Sectio
         >
           {enabled ? (
             <>
-              <Check className="w-3.5 h-3.5 inline mr-1" /> Applying
+              <Check className="w-3.5 h-3.5 inline mr-1" /> {t("analyzer.review.applying")}
             </>
           ) : (
             <>
-              <X className="w-3.5 h-3.5 inline mr-1" /> Skip
+              <X className="w-3.5 h-3.5 inline mr-1" /> {t("analyzer.review.skip")}
             </>
           )}
         </button>
@@ -53,6 +55,7 @@ function SectionToggle({ label, enabled, onToggle, rationale, children }: Sectio
 }
 
 export function VoiceAnalyzerReview({ result, onApplied, onReset }: VoiceAnalyzerReviewProps) {
+  const { t } = useTranslation("brandvoice");
   const update = useUpdateVoiceguide();
 
   // Per-section enabled state — user can opt out of any block
@@ -94,7 +97,7 @@ export function VoiceAnalyzerReview({ result, onApplied, onReset }: VoiceAnalyze
       await update.mutateAsync(patch);
       onApplied();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not apply analyzer suggestions");
+      setError(e instanceof Error ? e.message : t("analyzer.review.applyError"));
     }
   };
 
@@ -103,17 +106,16 @@ export function VoiceAnalyzerReview({ result, onApplied, onReset }: VoiceAnalyze
       <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start gap-3">
         <Sparkles className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
         <div>
-          <h3 className="text-sm font-semibold text-emerald-900">Analysis ready</h3>
+          <h3 className="text-sm font-semibold text-emerald-900">{t("analyzer.review.readyTitle")}</h3>
           <p className="text-xs text-emerald-700">
-            Review each block below. Toggle any you want to skip — only enabled blocks
-            are written to the voiceguide.
+            {t("analyzer.review.readyDescription")}
           </p>
         </div>
       </div>
 
       {/* Voice description + tone */}
       <SectionToggle
-        label="Voice description + tone (4-axis)"
+        label={t("analyzer.review.voiceLabel")}
         enabled={enabled.voice}
         onToggle={() => toggle("voice")}
         rationale={result.rationale.voice}
@@ -131,7 +133,7 @@ export function VoiceAnalyzerReview({ result, onApplied, onReset }: VoiceAnalyze
 
       {/* Writing samples */}
       <SectionToggle
-        label={`Writing samples (${result.writingSamples.length})`}
+        label={t("analyzer.review.samplesLabel", { n: result.writingSamples.length })}
         enabled={enabled.samples}
         onToggle={() => toggle("samples")}
         rationale={result.rationale.samples}
@@ -143,21 +145,23 @@ export function VoiceAnalyzerReview({ result, onApplied, onReset }: VoiceAnalyze
             </div>
           ))}
           {result.writingSamples.length > 3 && (
-            <p className="text-xs text-gray-400">+ {result.writingSamples.length - 3} more</p>
+            <p className="text-xs text-gray-400">
+              {t("analyzer.review.moreSamples", { n: result.writingSamples.length - 3 })}
+            </p>
           )}
         </div>
       </SectionToggle>
 
       {/* Vocabulary */}
       <SectionToggle
-        label="Vocabulary"
+        label={t("analyzer.review.vocabularyLabel")}
         enabled={enabled.vocabulary}
         onToggle={() => toggle("vocabulary")}
         rationale={result.rationale.vocabulary}
       >
         <div className="grid sm:grid-cols-2 gap-3">
           <div>
-            <p className="text-xs font-medium text-gray-700 mb-1">Words we use ({result.wordsWeUse.length})</p>
+            <p className="text-xs font-medium text-gray-700 mb-1">{t("analyzer.review.wordsWeUse", { n: result.wordsWeUse.length })}</p>
             <div className="flex flex-wrap gap-1">
               {result.wordsWeUse.map((w, i) => (
                 <span key={i} className="px-1.5 py-0.5 bg-teal-50 text-teal-700 rounded text-xs">{w}</span>
@@ -165,7 +169,7 @@ export function VoiceAnalyzerReview({ result, onApplied, onReset }: VoiceAnalyze
             </div>
           </div>
           <div>
-            <p className="text-xs font-medium text-gray-700 mb-1">Words we avoid ({result.wordsWeAvoid.length})</p>
+            <p className="text-xs font-medium text-gray-700 mb-1">{t("analyzer.review.wordsWeAvoid", { n: result.wordsWeAvoid.length })}</p>
             <div className="flex flex-wrap gap-1">
               {result.wordsWeAvoid.map((w, i) => (
                 <span key={i} className="px-1.5 py-0.5 bg-rose-50 text-rose-700 rounded text-xs">{w}</span>
@@ -177,7 +181,7 @@ export function VoiceAnalyzerReview({ result, onApplied, onReset }: VoiceAnalyze
 
       {/* Channel tones */}
       <SectionToggle
-        label="Channel tones"
+        label={t("analyzer.review.channelsLabel")}
         enabled={enabled.channels}
         onToggle={() => toggle("channels")}
         rationale={result.rationale.channels}
@@ -198,7 +202,7 @@ export function VoiceAnalyzerReview({ result, onApplied, onReset }: VoiceAnalyze
 
       {/* Anti-patterns */}
       <SectionToggle
-        label={`Anti-patterns (${result.antiPatterns.length})`}
+        label={t("analyzer.review.antiPatternsLabel", { n: result.antiPatterns.length })}
         enabled={enabled.antiPatterns}
         onToggle={() => toggle("antiPatterns")}
         rationale={result.rationale.antiPatterns}
@@ -219,10 +223,10 @@ export function VoiceAnalyzerReview({ result, onApplied, onReset }: VoiceAnalyze
       <div className="flex justify-between pt-2">
         <Button variant="ghost" size="sm" onClick={onReset}>
           <RefreshCcw className="w-3.5 h-3.5 mr-1" />
-          Run again
+          {t("analyzer.review.runAgain")}
         </Button>
         <Button variant="primary" size="md" onClick={handleApply} isLoading={update.isPending}>
-          Apply to voiceguide
+          {t("analyzer.review.apply")}
           <ArrowRight className="w-4 h-4 ml-1.5" />
         </Button>
       </div>

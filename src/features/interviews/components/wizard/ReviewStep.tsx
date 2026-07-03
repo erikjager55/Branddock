@@ -2,15 +2,8 @@
 
 import { Badge, Button } from '@/components/shared';
 import { CheckCircle, Clock, Layers, FileCheck, Lock } from 'lucide-react';
-import type { Interview, QuestionType } from '../../types/interview.types';
-
-const TYPE_LABELS: Record<QuestionType, string> = {
-  OPEN: 'Open',
-  MULTIPLE_CHOICE: 'MC',
-  MULTI_SELECT: 'MS',
-  RATING_SCALE: 'Rating',
-  RANKING: 'Ranking',
-};
+import { useTranslation } from 'react-i18next';
+import type { Interview } from '../../types/interview.types';
 
 interface ReviewStepProps {
   interview: Interview;
@@ -20,13 +13,14 @@ interface ReviewStepProps {
 }
 
 export function ReviewStep({ interview, onApprove, onEditResponses, isApproving }: ReviewStepProps) {
+  const { t } = useTranslation('interviews');
   const questions = interview.questions ?? [];
   const answeredCount = questions.filter((q) => q.isAnswered).length;
   const completion = questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0;
 
   // Group questions by linked asset
   const grouped = questions.reduce<Record<string, typeof questions>>((acc, q) => {
-    const key = q.linkedAsset?.name ?? 'General';
+    const key = q.linkedAsset?.name ?? t('generalCategory');
     if (!acc[key]) acc[key] = [];
     acc[key].push(q);
     return acc;
@@ -34,9 +28,9 @@ export function ReviewStep({ interview, onApprove, onEditResponses, isApproving 
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-gray-900 mb-1">Review & Approve</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('review.title')}</h2>
       <p className="text-sm text-gray-500 mb-6">
-        Review the interview responses before approving and locking.
+        {t('review.subtitle')}
       </p>
 
       {/* Stats */}
@@ -44,24 +38,24 @@ export function ReviewStep({ interview, onApprove, onEditResponses, isApproving 
         <div className="p-3 bg-gray-50 rounded-lg text-center">
           <CheckCircle className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
           <p className="text-lg font-semibold text-gray-900">{answeredCount}/{questions.length}</p>
-          <p className="text-xs text-gray-500">Answered</p>
+          <p className="text-xs text-gray-500">{t('review.stats.answered')}</p>
         </div>
         <div className="p-3 bg-gray-50 rounded-lg text-center">
           <Clock className="w-5 h-5 text-blue-500 mx-auto mb-1" />
           <p className="text-lg font-semibold text-gray-900">
-            {interview.actualDuration ?? interview.durationMinutes} min
+            {t('unit.min', { count: interview.actualDuration ?? interview.durationMinutes })}
           </p>
-          <p className="text-xs text-gray-500">Duration</p>
+          <p className="text-xs text-gray-500">{t('review.stats.duration')}</p>
         </div>
         <div className="p-3 bg-gray-50 rounded-lg text-center">
           <Layers className="w-5 h-5 text-primary-500 mx-auto mb-1" />
           <p className="text-lg font-semibold text-gray-900">{interview.selectedAssets?.length ?? 0}</p>
-          <p className="text-xs text-gray-500">Assets</p>
+          <p className="text-xs text-gray-500">{t('review.stats.assets')}</p>
         </div>
         <div className="p-3 bg-gray-50 rounded-lg text-center">
           <FileCheck className="w-5 h-5 text-amber-500 mx-auto mb-1" />
           <p className="text-lg font-semibold text-gray-900">{completion}%</p>
-          <p className="text-xs text-gray-500">Completion</p>
+          <p className="text-xs text-gray-500">{t('review.stats.completion')}</p>
         </div>
       </div>
 
@@ -88,12 +82,12 @@ export function ReviewStep({ interview, onApprove, onEditResponses, isApproving 
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="default" size="sm">
-                          {TYPE_LABELS[q.questionType]}
+                          {t(`typeLabelAbbr.${q.questionType}`)}
                         </Badge>
                         {q.isAnswered ? (
-                          <Badge variant="success" size="sm">Answered</Badge>
+                          <Badge variant="success" size="sm">{t('badge.answered')}</Badge>
                         ) : (
-                          <Badge variant="warning" size="sm">Unanswered</Badge>
+                          <Badge variant="warning" size="sm">{t('badge.unanswered')}</Badge>
                         )}
                       </div>
                       <p className="text-sm text-gray-900 mb-1">{q.questionText}</p>
@@ -109,7 +103,7 @@ export function ReviewStep({ interview, onApprove, onEditResponses, isApproving 
                           )}
                           {q.answerRating !== null && q.answerRating !== undefined && (
                             <p className="text-sm text-gray-600">
-                              Rating: {q.answerRating}/5
+                              {t('review.ratingValue', { rating: q.answerRating })}
                             </p>
                           )}
                         </div>
@@ -126,7 +120,7 @@ export function ReviewStep({ interview, onApprove, onEditResponses, isApproving 
       {/* General notes */}
       {interview.generalNotes && (
         <div className="p-4 bg-gray-50 rounded-lg mb-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Interview Notes</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-2">{t('review.notesTitle')}</h3>
           <p className="text-sm text-gray-600 whitespace-pre-wrap">{interview.generalNotes}</p>
         </div>
       )}
@@ -134,12 +128,12 @@ export function ReviewStep({ interview, onApprove, onEditResponses, isApproving 
       {/* Actions */}
       <div className="flex items-center gap-3">
         <Button variant="secondary" size="md" onClick={onEditResponses}>
-          Edit Responses
+          {t('review.editResponses')}
         </Button>
         {interview.isLocked ? (
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <Lock className="w-4 h-4" />
-            Interview approved & locked
+            {t('review.lockedText')}
           </div>
         ) : (
           <Button
@@ -150,7 +144,7 @@ export function ReviewStep({ interview, onApprove, onEditResponses, isApproving 
             isLoading={isApproving}
             disabled={answeredCount < questions.length}
           >
-            Approve & Lock
+            {t('review.approveLock')}
           </Button>
         )}
       </div>

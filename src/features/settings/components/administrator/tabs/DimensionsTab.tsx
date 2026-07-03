@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Plus, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/shared';
 import { DimensionCard } from '../DimensionCard';
@@ -22,6 +23,7 @@ export function DimensionsTab({
   onChange,
   onLoadDefaults,
 }: DimensionsTabProps) {
+  const { t } = useTranslation('settings-admin');
   const updateDimension = (index: number, field: keyof StoredDimension, value: string) => {
     const updated = dimensions.map((d, i) => (i === index ? { ...d, [field]: value } : d));
     onChange(updated, index);
@@ -56,10 +58,10 @@ export function DimensionsTab({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-800">
-            Dimensions ({dimensions.length})
+            {t('dimensions.heading', { count: dimensions.length })}
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Each dimension contains a strategic question that the AI asks during the exploration
+            {t('dimensions.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -70,7 +72,7 @@ export function DimensionsTab({
               icon={RotateCcw}
               onClick={onLoadDefaults}
             >
-              Load defaults
+              {t('dimensions.loadDefaults')}
             </Button>
           )}
           <Button
@@ -79,7 +81,7 @@ export function DimensionsTab({
             icon={Plus}
             onClick={addDimension}
           >
-            Add dimension
+            {t('dimensions.addDimension')}
           </Button>
         </div>
       </div>
@@ -87,18 +89,18 @@ export function DimensionsTab({
       {/* Dimension cards */}
       {dimensions.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
-          <p className="text-sm text-gray-400">No dimensions configured yet.</p>
+          <p className="text-sm text-gray-400">{t('dimensions.emptyTitle')}</p>
           <p className="text-xs text-gray-400 mt-1">
-            Add dimensions or load the default configuration.
+            {t('dimensions.emptyHelp')}
           </p>
           <div className="flex items-center justify-center gap-2 mt-4">
             {onLoadDefaults && (
               <Button variant="secondary" size="sm" icon={RotateCcw} onClick={onLoadDefaults}>
-                Load default dimensions
+                {t('dimensions.loadDefaultDimensions')}
               </Button>
             )}
             <Button variant="primary" size="sm" icon={Plus} onClick={addDimension}>
-              Add first dimension
+              {t('dimensions.addFirstDimension')}
             </Button>
           </div>
         </div>
@@ -128,7 +130,7 @@ export function DimensionsTab({
           className="flex items-center gap-1.5 text-xs text-primary hover:text-primary-700 font-medium transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
-          Add dimension
+          {t('dimensions.addDimension')}
         </button>
       )}
     </div>

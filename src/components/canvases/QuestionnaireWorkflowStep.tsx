@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
@@ -123,6 +124,7 @@ export function QuestionnaireWorkflowStep({
   onReturnToHub,
   currentAssetId
 }: QuestionnaireWorkflowStepProps) {
+  const { t } = useTranslation('canvases');
   const { brandAssets } = useBrandAssets();
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
 
@@ -196,15 +198,15 @@ export function QuestionnaireWorkflowStep({
   const getQuestionTypeLabel = (type: string) => {
     switch (type) {
       case 'text':
-        return 'Short Answer';
+        return t('questionnaireStep.types.text');
       case 'textarea':
-        return 'Long Answer';
+        return t('questionnaireStep.types.textarea');
       case 'multiple-choice':
-        return 'Multiple Choice';
+        return t('questionnaireStep.types.multipleChoice');
       case 'rating':
-        return 'Rating Scale';
+        return t('questionnaireStep.types.rating');
       case 'yes-no':
-        return 'Yes/No';
+        return t('questionnaireStep.types.yesNo');
       default:
         return type;
     }
@@ -232,14 +234,14 @@ export function QuestionnaireWorkflowStep({
         <div className="flex items-start justify-between mb-2">
           <div>
             <h4 className={`font-semibold ${step.isCurrent ? 'text-blue-600' : ''}`}>
-              Step {step.step}: {step.title}
+              {t('common.stepTitle', { step: step.step, title: step.title })}
             </h4>
             <p className="text-sm text-muted-foreground">{step.description}</p>
           </div>
           {step.isCompleted && (
             <Badge variant="secondary" className="bg-green-100 text-green-700">
               <Check className="h-3 w-3 mr-1" />
-              Complete
+              {t('common.complete')}
             </Badge>
           )}
         </div>
@@ -249,11 +251,11 @@ export function QuestionnaireWorkflowStep({
           <div className="space-y-4 mt-3">
             {/* Questionnaire Name */}
             <div className="p-3 bg-muted/50 rounded-lg">
-              <Label className="text-xs mb-2 block">Questionnaire Title</Label>
-              <Input 
+              <Label className="text-xs mb-2 block">{t('questionnaireStep.titleLabel')}</Label>
+              <Input
                 value={questionnaire.name}
                 onChange={(e) => updateQuestionnaire(questionnaire.id, 'name', e.target.value)}
-                placeholder="e.g., Brand Values Survey"
+                placeholder={t('questionnaireStep.titlePlaceholder')}
                 className="text-sm"
               />
             </div>
@@ -283,7 +285,7 @@ export function QuestionnaireWorkflowStep({
                           <Textarea
                             value={question.text}
                             onChange={(e) => updateQuestion(question.id, 'text', e.target.value)}
-                            placeholder="Type your question here..."
+                            placeholder={t('questionnaireStep.questionPlaceholder')}
                             rows={2}
                             className="text-sm"
                             onFocus={() => setEditingQuestionId(question.id)}
@@ -296,7 +298,7 @@ export function QuestionnaireWorkflowStep({
                             <div className="grid grid-cols-2 gap-3">
                               {/* Question Type */}
                               <div>
-                                <Label className="text-xs mb-1.5 block">Question Type</Label>
+                                <Label className="text-xs mb-1.5 block">{t('questionnaireStep.questionType')}</Label>
                                 <Select
                                   value={question.type}
                                   onValueChange={(value) => updateQuestion(question.id, 'type', value)}
@@ -308,31 +310,31 @@ export function QuestionnaireWorkflowStep({
                                     <SelectItem value="text">
                                       <div className="flex items-center gap-2">
                                         <MessageSquare className="h-3 w-3" />
-                                        Short Answer
+                                        {t('questionnaireStep.types.text')}
                                       </div>
                                     </SelectItem>
                                     <SelectItem value="textarea">
                                       <div className="flex items-center gap-2">
                                         <FileText className="h-3 w-3" />
-                                        Long Answer
+                                        {t('questionnaireStep.types.textarea')}
                                       </div>
                                     </SelectItem>
                                     <SelectItem value="multiple-choice">
                                       <div className="flex items-center gap-2">
                                         <CheckSquare className="h-3 w-3" />
-                                        Multiple Choice
+                                        {t('questionnaireStep.types.multipleChoice')}
                                       </div>
                                     </SelectItem>
                                     <SelectItem value="rating">
                                       <div className="flex items-center gap-2">
                                         <Star className="h-3 w-3" />
-                                        Rating Scale
+                                        {t('questionnaireStep.types.rating')}
                                       </div>
                                     </SelectItem>
                                     <SelectItem value="yes-no">
                                       <div className="flex items-center gap-2">
                                         <RadioIcon className="h-3 w-3" />
-                                        Yes/No
+                                        {t('questionnaireStep.types.yesNo')}
                                       </div>
                                     </SelectItem>
                                   </SelectContent>
@@ -341,7 +343,7 @@ export function QuestionnaireWorkflowStep({
 
                               {/* Link to Asset */}
                               <div>
-                                <Label className="text-xs mb-1.5 block">Link to Brand Asset</Label>
+                                <Label className="text-xs mb-1.5 block">{t('questionnaireStep.linkToAsset')}</Label>
                                 <Select
                                   value={question.linkedAssetId || 'none'}
                                   onValueChange={(value) => {
@@ -357,11 +359,11 @@ export function QuestionnaireWorkflowStep({
                                   }}
                                 >
                                   <SelectTrigger className="h-8 text-xs">
-                                    <SelectValue placeholder="No asset" />
+                                    <SelectValue placeholder={t('questionnaireStep.noAsset')} />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="none">
-                                      <span className="text-muted-foreground">No asset linked</span>
+                                      <span className="text-muted-foreground">{t('questionnaireStep.noAssetLinked')}</span>
                                     </SelectItem>
                                     {availableAssets.map((asset) => {
                                       const Icon = asset.icon;
@@ -382,7 +384,7 @@ export function QuestionnaireWorkflowStep({
                             {/* Multiple Choice Options */}
                             {question.type === 'multiple-choice' && (
                               <div className="space-y-2">
-                                <Label className="text-xs">Answer Options</Label>
+                                <Label className="text-xs">{t('questionnaireStep.answerOptions')}</Label>
                                 {(question.options || ['Option 1', 'Option 2']).map((option, optIndex) => (
                                   <div key={optIndex} className="flex items-center gap-2">
                                     <RadioIcon className="h-3 w-3 text-muted-foreground" />
@@ -394,7 +396,7 @@ export function QuestionnaireWorkflowStep({
                                         updateQuestion(question.id, 'options', newOptions);
                                       }}
                                       className="text-xs h-7"
-                                      placeholder={`Option ${optIndex + 1}`}
+                                      placeholder={t('questionnaireStep.optionPlaceholder', { number: optIndex + 1 })}
                                     />
                                     <Button
                                       size="sm"
@@ -419,7 +421,7 @@ export function QuestionnaireWorkflowStep({
                                   }}
                                 >
                                   <Plus className="h-3 w-3 mr-1" />
-                                  Add Option
+                                  {t('questionnaireStep.addOption')}
                                 </Button>
                               </div>
                             )}
@@ -434,7 +436,7 @@ export function QuestionnaireWorkflowStep({
                                 className="rounded"
                               />
                               <Label htmlFor={`required-${question.id}`} className="text-xs cursor-pointer">
-                                Required question
+                                {t('questionnaireStep.requiredQuestion')}
                               </Label>
                             </div>
                           </div>
@@ -477,7 +479,7 @@ export function QuestionnaireWorkflowStep({
                         )}
                         {question.required && (
                           <Badge variant="secondary" className="text-xs h-5 bg-orange-100 text-orange-700">
-                            Required
+                            {t('questionnaireStep.required')}
                           </Badge>
                         )}
                       </div>
@@ -487,9 +489,9 @@ export function QuestionnaireWorkflowStep({
               ) : (
                 <div className="text-center py-8 bg-muted/30 rounded-lg border-2 border-dashed">
                   <ClipboardCheck className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-                  <p className="text-sm text-muted-foreground mb-3">No questions added yet</p>
+                  <p className="text-sm text-muted-foreground mb-3">{t('questionnaireStep.noQuestions')}</p>
                   <p className="text-xs text-muted-foreground/70 mb-4">
-                    Start building your questionnaire by adding questions
+                    {t('questionnaireStep.noQuestionsHint')}
                   </p>
                 </div>
               )}
@@ -501,7 +503,7 @@ export function QuestionnaireWorkflowStep({
                 onClick={addQuestion}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Question
+                {t('questionnaireStep.addQuestion')}
               </Button>
             </div>
 
@@ -510,7 +512,7 @@ export function QuestionnaireWorkflowStep({
               <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg">
                 <Label className="text-xs mb-2 block flex items-center gap-1">
                   <Target className="h-3 w-3" />
-                  Linked Brand Assets ({questionnaire.selectedAssets.length})
+                  {t('questionnaireStep.linkedAssetsCount', { count: questionnaire.selectedAssets.length })}
                 </Label>
                 <div className="flex flex-wrap gap-1.5">
                   {questionnaire.selectedAssets.map((assetId) => {
@@ -541,7 +543,7 @@ export function QuestionnaireWorkflowStep({
               disabled={!questionnaire.questions || questionnaire.questions.length === 0 || questionnaire.linkGenerated}
             >
               <CheckCircle className="h-3 w-3 mr-1" />
-              Complete Design & Generate Link
+              {t('questionnaireStep.completeDesign')}
             </Button>
           </div>
         )}
@@ -551,21 +553,21 @@ export function QuestionnaireWorkflowStep({
           <div className="space-y-3 mt-3 p-3 bg-muted/50 rounded-lg">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Recipient Name</Label>
-                <Input 
+                <Label className="text-xs">{t('questionnaireStep.recipientName')}</Label>
+                <Input
                   value={questionnaire.recipient}
                   onChange={(e) => updateQuestionnaire(questionnaire.id, 'recipient', e.target.value)}
-                  placeholder="John Doe"
+                  placeholder={t('questionnaireStep.recipientPlaceholder')}
                   className="text-sm mt-1"
                 />
               </div>
               <div>
-                <Label className="text-xs">Email Address</Label>
-                <Input 
+                <Label className="text-xs">{t('questionnaireStep.emailAddress')}</Label>
+                <Input
                   type="email"
                   value={questionnaire.email}
                   onChange={(e) => updateQuestionnaire(questionnaire.id, 'email', e.target.value)}
-                  placeholder="john.doe@company.com"
+                  placeholder={t('questionnaireStep.emailPlaceholder')}
                   className="text-sm mt-1"
                 />
               </div>
@@ -573,20 +575,20 @@ export function QuestionnaireWorkflowStep({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Group/Category</Label>
-                <Input 
+                <Label className="text-xs">{t('questionnaireStep.groupCategory')}</Label>
+                <Input
                   value={questionnaire.group}
                   onChange={(e) => updateQuestionnaire(questionnaire.id, 'group', e.target.value)}
-                  placeholder="Internal Team"
+                  placeholder={t('questionnaireStep.groupPlaceholder')}
                   className="text-sm mt-1"
                 />
               </div>
               <div>
-                <Label className="text-xs">Role/Position</Label>
-                <Input 
+                <Label className="text-xs">{t('questionnaireStep.rolePosition')}</Label>
+                <Input
                   value={questionnaire.role}
                   onChange={(e) => updateQuestionnaire(questionnaire.id, 'role', e.target.value)}
-                  placeholder="Marketing Manager"
+                  placeholder={t('questionnaireStep.rolePlaceholder')}
                   className="text-sm mt-1"
                 />
               </div>
@@ -597,7 +599,7 @@ export function QuestionnaireWorkflowStep({
               <div className="border-t pt-3 mt-3">
                 <Label className="text-xs flex items-center gap-1 mb-2">
                   <Link2 className="h-3 w-3" />
-                  Survey Link
+                  {t('questionnaireStep.surveyLink')}
                 </Label>
                 <div className="flex items-center gap-2">
                   <Input 
@@ -632,13 +634,13 @@ export function QuestionnaireWorkflowStep({
                 if (questionnaire.recipient && questionnaire.email) {
                   updateQuestionnaire(questionnaire.id, 'linkSent', true);
                   updateQuestionnaire(questionnaire.id, 'status', 'link-sent');
-                  alert(`Email sent to ${questionnaire.email}`);
+                  alert(t('questionnaireStep.emailSentAlert', { email: questionnaire.email }));
                 }
               }}
               disabled={!questionnaire.recipient || !questionnaire.email || questionnaire.linkSent}
             >
               <Send className="h-3 w-3 mr-1" />
-              Send Questionnaire
+              {t('questionnaireStep.sendQuestionnaire')}
             </Button>
           </div>
         )}
@@ -669,19 +671,19 @@ export function QuestionnaireWorkflowStep({
                     {/* Response Tracking */}
                     <div className="p-3 bg-white dark:bg-gray-900 rounded border">
                       <div className="flex items-center justify-between mb-2">
-                        <Label className="text-xs font-semibold">Response Status</Label>
+                        <Label className="text-xs font-semibold">{t('questionnaireStep.responseStatus')}</Label>
                         <Badge variant={questionnaire.responsesReceived ? "default" : "secondary"} className="text-xs">
-                          {questionnaire.responsesReceived ? "Received" : "Waiting"}
+                          {questionnaire.responsesReceived ? t('questionnaireStep.received') : t('questionnaireStep.waiting')}
                         </Badge>
                       </div>
                       <div className="space-y-1 text-xs text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Mail className="h-3 w-3" />
-                          <span>Sent to: {questionnaire.email}</span>
+                          <span>{t('questionnaireStep.sentTo', { email: questionnaire.email })}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Target className="h-3 w-3" />
-                          <span>{questionnaire.questions?.length || 0} questions</span>
+                          <span>{t('questionnaireStep.questionsCount', { count: questionnaire.questions?.length || 0 })}</span>
                         </div>
                       </div>
                     </div>
@@ -690,7 +692,7 @@ export function QuestionnaireWorkflowStep({
                     <div className="space-y-3">
                       <Label className="text-xs flex items-center gap-1">
                         <ClipboardCheck className="h-3 w-3" />
-                        Record Responses
+                        {t('questionnaireStep.recordResponses')}
                       </Label>
                       
                       {questionnaire.questions?.map((question, index) => {
@@ -714,7 +716,7 @@ export function QuestionnaireWorkflowStep({
                                   <Textarea
                                     value={question.answer || ''}
                                     onChange={(e) => updateQuestion(question.id, 'answer', e.target.value)}
-                                    placeholder="Enter response..."
+                                    placeholder={t('questionnaireStep.responsePlaceholder')}
                                     rows={question.type === 'textarea' ? 3 : 2}
                                     className="text-sm"
                                   />
@@ -724,7 +726,7 @@ export function QuestionnaireWorkflowStep({
                                     onValueChange={(value) => updateQuestion(question.id, 'answer', value)}
                                   >
                                     <SelectTrigger className="text-sm">
-                                      <SelectValue placeholder="Select an answer..." />
+                                      <SelectValue placeholder={t('questionnaireStep.selectAnswer')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                       {question.options?.map((option, optIndex) => (
@@ -763,7 +765,7 @@ export function QuestionnaireWorkflowStep({
                                       onClick={() => updateQuestion(question.id, 'answer', 'yes')}
                                       className="flex-1"
                                     >
-                                      Yes
+                                      {t('questionnaireStep.yes')}
                                     </Button>
                                     <Button
                                       size="sm"
@@ -771,7 +773,7 @@ export function QuestionnaireWorkflowStep({
                                       onClick={() => updateQuestion(question.id, 'answer', 'no')}
                                       className="flex-1"
                                     >
-                                      No
+                                      {t('questionnaireStep.no')}
                                     </Button>
                                   </div>
                                 ) : null}
@@ -793,20 +795,20 @@ export function QuestionnaireWorkflowStep({
                           updateQuestionnaire(questionnaire.id, 'responsesReceived', true);
                           updateQuestionnaire(questionnaire.id, 'status', 'responses-received');
                         } else {
-                          alert('Please answer all required questions');
+                          alert(t('questionnaireStep.answerRequiredAlert'));
                         }
                       }}
                       disabled={questionnaire.responsesReceived}
                     >
                       <ClipboardCheck className="h-3 w-3 mr-1" />
-                      Save Responses
+                      {t('questionnaireStep.saveResponses')}
                     </Button>
                   </>
                 ) : (
                   <div className="text-xs text-muted-foreground bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 rounded p-3">
                     <p className="flex items-center gap-1">
                       <HelpCircle className="h-3 w-3" />
-                      Send the questionnaire (Step 2) before tracking responses
+                      {t('questionnaireStep.sendBeforeTracking')}
                     </p>
                   </div>
                 )}
@@ -823,10 +825,10 @@ export function QuestionnaireWorkflowStep({
                 {/* Results Summary */}
                 <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded">
                   <p className="text-xs text-green-900 dark:text-green-100 font-medium mb-1">
-                    ✓ Responses Collected
+                    {t('questionnaireStep.responsesCollected')}
                   </p>
                   <p className="text-xs text-green-700 dark:text-green-300">
-                    Ready to analyze insights from {questionnaire.recipient}
+                    {t('questionnaireStep.readyToAnalyze', { recipient: questionnaire.recipient })}
                   </p>
                 </div>
 
@@ -834,26 +836,26 @@ export function QuestionnaireWorkflowStep({
                 <div className="grid grid-cols-3 gap-2">
                   <div className="p-2 bg-white dark:bg-gray-900 rounded border text-center">
                     <div className="text-lg font-semibold">{questionnaire.questions?.length || 0}</div>
-                    <div className="text-xs text-muted-foreground">Questions</div>
+                    <div className="text-xs text-muted-foreground">{t('questionnaireStep.questions')}</div>
                   </div>
                   <div className="p-2 bg-white dark:bg-gray-900 rounded border text-center">
                     <div className="text-lg font-semibold">{questionnaire.selectedAssets.length}</div>
-                    <div className="text-xs text-muted-foreground">Assets</div>
+                    <div className="text-xs text-muted-foreground">{t('questionnaireStep.assets')}</div>
                   </div>
                   <div className="p-2 bg-white dark:bg-gray-900 rounded border text-center">
                     <div className="text-lg font-semibold">100%</div>
-                    <div className="text-xs text-muted-foreground">Complete</div>
+                    <div className="text-xs text-muted-foreground">{t('common.complete')}</div>
                   </div>
                 </div>
 
                 <div className="flex gap-2">
                   <Button size="sm" className="h-8 text-xs flex-1" variant="outline">
                     <BarChart3 className="h-3 w-3 mr-1" />
-                    View Analysis
+                    {t('questionnaireStep.viewAnalysis')}
                   </Button>
                   <Button size="sm" className="h-8 text-xs flex-1" variant="outline">
                     <Eye className="h-3 w-3 mr-1" />
-                    Export Report
+                    {t('questionnaireStep.exportReport')}
                   </Button>
                 </div>
 
@@ -865,14 +867,14 @@ export function QuestionnaireWorkflowStep({
                   }}
                 >
                   <CheckCircle className="h-3 w-3 mr-1" />
-                  Mark as Complete
+                  {t('questionnaireStep.markComplete')}
                 </Button>
               </>
             ) : (
               <div className="text-xs text-muted-foreground bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 rounded p-3">
                 <p className="flex items-center gap-1">
                   <HelpCircle className="h-3 w-3" />
-                  Collect responses (Step 3) before analyzing results
+                  {t('questionnaireStep.collectBeforeAnalyzing')}
                 </p>
               </div>
             )}

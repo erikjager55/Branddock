@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { MoreVertical, Pencil, Download, Archive, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface CardContextMenuProps {
   onEdit?: () => void;
@@ -11,6 +12,7 @@ interface CardContextMenuProps {
 }
 
 export function CardContextMenu({ onEdit, onDownload, onArchive, onDelete }: CardContextMenuProps) {
+  const { t } = useTranslation('knowledge-library');
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -46,7 +48,7 @@ export function CardContextMenu({ onEdit, onDownload, onArchive, onDelete }: Car
               onClick={(e) => { e.stopPropagation(); onEdit(); setIsOpen(false); }}
               className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
-              <Pencil className="h-3.5 w-3.5" /> Edit
+              <Pencil className="h-3.5 w-3.5" /> {t('contextMenu.edit')}
             </button>
           )}
           {onDownload && (
@@ -54,7 +56,7 @@ export function CardContextMenu({ onEdit, onDownload, onArchive, onDelete }: Car
               onClick={(e) => { e.stopPropagation(); onDownload(); setIsOpen(false); }}
               className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
-              <Download className="h-3.5 w-3.5" /> Download
+              <Download className="h-3.5 w-3.5" /> {t('contextMenu.download')}
             </button>
           )}
           {onArchive && (
@@ -63,7 +65,7 @@ export function CardContextMenu({ onEdit, onDownload, onArchive, onDelete }: Car
               data-testid="context-menu-archive"
               className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
-              <Archive className="h-3.5 w-3.5" /> Archive
+              <Archive className="h-3.5 w-3.5" /> {t('contextMenu.archive')}
             </button>
           )}
           {onDelete && (
@@ -74,7 +76,7 @@ export function CardContextMenu({ onEdit, onDownload, onArchive, onDelete }: Car
                 data-testid="context-menu-delete"
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50"
               >
-                <Trash2 className="h-3.5 w-3.5" /> Delete
+                <Trash2 className="h-3.5 w-3.5" /> {t('contextMenu.delete')}
               </button>
             </>
           )}

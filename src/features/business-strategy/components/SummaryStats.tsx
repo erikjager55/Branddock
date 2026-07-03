@@ -1,6 +1,7 @@
 'use client';
 
 import { BarChart3, CheckCircle, AlertTriangle, Calendar } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { StatCard } from '@/components/shared';
 import type { StrategyStats } from '../types/business-strategy.types';
 
@@ -10,6 +11,7 @@ interface SummaryStatsProps {
 }
 
 export function SummaryStats({ stats, isLoading }: SummaryStatsProps) {
+  const { t } = useTranslation('business-strategy');
   if (isLoading || !stats) {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -27,24 +29,24 @@ export function SummaryStats({ stats, isLoading }: SummaryStatsProps) {
   return (
     <div data-testid="strategy-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard
-        label="Active Strategies"
+        label={t('stats.activeStrategies')}
         value={stats.active}
         icon={BarChart3}
       />
       <StatCard
-        label="On Track"
+        label={t('stats.onTrack')}
         value={stats.onTrack}
         icon={CheckCircle}
         className="[&_svg]:text-green-500"
       />
       <StatCard
-        label="At Risk"
+        label={t('stats.atRisk')}
         value={stats.atRisk}
         icon={AlertTriangle}
         className="[&_svg]:text-red-500"
       />
       <StatCard
-        label="Current Period"
+        label={t('stats.currentPeriod')}
         value={stats.currentPeriod}
         icon={Calendar}
       />

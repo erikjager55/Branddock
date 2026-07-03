@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Shield, TrendingUp, AlertTriangle, Crosshair, Plus, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { useUpdateSwot } from '../../hooks';
 
@@ -15,10 +16,10 @@ interface SwotSectionProps {
 }
 
 const QUADRANTS = [
-  { key: 'strengths' as const, label: 'Strengths', icon: Shield, color: 'emerald', borderColor: 'border-emerald-200', bgColor: 'bg-emerald-50', tagBg: 'bg-emerald-100', tagText: 'text-emerald-700', iconColor: 'text-emerald-600' },
-  { key: 'weaknesses' as const, label: 'Weaknesses', icon: AlertTriangle, color: 'red', borderColor: 'border-red-200', bgColor: 'bg-red-50', tagBg: 'bg-red-100', tagText: 'text-red-700', iconColor: 'text-red-500' },
-  { key: 'opportunities' as const, label: 'Opportunities', icon: TrendingUp, color: 'blue', borderColor: 'border-blue-200', bgColor: 'bg-blue-50', tagBg: 'bg-blue-100', tagText: 'text-blue-700', iconColor: 'text-blue-600' },
-  { key: 'threats' as const, label: 'Threats', icon: Crosshair, color: 'amber', borderColor: 'border-amber-200', bgColor: 'bg-amber-50', tagBg: 'bg-amber-100', tagText: 'text-amber-700', iconColor: 'text-amber-600' },
+  { key: 'strengths' as const, icon: Shield, color: 'emerald', borderColor: 'border-emerald-200', bgColor: 'bg-emerald-50', tagBg: 'bg-emerald-100', tagText: 'text-emerald-700', iconColor: 'text-emerald-600' },
+  { key: 'weaknesses' as const, icon: AlertTriangle, color: 'red', borderColor: 'border-red-200', bgColor: 'bg-red-50', tagBg: 'bg-red-100', tagText: 'text-red-700', iconColor: 'text-red-500' },
+  { key: 'opportunities' as const, icon: TrendingUp, color: 'blue', borderColor: 'border-blue-200', bgColor: 'bg-blue-50', tagBg: 'bg-blue-100', tagText: 'text-blue-700', iconColor: 'text-blue-600' },
+  { key: 'threats' as const, icon: Crosshair, color: 'amber', borderColor: 'border-amber-200', bgColor: 'bg-amber-50', tagBg: 'bg-amber-100', tagText: 'text-amber-700', iconColor: 'text-amber-600' },
 ] as const;
 
 export function SwotSection({
@@ -29,6 +30,7 @@ export function SwotSection({
   threats,
   canEdit,
 }: SwotSectionProps) {
+  const { t } = useTranslation('business-strategy');
   const updateSwot = useUpdateSwot(strategyId);
 
   const data = { strengths, weaknesses, opportunities, threats };
@@ -44,7 +46,7 @@ export function SwotSection({
 
   return (
     <div className="p-6 bg-white border border-gray-200 rounded-lg">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">SWOT Analysis</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('swot.title')}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {QUADRANTS.map((q) => (
           <QuadrantCard
@@ -74,6 +76,7 @@ function QuadrantCard({
   onAdd: (value: string) => void;
   onRemove: (index: number) => void;
 }) {
+  const { t } = useTranslation('business-strategy');
   const [inputValue, setInputValue] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
@@ -89,7 +92,7 @@ function QuadrantCard({
     <div className={`rounded-lg border ${quadrant.borderColor} ${quadrant.bgColor} p-3`}>
       <div className="flex items-center gap-2 mb-2">
         <quadrant.icon className={`w-4 h-4 ${quadrant.iconColor}`} />
-        <span className="text-sm font-medium text-gray-900">{quadrant.label}</span>
+        <span className="text-sm font-medium text-gray-900">{t(`swot.quadrants.${quadrant.key}`)}</span>
         <span className="text-xs text-gray-400">({items.length})</span>
       </div>
 
@@ -110,7 +113,7 @@ function QuadrantCard({
         ))}
 
         {items.length === 0 && !isAdding && (
-          <p className="text-xs text-gray-400 italic py-1">No items yet</p>
+          <p className="text-xs text-gray-400 italic py-1">{t('swot.noItems')}</p>
         )}
       </div>
 
@@ -122,15 +125,15 @@ function QuadrantCard({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                placeholder={`Add ${quadrant.label.toLowerCase()}...`}
+                placeholder={t('swot.addPlaceholder', { label: t(`swot.quadrants.${quadrant.key}`).toLowerCase() })}
                 className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded bg-white focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400"
                 autoFocus
               />
               <Button variant="cta" size="sm" onClick={handleSubmit}>
-                Add
+                {t('actions.add')}
               </Button>
               <Button variant="ghost" size="sm" onClick={() => { setIsAdding(false); setInputValue(''); }}>
-                Cancel
+                {t('actions.cancel')}
               </Button>
             </div>
           ) : (
@@ -139,7 +142,7 @@ function QuadrantCard({
               onClick={() => setIsAdding(true)}
               className="mt-2 flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
             >
-              <Plus className="w-3 h-3" /> Add item
+              <Plus className="w-3 h-3" /> {t('swot.addItem')}
             </button>
           )}
         </>

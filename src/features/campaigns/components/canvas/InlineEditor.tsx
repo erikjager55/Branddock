@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
@@ -37,6 +38,7 @@ interface InlineEditorProps {
 }
 
 export function InlineEditor({ initialContent, onSave, onCancel, deliverableId }: InlineEditorProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const linkInputRef = useRef<HTMLInputElement>(null);
@@ -139,7 +141,7 @@ export function InlineEditor({ initialContent, onSave, onCancel, deliverableId }
       const selectedText = editor.state.doc.textBetween(from, to, ' ');
       if (!selectedText.trim()) return;
       if (selectedText.length > MAX_SELECTED_TEXT_LENGTH) {
-        showError(`Selection exceeds ${MAX_SELECTED_TEXT_LENGTH} characters.`);
+        showError(t('inlineEditor.errTooLong', { max: MAX_SELECTED_TEXT_LENGTH }));
         return;
       }
 
@@ -182,12 +184,12 @@ export function InlineEditor({ initialContent, onSave, onCancel, deliverableId }
               editor.chain().focus().run();
             }
             setActiveAction(null);
-            showError('Transform failed. Please try again.');
+            showError(t('inlineEditor.errTransform'));
           },
         },
       );
     },
-    [editor, deliverableId, isTransformPending, transformMutate, showError],
+    [editor, deliverableId, isTransformPending, transformMutate, showError, t],
   );
 
   useEffect(() => {
@@ -210,28 +212,28 @@ export function InlineEditor({ initialContent, onSave, onCancel, deliverableId }
         >
           <div className="flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white px-1 py-0.5 shadow-lg">
             <AiActionButton
-              label="Shorter"
+              label={t('inlineEditor.actionShorter')}
               icon={Scissors}
               action="shorter"
               activeAction={activeAction}
               onClick={handleTransform}
             />
             <AiActionButton
-              label="Urgent"
+              label={t('inlineEditor.actionUrgent')}
               icon={Zap}
               action="urgent"
               activeAction={activeAction}
               onClick={handleTransform}
             />
             <AiActionButton
-              label="Brand Voice"
+              label={t('inlineEditor.actionBrandVoice')}
               icon={Sparkles}
               action="brand_voice"
               activeAction={activeAction}
               onClick={handleTransform}
             />
             <AiActionButton
-              label="Simplify"
+              label={t('inlineEditor.actionSimplify')}
               icon={Type}
               action="simplify"
               activeAction={activeAction}
@@ -246,28 +248,28 @@ export function InlineEditor({ initialContent, onSave, onCancel, deliverableId }
         <ToolbarButton
           active={editor.isActive('bold')}
           onClick={() => editor.chain().focus().toggleBold().run()}
-          title="Bold"
+          title={t('inlineEditor.bold')}
         >
           <Bold className="h-3.5 w-3.5" />
         </ToolbarButton>
         <ToolbarButton
           active={editor.isActive('italic')}
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          title="Italic"
+          title={t('inlineEditor.italic')}
         >
           <Italic className="h-3.5 w-3.5" />
         </ToolbarButton>
         <ToolbarButton
           active={editor.isActive('underline')}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
-          title="Underline"
+          title={t('inlineEditor.underline')}
         >
           <UnderlineIcon className="h-3.5 w-3.5" />
         </ToolbarButton>
         <ToolbarButton
           active={editor.isActive('link')}
           onClick={handleAddLink}
-          title="Link"
+          title={t('inlineEditor.link')}
         >
           <LinkIcon className="h-3.5 w-3.5" />
         </ToolbarButton>
@@ -286,14 +288,14 @@ export function InlineEditor({ initialContent, onSave, onCancel, deliverableId }
               if (e.key === 'Enter') handleApplyLink();
               if (e.key === 'Escape') { setShowLinkInput(false); setLinkUrl(''); }
             }}
-            placeholder="https://example.com"
+            placeholder={t('inlineEditor.linkPlaceholder')}
             className="flex-1 text-xs px-2 py-1 rounded border border-gray-200 focus:outline-none focus:border-primary-400"
           />
           <button
             type="button"
             onClick={handleApplyLink}
             className="p-1 rounded hover:bg-gray-200 text-emerald-600"
-            title="Apply link"
+            title={t('inlineEditor.applyLink')}
           >
             <Check className="h-3.5 w-3.5" />
           </button>
@@ -301,7 +303,7 @@ export function InlineEditor({ initialContent, onSave, onCancel, deliverableId }
             type="button"
             onClick={() => { setShowLinkInput(false); setLinkUrl(''); }}
             className="p-1 rounded hover:bg-gray-200 text-gray-400"
-            title="Cancel"
+            title={t('actions.cancel')}
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -322,14 +324,14 @@ export function InlineEditor({ initialContent, onSave, onCancel, deliverableId }
       {/* Actions */}
       <div className="flex items-center justify-between px-2 py-1.5 border-t border-gray-100">
         <span className="text-xs text-gray-400">
-          {editor.storage.characterCount?.characters() ?? 0} characters
+          {t('inlineEditor.charCount', { count: editor.storage.characterCount?.characters() ?? 0 })}
         </span>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={onCancel}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
           <Button variant="primary" size="sm" onClick={handleSave}>
-            Save
+            {t('actions.save')}
           </Button>
         </div>
       </div>

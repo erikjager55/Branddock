@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
@@ -20,6 +21,7 @@ interface BrandstyleAnalyzerPageProps {
 type InputTab = "url" | "pdf";
 
 export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: BrandstyleAnalyzerPageProps) {
+  const { t } = useTranslation("brandstyle");
   const { data, isLoading, isError } = useStyleguide();
   const { analysisJobId, isAnalyzing, stopAnalysis } = useBrandstyleStore();
   const [activeInputTab, setActiveInputTab] = useState<InputTab>("url");
@@ -76,7 +78,7 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
     return (
       <PageShell maxWidth="7xl">
         <div data-testid="error-message" className="flex flex-col items-center justify-center h-64 text-gray-500 gap-2">
-          <p className="text-sm">Failed to load brandstyle data. Please try again.</p>
+          <p className="text-sm">{t("errors.loadData")}</p>
         </div>
       </PageShell>
     );
@@ -88,8 +90,8 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
       <PageShell maxWidth="7xl">
         <PageHeader
           moduleKey="brandstyle"
-          title="Analyzing Your Brand Style"
-          subtitle="Our AI is extracting your brand guidelines. This may take a moment."
+          title={t("analyzer.processingTitle")}
+          subtitle={t("analyzer.processingSubtitle")}
         />
         <ProcessingProgress jobId={analysisJobId} onComplete={onNavigateToGuide} />
       </PageShell>
@@ -101,8 +103,8 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
       <div data-testid="brandstyle-analyzer">
       <PageHeader
         moduleKey="brandstyle"
-        title="Brandstyle"
-        subtitle="Your visual identity guidelines"
+        title={t("analyzer.title")}
+        subtitle={t("analyzer.subtitle")}
       />
 
       {/* Warning banner when re-analyzing */}
@@ -111,10 +113,10 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
           <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-amber-800">
-              You already have a styleguide
+              {t("analyzer.reanalyzeWarningTitle")}
             </p>
             <p className="text-sm text-amber-700 mt-0.5">
-              Running a new analysis will update your existing styleguide with the new results.
+              {t("analyzer.reanalyzeWarningBody")}
             </p>
           </div>
         </div>
@@ -131,7 +133,7 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Website URL
+            {t("analyzer.tabUrl")}
           </button>
           <button
             onClick={() => setActiveInputTab("pdf")}
@@ -141,7 +143,7 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            PDF Upload
+            {t("analyzer.tabPdf")}
           </button>
         </div>
       </div>

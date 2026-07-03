@@ -2,19 +2,14 @@
 
 import React, { useMemo } from "react";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useContentLibraryStore, countActiveFilters } from "../../stores/useContentLibraryStore";
 import { useCampaigns } from "../../hooks";
 import { getDeliverableTypeById } from "../../lib/deliverable-types";
-import type { ReadinessLight, CampaignTypeFilter } from "../../types/content-library.types";
+import type { ReadinessLight } from "../../types/content-library.types";
 
 // ─── Label maps ─────────────────────────────────────────────
-
-const PHASE_LABELS: Record<string, string> = {
-  awareness: "Awareness",
-  consideration: "Consideration",
-  conversion: "Conversion",
-  retention: "Retention",
-};
+// Readiness labels carry a leading status emoji — kept verbatim (not i18n'd).
 
 const READINESS_LABELS: Record<ReadinessLight, string> = {
   red: "🔴 Not started",
@@ -22,21 +17,10 @@ const READINESS_LABELS: Record<ReadinessLight, string> = {
   green: "🟢 Ready",
 };
 
-const CAMPAIGN_TYPE_LABELS: Record<CampaignTypeFilter, string> = {
-  STRATEGIC: "Strategic",
-  QUICK: "Quick",
-  CONTENT: "Content",
-};
-
-const READINESS_HINT_LABELS: Record<string, string> = {
-  "no-content": "No content",
-  "not-reviewed": "Not reviewed",
-  "pipeline-incomplete": "Pipeline incomplete",
-};
-
 // ─── Component ──────────────────────────────────────────────
 
 export function ActiveFilterChips() {
+  const { t } = useTranslation("campaigns-content-library");
   const filters = useContentLibraryStore((s) => s.filters);
   const toggleTypeFilter = useContentLibraryStore((s) => s.toggleTypeFilter);
   const toggleCampaignFilter = useContentLibraryStore((s) => s.toggleCampaignFilter);
@@ -49,6 +33,13 @@ export function ActiveFilterChips() {
   const activeCount = countActiveFilters(filters);
   const { data: campaignsData } = useCampaigns();
 
+  const formatDateRange = (from: string | null, to: string | null): string => {
+    if (from && to) return t("chips.scheduledRange", { from, to });
+    if (from) return t("chips.scheduledFrom", { from });
+    if (to) return t("chips.scheduledUntil", { to });
+    return t("chips.scheduled");
+  };
+
   const campaignNameLookup = useMemo(() => {
     const map = new Map<string, string>();
     const raw = campaignsData as
@@ -59,16 +50,16 @@ export function ActiveFilterChips() {
       ? raw
       : raw?.campaigns ?? raw?.items ?? [];
     for (const c of list as Array<{ id: string; title?: string; name?: string }>) {
-      map.set(c.id, c.title ?? c.name ?? "Untitled");
+      map.set(c.id, c.title ?? c.name ?? t("common.untitled"));
     }
     return map;
-  }, [campaignsData]);
+  }, [campaignsData, t]);
 
   if (activeCount === 0) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-1 py-2">
-      <span className="text-xs font-semibold text-gray-500 mr-1">Filters:</span>
+      <span className="text-xs font-semibold text-gray-500 mr-1">{t("chips.label")}</span>
 
       {filters.types.map((typeId) => {
         const def = getDeliverableTypeById(typeId);
@@ -84,23 +75,23 @@ export function ActiveFilterChips() {
       {filters.campaigns.map((id) => (
         <Chip
           key={`camp-${id}`}
-          label={`Campaign: ${campaignNameLookup.get(id) ?? id.slice(0, 8)}`}
+          label={t("chips.campaign", { name: campaignNameLookup.get(id) ?? id.slice(0, 8) })}
           onRemove={() => toggleCampaignFilter(id)}
         />
       ))}
 
-      {filters.campaignTypes.map((t) => (
+      {filters.campaignTypes.map((ct) => (
         <Chip
-          key={`ctype-${t}`}
-          label={CAMPAIGN_TYPE_LABELS[t] ?? t}
-          onRemove={() => toggleCampaignTypeFilter(t)}
+          key={`ctype-${ct}`}
+          label={t(`chips.campaignType.${ct}`, { defaultValue: ct })}
+          onRemove={() => toggleCampaignTypeFilter(ct)}
         />
       ))}
 
       {filters.phases.map((p) => (
         <Chip
           key={`phase-${p}`}
-          label={PHASE_LABELS[p] ?? p}
+          label={t(`chips.phase.${p}`, { defaultValue: p })}
           onRemove={() => togglePhaseFilter(p)}
         />
       ))}
@@ -116,7 +107,7 @@ export function ActiveFilterChips() {
       {filters.readinessHints.map((h) => (
         <Chip
           key={`hint-${h}`}
-          label={READINESS_HINT_LABELS[h] ?? h}
+          label={t(`chips.readinessHint.${h}`, { defaultValue: h })}
           onRemove={() => toggleReadinessHintFilter(h)}
         />
       ))}
@@ -133,7 +124,7 @@ export function ActiveFilterChips() {
 
       {filters.qualityMin != null && (
         <Chip
-          label={`Quality ≥ ${filters.qualityMin}`}
+          label={t("chips.qualityMin", { min: filters.qualityMin })}
           onRemove={() => setFilter("qualityMin", null)}
         />
       )}
@@ -143,6 +134,7 @@ export function ActiveFilterChips() {
 }
 
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  const { t } = useTranslation("campaigns-content-library");
   return (
     <span
       className="inline-flex items-center gap-1 rounded-full bg-teal-50 border border-teal-200 text-xs text-teal-800"
@@ -153,7 +145,7 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
         type="button"
         onClick={onRemove}
         className="p-0.5 hover:bg-teal-100 rounded-full"
-        aria-label={`Remove ${label}`}
+        aria-label={t("chips.remove", { label })}
       >
         <X className="h-3 w-3" />
       </button>
@@ -161,11 +153,5 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   );
 }
 
-function formatDateRange(from: string | null, to: string | null): string {
-  if (from && to) return `Scheduled ${from} → ${to}`;
-  if (from) return `Scheduled from ${from}`;
-  if (to) return `Scheduled until ${to}`;
-  return "Scheduled";
-}
 
 export default ActiveFilterChips;

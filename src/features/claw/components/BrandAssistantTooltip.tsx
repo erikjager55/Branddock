@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { MessageSquare, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { openClawWithPrompt } from '../lib/open-with-prompt';
 import {
   useUserPreferences,
@@ -24,6 +25,7 @@ const PREFERENCE_KEY = 'brandAssistantTipDismissed';
  * discovery prompt.
  */
 export function BrandAssistantTooltip() {
+  const { t } = useTranslation('claw');
   const { data: preferences, isLoading } = useUserPreferences();
   const update = useUpdateUserPreferences();
 
@@ -39,14 +41,14 @@ export function BrandAssistantTooltip() {
   };
 
   const tryIt = () => {
-    openClawWithPrompt('Write a LinkedIn post about our latest product launch');
+    openClawWithPrompt(t('tooltip.tryPrompt'));
     dismiss();
   };
 
   return (
     <div
       role="dialog"
-      aria-label="Brand Assistant tip"
+      aria-label={t('tooltip.ariaLabel')}
       className="fixed bottom-6 right-6 z-40 max-w-xs bg-white border border-teal-200 rounded-xl shadow-lg p-4"
     >
       <div className="flex items-start gap-3">
@@ -55,13 +57,11 @@ export function BrandAssistantTooltip() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-gray-900">
-            Did you know?
+            {t('tooltip.title')}
           </div>
           <p className="mt-1 text-[12px] text-gray-600">
-            You can create content via the Brand Assistant. Try:{' '}
-            <span className="italic">
-              &ldquo;Write a LinkedIn post about [your topic]&rdquo;
-            </span>
+            {t('tooltip.body')}{' '}
+            <span className="italic">{t('tooltip.example')}</span>
           </p>
           <div className="mt-3 flex items-center gap-2">
             <button
@@ -70,7 +70,7 @@ export function BrandAssistantTooltip() {
               disabled={update.isPending}
               className="text-[12px] font-medium px-2.5 py-1 rounded-md bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-60"
             >
-              Try it now
+              {t('tooltip.tryItNow')}
             </button>
             <button
               type="button"
@@ -78,7 +78,7 @@ export function BrandAssistantTooltip() {
               disabled={update.isPending}
               className="text-[12px] font-medium px-2.5 py-1 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-60"
             >
-              Not now
+              {t('tooltip.notNow')}
             </button>
           </div>
         </div>
@@ -87,7 +87,7 @@ export function BrandAssistantTooltip() {
           onClick={dismiss}
           disabled={update.isPending}
           className="p-1 rounded hover:bg-gray-100 text-gray-400 disabled:opacity-60"
-          aria-label="Dismiss"
+          aria-label={t('tooltip.dismiss')}
         >
           <X className="h-4 w-4" />
         </button>

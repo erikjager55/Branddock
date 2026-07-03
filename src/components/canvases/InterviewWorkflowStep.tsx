@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
@@ -151,6 +152,7 @@ export function InterviewWorkflowStep({
   onReturnToHub,
   currentAssetId
 }: InterviewWorkflowStepProps) {
+  const { t } = useTranslation('canvases');
   const { brandAssets } = useBrandAssets();
   return (
     <div 
@@ -189,16 +191,16 @@ export function InterviewWorkflowStep({
             step.isCompleted ? 'text-green-600' : 
             'text-muted-foreground'
           }`}>
-            Step {step.step}: {step.title}
+            {t('common.stepTitle', { step: step.step, title: step.title })}
           </h4>
           {step.isCurrent && (
             <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-              Current
+              {t('status.current')}
             </Badge>
           )}
           {step.isCompleted && (
             <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-              Complete
+              {t('common.complete')}
             </Badge>
           )}
         </div>
@@ -209,21 +211,21 @@ export function InterviewWorkflowStep({
           <div className="space-y-3 mt-3 p-3 bg-muted/50 rounded-lg">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-xs">Interviewee Name</Label>
-                <Input 
+                <Label className="text-xs">{t('interviewStep.intervieweeName')}</Label>
+                <Input
                   value={interview.interviewee}
                   onChange={(e) => updateInterview(interview.id, 'interviewee', e.target.value)}
-                  placeholder="John Smith"
+                  placeholder={t('interviewStep.intervieweePlaceholder')}
                   className="h-8 text-sm"
                   disabled={interview.lockStatus === 'locked'}
                 />
               </div>
               <div>
-                <Label className="text-xs">Position</Label>
-                <Input 
+                <Label className="text-xs">{t('interviewStep.position')}</Label>
+                <Input
                   value={interview.position}
                   onChange={(e) => updateInterview(interview.id, 'position', e.target.value)}
-                  placeholder="CEO"
+                  placeholder={t('interviewStep.positionPlaceholder')}
                   className="h-8 text-sm"
                   disabled={interview.lockStatus === 'locked'}
                 />
@@ -231,33 +233,33 @@ export function InterviewWorkflowStep({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-xs">Email</Label>
-                <Input 
+                <Label className="text-xs">{t('interviewStep.email')}</Label>
+                <Input
                   value={interview.email}
                   onChange={(e) => updateInterview(interview.id, 'email', e.target.value)}
-                  placeholder="john@company.com"
+                  placeholder={t('interviewStep.emailPlaceholder')}
                   type="email"
                   className="h-8 text-sm"
                   disabled={interview.lockStatus === 'locked'}
                 />
               </div>
               <div>
-                <Label className="text-xs">Phone</Label>
-                <Input 
+                <Label className="text-xs">{t('interviewStep.phone')}</Label>
+                <Input
                   value={interview.phone}
                   onChange={(e) => updateInterview(interview.id, 'phone', e.target.value)}
-                  placeholder="+1 (555) 123-4567"
+                  placeholder={t('interviewStep.phonePlaceholder')}
                   className="h-8 text-sm"
                   disabled={interview.lockStatus === 'locked'}
                 />
               </div>
             </div>
             <div>
-              <Label className="text-xs">Company</Label>
-              <Input 
+              <Label className="text-xs">{t('interviewStep.company')}</Label>
+              <Input
                 value={interview.company}
                 onChange={(e) => updateInterview(interview.id, 'company', e.target.value)}
-                placeholder="Company Inc."
+                placeholder={t('interviewStep.companyPlaceholder')}
                 className="h-8 text-sm"
                 disabled={interview.lockStatus === 'locked'}
               />
@@ -287,15 +289,15 @@ export function InterviewWorkflowStep({
                   </div>
                 </div>
                 <Badge variant="outline" className="text-xs">
-                  {activeBundle.includedAssets.length} assets
+                  {t('common.assetsCount', { count: activeBundle.includedAssets.length })}
                 </Badge>
               </div>
             )}
 
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <Label className="text-xs">Date</Label>
-                <Input 
+                <Label className="text-xs">{t('common.date')}</Label>
+                <Input
                   type="date"
                   value={interview.date}
                   onChange={(e) => updateInterview(interview.id, 'date', e.target.value)}
@@ -304,8 +306,8 @@ export function InterviewWorkflowStep({
                 />
               </div>
               <div>
-                <Label className="text-xs">Time</Label>
-                <Input 
+                <Label className="text-xs">{t('common.time')}</Label>
+                <Input
                   type="time"
                   value={interview.time}
                   onChange={(e) => updateInterview(interview.id, 'time', e.target.value)}
@@ -314,7 +316,7 @@ export function InterviewWorkflowStep({
                 />
               </div>
               <div>
-                <Label className="text-xs">Duration (min)</Label>
+                <Label className="text-xs">{t('interviewStep.durationMin')}</Label>
                 <Input 
                   type="number"
                   value={interview.duration}
@@ -325,7 +327,7 @@ export function InterviewWorkflowStep({
               </div>
             </div>
             <div>
-              <Label className="text-xs mb-2 block">Brand Assets to Discuss</Label>
+              <Label className="text-xs mb-2 block">{t('interviewStep.assetsToDiscuss')}</Label>
               <div className="grid grid-cols-2 gap-2">
                 {availableAssets.slice(0, 4).map(asset => {
                   const Icon = asset.icon;
@@ -382,7 +384,7 @@ export function InterviewWorkflowStep({
                           disabled={interview.lockStatus === 'locked'}
                         >
                           <Zap className={`h-3 w-3 mr-1 ${isBoosted ? 'fill-current' : ''}`} />
-                          {isBoosted ? 'Boosted' : 'Boost'}
+                          {isBoosted ? t('interviewStep.boosted') : t('interviewStep.boost')}
                         </Button>
                       )}
                     </div>
@@ -395,7 +397,7 @@ export function InterviewWorkflowStep({
                 className="mt-2 h-7 text-xs w-full"
                 onClick={() => openDetailView(interview.id)}
               >
-                View All {availableAssets.length} Assets
+                {t('interviewStep.viewAllAssets', { count: availableAssets.length })}
               </Button>
             </div>
             <div className="flex items-center gap-2">
@@ -410,7 +412,7 @@ export function InterviewWorkflowStep({
                 }}
                 disabled={interview.status !== 'add-contact' || interview.lockStatus === 'locked'}
               >
-                Mark as Contacted
+                {t('interviewStep.markContacted')}
               </Button>
               <Button
                 size="sm"
@@ -420,7 +422,7 @@ export function InterviewWorkflowStep({
                 }}
                 disabled={interview.status === 'appointment-made' || interview.lockStatus === 'locked'}
               >
-                Confirm Appointment
+                {t('interviewStep.confirmAppointment')}
               </Button>
             </div>
           </div>
@@ -473,12 +475,12 @@ export function InterviewWorkflowStep({
                 <div>
                   <Label className="text-xs flex items-center gap-1">
                     <FileText className="h-3 w-3" />
-                    General Interview Summary
+                    {t('interviewStep.generalSummary')}
                   </Label>
-                  <Textarea 
+                  <Textarea
                     value={interview.interviewResults}
                     onChange={(e) => updateInterview(interview.id, 'interviewResults', e.target.value)}
-                    placeholder="Provide a high-level summary of the interview, key themes, and notable quotes..."
+                    placeholder={t('interviewStep.summaryPlaceholder')}
                     rows={4}
                     className="text-sm mt-1"
                     disabled={interview.lockStatus === 'locked'}
@@ -490,10 +492,10 @@ export function InterviewWorkflowStep({
                   <div className="space-y-3 border-t pt-3 mt-3">
                     <Label className="text-xs flex items-center gap-1">
                       <HelpCircle className="h-3 w-3" />
-                      Asset-Specific Questions ({relevantQuestions.length})
+                      {t('interviewStep.assetQuestionsCount', { count: relevantQuestions.length })}
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Answer questions related to the selected brand assets
+                      {t('interviewStep.answerQuestions')}
                     </p>
                     
                     {relevantQuestions.map((q, index) => (
@@ -509,7 +511,7 @@ export function InterviewWorkflowStep({
                         <Textarea 
                           value={interview.questionAnswers?.[q.id] || ''}
                           onChange={(e) => updateQuestionAnswer(q.id, e.target.value)}
-                          placeholder="Enter interviewee's answer..."
+                          placeholder={t('interviewStep.answerPlaceholder')}
                           rows={2}
                           className="text-sm"
                           disabled={interview.lockStatus === 'locked'}
@@ -523,7 +525,7 @@ export function InterviewWorkflowStep({
                   <div className="text-xs text-muted-foreground bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 rounded p-2">
                     <p className="flex items-center gap-1">
                       <HelpCircle className="h-3 w-3" />
-                      No brand assets selected. Select assets in Step 2 to see relevant questions.
+                      {t('interviewStep.noAssetsSelected')}
                     </p>
                   </div>
                 )}
@@ -537,7 +539,7 @@ export function InterviewWorkflowStep({
                   disabled={!interview.interviewResults || interview.status === 'results-added' || interview.lockStatus === 'locked'}
                 >
                   <Save className="h-3 w-3 mr-1" />
-                  Save Results
+                  {t('interviewStep.saveResults')}
                 </Button>
               </div>
             </div>
@@ -548,11 +550,11 @@ export function InterviewWorkflowStep({
         {step.step === 4 && (
           <div className="space-y-3 mt-3 p-3 bg-muted/50 rounded-lg">
             <div>
-              <Label className="text-xs">Interview Notes</Label>
-              <Textarea 
+              <Label className="text-xs">{t('interviewStep.interviewNotes')}</Label>
+              <Textarea
                 value={interview.notes}
                 onChange={(e) => updateInterview(interview.id, 'notes', e.target.value)}
-                placeholder="Add notes during or after the interview..."
+                placeholder={t('interviewStep.notesPlaceholder')}
                 rows={3}
                 className="text-sm mt-1"
                 disabled={interview.lockStatus === 'locked'}
@@ -567,7 +569,7 @@ export function InterviewWorkflowStep({
               disabled={interview.status === 'interview-held' || interview.status === 'results-added' || interview.lockStatus === 'locked'}
             >
               <CheckCircle className="h-3 w-3 mr-1" />
-              Mark Interview as Completed
+              {t('interviewStep.markCompleted')}
             </Button>
           </div>
         )}
@@ -579,11 +581,11 @@ export function InterviewWorkflowStep({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-xs text-green-600">
                   <Lock className="h-4 w-4" />
-                  <span className="font-medium">Interview is locked and approved</span>
+                  <span className="font-medium">{t('interviewStep.lockedApproved')}</span>
                 </div>
                 {interview.lockedBy && (
                   <p className="text-xs text-muted-foreground">
-                    Locked by {interview.lockedBy} on {formatDate(interview.lockedAt)}
+                    {t('interviewStep.lockedBy', { by: interview.lockedBy, date: formatDate(interview.lockedAt) })}
                   </p>
                 )}
                 <Button
@@ -593,13 +595,13 @@ export function InterviewWorkflowStep({
                   onClick={() => handleUnlockInterview(interview.id)}
                 >
                   <Unlock className="h-3 w-3 mr-1" />
-                  Unlock Interview
+                  {t('interviewStep.unlockInterview')}
                 </Button>
               </div>
             ) : (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Lock this interview to finalize it for reporting and prevent further edits.
+                  {t('interviewStep.lockHint')}
                 </p>
                 <Button
                   size="sm"
@@ -608,7 +610,7 @@ export function InterviewWorkflowStep({
                   disabled={interview.status !== 'results-added'}
                 >
                   <Lock className="h-3 w-3 mr-1" />
-                  Lock & Approve Interview
+                  {t('interviewStep.lockApprove')}
                 </Button>
               </div>
             )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, ChevronDown, Eye, Pencil, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/shared";
 import { ModelTypeBadge } from "../shared/ModelTypeBadge";
@@ -38,6 +39,7 @@ export function ModelShowcasePage({
   onNavigateToDetail,
   onNavigateToStudio,
 }: ModelShowcasePageProps) {
+  const { t } = useTranslation("consistent-models");
   const { data: model, isLoading } = useConsistentModelDetail(modelId);
   const { data: generationsData } = useGenerations(modelId, { limit: 50 });
   const updateModel = useUpdateModel(modelId);
@@ -104,7 +106,7 @@ export function ModelShowcasePage({
 
   const handleDelete = () => {
     const confirmed = window.confirm(
-      `Are you sure you want to delete "${model.name}"? This action cannot be undone.`,
+      t("showcase.confirmDelete", { name: model.name }),
     );
     if (!confirmed) return;
     deleteModel.mutate(undefined, {
@@ -127,7 +129,7 @@ export function ModelShowcasePage({
             className="flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-gray-700"
           >
             <ArrowLeft className="h-4 w-4" />
-            AI Trainer
+            {t("showcase.aiTrainer")}
           </button>
           <span className="font-mono text-xs uppercase tracking-wider text-gray-400">
             {model.name}
@@ -138,7 +140,7 @@ export function ModelShowcasePage({
             className="flex items-center gap-1.5 text-sm text-teal-600 transition-colors hover:text-teal-700"
           >
             <Pencil className="h-3.5 w-3.5" />
-            Edit
+            {t("showcase.edit")}
           </button>
         </div>
       </div>
@@ -183,7 +185,7 @@ export function ModelShowcasePage({
                 className="absolute left-8 top-8 flex items-center gap-1.5 text-sm text-white/70 transition-colors hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Back to AI Trainer
+                {t("showcase.backToAiTrainer")}
               </button>
             </div>
 
@@ -207,7 +209,7 @@ export function ModelShowcasePage({
           {remainingGenerations.length > 0 && (
             <div className="space-y-6 bg-stone-50 p-8">
               <h2 className="font-mono text-xs uppercase tracking-wider text-teal-600">
-                Gallery
+                {t("showcase.gallery")}
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {remainingGenerations.map((gen) => (
@@ -253,6 +255,7 @@ interface PortraitStripProps {
  * If fewer than 4 portraits, adjusts gracefully.
  */
 function PortraitStrip({ portraits, center, modelName }: PortraitStripProps) {
+  const { t } = useTranslation("consistent-models");
   const left = portraits.slice(0, 2);
   const right = portraits.slice(2, 4);
 
@@ -264,18 +267,18 @@ function PortraitStrip({ portraits, center, modelName }: PortraitStripProps) {
         style={{ gridTemplateColumns: "2fr 2fr 4fr 2fr 2fr" }}
       >
         {left.map((gen, i) => (
-          <PortraitCell key={gen.id} generation={gen} alt={`${modelName} — side ${i + 1}`} />
+          <PortraitCell key={gen.id} generation={gen} alt={t("showcase.altSide", { name: modelName, index: i + 1 })} />
         ))}
         {/* Center slot — double-wide */}
         <div className="aspect-[2/3] overflow-hidden bg-gray-100">
           <img
             src={center.storageUrl}
-            alt={`${modelName} — feature`}
+            alt={t("showcase.altFeature", { name: modelName })}
             className="h-full w-full object-cover"
           />
         </div>
         {right.map((gen, i) => (
-          <PortraitCell key={gen.id} generation={gen} alt={`${modelName} — view ${i + 3}`} />
+          <PortraitCell key={gen.id} generation={gen} alt={t("showcase.altView", { name: modelName, index: i + 3 })} />
         ))}
       </div>
     );
@@ -291,7 +294,7 @@ function PortraitStrip({ portraits, center, modelName }: PortraitStripProps) {
       style={{ gridTemplateColumns: `repeat(${all.length}, 1fr)` }}
     >
       {all.map((gen, i) => (
-        <PortraitCell key={gen.id} generation={gen} alt={`${modelName} — ${i + 1}`} />
+        <PortraitCell key={gen.id} generation={gen} alt={t("showcase.altGeneric", { name: modelName, index: i + 1 })} />
       ))}
     </div>
   );

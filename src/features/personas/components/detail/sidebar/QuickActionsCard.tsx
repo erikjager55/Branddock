@@ -1,6 +1,7 @@
 'use client';
 
 import { MessageCircle, FileText, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface QuickActionsCardProps {
   onChat: () => void;
@@ -11,12 +12,13 @@ interface QuickActionsCardProps {
 }
 
 const ACTIONS = [
-  { key: 'chat', label: 'Chat with Persona', icon: MessageCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', needsUnlock: false, hideWhenLocked: false, dangerZone: false },
-  { key: 'export-pdf', label: 'Export PDF', icon: FileText, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false, hideWhenLocked: false, dangerZone: false },
-  { key: 'delete', label: 'Delete Persona', icon: Trash2, color: 'text-red-600', bg: 'bg-red-50', needsUnlock: true, hideWhenLocked: true, dangerZone: true },
+  { key: 'chat', labelKey: 'quickActions.chat', icon: MessageCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', needsUnlock: false, hideWhenLocked: false, dangerZone: false },
+  { key: 'export-pdf', labelKey: 'quickActions.exportPdf', icon: FileText, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false, hideWhenLocked: false, dangerZone: false },
+  { key: 'delete', labelKey: 'quickActions.delete', icon: Trash2, color: 'text-red-600', bg: 'bg-red-50', needsUnlock: true, hideWhenLocked: true, dangerZone: true },
 ] as const;
 
 export function QuickActionsCard({ onChat, onExportPdf, onDelete, isLocked, isDeleting }: QuickActionsCardProps) {
+  const { t } = useTranslation('personas');
   const handlers: Record<string, () => void> = {
     chat: onChat,
     'export-pdf': onExportPdf,
@@ -25,7 +27,7 @@ export function QuickActionsCard({ onChat, onExportPdf, onDelete, isLocked, isDe
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('quickActions.title')}</h3>
 
       <div className="space-y-1.5">
         {ACTIONS.map((action, index) => {
@@ -52,7 +54,7 @@ export function QuickActionsCard({ onChat, onExportPdf, onDelete, isLocked, isDe
                   <Icon className={`h-3.5 w-3.5 ${action.color}`} />
                 </div>
                 <span className={`text-xs font-medium ${isDelete ? 'text-red-600' : 'text-gray-700'}`}>
-                  {isDelete && isDeleting ? 'Deleting...' : action.label}
+                  {isDelete && isDeleting ? t('quickActions.deleting') : t(action.labelKey)}
                 </span>
               </button>
             </div>

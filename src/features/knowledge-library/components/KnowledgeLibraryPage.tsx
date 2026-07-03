@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertTriangle, BookOpen, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { PageShell, PageHeader } from '@/components/ui/layout';
 import { useKnowledgeLibraryStore } from '@/stores/useKnowledgeLibraryStore';
@@ -16,6 +17,7 @@ interface KnowledgeLibraryPageProps {
 }
 
 export function KnowledgeLibraryPage({ onNavigate }: KnowledgeLibraryPageProps) {
+  const { t } = useTranslation('knowledge-library');
   const store = useKnowledgeLibraryStore();
 
   const { data: featuredData } = useFeaturedResources();
@@ -49,12 +51,12 @@ export function KnowledgeLibraryPage({ onNavigate }: KnowledgeLibraryPageProps) 
       <div data-testid="knowledge-library-page">
       <PageHeader
         moduleKey="knowledge"
-        title="Knowledge Library"
-        subtitle="Your research and knowledge base"
+        title={t('page.title')}
+        subtitle={t('page.subtitle')}
         actions={
           <Button onClick={() => store.setAddModalOpen(true)} className="gap-2" data-testid="add-resource-button">
             <Plus className="h-4 w-4" />
-            Add Item
+            {t('page.addItem')}
           </Button>
         }
       />
@@ -72,9 +74,9 @@ export function KnowledgeLibraryPage({ onNavigate }: KnowledgeLibraryPageProps) 
       {isError ? (
         <div data-testid="error-message" className="text-center py-16">
           <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-3" />
-          <h3 className="text-sm font-medium text-foreground mb-1">Something went wrong</h3>
+          <h3 className="text-sm font-medium text-foreground mb-1">{t('error.title')}</h3>
           <p className="text-xs text-muted-foreground">
-            Failed to load resources. Please try again later.
+            {t('error.description')}
           </p>
         </div>
       ) : isLoading ? (
@@ -86,9 +88,9 @@ export function KnowledgeLibraryPage({ onNavigate }: KnowledgeLibraryPageProps) 
       ) : resources.length === 0 ? (
         <div data-testid="empty-state" className="text-center py-16">
           <BookOpen className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-          <h3 className="text-sm font-medium text-foreground mb-1">No resources found</h3>
+          <h3 className="text-sm font-medium text-foreground mb-1">{t('empty.title')}</h3>
           <p className="text-xs text-muted-foreground">
-            Try adjusting your filters or add a new resource.
+            {t('empty.description')}
           </p>
         </div>
       ) : store.viewMode === 'grid' ? (

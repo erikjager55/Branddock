@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { useHelpStore } from '@/stores/useHelpStore';
 import { useHelpSearch } from '@/hooks/use-help';
 import { Badge } from '@/components/shared';
 
 export function HelpSearchInput() {
+  const { t } = useTranslation('help');
   const searchQuery = useHelpStore((s) => s.searchQuery);
   const setSearchQuery = useHelpStore((s) => s.setSearchQuery);
   const activeTag = useHelpStore((s) => s.activeTag);
@@ -65,7 +67,7 @@ export function HelpSearchInput() {
               setIsDropdownOpen(true);
             }
           }}
-          placeholder="Search for articles, tutorials, and more..."
+          placeholder={t('search.placeholder')}
           className="w-full pl-12 px-5 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-primary focus:outline-none transition-colors"
         />
       </div>
@@ -76,7 +78,7 @@ export function HelpSearchInput() {
           {data.articles.length > 0 && (
             <div className="p-2">
               <p className="px-3 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Articles
+                {t('search.articles')}
               </p>
               {data.articles.map((article) => (
                 <button
@@ -101,7 +103,7 @@ export function HelpSearchInput() {
           {data.faqMatches.length > 0 && (
             <div className="p-2 border-t border-gray-100">
               <p className="px-3 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                FAQ
+                {t('search.faq')}
               </p>
               {data.faqMatches.map((faq) => (
                 <button
@@ -116,7 +118,7 @@ export function HelpSearchInput() {
                     {faq.question}
                   </span>
                   <Badge variant="teal" size="sm">
-                    FAQ
+                    {t('search.faq')}
                   </Badge>
                 </button>
               ))}

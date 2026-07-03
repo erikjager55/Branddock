@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, Play } from 'lucide-react';
 import { Badge } from '@/components/shared';
 
@@ -14,6 +15,7 @@ export function WorkshopSessionHeader({
   assetName,
   onBack,
 }: WorkshopSessionHeaderProps) {
+  const { t } = useTranslation('workshop');
   return (
     <div className="mb-6">
       <button
@@ -21,14 +23,14 @@ export function WorkshopSessionHeader({
         className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2 transition-colors"
       >
         <ChevronLeft className="w-4 h-4" />
-        Back to Asset
+        {t('common.backToAsset')}
       </button>
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-bold text-gray-900">
-          {title || 'Canvas Workshop'}
+          {title || t('common.defaultTitle')}
         </h1>
         <Badge variant="success" icon={Play}>
-          In Progress
+          {t('session.header.inProgress')}
         </Badge>
       </div>
       {assetName && (

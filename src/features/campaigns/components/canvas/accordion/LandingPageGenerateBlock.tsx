@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect, useRef, useContext, createContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Loader2, Sparkles, ArrowLeft, RefreshCw, CheckCircle2, ImageIcon, Pencil,
 } from 'lucide-react';
@@ -57,7 +58,9 @@ interface LandingPageGenerateBlockProps {
 const ACCENTS = ['emerald', 'violet', 'blue', 'amber'] as const;
 type VariantAccent = (typeof ACCENTS)[number];
 const accentFor = (i: number): VariantAccent => ACCENTS[i % ACCENTS.length];
-const FALLBACK_LABELS = ['conservative', 'creative', 'narrative', 'data-driven'];
+// Fallback creative-angle labels (per index) live in the i18n catalog
+// (lp.variant.fallback.*), resolved at render.
+const FALLBACK_LABEL_KEYS = ['conservative', 'creative', 'narrative', 'dataDriven'] as const;
 // Inline-style hexes i.p.v. Tailwind-klassen: src/index.css (gecompileerde,
 // gecommitte output) mist de blue/amber-utilities → purge-veilig (CLAUDE.md
 // Tailwind-4 gotcha). emerald/violet-hexes matchen de bestaande -400/-100-shades.
@@ -72,6 +75,7 @@ export function LandingPageGenerateBlock({
   deliverableId,
   onAdvance,
 }: LandingPageGenerateBlockProps) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const setStructuredVariant = useCanvasStore((s) => s.setStructuredVariant);
   const setStructuredVariantOptions = useCanvasStore((s) => s.setStructuredVariantOptions);
   const setContextStack = useCanvasStore((s) => s.setContextStack);
@@ -178,9 +182,9 @@ export function LandingPageGenerateBlock({
         new CustomEvent('canvas:refresh-deliverable', { detail: { deliverableId } }),
       );
     } catch (err) {
-      setVisualError(err instanceof Error ? err.message : 'Failed to save hero image');
+      setVisualError(err instanceof Error ? err.message : t('lp.errors.saveHeroImage'));
     }
-  }, [deliverableId, visualSource, chosenVariant, contextStack, setStructuredVariant]);
+  }, [deliverableId, visualSource, chosenVariant, contextStack, setStructuredVariant, t]);
 
   const builtPrompt = useMemo(() => {
     const parts: string[] = [];
@@ -335,7 +339,7 @@ export function LandingPageGenerateBlock({
     // Guard: bare onClick={handleGenerate} zou een MouseEvent doorgeven → coerce.
     const count = typeof countArg === 'number' && countArg >= 1 && countArg <= 4 ? countArg : 2;
     if (briefIncomplete) {
-      setError('First fill in Objective or Value Proposition in Step 1.');
+      setError(t('lp.errors.fillObjective'));
       setErrorUnavailable(false);
       return;
     }
@@ -387,7 +391,7 @@ export function LandingPageGenerateBlock({
       data.variants.forEach((v, i) => void scoreVariantFidelity(v, i));
     } catch (err) {
       const e = interpretAiError(err);
-      setError(e.message || 'Generation failed');
+      setError(e.message || t('lp.errors.generationFailed'));
       setErrorUnavailable(e.unavailable);
       setErrorType(e.errorType);
       if (e.unavailable) notifyAiError(err, { retry: () => { void handleGenerate(countArg); } });
@@ -404,6 +408,7 @@ export function LandingPageGenerateBlock({
     scoreVariantFidelity,
     setStructuredVariant,
     setStructuredVariantOptions,
+    t,
   ]);
 
   // Auto-trigger op mount
@@ -523,10 +528,10 @@ export function LandingPageGenerateBlock({
           if (heroUrl) {
             lpChosen = { ...lpChosen, hero: { ...lpChosen.hero, heroVisualUrl: heroUrl } };
           } else {
-            setVisualError('The automatic header image didn\'t come back (in time) — Step 3 will generate it automatically.');
+            setVisualError(t('lp.errors.heroTimeout'));
           }
         } catch (genErr) {
-          setVisualError(genErr instanceof Error ? genErr.message : 'Automatic header image failed — Step 3 will generate it automatically.');
+          setVisualError(genErr instanceof Error ? genErr.message : t('lp.errors.heroFailed'));
         } finally {
           setIsGeneratingVisual(false);
         }
@@ -589,7 +594,7 @@ export function LandingPageGenerateBlock({
         }),
       });
       if (!patchRes.ok) {
-        throw new Error(`Save failed: HTTP ${patchRes.status}`);
+        throw new Error(t('lp.errors.saveFailedHttp', { status: patchRes.status }));
       }
       setStructuredVariant(chosen);
       // Fetch /context expliciet zodat contextStack.puckData synchroon
@@ -612,11 +617,11 @@ export function LandingPageGenerateBlock({
       // puckData → Step 3 rendert de pagina MÉT de foto.
       onAdvance();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save variant choice');
+      setError(err instanceof Error ? err.message : t('lp.errors.saveVariantChoice'));
     } finally {
       setIsChoosing(false);
     }
-  }, [contextStack, deliverableId, selectedHeroImageUrl, setContextStack, setStructuredVariant, onAdvance, generateHeroVisualUrl]);
+  }, [contextStack, deliverableId, selectedHeroImageUrl, setContextStack, setStructuredVariant, onAdvance, generateHeroVisualUrl, t]);
 
   const handleGenerateVisual = useCallback(async () => {
     // W1: hero-AI-gen is LP-shaped (buildHeroVisualInstruction leest hero.subhead).
@@ -627,12 +632,12 @@ export function LandingPageGenerateBlock({
       await generateHeroVisualFor(chosenVariant);
     } catch (err) {
       const e = interpretAiError(err);
-      setVisualError(e.message || 'Visual generation failed');
+      setVisualError(e.message || t('lp.errors.visualGenerationFailed'));
       if (e.unavailable) notifyAiError(err);
     } finally {
       setIsGeneratingVisual(false);
     }
-  }, [chosenVariant, generateHeroVisualFor]);
+  }, [chosenVariant, generateHeroVisualFor, t]);
 
   /**
    * LP auto-iterate (Step 2): laat het backend de actieve variant herschrijven
@@ -667,7 +672,11 @@ export function LandingPageGenerateBlock({
     let iterations = 0;
     try {
       for (let iter = 1; iter <= AUTO_ITERATE_MAX; iter++) {
-        setAutoIterateMsg(`Iteration ${iter}/${AUTO_ITERATE_MAX}…${bestScore != null ? ` (score ${bestScore})` : ''}`);
+        setAutoIterateMsg(
+          bestScore != null
+            ? t('lp.autoIterate.iterationScore', { current: iter, max: AUTO_ITERATE_MAX, score: bestScore })
+            : t('lp.autoIterate.iteration', { current: iter, max: AUTO_ITERATE_MAX }),
+        );
         const res = await fetch(`/api/landing-pages/${deliverableId}/auto-iterate-variant`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -675,17 +684,17 @@ export function LandingPageGenerateBlock({
         });
         const json = (await res.json().catch(() => null)) as IterateResponse | null;
         if (!res.ok || !json || !('status' in json) || json.status === undefined) {
-          if (iterations === 0) setAutoIterateError((json && 'error' in json && json.error) ? json.error : 'Improvement failed — please try again.');
+          if (iterations === 0) setAutoIterateError((json && 'error' in json && json.error) ? json.error : t('lp.errors.improvementRetry'));
           break;
         }
         if (json.status === 'skipped') {
           // Informatief, geen fout (al goed genoeg / te weinig content).
-          if (iterations === 0) setAutoIterateMsg(json.reason === 'above-threshold' ? 'This variant is already above the threshold.' : 'Not enough content to improve.');
+          if (iterations === 0) setAutoIterateMsg(json.reason === 'above-threshold' ? t('lp.autoIterate.aboveThreshold') : t('lp.autoIterate.notEnoughContent'));
           break;
         }
         if (json.status === 'no_improvement') {
           // Informatief, geen fout — huidige variant blijft het beste.
-          if (iterations === 0) setAutoIterateMsg(`No improvement found (${json.score} → ${json.scoreProjected}). Keeping the current variant.`);
+          if (iterations === 0) setAutoIterateMsg(t('lp.autoIterate.noImprovement', { score: json.score, projected: json.scoreProjected }));
           break; // kan niet verder → stop met het beste (current)
         }
         if (json.status === 'error') {
@@ -711,12 +720,12 @@ export function LandingPageGenerateBlock({
       }
     } catch (err) {
       const e = interpretAiError(err);
-      setAutoIterateError(e.message || 'Improvement failed');
+      setAutoIterateError(e.message || t('lp.errors.improvementFailed'));
       if (e.unavailable) notifyAiError(err);
     } finally {
       setIsAutoIterating(false);
     }
-  }, [variantOptions, activeVariantIndex, deliverableId]);
+  }, [variantOptions, activeVariantIndex, deliverableId, t]);
 
   const applyProposal = useCallback(() => {
     if (!pendingProposal || !variantOptions) return;
@@ -724,15 +733,15 @@ export function LandingPageGenerateBlock({
     setStructuredVariantOptions(variantOptions.map((v, i) => (i === activeVariantIndex ? improved : v)));
     void scoreVariantFidelity(improved, activeVariantIndex);
     setAutoIterateError(null);
-    setAutoIterateMsg(`Applied: ${pendingProposal.before} → ${pendingProposal.after}.`);
+    setAutoIterateMsg(t('lp.autoIterate.applied', { before: pendingProposal.before, after: pendingProposal.after }));
     setPendingProposal(null);
-  }, [pendingProposal, variantOptions, activeVariantIndex, setStructuredVariantOptions, scoreVariantFidelity]);
+  }, [pendingProposal, variantOptions, activeVariantIndex, setStructuredVariantOptions, scoreVariantFidelity, t]);
 
   const discardProposal = useCallback(() => {
     setPendingProposal(null);
     setAutoIterateError(null);
-    setAutoIterateMsg('Proposal discarded — keeping the current variant.');
-  }, []);
+    setAutoIterateMsg(t('lp.autoIterate.discarded'));
+  }, [t]);
 
   // P4: auto-iterate-feedback is variant-specifiek. Reset bij het wisselen van
   // variant (i.p.v. in een effect — voorkomt de setState-in-effect-gotcha) zodat
@@ -748,21 +757,27 @@ export function LandingPageGenerateBlock({
   // anders de generieke conservatief/creatief-fallback.
   const variantLabel = (i: number): string => {
     const angle = variantLabels?.[i]?.trim();
-    return `Variant ${String.fromCharCode(65 + i)} — ${angle && angle.length > 0 ? angle : FALLBACK_LABELS[i] ?? 'variant'}`;
+    const fallbackKey = FALLBACK_LABEL_KEYS[i];
+    const displayAngle = angle && angle.length > 0
+      ? angle
+      : fallbackKey
+        ? t(`lp.variant.fallback.${fallbackKey}`)
+        : t('lp.variant.fallback.generic');
+    return t('lp.variant.labelWithAngle', { letter: String.fromCharCode(65 + i), angle: displayAngle });
   };
 
   // ─── Briefing incompleet ─────────────────────────────────
   if (briefIncomplete) {
     return (
       <div className="space-y-6">
-        <InfoBox variant="warning" size="md" title="Brief incomplete">
-          <p>First fill in at least Objective or Value Proposition in Step 1.</p>
+        <InfoBox variant="warning" size="md" title={t('lp.briefIncomplete.title')}>
+          <p>{t('lp.briefIncomplete.body')}</p>
           <button
             type="button"
             onClick={() => setActiveStep('context')}
             className="mt-2 inline-flex items-center gap-1 text-xs font-medium underline hover:opacity-80"
           >
-            <ArrowLeft className="h-3 w-3" />Back to Step 1
+            <ArrowLeft className="h-3 w-3" />{t('lp.backToStep1')}
           </button>
         </InfoBox>
       </div>
@@ -773,10 +788,10 @@ export function LandingPageGenerateBlock({
   if (!variantOptions && !chosenVariant && isGenerating) {
     return (
       <div className="space-y-6">
-        <InfoBox variant="info" size="md" title={`Generating ${selectedCount} landing page variants…`}>
+        <InfoBox variant="info" size="md" title={t('lp.generating.title', { count: selectedCount })}>
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
-            <span>Different angles in parallel — 30-90 seconds total.</span>
+            <span>{t('lp.generating.body')}</span>
           </div>
         </InfoBox>
       </div>
@@ -796,20 +811,20 @@ export function LandingPageGenerateBlock({
     }
     return (
       <div className="space-y-6">
-        <InfoBox variant="error" size="md" title="Generation failed">{error}</InfoBox>
+        <InfoBox variant="error" size="md" title={t('lp.errors.generationFailed')}>{error}</InfoBox>
         <button
           type="button"
           onClick={() => { setError(null); void handleGenerate(); }}
           className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
         >
-          <Sparkles className="h-4 w-4" />Try again
+          <Sparkles className="h-4 w-4" />{t('common.tryAgain')}
         </button>
         <button
           type="button"
           onClick={() => setActiveStep('context')}
           className="w-full inline-flex items-center justify-center gap-1 text-xs text-gray-600 underline hover:text-gray-900"
         >
-          <ArrowLeft className="h-3 w-3" />Edit brief in Step 1
+          <ArrowLeft className="h-3 w-3" />{t('lp.editBrief')}
         </button>
       </div>
     );
@@ -822,7 +837,7 @@ export function LandingPageGenerateBlock({
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
           <p className="font-medium">
-            {variantOptions.length} variant{variantOptions.length === 1 ? '' : 's'} ready — compare and pick the one that fits
+            {t('lp.variantsReady', { count: variantOptions.length })}
           </p>
         </div>
         {/* Track 5 — F-VAL fidelity-score voor LP-variant. Verschijnt zodra
@@ -837,7 +852,7 @@ export function LandingPageGenerateBlock({
             actieve variant, zodat een screen reader bij tab-wissel aankondigt
             wélke variant de score betreft (relevanter nu het er tot 4 zijn). */}
         {variantOptions.length > 1 ? (
-          <p className="sr-only" aria-live="polite">Brand fidelity score for {variantLabel(activeVariantIndex)}</p>
+          <p className="sr-only" aria-live="polite">{t('lp.fidelityFor', { variant: variantLabel(activeVariantIndex) })}</p>
         ) : null}
         <FidelityScoreBar deliverableId={deliverableId} variantIndex={activeVariantIndex} suppressAutoIterateCta />
         {/* Thumbnail-selector: vergelijk A/B in één oogopslag + klik om te
@@ -848,7 +863,7 @@ export function LandingPageGenerateBlock({
             className="grid gap-3"
             style={{ gridTemplateColumns: `repeat(${variantOptions.length === 3 ? 3 : 2}, minmax(0, 1fr))` }}
             role="tablist"
-            aria-label="Choose a variant"
+            aria-label={t('lp.chooseVariantAria')}
           >
             {variantOptions.map((v, i) => {
               const isActive = activeVariantIndex === i;
@@ -888,9 +903,9 @@ export function LandingPageGenerateBlock({
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 text-sm font-medium hover:bg-emerald-100 disabled:opacity-50"
           >
             {isAutoIterating ? (
-              <><Loader2 className="h-4 w-4 animate-spin" />Improving…</>
+              <><Loader2 className="h-4 w-4 animate-spin" />{t('lp.autoIterate.improving')}</>
             ) : (
-              <><Sparkles className="h-4 w-4" />Improve {variantLabel(activeVariantIndex)} automatically</>
+              <><Sparkles className="h-4 w-4" />{t('lp.autoIterate.improveAuto', { variant: variantLabel(activeVariantIndex) })}</>
             )}
           </button>
         </div>
@@ -907,9 +922,9 @@ export function LandingPageGenerateBlock({
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <p className="text-sm font-medium text-emerald-900 flex items-center gap-1.5">
                 <Sparkles className="h-4 w-4 text-emerald-600" />
-                Proposal: score {pendingProposal.before} → {pendingProposal.after}
-                {pendingProposal.iterations > 1 ? ` (${pendingProposal.iterations} iterations)` : ''}
-                {' · '}{pendingProposal.changes.length} change{pendingProposal.changes.length === 1 ? '' : 's'}
+                {t('lp.proposal.scoreLabel', { before: pendingProposal.before, after: pendingProposal.after })}
+                {pendingProposal.iterations > 1 ? t('lp.proposal.iterationsSuffix', { count: pendingProposal.iterations }) : ''}
+                {' · '}{t('lp.proposal.changesCount', { count: pendingProposal.changes.length })}
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -917,14 +932,14 @@ export function LandingPageGenerateBlock({
                   onClick={applyProposal}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700"
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5" />Apply
+                  <CheckCircle2 className="h-3.5 w-3.5" />{t('common.apply')}
                 </button>
                 <button
                   type="button"
                   onClick={discardProposal}
                   className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 text-xs font-medium hover:bg-gray-50"
                 >
-                  Discard
+                  {t('common.discard')}
                 </button>
               </div>
             </div>
@@ -939,7 +954,7 @@ export function LandingPageGenerateBlock({
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-gray-500">Score improved without visible text changes.</p>
+              <p className="text-xs text-gray-500">{t('lp.proposal.noVisibleChanges')}</p>
             )}
           </div>
         ) : null}
@@ -947,10 +962,10 @@ export function LandingPageGenerateBlock({
           <InfoBox
             variant="warning"
             size="sm"
-            title={`${partialDelivery.delivered} of ${partialDelivery.requested} variants delivered`}
+            title={t('lp.partialDelivery.title', { delivered: partialDelivery.delivered, requested: partialDelivery.requested })}
             onDismiss={() => setPartialDelivery(null)}
           >
-            {partialDelivery.requested - partialDelivery.delivered} variant(s) failed (timeout or validation error). Click the regenerate button to try again, or continue with the delivered ones.
+            {t('lp.partialDelivery.body', { count: partialDelivery.requested - partialDelivery.delivered })}
           </InfoBox>
         ) : null}
         {/* Detail: ÉÉN full-width, leesbare kaart voor de actieve variant
@@ -973,7 +988,7 @@ export function LandingPageGenerateBlock({
                 </div>
                 <VariantPuckPreview variant={v} contextStack={contextStack} maxHeight={560} scroll />
                 <p className="text-[11px] text-gray-500 -mt-2">
-                  Readable preview (scroll for the full page) — edit text after your choice in the editor (Step 3).
+                  {t('lp.readablePreviewEditor')}
                 </p>
                 <button
                   type="button"
@@ -982,9 +997,9 @@ export function LandingPageGenerateBlock({
                   className={`mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50`}
                 >
                   {isChoosing ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" />Saving...</>
+                    <><Loader2 className="h-4 w-4 animate-spin" />{t('common.saving')}</>
                   ) : (
-                    <><CheckCircle2 className="h-4 w-4" />Choose this variant</>
+                    <><CheckCircle2 className="h-4 w-4" />{t('lp.chooseThisVariant')}</>
                   )}
                 </button>
               </div>
@@ -1015,7 +1030,7 @@ export function LandingPageGenerateBlock({
           <InfoBox variant="info" size="sm">
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
-              <span>Generating hero image — the page will open with the photo…</span>
+              <span>{t('lp.generatingHero')}</span>
             </div>
           </InfoBox>
         ) : null}
@@ -1023,7 +1038,7 @@ export function LandingPageGenerateBlock({
           <InfoBox variant="warning" size="sm" onDismiss={() => setVisualError(null)}>{visualError}</InfoBox>
         ) : null}
         {error ? (
-          <InfoBox variant="error" size="sm" title="Variant choice failed" onDismiss={() => setError(null)}>{error}</InfoBox>
+          <InfoBox variant="error" size="sm" title={t('lp.variantChoiceFailed')} onDismiss={() => setError(null)}>{error}</InfoBox>
         ) : null}
 
         {/* User-feedback 2026-05-28: hetzelfde Step 2 patroon als 'Content
@@ -1053,8 +1068,8 @@ export function LandingPageGenerateBlock({
         <div className="flex items-center gap-3 pt-2 border-t border-gray-100 flex-wrap">
           {/* P3a — aantal-selector: stuurt hoeveel varianten de regenereer-knop
               genereert. Default 2; 4 ≈ 2× generatietijd. */}
-          <div className="flex items-center gap-1.5" role="group" aria-label="Number of variants">
-            <span className="text-xs text-gray-500">Count:</span>
+          <div className="flex items-center gap-1.5" role="group" aria-label={t('lp.countAria')}>
+            <span className="text-xs text-gray-500">{t('lp.count')}</span>
             {[2, 3, 4].map((n) => {
               const sel = selectedCount === n;
               return (
@@ -1064,7 +1079,7 @@ export function LandingPageGenerateBlock({
                   onClick={() => setSelectedCount(n)}
                   disabled={isGenerating || isChoosing}
                   aria-pressed={sel}
-                  title={n === 4 ? '4 variants ≈ 2× generation time' : `${n} variants`}
+                  title={n === 4 ? t('lp.countTitle4') : t('lp.countTitle', { count: n })}
                   className={`w-7 h-7 rounded-md text-xs font-medium border transition-colors disabled:opacity-50 ${sel ? '' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
                   style={sel ? { borderColor: '#14b8a6', backgroundColor: '#f0fdfa', color: '#0f766e' } : undefined}
                 >
@@ -1080,9 +1095,9 @@ export function LandingPageGenerateBlock({
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
           >
             {isGenerating ? (
-              <><Loader2 className="h-4 w-4 animate-spin" />Regenerating...</>
+              <><Loader2 className="h-4 w-4 animate-spin" />{t('common.regenerating')}</>
             ) : (
-              <><RefreshCw className="h-4 w-4" />Generate {selectedCount} new variant{selectedCount === 1 ? '' : 's'}</>
+              <><RefreshCw className="h-4 w-4" />{t('lp.generateNewVariants', { count: selectedCount })}</>
             )}
           </button>
           <button
@@ -1095,7 +1110,7 @@ export function LandingPageGenerateBlock({
             className={`ml-auto inline-flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-medium ${STUDIO.generateButton} disabled:opacity-50`}
           >
             {isChoosing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            Confirm & continue
+            {t('lp.confirmContinue')}
           </button>
         </div>
       </div>
@@ -1117,9 +1132,9 @@ export function LandingPageGenerateBlock({
       <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 flex items-start gap-2">
         <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
         <div className="flex-1">
-          <p className="font-medium">Variant chosen</p>
+          <p className="font-medium">{t('lp.variantChosen')}</p>
           <p className="text-xs text-emerald-800 mt-0.5">
-            The page has been built in Step 3 (Medium). Click below to choose a different variant or continue.
+            {t('lp.variantChosenBody')}
           </p>
         </div>
       </div>
@@ -1134,7 +1149,7 @@ export function LandingPageGenerateBlock({
             onClick={() => setStructuredVariant(null)}
             className="text-xs font-medium text-gray-600 underline hover:text-gray-900"
           >
-            Choose a different variant
+            {t('lp.chooseDifferent')}
           </button>
         ) : null}
         <div className="ml-auto">
@@ -1143,7 +1158,7 @@ export function LandingPageGenerateBlock({
             onClick={onAdvance}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium ${STUDIO.generateButton}`}
           >
-            <CheckCircle2 className="h-4 w-4" />Open editor (Step 3)
+            <CheckCircle2 className="h-4 w-4" />{t('lp.openEditor')}
           </button>
         </div>
       </div>
@@ -1181,6 +1196,7 @@ function VariantPuckPreview({
   maxHeight?: number;
   scroll?: boolean;
 }) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   // Step 2 variant-preview is geschaald/ingebed → niet-sticky nav.
   const config = useMemo(() => buildSpikePuckConfig(contextStack, { stickyNav: false }), [contextStack]);
   const puckData = useMemo(
@@ -1217,7 +1233,7 @@ function VariantPuckPreview({
       ref={outerRef}
       className={`w-full rounded-lg border border-gray-200 bg-white ${scroll ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'}`}
       style={{ height: maxHeight != null ? boxHeight : undefined }}
-      aria-label="Page preview"
+      aria-label={t('lp.pagePreviewAria')}
     >
       <div style={{ height: scaledHeight, position: 'relative' }}>
         <div
@@ -1265,6 +1281,7 @@ function VariantCompareCard({
    *  verloren gaan wanneer je naar de andere variant-thumbnail wisselt. */
   onVariantChange?: (variant: LandingPageVariantContent) => void;
 }) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   // Local edit-state: user kan inline velden bewerken voordat hij "Kies"
   // klikt. Pennetje naast elk veld toggled edit-mode.
   const [v, setV] = useState<LandingPageVariantContent>(initialVariant);
@@ -1311,16 +1328,16 @@ function VariantCompareCard({
           const next = data.variant as LandingPageVariantContent;
           setV((prev) => ({ ...prev, [section]: next[section] }));
         } else if (data.status === 'error') {
-          throw new Error(data.error ?? 'Regeneration failed');
+          throw new Error(data.error ?? t('lp.errors.regenerationFailed'));
         } else if (data.status === 'skipped') {
-          setRegenError(data.reason === 'insufficient-content' ? 'Not enough content to regenerate.' : 'Regeneration skipped.');
+          setRegenError(data.reason === 'insufficient-content' ? t('lp.errors.notEnoughToRegenerate') : t('lp.errors.regenerationSkipped'));
         } else if (data.status === 'no_improvement') {
-          setRegenError('No improvement found — section unchanged.');
+          setRegenError(t('lp.errors.noImprovementSection'));
         }
       })
-      .catch((err) => setRegenError(err instanceof Error ? err.message : 'Regeneration failed'))
+      .catch((err) => setRegenError(err instanceof Error ? err.message : t('lp.errors.regenerationFailed')))
       .finally(() => setRegenSection(null));
-  }, [deliverableId, variantIndex]);
+  }, [deliverableId, variantIndex, t]);
 
   // P3a — accent-kleuren via inline-style (purge-veilig voor blue/amber).
   const hex = ACCENT_HEX[accent];
@@ -1337,10 +1354,10 @@ function VariantCompareCard({
       {/* P1a — WYSIWYG-preview: de echte (geschaalde) pagina uit deze variant. */}
       <VariantPuckPreview variant={v} contextStack={contextStack} maxHeight={560} scroll />
       <p className="text-[11px] text-gray-500 -mt-2">
-        Readable preview (scroll for the full page) — the header photo is generated on your choice. Edit the text below; the preview updates instantly.
+        {t('lp.readablePreviewEdit')}
       </p>
       {regenError ? (
-        <InfoBox variant="error" size="sm" onDismiss={() => setRegenError(null)}>Regeneration failed: {regenError}</InfoBox>
+        <InfoBox variant="error" size="sm" onDismiss={() => setRegenError(null)}>{t('lp.errors.regenerationFailedPrefix')} {regenError}</InfoBox>
       ) : null}
 
       {/* Tekst-bewerking — ingeklapt zodat de preview centraal staat.
@@ -1349,20 +1366,20 @@ function VariantCompareCard({
       <details className="group">
         <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center gap-1.5 select-none">
           <Pencil className="h-3.5 w-3.5" />
-          Edit content · regenerate per section
+          {t('lp.editContent')}
         </summary>
         <div className="flex flex-col gap-4 pt-3">
 
       {/* HERO */}
-      <VariantSection title="Hero" onRegenerate={() => regenerate('hero')} regenerating={regenSection === 'hero'}>
+      <VariantSection title={t('lp.sections.hero')} onRegenerate={() => regenerate('hero')} regenerating={regenSection === 'hero'}>
         <EditableField
-          label="Headline"
+          label={t('lp.fields.headline')}
           value={v.hero.headline}
           onChange={(val) => setV({ ...v, hero: { ...v.hero, headline: val } })}
           fontClass="text-base font-semibold text-gray-900"
         />
         <EditableField
-          label="Subhead"
+          label={t('lp.fields.subhead')}
           value={v.hero.subhead}
           onChange={(val) => setV({ ...v, hero: { ...v.hero, subhead: val } })}
           multiline
@@ -1370,14 +1387,14 @@ function VariantCompareCard({
         />
         {v.hero.eyebrow ? (
           <EditableField
-            label="Eyebrow"
+            label={t('lp.fields.eyebrow')}
             value={v.hero.eyebrow}
             onChange={(val) => setV({ ...v, hero: { ...v.hero, eyebrow: val } })}
             fontClass="text-xs uppercase tracking-wider text-gray-600"
           />
         ) : null}
         <EditableField
-          label="Primary CTA"
+          label={t('lp.fields.primaryCta')}
           value={v.hero.primaryCta}
           onChange={(val) => setV({ ...v, hero: { ...v.hero, primaryCta: val } })}
           fontClass="text-sm font-medium text-teal-700"
@@ -1385,7 +1402,7 @@ function VariantCompareCard({
       </VariantSection>
 
       {/* TRUST */}
-      <VariantSection title={`Trust (${v.trust.type} · ${v.trust.items.length})`}>
+      <VariantSection title={t('lp.sections.trust', { type: v.trust.type, count: v.trust.items.length })}>
         {v.trust.items.map((item, i) => (
           <div key={i} className="text-xs text-gray-600">• {item.label}</div>
         ))}
@@ -1393,15 +1410,15 @@ function VariantCompareCard({
 
       {/* PROBLEM */}
       {v.problem ? (
-        <VariantSection title="Problem" onRegenerate={() => regenerate('problem')} regenerating={regenSection === 'problem'}>
+        <VariantSection title={t('lp.sections.problem')} onRegenerate={() => regenerate('problem')} regenerating={regenSection === 'problem'}>
           <EditableField
-            label="Heading"
+            label={t('lp.fields.heading')}
             value={v.problem.heading}
             onChange={(val) => setV({ ...v, problem: { ...v.problem!, heading: val } })}
             fontClass="text-sm font-medium text-gray-800"
           />
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase mb-1">Pain points</p>
+            <p className="text-xs font-medium text-gray-500 uppercase mb-1">{t('lp.painPoints')}</p>
             <ul className="text-xs text-gray-600 list-disc list-inside space-y-1">
               {v.problem.painBullets.map((p, i) => <li key={i}>{p}</li>)}
             </ul>
@@ -1411,9 +1428,9 @@ function VariantCompareCard({
       ) : null}
 
       {/* FEATURES */}
-      <VariantSection title={`Features (${v.features.items.length})`} onRegenerate={() => regenerate('features')} regenerating={regenSection === 'features'}>
+      <VariantSection title={t('lp.sections.features', { count: v.features.items.length })} onRegenerate={() => regenerate('features')} regenerating={regenSection === 'features'}>
         <EditableField
-          label="Section Heading"
+          label={t('lp.fields.sectionHeading')}
           value={v.features.sectionHeading}
           onChange={(val) => setV({ ...v, features: { ...v.features, sectionHeading: val } })}
           fontClass="text-sm font-medium text-gray-800"
@@ -1422,7 +1439,7 @@ function VariantCompareCard({
           <div key={i} className="border-l-2 border-gray-200 pl-3 space-y-1">
             <div className="text-xs text-gray-500">{f.icon}</div>
             <EditableField
-              label="Heading"
+              label={t('lp.fields.heading')}
               value={f.heading}
               onChange={(val) => {
                 const items = [...v.features.items];
@@ -1433,7 +1450,7 @@ function VariantCompareCard({
               fontClass="text-sm font-semibold text-gray-900"
             />
             <EditableField
-              label="Body"
+              label={t('lp.fields.body')}
               value={f.body}
               onChange={(val) => {
                 const items = [...v.features.items];
@@ -1449,7 +1466,7 @@ function VariantCompareCard({
       </VariantSection>
 
       {/* SOCIAL PROOF */}
-      <VariantSection title={`Social proof (${v.socialProof.testimonials.length} testimonials)`} onRegenerate={() => regenerate('socialProof')} regenerating={regenSection === 'socialProof'}>
+      <VariantSection title={t('lp.sections.socialProof', { count: v.socialProof.testimonials.length })} onRegenerate={() => regenerate('socialProof')} regenerating={regenSection === 'socialProof'}>
         {v.socialProof.testimonials.map((t, i) => (
           <div key={i} className="text-xs text-gray-700 italic border-l-2 border-gray-200 pl-3">
             <p>&ldquo;{t.quote}&rdquo;</p>
@@ -1470,7 +1487,7 @@ function VariantCompareCard({
 
       {/* PRICING */}
       {v.pricing ? (
-        <VariantSection title={`Pricing (${v.pricing.tiers.length} tiers)`}>
+        <VariantSection title={t('lp.sections.pricing', { count: v.pricing.tiers.length })}>
           <div className="grid grid-cols-3 gap-2">
             {v.pricing.tiers.map((tier, i) => (
               <div key={i} className={`text-xs p-2 rounded border ${tier.highlighted ? 'border-teal-400 bg-teal-50' : 'border-gray-200'}`}>
@@ -1486,7 +1503,7 @@ function VariantCompareCard({
       ) : null}
 
       {/* FAQ */}
-      <VariantSection title={`FAQ (${v.faq.items.length} items)`} onRegenerate={() => regenerate('faq')} regenerating={regenSection === 'faq'}>
+      <VariantSection title={t('lp.sections.faq', { count: v.faq.items.length })} onRegenerate={() => regenerate('faq')} regenerating={regenSection === 'faq'}>
         {v.faq.items.map((q, i) => (
           <details key={i} className="text-xs">
             <summary className="font-medium text-gray-800 cursor-pointer">{q.question}</summary>
@@ -1496,15 +1513,15 @@ function VariantCompareCard({
       </VariantSection>
 
       {/* FINAL CTA */}
-      <VariantSection title="Final CTA" onRegenerate={() => regenerate('finalCta')} regenerating={regenSection === 'finalCta'}>
+      <VariantSection title={t('lp.sections.finalCta')} onRegenerate={() => regenerate('finalCta')} regenerating={regenSection === 'finalCta'}>
         <EditableField
-          label="Heading"
+          label={t('lp.fields.heading')}
           value={v.finalCta.heading}
           onChange={(val) => setV({ ...v, finalCta: { ...v.finalCta, heading: val } })}
           fontClass="text-sm font-medium text-gray-900"
         />
         <EditableField
-          label="Primary CTA"
+          label={t('lp.fields.primaryCta')}
           value={v.finalCta.primaryCta}
           onChange={(val) => setV({ ...v, finalCta: { ...v.finalCta, primaryCta: val } })}
           fontClass="text-sm font-medium text-teal-700"
@@ -1523,9 +1540,9 @@ function VariantCompareCard({
         className={`mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50`}
       >
         {disabled ? (
-          <><Loader2 className="h-4 w-4 animate-spin" />Saving...</>
+          <><Loader2 className="h-4 w-4 animate-spin" />{t('common.saving')}</>
         ) : (
-          <><CheckCircle2 className="h-4 w-4" />Choose this variant</>
+          <><CheckCircle2 className="h-4 w-4" />{t('lp.chooseThisVariant')}</>
         )}
       </button>
     </div>
@@ -1546,6 +1563,7 @@ function VariantSection({
   onRegenerate?: () => void;
   regenerating?: boolean;
 }) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   return (
     <div className="space-y-2 pb-3 border-b border-gray-100 last:border-b-0">
       <div className="flex items-center justify-between gap-2">
@@ -1556,10 +1574,10 @@ function VariantSection({
             onClick={onRegenerate}
             disabled={regenerating}
             className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-teal-700 disabled:opacity-50 transition-colors"
-            title="Regenerate only this section"
+            title={t('lp.regenerateSection')}
           >
             {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-            {regenerating ? 'Working…' : 'Regenerate'}
+            {regenerating ? t('common.working') : t('common.regenerate')}
           </button>
         ) : null}
       </div>
@@ -1572,10 +1590,11 @@ function VariantSection({
  *  transforms werken zonder elke call-site te wijzigen. */
 const EditDeliverableCtx = createContext<string | undefined>(undefined);
 
-const MICRO_TRANSFORMS: ReadonlyArray<{ action: 'shorter' | 'urgent' | 'brand_voice'; label: string }> = [
-  { action: 'shorter', label: 'Shorter' },
-  { action: 'urgent', label: 'More urgent' },
-  { action: 'brand_voice', label: 'Brand voice' },
+// Labels live in the i18n catalog (lp.microTransforms.<action>), resolved at render.
+const MICRO_TRANSFORMS: ReadonlyArray<{ action: 'shorter' | 'urgent' | 'brand_voice' }> = [
+  { action: 'shorter' },
+  { action: 'urgent' },
+  { action: 'brand_voice' },
 ];
 
 function EditableField({
@@ -1596,6 +1615,7 @@ function EditableField({
   /** P1c — enables tone/length micro-transforms (Korter/Urgenter/Brand voice). */
   deliverableId?: string;
 }) {
+  const { t } = useTranslation('campaigns-canvas-accordion');
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const ctxDeliverableId = useContext(EditDeliverableCtx);
@@ -1645,24 +1665,24 @@ function EditableField({
             />
           )}
           <div className="flex items-center gap-1 text-xs flex-wrap">
-            <button onClick={save} className="text-teal-700 font-medium hover:underline">Save</button>
+            <button onClick={save} className="text-teal-700 font-medium hover:underline">{t('common.save')}</button>
             <span className="text-gray-400">·</span>
-            <button onClick={cancel} className="text-gray-500 hover:underline">Cancel</button>
+            <button onClick={cancel} className="text-gray-500 hover:underline">{t('common.cancel')}</button>
             {dId ? (
               <>
                 <span className="text-gray-300 mx-1">|</span>
                 {isTransforming ? (
-                  <span className="inline-flex items-center gap-1 text-gray-400"><Loader2 className="h-3 w-3 animate-spin" />AI…</span>
+                  <span className="inline-flex items-center gap-1 text-gray-400"><Loader2 className="h-3 w-3 animate-spin" />{t('common.aiWorking')}</span>
                 ) : (
-                  MICRO_TRANSFORMS.map((t) => (
+                  MICRO_TRANSFORMS.map((mt) => (
                     <button
-                      key={t.action}
+                      key={mt.action}
                       type="button"
-                      onClick={() => applyTransform(t.action)}
+                      onClick={() => applyTransform(mt.action)}
                       className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:border-teal-300 hover:text-teal-700 transition-colors"
-                      title={`AI: ${t.label}`}
+                      title={t('lp.microTransforms.aiTitle', { label: t(`lp.microTransforms.${mt.action}`) })}
                     >
-                      <Sparkles className="h-2.5 w-2.5" />{t.label}
+                      <Sparkles className="h-2.5 w-2.5" />{t(`lp.microTransforms.${mt.action}`)}
                     </button>
                   ))
                 )}
@@ -1677,7 +1697,7 @@ function EditableField({
             type="button"
             onClick={() => setEditing(true)}
             className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-teal-700 transition-opacity flex-shrink-0"
-            title="Edit"
+            title={t('common.edit')}
           >
             <Pencil className="h-3 w-3" />
           </button>

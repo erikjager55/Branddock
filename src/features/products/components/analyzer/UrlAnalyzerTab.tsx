@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Globe } from "lucide-react";
 import { Button, Input } from "@/components/shared";
 import { normaliseUserUrl, INVALID_URL_MESSAGE } from "@/lib/utils/normalise-url";
@@ -9,6 +10,7 @@ import { useProductsStore } from "../../stores/useProductsStore";
 import { WhatWeExtractGrid } from "./WhatWeExtractGrid";
 
 export function UrlAnalyzerTab() {
+  const { t } = useTranslation("products");
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const analyzeUrl = useAnalyzeUrl();
@@ -37,7 +39,7 @@ export function UrlAnalyzerTab() {
         },
         onError: (err) => {
           setProcessingModalOpen(false);
-          setError(err instanceof Error ? err.message : "Failed to analyze URL. Please try again.");
+          setError(err instanceof Error ? err.message : t("analyzer.url.error"));
         },
       },
     );
@@ -47,8 +49,8 @@ export function UrlAnalyzerTab() {
     <div className="space-y-6">
       <div className="space-y-4">
         <Input
-          label="Product page URL"
-          placeholder="https://example.com/product-page"
+          label={t("analyzer.url.label")}
+          placeholder={t("analyzer.url.placeholder")}
           icon={Globe}
           value={url}
           onChange={(e) => {
@@ -67,7 +69,7 @@ export function UrlAnalyzerTab() {
           onClick={handleSubmit}
           isLoading={analyzeUrl.isPending}
         >
-          Analyze
+          {t("analyzer.url.analyzeButton")}
         </Button>
       </div>
 

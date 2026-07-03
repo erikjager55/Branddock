@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Globe, MessageCircle, Mail, Megaphone, Video } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/shared";
 import { AiContentBanner } from "../AiContentBanner";
 import { useUpdateVoiceguide } from "../../hooks";
@@ -18,22 +19,23 @@ interface ChannelTonesSectionProps {
   voiceguide: BrandVoiceguide;
 }
 
-const CHANNELS: { key: ChannelKey; label: string; icon: LucideIcon; placeholder: string }[] = [
-  { key: "website", label: "Website", icon: Globe, placeholder: "Authoritative, structured. Lean towards explanation, not persuasion." },
-  { key: "socialMedia", label: "Social Media", icon: MessageCircle, placeholder: "Casual, punchy. One idea per post. Lean into personality." },
-  { key: "email", label: "Email", icon: Mail, placeholder: "Personal, warm. Direct opening line. Conversational throughout." },
-  { key: "ads", label: "Ads", icon: Megaphone, placeholder: "Concise. Strong hook. Benefit-led, not feature-led." },
-  { key: "video", label: "Video", icon: Video, placeholder: "Spoken cadence. Short sentences. Lean into personality." },
+const CHANNELS: { key: ChannelKey; labelKey: string; icon: LucideIcon; placeholderKey: string }[] = [
+  { key: "website", labelKey: "channelTones.channels.website", icon: Globe, placeholderKey: "channelTones.placeholders.website" },
+  { key: "socialMedia", labelKey: "channelTones.channels.socialMedia", icon: MessageCircle, placeholderKey: "channelTones.placeholders.socialMedia" },
+  { key: "email", labelKey: "channelTones.channels.email", icon: Mail, placeholderKey: "channelTones.placeholders.email" },
+  { key: "ads", labelKey: "channelTones.channels.ads", icon: Megaphone, placeholderKey: "channelTones.placeholders.ads" },
+  { key: "video", labelKey: "channelTones.channels.video", icon: Video, placeholderKey: "channelTones.placeholders.video" },
 ];
 
-const AXIS_LABELS: { axis: ToneAxis; label: string }[] = [
-  { axis: "formalCasual", label: "Casual ↔ Formal" },
-  { axis: "seriousFunny", label: "Funny ↔ Serious" },
-  { axis: "respectfulIrreverent", label: "Irreverent ↔ Respectful" },
-  { axis: "matterOfFactEnthusiastic", label: "Enthusiastic ↔ Matter-of-fact" },
+const AXIS_LABELS: { axis: ToneAxis; labelKey: string }[] = [
+  { axis: "formalCasual", labelKey: "channelTones.axes.formalCasual" },
+  { axis: "seriousFunny", labelKey: "channelTones.axes.seriousFunny" },
+  { axis: "respectfulIrreverent", labelKey: "channelTones.axes.respectfulIrreverent" },
+  { axis: "matterOfFactEnthusiastic", labelKey: "channelTones.axes.matterOfFactEnthusiastic" },
 ];
 
 export function ChannelTonesSection({ voiceguide }: ChannelTonesSectionProps) {
+  const { t } = useTranslation("brandvoice");
   const update = useUpdateVoiceguide();
   const [draft, setDraft] = useState<ChannelTones>(voiceguide.channelTones ?? {});
 
@@ -58,15 +60,14 @@ export function ChannelTonesSection({ voiceguide }: ChannelTonesSectionProps) {
   return (
     <div className="space-y-6">
       <div className="bg-white border border-gray-200 rounded-lg p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-1">Channel-specific tone</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-1">{t("channelTones.title")}</h3>
         <p className="text-xs text-gray-500">
-          Free-text overrides per channel + an optional dominant axis-shift relative
-          to the global Voice DNA baseline. Empty channels fall back to baseline.
+          {t("channelTones.help")}
         </p>
       </div>
 
       <div className="space-y-4">
-        {CHANNELS.map(({ key, label, icon: Icon, placeholder }) => {
+        {CHANNELS.map(({ key, labelKey, icon: Icon, placeholderKey }) => {
           const entry = draft[key] ?? { description: "", axisShift: null };
           const description = entry.description ?? "";
           const shiftAxis = entry.axisShift?.axis ?? "";
@@ -76,19 +77,19 @@ export function ChannelTonesSection({ voiceguide }: ChannelTonesSectionProps) {
             <div key={key} className="bg-white border border-gray-200 rounded-lg p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Icon className="w-4 h-4 text-teal-600" />
-                <h4 className="text-sm font-semibold text-gray-900">{label}</h4>
+                <h4 className="text-sm font-semibold text-gray-900">{t(labelKey)}</h4>
               </div>
 
               <textarea
                 value={description}
                 onChange={(e) => handleChange(key, { description: e.target.value })}
                 rows={2}
-                placeholder={placeholder}
+                placeholder={t(placeholderKey)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary-300 mb-3"
               />
 
               <div className="flex items-center gap-2 text-xs text-gray-600">
-                <span>Optional axis shift:</span>
+                <span>{t("channelTones.axisShift")}</span>
                 <select
                   value={shiftAxis}
                   onChange={(e) => {
@@ -101,9 +102,9 @@ export function ChannelTonesSection({ voiceguide }: ChannelTonesSectionProps) {
                   }}
                   className="px-2 py-1 border border-gray-300 rounded text-xs"
                 >
-                  <option value="">— none —</option>
+                  <option value="">{t("channelTones.none")}</option>
                   {AXIS_LABELS.map((a) => (
-                    <option key={a.axis} value={a.axis}>{a.label}</option>
+                    <option key={a.axis} value={a.axis}>{t(a.labelKey)}</option>
                   ))}
                 </select>
                 {shiftAxis && (
@@ -116,8 +117,8 @@ export function ChannelTonesSection({ voiceguide }: ChannelTonesSectionProps) {
                     }
                     className="px-2 py-1 border border-gray-300 rounded text-xs"
                   >
-                    <option value="increase">↑ shift right</option>
-                    <option value="decrease">↓ shift left</option>
+                    <option value="increase">{t("channelTones.shiftRight")}</option>
+                    <option value="decrease">{t("channelTones.shiftLeft")}</option>
                   </select>
                 )}
               </div>
@@ -129,7 +130,7 @@ export function ChannelTonesSection({ voiceguide }: ChannelTonesSectionProps) {
       {dirty && (
         <div className="sticky bottom-4 flex justify-end">
           <Button variant="primary" size="md" onClick={handleSave} isLoading={update.isPending}>
-            Save Channel Tones
+            {t("channelTones.save")}
           </Button>
         </div>
       )}

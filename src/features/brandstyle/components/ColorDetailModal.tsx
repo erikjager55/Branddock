@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Copy, Check } from "lucide-react";
 import { Modal, Badge } from "@/components/shared";
 import type { StyleguideColor } from "../types/brandstyle.types";
@@ -17,10 +18,10 @@ interface ColorDetailModalProps {
 /** Fase E — usage-tags die user via toggles kan setten/clearen. Subset
  *  van ColorUsageTag uit color-usage-extractor. Brand-relevante hero-roles. */
 const TOGGLEABLE_USAGE_TAGS = [
-  { key: "hero-bg", label: "Hero background", hint: "Use this color as the background of the hero section on generated LPs" },
-  { key: "heading-text", label: "Heading color", hint: "Use this color for h1/h2 in generated content" },
-  { key: "button-bg", label: "Button background", hint: "Primary CTA buttons use this color" },
-  { key: "link", label: "Link color", hint: "Hyperlinks render in this color" },
+  { key: "hero-bg", i18n: "heroBg" },
+  { key: "heading-text", i18n: "headingText" },
+  { key: "button-bg", i18n: "buttonBg" },
+  { key: "link", i18n: "link" },
 ] as const;
 
 function CopyButton({ value, label }: { value: string; label: string }) {
@@ -59,6 +60,7 @@ function ContrastBadge({ level }: { level: string | null }) {
 }
 
 export function ColorDetailModal({ isOpen, onClose, color, onTagsChanged }: ColorDetailModalProps) {
+  const { t } = useTranslation("brandstyle");
   // Lokale tag-state om optimistic toggles te tonen zonder wachten op
   // server-roundtrip. Reset wanneer color-prop verandert.
   const [localTags, setLocalTags] = useState<string[]>([]);
@@ -113,24 +115,24 @@ export function ColorDetailModal({ isOpen, onClose, color, onTagsChanged }: Colo
         <div className="w-1/2 space-y-4">
           {/* Color values */}
           <div className="space-y-1 divide-y divide-gray-100">
-            <CopyButton label="HEX" value={color.hex} />
-            {color.rgb && <CopyButton label="RGB" value={color.rgb} />}
-            {color.hsl && <CopyButton label="HSL" value={color.hsl} />}
-            {color.cmyk && <CopyButton label="CMYK" value={color.cmyk} />}
+            <CopyButton label={t("colors.detail.hex")} value={color.hex} />
+            {color.rgb && <CopyButton label={t("colors.detail.rgb")} value={color.rgb} />}
+            {color.hsl && <CopyButton label={t("colors.detail.hsl")} value={color.hsl} />}
+            {color.cmyk && <CopyButton label={t("colors.detail.cmyk")} value={color.cmyk} />}
           </div>
 
           {/* Accessibility */}
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-              Accessibility
+              {t("colors.detail.accessibility")}
             </p>
             <div className="flex gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">On White</span>
+                <span className="text-xs text-gray-500">{t("colors.detail.onWhite")}</span>
                 <ContrastBadge level={color.contrastWhite} />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">On Black</span>
+                <span className="text-xs text-gray-500">{t("colors.detail.onBlack")}</span>
                 <ContrastBadge level={color.contrastBlack} />
               </div>
             </div>
@@ -140,7 +142,7 @@ export function ColorDetailModal({ isOpen, onClose, color, onTagsChanged }: Colo
           {color.tags.length > 0 && (
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                Tags
+                {t("colors.detail.tags")}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {color.tags.map((tag) => (
@@ -159,10 +161,12 @@ export function ColorDetailModal({ isOpen, onClose, color, onTagsChanged }: Colo
               usage-tags overrulen wanneer de scraper het verkeerd had. */}
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-              Use in generated content
+              {t("colors.detail.useInGenerated")}
             </p>
             <div className="space-y-1.5">
-              {TOGGLEABLE_USAGE_TAGS.map(({ key, label, hint }) => {
+              {TOGGLEABLE_USAGE_TAGS.map(({ key, i18n }) => {
+                const label = t(`colors.detail.usageTags.${i18n}`);
+                const hint = t(`colors.detail.usageTags.${i18n}Hint`);
                 const fullTag = `usage:${key}`;
                 const enabled = localTags.includes(fullTag);
                 const busy = savingTag === key;
@@ -206,7 +210,7 @@ export function ColorDetailModal({ isOpen, onClose, color, onTagsChanged }: Colo
           {color.notes && (
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                Notes
+                {t("colors.detail.notes")}
               </p>
               <p className="text-sm text-gray-600">{color.notes}</p>
             </div>

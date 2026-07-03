@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
@@ -224,6 +225,7 @@ export function CanvasWorkshopInProgress({
   onBack,
   onSwitchToApproved
 }: CanvasWorkshopInProgressProps) {
+  const { t } = useTranslation('canvases');
   const [sessionStartTime, setSessionStartTime] = useState<Date>(new Date());
   const [sessionPaused, setSessionPaused] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
@@ -336,7 +338,7 @@ export function CanvasWorkshopInProgress({
             <CardContent className="p-3 flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
               <span className="text-sm font-medium text-green-900 dark:text-green-100">
-                Progress saved successfully
+                {t('inProgress.progressSaved')}
               </span>
             </CardContent>
           </Card>
@@ -351,9 +353,9 @@ export function CanvasWorkshopInProgress({
               <Calendar className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-base">Workshops</CardTitle>
+              <CardTitle className="text-base">{t('inProgress.workshops')}</CardTitle>
               <CardDescription className="text-xs">
-                {workshops.length} scheduled
+                {t('inProgress.scheduled', { count: workshops.length })}
               </CardDescription>
             </div>
           </div>
@@ -394,13 +396,13 @@ export function CanvasWorkshopInProgress({
                   {workshop.hasFacilitator && (
                     <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/30 dark:border-blue-900 dark:text-blue-300">
                       <Users className="h-3 w-3 mr-1" />
-                      Facilitator
+                      {t('status.facilitator')}
                     </Badge>
                   )}
                   {workshop.assets && workshop.assets.length > 0 && (
                     <span className="text-xs text-muted-foreground flex items-center">
                       <Package className="h-3 w-3 mr-1" />
-                      {workshop.assets.length} asset{workshop.assets.length !== 1 ? 's' : ''}
+                      {t('common.assetsCount', { count: workshop.assets.length })}
                     </span>
                   )}
                 </div>
@@ -412,7 +414,7 @@ export function CanvasWorkshopInProgress({
         <div className="px-3 pb-3 border-t pt-3 bg-muted/30">
           <Button variant="outline" size="sm" onClick={onBack}>
             <ChevronLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+            {t('inProgress.backToDashboard')}
           </Button>
         </div>
       </Card>
@@ -442,7 +444,7 @@ export function CanvasWorkshopInProgress({
                       onClick={() => setMode('videoask')}
                     >
                       <Video className="h-3.5 w-3.5 mr-1.5" />
-                      Video Guide
+                      {t('inProgress.videoGuide')}
                     </Button>
                     <Button 
                       variant={mode === 'facilitator' ? 'default' : 'ghost'} 
@@ -453,7 +455,7 @@ export function CanvasWorkshopInProgress({
                       onClick={() => setMode('facilitator')}
                     >
                       <Users className="h-3.5 w-3.5 mr-1.5" />
-                      Facilitator
+                      {t('status.facilitator')}
                     </Button>
                   </div>
                 </div>
@@ -469,8 +471,8 @@ export function CanvasWorkshopInProgress({
                         size="sm" 
                         variant="ghost" 
                         onClick={handlePauseSession} 
-                        className="h-9 w-9 p-0 rounded-full hover:bg-muted" 
-                        title="Pause session"
+                        className="h-9 w-9 p-0 rounded-full hover:bg-muted"
+                        title={t('inProgress.pauseSessionTooltip')}
                       >
                         <Pause className="h-4 w-4" />
                       </Button>
@@ -480,17 +482,17 @@ export function CanvasWorkshopInProgress({
                         className="h-9 px-4"
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Complete
+                        {t('common.complete')}
                       </Button>
                     </>
                   ) : (
-                    <Button 
-                      size="sm" 
-                      onClick={handleResumeSession} 
+                    <Button
+                      size="sm"
+                      onClick={handleResumeSession}
                       className="bg-green-600 hover:bg-green-700 h-9 px-4"
                     >
                       <Play className="h-4 w-4 mr-2" />
-                      Resume Session
+                      {t('inProgress.resumeSession')}
                     </Button>
                   )}
                 </div>
@@ -506,9 +508,9 @@ export function CanvasWorkshopInProgress({
                   <div className="bg-background border-b px-6 py-4">
                     <div className="max-w-6xl mx-auto">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-sm text-muted-foreground">Workshop Steps</h3>
+                        <h3 className="font-semibold text-sm text-muted-foreground">{t('inProgress.workshopSteps')}</h3>
                         <div className="text-xs text-muted-foreground">
-                          {Object.keys(stepResponses).length} of {workshopSteps.length} steps completed
+                          {t('inProgress.stepsCompleted', { completed: Object.keys(stepResponses).length, total: workshopSteps.length })}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 overflow-x-auto pb-2">
@@ -540,7 +542,7 @@ export function CanvasWorkshopInProgress({
                                 </div>
                                 <div className="flex-1 text-left">
                                   <div className={`text-xs font-medium ${isActive ? 'text-primary' : isCompleted ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground'}`}>
-                                    Step {step.id}
+                                    {t('common.stepNumber', { number: step.id })}
                                   </div>
                                   <div className={`text-sm font-semibold line-clamp-1 ${isActive ? 'text-foreground' : 'text-foreground/70'}`}>
                                     {step.title}
@@ -565,7 +567,7 @@ export function CanvasWorkshopInProgress({
                         {/* Step Header */}
                         <div className="flex items-center justify-between pb-2">
                           <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary font-semibold px-3 py-1">
-                            Step {currentStep} of {workshopSteps.length}
+                            {t('common.stepOf', { current: currentStep, total: workshopSteps.length })}
                           </Badge>
                           <span className="text-sm text-muted-foreground font-medium">
                             {currentStepData.duration}
@@ -606,9 +608,9 @@ export function CanvasWorkshopInProgress({
                                 <MessageSquare className="h-5 w-5 text-white" />
                               </div>
                               <div>
-                                <CardTitle className="text-base">Your Response</CardTitle>
+                                <CardTitle className="text-base">{t('inProgress.yourResponse')}</CardTitle>
                                 <CardDescription className="text-xs">
-                                  Document your insights for this step
+                                  {t('inProgress.documentInsights')}
                                 </CardDescription>
                               </div>
                             </div>
@@ -621,7 +623,7 @@ export function CanvasWorkshopInProgress({
                               </label>
                               <Textarea 
                                 className="flex-1 min-h-[250px] resize-none text-base p-4 border-2 focus:ring-2 focus:ring-primary/20" 
-                                placeholder="Share your thoughts, ideas, and key takeaways..."
+                                placeholder={t('inProgress.responsePlaceholder')}
                                 value={stepResponses[currentStep] || ''}
                                 onChange={(e) => handleStepResponseChange(e.target.value)}
                               />
@@ -636,7 +638,7 @@ export function CanvasWorkshopInProgress({
                               className="h-10 px-5"
                             >
                               <ChevronLeft className="h-4 w-4 mr-1" />
-                              Previous
+                              {t('actions.previous')}
                             </Button>
                             <Button 
                               onClick={() => setCurrentStep(prev => Math.min(workshopSteps.length, prev + 1))}
@@ -646,11 +648,11 @@ export function CanvasWorkshopInProgress({
                               {currentStep === workshopSteps.length ? (
                                 <>
                                   <CheckCircle className="h-4 w-4 mr-2" />
-                                  Finish
+                                  {t('actions.finish')}
                                 </>
                               ) : (
                                 <>
-                                  Next Step
+                                  {t('actions.nextStep')}
                                   <ChevronRight className="h-4 w-4 ml-1" />
                                 </>
                               )}
@@ -661,8 +663,8 @@ export function CanvasWorkshopInProgress({
                         {/* Progress Indicator */}
                         <div className="mt-6 space-y-2">
                           <div className="flex justify-between text-xs font-medium text-muted-foreground">
-                            <span>Overall Progress</span>
-                            <span className="text-primary">{Math.round(progressPercentage)}% Complete</span>
+                            <span>{t('inProgress.overallProgress')}</span>
+                            <span className="text-primary">{t('common.percentComplete', { percent: Math.round(progressPercentage) })}</span>
                           </div>
                           <Progress value={progressPercentage} className="h-2 shadow-sm" />
                         </div>
@@ -677,9 +679,9 @@ export function CanvasWorkshopInProgress({
                   <div className="bg-background border-b px-6 py-4">
                     <div className="max-w-6xl mx-auto">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-sm text-muted-foreground">Workshop Steps</h3>
+                        <h3 className="font-semibold text-sm text-muted-foreground">{t('inProgress.workshopSteps')}</h3>
                         <div className="text-xs text-muted-foreground">
-                          {Object.keys(stepResponses).length} of {workshopSteps.length} steps completed
+                          {t('inProgress.stepsCompleted', { completed: Object.keys(stepResponses).length, total: workshopSteps.length })}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 overflow-x-auto pb-2">
@@ -711,7 +713,7 @@ export function CanvasWorkshopInProgress({
                                 </div>
                                 <div className="flex-1 text-left">
                                   <div className={`text-xs font-medium ${isActive ? 'text-primary' : isCompleted ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground'}`}>
-                                    Step {step.id}
+                                    {t('common.stepNumber', { number: step.id })}
                                   </div>
                                   <div className={`text-sm font-semibold line-clamp-1 ${isActive ? 'text-foreground' : 'text-foreground/70'}`}>
                                     {step.title}
@@ -736,7 +738,7 @@ export function CanvasWorkshopInProgress({
                         {/* Step Header */}
                         <div className="flex items-center justify-between pb-2">
                           <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary font-semibold px-3 py-1">
-                            Step {currentStep} of {workshopSteps.length}
+                            {t('common.stepOf', { current: currentStep, total: workshopSteps.length })}
                           </Badge>
                           <span className="text-sm text-muted-foreground font-medium">
                             {currentStepData.duration}
@@ -755,7 +757,7 @@ export function CanvasWorkshopInProgress({
                           <div className="flex items-center justify-between">
                             <h4 className="text-sm font-semibold flex items-center gap-2">
                               <Target className="h-4 w-4 text-primary" />
-                              Presentation Workspace
+                              {t('inProgress.presentationWorkspace')}
                             </h4>
                             <Button
                               variant="outline"
@@ -766,12 +768,12 @@ export function CanvasWorkshopInProgress({
                               {isPresentationExpanded ? (
                                 <>
                                   <Minimize2 className="h-3.5 w-3.5 mr-1.5" />
-                                  Minimize
+                                  {t('actions.minimize')}
                                 </>
                               ) : (
                                 <>
                                   <Maximize2 className="h-3.5 w-3.5 mr-1.5" />
-                                  Expand
+                                  {t('actions.expand')}
                                 </>
                               )}
                             </Button>
@@ -787,10 +789,10 @@ export function CanvasWorkshopInProgress({
                                   <FileText className="h-8 w-8 text-primary" />
                                 </div>
                                 <p className="text-sm font-medium text-muted-foreground">
-                                  Share your screen here for live presentation
+                                  {t('inProgress.shareScreen')}
                                 </p>
                                 <p className="text-xs text-muted-foreground/70">
-                                  Slides, canvas, or supporting materials
+                                  {t('inProgress.shareScreenHint')}
                                 </p>
                               </div>
                             </div>
@@ -804,7 +806,7 @@ export function CanvasWorkshopInProgress({
                                   <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
                                     <Lightbulb className="h-4 w-4 text-amber-600 dark:text-amber-500" />
                                   </div>
-                                  <h4 className="font-semibold text-amber-900 dark:text-amber-100">Facilitator Tips</h4>
+                                  <h4 className="font-semibold text-amber-900 dark:text-amber-100">{t('inProgress.facilitatorTips')}</h4>
                                 </div>
                                 <ul className="space-y-2.5 ml-1">
                                   {currentStepData.facilitatorTips.map((tip, i) => (
@@ -834,9 +836,9 @@ export function CanvasWorkshopInProgress({
                                 <MessageSquare className="h-5 w-5 text-white" />
                               </div>
                               <div>
-                                <CardTitle className="text-base">Workshop Notes</CardTitle>
+                                <CardTitle className="text-base">{t('inProgress.workshopNotes')}</CardTitle>
                                 <CardDescription className="text-xs">
-                                  Document key outcomes for this step
+                                  {t('inProgress.documentOutcomes')}
                                 </CardDescription>
                               </div>
                             </div>
@@ -849,7 +851,7 @@ export function CanvasWorkshopInProgress({
                               </label>
                               <Textarea 
                                 className="flex-1 min-h-[250px] resize-none text-base p-4 border-2 focus:ring-2 focus:ring-primary/20" 
-                                placeholder="Capture insights, decisions, and action items..."
+                                placeholder={t('inProgress.notesPlaceholder')}
                                 value={stepResponses[currentStep] || ''}
                                 onChange={(e) => handleStepResponseChange(e.target.value)}
                               />
@@ -864,7 +866,7 @@ export function CanvasWorkshopInProgress({
                               className="h-10 px-5"
                             >
                               <ChevronLeft className="h-4 w-4 mr-1" />
-                              Previous
+                              {t('actions.previous')}
                             </Button>
                             <Button 
                               onClick={() => setCurrentStep(prev => Math.min(workshopSteps.length, prev + 1))}
@@ -874,11 +876,11 @@ export function CanvasWorkshopInProgress({
                               {currentStep === workshopSteps.length ? (
                                 <>
                                   <CheckCircle className="h-4 w-4 mr-2" />
-                                  Finish
+                                  {t('actions.finish')}
                                 </>
                               ) : (
                                 <>
-                                  Next Step
+                                  {t('actions.nextStep')}
                                   <ChevronRight className="h-4 w-4 ml-1" />
                                 </>
                               )}
@@ -889,8 +891,8 @@ export function CanvasWorkshopInProgress({
                         {/* Progress Indicator */}
                         <div className="mt-6 space-y-2">
                           <div className="flex justify-between text-xs font-medium text-muted-foreground">
-                            <span>Overall Progress</span>
-                            <span className="text-primary">{Math.round(progressPercentage)}% Complete</span>
+                            <span>{t('inProgress.overallProgress')}</span>
+                            <span className="text-primary">{t('common.percentComplete', { percent: Math.round(progressPercentage) })}</span>
                           </div>
                           <Progress value={progressPercentage} className="h-2 shadow-sm" />
                         </div>
@@ -908,9 +910,9 @@ export function CanvasWorkshopInProgress({
                 <PlayCircle className="h-10 w-10 text-muted-foreground/50" />
               </div>
               <div>
-                <h3 className="text-xl font-bold mb-2">Select a Workshop</h3>
+                <h3 className="text-xl font-bold mb-2">{t('inProgress.selectWorkshop')}</h3>
                 <p className="text-muted-foreground">
-                  Choose a workshop from the sidebar to begin your session, watch video guides, or collaborate with your facilitator.
+                  {t('inProgress.selectWorkshopHint')}
                 </p>
               </div>
             </div>
@@ -925,9 +927,9 @@ export function CanvasWorkshopInProgress({
             <div className="h-12 w-12 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
               <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
-            <DialogTitle className="text-center text-xl">Complete Workshop Session?</DialogTitle>
+            <DialogTitle className="text-center text-xl">{t('inProgress.completeDialogTitle')}</DialogTitle>
             <DialogDescription className="text-center">
-              Mark this session as complete and lock the outcomes for review.
+              {t('inProgress.completeDialogDescription')}
             </DialogDescription>
           </DialogHeader>
           
@@ -937,19 +939,19 @@ export function CanvasWorkshopInProgress({
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-900 dark:text-blue-100 space-y-2">
-                    <p className="font-semibold">What happens next:</p>
+                    <p className="font-semibold">{t('inProgress.whatHappensNext')}</p>
                     <ul className="space-y-1.5 text-xs leading-relaxed">
                       <li className="flex items-center gap-2">
                         <div className="h-1 w-1 rounded-full bg-blue-600" />
-                        Session marked as approved and completed
+                        {t('inProgress.next1')}
                       </li>
                       <li className="flex items-center gap-2">
                         <div className="h-1 w-1 rounded-full bg-blue-600" />
-                        Canvas blocks locked for editing
+                        {t('inProgress.next2')}
                       </li>
                       <li className="flex items-center gap-2">
                         <div className="h-1 w-1 rounded-full bg-blue-600" />
-                        Results available for export and review
+                        {t('inProgress.next3')}
                       </li>
                     </ul>
                   </div>
@@ -960,11 +962,11 @@ export function CanvasWorkshopInProgress({
           
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowApprovalDialog(false)}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button onClick={handleConfirmApproval} className="bg-green-600 hover:bg-green-700">
               <CheckCircle className="h-4 w-4 mr-2" />
-              Approve & Complete
+              {t('inProgress.approveComplete')}
             </Button>
           </DialogFooter>
         </DialogContent>

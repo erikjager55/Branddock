@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import ReactMarkdown from 'react-markdown';
 import { AlertTriangle, Check, RefreshCw } from 'lucide-react';
 import { Modal, Button } from '@/components/shared';
@@ -28,6 +30,7 @@ export function BriefRenderView({
   isOpen,
   onClose,
 }: BriefRenderViewProps) {
+  const { t } = useTranslation('campaigns-core');
   const briefQuery = useGenerateBrief(campaignId, { enabled: isOpen });
   const [markedReady, setMarkedReady] = useState(false);
   const [markingError, setMarkingError] = useState<string | null>(null);
@@ -60,7 +63,7 @@ export function BriefRenderView({
       });
       setMarkedReady(true);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error';
+      const msg = err instanceof Error ? err.message : t('brief.unknownError');
       setMarkingError(msg);
     }
   };
@@ -69,7 +72,7 @@ export function BriefRenderView({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Campaign brief"
+      title={t('brief.title')}
       subtitle={campaignTitle}
       size="xl"
       footer={renderFooter({
@@ -78,13 +81,14 @@ export function BriefRenderView({
         canMarkReady: !!briefQuery.data && !briefQuery.isLoading,
         markedReady,
         markingError,
+        t,
       })}
     >
       <div style={{ maxHeight: '70vh' }} className="overflow-y-auto pr-2">
         {briefQuery.isLoading && <LoadingState />}
         {briefQuery.isError && (
           <ErrorState
-            message={briefQuery.error instanceof Error ? briefQuery.error.message : 'Unknown error'}
+            message={briefQuery.error instanceof Error ? briefQuery.error.message : t('brief.unknownError')}
             onRetry={() => briefQuery.refetch()}
           />
         )}
@@ -106,22 +110,24 @@ export function BriefRenderView({
 // ─── States ───────────────────────────────────────────────────
 
 function LoadingState() {
+  const { t } = useTranslation('campaigns-core');
   return (
     <div className="flex items-center justify-center py-16 text-gray-500">
       <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-      <span>Generating brief — deriving weekly themes from the strategy...</span>
+      <span>{t('brief.loading')}</span>
     </div>
   );
 }
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useTranslation('campaigns-core');
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <AlertTriangle className="w-8 h-8 text-amber-500 mb-3" />
-      <p className="text-gray-900 font-medium mb-1">Could not generate brief</p>
+      <p className="text-gray-900 font-medium mb-1">{t('brief.errorTitle')}</p>
       <p className="text-gray-500 mb-4 max-w-md">{message}</p>
       <Button variant="secondary" size="sm" icon={RefreshCw} onClick={onRetry}>
-        Retry
+        {t('actions.retry')}
       </Button>
     </div>
   );
@@ -139,25 +145,26 @@ interface BriefContentProps {
 }
 
 function BriefContent({ markdown, missing, durationMs, weekThemeError, onRegenerate, isRefetching }: BriefContentProps) {
+  const { t } = useTranslation('campaigns-core');
   return (
     <div className="space-y-4">
       {missing.length > 0 && <MissingDataBanner missing={missing} />}
       {weekThemeError && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <strong>Section 5 (calendar):</strong> {weekThemeError}
+          <strong>{t('brief.section5Calendar')}</strong> {weekThemeError}
         </div>
       )}
       <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-        <span>Render time: {(durationMs / 1000).toFixed(2)}s</span>
+        <span>{t('brief.renderTime', { seconds: (durationMs / 1000).toFixed(2) })}</span>
         <button
           type="button"
           onClick={onRegenerate}
           disabled={isRefetching}
           className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-800 disabled:opacity-50"
-          title="Regenerate brief from latest wizard data"
+          title={t('brief.regenerateTooltip')}
         >
           <RefreshCw className={`w-3 h-3 ${isRefetching ? 'animate-spin' : ''}`} />
-          {isRefetching ? 'Regenerating…' : 'Regenerate'}
+          {isRefetching ? t('actions.regenerating') : t('actions.regenerate')}
         </button>
       </div>
       <article className="text-gray-800">
@@ -172,18 +179,19 @@ function MissingDataBanner({
 }: {
   missing: { section: number; fieldName: string; severity: 'warning' | 'error'; message: string }[];
 }) {
+  const { t } = useTranslation('campaigns-core');
   return (
     <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
       <div className="flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
         <div>
           <p className="font-medium text-amber-900 mb-1">
-            {missing.length} field{missing.length === 1 ? '' : 's'} missing in wizard data
+            {t('brief.missingFields', { count: missing.length })}
           </p>
           <ul className="text-amber-800 space-y-0.5">
             {missing.map((m) => (
               <li key={`${m.section}-${m.fieldName}`}>
-                Section {m.section} — <code className="text-xs">{m.fieldName}</code>: {m.message}
+                {t('brief.missingSectionLabel', { section: m.section })}<code className="text-xs">{m.fieldName}</code>: {m.message}
               </li>
             ))}
           </ul>
@@ -244,19 +252,20 @@ interface FooterProps {
   canMarkReady: boolean;
   markedReady: boolean;
   markingError: string | null;
+  t: TFunction;
 }
 
-function renderFooter({ onClose, onMarkReady, canMarkReady, markedReady, markingError }: FooterProps) {
+function renderFooter({ onClose, onMarkReady, canMarkReady, markedReady, markingError, t }: FooterProps) {
   return (
     <div className="flex items-center justify-between w-full">
       <div className="text-xs text-amber-700">{markingError}</div>
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" onClick={onClose}>
-          Close
+          {t('actions.close')}
         </Button>
         {markedReady ? (
           <Button variant="primary" size="sm" icon={Check} disabled>
-            Marked as ready
+            {t('brief.markedReady')}
           </Button>
         ) : (
           <Button
@@ -266,7 +275,7 @@ function renderFooter({ onClose, onMarkReady, canMarkReady, markedReady, marking
             onClick={onMarkReady}
             disabled={!canMarkReady}
           >
-            Ready for client
+            {t('brief.readyForClient')}
           </Button>
         )}
       </div>

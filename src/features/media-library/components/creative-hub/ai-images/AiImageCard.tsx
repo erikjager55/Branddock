@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ImageIcon, Heart, Trash2, FolderPlus } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
@@ -27,6 +28,7 @@ export const AiImageCard = React.memo(function AiImageCard({
   onToggleFavorite,
   onSendToLibrary,
 }: AiImageCardProps) {
+  const { t } = useTranslation('media-library');
   const [imageFailed, setImageFailed] = useState(false);
   const previewUrl = image.fileUrl;
 
@@ -77,7 +79,7 @@ export const AiImageCard = React.memo(function AiImageCard({
               onDelete(image.id);
             }}
             className="p-1 rounded-md bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white transition-all"
-            aria-label={`Delete ${image.name}`}
+            aria-label={t('actions.deleteNamed', { name: image.name })}
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -89,7 +91,7 @@ export const AiImageCard = React.memo(function AiImageCard({
                 onSendToLibrary();
               }}
               className="p-1 rounded-md bg-white/80 text-gray-400 hover:text-teal-600 hover:bg-white transition-all"
-              aria-label={`Save ${image.name} to Media Library`}
+              aria-label={t('aiImages.card.saveAria', { name: image.name })}
             >
               <FolderPlus className="w-3.5 h-3.5" />
             </button>
@@ -104,7 +106,7 @@ export const AiImageCard = React.memo(function AiImageCard({
             onToggleFavorite();
           }}
           className="absolute bottom-2 right-2 p-1 rounded-md bg-white/80 hover:bg-white transition-all"
-          aria-label={image.isFavorite ? `Unfavorite ${image.name}` : `Favorite ${image.name}`}
+          aria-label={image.isFavorite ? t('actions.unfavoriteNamed', { name: image.name }) : t('actions.favoriteNamed', { name: image.name })}
         >
           <Heart
             className={`w-3.5 h-3.5 ${

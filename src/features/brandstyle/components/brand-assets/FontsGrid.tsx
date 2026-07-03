@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Upload } from "lucide-react";
 import { Card, Button } from "@/components/shared";
 import type { StyleguideFontData, FontRole } from "../../types/brandstyle.types";
@@ -20,14 +21,9 @@ interface FontsGridProps {
 }
 
 const ROLE_ORDER: FontRole[] = ["DISPLAY", "UI", "EYEBROW_META", "BODY"];
-const ROLE_HEADER: Record<FontRole, string> = {
-  DISPLAY: "Display type",
-  UI: "UI type",
-  EYEBROW_META: "Eyebrow & meta",
-  BODY: "Body",
-};
 
 export function FontsGrid({ fonts, canEdit, workspaceKitId, reviewSlot }: FontsGridProps) {
+  const { t } = useTranslation("brandstyle");
   const hasAdobeFonts = fonts.some(
     (f) => f.availability === "ADOBE_FONTS" && f.source !== "UPLOADED",
   );
@@ -57,14 +53,14 @@ export function FontsGrid({ fonts, canEdit, workspaceKitId, reviewSlot }: FontsG
     <Card>
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Fonts</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t("fonts.gridTitle")}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Upload font files so previews and exports use the real brand type.
+            {t("fonts.gridSubtitle")}
           </p>
         </div>
         {canEdit && (
           <Button variant="primary" size="sm" icon={Plus} onClick={() => openUpload()}>
-            Upload font
+            {t("fonts.uploadFont")}
           </Button>
         )}
       </div>
@@ -78,10 +74,10 @@ export function FontsGrid({ fonts, canEdit, workspaceKitId, reviewSlot }: FontsG
           <Upload className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium text-amber-900">
-              {missingCount} brand {missingCount === 1 ? "font" : "fonts"} missing their file
+              {t("fonts.missingTitle", { count: missingCount })}
             </p>
             <p className="text-xs text-amber-800 mt-0.5">
-              Previews are using substitute web fonts. Click &quot;Upload&quot; on each card below to add the real files — needed for accurate previews, PDF exports, and AI-generated content.
+              {t("fonts.missingBody")}
             </p>
           </div>
         </div>
@@ -89,7 +85,7 @@ export function FontsGrid({ fonts, canEdit, workspaceKitId, reviewSlot }: FontsG
 
       {fonts.length === 0 ? (
         <div className="py-8 text-center text-sm text-gray-400">
-          No fonts detected yet. Run an analysis or upload fonts manually.
+          {t("fonts.gridEmpty")}
         </div>
       ) : (
         <div className="space-y-6">
@@ -98,7 +94,7 @@ export function FontsGrid({ fonts, canEdit, workspaceKitId, reviewSlot }: FontsG
             return (
               <div key={role}>
                 <h4 className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-3">
-                  {ROLE_HEADER[role]}
+                  {t(`fonts.roles.${role}`)}
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {roleFonts.map((font) => (

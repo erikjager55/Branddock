@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { SeverityBadge } from "./SeverityBadge";
 import type {
@@ -20,15 +21,6 @@ const CATEGORIES: ReviewCategory[] = [
   "AI_TELL",
 ];
 
-const CATEGORY_LABELS: Record<ReviewCategory, string> = {
-  VOICE: "Voice",
-  TERMINOLOGY: "Terminology",
-  CLAIMS: "Claims",
-  STYLE: "Style",
-  BUSINESS: "Business",
-  AI_TELL: "AI tell",
-};
-
 interface ContentReviewResultProps {
   submitData: ReviewSubmitResponse;
   findings: ReviewFinding[];
@@ -46,6 +38,7 @@ export function ContentReviewResult({
   findingsLoading,
   findingsError,
 }: ContentReviewResultProps) {
+  const { t } = useTranslation('brand-alignment');
   const [severityFilter, setSeverityFilter] = useState<ReviewSeverity | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<ReviewCategory | null>(null);
 
@@ -100,7 +93,7 @@ export function ContentReviewResult({
             <EmptyFindingsState />
           ) : filtered.length === 0 ? (
             <div className="rounded-md border border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
-              No findings match the current filters.
+              {t('result.noMatch')}
             </div>
           ) : (
             <FindingsTable findings={filtered} />
@@ -123,6 +116,7 @@ interface ScorePanelProps {
 }
 
 function ScorePanel({ data, actualFindingsCount }: ScorePanelProps) {
+  const { t } = useTranslation('brand-alignment');
   const score = Math.round(data.compositeScore);
   const passed = data.thresholdMet;
   const color = passed ? "text-emerald-600" : score >= 60 ? "text-amber-600" : "text-red-600";
@@ -132,32 +126,32 @@ function ScorePanel({ data, actualFindingsCount }: ScorePanelProps) {
     <div className="rounded-lg border border-gray-200 bg-white p-5 flex items-center gap-5">
       <div className="flex flex-col items-center px-4">
         <div className={`text-4xl font-bold ${color}`}>{score}</div>
-        <div className="text-xs text-gray-500 mt-1">F-VAL score</div>
+        <div className="text-xs text-gray-500 mt-1">{t('result.fvalScore')}</div>
       </div>
       <div className="flex-1 border-l border-gray-200 pl-5 space-y-1.5 text-sm">
         <div className="flex items-center gap-2">
           {passed ? (
             <>
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span className="font-medium text-emerald-700">Threshold met</span>
+              <span className="font-medium text-emerald-700">{t('result.thresholdMet')}</span>
             </>
           ) : (
             <>
               <AlertTriangle className="w-4 h-4 text-amber-600" />
-              <span className="font-medium text-amber-700">Below threshold</span>
+              <span className="font-medium text-amber-700">{t('result.belowThreshold')}</span>
             </>
           )}
         </div>
         <div className="text-gray-600">
-          {findingsCount} finding{findingsCount === 1 ? "" : "s"}
+          {t('findings', { count: findingsCount })}
           {/* Duration alleen tonen als bekend (verse run / externe-GET).
               Preload-internal flows hebben geen duration en moeten geen
               "0.0s" sentinel tonen. */}
           {typeof data.durationMs === "number" && data.durationMs > 0 && (
-            <> · run took {(data.durationMs / 1000).toFixed(1)}s</>
+            <>{t('result.runTook', { seconds: (data.durationMs / 1000).toFixed(1) })}</>
           )}
           {data.scorerVersion && (
-            <> · scorer <code className="text-xs">{data.scorerVersion}</code></>
+            <>{t('result.scorerPrefix')}<code className="text-xs">{data.scorerVersion}</code></>
           )}
         </div>
       </div>
@@ -184,10 +178,11 @@ function FilterPills({
   severityCounts,
   categoryCounts,
 }: FilterPillsProps) {
+  const { t } = useTranslation('brand-alignment');
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-gray-500 mr-1">Severity:</span>
+        <span className="text-xs text-gray-500 mr-1">{t('result.severityLabel')}</span>
         {SEVERITIES.map((s) => (
           <PillButton
             key={s}
@@ -199,11 +194,11 @@ function FilterPills({
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-gray-500 mr-1">Category:</span>
+        <span className="text-xs text-gray-500 mr-1">{t('result.categoryLabel')}</span>
         {CATEGORIES.map((c) => (
           <PillButton
             key={c}
-            label={`${CATEGORY_LABELS[c]} (${categoryCounts[c]})`}
+            label={`${t(`categoryLabels.${c}`)} (${categoryCounts[c]})`}
             active={categoryFilter === c}
             disabled={categoryCounts[c] === 0}
             onClick={() => onCategoryChange(categoryFilter === c ? null : c)}
@@ -247,15 +242,16 @@ function PillButton({
 // ─── Findings table ───────────────────────────────────
 
 function FindingsTable({ findings }: { findings: ReviewFinding[] }) {
+  const { t } = useTranslation('brand-alignment');
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
       <table className="w-full text-sm">
         <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
           <tr>
-            <th scope="col" className="px-3 py-2 w-24">Severity</th>
-            <th scope="col" className="px-3 py-2 w-32">Category</th>
-            <th scope="col" className="px-3 py-2 w-48">Location</th>
-            <th scope="col" className="px-3 py-2">Description</th>
+            <th scope="col" className="px-3 py-2 w-24">{t('result.colSeverity')}</th>
+            <th scope="col" className="px-3 py-2 w-32">{t('result.colCategory')}</th>
+            <th scope="col" className="px-3 py-2 w-48">{t('result.colLocation')}</th>
+            <th scope="col" className="px-3 py-2">{t('result.colDescription')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -265,7 +261,7 @@ function FindingsTable({ findings }: { findings: ReviewFinding[] }) {
                 <SeverityBadge severity={mapSeverity(f.severity)} />
               </td>
               <td className="px-3 py-3 align-top text-gray-700">
-                {CATEGORY_LABELS[f.category] ?? f.category}
+                {t(`categoryLabels.${f.category}`)}
               </td>
               <td className="px-3 py-3 align-top text-gray-600 text-xs">
                 {f.location}
@@ -274,20 +270,20 @@ function FindingsTable({ findings }: { findings: ReviewFinding[] }) {
                 <div>{f.description}</div>
                 {f.suggestion && (
                   <div className="mt-1 text-xs text-emerald-700">
-                    <strong>Suggestion:</strong> {f.suggestion}
+                    <strong>{t('result.suggestion')}</strong> {f.suggestion}
                   </div>
                 )}
                 {(f.beforeText || f.afterText) && (
                   <div className="mt-2 text-xs text-gray-600 grid grid-cols-2 gap-2">
                     {f.beforeText && (
                       <div className="rounded bg-red-50 border border-red-100 px-2 py-1">
-                        <div className="text-red-700 font-medium mb-0.5">Before</div>
+                        <div className="text-red-700 font-medium mb-0.5">{t('result.before')}</div>
                         <div className="text-red-900 break-words whitespace-pre-wrap">{f.beforeText}</div>
                       </div>
                     )}
                     {f.afterText && (
                       <div className="rounded bg-emerald-50 border border-emerald-100 px-2 py-1">
-                        <div className="text-emerald-700 font-medium mb-0.5">After</div>
+                        <div className="text-emerald-700 font-medium mb-0.5">{t('result.after')}</div>
                         <div className="text-emerald-900 break-words whitespace-pre-wrap">{f.afterText}</div>
                       </div>
                     )}
@@ -305,30 +301,33 @@ function FindingsTable({ findings }: { findings: ReviewFinding[] }) {
 // ─── States ───────────────────────────────────────────
 
 function FindingsLoadingState() {
+  const { t } = useTranslation('brand-alignment');
   return (
     <div className="flex items-center justify-center py-10 text-gray-500">
       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-      <span>Loading findings...</span>
+      <span>{t('result.loadingFindings')}</span>
     </div>
   );
 }
 
 function FindingsErrorState({ message }: { message: string }) {
+  const { t } = useTranslation('brand-alignment');
   return (
     <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
       <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-      <span>Failed to load findings: {message}</span>
+      <span>{t('result.loadFindingsError', { message })}</span>
     </div>
   );
 }
 
 function EmptyFindingsState() {
+  const { t } = useTranslation('brand-alignment');
   return (
     <div className="rounded-md border border-emerald-200 bg-emerald-50 px-5 py-6 text-center">
       <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-      <div className="text-sm text-emerald-800 font-medium">No findings</div>
+      <div className="text-sm text-emerald-800 font-medium">{t('result.noFindingsTitle')}</div>
       <div className="text-xs text-emerald-700 mt-1">
-        Content passed F-VAL evaluation without issues.
+        {t('result.noFindingsDescription')}
       </div>
     </div>
   );

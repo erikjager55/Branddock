@@ -8,6 +8,7 @@
 //   3. Edit-distance heatmap (per componentType: total/significant/avgDistance)
 // =============================================================
 
+import { useTranslation } from 'react-i18next';
 import { Loader2, Repeat, FileEdit, Sparkles } from 'lucide-react';
 import {
   useFeedbackLoopMetrics,
@@ -17,6 +18,7 @@ import {
 } from '@/hooks/useFeedbackLoopMetrics';
 
 export function FeedbackLoopPanels() {
+  const { t } = useTranslation('brand-alignment');
   const { data, isPending, isError } = useFeedbackLoopMetrics();
 
   if (isPending) {
@@ -29,7 +31,7 @@ export function FeedbackLoopPanels() {
   if (isError || !data) {
     return (
       <div className="text-sm text-red-500 px-4 py-3">
-        Failed to load feedback-loop metrics
+        {t('feedback.loadError')}
       </div>
     );
   }
@@ -46,20 +48,21 @@ export function FeedbackLoopPanels() {
 // ─── Auto-iterate ──────────────────────────────────────────
 
 function AutoIteratePanel({ metrics }: { metrics: AutoIterateMetrics }) {
+  const { t } = useTranslation('brand-alignment');
   const successRate =
     metrics.totalRuns > 0
       ? Math.round((metrics.successCount / metrics.totalRuns) * 100)
       : 0;
   return (
-    <Card icon={Repeat} title="Auto-iterate (30 days)">
+    <Card icon={Repeat} title={t('feedback.autoIterateTitle')}>
       {metrics.totalRuns === 0 ? (
-        <EmptyState message="No auto-iterate runs yet. Set FEATURE_AUTO_ITERATE=true to get started." />
+        <EmptyState message={t('feedback.autoIterateEmpty')} />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Stat label="Total runs" value={metrics.totalRuns} />
-          <Stat label="Success rate" value={`${successRate}%`} accent={successRate >= 70} />
-          <Stat label="Avg. iterations" value={metrics.avgIterations.toFixed(1)} />
-          <Stat label="Avg. score delta" value={`+${metrics.avgScoreImprovement}`} accent />
+          <Stat label={t('feedback.totalRuns')} value={metrics.totalRuns} />
+          <Stat label={t('feedback.successRate')} value={`${successRate}%`} accent={successRate >= 70} />
+          <Stat label={t('feedback.avgIterations')} value={metrics.avgIterations.toFixed(1)} />
+          <Stat label={t('feedback.avgScoreDelta')} value={`+${metrics.avgScoreImprovement}`} accent />
         </div>
       )}
     </Card>
@@ -73,11 +76,12 @@ function TemplateEffectivenessPanel({
 }: {
   templates: TemplateEffectivenessRow[];
 }) {
+  const { t } = useTranslation('brand-alignment');
   const top5 = templates.slice(0, 5);
   return (
-    <Card icon={Sparkles} title="Top hint templates (effectiveness)">
+    <Card icon={Sparkles} title={t('feedback.templatesTitle')}>
       {top5.length === 0 ? (
-        <EmptyState message="No template applications recorded. Appears after the first auto-iterate run." />
+        <EmptyState message={t('feedback.templatesEmpty')} />
       ) : (
         <div className="space-y-2">
           {top5.map((tpl) => (
@@ -97,7 +101,7 @@ function TemplateEffectivenessPanel({
                 }`}
               >
                 {tpl.avgScoreImprovement > 0 ? '+' : ''}
-                {tpl.avgScoreImprovement.toFixed(1)} score
+                {tpl.avgScoreImprovement.toFixed(1)} {t('feedback.scoreSuffix')}
               </div>
             </div>
           ))}
@@ -110,20 +114,21 @@ function TemplateEffectivenessPanel({
 // ─── Edit-distance ─────────────────────────────────────────
 
 function EditDistancePanel({ rows }: { rows: EditDistanceRow[] }) {
+  const { t } = useTranslation('brand-alignment');
   const totalEdits = rows.reduce((sum, r) => sum + r.totalEdits, 0);
   return (
-    <Card icon={FileEdit} title={`Inline edits per component type (${totalEdits} total)`}>
+    <Card icon={FileEdit} title={t('feedback.editsTitle', { count: totalEdits })}>
       {rows.length === 0 ? (
-        <EmptyState message="No content.edited events recorded yet." />
+        <EmptyState message={t('feedback.editsEmpty')} />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
-                <th className="py-2 pr-4">Component type</th>
-                <th className="py-2 pr-4 text-right">Edits</th>
-                <th className="py-2 pr-4 text-right">Significant (&gt;20%)</th>
-                <th className="py-2 pr-4 text-right">Avg. distance</th>
+                <th className="py-2 pr-4">{t('feedback.colComponentType')}</th>
+                <th className="py-2 pr-4 text-right">{t('feedback.colEdits')}</th>
+                <th className="py-2 pr-4 text-right">{t('feedback.colSignificant')}</th>
+                <th className="py-2 pr-4 text-right">{t('feedback.colAvgDistance')}</th>
               </tr>
             </thead>
             <tbody>

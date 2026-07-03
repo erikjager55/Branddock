@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Modal, Input } from '@/components/shared';
 import { useAddMilestone } from '../../hooks';
 import type { MilestoneStatus } from '../../types/business-strategy.types';
@@ -18,13 +19,10 @@ function calcQuarter(dateStr: string): string {
   return `Q${q} ${d.getFullYear()}`;
 }
 
-const STATUS_OPTIONS: { value: MilestoneStatus; label: string }[] = [
-  { value: 'UPCOMING', label: 'Upcoming' },
-  { value: 'DONE', label: 'Done' },
-  { value: 'FUTURE', label: 'Future' },
-];
+const STATUS_VALUES: MilestoneStatus[] = ['UPCOMING', 'DONE', 'FUTURE'];
 
 export function AddMilestoneModal({ isOpen, onClose, strategyId }: AddMilestoneModalProps) {
+  const { t } = useTranslation('business-strategy');
   const addMilestone = useAddMilestone(strategyId);
 
   const [title, setTitle] = useState('');
@@ -64,28 +62,28 @@ export function AddMilestoneModal({ isOpen, onClose, strategyId }: AddMilestoneM
   const isValid = title.trim().length > 0 && date !== '';
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Milestone">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('milestone.add')}>
       <div className="space-y-4">
         <Input
-          label="Title"
+          label={t('fields.title')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Series A Secured"
+          placeholder={t('milestone.titlePlaceholder')}
         />
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.description')}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional description..."
+            placeholder={t('fields.optionalDescription')}
             rows={2}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
           />
         </div>
 
         <Input
-          label="Date"
+          label={t('milestone.date')}
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
@@ -93,33 +91,33 @@ export function AddMilestoneModal({ isOpen, onClose, strategyId }: AddMilestoneM
 
         {quarter && (
           <p className="text-sm text-gray-500">
-            Quarter: <span className="font-medium text-gray-700">{quarter}</span>
+            {t('milestone.quarterLabel')} <span className="font-medium text-gray-700">{quarter}</span>
           </p>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('milestone.statusLabel')}</label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as MilestoneStatus)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            {STATUS_VALUES.map((value) => (
+              <option key={value} value={value}>{t(`milestone.status.${value}`)}</option>
             ))}
           </select>
         </div>
       </div>
 
       <div className="flex items-center justify-end gap-2 mt-6">
-        <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        <Button variant="ghost" onClick={onClose}>{t('actions.cancel')}</Button>
         <Button
           variant="cta"
           onClick={handleSubmit}
           isLoading={addMilestone.isPending}
           disabled={!isValid}
         >
-          Add Milestone
+          {t('milestone.add')}
         </Button>
       </div>
     </Modal>

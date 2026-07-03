@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button, Input, Select } from "@/components/shared";
 import { useCreateCompetitor } from "../../hooks";
 import { TIER_OPTIONS } from "../../constants/competitor-constants";
@@ -12,6 +13,7 @@ interface ManualEntryTabProps {
 
 /** Manual entry form for adding a competitor */
 export function ManualEntryTab({ onBack, onNavigateToDetail }: ManualEntryTabProps) {
+  const { t } = useTranslation("competitors");
   const createCompetitor = useCreateCompetitor();
   const [name, setName] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
@@ -22,7 +24,7 @@ export function ManualEntryTab({ onBack, onNavigateToDetail }: ManualEntryTabPro
   const handleSubmit = () => {
     setError(null);
     if (!name.trim()) {
-      setError("Please enter a competitor name");
+      setError(t("manual.nameRequired"));
       return;
     }
 
@@ -39,7 +41,7 @@ export function ManualEntryTab({ onBack, onNavigateToDetail }: ManualEntryTabPro
         onNavigateToDetail(created.id);
       })
       .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : "Failed to create competitor";
+        const message = err instanceof Error ? err.message : t("manual.createError");
         setError(message);
       });
   };
@@ -47,35 +49,35 @@ export function ManualEntryTab({ onBack, onNavigateToDetail }: ManualEntryTabPro
   return (
     <div className="max-w-lg space-y-5">
       <Input
-        label="Competitor name"
-        placeholder="e.g. Acme Corp"
+        label={t("manual.nameLabel")}
+        placeholder={t("manual.namePlaceholder")}
         value={name}
         onChange={(e) => setName(e.target.value)}
-        error={!name.trim() && error ? "Name is required" : undefined}
+        error={!name.trim() && error ? t("manual.nameError") : undefined}
       />
 
       <Input
-        label="Website URL (optional)"
-        placeholder="https://competitor.com"
+        label={t("manual.websiteLabel")}
+        placeholder={t("manual.websitePlaceholder")}
         value={websiteUrl}
         onChange={(e) => setWebsiteUrl(e.target.value)}
       />
 
       <Select
-        label="Competitor tier"
+        label={t("manual.tierLabel")}
         value={tier}
         onChange={(v) => setTier(v ?? "DIRECT")}
-        options={TIER_OPTIONS.map((t) => ({ value: t.value, label: t.label }))}
+        options={TIER_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
       />
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Description (optional)
+          {t("manual.descriptionLabel")}
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Brief description of this competitor..."
+          placeholder={t("manual.descriptionPlaceholder")}
           rows={3}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
@@ -89,14 +91,14 @@ export function ManualEntryTab({ onBack, onNavigateToDetail }: ManualEntryTabPro
 
       <div className="flex items-center gap-3 pt-2">
         <Button variant="ghost" onClick={onBack}>
-          Cancel
+          {t("actions.cancel")}
         </Button>
         <Button
           variant="cta"
           onClick={handleSubmit}
           isLoading={createCompetitor.isPending}
         >
-          Create Competitor
+          {t("manual.createCompetitor")}
         </Button>
       </div>
     </div>

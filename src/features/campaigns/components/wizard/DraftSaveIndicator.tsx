@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { AlertCircle, Check, Loader2 } from "lucide-react";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 
@@ -8,17 +10,17 @@ import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
  * Formats a timestamp as a relative phrase ("just now", "2m ago", "1h ago").
  * Designed for the save indicator — resolution is seconds/minutes/hours.
  */
-function formatRelativeTime(iso: string): string {
+function formatRelativeTime(iso: string, t: TFunction): string {
   const savedAt = new Date(iso).getTime();
-  if (Number.isNaN(savedAt)) return "just now";
+  if (Number.isNaN(savedAt)) return t("draftSave.justNow");
   const elapsedMs = Date.now() - savedAt;
   const elapsedSec = Math.max(0, Math.floor(elapsedMs / 1000));
-  if (elapsedSec < 5) return "just now";
-  if (elapsedSec < 60) return `${elapsedSec}s ago`;
+  if (elapsedSec < 5) return t("draftSave.justNow");
+  if (elapsedSec < 60) return t("draftSave.secondsAgo", { seconds: elapsedSec });
   const elapsedMin = Math.floor(elapsedSec / 60);
-  if (elapsedMin < 60) return `${elapsedMin}m ago`;
+  if (elapsedMin < 60) return t("draftSave.minutesAgo", { minutes: elapsedMin });
   const elapsedHr = Math.floor(elapsedMin / 60);
-  return `${elapsedHr}h ago`;
+  return t("draftSave.hoursAgo", { hours: elapsedHr });
 }
 
 /**
@@ -27,6 +29,7 @@ function formatRelativeTime(iso: string): string {
  * Renders nothing when idle (no draft yet, first open).
  */
 export function DraftSaveIndicator() {
+  const { t } = useTranslation("campaigns-wizard");
   const status = useCampaignWizardStore((s) => s.draftSaveStatus);
   const lastSavedAt = useCampaignWizardStore((s) => s.draftLastSavedAt);
   const error = useCampaignWizardStore((s) => s.draftSaveError);
@@ -45,7 +48,7 @@ export function DraftSaveIndicator() {
     return (
       <div className="flex items-center gap-1.5 text-xs text-gray-500">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        <span>Saving…</span>
+        <span>{t("draftSave.saving")}</span>
       </div>
     );
   }
@@ -54,7 +57,11 @@ export function DraftSaveIndicator() {
     return (
       <div className="flex items-center gap-1.5 text-xs text-gray-500">
         <Check className="h-3.5 w-3.5 text-emerald-500" />
-        <span>Saved {lastSavedAt ? formatRelativeTime(lastSavedAt) : "just now"}</span>
+        <span>
+          {t("draftSave.saved", {
+            time: lastSavedAt ? formatRelativeTime(lastSavedAt, t) : t("draftSave.justNow"),
+          })}
+        </span>
       </div>
     );
   }
@@ -67,7 +74,7 @@ export function DraftSaveIndicator() {
       title={error ?? undefined}
     >
       <AlertCircle className="h-3.5 w-3.5" />
-      <span className="max-w-[240px] truncate">{error || "Save failed"}</span>
+      <span className="max-w-[240px] truncate">{error || t("draftSave.saveFailed")}</span>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronUp, ChevronDown, Trash2, GripVertical, Key } from 'lucide-react';
 import { IconPicker, resolveIcon } from './IconPicker';
 import type { StoredDimension } from '@/lib/ai/exploration/config.types';
@@ -30,6 +31,7 @@ export function DimensionCard({
   onMoveDown,
   onRemove,
 }: DimensionCardProps) {
+  const { t } = useTranslation('settings-admin');
   const [editingKey, setEditingKey] = useState(false);
   const Icon = resolveIcon(dimension.icon);
 
@@ -48,11 +50,11 @@ export function DimensionCard({
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-700">
-              {index + 1}. {dimension.title || 'Unnamed dimension'}
+              {index + 1}. {dimension.title || t('dimensionCard.unnamed')}
             </span>
             {hasError && (
               <span className="text-[10px] text-red-500 font-medium bg-red-50 px-1.5 py-0.5 rounded-full">
-                Incomplete
+                {t('dimensionCard.incomplete')}
               </span>
             )}
           </div>
@@ -63,7 +65,7 @@ export function DimensionCard({
             onClick={onMoveUp}
             disabled={index === 0}
             className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-md hover:bg-gray-100"
-            title="Move up"
+            title={t('dimensionCard.moveUp')}
           >
             <ChevronUp className="w-3.5 h-3.5" />
           </button>
@@ -72,7 +74,7 @@ export function DimensionCard({
             onClick={onMoveDown}
             disabled={index === total - 1}
             className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-md hover:bg-gray-100"
-            title="Move down"
+            title={t('dimensionCard.moveDown')}
           >
             <ChevronDown className="w-3.5 h-3.5" />
           </button>
@@ -81,7 +83,7 @@ export function DimensionCard({
             type="button"
             onClick={onRemove}
             className="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded-md hover:bg-red-50"
-            title="Delete"
+            title={t('actions.delete')}
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -94,12 +96,12 @@ export function DimensionCard({
         <div className="grid grid-cols-[1fr_160px] gap-3">
           <div>
             <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">
-              Title
+              {t('dimensionCard.titleLabel')}
             </label>
             <input
               value={dimension.title}
               onChange={(e) => onChange('title', e.target.value)}
-              placeholder="E.g. WHY — Core Belief"
+              placeholder={t('dimensionCard.titlePlaceholder')}
               className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 ${
                 hasError && !dimension.title?.trim() ? 'border-red-300 bg-red-50' : 'border-gray-200'
               }`}
@@ -107,7 +109,7 @@ export function DimensionCard({
           </div>
           <div>
             <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">
-              Icon
+              {t('dimensionCard.iconLabel')}
             </label>
             <IconPicker
               value={dimension.icon}
@@ -119,12 +121,12 @@ export function DimensionCard({
         {/* Question */}
         <div>
           <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">
-            Question
+            {t('dimensionCard.questionLabel')}
           </label>
           <textarea
             value={dimension.question}
             onChange={(e) => onChange('question', e.target.value)}
-            placeholder="The question the AI asks the user for this dimension..."
+            placeholder={t('dimensionCard.questionPlaceholder')}
             rows={3}
             className={`w-full px-3 py-2 text-sm border rounded-lg resize-y focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 ${
               hasError && !dimension.question?.trim() ? 'border-red-300 bg-red-50' : 'border-gray-200'
@@ -135,12 +137,12 @@ export function DimensionCard({
         {/* Follow-up hint */}
         <div>
           <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">
-            Follow-up hint <span className="text-gray-400 normal-case">(optional)</span>
+            {t('dimensionCard.followUpLabel')} <span className="text-gray-400 normal-case">{t('dimensionCard.optional')}</span>
           </label>
           <input
             value={dimension.followUpHint ?? ''}
             onChange={(e) => onChange('followUpHint', e.target.value)}
-            placeholder="Additional instruction for the AI to probe deeper..."
+            placeholder={t('dimensionCard.followUpPlaceholder')}
             className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>
@@ -155,7 +157,7 @@ export function DimensionCard({
                 onChange={(e) => onChange('key', e.target.value)}
                 onBlur={() => setEditingKey(false)}
                 onKeyDown={(e) => { if (e.key === 'Enter') setEditingKey(false); }}
-                placeholder="dim_key"
+                placeholder={t('dimensionCard.keyPlaceholder')}
                 autoFocus
                 className="px-2 py-1 text-[11px] font-mono border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 w-48"
               />
@@ -169,7 +171,7 @@ export function DimensionCard({
                 onClick={() => setEditingKey(true)}
                 className="text-gray-300 hover:text-primary-500 ml-1 cursor-pointer"
               >
-                edit
+                {t('dimensionCard.editKey')}
               </button>
             </div>
           )}

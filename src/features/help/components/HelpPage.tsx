@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { PageShell, PageHeader } from '@/components/ui/layout';
 import { HelpHeader } from './HelpHeader';
 import { HelpSearchInput } from './HelpSearchInput';
@@ -15,12 +16,13 @@ import { PlatformRating } from './PlatformRating';
 import { ResourceLinks } from './ResourceLinks';
 
 export function HelpPage() {
+  const { t } = useTranslation('help');
   return (
     <PageShell maxWidth="5xl">
       <PageHeader
         moduleKey="help"
-        title="Help & Support"
-        subtitle="Find answers, tutorials, and get in touch"
+        title={t('page.title')}
+        subtitle={t('page.subtitle')}
       />
       <div className="space-y-10">
         <HelpHeader />

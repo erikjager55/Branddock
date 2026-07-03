@@ -1,18 +1,16 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { MUSIC_TRACKS, AI_VOICES } from '../../../constants/medium-config-data';
 import { ConfigSection } from './ConfigSection';
 
-const VOICE_TYPES = [
-  { value: 'ai', label: 'AI Voice', description: 'Synthesized voiceover' },
-  { value: 'human', label: 'Human', description: 'Professional voice actor' },
-  { value: 'none', label: 'No Voice', description: 'Music and text only' },
-];
+const VOICE_TYPE_VALUES = ['ai', 'human', 'none'] as const;
 
 /** Audio settings: music track, volume, voice type, AI voice selection */
 export function AudioSettings() {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const configValues = useCanvasStore((s) => s.mediumConfigValues);
   const setConfigValue = useCanvasStore((s) => s.setMediumConfigValue);
 
@@ -21,8 +19,14 @@ export function AudioSettings() {
   const voiceType = (configValues.voiceType as string) ?? 'ai';
   const aiVoiceId = (configValues.aiVoiceId as string) ?? '';
 
+  const voiceTypes = VOICE_TYPE_VALUES.map((value) => ({
+    value,
+    label: t(`audio.voiceType.${value}.label`),
+    description: t(`audio.voiceType.${value}.description`),
+  }));
+
   return (
-    <ConfigSection title="Audio Settings">
+    <ConfigSection title={t('audio.title')}>
       <div
         className="grid gap-6"
         style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}
@@ -30,7 +34,7 @@ export function AudioSettings() {
         {/* Left column: Music */}
         <div className="space-y-4">
           <div>
-            <label htmlFor="audio-music-track" className="text-sm font-medium text-gray-700">Music Track</label>
+            <label htmlFor="audio-music-track" className="text-sm font-medium text-gray-700">{t('audio.musicTrack')}</label>
             <select
               id="audio-music-track"
               value={musicTrack}
@@ -47,7 +51,7 @@ export function AudioSettings() {
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label htmlFor="audio-volume" className="text-sm font-medium text-gray-700">Volume</label>
+              <label htmlFor="audio-volume" className="text-sm font-medium text-gray-700">{t('audio.volume')}</label>
               <span className="text-sm font-medium text-primary">{musicVolume}%</span>
             </div>
             <input
@@ -66,9 +70,9 @@ export function AudioSettings() {
         {/* Right column: Voice */}
         <div className="space-y-4">
           <fieldset>
-            <legend className="text-sm font-medium text-gray-700">Voice Type</legend>
+            <legend className="text-sm font-medium text-gray-700">{t('audio.voiceTypeLegend')}</legend>
             <div className="space-y-2 mt-1.5">
-              {VOICE_TYPES.map((vt) => (
+              {voiceTypes.map((vt) => (
                 <label
                   key={vt.value}
                   className="flex items-start gap-3 cursor-pointer"
@@ -95,14 +99,14 @@ export function AudioSettings() {
           {/* AI Voice selector — conditional on voiceType === 'ai' */}
           {voiceType === 'ai' && (
             <div>
-              <label htmlFor="audio-ai-voice" className="text-sm font-medium text-gray-700">AI Voice</label>
+              <label htmlFor="audio-ai-voice" className="text-sm font-medium text-gray-700">{t('audio.aiVoice')}</label>
               <select
                 id="audio-ai-voice"
                 value={aiVoiceId}
                 onChange={(e) => setConfigValue('aiVoiceId', e.target.value)}
                 className="mt-1.5 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
-                <option value="">Select a voice...</option>
+                <option value="">{t('audio.selectVoice')}</option>
                 {AI_VOICES.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.name} — {v.gender}, {v.tone} ({v.accent})

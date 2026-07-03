@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowUpRight, Zap, Minus } from 'lucide-react';
 import type { ImprovementPoint } from '@/types/brand-alignment';
 
@@ -8,28 +9,29 @@ interface Props {
 }
 
 const IMPACT_CONFIG = {
-  HIGH: { label: 'High Impact', color: '#dc2626', bgColor: '#fef2f2', icon: Zap },
-  MEDIUM: { label: 'Medium Impact', color: '#d97706', bgColor: '#fffbeb', icon: ArrowUpRight },
-  LOW: { label: 'Low Impact', color: '#6b7280', bgColor: '#f9fafb', icon: Minus },
+  HIGH: { color: '#dc2626', bgColor: '#fef2f2', icon: Zap },
+  MEDIUM: { color: '#d97706', bgColor: '#fffbeb', icon: ArrowUpRight },
+  LOW: { color: '#6b7280', bgColor: '#f9fafb', icon: Minus },
 } as const;
 
 const EFFORT_CONFIG = {
-  LOW: { label: 'Quick win', color: '#059669' },
-  MEDIUM: { label: 'Moderate effort', color: '#d97706' },
-  HIGH: { label: 'Significant effort', color: '#dc2626' },
+  LOW: { color: '#059669' },
+  MEDIUM: { color: '#d97706' },
+  HIGH: { color: '#dc2626' },
 } as const;
 
 export function AuditImprovementList({ improvements, onNavigateToAsset }: Props) {
+  const { t } = useTranslation('brand-alignment');
   if (improvements.length === 0) return null;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100">
         <h3 className="text-sm font-semibold text-gray-900">
-          Top Improvements
+          {t('auditImprovements.title')}
         </h3>
         <p className="text-xs text-gray-500 mt-0.5">
-          Prioritized actions to strengthen your brand.
+          {t('auditImprovements.subtitle')}
         </p>
       </div>
 
@@ -38,8 +40,10 @@ export function AuditImprovementList({ improvements, onNavigateToAsset }: Props)
           // Audits persisted before AI-output validation may carry
           // non-enum impact/effort values — fall back to MEDIUM
           // instead of crashing the entire audit view.
-          const impact = IMPACT_CONFIG[imp.impact] ?? IMPACT_CONFIG.MEDIUM;
-          const effort = EFFORT_CONFIG[imp.effort] ?? EFFORT_CONFIG.MEDIUM;
+          const impactKey = IMPACT_CONFIG[imp.impact] ? imp.impact : 'MEDIUM';
+          const effortKey = EFFORT_CONFIG[imp.effort] ? imp.effort : 'MEDIUM';
+          const impact = IMPACT_CONFIG[impactKey];
+          const effort = EFFORT_CONFIG[effortKey];
           const ImpactIcon = impact.icon;
 
           return (
@@ -74,7 +78,7 @@ export function AuditImprovementList({ improvements, onNavigateToAsset }: Props)
                         className="text-xs font-medium"
                         style={{ color: impact.color }}
                       >
-                        {impact.label}
+                        {t(`auditImprovements.impact.${impactKey}`)}
                       </span>
                     </div>
 
@@ -83,7 +87,7 @@ export function AuditImprovementList({ improvements, onNavigateToAsset }: Props)
                       className="text-xs"
                       style={{ color: effort.color }}
                     >
-                      {effort.label}
+                      {t(`auditImprovements.effort.${effortKey}`)}
                     </span>
 
                     {/* Asset link */}

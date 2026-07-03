@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { Database, FileText, Users, CalendarDays } from "lucide-react";
 import { ProgressBar } from "@/components/shared";
 import { CardLockIndicator } from "@/components/lock";
@@ -17,14 +19,9 @@ interface StrategicCampaignCardProps {
   onDelete: () => void;
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export function StrategicCampaignCard({ campaign, onClick, onArchive, onDelete }: StrategicCampaignCardProps) {
+  const { t } = useTranslation("campaigns-overview");
+  const { formatDate } = useFormat();
   const [deleteTarget, setDeleteTarget] = useState(false);
   const progress = campaign.deliverableCount > 0
     ? Math.round((campaign.completedDeliverableCount / campaign.deliverableCount) * 100)
@@ -93,11 +90,11 @@ export function StrategicCampaignCard({ campaign, onClick, onArchive, onDelete }
         <div className="flex items-center gap-4 mb-4 text-xs text-gray-500">
           <span className="flex items-center gap-1">
             <Database className="h-3.5 w-3.5" />
-            {campaign.knowledgeAssetCount} assets
+            {t("card.assets", { count: campaign.knowledgeAssetCount })}
           </span>
           <span className="flex items-center gap-1">
             <FileText className="h-3.5 w-3.5" />
-            {campaign.deliverableCount} deliverables
+            {t("card.deliverables", { count: campaign.deliverableCount })}
           </span>
           {campaign.teamMemberCount > 0 && (
             <span className="flex items-center gap-1">
@@ -121,14 +118,14 @@ export function StrategicCampaignCard({ campaign, onClick, onArchive, onDelete }
             {campaign.startDate && (
               <span className="flex items-center gap-1 text-teal-600">
                 <CalendarDays className="w-3 h-3" />
-                {formatDate(campaign.startDate)}
-                {campaign.endDate && ` — ${formatDate(campaign.endDate)}`}
+                {formatDate(campaign.startDate, { month: "short", day: "numeric" })}
+                {campaign.endDate && ` — ${formatDate(campaign.endDate, { month: "short", day: "numeric" })}`}
               </span>
             )}
-            <span>Updated {new Date(campaign.updatedAt).toLocaleDateString()}</span>
+            <span>{t("card.updated", { date: formatDate(campaign.updatedAt) })}</span>
           </div>
           <span className="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-            View Campaign →
+            {t("card.viewCampaign")}
           </span>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -28,6 +29,7 @@ interface BrandValuesCanvasProps {
 }
 
 export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, isLocked = false }: BrandValuesCanvasProps) {
+  const { t } = useTranslation('canvases');
   const [isEditing, setIsEditing] = useState(false);
   
   // Use session data if available, otherwise fall back to default data
@@ -93,21 +95,21 @@ export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, 
       <CardContent className="p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h3 className="text-xl font-semibold mb-2">Core Values Canvas</h3>
-            <p className="text-muted-foreground">Your organization's fundamental beliefs and principles</p>
+            <h3 className="text-xl font-semibold mb-2">{t('values.title')}</h3>
+            <p className="text-muted-foreground">{t('values.subtitle')}</p>
             {sessionData?.sources && (
               <p className="text-xs text-blue-600 mt-1">
-                Data from: {sessionData.sources.join(', ')}
+                {t('common.dataFrom', { sources: sessionData.sources.join(', ') })}
               </p>
             )}
           </div>
           <div className="flex items-center space-x-2">
             <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-              Completed
+              {t('status.completed')}
             </Badge>
             {sessionData && (
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                Session Data Applied
+                {t('status.sessionDataApplied')}
               </Badge>
             )}
           </div>
@@ -124,7 +126,7 @@ export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, 
                   </div>
                   <div>
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{value.name}</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Core Value #{index + 1}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('values.coreValueNumber', { number: index + 1 })}</p>
                   </div>
                 </div>
                 
@@ -134,7 +136,7 @@ export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, 
                   <div>
                     <h5 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center">
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Behaviors & Actions
+                      {t('values.behaviorsActions')}
                     </h5>
                     <ul className="space-y-2">
                       {value.behaviors.map((behavior: string, behaviorIndex: number) => (
@@ -150,7 +152,7 @@ export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, 
                 {value.frequency && value.frequency > 1 && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                      Confirmed in {value.frequency} sessions
+                      {t('values.confirmedInSessions', { count: value.frequency })}
                     </Badge>
                   </div>
                 )}
@@ -164,23 +166,23 @@ export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, 
           <DialogTrigger asChild>
             <Button variant="outline" className="w-full" disabled={isLocked}>
               <Edit className="h-4 w-4 mr-2" />
-              {isLocked ? 'Locked - Cannot Edit' : 'Edit Core Values'}
+              {isLocked ? t('status.lockedCannotEdit') : t('values.editButton')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Edit Core Values</DialogTitle>
+              <DialogTitle>{t('values.editTitle')}</DialogTitle>
               <DialogDescription>
-                Define your organization's fundamental beliefs and guiding principles
+                {t('values.editDescription')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
               {editData.values.map((value: BrandValueItem, index: number) => (
                 <div key={index} className="border rounded-lg p-4">
-                  <h4 className="font-semibold mb-4">Value #{index + 1}</h4>
+                  <h4 className="font-semibold mb-4">{t('values.valueNumber', { number: index + 1 })}</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Value Name</label>
+                      <label className="text-sm font-medium mb-2 block">{t('values.nameLabel')}</label>
                       <Textarea
                         value={value.name}
                         onChange={(e) => {
@@ -188,12 +190,12 @@ export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, 
                           newValues[index] = {...newValues[index], name: e.target.value};
                           setEditData({...editData, values: newValues});
                         }}
-                        placeholder="e.g., Innovation"
+                        placeholder={t('values.namePlaceholder')}
                         className="min-h-12"
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Description</label>
+                      <label className="text-sm font-medium mb-2 block">{t('values.descriptionLabel')}</label>
                       <Textarea
                         value={value.description}
                         onChange={(e) => {
@@ -201,13 +203,13 @@ export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, 
                           newValues[index] = {...newValues[index], description: e.target.value};
                           setEditData({...editData, values: newValues});
                         }}
-                        placeholder="What does this value mean to your organization?"
+                        placeholder={t('values.descriptionPlaceholder')}
                         className="min-h-16"
                       />
                     </div>
                   </div>
                   <div className="mt-4">
-                    <label className="text-sm font-medium mb-2 block">Behaviors & Actions (one per line)</label>
+                    <label className="text-sm font-medium mb-2 block">{t('values.behaviorsLabel')}</label>
                     <Textarea
                       value={value.behaviors?.join('\n') || ''}
                       onChange={(e) => {
@@ -215,7 +217,7 @@ export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, 
                         newValues[index] = {...newValues[index], behaviors: e.target.value.split('\n').filter(b => b.trim())};
                         setEditData({...editData, values: newValues});
                       }}
-                      placeholder="How does this value show up in daily behavior?"
+                      placeholder={t('values.behaviorsPlaceholder')}
                       className="min-h-20"
                     />
                   </div>
@@ -232,18 +234,18 @@ export function BrandValuesCanvas({ onRerender, onEdit, assetData, sessionData, 
                     });
                   }}
                 >
-                  Add Another Value
+                  {t('values.addAnother')}
                 </Button>
               </div>
             </div>
             <div className="flex justify-end space-x-2 mt-6">
               <Button variant="outline" onClick={handleCancel}>
                 <X className="h-4 w-4 mr-2" />
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button onClick={handleSave}>
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                {t('actions.saveChanges')}
               </Button>
             </div>
           </DialogContent>

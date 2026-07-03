@@ -1,46 +1,39 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageCircle, Mail, Phone } from 'lucide-react';
 import { useHelpStore } from '@/stores/useHelpStore';
 
 const contactMethods = [
   {
     id: 'live-chat',
-    title: 'Live Chat',
-    subtitle: 'Chat with our support team',
-    responseTime: '~1 min response',
     icon: MessageCircle,
     iconBg: 'bg-emerald-100',
     iconColor: 'text-emerald-600',
-    badge: { label: 'Online', color: 'bg-emerald-500' },
+    hasBadge: true,
     action: 'chat' as const,
   },
   {
     id: 'email',
-    title: 'Email Support',
-    subtitle: 'Send us a detailed message',
-    responseTime: '~4 hour response',
     icon: Mail,
     iconBg: 'bg-blue-100',
     iconColor: 'text-blue-600',
-    badge: null,
+    hasBadge: false,
     action: null,
   },
   {
     id: 'call',
-    title: 'Schedule a Call',
-    subtitle: 'Book a time slot',
-    responseTime: 'Book a time slot',
     icon: Phone,
     iconBg: 'bg-purple-100',
     iconColor: 'text-purple-600',
-    badge: null,
+    hasBadge: false,
     action: null,
   },
 ] as const;
 
 export function ContactOptions() {
+  const { t } = useTranslation('help');
   const openChat = useHelpStore((s) => s.openChat);
 
   return (
@@ -61,16 +54,18 @@ export function ContactOptions() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-900">
-                {method.title}
+                {t(`contact.methods.${method.id}.title`)}
               </span>
-              {method.badge && (
+              {method.hasBadge && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium text-white bg-emerald-500">
                   <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  {method.badge.label}
+                  {t('contact.methods.live-chat.badge')}
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">{method.responseTime}</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {t(`contact.methods.${method.id}.responseTime`)}
+            </p>
           </div>
         </button>
       ))}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Briefcase, Trash2, Loader2, Plus } from 'lucide-react';
 
 interface WorkspaceItem {
@@ -11,6 +12,7 @@ interface WorkspaceItem {
 }
 
 export function WorkspacesTab() {
+  const { t } = useTranslation('settings-misc');
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,11 +42,7 @@ export function WorkspacesTab() {
   }, [loadWorkspaces]);
 
   const handleDelete = async (ws: WorkspaceItem) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete "${ws.name}"?\n\nAll brand assets, personas, campaigns and other data in this workspace will be permanently deleted.`
-      )
-    ) {
+    if (!window.confirm(t('workspaces.deleteConfirm', { name: ws.name }))) {
       return;
     }
 
@@ -60,7 +58,7 @@ export function WorkspacesTab() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? 'Failed to delete workspace');
+        setError(data.error ?? t('workspaces.deleteFailed'));
         return;
       }
 
@@ -71,7 +69,7 @@ export function WorkspacesTab() {
 
       await loadWorkspaces();
     } catch {
-      setError('Failed to delete workspace');
+      setError(t('workspaces.deleteFailed'));
     } finally {
       setDeletingId(null);
     }
@@ -93,7 +91,7 @@ export function WorkspacesTab() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? 'Failed to create workspace');
+        setError(data.error ?? t('workspaces.createFailed'));
         return;
       }
 
@@ -101,7 +99,7 @@ export function WorkspacesTab() {
       setShowCreate(false);
       await loadWorkspaces();
     } catch {
-      setError('Failed to create workspace');
+      setError(t('workspaces.createFailed'));
     } finally {
       setIsCreating(false);
     }
@@ -118,9 +116,9 @@ export function WorkspacesTab() {
   return (
     <div className="p-6 max-w-3xl space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Workspaces</h2>
+        <h2 className="text-lg font-semibold">{t('workspaces.heading')}</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Manage workspaces in your organization. Each workspace has its own brand assets, personas, campaigns and other data.
+          {t('workspaces.description')}
         </p>
       </div>
 
@@ -132,14 +130,14 @@ export function WorkspacesTab() {
 
       <div className="flex items-center justify-between">
         <span className="text-sm text-gray-500">
-          {workspaces.length} workspace{workspaces.length !== 1 ? 's' : ''}
+          {t('workspaces.workspaceCount', { count: workspaces.length })}
         </span>
         <button
           onClick={() => setShowCreate(!showCreate)}
           className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
         >
           <Plus className="h-4 w-4" />
-          New Workspace
+          {t('workspaces.newWorkspace')}
         </button>
       </div>
 
@@ -147,14 +145,14 @@ export function WorkspacesTab() {
         <form onSubmit={handleCreate} className="flex items-end gap-3 rounded-lg border border-gray-200 p-4 bg-gray-50">
           <div className="flex-1 space-y-1">
             <label htmlFor="ws-name" className="text-sm font-medium text-gray-700">
-              Workspace name
+              {t('workspaces.nameLabel')}
             </label>
             <input
               id="ws-name"
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="e.g. Client Name"
+              placeholder={t('workspaces.namePlaceholder')}
               autoFocus
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
             />
@@ -165,14 +163,14 @@ export function WorkspacesTab() {
             className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
           >
             {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
-            Create
+            {t('workspaces.create')}
           </button>
           <button
             type="button"
             onClick={() => { setShowCreate(false); setNewName(''); }}
             className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            {t('workspaces.cancel')}
           </button>
         </form>
       )}
@@ -192,7 +190,7 @@ export function WorkspacesTab() {
                   <span className="font-medium text-sm">{ws.name}</span>
                   {ws.id === activeWorkspaceId && (
                     <span className="inline-flex items-center rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
-                      Active
+                      {t('workspaces.active')}
                     </span>
                   )}
                 </div>
@@ -206,8 +204,8 @@ export function WorkspacesTab() {
               onClick={() => handleDelete(ws)}
               title={
                 workspaces.length <= 1
-                  ? 'Cannot delete the last workspace'
-                  : `Delete ${ws.name}`
+                  ? t('workspaces.cannotDeleteLast')
+                  : t('workspaces.deleteTooltip', { name: ws.name })
               }
             >
               {deletingId === ws.id ? (

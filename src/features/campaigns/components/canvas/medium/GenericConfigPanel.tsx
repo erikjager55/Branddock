@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { MEDIUM_CATEGORY_CONFIGS } from '../../../constants/medium-config-registry';
 import type { MediumCategory } from '../../../types/medium-config.types';
@@ -21,6 +22,7 @@ interface GenericConfigPanelProps {
 
 /** Registry-driven config panel for non-video categories */
 export function GenericConfigPanel({ category, onAdvance, deliverableId }: GenericConfigPanelProps) {
+  const { t } = useTranslation('campaigns-canvas-medium');
   const config = MEDIUM_CATEGORY_CONFIGS[category];
   const contentType = useCanvasStore((s) => s.contentType);
   const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
@@ -99,15 +101,15 @@ export function GenericConfigPanel({ category, onAdvance, deliverableId }: Gener
           category registry because it's specific to one content-type
           (linkedin-poll), not the whole social-post category. */}
       {isLinkedInPoll && (
-        <ConfigSection title="Poll Settings">
+        <ConfigSection title={t('poll.title')}>
           <div>
-            <label className="text-xs font-medium text-gray-700 mb-1.5 block">Poll duration</label>
+            <label className="text-xs font-medium text-gray-700 mb-1.5 block">{t('poll.duration')}</label>
             <div className="flex gap-1.5 flex-wrap">
               {[
-                { value: '1d', label: '1 day' },
-                { value: '3d', label: '3 days' },
-                { value: '1w', label: '1 week' },
-                { value: '2w', label: '2 weeks' },
+                { value: '1d', labelKey: 'poll.options.oneDay' },
+                { value: '3d', labelKey: 'poll.options.threeDays' },
+                { value: '1w', labelKey: 'poll.options.oneWeek' },
+                { value: '2w', labelKey: 'poll.options.twoWeeks' },
               ].map((opt) => {
                 const active = (pollDuration ?? '1w') === opt.value;
                 return (
@@ -120,13 +122,13 @@ export function GenericConfigPanel({ category, onAdvance, deliverableId }: Gener
                     }`}
                     style={active ? { backgroundColor: '#0d9488' } : undefined}
                   >
-                    {opt.label}
+                    {t(opt.labelKey)}
                   </button>
                 );
               })}
             </div>
             <p className="text-[11px] text-gray-500 mt-1.5">
-              LinkedIn limits polls to these four durations. 1 week is the platform default and typically performs best.
+              {t('poll.help')}
             </p>
           </div>
         </ConfigSection>

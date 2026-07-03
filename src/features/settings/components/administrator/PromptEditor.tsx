@@ -1,7 +1,9 @@
 'use client';
 
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RotateCcw } from 'lucide-react';
+import { useFormat } from '@/lib/ui-i18n/format';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -40,6 +42,8 @@ export function PromptEditor({
   onLoadDefault,
   maxLength = 20000,
 }: PromptEditorProps) {
+  const { t } = useTranslation('settings-admin');
+  const { formatNumber } = useFormat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const selectionRef = useRef({ start: 0, end: 0 });
 
@@ -79,7 +83,7 @@ export function PromptEditor({
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-800">{label}</span>
               {required && !value.trim() && (
-                <span className="text-[10px] text-red-400 font-medium">required</span>
+                <span className="text-[10px] text-red-400 font-medium">{t('promptEditor.required')}</span>
               )}
             </div>
             <p className="text-xs text-gray-500 mt-0.5">{description}</p>
@@ -91,7 +95,7 @@ export function PromptEditor({
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <RotateCcw className="w-3 h-3" />
-              Default
+              {t('promptEditor.default')}
             </button>
           )}
         </div>
@@ -132,7 +136,7 @@ export function PromptEditor({
       {/* Footer with character count */}
       <div className="px-4 py-1.5 border-t border-gray-100 bg-gray-50 flex justify-end">
         <span className={`text-[10px] ${value.length > maxLength * 0.9 ? 'text-amber-500' : 'text-gray-400'}`}>
-          {value.length.toLocaleString()} / {maxLength.toLocaleString()}
+          {formatNumber(value.length)} / {formatNumber(maxLength)}
         </span>
       </div>
     </div>

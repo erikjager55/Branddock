@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { ChevronDown, ChevronRight, GripVertical, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Badge, ProgressBar } from '@/components/shared';
 import { OBJECTIVE_STATUS_COLORS, METRIC_FORMATTERS } from '../../constants/strategy-types';
 import { KeyResultItemComponent } from './KeyResultItemComponent';
@@ -33,6 +34,7 @@ export function ObjectiveCard({
   onDragStart,
   onDragEnd,
 }: ObjectiveCardProps) {
+  const { t } = useTranslation('business-strategy');
   const [isExpanded, setIsExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -89,13 +91,13 @@ export function ObjectiveCard({
                 onClick={() => { setShowMenu(false); onEdit?.(); }}
                 className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
               >
-                <Pencil className="w-3.5 h-3.5" /> Edit
+                <Pencil className="w-3.5 h-3.5" /> {t('actions.edit')}
               </button>
               <button
                 onClick={() => { setShowMenu(false); onDelete?.(); }}
                 className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
               >
-                <Trash2 className="w-3.5 h-3.5" /> Delete
+                <Trash2 className="w-3.5 h-3.5" /> {t('actions.delete')}
               </button>
             </div>
           )}
@@ -114,9 +116,9 @@ export function ObjectiveCard({
           <ProgressBar value={progressPct} color="emerald" size="sm" />
         </div>
         <div className="flex items-center gap-3 text-xs text-gray-500">
-          <span>Start: {formatter(objective.startValue)}</span>
-          <span className="font-medium text-gray-900">Current: {formatter(objective.currentValue)}</span>
-          <span>Target: {formatter(objective.targetValue)}</span>
+          <span>{t('objectiveCard.start')} {formatter(objective.startValue)}</span>
+          <span className="font-medium text-gray-900">{t('objectiveCard.current')} {formatter(objective.currentValue)}</span>
+          <span>{t('objectiveCard.target')} {formatter(objective.targetValue)}</span>
         </div>
       </div>
 
@@ -139,7 +141,7 @@ export function ObjectiveCard({
             ) : (
               <ChevronRight className="w-4 h-4" />
             )}
-            Key Results ({objective.keyResults.length})
+            {t('objectiveCard.keyResultsCount', { count: objective.keyResults.length })}
           </button>
 
           {isExpanded && (

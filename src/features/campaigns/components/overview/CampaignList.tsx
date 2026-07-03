@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useFormat } from "@/lib/ui-i18n/format";
 import { EmptyState, ProgressBar } from "@/components/shared";
 import { CalendarDays, Megaphone } from "lucide-react";
 import { CampaignOverflowMenu } from "./CampaignOverflowMenu";
@@ -17,13 +19,6 @@ interface CampaignListProps {
   onDelete: (id: string) => void;
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export function CampaignList({
   campaigns,
   isLoading,
@@ -31,6 +26,8 @@ export function CampaignList({
   onArchive,
   onDelete,
 }: CampaignListProps) {
+  const { t } = useTranslation("campaigns-overview");
+  const { formatDate } = useFormat();
   const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
@@ -48,8 +45,8 @@ export function CampaignList({
     return (
       <EmptyState
         icon={Megaphone}
-        title="No campaigns found"
-        description="Create your first campaign or quick content to get started."
+        title={t("empty.title")}
+        description={t("empty.description")}
       />
     );
   }
@@ -73,12 +70,12 @@ export function CampaignList({
         }}
       >
         <div />
-        <div>Campaign</div>
-        <div>Type</div>
-        <div>Readiness</div>
-        <div>Progress</div>
-        <div>Content</div>
-        <div>Scheduled</div>
+        <div>{t("list.columns.campaign")}</div>
+        <div>{t("list.columns.type")}</div>
+        <div>{t("list.columns.readiness")}</div>
+        <div>{t("list.columns.progress")}</div>
+        <div>{t("list.columns.content")}</div>
+        <div>{t("list.columns.scheduled")}</div>
         <div />
       </div>
 
@@ -154,7 +151,7 @@ export function CampaignList({
               {campaign.startDate ? (
                 <span className="inline-flex items-center gap-1 text-xs text-teal-600">
                   <CalendarDays className="w-3 h-3" />
-                  {formatDate(campaign.startDate)}
+                  {formatDate(campaign.startDate, { month: "short", day: "numeric" })}
                 </span>
               ) : (
                 <span className="text-xs text-gray-400">—</span>

@@ -1,6 +1,7 @@
 'use client';
 
 import { ShoppingCart, Zap, Scale, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 import { RepeatableListInput } from '../create/RepeatableListInput';
 
@@ -11,6 +12,7 @@ interface BuyingTriggersSectionProps {
 }
 
 export function BuyingTriggersSection({ persona, isEditing, onUpdate }: BuyingTriggersSectionProps) {
+  const { t } = useTranslation('personas');
   const triggers = persona.buyingTriggers ?? [];
   const criteria = persona.decisionCriteria ?? [];
 
@@ -25,8 +27,8 @@ export function BuyingTriggersSection({ persona, isEditing, onUpdate }: BuyingTr
             <ShoppingCart className="w-5 h-5 text-orange-600" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Buying Triggers & Decision Criteria</h2>
-            <p className="text-sm text-gray-500">What triggers action and influences decisions</p>
+            <h2 className="text-base font-semibold text-gray-900">{t('buying.title')}</h2>
+            <p className="text-sm text-gray-500">{t('buying.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -37,14 +39,14 @@ export function BuyingTriggersSection({ persona, isEditing, onUpdate }: BuyingTr
             <div className="flex items-center gap-1.5 mb-3">
               <Zap className="w-4 h-4 text-orange-500" />
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Buying Triggers
+                {t('buying.buyingTriggers')}
               </p>
             </div>
             {isEditing ? (
               <RepeatableListInput
                 items={triggers}
                 onChange={(items) => onUpdate({ buyingTriggers: items })}
-                placeholder="Add a trigger..."
+                placeholder={t('buying.triggerPlaceholder')}
               />
             ) : (
               <ul className="space-y-2">
@@ -63,14 +65,14 @@ export function BuyingTriggersSection({ persona, isEditing, onUpdate }: BuyingTr
             <div className="flex items-center gap-1.5 mb-3">
               <Scale className="w-4 h-4 text-amber-500" />
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Decision Criteria
+                {t('buying.decisionCriteria')}
               </p>
             </div>
             {isEditing ? (
               <RepeatableListInput
                 items={criteria}
                 onChange={(items) => onUpdate({ decisionCriteria: items })}
-                placeholder="Add a criterion..."
+                placeholder={t('buying.criterionPlaceholder')}
               />
             ) : (
               <ul className="space-y-2">
@@ -90,12 +92,12 @@ export function BuyingTriggersSection({ persona, isEditing, onUpdate }: BuyingTr
         <div className="flex items-center gap-4 text-xs text-gray-500">
           <span className="inline-flex items-center gap-1">
             <Zap className="w-3.5 h-3.5 text-gray-400" />
-            {triggers.length} triggers
+            {t('buying.triggersCount', { count: triggers.length })}
           </span>
           <span>&middot;</span>
           <span className="inline-flex items-center gap-1">
             <Scale className="w-3.5 h-3.5 text-gray-400" />
-            {criteria.length} criteria
+            {t('buying.criteriaCount', { count: criteria.length })}
           </span>
         </div>
       </div>

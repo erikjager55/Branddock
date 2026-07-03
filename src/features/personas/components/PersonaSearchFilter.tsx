@@ -2,23 +2,26 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Filter } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { SearchInput } from "@/components/shared";
 import { usePersonasOverviewStore } from "../stores/usePersonasOverviewStore";
 
-const FILTER_OPTIONS = [
-  { value: "all", label: "All" },
-  { value: "ready", label: "Ready" },
-  { value: "needs_work", label: "Needs Work" },
+const FILTER_OPTIONS: { value: string; labelKey: string }[] = [
+  { value: "all", labelKey: "filter.all" },
+  { value: "ready", labelKey: "filter.ready" },
+  { value: "needs_work", labelKey: "filter.needsWork" },
 ];
 
 export function PersonaSearchFilter() {
+  const { t } = useTranslation('personas');
   const { searchQuery, filter, setSearchQuery, setFilter } =
     usePersonasOverviewStore();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const activeLabel =
-    FILTER_OPTIONS.find((o) => o.value === filter)?.label ?? "All";
+  const activeLabel = t(
+    FILTER_OPTIONS.find((o) => o.value === filter)?.labelKey ?? "filter.all",
+  );
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -36,7 +39,7 @@ export function PersonaSearchFilter() {
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="Search personas..."
+          placeholder={t('search.placeholder')}
         />
       </div>
       <div className="relative" ref={ref}>
@@ -64,7 +67,7 @@ export function PersonaSearchFilter() {
                   setOpen(false);
                 }}
               >
-                {opt.label}
+                {t(opt.labelKey)}
               </button>
             ))}
           </div>

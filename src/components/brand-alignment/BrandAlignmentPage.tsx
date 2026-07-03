@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   CircleDot,
   RefreshCw,
@@ -18,6 +19,7 @@ import {
   Button,
 } from '@/components/shared';
 import { PageShell, PageHeader } from '@/components/ui/layout';
+import { useFormat, type UiFormatters } from '@/lib/ui-i18n/format';
 import {
   useBrandAlignment,
   useAlignmentModules,
@@ -51,7 +53,7 @@ import { BrandclawObservationsTab } from '@/features/brand-alignment/components/
 
 // ─── Relative time helper ───────────────────────────────────
 
-function formatLastScan(dateStr: string): string {
+function formatLastScan(dateStr: string, formatDate: UiFormatters['formatDate']): string {
   const now = new Date();
   const date = new Date(dateStr);
   const diffMs = now.getTime() - date.getTime();
@@ -61,7 +63,7 @@ function formatLastScan(dateStr: string): string {
   if (diffHours < 1) return 'Less than an hour ago';
   if (diffHours < 24) return `${diffHours} hours ago`;
   if (diffDays < 7) return `${diffDays} days ago`;
-  return date.toLocaleDateString('en-US', {
+  return formatDate(date, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -71,6 +73,8 @@ function formatLastScan(dateStr: string): string {
 // ─── Main component ─────────────────────────────────────────
 
 export function BrandAlignmentPage() {
+  const { t } = useTranslation('brand-alignment');
+  const { formatDate } = useFormat();
   const { setActiveSection } = useUIState();
 
   // Context hooks — server data
@@ -109,7 +113,7 @@ export function BrandAlignmentPage() {
   const hasScan = overview?.hasScan ?? false;
 
   const lastScanned = scan?.completedAt
-    ? formatLastScan(scan.completedAt)
+    ? formatLastScan(scan.completedAt, formatDate)
     : null;
 
   // Handlers
@@ -151,7 +155,7 @@ export function BrandAlignmentPage() {
       <PageShell>
         <div data-testid="skeleton-loader" className="flex items-center justify-center py-32 text-gray-400 gap-2">
           <Loader2 className="w-5 h-5 animate-spin" />
-          <span className="text-sm">Loading alignment data...</span>
+          <span className="text-sm">{t('page.loading')}</span>
         </div>
       </PageShell>
     );
@@ -164,7 +168,7 @@ export function BrandAlignmentPage() {
       <PageShell>
         <div data-testid="error-message" className="flex flex-col items-center justify-center py-32 text-center">
           <XCircle className="w-10 h-10 text-red-300 mb-3" />
-          <p className="text-sm text-gray-500">Failed to load alignment data</p>
+          <p className="text-sm text-gray-500">{t('page.loadError')}</p>
           <p className="text-xs text-gray-400 mt-1">{overviewError.message}</p>
         </div>
       </PageShell>
@@ -177,8 +181,8 @@ export function BrandAlignmentPage() {
     <PageShell>
       <PageHeader
         moduleKey="brand-alignment"
-        title="Brand Alignment"
-        subtitle="Ensure consistency across all brand touchpoints"
+        title={t('page.title')}
+        subtitle={t('page.subtitle')}
         actions={
           activeTab === 'alignment' ? (
             <div className="flex items-center gap-2">
@@ -186,11 +190,11 @@ export function BrandAlignmentPage() {
                 <>
                   <Button variant="secondary" onClick={handleExportPdf} className="gap-2">
                     <FileText className="h-4 w-4" />
-                    Export PDF
+                    {t('page.exportPdf')}
                   </Button>
                   <Button variant="secondary" onClick={handleExportJson} className="gap-2">
                     <FileJson className="h-4 w-4" />
-                    Export JSON
+                    {t('page.exportJson')}
                   </Button>
                 </>
               )}
@@ -201,7 +205,7 @@ export function BrandAlignmentPage() {
                 className="gap-2"
               >
                 {!startScan.isPending && <RefreshCw className="h-4 w-4" />}
-                {startScan.isPending ? 'Scanning...' : 'Run Alignment Check'}
+                {startScan.isPending ? t('page.scanning') : t('page.runCheck')}
               </Button>
             </div>
           ) : undefined
@@ -214,11 +218,11 @@ export function BrandAlignmentPage() {
       {/* ── Tab switcher ─────────────────────────────────── */}
       <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit mb-6">
         {([
-          { key: 'alignment' as AlignmentTab, label: 'Brand Alignment', icon: ShieldCheck },
-          { key: 'audit' as AlignmentTab, label: 'Brand Audit', icon: ClipboardCheck },
-          { key: 'review' as AlignmentTab, label: 'Content Review', icon: FileSearch },
-          { key: 'insights' as AlignmentTab, label: 'Insights', icon: BarChart3 },
-          { key: 'brandclaw' as AlignmentTab, label: 'Strategy Analyst', icon: Brain },
+          { key: 'alignment' as AlignmentTab, label: t('tabs.alignment'), icon: ShieldCheck },
+          { key: 'audit' as AlignmentTab, label: t('tabs.audit'), icon: ClipboardCheck },
+          { key: 'review' as AlignmentTab, label: t('tabs.review'), icon: FileSearch },
+          { key: 'insights' as AlignmentTab, label: t('tabs.insights'), icon: BarChart3 },
+          { key: 'brandclaw' as AlignmentTab, label: t('tabs.brandclaw'), icon: Brain },
         ]).map((tab) => {
           const isActive = activeTab === tab.key;
           const TabIcon = tab.icon;
@@ -247,9 +251,9 @@ export function BrandAlignmentPage() {
           {!hasScan && (
             <EmptyState
               icon={CircleDot}
-              title="No alignment scan yet"
-              description="Run your first scan to check consistency across all brand modules and identify misalignments."
-              action={{ label: 'Start First Scan', onClick: handleStartScan }}
+              title={t('page.noScanTitle')}
+              description={t('page.noScanDescription')}
+              action={{ label: t('page.startFirstScan'), onClick: handleStartScan }}
             />
           )}
 

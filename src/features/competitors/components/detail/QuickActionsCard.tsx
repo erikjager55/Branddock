@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { RefreshCw, Download } from "lucide-react";
 import { Button } from "@/components/shared";
 import { useRefreshCompetitor } from "../../hooks";
@@ -13,12 +14,13 @@ interface QuickActionsCardProps {
 
 /** Quick actions sidebar card (refresh, export) */
 export function QuickActionsCard({ competitorId, isLocked, hasWebsiteUrl }: QuickActionsCardProps) {
+  const { t } = useTranslation("competitors");
   const refresh = useRefreshCompetitor(competitorId);
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-5">
-      <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">{t("quickActions.title")}</h3>
       <div className="space-y-2">
         <Button
           variant="ghost"
@@ -29,7 +31,7 @@ export function QuickActionsCard({ competitorId, isLocked, hasWebsiteUrl }: Quic
             setRefreshError(null);
             refresh.mutate(undefined, {
               onError: (err) => {
-                setRefreshError(err instanceof Error ? err.message : "Refresh failed");
+                setRefreshError(err instanceof Error ? err.message : t("quickActions.refreshError"));
               },
             });
           }}
@@ -37,7 +39,7 @@ export function QuickActionsCard({ competitorId, isLocked, hasWebsiteUrl }: Quic
           disabled={isLocked || !hasWebsiteUrl}
           className="justify-start"
         >
-          Refresh Analysis
+          {t("quickActions.refreshAnalysis")}
         </Button>
         <Button
           variant="ghost"
@@ -46,11 +48,11 @@ export function QuickActionsCard({ competitorId, isLocked, hasWebsiteUrl }: Quic
           icon={Download}
           onClick={() => {
             // Export placeholder
-            alert("Export feature coming soon");
+            alert(t("quickActions.exportComingSoon"));
           }}
           className="justify-start"
         >
-          Export Data
+          {t("quickActions.exportData")}
         </Button>
       </div>
       {refreshError && (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Video, Wand2, ChevronRight, Image, X, Loader2, Sparkles } from 'lucide-react';
 import { Modal, Button, Input } from '@/components/shared';
 import { useGenerateAiVideo, useAiImages, useMediaAssets } from '@/features/media-library/hooks';
@@ -34,6 +35,7 @@ interface GenerateVideoModalProps {
 
 /** Modal for generating AI videos via fal.ai — supports text-to-video and image-to-video. */
 export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps) {
+  const { t } = useTranslation('media-library');
   const generateVideo = useGenerateAiVideo();
 
   // Source image browsing
@@ -134,13 +136,13 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
   const isValid = name.trim().length > 0 && prompt.trim().length > 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Generate AI Video" size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('aiVideos.generateModal.title')} size="lg">
       <div className="space-y-5">
 
         {/* ── Step 1: Choose source (text-only or image-to-video) ── */}
         {step === 'source' && (
           <div className="space-y-3">
-            <p className="text-sm text-gray-600">How would you like to create your video?</p>
+            <p className="text-sm text-gray-600">{t('aiVideos.generateModal.question')}</p>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -152,9 +154,9 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
               >
                 <div className="flex items-center gap-2 mb-1">
                   <Wand2 className="w-5 h-5 text-purple-600" />
-                  <span className="font-semibold text-gray-900">Text to Video</span>
+                  <span className="font-semibold text-gray-900">{t('aiVideos.generateModal.textToVideo')}</span>
                 </div>
-                <p className="text-sm text-gray-500">Generate a video from a text prompt only.</p>
+                <p className="text-sm text-gray-500">{t('aiVideos.generateModal.textDescription')}</p>
               </button>
 
               <button
@@ -164,9 +166,9 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
               >
                 <div className="flex items-center gap-2 mb-1">
                   <Image className="w-5 h-5 text-teal-600" />
-                  <span className="font-semibold text-gray-900">Image to Video</span>
+                  <span className="font-semibold text-gray-900">{t('aiVideos.generateModal.imageToVideo')}</span>
                 </div>
-                <p className="text-sm text-gray-500">Animate a photo from your Media Library.</p>
+                <p className="text-sm text-gray-500">{t('aiVideos.generateModal.imageDescription')}</p>
               </button>
             </div>
 
@@ -174,7 +176,7 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
             {imagePickerOpen && (
               <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-gray-900">Select a source image</h4>
+                  <h4 className="text-sm font-semibold text-gray-900">{t('aiVideos.generateModal.selectSource')}</h4>
                   <button
                     type="button"
                     onClick={() => setImagePickerOpen(false)}
@@ -185,7 +187,7 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
                 </div>
                 {availableImages.length === 0 ? (
                   <p className="text-sm text-gray-400 py-4 text-center">
-                    No images found. Upload images to your Media Library or generate AI images first.
+                    {t('aiVideos.generateModal.noImages')}
                   </p>
                 ) : (
                   <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
@@ -224,7 +226,7 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
               className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
             >
               <ChevronRight className="w-3 h-3 rotate-180" />
-              Back
+              {t('actions.back')}
             </button>
 
             {/* Source image preview */}
@@ -237,7 +239,7 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-teal-900 truncate">{sourceImage.name}</p>
-                  <p className="text-xs text-teal-600">Image-to-video — this image will be animated</p>
+                  <p className="text-xs text-teal-600">{t('aiVideos.generateModal.imageAnimatedNote')}</p>
                 </div>
                 <button
                   type="button"
@@ -254,22 +256,22 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
 
             {/* Name */}
             <Input
-              label="Name"
+              label={t('fields.name')}
               value={name}
               onChange={(e) => setName(e.target.value.slice(0, 200))}
-              placeholder="e.g. Product launch teaser"
+              placeholder={t('aiVideos.generateModal.namePlaceholder')}
             />
 
             {/* Prompt */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Prompt</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('meta.prompt')}</label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value.slice(0, 1000))}
                 placeholder={
                   sourceImage
-                    ? 'Describe how this image should be animated...'
-                    : 'Describe the video you want to generate...'
+                    ? t('aiVideos.generateModal.promptPlaceholderImage')
+                    : t('aiVideos.generateModal.promptPlaceholder')
                 }
                 rows={3}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
@@ -281,10 +283,10 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
             <div className="rounded-lg border border-gray-200 bg-white p-5">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-500" />
-                <h3 className="text-sm font-semibold text-gray-900">AI Video Model</h3>
+                <h3 className="text-sm font-semibold text-gray-900">{t('aiVideos.generateModal.modelTitle')}</h3>
               </div>
               <p className="mt-1 text-sm text-gray-500">
-                Choose a model based on quality, speed, and budget.
+                {t('aiVideos.generateModal.modelHint')}
               </p>
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {FAL_VIDEO_PROVIDERS.map((p) => {
@@ -308,11 +310,11 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
                       <div className="mt-1.5 flex items-center gap-2 text-xs text-gray-400">
                         <span>{p.cost}</span>
                         <span>·</span>
-                        <span>max {p.maxDuration}s</span>
+                        <span>{t('aiVideos.generateModal.maxDuration', { seconds: p.maxDuration })}</span>
                         {p.supportsAudio && (
                           <>
                             <span>·</span>
-                            <span>audio</span>
+                            <span>{t('aiVideos.generateModal.audio')}</span>
                           </>
                         )}
                       </div>
@@ -325,7 +327,7 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
             {/* Duration + Aspect Ratio */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('meta.duration')}</label>
                 <div className="flex gap-2">
                   {allowedDurations.map((d) => (
                     <button
@@ -346,7 +348,7 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Aspect Ratio</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('meta.aspectRatio')}</label>
                 <select
                   value={aspectRatio}
                   onChange={(e) => setAspectRatio(e.target.value)}
@@ -364,7 +366,7 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
               <div className="flex items-center gap-2 rounded-lg border p-3" style={{ backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }}>
                 <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#0d9488' }} />
                 <p className="text-sm" style={{ color: '#065f46' }}>
-                  Generating video... This may take 30–180 seconds depending on duration and model.
+                  {t('aiVideos.generateModal.progress')}
                 </p>
               </div>
             )}
@@ -373,7 +375,7 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
             {generateVideo.isError && (
               <div className="rounded-lg bg-red-50 border border-red-200 p-3" role="alert">
                 <p className="text-sm text-red-700">
-                  {(generateVideo.error as Error)?.message || 'Failed to generate video. Please try again.'}
+                  {(generateVideo.error as Error)?.message || t('aiVideos.generateModal.error')}
                 </p>
               </div>
             )}
@@ -381,7 +383,7 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="secondary" onClick={handleClose} disabled={generateVideo.isPending}>
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button
                 icon={Video}
@@ -389,7 +391,7 @@ export function GenerateVideoModal({ isOpen, onClose }: GenerateVideoModalProps)
                 disabled={!isValid || generateVideo.isPending}
                 isLoading={generateVideo.isPending}
               >
-                {generateVideo.isPending ? 'Generating...' : 'Generate Video'}
+                {generateVideo.isPending ? t('actions.generating') : t('aiVideos.generate')}
               </Button>
             </div>
           </>

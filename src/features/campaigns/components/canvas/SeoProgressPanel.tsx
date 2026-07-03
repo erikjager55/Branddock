@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, CheckCircle2, AlertCircle, Circle, Search } from "lucide-react";
 import { ProgressBar } from "@/components/shared";
 import { useCanvasStore } from "../../stores/useCanvasStore";
@@ -10,6 +11,7 @@ import { useCanvasStore } from "../../stores/useCanvasStore";
  * for website deliverable types (landing-page, product-page, etc.).
  */
 export function SeoProgressPanel() {
+  const { t } = useTranslation("campaigns-canvas");
   const seoSteps = useCanvasStore((s) => s.seoSteps);
   const completedCount = seoSteps.filter((s) => s.status === "complete").length;
   const totalSteps = seoSteps.length;
@@ -28,14 +30,18 @@ export function SeoProgressPanel() {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-gray-900">
-            SEO Research & Content Pipeline
+            {t("seoProgress.title")}
           </h3>
           <p className="text-xs text-gray-500">
             {hasError
-              ? "Pipeline encountered an error"
+              ? t("seoProgress.error")
               : completedCount === totalSteps
-                ? `Completed in ${formatTime(elapsed)}`
-                : `Step ${completedCount + 1} of ${totalSteps} — ${formatTime(elapsed)}`}
+                ? t("seoProgress.completedIn", { time: formatTime(elapsed) })
+                : t("seoProgress.stepProgress", {
+                    current: completedCount + 1,
+                    total: totalSteps,
+                    time: formatTime(elapsed),
+                  })}
           </p>
         </div>
       </div>
@@ -74,7 +80,7 @@ export function SeoProgressPanel() {
                 </span>
                 {step.status === "running" && (
                   <span className="text-xs text-teal-500 animate-pulse">
-                    Processing...
+                    {t("seoProgress.processing")}
                   </span>
                 )}
               </div>

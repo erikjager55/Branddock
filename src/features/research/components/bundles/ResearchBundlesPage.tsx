@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { SkeletonCard } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
 import { useBundles } from "../../hooks";
@@ -22,6 +23,7 @@ export function ResearchBundlesPage({
   onNavigate,
   onNavigateToDetail,
 }: ResearchBundlesPageProps) {
+  const { t } = useTranslation("research");
   const { data, isLoading } = useBundles();
   const [filter, setFilter] = useState<"all" | "recommended">("all");
   const [search, setSearch] = useState("");
@@ -60,8 +62,8 @@ export function ResearchBundlesPage({
       <div data-testid="research-bundles-page">
       <PageHeader
         moduleKey="research"
-        title="Research Bundles"
-        subtitle="Pre-built research packages"
+        title={t("bundles.title")}
+        subtitle={t("bundles.subtitle")}
       />
 
       {/* Filters */}

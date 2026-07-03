@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Sparkles, TrendingUp, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { useAiReview } from '../../hooks';
 import type { AiReviewResponse } from '../../types/business-strategy.types';
@@ -31,6 +32,7 @@ function ScoreIcon({ score }: { score: number }) {
 }
 
 export function AiReviewPanel({ strategyId, isOpen, onClose }: AiReviewPanelProps) {
+  const { t } = useTranslation('business-strategy');
   const aiReview = useAiReview(strategyId);
   const [review, setReview] = useState<AiReviewResponse | null>(null);
 
@@ -75,7 +77,7 @@ export function AiReviewPanel({ strategyId, isOpen, onClose }: AiReviewPanelProp
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-violet-500" />
-            <h2 className="text-lg font-semibold text-gray-900">AI Strategy Review</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('aiReview.title')}</h2>
           </div>
           <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
             <X className="w-5 h-5" />
@@ -87,13 +89,13 @@ export function AiReviewPanel({ strategyId, isOpen, onClose }: AiReviewPanelProp
           {!review && !aiReview.isPending && !aiReview.isError && (
             <div className="text-center py-12">
               <Sparkles className="w-12 h-12 text-violet-300 mx-auto mb-4" />
-              <h3 className="text-base font-medium text-gray-900 mb-2">Get AI-Powered Insights</h3>
+              <h3 className="text-base font-medium text-gray-900 mb-2">{t('aiReview.emptyTitle')}</h3>
               <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
-                Let AI analyze your strategy across key dimensions and provide actionable recommendations.
+                {t('aiReview.emptyDescription')}
               </p>
               <Button variant="cta" onClick={handleGenerate}>
                 <Sparkles className="w-4 h-4 mr-1.5" />
-                Generate Review
+                {t('aiReview.generate')}
               </Button>
             </div>
           )}
@@ -101,15 +103,15 @@ export function AiReviewPanel({ strategyId, isOpen, onClose }: AiReviewPanelProp
           {aiReview.isPending && (
             <div className="text-center py-12">
               <Loader2 className="w-10 h-10 text-violet-400 mx-auto mb-4 animate-spin" />
-              <p className="text-sm text-gray-500">Analyzing your strategy...</p>
+              <p className="text-sm text-gray-500">{t('aiReview.analyzing')}</p>
             </div>
           )}
 
           {aiReview.isError && !aiReview.isPending && (
             <div className="text-center py-12">
               <AlertTriangle className="w-10 h-10 text-red-300 mx-auto mb-4" />
-              <p className="text-sm text-red-600 mb-4">Failed to generate review. Please try again.</p>
-              <Button variant="secondary" size="sm" onClick={handleGenerate}>Retry</Button>
+              <p className="text-sm text-red-600 mb-4">{t('aiReview.error')}</p>
+              <Button variant="secondary" size="sm" onClick={handleGenerate}>{t('actions.retry')}</Button>
             </div>
           )}
 
@@ -122,7 +124,7 @@ export function AiReviewPanel({ strategyId, isOpen, onClose }: AiReviewPanelProp
                     {review.overallScore.toFixed(1)}
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">Overall Score</p>
+                <p className="text-xs text-gray-400 mt-2">{t('aiReview.overallScore')}</p>
               </div>
 
               {/* Summary */}
@@ -132,7 +134,7 @@ export function AiReviewPanel({ strategyId, isOpen, onClose }: AiReviewPanelProp
 
               {/* Findings */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Dimension Scores</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('aiReview.dimensionScores')}</h3>
                 <div className="space-y-3">
                   {review.findings.map((finding) => {
                     const level = getScoreLevel(finding.score);
@@ -161,7 +163,7 @@ export function AiReviewPanel({ strategyId, isOpen, onClose }: AiReviewPanelProp
               {/* Top Priorities */}
               {review.topPriorities.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Top Priorities</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('aiReview.topPriorities')}</h3>
                   <ol className="space-y-2">
                     {review.topPriorities.map((priority, idx) => (
                       <li key={idx} className="flex items-start gap-2.5">
@@ -184,7 +186,7 @@ export function AiReviewPanel({ strategyId, isOpen, onClose }: AiReviewPanelProp
                   disabled={aiReview.isPending}
                 >
                   <Sparkles className="w-3.5 h-3.5 mr-1" />
-                  Re-generate Review
+                  {t('aiReview.regenerate')}
                 </Button>
               </div>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -126,6 +127,7 @@ export function BriefingReviewView({
   onRevalidate,
   isRevalidating = false,
 }: BriefingReviewViewProps) {
+  const { t } = useTranslation("campaigns-wizard");
   const [showGaps, setShowGaps] = React.useState(true);
   const [showEditor, setShowEditor] = React.useState(true);
   const [appliedGaps, setAppliedGaps] = React.useState<Set<number>>(new Set());
@@ -205,7 +207,7 @@ export function BriefingReviewView({
       setShowEditor(true);
       setHasEdited(true);
     } catch (err) {
-      setImproveError(err instanceof Error ? err.message : 'Failed to improve briefing');
+      setImproveError(err instanceof Error ? err.message : t('briefingReview.improveError'));
     } finally {
       setIsImprovingWithAI(false);
     }
@@ -224,11 +226,10 @@ export function BriefingReviewView({
       {/* Header */}
       <div className="text-center">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Briefing Validation
+          {t("briefingReview.title")}
         </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          AI has evaluated your campaign briefing for completeness and strategic
-          clarity.
+          {t("briefingReview.subtitle")}
         </p>
       </div>
 
@@ -236,30 +237,30 @@ export function BriefingReviewView({
       <div className={`rounded-xl border p-6 ${scoreBg}`}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-700">Briefing Score</p>
+            <p className="text-sm font-medium text-gray-700">{t("briefingReview.score")}</p>
             <p className={`text-3xl font-bold ${scoreColor}`}>
               {score}
               <span className="text-lg text-gray-400">/100</span>
             </p>
             {hasEdited && (
-              <p className="text-xs text-gray-400 mt-0.5">Estimated — re-validate for AI score</p>
+              <p className="text-xs text-gray-400 mt-0.5">{t("briefingReview.estimatedNote")}</p>
             )}
           </div>
           <div className="text-right flex flex-col items-end gap-1.5">
             {validation.isComplete && !hasEdited ? (
               <Badge variant="success">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
-                Complete
+                {t("briefingReview.complete")}
               </Badge>
             ) : hasEdited ? (
               <Badge variant="info">
                 <Pencil className="w-3 h-3 mr-1" />
-                Edited
+                {t("briefingReview.edited")}
               </Badge>
             ) : (
               <Badge variant="warning">
                 <AlertTriangle className="w-3 h-3 mr-1" />
-                Incomplete
+                {t("briefingReview.incomplete")}
               </Badge>
             )}
           </div>
@@ -275,7 +276,7 @@ export function BriefingReviewView({
             onClick={() => setShowEditor(!showEditor)}
           >
             <Pencil className="w-3.5 h-3.5" />
-            {showEditor ? "Hide Briefing Fields" : "Show Briefing Fields"}
+            {showEditor ? t("briefingReview.hideFields") : t("briefingReview.showFields")}
             {showEditor ? (
               <ChevronUp className="w-4 h-4" />
             ) : (
@@ -289,7 +290,7 @@ export function BriefingReviewView({
             disabled={isRevalidating}
             size="sm"
           >
-            Edit Manually
+            {t("briefingReview.editManually")}
           </Button>
         </div>
         {showEditor && (
@@ -300,7 +301,7 @@ export function BriefingReviewView({
                   htmlFor={`briefing-${field}`}
                   className="block text-xs font-medium text-gray-600 mb-1"
                 >
-                  {FIELD_LABELS[field]}
+                  {t(`briefingReview.fieldLabels.${field}`)}
                 </label>
                 <textarea
                   id={`briefing-${field}`}
@@ -309,7 +310,7 @@ export function BriefingReviewView({
                   disabled={isRevalidating}
                   rows={4}
                   className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 focus:outline-none disabled:opacity-50 resize-y"
-                  placeholder={`Enter ${FIELD_LABELS[field].toLowerCase()}...`}
+                  placeholder={t("briefingReview.enterPlaceholder", { field: t(`briefingReview.fieldLabels.${field}`).toLowerCase() })}
                 />
               </div>
             ))}
@@ -321,7 +322,7 @@ export function BriefingReviewView({
                 disabled={isRevalidating}
                 size="sm"
               >
-                Re-validate with AI
+                {t("briefingReview.revalidate")}
               </Button>
             </div>
           </div>
@@ -331,7 +332,7 @@ export function BriefingReviewView({
       {/* Strengths */}
       {(validation.strengths ?? []).length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Strengths</h4>
+          <h4 className="text-sm font-medium text-gray-700">{t("briefingReview.strengths")}</h4>
           <ul className="space-y-1.5">
             {(validation.strengths ?? []).map((s, i) => (
               <li
@@ -354,7 +355,7 @@ export function BriefingReviewView({
             className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-gray-900"
             onClick={() => setShowGaps(!showGaps)}
           >
-            Gaps ({(validation.gaps ?? []).length})
+            {t("briefingReview.gaps", { count: (validation.gaps ?? []).length })}
             {showGaps ? (
               <ChevronUp className="w-4 h-4" />
             ) : (
@@ -364,7 +365,8 @@ export function BriefingReviewView({
           {showGaps && (
             <div className="space-y-2">
               {(validation.gaps ?? []).map((gap, i) => {
-                const config = SEVERITY_CONFIG[gap.severity as keyof typeof SEVERITY_CONFIG] ?? SEVERITY_CONFIG["nice-to-have"];
+                const severityKey = (gap.severity && gap.severity in SEVERITY_CONFIG ? gap.severity : "nice-to-have") as keyof typeof SEVERITY_CONFIG;
+                const config = SEVERITY_CONFIG[severityKey];
                 const Icon = config.icon;
                 const targetField = mapGapToField(gap.field);
                 const isApplied = appliedGaps.has(i);
@@ -385,24 +387,24 @@ export function BriefingReviewView({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-sm font-medium text-gray-800">
-                          {gap.field ?? "General"}
+                          {gap.field ?? t("briefingReview.general")}
                         </span>
-                        <Badge variant={config.variant}>{config.label}</Badge>
+                        <Badge variant={config.variant}>{t(`briefingReview.severity.${severityKey}`)}</Badge>
                       </div>
                       <p className="text-sm text-gray-600">{gap.suggestion}</p>
                       {/* Field mapping indicator */}
                       {targetField ? (
                         <span className="mt-1 inline-flex items-center gap-1 text-xs text-gray-400">
                           {isApplied ? (
-                            <><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Improved</>
+                            <><CheckCircle2 className="w-3 h-3 text-emerald-500" /> {t("briefingReview.improved")}</>
                           ) : (
-                            <>{FIELD_LABELS[targetField]}</>
+                            <>{t(`briefingReview.fieldLabels.${targetField}`)}</>
                           )}
                         </span>
                       ) : (
                         <span className="mt-1 inline-flex items-center gap-1 text-xs text-gray-400">
                           <BookOpen className="w-3 h-3" />
-                          Managed via Knowledge step
+                          {t("briefingReview.managedViaKnowledge")}
                         </span>
                       )}
                     </div>
@@ -418,7 +420,7 @@ export function BriefingReviewView({
       {(validation.suggestions ?? []).length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">
-            Suggestions for Improvement
+            {t("briefingReview.suggestionsTitle")}
           </h4>
           <div className="space-y-2">
             {(validation.suggestions ?? []).map((s, i) => {
@@ -442,11 +444,11 @@ export function BriefingReviewView({
                     <p className="text-sm text-gray-600">{s}</p>
                     <span className="mt-1 inline-flex items-center gap-1 text-xs text-gray-400">
                       {isApplied ? (
-                        <><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Improved</>
+                        <><CheckCircle2 className="w-3 h-3 text-emerald-500" /> {t("briefingReview.improved")}</>
                       ) : targetField ? (
-                        <>{FIELD_LABELS[targetField]}</>
+                        <>{t(`briefingReview.fieldLabels.${targetField}`)}</>
                       ) : (
-                        <>General suggestion</>
+                        <>{t("briefingReview.generalSuggestion")}</>
                       )}
                     </span>
                   </div>
@@ -466,9 +468,9 @@ export function BriefingReviewView({
             onClick={handleImproveWithAI}
             disabled={isImprovingWithAI || isRevalidating}
           >
-            {isImprovingWithAI ? 'Improving briefing...' : 'Improve Briefing with AI'}
+            {isImprovingWithAI ? t("briefingReview.improving") : t("briefingReview.improveWithAi")}
           </Button>
-          <p className="text-xs text-gray-400">AI will rewrite all fields to address the gaps above</p>
+          <p className="text-xs text-gray-400">{t("briefingReview.improveHint")}</p>
           {improveError && (
             <p className="text-xs text-red-600">{improveError}</p>
           )}
@@ -488,7 +490,7 @@ export function BriefingReviewView({
         <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-primary-50 border border-primary-200">
           <Loader2 className="w-4 h-4 text-primary animate-spin" />
           <span className="text-sm font-medium text-primary-700">
-            Re-validating your briefing...
+            {t("briefingReview.revalidating")}
           </span>
         </div>
       )}
@@ -496,7 +498,7 @@ export function BriefingReviewView({
       {/* Score gate hint */}
       {score < 80 && (
         <p className="text-xs text-gray-500 text-center pt-2">
-          Score must be at least 80/100 to continue
+          {t("briefingReview.scoreGate")}
         </p>
       )}
     </div>

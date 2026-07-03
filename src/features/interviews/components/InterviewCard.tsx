@@ -13,20 +13,22 @@ import {
   FileJson,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import type { Interview, InterviewStatus } from '../types/interview.types';
 import { exportInterviewPdf } from '../utils/exportInterviewPdf';
 import { exportInterviewJson } from '../utils/exportInterviewJson';
 
-const STATUS_MAP: Record<InterviewStatus, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'teal' }> = {
-  TO_SCHEDULE: { label: 'To Schedule', variant: 'default' },
-  DRAFT: { label: 'Draft', variant: 'default' },
-  SCHEDULED: { label: 'Scheduled', variant: 'info' },
-  INTERVIEW_HELD: { label: 'Interview Held', variant: 'teal' },
-  IN_PROGRESS: { label: 'In Progress', variant: 'warning' },
-  IN_REVIEW: { label: 'In Review', variant: 'teal' },
-  COMPLETED: { label: 'Completed', variant: 'success' },
-  APPROVED: { label: 'Approved', variant: 'success' },
-  CANCELLED: { label: 'Cancelled', variant: 'danger' },
+const STATUS_VARIANT: Record<InterviewStatus, 'default' | 'success' | 'warning' | 'danger' | 'info' | 'teal'> = {
+  TO_SCHEDULE: 'default',
+  DRAFT: 'default',
+  SCHEDULED: 'info',
+  INTERVIEW_HELD: 'teal',
+  IN_PROGRESS: 'warning',
+  IN_REVIEW: 'teal',
+  COMPLETED: 'success',
+  APPROVED: 'success',
+  CANCELLED: 'danger',
 };
 
 interface InterviewCardProps {
@@ -40,11 +42,13 @@ export function InterviewCard({
   onView,
   onDelete,
 }: InterviewCardProps) {
+  const { t } = useTranslation('interviews');
+  const { formatDate } = useFormat();
   const [menuOpen, setMenuOpen] = useState(false);
-  const status = STATUS_MAP[interview.status];
+  const statusVariant = STATUS_VARIANT[interview.status];
 
   const scheduledDate = interview.scheduledDate
-    ? new Date(interview.scheduledDate).toLocaleDateString('en-US', {
+    ? formatDate(new Date(interview.scheduledDate), {
         month: 'short',
         day: 'numeric',
       })
@@ -55,15 +59,15 @@ export function InterviewCard({
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <h3 className="font-medium text-gray-900">
-            {interview.title || `Interview #${interview.orderNumber}`}
+            {interview.title || t('card.defaultTitle', { number: interview.orderNumber })}
           </h3>
           {interview.isLocked && (
             <Lock className="w-3.5 h-3.5 text-gray-400" />
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={status.variant} size="sm">
-            {status.label}
+          <Badge variant={statusVariant} size="sm">
+            {t(`statusLabel.${interview.status}`)}
           </Badge>
           <div className="relative">
             <button
@@ -90,7 +94,7 @@ export function InterviewCard({
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       >
                         <FileText className="w-3.5 h-3.5" />
-                        Export PDF
+                        {t('card.exportPdf')}
                       </button>
                       <button
                         onClick={(e) => {
@@ -101,7 +105,7 @@ export function InterviewCard({
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       >
                         <FileJson className="w-3.5 h-3.5" />
-                        Export JSON
+                        {t('card.exportJson')}
                       </button>
                       <div className="border-t border-gray-100 my-1" />
                     </>
@@ -114,7 +118,7 @@ export function InterviewCard({
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    Delete
+                    {t('card.delete')}
                   </button>
                 </div>
               </>
@@ -156,11 +160,11 @@ export function InterviewCard({
         )}
         <span className="flex items-center gap-1">
           <Clock className="w-3.5 h-3.5" />
-          {interview.durationMinutes} min
+          {t('unit.min', { count: interview.durationMinutes })}
         </span>
         <span className="flex items-center gap-1">
           <Layers className="w-3.5 h-3.5" />
-          {interview.questions.length} questions
+          {t('card.questions', { count: interview.questions.length })}
         </span>
         {interview.intervieweeEmail && (
           <span className="flex items-center gap-1">
@@ -171,7 +175,7 @@ export function InterviewCard({
       </div>
 
       <Button variant="secondary" size="sm" onClick={() => onView(interview.id)}>
-        View
+        {t('card.view')}
       </Button>
     </div>
   );

@@ -2,17 +2,10 @@
 
 import { useState } from 'react';
 import { X, Search, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/shared';
 import { useInterviewTemplates } from '../../hooks/useInterviews';
-import type { InterviewTemplate, QuestionType } from '../../types/interview.types';
-
-const TYPE_LABELS: Record<QuestionType, string> = {
-  OPEN: 'Open',
-  MULTIPLE_CHOICE: 'MC',
-  MULTI_SELECT: 'MS',
-  RATING_SCALE: 'Rating',
-  RANKING: 'Ranking',
-};
+import type { InterviewTemplate } from '../../types/interview.types';
 
 interface TemplatePanelSlideoutProps {
   isOpen: boolean;
@@ -27,6 +20,7 @@ export function TemplatePanelSlideout({
   assetId,
   onAddTemplate,
 }: TemplatePanelSlideoutProps) {
+  const { t } = useTranslation('interviews');
   const { data } = useInterviewTemplates(assetId);
   const [search, setSearch] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -69,7 +63,7 @@ export function TemplatePanelSlideout({
       <div className="fixed right-0 top-0 bottom-0 z-40 w-96 bg-white border-l border-gray-200 shadow-xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-          <h3 className="font-semibold text-gray-900">Question Templates</h3>
+          <h3 className="font-semibold text-gray-900">{t('templates.title')}</h3>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
@@ -83,7 +77,7 @@ export function TemplatePanelSlideout({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search templates..."
+              placeholder={t('templates.searchPlaceholder')}
               className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             />
           </div>
@@ -93,7 +87,7 @@ export function TemplatePanelSlideout({
         <div className="flex-1 overflow-y-auto">
           {Object.keys(grouped).length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-8">
-              No templates found.
+              {t('templates.empty')}
             </p>
           ) : (
             Object.entries(grouped).map(([category, catTemplates]) => {
@@ -129,7 +123,7 @@ export function TemplatePanelSlideout({
                             </p>
                             <div className="flex items-center gap-1.5 mt-1">
                               <Badge variant="default" size="sm">
-                                {TYPE_LABELS[template.questionType]}
+                                {t(`typeLabelAbbr.${template.questionType}`)}
                               </Badge>
                             </div>
                           </div>

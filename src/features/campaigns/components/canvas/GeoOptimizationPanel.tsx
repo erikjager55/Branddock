@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Sparkles, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
 import { useCanvasComponents } from '../../hooks/canvas.hooks';
 import {
@@ -14,11 +15,6 @@ const ZONE_HEX: Record<GeoZone, string> = {
   good: '#10b981', // emerald-500  ≥70
   warn: '#f59e0b', // amber-500    50-69
   bad: '#ef4444', // red-500      <50
-};
-const ZONE_LABEL: Record<GeoZone, string> = {
-  good: 'GEO-geoptimaliseerd',
-  warn: 'Kan beter',
-  bad: 'Onder doel',
 };
 
 interface GeoOptimizationPanelProps {
@@ -37,6 +33,7 @@ interface GeoOptimizationPanelProps {
  * VisualFidelityBadge-contract (geen data → render niets).
  */
 export function GeoOptimizationPanel({ deliverableId }: GeoOptimizationPanelProps) {
+  const { t } = useTranslation('campaigns-canvas');
   const { data } = useCanvasComponents(deliverableId);
   const analysis = data?.geoOptimizationAnalysis;
   // Guard tegen ruwe/corrupte persisted JSON (zie isRenderableGeoAnalysis):
@@ -56,14 +53,14 @@ export function GeoOptimizationPanel({ deliverableId }: GeoOptimizationPanelProp
             {vm.score}
           </span>
           <span className="text-xs font-medium" style={{ color: hex }}>
-            {ZONE_LABEL[vm.zone]}
+            {t(`geoPanel.zone.${vm.zone}`)}
           </span>
         </div>
-        <span className="text-xs text-gray-400">AI-citeerbaarheid (GEO)</span>
+        <span className="text-xs text-gray-400">{t('geoPanel.citeability')}</span>
         <div className="flex-1" />
         {vm.stale && (
           <span className="inline-flex items-center gap-1 text-[11px] text-amber-700">
-            <Clock className="w-3 h-3" /> 90+ dagen oud
+            <Clock className="w-3 h-3" /> {t('geoPanel.stale')}
           </span>
         )}
       </div>
@@ -71,12 +68,12 @@ export function GeoOptimizationPanel({ deliverableId }: GeoOptimizationPanelProp
       {/* Geëmitte schema.org-types */}
       {vm.schemaTypes.length > 0 && (
         <div className="flex flex-wrap gap-1 pt-2">
-          {vm.schemaTypes.map((t) => (
+          {vm.schemaTypes.map((schemaType) => (
             <span
-              key={t}
+              key={schemaType}
               className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-[10px] font-medium"
             >
-              {t}
+              {schemaType}
             </span>
           ))}
         </div>
@@ -102,7 +99,7 @@ export function GeoOptimizationPanel({ deliverableId }: GeoOptimizationPanelProp
       {vm.findings.length > 0 ? (
         <div className="mt-1 space-y-1.5 border-t border-gray-100 pt-3">
           <div className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
-            Verbeterpunten ({vm.findings.length})
+            {t('geoPanel.improvements', { count: vm.findings.length })}
           </div>
           {vm.findings.map((f, i) => (
             <div key={i} className="flex items-start gap-2 text-xs text-gray-700">
@@ -113,7 +110,7 @@ export function GeoOptimizationPanel({ deliverableId }: GeoOptimizationPanelProp
         </div>
       ) : (
         <div className="mt-1 flex items-center gap-1.5 border-t border-gray-100 pt-3 text-xs text-emerald-700">
-          <CheckCircle2 className="h-3.5 w-3.5" /> Alle GEO-signalen op orde
+          <CheckCircle2 className="h-3.5 w-3.5" /> {t('geoPanel.allGood')}
         </div>
       )}
     </div>

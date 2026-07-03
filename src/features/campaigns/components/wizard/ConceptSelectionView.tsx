@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Wand2,
   Check,
@@ -36,10 +37,12 @@ const STICKINESS_LABELS: Array<{ key: keyof Omit<StickinessScore, 'total'>; labe
 ];
 
 function StickinessBar({ score }: { score: StickinessScore }) {
+  const { t } = useTranslation("campaigns-wizard");
   return (
     <div className="flex items-center gap-1">
-      {STICKINESS_LABELS.map(({ key, label }) => {
+      {STICKINESS_LABELS.map(({ key }) => {
         const value = score[key] ?? 0;
+        const label = t(`successAttributes.${key}`);
         const color = value >= 8 ? "bg-emerald-500" : value >= 6 ? "bg-amber-400" : "bg-red-400";
         return (
           <div key={key} className="flex flex-col items-center gap-0.5" title={`${label}: ${value}/10`}>
@@ -58,14 +61,15 @@ function StickinessBar({ score }: { score: StickinessScore }) {
 // ─── Campaign Line Tests ────────────────────────────────────
 
 function CampaignLineTestBadges({ tests }: { tests: CreativeConcept["campaignLineTests"] }) {
+  const { t } = useTranslation("campaigns-wizard");
   if (!tests) return null;
   const items = [
-    { key: "barTest", label: "Bar", passes: tp(tests.barTest) },
-    { key: "tShirtTest", label: "T-Shirt", passes: tp(tests.tShirtTest) },
-    { key: "parodyTest", label: "Parody", passes: tp(tests.parodyTest) },
-    { key: "tenYearTest", label: "10-Year", passes: tp(tests.tenYearTest) },
-    { key: "categoryEscapeTest", label: "Category Escape", passes: tp(tests.categoryEscapeTest) },
-    { key: "oppositeTest", label: "Opposite", passes: tp(tests.oppositeTest) },
+    { key: "barTest", label: t("conceptSelection.tests.bar"), passes: tp(tests.barTest) },
+    { key: "tShirtTest", label: t("conceptSelection.tests.tShirt"), passes: tp(tests.tShirtTest) },
+    { key: "parodyTest", label: t("conceptSelection.tests.parody"), passes: tp(tests.parodyTest) },
+    { key: "tenYearTest", label: t("conceptSelection.tests.tenYear"), passes: tp(tests.tenYearTest) },
+    { key: "categoryEscapeTest", label: t("conceptSelection.tests.categoryEscape"), passes: tp(tests.categoryEscapeTest) },
+    { key: "oppositeTest", label: t("conceptSelection.tests.opposite"), passes: tp(tests.oppositeTest) },
   ];
   return (
     <div className="flex flex-wrap gap-1">
@@ -96,6 +100,7 @@ interface ConceptCardProps {
 }
 
 function ConceptCard({ concept, index, isSelected, onSelect }: ConceptCardProps) {
+  const { t } = useTranslation("campaigns-wizard");
   const [expanded, setExpanded] = useState(false);
 
   const templateLabel = (concept.goldenbergTemplate ?? "").replace(/_/g, " ");
@@ -152,7 +157,7 @@ function ConceptCard({ concept, index, isSelected, onSelect }: ConceptCardProps)
           className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-2"
         >
           {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-          {expanded ? "Hide details" : "Show details"}
+          {expanded ? t("conceptSelection.card.hideDetails") : t("conceptSelection.card.showDetails")}
         </button>
 
         {expanded && (
@@ -161,7 +166,7 @@ function ConceptCard({ concept, index, isSelected, onSelect }: ConceptCardProps)
             <div>
               <div className="flex items-center gap-1.5 mb-1">
                 <Eye className="h-3.5 w-3.5 text-gray-400" />
-                <span className="text-xs font-medium text-gray-500 uppercase">Visual World</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">{t("conceptSelection.card.visualWorld")}</span>
               </div>
               <p className="text-gray-700">{concept.visualWorld}</p>
             </div>
@@ -170,7 +175,7 @@ function ConceptCard({ concept, index, isSelected, onSelect }: ConceptCardProps)
             <div>
               <div className="flex items-center gap-1.5 mb-1">
                 <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                <span className="text-xs font-medium text-gray-500 uppercase">Memorable Device</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">{t("conceptSelection.card.memorableDevice")}</span>
               </div>
               <p className="text-gray-700 font-medium">{concept.memorableDevice}</p>
             </div>
@@ -179,7 +184,7 @@ function ConceptCard({ concept, index, isSelected, onSelect }: ConceptCardProps)
             <div>
               <div className="flex items-center gap-1.5 mb-1">
                 <Repeat2 className="h-3.5 w-3.5 text-blue-500" />
-                <span className="text-xs font-medium text-gray-500 uppercase">Bisociation Connection</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">{t("conceptSelection.card.bisociationConnection")}</span>
               </div>
               <p className="text-gray-600">{concept.bisociationDomain?.connectionToInsight}</p>
             </div>
@@ -188,14 +193,14 @@ function ConceptCard({ concept, index, isSelected, onSelect }: ConceptCardProps)
             <div>
               <div className="flex items-center gap-1.5 mb-1">
                 <Puzzle className="h-3.5 w-3.5 text-violet-500" />
-                <span className="text-xs font-medium text-gray-500 uppercase">Template Application</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">{t("conceptSelection.card.templateApplication")}</span>
               </div>
               <p className="text-gray-600">{concept.goldenbergApplication}</p>
             </div>
 
             {/* Campaign line tests */}
             <div>
-              <span className="text-xs font-medium text-gray-500 uppercase">Campaign Line Tests</span>
+              <span className="text-xs font-medium text-gray-500 uppercase">{t("conceptSelection.card.campaignLineTests")}</span>
               <div className="mt-1">
                 <CampaignLineTestBadges tests={concept.campaignLineTests} />
               </div>
@@ -204,7 +209,7 @@ function ConceptCard({ concept, index, isSelected, onSelect }: ConceptCardProps)
             {/* Extendability */}
             {concept.extendability?.length > 0 && (
               <div>
-                <span className="text-xs font-medium text-gray-500 uppercase">Extendability</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">{t("conceptSelection.card.extendability")}</span>
                 <ul className="mt-1 space-y-0.5">
                   {concept.extendability.map((ext, i) => (
                     <li key={i} className="text-xs text-gray-500 flex items-start gap-1.5">
@@ -234,6 +239,7 @@ interface ConceptSelectionViewProps {
  * Each concept uses a different Goldenberg template + bisociation domain.
  */
 export function ConceptSelectionView({ onRegenerate, isRegenerating }: ConceptSelectionViewProps) {
+  const { t } = useTranslation("campaigns-wizard");
   const concepts = useCampaignWizardStore((s) => s.concepts);
   const selectedIndex = useCampaignWizardStore((s) => s.selectedConceptIndex);
   const setSelectedConcept = useCampaignWizardStore((s) => s.setSelectedConcept);
@@ -252,9 +258,9 @@ export function ConceptSelectionView({ onRegenerate, isRegenerating }: ConceptSe
           <Wand2 className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Choose the Creative Concept</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t("conceptSelection.title")}</h3>
           <p className="text-sm text-gray-500 mt-0.5">
-            Three concepts built on your chosen insight, each using a different creative template and connecting to a different world.
+            {t("conceptSelection.subtitle")}
           </p>
         </div>
       </div>
@@ -264,7 +270,7 @@ export function ConceptSelectionView({ onRegenerate, isRegenerating }: ConceptSe
         <div className="bg-gray-50 rounded-lg px-4 py-3 flex items-start gap-2">
           <Quote className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
           <div>
-            <span className="text-xs font-medium text-gray-500">Building on insight:</span>
+            <span className="text-xs font-medium text-gray-500">{t("conceptSelection.buildingOnInsight")}</span>
             <p className="text-sm text-gray-700 font-medium">&ldquo;{selectedInsight.insightStatement}&rdquo;</p>
           </div>
         </div>
@@ -286,10 +292,10 @@ export function ConceptSelectionView({ onRegenerate, isRegenerating }: ConceptSe
       {/* Feedback */}
       <div className="space-y-3">
         <label className="block text-sm font-medium text-gray-700">
-          Optional: feedback for the creative debate
+          {t("conceptSelection.feedbackLabel")}
         </label>
         <textarea
-          placeholder="e.g., 'I love the campaign line of Concept A but the visual world of Concept C. The memorable device in Concept B is strongest.'"
+          placeholder={t("conceptSelection.feedbackPlaceholder")}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
           rows={2}
           onKeyDown={(e) => e.stopPropagation()}
@@ -302,7 +308,7 @@ export function ConceptSelectionView({ onRegenerate, isRegenerating }: ConceptSe
             onClick={onRegenerate}
             disabled={isRegenerating}
           >
-            {isRegenerating ? "Regenerating..." : "None of these — regenerate with different templates"}
+            {isRegenerating ? t("actions.regenerating") : t("actions.regenerateDifferentTemplates")}
           </Button>
         )}
       </div>

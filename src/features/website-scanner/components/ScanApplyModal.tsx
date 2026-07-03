@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Shield, Users, Package, Swords, CheckCircle, Loader2 } from 'lucide-react';
 import { Modal } from '@/components/shared';
 import { useWebsiteScannerStore } from '../stores/useWebsiteScannerStore';
@@ -11,13 +12,14 @@ interface ScanApplyModalProps {
 }
 
 const CATEGORIES = [
-  { key: 'brandAssets', label: 'Brand Foundation', icon: Shield, color: 'teal' },
-  { key: 'personas', label: 'Personas', icon: Users, color: 'blue' },
-  { key: 'products', label: 'Products & Services', icon: Package, color: 'purple' },
-  { key: 'competitors', label: 'Competitors', icon: Swords, color: 'amber' },
+  { key: 'brandAssets', icon: Shield, color: 'teal' },
+  { key: 'personas', icon: Users, color: 'blue' },
+  { key: 'products', icon: Package, color: 'purple' },
+  { key: 'competitors', icon: Swords, color: 'amber' },
 ] as const;
 
 export function ScanApplyModal({ onNavigate }: ScanApplyModalProps) {
+  const { t } = useTranslation('website-scanner');
   const { jobId, closeApplyModal, setViewState } = useWebsiteScannerStore();
   const { data: progress } = useScanProgress(jobId);
   const applyMutation = useApplyResults();
@@ -66,15 +68,15 @@ export function ScanApplyModal({ onNavigate }: ScanApplyModalProps) {
   );
 
   return (
-    <Modal isOpen onClose={closeApplyModal} title="Apply Scan Results" size="md">
+    <Modal isOpen onClose={closeApplyModal} title={t('applyModal.title')} size="md">
       <div className="space-y-4">
         <p className="text-sm text-gray-500">
-          Select which categories to apply to your workspace. This will populate your brand profile with the scanned data.
+          {t('applyModal.description')}
         </p>
 
         {/* Category checkboxes */}
         <div className="space-y-2">
-          {CATEGORIES.map(({ key, label, icon: Icon }) => {
+          {CATEGORIES.map(({ key, icon: Icon }) => {
             const count = counts[key];
             const isSelected = selectedCategories.has(key);
             const isDisabled = count === 0;
@@ -98,9 +100,9 @@ export function ScanApplyModal({ onNavigate }: ScanApplyModalProps) {
                   className="rounded border-gray-300 text-primary focus:ring-primary-500"
                 />
                 <Icon className="h-4 w-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-900 flex-1">{label}</span>
+                <span className="text-sm font-medium text-gray-900 flex-1">{t(`categories.${key}`)}</span>
                 <span className="text-xs text-gray-500">
-                  {count} item{count !== 1 ? 's' : ''}
+                  {t('applyModal.itemCount', { count })}
                 </span>
               </label>
             );
@@ -110,14 +112,14 @@ export function ScanApplyModal({ onNavigate }: ScanApplyModalProps) {
         {/* Summary */}
         <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-sm text-gray-600">
-            <strong>{totalSelected}</strong> items will be applied to your workspace
+            <strong>{totalSelected}</strong> {t('applyModal.summarySuffix', { count: totalSelected })}
           </p>
         </div>
 
         {/* Error */}
         {applyMutation.isError && (
           <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg" role="alert">
-            Failed to apply results. Please try again.
+            {t('applyModal.applyError')}
           </div>
         )}
 
@@ -127,7 +129,7 @@ export function ScanApplyModal({ onNavigate }: ScanApplyModalProps) {
             onClick={closeApplyModal}
             className="px-4 py-2 border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
           >
-            Cancel
+            {t('applyModal.cancel')}
           </button>
           <button
             onClick={handleApply}
@@ -138,12 +140,12 @@ export function ScanApplyModal({ onNavigate }: ScanApplyModalProps) {
             {applyMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Applying...
+                {t('applyModal.applying')}
               </>
             ) : (
               <>
                 <CheckCircle className="h-4 w-4" />
-                Apply Results
+                {t('applyModal.apply')}
               </>
             )}
           </button>

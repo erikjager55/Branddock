@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { useVoiceguide } from "../hooks";
@@ -18,6 +19,7 @@ interface BrandVoiceguidePageProps {
 }
 
 export function BrandVoiceguidePage({ onNavigateToAnalyzer }: BrandVoiceguidePageProps) {
+  const { t } = useTranslation("brandvoice");
   const { data, isLoading, isError } = useVoiceguide();
   const activeTab = useVoiceguideStore((s) => s.activeTab);
   const setActiveTab = useVoiceguideStore((s) => s.setActiveTab);
@@ -38,7 +40,7 @@ export function BrandVoiceguidePage({ onNavigateToAnalyzer }: BrandVoiceguidePag
     return (
       <PageShell maxWidth="7xl">
         <div className="bg-rose-50 border border-rose-200 rounded-lg p-6 text-rose-700 text-sm">
-          Could not load Brand Voice. Try refreshing the page.
+          {t("guide.loadError")}
         </div>
       </PageShell>
     );

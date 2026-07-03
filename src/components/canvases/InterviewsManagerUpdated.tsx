@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useFormat } from '@/lib/ui-i18n/format';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -114,6 +116,8 @@ interface InterviewsManagerProps {
 }
 
 export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, researchPlanConfig, onNavigateToAsset, onReturnToHub }: InterviewsManagerProps) {
+  const { t } = useTranslation('canvases');
+  const { formatDate: formatDateLocale } = useFormat();
   const [viewStatus, setViewStatus] = useState<'in-progress' | 'approved'>('in-progress');
   const [selectedInterviewId, setSelectedInterviewId] = useState<string | null>(null);
   const [editMode, setEditMode] = useState<string | null>(null);
@@ -286,18 +290,17 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
   // Helper functions
   const formatDate = (date: Date | undefined) => {
     if (!date) return '';
-    const d = new Date(date);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return formatDateLocale(date, { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const getLockReasonLabel = (reason?: string) => {
     const reasons: Record<string, string> = {
-      'finalized': 'Finalized for report',
-      'used-in-canvas': 'Used in canvas',
-      'approved-by-stakeholder': 'Approved by stakeholder',
-      'other': 'Other reason'
+      'finalized': t('interviewsManager.lockReasons.finalized'),
+      'used-in-canvas': t('interviewsManager.lockReasons.usedInCanvas'),
+      'approved-by-stakeholder': t('interviewsManager.lockReasons.approvedByStakeholder'),
+      'other': t('interviewsManager.lockReasons.other')
     };
-    return reasons[reason || ''] || 'Locked';
+    return reasons[reason || ''] || t('interviewsManager.lockedFallback');
   };
 
   // Generic field-update: value type per Interview field (string, string[], Date, etc.).
@@ -434,11 +437,11 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
   // Get status badge
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'add-contact': { label: 'Add Contact', color: 'bg-gray-100 text-gray-700' },
-      'contacted': { label: 'Contacted', color: 'bg-yellow-100 text-yellow-700' },
-      'appointment-made': { label: 'Scheduled', color: 'bg-blue-100 text-blue-700' },
-      'interview-held': { label: 'Interview Held', color: 'bg-purple-100 text-purple-700' },
-      'results-added': { label: 'Results Added', color: 'bg-green-100 text-green-700' }
+      'add-contact': { label: t('interviewsManager.status.addContact'), color: 'bg-gray-100 text-gray-700' },
+      'contacted': { label: t('interviewsManager.status.contacted'), color: 'bg-yellow-100 text-yellow-700' },
+      'appointment-made': { label: t('interviewsManager.status.scheduled'), color: 'bg-blue-100 text-blue-700' },
+      'interview-held': { label: t('interviewsManager.status.interviewHeld'), color: 'bg-purple-100 text-purple-700' },
+      'results-added': { label: t('interviewsManager.status.resultsAdded'), color: 'bg-green-100 text-green-700' }
     };
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['add-contact'];
     
@@ -461,9 +464,9 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
   const getStatusLabel = () => {
     switch (viewStatus) {
       case 'in-progress':
-        return 'In Progress';
+        return t('status.inProgress');
       case 'approved':
-        return 'Approved';
+        return t('status.approved');
     }
   };
 
@@ -487,33 +490,33 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
             <div className="flex items-center gap-6">
               <div>
                 <div className="text-2xl font-semibold">{inProgressInterviews.length}/{totalInterviews}</div>
-                <div className="text-sm text-muted-foreground">Active Interviews</div>
+                <div className="text-sm text-muted-foreground">{t('interviewsManager.activeInterviews')}</div>
               </div>
               <Separator orientation="vertical" className="h-12" />
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-gray-400"></div>
                   <span className="text-sm text-muted-foreground">
-                    {interviews.filter(i => i.status === 'add-contact').length} To Schedule
+                    {t('interviewsManager.toScheduleCount', { count: interviews.filter(i => i.status === 'add-contact').length })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                   <span className="text-sm text-muted-foreground">
-                    {interviews.filter(i => i.status === 'appointment-made').length} Scheduled
+                    {t('interviewsManager.scheduledCount', { count: interviews.filter(i => i.status === 'appointment-made').length })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-purple-500"></div>
                   <span className="text-sm text-muted-foreground">
-                    {interviews.filter(i => i.status === 'interview-held').length} In Review
+                    {t('interviewsManager.inReviewCount', { count: interviews.filter(i => i.status === 'interview-held').length })}
                   </span>
                 </div>
               </div>
             </div>
             <Button onClick={() => setAddInterviewDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Interview
+              {t('interviewsManager.addInterview')}
             </Button>
           </div>
         </CardContent>
@@ -528,36 +531,36 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
           const workflowSteps = [
             {
               step: 1,
-              title: 'Add Contact Information',
-              description: 'Fill in interviewee details and contact information',
+              title: t('interviewsManager.steps.contactTitle'),
+              description: t('interviewsManager.steps.contactDesc'),
               isCompleted: !!(interview.interviewee && interview.email),
               isCurrent: !interview.interviewee || !interview.email
             },
             {
               step: 2,
-              title: 'Schedule Interview',
-              description: 'Set date, time and select brand assets to discuss',
+              title: t('interviewsManager.steps.scheduleTitle'),
+              description: t('interviewsManager.steps.scheduleDesc'),
               isCompleted: interview.status !== 'add-contact' && interview.selectedAssets.length > 0,
               isCurrent: !!(interview.interviewee && interview.email) && (interview.status === 'add-contact' || interview.selectedAssets.length === 0)
             },
             {
               step: 3,
-              title: 'Document Results',
-              description: 'Add interview insights and key findings',
+              title: t('interviewsManager.steps.documentTitle'),
+              description: t('interviewsManager.steps.documentDesc'),
               isCompleted: interview.status === 'results-added',
               isCurrent: interview.status === 'appointment-made' || interview.status === 'contacted'
             },
             {
               step: 4,
-              title: 'Conduct Interview',
-              description: 'Hold the interview and take initial notes',
+              title: t('interviewsManager.steps.conductTitle'),
+              description: t('interviewsManager.steps.conductDesc'),
               isCompleted: interview.status === 'interview-held' || interview.status === 'results-added',
               isCurrent: interview.status === 'interview-held'
             },
             {
               step: 5,
-              title: 'Lock & Approve',
-              description: 'Finalize interview and lock for reporting',
+              title: t('interviewsManager.steps.lockTitle'),
+              description: t('interviewsManager.steps.lockDesc'),
               isCompleted: interview.lockStatus === 'locked',
               isCurrent: interview.status === 'results-added' && interview.lockStatus === 'editable'
             }
@@ -581,7 +584,7 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                           </div>
                           {interview.interviewee && (
                             <div className="text-sm text-muted-foreground">
-                              {interview.interviewee} • {interview.position} at {interview.company}
+                              {interview.interviewee} • {t('interviewsManager.positionAtCompany', { position: interview.position, company: interview.company })}
                             </div>
                           )}
                         </div>
@@ -595,12 +598,12 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {interview.time} • {interview.duration} min
+                          {interview.time} • {t('interviewsManager.minutes', { duration: interview.duration })}
                         </span>
                         {interview.selectedAssets.length > 0 && (
                           <span className="flex items-center gap-1">
                             <Package className="h-3 w-3" />
-                            {interview.selectedAssets.length} assets
+                            {t('common.assetsCount', { count: interview.selectedAssets.length })}
                           </span>
                         )}
                       </div>
@@ -640,20 +643,20 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => openDetailView(interview.id)}>
                             <Edit3 className="h-4 w-4 mr-2" />
-                            Edit Details
+                            {t('interviewsManager.editDetails')}
                           </DropdownMenuItem>
                           {interview.status === 'results-added' && interview.lockStatus === 'editable' && (
                             <DropdownMenuItem onClick={() => handleLockInterview(interview.id)}>
                               <Lock className="h-4 w-4 mr-2" />
-                              Lock Interview
+                              {t('interviewsManager.lockInterview')}
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleDeleteInterview(interview.id)}
                             className="text-red-600"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            {t('actions.delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -676,7 +679,7 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                       >
                         <span className="flex items-center gap-2">
                           <Lightbulb className="h-4 w-4" />
-                          View Interview Workflow
+                          {t('interviewsManager.viewWorkflow')}
                         </span>
                         {isExpanded ? (
                           <ChevronDown className="h-4 w-4" />
@@ -730,12 +733,12 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
             <div className="flex items-center gap-6">
               <div>
                 <div className="text-2xl font-semibold">{approvedInterviews.length}</div>
-                <div className="text-sm text-muted-foreground">Approved Interviews</div>
+                <div className="text-sm text-muted-foreground">{t('interviewsManager.approvedInterviews')}</div>
               </div>
               <Separator orientation="vertical" className="h-12" />
               <div>
                 <div className="text-sm text-muted-foreground">
-                  All interviews locked and ready for analysis
+                  {t('interviewsManager.allLocked')}
                 </div>
               </div>
             </div>
@@ -743,30 +746,30 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
-                    Sort: {approvedSort === 'date' && 'Date'}
-                    {approvedSort === 'name' && 'Name'}
-                    {approvedSort === 'assets' && 'Assets'}
+                    {t('interviewsManager.sortPrefix')} {approvedSort === 'date' && t('interviewsManager.sortDate')}
+                    {approvedSort === 'name' && t('interviewsManager.sortName')}
+                    {approvedSort === 'assets' && t('interviewsManager.sortAssets')}
                     <ChevronDown className="h-4 w-4 ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => setApprovedSort('date')}>
                     <Calendar className="h-3 w-3 mr-2" />
-                    By Date
+                    {t('interviewsManager.byDate')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setApprovedSort('name')}>
                     <Users className="h-3 w-3 mr-2" />
-                    By Name
+                    {t('interviewsManager.byName')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setApprovedSort('assets')}>
                     <Package className="h-3 w-3 mr-2" />
-                    By Assets
+                    {t('interviewsManager.byAssets')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button>
                 <Download className="h-4 w-4 mr-2" />
-                Export All
+                {t('interviewsManager.exportAll')}
               </Button>
             </div>
           </div>
@@ -794,11 +797,11 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                           <h3 className="font-semibold">{interview.interviewee}</h3>
                           <Badge className="bg-green-100 text-green-700">
                             <Lock className="h-3 w-3 mr-1" />
-                            Locked
+                            {t('status.locked')}
                           </Badge>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {interview.position} at {interview.company}
+                          {t('interviewsManager.positionAtCompany', { position: interview.position, company: interview.company })}
                         </div>
                       </div>
                     </div>
@@ -811,11 +814,11 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {interview.duration} min
+                        {t('interviewsManager.minutes', { duration: interview.duration })}
                       </span>
                       <span className="flex items-center gap-1">
                         <Package className="h-3 w-3" />
-                        {interview.selectedAssets.length} assets
+                        {t('common.assetsCount', { count: interview.selectedAssets.length })}
                       </span>
                       {interview.interviewer && (
                         <span className="flex items-center gap-1">
@@ -836,7 +839,7 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                     {interview.lockedBy && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Lock className="h-3 w-3 text-green-600" />
-                        <span>Locked by {interview.lockedBy} on {formatDate(interview.lockedAt)}</span>
+                        <span>{t('interviewStep.lockedBy', { by: interview.lockedBy, date: formatDate(interview.lockedAt) })}</span>
                         {interview.lockReason && (
                           <>
                             <span>•</span>
@@ -870,12 +873,12 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                           handleUnlockInterview(interview.id);
                         }}>
                           <Unlock className="h-4 w-4 mr-2" />
-                          Unlock Interview
+                          {t('interviewsManager.unlockInterview')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                         }}>
                           <FileText className="h-4 w-4 mr-2" />
-                          Export Report
+                          {t('interviewsManager.exportReport')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -903,10 +906,10 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
               <Users className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="font-bold text-xl">1-on-1 Interview Manager</h2>
+              <h2 className="font-bold text-xl">{t('interviewsManager.title')}</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {viewStatus === 'in-progress' && 'Conduct structured interviews with stakeholders'}
-                {viewStatus === 'approved' && 'Completed and locked interviews ready for analysis'}
+                {viewStatus === 'in-progress' && t('interviewsManager.headerInProgress')}
+                {viewStatus === 'approved' && t('interviewsManager.headerApproved')}
               </p>
             </div>
           </div>
@@ -926,12 +929,12 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
               <DropdownMenuContent align="end" className="w-[220px]">
                 <DropdownMenuItem onClick={() => setViewStatus('in-progress')} className="cursor-pointer py-3">
                   <Play className="h-4 w-4 mr-2 text-blue-600" />
-                  <span>In Progress</span>
+                  <span>{t('status.inProgress')}</span>
                   {viewStatus === 'in-progress' && <Check className="h-4 w-4 ml-auto" />}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setViewStatus('approved')} className="cursor-pointer py-3">
                   <Check className="h-4 w-4 mr-2 text-green-600" />
-                  <span>Approved</span>
+                  <span>{t('status.approved')}</span>
                   {viewStatus === 'approved' && <Check className="h-4 w-4 ml-auto" />}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -947,28 +950,28 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
       <Dialog open={addInterviewDialogOpen} onOpenChange={setAddInterviewDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Interview</DialogTitle>
+            <DialogTitle>{t('interviewsManager.addNewInterview')}</DialogTitle>
             <DialogDescription>
-              Create a new interview slot to schedule with a stakeholder
+              {t('interviewsManager.addNewDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Interview Name</Label>
-              <Input 
+              <Label>{t('interviewsManager.interviewName')}</Label>
+              <Input
                 value={newInterviewName}
                 onChange={(e) => setNewInterviewName(e.target.value)}
-                placeholder="e.g., Leadership Interview #3"
+                placeholder={t('interviewsManager.interviewNamePlaceholder')}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddInterviewDialogOpen(false)}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button onClick={handleAddInterview}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Interview
+              {t('interviewsManager.addInterview')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -990,7 +993,7 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                       {selectedDetailInterviewData.lockStatus === 'locked' && (
                         <Badge className="bg-green-100 text-green-700">
                           <Lock className="h-3 w-3 mr-1" />
-                          Locked
+                          {t('status.locked')}
                         </Badge>
                       )}
                     </div>
@@ -1009,20 +1012,20 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                 {/* Contact Information */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Contact Information</CardTitle>
+                    <CardTitle className="text-base">{t('interviewsManager.contactInfo')}</CardTitle>
                   </CardHeader>
                   <CardContent className="grid gap-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Interviewee</Label>
-                        <Input 
+                        <Label>{t('interviewsManager.interviewee')}</Label>
+                        <Input
                           value={selectedDetailInterviewData.interviewee}
                           onChange={(e) => updateInterview(selectedDetailInterviewData.id, 'interviewee', e.target.value)}
                           disabled={selectedDetailInterviewData.lockStatus === 'locked'}
                         />
                       </div>
                       <div>
-                        <Label>Position</Label>
+                        <Label>{t('interviewStep.position')}</Label>
                         <Input 
                           value={selectedDetailInterviewData.position}
                           onChange={(e) => updateInterview(selectedDetailInterviewData.id, 'position', e.target.value)}
@@ -1032,16 +1035,16 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Email</Label>
-                        <Input 
+                        <Label>{t('interviewStep.email')}</Label>
+                        <Input
                           value={selectedDetailInterviewData.email}
                           onChange={(e) => updateInterview(selectedDetailInterviewData.id, 'email', e.target.value)}
                           disabled={selectedDetailInterviewData.lockStatus === 'locked'}
                         />
                       </div>
                       <div>
-                        <Label>Phone</Label>
-                        <Input 
+                        <Label>{t('interviewStep.phone')}</Label>
+                        <Input
                           value={selectedDetailInterviewData.phone}
                           onChange={(e) => updateInterview(selectedDetailInterviewData.id, 'phone', e.target.value)}
                           disabled={selectedDetailInterviewData.lockStatus === 'locked'}
@@ -1049,7 +1052,7 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                       </div>
                     </div>
                     <div>
-                      <Label>Company</Label>
+                      <Label>{t('interviewStep.company')}</Label>
                       <Input 
                         value={selectedDetailInterviewData.company}
                         onChange={(e) => updateInterview(selectedDetailInterviewData.id, 'company', e.target.value)}
@@ -1062,13 +1065,13 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                 {/* Interview Details */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Interview Schedule</CardTitle>
+                    <CardTitle className="text-base">{t('interviewsManager.interviewSchedule')}</CardTitle>
                   </CardHeader>
                   <CardContent className="grid gap-4">
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <Label>Date</Label>
-                        <Input 
+                        <Label>{t('common.date')}</Label>
+                        <Input
                           type="date"
                           value={selectedDetailInterviewData.date}
                           onChange={(e) => updateInterview(selectedDetailInterviewData.id, 'date', e.target.value)}
@@ -1076,8 +1079,8 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                         />
                       </div>
                       <div>
-                        <Label>Time</Label>
-                        <Input 
+                        <Label>{t('common.time')}</Label>
+                        <Input
                           type="time"
                           value={selectedDetailInterviewData.time}
                           onChange={(e) => updateInterview(selectedDetailInterviewData.id, 'time', e.target.value)}
@@ -1085,7 +1088,7 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                         />
                       </div>
                       <div>
-                        <Label>Duration (min)</Label>
+                        <Label>{t('interviewStep.durationMin')}</Label>
                         <Input 
                           type="number"
                           value={selectedDetailInterviewData.duration}
@@ -1100,9 +1103,9 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                 {/* Brand Assets Selection */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Brand Assets to Discuss</CardTitle>
+                    <CardTitle className="text-base">{t('interviewStep.assetsToDiscuss')}</CardTitle>
                     <CardDescription>
-                      Select which brand assets to cover in this interview
+                      {t('interviewsManager.selectAssetsDesc')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -1147,13 +1150,13 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                 {/* Interview Notes */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Notes</CardTitle>
+                    <CardTitle className="text-base">{t('interviewsManager.notes')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Textarea 
+                    <Textarea
                       value={selectedDetailInterviewData.notes}
                       onChange={(e) => updateInterview(selectedDetailInterviewData.id, 'notes', e.target.value)}
-                      placeholder="Add your notes here..."
+                      placeholder={t('interviewsManager.notesPlaceholder')}
                       rows={3}
                       disabled={selectedDetailInterviewData.lockStatus === 'locked'}
                     />
@@ -1163,16 +1166,16 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                 {/* Interview Results */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Interview Results</CardTitle>
+                    <CardTitle className="text-base">{t('interviewsManager.interviewResults')}</CardTitle>
                     <CardDescription>
-                      Document key insights and findings from the interview
+                      {t('interviewsManager.resultsDesc')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Textarea 
+                    <Textarea
                       value={selectedDetailInterviewData.interviewResults}
                       onChange={(e) => updateInterview(selectedDetailInterviewData.id, 'interviewResults', e.target.value)}
-                      placeholder="Add interview results and insights..."
+                      placeholder={t('interviewsManager.resultsPlaceholder')}
                       rows={8}
                       disabled={selectedDetailInterviewData.lockStatus === 'locked'}
                     />
@@ -1182,7 +1185,7 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                 {/* Status Update */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Interview Status</CardTitle>
+                    <CardTitle className="text-base">{t('interviewsManager.interviewStatus')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Select
@@ -1194,11 +1197,11 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="add-contact">Add Contact</SelectItem>
-                        <SelectItem value="contacted">Contacted</SelectItem>
-                        <SelectItem value="appointment-made">Appointment Made</SelectItem>
-                        <SelectItem value="interview-held">Interview Held</SelectItem>
-                        <SelectItem value="results-added">Results Added</SelectItem>
+                        <SelectItem value="add-contact">{t('interviewsManager.status.addContact')}</SelectItem>
+                        <SelectItem value="contacted">{t('interviewsManager.status.contacted')}</SelectItem>
+                        <SelectItem value="appointment-made">{t('interviewsManager.status.appointmentMade')}</SelectItem>
+                        <SelectItem value="interview-held">{t('interviewsManager.status.interviewHeld')}</SelectItem>
+                        <SelectItem value="results-added">{t('interviewsManager.status.resultsAdded')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </CardContent>
@@ -1214,25 +1217,25 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                       disabled={selectedDetailInterviewData.status !== 'results-added'}
                     >
                       <Lock className="h-4 w-4 mr-2" />
-                      Lock Interview
+                      {t('interviewsManager.lockInterview')}
                     </Button>
                   ) : (
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => handleUnlockInterview(selectedDetailInterviewData.id)}
                     >
                       <Unlock className="h-4 w-4 mr-2" />
-                      Unlock Interview
+                      {t('interviewsManager.unlockInterview')}
                     </Button>
                   )}
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={closeDetailView}>
-                    Close
+                    {t('interviewsManager.close')}
                   </Button>
                   <Button onClick={closeDetailView}>
                     <Save className="h-4 w-4 mr-2" />
-                    Save Changes
+                    {t('actions.saveChanges')}
                   </Button>
                 </div>
               </DialogFooter>
@@ -1245,33 +1248,33 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
       <Dialog open={lockModalOpen} onOpenChange={setLockModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Lock Interview</DialogTitle>
+            <DialogTitle>{t('interviewsManager.lockInterview')}</DialogTitle>
             <DialogDescription>
-              Locking this interview will prevent further edits. Choose a reason for locking:
+              {t('interviewsManager.lockDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Lock Reason</Label>
+              <Label>{t('interviewsManager.lockReason')}</Label>
               <Select value={lockReason} onValueChange={setLockReason}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="finalized">Finalized for report</SelectItem>
-                  <SelectItem value="used-in-canvas">Used in canvas</SelectItem>
-                  <SelectItem value="approved-by-stakeholder">Approved by stakeholder</SelectItem>
-                  <SelectItem value="other">Other reason</SelectItem>
+                  <SelectItem value="finalized">{t('interviewsManager.lockReasons.finalized')}</SelectItem>
+                  <SelectItem value="used-in-canvas">{t('interviewsManager.lockReasons.usedInCanvas')}</SelectItem>
+                  <SelectItem value="approved-by-stakeholder">{t('interviewsManager.lockReasons.approvedByStakeholder')}</SelectItem>
+                  <SelectItem value="other">{t('interviewsManager.lockReasons.other')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {lockReason === 'other' && (
               <div>
-                <Label>Additional Notes</Label>
-                <Textarea 
+                <Label>{t('interviewsManager.additionalNotes')}</Label>
+                <Textarea
                   value={lockReasonText}
                   onChange={(e) => setLockReasonText(e.target.value)}
-                  placeholder="Explain why you're locking this interview..."
+                  placeholder={t('interviewsManager.lockNotesPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -1279,11 +1282,11 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLockModalOpen(false)}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button onClick={confirmLockInterview}>
               <Lock className="h-4 w-4 mr-2" />
-              Lock Interview
+              {t('interviewsManager.lockInterview')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1293,18 +1296,18 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
       <Dialog open={unlockModalOpen} onOpenChange={setUnlockModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Unlock Interview</DialogTitle>
+            <DialogTitle>{t('interviewsManager.unlockInterview')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to unlock this interview? This will allow it to be edited again.
+              {t('interviewsManager.unlockDesc')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setUnlockModalOpen(false)}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button onClick={confirmUnlockInterview}>
               <Unlock className="h-4 w-4 mr-2" />
-              Unlock Interview
+              {t('interviewsManager.unlockInterview')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { ArrowRight } from "lucide-react";
 import { Modal, Badge } from "@/components/shared";
 import type { ImpactPreview } from "../../types/workshop-purchase.types";
@@ -12,16 +13,21 @@ interface DashboardImpactModalProps {
   isLoading: boolean;
 }
 
-const STATUS_BADGE_MAP: Record<string, { variant: "default" | "success" | "warning" | "info"; label: string }> = {
-  AVAILABLE: { variant: "default", label: "Available" },
-  IN_PROGRESS: { variant: "info", label: "In Progress" },
-  COMPLETED: { variant: "success", label: "Completed" },
-  VALIDATED: { variant: "success", label: "Validated" },
+const STATUS_BADGE_MAP: Record<string, { variant: "default" | "success" | "warning" | "info"; labelKey: string }> = {
+  AVAILABLE: { variant: "default", labelKey: "purchase.impact.status.available" },
+  IN_PROGRESS: { variant: "info", labelKey: "purchase.impact.status.inProgress" },
+  COMPLETED: { variant: "success", labelKey: "purchase.impact.status.completed" },
+  VALIDATED: { variant: "success", labelKey: "purchase.impact.status.validated" },
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const config = STATUS_BADGE_MAP[status] ?? { variant: "default" as const, label: status };
-  return <Badge variant={config.variant} size="sm">{config.label}</Badge>;
+  const { t } = useTranslation("workshop");
+  const config = STATUS_BADGE_MAP[status];
+  return (
+    <Badge variant={config?.variant ?? "default"} size="sm">
+      {config ? t(config.labelKey) : status}
+    </Badge>
+  );
 }
 
 export function DashboardImpactModal({
@@ -31,20 +37,17 @@ export function DashboardImpactModal({
   updatedCount,
   isLoading,
 }: DashboardImpactModalProps) {
+  const { t } = useTranslation("workshop");
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Dashboard Impact Preview" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={t("purchase.impact.title")} size="md">
       {isLoading ? (
         <div className="py-8 text-center text-sm text-gray-500">
-          Calculating impact...
+          {t("purchase.impact.calculating")}
         </div>
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            Purchasing this workshop will update{" "}
-            <span className="font-semibold text-gray-900">
-              {updatedCount} asset{updatedCount !== 1 ? "s" : ""}
-            </span>{" "}
-            on your dashboard.
+            {t("purchase.impact.summary", { count: updatedCount })}
           </p>
 
           <div className="space-y-3">

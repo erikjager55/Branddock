@@ -1,20 +1,22 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useInviteMember } from '@/hooks/use-settings';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { Modal, Input, Select, Button } from '@/components/shared';
 import { Mail } from 'lucide-react';
 
-const ROLE_OPTIONS = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'member', label: 'Member' },
-  { value: 'viewer', label: 'Viewer' },
-];
-
 export function InviteMemberModal() {
+  const { t } = useTranslation('settings-team');
   const isOpen = useSettingsStore((s) => s.isInviteModalOpen);
   const setIsOpen = useSettingsStore((s) => s.setIsInviteModalOpen);
+
+  const ROLE_OPTIONS = [
+    { value: 'admin', label: t('roles.admin') },
+    { value: 'member', label: t('roles.member') },
+    { value: 'viewer', label: t('roles.viewer') },
+  ];
 
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<string | null>('member');
@@ -43,11 +45,11 @@ export function InviteMemberModal() {
       handleClose();
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : 'Failed to send invitation';
+        err instanceof Error ? err.message : t('invite.errorSendFailed');
       if (message.toLowerCase().includes('duplicate') || message.toLowerCase().includes('already')) {
-        setError('This email has already been invited.');
+        setError(t('invite.errorAlreadyInvited'));
       } else if (message.toLowerCase().includes('seat') || message.toLowerCase().includes('limit')) {
-        setError('Seat limit reached. Upgrade your plan to invite more members.');
+        setError(t('invite.errorSeatLimit'));
       } else {
         setError(message);
       }
@@ -58,13 +60,13 @@ export function InviteMemberModal() {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Invite Team Member"
-      subtitle="Send an invitation to collaborate on your workspace."
+      title={t('invite.title')}
+      subtitle={t('invite.subtitle')}
       size="sm"
       footer={
         <div className="flex justify-end gap-3 pt-3">
           <Button variant="secondary" onClick={handleClose}>
-            Cancel
+            {t('invite.cancel')}
           </Button>
           <Button
             data-testid="invite-submit-button"
@@ -73,16 +75,16 @@ export function InviteMemberModal() {
             disabled={!email.trim()}
             isLoading={inviteMember.isPending}
           >
-            Send Invitation
+            {t('invite.send')}
           </Button>
         </div>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="Email address"
+          label={t('invite.emailLabel')}
           type="email"
-          placeholder="colleague@company.com"
+          placeholder={t('invite.emailPlaceholder')}
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
@@ -94,11 +96,11 @@ export function InviteMemberModal() {
         />
 
         <Select
-          label="Role"
+          label={t('invite.roleLabel')}
           value={role}
           onChange={setRole}
           options={ROLE_OPTIONS}
-          placeholder="Select a role..."
+          placeholder={t('invite.rolePlaceholder')}
         />
       </form>
     </Modal>
