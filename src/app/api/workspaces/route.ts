@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
 import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "@/lib/constants/canonical-brand-assets";
+import { invalidateBrandContext } from "@/lib/ai/brand-context";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
+import { localeForLanguage, syncDefaultLocaleProfile } from "@/lib/content-locale/default-profile";
+
+// Content-taal-opties (ISO-639-1) — gedeeld door POST (create-form) + PATCH.
+const VALID_LANGUAGES = new Set(["en", "nl", "de", "fr", "es", "pt", "it"]);
 
 // GET /api/workspaces — list workspaces for the active organization
 export async function GET() {
@@ -101,7 +108,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name } = body;
+    const { name, contentLanguage: rawContentLanguage } = body;
+    const contentLanguage =
+      typeof rawContentLanguage === "string" && VALID_LANGUAGES.has(rawContentLanguage)
+        ? rawContentLanguage
+        : "en";
 
     if (!name) {
       return NextResponse.json(
@@ -132,6 +143,19 @@ export async function POST(request: NextRequest) {
           name,
           slug,
           organizationId: activeOrgId,
+          contentLanguage,
+        },
+      });
+
+      // Content-locale foundation — Brand + default-profiel (forward-compatible;
+      // getBrandContext-default-pad blijft op Workspace.contentLanguage draaien).
+      const brand = await tx.brand.create({ data: { workspaceId: ws.id } });
+      await tx.brandLocaleProfile.create({
+        data: {
+          brandId: brand.id,
+          workspaceId: ws.id,
+          locale: localeForLanguage(contentLanguage),
+          isDefault: true,
         },
       });
 
@@ -217,7 +241,6 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Build update data
-    const VALID_LANGUAGES = new Set(["en", "nl", "de", "fr", "es", "pt", "it"]);
     const updateData: Record<string, unknown> = {};
     if (typeof contentLanguage === "string") {
       if (!VALID_LANGUAGES.has(contentLanguage)) {
@@ -235,6 +258,14 @@ export async function PATCH(request: NextRequest) {
       data: updateData,
       select: { id: true, name: true, contentLanguage: true },
     });
+
+    // Content-locale foundation: sync het default-profiel + invalideer de
+    // brand-context-cache (anders serveert getBrandContext tot 5 min de oude taal).
+    if (typeof contentLanguage === "string") {
+      await syncDefaultLocaleProfile(workspaceId, localeForLanguage(contentLanguage));
+      invalidateBrandContext(workspaceId);
+      invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+    }
 
     return NextResponse.json(updated);
   } catch (error) {

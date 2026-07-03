@@ -87,6 +87,10 @@ const ns = {
       'Weet je zeker dat je "{{name}}" wilt verwijderen?\n\nAlle brand assets, persona’s, campagnes en andere data in deze workspace worden permanent verwijderd.',
     deleteFailed: 'Workspace verwijderen mislukt',
     createFailed: 'Workspace aanmaken mislukt',
+    updateFailed: 'Kon de workspace niet bijwerken',
+    contentLanguageLabel: 'Contenttaal',
+    contentLanguageHelp:
+      'De contenttaal is de taal waarin de AI content schrijft voor een workspace — los van je Weergavetaal (Instellingen → Weergave).',
     workspaceCount_one: '{{count}} workspace',
     workspaceCount_other: '{{count}} workspaces',
     newWorkspace: 'Nieuwe workspace',

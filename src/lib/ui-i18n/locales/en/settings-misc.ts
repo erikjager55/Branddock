@@ -90,6 +90,10 @@ const ns = {
       'Are you sure you want to delete "{{name}}"?\n\nAll brand assets, personas, campaigns and other data in this workspace will be permanently deleted.',
     deleteFailed: 'Failed to delete workspace',
     createFailed: 'Failed to create workspace',
+    updateFailed: 'Could not update the workspace',
+    contentLanguageLabel: 'Content language',
+    contentLanguageHelp:
+      'Content language is the language the AI writes in for a workspace — separate from your Display language (Settings → Appearance).',
     workspaceCount_one: '{{count}} workspace',
     workspaceCount_other: '{{count}} workspaces',
     newWorkspace: 'New Workspace',
