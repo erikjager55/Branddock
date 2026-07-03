@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
@@ -13,6 +14,7 @@ interface ThinkFeelActContentProps {
 }
 
 export function ThinkFeelActContent({ assetId, isEditing, config, hasToolbar = false }: ThinkFeelActContentProps) {
+  const { t } = useTranslation('asset-content');
   const [content, setContent] = useState({
     think: config.defaultContent?.think?.text || '',
     feel: config.defaultContent?.feel?.text || '',
@@ -22,9 +24,9 @@ export function ThinkFeelActContent({ assetId, isEditing, config, hasToolbar = f
   const dimensions = [
     {
       key: 'think' as const,
-      title: 'Think',
-      subtitle: 'Cognitive Goal',
-      description: 'What you want your audience to think and believe',
+      title: t('thinkFeelAct.dimensions.think.title'),
+      subtitle: t('thinkFeelAct.dimensions.think.subtitle'),
+      description: t('thinkFeelAct.dimensions.think.description'),
       icon: Brain,
       gradient: 'from-blue-500 to-cyan-500',
       bgLight: 'bg-blue-50 dark:bg-blue-900/20',
@@ -33,9 +35,9 @@ export function ThinkFeelActContent({ assetId, isEditing, config, hasToolbar = f
     },
     {
       key: 'feel' as const,
-      title: 'Feel',
-      subtitle: 'Emotional Goal',
-      description: 'The emotions you want to evoke in your audience',
+      title: t('thinkFeelAct.dimensions.feel.title'),
+      subtitle: t('thinkFeelAct.dimensions.feel.subtitle'),
+      description: t('thinkFeelAct.dimensions.feel.description'),
       icon: Heart,
       gradient: 'from-pink-500 to-rose-500',
       bgLight: 'bg-pink-50 dark:bg-pink-900/20',
@@ -44,9 +46,9 @@ export function ThinkFeelActContent({ assetId, isEditing, config, hasToolbar = f
     },
     {
       key: 'act' as const,
-      title: 'Act',
-      subtitle: 'Behavioral Goal',
-      description: 'The specific actions you want to drive',
+      title: t('thinkFeelAct.dimensions.act.title'),
+      subtitle: t('thinkFeelAct.dimensions.act.subtitle'),
+      description: t('thinkFeelAct.dimensions.act.description'),
       icon: Zap,
       gradient: 'from-amber-500 to-orange-500',
       bgLight: 'bg-amber-50 dark:bg-amber-900/20',
@@ -98,13 +100,13 @@ export function ThinkFeelActContent({ assetId, isEditing, config, hasToolbar = f
                   onChange={(e) =>
                     setContent({ ...content, [dimension.key]: e.target.value })
                   }
-                  placeholder={`Enter ${dimension.title.toLowerCase()} goal...`}
+                  placeholder={t('thinkFeelAct.placeholder', { dimension: dimension.title.toLowerCase() })}
                   className="min-h-[120px] resize-none border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary"
                 />
               ) : (
                 <div className={`p-4 rounded-lg ${dimension.bgLight} ${dimension.borderLight} border`}>
                   <p className="text-sm leading-relaxed">
-                    {content[dimension.key] || `No ${dimension.title.toLowerCase()} goal defined yet.`}
+                    {content[dimension.key] || t('thinkFeelAct.empty', { dimension: dimension.title.toLowerCase() })}
                   </p>
                 </div>
               )}

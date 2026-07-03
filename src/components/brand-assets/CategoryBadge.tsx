@@ -6,6 +6,7 @@
 // =============================================================
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Badge, type BadgeVariant } from '@/components/shared/Badge';
 import type { AssetCategory } from '@/types/brand-asset';
 
@@ -39,11 +40,12 @@ export interface CategoryBadgeProps {
 // ─── Component ───────────────────────────────────────────
 
 export function CategoryBadge({ category, size = 'sm', className }: CategoryBadgeProps) {
+  const { t } = useTranslation('brand-assets');
   const config = CATEGORY_CONFIG[category] ?? { variant: 'default' as BadgeVariant, label: category };
 
   return (
     <Badge variant={config.variant} size={size} className={className}>
-      {config.label}
+      {t(`category.${category}`, { defaultValue: config.label })}
     </Badge>
   );
 }

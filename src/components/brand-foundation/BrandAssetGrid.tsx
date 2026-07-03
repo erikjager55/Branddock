@@ -10,6 +10,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, AlertTriangle } from 'lucide-react';
 import { EmptyState, SkeletonCard } from '@/components/shared';
 import { useBrandAssetsQuery } from '@/hooks/use-brand-assets';
@@ -41,6 +42,7 @@ interface BrandAssetGridProps {
 // ─── Component ───────────────────────────────────────────
 
 export function BrandAssetGrid({ onAssetClick }: BrandAssetGridProps) {
+  const { t } = useTranslation('brand-foundation');
   const { workspaceId } = useWorkspace();
   const { data, isLoading, error } = useBrandAssetsQuery(workspaceId ?? undefined);
   const searchQuery = useBrandAssetStore((s) => s.searchQuery);
@@ -102,8 +104,8 @@ export function BrandAssetGrid({ onAssetClick }: BrandAssetGridProps) {
     return (
       <div data-testid="error-message" className="flex flex-col items-center justify-center py-16 text-center gap-3">
         <AlertTriangle className="w-10 h-10 text-amber-500" />
-        <h3 className="text-base font-semibold text-gray-900">Failed to load brand assets</h3>
-        <p className="text-sm text-gray-500 max-w-md">{error.message || 'An unexpected error occurred. Please try again later.'}</p>
+        <h3 className="text-base font-semibold text-gray-900">{t('grid.errorTitle')}</h3>
+        <p className="text-sm text-gray-500 max-w-md">{error.message || t('grid.errorFallback')}</p>
       </div>
     );
   }
@@ -113,16 +115,16 @@ export function BrandAssetGrid({ onAssetClick }: BrandAssetGridProps) {
     return (
       <EmptyState
         icon={FileText}
-        title="No assets found"
+        title={t('grid.emptyTitle')}
         description={
           hasActiveFilters
-            ? 'Try adjusting your filters to find what you are looking for.'
-            : 'Your brand foundation is empty. Add your first asset to get started.'
+            ? t('grid.emptyFilteredDescription')
+            : t('grid.emptyDescription')
         }
         action={
           hasActiveFilters
             ? {
-                label: 'Reset Filters',
+                label: t('grid.resetFilters'),
                 onClick: () => {
                   setSearchQuery('');
                   setCategoryFilter(null);
@@ -141,7 +143,13 @@ export function BrandAssetGrid({ onAssetClick }: BrandAssetGridProps) {
       {filteredAssets.map((asset) => (
         <BrandAssetCard
           key={asset.id}
-          asset={asset}
+          asset={{
+            ...asset,
+            name: t(`assets.${asset.slug}.name`, { defaultValue: asset.name }),
+            description: t(`assets.${asset.slug}.description`, {
+              defaultValue: asset.description,
+            }),
+          }}
           onClick={onAssetClick}
         />
       ))}

@@ -5,11 +5,13 @@
 // =============================================================
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Layers } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import { useBrandAssets } from '@/contexts';
 
 export function BrandFoundationHeader() {
+  const { t } = useTranslation('brand-foundation');
   const { brandAssets } = useBrandAssets();
 
   return (
@@ -20,16 +22,16 @@ export function BrandFoundationHeader() {
           <Layers className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Brand Foundation</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('header.title')}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Build your strategic foundation with premium brand tools
+            {t('header.subtitle')}
           </p>
         </div>
       </div>
 
       {/* Right: count badge */}
       <div className="flex items-center gap-3">
-        <Badge>{brandAssets.length} assets</Badge>
+        <Badge>{t('header.assetCount', { count: brandAssets.length })}</Badge>
       </div>
     </div>
   );

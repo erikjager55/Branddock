@@ -6,6 +6,7 @@
 // =============================================================
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { cn } from '@/components/ui/utils';
 
@@ -47,6 +48,7 @@ export function ValidationBreakdown({
   variant = 'compact',
   className,
 }: ValidationBreakdownProps) {
+  const { t } = useTranslation('brand-assets');
   const completedCount = METHODS.filter((m) => methods[m.key]).length;
 
   if (variant === 'compact') {
@@ -61,14 +63,14 @@ export function ValidationBreakdown({
                 'flex items-center gap-1 text-xs',
                 done ? 'text-emerald-600' : 'text-gray-400',
               )}
-              title={`${method.label}: ${done ? 'Completed' : 'Not started'}`}
+              title={`${t(`validation.methods.${method.key}`, { defaultValue: method.label })}: ${done ? t('validation.completed') : t('validation.notStarted')}`}
             >
               {done ? (
                 <CheckCircle2 className="w-3.5 h-3.5" />
               ) : (
                 <Circle className="w-3.5 h-3.5" />
               )}
-              <span>{method.shortLabel}</span>
+              <span>{t(`validation.methodsShort.${method.key}`, { defaultValue: method.shortLabel })}</span>
             </div>
           );
         })}
@@ -81,7 +83,7 @@ export function ValidationBreakdown({
     <div className={cn('space-y-2', className)}>
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-          Research Methods
+          {t('validation.heading')}
         </span>
         <span className="text-xs text-gray-500">
           {completedCount}/{METHODS.length}
@@ -104,7 +106,7 @@ export function ValidationBreakdown({
               <Circle className="w-4 h-4 text-gray-300 flex-shrink-0" />
             )}
             <span className={done ? 'text-emerald-700' : 'text-gray-500'}>
-              {method.label}
+              {t(`validation.methods.${method.key}`, { defaultValue: method.label })}
             </span>
           </div>
         );
