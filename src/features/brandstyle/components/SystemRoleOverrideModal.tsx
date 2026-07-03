@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal, Button } from "@/components/shared";
 import { updateStyleguide } from "../api/brandstyle.api";
@@ -28,6 +29,7 @@ export function SystemRoleOverrideModal({
   tokens,
   onClose,
 }: Props) {
+  const { t } = useTranslation("brandstyle-review");
   const [value, setValue] = useState(currentHex ?? resolvedHex ?? '#000000');
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -46,13 +48,13 @@ export function SystemRoleOverrideModal({
       queryClient.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
       onClose();
     },
-    onError: (e) => setError(e instanceof Error ? e.message : 'Save failed'),
+    onError: (e) => setError(e instanceof Error ? e.message : t("systemRoles.modal.errorSaveFailed")),
   });
 
   const handleSave = () => {
     const hex = normalizeHex(value);
     if (!hex) {
-      setError('Enter a valid hex value (e.g. #0D9488)');
+      setError(t("systemRoles.modal.errorInvalidHex"));
       return;
     }
     const nextColors: Record<string, string> = {
@@ -75,7 +77,7 @@ export function SystemRoleOverrideModal({
   const onSurface = tokens.resolved.colors['on-surface'] ?? '#000000';
 
   return (
-    <Modal isOpen={true} onClose={onClose} title={`Override ${role}`} size="md">
+    <Modal isOpen={true} onClose={onClose} title={t("systemRoles.modal.title", { role })} size="md">
       <div className="space-y-5">
         <p className="text-sm text-gray-600">{COLOR_ROLE_DESCRIPTIONS[role]}</p>
 
@@ -85,7 +87,7 @@ export function SystemRoleOverrideModal({
             style={{ backgroundColor: previewHex }}
           />
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-gray-700">Hex value</label>
+            <label className="block text-xs font-medium text-gray-700">{t("systemRoles.modal.hexLabel")}</label>
             <div className="flex items-center gap-2">
               <input
                 type="color"
@@ -105,18 +107,18 @@ export function SystemRoleOverrideModal({
         </div>
 
         <div className="rounded border border-gray-100 p-3 space-y-2">
-          <p className="text-xs font-medium text-gray-700 uppercase tracking-wide">Contrast preview</p>
+          <p className="text-xs font-medium text-gray-700 uppercase tracking-wide">{t("systemRoles.modal.contrastPreview")}</p>
           <div
             className="rounded px-3 py-2 text-sm"
             style={{ backgroundColor: previewHex, color: pickForeground(previewHex) }}
           >
-            Sample text on {role}
+            {t("systemRoles.modal.sampleOn", { role })}
           </div>
           <div
             className="rounded px-3 py-2 text-sm border"
             style={{ backgroundColor: surface, color: previewHex, borderColor: previewHex }}
           >
-            Sample text using {role} on surface
+            {t("systemRoles.modal.sampleUsing", { role })}
           </div>
           {isContrastPair(role) && (
             <ContrastBadge
@@ -134,7 +136,7 @@ export function SystemRoleOverrideModal({
 
         {resolvedHex && resolvedHex !== currentHex && (
           <div className="text-xs text-gray-500">
-            Resolver suggested: <span className="font-mono">{resolvedHex}</span>
+            {t("systemRoles.modal.resolverSuggested")} <span className="font-mono">{resolvedHex}</span>
           </div>
         )}
 
@@ -143,15 +145,15 @@ export function SystemRoleOverrideModal({
         <div className="flex justify-between gap-3 pt-2">
           {isOverride ? (
             <Button variant="ghost" onClick={handleRevert} disabled={mut.isPending}>
-              Revert to resolver
+              {t("systemRoles.modal.revert")}
             </Button>
           ) : <span />}
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose} disabled={mut.isPending}>
-              Cancel
+              {t("systemRoles.modal.cancel")}
             </Button>
             <Button variant="primary" onClick={handleSave} disabled={mut.isPending}>
-              {mut.isPending ? 'Saving…' : 'Save override'}
+              {mut.isPending ? t("systemRoles.modal.saving") : t("systemRoles.modal.save")}
             </Button>
           </div>
         </div>
@@ -196,11 +198,15 @@ function resolveContrastBg(
 }
 
 function ContrastBadge({ bg, fg }: { bg: string; fg: string }) {
+  const { t } = useTranslation("brandstyle-review");
   const ratio = contrastRatio(bg, fg);
   const pass = ratio >= 4.5;
   return (
     <p className={`text-xs font-medium ${pass ? 'text-emerald-700' : 'text-amber-700'}`}>
-      Contrast {ratio.toFixed(2)}:1 — {pass ? 'WCAG AA ✓' : 'Below WCAG AA (needs 4.5:1)'}
+      {t("systemRoles.modal.contrastBadge", {
+        ratio: ratio.toFixed(2),
+        verdict: pass ? t("systemRoles.modal.contrastPass") : t("systemRoles.modal.contrastFail"),
+      })}
     </p>
   );
 }

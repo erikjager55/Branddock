@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { History } from 'lucide-react';
 import type { VersionedResourceType } from '@prisma/client';
 import { useVersionHistory } from '@/hooks/useVersionHistory';
@@ -15,6 +16,7 @@ interface VersionPillProps {
 
 /** Small button showing version count — opens VersionHistoryPanel on click */
 export function VersionPill({ resourceType, resourceId, onRestore }: VersionPillProps) {
+  const { t } = useTranslation('versioning-impact');
   const [open, setOpen] = useState(false);
   const { data: versions } = useVersionHistory(resourceType, resourceId);
 
@@ -28,7 +30,7 @@ export function VersionPill({ resourceType, resourceId, onRestore }: VersionPill
         className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
       >
         <History className="h-3.5 w-3.5" />
-        {count} {count === 1 ? 'version' : 'versions'}
+        {t('versioning.pill.versions', { count })}
       </button>
 
       {open && (

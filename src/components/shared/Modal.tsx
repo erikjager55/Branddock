@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { COMPONENTS, COLORS, TYPOGRAPHY, cn } from '@/lib/constants/design-tokens';
 
@@ -104,6 +105,7 @@ export function Modal({
   zIndex,
   'data-testid': testId,
 }: ModalProps) {
+  const { t } = useTranslation('shared');
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -172,7 +174,7 @@ export function Modal({
             <button
               onClick={onClose}
               className={cn(COMPONENTS.button.icon, 'flex-shrink-0')}
-              aria-label="Close"
+              aria-label={t('modal.closeLabel')}
             >
               <X className="w-5 h-5" />
             </button>

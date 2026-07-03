@@ -3,6 +3,8 @@
 import { ShieldAlert, ShieldCheck, Pencil, Trash2, Sparkles, MessageCircle, Eye, EyeOff, Copy, Download, Zap } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 type LockEntityType = 'persona' | 'brand-asset' | 'trend-radar' | 'competitor';
 
@@ -15,45 +17,45 @@ interface LockConfirmDialogProps {
   onCancel: () => void;
 }
 
-function getLockBlockedItems(entityType: LockEntityType) {
+function getLockBlockedItems(entityType: LockEntityType, t: TFunction) {
   if (entityType === 'trend-radar') {
     return [
-      { icon: Pencil, label: 'Edit content' },
-      { icon: Trash2, label: 'Delete trend' },
-      { icon: Zap, label: 'Activate or dismiss trend' },
+      { icon: Pencil, label: t('confirmDialog.blocked.editContent') },
+      { icon: Trash2, label: t('confirmDialog.blocked.deleteTrend') },
+      { icon: Zap, label: t('confirmDialog.blocked.activateDismissTrend') },
     ];
   }
 
   const items = [
-    { icon: Pencil, label: 'Edit content' },
+    { icon: Pencil, label: t('confirmDialog.blocked.editContent') },
   ];
   // Brand assets cannot be deleted — only show delete for other entity types
   if (entityType !== 'brand-asset') {
-    items.push({ icon: Trash2, label: 'Delete item' });
+    items.push({ icon: Trash2, label: t('confirmDialog.blocked.deleteItem') });
   }
   items.push(
-    { icon: Sparkles, label: 'AI generation & regeneration' },
-    { icon: MessageCircle, label: entityType === 'brand-asset' ? 'Start AI Exploration' : 'Start new conversation' },
-    { icon: Pencil, label: 'Start research methods' },
+    { icon: Sparkles, label: t('confirmDialog.blocked.aiGeneration') },
+    { icon: MessageCircle, label: entityType === 'brand-asset' ? t('confirmDialog.blocked.startAiExploration') : t('confirmDialog.blocked.startNewConversation') },
+    { icon: Pencil, label: t('confirmDialog.blocked.startResearchMethods') },
   );
   return items;
 }
 
-const LOCK_HIDDEN = [
-  { icon: EyeOff, label: 'Empty/incomplete sections' },
-  { icon: EyeOff, label: 'AI tools & generation buttons' },
-];
+function getHiddenItems(isLocking: boolean, t: TFunction) {
+  const icon = isLocking ? EyeOff : Eye;
+  return [
+    { icon, label: t('confirmDialog.hidden.emptySections') },
+    { icon, label: t('confirmDialog.hidden.aiTools') },
+  ];
+}
 
-const UNLOCK_VISIBLE = [
-  { icon: Eye, label: 'Empty/incomplete sections' },
-  { icon: Eye, label: 'AI tools & generation buttons' },
-];
-
-const ALWAYS_AVAILABLE = [
-  { icon: Copy, label: 'Duplicate (creates unlocked copy)' },
-  { icon: Download, label: 'Export (PDF, JSON)' },
-  { icon: Eye, label: 'View completed sections' },
-];
+function getAlwaysAvailableItems(t: TFunction) {
+  return [
+    { icon: Copy, label: t('confirmDialog.alwaysAvailableItems.duplicate') },
+    { icon: Download, label: t('confirmDialog.alwaysAvailableItems.export') },
+    { icon: Eye, label: t('confirmDialog.alwaysAvailableItems.viewSections') },
+  ];
+}
 
 export function LockConfirmDialog({
   isOpen,
@@ -63,7 +65,8 @@ export function LockConfirmDialog({
   onConfirm,
   onCancel,
 }: LockConfirmDialogProps) {
-  const blockedItems = getLockBlockedItems(entityType);
+  const { t } = useTranslation('lock-billing');
+  const blockedItems = getLockBlockedItems(entityType, t);
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
@@ -109,7 +112,7 @@ export function LockConfirmDialog({
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             role="alertdialog"
             aria-modal="true"
-            aria-label={isLocking ? `Lock ${entityName}` : `Unlock ${entityName}`}
+            aria-label={isLocking ? t('confirmDialog.header.lockAria', { name: entityName }) : t('confirmDialog.header.unlockAria', { name: entityName })}
             className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden"
           >
             {/* Header */}
@@ -123,7 +126,7 @@ export function LockConfirmDialog({
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
-                  {isLocking ? 'Lock item' : 'Unlock item'}
+                  {isLocking ? t('confirmDialog.header.lockTitle') : t('confirmDialog.header.unlockTitle')}
                 </h2>
                 <p className="text-sm text-gray-500">{entityName}</p>
               </div>
@@ -134,7 +137,7 @@ export function LockConfirmDialog({
               {/* Block 1: blocked/enabled */}
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  {isLocking ? 'Will be blocked' : 'Will be enabled'}
+                  {isLocking ? t('confirmDialog.sections.willBeBlocked') : t('confirmDialog.sections.willBeEnabled')}
                 </p>
                 <div className="space-y-1.5">
                   {blockedItems.map(({ icon: Icon, label }) => (
@@ -149,10 +152,10 @@ export function LockConfirmDialog({
               {/* Block 2: hidden/visible */}
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  {isLocking ? 'Will be hidden' : 'Will be visible'}
+                  {isLocking ? t('confirmDialog.sections.willBeHidden') : t('confirmDialog.sections.willBeVisible')}
                 </p>
                 <div className="space-y-1.5">
-                  {(isLocking ? LOCK_HIDDEN : UNLOCK_VISIBLE).map(({ icon: Icon, label }) => (
+                  {getHiddenItems(isLocking, t).map(({ icon: Icon, label }) => (
                     <div key={label} className="flex items-center gap-2.5 text-sm text-gray-700">
                       <Icon className={`w-4 h-4 flex-shrink-0 ${isLocking ? 'text-amber-500' : 'text-emerald-500'}`} />
                       <span>{label}</span>
@@ -164,10 +167,10 @@ export function LockConfirmDialog({
               {/* Block 3: always available */}
               <div className="border-t border-gray-100 pt-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  Always available
+                  {t('confirmDialog.sections.alwaysAvailable')}
                 </p>
                 <div className="space-y-1.5">
-                  {ALWAYS_AVAILABLE.map(({ icon: Icon, label }) => (
+                  {getAlwaysAvailableItems(t).map(({ icon: Icon, label }) => (
                     <div key={label} className="flex items-center gap-2.5 text-sm text-gray-500">
                       <Icon className="w-4 h-4 flex-shrink-0 text-gray-400" />
                       <span>{label}</span>
@@ -183,7 +186,7 @@ export function LockConfirmDialog({
                 onClick={onCancel}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t('confirmDialog.cancel')}
               </button>
               <button
                 onClick={onConfirm}
@@ -193,7 +196,7 @@ export function LockConfirmDialog({
                     : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
                 }`}
               >
-                {isLocking ? 'Lock' : 'Unlock'}
+                {isLocking ? t('confirmDialog.lock') : t('confirmDialog.unlock')}
               </button>
             </div>
           </motion.div>

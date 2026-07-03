@@ -26,6 +26,7 @@ import {
   Loader2,
   RefreshCw,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { PageHeader } from '../shared/PageHeader';
 import { PageContainer } from '../shared/PageContainer';
 import { useUIState } from '../../contexts/UIStateContext';
@@ -55,6 +56,7 @@ interface ApiInvitation {
 }
 
 export function TeamManagementPage() {
+  const { t } = useTranslation('team');
   const { setActiveSection } = useUIState();
   const { organizationId } = useWorkspace();
   const [members, setMembers] = useState<ApiMember[]>([]);
@@ -81,7 +83,7 @@ export function TeamManagementPage() {
       setInvitations(data.invitations ?? []);
       setMyRole(data.myRole ?? 'viewer');
     } catch (err) {
-      setError('Could not load team members');
+      setError(t('errors.load'));
       console.error('[TeamManagement]', err);
     } finally {
       setIsLoading(false);
@@ -122,7 +124,7 @@ export function TeamManagementPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error ?? 'Failed to send invitation');
+        alert(data.error ?? t('errors.invite'));
         return;
       }
 
@@ -132,7 +134,7 @@ export function TeamManagementPage() {
       loadMembers(); // Refresh to show new invitation
     } catch (err) {
       console.error('Invite failed:', err);
-      alert('Failed to send invitation');
+      alert(t('errors.invite'));
     } finally {
       setIsInviting(false);
     }
@@ -151,7 +153,7 @@ export function TeamManagementPage() {
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!confirm('Are you sure you want to remove this team member?')) return;
+    if (!confirm(t('confirmRemove'))) return;
     // For now, just remove from local state — could add a DELETE endpoint later
     setMembers((prev) => prev.filter((m) => m.id !== memberId));
   };
@@ -187,7 +189,7 @@ export function TeamManagementPage() {
         <div className="flex items-center justify-center py-32">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 text-primary animate-spin" />
-            <p className="text-sm text-gray-500">Loading team...</p>
+            <p className="text-sm text-gray-500">{t('loading')}</p>
           </div>
         </div>
       </PageContainer>
@@ -202,7 +204,7 @@ export function TeamManagementPage() {
             <p className="text-gray-500">{error}</p>
             <Button variant="outline" onClick={loadMembers} className="gap-2">
               <RefreshCw className="h-4 w-4" />
-              Retry
+              {t('retry')}
             </Button>
           </div>
         </div>
@@ -217,12 +219,12 @@ export function TeamManagementPage() {
           icon={Users}
           iconBg="bg-gray-100"
           iconColor="text-gray-600"
-          title="Team"
-          subtitle="Manage team members and permissions"
-          backLabel="Settings"
+          title={t('page.title')}
+          subtitle={t('page.subtitle')}
+          backLabel={t('page.back')}
           onBack={() => setActiveSection('settings-account')}
           primaryAction={canManage ? {
-            label: '+ Invite Member',
+            label: t('page.invite'),
             icon: UserPlus,
             onClick: () => setShowInviteForm(!showInviteForm),
           } : undefined}
@@ -236,7 +238,7 @@ export function TeamManagementPage() {
                 <Crown className="h-5 w-5 text-yellow-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Owners</p>
+                <p className="text-sm text-muted-foreground">{t('stats.owners')}</p>
                 <p className="text-2xl font-bold">{roleCounts.owner}</p>
               </div>
             </div>
@@ -248,7 +250,7 @@ export function TeamManagementPage() {
                 <Shield className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Admins</p>
+                <p className="text-sm text-muted-foreground">{t('stats.admins')}</p>
                 <p className="text-2xl font-bold">{roleCounts.admin}</p>
               </div>
             </div>
@@ -260,7 +262,7 @@ export function TeamManagementPage() {
                 <Edit2 className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Members</p>
+                <p className="text-sm text-muted-foreground">{t('stats.members')}</p>
                 <p className="text-2xl font-bold">{roleCounts.member}</p>
               </div>
             </div>
@@ -272,7 +274,7 @@ export function TeamManagementPage() {
                 <Users className="h-5 w-5 text-gray-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Viewers</p>
+                <p className="text-sm text-muted-foreground">{t('stats.viewers')}</p>
                 <p className="text-2xl font-bold">{roleCounts.viewer}</p>
               </div>
             </div>
@@ -284,7 +286,7 @@ export function TeamManagementPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search team members..."
+              placeholder={t('search.placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -297,21 +299,21 @@ export function TeamManagementPage() {
           <Card className="p-6 border-2 border-primary/20">
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-semibold mb-1">Invite Team Member</h3>
+                <h3 className="text-lg font-semibold mb-1">{t('inviteForm.title')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Send an invitation to join your organization
+                  {t('inviteForm.subtitle')}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="invite-email">Email Address</Label>
+                  <Label htmlFor="invite-email">{t('inviteForm.emailLabel')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="invite-email"
                       type="email"
-                      placeholder="colleague@example.com"
+                      placeholder={t('inviteForm.emailPlaceholder')}
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       className="pl-9"
@@ -320,7 +322,7 @@ export function TeamManagementPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="invite-role">Role</Label>
+                  <Label htmlFor="invite-role">{t('inviteForm.roleLabel')}</Label>
                   <Select value={inviteRole} onValueChange={(value) => setInviteRole(value as TeamRole)}>
                     <SelectTrigger id="invite-role">
                       <SelectValue />
@@ -329,19 +331,19 @@ export function TeamManagementPage() {
                       <SelectItem value="viewer">
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4" />
-                          <span>Viewer</span>
+                          <span>{t('inviteForm.roleViewer')}</span>
                         </div>
                       </SelectItem>
                       <SelectItem value="member">
                         <div className="flex items-center gap-2">
                           <Edit2 className="h-4 w-4" />
-                          <span>Member</span>
+                          <span>{t('inviteForm.roleMember')}</span>
                         </div>
                       </SelectItem>
                       <SelectItem value="admin">
                         <div className="flex items-center gap-2">
                           <Shield className="h-4 w-4" />
-                          <span>Admin</span>
+                          <span>{t('inviteForm.roleAdmin')}</span>
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -356,10 +358,10 @@ export function TeamManagementPage() {
                   ) : (
                     <Mail className="h-4 w-4" />
                   )}
-                  Send Invitation
+                  {t('inviteForm.send')}
                 </Button>
                 <Button variant="outline" onClick={() => setShowInviteForm(false)}>
-                  Cancel
+                  {t('inviteForm.cancel')}
                 </Button>
               </div>
             </div>
@@ -371,7 +373,7 @@ export function TeamManagementPage() {
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Clock className="h-5 w-5 text-yellow-500" />
-              Pending Invitations ({invitations.length})
+              {t('invitations.heading', { count: invitations.length })}
             </h3>
             <div className="space-y-3">
               {invitations.map((invite) => (
@@ -383,19 +385,21 @@ export function TeamManagementPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{invite.email}</p>
                     <p className="text-xs text-muted-foreground">
-                      Invited as {invite.role} &middot; Expires{' '}
-                      {new Date(invite.expiresAt).toLocaleDateString()}
+                      {t('invitations.invitedAs', {
+                        role: invite.role,
+                        date: new Date(invite.expiresAt).toLocaleDateString(),
+                      })}
                     </p>
                   </div>
                   <Badge variant="outline" className="text-yellow-700 border-yellow-300">
-                    Pending
+                    {t('invitations.pending')}
                   </Badge>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleCancelInvite(invite.id)}
                     className="text-destructive hover:text-destructive"
-                    title="Cancel invitation"
+                    title={t('invitations.cancelTitle')}
                   >
                     <XCircle className="h-4 w-4" />
                   </Button>
@@ -409,7 +413,7 @@ export function TeamManagementPage() {
         <Card>
           <div className="p-6">
             <h3 className="text-lg font-semibold mb-4">
-              Team Members ({filteredMembers.length})
+              {t('membersList.heading', { count: filteredMembers.length })}
             </h3>
 
             <div className="space-y-4">
@@ -444,7 +448,7 @@ export function TeamManagementPage() {
                           <XCircle className="h-4 w-4 text-gray-400" />
                         )}
                         <span className="text-xs text-muted-foreground">
-                          {member.isActive ? 'Active' : 'Inactive'}
+                          {member.isActive ? t('membersList.active') : t('membersList.inactive')}
                         </span>
                       </div>
                     </div>
@@ -452,7 +456,9 @@ export function TeamManagementPage() {
                       {member.email}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Joined {new Date(member.joinedAt).toLocaleDateString()}
+                      {t('membersList.joined', {
+                        date: new Date(member.joinedAt).toLocaleDateString(),
+                      })}
                     </p>
                   </div>
 
@@ -483,11 +489,11 @@ export function TeamManagementPage() {
               {filteredMembers.length === 0 && (
                 <div className="text-center py-12">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-1">No team members found</h3>
+                  <h3 className="text-lg font-semibold mb-1">{t('membersList.emptyTitle')}</h3>
                   <p className="text-sm text-muted-foreground">
                     {searchQuery
-                      ? 'Try adjusting your search query'
-                      : 'Invite team members to get started'}
+                      ? t('membersList.emptySearch')
+                      : t('membersList.emptyDefault')}
                   </p>
                 </div>
               )}
@@ -497,15 +503,15 @@ export function TeamManagementPage() {
 
         {/* Role Permissions Info */}
         <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Role Permissions</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('permissions.heading')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <Crown className="h-5 w-5 text-yellow-500 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold">Owner</h4>
+                  <h4 className="font-semibold">{t('permissions.owner.title')}</h4>
                   <p className="text-sm text-muted-foreground">
-                    Full access to all features, billing, and team management
+                    {t('permissions.owner.description')}
                   </p>
                 </div>
               </div>
@@ -513,9 +519,9 @@ export function TeamManagementPage() {
               <div className="flex items-start gap-3">
                 <Shield className="h-5 w-5 text-blue-500 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold">Admin</h4>
+                  <h4 className="font-semibold">{t('permissions.admin.title')}</h4>
                   <p className="text-sm text-muted-foreground">
-                    Manage team members, workspaces, and organization settings
+                    {t('permissions.admin.description')}
                   </p>
                 </div>
               </div>
@@ -525,9 +531,9 @@ export function TeamManagementPage() {
               <div className="flex items-start gap-3">
                 <Edit2 className="h-5 w-5 text-green-500 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold">Member</h4>
+                  <h4 className="font-semibold">{t('permissions.member.title')}</h4>
                   <p className="text-sm text-muted-foreground">
-                    Create and edit content, strategies, and research
+                    {t('permissions.member.description')}
                   </p>
                 </div>
               </div>
@@ -535,9 +541,9 @@ export function TeamManagementPage() {
               <div className="flex items-start gap-3">
                 <Users className="h-5 w-5 text-gray-500 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold">Viewer</h4>
+                  <h4 className="font-semibold">{t('permissions.viewer.title')}</h4>
                   <p className="text-sm text-muted-foreground">
-                    View-only access to content and reports
+                    {t('permissions.viewer.description')}
                   </p>
                 </div>
               </div>

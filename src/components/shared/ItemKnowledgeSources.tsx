@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, Globe, AlignLeft, Plus, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Badge, Modal, Card, EmptyState } from '@/components/shared';
@@ -40,6 +41,7 @@ function formatFileSize(bytes: number): string {
 
 /** Sidebar card for managing per-item knowledge sources */
 export function ItemKnowledgeSources({ itemType, itemId }: ItemKnowledgeSourcesProps) {
+  const { t } = useTranslation('shared');
   const { data: sources = [], isLoading } = useItemKnowledgeSources(itemType, itemId);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -48,7 +50,7 @@ export function ItemKnowledgeSources({ itemType, itemId }: ItemKnowledgeSourcesP
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-gray-900">Knowledge Sources</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t('itemKnowledge.title')}</h3>
           {sources.length > 0 && (
             <Badge variant="default">{sources.length}</Badge>
           )}
@@ -59,7 +61,7 @@ export function ItemKnowledgeSources({ itemType, itemId }: ItemKnowledgeSourcesP
           onClick={() => setIsModalOpen(true)}
         >
           <Plus className="w-4 h-4 mr-1" />
-          Add
+          {t('itemKnowledge.add')}
         </Button>
       </div>
 
@@ -73,8 +75,8 @@ export function ItemKnowledgeSources({ itemType, itemId }: ItemKnowledgeSourcesP
       ) : sources.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="No knowledge sources"
-          description="Add documents, URLs or text as additional context for AI sessions."
+          title={t('itemKnowledge.emptyTitle')}
+          description={t('itemKnowledge.emptyDescription')}
         />
       ) : (
         <SourcesList sources={sources} itemType={itemType} itemId={itemId} />
@@ -102,13 +104,14 @@ function SourcesList({
   itemType: string;
   itemId: string;
 }) {
+  const { t } = useTranslation('shared');
   const deleteMutation = useDeleteKnowledgeSource(itemType, itemId);
 
   const handleDelete = (sourceId: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+    if (!confirm(t('itemKnowledge.deleteConfirm', { title }))) return;
     deleteMutation.mutate(sourceId, {
-      onSuccess: () => toast.success(`"${title}" deleted`),
-      onError: () => toast.error('Failed to delete'),
+      onSuccess: () => toast.success(t('itemKnowledge.deleted', { title })),
+      onError: () => toast.error(t('itemKnowledge.deleteFailed')),
     });
   };
 
@@ -127,12 +130,16 @@ function SourcesList({
                 {source.title}
               </p>
               <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span>{SOURCE_TYPE_LABELS[source.sourceType]}</span>
+                <span>
+                  {t(`itemKnowledge.sourceTypes.${source.sourceType}`, {
+                    defaultValue: SOURCE_TYPE_LABELS[source.sourceType],
+                  })}
+                </span>
                 {source.fileSize && (
                   <span>{formatFileSize(source.fileSize)}</span>
                 )}
                 {!source.isProcessed && (
-                  <Badge variant="warning">Not processed</Badge>
+                  <Badge variant="warning">{t('itemKnowledge.notProcessed')}</Badge>
                 )}
               </div>
             </div>
@@ -163,6 +170,7 @@ function AddKnowledgeSourceModal({
   itemType: string;
   itemId: string;
 }) {
+  const { t } = useTranslation('shared');
   const [activeTab, setActiveTab] = useState<AddTab>('text');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -192,19 +200,19 @@ function AddKnowledgeSourceModal({
 
   const handleSubmit = () => {
     if (!title.trim()) {
-      toast.error('Title is required');
+      toast.error(t('itemKnowledge.titleRequired'));
       return;
     }
 
     const onSuccess = () => {
-      toast.success('Knowledge source added');
+      toast.success(t('itemKnowledge.added'));
       handleClose();
     };
-    const onError = () => toast.error('Failed to add');
+    const onError = () => toast.error(t('itemKnowledge.addFailed'));
 
     if (activeTab === 'text') {
       if (!content.trim()) {
-        toast.error('Content is required');
+        toast.error(t('itemKnowledge.contentRequired'));
         return;
       }
       createText.mutate(
@@ -213,7 +221,7 @@ function AddKnowledgeSourceModal({
       );
     } else if (activeTab === 'url') {
       if (!url.trim()) {
-        toast.error('URL is required');
+        toast.error(t('itemKnowledge.urlRequired'));
         return;
       }
       createUrl.mutate(
@@ -222,7 +230,7 @@ function AddKnowledgeSourceModal({
       );
     } else if (activeTab === 'file') {
       if (!file) {
-        toast.error('Select a file');
+        toast.error(t('itemKnowledge.selectFile'));
         return;
       }
       const formData = new FormData();
@@ -234,25 +242,25 @@ function AddKnowledgeSourceModal({
   };
 
   const tabs: { key: AddTab; label: string; icon: typeof FileText }[] = [
-    { key: 'text', label: 'Text', icon: AlignLeft },
-    { key: 'url', label: 'URL', icon: Globe },
-    { key: 'file', label: 'File', icon: Upload },
+    { key: 'text', label: t('itemKnowledge.sourceTypes.text'), icon: AlignLeft },
+    { key: 'url', label: t('itemKnowledge.sourceTypes.url'), icon: Globe },
+    { key: 'file', label: t('itemKnowledge.sourceTypes.file'), icon: Upload },
   ];
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Add Knowledge Source"
-      subtitle="Add additional context for AI sessions"
+      title={t('itemKnowledge.modalTitle')}
+      subtitle={t('itemKnowledge.modalSubtitle')}
       size="md"
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={handleClose} disabled={isPending}>
-            Cancel
+            {t('itemKnowledge.cancel')}
           </Button>
           <Button variant="primary" onClick={handleSubmit} isLoading={isPending}>
-            Add
+            {t('itemKnowledge.add')}
           </Button>
         </div>
       }
@@ -279,13 +287,13 @@ function AddKnowledgeSourceModal({
       <div className="space-y-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Title *
+            {t('itemKnowledge.fieldTitle')} *
           </label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Market Research Q1 2026"
+            placeholder={t('itemKnowledge.titlePlaceholder')}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
             maxLength={200}
           />
@@ -293,13 +301,13 @@ function AddKnowledgeSourceModal({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
+            {t('itemKnowledge.fieldDescription')}
           </label>
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Short description (optional)"
+            placeholder={t('itemKnowledge.descriptionPlaceholder')}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
             maxLength={500}
           />
@@ -309,12 +317,12 @@ function AddKnowledgeSourceModal({
         {activeTab === 'text' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Content *
+              {t('itemKnowledge.fieldContent')} *
             </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Paste your text, notes, or knowledge source here..."
+              placeholder={t('itemKnowledge.contentPlaceholder')}
               rows={6}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-y"
               maxLength={50000}
@@ -325,7 +333,7 @@ function AddKnowledgeSourceModal({
         {activeTab === 'url' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              URL *
+              {t('itemKnowledge.fieldUrl')} *
             </label>
             <input
               type="url"
@@ -340,7 +348,7 @@ function AddKnowledgeSourceModal({
         {activeTab === 'file' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              File *
+              {t('itemKnowledge.fieldFile')} *
             </label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-400 transition-colors">
               {file ? (
@@ -361,9 +369,9 @@ function AddKnowledgeSourceModal({
                 <label className="cursor-pointer">
                   <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                   <p className="text-sm text-gray-600">
-                    Click to select a file
+                    {t('itemKnowledge.clickToSelect')}
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">Max 50MB</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('itemKnowledge.maxSize')}</p>
                   <input
                     type="file"
                     className="hidden"

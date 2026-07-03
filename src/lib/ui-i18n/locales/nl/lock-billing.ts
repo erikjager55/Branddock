@@ -1,0 +1,137 @@
+// Dutch UI strings — `lock-billing` namespace. Same key shape as en/.
+const ns = {
+  cardIndicator: {
+    locked: 'Vergrendeld',
+  },
+  lockBanner: {
+    title: 'Dit item is vergrendeld',
+    lockedBy: 'Vergrendeld door {{name}}',
+    unlock: 'Ontgrendelen',
+  },
+  pill: {
+    locked: 'Vergrendeld',
+    editable: 'Bewerkbaar',
+    tooltip: 'Vergrendeld door {{name}} — {{time}}',
+    time: {
+      justNow: 'zojuist',
+      minAgo: '{{minutes}} min geleden',
+      hoursAgo: '{{hours}} u geleden',
+      daysAgo_one: '{{count}} dag geleden',
+      daysAgo_other: '{{count}} dagen geleden',
+    },
+  },
+  shield: {
+    lockAria: 'Dit item vergrendelen',
+    unlockAria: 'Dit item ontgrendelen',
+  },
+  confirmDialog: {
+    header: {
+      lockTitle: 'Item vergrendelen',
+      unlockTitle: 'Item ontgrendelen',
+      lockAria: 'Vergrendel {{name}}',
+      unlockAria: 'Ontgrendel {{name}}',
+    },
+    sections: {
+      willBeBlocked: 'Wordt geblokkeerd',
+      willBeEnabled: 'Wordt ingeschakeld',
+      willBeHidden: 'Wordt verborgen',
+      willBeVisible: 'Wordt zichtbaar',
+      alwaysAvailable: 'Altijd beschikbaar',
+    },
+    blocked: {
+      editContent: 'Content bewerken',
+      deleteTrend: 'Trend verwijderen',
+      activateDismissTrend: 'Trend activeren of afwijzen',
+      deleteItem: 'Item verwijderen',
+      aiGeneration: 'AI-generatie & regeneratie',
+      startAiExploration: 'AI Exploration starten',
+      startNewConversation: 'Nieuw gesprek starten',
+      startResearchMethods: 'Onderzoeksmethoden starten',
+    },
+    hidden: {
+      emptySections: 'Lege/onvolledige secties',
+      aiTools: 'AI-tools & generatieknoppen',
+    },
+    alwaysAvailableItems: {
+      duplicate: 'Dupliceren (maakt ontgrendelde kopie)',
+      export: 'Exporteren (PDF, JSON)',
+      viewSections: 'Voltooide secties bekijken',
+    },
+    cancel: 'Annuleren',
+    lock: 'Vergrendelen',
+    unlock: 'Ontgrendelen',
+  },
+  billingBanner: {
+    freeBetaTitle: 'Gratis beta — alle functies ontgrendeld',
+    freeBetaSubtitle: 'Volledige toegang tijdens de betaperiode',
+    limitReachedTitle: 'AI-tokenlimiet bereikt',
+    percentUsedTitle: '{{percent}}% van AI-tokens gebruikt',
+    limitReachedSubtitle: 'Upgrade je abonnement om AI-functies te blijven gebruiken',
+    warningSubtitle: 'Overweeg te upgraden om onderbrekingen te voorkomen',
+    upgrade: 'Upgraden',
+  },
+  planBadge: {
+    beta: 'BETA',
+  },
+  planName: {
+    FREE: 'Free',
+    PRO: 'Pro',
+    AGENCY: 'Agency',
+    ENTERPRISE: 'Enterprise',
+  },
+  planFeatures: {
+    FREE: {
+      '0': '1 workspace',
+      '1': '1 teamlid',
+      '2': '10K AI-tokens/maand',
+      '3': 'Basis Content Studio',
+    },
+    PRO: {
+      '0': '3 workspaces',
+      '1': '5 teamleden',
+      '2': '100K AI-tokens/maand',
+      '3': 'Volledige Content Studio',
+      '4': 'PDF-export',
+      '5': 'Dagelijkse alignment-scans',
+    },
+    AGENCY: {
+      '0': '10 workspaces',
+      '1': '25 teamleden',
+      '2': '500K AI-tokens/maand',
+      '3': 'Volledig + templates',
+      '4': 'PDF- + DOCX-export',
+      '5': 'Onbeperkte alignment-scans',
+    },
+    ENTERPRISE: {
+      '0': 'Onbeperkte workspaces',
+      '1': 'Onbeperkte teamleden',
+      '2': '2M AI-tokens/maand',
+      '3': 'Volledig + custom',
+      '4': 'Alle exportformaten',
+      '5': 'Dedicated support',
+    },
+  },
+  upgradeModal: {
+    title: 'Kies je abonnement',
+    subtitle: 'Kies het abonnement dat bij je past',
+    monthly: 'Maandelijks',
+    yearly: 'Jaarlijks',
+    save: '20% korting',
+    popular: 'Populair',
+    current: 'Huidig',
+    perMonthShort: 'mnd',
+    perYearShort: 'jr',
+    currentPlan: 'Huidig abonnement',
+    free: 'Gratis',
+    redirecting: 'Doorsturen...',
+    upgrade: 'Upgraden',
+    trialNote: 'Alle abonnementen bevatten een gratis proefperiode van 14 dagen. Altijd opzegbaar.',
+  },
+  usageMeter: {
+    title: 'AI Tokens',
+    compact: '{{used}} / {{limit}} AI-tokens',
+    used: '{{used}} / {{limit}} gebruikt',
+  },
+} as const;
+
+export default ns;

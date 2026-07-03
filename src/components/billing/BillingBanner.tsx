@@ -10,6 +10,7 @@
 
 import React from 'react';
 import { Sparkles, AlertTriangle, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/shared';
 import { cn } from '@/lib/constants/design-tokens';
 
@@ -26,6 +27,8 @@ export function BillingBanner({
   onUpgrade,
   className,
 }: BillingBannerProps) {
+  const { t } = useTranslation('lock-billing');
+
   // Free Beta banner
   if (isFreeBeta) {
     return (
@@ -42,10 +45,10 @@ export function BillingBanner({
           </div>
           <div>
             <p className="text-sm font-medium text-gray-900">
-              Free Beta — All features unlocked
+              {t('billingBanner.freeBetaTitle')}
             </p>
             <p className="text-xs text-gray-500">
-              Enjoy full access during the beta period
+              {t('billingBanner.freeBetaSubtitle')}
             </p>
           </div>
         </div>
@@ -87,19 +90,19 @@ export function BillingBanner({
         <div>
           <p className="text-sm font-medium text-gray-900">
             {isAtLimit
-              ? 'AI token limit reached'
-              : `${usagePercentage}% of AI tokens used`}
+              ? t('billingBanner.limitReachedTitle')
+              : t('billingBanner.percentUsedTitle', { percent: usagePercentage })}
           </p>
           <p className="text-xs text-gray-500">
             {isAtLimit
-              ? 'Upgrade your plan to continue using AI features'
-              : 'Consider upgrading to avoid interruptions'}
+              ? t('billingBanner.limitReachedSubtitle')
+              : t('billingBanner.warningSubtitle')}
           </p>
         </div>
       </div>
       {onUpgrade && (
         <Button variant="primary" size="sm" onClick={onUpgrade} className="gap-1.5 flex-shrink-0">
-          Upgrade
+          {t('billingBanner.upgrade')}
           <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       )}

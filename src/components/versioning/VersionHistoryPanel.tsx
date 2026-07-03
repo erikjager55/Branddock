@@ -10,6 +10,7 @@ import {
   Upload,
   History,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { VersionedResourceType, VersionChangeType } from '@prisma/client';
 import { useVersionHistory, useRestoreVersion } from '@/hooks/useVersionHistory';
 import { useFormat } from '@/lib/ui-i18n/format';
@@ -40,6 +41,7 @@ export function VersionHistoryPanel({
   onClose,
   onRestore,
 }: VersionHistoryPanelProps) {
+  const { t } = useTranslation('versioning-impact');
   const { formatRelative } = useFormat();
   const { data: versions, isLoading } = useVersionHistory(resourceType, resourceId);
   const restoreMutation = useRestoreVersion(resourceType, resourceId);
@@ -66,7 +68,7 @@ export function VersionHistoryPanel({
           <div className="flex items-center gap-2">
             <History className="h-5 w-5 text-gray-500" />
             <h2 className="text-base font-semibold text-gray-900">
-              Version History
+              {t('versioning.panel.title')}
             </h2>
           </div>
           <button
@@ -91,9 +93,9 @@ export function VersionHistoryPanel({
           {!isLoading && (!versions || versions.length === 0) && (
             <div className="flex flex-col items-center justify-center p-10 text-center">
               <History className="mb-3 h-10 w-10 text-gray-300" />
-              <p className="text-sm font-medium text-gray-500">No versions yet</p>
+              <p className="text-sm font-medium text-gray-500">{t('versioning.panel.empty')}</p>
               <p className="mt-1 text-xs text-gray-400">
-                Versions are created when you save, lock, or use AI features.
+                {t('versioning.panel.emptyHint')}
               </p>
             </div>
           )}
@@ -119,12 +121,12 @@ export function VersionHistoryPanel({
                           </span>
                           {isLatest && (
                             <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-                              Current
+                              {t('versioning.panel.current')}
                             </span>
                           )}
                         </div>
                         <p className="mt-0.5 text-xs text-gray-500">
-                          {config.label}
+                          {t(`versioning.changeType.${v.changeType}`, { defaultValue: config.label })}
                           {v.changeNote ? ` — ${v.changeNote}` : ''}
                         </p>
                         <div className="mt-1 flex items-center gap-2 text-[11px] text-gray-400">
@@ -141,9 +143,9 @@ export function VersionHistoryPanel({
                             <>
                               <span>·</span>
                               <span>
-                                {Object.keys(v.diff).length} field
-                                {Object.keys(v.diff).length !== 1 ? 's' : ''}{' '}
-                                changed
+                                {t('versioning.panel.fieldsChanged', {
+                                  count: Object.keys(v.diff).length,
+                                })}
                               </span>
                             </>
                           )}
@@ -155,7 +157,7 @@ export function VersionHistoryPanel({
                             {isConfirming ? (
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-amber-600">
-                                  Restore to this version?
+                                  {t('versioning.panel.restorePrompt')}
                                 </span>
                                 <button
                                   type="button"
@@ -165,15 +167,15 @@ export function VersionHistoryPanel({
                                   className="rounded px-2 py-0.5 text-[11px] font-medium hover:opacity-90 disabled:opacity-50"
                                 >
                                   {restoreMutation.isPending
-                                    ? 'Restoring...'
-                                    : 'Confirm'}
+                                    ? t('versioning.panel.restoring')
+                                    : t('versioning.panel.confirm')}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setConfirmId(null)}
                                   className="rounded px-2 py-0.5 text-[11px] font-medium text-gray-500 hover:bg-gray-100"
                                 >
-                                  Cancel
+                                  {t('versioning.panel.cancel')}
                                 </button>
                               </div>
                             ) : (
@@ -183,7 +185,7 @@ export function VersionHistoryPanel({
                                 className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-emerald-600"
                               >
                                 <RotateCcw className="h-3 w-3" />
-                                Restore
+                                {t('versioning.panel.restore')}
                               </button>
                             )}
                           </div>

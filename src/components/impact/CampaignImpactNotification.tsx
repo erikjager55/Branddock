@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { RefreshCw, Info, X } from 'lucide-react';
 import { ImpactAnalysis } from '../../types/change-impact';
 import { ChangeImpactService } from '../../services/ChangeImpactService';
@@ -22,8 +23,9 @@ export function CampaignImpactNotification({
   impactAnalyses,
   onRecalculate,
   onDismiss,
-  className 
+  className
 }: CampaignImpactNotificationProps) {
+  const { t } = useTranslation('versioning-impact');
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed || impactAnalyses.length === 0) {
@@ -52,7 +54,7 @@ export function CampaignImpactNotification({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-2">
             <h4 className="font-medium text-slate-900">
-              Newer strategic input available
+              {t('impact.notification.title')}
             </h4>
             <button
               onClick={handleDismiss}
@@ -64,15 +66,14 @@ export function CampaignImpactNotification({
 
           <p className="text-sm text-slate-700 mb-3">
             {uniqueAssets.length === 1 ? (
-              <>
-                The asset <span className="font-medium">{uniqueAssets[0]}</span> has been updated
-                with new research since this campaign was configured.
-              </>
+              <Trans
+                i18nKey="impact.notification.singleAsset"
+                ns="versioning-impact"
+                values={{ name: uniqueAssets[0] }}
+                components={{ b: <span className="font-medium" /> }}
+              />
             ) : (
-              <>
-                {uniqueAssets.length} assets have been updated with new research since this
-                campaign was configured.
-              </>
+              t('impact.notification.multipleAssets', { count: uniqueAssets.length })
             )}
           </p>
 
@@ -89,7 +90,7 @@ export function CampaignImpactNotification({
             ))}
             {impactAnalyses.length > 3 && (
               <div className="text-sm text-slate-600 pl-4">
-                +{impactAnalyses.length - 3} more change(s)
+                {t('impact.notification.moreChanges', { count: impactAnalyses.length - 3 })}
               </div>
             )}
           </div>
@@ -101,7 +102,7 @@ export function CampaignImpactNotification({
                 className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                Recalculate with new input
+                {t('impact.notification.recalculate')}
               </button>
             )}
 
@@ -109,7 +110,7 @@ export function CampaignImpactNotification({
               onClick={handleDismiss}
               className="text-sm text-slate-600 hover:text-slate-700"
             >
-              Review later
+              {t('impact.notification.reviewLater')}
             </button>
           </div>
         </div>
@@ -127,11 +128,13 @@ interface CompactCampaignImpactProps {
   className?: string;
 }
 
-export function CompactCampaignImpact({ 
+export function CompactCampaignImpact({
   impactCount,
   onViewDetails,
-  className 
+  className
 }: CompactCampaignImpactProps) {
+  const { t } = useTranslation('versioning-impact');
+
   if (impactCount === 0) {
     return null;
   }
@@ -143,14 +146,14 @@ export function CompactCampaignImpact({
     )}>
       <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
       <p className="text-sm text-slate-700 flex-1">
-        {impactCount} asset{impactCount > 1 ? 's have' : ' has'} new strategic input
+        {t('impact.compact.summary', { count: impactCount })}
       </p>
       {onViewDetails && (
         <button
           onClick={onViewDetails}
           className="text-sm text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap"
         >
-          View details
+          {t('impact.compact.viewDetails')}
         </button>
       )}
     </div>
