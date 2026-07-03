@@ -92,3 +92,28 @@ registerHandler('BRANDSTYLE_ANALYZE_PDF', async (job) => {
   await analyzePdf(styleguideId, buffer, fileName);
   return { styleguideId };
 });
+
+// Tier 2 — pure background-enrichment, geen client-progress-polling. Enqueue-only.
+registerHandler('DAM_AUTO_TAG', async (job) => {
+  const { assetId } = (job.payload ?? {}) as { assetId?: string };
+  if (!assetId) throw new Error('DAM_AUTO_TAG: assetId vereist');
+  const { tagMediaAssetIfPossible } = await import('@/lib/ai/dam-auto-tagger');
+  await tagMediaAssetIfPossible(assetId);
+  return { assetId };
+});
+
+registerHandler('BUG_REPORT_ANALYZE', async (job) => {
+  const { bugId, workspaceId } = (job.payload ?? {}) as { bugId?: string; workspaceId?: string };
+  if (!bugId || !workspaceId) throw new Error('BUG_REPORT_ANALYZE: bugId + workspaceId vereist');
+  const { analyzeBugReport } = await import('@/lib/bug-analysis/analyze-bug');
+  await analyzeBugReport(bugId, workspaceId);
+  return { bugId };
+});
+
+registerHandler('CHAT_FEEDBACK_ANALYZE', async (job) => {
+  const { feedbackId } = (job.payload ?? {}) as { feedbackId?: string };
+  if (!feedbackId) throw new Error('CHAT_FEEDBACK_ANALYZE: feedbackId vereist');
+  const { analyzeFeedback } = await import('@/lib/feedback-analysis/analyze-feedback');
+  await analyzeFeedback(feedbackId);
+  return { feedbackId };
+});

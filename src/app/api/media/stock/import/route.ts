@@ -129,10 +129,10 @@ export async function POST(request: NextRequest) {
 
     invalidateCache(cacheKeys.prefixes.media(workspaceId));
 
-    // F41 (audit 2026-05-13): DAM auto-tagging fire-and-forget
-    void import('@/lib/ai/dam-auto-tagger').then(({ tagMediaAssetIfPossible }) => {
-      void tagMediaAssetIfPossible(asset.id);
-    });
+    // Serverless-safe: op de queue i.p.v. fire-and-forget (Vercel kilt post-response).
+    await import('@/lib/agents/jobs/dispatch').then(({ dispatchJob }) =>
+      dispatchJob({ type: 'DAM_AUTO_TAG', payload: { assetId: asset.id }, workspaceId, triggeredBy: 'user' }),
+    );
 
     return NextResponse.json({ asset }, { status: 201 });
   } catch (error) {

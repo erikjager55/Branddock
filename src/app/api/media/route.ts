@@ -270,9 +270,10 @@ export async function POST(request: NextRequest) {
     // fire-and-forget, blokkeert response niet. Vision-call duurt
     // 3-8s; user ziet asset direct in library, tags volgen async.
     if (asset.mediaType === 'IMAGE') {
-      void import('@/lib/ai/dam-auto-tagger').then(({ tagMediaAssetIfPossible }) => {
-        void tagMediaAssetIfPossible(asset.id);
-      });
+      // Serverless-safe: op de queue i.p.v. fire-and-forget (Vercel kilt post-response).
+      await import('@/lib/agents/jobs/dispatch').then(({ dispatchJob }) =>
+        dispatchJob({ type: 'DAM_AUTO_TAG', payload: { assetId: asset.id }, workspaceId, triggeredBy: 'user' }),
+      );
     }
 
     return NextResponse.json(asset, { status: 201 });

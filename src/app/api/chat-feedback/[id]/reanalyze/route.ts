@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/auth-server';
 import { requireDeveloper } from '@/lib/developer-access';
-import { analyzeFeedback } from '@/lib/feedback-analysis/analyze-feedback';
+import { dispatchJob } from '@/lib/agents/jobs/dispatch';
 
 /** POST /api/chat-feedback/:id/reanalyze — re-run AI suggestion (developer only) */
 export async function POST(
@@ -25,9 +25,8 @@ export async function POST(
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
-  analyzeFeedback(row.id).catch((err) => {
-    console.error('[feedback-analysis] Reanalyze failed:', err);
-  });
+  // Serverless-safe: op de queue i.p.v. fire-and-forget.
+  await dispatchJob({ type: 'CHAT_FEEDBACK_ANALYZE', payload: { feedbackId: row.id }, triggeredBy: 'user' });
 
   return Response.json({ status: 'analyzing' });
 }

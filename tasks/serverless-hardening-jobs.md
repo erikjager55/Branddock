@@ -37,10 +37,11 @@ Latency-noot: minute-cron → tot ~60s start-latency. Acceptabel (spinner dekt h
 - `trend-radar/research/route.ts` (`runTrendResearch`).
 - `brandvoiceguide/analyze/url/route.ts` (`voice-analyzer-engine`) — **heeft in-memory Map** → Tier 3.
 
-## ⬜ Tier 2 — geen client-progress-polling (alleen enqueue, simpelst)
-- DAM auto-tag: `media/route.ts:270`, `media/bulk/route.ts:169`, `media/import-url/route.ts:183`, `media/stock/import/route.ts:132`, `media/backfill-tags/route.ts:45`.
-- `bug-reports/route.ts:76` + `bug-reports/[id]/reanalyze/route.ts:23`.
-- `chat-feedback/route.ts:103` + `chat-feedback/[id]/reanalyze/route.ts:28`.
+## ✅ Tier 2 — enqueue-only (geen client-progress-polling) — DONE 2026-07-03
+- DAM auto-tag (5 media-routes) → `DAM_AUTO_TAG`.
+- `bug-reports` + reanalyze → `BUG_REPORT_ANALYZE`.
+- `chat-feedback` + reanalyze → `CHAT_FEEDBACK_ANALYZE`.
+- 3 job-types + handlers (dynamic import van de bestaande functies); 9 routes await'en nu `dispatchJob`.
 - studio `generate-visual*` / `refine-visual` fidelity-rescore fire-and-forgets.
 
 ## ⬜ Tier 3 — in-memory progress Map → eerst naar domein-tabel
@@ -49,7 +50,8 @@ Latency-noot: minute-cron → tot ~60s start-latency. Acceptabel (spinner dekt h
 
 # Acceptatie
 - [x] Patroon vastgesteld + representant (brandstyle url+pdf) op de queue.
-- [ ] Tier 1-restant + Tier 2 gemigreerd.
+- [x] Tier 2 gemigreerd (DAM/bug/feedback, 2026-07-03).
+- [ ] Tier 1-restant (alignment/scan, trend-radar) gemigreerd.
 - [ ] Tier 3: in-memory Maps vervangen door DB-progress + gemigreerd.
 - [ ] Smoke (Fase 5): start elke pipeline op de deploy → job enqueued → cron verwerkt → progress + resultaat verschijnen cross-instance.
 
