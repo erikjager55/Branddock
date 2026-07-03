@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { RotateCcw } from 'lucide-react';
 import { SearchInput, Select, Button } from '@/components/shared';
 import { useBrandAssetStore } from '@/stores/useBrandAssetStore';
@@ -28,6 +29,7 @@ const STATUS_OPTIONS = [
 // ─── Component ─────────────────────────────────────────────
 
 export function BrandAssetFilters() {
+  const { t } = useTranslation('brand-foundation');
   const searchQuery = useBrandAssetStore((s) => s.searchQuery);
   const categoryFilter = useBrandAssetStore((s) => s.categoryFilter);
   const statusFilter = useBrandAssetStore((s) => s.statusFilter);
@@ -43,34 +45,43 @@ export function BrandAssetFilters() {
     setStatusFilter(null);
   };
 
+  const categoryOptions = CATEGORY_OPTIONS.map((o) => ({
+    ...o,
+    label: t(`filters.category.${o.value}`, { defaultValue: o.label }),
+  }));
+  const statusOptions = STATUS_OPTIONS.map((o) => ({
+    ...o,
+    label: t(`filters.status.${o.value}`, { defaultValue: o.label }),
+  }));
+
   return (
     <div data-testid="asset-filters" className="flex flex-wrap items-center gap-3 mb-6">
       <SearchInput
         value={searchQuery}
         onChange={setSearchQuery}
-        placeholder="Search brand assets..."
+        placeholder={t('filters.searchPlaceholder')}
         className="flex-1 min-w-[200px]"
       />
 
       <Select
         value={categoryFilter}
         onChange={(v) => setCategoryFilter(v as AssetCategory | null)}
-        options={CATEGORY_OPTIONS}
-        placeholder="All Categories"
+        options={categoryOptions}
+        placeholder={t('filters.allCategories')}
         className="w-auto"
       />
 
       <Select
         value={statusFilter}
         onChange={(v) => setStatusFilter(v as AssetStatus | null)}
-        options={STATUS_OPTIONS}
-        placeholder="All Statuses"
+        options={statusOptions}
+        placeholder={t('filters.allStatuses')}
         className="w-auto"
       />
 
       {hasActiveFilters && (
         <Button variant="ghost" icon={RotateCcw} onClick={resetFilters}>
-          Reset
+          {t('filters.reset')}
         </Button>
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { signInWithProvider } from '@/lib/auth-client';
 import type { OAuthProviderId, OAuthProviderConfig } from '@/lib/auth/oauth-config';
 
@@ -67,6 +68,7 @@ export function SocialLoginButtons() {
   const [enabledProviders, setEnabledProviders] = useState<OAuthProviderConfig[]>([]);
   const [loadingProvider, setLoadingProvider] = useState<OAuthProviderId | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation('auth-chrome');
 
   useEffect(() => {
     fetch('/api/auth/providers')
@@ -89,17 +91,17 @@ export function SocialLoginButtons() {
       const result = await signInWithProvider(provider, '/');
 
       if (result.error) {
-        const message = result.error.message ?? 'Login failed';
+        const message = result.error.message ?? t('socialLogin.loginFailed');
         if (message.includes('popup')) {
-          setError('Popup blocked. Please allow popups for this site.');
+          setError(t('socialLogin.popupBlocked'));
         } else if (message.includes('account') && message.includes('exist')) {
-          setError('This email address is already linked to another account. Try signing in with email.');
+          setError(t('socialLogin.accountExists'));
         } else {
           setError(message);
         }
       }
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError(t('socialLogin.genericError'));
     } finally {
       setLoadingProvider(null);
     }
@@ -135,7 +137,7 @@ export function SocialLoginButtons() {
             ) : (
               <Icon className="w-5 h-5" />
             )}
-            {config.label}
+            {t(`socialProviders.${provider.id}`, { defaultValue: config.label })}
           </button>
         );
       })}

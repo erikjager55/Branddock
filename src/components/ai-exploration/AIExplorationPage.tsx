@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Bot, RefreshCw, Sparkles, RotateCcw } from 'lucide-react';
 import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage, BackendDimension } from './types';
 import { mapBackendDimensions } from './utils/map-backend-dimensions';
@@ -53,6 +54,7 @@ export function AIExplorationPage({
   onSendAnswer,
   onComplete,
 }: AIExplorationPageProps) {
+  const { t } = useTranslation('ai-exploration');
   const sessionId = useAIExplorationStore((s) => s.sessionId);
   const setSessionId = useAIExplorationStore((s) => s.setSessionId);
   const status = useAIExplorationStore((s) => s.status);
@@ -100,7 +102,7 @@ export function AIExplorationPage({
       })
       .catch((err) => {
         console.error('[AIExplorationPage] Failed to start session:', err);
-        setStartError('Failed to start exploration session. Please try again.');
+        setStartError(t('page.startError'));
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onStartSession]);
@@ -190,7 +192,7 @@ export function AIExplorationPage({
           console.error('[AIExplorationPage] Report generation failed:', completeErr);
           // Fall back to chat view so user isn't stuck on spinner
           setStatus('in_progress');
-          setStartError('Report generation failed. Please try again or start a new exploration.');
+          setStartError(t('page.reportError'));
         }
       }
     } catch (err) {
@@ -211,7 +213,7 @@ export function AIExplorationPage({
             style={{ color: '#6b7280', marginBottom: '24px' }}
           >
             <ArrowLeft className="w-4 h-4" />
-            {effectiveConfig.backLabel ?? 'Back'}
+            {effectiveConfig.backLabel ?? t('page.back')}
           </button>
           <div className="flex flex-col items-center justify-center rounded-xl" style={{ padding: '48px', border: '1px solid #fecaca', backgroundColor: '#fef2f2' }}>
             <p className="text-sm font-medium" style={{ color: '#991b1b', marginBottom: '12px' }}>{startError}</p>
@@ -221,7 +223,7 @@ export function AIExplorationPage({
               style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #14b8a6, #10b981)' }}
             >
               <RefreshCw className="h-4 w-4" />
-              Try again
+              {t('page.tryAgain')}
             </button>
           </div>
         </div>
@@ -255,7 +257,7 @@ export function AIExplorationPage({
               style={{ color: '#6b7280' }}
             >
               <ArrowLeft className="w-4 h-4" />
-              {effectiveConfig.backLabel ?? 'Back'}
+              {effectiveConfig.backLabel ?? t('page.back')}
             </button>
 
             {/* Header — uniform with other modules */}
@@ -271,10 +273,10 @@ export function AIExplorationPage({
               </div>
               <div>
                 <h1 className="text-xl font-semibold" style={{ color: '#111827' }}>
-                  {effectiveConfig.pageTitle ?? 'AI Exploration'}
+                  {effectiveConfig.pageTitle ?? t('page.defaultTitle')}
                 </h1>
                 <p className="text-sm" style={{ color: '#6b7280' }}>
-                  {effectiveConfig.pageDescription ?? 'Answer the questions to start the analysis'}
+                  {effectiveConfig.pageDescription ?? t('page.defaultDescription')}
                 </p>
               </div>
             </div>
@@ -309,8 +311,8 @@ export function AIExplorationPage({
             >
               <Sparkles className="w-8 h-8 text-white animate-pulse" />
             </div>
-            <p className="text-sm font-medium" style={{ color: '#111827' }}>Generating report...</p>
-            <p className="text-xs" style={{ color: '#9ca3af', marginTop: '4px' }}>This takes a few seconds</p>
+            <p className="text-sm font-medium" style={{ color: '#111827' }}>{t('page.generatingReport')}</p>
+            <p className="text-xs" style={{ color: '#9ca3af', marginTop: '4px' }}>{t('page.generatingHint')}</p>
           </div>
         )}
 
@@ -331,7 +333,7 @@ export function AIExplorationPage({
                 style={{ padding: '8px 20px' }}
               >
                 <RotateCcw className="h-4 w-4" />
-                Start New Exploration
+                {t('page.startNew')}
               </button>
             </div>
           </>

@@ -2,6 +2,7 @@
 
 import { ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/components/ui/utils';
 
 interface LockBannerProps {
@@ -17,6 +18,7 @@ export function LockBanner({
   lockedBy,
   className,
 }: LockBannerProps) {
+  const { t } = useTranslation('lock-billing');
   const prefersReducedMotion = useReducedMotion();
 
   return (
@@ -48,11 +50,11 @@ export function LockBanner({
               </motion.div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-amber-900">
-                  This item is locked
+                  {t('lockBanner.title')}
                 </p>
                 {lockedBy && (
                   <p className="text-xs text-amber-700 truncate">
-                    Locked by {lockedBy.name}
+                    {t('lockBanner.lockedBy', { name: lockedBy.name })}
                   </p>
                 )}
               </div>
@@ -62,7 +64,7 @@ export function LockBanner({
               onClick={onUnlock}
               className="flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg bg-white/70 backdrop-blur-sm border border-amber-300 text-amber-800 hover:bg-white transition-colors"
             >
-              Unlock
+              {t('lockBanner.unlock')}
             </button>
           </div>
         </motion.div>

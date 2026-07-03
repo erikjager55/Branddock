@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { Crown, Sparkles, Building2, Rocket } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/shared';
 import type { BadgeVariant } from '@/components/shared';
 import type { PlanTier } from '@/types/billing';
@@ -31,10 +32,12 @@ const TIER_CONFIG: Record<PlanTier, {
 };
 
 export function PlanBadge({ tier, isFreeBeta = false, className }: PlanBadgeProps) {
+  const { t } = useTranslation('lock-billing');
+
   if (isFreeBeta) {
     return (
       <Badge variant="teal" size="sm" icon={Sparkles} className={className}>
-        BETA
+        {t('planBadge.beta')}
       </Badge>
     );
   }
@@ -43,7 +46,7 @@ export function PlanBadge({ tier, isFreeBeta = false, className }: PlanBadgeProp
 
   return (
     <Badge variant={config.variant} size="sm" icon={config.icon} className={className}>
-      {config.label}
+      {t(`planName.${tier}`, { defaultValue: config.label })}
     </Badge>
   );
 }

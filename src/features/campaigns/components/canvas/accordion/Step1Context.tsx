@@ -49,7 +49,7 @@ interface Step1ContextProps {
 }
 
 export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
-  const { t } = useTranslation('campaigns-canvas-accordion');
+  const { t } = useTranslation(['campaigns-canvas-accordion', 'campaigns-content-inputs']);
   const contextStack = useCanvasStore((s) => s.contextStack);
   const additionalContextItems = useCanvasStore((s) => s.additionalContextItems);
   const removeContextItem = useCanvasStore((s) => s.removeContextItem);
@@ -133,7 +133,11 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       },
       ...contentTypeFields.map<FormFillField>((field) => ({
         key: field.key,
-        label: field.label,
+        label: t(`campaigns-content-inputs:byType.${contentType ?? ''}.${field.key}.label`, {
+          defaultValue: t(`campaigns-content-inputs:fields.${field.key}.label`, {
+            defaultValue: field.label,
+          }),
+        }),
         currentValue: formatCurrentValue(contentTypeInputs[field.key]),
         setter: (value) => setContentTypeInput(field.key, value as ContentTypeInputValue),
       })),
@@ -147,6 +151,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
     brief.keyMessage,
     brief.toneDirection,
     brief.callToAction,
+    contentType,
     contentTypeInputs,
     deliverableId,
     contentTypeFields,
@@ -173,8 +178,13 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       if (typeof value === 'string') return value.trim().length === 0;
       if (Array.isArray(value)) return value.length === 0;
       return false;
-    }).map((f) => ({ key: f.key, label: f.label }));
-  }, [contentType, contentTypeInputs]);
+    }).map((f) => ({
+      key: f.key,
+      label: t(`campaigns-content-inputs:byType.${contentType}.${f.key}.label`, {
+        defaultValue: t(`campaigns-content-inputs:fields.${f.key}.label`, { defaultValue: f.label }),
+      }),
+    }));
+  }, [contentType, contentTypeInputs, t]);
 
   const hasMissingRequired = missingRequired.length > 0;
 
@@ -903,7 +913,7 @@ function SkeletonContextCard() {
  *      the AI output but never block.
  */
 function ContentBriefSection() {
-  const { t } = useTranslation('campaigns-canvas-accordion');
+  const { t } = useTranslation(['campaigns-canvas-accordion', 'campaigns-content-inputs']);
   const contentType = useCanvasStore((s) => s.contentType);
   const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
   const setContentTypeInput = useCanvasStore((s) => s.setContentTypeInput);
@@ -924,14 +934,24 @@ function ContentBriefSection() {
     [fields],
   );
 
-  const toneSuggestions = React.useMemo(
-    () => (contentType ? getToneSuggestions(contentType) : null),
-    [contentType],
-  );
-  const ctaSuggestions = React.useMemo(
-    () => (contentType ? getCtaSuggestions(contentType) : null),
-    [contentType],
-  );
+  const toneSuggestions = React.useMemo(() => {
+    const raw = contentType ? getToneSuggestions(contentType) : null;
+    return raw
+      ? raw.map((s) => ({
+          value: s.value,
+          label: t(`campaigns-content-inputs:tone.${s.value}`, { defaultValue: s.label }),
+        }))
+      : null;
+  }, [contentType, t]);
+  const ctaSuggestions = React.useMemo(() => {
+    const raw = contentType ? getCtaSuggestions(contentType) : null;
+    return raw
+      ? raw.map((s) => ({
+          value: s.value,
+          label: t(`campaigns-content-inputs:cta.${s.value}`, { defaultValue: s.label }),
+        }))
+      : null;
+  }, [contentType, t]);
 
   const handleChange = React.useCallback(
     (key: string, value: ContentTypeInputValue) => {

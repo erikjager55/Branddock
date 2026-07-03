@@ -12,6 +12,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Lock, Unlock, Pencil, Calendar, FileText } from 'lucide-react';
 import { useFormat } from '@/lib/ui-i18n/format';
 import { Modal } from '@/components/shared/Modal';
@@ -66,6 +67,7 @@ export function BrandAssetDetailPanel({
   onEdit,
   onToggleLock,
 }: BrandAssetDetailPanelProps) {
+  const { t } = useTranslation('brand-assets');
   const { formatDate } = useFormat();
 
   if (!asset) return null;
@@ -80,13 +82,13 @@ export function BrandAssetDetailPanel({
             icon={isLocked ? Unlock : Lock}
             onClick={() => onToggleLock(asset)}
           >
-            {isLocked ? 'Unlock' : 'Lock'}
+            {isLocked ? t('detail.unlock') : t('detail.lock')}
           </Button>
         )}
       </div>
       <div className="flex items-center gap-2">
         <Button variant="secondary" size="sm" onClick={onClose}>
-          Close
+          {t('detail.close')}
         </Button>
         {onEdit && (
           <Button
@@ -96,7 +98,7 @@ export function BrandAssetDetailPanel({
             onClick={() => onEdit(asset)}
             disabled={isLocked}
           >
-            Edit Asset
+            {t('detail.editAsset')}
           </Button>
         )}
       </div>
@@ -108,11 +110,14 @@ export function BrandAssetDetailPanel({
       isOpen={isOpen}
       onClose={onClose}
       title={asset.name}
-      subtitle={`${asset.slug} — Last updated ${formatDate(asset.updatedAt, {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })}`}
+      subtitle={t('detail.subtitle', {
+        slug: asset.slug,
+        date: formatDate(asset.updatedAt, {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        }),
+      })}
       size="xl"
       footer={footer}
     >
@@ -124,14 +129,14 @@ export function BrandAssetDetailPanel({
           {isLocked && (
             <span className="inline-flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
               <Lock className="w-3 h-3" />
-              Locked
+              {t('detail.locked')}
             </span>
           )}
         </div>
 
         {/* Description */}
         {asset.description && (
-          <Section title="Description">
+          <Section title={t('detail.sectionDescription')}>
             <p className="text-sm text-gray-700 leading-relaxed">
               {asset.description}
             </p>
@@ -147,30 +152,32 @@ export function BrandAssetDetailPanel({
             <div className="text-lg font-semibold text-gray-900 tabular-nums">
               {asset.artifactCount}
             </div>
-            <div className="text-xs text-gray-500 mt-0.5">Artifacts</div>
+            <div className="text-xs text-gray-500 mt-0.5">{t('detail.artifacts')}</div>
           </div>
           <div className="bg-gray-50 rounded-lg p-3 text-center">
             <div className="text-lg font-semibold text-gray-900 tabular-nums">
-              {asset.validationMethods.ai ? 'Yes' : 'No'}
+              {asset.validationMethods.ai ? t('detail.yes') : t('detail.no')}
             </div>
-            <div className="text-xs text-gray-500 mt-0.5">AI Explored</div>
+            <div className="text-xs text-gray-500 mt-0.5">{t('detail.aiExplored')}</div>
           </div>
         </div>
 
         {/* Meta info */}
-        <Section title="Details">
+        <Section title={t('detail.sectionDetails')}>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="flex items-center gap-2 text-gray-500">
               <Calendar className="w-4 h-4 flex-shrink-0" />
-              <span>Updated {formatDate(asset.updatedAt, {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
+              <span>{t('detail.updated', {
+                date: formatDate(asset.updatedAt, {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                }),
               })}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-500">
               <FileText className="w-4 h-4 flex-shrink-0" />
-              <span>Slug: {asset.slug}</span>
+              <span>{t('detail.slug', { slug: asset.slug })}</span>
             </div>
           </div>
         </Section>

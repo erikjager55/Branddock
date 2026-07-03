@@ -10,6 +10,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PageShell, PageHeader } from '@/components/ui/layout';
 import { BrandFoundationStats } from './BrandFoundationStats';
 import { BrandAssetFilters } from './BrandAssetFilters';
@@ -39,6 +40,7 @@ export function BrandFoundationPage({
   onAssetClick,
   onNavigate,
 }: BrandFoundationPageProps) {
+  const { t } = useTranslation('brand-foundation');
   const { workspaceId } = useWorkspace();
   const { data, refetch } = useBrandAssetsQuery(workspaceId ?? undefined);
   const brandAssets = data?.assets ?? [];
@@ -79,8 +81,8 @@ export function BrandFoundationPage({
       <div data-testid="brand-foundation-page">
       <PageHeader
         moduleKey="brand-foundation"
-        title="Brand Foundation"
-        subtitle="Your core brand assets and identity"
+        title={t('page.title')}
+        subtitle={t('page.subtitle')}
       />
       <div className="space-y-6">
         <BrandFoundationStats />

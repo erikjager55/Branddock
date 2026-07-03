@@ -196,14 +196,14 @@ export function SetupStep() {
               <SelectionCard
                 key={id}
                 icon={icon}
-                title={label}
-                subtitle={desc}
+                title={t(`campaigns-setup:campaignTypes.${id}`, { defaultValue: label })}
+                subtitle={t(`campaigns-setup:campaignTypes.${id}Desc`, { defaultValue: desc })}
                 selected={campaignType === id}
                 onSelect={() => setCampaignType(id)}
                 badges={
                   <span className="inline-flex items-center gap-1.5">
                     <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
-                      {creativeApproach}
+                      {t(`campaigns-setup:campaignTypes.${id}Approach`, { defaultValue: creativeApproach })}
                     </span>
                     {isRecommended && (
                       <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-50 text-emerald-700">
@@ -255,15 +255,15 @@ export function SetupStep() {
           {GOAL_CATEGORIES.map((category) => (
             <div key={category.key}>
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                {category.label}
+                {t(`campaigns-setup:categories.${category.key}`, { defaultValue: category.label })}
               </h4>
               <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
                 {category.types.map(({ id, label, description: desc, icon }) => (
                   <SelectionCard
                     key={id}
                     icon={icon}
-                    title={label}
-                    subtitle={desc}
+                    title={t(`campaigns-setup:goals.${id}`, { defaultValue: label })}
+                    subtitle={t(`campaigns-setup:goals.${id}Desc`, { defaultValue: desc })}
                     selected={campaignGoalType === id}
                     onSelect={() => setCampaignGoalType(id)}
                   />

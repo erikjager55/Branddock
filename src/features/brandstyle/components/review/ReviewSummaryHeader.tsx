@@ -294,7 +294,11 @@ export function ReviewSummaryHeader({ styleguide, canEdit }: ReviewSummaryHeader
         <p className="text-xs text-red-700">
           <span className="font-semibold">{t("review.summary.needsWorkLabel")}</span>{" "}
           {Array.from(needsWorkSet)
-            .map((s) => REVIEW_SECTION_LABELS[s as ReviewSectionKey] ?? s)
+            .map((s) =>
+              t(`brandstyle-review:sections.${s}`, {
+                defaultValue: REVIEW_SECTION_LABELS[s as ReviewSectionKey] ?? s,
+              }),
+            )
             .join(", ")}
         </p>
       )}

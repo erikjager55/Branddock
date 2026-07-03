@@ -75,6 +75,13 @@ function normalize(raw: SocialRelevancyFrameworkData | null): SocialRelevancyFra
   };
 }
 
+/** Stable render-edge slug per reference framework (keyed off the constant's English name). */
+const REFERENCE_FRAMEWORK_SLUGS: Record<string, string> = {
+  'Triple Bottom Line': 'tripleBottomLine',
+  'B Corp Impact Assessment': 'bCorp',
+  'Brand Activism Spectrum': 'brandActivism',
+};
+
 const PILLAR_ICONS = { Leaf, Heart, Globe } as const;
 
 function getPillarIcon(iconName: string) {
@@ -157,6 +164,7 @@ function PillarScoreSummary({ score, maxScore, color }: {
 function GrandTotalBar({ data }: { data: SocialRelevancyFrameworkData }) {
   const { t } = useTranslation('brand-asset-detail');
   const scores = PILLAR_CONFIGS.map(p => ({
+    key: p.key,
     label: p.label,
     color: p.color,
     score: calculatePillarScore(data[p.key]),
@@ -184,7 +192,7 @@ function GrandTotalBar({ data }: { data: SocialRelevancyFrameworkData }) {
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-gray-900">{t('socialRelevancy.grandTotal.title')}</h4>
         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${badgeColor[threshold.color] ?? ''}`}>
-          {threshold.label}
+          {t(`brand-dna:scoreThresholds.${threshold.color}`, { defaultValue: threshold.label })}
         </span>
       </div>
       <div className="grid grid-cols-4 gap-3">
@@ -197,8 +205,8 @@ function GrandTotalBar({ data }: { data: SocialRelevancyFrameworkData }) {
             teal: 'text-primary',
           };
           return (
-            <div key={s.label} className="text-center">
-              <p className="text-xs text-gray-500 mb-1">{s.label}</p>
+            <div key={s.key} className="text-center">
+              <p className="text-xs text-gray-500 mb-1">{t(`brand-dna:pillars.${s.key}.label`, { defaultValue: s.label })}</p>
               <p className={`text-lg font-bold ${textColor[pillarThreshold.color] ?? 'text-gray-700'}`}>
                 {s.score}<span className="text-sm font-normal text-gray-400">/15</span>
               </p>
@@ -511,8 +519,8 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <p className="text-sm font-medium text-gray-900">{level.label}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{level.description}</p>
+                      <p className="text-sm font-medium text-gray-900">{t(`brand-dna:activism.${level.value}.label`, { defaultValue: level.label })}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{t(`brand-dna:activism.${level.value}.description`, { defaultValue: level.description })}</p>
                     </button>
                   ))}
                 </div>
@@ -524,7 +532,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                         {draft.activismLevel}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {ACTIVISM_LEVELS.find(l => l.value === draft.activismLevel)?.description}
+                        {t(`brand-dna:activism.${draft.activismLevel}.description`, { defaultValue: ACTIVISM_LEVELS.find(l => l.value === draft.activismLevel)?.description ?? '' })}
                       </span>
                     </div>
                   ) : (
@@ -547,22 +555,25 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
               </button>
               {showReference && (
                 <div className="mt-3 space-y-3">
-                  {REFERENCE_FRAMEWORKS.map((fw) => (
+                  {REFERENCE_FRAMEWORKS.map((fw) => {
+                    const fwSlug = REFERENCE_FRAMEWORK_SLUGS[fw.name] ?? fw.name;
+                    return (
                     <div key={fw.name} className="rounded-lg bg-gray-50 p-3">
                       <p className="text-xs font-semibold text-gray-700">
-                        {fw.name} <span className="font-normal text-gray-400">({fw.author}, {fw.year})</span>
+                        {t(`brand-dna:referenceFrameworks.${fwSlug}.name`, { defaultValue: fw.name })} <span className="font-normal text-gray-400">({fw.author}, {fw.year})</span>
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">{fw.description}</p>
+                      <p className="text-xs text-gray-500 mt-1">{t(`brand-dna:referenceFrameworks.${fwSlug}.description`, { defaultValue: fw.description })}</p>
                       <ul className="mt-1.5 space-y-0.5">
                         {fw.keyPoints.map((kp, i) => (
                           <li key={i} className="text-xs text-gray-500 flex items-start gap-1.5">
                             <span className="text-gray-300 mt-0.5">-</span>
-                            {kp}
+                            {t(`brand-dna:referenceFrameworks.${fwSlug}.keyPoints.${i}`, { defaultValue: kp })}
                           </li>
                         ))}
                       </ul>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -582,8 +593,8 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
             <CardHeader
               icon={PillarIcon}
               color={pillarConfig.color}
-              title={pillarConfig.label}
-              subtitle={pillarConfig.subtitle}
+              title={t(`brand-dna:pillars.${pillarConfig.key}.label`, { defaultValue: pillarConfig.label })}
+              subtitle={t(`brand-dna:pillars.${pillarConfig.key}.subtitle`, { defaultValue: pillarConfig.subtitle })}
               isExpanded={expandedCard === cardNum}
               onToggle={() => toggleCard(cardNum)}
               summary={pillarScore > 0 ? (
@@ -598,7 +609,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                     {/* Fixed statement text (always readonly) */}
                     <p className="text-sm font-medium text-gray-800">
                       <span className="text-gray-400 mr-1">{pillarIdx * 3 + stmtIdx + 1}.</span>
-                      {stmt.text}
+                      {t(`brand-dna:pillars.${pillarConfig.key}.statements.${stmtIdx}`, { defaultValue: stmt.text })}
                     </p>
 
                     {/* Score */}
@@ -673,7 +684,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                       onChange={(e) => handlePillarReflection(pillarConfig.key, e.target.value)}
                       className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                       rows={2}
-                      placeholder={t('socialRelevancy.pillar.reflectionPlaceholder', { pillar: pillarConfig.label.toLowerCase() })}
+                      placeholder={t('socialRelevancy.pillar.reflectionPlaceholder', { pillar: t(`brand-dna:pillars.${pillarConfig.key}.label`, { defaultValue: pillarConfig.label }).toLowerCase() })}
                     />
                   ) : (
                     <p className="text-sm text-gray-600">{pillarData.pillarReflection || <span className="italic text-gray-400">{t('socialRelevancy.pillar.noReflection')}</span>}</p>
@@ -717,8 +728,8 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                 {AUTHENTICITY_CRITERIA.map((criterion) => (
                   <div key={criterion.key} className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-700">{criterion.label}</p>
-                      <p className="text-xs text-gray-500">{criterion.question}</p>
+                      <p className="text-sm font-medium text-gray-700">{t(`brand-dna:authenticity.${criterion.key}.label`, { defaultValue: criterion.label })}</p>
+                      <p className="text-xs text-gray-500">{t(`brand-dna:authenticity.${criterion.key}.question`, { defaultValue: criterion.question })}</p>
                     </div>
                     <div className="flex-shrink-0">
                       <ScoreBar
@@ -846,7 +857,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                       } ${isEditing ? 'cursor-pointer' : 'cursor-default'}`}
                       style={selected ? { backgroundColor: sdg.color } : undefined}
                     >
-                      <span className="font-bold">{sdg.number}.</span> {sdg.name}
+                      <span className="font-bold">{sdg.number}.</span> {t(`brand-dna:sdg.${sdg.number}`, { defaultValue: sdg.name })}
                     </button>
                   );
                 })}

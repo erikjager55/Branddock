@@ -1,6 +1,7 @@
 'use client';
 
 import { ShieldCheck, ShieldAlert } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/components/ui/utils';
 
 interface LockShieldProps {
@@ -11,13 +12,14 @@ interface LockShieldProps {
 }
 
 export function LockShield({ isLocked, isToggling, onClick }: LockShieldProps) {
+  const { t } = useTranslation('lock-billing');
   return (
     <button
       onClick={onClick}
       disabled={isToggling}
       role="switch"
       aria-checked={isLocked}
-      aria-label={isLocked ? 'Unlock this item' : 'Lock this item'}
+      aria-label={isLocked ? t('shield.unlockAria') : t('shield.lockAria')}
       className={cn(
         'group',
         isToggling && 'opacity-60 cursor-wait',

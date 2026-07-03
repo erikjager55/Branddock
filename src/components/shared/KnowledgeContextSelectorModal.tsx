@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Plus, Link2, Upload } from 'lucide-react';
 import { Modal } from '@/components/shared';
 import {
@@ -94,6 +95,7 @@ export function KnowledgeContextSelectorModal({
   initialSelected,
   inlineAdd,
 }: KnowledgeContextSelectorModalProps) {
+  const { t } = useTranslation('shared');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<SourceType>('all');
   const [selected, setSelected] = useState<Map<string, SelectedContextEntry>>(
@@ -148,13 +150,13 @@ export function KnowledgeContextSelectorModal({
     const title = linkTitle.trim();
     const url = linkUrl.trim();
     if (!title || !url) {
-      setAddError('Title and URL are required');
+      setAddError(t('contextSelector.titleUrlRequired'));
       return;
     }
     try {
       new URL(url);
     } catch {
-      setAddError('Enter a valid URL (e.g. https://example.com)');
+      setAddError(t('contextSelector.invalidUrl'));
       return;
     }
     setAddPending(true);
@@ -168,10 +170,10 @@ export function KnowledgeContextSelectorModal({
         setLinkDesc('');
         setAddOpen(false);
       } else {
-        setAddError('Could not add the link');
+        setAddError(t('contextSelector.addLinkFailed'));
       }
     } catch (err) {
-      setAddError(err instanceof Error ? err.message : 'Could not add the link');
+      setAddError(err instanceof Error ? err.message : t('contextSelector.addLinkFailed'));
     } finally {
       setAddPending(false);
     }
@@ -180,7 +182,11 @@ export function KnowledgeContextSelectorModal({
   const handleAddFile = async (file: File) => {
     if (!inlineAdd) return;
     if (file.size > inlineAdd.maxFileSizeBytes) {
-      setAddError(`File too large (max ${Math.round(inlineAdd.maxFileSizeBytes / 1024 / 1024)}MB)`);
+      setAddError(
+        t('contextSelector.fileTooLarge', {
+          max: Math.round(inlineAdd.maxFileSizeBytes / 1024 / 1024),
+        }),
+      );
       return;
     }
     setAddPending(true);
@@ -191,10 +197,10 @@ export function KnowledgeContextSelectorModal({
         selectEntry(entry);
         setAddOpen(false);
       } else {
-        setAddError('Could not upload the file');
+        setAddError(t('contextSelector.uploadFailed'));
       }
     } catch (err) {
-      setAddError(err instanceof Error ? err.message : 'Could not upload the file');
+      setAddError(err instanceof Error ? err.message : t('contextSelector.uploadFailed'));
     } finally {
       setAddPending(false);
     }
@@ -202,7 +208,7 @@ export function KnowledgeContextSelectorModal({
 
   // Build filter chips dynamically from groups
   const filterChips = useMemo(() => {
-    if (!groups) return [{ key: 'all' as SourceType, label: 'All', icon: SEARCH_ICON }];
+    if (!groups) return [{ key: 'all' as SourceType, label: t('contextSelector.all'), icon: SEARCH_ICON }];
     // Show a chip for a group only when it has items, failed to load, OR is the
     // inline-add target (knowledge_resource in the canvas picker — so the user
     // can find where to add even when empty). This keeps the F3 empty-group
@@ -214,14 +220,14 @@ export function KnowledgeContextSelectorModal({
         (g.items.length > 0 || g.error || (canInlineAdd && g.key === 'knowledge_resource')),
     );
     return [
-      { key: 'all' as SourceType, label: 'All', icon: SEARCH_ICON },
+      { key: 'all' as SourceType, label: t('contextSelector.all'), icon: SEARCH_ICON },
       ...allowedGroups.map((g) => ({
         key: g.key as SourceType,
         label: g.label,
         icon: CONTEXT_ICON_MAP[g.icon] || DEFAULT_SOURCE_ICON,
       })),
     ];
-  }, [groups, excludedGroups, canInlineAdd]);
+  }, [groups, excludedGroups, canInlineAdd, t]);
 
   // Flatten all items from groups into a single list
   const flatItems = useMemo<FlatItem[]>(() => {
@@ -302,20 +308,20 @@ export function KnowledgeContextSelectorModal({
     <Modal
       isOpen={isOpen}
       onClose={resetAndClose}
-      title="Select Knowledge Context"
-      subtitle={`${flatItems.length} items available`}
+      title={t('contextSelector.title')}
+      subtitle={t('contextSelector.itemsAvailable', { count: flatItems.length })}
       size="xl"
       footer={
         <div className="flex items-center justify-between w-full">
           <span className="text-sm text-gray-500">
-            {selected.size} item{selected.size !== 1 ? 's' : ''} selected
+            {t('contextSelector.selectedCount', { count: selected.size })}
           </span>
           <div className="flex items-center gap-3">
             <button
               onClick={resetAndClose}
               className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
             >
-              Cancel
+              {t('contextSelector.cancel')}
             </button>
             <button
               onClick={handleApply}
@@ -326,7 +332,7 @@ export function KnowledgeContextSelectorModal({
               }}
               className="px-5 py-2 text-sm font-medium rounded-lg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isPending ? 'Applying...' : 'Apply Selection'}
+              {isPending ? t('contextSelector.applying') : t('contextSelector.apply')}
             </button>
           </div>
         </div>
@@ -344,7 +350,7 @@ export function KnowledgeContextSelectorModal({
                 className="flex items-center gap-2 text-sm font-medium text-teal-700 hover:text-teal-800"
               >
                 <Plus className="h-4 w-4" />
-                Add knowledge (link or file)
+                {t('contextSelector.addKnowledge')}
               </button>
             ) : (
               <div className="space-y-3">
@@ -357,7 +363,7 @@ export function KnowledgeContextSelectorModal({
                       addTab === 'link' ? 'ring-1 ring-teal-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    <Link2 className="h-3.5 w-3.5" /> Link
+                    <Link2 className="h-3.5 w-3.5" /> {t('contextSelector.link')}
                   </button>
                   <button
                     type="button"
@@ -367,14 +373,14 @@ export function KnowledgeContextSelectorModal({
                       addTab === 'file' ? 'ring-1 ring-teal-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    <Upload className="h-3.5 w-3.5" /> File
+                    <Upload className="h-3.5 w-3.5" /> {t('contextSelector.file')}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setAddOpen(false); setAddError(null); }}
                     className="ml-auto text-xs text-gray-400 hover:text-gray-600"
                   >
-                    Cancel
+                    {t('contextSelector.cancel')}
                   </button>
                 </div>
 
@@ -384,7 +390,7 @@ export function KnowledgeContextSelectorModal({
                       type="text"
                       value={linkTitle}
                       onChange={(e) => setLinkTitle(e.target.value)}
-                      placeholder="Title"
+                      placeholder={t('contextSelector.titlePlaceholder')}
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                     <input
@@ -397,7 +403,7 @@ export function KnowledgeContextSelectorModal({
                     <textarea
                       value={linkDesc}
                       onChange={(e) => setLinkDesc(e.target.value)}
-                      placeholder="What this is about (optional context for the AI)"
+                      placeholder={t('contextSelector.linkDescPlaceholder')}
                       rows={2}
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-y"
                     />
@@ -411,7 +417,7 @@ export function KnowledgeContextSelectorModal({
                       }}
                       className="px-4 py-1.5 text-sm font-medium rounded-lg transition-opacity hover:opacity-90 disabled:cursor-not-allowed"
                     >
-                      {addPending ? 'Adding…' : 'Add to library'}
+                      {addPending ? t('contextSelector.adding') : t('contextSelector.addToLibrary')}
                     </button>
                   </div>
                 ) : (
@@ -423,7 +429,7 @@ export function KnowledgeContextSelectorModal({
                       className="w-full flex flex-col items-center gap-2 border-2 border-dashed border-gray-300 rounded-lg py-6 text-sm text-gray-500 hover:border-teal-400 hover:text-teal-700 transition-colors disabled:opacity-60"
                     >
                       <Upload className="h-5 w-5" />
-                      {addPending ? 'Uploading…' : 'Click to choose a file'}
+                      {addPending ? t('contextSelector.uploading') : t('contextSelector.chooseFile')}
                     </button>
                     <input
                       ref={fileInputRef}
@@ -437,7 +443,10 @@ export function KnowledgeContextSelectorModal({
                       }}
                     />
                     <p className="text-[11px] text-gray-400">
-                      Max {Math.round(inlineAdd.maxFileSizeBytes / 1024 / 1024)}MB · {inlineAdd.acceptExtensions.join(', ')} · PDF and text are read into the AI context
+                      {t('contextSelector.fileHint', {
+                        max: Math.round(inlineAdd.maxFileSizeBytes / 1024 / 1024),
+                        extensions: inlineAdd.acceptExtensions.join(', '),
+                      })}
                     </p>
                   </div>
                 )}
@@ -453,7 +462,7 @@ export function KnowledgeContextSelectorModal({
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search knowledge items..."
+            placeholder={t('contextSelector.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -487,28 +496,28 @@ export function KnowledgeContextSelectorModal({
         <div className="max-h-[40vh] overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
           {isLoading ? (
             <div className="flex items-center justify-center py-12 text-sm text-gray-400">
-              Loading available context...
+              {t('contextSelector.loadingContext')}
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-1 py-12 px-6 text-center text-sm text-gray-400">
               {searchQuery ? (
-                <span>No items match your search</span>
+                <span>{t('contextSelector.noSearchMatch')}</span>
               ) : activeGroup?.error ? (
-                <span className="text-amber-600">Could not load {activeGroup.label}. Try again later.</span>
+                <span className="text-amber-600">{t('contextSelector.loadGroupFailed', { group: activeGroup.label })}</span>
               ) : activeGroup ? (
                 <>
-                  <span>No items in {activeGroup.label} yet.</span>
+                  <span>{t('contextSelector.groupEmpty', { group: activeGroup.label })}</span>
                   {inlineAdd && activeGroup.key === 'knowledge_resource' && (
-                    <span className="text-xs text-gray-400">Use Add knowledge above to add a link or file.</span>
+                    <span className="text-xs text-gray-400">{t('contextSelector.addHintGroup')}</span>
                   )}
                 </>
               ) : anyGroupError ? (
-                <span className="text-amber-600">Some sources could not load. Showing what is available.</span>
+                <span className="text-amber-600">{t('contextSelector.someSourcesFailed')}</span>
               ) : (
                 <>
-                  <span>No context items in this workspace yet.</span>
+                  <span>{t('contextSelector.workspaceEmpty')}</span>
                   {inlineAdd && (
-                    <span className="text-xs text-gray-400">Use Add knowledge above to add your first item.</span>
+                    <span className="text-xs text-gray-400">{t('contextSelector.addHintFirst')}</span>
                   )}
                 </>
               )}
@@ -573,7 +582,7 @@ export function KnowledgeContextSelectorModal({
                   {isItemSelected && (
                     <div className="px-4 pb-3 pl-12 space-y-2">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-gray-500">Use as:</span>
+                        <span className="text-[11px] text-gray-500">{t('contextSelector.useAs')}</span>
                         {(['primary', 'reference'] as const).map((p) => {
                           const active = priority === p;
                           return (
@@ -586,7 +595,7 @@ export function KnowledgeContextSelectorModal({
                                 active ? '' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                               }`}
                             >
-                              {p === 'primary' ? 'Source material' : 'Reference'}
+                              {p === 'primary' ? t('contextSelector.sourceMaterial') : t('contextSelector.reference')}
                             </button>
                           );
                         })}
@@ -594,7 +603,7 @@ export function KnowledgeContextSelectorModal({
                       <textarea
                         value={entry?.note ?? ''}
                         onChange={(e) => updateSelectedItem(key, { note: e.target.value })}
-                        placeholder="Guidance for the AI on this source — e.g. emphasize this vision, play up this contrast (optional)"
+                        placeholder={t('contextSelector.guidancePlaceholder')}
                         rows={2}
                         maxLength={500}
                         className="w-full text-xs px-2.5 py-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-teal-400 resize-y"

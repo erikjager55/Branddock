@@ -138,7 +138,7 @@ export function ContentCardGrid({
                     die anders min-w-0 + line-clamp ontwijken. */}
                 {onRename ? (
                   <InlineRenameField
-                    placeholder={t("card.untitledPlaceholder", { type: formatContentType(item.type) })}
+                    placeholder={t("card.untitledPlaceholder", { type: t(`campaigns-content-types:types.${item.type}`, { defaultValue: formatContentType(item.type) }) })}
                     currentValue={item.title.toLowerCase() === item.type.toLowerCase() ? undefined : item.title}
                     className="text-sm font-semibold text-gray-900 line-clamp-2 break-words"
                     onRename={(t) => onRename(item.id, item.campaignId, t)}

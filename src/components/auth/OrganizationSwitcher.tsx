@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { authClient, useSession } from '@/lib/auth-client';
 import { Building2, ChevronDown, Check, Plus, Loader2, Briefcase } from 'lucide-react';
 import { clearAllStorage } from '@/utils/storage';
@@ -42,6 +43,7 @@ interface WorkspaceData {
 }
 
 export function OrganizationSwitcher() {
+  const { t } = useTranslation('auth-chrome');
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [orgs, setOrgs] = useState<OrgData[]>([]);
@@ -184,7 +186,7 @@ export function OrganizationSwitcher() {
         await handleSwitchWorkspace(workspace);
       } else {
         const err = await res.json();
-        alert(err.error ?? 'Failed to create workspace');
+        alert(err.error ?? t('orgSwitcher.createFailed'));
       }
     } catch (err) {
       console.error('Failed to create workspace:', err);
@@ -214,7 +216,7 @@ export function OrganizationSwitcher() {
         <Building2 className="h-4 w-4 text-primary" />
         <div className="flex flex-col items-start">
           <span className="font-medium text-gray-900 truncate max-w-[160px]">
-            {activeOrg?.name ?? 'Select organization'}
+            {activeOrg?.name ?? t('orgSwitcher.selectOrganization')}
           </span>
           {activeWorkspace && workspaces.length > 1 && (
             <span className="text-xs text-gray-500 truncate max-w-[160px]">
@@ -232,7 +234,7 @@ export function OrganizationSwitcher() {
           {orgs.length > 1 && (
             <>
               <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Organizations
+                {t('orgSwitcher.organizationsHeading')}
               </div>
               {orgs.map((org) => (
                 <button
@@ -259,7 +261,7 @@ export function OrganizationSwitcher() {
           {workspaces.length > 0 && (
             <>
               <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Workspaces
+                {t('orgSwitcher.workspacesHeading')}
               </div>
               {workspaces.map((ws) => (
                 <button
@@ -291,7 +293,7 @@ export function OrganizationSwitcher() {
                         value={newWorkspaceName}
                         onChange={(e) => setNewWorkspaceName(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleCreateWorkspace()}
-                        placeholder="Workspace name..."
+                        placeholder={t('orgSwitcher.newWorkspacePlaceholder')}
                         className="flex-1 text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         autoFocus
                       />
@@ -300,7 +302,7 @@ export function OrganizationSwitcher() {
                         disabled={isCreating || !newWorkspaceName.trim()}
                         className="text-sm text-primary hover:text-primary-700 font-medium disabled:opacity-50"
                       >
-                        {isCreating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Add'}
+                        {isCreating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('orgSwitcher.add')}
                       </button>
                     </div>
                   ) : (
@@ -310,7 +312,7 @@ export function OrganizationSwitcher() {
                       className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors text-left text-sm text-primary"
                     >
                       <Plus className="h-4 w-4" />
-                      <span>New workspace</span>
+                      <span>{t('orgSwitcher.newWorkspace')}</span>
                     </button>
                   )}
                 </>

@@ -10,6 +10,7 @@
 // =============================================================
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, X, Sparkles, Loader2, AlertCircle, ShieldAlert } from 'lucide-react';
 import { useMediaAssets } from '@/features/media-library/hooks';
 
@@ -36,6 +37,7 @@ interface AnchorLogoAudit {
 }
 
 export function BrandStyleAnchorsPanel() {
+  const { t } = useTranslation('brand-foundation');
   const [anchors, setAnchors] = useState<Anchor[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,14 +60,14 @@ export function BrandStyleAnchorsPanel() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Fetch failed');
+          setError(err instanceof Error ? err.message : t('anchors.errors.fetchFailed'));
           setLoading(false);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const persist = async (newAnchors: Anchor[]) => {
     setSaving(true);
@@ -78,12 +80,12 @@ export function BrandStyleAnchorsPanel() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error ?? `Save failed (${res.status})`);
+        throw new Error(body?.error ?? t('anchors.errors.saveFailedStatus', { status: res.status }));
       }
       const data = (await res.json()) as { anchors?: Anchor[] };
       setAnchors(data.anchors ?? newAnchors);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('anchors.errors.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -99,11 +101,11 @@ export function BrandStyleAnchorsPanel() {
     setError(null);
     try {
       const res = await fetch('/api/workspace/brand-style-anchors?audit=1');
-      if (!res.ok) throw new Error(`Audit failed (${res.status})`);
+      if (!res.ok) throw new Error(t('anchors.errors.auditFailedStatus', { status: res.status }));
       const data = (await res.json()) as { logoAudit?: AnchorLogoAudit };
       setAudit(data.logoAudit ?? { findings: [], dominantCount: 0, visibleCount: 0, warning: null });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Audit failed');
+      setError(err instanceof Error ? err.message : t('anchors.errors.auditFailed'));
     } finally {
       setAuditing(false);
     }
@@ -115,7 +117,7 @@ export function BrandStyleAnchorsPanel() {
 
   const handleAdd = (asset: { id: string; fileUrl: string; name?: string | null }) => {
     if (anchors.length >= 10) {
-      setError('Maximum 10 anchors. Remove one first.');
+      setError(t('anchors.errors.maxAnchors'));
       return;
     }
     if (anchors.some((a) => a.mediaAssetId === asset.id)) {
@@ -132,7 +134,10 @@ export function BrandStyleAnchorsPanel() {
   };
 
   const count = anchors.length;
-  const countLabel = count < 3 ? `${count} (3-10 recommended)` : `${count} active`;
+  const countLabel =
+    count < 3
+      ? t('anchors.countRecommended', { n: count })
+      : t('anchors.countActive', { n: count });
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
@@ -140,7 +145,7 @@ export function BrandStyleAnchorsPanel() {
         <div>
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-purple-600" />
-            <h3 className="text-sm font-semibold text-gray-900">Brand-style anchors</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t('anchors.title')}</h3>
             <span
               className={`text-[11px] px-1.5 py-0.5 rounded-full ${
                 count >= 3
@@ -152,9 +157,7 @@ export function BrandStyleAnchorsPanel() {
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-            3-10 reference images that represent how the brand should feel visually. Every image
-            generation injects these as style references (Recraft / Nano Banana / FLUX 2) for a
-            consistent brand look across campaigns.
+            {t('anchors.description')}
           </p>
         </div>
         {saving && <Loader2 className="h-4 w-4 animate-spin text-purple-600" />}
@@ -177,7 +180,7 @@ export function BrandStyleAnchorsPanel() {
             className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-purple-700 disabled:opacity-50"
           >
             {auditing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldAlert className="h-3.5 w-3.5" />}
-            Check anchors for logos
+            {t('anchors.checkLogos')}
           </button>
           {audit && (
             audit.warning ? (
@@ -187,7 +190,9 @@ export function BrandStyleAnchorsPanel() {
               </div>
             ) : (
               <p className="mt-2 text-[11px] text-emerald-700">
-                No logo-dominant anchors found{audit.visibleCount > 0 ? ` (${audit.visibleCount} with a small/subtle logo)` : ''}.
+                {audit.visibleCount > 0
+                  ? t('anchors.noLogoCleanWithVisible', { visible: audit.visibleCount })
+                  : t('anchors.noLogoClean')}
               </p>
             )
           )}
@@ -197,7 +202,7 @@ export function BrandStyleAnchorsPanel() {
       {loading ? (
         <div className="flex items-center gap-2 text-xs text-gray-500 py-4">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Loading anchors...
+          {t('anchors.loadingAnchors')}
         </div>
       ) : (
         <>
@@ -210,16 +215,16 @@ export function BrandStyleAnchorsPanel() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={anchor.fileUrl}
-                  alt={anchor.alt ?? 'Anchor'}
+                  alt={anchor.alt ?? t('anchors.anchorAlt')}
                   className="w-full h-full object-cover"
                 />
                 {prominenceOf(anchor.mediaAssetId) === 'dominant' && (
                   <span
                     className="absolute bottom-1 left-1 inline-flex items-center gap-0.5 rounded bg-amber-500/95 px-1 py-0.5 text-[9px] font-semibold text-white shadow-sm"
-                    title="This image shows a prominent logo — replace it for clean generations"
+                    title={t('anchors.logoBadgeTitle')}
                   >
                     <ShieldAlert className="h-2.5 w-2.5" />
-                    logo
+                    {t('anchors.logoBadge')}
                   </span>
                 )}
                 <button
@@ -227,8 +232,8 @@ export function BrandStyleAnchorsPanel() {
                   onClick={() => handleRemove(anchor.mediaAssetId)}
                   disabled={saving}
                   className="absolute top-1 right-1 p-1 rounded-full bg-white/95 hover:bg-red-50 text-gray-700 hover:text-red-600 shadow-sm border border-gray-200 transition-colors"
-                  title="Remove anchor"
-                  aria-label="Remove anchor"
+                  title={t('anchors.removeAnchor')}
+                  aria-label={t('anchors.removeAnchor')}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -242,15 +247,14 @@ export function BrandStyleAnchorsPanel() {
                 className="aspect-square rounded-md border-2 border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50 flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-purple-700 transition-colors disabled:opacity-50"
               >
                 <Plus className="h-5 w-5" />
-                <span className="text-[10px] font-medium">Add</span>
+                <span className="text-[10px] font-medium">{t('anchors.add')}</span>
               </button>
             )}
           </div>
 
           {count === 0 && (
             <div className="mt-3 text-[11px] text-gray-500 italic">
-              No anchors set. Image generation still works without them, but brand consistency
-              requires a curated set of anchors.
+              {t('anchors.emptyHint')}
             </div>
           )}
         </>
@@ -278,6 +282,7 @@ function AnchorPickerModal({
   onPicked: (asset: { id: string; fileUrl: string; name?: string | null }) => void;
   excludeIds: string[];
 }) {
+  const { t } = useTranslation('brand-foundation');
   const { data, isLoading } = useMediaAssets({ mediaType: 'IMAGE' as never, limit: 60 });
   const assets = (data?.assets ?? []).filter(
     (a: { id: string; mediaType: string }) =>
@@ -294,7 +299,7 @@ function AnchorPickerModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">Pick a media asset as anchor</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t('anchors.pickerTitle')}</h3>
           <button
             type="button"
             onClick={onClose}
@@ -307,11 +312,11 @@ function AnchorPickerModal({
           {isLoading ? (
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Loading library...
+              {t('anchors.loadingLibrary')}
             </div>
           ) : assets.length === 0 ? (
             <p className="text-xs text-gray-500">
-              No image assets found in the Media Library. Upload some reference images first.
+              {t('anchors.pickerEmpty')}
             </p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
@@ -325,7 +330,7 @@ function AnchorPickerModal({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={asset.thumbnailUrl ?? asset.fileUrl}
-                    alt={asset.name ?? 'Asset'}
+                    alt={asset.name ?? t('anchors.assetAlt')}
                     className="w-full h-full object-cover"
                   />
                 </button>

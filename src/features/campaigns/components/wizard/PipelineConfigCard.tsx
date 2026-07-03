@@ -90,6 +90,7 @@ export function PipelineConfigCard() {
         icon={<Target className="h-3.5 w-3.5 text-gray-500" />}
         label={t("pipelineConfig.strategyDepth")}
         helper={t("pipelineConfig.strategyDepthHelper")}
+        nsGroup="strategyDepth"
         options={STRATEGY_DEPTH_OPTIONS}
         value={pipelineConfig.strategyDepth}
         onChange={(v) => setStrategyDepth(v as StrategyDepth)}
@@ -99,6 +100,7 @@ export function PipelineConfigCard() {
         icon={<Zap className="h-3.5 w-3.5 text-gray-500" />}
         label={t("pipelineConfig.creativeRange")}
         helper={t("pipelineConfig.creativeRangeHelper")}
+        nsGroup="creativeRange"
         options={CREATIVE_RANGE_OPTIONS}
         value={pipelineConfig.creativeRange}
         onChange={(v) => setCreativeRange(v as CreativeRange)}
@@ -108,6 +110,7 @@ export function PipelineConfigCard() {
         icon={<Gauge className="h-3.5 w-3.5 text-gray-500" />}
         label={t("pipelineConfig.modelRigor")}
         helper={t("pipelineConfig.modelRigorHelper")}
+        nsGroup="modelRigor"
         options={MODEL_RIGOR_OPTIONS}
         value={pipelineConfig.modelRigor}
         onChange={(v) => setModelRigor(v as ModelRigor)}
@@ -117,7 +120,11 @@ export function PipelineConfigCard() {
       <div className="pt-1 flex items-center justify-between text-xs">
         <span className="text-gray-500">
           {t("pipelineConfig.presetLabel")} <span className="font-medium text-gray-700">
-            {activePreset === 'custom' ? t("pipelineConfig.custom") : PRESET_LABELS[activePreset as Exclude<PipelinePreset, 'custom'>]}
+            {activePreset === 'custom'
+              ? t("pipelineConfig.custom")
+              : t(`campaigns-pipeline:presetLabels.${activePreset}`, {
+                  defaultValue: PRESET_LABELS[activePreset as Exclude<PipelinePreset, 'custom'>],
+                })}
           </span>
         </span>
         <span className="text-gray-400">
@@ -167,12 +174,15 @@ interface SliderRowProps<T extends string> {
   icon: React.ReactNode;
   label: string;
   helper: string;
+  /** Catalog group in the `campaigns-pipeline` namespace (matches the registry name). */
+  nsGroup: 'strategyDepth' | 'creativeRange' | 'modelRigor';
   options: SliderOption<T>[];
   value: T;
   onChange: (value: T) => void;
 }
 
-function SliderRow<T extends string>({ icon, label, helper, options, value, onChange }: SliderRowProps<T>) {
+function SliderRow<T extends string>({ icon, label, helper, nsGroup, options, value, onChange }: SliderRowProps<T>) {
+  const { t } = useTranslation();
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
@@ -195,10 +205,10 @@ function SliderRow<T extends string>({ icon, label, helper, options, value, onCh
               }`}
             >
               <div className={`text-xs font-medium ${isActive ? 'text-primary' : 'text-gray-700'}`}>
-                {option.label}
+                {t(`campaigns-pipeline:${nsGroup}.${option.value}`, { defaultValue: option.label })}
               </div>
               <div className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
-                {option.description}
+                {t(`campaigns-pipeline:${nsGroup}.${option.value}Desc`, { defaultValue: option.description })}
               </div>
             </button>
           );

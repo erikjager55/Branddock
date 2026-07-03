@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 
 export interface BrandContextTagsEditorProps {
@@ -30,6 +31,7 @@ export function BrandContextTagsEditor({
   onAddCustomTag,
   isLoading = false,
 }: BrandContextTagsEditorProps) {
+  const { t } = useTranslation('shared');
   const [newTagInput, setNewTagInput] = useState('');
 
   const handleAdd = useCallback(() => {
@@ -43,14 +45,13 @@ export function BrandContextTagsEditor({
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-5">
-      <h3 className="text-sm font-semibold text-gray-900">Brand Context Tags</h3>
+      <h3 className="text-sm font-semibold text-gray-900">{t('brandContextTags.title')}</h3>
       <p className="mt-1 text-sm text-gray-500">
-        Select the brand keywords to include in the generation prompts. Deselect tags you
-        don&apos;t want to influence the output.
+        {t('brandContextTags.description')}
       </p>
 
       {isLoading ? (
-        <p className="mt-3 text-sm text-gray-400 italic">Loading brand context…</p>
+        <p className="mt-3 text-sm text-gray-400 italic">{t('brandContextTags.loading')}</p>
       ) : allTags.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {allTags.map((tag) => (
@@ -70,7 +71,7 @@ export function BrandContextTagsEditor({
         </div>
       ) : (
         <p className="mt-3 text-sm text-gray-400 italic">
-          No brand context available. Images will be generated with default prompts.
+          {t('brandContextTags.empty')}
         </p>
       )}
 
@@ -86,7 +87,7 @@ export function BrandContextTagsEditor({
               handleAdd();
             }
           }}
-          placeholder="Add keyword..."
+          placeholder={t('brandContextTags.addPlaceholder')}
           className="rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
         />
         <button
@@ -96,7 +97,7 @@ export function BrandContextTagsEditor({
           className="flex items-center gap-1 rounded-md bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <Plus className="h-3 w-3" />
-          Add
+          {t('brandContextTags.add')}
         </button>
       </div>
     </div>

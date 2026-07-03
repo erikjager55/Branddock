@@ -168,7 +168,7 @@ export function ContentCardList({
               </button>
               {onRename ? (
                 <InlineRenameField
-                  placeholder={t("card.untitledPlaceholder", { type: formatContentType(item.type) })}
+                  placeholder={t("card.untitledPlaceholder", { type: t(`campaigns-content-types:types.${item.type}`, { defaultValue: formatContentType(item.type) }) })}
                   currentValue={item.title.toLowerCase() === item.type.toLowerCase() ? undefined : item.title}
                   className="text-sm font-medium text-gray-900 truncate"
                   onRename={(t) => onRename(item.id, item.campaignId, t)}
@@ -182,7 +182,7 @@ export function ContentCardList({
 
             {/* Type */}
             <div className="overflow-hidden">
-              <Badge size="sm">{formatContentType(item.type)}</Badge>
+              <Badge size="sm">{t(`campaigns-content-types:types.${item.type}`, { defaultValue: formatContentType(item.type) })}</Badge>
             </div>
 
             {/* Campaign */}

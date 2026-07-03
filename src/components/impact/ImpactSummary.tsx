@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Info, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { ImpactAnalysis } from '../../types/change-impact';
 import { ChangeImpactService } from '../../services/ChangeImpactService';
@@ -20,8 +21,9 @@ interface ImpactSummaryProps {
 export function ImpactSummary({ 
   impactAnalysis, 
   compact = false,
-  className 
+  className
 }: ImpactSummaryProps) {
+  const { t } = useTranslation('versioning-impact');
   const [expanded, setExpanded] = useState(false);
   const { decisionImpact } = impactAnalysis;
 
@@ -95,7 +97,7 @@ export function ImpactSummary({
       >
         <Icon className="w-5 h-5 mt-0.5 flex-shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium">What does this change mean?</p>
+          <p className="text-sm font-medium">{t('impact.summary.heading')}</p>
           <p className="text-sm mt-1 opacity-90">{shortSummary}</p>
         </div>
         {expanded ? (
@@ -144,11 +146,12 @@ interface ImpactSummaryListProps {
   className?: string;
 }
 
-export function ImpactSummaryList({ 
-  impactAnalyses, 
+export function ImpactSummaryList({
+  impactAnalyses,
   maxVisible = 3,
-  className 
+  className
 }: ImpactSummaryListProps) {
+  const { t } = useTranslation('versioning-impact');
   const [showAll, setShowAll] = useState(false);
 
   if (impactAnalyses.length === 0) {
@@ -173,7 +176,7 @@ export function ImpactSummaryList({
           onClick={() => setShowAll(true)}
           className="text-sm text-blue-600 hover:text-blue-700 font-medium"
         >
-          Show {impactAnalyses.length - maxVisible} more change(s)
+          {t('impact.summary.showMore', { count: impactAnalyses.length - maxVisible })}
         </button>
       )}
 
@@ -182,7 +185,7 @@ export function ImpactSummaryList({
           onClick={() => setShowAll(false)}
           className="text-sm text-slate-600 hover:text-slate-700 font-medium"
         >
-          Show less
+          {t('impact.summary.showLess')}
         </button>
       )}
     </div>

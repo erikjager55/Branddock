@@ -8,6 +8,7 @@
 // =============================================================
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Badge, type BadgeVariant } from '@/components/shared/Badge';
 import { CheckCircle2, Clock, AlertTriangle, Circle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -47,6 +48,7 @@ export function AssetStatusBadge({
   showIcon = true,
   className,
 }: AssetStatusBadgeProps) {
+  const { t } = useTranslation('brand-assets');
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.DRAFT;
 
   return (
@@ -56,7 +58,7 @@ export function AssetStatusBadge({
       dot={dot}
       className={className}
     >
-      {config.label}
+      {t(`status.${status}`, { defaultValue: config.label })}
     </Badge>
   );
 }

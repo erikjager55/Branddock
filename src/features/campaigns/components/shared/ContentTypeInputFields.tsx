@@ -208,23 +208,43 @@ function ProductSelectField({
 
 function FieldRenderer({
   field,
+  typeId,
   value,
   onChange,
   isAiDerived,
   compact,
 }: {
   field: ContentTypeInputField;
+  typeId: string;
   value: ContentTypeInputValue | undefined;
   onChange: (value: ContentTypeInputValue) => void;
   isAiDerived: boolean;
   compact: boolean;
 }) {
-  const { t } = useTranslation('campaigns-core');
+  const { t } = useTranslation(['campaigns-core', 'campaigns-content-inputs']);
+
+  // Render-edge i18n: the registry keeps its English source strings; translations
+  // live in the `campaigns-content-inputs` catalog, keyed by the field's stable id
+  // with per-content-type overrides where the same key carries a different label.
+  const tField = (suffix: 'label' | 'placeholder' | 'help', def: string) =>
+    t(`campaigns-content-inputs:byType.${typeId}.${field.key}.${suffix}`, {
+      defaultValue: t(`campaigns-content-inputs:fields.${field.key}.${suffix}`, { defaultValue: def }),
+    });
+  const tOption = (optionValue: string, def: string) =>
+    t(`campaigns-content-inputs:byType.${typeId}.${field.key}.options.${optionValue}`, {
+      defaultValue: t(`campaigns-content-inputs:options.${field.key}.${optionValue}`, { defaultValue: def }),
+    });
+
+  const label = tField('label', field.label);
+  const placeholder =
+    field.placeholder !== undefined ? tField('placeholder', field.placeholder) : field.placeholder;
+  const helpText = field.helpText !== undefined ? tField('help', field.helpText) : field.helpText;
+
   const labelContent = (
     <div className="flex items-center gap-1.5 mb-1">
       <label className="text-sm font-medium text-gray-700">
         {field.required && <span className="text-red-500 mr-0.5">*</span>}
-        {field.label}
+        {label}
       </label>
       {isAiDerived && (
         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-50 text-violet-600">
@@ -232,11 +252,11 @@ function FieldRenderer({
           AI
         </span>
       )}
-      {!compact && field.helpText && (
+      {!compact && helpText && (
         <span className="group relative">
           <HelpCircle className="w-3.5 h-3.5 text-gray-300 cursor-help" />
           <span className="absolute left-5 top-0 z-10 hidden group-hover:block w-48 p-2 rounded-lg bg-gray-800 text-white text-xs shadow-lg">
-            {field.helpText}
+            {helpText}
           </span>
         </span>
       )}
@@ -252,7 +272,7 @@ function FieldRenderer({
             type="text"
             value={(value as string) ?? ''}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={field.placeholder}
+            placeholder={placeholder}
             className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
           />
         </div>
@@ -265,7 +285,7 @@ function FieldRenderer({
           <textarea
             value={(value as string) ?? ''}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={field.placeholder}
+            placeholder={placeholder}
             rows={3}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 resize-y"
           />
@@ -286,7 +306,7 @@ function FieldRenderer({
                 onChange(Number(e.target.value));
               }
             }}
-            placeholder={field.placeholder}
+            placeholder={placeholder}
             min={0}
             className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
           />
@@ -302,7 +322,7 @@ function FieldRenderer({
             onChange={(e) => onChange(e.target.checked)}
             className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
           />
-          <span className="text-sm text-gray-700">{field.label}</span>
+          <span className="text-sm text-gray-700">{label}</span>
           {isAiDerived && (
             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-50 text-violet-600">
               <Sparkles className="w-2.5 h-2.5" />
@@ -319,10 +339,11 @@ function FieldRenderer({
           <Select
             value={(value as string) ?? null}
             onChange={(v) => onChange(v ?? '')}
-            options={(field.options ?? []).map((o) =>
-              typeof o === 'string' ? { value: o, label: o } : o,
-            )}
-            placeholder={t('field.selectPlaceholder', { field: field.label.toLowerCase() })}
+            options={(field.options ?? []).map((o) => {
+              const opt = typeof o === 'string' ? { value: o, label: o } : o;
+              return { value: opt.value, label: tOption(opt.value, opt.label) };
+            })}
+            placeholder={t('field.selectPlaceholder', { field: label.toLowerCase() })}
             allowClear
           />
         </div>
@@ -335,7 +356,7 @@ function FieldRenderer({
           <TagInput
             value={Array.isArray(value) ? (value as string[]) : []}
             onChange={(tags) => onChange(tags)}
-            placeholder={field.placeholder}
+            placeholder={placeholder}
           />
         </div>
       );
@@ -347,7 +368,7 @@ function FieldRenderer({
           <ProductSelectField
             value={(value as string) ?? ''}
             onChange={(v) => onChange(v)}
-            placeholder={field.placeholder}
+            placeholder={placeholder}
           />
         </div>
       );
@@ -360,9 +381,10 @@ function FieldRenderer({
         : Array.isArray(field.defaultValue)
           ? (field.defaultValue as string[])
           : [];
-      const options = (field.options ?? []).map((o) =>
-        typeof o === 'string' ? { value: o, label: o } : o,
-      );
+      const options = (field.options ?? []).map((o) => {
+        const opt = typeof o === 'string' ? { value: o, label: o } : o;
+        return { value: opt.value, label: tOption(opt.value, opt.label) };
+      });
       return (
         <div>
           {labelContent}
@@ -404,6 +426,7 @@ export function ContentTypeInputFields({
   compact = false,
   filterKeys,
 }: ContentTypeInputFieldsProps) {
+  const { t } = useTranslation(['campaigns-core', 'campaigns-content-inputs']);
   const allFields = getContentTypeInputs(typeId);
   const fields = filterKeys
     ? allFields.filter((f) => filterKeys.includes(f.key))
@@ -429,13 +452,14 @@ export function ContentTypeInputFields({
         return (
           <div key={category}>
             <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-              {label}
+              {t(`campaigns-content-inputs:categories.${category}`, { defaultValue: label })}
             </h4>
             <div className={compact ? 'space-y-2' : 'space-y-3'}>
               {categoryFields.map((field) => (
                 <FieldRenderer
                   key={field.key}
                   field={field}
+                  typeId={typeId}
                   value={values[field.key]}
                   onChange={(v) => onChange(field.key, v)}
                   isAiDerived={aiDerivedKeys?.has(field.key) ?? false}

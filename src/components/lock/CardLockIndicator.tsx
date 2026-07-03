@@ -2,6 +2,7 @@
 
 import { ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/components/ui/utils';
 
 interface CardLockIndicatorProps {
@@ -10,7 +11,9 @@ interface CardLockIndicatorProps {
 }
 
 export function CardLockIndicator({ isLocked, className }: CardLockIndicatorProps) {
+  const { t } = useTranslation('lock-billing');
   const prefersReducedMotion = useReducedMotion();
+  const lockedLabel = t('cardIndicator.locked');
 
   return (
     <AnimatePresence>
@@ -24,9 +27,9 @@ export function CardLockIndicator({ isLocked, className }: CardLockIndicatorProp
             'w-7 h-7 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center shadow-sm',
             className,
           )}
-          title="Locked"
+          title={lockedLabel}
           role="img"
-          aria-label="Locked"
+          aria-label={lockedLabel}
         >
           <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
         </motion.div>
