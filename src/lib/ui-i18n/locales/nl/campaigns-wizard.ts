@@ -1,5 +1,14 @@
 // Dutch UI strings — `campaigns-wizard` namespace.
 const campaignsWizard = {
+  steps: {
+    setup: 'Setup',
+    knowledge: 'Kennis',
+    strategy: 'Strategie',
+    concept: 'Concept',
+    'content-generate': 'Content',
+    deliverables: 'Deliverables',
+    review: 'Controle',
+  },
   actions: {
     regenerating: 'Opnieuw genereren...',
     regenerateDifferentTemplates: 'Geen van deze — genereer opnieuw met andere templates',

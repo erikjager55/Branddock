@@ -1,5 +1,14 @@
 // Canonical (source-of-truth) English UI strings — `campaigns-wizard` namespace.
 const campaignsWizard = {
+  steps: {
+    setup: 'Setup',
+    knowledge: 'Knowledge',
+    strategy: 'Strategy',
+    concept: 'Concept',
+    'content-generate': 'Content',
+    deliverables: 'Deliverables',
+    review: 'Review',
+  },
   actions: {
     regenerating: 'Regenerating...',
     regenerateDifferentTemplates: 'None of these — regenerate with different templates',

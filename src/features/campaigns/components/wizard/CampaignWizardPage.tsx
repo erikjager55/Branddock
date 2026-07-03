@@ -95,7 +95,8 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
 
   useEffect(() => {
     const stepList = getStepsForMode(wizardMode, skipConceptStepForSnapshot);
-    const stepLabel = stepList[currentStep - 1]?.label ?? `Step ${currentStep}`;
+    const currentStepDef = stepList[currentStep - 1];
+    const stepLabel = currentStepDef ? t(`steps.${currentStepDef.key}`, { defaultValue: currentStepDef.label }) : `Step ${currentStep}`;
     const selectedContentTypeValue = useCampaignWizardStore.getState().selectedContentType;
     const stringField = (value: string | null | undefined, maxLen = 200) => {
       const v = (value ?? '').trim();
@@ -256,7 +257,7 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
           <div className="flex-1 min-w-0">
             <WizardStepper
               currentStep={currentStep}
-              stepLabels={steps.map(s => s.label)}
+              stepLabels={steps.map(s => t(`steps.${s.key}`, { defaultValue: s.label }))}
             />
           </div>
           <div className="flex-shrink-0">
