@@ -37,6 +37,16 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 354. Content-locale foundation — content-taal-selector + multi-markt-datamodel (Approach C)
+
+De tweede taal-as van het meertaligheid-programma: de **content-taal** (waarin de AI schrijft, per workspace), naast de al gelande UI-taal-as. Niet-brekend + forward-compatible multi-markt-fundament (ADR 2026-06-28). **Fase A+C**: additief schema — `Brand` (1:1 workspace) + `BrandLocaleProfile` (`@@unique([workspaceId, locale])`, gereserveerde JSON-deltas), nullable `localeProfileId` op `Deliverable`/`Persona`, `LandingPage` +`locale`+`localeProfileId` met unique-flip `[workspaceId,slug]` → `[workspaceId,locale,slug]` (compound-key-code in `publish-page.ts`/`p/[slug]`); backfill-script (17 workspaces → 17 default-profielen, 0 orphans) + seed-update. **Fase B**: `getBrandContext(workspaceId, localeProfileId?)` + cache-key `${workspaceId}:${localeProfileId ?? 'default'}` + `invalidateBrandContext` wist alle varianten; `resolveLocaleForBrand(workspaceId, requestedLocale?)`. Default-pad **byte-identiek** (geverifieerd tegen 17-workspace baseline); alleen een expliciet gekozen profiel (Fase 2) wint. **Fase D**: live Content-language-control in WorkspacesTab (per-workspace + create-form, onderscheiden van de Display-language), POST maakt Brand+profiel, PATCH synct profiel + mirror + invalideert de brand-context-cache (fixt een bestaande stale-cache-bug). Elke fase gate-groen (tsc 0 / lint 0 / separation 3/3 / build). Smoke `content-locale-foundation.ts` 46/46.
+
+- Task: [tasks/content-locale-foundation.md](../tasks/content-locale-foundation.md)
+- ADR: [adr/2026-06-28-multilingual-i18n-and-multi-market-content.md](adr/2026-06-28-multilingual-i18n-and-multi-market-content.md)
+- Spec: -
+- Commit: 1b8fc776 (A+C) · 787c39e0 (B) · 67fb8b71 (D) · (E deze commit)
+- Vervolg: `content-locale-target-picker` (per-generatie target-locale + analyze-route-lekken, Fase 2)
+
 ### 353. Meertaligheid remediation — data-gedreven registries + gemiste clusters (5 waves)
 
 Na #352 bleek bij het switchen naar nl nog veel Engels. Een multi-agent audit vond twee structurele oorzaken die de JSXText-extractie van #352 niet kón raken: **(A) data-gedreven constant-registries** (namen/titels uit `src/*/lib/*` + `src/lib/` + `src/config/`, gerenderd via `{item.name}`) en **(B) gemiste `src/components/*`-clusters** (de extractie-waves liepen op `src/features/*`). Opgelost met het **render-edge-patroon** (constant blijft en-bron + stabiele key; render via `t('ns:key', { defaultValue })`) + migratie van de gemiste clusters, in 5 waves:

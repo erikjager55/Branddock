@@ -5999,13 +5999,13 @@ model BrandVoiceguide {
 
   // ─── Locale (ADR-3 — per-brand routing voor heuristiek-pakketten) ─────
   /**
-   * /**
    * IETF BCP 47 locale-tag: `nl-NL` / `nl-BE` / `en-GB` / `de-DE` (v1).
-   * Wanneer null: `getHeuristicsForBrand()` resolver valt terug op
-   * `Workspace.contentLanguage` mapped naar default-locale (en→en-GB,
-   * nl→nl-NL, de→de-DE), dan op `en-GB` als ultimate default.
-   * Source-of-truth voor F-VAL Pijler 3 heuristiek-pakket-selectie + Δ-2
-   * heuristics-packages-multilingual task.
+   * Per-merk override. `resolveLocaleForBrand(workspaceId, requestedLocale?)`:
+   * expliciet gevraagde locale → deze `contentLocale` → `Workspace.contentLanguage`
+   * mapped naar default-locale (en→en-GB, nl→nl-NL, de→de-DE) → `en-GB` fallback.
+   * Content-locale foundation (ADR 2026-06-28): het default `BrandLocaleProfile`
+   * is de forward-compatible drager; deze scalar blijft de per-merk override + de
+   * source-of-truth voor F-VAL Pijler 3 heuristiek-pakket-selectie.
    */
   contentLocale String?
 
