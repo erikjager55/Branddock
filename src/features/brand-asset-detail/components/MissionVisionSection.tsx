@@ -173,8 +173,8 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
                 {MISSION_EXAMPLES.map((ex) => (
                   <div key={ex.brand} className="flex items-start gap-2">
                     <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">{ex.brand}:</span>
-                    <span className="text-xs text-gray-600">{ex.statement}</span>
-                    <span className="text-xs text-gray-400 italic whitespace-nowrap">({ex.analysis})</span>
+                    <span className="text-xs text-gray-600">{t(`brand-dna:missionExamples.${ex.brand}.statement`, { defaultValue: ex.statement })}</span>
+                    <span className="text-xs text-gray-400 italic whitespace-nowrap">({t(`brand-dna:missionExamples.${ex.brand}.analysis`, { defaultValue: ex.analysis })})</span>
                   </div>
                 ))}
               </div>
@@ -266,7 +266,7 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
                   <option value="">{t('missionVision.vision.timeHorizonSelect')}</option>
                   {TIME_HORIZON_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
-                      {opt.label} — {opt.description}
+                      {t(`brand-dna:timeHorizon.${opt.value}.label`, { defaultValue: opt.label })} — {t(`brand-dna:timeHorizon.${opt.value}.description`, { defaultValue: opt.description })}
                     </option>
                   ))}
                 </select>
@@ -327,8 +327,8 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
                 {VISION_EXAMPLES.map((ex) => (
                   <div key={ex.brand} className="flex items-start gap-2">
                     <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">{ex.brand}:</span>
-                    <span className="text-xs text-gray-600">{ex.statement}</span>
-                    <span className="text-xs text-gray-400 italic whitespace-nowrap">({ex.analysis})</span>
+                    <span className="text-xs text-gray-600">{t(`brand-dna:visionExamples.${ex.brand}.statement`, { defaultValue: ex.statement })}</span>
+                    <span className="text-xs text-gray-400 italic whitespace-nowrap">({t(`brand-dna:visionExamples.${ex.brand}.analysis`, { defaultValue: ex.analysis })})</span>
                   </div>
                 ))}
               </div>

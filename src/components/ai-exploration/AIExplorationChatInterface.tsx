@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Bot, User, Sparkles } from 'lucide-react';
 import type { ExplorationMessage, ExplorationConfig } from './types';
 
@@ -27,6 +28,7 @@ export function AIExplorationChatInterface({
   progress,
   answeredDimensions,
 }: AIExplorationChatInterfaceProps) {
+  const { t } = useTranslation('ai-exploration');
   const listRef = useRef<HTMLDivElement>(null);
   const totalDimensions = config.dimensions.length;
 
@@ -178,7 +180,7 @@ export function AIExplorationChatInterface({
         {/* Progress */}
         <div style={{ padding: '16px 24px 12px' }}>
           <div className="flex items-center justify-between text-xs" style={{ marginBottom: '10px' }}>
-            <span className="font-medium" style={{ color: '#6b7280' }}>Progress</span>
+            <span className="font-medium" style={{ color: '#6b7280' }}>{t('chat.progress')}</span>
             <span className="font-semibold" style={{ color: '#14b8a6' }}>{progressPercent}%</span>
           </div>
           <div className="flex items-center gap-2" style={{ marginBottom: '6px' }}>
@@ -197,7 +199,7 @@ export function AIExplorationChatInterface({
           <div className="flex items-center justify-between">
             {config.dimensions.map((dim, i) => (
               <span key={dim.key} className="font-medium" style={{ fontSize: '10px', color: i <= answeredDimensions ? '#14b8a6' : '#9ca3af' }}>
-                {dim.label}
+                {t(`dimensions.${dim.key}`, { defaultValue: dim.label })}
               </span>
             ))}
           </div>
@@ -209,7 +211,7 @@ export function AIExplorationChatInterface({
             value={currentInput}
             onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your answer here..."
+            placeholder={t('chat.inputPlaceholder')}
             disabled={isAITyping || isSubmitting}
             rows={3}
             className="w-full rounded-xl text-sm resize-none outline-none disabled:opacity-50 transition-all"
@@ -231,7 +233,7 @@ export function AIExplorationChatInterface({
               boxShadow: (!currentInput.trim() || isAITyping) ? 'none' : isLastDimension ? '0 2px 8px rgba(139,92,246,0.3)' : '0 2px 8px rgba(20,184,166,0.3)',
             }}
           >
-            {isLastDimension ? (<><Sparkles className="h-4 w-4" /> Generate Report</>) : (<>Next <ArrowRight className="h-4 w-4" /></>)}
+            {isLastDimension ? (<><Sparkles className="h-4 w-4" /> {t('chat.generateReport')}</>) : (<>{t('chat.next')} <ArrowRight className="h-4 w-4" /></>)}
           </button>
         </div>
       </div>

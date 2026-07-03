@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import {
   Users, Target, Heart, Zap, Brain, TrendingUp,
   Crown, Shield, ShieldCheck, MessageCircle, Palette, Activity, Moon,
@@ -40,6 +41,7 @@ interface AIExplorationDimensionCardProps {
 }
 
 export function AIExplorationDimensionCard({ dimension, dimensionConfigs }: AIExplorationDimensionCardProps) {
+  const { t } = useTranslation('ai-exploration');
   const IconComponent = ICON_MAP[dimension.icon] ?? Users;
 
   // Resolve style from the frontend dimension config's color, falling back to gray
@@ -63,7 +65,7 @@ export function AIExplorationDimensionCard({ dimension, dimensionConfigs }: AIEx
           <IconComponent className="h-5 w-5" style={{ color: style.iconColor }} />
         </div>
         <div className="flex-1" style={{ minWidth: 0 }}>
-          <h4 className="text-sm font-semibold" style={{ color: '#111827' }}>{dimension.title}</h4>
+          <h4 className="text-sm font-semibold" style={{ color: '#111827' }}>{t(`dimensions.${dimension.key}`, { defaultValue: dimension.title })}</h4>
           <p className="text-sm" style={{ color: '#6b7280', marginTop: '4px' }}>{dimension.summary}</p>
         </div>
       </div>

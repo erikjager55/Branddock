@@ -418,13 +418,13 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {STORYTELLING_FRAMEWORKS.map((fw) => (
               <div key={fw.id} className="bg-white/70 rounded-lg p-3 space-y-1">
-                <p className="font-medium text-gray-800 text-xs">{fw.name} <span className="text-gray-400 font-normal">— {fw.author}</span></p>
-                <p className="text-xs text-gray-500">{fw.principle}</p>
+                <p className="font-medium text-gray-800 text-xs">{t(`brand-dna:storyFrameworks.${fw.id}.name`, { defaultValue: fw.name })} <span className="text-gray-400 font-normal">— {fw.author}</span></p>
+                <p className="text-xs text-gray-500">{t(`brand-dna:storyFrameworks.${fw.id}.principle`, { defaultValue: fw.principle })}</p>
                 <ul className="text-xs text-gray-500 space-y-0.5 mt-1">
-                  {fw.elements.slice(0, 3).map((el) => (
+                  {fw.elements.slice(0, 3).map((el, ei) => (
                     <li key={el} className="flex items-start gap-1">
                       <Check className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
-                      {el}
+                      {t(`brand-dna:storyFrameworks.${fw.id}.elements.${ei}`, { defaultValue: el })}
                     </li>
                   ))}
                 </ul>
@@ -475,8 +475,8 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <p className="text-sm font-medium text-gray-800">{role.label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{role.description}</p>
+                    <p className="text-sm font-medium text-gray-800">{t(`brand-dna:brandRole.${role.id}.label`, { defaultValue: role.label })}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{t(`brand-dna:brandRole.${role.id}.description`, { defaultValue: role.description })}</p>
                   </button>
                 ))}
               </div>
@@ -519,8 +519,8 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <p className="text-sm font-medium text-gray-800">{arc.label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{arc.description}</p>
+                    <p className="text-sm font-medium text-gray-800">{t(`brand-dna:narrativeArc.${arc.id}.label`, { defaultValue: arc.label })}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{t(`brand-dna:narrativeArc.${arc.id}.description`, { defaultValue: arc.description })}</p>
                   </button>
                 ))}
               </div>

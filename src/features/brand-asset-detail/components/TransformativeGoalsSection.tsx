@@ -802,7 +802,7 @@ function GoalCard({
                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                         }`}
                         style={selected ? { backgroundColor: sdg.color } : undefined}
-                        title={sdg.name}
+                        title={t(`brand-dna:sdg.${sdg.number}`, { defaultValue: sdg.name })}
                       >
                         {sdg.number}
                       </button>
@@ -883,7 +883,7 @@ function GoalCard({
                           key={sdg}
                           className="px-2 py-0.5 rounded text-xs font-medium text-white"
                           style={{ backgroundColor: sdgInfo?.color ?? '#0d9488' }}
-                          title={sdgInfo?.name}
+                          title={t(`brand-dna:sdg.${sdg}`, { defaultValue: sdgInfo?.name ?? '' })}
                         >
                           {t('transformativeGoals.goalCard.sdgTag', { number: sdg })}
                         </span>

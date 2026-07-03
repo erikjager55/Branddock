@@ -231,17 +231,18 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
               : d.dimensionScores[dim.key as keyof AakerDimensionScores];
             const colors = DIMENSION_COLORS[dim.key] ?? DIMENSION_COLORS.sincerity;
             const isExpanded = expandedDimension === dim.key;
+            const dimLabel = t(`brand-dna:aaker.${dim.key}.label`, { defaultValue: dim.label });
 
             return (
               <div key={dim.key} className={`rounded-xl border border-gray-100 ${colors.bg} p-4`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-semibold ${colors.text}`}>{dim.label}</span>
+                    <span className={`text-sm font-semibold ${colors.text}`}>{dimLabel}</span>
                     <button
                       type="button"
                       onClick={() => setExpandedDimension(isExpanded ? null : dim.key)}
                       className="text-gray-400 hover:text-gray-600 transition-colors"
-                      aria-label={isExpanded ? t('brandPersonality.dimensions.collapseInfo', { label: dim.label }) : t('brandPersonality.dimensions.expandInfo', { label: dim.label })}
+                      aria-label={isExpanded ? t('brandPersonality.dimensions.collapseInfo', { label: dimLabel }) : t('brandPersonality.dimensions.expandInfo', { label: dimLabel })}
                       aria-expanded={isExpanded}
                     >
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <Info className="h-4 w-4" />}
@@ -282,7 +283,7 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
                 {/* Expanded info */}
                 {isExpanded && (
                   <div className="mt-3 pt-3 border-t border-white/50 space-y-2">
-                    <p className="text-xs text-gray-600">{dim.description}</p>
+                    <p className="text-xs text-gray-600">{t(`brand-dna:aaker.${dim.key}.description`, { defaultValue: dim.description })}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {dim.facets.map((f) => (
                         <span key={f.name} className="text-xs bg-white/70 rounded-full px-2.5 py-0.5 text-gray-600">
@@ -310,8 +311,8 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
             <p className="text-xs font-medium text-primary uppercase tracking-wider mb-1">
               {t('brandPersonality.dimensions.dominant')}
             </p>
-            <p className="text-sm font-semibold text-primary-800">{primaryInfo.label}</p>
-            <p className="text-xs text-primary mt-0.5">{primaryInfo.description}</p>
+            <p className="text-sm font-semibold text-primary-800">{t(`brand-dna:aaker.${primaryInfo.key}.label`, { defaultValue: primaryInfo.label })}</p>
+            <p className="text-xs text-primary mt-0.5">{t(`brand-dna:aaker.${primaryInfo.key}.description`, { defaultValue: primaryInfo.description })}</p>
           </div>
         )}
       </div>
@@ -445,8 +446,8 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
             return (
               <div key={slider.key}>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-gray-700">{slider.leftLabel}</span>
-                  <span className="text-xs font-medium text-gray-700">{slider.rightLabel}</span>
+                  <span className="text-xs font-medium text-gray-700">{t(`brand-dna:spectrum.${slider.key}.leftLabel`, { defaultValue: slider.leftLabel })}</span>
+                  <span className="text-xs font-medium text-gray-700">{t(`brand-dna:spectrum.${slider.key}.rightLabel`, { defaultValue: slider.rightLabel })}</span>
                 </div>
                 {isEditing ? (
                   <input
@@ -471,8 +472,8 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
                   </div>
                 )}
                 <div className="flex justify-between mt-1">
-                  <span className="text-[10px] text-gray-400">{slider.leftDescription}</span>
-                  <span className="text-[10px] text-gray-400">{slider.rightDescription}</span>
+                  <span className="text-[10px] text-gray-400">{t(`brand-dna:spectrum.${slider.key}.leftDescription`, { defaultValue: slider.leftDescription })}</span>
+                  <span className="text-[10px] text-gray-400">{t(`brand-dna:spectrum.${slider.key}.rightDescription`, { defaultValue: slider.rightDescription })}</span>
                 </div>
               </div>
             );
@@ -501,20 +502,20 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
         {primaryDim && primaryInfo && (
           <div className="bg-violet-50/30 border border-violet-100 rounded-xl p-4 mb-5">
             <p className="text-xs font-medium text-violet-600 uppercase tracking-wider mb-2">
-              {t('brandPersonality.visual.guidanceFor', { label: primaryInfo.label })}
+              {t('brandPersonality.visual.guidanceFor', { label: t(`brand-dna:aaker.${primaryInfo.key}.label`, { defaultValue: primaryInfo.label }) })}
             </p>
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <p className="text-xs font-medium text-gray-600 mb-0.5">{t('brandPersonality.visual.color')}</p>
-                <p className="text-xs text-gray-500">{primaryInfo.colorAssociation}</p>
+                <p className="text-xs text-gray-500">{t(`brand-dna:aaker.${primaryInfo.key}.colorAssociation`, { defaultValue: primaryInfo.colorAssociation })}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-600 mb-0.5">{t('brandPersonality.visual.typography')}</p>
-                <p className="text-xs text-gray-500">{primaryInfo.typographyAssociation}</p>
+                <p className="text-xs text-gray-500">{t(`brand-dna:aaker.${primaryInfo.key}.typographyAssociation`, { defaultValue: primaryInfo.typographyAssociation })}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-600 mb-0.5">{t('brandPersonality.visual.imagery')}</p>
-                <p className="text-xs text-gray-500">{primaryInfo.imageryAssociation}</p>
+                <p className="text-xs text-gray-500">{t(`brand-dna:aaker.${primaryInfo.key}.imageryAssociation`, { defaultValue: primaryInfo.imageryAssociation })}</p>
               </div>
             </div>
           </div>

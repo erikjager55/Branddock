@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   Lightbulb,
@@ -69,6 +70,7 @@ export function AIExplorationSuggestions({
   insightsData,
   onBackToReport,
 }: AIExplorationSuggestionsProps) {
+  const { t } = useTranslation('ai-exploration');
   const suggestions = insightsData.fieldSuggestions ?? [];
   const [actions, setActions] = useState<Record<string, SuggestionAction>>(
     () => Object.fromEntries(suggestions.map((s) => [s.field, 'pending']))
@@ -128,14 +130,14 @@ export function AIExplorationSuggestions({
           className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
           style={{ color: '#6b7280' }}
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Report
+          <ArrowLeft className="w-4 h-4" /> {t('suggestions.backToReport')}
         </button>
         <div className="text-center" style={{ paddingTop: '64px', paddingBottom: '64px' }}>
           <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: '#f3f4f6', marginBottom: '12px' }}>
             <Lightbulb className="h-6 w-6" style={{ color: '#9ca3af' }} />
           </div>
-          <p className="text-sm font-medium" style={{ color: '#111827' }}>No Suggestions</p>
-          <p className="text-sm" style={{ color: '#6b7280', marginTop: '4px' }}>All fields are already well-defined.</p>
+          <p className="text-sm font-medium" style={{ color: '#111827' }}>{t('suggestions.noSuggestionsTitle')}</p>
+          <p className="text-sm" style={{ color: '#6b7280', marginTop: '4px' }}>{t('suggestions.noSuggestionsBody')}</p>
         </div>
       </div>
     );
@@ -149,7 +151,7 @@ export function AIExplorationSuggestions({
         className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
         style={{ color: '#6b7280' }}
       >
-        <ArrowLeft className="w-4 h-4" /> Back to Report
+        <ArrowLeft className="w-4 h-4" /> {t('suggestions.backToReport')}
       </button>
 
       {/* Header card */}
@@ -167,9 +169,9 @@ export function AIExplorationSuggestions({
               <Lightbulb className="h-5 w-5" style={{ color: '#d97706' }} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold" style={{ color: '#111827' }}>Suggested Updates</h2>
+              <h2 className="text-lg font-semibold" style={{ color: '#111827' }}>{t('suggestions.heading')}</h2>
               <p className="text-sm" style={{ color: '#92400e', marginTop: '2px' }}>
-                {suggestions.length} suggestion{suggestions.length !== 1 ? 's' : ''} for {config.itemName}
+                {t('suggestions.countFor', { count: suggestions.length, itemName: config.itemName })}
               </p>
             </div>
           </div>
@@ -183,11 +185,11 @@ export function AIExplorationSuggestions({
               backgroundColor: '#ecfdf5',
             }}
           >
-            <Check className="h-4 w-4" /> Accept all ({suggestions.length})
+            <Check className="h-4 w-4" /> {t('suggestions.acceptAll', { count: suggestions.length })}
           </button>
         </div>
         <p className="text-sm" style={{ color: '#78716c', marginTop: '12px' }}>
-          Based on the analysis, we suggest the following updates. Accept, edit, or dismiss per field.
+          {t('suggestions.intro')}
         </p>
       </div>
 
@@ -215,7 +217,7 @@ export function AIExplorationSuggestions({
         >
           <Check className="h-5 w-5 flex-shrink-0" style={{ color: '#059669' }} />
           <p className="text-sm font-medium" style={{ color: '#065f46' }}>
-            Changes applied successfully. Returning to {config.itemName}...
+            {t('suggestions.applySuccess', { itemName: config.itemName })}
           </p>
         </div>
       )}
@@ -228,7 +230,7 @@ export function AIExplorationSuggestions({
             className="flex items-center gap-2 rounded-lg text-sm transition-colors hover:opacity-80"
             style={{ padding: '10px 16px', color: '#4b5563', border: '1px solid #e5e7eb' }}
           >
-            <ArrowLeft className="h-4 w-4" /> Back to Report
+            <ArrowLeft className="h-4 w-4" /> {t('suggestions.backToReport')}
           </button>
           {acceptedCount > 0 && (
             <button
@@ -242,7 +244,7 @@ export function AIExplorationSuggestions({
               }}
             >
               <Sparkles className="h-4 w-4" />
-              {isApplying ? 'Applying...' : `Apply ${acceptedCount} Changes`}
+              {isApplying ? t('suggestions.applying') : t('suggestions.apply', { count: acceptedCount })}
             </button>
           )}
         </div>
@@ -270,6 +272,7 @@ function SuggestionCard({
   onEdit: () => void;
   onEditValueChange: (val: string) => void;
 }) {
+  const { t } = useTranslation('ai-exploration');
   const [isEditing, setIsEditing] = useState(false);
 
   const borderColor =
@@ -300,14 +303,14 @@ function SuggestionCard({
               className="flex items-center gap-1 rounded-md text-xs font-medium transition-colors hover:opacity-80"
               style={{ padding: '6px 12px', color: '#059669', border: '1px solid #6ee7b7', backgroundColor: '#ecfdf5' }}
             >
-              <Check className="h-3 w-3" /> Accept
+              <Check className="h-3 w-3" /> {t('suggestions.accept')}
             </button>
             <button
               onClick={() => { onEdit(); setIsEditing(true); }}
               className="flex items-center gap-1 rounded-md text-xs font-medium transition-colors hover:opacity-80"
               style={{ padding: '6px 12px', color: '#4b5563', border: '1px solid #e5e7eb' }}
             >
-              <Pencil className="h-3 w-3" /> Edit
+              <Pencil className="h-3 w-3" /> {t('suggestions.edit')}
             </button>
             <button
               onClick={onReject}
@@ -319,26 +322,26 @@ function SuggestionCard({
           </div>
         )}
         {action === 'accepted' && (
-          <span className="text-xs font-medium" style={{ color: '#059669', padding: '6px 12px', backgroundColor: '#ecfdf5', borderRadius: '6px' }}>Accepted</span>
+          <span className="text-xs font-medium" style={{ color: '#059669', padding: '6px 12px', backgroundColor: '#ecfdf5', borderRadius: '6px' }}>{t('suggestions.accepted')}</span>
         )}
         {action === 'edited' && (
-          <span className="text-xs font-medium" style={{ color: '#2563eb', padding: '6px 12px', backgroundColor: '#eff6ff', borderRadius: '6px' }}>Edited</span>
+          <span className="text-xs font-medium" style={{ color: '#2563eb', padding: '6px 12px', backgroundColor: '#eff6ff', borderRadius: '6px' }}>{t('suggestions.edited')}</span>
         )}
         {action === 'rejected' && (
-          <span className="text-xs font-medium" style={{ color: '#dc2626', padding: '6px 12px', backgroundColor: '#fef2f2', borderRadius: '6px' }}>Dismissed</span>
+          <span className="text-xs font-medium" style={{ color: '#dc2626', padding: '6px 12px', backgroundColor: '#fef2f2', borderRadius: '6px' }}>{t('suggestions.dismissed')}</span>
         )}
       </div>
 
       {/* Current → Suggested */}
       <div className="grid grid-cols-2 gap-6" style={{ marginTop: '16px' }}>
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#9ca3af', marginBottom: '4px' }}>Current</div>
+          <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#9ca3af', marginBottom: '4px' }}>{t('suggestions.current')}</div>
           <p className="text-sm" style={{ color: suggestion.currentValue ? '#374151' : '#d1d5db' }}>
             {formatDisplayValue(suggestion.currentValue)}
           </p>
         </div>
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#9ca3af', marginBottom: '4px' }}>Suggested</div>
+          <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#9ca3af', marginBottom: '4px' }}>{t('suggestions.suggested')}</div>
           {isEditing ? (
             <div className="space-y-2">
               <textarea
@@ -353,7 +356,7 @@ function SuggestionCard({
                 className="text-xs font-medium rounded-md text-white"
                 style={{ padding: '4px 12px', backgroundColor: '#14b8a6' }}
               >
-                Save
+                {t('suggestions.save')}
               </button>
             </div>
           ) : (

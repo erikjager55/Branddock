@@ -231,8 +231,8 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
         {/* Motto display */}
         {primaryDef && (
           <div className="mt-4 bg-amber-50/50 border border-amber-100 rounded-xl px-4 py-3">
-            <p className="text-sm text-amber-700 italic">&ldquo;{primaryDef.motto}&rdquo;</p>
-            <p className="text-xs text-amber-500 mt-1">{primaryDef.quadrantLabel}</p>
+            <p className="text-sm text-amber-700 italic">&ldquo;{t(`brand-dna:archetypes.${primaryDef.id}.motto`, { defaultValue: primaryDef.motto })}&rdquo;</p>
+            <p className="text-xs text-amber-500 mt-1">{t(`brand-dna:quadrants.${primaryDef.quadrant}`, { defaultValue: primaryDef.quadrantLabel })}</p>
           </div>
         )}
       </div>
@@ -444,7 +444,7 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
                 <span key={i} className="text-xs bg-gray-100 text-gray-600 border border-gray-200 rounded-full px-2.5 py-0.5">{ex}</span>
               ))}
               {posOpt && (
-                <span className="text-xs bg-primary-50 text-primary border border-primary-100 rounded-full px-2.5 py-0.5">{posOpt.label}</span>
+                <span className="text-xs bg-primary-50 text-primary border border-primary-100 rounded-full px-2.5 py-0.5">{t(`brand-dna:positioning.${posOpt.value}.label`, { defaultValue: posOpt.label })}</span>
               )}
             </div>
           ) : null;
@@ -476,7 +476,7 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
                 >
                   <option value="">{t('brandArchetype.reference.positioningSelect')}</option>
                   {POSITIONING_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label} — {opt.description}</option>
+                    <option key={opt.value} value={opt.value}>{t(`brand-dna:positioning.${opt.value}.label`, { defaultValue: opt.label })} — {t(`brand-dna:positioning.${opt.value}.description`, { defaultValue: opt.description })}</option>
                   ))}
                 </select>
               ) : d.positioningApproach ? (
@@ -485,8 +485,8 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
                     const opt = POSITIONING_OPTIONS.find((o) => o.value === d.positioningApproach);
                     return opt ? (
                       <span className="inline-flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm">
-                        <span className="font-medium text-gray-700">{opt.label}</span>
-                        <span className="text-gray-400">{opt.description}</span>
+                        <span className="font-medium text-gray-700">{t(`brand-dna:positioning.${opt.value}.label`, { defaultValue: opt.label })}</span>
+                        <span className="text-gray-400">{t(`brand-dna:positioning.${opt.value}.description`, { defaultValue: opt.description })}</span>
                       </span>
                     ) : null;
                   })()}
@@ -607,6 +607,7 @@ interface ArchetypeGridSelectorProps {
 }
 
 function ArchetypeGridSelector({ selectedId, isEditing, onSelectArchetype }: ArchetypeGridSelectorProps) {
+  const { t } = useTranslation('brand-asset-detail');
   return (
     <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
       {ARCHETYPES.map((arch) => {
@@ -638,12 +639,12 @@ function ArchetypeGridSelector({ selectedId, isEditing, onSelectArchetype }: Arc
                 <div className={`h-2.5 w-2.5 rounded-full ${colors.dot} flex-shrink-0`} />
               )}
               <span className={`text-xs font-semibold truncate flex-1 ${selected ? 'text-gray-900' : 'text-gray-600'}`}>
-                {arch.name.replace('The ', '')}
+                {t(`brand-dna:archetypes.${arch.id}.name`, { defaultValue: arch.name }).replace('The ', '')}
               </span>
             </div>
 
             <p className="text-[10px] text-gray-400 leading-tight line-clamp-2 pl-0.5">
-              {arch.motto}
+              {t(`brand-dna:archetypes.${arch.id}.motto`, { defaultValue: arch.motto })}
             </p>
           </button>
         );
