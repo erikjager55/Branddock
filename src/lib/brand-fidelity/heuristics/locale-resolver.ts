@@ -53,7 +53,16 @@ export function isSupportedLocale(value: unknown): value is Locale {
  * Cost: 1-2 Prisma queries (cacheable binnen `getBrandContext` 5-min cache —
  * separate caching-laag verantwoordelijk; resolver zelf is lookup-only).
  */
-export async function resolveLocaleForBrand(workspaceId: string): Promise<Locale> {
+export async function resolveLocaleForBrand(
+  workspaceId: string,
+  requestedLocale?: string,
+): Promise<Locale> {
+  // Expliciet gevraagde locale (bv. per-generatie target-picker, Fase 2) wint,
+  // mits supported. Weggelaten → het bestaande 3-laags default-pad, ongewijzigd.
+  if (requestedLocale && isSupportedLocale(requestedLocale)) {
+    return requestedLocale;
+  }
+
   // Hot path (F-VAL content-generation): sequentieel met short-circuit op
   // voiceguide-hit zodat 90% van de calls slechts één DB-roundtrip kost.
   const voiceguide = await prisma.brandVoiceguide.findUnique({
