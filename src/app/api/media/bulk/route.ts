@@ -166,11 +166,11 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // F41-bis (audit 2026-05-13): DAM auto-tag fire-and-forget per asset
+        // Serverless-safe: op de queue i.p.v. fire-and-forget (Vercel kilt post-response).
         if (asset.mediaType === 'IMAGE') {
-          void import('@/lib/ai/dam-auto-tagger').then(({ tagMediaAssetIfPossible }) => {
-            void tagMediaAssetIfPossible(asset.id);
-          });
+          await import('@/lib/agents/jobs/dispatch').then(({ dispatchJob }) =>
+            dispatchJob({ type: 'DAM_AUTO_TAG', payload: { assetId: asset.id }, workspaceId, triggeredBy: 'user' }),
+          );
         }
 
         results.push({

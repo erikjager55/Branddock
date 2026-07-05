@@ -5,7 +5,7 @@ import { validateBinaryFile } from "@/lib/security/file-validator";
 import { parsePdf } from "@/lib/brandstyle/pdf-parser";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
-import { writeFile, mkdir } from "fs/promises";
+import { getStorageProvider } from "@/lib/storage";
 import path from "path";
 import type { KnowledgeResource } from "@prisma/client";
 
@@ -168,21 +168,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const uploadDir = path.join(
-      process.cwd(),
-      "public",
-      "uploads",
-      "knowledge-resources",
+    // Serverless-safe: via de storage-provider i.p.v. direct naar public/uploads.
+    const { url: fileUrl } = await getStorageProvider().upload(buffer, {
       workspaceId,
-    );
-    await mkdir(uploadDir, { recursive: true });
-
-    const safeDiskName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
-    const diskPath = path.join(uploadDir, safeDiskName);
-
-    await writeFile(diskPath, buffer);
-
-    const fileUrl = `/uploads/knowledge-resources/${workspaceId}/${safeDiskName}`;
+      fileName: file.name,
+      contentType: file.type,
+      generateThumbnail: false,
+    });
     const displayName = sanitizeDisplayName(file.name);
     const title = formData.get("title")?.toString().trim() || displayName;
     const category = formData.get("category")?.toString().trim() || "General";

@@ -14,6 +14,9 @@
 // Gated by env var `BRANDSTYLE_VISUAL_AI=1`. Requires Chromium binary.
 // =============================================================
 
+import { launchHeadlessBrowser } from "@/lib/browser/launch";
+import type { Browser } from "playwright-core";
+
 export function isVisualAiEnabled(): boolean {
   return process.env.BRANDSTYLE_VISUAL_AI === "1";
 }
@@ -37,17 +40,15 @@ export interface PageScreenshot {
  * analyzer should still complete using the CSS-only prompt path).
  */
 export async function capturePageScreenshots(url: string): Promise<PageScreenshot[]> {
-  let chromium: typeof import("playwright").chromium;
+  let browser: Browser;
   try {
-    ({ chromium } = await import("playwright"));
+    browser = await launchHeadlessBrowser();
   } catch (err) {
     console.warn(
-      `[page-screenshotter] Playwright not available: ${err instanceof Error ? err.message : String(err)}`,
+      `[page-screenshotter] Headless browser not available: ${err instanceof Error ? err.message : String(err)}`,
     );
     return [];
   }
-
-  const browser = await chromium.launch({ headless: true });
   try {
     const ctx = await browser.newContext({
       userAgent:

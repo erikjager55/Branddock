@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { validateBinaryFile } from '@/lib/security/file-validator';
-import { writeFile, mkdir } from 'fs/promises';
+import { getStorageProvider } from '@/lib/storage';
 import path from 'path';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -68,14 +68,13 @@ export async function POST(
       }
     }
 
-    // Save file to uploads directory
-    const uploadDir = path.join(process.cwd(), 'uploads', 'knowledge-sources', workspaceId);
-    await mkdir(uploadDir, { recursive: true });
-
-    const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-    const filePath = path.join(uploadDir, safeName);
-
-    await writeFile(filePath, buffer);
+    // Serverless-safe: via de storage-provider i.p.v. direct naar disk.
+    const { url: fileUrl } = await getStorageProvider().upload(buffer, {
+      workspaceId,
+      fileName: file.name,
+      contentType: file.type,
+      generateThumbnail: false,
+    });
 
     // Extract text content for simple text files
     let content: string | null = null;
@@ -95,7 +94,7 @@ export async function POST(
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
-        filePath: `uploads/knowledge-sources/${workspaceId}/${safeName}`,
+        filePath: fileUrl,
         isProcessed: content !== null,
         workspaceId,
       },

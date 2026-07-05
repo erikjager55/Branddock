@@ -13,7 +13,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
-import { tagMediaAssetIfPossible } from '@/lib/ai/dam-auto-tagger';
+import { dispatchJob } from '@/lib/agents/jobs/dispatch';
 
 const bodySchema = z.object({ limit: z.number().int().min(1).max(50).optional() });
 
@@ -42,10 +42,12 @@ export async function POST(request: Request) {
       take: limit,
     });
 
-    // Fire-and-forget per asset
-    for (const a of untagged) {
-      void tagMediaAssetIfPossible(a.id);
-    }
+    // Serverless-safe: op de queue i.p.v. fire-and-forget (Vercel kilt post-response).
+    await Promise.all(
+      untagged.map((a) =>
+        dispatchJob({ type: 'DAM_AUTO_TAG', payload: { assetId: a.id }, triggeredBy: 'user' }),
+      ),
+    );
 
     return NextResponse.json({
       queued: untagged.length,

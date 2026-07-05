@@ -19,7 +19,7 @@
 // vermijden.
 // =============================================================
 
-import type { Page } from 'playwright';
+import type { Page } from 'playwright-core';
 import type { CssVisualHeuristics } from './visual-language.types';
 
 /** Cap voor het aantal elementen dat we per pagina scannen.

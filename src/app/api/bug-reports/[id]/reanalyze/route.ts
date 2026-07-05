@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/auth-server';
 import { requireDeveloper } from '@/lib/developer-access';
-import { analyzeBugReport } from '@/lib/bug-analysis/analyze-bug';
+import { dispatchJob } from '@/lib/agents/jobs/dispatch';
 
 /** POST /api/bug-reports/:id/reanalyze — re-trigger AI analysis (developer only) */
 export async function POST(
@@ -19,10 +19,8 @@ export async function POST(
   const bug = await prisma.bugReport.findFirst({ where: { id } });
   if (!bug) return Response.json({ error: 'Not found' }, { status: 404 });
 
-  // Fire-and-forget
-  analyzeBugReport(bug.id, bug.workspaceId).catch((err) => {
-    console.error('[bug-analysis] Reanalyze failed:', err);
-  });
+  // Serverless-safe: op de queue i.p.v. fire-and-forget.
+  await dispatchJob({ type: 'BUG_REPORT_ANALYZE', payload: { bugId: bug.id, workspaceId: bug.workspaceId }, workspaceId: bug.workspaceId, triggeredBy: 'user' });
 
   return Response.json({ status: 'analyzing' });
 }

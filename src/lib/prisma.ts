@@ -9,7 +9,17 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is not configured in .env");
 }
 
-const pool = new pg.Pool({ connectionString });
+// Serverless (Vercel): elke lambda-instance houdt een eigen pool → cap 'max'
+// laag zodat veel gelijktijdige instances Neon's connection-limiet niet
+// uitputten; korte idleTimeout zodat bevroren instances hun connectie loslaten.
+// Gebruik de Neon POOLED endpoint (PgBouncer) in DATABASE_URL.
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const pool = new pg.Pool({
+  connectionString,
+  max: isServerless ? 3 : 10,
+  idleTimeoutMillis: isServerless ? 10_000 : 30_000,
+  connectionTimeoutMillis: 10_000,
+});
 const adapter = new PrismaPg(pool);
 
 function createPrismaClient() {

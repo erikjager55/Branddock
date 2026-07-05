@@ -5,8 +5,7 @@ import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { resolveWorkspaceForProduct } from "@/lib/products/resolve-workspace";
 import { validateBinaryFile } from "@/lib/security/file-validator";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { getStorageProvider } from "@/lib/storage";
 import type { ProductImageCategory } from "@prisma/client";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -71,14 +70,6 @@ export async function POST(
       );
     }
 
-    // Save file to public/uploads/products
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
-    await mkdir(uploadDir, { recursive: true });
-
-    const ext = path.extname(file.name) || ".jpg";
-    const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-    const filePath = path.join(uploadDir, safeName);
-
     const buffer = Buffer.from(await file.arrayBuffer());
 
     // Magic-byte MIME validation — catches client-header spoofing
@@ -90,10 +81,14 @@ export async function POST(
       );
     }
 
-    await writeFile(filePath, buffer);
-
-    // Public URL path
-    const publicUrl = `/uploads/products/${safeName}`;
+    // Serverless-safe: via de storage-provider (R2 in prod, local in dev) i.p.v.
+    // direct naar public/uploads (read-only fs op Vercel).
+    const { url: publicUrl } = await getStorageProvider().upload(buffer, {
+      workspaceId,
+      fileName: file.name,
+      contentType: file.type,
+      generateThumbnail: false,
+    });
 
     // Determine next sort order
     const lastImage = await prisma.productImage.findFirst({

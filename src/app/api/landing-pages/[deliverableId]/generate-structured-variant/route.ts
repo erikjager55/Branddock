@@ -70,6 +70,10 @@ interface RequestBody {
   count?: 1 | 2 | 3 | 4;
 }
 
+// Serverless: multi-variant Opus-batch + tell-rewrite kan minuten kosten;
+// expliciete duur voorkomt mid-stream-kill. Fluid Compute-ceiling is 800s.
+export const maxDuration = 300;
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ deliverableId: string }> },

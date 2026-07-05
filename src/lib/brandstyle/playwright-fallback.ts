@@ -25,6 +25,7 @@
 
 import type { ScrapedData } from './url-scraper';
 import { assertSafeUrl } from '@/lib/utils/ssrf';
+import { launchHeadlessBrowser } from '@/lib/browser/launch';
 
 /** Configurable via env var so an operator can toggle the fallback without
  *  redeploying. Default OFF — pulls Chromium binary, adds latency. */
@@ -75,16 +76,7 @@ const MAX_RENDERED_CSS_BYTES = 5 * 1024 * 1024; // 5 MB
  * brand tokens plus inferred body/heading fonts.
  */
 async function extractWithChromium(url: string): Promise<HeadlessExtraction> {
-  let chromium: typeof import('playwright').chromium;
-  try {
-    ({ chromium } = await import('playwright'));
-  } catch (err) {
-    throw new Error(
-      `Headless fallback unavailable: playwright package not installed (${err instanceof Error ? err.message : String(err)})`,
-    );
-  }
-
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchHeadlessBrowser();
   try {
     const ctx = await browser.newContext({
       userAgent:

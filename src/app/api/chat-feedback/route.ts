@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getServerSession, resolveWorkspaceId } from '@/lib/auth-server';
 import { requireDeveloper } from '@/lib/developer-access';
-import { analyzeFeedback } from '@/lib/feedback-analysis/analyze-feedback';
+import { dispatchJob } from '@/lib/agents/jobs/dispatch';
 
 const SENTIMENTS = ['positive', 'neutral', 'negative'] as const;
 const TAGS = [
@@ -99,10 +99,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Fire-and-forget AI suggestion (mirrors /bug analyzeBugReport pattern).
-    analyzeFeedback(entry.id).catch((err) => {
-      console.error('[feedback-analysis] Failed to start:', err);
-    });
+    // Serverless-safe: op de queue i.p.v. fire-and-forget.
+    await dispatchJob({ type: 'CHAT_FEEDBACK_ANALYZE', payload: { feedbackId: entry.id }, triggeredBy: 'user' });
 
     return Response.json({ feedback: entry }, { status: 201 });
   } catch (err) {

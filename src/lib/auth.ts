@@ -177,10 +177,26 @@ async function syncOAuthTokensToWorkspace(account: {
 
 // ─── Better Auth server config ─────────────────────────────
 
+/**
+ * Trusted origins voor CSRF/cookie-acceptatie. Zonder dit vertrouwt Better Auth
+ * alleen de BETTER_AUTH_URL-origin → preview-deploys (*.vercel.app) + het www-
+ * marketingdomein zouden falen op auth. Env-driven; wildcard alleen op preview.
+ */
+function buildTrustedOrigins(): string[] {
+  const origins = new Set<string>();
+  const marketing = process.env.NEXT_PUBLIC_MARKETING_URL;
+  if (marketing) origins.add(marketing.replace(/\/$/, ""));
+  if (process.env.VERCEL_ENV === "preview" || process.env.NODE_ENV !== "production") {
+    origins.add("https://*.vercel.app");
+  }
+  return Array.from(origins);
+}
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  trustedOrigins: buildTrustedOrigins(),
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {

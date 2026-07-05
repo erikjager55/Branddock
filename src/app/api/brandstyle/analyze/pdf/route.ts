@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { withAiRateLimit } from "@/lib/ai/middleware";
-import { analyzePdf } from "@/lib/brandstyle/analysis-engine";
+import { dispatchJob } from "@/lib/agents/jobs/dispatch";
+import { getStorageProvider } from "@/lib/storage";
 
 // =============================================================
 // POST /api/brandstyle/analyze/pdf — start PDF analyse
@@ -63,9 +64,22 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Start real PDF analysis as fire-and-forget background task
-    analyzePdf(styleguide.id, buffer, file.name).catch((err) => {
-      console.error("[analyze/pdf background] unhandled:", err);
+    // Serverless-safe: persist de PDF naar storage (de buffer overleeft de
+    // function-freeze niet) + verwerk via de AgentJob-queue i.p.v. fire-and-forget.
+    const { url: fileUrl } = await getStorageProvider().upload(buffer, {
+      workspaceId,
+      fileName: file.name,
+      contentType: "application/pdf",
+      generateThumbnail: false,
+    });
+    await dispatchJob({
+      type: "BRANDSTYLE_ANALYZE_PDF",
+      payload: { styleguideId: styleguide.id, fileUrl, fileName: file.name },
+      workspaceId,
+      priority: 50,
+      maxAttempts: 1,
+      idempotencyKey: `brandstyle-analyze:${styleguide.id}`,
+      triggeredBy: "user",
     });
 
     return NextResponse.json({ jobId: styleguide.analysisJobId }, { status: 201 });

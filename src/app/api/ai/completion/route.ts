@@ -48,6 +48,10 @@ const VALID_USE_CASES = new Set<string>(['ANALYSIS', 'CREATIVE', 'CHAT', 'STRUCT
 
 // ─── Route handler ─────────────────────────────────────────
 
+// Serverless: streaming completion kan lang lopen; expliciete duur voorkomt
+// truncatie op de korte platform-default. Fluid Compute-ceiling is 800s.
+export const maxDuration = 300;
+
 export async function POST(request: Request) {
   // 1. Parse body
   let body: unknown;

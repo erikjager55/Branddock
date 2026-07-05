@@ -47,6 +47,14 @@ export async function capturePuckTreeScreenshot(
   ctx: CanvasContextStack | null,
   options: ScreenshotOptions = {},
 ): Promise<Buffer | null> {
+  // Het tsx-child-process-pad (dual-React workaround) bestaat NIET op Vercel:
+  // geen .bin/tsx + worker-script in de function-bundle. Skip expliciet →
+  // graceful null (LP-fidelity vision-scoring wordt overgeslagen). Volledige
+  // serverless-support vereist render-via-URL-herarchitectuur (follow-up, plan A4).
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    console.warn("[lp-screenshotter] Skipped op serverless (child-process render niet beschikbaar).");
+    return null;
+  }
   const projectRoot = process.cwd();
   const tsxBin = path.join(projectRoot, "node_modules", ".bin", "tsx");
   const workerPath = path.join(projectRoot, "scripts", "workers", "lp-screenshot-worker.tsx");

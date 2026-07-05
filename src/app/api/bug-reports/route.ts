@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getServerSession, resolveWorkspaceId } from '@/lib/auth-server';
 import { requireDeveloper } from '@/lib/developer-access';
-import { analyzeBugReport } from '@/lib/bug-analysis/analyze-bug';
+import { dispatchJob } from '@/lib/agents/jobs/dispatch';
 
 const createSchema = z.object({
   page: z.string().min(1).max(200),
@@ -72,10 +72,8 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Fire-and-forget: AI analysis
-  analyzeBugReport(bug.id, workspaceId).catch((err) => {
-    console.error('[bug-analysis] Failed to start:', err);
-  });
+  // Serverless-safe: op de queue i.p.v. fire-and-forget (Vercel kilt post-response).
+  await dispatchJob({ type: 'BUG_REPORT_ANALYZE', payload: { bugId: bug.id, workspaceId }, workspaceId, triggeredBy: 'user' });
 
   return Response.json({ bug }, { status: 201 });
 }
