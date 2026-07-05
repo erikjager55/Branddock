@@ -117,3 +117,25 @@ registerHandler('CHAT_FEEDBACK_ANALYZE', async (job) => {
   await analyzeFeedback(feedbackId);
   return { feedbackId };
 });
+
+// Tier 1-rest — DB-backed status (engine zet zelf COMPLETED/FAILED); alleen executie naar de queue.
+registerHandler('ALIGNMENT_SCAN', async (job) => {
+  const { scanId, workspaceId } = (job.payload ?? {}) as { scanId?: string; workspaceId?: string };
+  if (!scanId || !workspaceId) throw new Error('ALIGNMENT_SCAN: scanId + workspaceId vereist');
+  const { runScan } = await import('@/lib/alignment/scanner');
+  await runScan(scanId, workspaceId);
+  return { scanId };
+});
+
+registerHandler('TREND_RESEARCH', async (job) => {
+  const { jobId, workspaceId, query, useBrandContext } = (job.payload ?? {}) as {
+    jobId?: string;
+    workspaceId?: string;
+    query?: string;
+    useBrandContext?: boolean;
+  };
+  if (!jobId || !workspaceId || !query) throw new Error('TREND_RESEARCH: jobId + workspaceId + query vereist');
+  const { runTrendResearch } = await import('@/lib/trend-radar/researcher');
+  await runTrendResearch(jobId, workspaceId, query, useBrandContext ?? false);
+  return { jobId };
+});

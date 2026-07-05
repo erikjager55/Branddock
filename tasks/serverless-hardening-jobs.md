@@ -32,10 +32,10 @@ Latency-noot: minute-cron → tot ~60s start-latency. Acceptabel (spinner dekt h
 - `brandstyle/analyze/url` → `BRANDSTYLE_ANALYZE_URL` ✅
 - `brandstyle/analyze/pdf` → `BRANDSTYLE_ANALYZE_PDF` ✅ (PDF via storage-URL)
 
-## ⬜ Tier 1-restant — check of DB-backed, dan zelfde patroon
-- `alignment/scan/route.ts` (`runScan`) — verifieer progress-opslag.
-- `trend-radar/research/route.ts` (`runTrendResearch`).
-- `brandvoiceguide/analyze/url/route.ts` (`voice-analyzer-engine`) — **heeft in-memory Map** → Tier 3.
+## ✅ Tier 1-restant — DONE 2026-07-05 (DB-backed, zelfde patroon als brandstyle)
+- `alignment/scan` (`runScan`) → `ALIGNMENT_SCAN` — engine zet zelf COMPLETED/FAILED (scanner.ts:273/298).
+- `trend-radar/research` (`runTrendResearch`) → `TREND_RESEARCH` — idem (researcher.ts:549/566).
+- `brandvoiceguide/analyze/url` → **verplaatst naar Tier 3** (voice-analyzer-engine heeft in-memory Map).
 
 ## ✅ Tier 2 — enqueue-only (geen client-progress-polling) — DONE 2026-07-03
 - DAM auto-tag (5 media-routes) → `DAM_AUTO_TAG`.
@@ -51,7 +51,8 @@ Latency-noot: minute-cron → tot ~60s start-latency. Acceptabel (spinner dekt h
 # Acceptatie
 - [x] Patroon vastgesteld + representant (brandstyle url+pdf) op de queue.
 - [x] Tier 2 gemigreerd (DAM/bug/feedback, 2026-07-03).
-- [ ] Tier 1-restant (alignment/scan, trend-radar) gemigreerd.
+- [x] Tier 1-restant gemigreerd (alignment/scan, trend-radar, 2026-07-05).
+- [ ] Tier 3 (website-scanner + brandvoice: in-memory Map → DB-progress).
 - [ ] Tier 3: in-memory Maps vervangen door DB-progress + gemigreerd.
 - [ ] Smoke (Fase 5): start elke pipeline op de deploy → job enqueued → cron verwerkt → progress + resultaat verschijnen cross-instance.
 
