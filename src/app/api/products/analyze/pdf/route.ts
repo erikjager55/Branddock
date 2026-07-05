@@ -7,7 +7,7 @@ import { getBrandContext } from "@/lib/ai/brand-context";
 import { formatBrandContext } from "@/lib/ai/prompt-templates";
 import {
   getProductAnalysisSystemPrompt,
-  parseOutputLanguage,
+  getContentOutputLanguage,
   buildPdfAnalysisPrompt,
   type ProductAnalysisResult,
 } from "@/lib/ai/prompts/product-analysis";
@@ -83,7 +83,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Build prompts and call Gemini 3.1
-    const outputLanguage = parseOutputLanguage(request.headers.get("accept-language"));
+    // Content-locale Fase 2: output volgt de workspace-content-taal, niet Accept-Language.
+    const outputLanguage = await getContentOutputLanguage(workspaceId);
     const systemPrompt = getProductAnalysisSystemPrompt(outputLanguage);
 
     const userPrompt = buildPdfAnalysisPrompt({

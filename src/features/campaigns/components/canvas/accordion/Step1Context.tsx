@@ -8,6 +8,7 @@ import { Building2, Lightbulb, Route, Monitor, BookOpen, Plus, X, Sparkles, Sear
 import { Badge, Skeleton, SkeletonText } from '@/components/shared';
 import { WEBSITE_DELIVERABLE_TYPES } from '@/lib/ai/seo-pipeline.types';
 import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
+import { CONTENT_LANGUAGE_OPTIONS } from '@/lib/content-locale/shipped-languages';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
 import type { VisualBriefSource, VisualStyleDirection } from '@/lib/ai/canvas-context';
@@ -50,6 +51,8 @@ interface Step1ContextProps {
 
 export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
   const { t } = useTranslation(['campaigns-canvas-accordion', 'campaigns-content-inputs']);
+  // Content-locale Fase 2: per-generatie doeltaal ('' = workspace-default).
+  const [targetLanguage, setTargetLanguage] = React.useState('');
   const contextStack = useCanvasStore((s) => s.contextStack);
   const additionalContextItems = useCanvasStore((s) => s.additionalContextItems);
   const removeContextItem = useCanvasStore((s) => s.removeContextItem);
@@ -311,7 +314,7 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
       })();
 
       // Trigger content generation (SSE auto-advance handles step 2 transition)
-      await generate();
+      await generate(targetLanguage ? { targetLanguage } : undefined);
       // Visual gen runs in parallel — we don't await it so the user can
       // already see text-variants land while the image finishes.
       void visualGenPromise;
@@ -542,6 +545,23 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
           </div>
         )}
 
+        <div className="flex items-center gap-2 pb-1">
+          <label htmlFor="canvas-target-lang" className="text-xs text-gray-500 whitespace-nowrap">
+            {t('step1.generate.targetLanguageLabel', { defaultValue: 'Output language' })}
+          </label>
+          <select
+            id="canvas-target-lang"
+            value={targetLanguage}
+            onChange={(e) => setTargetLanguage(e.target.value)}
+            disabled={isGenerating}
+            className="rounded-lg border border-gray-300 px-2 py-1 text-xs focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none disabled:opacity-50"
+          >
+            <option value="">{t('step1.generate.targetLanguageDefault', { defaultValue: 'Workspace default' })}</option>
+            {CONTENT_LANGUAGE_OPTIONS.map((l) => (
+              <option key={l.code} value={l.code}>{l.label}</option>
+            ))}
+          </select>
+        </div>
         {hasExistingContent ? (
           <>
             <button

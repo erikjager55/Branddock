@@ -6,6 +6,7 @@ import { orchestrateContentGeneration } from '@/lib/ai/canvas-orchestrator';
 import { buildAiErrorEvent, buildAiErrorPayload } from '@/lib/ai/error-handler';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { resolveTargetProfile, SHIPPED_CONTENT_LANGUAGES } from '@/lib/content-locale/default-profile';
 
 // Allow up to 10 minutes for bulk generation of many deliverables
 export const maxDuration = 600;
@@ -14,6 +15,7 @@ const MAX_CONCURRENCY = 3;
 
 const bulkGenerateBodySchema = z.object({
   deliverableIds: z.array(z.string()).max(50).optional(),
+  targetLanguage: z.enum(SHIPPED_CONTENT_LANGUAGES).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -72,6 +74,13 @@ export async function POST(
       return NextResponse.json({ error: 'No deliverables to generate' }, { status: 400 });
     }
 
+    // Content-locale Fase 2: expliciete target-taal geldt voor de hele batch.
+    let targetLocaleProfileId: string | undefined;
+    if (body.targetLanguage) {
+      const targetProfile = await resolveTargetProfile(workspaceId!, body.targetLanguage);
+      targetLocaleProfileId = targetProfile?.id;
+    }
+
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -119,7 +128,7 @@ export async function POST(
           const promise = (async () => {
             try {
               // Consume the async generator — we only care about the final result
-              const generator = orchestrateContentGeneration(item.id, workspaceId!);
+              const generator = orchestrateContentGeneration(item.id, workspaceId!, { targetLocaleProfileId });
               let hasError = false;
               for await (const event of generator) {
                 if (event.event === 'error') {
@@ -141,7 +150,7 @@ export async function POST(
                 // Update status to IN_PROGRESS
                 await prisma.deliverable.update({
                   where: { id: item.id },
-                  data: { status: 'IN_PROGRESS' },
+                  data: { status: 'IN_PROGRESS', ...(targetLocaleProfileId ? { localeProfileId: targetLocaleProfileId } : {}) },
                 });
 
                 generated++;

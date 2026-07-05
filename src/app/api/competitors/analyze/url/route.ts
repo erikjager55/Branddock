@@ -10,10 +10,10 @@ import { getBrandContext } from "@/lib/ai/brand-context";
 import { formatBrandContext } from "@/lib/ai/prompt-templates";
 import {
   getCompetitorAnalysisSystemPrompt,
-  parseOutputLanguage,
   buildCompetitorUrlAnalysisPrompt,
   type CompetitorAnalysisResult,
 } from "@/lib/ai/prompts/competitor-analysis";
+import { getContentOutputLanguage } from "@/lib/ai/prompts/product-analysis";
 import { COMPETITOR_ANALYZE_STEPS } from "@/features/competitors/constants/competitor-constants";
 
 const analyzeUrlSchema = z.object({
@@ -80,7 +80,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Build prompts and call Gemini 3.1
-    const outputLanguage = parseOutputLanguage(request.headers.get("accept-language"));
+    // Content-locale Fase 2: output volgt de workspace-content-taal, niet Accept-Language.
+    const outputLanguage = await getContentOutputLanguage(workspaceId);
     const systemPrompt = getCompetitorAnalysisSystemPrompt(outputLanguage);
 
     const userPrompt = buildCompetitorUrlAnalysisPrompt({

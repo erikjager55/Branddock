@@ -7,6 +7,7 @@ import { orchestrateContentGeneration } from '@/lib/ai/canvas-orchestrator';
 import { buildAiErrorEvent } from '@/lib/ai/error-handler';
 import { serializeContextForPrompt } from '@/lib/ai/context/fetcher';
 import { isPuckRenderable } from '@/lib/landing-pages/webpage-types';
+import { resolveTargetProfile, SHIPPED_CONTENT_LANGUAGES } from '@/lib/content-locale/default-profile';
 
 // Allow up to 5 minutes for full generation pipeline (text + images)
 export const maxDuration = 300;
@@ -35,6 +36,7 @@ const orchestrateBodySchema = z.object({
   mediumConfig: z.record(z.string(), z.unknown()).optional(),
   seoInput: seoInputSchema.optional(),
   contentTypeInputs: z.record(z.string(), z.union([z.string(), z.array(z.string()), z.number(), z.boolean()])).optional(),
+  targetLanguage: z.enum(SHIPPED_CONTENT_LANGUAGES).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -165,6 +167,20 @@ export async function POST(
             }
           }
 
+          // Content-locale Fase 2: expliciete target-taal → find-or-create profiel,
+          // persist op de deliverable (her-genereren behoudt de taal) + thread door.
+          let targetLocaleProfileId: string | undefined;
+          if (body.targetLanguage) {
+            const targetProfile = await resolveTargetProfile(workspaceId, body.targetLanguage);
+            if (targetProfile) {
+              targetLocaleProfileId = targetProfile.id;
+              await prisma.deliverable.update({
+                where: { id: deliverableId },
+                data: { localeProfileId: targetProfile.id },
+              });
+            }
+          }
+
           const generator = orchestrateContentGeneration(
             deliverableId,
             workspaceId,
@@ -176,6 +192,7 @@ export async function POST(
               mediumConfig: body.mediumConfig,
               seoInput: body.seoInput,
               contentTypeInputs: body.contentTypeInputs,
+              targetLocaleProfileId,
             },
           );
 

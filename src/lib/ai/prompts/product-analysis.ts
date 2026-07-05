@@ -6,25 +6,41 @@
 // existing importers keep working.
 export { fenceUntrustedContent } from '@/lib/ai/untrusted-fence';
 import { fenceUntrustedContent } from '@/lib/ai/untrusted-fence';
+import { getBrandContext } from '@/lib/ai/brand-context';
+
+const LANG_NAME_BY_CODE: Record<string, string> = {
+  nl: "Dutch", en: "English", de: "German", fr: "French", es: "Spanish",
+  it: "Italian", pt: "Portuguese", ja: "Japanese", ko: "Korean", zh: "Chinese",
+  ar: "Arabic", ru: "Russian", pl: "Polish", sv: "Swedish", da: "Danish",
+  no: "Norwegian", fi: "Finnish", tr: "Turkish", cs: "Czech", ro: "Romanian",
+  hu: "Hungarian", el: "Greek", he: "Hebrew", th: "Thai", vi: "Vietnamese",
+  id: "Indonesian", ms: "Malay", uk: "Ukrainian", hi: "Hindi",
+};
+
+/** ISO-639-1 code → human-readable language name (default "English"). */
+export function outputLanguageForCode(langCode: string): string {
+  return LANG_NAME_BY_CODE[langCode] ?? "English";
+}
 
 /**
  * Parse the primary language from an Accept-Language header value.
- * Returns a human-readable language name (e.g. "Dutch", "English", "German").
+ * @deprecated Analyze-output moet de content-locale van de workspace volgen, niet de
+ * browser-taal van de operator — gebruik `getContentOutputLanguage(workspaceId)`.
  */
 export function parseOutputLanguage(acceptLanguage: string | null): string {
   if (!acceptLanguage) return "English";
-  // Take the first language tag (highest priority)
   const primary = acceptLanguage.split(",")[0]?.split(";")[0]?.trim().toLowerCase() ?? "";
-  const langCode = primary.split("-")[0];
-  const LANG_MAP: Record<string, string> = {
-    nl: "Dutch", en: "English", de: "German", fr: "French", es: "Spanish",
-    it: "Italian", pt: "Portuguese", ja: "Japanese", ko: "Korean", zh: "Chinese",
-    ar: "Arabic", ru: "Russian", pl: "Polish", sv: "Swedish", da: "Danish",
-    no: "Norwegian", fi: "Finnish", tr: "Turkish", cs: "Czech", ro: "Romanian",
-    hu: "Hungarian", el: "Greek", he: "Hebrew", th: "Thai", vi: "Vietnamese",
-    id: "Indonesian", ms: "Malay", uk: "Ukrainian", hi: "Hindi",
-  };
-  return LANG_MAP[langCode] ?? "English";
+  return outputLanguageForCode(primary.split("-")[0]);
+}
+
+/**
+ * Content-locale Fase 2: de output-taal van analyze-routes volgt de content-locale
+ * van de WORKSPACE (`getBrandContext.contentLanguage`), niet de browser-`Accept-Language`
+ * van de operator — anders bloedt de UI-taal van de operator in geproduceerde content.
+ */
+export async function getContentOutputLanguage(workspaceId: string): Promise<string> {
+  const ctx = await getBrandContext(workspaceId);
+  return outputLanguageForCode(ctx.contentLanguage ?? "en");
 }
 
 /**

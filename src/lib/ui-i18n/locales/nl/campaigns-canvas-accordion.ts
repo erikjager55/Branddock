@@ -50,6 +50,8 @@ const ns = {
       continueToVariants: 'Doorgaan naar varianten',
       regenerating: 'Opnieuw genereren...',
       regenerateFromScratch: 'Opnieuw genereren vanaf nul',
+      targetLanguageLabel: 'Uitvoertaal',
+      targetLanguageDefault: 'Workspace-standaard',
       fillRequiredFirst: 'Vul eerst de verplichte velden in',
     },
     summary: {

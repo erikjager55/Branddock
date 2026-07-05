@@ -411,6 +411,8 @@ export function bulkGenerateSSE(
   deliverableIds: string[] | undefined,
   onEvent: (eventType: string, data: unknown) => void,
   onError: (error: string) => void,
+  /** Content-locale Fase 2: optionele per-batch doeltaal (ISO-639-1). */
+  targetLanguage?: string,
 ): { abort: () => void } {
   const controller = new AbortController();
 
@@ -419,7 +421,10 @@ export function bulkGenerateSSE(
       const res = await fetch(`/api/campaigns/${campaignId}/bulk-generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-        body: JSON.stringify(deliverableIds ? { deliverableIds } : {}),
+        body: JSON.stringify({
+          ...(deliverableIds ? { deliverableIds } : {}),
+          ...(targetLanguage ? { targetLanguage } : {}),
+        }),
         signal: controller.signal,
       });
 

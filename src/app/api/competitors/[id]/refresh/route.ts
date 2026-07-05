@@ -8,10 +8,10 @@ import { getBrandContext } from "@/lib/ai/brand-context";
 import { formatBrandContext } from "@/lib/ai/prompt-templates";
 import {
   getCompetitorAnalysisSystemPrompt,
-  parseOutputLanguage,
   buildCompetitorUrlAnalysisPrompt,
   type CompetitorAnalysisResult,
 } from "@/lib/ai/prompts/competitor-analysis";
+import { getContentOutputLanguage } from "@/lib/ai/prompts/product-analysis";
 import { resolveFeatureModel } from "@/lib/ai/feature-models.server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
@@ -115,7 +115,8 @@ export async function POST(
     }
 
     // 3. AI analysis
-    const outputLanguage = parseOutputLanguage(request.headers.get("accept-language"));
+    // Content-locale Fase 2: output volgt de workspace-content-taal, niet Accept-Language.
+    const outputLanguage = await getContentOutputLanguage(workspaceId);
     const systemPrompt = getCompetitorAnalysisSystemPrompt(outputLanguage);
     const userPrompt = buildCompetitorUrlAnalysisPrompt({
       url: existing.websiteUrl,
