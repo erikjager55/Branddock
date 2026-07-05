@@ -37,6 +37,23 @@ Numbering wordt auto-incremented door `task-finalize` skill, doorgaand vanaf #22
 
 ## 2026-07
 
+### 357. vercel-deployment — LIVE op Vercel + serverless-hardening geconsolideerd (Track C)
+
+De **hard launch-blocker is opgelost**: de app draait live op Vercel (`branddock-7y9n.vercel.app` · Pro + Fluid Compute · fra1), production-branch `main`. Geverifieerd: signup/auth (Better Auth) + Neon Postgres (pgvector + 3 HNSW-indexen) + AI (3 providers) + Cloudflare R2 uploads. De verkenning weerlegde "pure infra, 3 dagen": onder de infra zat een serverless-compatibiliteitslaag die kern-flows brak op Vercel. Geleverd (PR #76, merge `5e642ded`, bovenop i18n Fase 1-3):
+
+- **Serverless-hardening (Fase 2)**: A2 — 3 upload-routes + media-fetch/logo-overlay via `getStorageProvider()` (R2 in prod, fail-closed); A4 — brandstyle/LP-screenshots via in-process `@sparticuz/chromium` + `playwright-core` i.p.v. tsx-child-process/`import('playwright')`; A1 — fire-and-forget onboarding-pipelines naar de `AgentJob`-queue (11 routes: brandstyle url+pdf, DAM auto-tag, bug-reports, chat-feedback, alignment-scan, trend-research); A3 — expliciete `maxDuration` op SSE/streaming-routes; A5 — cache bewust per-instance gedocumenteerd.
+- **Deploy-config-fixes (Fase 1)**: `prisma generate && next build` (Vercel-buildfix), playwright-core dedupe (1.60.0 override), R2 env-naam-unificatie (`R2_BUCKET_NAME`/`R2_PUBLIC_URL`), Node-22-pin, Better Auth `trustedOrigins`.
+- **Fase 3 Neon**: pooltuning (`pg.Pool` max serverless-cap) + `scripts/prod/create-vector-indexes.ts` (HNSW cosine op 3 vector-kolommen) + `prisma db push`.
+- **Fase 4 CI/CD**: e2e critical-flow job + branch-protection op `main` (required `check`).
+
+**Resterende follow-ups (op main, niet-blokkerend)**: A1 Tier 3 (website-scanner + brandvoice: in-memory Map → DB-progress, `tasks/serverless-hardening-jobs.md`), A3-deel-2 (SEO 8-staps-pipeline decompose), custom domein (nu `.vercel.app`), Stripe billing, marketing-site, pilot-onboarding. De e2e-CI-job is flaky + niet-verplicht (ving wél een echte i18n-gap: onboarding-skip-knop toont rúw `onboarding.skipTour`).
+
+**Gotcha vastgelegd**: het prod-Neon-schema wordt via `prisma db push` beheerd, NIET door de Vercel-build — na elke schema-wijziging handmatig db-pushen naar Neon (anders 500't de deployed code op een onbekende enum/kolom).
+
+- Task: [tasks/vercel-deployment.md](../tasks/vercel-deployment.md) + [tasks/serverless-hardening-jobs.md](../tasks/serverless-hardening-jobs.md)
+- Plan: `snug-popping-tulip.md`
+- Commit: PR #76 (`5e642ded`) — merge van `track/launch` (13 commits) in `main`
+
 ### 356. Meertaligheid Fase 1-3 — launch-ready afgerond (docs + status)
 
 Afronding van het meertaligheid-programma tot een **launch-ready** staat, zodat `vercel-deployment` niet langer op i18n wacht. Fase 1-3 (`i18n-ui-foundation` + `content-locale-foundation` + `content-locale-target-picker`) zijn alle **done + gemerged op `main`** (#65/#68/#70/#71/#73/#74): en↔nl is live door de hele app en de twee-selector-visie (Display-language per gebruiker + Content-/Output-language per workspace/generatie) is compleet. Volledige gate-suite groen op main (tsc 0 / lint 0 / separation 3/3 / content-locale-foundation-smoke 46/46 / target-picker-smoke 8/8 / build). Deze commit: `i18n-ui-foundation` → done, roadmap §🌍 + START_HERE bijgewerkt naar launch-ready, alle open items expliciet **post-launch** geparkeerd.

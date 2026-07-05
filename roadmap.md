@@ -110,7 +110,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 | `brandclaw-data-collection` | DataSnapshot model + registry + 4 v1 sources live | 5-7d | #5 | ✅ done 2026-05-18 (#255) |
 | `brandclaw-tool-orchestrator` | Shared Anthropic tool-orchestrator + agent-loop + 4 query-tools + PostHog | 3-5d | #5 | ✅ done 2026-05-18 (#256) |
 | [`strategy-analyst-stub`](tasks/strategy-analyst-stub.md) Phase A+B | Strategy Analyst node — node entry + manual trigger + UI Tab 5 + 4 dimensions + sort/group | 15-20d landed | #5-6 | ✅ done 2026-05-18 (#260/#261/#262) |
-| `strategy-analyst-stub` Phase C | Vercel Cron weekly `0 9 * * 1` + per-workspace concurrency-cap + cost-budget alerts (>$10/ws/maand → PostHog) + BB pilot smoke met productie-data | 5-7d | #6-7 | open — **sequential dep op vercel-deployment** |
+| `strategy-analyst-stub` Phase C | Vercel Cron weekly `0 9 * * 1` + per-workspace concurrency-cap + cost-budget alerts (>$10/ws/maand → PostHog) + BB pilot smoke met productie-data | 5-7d | #6-7 | open — **dep vervuld** (`vercel-deployment` done 2026-07-05), startklaar |
 | [`competitor-ai-event-classifier`](tasks/done/competitor-ai-event-classifier.md) | AI-pattern-detector voor CATEGORY_REPOSITIONING + TARGET_AUDIENCE_CHANGED bovenop deterministische diff-engine. A1 96,7% accuracy. | 3-4d | #6 | ✅ done 2026-05-19 (#263, PR #6) |
 | [`competitor-activities-ui`](tasks/done/competitor-activities-ui.md) | Activities zichtbaar maken: detail-timeline + dashboard attention + multi-competitor digest + Brand Assistant tool + in-app/email notificaties + reconcile-cron. Gemerged via PR #8/#13 + BA-tool/cron branches; ge-finalized + gehardend 2026-05-29. | 2-3d | #6 | ✅ done 2026-05-29 (#271) |
 | [`competitor-scraping-apify-fallback`](tasks/done/competitor-scraping-apify-fallback.md) | 3-step scraper-chain (current → Apify playwright:firefox → Gemini) in refresh-route; redt JS-heavy SPA scrape-failures die anders geen classifier-input leveren. | 1-1.5d | #6 | ✅ done 2026-05-29 (#272, PR #12) |
@@ -120,8 +120,8 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 **Track C — Launch infra** (worktree `branddock-launch`)
 | ID | Titel | Effort | Sprint | Status |
 |---|---|---|---|---|
-| [`vercel-deployment`](tasks/vercel-deployment.md) | Vercel + Neon DB + custom domain + monitoring | 3d | #5 | open task-file |
-| [`stripe-billing-live`](tasks/stripe-billing-live.md) | Stripe live billing — checkout + webhooks + plan enforcement | 1w | #6 | open task-file |
+| [`vercel-deployment`](tasks/vercel-deployment.md) | Vercel + Neon DB + serverless-hardening + monitoring | ~2wk | #5 | ✅ **DONE + LIVE 2026-07-05** (PR #76) |
+| [`stripe-billing-live`](tasks/stripe-billing-live.md) | Stripe live billing — checkout + webhooks + plan enforcement | 1w | #6 | open task-file — **ontgrendeld** (vercel done) |
 | [`pilot-onboarding-better-brands`](tasks/pilot-onboarding-better-brands.md) | Better Brands eerste pilot live | 2d | #6 (na vercel) | open task-file |
 | `onboarding-flow-test` | Onboarding flow met 3 externe gebruikers | 1w | #7 | task-file volgt |
 | `marketing-site-pricing` | Marketing site + pricing pagina | 1w | #6-7 | task-file volgt |
@@ -138,7 +138,7 @@ Pre-launch scope herzien 2026-05-12 (2× uitbreiding zelfde dag): alle items uit
 **Sprint #5 — Bugfix + Foundation start** (Track A klaar, Track B Phase A+B gemerged 2026-05-18)
 - Track A: ✅ 5A foundation + ✅ 5B goldens + ✅ 6A wiring-gates + ✅ 6B partial + ✅ compose-Gemini + ✅ claw-page-awareness vervolg. **Open**: 6B wiring/dashboard finish + bugfix-cluster uit Ronde 1 + full 53-types Ronde 1.
 - Track B: ✅ Phase A+B gemerged via `a0e59a5b` — data-collection + tool-orchestrator + strategy-analyst Phase A+vervolg+B + model-ID hotfix (#255/256/260/261/262). **Open**: Phase C in worktree `branddock-brandclaw` — sequential dep op Track C.
-- Track C: ⏸️ niet gestart (worktree ~58 commits behind main inclusief brandclaw-merge). Rebase + vercel-deployment (3d) start. **Hard launch-blocker + ontgrendelt Phase C Vercel Cron.**
+- Track C: ✅ **`vercel-deployment` DONE + LIVE 2026-07-05** — app live op Vercel (Pro+Fluid, fra1); serverless-hardening (A1 11-routes-queue / A2 uploads / A3 SSE / A4 browser / A5 cache) + Neon (pool + HNSW) + R2 + CI/branch-protection, geconsolideerd met i18n op `main` (PR #76, `5e642ded`). Hard launch-blocker **opgeheven** → ontgrendelt Phase C Vercel Cron + pilot-onboarding + stripe-billing.
 
 **Sprint #6 — Feature build + Infra** (~3 weken, 3 parallel tracks)
 - Track A: testplan Ronde 1 finish + persist-TODOs cluster + Ronde 2 generator-evaluatie
